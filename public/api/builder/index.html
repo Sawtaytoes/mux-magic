@@ -8,8 +8,10 @@
 <script src="/vendor/js-yaml-4.1.1.min.js"></script>
 <script src="/vendor/Sortable-1.15.2.min.js"></script>
 <script src="/sse-utils.js"></script>
+<script src="/progress-utils.js"></script>
 <script src="/command-labels.js"></script>
 <script src="/reload-on-restart.js"></script>
+<link rel="stylesheet" href="/progress-utils.css" />
 <script type="module" src="/builder/js/main.js"></script>
 <style>
   @keyframes stepEnter {
@@ -426,6 +428,15 @@
         <button onclick="copyApiRunLogs()" id="api-run-copy-btn" class="text-xs text-blue-400 hover:text-blue-300">Copy logs</button>
         <button onclick="closeApiRunModal()" class="text-xs text-slate-400 hover:text-slate-200">✕ Close</button>
       </div>
+    </div>
+    <!-- Per-child progress row, populated by openModalChildProgressStream
+         when the umbrella's SSE delivers a step-started event. The
+         row's actual .progress-bar / .progress-fill / .progress-label /
+         .progress-files markup is appended at runtime by
+         ProgressUtils.createProgressRow to keep the structure in sync
+         with /api/index.html's bars. -->
+    <div id="api-run-progress-host" class="hidden shrink-0 px-4 pt-3 pb-1 border-b border-slate-700">
+      <div id="api-run-progress-step-label" class="text-[0.72rem] text-slate-500 font-mono mb-1"></div>
     </div>
     <pre id="api-run-logs" class="flex-1 overflow-auto p-4 text-xs text-slate-300 font-mono leading-relaxed whitespace-pre-wrap"></pre>
   </div>
@@ -2733,11 +2744,24 @@ let apiRunEventSource = null
 // Tracked so the modal's Cancel button can DELETE the umbrella job.
 let apiRunCurrentJobId = null
 
+// Per-child progress stream state. ProgressEvents fire on the CHILD
+// subject (because withFileProgress / spawn ops resolve getActiveJobId
+// to the child running under runJob's withJobContext), so the modal
+// can't see them on the umbrella stream. We open a side EventSource
+// against the currently-running step's child id and tear it down at
+// step-finished. Only one child SSE is open at a time even inside
+// parallel groups — the most recent step-started wins (UI shows the
+// latest, the others would otherwise compete for the single bar).
+let apiRunChildEventSource = null
+let apiRunChildJobId = null
+let apiRunChildSnapshot = null
+
 function openApiRunModal({ jobId, status }) {
   apiRunCurrentJobId = jobId ?? null
   document.getElementById('api-run-jobid').textContent = jobId ? `job ${jobId}` : ''
   setApiRunStatus(status)
   document.getElementById('api-run-logs').textContent = ''
+  hideApiRunProgress()
   document.getElementById('api-run-modal').classList.remove('hidden')
 }
 
@@ -2748,6 +2772,8 @@ function closeApiRunModal(event) {
     apiRunEventSource.close()
     apiRunEventSource = null
   }
+  closeApiRunChildProgressStream()
+  hideApiRunProgress()
   apiRunCurrentJobId = null
   document.getElementById('run-api-btn').disabled = false
 }
@@ -2791,6 +2817,24 @@ function tailApiRunLogs(jobId, onDone) {
   // rare. closeApiRunModal still calls .close() on the handle.
   apiRunEventSource = createTolerantEventSource(`/jobs/${jobId}/logs`, {
     onMessage: (data) => {
+      if (data.type === 'step-started') {
+        // Switch the progress bar to follow this child step. Replaces
+        // any previously-open child SSE — even in parallel groups we
+        // only render one bar at a time (latest started wins).
+        openApiRunChildProgressStream(data.childJobId, data.stepId)
+        return
+      }
+      if (data.type === 'step-finished') {
+        // Tear down the per-child SSE only if it matches the finished
+        // child — in parallel groups, an out-of-order step-finished for
+        // a sibling that lost the bar shouldn't close the currently-
+        // mounted one.
+        if (data.childJobId === apiRunChildJobId) {
+          closeApiRunChildProgressStream()
+          hideApiRunProgress()
+        }
+        return
+      }
       if (data.line) {
         logsEl.textContent += (logsEl.textContent ? '\n' : '') + data.line
         logsEl.scrollTop = logsEl.scrollHeight
@@ -2800,6 +2844,8 @@ function tailApiRunLogs(jobId, onDone) {
         setApiRunStatus(data.status || 'completed')
         apiRunEventSource.close()
         apiRunEventSource = null
+        closeApiRunChildProgressStream()
+        hideApiRunProgress()
         onDone?.()
       }
     },
@@ -2807,9 +2853,74 @@ function tailApiRunLogs(jobId, onDone) {
       setApiRunStatus('failed')
       apiRunEventSource?.close()
       apiRunEventSource = null
+      closeApiRunChildProgressStream()
+      hideApiRunProgress()
       onDone?.()
     },
   })
+}
+
+// Mounts (or replaces) the modal's progress bar and opens an SSE on the
+// child step's logs to receive its ProgressEvents. The umbrella stream
+// stays open in parallel — that one carries log lines + step-* events;
+// this one carries data.type === "progress" payloads for the active
+// child only.
+function openApiRunChildProgressStream(childJobId, stepId) {
+  closeApiRunChildProgressStream()
+  apiRunChildJobId = childJobId
+  apiRunChildSnapshot = {}
+  showApiRunProgress(stepId)
+  apiRunChildEventSource = createTolerantEventSource(`/jobs/${childJobId}/logs`, {
+    onMessage: (data) => {
+      if (data.type === 'progress') {
+        apiRunChildSnapshot = ProgressUtils.mergeProgress(apiRunChildSnapshot, data)
+        const host = document.getElementById('api-run-progress-host')
+        ProgressUtils.paintProgressBar(host, apiRunChildSnapshot)
+        return
+      }
+      // The child SSE also carries log lines and a done event for the
+      // child job, but the umbrella stream already mirrors those into
+      // the modal's log pane and decides when to tear the bar down via
+      // step-finished. Ignoring the child's line/done here keeps log
+      // ordering authoritative on the umbrella stream.
+    },
+    // Don't flip the umbrella status on a transient child-SSE blip —
+    // that's signalled separately by the umbrella stream.
+    onPossiblyDisconnected: () => {},
+  })
+}
+
+function closeApiRunChildProgressStream() {
+  if (apiRunChildEventSource) {
+    apiRunChildEventSource.close()
+    apiRunChildEventSource = null
+  }
+  apiRunChildJobId = null
+  apiRunChildSnapshot = null
+}
+
+function showApiRunProgress(stepId) {
+  const host = document.getElementById('api-run-progress-host')
+  const label = document.getElementById('api-run-progress-step-label')
+  // Replace the bar markup so each step starts with a fresh
+  // (indeterminate-by-default) bar — leftover state from a previous
+  // step would otherwise paint stale ratios while the new step warms
+  // up its first ProgressEvent.
+  Array.from(host.querySelectorAll('.progress-row')).forEach((node) => node.remove())
+  host.append(ProgressUtils.createProgressRow())
+  label.textContent = stepId ? `Step ${stepId}` : ''
+  host.classList.remove('hidden')
+  // Initial paint with empty snapshot — null ratio shows the
+  // indeterminate animation immediately.
+  ProgressUtils.paintProgressBar(host, {})
+}
+
+function hideApiRunProgress() {
+  const host = document.getElementById('api-run-progress-host')
+  host.classList.add('hidden')
+  Array.from(host.querySelectorAll('.progress-row')).forEach((node) => node.remove())
+  const label = document.getElementById('api-run-progress-step-label')
+  if (label) label.textContent = ''
 }
 
 function copyApiRunLogs() {
