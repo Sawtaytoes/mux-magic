@@ -1025,6 +1025,51 @@ const generateStepId = () => `step${++stepCounter}`
 let running = false
 const stepLogs = new Map()
 
+// Per-step ProgressEvent snapshot. Keyed by stepId so both the per-step
+// ▶ flow (waitForJob) and the sequence-flow's per-child SSE
+// (openApiRunChildProgressStream) drive the same Map and the same step
+// card without coordinating who owns the entry. Cleared on done /
+// step-finished / cancel via unmountStepCardProgress.
+const progressByStepId = new Map()
+
+function mountStepCardProgress(stepId) {
+  const card = document.getElementById(`step-${stepId}`)
+  if (!card) return
+  // Card body is the .px-3.py-2 wrapper around the fields. When the
+  // step is collapsed, that wrapper isn't rendered; skip in that case
+  // (the bar will appear once the user expands the card and a fresh
+  // progress event lands).
+  const body = card.querySelector('.px-3.py-2')
+  if (!body) return
+  if (body.querySelector('[data-step-progress]')) return
+  const host = document.createElement('div')
+  host.dataset.stepProgress = stepId
+  host.append(ProgressUtils.createProgressRow())
+  body.append(host)
+}
+
+function paintStepCardProgress(stepId) {
+  const card = document.getElementById(`step-${stepId}`)
+  if (!card) return
+  const host = card.querySelector('[data-step-progress]')
+  if (!host) return
+  ProgressUtils.paintProgressBar(host, progressByStepId.get(stepId))
+}
+
+function handleStepCardProgressEvent(stepId, event) {
+  progressByStepId.set(stepId, ProgressUtils.mergeProgress(progressByStepId.get(stepId), event))
+  mountStepCardProgress(stepId)
+  paintStepCardProgress(stepId)
+}
+
+function unmountStepCardProgress(stepId) {
+  progressByStepId.delete(stepId)
+  const card = document.getElementById(`step-${stepId}`)
+  if (!card) return
+  const host = card.querySelector('[data-step-progress]')
+  host?.remove()
+}
+
 // Path variable registry — [{ id: string, label: string, value: string }]
 let paths = []
 
@@ -1930,6 +1975,17 @@ function renderAll() {
   // are destroyed inside attachSortables since renderAll just replaced
   // their host nodes via innerHTML.
   window.mediaTools.attachSortables?.()
+
+  // Re-mount per-step progress bars after the innerHTML swap. Any step
+  // that had a snapshot in flight (running step + at least one
+  // ProgressEvent received) gets its bar reattached and repainted from
+  // the latest snapshot — without this, every renderAll (e.g. the user
+  // toggles a card collapsed/expanded mid-run) would visually wipe the
+  // bar until the next ProgressEvent landed.
+  progressByStepId.forEach((_, stepId) => {
+    mountStepCardProgress(stepId)
+    paintStepCardProgress(stepId)
+  })
 
   updateYaml()
   updateUrl()
@@ -2860,14 +2916,26 @@ function tailApiRunLogs(jobId, onDone) {
   })
 }
 
+// Tracked alongside apiRunChildJobId so closeApiRunChildProgressStream
+// can unmount the matching step card without re-deriving stepId from
+// the umbrella stream's prior step-started.
+let apiRunChildStepId = null
+
 // Mounts (or replaces) the modal's progress bar and opens an SSE on the
 // child step's logs to receive its ProgressEvents. The umbrella stream
 // stays open in parallel — that one carries log lines + step-* events;
 // this one carries data.type === "progress" payloads for the active
 // child only.
+//
+// The same SSE drives TWO bars in lockstep:
+//   1. The modal's progress-host (one bar + multi-file stack).
+//   2. The matching step card in the builder (stepId match).
+// One SSE, one snapshot, two paint targets — keeps the modal and the
+// underlying card in sync without coordinating a second connection.
 function openApiRunChildProgressStream(childJobId, stepId) {
   closeApiRunChildProgressStream()
   apiRunChildJobId = childJobId
+  apiRunChildStepId = stepId
   apiRunChildSnapshot = {}
   showApiRunProgress(stepId)
   apiRunChildEventSource = createTolerantEventSource(`/jobs/${childJobId}/logs`, {
@@ -2876,6 +2944,7 @@ function openApiRunChildProgressStream(childJobId, stepId) {
         apiRunChildSnapshot = ProgressUtils.mergeProgress(apiRunChildSnapshot, data)
         const host = document.getElementById('api-run-progress-host')
         ProgressUtils.paintProgressBar(host, apiRunChildSnapshot)
+        if (stepId) handleStepCardProgressEvent(stepId, data)
         return
       }
       // The child SSE also carries log lines and a done event for the
@@ -2895,7 +2964,11 @@ function closeApiRunChildProgressStream() {
     apiRunChildEventSource.close()
     apiRunChildEventSource = null
   }
+  if (apiRunChildStepId) {
+    unmountStepCardProgress(apiRunChildStepId)
+  }
   apiRunChildJobId = null
+  apiRunChildStepId = null
   apiRunChildSnapshot = null
 }
 
@@ -2970,6 +3043,7 @@ function waitForJob(jobId, stepId) {
         if (data.done) {
           closePromptModal()
           handle.close()
+          unmountStepCardProgress(stepId)
           const step = findStepById(stepId)
           if (step && Array.isArray(data.results) && data.results.length > 0) {
             step.results = data.results
@@ -2987,6 +3061,13 @@ function waitForJob(jobId, stepId) {
           else reject(`Job ended with status: ${data.status}`)
         } else if (data.type === 'prompt') {
           showPromptModal(jobId, data)
+        } else if (data.type === 'progress') {
+          // Drives the multi-file progress bar mounted inside the step
+          // card. Same shape the /jobs page renders — overall ratio +
+          // per-active-file rows. Trivially-fast jobs never emit
+          // progress (silent-fast rule on the server) so the card stays
+          // bar-less in those cases.
+          handleStepCardProgressEvent(stepId, data)
         } else if (data.line) {
           const logs = stepLogs.get(stepId) ?? []
           logs.push(data.line)
@@ -2997,6 +3078,7 @@ function waitForJob(jobId, stepId) {
       onPossiblyDisconnected: () => {
         closePromptModal()
         handle.close()
+        unmountStepCardProgress(stepId)
         reject('SSE connection error')
       },
     })
