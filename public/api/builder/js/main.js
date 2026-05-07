@@ -37,6 +37,13 @@ import {
 } from './components/card-clipboard.js'
 import { attachSortables } from './components/drag-and-drop.js'
 import { attachModalEscapeListener } from './util/modal-keys.js'
+import {
+  openFileExplorer,
+  refreshFileExplorer,
+  closeFileExplorerModal,
+  confirmFileExplorerDelete,
+  closeVideoModal,
+} from './components/file-explorer-modal.js'
 import { pathVarOptionText, refreshPathVarOptions } from './util/path-var-options.js'
 
 window.mediaTools = window.mediaTools || {}
@@ -65,7 +72,20 @@ Object.assign(window.mediaTools, {
   copyGroupYaml,
   pasteCardAt,
   attachSortables,
+  openFileExplorer,
+  refreshFileExplorer,
+  closeFileExplorerModal,
+  confirmFileExplorerDelete,
+  closeVideoModal,
 })
+
+// Inline onclick handlers in the file-explorer / video modal markup
+// resolve against window.* — wire forwarders for each exported function.
+window.openFileExplorer = openFileExplorer
+window.refreshFileExplorer = refreshFileExplorer
+window.closeFileExplorerModal = closeFileExplorerModal
+window.confirmFileExplorerDelete = confirmFileExplorerDelete
+window.closeVideoModal = closeVideoModal
 
 attachPageHeaderListeners()
 attachModalEscapeListener()

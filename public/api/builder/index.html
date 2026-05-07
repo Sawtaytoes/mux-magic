@@ -456,6 +456,51 @@
   </div>
 </div>
 
+<!-- File-explorer modal: list / watch / delete files in a directory -->
+<!-- Triggered by the "Browse Files" button on commands that operate on a folder. -->
+<div id="file-explorer-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80" onclick="closeFileExplorerModal(event)">
+  <div class="bg-slate-900 border border-slate-700 rounded-xl flex flex-col" style="width:min(95vw,1000px);max-height:90vh" onclick="event.stopPropagation()">
+    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
+      <div class="flex items-center gap-2 min-w-0 flex-1">
+        <span class="text-xs font-medium text-slate-400 shrink-0">📁</span>
+        <code id="file-explorer-path" class="text-xs text-slate-200 font-mono truncate"></code>
+      </div>
+      <div class="flex items-center gap-3 shrink-0 ml-3">
+        <span id="file-explorer-mode-badge" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium"></span>
+        <button onclick="refreshFileExplorer()" class="text-xs text-slate-400 hover:text-slate-200" title="Refresh listing">↻ Refresh</button>
+        <button onclick="closeFileExplorerModal()" class="text-slate-500 hover:text-slate-200 text-lg leading-none w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800">✕</button>
+      </div>
+    </div>
+    <div id="file-explorer-body" class="flex-1 overflow-auto p-3 text-sm text-slate-200"></div>
+    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-t border-slate-700 bg-slate-950/50">
+      <span id="file-explorer-selection-count" class="text-xs text-slate-400">0 selected</span>
+      <button id="file-explorer-delete-btn" onclick="confirmFileExplorerDelete()"
+        class="text-xs bg-rose-700 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded font-medium" disabled>
+        Delete selected
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Video-playback sub-modal opened from the file-explorer's ▶ button. -->
+<div id="video-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/90" onclick="closeVideoModal(event)">
+  <div class="bg-slate-900 border border-slate-700 rounded-xl flex flex-col" style="width:min(95vw,1000px);max-height:90vh" onclick="event.stopPropagation()">
+    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
+      <code id="video-modal-name" class="text-xs text-slate-200 font-mono truncate"></code>
+      <div class="flex items-center gap-3 shrink-0 ml-3">
+        <button id="video-modal-copy-path" class="text-xs text-blue-400 hover:text-blue-300" title="Copy absolute path for VLC / external player">📋 Copy path</button>
+        <button onclick="closeVideoModal()" class="text-slate-500 hover:text-slate-200 text-lg leading-none w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800">✕</button>
+      </div>
+    </div>
+    <div class="flex-1 min-h-0 flex items-center justify-center bg-black">
+      <video id="video-modal-player" class="max-w-full max-h-full" controls preload="metadata"></video>
+    </div>
+    <div class="shrink-0 px-4 py-2 border-t border-slate-700 text-[11px] text-slate-500">
+      Many disc rips use codecs (DTS, TrueHD, HEVC) browsers can't decode natively. If playback fails or audio is missing, copy the path and open in VLC.
+    </div>
+  </div>
+</div>
+
 <!-- Command picker popover -->
 <div id="cmd-picker-popover" class="hidden fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col" style="width:340px;max-height:400px">
   <input id="cmd-picker-input" type="text" placeholder="Search commands…"
@@ -4697,7 +4742,24 @@ function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) 
     ? summaryRecord.possibleNames
     : []
   const counts = `Renamed ${renamePairs.length}. Files not renamed: ${unrenamed.length}.`
-  const countsBlock = `<p class="text-slate-300 mb-2">${esc(counts)}</p>`
+  // Resolve the step's source folder for the "Browse Files" trigger.
+  // Falls back to the linked path-variable's resolved value when the
+  // user wired sourcePath through @basePath rather than typing it
+  // directly. Empty string disables the button (no folder to browse).
+  const sourcePath = (
+    step.params?.sourcePath
+    && !String(step.params.sourcePath).startsWith('@')
+      ? String(step.params.sourcePath)
+      : (typeof getLinkedValue === 'function'
+          ? (getLinkedValue(step, 'sourcePath') ?? '')
+          : '')
+  )
+  const browseBtnBlock = sourcePath
+    ? `<button onclick="openFileExplorer(${JSON.stringify(sourcePath).replace(/"/g, '&quot;')})"
+        class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded border border-slate-600 ml-2"
+        title="Open the file explorer scoped to this step's source folder">📁 Browse files</button>`
+    : ''
+  const countsBlock = `<div class="flex items-center mb-2"><p class="text-slate-300">${esc(counts)}</p>${browseBtnBlock}</div>`
   const renameRowsHtml = renamePairs.map((item) => (
     `<div>${esc(item.oldName)} → ${esc(item.newName)}</div>`
   )).join('')
