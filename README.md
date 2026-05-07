@@ -90,13 +90,17 @@ Language options accept [ISO 639-2](https://en.wikipedia.org/wiki/List_of_ISO_63
 
 **Cache location.** Set `ANIDB_CACHE_FOLDER` in `.env` (or your container env) to point both caches at a directory that survives restarts — important in Docker where the project-relative `./.cache/anidb/` is ephemeral.
 
-**Current scope (MVP).** Filters episodes to type=1 (regular) and maps files to episodes by index after natural-sorting both lists. Output filename format is `<seriesName> - sNNeNN - <episodeTitle>`.
+**Episode types (`episodeType` param).** Three modes branch on AniDB's six-way episode classification:
+
+- `regular` (default) — type=1. Files map to episodes index-for-index after natural sort. Output: `<seriesName> - sNNeNN - <episodeTitle>` using AniDB's epno verbatim.
+- `specials` — types 2-5 (S/C/T/P). Each file's mediainfo duration is matched against AniDB's rough minute-length estimates; the per-file picker surfaces the top length-ranked candidates plus a "Skip this file" option, and already-claimed entries drop out of subsequent prompts. Output: `<seriesName> - s00eNN - <episodeTitle>` (Plex's specials convention; season 0 regardless of `seasonNumber`, sequential index in pick order).
+- `others` — type=6 (director's-cut "O" episodes and other alternate cuts). Index-paired like `regular`. Output: `<seriesName> - sNNeNN - <episodeTitle>` using `seasonNumber` and a sequential index.
+
+In the CLI, the picker prompts hit your terminal one file at a time. In the API/builder, the same prompts ride the existing job-event channel — answer them in the job log surface as the job runs.
 
 **Planned features (not yet implemented).**
 
 - **Episode range/list filter.** Name only a subset of files — e.g., `episodes: "1-4"` or `"5,7,10"`. Useful when you've already named some episodes and got the rest later.
-- **Regular vs alternate selection.** For series with both type=1 and type=6 sets (e.g., director's-cut "O" episodes), a required prop to pick which set to use.
-- **Specials directory mapping.** Files in a `/specials` subdir get mapped to AniDB special entries (S/C/T/P) via an interactive modal. AniDB provides rough episode lengths (rounded minutes) for auto-suggesting matches, the user drops entries they don't have, and confirms the rest in order.
 
 ### Demo file format
 

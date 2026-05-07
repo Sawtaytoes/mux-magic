@@ -303,9 +303,9 @@ export const commandConfigs: Record<CommandName, CommandConfig> = {
     tags: ["Naming Operations"],
   },
   nameAnimeEpisodesAniDB: {
-    getObservable: (body) => nameAnimeEpisodesAniDB({ anidbId: body.anidbId, searchTerm: body.searchTerm, seasonNumber: body.seasonNumber, sourcePath: body.sourcePath }),
+    getObservable: (body) => nameAnimeEpisodesAniDB({ anidbId: body.anidbId, episodeType: body.episodeType, searchTerm: body.searchTerm, seasonNumber: body.seasonNumber, sourcePath: body.sourcePath }),
     schema: schemas.nameAnimeEpisodesAniDBRequestSchema,
-    summary: "Rename anime episode files using AniDB metadata (better OVA/special coverage than MAL)",
+    summary: "Rename anime episode files using AniDB metadata (regular, specials with length-matched picker, or type=6 alternates)",
     tags: ["Naming Operations"],
   },
   nameSpecialFeatures: {

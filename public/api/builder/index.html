@@ -827,13 +827,24 @@ const COMMANDS = {
   },
   nameAnimeEpisodesAniDB: {
     summary: "Rename anime episode files using AniDB metadata (better OVA/special coverage than MAL)",
-    note: "MVP: filters to regular episodes only. Specials/OPs/EDs, type=6 alternates (e.g., director's-cut 'O' episodes), and episode-range selection are not yet implemented — see README §AniDB command notes.",
+    note: "Specials runs an interactive length-matched per-file picker — answer the prompts in the job log. Others maps type=6 alternates (e.g., director's-cut 'O' episodes) by index. Episode-range selection is still planned — see README §AniDB command notes.",
     tag: "Naming Operations",
     outputFolderName: null,
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "anidbId", type: "numberWithLookup", lookupType: "anidb", label: "AniDB Anime ID", placeholder: "8160", required: true, companionNameField: "anidbName" },
       { name: "seasonNumber", type: "number", label: "Season Number", default: 1 },
+      {
+        name: "episodeType",
+        type: "enum",
+        label: "Episode Type",
+        default: "regular",
+        options: [
+          { value: "regular", label: "Regular (type=1)" },
+          { value: "specials", label: "Specials (S/C/T/P)" },
+          { value: "others", label: "Others (type=6, alt cuts)" },
+        ],
+      },
     ]
   },
   nameSpecialFeatures: {
@@ -2071,6 +2082,22 @@ function renderFields(step, stepIndex) {
         class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" />
         ${field.companionNameField ? `<p data-step="${step.id}" data-companion="${field.name}" class="text-xs text-slate-500 mt-0.5 truncate ${companion ? '' : 'hidden'}" title="${esc(companion ?? '')}">${esc(companion ?? '')}</p>` : ''}
       </div>`
+    }
+
+    if (field.type === 'enum') {
+      // Fixed list of choices rendered as a native <select>. Each
+      // option carries a value/label pair; the field's default value
+      // wins when the step has no stored param yet. setParam takes the
+      // raw string so YAML round-trips cleanly without coercion.
+      const selected = val ?? field.default ?? ''
+      const options = (field.options ?? []).map((option) => (
+        `<option value="${esc(option.value)}" ${option.value === selected ? 'selected' : ''}>${esc(option.label)}</option>`
+      )).join('')
+      return `<div>${label}<select
+        onchange="setParam('${step.id}','${field.name}',this.value)"
+        class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500">
+        ${options}
+      </select></div>`
     }
 
     if (field.type === 'numberWithLookup') {
