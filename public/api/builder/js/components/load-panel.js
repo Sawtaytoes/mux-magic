@@ -119,10 +119,15 @@ export function loadYamlFromText(text) {
     newSteps.push(step)
   }
   setSteps(newSteps)
-  // Kick TMDB resolutions for any nameSpecialFeatures step whose YAML
-  // didn't already carry a tmdbId (older shared seq URLs predate the
-  // persisted-resolution work). Safe to call when nothing matches —
-  // the function is idempotent and gated on per-step flags.
+  // Re-resolve every numberWithLookup field's companion against the
+  // current backend (TVDB English-title code, refreshed MAL/AniDB/TMDB
+  // data, etc.) so a stale companion stored in the seq URL doesn't
+  // outlive the bug it captured. The kick also chains TMDB resolution
+  // for nameSpecialFeatures via runReverseLookup, subsuming most of
+  // what kickTmdbResolutions does — kickTmdbResolutions stays as a
+  // safety net for the edge case where a seq URL carries dvdCompareName
+  // without dvdCompareId.
+  bridge().kickReverseLookups?.()
   bridge().kickTmdbResolutions?.()
 }
 

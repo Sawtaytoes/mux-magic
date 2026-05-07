@@ -2907,6 +2907,47 @@ function clearTmdbResolution(step) {
   delete step.params.tmdbResolutionAttempted
 }
 
+// Sweeps every step's numberWithLookup fields that have an id and
+// re-fires the reverse lookup. Called after YAML load so a shared seq
+// URL whose companion was resolved against an old endpoint (e.g.
+// pre-English-translation TVDB code that returned the Japanese title)
+// re-resolves to the current canonical name on every load. Also kicks
+// the chain that runReverseLookup runs for nameSpecialFeatures
+// (dvdCompareReleaseHash + resolveTmdbForStep), so kickTmdbResolutions
+// is rarely needed once this runs — it stays as a safety net for
+// seq URLs that happen to have a dvdCompareName without a dvdCompareId
+// (which shouldn't happen in practice).
+function kickReverseLookups() {
+  for (const step of steps) {
+    if (!step.command) {
+      continue
+    }
+    const cmd = COMMANDS[step.command]
+    if (!cmd) {
+      continue
+    }
+    for (const field of cmd.fields) {
+      if (field.type !== 'numberWithLookup') {
+        continue
+      }
+      if (!field.companionNameField) {
+        continue
+      }
+      const idValue = step.params[field.name]
+      const numericId = Number(idValue)
+      if (!Number.isFinite(numericId) || numericId <= 0) {
+        continue
+      }
+      const token = String(numericId)
+      const key = `${step.id}-${field.name}`
+      // Seed the token so runReverseLookup's stale-check passes — that
+      // check exists for in-flight typing, but our kicks are unprompted.
+      reverseLookupTokens.set(key, token)
+      runReverseLookup(step.id, field.name, numericId, token)
+    }
+  }
+}
+
 // Sweeps every nameSpecialFeatures step that has a dvdCompareName but
 // no resolved TMDB match yet, and fires the resolver. Called after YAML
 // load (seq-URL restore + Load-panel paste) so a shared seq URL whose
@@ -3116,6 +3157,11 @@ async function runReverseLookup(stepId, fieldName, id, requestToken) {
     step.params[field.companionNameField] = name
     setCompanionDisplay(stepId, fieldName, name)
     updateYaml()
+    // Persist the freshly-resolved companion into the URL so a refresh
+    // doesn't lose it. setParam is what previously owned URL writes,
+    // but it only fires on input blur — companion updates from the
+    // reverse-lookup path were never reaching the URL otherwise.
+    scheduleUpdateUrl()
 
     // The release label depends on which film we're looking at, so a
     // dvdCompareId change must also refresh the hash field's companion.
@@ -3126,7 +3172,14 @@ async function runReverseLookup(stepId, fieldName, id, requestToken) {
       const hashField = cmd?.fields.find(f => f.name === 'dvdCompareReleaseHash')
       if (hashField) {
         const hashValue = step.params.dvdCompareReleaseHash ?? hashField.default ?? 1
-        runReverseLookup(stepId, 'dvdCompareReleaseHash', Number(hashValue), String(hashValue))
+        const hashKey = `${stepId}-dvdCompareReleaseHash`
+        const hashToken = String(hashValue)
+        // The chained call's staleness check reads reverseLookupTokens,
+        // which scheduleReverseLookup set for the dvdCompareId key but
+        // not for dvdCompareReleaseHash. Seed it so the nested
+        // runReverseLookup actually applies its result.
+        reverseLookupTokens.set(hashKey, hashToken)
+        runReverseLookup(stepId, 'dvdCompareReleaseHash', Number(hashValue), hashToken)
       }
       // Same flow as lookupSelectRelease: resolve TMDB so the user can
       // jump straight to the matched movie. The display name returned
@@ -3805,6 +3858,7 @@ Object.assign(window.mediaTools, {
   updateUrl,
   closeApiRunModal,
   kickTmdbResolutions,
+  kickReverseLookups,
 })
 
 // Initial bootstrap (initPaths / restoreFromUrl / renderAll) is invoked
