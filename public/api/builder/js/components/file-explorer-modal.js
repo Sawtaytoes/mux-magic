@@ -40,6 +40,23 @@ const modeBadge = () => document.getElementById('file-explorer-mode-badge')
 const pickerBadge = () => document.getElementById('file-explorer-picker-badge')
 const pickBtn = () => document.getElementById('file-explorer-pick-btn')
 
+// Mirrors the server-side VIDEO_EXTENSIONS allow-list in
+// listFilesWithMetadata.ts. Used to gate which file rows expose a
+// play affordance — clicking a .txt to "play" it is meaningless, so
+// non-video files render as plain text instead. The server's `duration`
+// field would be a more authoritative signal, but it's null for files
+// where mediainfo failed too — a bad codec doesn't mean we shouldn't
+// offer playback.
+const VIDEO_EXTENSIONS = new Set([
+  '.mkv', '.mp4', '.m4v', '.webm', '.avi', '.mov', '.mpg', '.mpeg', '.ts', '.wmv',
+])
+
+function isVideoFile(name) {
+  const dot = name.lastIndexOf('.')
+  if (dot < 0) return false
+  return VIDEO_EXTENSIONS.has(name.slice(dot).toLowerCase())
+}
+
 // Pretty byte size — KB/MB/GB scale; 1 decimal at MB+ for the typical
 // disc-rip sizes (1.x GB), otherwise integer to keep small files terse.
 function formatSize(bytes) {
@@ -254,14 +271,18 @@ function renderListing() {
     const copyBtn = entry.isFile
       ? `<button class="fe-copy text-slate-400 hover:text-slate-200" data-name="${esc(entry.name)}" title="Copy absolute path">📋</button>`
       : '<span class="text-slate-700">—</span>'
-    const icon = entry.isDirectory ? '📁' : '🎬'
-    // Clicking the name navigates (directories) or plays (files). Both
-    // render as buttons with the same hover affordance so the row's
-    // interactivity is obvious.
+    // Icon hints at what's clickable: 📁 for directories (navigable),
+    // 🎬 for video files (playable), 📄 for any other file (inert).
+    const isVideo = entry.isFile && isVideoFile(entry.name)
+    const icon = entry.isDirectory ? '📁' : isVideo ? '🎬' : '📄'
+    // Directories navigate, video files play, everything else renders
+    // as plain text. Non-video files keep the 📋 copy-path button so
+    // the user can still hand them off to another app, but the row
+    // itself is non-interactive.
     const nameContent = `${icon} ${esc(entry.name)}`
     const nameCell = entry.isDirectory
       ? `<button class="fe-name fe-dir text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full" data-name="${esc(entry.name)}" title="Open this folder">${nameContent}</button>`
-      : entry.isFile
+      : isVideo
         ? `<button class="fe-name fe-file text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full" data-name="${esc(entry.name)}" title="Play in browser">${nameContent}</button>`
         : `<span class="text-slate-400">${nameContent}</span>`
     return `<tr class="border-b border-slate-800 hover:bg-slate-800/30">
