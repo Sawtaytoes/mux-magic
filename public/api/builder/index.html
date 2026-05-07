@@ -7,6 +7,7 @@
 <script src="/vendor/tailwind-3.4.17.js"></script>
 <script src="/vendor/js-yaml-4.1.1.min.js"></script>
 <script src="/sse-utils.js"></script>
+<script src="/command-labels.js"></script>
 <script type="module" src="/builder/js/main.js"></script>
 <style>
   @keyframes stepEnter {
@@ -1411,7 +1412,7 @@ function renderStep(step, index) {
   const isFirst = index === 0, isLast = index === steps.length - 1
 
   const triggerLabel = step.command
-    ? `<span class="font-mono">${esc(step.command)}</span><span class="text-[10px] text-slate-500 ml-2 truncate">${esc(cmd.tag)}</span>`
+    ? `<span>${esc(commandLabel(step.command))}</span><span class="text-[10px] text-slate-500 ml-2 truncate">${esc(cmd.tag)}</span>`
     : `<span class="text-slate-400 italic">— pick a command —</span>`
 
   const body = cmd
@@ -1605,7 +1606,7 @@ function renderStepOutputPicker(step, field, stepIndex, link) {
       COMMANDS[s.command].outputs.map((out) => {
         const value = `step:${s.id}:${out.name}`
         const isSelected = isLinked && link.linkedTo === s.id && link.output === out.name
-        const label = `Step (${esc(s.command)}) → ${esc(out.label ?? out.name)}`
+        const label = `Step (${esc(commandLabel(s.command))}) → ${esc(out.label ?? out.name)}`
         return `<option value="${value}"${isSelected ? ' selected' : ''}>${label}</option>`
       })
     ))
@@ -2384,14 +2385,22 @@ const commandPicker = createPopoverPicker({
   ),
   matchesQuery: (item, query) => (
     item.name.toLowerCase().includes(query)
+    || commandLabel(item.name).toLowerCase().includes(query)
     || item.tag.toLowerCase().includes(query)
   ),
   itemClass: (item, isActive) => (
-    `w-full text-left px-3 py-1.5 flex items-center gap-2 ${isActive ? 'bg-blue-700 text-white' : 'text-slate-200 hover:bg-slate-800'}`
+    `w-full text-left px-3 py-1.5 flex items-start gap-2 ${isActive ? 'bg-blue-700 text-white' : 'text-slate-200 hover:bg-slate-800'}`
   ),
+  // Two-line row: friendly label on top, the raw camelCase API id under it
+  // in mono font so power users still see exactly which command they'll
+  // wire into the YAML. Tag chip stays right-aligned, vertically centered
+  // against the friendly label.
   renderItem: (item, isActive) => (
-    `<span class="font-mono text-xs flex-1 min-w-0 truncate">${esc(item.name)}</span>`
-    + `<span class="text-[10px] ${isActive ? 'text-blue-200' : 'text-slate-500'} shrink-0">${esc(item.tag)}</span>`
+    `<span class="flex-1 min-w-0 flex flex-col">`
+    + `<span class="text-xs truncate">${esc(commandLabel(item.name))}</span>`
+    + `<span class="font-mono text-[10px] ${isActive ? 'text-blue-200' : 'text-slate-500'} truncate">${esc(item.name)}</span>`
+    + `</span>`
+    + `<span class="text-[10px] ${isActive ? 'text-blue-200' : 'text-slate-500'} shrink-0 mt-0.5">${esc(item.tag)}</span>`
   ),
   emptyHtml: '<p class="text-xs text-slate-500 text-center py-4">No commands match.</p>',
   onSelect: (item, anchor) => {
@@ -2423,7 +2432,7 @@ function describeLinkTarget(step, fieldName) {
       return { label: '(missing step)' }
     }
     const sourceIndex = steps.indexOf(sourceStep)
-    return { label: `Step ${sourceIndex + 1}: ${sourceStep.command || '?'}`, sourceStepId: sourceStep.id }
+    return { label: `Step ${sourceIndex + 1}: ${commandLabel(sourceStep.command) || '?'}`, sourceStepId: sourceStep.id }
   }
   return { label: '— manual —' }
 }
@@ -2465,7 +2474,7 @@ function buildLinkPickerItems(stepId, fieldName) {
     items.push({
       kind: 'step',
       value: `step:${previousStep.id}:folder`,
-      label: `Step ${previousIndex + 1}: ${previousStep.command}`,
+      label: `Step ${previousIndex + 1}: ${commandLabel(previousStep.command)}`,
       detail: folderOutput || '',
       sourceStepId: previousStep.id,
     })

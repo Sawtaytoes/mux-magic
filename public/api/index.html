@@ -284,6 +284,7 @@
 <div class="jobs" id="jobs"></div>
 
 <script src="/sse-utils.js"></script>
+<script src="/command-labels.js"></script>
 <script>
 const statusBar = document.getElementById("status-bar");
 const jobsEl = document.getElementById("jobs");
@@ -569,7 +570,7 @@ function renderStepRow(child, index) {
   const idx = makeEl("span", "step-index");
   idx.textContent = `${index + 1}.`;
   const cmdName = document.createElement("strong");
-  cmdName.textContent = child.commandName;
+  cmdName.textContent = commandLabel(child.commandName);
   title.append(idx, cmdName);
   if (child.stepId) {
     const sid = makeEl("span", "step-id");
@@ -617,7 +618,7 @@ function renderJob(job) {
 
   const header = makeEl("div", "job-header");
   const cmd = makeEl("div", "command");
-  cmd.textContent = job.commandName ?? job.command ?? "unknown";
+  cmd.textContent = commandLabel(job.commandName ?? job.command ?? "unknown");
   const badge = makeEl("div", `status ${job.status}`);
   badge.textContent = job.status;
   header.append(cmd, badge);
