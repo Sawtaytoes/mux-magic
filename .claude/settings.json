@@ -1,11 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit *)",
-      "Bash(git check-attr *)",
-      "Bash(git restore *)",
-      "Bash(git checkout *)",
-      "Bash(git merge *)",
+      "Bash(git *)",
+      "PowerShell(git *)",
       "Bash(yarn *)",
       "PowerShell(yarn *)",
       "Bash(npx *)",
@@ -13,10 +10,7 @@
       "Bash(npm view *)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "PowerShell(gh --version 2>&1)",
-      "Bash(git stash *)",
-      "Bash(git add *)",
-      "Bash(git fetch *)"
+      "PowerShell(gh --version 2>&1)"
     ]
   }
 }
