@@ -23,6 +23,86 @@ export function toggleLoad() {
 
 // ─── YAML → state ────────────────────────────────────────────────────────────
 
+const isGroupItem = (item) => !!(item && typeof item === 'object' && item.kind === 'group')
+
+// Hydrate a single bare-step item from YAML into the in-memory step
+// shape. Captures id, alias, isCollapsed, and walks the command's
+// fields to assign params or restore links. Same logic the old loader
+// applied to every top-level entry — extracted so it can be reused for
+// inner steps inside a group.
+function loadStepItem(item, COMMANDS) {
+  if (!item.command) throw new Error('Each step must have a "command" key')
+  if (!COMMANDS[item.command]) throw new Error(`Unknown command: ${item.command}`)
+  const step = bridge().makeStep(item.command)
+  if (typeof item.id === 'string' && item.id) {
+    step.id = item.id
+    const match = /^step(\d+)$/.exec(item.id)
+    if (match) {
+      const restoredCount = Number(match[1])
+      if (restoredCount > getStepCounter()) setStepCounter(restoredCount)
+    }
+  }
+  if (typeof item.alias === 'string') step.alias = item.alias
+  if (item.isCollapsed === true) step.isCollapsed = true
+  const cmd = COMMANDS[item.command]
+  for (const field of cmd.fields) {
+    const value = item.params?.[field.name]
+    if (value !== undefined) {
+      if (typeof value === 'string' && value.startsWith('@')) {
+        // Path-variable reference — restore as a string link if the path
+        // exists, otherwise keep the literal so the user can fix it.
+        const pathVarId = value.slice(1)
+        if (getPaths().find((path) => path.id === pathVarId)) {
+          step.links[field.name] = pathVarId
+        } else {
+          step.params[field.name] = value
+        }
+      } else if (
+        value && typeof value === 'object' && !Array.isArray(value) &&
+        typeof value.linkedTo === 'string'
+      ) {
+        // Step-output reference — restore as the object form. We do not
+        // verify that the referenced step+output exists here; that happens
+        // at run/resolve time so partial sequences keep loading.
+        step.links[field.name] = {
+          linkedTo: value.linkedTo,
+          output: value.output || 'folder',
+        }
+      } else {
+        step.params[field.name] = value
+      }
+    }
+    // Companion display-name field (purely visual)
+    if (field.companionNameField) {
+      const companionValue = item.params?.[field.companionNameField]
+      if (companionValue !== undefined) step.params[field.companionNameField] = companionValue
+    }
+  }
+  return step
+}
+
+// Hydrate a group item: walks its inner `steps` array, refusing nested
+// groups (the schema bans nesting; surface it here as a clear error).
+function loadGroupItem(item, COMMANDS) {
+  if (!Array.isArray(item.steps) || item.steps.length === 0) {
+    throw new Error('A group must have a non-empty "steps" array')
+  }
+  const innerSteps = item.steps.map((inner) => {
+    if (isGroupItem(inner)) {
+      throw new Error('Groups cannot be nested — a group\'s inner steps must each be a bare step')
+    }
+    return loadStepItem(inner, COMMANDS)
+  })
+  return {
+    kind: 'group',
+    id: typeof item.id === 'string' && item.id ? item.id : 'group_' + Math.random().toString(36).slice(2, 8),
+    label: typeof item.label === 'string' ? item.label : '',
+    isParallel: item.isParallel === true,
+    isCollapsed: item.isCollapsed === true,
+    steps: innerSteps,
+  }
+}
+
 // Replaces `paths` and `steps` with the contents of a saved YAML
 // document. Two formats are accepted: the canonical `{ paths, steps }`
 // object form emitted by toYamlStr, and the legacy plain-array-of-steps
@@ -51,62 +131,16 @@ export function loadYamlFromText(text) {
   }
 
   // Reset the step counter for this load so we don't keep bumping it across
-  // reloads. Each loaded step's explicit `id` (when present) is preserved;
-  // anything missing falls through to the generated `step{N}` form. After
-  // the loop, advance the counter past every step{N}-shaped ID we restored
-  // so future makeStep calls won't collide with a loaded ID.
-  const newSteps = []
+  // reloads. Each loaded step's explicit `id` (when present) is preserved
+  // by loadStepItem; anything missing falls through to the generated
+  // `step{N}` form via makeStep. After the loop the counter has been
+  // advanced past every step{N}-shaped ID we restored so future
+  // makeStep calls won't collide with a loaded ID.
   setStepCounter(0)
-  for (const item of stepsData) {
-    if (!item.command) throw new Error('Each step must have a "command" key')
-    if (!COMMANDS[item.command]) throw new Error(`Unknown command: ${item.command}`)
-    const step = bridge().makeStep(item.command)
-    if (typeof item.id === 'string' && item.id) {
-      step.id = item.id
-      const match = /^step(\d+)$/.exec(item.id)
-      if (match) {
-        const restoredCount = Number(match[1])
-        if (restoredCount > getStepCounter()) setStepCounter(restoredCount)
-      }
-    }
-    if (typeof item.alias === 'string') step.alias = item.alias
-    const cmd = COMMANDS[item.command]
-    for (const field of cmd.fields) {
-      const value = item.params?.[field.name]
-      if (value !== undefined) {
-        if (typeof value === 'string' && value.startsWith('@')) {
-          // Path-variable reference — restore as a string link if the path
-          // exists, otherwise keep the literal so the user can fix it.
-          const pathVarId = value.slice(1)
-          if (getPaths().find((path) => path.id === pathVarId)) {
-            step.links[field.name] = pathVarId
-          } else {
-            step.params[field.name] = value
-          }
-        } else if (
-          value && typeof value === 'object' && !Array.isArray(value) &&
-          typeof value.linkedTo === 'string'
-        ) {
-          // Step-output reference — restore as the object form. We do not
-          // verify that the referenced step+output exists here; that happens
-          // at run/resolve time so partial sequences keep loading.
-          step.links[field.name] = {
-            linkedTo: value.linkedTo,
-            output: value.output || 'folder',
-          }
-        } else {
-          step.params[field.name] = value
-        }
-      }
-      // Companion display-name field (purely visual)
-      if (field.companionNameField) {
-        const companionValue = item.params?.[field.companionNameField]
-        if (companionValue !== undefined) step.params[field.companionNameField] = companionValue
-      }
-    }
-    newSteps.push(step)
-  }
-  setSteps(newSteps)
+  const newItems = stepsData.map((item) => (
+    isGroupItem(item) ? loadGroupItem(item, COMMANDS) : loadStepItem(item, COMMANDS)
+  ))
+  setSteps(newItems)
 }
 
 // ─── Click handler for the panel's Load button ──────────────────────────────

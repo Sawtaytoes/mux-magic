@@ -8,9 +8,49 @@ const bridge = () => window.mediaTools
 
 // ─── YAML serialization ──────────────────────────────────────────────────────
 
+// Convert a single in-memory step object into its YAML-shape dict.
+// Keys are emitted in a deterministic order (id → alias → command →
+// params → isCollapsed) so saved YAML is stable to diff.
+function stepToYaml(step) {
+  return {
+    id: step.id,
+    ...(step.alias ? { alias: step.alias } : {}),
+    command: step.command,
+    params: bridge().buildParams(step),
+    ...(step.isCollapsed ? { isCollapsed: true } : {}),
+  }
+}
+
+// Group → YAML. Only emit isParallel / isCollapsed / label when they
+// carry information so default groups stay uncluttered.
+function groupToYaml(group) {
+  const innerFilled = group.steps.filter((step) => step.command !== null)
+  return {
+    kind: 'group',
+    ...(group.id ? { id: group.id } : {}),
+    ...(group.label ? { label: group.label } : {}),
+    ...(group.isParallel ? { isParallel: true } : {}),
+    ...(group.isCollapsed ? { isCollapsed: true } : {}),
+    steps: innerFilled.map(stepToYaml),
+  }
+}
+
+const isGroup = (item) => !!(item && typeof item === 'object' && item.kind === 'group')
+
+// A top-level item contributes content if it's a step with a command,
+// or a group containing at least one filled inner step. Empty entries
+// (placeholders the user hasn't filled in yet) get dropped on save so
+// the YAML doesn't carry junk.
+function topLevelHasContent(item) {
+  if (isGroup(item)) {
+    return item.steps.some((step) => step.command !== null)
+  }
+  return item.command !== null
+}
+
 export function toYamlStr() {
-  const filledSteps = getSteps().filter((step) => step.command !== null)
-  const hasContent = filledSteps.length || getPaths().some((p) => p.value)
+  const items = getSteps().filter(topLevelHasContent)
+  const hasContent = items.length || getPaths().some((p) => p.value)
   if (!hasContent) return '# No steps yet'
   const pathsObj = {}
   for (const pv of getPaths()) pathsObj[pv.id] = { label: pv.label, value: pv.value }
@@ -19,13 +59,9 @@ export function toYamlStr() {
     // Each step ships its stable string ID so { linkedTo: stepN, output: ... }
     // links remain valid across save/load cycles. `alias` is purely cosmetic
     // (builder UI label) — only emitted when the user has set one, so default
-    // YAML stays uncluttered.
-    steps: filledSteps.map((s) => ({
-      id: s.id,
-      ...(s.alias ? { alias: s.alias } : {}),
-      command: s.command,
-      params: bridge().buildParams(s),
-    })),
+    // YAML stays uncluttered. Group entries get the discriminator (`kind`)
+    // + their inner steps; bare steps stay in the legacy flat shape.
+    steps: items.map((item) => isGroup(item) ? groupToYaml(item) : stepToYaml(item)),
   }
   return window.jsyaml.dump(data, { lineWidth: -1, flowLevel: 3, indent: 2 })
 }

@@ -1,3 +1,5 @@
+import { defer, forkJoin, lastValueFrom } from "rxjs"
+
 import { logError, logInfo } from "../tools/logMessage.js"
 import { withJobContext } from "./logCapture.js"
 import {
@@ -20,29 +22,80 @@ import {
 } from "./routes/commandRoutes.js"
 
 export type SequenceStep = {
+  kind?: "step"
   id?: string
   alias?: string
   command: string
   params?: Record<string, unknown>
+  isCollapsed?: boolean
 }
+
+export type SequenceGroup = {
+  kind: "group"
+  id?: string
+  label?: string
+  isParallel?: boolean
+  isCollapsed?: boolean
+  steps: SequenceStep[]
+}
+
+export type SequenceItem = SequenceStep | SequenceGroup
 
 export type SequenceBody = {
   paths?: Record<string, SequencePath>
-  steps: SequenceStep[]
+  steps: SequenceItem[]
 }
+
+const isGroup = (item: SequenceItem): item is SequenceGroup => (
+  item.kind === "group"
+)
+
+// Flatten the top-level items into the linear list of underlying steps,
+// preserving original (group, indexInGroup) provenance so the runner can
+// route each child job back to its group when it advances. The flat list
+// is what we use to pre-create child jobs, so the Jobs UI sees one child
+// per actual step regardless of group nesting.
+type FlatStep = {
+  step: SequenceStep
+  group: SequenceGroup | null
+}
+
+const flattenItems = (items: SequenceItem[]): FlatStep[] => (
+  items.flatMap((item): FlatStep[] => (
+    isGroup(item)
+    ? item.steps.map((step): FlatStep => ({ step, group: item }))
+    : [{ step: item, group: null }]
+  ))
+)
 
 const isKnownCommand = (name: string): name is CommandName => (
   Object.prototype.hasOwnProperty.call(commandConfigs, name)
 )
 
-// Drives a sequence under a single umbrella job. Each step is a real,
-// first-class child Job (parentJobId = umbrellaId) with its own status,
-// log stream, results, and cancel affordance — the Jobs UI groups by
-// parentJobId on the client. Steps are pre-created up front in `pending`
-// so the UI can render the entire step list immediately; each one then
-// transitions through running → completed | failed | cancelled | skipped
-// as the runner advances. The umbrella's own logs carry the cross-step
+type StepRunOutcome =
+  | { kind: "completed", stepId: string, command: string, outputs: Record<string, unknown> | null, resolved: Record<string, unknown> }
+  | { kind: "failed", stepId: string, error: string }
+  | { kind: "cancelled" }
+
+// Drives a sequence under a single umbrella job. Each step (whether at
+// the top level or inside a group) is a real, first-class child Job
+// (parentJobId = umbrellaId) with its own status, log stream, results,
+// and cancel affordance — the Jobs UI groups by parentJobId on the
+// client. Steps are pre-created up front in `pending` so the UI can
+// render the entire step list immediately; each one then transitions
+// through running → completed | failed | cancelled | skipped as the
+// runner advances. The umbrella's own logs carry the cross-step
 // "Step X starting / Run summary" markers.
+//
+// Groups are a flat-only container: a top-level item is either a
+// `kind: "step"` (the bare step form) or a `kind: "group"` whose
+// `steps` array is itself a list of bare steps. Serial groups iterate
+// their inner steps the same way the outer loop does. Parallel groups
+// run their inner steps concurrently via forkJoin and fail-fast: the
+// first inner failure cancels the rest of the forkJoin, marks any
+// still-pending siblings as cancelled, and skips the remaining outer
+// items. There is no group-level child Job — group identity lives only
+// in the YAML structure and the builder UI.
 export const runSequenceJob = (
   jobId: string,
   body: SequenceBody,
@@ -56,21 +109,21 @@ export const runSequenceJob = (
   const pathsById: Record<string, SequencePath> = body.paths ?? {}
   const stepsById: Record<string, StepRuntimeRecord> = {}
 
-  // Pre-assign step ids so they're stable for both the child Job
-  // creation pass below and any later resolveSequenceParams lookups.
+  // Walk every underlying step (flattening group children inline) once
+  // up front so we can:
+  //   - assign stable ids in document order (so existing tests that
+  //     assert `step1`, `step2` for unnamed top-level steps still hold),
+  //   - pre-create one child Job per actual step in `pending`,
+  //   - look up the (childJobId, stepId) for any FlatStep cheaply during
+  //     the run.
+  const flatSteps = flattenItems(body.steps)
   let assignedCounter = 0
-  const stepIds: string[] = body.steps.map((step) => {
+  const stepIds: string[] = flatSteps.map(({ step }) => {
     if (typeof step.id === "string" && step.id.length > 0) return step.id
     assignedCounter += 1
     return `step${assignedCounter}`
   })
-
-  // Pre-create one child job per step in `pending`. Carries the raw
-  // (unresolved) params — the resolved snapshot lives on the running
-  // child only after we kick its observable off via runJob. Surfacing
-  // raw params keeps the UI honest about what the user wrote and stays
-  // consistent with how params are shown for un-started steps.
-  const childJobIds: string[] = body.steps.map((step, index) => {
+  const childJobIds: string[] = flatSteps.map(({ step }, index) => {
     const child = createJob({
       commandName: step.command,
       params: step.params ?? {},
@@ -80,26 +133,40 @@ export const runSequenceJob = (
     return child.id
   })
 
-  const markRemainingSkipped = (fromIndex: number): void => {
-    for (let i = fromIndex; i < childJobIds.length; i += 1) {
-      const childId = childJobIds[i]
-      if (getJob(childId)?.status === "pending") {
-        updateJob(childId, {
-          completedAt: new Date(),
-          status: "skipped",
-        })
-        completeSubject(childId)
-      }
+  // (childJobId, stepId, command) lookup keyed by reference identity of
+  // the underlying SequenceStep object — used during item iteration so a
+  // group's inner steps can find their pre-allocated child rows.
+  const childLookupByStep = new Map<SequenceStep, { childId: string, stepId: string }>()
+  flatSteps.forEach((flat, index) => {
+    childLookupByStep.set(flat.step, { childId: childJobIds[index], stepId: stepIds[index] })
+  })
+
+  const markChildSkippedIfPending = (childId: string): void => {
+    if (getJob(childId)?.status === "pending") {
+      updateJob(childId, {
+        completedAt: new Date(),
+        status: "skipped",
+      })
+      completeSubject(childId)
+    }
+  }
+
+  // Skip every still-pending child after a given flat-step index.
+  // Used by both the outer item loop (after a serial failure) and by
+  // parallel-group failure handling (to skip later outer items).
+  const markRemainingSkippedFromFlatIndex = (fromFlatIndex: number): void => {
+    for (let i = fromFlatIndex; i < childJobIds.length; i += 1) {
+      markChildSkippedIfPending(childJobIds[i])
     }
   }
 
   const logRunSummary = (): void => {
-    if (body.steps.length === 0) return
+    if (flatSteps.length === 0) return
     logInfo("SEQUENCE", "Run summary:")
-    body.steps.forEach((step, index) => {
+    flatSteps.forEach((flat, index) => {
       const stepId = stepIds[index]
       const childStatus = getJob(childJobIds[index])?.status ?? "pending"
-      logInfo("SEQUENCE", `  ${index + 1}. ${stepId} (${step.command}): ${childStatus}`)
+      logInfo("SEQUENCE", `  ${index + 1}. ${stepId} (${flat.step.command}): ${childStatus}`)
     })
   }
 
@@ -112,128 +179,220 @@ export const runSequenceJob = (
     completeSubject(jobId)
   }
 
+  // Run a single step end-to-end and return a structured outcome. The
+  // outcome is what the caller (item loop / serial group / parallel
+  // group) inspects to decide whether to continue, skip, or fail.
+  const runOneStep = async (
+    step: SequenceStep,
+  ): Promise<StepRunOutcome> => {
+    const lookup = childLookupByStep.get(step)
+    if (!lookup) {
+      // Defensive — flatSteps came from the same body.steps the iteration
+      // walks, so this should be unreachable.
+      return { kind: "failed", stepId: "(unknown)", error: "Internal: no child job allocated for step" }
+    }
+    const { childId, stepId } = lookup
+
+    if (!isKnownCommand(step.command)) {
+      const error = `Unknown command "${step.command}"`
+      logError("SEQUENCE", `Step ${stepId}: ${error}.`)
+      updateJob(childId, {
+        completedAt: new Date(),
+        error,
+        status: "failed",
+      })
+      completeSubject(childId)
+      return { kind: "failed", stepId, error }
+    }
+
+    const config: CommandConfig = commandConfigs[step.command]
+
+    const { resolved, errors } = resolveSequenceParams({
+      rawParams: step.params ?? {},
+      pathsById,
+      stepsById,
+      commandConfigsByName: commandConfigs,
+    })
+
+    if (errors.length > 0) {
+      errors.forEach((error) => logError("SEQUENCE", `Step ${stepId}: ${error}`))
+      const message = errors.join("; ")
+      updateJob(childId, {
+        completedAt: new Date(),
+        error: message,
+        status: "failed",
+      })
+      completeSubject(childId)
+      return { kind: "failed", stepId, error: message }
+    }
+
+    logInfo("SEQUENCE", `Step ${stepId} (${step.command}): starting.`)
+
+    let stepObservable
+    try {
+      stepObservable = config.getObservable(resolved)
+    } catch (error) {
+      const message = String(error)
+      logError("SEQUENCE", `Step ${stepId}: ${message}`)
+      updateJob(childId, {
+        completedAt: new Date(),
+        error: message,
+        status: "failed",
+      })
+      completeSubject(childId)
+      return { kind: "failed", stepId, error: message }
+    }
+
+    const finalChild = await runJob(childId, stepObservable, {
+      extractOutputs: config.extractOutputs,
+    })
+    const childStatus = finalChild?.status
+
+    if (childStatus === "cancelled") {
+      return { kind: "cancelled" }
+    }
+    if (childStatus === "failed") {
+      const message = finalChild?.error ?? "Step failed"
+      return { kind: "failed", stepId, error: message }
+    }
+
+    // Completed. jobRunner uses results.concat(emission) which flattens
+    // a single-level array — the original in-line subscriber comment
+    // about array-of-array still applies here.
+    const outputs = finalChild?.outputs ?? null
+    return {
+      kind: "completed",
+      stepId,
+      command: step.command,
+      outputs,
+      resolved,
+    }
+  }
+
+  // Returns the index of the first FlatStep whose underlying step
+  // reference matches `target` — used to convert "we just finished
+  // this group" into a flat-index for cascading skip.
+  const flatIndexAfter = (lastStepInItem: SequenceStep): number => {
+    const last = flatSteps.findIndex((flat) => flat.step === lastStepInItem)
+    return last < 0 ? childJobIds.length : last + 1
+  }
+
   // Kick the loop off without awaiting — the route handler treats this
-  // as fire-and-forget. The loop awaits each child job's runJob promise
-  // and finalizes the umbrella when it terminates.
+  // as fire-and-forget.
   void withJobContext(jobId, async () => {
-    for (let stepIndex = 0; stepIndex < body.steps.length; stepIndex += 1) {
-      // Bail-out gates checked at the top of every iteration: cancelJob
-      // on the umbrella runs a cascade that flips the currently-running
-      // child to cancelled and any still-pending children to skipped, so
-      // by the time we resume after `await runJob` the umbrella may have
-      // already moved into a terminal state.
+    for (let itemIndex = 0; itemIndex < body.steps.length; itemIndex += 1) {
       const umbrella = getJob(jobId)
       if (!umbrella || umbrella.status !== "running") return
 
-      const step = body.steps[stepIndex]
-      const stepId = stepIds[stepIndex]
-      const childId = childJobIds[stepIndex]
+      const item = body.steps[itemIndex]
 
-      if (!isKnownCommand(step.command)) {
-        const error = `Unknown command "${step.command}"`
-        logError("SEQUENCE", `Step ${stepId}: ${error}.`)
-        updateJob(childId, {
-          completedAt: new Date(),
-          error,
-          status: "failed",
-        })
-        completeSubject(childId)
-        updateJob(jobId, { error })
-        markRemainingSkipped(stepIndex + 1)
+      if (isGroup(item)) {
+        const groupLabel = item.label ?? item.id ?? "(unlabeled)"
+
+        if (item.isParallel === true) {
+          logInfo("SEQUENCE", `Group "${groupLabel}" (parallel, ${item.steps.length} step${item.steps.length === 1 ? "" : "s"}): starting.`)
+          // Kick off every inner step concurrently via forkJoin. Each
+          // inner observable is a `defer` wrapper around runOneStep so
+          // the underlying work only starts when forkJoin subscribes —
+          // the standard RxJS lazy-eval pattern, matching how the rest
+          // of the code composes observables.
+          //
+          // runOneStep never throws (failures come back as
+          // `{ kind: "failed" }`), so forkJoin's error-propagation /
+          // sibling-cancellation path never fires. We deliberately wait
+          // for every inner observable to complete — racing on the
+          // first failure here would leave the corresponding child jobs
+          // in `running` forever. First-failure semantics manifest at
+          // the GROUP level: scan the outcomes for the first failed
+          // entry, surface its error, skip the outer remainder.
+          const innerOutcomes = await lastValueFrom(
+            forkJoin(item.steps.map((innerStep) => defer(() => runOneStep(innerStep)))),
+          )
+
+          // Apply outputs from every successful inner step into stepsById
+          // so steps after the parallel group can `linkedTo` any of them.
+          innerOutcomes.forEach((outcome) => {
+            if (outcome.kind === "completed") {
+              stepsById[outcome.stepId] = {
+                command: outcome.command,
+                outputs: outcome.outputs,
+                resolvedParams: outcome.resolved,
+              }
+            }
+          })
+
+          const cancelled = innerOutcomes.find((o) => o.kind === "cancelled")
+          if (cancelled) {
+            logInfo("SEQUENCE", `Group "${groupLabel}" (parallel): cancelled.`)
+            return
+          }
+
+          const firstFailure = innerOutcomes.find((o): o is Extract<StepRunOutcome, { kind: "failed" }> => o.kind === "failed")
+          if (firstFailure) {
+            logError("SEQUENCE", `Group "${groupLabel}" (parallel): one or more inner steps failed.`)
+            updateJob(jobId, { error: firstFailure.error })
+            markRemainingSkippedFromFlatIndex(flatIndexAfter(item.steps[item.steps.length - 1]))
+            finalize("failed")
+            return
+          }
+
+          logInfo("SEQUENCE", `Group "${groupLabel}" (parallel): completed.`)
+          continue
+        }
+
+        // Serial group — iterate inner steps in order, fail-fast.
+        logInfo("SEQUENCE", `Group "${groupLabel}" (serial, ${item.steps.length} step${item.steps.length === 1 ? "" : "s"}): starting.`)
+        let groupFailed = false
+        for (let innerIndex = 0; innerIndex < item.steps.length; innerIndex += 1) {
+          const innerStep = item.steps[innerIndex]
+          const innerOutcome = await runOneStep(innerStep)
+          if (innerOutcome.kind === "cancelled") return
+          if (innerOutcome.kind === "failed") {
+            updateJob(jobId, { error: innerOutcome.error })
+            // Skip from the next inner step onward — that captures both
+            // remaining siblings inside this group AND every outer item
+            // after it. Passing the failed step itself (innerStep) means
+            // flatIndexAfter returns the flat-index of the next pending
+            // child, since the failed child is already in `failed`
+            // status (markChildSkippedIfPending only touches `pending`).
+            markRemainingSkippedFromFlatIndex(flatIndexAfter(innerStep))
+            groupFailed = true
+            break
+          }
+          stepsById[innerOutcome.stepId] = {
+            command: innerOutcome.command,
+            outputs: innerOutcome.outputs,
+            resolvedParams: innerOutcome.resolved,
+          }
+          logInfo("SEQUENCE", `Step ${innerOutcome.stepId} (${innerStep.command}): completed.`)
+        }
+        if (groupFailed) {
+          logError("SEQUENCE", `Group "${groupLabel}" (serial): failed at an inner step.`)
+          finalize("failed")
+          return
+        }
+        logInfo("SEQUENCE", `Group "${groupLabel}" (serial): completed.`)
+        continue
+      }
+
+      // Plain (non-group) top-level step.
+      const outcome = await runOneStep(item)
+      if (outcome.kind === "cancelled") return
+      if (outcome.kind === "failed") {
+        updateJob(jobId, { error: outcome.error })
+        markRemainingSkippedFromFlatIndex(flatIndexAfter(item))
         finalize("failed")
         return
       }
-
-      const config: CommandConfig = commandConfigs[step.command]
-
-      const { resolved, errors } = resolveSequenceParams({
-        rawParams: step.params ?? {},
-        pathsById,
-        stepsById,
-        commandConfigsByName: commandConfigs,
-      })
-
-      if (errors.length > 0) {
-        errors.forEach((error) => logError("SEQUENCE", `Step ${stepId}: ${error}`))
-        const message = errors.join("; ")
-        updateJob(childId, {
-          completedAt: new Date(),
-          error: message,
-          status: "failed",
-        })
-        completeSubject(childId)
-        updateJob(jobId, { error: message })
-        markRemainingSkipped(stepIndex + 1)
-        finalize("failed")
-        return
+      stepsById[outcome.stepId] = {
+        command: outcome.command,
+        outputs: outcome.outputs,
+        resolvedParams: outcome.resolved,
       }
-
-      logInfo("SEQUENCE", `Step ${stepId} (${step.command}): starting.`)
-
-      let stepObservable
-      try {
-        stepObservable = config.getObservable(resolved)
-      } catch (error) {
-        const message = String(error)
-        logError("SEQUENCE", `Step ${stepId}: ${message}`)
-        updateJob(childId, {
-          completedAt: new Date(),
-          error: message,
-          status: "failed",
-        })
-        completeSubject(childId)
-        updateJob(jobId, { error: message })
-        markRemainingSkipped(stepIndex + 1)
-        finalize("failed")
-        return
-      }
-
-      // runJob installs its own withJobContext(childId, ...) inside —
-      // per-step command logs route to the child's log stream, while
-      // SEQUENCE-prefixed lines around it (above/below this await) stay
-      // on the umbrella's stream because we're inside withJobContext(jobId).
-      const finalChild = await runJob(childId, stepObservable, {
-        extractOutputs: config.extractOutputs,
-      })
-
-      const childStatus = finalChild?.status
-
-      if (childStatus === "cancelled") {
-        // cancelJob(jobId) already cascaded — the umbrella is cancelled
-        // and any later children are skipped. Nothing for us to do but bail.
-        return
-      }
-
-      if (childStatus === "failed") {
-        const message = finalChild?.error ?? "Step failed"
-        updateJob(jobId, { error: message })
-        markRemainingSkipped(stepIndex + 1)
-        finalize("failed")
-        return
-      }
-
-      // Completed. Flatten single-array emissions into named outputs the
-      // way the old in-line subscriber did, so a command that emits a
-      // single rules-array (e.g. computeDefaultSubtitleRules) doesn't
-      // leave downstream `linkedTo: ..., output: 'rules'` references
-      // resolving to an array-of-array. jobRunner uses concat() which
-      // already produces the flat shape — but extractOutputs is called
-      // on `job.results`, which is whatever next-callbacks pushed. Since
-      // jobRunner does `results.concat(value)` (which itself flattens
-      // a single-level array via Array.prototype.concat), the outputs
-      // here are already flat for the array-emission case.
-      const outputs = finalChild?.outputs ?? null
-
-      stepsById[stepId] = {
-        command: step.command,
-        outputs,
-        resolvedParams: resolved,
-      }
-
-      logInfo("SEQUENCE", `Step ${stepId} (${step.command}): completed.`)
+      logInfo("SEQUENCE", `Step ${outcome.stepId} (${item.command}): completed.`)
     }
 
-    logInfo("SEQUENCE", `Completed all ${body.steps.length} step(s).`)
+    logInfo("SEQUENCE", `Completed all ${flatSteps.length} step(s).`)
     finalize("completed")
   })
 }
