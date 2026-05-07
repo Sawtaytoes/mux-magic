@@ -1,5 +1,5 @@
 import { createReadStream, createWriteStream } from "node:fs"
-import { stat } from "node:fs/promises"
+import { stat, unlink } from "node:fs/promises"
 import { Transform } from "node:stream"
 import { pipeline } from "node:stream/promises"
 
@@ -21,9 +21,18 @@ export type CopyProgressEvent = {
  * to receive byte-level updates as the copy streams through; omit
  * the options object entirely (the common case) to skip the progress
  * instrumentation and the upfront `stat` call it requires.
+ *
+ * Pass `signal` to make the copy abortable mid-stream — `pipeline`
+ * destroys the read/write streams when the signal fires and the
+ * returned promise rejects with an AbortError. Callers (e.g.
+ * `copyFiles`, `flattenOutput`) wire this into a per-job
+ * `AbortController` whose lifetime tracks the outer Observable, so
+ * an unsubscribe (sequence cancel / sibling-fail cascade) interrupts
+ * the in-flight copy instead of letting it finish.
  */
 export type CopyOptions = {
   onProgress?: (event: CopyProgressEvent) => void
+  signal?: AbortSignal
 }
 
 /**
@@ -53,24 +62,49 @@ export type CopyOptions = {
  * omitted, the function takes a fast path that skips the upfront
  * `stat` call and the in-pipeline counting transform.
  */
+// On abort, the destination is left as a half-written partial. The
+// next run would either skip it (if same size by accident) or worse,
+// be inspected by the user as if the copy had succeeded. Best-effort
+// unlink of the partial: ignore ENOENT (file never opened) and any
+// other unlink error — abort cleanup must not mask the original
+// AbortError that the caller is about to receive.
+const removePartialOnAbort = async (
+  signal: AbortSignal | undefined,
+  destination: string,
+): Promise<void> => {
+  if (signal === undefined || !signal.aborted) return
+  try {
+    await unlink(destination)
+  } catch {
+    // partial may not exist (createWriteStream lazy-opens) — ignore
+  }
+}
+
 export const aclSafeCopyFile = async (
   source: string,
   destination: string,
   options?: CopyOptions,
 ): Promise<void> => {
+  const signal = options?.signal
+
   if (
     !options?.onProgress
   ) {
-    return (
-      pipeline(
+    try {
+      await pipeline(
         createReadStream(
           source,
         ),
         createWriteStream(
           destination,
         ),
+        signal === undefined ? {} : { signal },
       )
-    )
+      return
+    } catch (error) {
+      await removePartialOnAbort(signal, destination)
+      throw error
+    }
   }
 
   const onProgress = (
@@ -105,8 +139,8 @@ export const aclSafeCopyFile = async (
     })
   )
 
-  return (
-    pipeline(
+  try {
+    await pipeline(
       createReadStream(
         source,
       ),
@@ -114,6 +148,10 @@ export const aclSafeCopyFile = async (
       createWriteStream(
         destination,
       ),
+      signal === undefined ? {} : { signal },
     )
-  )
+  } catch (error) {
+    await removePartialOnAbort(signal, destination)
+    throw error
+  }
 }

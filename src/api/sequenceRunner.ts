@@ -1,8 +1,7 @@
-import { defer, forkJoin, lastValueFrom } from "rxjs"
-
 import { logError, logInfo } from "../tools/logMessage.js"
 import { withJobContext } from "./logCapture.js"
 import {
+  cancelOrSkipJob,
   completeSubject,
   createJob,
   createSubject,
@@ -170,13 +169,30 @@ export const runSequenceJob = (
     })
   }
 
-  const finalize = (status: "completed" | "failed"): void => {
+  const finalize = (status: "completed" | "failed" | "cancelled"): void => {
     logRunSummary()
     updateJob(jobId, {
       completedAt: new Date(),
       status,
     })
     completeSubject(jobId)
+  }
+
+  // Called from any cancelled-outcome branch (plain step / serial group /
+  // parallel group). Two paths reach a cancelled outcome:
+  //   1. The user cancelled the umbrella job itself — `cancelJob`'s cascade
+  //      already wrote `cancelled` on the umbrella + every child, so the
+  //      umbrella is no longer `running` and we just surrender the loop.
+  //   2. The user cancelled ONE child step directly. The umbrella is still
+  //      `running`, the cancel hasn't propagated, and the rest of the
+  //      sequence would otherwise sit `pending` forever. Skip the
+  //      remainder and finalize the umbrella as `cancelled` so the UI
+  //      sees the whole sequence terminate.
+  const finalizeFromChildCancel = (lastStepInItem: SequenceStep): void => {
+    const umbrella = getJob(jobId)
+    if (!umbrella || umbrella.status !== "running") return
+    markRemainingSkippedFromFlatIndex(flatIndexAfter(lastStepInItem))
+    finalize("cancelled")
   }
 
   // Run a single step end-to-end and return a structured outcome. The
@@ -291,23 +307,49 @@ export const runSequenceJob = (
 
         if (item.isParallel === true) {
           logInfo("SEQUENCE", `Group "${groupLabel}" (parallel, ${item.steps.length} step${item.steps.length === 1 ? "" : "s"}): starting.`)
-          // Kick off every inner step concurrently via forkJoin. Each
-          // inner observable is a `defer` wrapper around runOneStep so
-          // the underlying work only starts when forkJoin subscribes —
-          // the standard RxJS lazy-eval pattern, matching how the rest
-          // of the code composes observables.
+          // Kick off every inner step concurrently. Each runOneStep
+          // returns a Promise that already represents the full child-job
+          // lifecycle — runOneStep never throws (failures come back as
+          // `{ kind: "failed" }`), so we drive the group with Promise.all
+          // rather than forkJoin to keep the side-channel fail-fast logic
+          // below straightforward.
           //
-          // runOneStep never throws (failures come back as
-          // `{ kind: "failed" }`), so forkJoin's error-propagation /
-          // sibling-cancellation path never fires. We deliberately wait
-          // for every inner observable to complete — racing on the
-          // first failure here would leave the corresponding child jobs
-          // in `running` forever. First-failure semantics manifest at
-          // the GROUP level: scan the outcomes for the first failed
-          // entry, surface its error, skip the outer remainder.
-          const innerOutcomes = await lastValueFrom(
-            forkJoin(item.steps.map((innerStep) => defer(() => runOneStep(innerStep)))),
-          )
+          // First-failure semantics: the moment any inner step resolves
+          // with `{ kind: "failed" }`, walk the siblings and call
+          // cancelOrSkipJob on each — running ones flip to `cancelled`
+          // (subscription unsubscribed, in-flight work torn down via the
+          // command's own teardown), pending ones flip to `skipped`. The
+          // boolean latch makes the broadcast first-wins so two near-
+          // simultaneous failures don't double-cancel.
+          //
+          // The cancelled siblings' runOneStep promises resolve cleanly
+          // via runJob's `subscription.add(() => resolve(...))` teardown,
+          // so awaiting Promise.all here doesn't hang.
+          const innerPromises = item.steps.map((innerStep) => runOneStep(innerStep))
+
+          // Broadcast on first failure OR first cancellation. Cancel
+          // symmetry with failure: if the user cancels one parallel
+          // sibling directly (DELETE /jobs/:childId), the others should
+          // tear down too rather than continuing to run while the rest
+          // of the sequence is doomed to skip anyway. cancelOrSkipJob
+          // is idempotent, so the umbrella-cascade case (where every
+          // sibling is already terminal by the time the watcher fires)
+          // is a harmless no-op.
+          let isStopBroadcast = false
+          innerPromises.forEach((promise, stoppedIndex) => {
+            void promise.then((outcome) => {
+              if (outcome.kind === "completed" || isStopBroadcast) return
+              isStopBroadcast = true
+              item.steps.forEach((siblingStep, siblingIndex) => {
+                if (siblingIndex === stoppedIndex) return
+                const lookup = childLookupByStep.get(siblingStep)
+                if (!lookup) return
+                cancelOrSkipJob(lookup.childId)
+              })
+            })
+          })
+
+          const innerOutcomes = await Promise.all(innerPromises)
 
           // Apply outputs from every successful inner step into stepsById
           // so steps after the parallel group can `linkedTo` any of them.
@@ -321,18 +363,23 @@ export const runSequenceJob = (
             }
           })
 
-          const cancelled = innerOutcomes.find((o) => o.kind === "cancelled")
-          if (cancelled) {
-            logInfo("SEQUENCE", `Group "${groupLabel}" (parallel): cancelled.`)
-            return
-          }
-
-          const firstFailure = innerOutcomes.find((o): o is Extract<StepRunOutcome, { kind: "failed" }> => o.kind === "failed")
+          // Failure takes precedence over cancelled — cancelled siblings
+          // here are the *consequence* of the failure, not an external
+          // signal. A pure-cancelled outcome (no failures) only happens
+          // when the umbrella job itself was externally cancelled, in
+          // which case we surrender the loop without finalizing.
+          const firstFailure = innerOutcomes.find((outcome): outcome is Extract<StepRunOutcome, { kind: "failed" }> => outcome.kind === "failed")
           if (firstFailure) {
-            logError("SEQUENCE", `Group "${groupLabel}" (parallel): one or more inner steps failed.`)
+            logError("SEQUENCE", `Group "${groupLabel}" (parallel): one or more inner steps failed; siblings cancelled.`)
             updateJob(jobId, { error: firstFailure.error })
             markRemainingSkippedFromFlatIndex(flatIndexAfter(item.steps[item.steps.length - 1]))
             finalize("failed")
+            return
+          }
+
+          if (innerOutcomes.some((outcome) => outcome.kind === "cancelled")) {
+            logInfo("SEQUENCE", `Group "${groupLabel}" (parallel): cancelled.`)
+            finalizeFromChildCancel(item.steps[item.steps.length - 1])
             return
           }
 
@@ -346,7 +393,10 @@ export const runSequenceJob = (
         for (let innerIndex = 0; innerIndex < item.steps.length; innerIndex += 1) {
           const innerStep = item.steps[innerIndex]
           const innerOutcome = await runOneStep(innerStep)
-          if (innerOutcome.kind === "cancelled") return
+          if (innerOutcome.kind === "cancelled") {
+            finalizeFromChildCancel(innerStep)
+            return
+          }
           if (innerOutcome.kind === "failed") {
             updateJob(jobId, { error: innerOutcome.error })
             // Skip from the next inner step onward — that captures both
@@ -377,7 +427,10 @@ export const runSequenceJob = (
 
       // Plain (non-group) top-level step.
       const outcome = await runOneStep(item)
-      if (outcome.kind === "cancelled") return
+      if (outcome.kind === "cancelled") {
+        finalizeFromChildCancel(item)
+        return
+      }
       if (outcome.kind === "failed") {
         updateJob(jobId, { error: outcome.error })
         markRemainingSkippedFromFlatIndex(flatIndexAfter(item))
