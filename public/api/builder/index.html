@@ -1665,16 +1665,26 @@ function promotePathToPathVar(stepId, fieldName, rawValue) {
 }
 
 // Open the file-explorer in picker mode scoped to the field's current
-// resolved value. When the user clicks "Use this folder", clear any
-// existing link on the field and set the literal value via setParam.
+// resolved value (or the OS home directory when the field is empty —
+// /files/default-path). When the user clicks "Use this folder", clear
+// any existing link on the field and set the literal value via setParam.
 // Linked fields (path-variable / step-output) become manual after a
 // pick — the picker is meant to override the link, not edit a shared
 // path-variable in place. (Editing the path-variable lives on the
 // path-var card's own Browse trigger.)
-function browsePathField(stepId, fieldName, initialPath) {
-  if (!initialPath) return
+async function browsePathField(stepId, fieldName, initialPath) {
   if (typeof window.openFileExplorer !== 'function') return
-  window.openFileExplorer(initialPath, {
+  let startPath = initialPath
+  if (!startPath) {
+    try {
+      const resp = await fetch('/files/default-path')
+      const data = await resp.json()
+      startPath = data.path || '/'
+    } catch {
+      startPath = '/'
+    }
+  }
+  window.openFileExplorer(startPath, {
     pickerOnSelect: (selectedPath) => {
       // Drop link first so the manual value takes effect; otherwise the
       // linked-input would still display the old computed value.
@@ -2351,19 +2361,18 @@ function renderPathField(step, field, stepIndex) {
   ].filter(Boolean).join(' ')
 
   // Browse button next to the link-picker — opens the file-explorer in
-  // picker mode scoped to whatever the field currently resolves to.
-  // The pickerOnSelect callback feeds the chosen folder back through
-  // setParam (or the linked-input update path) so the user can navigate
-  // into a folder visually instead of typing.
+  // picker mode scoped to whatever the field currently resolves to, or
+  // at the OS home directory if the field is empty. The pickerOnSelect
+  // callback feeds the chosen folder back through setParam (clearing
+  // any existing link) so the user can navigate visually instead of
+  // typing.
   const browsePathArg = JSON.stringify(computed ?? val).replace(/"/g, '&quot;')
-  const hasBrowsePath = Boolean(computed ?? val)
   return `<div>
     <div class="flex items-center gap-2 mb-1">
       <label class="text-xs text-slate-400">${esc(field.label)}${field.required ? ' <span class="text-red-400">*</span>' : ''}</label>
       <button type="button" onclick="browsePathField('${step.id}','${field.name}',${browsePathArg})"
-        title="${hasBrowsePath ? 'Browse files in this folder (picker mode)' : 'Set a path to enable Browse'}"
-        ${hasBrowsePath ? '' : 'disabled'}
-        class="ml-auto text-xs bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 cursor-pointer">📁</button>
+        title="Browse to pick a folder for this field"
+        class="ml-auto text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 cursor-pointer">📁</button>
       <button type="button" onclick="linkPicker.open({stepId: '${step.id}', fieldName: '${field.name}'}, this)" data-link-picker-trigger ${triggerData}
         class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer">
         <span class="truncate" data-link-trigger-label>${esc(target.label)}</span>

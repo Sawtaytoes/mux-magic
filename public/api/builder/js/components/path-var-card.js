@@ -7,6 +7,21 @@ import { refreshPathVarOptions } from '../util/path-var-options.js'
 // up after this module is parsed.
 const bridge = () => window.mediaTools
 
+// Asks the server for a sensible starting path when the user opens the
+// file-explorer from an empty field (empty path-var, manual field with
+// no value, etc.). Falls back to '/' on failure so the modal still
+// opens — users can navigate up to a drive root from there.
+async function fetchDefaultPath() {
+  try {
+    const resp = await fetch('/files/default-path')
+    const data = await resp.json()
+    return data.path || '/'
+  }
+  catch {
+    return '/'
+  }
+}
+
 // ─── Render ───────────────────────────────────────────────────────────────────
 
 export function renderPathVarCard(pv, isFirst) {
@@ -23,15 +38,15 @@ export function renderPathVarCard(pv, isFirst) {
         class="text-xs text-slate-500 hover:text-red-400 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700">✕</button>`
     : ''
   // Replaces the static folder emoji with a clickable trigger that opens
-  // the file-explorer modal scoped to this variable's value. Read-only
-  // mode (no pickerOnSelect) — the user is just browsing a folder they
-  // already named. Disabled when the value is empty so we don't pop a
-  // modal pointed at nothing.
+  // the file-explorer modal. With a value set, opens read-only at that
+  // path (browsing a folder you've already named). With NO value set,
+  // opens in PICKER mode at the OS home directory so the user can
+  // navigate to find a folder and click "Use this folder" to populate
+  // this variable's value.
   const browseBtn = `<button data-action="browse-path-var" data-pv-id="${pv.id}"
-        title="${pv.value ? 'Browse files in this folder' : 'Set a path value to enable Browse'}"
-        aria-label="Browse files in this folder"
-        ${pv.value ? '' : 'disabled'}
-        class="text-xs text-slate-500 hover:text-slate-300 disabled:cursor-not-allowed disabled:hover:text-slate-500 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700 shrink-0">📁</button>`
+        title="${pv.value ? 'Browse files in this folder' : 'Browse to pick a folder for this path variable'}"
+        aria-label="${pv.value ? 'Browse files in this folder' : 'Pick a folder for this path variable'}"
+        class="text-xs text-slate-500 hover:text-slate-300 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700 shrink-0">📁</button>`
   return `<div data-path-var="${pv.id}" class="col-span-full bg-slate-800/40 rounded-xl border border-dashed border-slate-600 px-4 py-3">
     <div class="flex items-center gap-2 mb-2">
       ${browseBtn}
@@ -117,18 +132,31 @@ export function attachPathVarListeners(container) {
       onPathVarInput(t, t.dataset.pvId, t.value)
     }
   })
-  container.addEventListener('click', (event) => {
+  container.addEventListener('click', async (event) => {
     const btn = event.target.closest?.('[data-action]')
     if (!btn) return
     if (btn.dataset.action === 'remove-path') {
       removePath(btn.dataset.pvId)
     } else if (btn.dataset.action === 'browse-path-var') {
       const pv = getPaths().find((p) => p.id === btn.dataset.pvId)
-      if (pv && pv.value) {
-        // Read-only browse — no pickerOnSelect callback. The user is
-        // inspecting a folder they already named, not assigning a new
-        // path to this variable.
+      if (!pv) return
+      if (pv.value) {
+        // Value already set — read-only browse. The user is inspecting
+        // a folder they already named, not assigning a new path.
         window.openFileExplorer(pv.value)
+      } else {
+        // Empty value — open in PICKER mode at the OS home directory so
+        // the user can navigate to find a folder. Picking writes the
+        // chosen path back to this variable via setPathValue, which
+        // also re-renders so step fields linked to this var pick up
+        // the new value.
+        const startPath = await fetchDefaultPath()
+        window.openFileExplorer(startPath, {
+          pickerOnSelect: (selectedPath) => {
+            setPathValue(pv.id, selectedPath)
+            bridge().renderAll()
+          },
+        })
       }
     }
   })

@@ -21,6 +21,12 @@ const selectedNames = new Set()
 // "📌 Use this folder" trigger that calls this back with currentPath.
 // Cleared on close so the next non-picker open behaves normally.
 let pickerOnSelect = null
+// Active sort column ('default' uses the server's dirs-first/alphabetical
+// order; 'name' / 'duration' / 'size' / 'mtime' use the corresponding
+// entry field). Persisted across opens — switching folders shouldn't
+// reset the user's sort preference. ASC for default; click toggles.
+let sortColumn = 'default'
+let sortDirection = 'asc'
 
 // ─── DOM helpers ─────────────────────────────────────────────────────────────
 
@@ -131,6 +137,69 @@ function navigateTo(newPath) {
   renderBreadcrumb()
 }
 
+// Sort comparator factories — directories ALWAYS group above files
+// regardless of the active sort column (matches OS file-manager
+// expectations). Within each group, the active column drives ordering.
+function buildEntriesComparator() {
+  const dir = sortDirection === 'desc' ? -1 : 1
+  const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) * dir
+  const byDuration = (a, b) => {
+    // Durations like '4:48' or '1:38:47'. Convert to seconds; nulls
+    // (non-video / unknown) sort to the end regardless of direction.
+    const aSec = durationToSeconds(a.duration)
+    const bSec = durationToSeconds(b.duration)
+    if (aSec === null && bSec === null) return 0
+    if (aSec === null) return 1
+    if (bSec === null) return -1
+    return (aSec - bSec) * dir
+  }
+  const bySize = (a, b) => (a.size - b.size) * dir
+  const byMtime = (a, b) => {
+    if (!a.mtime && !b.mtime) return 0
+    if (!a.mtime) return 1
+    if (!b.mtime) return -1
+    return (Date.parse(a.mtime) - Date.parse(b.mtime)) * dir
+  }
+  const inner = (
+    sortColumn === 'name' ? byName
+    : sortColumn === 'duration' ? byDuration
+    : sortColumn === 'size' ? bySize
+    : sortColumn === 'mtime' ? byMtime
+    // 'default' replays the server-side order (already directories-first
+    // then case-insensitive name). Returning 0 keeps Array.prototype.sort
+    // stable so the server-supplied order survives.
+    : () => 0
+  )
+  return (a, b) => {
+    if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1
+    return inner(a, b)
+  }
+}
+
+function durationToSeconds(timecode) {
+  if (!timecode) return null
+  const parts = timecode.split(':').map(Number)
+  if (parts.some(Number.isNaN)) return null
+  if (parts.length === 1) return parts[0]
+  if (parts.length === 2) return parts[0] * 60 + parts[1]
+  return parts[0] * 3600 + parts[1] * 60 + parts[2]
+}
+
+function setSort(column) {
+  if (sortColumn === column) {
+    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortColumn = column
+    sortDirection = 'asc'
+  }
+  renderListing()
+}
+
+function sortIndicator(column) {
+  if (sortColumn !== column) return ''
+  return sortDirection === 'asc' ? ' ▲' : ' ▼'
+}
+
 function renderPickerUi() {
   const isPicker = typeof pickerOnSelect === 'function'
   pickerBadge().classList.toggle('hidden', !isPicker)
@@ -172,7 +241,11 @@ function renderListing() {
     body().innerHTML = '<p class="text-slate-500 text-sm py-4 text-center">Folder is empty.</p>'
     return
   }
-  const rowsHtml = entries.map((entry) => {
+  // Apply the active sort. Mutating-sort on a slice keeps `entries`
+  // (the server-supplied order) intact so 'default' can fall back to
+  // it without re-fetching.
+  const sortedEntries = entries.slice().sort(buildEntriesComparator())
+  const rowsHtml = sortedEntries.map((entry) => {
     const checked = selectedNames.has(entry.name) ? 'checked' : ''
     const sizeCell = entry.isDirectory ? '—' : esc(formatSize(entry.size))
     // Server returns null for non-video files / directories / mediainfo
@@ -209,14 +282,22 @@ function renderListing() {
   // top:0 of the scroll viewport, so rows above the scroll position
   // bled through. Padding now lives inside the table block so the
   // thead snaps cleanly to the top of the scroll container.
+  // Sortable column headers. Clicking a header toggles between asc/desc
+  // when already active, or switches to that column at asc when not.
+  // Indicator (▲/▼) renders next to the active column. Directories
+  // always group above files regardless of column — the comparator
+  // handles that.
+  const sortableHeader = (column, label, extraClass = '') => (
+    `<th class="py-2 px-2 ${extraClass} cursor-pointer hover:text-white select-none" data-fe-sort="${column}" title="Click to sort by ${label.toLowerCase()}">${label}<span class="ml-1 text-slate-300">${sortIndicator(column)}</span></th>`
+  )
   body().innerHTML = `<div class="px-3 py-2"><table class="w-full text-sm">
     <thead class="text-[10px] uppercase tracking-wider text-slate-300 sticky top-0 bg-slate-800 z-10 shadow-sm">
       <tr>
         <th class="py-2 px-2 text-left w-6"><input type="checkbox" id="fe-select-all" title="Select all files"></th>
-        <th class="py-2 px-2 text-left">Name</th>
-        <th class="py-2 px-2 text-right">Duration</th>
-        <th class="py-2 px-2 text-right">Size</th>
-        <th class="py-2 px-2 text-left">Modified</th>
+        ${sortableHeader('name', 'Name', 'text-left')}
+        ${sortableHeader('duration', 'Duration', 'text-right')}
+        ${sortableHeader('size', 'Size', 'text-right')}
+        ${sortableHeader('mtime', 'Modified', 'text-left')}
         <th class="py-2 px-2 w-8"></th>
       </tr>
     </thead>
@@ -274,6 +355,9 @@ function wireRowActions() {
       renderListing()
     })
   }
+  body().querySelectorAll('[data-fe-sort]').forEach((th) => {
+    th.addEventListener('click', () => setSort(th.getAttribute('data-fe-sort')))
+  })
 }
 
 // Path joining respecting the OS separator. The /files/list response
