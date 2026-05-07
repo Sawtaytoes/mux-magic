@@ -2428,15 +2428,17 @@ function describeLinkTarget(step, fieldName) {
   return { label: '— manual —' }
 }
 
-// Inject a zero-width space after each path separator and space so the
-// browser has explicit break opportunities at those points instead of
-// chopping mid-word. Combined with overflow-wrap: break-word + hyphens:
-// auto on .path-detail, this turns `D:\Anime\…\subtitle-extraction-…`
-// into clean per-segment wraps; only when a single segment still
-// doesn't fit does the browser fall back to hyphenated breaks (which
-// the custom hyphenate-character marks with ↵).
+// Inject a zero-width space BEFORE each path separator so the browser
+// has an explicit break opportunity there AND so the wrap pulls the
+// separator down to the start of the next line — `\__work__\subtitle`
+// wraps as `\__work__` / `\subtitle` instead of `\__work__\` /
+// `subtitle`. Spaces are already break opportunities and are consumed
+// at the wrap, so they don't need help. Combined with overflow-wrap:
+// break-word + hyphens: auto on .path-detail, this gives clean
+// per-segment wraps; only when a single segment still doesn't fit
+// does the browser fall back to hyphenated breaks (marked with ↵).
 function makePathBreakable(text) {
-  return text.replace(/([/\\ ])/g, "$1\u200B")
+  return text.replace(/([/\\])/g, "\u200B$1")
 }
 
 function buildLinkPickerItems(stepId, fieldName) {
