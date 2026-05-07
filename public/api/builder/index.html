@@ -1561,8 +1561,12 @@ function renderFields(step, stepIndex) {
       } else if (lookupConfig && idValue) {
         companionHref = lookupConfig.buildUrl(idValue, step.params)
       }
+      // The truncating wrapper takes flex-1 so the right-side anchor
+      // still lands at the row's right edge, but the actual <a> inside
+      // is inline — its bounding box (and click area) matches the text
+      // width rather than spanning the full row.
       const companionLink = lookupConfig
-        ? `<a data-step="${step.id}" data-companion="${field.name}" href="${esc(companionHref)}" target="_blank" rel="noopener" class="flex-1 min-w-0 text-xs text-blue-400 hover:text-blue-300 hover:underline truncate ${companionText ? '' : 'hidden'}" title="${esc(companionText)}">${esc(companionText)}</a>`
+        ? `<div class="flex-1 min-w-0 truncate"><a data-step="${step.id}" data-companion="${field.name}" href="${esc(companionHref)}" target="_blank" rel="noopener" class="text-xs text-blue-400 hover:text-blue-300 hover:underline ${companionText ? '' : 'hidden'}" title="${esc(companionText)}">${esc(companionText)}</a></div>`
         : `<p data-step="${step.id}" data-companion="${field.name}" class="flex-1 min-w-0 text-xs text-slate-500 truncate ${companionText ? '' : 'hidden'}" title="${esc(companionText)}">${esc(companionText)}</p>`
       // DVDCompare release anchor sits to the right of the TMDB-bound
       // companion on the special-features card so the user has a
@@ -1578,8 +1582,7 @@ function renderFields(step, stepIndex) {
       }
       return `<div>${label}<div class="flex items-center gap-2">
         <input type="number" value="${esc(num)}" placeholder="${esc(field.placeholder ?? '')}"
-          oninput="scheduleReverseLookup('${step.id}','${field.name}',this.value); updateLookupLinks('${step.id}','${field.name}',this.value)"
-          onchange="setParam('${step.id}','${field.name}',this.value===''?undefined:Number(this.value))"
+          oninput="setParam('${step.id}','${field.name}',this.value===''?undefined:Number(this.value)); scheduleReverseLookup('${step.id}','${field.name}',this.value); updateLookupLinks('${step.id}','${field.name}',this.value)"
           class="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" />
         <button onclick="openLookup('${field.lookupType}','${step.id}','${field.name}')"
           title="Look up ${esc(field.label)}"
