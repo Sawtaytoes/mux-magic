@@ -3107,20 +3107,26 @@ function createPopoverPicker(config) {
     }
 
     // Vertical: prefer below the trigger; flip above only if cramped.
+    // When flipping above, anchor the popover's BOTTOM edge instead
+    // of the top — `max-height` lets the popover render shorter than
+    // its cap when the list is small (e.g., the enum picker with 6
+    // options), and the previous `top = triggerRect.top - maxHeight`
+    // formula left a giant gap between the popover and the trigger
+    // because it pretended the popover was always full-height.
     const spaceBelow = window.innerHeight - triggerRect.bottom - margin
     const spaceAbove = triggerRect.top - margin
     const isFlippedAbove = spaceBelow < 200 && spaceAbove > spaceBelow
-    let top
     let height
     if (isFlippedAbove) {
       height = Math.min(config.maxHeight, spaceAbove)
-      top = triggerRect.top - height - 4
+      popover.style.top = ''
+      popover.style.bottom = `${window.innerHeight - triggerRect.top + 4}px`
     } else {
       height = Math.min(config.maxHeight, spaceBelow)
-      top = triggerRect.bottom + 4
+      popover.style.top = `${triggerRect.bottom + 4}px`
+      popover.style.bottom = ''
     }
     popover.style.left = `${left}px`
-    popover.style.top = `${top}px`
     popover.style.maxHeight = `${height}px`
   }
 
