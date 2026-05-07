@@ -436,6 +436,10 @@
     <div>
       <p class="text-xs text-slate-400 mb-1 font-medium">Job requires input</p>
       <pre id="prompt-message" class="text-lg text-slate-100 font-mono font-medium whitespace-pre-wrap break-words"></pre>
+      <!-- Conditionally populated by showPromptModal when promptData.filePath -->
+      <!-- is set — opens the file-explorer's video sub-modal so the user can -->
+      <!-- preview before answering. Empty when the prompt isn't file-specific. -->
+      <div id="prompt-preview" class="mt-2 hidden"></div>
     </div>
     <div id="prompt-options" class="flex flex-col gap-2 overflow-y-auto"></div>
     <p class="text-xs text-slate-500">Press a number key to select, or click an option.</p>
@@ -460,13 +464,17 @@
 <!-- Triggered by the "Browse Files" button on commands that operate on a folder. -->
 <div id="file-explorer-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80" onclick="closeFileExplorerModal(event)">
   <div class="bg-slate-900 border border-slate-700 rounded-xl flex flex-col" style="width:min(95vw,1000px);max-height:90vh" onclick="event.stopPropagation()">
-    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
-      <div class="flex items-center gap-2 min-w-0 flex-1">
-        <span class="text-xs font-medium text-slate-400 shrink-0">📁</span>
-        <code id="file-explorer-path" class="text-xs text-slate-200 font-mono truncate"></code>
-      </div>
-      <div class="flex items-center gap-3 shrink-0 ml-3">
+    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700 gap-3">
+      <!-- Breadcrumb path-bar — JS-rendered links per path segment. -->
+      <!-- Click a segment to navigate up to that level; the trailing -->
+      <!-- segment is the current directory and renders as plain text. -->
+      <div id="file-explorer-breadcrumb" class="flex items-center gap-1 min-w-0 flex-1 overflow-hidden text-xs font-mono"></div>
+      <div class="flex items-center gap-3 shrink-0">
         <span id="file-explorer-mode-badge" class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium"></span>
+        <span id="file-explorer-picker-badge" class="hidden text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-blue-900/50 text-blue-300 border border-blue-700/50" title="Picker mode: clicking a directory navigates into it; click 'Use this folder' to pick the displayed path.">Picker</span>
+        <button id="file-explorer-pick-btn" onclick="confirmFileExplorerPick()"
+          class="hidden text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1.5 rounded font-medium"
+          title="Use the currently-displayed folder as the path">📌 Use this folder</button>
         <button onclick="refreshFileExplorer()" class="text-xs text-slate-400 hover:text-slate-200" title="Refresh listing">↻ Refresh</button>
         <button onclick="closeFileExplorerModal()" class="text-slate-500 hover:text-slate-200 text-lg leading-none w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800">✕</button>
       </div>
@@ -474,7 +482,7 @@
     <!-- No padding here so the sticky <thead> inside snaps to top:0 of -->
 <!-- the scroll viewport. Padding lives on the table itself. -->
     <div id="file-explorer-body" class="flex-1 overflow-auto text-sm text-slate-200"></div>
-    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-t border-slate-700 bg-slate-950/50">
+    <div id="file-explorer-footer" class="shrink-0 flex items-center justify-between px-4 py-2 border-t border-slate-700 bg-slate-950/50">
       <span id="file-explorer-selection-count" class="text-xs text-slate-400">0 selected</span>
       <button id="file-explorer-delete-btn" onclick="confirmFileExplorerDelete()"
         class="text-xs bg-rose-700 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded font-medium" disabled>
@@ -1656,6 +1664,39 @@ function promotePathToPathVar(stepId, fieldName, rawValue) {
   renderAll()
 }
 
+// Open the file-explorer in picker mode scoped to the field's current
+// resolved value (or the OS home directory when the field is empty —
+// /files/default-path). When the user clicks "Use this folder", clear
+// any existing link on the field and set the literal value via setParam.
+// Linked fields (path-variable / step-output) become manual after a
+// pick — the picker is meant to override the link, not edit a shared
+// path-variable in place. (Editing the path-variable lives on the
+// path-var card's own Browse trigger.)
+async function browsePathField(stepId, fieldName, initialPath) {
+  if (typeof window.openFileExplorer !== 'function') return
+  let startPath = initialPath
+  if (!startPath) {
+    try {
+      const resp = await fetch('/files/default-path')
+      const data = await resp.json()
+      startPath = data.path || '/'
+    } catch {
+      startPath = '/'
+    }
+  }
+  window.openFileExplorer(startPath, {
+    pickerOnSelect: (selectedPath) => {
+      // Drop link first so the manual value takes effect; otherwise the
+      // linked-input would still display the old computed value.
+      setLink(stepId, fieldName, '')
+      setParam(stepId, fieldName, selectedPath)
+      // Repaint the step card so the input flips from linked-readonly
+      // to manual-editable mode and shows the new value.
+      renderAll()
+    },
+  })
+}
+
 function setLink(id, field, choice) {
   const step = findStepById(id)
   if (!step) return
@@ -2319,11 +2360,21 @@ function renderPathField(step, field, stepIndex) {
     target.sourceStepId ? `data-linked-step="${target.sourceStepId}"` : '',
   ].filter(Boolean).join(' ')
 
+  // Browse button next to the link-picker — opens the file-explorer in
+  // picker mode scoped to whatever the field currently resolves to, or
+  // at the OS home directory if the field is empty. The pickerOnSelect
+  // callback feeds the chosen folder back through setParam (clearing
+  // any existing link) so the user can navigate visually instead of
+  // typing.
+  const browsePathArg = JSON.stringify(computed ?? val).replace(/"/g, '&quot;')
   return `<div>
     <div class="flex items-center gap-2 mb-1">
       <label class="text-xs text-slate-400">${esc(field.label)}${field.required ? ' <span class="text-red-400">*</span>' : ''}</label>
+      <button type="button" onclick="browsePathField('${step.id}','${field.name}',${browsePathArg})"
+        title="Browse to pick a folder for this field"
+        class="ml-auto text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 cursor-pointer">📁</button>
       <button type="button" onclick="linkPicker.open({stepId: '${step.id}', fieldName: '${field.name}'}, this)" data-link-picker-trigger ${triggerData}
-        class="ml-auto text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer">
+        class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer">
         <span class="truncate" data-link-trigger-label>${esc(target.label)}</span>
         <span class="text-slate-400 shrink-0">▾</span>
       </button>
@@ -2802,6 +2853,24 @@ function waitForJob(jobId, stepId) {
 
 function showPromptModal(jobId, promptData) {
   document.getElementById('prompt-message').textContent = promptData.message
+  // Render a ▶ Play button when the prompt is about a specific file
+  // (the matcher's per-file disambiguation prompts forward filePath via
+  // PromptEvent). Reuses the file-explorer's video sub-modal — same
+  // streaming endpoint, same codec caveats, same ESC-to-close.
+  const previewEl = document.getElementById('prompt-preview')
+  previewEl.innerHTML = ''
+  if (promptData.filePath) {
+    const playBtn = document.createElement('button')
+    playBtn.className = 'text-xs bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded font-medium'
+    playBtn.textContent = '▶ Play to preview'
+    playBtn.onclick = () => {
+      if (typeof window.openVideoModal === 'function') window.openVideoModal(promptData.filePath)
+    }
+    previewEl.appendChild(playBtn)
+    previewEl.classList.remove('hidden')
+  } else {
+    previewEl.classList.add('hidden')
+  }
   const optionsEl = document.getElementById('prompt-options')
   optionsEl.innerHTML = ''
   // Reorder so the "0" hotkey lands after 1–9 (matches the physical

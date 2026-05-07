@@ -476,7 +476,11 @@ export const listDirectoryEntriesResponseSchema = z.object({
   error: z.string().nullable().optional().describe("Error message if the listing failed (e.g. missing path, permission denied). When present, entries is empty."),
 })
 
-// File-explorer modal — listing, delete-mode, bulk delete
+// File-explorer modal — default path, listing, delete-mode, bulk delete
+export const defaultPathResponseSchema = z.object({
+  path: z.string().describe("Absolute path the file-explorer should open at when the calling field is empty (currently the OS user's home directory)."),
+})
+
 export const listFilesRequestSchema = z.object({
   path: z.string().describe("Absolute directory path to list. Must be absolute and traversal-free."),
   includeDuration: z.string().optional().describe("Pass '1' / 'true' to compute video runtime per file via mediainfo. Adds ~50-200ms per file (concurrent up to 8). Off by default."),

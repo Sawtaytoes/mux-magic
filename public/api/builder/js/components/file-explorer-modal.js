@@ -16,15 +16,46 @@ let entries = []
 let deleteMode = 'trash'
 let deleteModeReason = null
 const selectedNames = new Set()
+// Set when openFileExplorer is invoked in picker mode. The picker badge
+// renders, the "Delete selected" button hides, and the title bar grows a
+// "📌 Use this folder" trigger that calls this back with currentPath.
+// Cleared on close so the next non-picker open behaves normally.
+let pickerOnSelect = null
+// Active sort column ('default' uses the server's dirs-first/alphabetical
+// order; 'name' / 'duration' / 'size' / 'mtime' use the corresponding
+// entry field). Persisted across opens — switching folders shouldn't
+// reset the user's sort preference. ASC for default; click toggles.
+let sortColumn = 'default'
+let sortDirection = 'asc'
 
 // ─── DOM helpers ─────────────────────────────────────────────────────────────
 
 const modal = () => document.getElementById('file-explorer-modal')
 const body = () => document.getElementById('file-explorer-body')
-const pathLabel = () => document.getElementById('file-explorer-path')
+const breadcrumb = () => document.getElementById('file-explorer-breadcrumb')
 const selectionCount = () => document.getElementById('file-explorer-selection-count')
+const footer = () => document.getElementById('file-explorer-footer')
 const deleteBtn = () => document.getElementById('file-explorer-delete-btn')
 const modeBadge = () => document.getElementById('file-explorer-mode-badge')
+const pickerBadge = () => document.getElementById('file-explorer-picker-badge')
+const pickBtn = () => document.getElementById('file-explorer-pick-btn')
+
+// Mirrors the server-side VIDEO_EXTENSIONS allow-list in
+// listFilesWithMetadata.ts. Used to gate which file rows expose a
+// play affordance — clicking a .txt to "play" it is meaningless, so
+// non-video files render as plain text instead. The server's `duration`
+// field would be a more authoritative signal, but it's null for files
+// where mediainfo failed too — a bad codec doesn't mean we shouldn't
+// offer playback.
+const VIDEO_EXTENSIONS = new Set([
+  '.mkv', '.mp4', '.m4v', '.webm', '.avi', '.mov', '.mpg', '.mpeg', '.ts', '.wmv',
+])
+
+function isVideoFile(name) {
+  const dot = name.lastIndexOf('.')
+  if (dot < 0) return false
+  return VIDEO_EXTENSIONS.has(name.slice(dot).toLowerCase())
+}
 
 // Pretty byte size — KB/MB/GB scale; 1 decimal at MB+ for the typical
 // disc-rip sizes (1.x GB), otherwise integer to keep small files terse.
@@ -49,6 +80,151 @@ function formatMtime(iso) {
 }
 
 // ─── Render ──────────────────────────────────────────────────────────────────
+
+// Splits the current path into clickable ancestor links. Click any
+// segment to navigate up to that level; the trailing segment is the
+// current directory and renders as plain text. Builds the cumulative
+// target path as we walk segments so we don't have to round-trip through
+// the OS separator's regex-escape dance.
+function buildBreadcrumbSegments(path, sep) {
+  if (!path) return []
+  const parts = path.split(sep)
+  const segments = []
+  let cumulative = ''
+  parts.forEach((part, idx) => {
+    if (idx === 0) {
+      // Windows: 'G:' from 'G:\\foo' — root is 'G:\\'.
+      // POSIX: '' from '/home/foo' — root is '/'.
+      if (part === '') {
+        cumulative = sep
+        segments.push({ label: sep, target: sep })
+      } else {
+        cumulative = part + sep
+        segments.push({ label: part, target: cumulative })
+      }
+      return
+    }
+    // Skip trailing-separator empties (e.g. path 'G:\\').
+    if (part === '') return
+    cumulative += (idx === 1 ? '' : sep) + part
+    // For non-root nodes, trim any trailing separator from the target.
+    const target = cumulative.replace(new RegExp(sep === '\\' ? '\\\\$' : sep + '$'), '')
+    segments.push({ label: part, target })
+  })
+  return segments
+}
+
+function renderBreadcrumb() {
+  const el = breadcrumb()
+  if (!el) return
+  el.innerHTML = ''
+  if (!currentPath) return
+  const sep = pathSeparator
+  const segments = buildBreadcrumbSegments(currentPath, sep)
+
+  segments.forEach((seg, idx) => {
+    const isLast = idx === segments.length - 1
+    if (isLast) {
+      const text = document.createElement('span')
+      text.className = 'text-slate-200 truncate'
+      text.textContent = seg.label
+      el.appendChild(text)
+    } else {
+      const link = document.createElement('button')
+      link.className = 'text-blue-300 hover:text-blue-200 underline-offset-2 hover:underline truncate shrink-0'
+      link.textContent = seg.label
+      link.title = `Navigate to ${seg.target}`
+      link.onclick = () => navigateTo(seg.target)
+      el.appendChild(link)
+      const sepEl = document.createElement('span')
+      sepEl.className = 'text-slate-500 shrink-0'
+      sepEl.textContent = ` ${sep} `
+      el.appendChild(sepEl)
+    }
+  })
+}
+
+function navigateTo(newPath) {
+  currentPath = newPath
+  selectedNames.clear()
+  // Reload listing + delete-mode (network-drive detection is path-aware,
+  // so navigating from a network share into a local dir flips the mode).
+  loadDeleteMode()
+  loadListing()
+  renderBreadcrumb()
+}
+
+// Sort comparator factories — directories ALWAYS group above files
+// regardless of the active sort column (matches OS file-manager
+// expectations). Within each group, the active column drives ordering.
+function buildEntriesComparator() {
+  const dir = sortDirection === 'desc' ? -1 : 1
+  const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) * dir
+  const byDuration = (a, b) => {
+    // Durations like '4:48' or '1:38:47'. Convert to seconds; nulls
+    // (non-video / unknown) sort to the end regardless of direction.
+    const aSec = durationToSeconds(a.duration)
+    const bSec = durationToSeconds(b.duration)
+    if (aSec === null && bSec === null) return 0
+    if (aSec === null) return 1
+    if (bSec === null) return -1
+    return (aSec - bSec) * dir
+  }
+  const bySize = (a, b) => (a.size - b.size) * dir
+  const byMtime = (a, b) => {
+    if (!a.mtime && !b.mtime) return 0
+    if (!a.mtime) return 1
+    if (!b.mtime) return -1
+    return (Date.parse(a.mtime) - Date.parse(b.mtime)) * dir
+  }
+  const inner = (
+    sortColumn === 'name' ? byName
+    : sortColumn === 'duration' ? byDuration
+    : sortColumn === 'size' ? bySize
+    : sortColumn === 'mtime' ? byMtime
+    // 'default' replays the server-side order (already directories-first
+    // then case-insensitive name). Returning 0 keeps Array.prototype.sort
+    // stable so the server-supplied order survives.
+    : () => 0
+  )
+  return (a, b) => {
+    if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1
+    return inner(a, b)
+  }
+}
+
+function durationToSeconds(timecode) {
+  if (!timecode) return null
+  const parts = timecode.split(':').map(Number)
+  if (parts.some(Number.isNaN)) return null
+  if (parts.length === 1) return parts[0]
+  if (parts.length === 2) return parts[0] * 60 + parts[1]
+  return parts[0] * 3600 + parts[1] * 60 + parts[2]
+}
+
+function setSort(column) {
+  if (sortColumn === column) {
+    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortColumn = column
+    sortDirection = 'asc'
+  }
+  renderListing()
+}
+
+function sortIndicator(column) {
+  if (sortColumn !== column) return ''
+  return sortDirection === 'asc' ? ' ▲' : ' ▼'
+}
+
+function renderPickerUi() {
+  const isPicker = typeof pickerOnSelect === 'function'
+  pickerBadge().classList.toggle('hidden', !isPicker)
+  pickBtn().classList.toggle('hidden', !isPicker)
+  // Hide the bulk-delete footer in picker mode — accidental destructive
+  // operations during a pick flow would be a bad surprise.
+  footer().classList.toggle('hidden', isPicker)
+}
 
 function renderModeBadge() {
   const el = modeBadge()
@@ -82,7 +258,11 @@ function renderListing() {
     body().innerHTML = '<p class="text-slate-500 text-sm py-4 text-center">Folder is empty.</p>'
     return
   }
-  const rowsHtml = entries.map((entry) => {
+  // Apply the active sort. Mutating-sort on a slice keeps `entries`
+  // (the server-supplied order) intact so 'default' can fall back to
+  // it without re-fetching.
+  const sortedEntries = entries.slice().sort(buildEntriesComparator())
+  const rowsHtml = sortedEntries.map((entry) => {
     const checked = selectedNames.has(entry.name) ? 'checked' : ''
     const sizeCell = entry.isDirectory ? '—' : esc(formatSize(entry.size))
     // Server returns null for non-video files / directories / mediainfo
@@ -91,15 +271,20 @@ function renderListing() {
     const copyBtn = entry.isFile
       ? `<button class="fe-copy text-slate-400 hover:text-slate-200" data-name="${esc(entry.name)}" title="Copy absolute path">📋</button>`
       : '<span class="text-slate-700">—</span>'
-    const icon = entry.isDirectory ? '📁' : '🎬'
-    // Clicking the name itself triggers playback for files. Directories
-    // get no click target yet — once the path-bar nav lands, they'll
-    // navigate into the folder. Hover state hints at the affordance for
-    // files; directories stay flat-styled.
+    // Icon hints at what's clickable: 📁 for directories (navigable),
+    // 🎬 for video files (playable), 📄 for any other file (inert).
+    const isVideo = entry.isFile && isVideoFile(entry.name)
+    const icon = entry.isDirectory ? '📁' : isVideo ? '🎬' : '📄'
+    // Directories navigate, video files play, everything else renders
+    // as plain text. Non-video files keep the 📋 copy-path button so
+    // the user can still hand them off to another app, but the row
+    // itself is non-interactive.
     const nameContent = `${icon} ${esc(entry.name)}`
-    const nameCell = entry.isFile
-      ? `<button class="fe-name text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full" data-name="${esc(entry.name)}" title="Play in browser">${nameContent}</button>`
-      : `<span class="text-slate-400">${nameContent}</span>`
+    const nameCell = entry.isDirectory
+      ? `<button class="fe-name fe-dir text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full" data-name="${esc(entry.name)}" title="Open this folder">${nameContent}</button>`
+      : isVideo
+        ? `<button class="fe-name fe-file text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full" data-name="${esc(entry.name)}" title="Play in browser">${nameContent}</button>`
+        : `<span class="text-slate-400">${nameContent}</span>`
     return `<tr class="border-b border-slate-800 hover:bg-slate-800/30">
       <td class="py-1 px-2">
         <input type="checkbox" class="fe-checkbox" data-name="${esc(entry.name)}" ${checked}
@@ -118,14 +303,22 @@ function renderListing() {
   // top:0 of the scroll viewport, so rows above the scroll position
   // bled through. Padding now lives inside the table block so the
   // thead snaps cleanly to the top of the scroll container.
+  // Sortable column headers. Clicking a header toggles between asc/desc
+  // when already active, or switches to that column at asc when not.
+  // Indicator (▲/▼) renders next to the active column. Directories
+  // always group above files regardless of column — the comparator
+  // handles that.
+  const sortableHeader = (column, label, extraClass = '') => (
+    `<th class="py-2 px-2 ${extraClass} cursor-pointer hover:text-white select-none" data-fe-sort="${column}" title="Click to sort by ${label.toLowerCase()}">${label}<span class="ml-1 text-slate-300">${sortIndicator(column)}</span></th>`
+  )
   body().innerHTML = `<div class="px-3 py-2"><table class="w-full text-sm">
     <thead class="text-[10px] uppercase tracking-wider text-slate-300 sticky top-0 bg-slate-800 z-10 shadow-sm">
       <tr>
         <th class="py-2 px-2 text-left w-6"><input type="checkbox" id="fe-select-all" title="Select all files"></th>
-        <th class="py-2 px-2 text-left">Name</th>
-        <th class="py-2 px-2 text-right">Duration</th>
-        <th class="py-2 px-2 text-right">Size</th>
-        <th class="py-2 px-2 text-left">Modified</th>
+        ${sortableHeader('name', 'Name', 'text-left')}
+        ${sortableHeader('duration', 'Duration', 'text-right')}
+        ${sortableHeader('size', 'Size', 'text-right')}
+        ${sortableHeader('mtime', 'Modified', 'text-left')}
         <th class="py-2 px-2 w-8"></th>
       </tr>
     </thead>
@@ -144,7 +337,13 @@ function wireRowActions() {
       renderSelectionCount()
     })
   })
-  body().querySelectorAll('.fe-name').forEach((btn) => {
+  body().querySelectorAll('.fe-dir').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const name = btn.getAttribute('data-name')
+      navigateTo(joinPath(currentPath, name))
+    })
+  })
+  body().querySelectorAll('.fe-file').forEach((btn) => {
     btn.addEventListener('click', () => {
       const name = btn.getAttribute('data-name')
       openVideoModal(joinPath(currentPath, name))
@@ -177,6 +376,9 @@ function wireRowActions() {
       renderListing()
     })
   }
+  body().querySelectorAll('[data-fe-sort]').forEach((th) => {
+    th.addEventListener('click', () => setSort(th.getAttribute('data-fe-sort')))
+  })
 }
 
 // Path joining respecting the OS separator. The /files/list response
@@ -228,6 +430,10 @@ async function loadListing() {
     pathSeparator = data.separator || pathSeparator
     selectedNames.clear()
     renderListing()
+    // Re-render the breadcrumb after the listing call lands — the very
+    // first open won't have pathSeparator until the server replies, so
+    // the initial render in openFileExplorer might use the fallback.
+    renderBreadcrumb()
   } catch (err) {
     body().innerHTML = `<p class="text-rose-400 text-sm py-4">${esc(String(err))}</p>`
   }
@@ -235,15 +441,35 @@ async function loadListing() {
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
-export async function openFileExplorer(path) {
+// `options.pickerOnSelect`: when set, the modal renders in picker mode —
+// the "PICKER" badge appears, the bulk-delete footer hides, and a
+// "📌 Use this folder" button in the title bar invokes this callback
+// with the currently-displayed directory path (then closes the modal).
+// Click-to-play and click-to-navigate row behavior is unchanged in
+// picker mode so the user can preview / dive in without exiting.
+export async function openFileExplorer(path, options = {}) {
   if (!path) return
   currentPath = path
-  pathLabel().textContent = path
+  pickerOnSelect = typeof options.pickerOnSelect === 'function' ? options.pickerOnSelect : null
+  renderBreadcrumb()
+  renderPickerUi()
   modal().classList.remove('hidden')
   // delete-mode now wants the path so it can downgrade trash → permanent
   // for network drives. loadDeleteMode reads currentPath, so it must run
   // AFTER the assignment above.
   await Promise.all([loadDeleteMode(), loadListing()])
+}
+
+export function confirmFileExplorerPick() {
+  if (!pickerOnSelect) return
+  const cb = pickerOnSelect
+  // Clear before invoking so the callback's setParam → renderAll cycle
+  // doesn't see a stale picker reference if it ends up reopening the
+  // modal for some reason.
+  pickerOnSelect = null
+  modal().classList.add('hidden')
+  renderPickerUi()
+  cb(currentPath)
 }
 
 export function refreshFileExplorer() {
@@ -253,6 +479,11 @@ export function refreshFileExplorer() {
 export function closeFileExplorerModal(event) {
   if (event && event.target !== modal()) return
   modal().classList.add('hidden')
+  // Clear picker mode on close so the next open without options reverts
+  // to read-only browsing — the "Use this folder" button and badge
+  // shouldn't linger across opens.
+  pickerOnSelect = null
+  renderPickerUi()
   // Pause/clear any playing video too if its sub-modal happens to be
   // open — closing the parent should kill the child.
   closeVideoModal()

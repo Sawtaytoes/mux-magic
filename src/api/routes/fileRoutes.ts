@@ -1,5 +1,6 @@
 import { createReadStream } from "node:fs"
 import { stat } from "node:fs/promises"
+import { homedir } from "node:os"
 import { extname } from "node:path"
 import { Readable } from "node:stream"
 
@@ -38,6 +39,27 @@ const guessMimeType = (path: string): string => {
   if (ext === ".mov") return "video/quicktime"
   return "application/octet-stream"
 }
+
+fileRoutes.openapi(
+  createRoute({
+    method: "get",
+    path: "/files/default-path",
+    summary: "Suggested starting path when the explorer opens with no input",
+    description: "The Builder's Browse triggers fall back to this when the field they're attached to is empty. Returns the OS user's home directory (`os.homedir()`) — a safe, always-existing root the user can navigate from. Could later be extended to remember the last-used path per session.",
+    tags: ["File Operations"],
+    responses: {
+      200: {
+        description: "Suggested default starting path",
+        content: {
+          "application/json": { schema: schemas.defaultPathResponseSchema },
+        },
+      },
+    },
+  }),
+  async (context) => (
+    context.json({ path: homedir() }, 200)
+  ),
+)
 
 fileRoutes.openapi(
   createRoute({
