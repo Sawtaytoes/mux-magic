@@ -4,8 +4,6 @@ import {
   EMPTY,
   filter,
   map,
-  mergeAll,
-  mergeMap,
   of,
   tap,
 } from "rxjs"
@@ -13,6 +11,7 @@ import {
 import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const hasManyAudioTracks = ({
   isRecursive,
@@ -30,7 +29,7 @@ export const hasManyAudioTracks = ({
     sourcePath,
   })
   .pipe(
-    mergeMap((
+    withFileProgress((
       fileInfo,
     ) => (
       getMediaInfo(
@@ -91,7 +90,7 @@ export const hasManyAudioTracks = ({
           )
         }),
       )
-    )),
+    ), { concurrency: Infinity }),
     logAndRethrow(
       hasManyAudioTracks
     ),

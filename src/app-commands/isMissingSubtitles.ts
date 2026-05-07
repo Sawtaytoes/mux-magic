@@ -2,11 +2,9 @@ import {
   cpus,
 } from "node:os"
 import {
-  concatAll,
   concatMap,
   filter,
   map,
-  mergeAll,
   tap,
 } from "rxjs"
 
@@ -17,6 +15,7 @@ import {
   type TextTrack,
 } from "../tools/getMediaInfo.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const isMissingSubtitles = ({
   isRecursive,
@@ -35,7 +34,7 @@ export const isMissingSubtitles = ({
   })
   .pipe(
     filterIsVideoFile(),
-    map((
+    withFileProgress((
       fileInfo,
     ) => (
       getMediaInfo(
@@ -76,11 +75,7 @@ export const isMissingSubtitles = ({
           )
         }),
       )
-    )),
-    mergeAll(
-      cpus()
-      .length
-    ),
+    ), { concurrency: cpus().length }),
     logAndRethrow(
       isMissingSubtitles
     ),

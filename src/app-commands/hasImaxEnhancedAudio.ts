@@ -2,7 +2,6 @@ import {
   EMPTY,
   filter,
   map,
-  mergeAll,
   mergeMap,
   of,
   tap,
@@ -11,6 +10,7 @@ import {
 import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const hasImaxEnhancedAudio = ({
   isRecursive,
@@ -28,7 +28,7 @@ export const hasImaxEnhancedAudio = ({
     sourcePath,
   })
   .pipe(
-    mergeMap((
+    withFileProgress((
       fileInfo,
     ) => (
       getMediaInfo(
@@ -83,7 +83,7 @@ export const hasImaxEnhancedAudio = ({
           )
         }),
       )
-    )),
+    ), { concurrency: Infinity }),
     logAndRethrow(
       hasImaxEnhancedAudio
     ),
