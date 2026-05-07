@@ -231,9 +231,10 @@ export const nameAnimeEpisodesRequestSchema = z.object({
 export const nameAnimeEpisodesAniDBRequestSchema = z.object({
   sourcePath: z.string().describe("Source directory path"),
   searchTerm: z.string().optional().describe("Anime title to search for via the manami-project anime-offline-database (used when no anidbId is provided; CLI falls back to interactive picker)"),
-  seasonNumber: z.number().default(1).describe("Season number for the Plex-style sNNeNN output filename"),
+  seasonNumber: z.number().default(1).describe("Season number for the Plex-style sNNeNN output filename. Ignored when episodeType is \"specials\" (Plex's specials live in season 0)."),
   anidbId: z.number().optional().describe("AniDB anime id (aid) — when provided, skips the search and uses this aid directly"),
-}).describe("Rename anime episodes using AniDB metadata. MVP: filters to regular (type=1) episodes only. Specials (OPs/EDs/trailers/parodies), type=6 alternates (e.g., director's-cut 'O' episodes), and episode-range selection are planned but not yet implemented — see README §AniDB command notes.")
+  episodeType: z.enum(["regular", "specials", "credits", "trailers", "parodies", "others"]).default("regular").describe("Which AniDB episode types to rename. Each non-regular sub-type is its own category so users can run them separately:\n  - \"regular\"  type=1 — index-paired with a duration sanity-check warning when files and AniDB episodes diverge by >2m.\n  - \"specials\" type=2 (S) — length-matched per-file picker, Plex s00eNN.\n  - \"credits\"  type=3 (C, OP/ED) — length-matched per-file picker, Plex s00eNN.\n  - \"trailers\" type=4 (T) — length-matched per-file picker, Plex s00eNN.\n  - \"parodies\" type=5 (P) — length-matched per-file picker, Plex s00eNN.\n  - \"others\"   type=6 (O, director's-cut alts) — index-paired like regular."),
+}).describe("Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Episode-range selection is planned — see README §AniDB command notes.")
 
 export const nameSpecialFeaturesRequestSchema = z.object({
   sourcePath: z.string().describe("Source directory path"),

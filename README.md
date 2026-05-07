@@ -90,13 +90,24 @@ Language options accept [ISO 639-2](https://en.wikipedia.org/wiki/List_of_ISO_63
 
 **Cache location.** Set `ANIDB_CACHE_FOLDER` in `.env` (or your container env) to point both caches at a directory that survives restarts — important in Docker where the project-relative `./.cache/anidb/` is ephemeral.
 
-**Current scope (MVP).** Filters episodes to type=1 (regular) and maps files to episodes by index after natural-sorting both lists. Output filename format is `<seriesName> - sNNeNN - <episodeTitle>`.
+**Episode types (`episodeType` param).** Six modes — one per AniDB episode-type code — so users can run each subset separately rather than mixing them in one prompt loop:
+
+- `regular` (default) — type=1. Files map to episodes index-for-index after natural sort. Each pair also reads the file's mediainfo duration and logs a `DURATION MISMATCH` warning when the file/episode lengths diverge by more than 2 minutes (the rename still applies — the warning is advisory). Output: `<seriesName> - sNNeNN - <episodeTitle>` using AniDB's epno verbatim.
+- `specials` — type=2 (S). Per-file picker (see below). Output: `<seriesName> - s00eNN - <episodeTitle>`.
+- `credits` — type=3 (C, OP/ED songs). Per-file picker. Output: `<seriesName> - s00eNN - <episodeTitle>`.
+- `trailers` — type=4 (T, PVs/promos). Per-file picker. Output: `<seriesName> - s00eNN - <episodeTitle>`.
+- `parodies` — type=5 (P). Per-file picker. Output: `<seriesName> - s00eNN - <episodeTitle>`.
+- `others` — type=6 (O, director's-cut alternates). Same index-paired flow as `regular`, with the same duration sanity-check warning. Output: `<seriesName> - sNNeNN - <episodeTitle>` using `seasonNumber` and a sequential index.
+
+**Per-file picker (specials / credits / trailers / parodies).** Each file's mediainfo duration is matched against AniDB's rough minute-length estimates; the picker surfaces the top length-ranked candidates plus skip and cancel options, and already-claimed entries drop out of subsequent prompts. Keys in the builder modal: `0`–`9` pick a candidate, **Space** skips the current file, **Esc** cancels the loop and applies any matches confirmed so far.
+
+**Complete vs Parts pre-prompt.** When AniDB's filtered list contains both a "complete" entry and "Part N" entries for the same content (common for OVAs and movies with multi-part rips), the rename surfaces a one-time prompt asking which form your files match. The chosen subset feeds into the normal pairing — index-paired for `regular`/`others`, picker for the rest.
+
+In the CLI, the picker prompts hit your terminal one file at a time. In the API/builder, the same prompts ride the existing job-event channel — answer them in the job log surface as the job runs.
 
 **Planned features (not yet implemented).**
 
 - **Episode range/list filter.** Name only a subset of files — e.g., `episodes: "1-4"` or `"5,7,10"`. Useful when you've already named some episodes and got the rest later.
-- **Regular vs alternate selection.** For series with both type=1 and type=6 sets (e.g., director's-cut "O" episodes), a required prop to pick which set to use.
-- **Specials directory mapping.** Files in a `/specials` subdir get mapped to AniDB special entries (S/C/T/P) via an interactive modal. AniDB provides rough episode lengths (rounded minutes) for auto-suggesting matches, the user drops entries they don't have, and confirms the rest in order.
 
 ### Demo file format
 

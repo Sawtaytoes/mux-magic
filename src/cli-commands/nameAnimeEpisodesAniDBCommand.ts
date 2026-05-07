@@ -2,6 +2,7 @@ import { toArray } from "rxjs"
 import type { Argv, CommandBuilder, CommandModule } from "yargs"
 
 import { nameAnimeEpisodesAniDB } from "../app-commands/nameAnimeEpisodesAniDB.js"
+import type { AnidbEpisodeCategory } from "../types/anidb.js"
 import { subscribeCli } from "../tools/subscribeCli.js"
 
 type InferArgvOptions<T> = T extends Argv<infer U> ? U : never
@@ -17,7 +18,7 @@ const builder = (yargs: Argv) => (
     {
       alias: "s",
       default: 1,
-      describe: "Season number for the output filename (Plex-style sNNeNN).",
+      describe: "Season number for the output filename (Plex-style sNNeNN). Ignored when --episodeType=specials.",
       nargs: 1,
       number: true,
       type: "number",
@@ -31,6 +32,17 @@ const builder = (yargs: Argv) => (
       nargs: 1,
       number: true,
       type: "number",
+    },
+  )
+  .option(
+    "episodeType",
+    {
+      alias: "t",
+      choices: ["regular", "specials", "credits", "trailers", "parodies", "others"] as const,
+      default: "regular" as const,
+      describe: "Which AniDB episode types to rename. Each non-regular sub-type is run separately: specials (S), credits (C, OP/ED), trailers (T), parodies (P) all run the length-matched per-file picker and emit Plex's s00eNN. Others (type=6 alts) and regular are index-paired with a duration sanity-check warning.",
+      nargs: 1,
+      type: "string",
     },
   )
   .positional(
@@ -62,6 +74,7 @@ export const nameAnimeEpisodesAniDBCommand: CommandModule<{}, Args> = {
   handler: (argv) => {
     nameAnimeEpisodesAniDB({
       anidbId: argv.anidbId,
+      episodeType: argv.episodeType as AnidbEpisodeCategory,
       searchTerm: argv.searchTerm,
       seasonNumber: argv.seasonNumber,
       sourcePath: argv.sourcePath,
