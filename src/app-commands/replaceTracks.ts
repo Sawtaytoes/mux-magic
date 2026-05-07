@@ -1,5 +1,4 @@
 import {
-  concatAll,
   concatMap,
   filter,
   map,
@@ -14,6 +13,7 @@ import { type Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { logInfo } from "../tools/logMessage.js"
 import { replaceTracksMkvMerge, replaceTracksMkvMergeDefaultProps } from "../cli-spawn-operations/replaceTracksMkvMerge.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ReplaceTracksRequiredProps = {
   audioLanguages: Iso6392LanguageCode[]
@@ -101,7 +101,7 @@ export const replaceTracks = ({
             sourceFilePath
           )
         )),
-        concatMap((
+        withFileProgress((
           {
             destinationFilePath,
             sourceFilePath,

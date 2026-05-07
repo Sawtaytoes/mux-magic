@@ -1,5 +1,4 @@
 import {
-  concatAll,
   concatMap,
   filter,
   map,
@@ -11,6 +10,7 @@ import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { getAudioOffset, getAudioOffsetDefaultProps } from "../cli-spawn-operations/getAudioOffset.js"
 import { getFiles } from "../tools/getFiles.js"
 import { logInfo } from "../tools/logMessage.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 type GetAudioOffsetsRequiredProps = {
   destinationFilesPath: string
@@ -82,12 +82,10 @@ export const getAudioOffsets = ({
             sourceFilePath
           )
         )),
-        concatMap((
-          {
-            destinationFilePath,
-            sourceFilePath,
-          },
-        ) => (
+        withFileProgress(({
+          destinationFilePath,
+          sourceFilePath,
+        }) => (
           getAudioOffset({
             destinationFilePath,
             outputFolderName,
@@ -103,8 +101,6 @@ export const getAudioOffsets = ({
             })),
           )
         )),
-        toArray(),
-        concatAll(),
         tap(({
           destinationFilePath,
           offsetInMilliseconds,
