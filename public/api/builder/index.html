@@ -1390,6 +1390,18 @@ function renderStep(step, index) {
     ? `<span class="font-mono">${esc(step.command)}</span><span class="text-[10px] text-slate-500 ml-2 truncate">${esc(cmd.tag)}</span>`
     : `<span class="text-slate-400 italic">— pick a command —</span>`
 
+  // Header-bar link to the lookup service's web page so the user can
+  // spot-check the matched release/series without scrolling back to the
+  // input fields. Same data source as the input-area link inside
+  // renderFields, plus a fallback to step.params.url for nameSpecialFeatures
+  // when the user pasted a URL instead of a numeric id.
+  const headerLinkData = step.command ? getLookupLinkData(step) : null
+  const headerLookupLink = headerLinkData
+    ? `<a href="${esc(headerLinkData.url)}" target="_blank" rel="noopener"
+        title="${esc(headerLinkData.label)}"
+        class="shrink-0 text-[10px] text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-slate-700 hover:border-blue-500">↗ ${esc(headerLinkData.label)}</a>`
+    : ''
+
   const body = cmd
     ? `<p class="text-xs text-slate-500 mb-2">${esc(cmd.summary)}</p>
        ${cmd.note ? `<p class="text-xs text-amber-300 bg-amber-950/40 border border-amber-800/50 rounded px-2 py-1 mb-2">${esc(cmd.note)}</p>` : ''}
@@ -1415,6 +1427,7 @@ function renderStep(step, index) {
       <span class="text-slate-400 shrink-0">▾</span>
     </button>
     ${statusBadge}
+    ${headerLookupLink}
     <button onclick="toggleStepActions('${step.id}')" title="Step actions"
       class="step-hamburger-btn w-6 h-6 items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 text-base leading-none">≡</button>
     <div class="step-actions" data-step-actions="${step.id}">
