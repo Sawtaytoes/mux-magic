@@ -5,8 +5,6 @@ import {
   filter,
   from,
   groupBy,
-  map,
-  mergeAll,
   mergeMap,
   take,
   tap,
@@ -17,6 +15,7 @@ import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
 import { getMkvInfo } from "../tools/getMkvInfo.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const hasWrongDefaultTrack = ({
   isRecursive,
@@ -35,7 +34,7 @@ export const hasWrongDefaultTrack = ({
   })
   .pipe(
     filterIsVideoFile(),
-    map((
+    withFileProgress((
       fileInfo,
     ) => (
       getMkvInfo(
@@ -117,7 +116,6 @@ export const hasWrongDefaultTrack = ({
         )),
       )
     )),
-    concatAll(),
     toArray(),
     logAndRethrow(
       hasWrongDefaultTrack
