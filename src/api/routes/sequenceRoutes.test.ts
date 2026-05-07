@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises"
 import { vol } from "memfs"
 import { afterEach, beforeAll, afterAll, describe, expect, test } from "vitest"
 
-import { getAllJobs, getChildJobs, getJob, resetStore } from "../jobStore.js"
+import { cancelJob, getAllJobs, getChildJobs, getJob, resetStore } from "../jobStore.js"
 import { installLogCapture, uninstallLogCapture } from "../logCapture.js"
 import { sequenceRoutes } from "./sequenceRoutes.js"
 
@@ -23,6 +23,20 @@ const post = (path: string, body: unknown) => (
 )
 
 const flushAfter = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+
+// Poll a predicate until it returns truthy or the budget expires. Used
+// by cancellation tests to catch a step exactly while it's `running` —
+// memfs is fast enough that a fixed `await flushAfter(20)` can race past
+// the running window straight to `completed`.
+const waitFor = async <T>(get: () => T | undefined, timeoutMs = 500): Promise<T> => {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < timeoutMs) {
+    const value = get()
+    if (value !== undefined && value !== null) return value
+    await new Promise<void>((r) => setImmediate(r))
+  }
+  throw new Error(`waitFor: predicate did not resolve within ${timeoutMs}ms`)
+}
 
 // Install log capture once for the whole file so the SEQUENCE log lines
 // emitted from runSequenceJob via console.info actually land on each
@@ -527,6 +541,48 @@ describe("POST /sequences/run — groups", () => {
     expect(vol.existsSync("/after-group")).toBe(false)
   })
 
+  test("parallel group fail-fast: in-flight sibling is cancelled, not allowed to complete", async () => {
+    // Seed enough files in /slow-src that copyFiles is still working
+    // through them when the fast-failing sibling rejects. Once the
+    // failure broadcast fires, the slow sibling's runJob subscription
+    // is unsubscribed; copyFiles' internal AbortController aborts the
+    // in-flight stream pipeline; the child job's status flips to
+    // `cancelled` (NOT `completed`). The proof point: at least one
+    // source file did not make it into the destination, because the
+    // copy was interrupted mid-iteration.
+    const seedFiles: Record<string, string> = { "/work/keep": "" }
+    for (let index = 0; index < 64; index += 1) {
+      seedFiles[`/slow-src/file${index}.txt`] = "padding-".repeat(500) + index
+    }
+    vol.fromJSON(seedFiles)
+
+    const response = await post("/sequences/run", {
+      steps: [
+        {
+          kind: "group",
+          id: "paraCancel",
+          isParallel: true,
+          steps: [
+            { id: "slow", command: "copyFiles", params: { sourcePath: "/slow-src", destinationPath: "/slow-dst" } },
+            { id: "boom", command: "deleteFolder", params: { folderPath: "/work", confirm: false } },
+          ],
+        },
+        { id: "after", command: "makeDirectory", params: { filePath: "/after" } },
+      ],
+    })
+    const { jobId } = await response.json() as { jobId: string }
+    await flushAfter(200)
+
+    const children = getChildJobs(jobId)
+    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+
+    expect(byStepId.boom.status).toBe("failed")
+    expect(byStepId.slow.status).toBe("cancelled")
+    expect(byStepId.after.status).toBe("skipped")
+    expect(getJob(jobId)?.status).toBe("failed")
+    expect(vol.existsSync("/after")).toBe(false)
+  })
+
   test("parallel group: inner steps actually run concurrently (lifetimes overlap)", async () => {
     // Promise.all in the runner subscribes to every inner-step
     // observable synchronously before any of them get to do work, so
@@ -581,6 +637,91 @@ describe("POST /sequences/run — groups", () => {
     // bStart > aEnd (or vice versa), violating one of these.
     expect(bStart!).toBeLessThan(aEnd!)
     expect(aStart!).toBeLessThan(bEnd!)
+  })
+
+  test("cancelling a single child step cancels the umbrella and skips remaining steps", async () => {
+    // Seed enough work that the first step is still running when we
+    // call cancelJob on it. The remaining steps have not yet started —
+    // they're still `pending`. Without the cancel-cascade fix, the
+    // runner would `return` on the cancelled outcome but leave the
+    // umbrella in `running` and the rest in `pending` forever.
+    const seedFiles: Record<string, string> = {}
+    for (let index = 0; index < 256; index += 1) {
+      seedFiles[`/cancel-src/file${index}.txt`] = "padding-".repeat(2000) + index
+    }
+    vol.fromJSON(seedFiles)
+
+    const response = await post("/sequences/run", {
+      steps: [
+        { id: "first", command: "copyFiles", params: { sourcePath: "/cancel-src", destinationPath: "/cancel-dst" } },
+        { id: "second", command: "makeDirectory", params: { filePath: "/should-not-run" } },
+        { id: "third", command: "makeDirectory", params: { filePath: "/also-should-not-run" } },
+      ],
+    })
+    const { jobId } = await response.json() as { jobId: string }
+
+    // Catch the first child exactly while it's running and cancel it
+    // immediately — memfs is fast enough that a fixed wait can race
+    // past the running window.
+    const firstChild = await waitFor(() => (
+      getChildJobs(jobId).find((child) => child.stepId === "first" && child.status === "running")
+    ))
+    cancelJob(firstChild.id)
+    await flushAfter(100)
+
+    const children = getChildJobs(jobId)
+    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+
+    expect(byStepId.first.status).toBe("cancelled")
+    expect(byStepId.second.status).toBe("skipped")
+    expect(byStepId.third.status).toBe("skipped")
+    expect(getJob(jobId)?.status).toBe("cancelled")
+    expect(vol.existsSync("/should-not-run")).toBe(false)
+    expect(vol.existsSync("/also-should-not-run")).toBe(false)
+  })
+
+  test("cancelling one parallel sibling cancels the others and finalizes the umbrella", async () => {
+    // Same shape as the cancel-cascade test, but inside a parallel
+    // group. Cancelling one in-flight sibling should broadcast to the
+    // others (cancelOrSkipJob), the group settles, the after-group
+    // step is skipped, and the umbrella is cancelled.
+    const seedFiles: Record<string, string> = {}
+    for (let index = 0; index < 256; index += 1) {
+      seedFiles[`/par-cancel-a/file${index}.txt`] = "alpha-".repeat(2000) + index
+      seedFiles[`/par-cancel-b/file${index}.txt`] = "beta-".repeat(2000) + index
+    }
+    vol.fromJSON(seedFiles)
+
+    const response = await post("/sequences/run", {
+      steps: [
+        {
+          kind: "group",
+          id: "paraCancelGroup",
+          isParallel: true,
+          steps: [
+            { id: "innerA", command: "copyFiles", params: { sourcePath: "/par-cancel-a", destinationPath: "/par-cancel-a-dst" } },
+            { id: "innerB", command: "copyFiles", params: { sourcePath: "/par-cancel-b", destinationPath: "/par-cancel-b-dst" } },
+          ],
+        },
+        { id: "afterGroup", command: "makeDirectory", params: { filePath: "/after-cancel-group" } },
+      ],
+    })
+    const { jobId } = await response.json() as { jobId: string }
+
+    const innerA = await waitFor(() => (
+      getChildJobs(jobId).find((child) => child.stepId === "innerA" && child.status === "running")
+    ))
+    cancelJob(innerA.id)
+    await flushAfter(200)
+
+    const children = getChildJobs(jobId)
+    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+
+    expect(byStepId.innerA.status).toBe("cancelled")
+    expect(byStepId.innerB.status).toBe("cancelled")
+    expect(byStepId.afterGroup.status).toBe("skipped")
+    expect(getJob(jobId)?.status).toBe("cancelled")
+    expect(vol.existsSync("/after-cancel-group")).toBe(false)
   })
 
   test("isCollapsed on a step parses without affecting runtime", async () => {
