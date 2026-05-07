@@ -61,12 +61,13 @@ export const runMkvMerge = ({
   ) => {
     // Bind a per-file progress emitter to the active job (if any).
     // Each runMkvMerge invocation handles a single output file — the
-    // emitter publishes that file's progress under currentFile /
-    // currentFileRatio. The iterator that wraps these calls (Phase 4
-    // withFileProgress) emits the overall i/N rollup separately.
+    // tracker publishes that file's progress as a row in the
+    // emitter's currentFiles snapshot. The iterator that wraps these
+    // calls (Phase 4 withFileProgress) drives the overall i/N rollup
+    // separately.
     const jobId = getActiveJobId()
     const emitter = jobId !== undefined ? createProgressEmitter(jobId) : null
-    if (emitter !== null) emitter.startFile(outputFilePath)
+    const tracker = emitter !== null ? emitter.startFile(outputFilePath) : null
 
     const commandArgs = [
       "--output",
@@ -144,9 +145,9 @@ export const runMkvMerge = ({
             )
           }
           // Feed the same parsed percentage to the SSE-progress
-          // emitter so API consumers see the same data the TTY bar
+          // tracker so API consumers see the same data the TTY bar
           // shows. Throttling lives inside the emitter.
-          if (emitter !== null) emitter.setCurrentFileRatio(percent / 100)
+          if (tracker !== null) tracker.setRatio(percent / 100)
         }
         else {
           console
@@ -200,7 +201,7 @@ export const runMkvMerge = ({
       ) => {
         cliProgressBar.stop()
         tty.detach()
-        if (emitter !== null) emitter.finalize()
+        if (tracker !== null) tracker.finish()
 
         if (code === 0) {
           observer.next(outputFilePath)
@@ -220,11 +221,11 @@ export const runMkvMerge = ({
     )
 
     // Wrap the tree-kill teardown so an unsubscribe (e.g. cancelJob)
-    // also clears the emitter's pending throttled timer. Idempotent
-    // with the 'exit'-handler finalize() above.
+    // also drops this file from the emitter's active set. Idempotent
+    // with the 'exit'-handler tracker.finish() above.
     const treeKillTeardown = treeKillOnUnsubscribe(childProcess)
     return () => {
-      if (emitter !== null) emitter.finalize()
+      if (tracker !== null) tracker.finish()
       treeKillTeardown()
     }
   })

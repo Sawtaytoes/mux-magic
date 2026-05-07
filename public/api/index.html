@@ -299,6 +299,51 @@
   .step .progress-bar { height: 4px; }
   .step .progress-label { font-size: 0.72rem; }
 
+  /* Per-file rows shown beneath the main bar when multiple Tasks run
+     in parallel. One row per active tracker — sorted in arrival order
+     (Map insertion semantics on the server). */
+  .progress-files {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .progress-file-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 2px 8px;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress-file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .progress-file-ratio {
+    color: #cbd5e1;
+  }
+  .progress-file-bar {
+    grid-column: 1 / -1;
+    background: #0f172a;
+    border-radius: 2px;
+    height: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-file-fill {
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    height: 100%;
+    width: 0%;
+    transition: width 250ms linear;
+  }
+  .progress-file-bar.indeterminate .progress-file-fill {
+    width: 30%;
+    animation: indeterminate-slide 1.6s ease-in-out infinite;
+  }
+
   #status-bar {
     max-width: 900px;
     margin: 0 auto 12px;
@@ -400,11 +445,12 @@ const logEventSourcesByJobId = new Map();
 
 // Per-job progress snapshot, fed by the same /jobs/:id/logs SSE that
 // streams log lines — ProgressEvents ride alongside string log events
-// on the same channel (logRoutes pass-through). Spawn ops and the
-// per-file iterator each emit different shapes (one populates
-// currentFile/currentFileRatio, the other populates ratio + filesDone),
-// so we MERGE incoming events field-by-field rather than replacing —
-// the bar shows whichever fields have arrived most recently.
+// on the same channel (logRoutes pass-through). The server sends an
+// authoritative snapshot every event: ratio + filesDone/Total roll up,
+// currentFiles is the full set of in-flight Tasks. We merge top-level
+// rollup fields (ratio/filesDone/filesTotal) since not every event
+// carries them, but currentFiles is a whole-array replace because the
+// server already aggregates across all active trackers.
 const progressByJobId = new Map();
 
 function mergeProgress(jobId, event) {
@@ -413,8 +459,10 @@ function mergeProgress(jobId, event) {
   if (event.ratio !== undefined) merged.ratio = event.ratio;
   if (event.filesDone !== undefined) merged.filesDone = event.filesDone;
   if (event.filesTotal !== undefined) merged.filesTotal = event.filesTotal;
-  if (event.currentFile !== undefined) merged.currentFile = event.currentFile;
-  if (event.currentFileRatio !== undefined) merged.currentFileRatio = event.currentFileRatio;
+  // currentFiles is authoritative when present; absence means "no
+  // active files" and we clear the previous list. Server omits the
+  // field entirely when activeFiles is empty.
+  merged.currentFiles = Array.isArray(event.currentFiles) ? event.currentFiles : [];
   progressByJobId.set(jobId, merged);
 }
 
@@ -439,25 +487,49 @@ function paintProgressBar(jobId) {
     const pct = Math.max(0, Math.min(1, ratio)) * 100;
     fill.style.width = pct.toFixed(1) + "%";
   }
-  // Build label text from whatever snapshot fields are populated. With
-  // both phases of the migration in play we may see overall + per-file
-  // info simultaneously: "12/50 files · episode-13.mkv (42%) · 24%".
+  // Top-line label: rollup counts + overall percent. Per-file detail
+  // moved into the .progress-files stack below the bar.
   const parts = [];
   if (typeof snapshot.filesDone === "number" && typeof snapshot.filesTotal === "number") {
     parts.push(`${snapshot.filesDone}/${snapshot.filesTotal} files`);
-  }
-  if (snapshot.currentFile) {
-    const filePart = String(snapshot.currentFile).split(/[\\/]/).pop();
-    if (typeof snapshot.currentFileRatio === "number") {
-      parts.push(`${filePart} (${(snapshot.currentFileRatio * 100).toFixed(0)}%)`);
-    } else {
-      parts.push(filePart);
-    }
   }
   if (ratio !== null) {
     parts.push(`${(ratio * 100).toFixed(0)}%`);
   }
   label.textContent = parts.join(" · ");
+
+  // Per-file rows. Each in-flight tracker becomes one row with a thin
+  // bar — multiple visible simultaneously when Tasks run in parallel.
+  // Empty list → drop the container so the spacing collapses.
+  const filesContainer = container.querySelector(".progress-files");
+  const currentFiles = Array.isArray(snapshot.currentFiles) ? snapshot.currentFiles : [];
+  if (currentFiles.length === 0) {
+    if (filesContainer) filesContainer.replaceChildren();
+    return;
+  }
+  if (!filesContainer) return;
+  filesContainer.replaceChildren(
+    ...currentFiles.map((entry) => {
+      const row = makeEl("div", "progress-file-row");
+      const name = makeEl("div", "progress-file-name");
+      name.textContent = String(entry.path).split(/[\\/]/).pop() || entry.path;
+      name.title = entry.path;
+      const ratioCell = makeEl("div", "progress-file-ratio");
+      const fileBar = makeEl("div", "progress-file-bar");
+      const fileFill = makeEl("div", "progress-file-fill");
+      fileBar.append(fileFill);
+      if (typeof entry.ratio === "number") {
+        ratioCell.textContent = `${(entry.ratio * 100).toFixed(0)}%`;
+        fileBar.classList.remove("indeterminate");
+        fileFill.style.width = (Math.max(0, Math.min(1, entry.ratio)) * 100).toFixed(1) + "%";
+      } else {
+        ratioCell.textContent = "";
+        fileBar.classList.add("indeterminate");
+      }
+      row.append(name, ratioCell, fileBar);
+      return row;
+    }),
+  );
 }
 
 function mountProgressBar(parent, jobId) {
@@ -471,7 +543,8 @@ function mountProgressBar(parent, jobId) {
   const fill = makeEl("div", "progress-fill");
   bar.append(fill);
   const label = makeEl("div", "progress-label");
-  row.append(bar, label);
+  const filesContainer = makeEl("div", "progress-files");
+  row.append(bar, label, filesContainer);
   parent.append(row);
   paintProgressBar(jobId);
 }
@@ -500,9 +573,9 @@ function ensureLogStream(jobId) {
       if (typeof data.line === "string") {
         appendLogLine(jobId, data.line);
       } else if (data.type === "progress") {
-        // Field-by-field merge so a spawn op's currentFile/ratio
-        // event doesn't blow away an earlier withFileProgress
-        // filesDone/total event (or vice versa).
+        // Top-level rollup fields merge field-by-field; currentFiles
+        // is whole-array replace (the server snapshot is authoritative
+        // — see mergeProgress).
         const hadEntry = progressByJobId.has(jobId);
         mergeProgress(jobId, data);
         if (!hadEntry) {

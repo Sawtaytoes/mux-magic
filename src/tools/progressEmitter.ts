@@ -11,6 +11,7 @@ import {
 import { emitJobEvent } from "../api/jobStore.js"
 import { getActiveJobId } from "../api/logCapture.js"
 import type { ProgressEvent } from "../api/types.js"
+import { runTask } from "./taskScheduler.js"
 
 // Hard cap on emission frequency. The user-facing requirement is "max
 // of 1s between updates"; the deferred-first-emit behavior gives the
@@ -25,25 +26,48 @@ type ProgressEmitterOptions = {
   totalBytes?: number
 }
 
-export type ProgressEmitter = {
-  // Per-file iterator entry point. Increments the internal filesDone
-  // counter and (if a totalBytes was declared) folds the just-finished
-  // file's size into the cumulative byte tally so future ratio
-  // computations include it.
-  finishFile: (fileSizeBytes?: number) => void
-  // Marks the file currently being processed. Resets the in-file byte
-  // counter; subsequent reportBytes calls accumulate against this file
-  // until the next startFile or finishFile.
-  startFile: (path: string, fileSizeBytes?: number) => void
+// Per-active-file state held inside the emitter. Keyed by an internal
+// trackerId (not path) so the same path being processed twice (retry,
+// concurrent passes) doesn't conflict.
+type FileState = {
+  path: string
+  totalBytes: number | undefined
+  bytesWritten: number
+  explicitRatio: number | null | undefined
+}
+
+// Handle returned by emitter.startFile() — scoped to ONE in-flight file.
+// Lets concurrent per-file Tasks each report their own bytes/ratio
+// without stepping on each other. The emitter aggregates across all
+// active trackers when computing snapshots.
+export type FileTracker = {
   // Folds an incremental byte count from the inner copy/spawn pipeline.
-  // Number is added to the in-file counter; currentFileRatio is
-  // recomputed (currentFileBytesWritten / currentFileTotalBytes).
+  // Number is added to this file's counter; the emitter recomputes the
+  // overall byte ratio.
   reportBytes: (bytesThisChunk: number) => void
-  // Direct override of currentFileRatio — used by spawn ops (mkvmerge,
+  // Direct override of THIS file's ratio — used by spawn ops (mkvmerge,
   // mkvextract, ffmpeg) that report a percentage parsed from stdout
-  // rather than byte counts. Resets back to byte-derived computation
-  // on the next startFile / finishFile.
-  setCurrentFileRatio: (ratio: number | null) => void
+  // rather than byte counts.
+  setRatio: (ratio: number | null) => void
+  // Marks this file done. Folds its size into the cumulative byte tally
+  // (caller-supplied takes precedence; falls back to whatever was
+  // accumulated via reportBytes), increments filesDone, and removes the
+  // tracker from the emitter's active-file set.
+  finish: (fileSizeBytes?: number) => void
+}
+
+export type ProgressEmitter = {
+  // Per-file iterator entry point. Returns a FileTracker scoped to the
+  // file at `path`. Multiple trackers can be live simultaneously when
+  // the caller is parallelizing per-file work. Adds the file to
+  // `currentFiles` snapshots so the UI can show one row per in-flight
+  // operation.
+  startFile: (path: string, fileSizeBytes?: number) => FileTracker
+  // Rollup-only counter bump. Increments filesDone (and folds bytes
+  // into the cumulative tally if supplied) WITHOUT adding anything to
+  // `currentFiles`. Used by generic iterators where the per-file unit
+  // is opaque (the operator doesn't know the file path / size).
+  incrementFilesDone: (fileSizeBytes?: number) => void
   // Direct ratio update — overrides the byte/file-derived overall
   // ratio. Useful when the caller has computed the canonical job
   // ratio itself.
@@ -55,168 +79,336 @@ export type ProgressEmitter = {
   finalize: () => void
 }
 
-// Builds an emitter bound to a specific job id. Caller drives it from
-// inside a per-file pipeline; the emitter handles throttling and the
-// "trivial-fast jobs stay silent" rule:
-//
-//   - The first `update`-style call (finishFile / reportBytes / setRatio)
-//     starts a 1s timer; nothing is emitted yet. If finalize() lands
-//     before the timer fires, no progress event is ever written to the
-//     subject — the running-status badge alone is the UX for fast jobs.
-//   - Subsequent calls inside the throttle window collapse onto the
-//     latest payload. When the timer fires, the latest snapshot is
-//     pushed and a fresh 1s window starts.
-//   - finalize() clears any pending timer. Idempotent.
+type EmitterState = {
+  jobId: string
+  totalFiles: number | undefined
+  totalBytes: number | undefined
+  filesDone: number
+  cumulativeBytes: number
+  explicitRatio: number | null | undefined
+  activeFiles: Map<number, FileState>
+  nextTrackerId: number
+  lastEmitAt: number | null
+  pendingTimer: ReturnType<typeof setTimeout> | null
+  pendingPayload: EmitterPayload | null
+}
+
+// Module-level singleton map — one EmitterState per jobId. Multiple
+// callers (the iterator's withFileProgress, individual spawn ops nested
+// inside per-file Tasks) all share the same state for a given jobId so
+// the snapshot of "currently active files" is unified across the job.
+const states = new Map<string, EmitterState>()
+
+const computeRatio = (state: EmitterState): number | null => {
+  if (state.explicitRatio !== undefined) {
+    return state.explicitRatio
+  }
+
+  if (
+    state.totalBytes !== undefined
+    && state.totalBytes > 0
+  ) {
+    const bytesInFlight = (
+      Array
+      .from(
+        state
+        .activeFiles
+        .values()
+      )
+      .reduce(
+        (sum, file) => sum + file.bytesWritten,
+        0,
+      )
+    )
+
+    return (
+      (state.cumulativeBytes + bytesInFlight)
+      / state.totalBytes
+    )
+  }
+
+  if (
+    state.totalFiles !== undefined
+    && state.totalFiles > 0
+  ) {
+    return state.filesDone / state.totalFiles
+  }
+
+  return null
+}
+
+const computeFileRatio = (file: FileState): number | null => {
+  if (file.explicitRatio !== undefined) {
+    return file.explicitRatio
+  }
+
+  if (
+    file.totalBytes !== undefined
+    && file.totalBytes > 0
+  ) {
+    return file.bytesWritten / file.totalBytes
+  }
+
+  return null
+}
+
+type CurrentFilesEntry = {
+  path: string
+  ratio: number | null
+}
+
+const computeCurrentFiles = (
+  state: EmitterState,
+): CurrentFilesEntry[] => (
+  Array
+  .from(
+    state
+    .activeFiles
+    .values()
+  )
+  .map((file) => ({
+    path: file.path,
+    ratio: computeFileRatio(file),
+  }))
+)
+
+// Compose the payload from accumulated state. Single source of truth so
+// the throttle layer can capture a snapshot at any tick.
+const snapshot = (state: EmitterState): EmitterPayload => {
+  const payload: EmitterPayload = {
+    ratio: computeRatio(state),
+  }
+
+  if (state.totalFiles !== undefined) {
+    payload.filesDone = state.filesDone
+    payload.filesTotal = state.totalFiles
+  }
+
+  const currentFiles = computeCurrentFiles(state)
+  if (currentFiles.length > 0) {
+    payload.currentFiles = currentFiles
+  }
+
+  return payload
+}
+
+const flush = (state: EmitterState): void => {
+  if (state.pendingPayload === null) {
+    return
+  }
+
+  emitJobEvent(
+    state.jobId,
+    {
+      type: "progress",
+      ...state.pendingPayload,
+    },
+  )
+
+  state.lastEmitAt = Date.now()
+  state.pendingPayload = null
+}
+
+const scheduleEmit = (
+  state: EmitterState,
+  delayMs: number,
+): void => {
+  if (state.pendingTimer !== null) {
+    return
+  }
+
+  state.pendingTimer = setTimeout(
+    () => {
+      state.pendingTimer = null
+      flush(state)
+    },
+    delayMs,
+  )
+}
+
+// Capture the current accumulated state and route it through the
+// throttle gate. First call defers a full interval; later calls
+// either flush immediately (if past the window) or hold the latest
+// payload until the timer fires.
+const tick = (state: EmitterState): void => {
+  state.pendingPayload = snapshot(state)
+
+  const now = Date.now()
+  if (state.lastEmitAt === null) {
+    scheduleEmit(state, THROTTLE_INTERVAL_MS)
+    return
+  }
+
+  const sinceLastEmit = now - state.lastEmitAt
+  if (sinceLastEmit >= THROTTLE_INTERVAL_MS) {
+    if (state.pendingTimer !== null) {
+      clearTimeout(state.pendingTimer)
+      state.pendingTimer = null
+    }
+    flush(state)
+    return
+  }
+
+  scheduleEmit(
+    state,
+    THROTTLE_INTERVAL_MS - sinceLastEmit,
+  )
+}
+
+// Returns the singleton emitter handle for the given jobId. The first
+// call seeds totals; subsequent calls additively merge new totals (so a
+// nested spawn op declaring extra totalBytes contributes to the same
+// rollup the iterator started). The returned handle is a thin facade
+// over the shared state — multiple call sites coexist safely.
 export const createProgressEmitter = (
   jobId: string,
   options: ProgressEmitterOptions = {},
 ): ProgressEmitter => {
-  const { totalFiles, totalBytes } = options
-
-  let filesDone = 0
-  let cumulativeBytes = 0
-  let currentFile: string | undefined = undefined
-  let currentFileTotalBytes: number | undefined = undefined
-  let currentFileBytesWritten = 0
-  let explicitRatio: number | null | undefined = undefined
-  let explicitCurrentFileRatio: number | null | undefined = undefined
-
-  let lastEmitAt: number | null = null
-  let pendingTimer: ReturnType<typeof setTimeout> | null = null
-  let pendingPayload: EmitterPayload | null = null
-
-  // Compose the payload from accumulated state. Single source of truth so
-  // the throttle layer can capture a snapshot at any tick.
-  const snapshot = (): EmitterPayload => {
-    let ratio: number | null
-    if (explicitRatio !== undefined) {
-      ratio = explicitRatio
-    } else if (totalBytes !== undefined && totalBytes > 0) {
-      ratio = (cumulativeBytes + currentFileBytesWritten) / totalBytes
-    } else if (totalFiles !== undefined && totalFiles > 0) {
-      ratio = filesDone / totalFiles
-    } else {
-      ratio = null
+  const existingState = states.get(jobId)
+  const state: EmitterState = (
+    existingState
+    ?? {
+      jobId,
+      totalFiles: undefined,
+      totalBytes: undefined,
+      filesDone: 0,
+      cumulativeBytes: 0,
+      explicitRatio: undefined,
+      activeFiles: new Map(),
+      nextTrackerId: 0,
+      lastEmitAt: null,
+      pendingTimer: null,
+      pendingPayload: null,
     }
+  )
 
-    const payload: EmitterPayload = { ratio }
-    if (totalFiles !== undefined) {
-      payload.filesDone = filesDone
-      payload.filesTotal = totalFiles
-    }
-    if (currentFile !== undefined) {
-      payload.currentFile = currentFile
-      payload.currentFileRatio = (
-        explicitCurrentFileRatio !== undefined
-          ? explicitCurrentFileRatio
-          : currentFileTotalBytes !== undefined && currentFileTotalBytes > 0
-            ? currentFileBytesWritten / currentFileTotalBytes
-            : null
-      )
-    }
-    return payload
+  if (existingState === undefined) {
+    states.set(jobId, state)
   }
 
-  const flush = (): void => {
-    if (pendingPayload === null) return
-    emitJobEvent(jobId, { type: "progress", ...pendingPayload })
-    lastEmitAt = Date.now()
-    pendingPayload = null
+  if (options.totalFiles !== undefined) {
+    state.totalFiles = (
+      (state.totalFiles ?? 0)
+      + options.totalFiles
+    )
   }
 
-  const schedule = (delayMs: number): void => {
-    if (pendingTimer !== null) return
-    pendingTimer = setTimeout(() => {
-      pendingTimer = null
-      flush()
-    }, delayMs)
-  }
-
-  // Capture the current accumulated state and route it through the
-  // throttle gate. First call defers a full interval; later calls
-  // either flush immediately (if past the window) or hold the latest
-  // payload until the timer fires.
-  const tick = (): void => {
-    pendingPayload = snapshot()
-
-    const now = Date.now()
-    if (lastEmitAt === null) {
-      schedule(THROTTLE_INTERVAL_MS)
-      return
-    }
-
-    const sinceLastEmit = now - lastEmitAt
-    if (sinceLastEmit >= THROTTLE_INTERVAL_MS) {
-      if (pendingTimer !== null) {
-        clearTimeout(pendingTimer)
-        pendingTimer = null
-      }
-      flush()
-      return
-    }
-
-    schedule(THROTTLE_INTERVAL_MS - sinceLastEmit)
+  if (options.totalBytes !== undefined) {
+    state.totalBytes = (
+      (state.totalBytes ?? 0)
+      + options.totalBytes
+    )
   }
 
   return {
     startFile: (path, fileSizeBytes) => {
-      currentFile = path
-      currentFileTotalBytes = fileSizeBytes
-      currentFileBytesWritten = 0
-      explicitCurrentFileRatio = undefined
-      tick()
+      const trackerId = state.nextTrackerId
+      state.nextTrackerId += 1
+
+      const fileState: FileState = {
+        path,
+        totalBytes: fileSizeBytes,
+        bytesWritten: 0,
+        explicitRatio: undefined,
+      }
+
+      state.activeFiles.set(trackerId, fileState)
+      tick(state)
+
+      return {
+        reportBytes: (bytesThisChunk) => {
+          fileState.bytesWritten += bytesThisChunk
+          tick(state)
+        },
+        setRatio: (ratio) => {
+          fileState.explicitRatio = ratio
+          tick(state)
+        },
+        finish: (fileSizeBytesOverride) => {
+          // Idempotent — callers that wire finish() into both an exit
+          // handler AND a teardown function (e.g. runFfmpeg) can fire
+          // twice without double-counting filesDone or double-folding
+          // bytes.
+          if (!state.activeFiles.has(trackerId)) {
+            return
+          }
+
+          state.cumulativeBytes += (
+            fileSizeBytesOverride
+            ?? fileState.totalBytes
+            ?? fileState.bytesWritten
+          )
+          state.filesDone += 1
+          state.activeFiles.delete(trackerId)
+          tick(state)
+        },
+      }
     },
-    reportBytes: (bytesThisChunk) => {
-      currentFileBytesWritten += bytesThisChunk
-      tick()
-    },
-    finishFile: (fileSizeBytes) => {
-      // Roll the just-finished file into the cumulative tally. Prefer
-      // the caller-supplied fileSizeBytes (authoritative); fall back to
-      // whatever we accumulated during reportBytes calls.
-      cumulativeBytes += fileSizeBytes ?? currentFileBytesWritten
-      filesDone += 1
-      currentFile = undefined
-      currentFileTotalBytes = undefined
-      currentFileBytesWritten = 0
-      explicitCurrentFileRatio = undefined
-      tick()
-    },
-    setCurrentFileRatio: (ratio) => {
-      explicitCurrentFileRatio = ratio
-      tick()
+    incrementFilesDone: (fileSizeBytes) => {
+      if (fileSizeBytes !== undefined) {
+        state.cumulativeBytes += fileSizeBytes
+      }
+      state.filesDone += 1
+      tick(state)
     },
     setRatio: (ratio) => {
-      explicitRatio = ratio
-      tick()
+      state.explicitRatio = ratio
+      tick(state)
     },
     finalize: () => {
-      if (pendingTimer !== null) {
-        clearTimeout(pendingTimer)
-        pendingTimer = null
+      if (state.pendingTimer !== null) {
+        clearTimeout(state.pendingTimer)
+        state.pendingTimer = null
       }
-      pendingPayload = null
+      state.pendingPayload = null
     },
   }
 }
 
+// Test/lifecycle helper — drops the emitter state for a given jobId.
+// Called from jobStore.resetStore() so vitest's afterEach hook clears
+// state cleanly. Safe to call when no state exists.
+export const disposeProgressEmitter = (
+  jobId: string,
+): void => {
+  const state = states.get(jobId)
+  if (state === undefined) {
+    return
+  }
+
+  if (state.pendingTimer !== null) {
+    clearTimeout(state.pendingTimer)
+  }
+
+  states.delete(jobId)
+}
+
+export const __resetAllProgressEmittersForTests = (): void => {
+  states.forEach((state) => {
+    if (state.pendingTimer !== null) {
+      clearTimeout(state.pendingTimer)
+    }
+  })
+  states.clear()
+}
+
 type WithFileProgressOptions = {
-  // Number of inner observables to run in parallel. Defaults to 1
-  // (sequential, matching `concatMap`). Set higher (e.g. cpus().length)
-  // to match an app-command's existing `mergeAll(threadCount)` flow.
-  // Inner-observable completions tick the emitter regardless of
-  // ordering — filesDone increments correctly even when files finish
-  // out of order.
+  // Upper bound on per-file fan-out from this operator. The actual
+  // parallelism is capped further by the global Task scheduler
+  // (process-wide MAX_THREADS budget). Defaults to Infinity — let the
+  // scheduler decide. Inner-observable completions tick the emitter
+  // regardless of ordering, so filesDone increments correctly even
+  // when files finish out of order.
   concurrency?: number
 }
 
 // Sugar for the per-file-iterator pattern that ~all app-commands share:
 // `getFiles(...).pipe(concatMap(fileInfo => …))`. Materializes the
 // upstream into an array first (so totalFiles is known), then re-emits
-// through `concatMap(perFile)` (or `mergeMap(perFile, concurrency)`
-// when an opts.concurrency > 1 is supplied) while ticking the emitter
-// on each inner-observable completion. Wires `emitter.finalize()` into
-// the pipeline's `finalize` operator so cancellation/error paths clear
+// through `mergeMap(perFile, concurrency)` (defaults to Infinity — the
+// scheduler is the actual cap) while ticking the emitter on each
+// inner-observable completion. Wires `emitter.finalize()` into the
+// pipeline's `finalize` operator so cancellation/error paths clear
 // pending timers without the call site having to remember.
 //
 // The job id is pulled from the active AsyncLocalStorage context (the
@@ -233,12 +425,15 @@ export const withFileProgress = <T, U>(
   .pipe(
     toArray(),
     concatMap((files) => {
-      const concurrency = options.concurrency ?? 1
+      const concurrency = options.concurrency ?? Infinity
       const indexedFiles = files.map((file, index) => ({ file, index }))
       const jobId = getActiveJobId()
       if (jobId === undefined) {
         return from(indexedFiles).pipe(
-          mergeMap(({ file, index }) => perFile(file, index), concurrency),
+          mergeMap(
+            ({ file, index }) => runTask(perFile(file, index)),
+            concurrency,
+          ),
         )
       }
       const emitter = createProgressEmitter(jobId, {
@@ -247,9 +442,11 @@ export const withFileProgress = <T, U>(
       return from(indexedFiles).pipe(
         mergeMap(
           ({ file, index }) => (
-            perFile(file, index)
-            .pipe(
-              rxFinalize(() => emitter.finishFile()),
+            runTask(
+              perFile(file, index)
+              .pipe(
+                rxFinalize(() => emitter.incrementFilesDone()),
+              )
             )
           ),
           concurrency,

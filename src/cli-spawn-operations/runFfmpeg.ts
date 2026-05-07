@@ -162,7 +162,7 @@ export const runFfmpeg = ({
         // 0..1 number rather than just elapsed milliseconds.
         const totalDurationMs = duration * 1000
         const emitter = inApiContext ? createProgressEmitter(jobId!) : null
-        if (emitter !== null) emitter.startFile(outputFilePath)
+        const tracker = emitter !== null ? emitter.startFile(outputFilePath) : null
 
         const commandArgs = (
           [
@@ -307,8 +307,8 @@ export const runFfmpeg = ({
 
               // SSE progress: emit even in API context (where the
               // TTY bar is suppressed). Throttling lives in the emitter.
-              if (emitter !== null && totalDurationMs > 0) {
-                emitter.setCurrentFileRatio(
+              if (tracker !== null && totalDurationMs > 0) {
+                tracker.setRatio(
                   Math.min(1, elapsedMs / totalDurationMs),
                 )
               }
@@ -400,7 +400,7 @@ export const runFfmpeg = ({
           (
             code,
           ) => {
-            if (emitter !== null) emitter.finalize()
+            if (tracker !== null) tracker.finish()
             if (
               code
               === 0
@@ -457,11 +457,14 @@ export const runFfmpeg = ({
         }
 
         // Wrap the tree-kill teardown so an unsubscribe (e.g. cancelJob)
-        // also clears the emitter's pending throttled timer. Idempotent
-        // with the 'exit'-handler finalize() above.
+        // also drops this file from the emitter's active set. Idempotent
+        // with the 'exit'-handler tracker.finish() above (subsequent
+        // finish/finalize on a removed tracker is a no-op since the
+        // tracker holds its own removed-flag implicitly via the Map
+        // delete).
         const treeKillTeardown = treeKillOnUnsubscribe(childProcess)
         return () => {
-          if (emitter !== null) emitter.finalize()
+          if (tracker !== null) tracker.finish()
           treeKillTeardown()
         }
       })

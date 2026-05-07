@@ -17,6 +17,7 @@ import { getFiles } from "../tools/getFiles.js"
 import { logInfo } from "../tools/logMessage.js"
 import { makeDirectory } from "../tools/makeDirectory.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
+import { runTasks } from "../tools/taskScheduler.js"
 
 // Copies every file in `sourcePath` into `destinationPath`, then removes
 // the source directory once all copies succeed. Emits a per-file
@@ -56,42 +57,49 @@ export const moveFiles = ({
         concatMap(({ files, sizes, emitter }) => (
           from(files.map((file, index) => ({ file, size: sizes[index] })))
           .pipe(
-            concatMap(({ file, size }) => {
+            // Per-file copies go through the global Task scheduler — see
+            // copyFiles.ts for the full rationale.
+            runTasks(({ file, size }) => {
               const destinationFilePath = join(
                 destinationPath,
                 file.filename.concat(extname(file.fullPath)),
               )
 
+              const tracker = (
+                emitter !== null
+                ? emitter.startFile(file.fullPath, size)
+                : null
+              )
+
               // aclSafeCopyFile.onProgress fires per chunk with
               // ABSOLUTE bytesWritten across the lifetime of one
-              // file copy. The emitter's reportBytes wants per-chunk
+              // file copy. The tracker's reportBytes wants per-chunk
               // delta, so we track the previous high-water mark.
               let lastBytesWritten = 0
-              if (emitter !== null) emitter.startFile(file.fullPath, size)
 
               return makeDirectory(destinationPath)
               .pipe(
                 concatMap(() => aclSafeCopyFile(
                   file.fullPath,
                   destinationFilePath,
-                  emitter !== null
+                  tracker !== null
                     ? {
                         onProgress: (event) => {
                           const delta = event.bytesWritten - lastBytesWritten
                           lastBytesWritten = event.bytesWritten
-                          emitter.reportBytes(delta)
+                          tracker.reportBytes(delta)
                         },
                       }
                     : undefined,
                 )),
                 tap(() => {
-                  if (emitter !== null) emitter.finishFile(size)
                   logInfo("COPIED", file.fullPath, destinationFilePath)
                 }),
                 map(() => ({
                   source: file.fullPath,
                   destination: destinationFilePath,
                 })),
+                finalize(() => tracker?.finish(size)),
               )
             }),
             finalize(() => emitter?.finalize()),
