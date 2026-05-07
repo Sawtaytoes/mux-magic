@@ -13,7 +13,9 @@
       "Bash(npm view *)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "PowerShell(gh --version 2>&1)"
+      "PowerShell(gh --version 2>&1)",
+      "Bash(git stash *)",
+      "Bash(git add *)"
     ]
   }
 }
