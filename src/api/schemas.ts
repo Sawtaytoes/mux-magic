@@ -242,7 +242,7 @@ export const nameSpecialFeaturesRequestSchema = z.object({
   dvdCompareReleaseHash: z.number().optional().describe("Release package hash (URL fragment, defaults to 1)"),
   searchTerm: z.string().optional().describe("Title to search on DVDCompare.net (used when no url or dvdCompareId)"),
   fixedOffset: z.number().default(0).describe("Fixed timecode offset in milliseconds"),
-  timecodePadding: z.number().default(0).describe("Timecode padding amount"),
+  timecodePadding: z.number().default(2).describe("Timecode padding amount (in seconds) — DVDCompare runtimes routinely drift 1–2s from rip metadata, so 2 matches typical real-world cases. Set to 0 for an exact-match-only run."),
 })
 
 export const nameTvShowEpisodesRequestSchema = z.object({
