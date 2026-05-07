@@ -145,7 +145,39 @@
     font-size: 0.9rem;
     color: #60a5fa;
     user-select: none;
+    /* Flex layout so the inline Copy button can sit at the right edge.
+       Suppress the default disclosure marker (a list-item bullet) and
+       provide our own ▶/▼ via ::before so it survives the flex switch. */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
   }
+  summary::-webkit-details-marker { display: none; }
+  summary::before {
+    content: "▶";
+    display: inline-block;
+    font-size: 0.7rem;
+    width: 0.9rem;
+    transition: transform 120ms ease;
+    color: #475569;
+  }
+  details[open] > summary::before {
+    transform: rotate(90deg);
+  }
+  .copy-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    border-radius: 4px;
+    padding: 1px 8px;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: color 150ms, border-color 150ms;
+  }
+  .copy-btn:hover { color: #e2e8f0; border-color: #64748b; }
+  .copy-btn.copied { color: #34d399; border-color: #34d399; }
 
   .result {
     margin-top: 8px;
@@ -284,6 +316,7 @@
 <div class="jobs" id="jobs"></div>
 
 <script src="/sse-utils.js"></script>
+<script src="/command-labels.js"></script>
 <script>
 const statusBar = document.getElementById("status-bar");
 const jobsEl = document.getElementById("jobs");
@@ -313,6 +346,35 @@ function makeEl(tag, className) {
   const el = document.createElement(tag);
   if (className) el.className = className;
   return el;
+}
+
+// Build a "📋 Copy" button that writes `getText()` to the clipboard on
+// click. The text is fetched lazily so callers can capture a closure
+// over a live reference (e.g. the latest accumulated log lines) instead
+// of a snapshot frozen at render time. Click also stopPropagations so
+// the surrounding <summary> doesn't toggle its <details>.
+function makeCopyButton(getText) {
+  const btn = makeEl("button", "copy-btn");
+  btn.type = "button";
+  btn.textContent = "📋 Copy";
+  btn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    const text = getText() ?? "";
+    navigator.clipboard.writeText(text).then(() => {
+      btn.classList.add("copied");
+      btn.textContent = "✓ Copied";
+      setTimeout(() => {
+        btn.classList.remove("copied");
+        btn.textContent = "📋 Copy";
+      }, 2000);
+    }).catch((error) => {
+      console.error("Copy failed", error);
+      btn.textContent = "Copy failed";
+      setTimeout(() => { btn.textContent = "📋 Copy"; }, 2000);
+    });
+  });
+  return btn;
 }
 
 function getChildren(parentId) {
@@ -534,7 +596,12 @@ function mountLogsDisclosure(parent, jobId, jobStatus, openByDefault) {
   const details = makeEl("details");
   if (openByDefault && jobStatus === "running") details.open = true;
   const summary = makeEl("summary");
-  summary.textContent = "Logs";
+  const summaryText = document.createTextNode("Logs");
+  // Lazy getter — captures the live `logsByJobId` entry so a copy issued
+  // mid-run grabs every line accumulated up to the click, not just what
+  // existed at render time.
+  const copyBtn = makeCopyButton(() => (logsByJobId.get(jobId) || []).join("\n"));
+  summary.append(summaryText, copyBtn);
   const pane = makeEl("div", "log-pane");
   pane.dataset.logId = jobId;
   const lines = logsByJobId.get(jobId);
@@ -569,7 +636,7 @@ function renderStepRow(child, index) {
   const idx = makeEl("span", "step-index");
   idx.textContent = `${index + 1}.`;
   const cmdName = document.createElement("strong");
-  cmdName.textContent = child.commandName;
+  cmdName.textContent = commandLabel(child.commandName);
   title.append(idx, cmdName);
   if (child.stepId) {
     const sid = makeEl("span", "step-id");
@@ -617,7 +684,7 @@ function renderJob(job) {
 
   const header = makeEl("div", "job-header");
   const cmd = makeEl("div", "command");
-  cmd.textContent = job.commandName ?? job.command ?? "unknown";
+  cmd.textContent = commandLabel(job.commandName ?? job.command ?? "unknown");
   const badge = makeEl("div", `status ${job.status}`);
   badge.textContent = job.status;
   header.append(cmd, badge);
@@ -650,7 +717,9 @@ function renderJob(job) {
   if (job.params && typeof job.params === "object" && Object.keys(job.params).length) {
     const details = makeEl("details");
     const summary = makeEl("summary");
-    summary.textContent = "Params";
+    const summaryText = document.createTextNode("Params");
+    const copyBtn = makeCopyButton(() => JSON.stringify(job.params, null, 2));
+    summary.append(summaryText, copyBtn);
     const params = makeEl("div", "result");
     params.textContent = JSON.stringify(job.params, null, 2);
     details.append(summary, params);

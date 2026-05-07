@@ -29,6 +29,13 @@ const stepOutputReferenceSchema = z.object({
 // ─── Sequence document shape ────────────────────────────────────────────────
 
 const sequenceStepSchema = z.object({
+  // Required literal at the schema level so the OpenAPI generator's
+  // discriminated-union transformer can read the discriminator value.
+  // The `sequenceItemSchema` preprocess below injects `kind: "step"`
+  // when callers omit it, so existing flat-step YAMLs still validate
+  // even though the documented schema marks `kind` as required.
+  kind: z.literal("step")
+    .describe("Discriminator marking this entry as a single step. May be omitted on input — the server treats a missing `kind` as `\"step\"` for backward compatibility with the original flat-step YAML form. The other allowed value is `\"group\"` (see `SequenceGroup`)."),
   id: z.string().optional()
     .describe("Stable identifier for this step. Optional on input — auto-assigned (`step1`, `step2`, ...) when omitted. Used as the target of `{ linkedTo, output }` references from later steps."),
   alias: z.string().optional()
@@ -37,6 +44,8 @@ const sequenceStepSchema = z.object({
     .describe("Name of the registered command to run. Must be one of the names listed at `GET /commands` (or surfaced individually as `POST /commands/<name>` endpoints)."),
   params: z.record(z.string(), z.unknown()).optional()
     .describe("Command params. Each value can be a literal (string / number / boolean / array / object), a `'@pathId'` path-variable reference, or a `{ linkedTo, output }` step-output reference. Per-command param shapes are documented under `POST /commands/<command>` — the same schema each command exposes for direct invocation also applies here once references are resolved."),
+  isCollapsed: z.boolean().optional()
+    .describe("Builder-UI accordion state. When `true`, the card renders with its body hidden. Pure view state; ignored at runtime."),
 }).openapi("SequenceStep", {
   description: "A single step inside a sequence.",
   example: {
@@ -49,6 +58,134 @@ const sequenceStepSchema = z.object({
     },
   },
 })
+
+// Inner steps inside a group go through the same kind-injection
+// preprocess that top-level steps do, so callers can omit `kind: "step"`
+// inside groups too. Wrapping `sequenceStepSchema` (which requires the
+// literal) keeps the OpenAPI doc honest while accepting the bare form.
+const preprocessedStepSchema = z.preprocess(
+  (value) => {
+    if (
+      value
+      && typeof value === "object"
+      && !Array.isArray(value)
+      && (value as { kind?: unknown }).kind === undefined
+    ) {
+      return { ...(value as Record<string, unknown>), kind: "step" }
+    }
+    return value
+  },
+  sequenceStepSchema,
+)
+
+const sequenceGroupSchema = z.object({
+  kind: z.literal("group")
+    .describe("Discriminator marking this entry as a group of steps rather than a single step."),
+  id: z.string().optional()
+    .describe("Optional stable identifier for the group. Currently used only by the builder UI; not referenceable from `linkedTo` (`linkedTo` always targets steps, not groups)."),
+  label: z.string().optional()
+    .describe("Optional human-readable label rendered in the group's header by the builder UI. Ignored at runtime."),
+  isParallel: z.boolean().optional()
+    .describe("When `true`, the group's inner steps run concurrently (Promise.all). When omitted or `false`, they run sequentially in array order. The builder UI also lays parallel groups out side-by-side on wide viewports."),
+  isCollapsed: z.boolean().optional()
+    .describe("Builder-UI accordion state for the group as a whole. When `true`, the group's inner step cards are hidden. Pure view state; ignored at runtime."),
+  steps: z.array(preprocessedStepSchema).min(1)
+    .describe("Inner steps. Groups don't nest — each entry must be a step, not another group."),
+}).openapi("SequenceGroup", {
+  description: "A container for a set of steps. Marked `isParallel: true` to run concurrently; otherwise the inner steps run sequentially. Groups are flat — they can contain steps but not other groups.",
+  example: {
+    kind: "group",
+    id: "extractParallel",
+    label: "Extract subs + media info",
+    isParallel: true,
+    steps: [
+      { id: "subs", command: "copyOutSubtitles", params: { sourcePath: "@workDir" } },
+      { id: "info", command: "getSubtitleMetadata", params: { sourcePath: "@workDir" } },
+    ],
+  },
+})
+
+// Discriminated union over `kind`. The preprocess step injects
+// `kind: "step"` when missing, so existing YAMLs that wrote bare-step
+// entries (no `kind` field) keep validating unchanged.
+const sequenceItemSchema = z.preprocess(
+  (value) => {
+    if (
+      value
+      && typeof value === "object"
+      && !Array.isArray(value)
+      && (value as { kind?: unknown }).kind === undefined
+    ) {
+      return { ...(value as Record<string, unknown>), kind: "step" }
+    }
+    return value
+  },
+  z.discriminatedUnion("kind", [sequenceStepSchema, sequenceGroupSchema]),
+)
+
+// Walks the parsed top-level item array to enforce two cross-item
+// invariants that the per-item schemas can't see on their own:
+//   1. Step ids must be globally unique across the top level + every
+//      group's children. Two steps sharing an id would let `linkedTo`
+//      ambiguously target either.
+//   2. Inside a parallel group, no step can `linkedTo` a sibling — they
+//      all start at the same time, so a sibling's outputs aren't
+//      available. (Steps before the group, and steps after it
+//      referencing inner steps, both stay legal.)
+const validateSequenceItems = (
+  items: ReadonlyArray<z.infer<typeof sequenceItemSchema>>,
+  ctx: z.RefinementCtx,
+): void => {
+  const seenIds = new Set<string>()
+  const flagDuplicate = (id: string, path: (string | number)[]): void => {
+    if (seenIds.has(id)) {
+      ctx.addIssue({
+        code: "custom",
+        message: `Duplicate step id "${id}". Step ids must be unique across the whole sequence (including across groups).`,
+        path,
+      })
+    }
+    seenIds.add(id)
+  }
+
+  items.forEach((item, itemIndex) => {
+    if (item.kind === "group") {
+      item.steps.forEach((step, stepIndex) => {
+        if (typeof step.id === "string" && step.id.length > 0) {
+          flagDuplicate(step.id, [itemIndex, "steps", stepIndex, "id"])
+        }
+      })
+      if (item.isParallel === true) {
+        const siblingIds = new Set(
+          item.steps
+            .map((s) => s.id)
+            .filter((id): id is string => typeof id === "string" && id.length > 0),
+        )
+        item.steps.forEach((step, stepIndex) => {
+          Object.entries(step.params ?? {}).forEach(([paramName, value]) => {
+            if (
+              value
+              && typeof value === "object"
+              && !Array.isArray(value)
+              && typeof (value as { linkedTo?: unknown }).linkedTo === "string"
+              && siblingIds.has((value as { linkedTo: string }).linkedTo)
+            ) {
+              ctx.addIssue({
+                code: "custom",
+                message: `Step "${step.id ?? `(group child #${stepIndex + 1})`}" param "${paramName}" links to "${(value as { linkedTo: string }).linkedTo}", a sibling inside the same parallel group. Parallel-group siblings start at the same time, so their outputs aren't available to each other.`,
+                path: [itemIndex, "steps", stepIndex, "params", paramName],
+              })
+            }
+          })
+        })
+      }
+    } else {
+      if (typeof item.id === "string" && item.id.length > 0) {
+        flagDuplicate(item.id, [itemIndex, "id"])
+      }
+    }
+  })
+}
 
 const sequencePathSchema = z.object({
   label: z.string().optional()
@@ -63,8 +200,8 @@ const sequencePathSchema = z.object({
 const parsedSequenceSchema = z.object({
   paths: z.record(z.string(), sequencePathSchema).optional()
     .describe("Top-level path-variable map keyed by path id. Each entry is referenced from step params via `'@<pathId>'`."),
-  steps: z.array(sequenceStepSchema)
-    .describe("Sequence of steps to run in order. Stops on the first failure; remaining steps don't run."),
+  steps: z.array(sequenceItemSchema)
+    .describe("Sequence of items to run in order. Each item is either a single step (the existing flat form) or a `kind: \"group\"` container (new). Stops on the first failure; remaining items don't run."),
 }).openapi("ParsedSequenceBody", {
   description: "Pre-parsed sequence body. Use this shape if you have the sequence as JSON; otherwise post a YAML string under `yaml` (the server parses with js-yaml and validates against this same schema).",
   example: {
@@ -136,9 +273,19 @@ const yamlSequenceSchema = z.object({
   },
 })
 
+// `parsedSequenceSchema` provides the OpenAPI-named schema reference;
+// the cross-item validator (unique ids, no parallel-sibling links) lives
+// in this wrapper so the route handler applies it both to YAML-parsed
+// bodies and to JSON bodies. The wrapper is intentionally not given an
+// `.openapi(...)` name so the docs continue to reference the bare
+// `ParsedSequenceBody` schema rather than a wrapped variant.
+const validatedParsedSequenceSchema = parsedSequenceSchema.superRefine((parsed, ctx) => {
+  validateSequenceItems(parsed.steps, ctx)
+})
+
 const sequenceRequestSchema = z.union([
   yamlSequenceSchema,
-  parsedSequenceSchema,
+  validatedParsedSequenceSchema,
 ])
 
 const sequenceResponseSchema = z.object({
@@ -228,7 +375,7 @@ sequenceRoutes.openapi(
       } catch (error) {
         return context.json({ error: `Invalid YAML: ${String(error)}` }, 400)
       }
-      const validation = parsedSequenceSchema.safeParse(loaded)
+      const validation = validatedParsedSequenceSchema.safeParse(loaded)
       if (!validation.success) {
         return context.json({ error: `YAML body did not match expected shape: ${validation.error.message}` }, 400)
       }

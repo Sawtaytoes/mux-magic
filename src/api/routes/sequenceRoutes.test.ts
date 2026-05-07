@@ -299,3 +299,304 @@ describe("POST /sequences/run", () => {
     expect(response.status).toBe(400)
   })
 })
+
+// Group-aware behavior. Bare-step entries continue to validate without
+// `kind`, but the schema also accepts `{ kind: "group", steps: [...] }`
+// container items at the top level. Groups don't nest — their inner
+// steps must be bare steps. Two execution modes:
+//   - `isParallel` omitted / false: serial loop inside the group; first
+//     failure stops the group and cascades to outer remainder.
+//   - `isParallel: true`: inner steps run concurrently via Promise.all.
+//     Outputs of every successful inner step land in stepsById so a step
+//     after the group can `linkedTo` any of them.
+//
+// Cross-item validation (unique step ids, no parallel-sibling links)
+// happens at parse time so misconfigured YAML returns 400 instead of
+// failing only at run-time.
+
+describe("POST /sequences/run — groups", () => {
+  test("accepts a top-level mix of bare steps and a kind:group container", async () => {
+    const response = await post("/sequences/run", {
+      paths: { root: { value: "/grp-mixed" } },
+      steps: [
+        { id: "before", command: "makeDirectory", params: { filePath: "@root" } },
+        {
+          kind: "group",
+          id: "innerSerial",
+          label: "Two serial steps",
+          steps: [
+            { id: "g1", command: "makeDirectory", params: { filePath: "@root" } },
+            { id: "g2", command: "makeDirectory", params: { filePath: "@root" } },
+          ],
+        },
+        { id: "after", command: "makeDirectory", params: { filePath: "@root" } },
+      ],
+    })
+    expect(response.status).toBe(202)
+    const { jobId } = await response.json() as { jobId: string }
+    await flushAfter(80)
+
+    const umbrella = getJob(jobId)
+    expect(umbrella?.status).toBe("completed")
+
+    // One child job per actual step — the group itself doesn't get a
+    // child job; its identity lives only in the source YAML.
+    const children = getChildJobs(jobId)
+    expect(children.map((c) => c.stepId)).toEqual(["before", "g1", "g2", "after"])
+    expect(children.every((c) => c.parentJobId === jobId)).toBe(true)
+    expect(children.every((c) => c.status === "completed")).toBe(true)
+  })
+
+  test("rejects a group with no inner steps via the schema (400)", async () => {
+    const response = await post("/sequences/run", {
+      steps: [
+        { kind: "group", steps: [] },
+      ],
+    })
+    expect(response.status).toBe(400)
+  })
+
+  test("rejects duplicate step ids across a group and the top level", async () => {
+    // Sent as YAML so the handler's own 400 response (with the
+    // formatted Zod error message) is what we inspect — the JSON-body
+    // path runs through Hono's @hono/zod-openapi validator wrapper
+    // which produces a different (and undocumented) error shape.
+    const response = await post("/sequences/run", {
+      yaml: [
+        "steps:",
+        "  - id: same",
+        "    command: makeDirectory",
+        "    params:",
+        "      filePath: /a",
+        "  - kind: group",
+        "    steps:",
+        "      - id: same",
+        "        command: makeDirectory",
+        "        params:",
+        "          filePath: /b",
+      ].join("\n"),
+    })
+    expect(response.status).toBe(400)
+    const body = await response.json() as { error: string }
+    expect(body.error.toLowerCase()).toContain("duplicate step id")
+  })
+
+  test("rejects linkedTo between siblings of the same parallel group", async () => {
+    const response = await post("/sequences/run", {
+      yaml: [
+        "steps:",
+        "  - kind: group",
+        "    isParallel: true",
+        "    steps:",
+        "      - id: alpha",
+        "        command: makeDirectory",
+        "        params:",
+        "          filePath: /alpha",
+        "      - id: beta",
+        "        command: copyFiles",
+        "        params:",
+        "          sourcePath:",
+        "            linkedTo: alpha",
+        "            output: folder",
+        "          destinationPath: /dst",
+      ].join("\n"),
+    })
+    expect(response.status).toBe(400)
+    const body = await response.json() as { error: string }
+    expect(body.error.toLowerCase()).toContain("parallel group")
+  })
+
+  test("serial group: inner steps run in document order and group failure cascades to outer remainder", async () => {
+    vol.fromJSON({ "/work/keep": "" })
+
+    const response = await post("/sequences/run", {
+      steps: [
+        {
+          kind: "group",
+          id: "boomGroup",
+          steps: [
+            { id: "innerOk", command: "makeDirectory", params: { filePath: "/inner-ok" } },
+            { id: "innerBoom", command: "deleteFolder", params: { folderPath: "/work", confirm: false } },
+            { id: "innerSkip", command: "makeDirectory", params: { filePath: "/inner-skip" } },
+          ],
+        },
+        { id: "afterGroup", command: "makeDirectory", params: { filePath: "/after-group" } },
+      ],
+    })
+    const { jobId } = await response.json() as { jobId: string }
+    await flushAfter(80)
+
+    const children = getChildJobs(jobId)
+    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+
+    expect(byStepId.innerOk.status).toBe("completed")
+    expect(byStepId.innerBoom.status).toBe("failed")
+    // Inner siblings after the failure AND outer steps after the group
+    // both get skipped — same fail-cascade as the flat-step case.
+    expect(byStepId.innerSkip.status).toBe("skipped")
+    expect(byStepId.afterGroup.status).toBe("skipped")
+
+    expect(getJob(jobId)?.status).toBe("failed")
+    expect(vol.existsSync("/inner-ok")).toBe(true)
+    expect(vol.existsSync("/inner-skip")).toBe(false)
+    expect(vol.existsSync("/after-group")).toBe(false)
+  })
+
+  test("parallel group: a step after the group can linkedTo an inner step's folder output", async () => {
+    // Each parallel inner copyFiles publishes a synthesized folder
+    // output equal to its destinationPath. The post-group step then
+    // links to one of those folders — proves the runner records every
+    // inner step's outputs into stepsById before advancing past the
+    // group, so steps after the group can reference any of them.
+    vol.fromJSON({
+      "/src-a/alpha.txt": "alpha",
+      "/src-b/beta.txt": "beta",
+      "/src-after/follow-up.txt": "after",
+    })
+
+    const response = await post("/sequences/run", {
+      steps: [
+        {
+          kind: "group",
+          id: "paraSources",
+          isParallel: true,
+          steps: [
+            { id: "copyA", command: "copyFiles", params: { sourcePath: "/src-a", destinationPath: "/dst-a" } },
+            { id: "copyB", command: "copyFiles", params: { sourcePath: "/src-b", destinationPath: "/dst-b" } },
+          ],
+        },
+        {
+          id: "consume",
+          command: "copyFiles",
+          params: {
+            sourcePath: "/src-after",
+            destinationPath: { linkedTo: "copyA", output: "folder" },
+          },
+        },
+      ],
+    })
+    const { jobId } = await response.json() as { jobId: string }
+    await flushAfter(150)
+
+    const job = getJob(jobId)
+    expect(job?.status).toBe("completed")
+    expect(job?.error).toBeNull()
+
+    const children = getChildJobs(jobId)
+    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+    expect(byStepId.copyA.status).toBe("completed")
+    expect(byStepId.copyB.status).toBe("completed")
+    expect(byStepId.consume.status).toBe("completed")
+
+    // Both parallel inner copies happened, and the after-group step
+    // copied /src-after/follow-up.txt into /dst-a (the folder output
+    // it linked to) — that one file is the proof that the linkedTo
+    // resolved through to the inner step's destination.
+    expect(vol.existsSync("/dst-a/alpha.txt")).toBe(true)
+    expect(vol.existsSync("/dst-b/beta.txt")).toBe(true)
+    expect(vol.existsSync("/dst-a/follow-up.txt")).toBe(true)
+  })
+
+  test("parallel group fail: outer remainder is skipped, sibling success still recorded", async () => {
+    vol.fromJSON({ "/work/keep": "" })
+
+    const response = await post("/sequences/run", {
+      steps: [
+        {
+          kind: "group",
+          id: "paraBoom",
+          isParallel: true,
+          steps: [
+            { id: "innerSuccess", command: "makeDirectory", params: { filePath: "/inner-success" } },
+            { id: "innerBoom", command: "deleteFolder", params: { folderPath: "/work", confirm: false } },
+          ],
+        },
+        { id: "afterGroup", command: "makeDirectory", params: { filePath: "/after-group" } },
+      ],
+    })
+    const { jobId } = await response.json() as { jobId: string }
+    await flushAfter(80)
+
+    const children = getChildJobs(jobId)
+    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+
+    expect(byStepId.innerSuccess.status).toBe("completed")
+    expect(byStepId.innerBoom.status).toBe("failed")
+    expect(byStepId.afterGroup.status).toBe("skipped")
+    expect(getJob(jobId)?.status).toBe("failed")
+    expect(vol.existsSync("/after-group")).toBe(false)
+  })
+
+  test("parallel group: inner steps actually run concurrently (lifetimes overlap)", async () => {
+    // Promise.all in the runner subscribes to every inner-step
+    // observable synchronously before any of them get to do work, so
+    // each child's `startedAt` lands before any sibling's
+    // `completedAt`. Equivalent: the two children's lifetimes overlap
+    // (each started while the other was still running).
+    //
+    // Seed enough copyFiles work that the operations have to yield to
+    // the event loop a few times — copyFiles awaits fs.readdir and
+    // fs.copyFile, which gives the parallel sibling a turn. Serial
+    // execution would force child2.startedAt > child1.completedAt and
+    // the overlap assertion would fail.
+    const seedFiles: Record<string, string> = {}
+    for (let i = 0; i < 8; i += 1) {
+      seedFiles[`/par-src-a/file${i}.txt`] = "alpha-".repeat(100) + i
+      seedFiles[`/par-src-b/file${i}.txt`] = "beta-".repeat(100) + i
+    }
+    vol.fromJSON(seedFiles)
+
+    const response = await post("/sequences/run", {
+      steps: [{
+        kind: "group",
+        id: "para",
+        isParallel: true,
+        steps: [
+          { id: "concA", command: "copyFiles", params: { sourcePath: "/par-src-a", destinationPath: "/par-dst-a" } },
+          { id: "concB", command: "copyFiles", params: { sourcePath: "/par-src-b", destinationPath: "/par-dst-b" } },
+        ],
+      }],
+    })
+    const { jobId } = await response.json() as { jobId: string }
+    await flushAfter(150)
+
+    expect(getJob(jobId)?.status).toBe("completed")
+
+    const children = getChildJobs(jobId)
+    const a = children.find((c) => c.stepId === "concA")
+    const b = children.find((c) => c.stepId === "concB")
+    expect(a?.status).toBe("completed")
+    expect(b?.status).toBe("completed")
+    const aStart = a?.startedAt?.getTime()
+    const aEnd = a?.completedAt?.getTime()
+    const bStart = b?.startedAt?.getTime()
+    const bEnd = b?.completedAt?.getTime()
+    expect(typeof aStart).toBe("number")
+    expect(typeof aEnd).toBe("number")
+    expect(typeof bStart).toBe("number")
+    expect(typeof bEnd).toBe("number")
+
+    // Lifetimes overlap: each step started before the other completed.
+    // This is the proof of concurrent execution — serial would have
+    // bStart > aEnd (or vice versa), violating one of these.
+    expect(bStart!).toBeLessThan(aEnd!)
+    expect(aStart!).toBeLessThan(bEnd!)
+  })
+
+  test("isCollapsed on a step parses without affecting runtime", async () => {
+    // isCollapsed is pure view state. It must not perturb either the
+    // child-job creation pass or the runtime — a sequence with a
+    // collapsed step still runs that step end-to-end.
+    vol.fromJSON({})
+    const response = await post("/sequences/run", {
+      steps: [
+        { id: "collapsed", command: "makeDirectory", params: { filePath: "/collapsed-runs" }, isCollapsed: true },
+      ],
+    })
+    expect(response.status).toBe(202)
+    const { jobId } = await response.json() as { jobId: string }
+    await flushAfter(40)
+    expect(getJob(jobId)?.status).toBe("completed")
+    expect(vol.existsSync("/collapsed-runs")).toBe(true)
+  })
+})

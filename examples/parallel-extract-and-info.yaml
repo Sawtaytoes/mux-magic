@@ -1,0 +1,55 @@
+# Demonstrates the new `kind: group` + `isParallel` container.
+#
+# Two independent operations on the same source folder are wrapped in a
+# parallel group so the server-side runner kicks them off concurrently
+# (Promise.all under the hood). The Sequence Builder UI lays the two
+# inner cards out side-by-side on wide viewports and stacks them on
+# narrow ones via a container query.
+#
+# Drop the contents into the Sequence Builder's Load YAML panel and hit
+# "▶ Run via API" (the client-side "▶ Run Sequence" path runs everything
+# serially — only the API path honors isParallel).
+#
+# Outline:
+#   1. extractSubs (parallel)         — copy out the .ass tracks
+#   2. computeRules (parallel)        — derive default subtitle rules
+#   3. After the group: applyRules    — consume the rules emitted by step 2
+#
+# isCollapsed is set on the post-group step purely to demonstrate the
+# new builder accordion — collapsed cards are pure view state and run
+# the same as expanded ones.
+
+paths:
+  workDir:
+    label: Work Directory
+    value: 'D:\Anime\<series>\__work'
+
+steps:
+  - id: prepare
+    command: copyFiles
+    params:
+      sourcePath: '@workDir'
+      destinationPath: '@workDir'
+
+  - kind: group
+    id: extractInParallel
+    label: Extract subs + compute rules in parallel
+    isParallel: true
+    steps:
+      - id: extractSubs
+        command: copyOutSubtitles
+        params:
+          sourcePath: '@workDir'
+      - id: computeRules
+        command: computeDefaultSubtitleRules
+        params:
+          sourcePath: '@workDir'
+
+  - id: applyRules
+    command: modifySubtitleMetadata
+    isCollapsed: true
+    params:
+      sourcePath: '@workDir'
+      rules:
+        linkedTo: computeRules
+        output: rules

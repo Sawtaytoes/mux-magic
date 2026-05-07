@@ -1,4 +1,22 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
+
+// Adds a step to the builder via whichever affordance is currently
+// available: the empty-state "Add your first step" button when no steps
+// exist, or the trailing per-divider "+ Step" button when there are.
+// The header no longer carries an "Add Step" button — the per-divider
+// buttons cover insert-anywhere and the empty-state button covers the
+// from-scratch path.
+async function addStep(page: Page) {
+  const emptyState = page.getByRole("button", { name: /Add your first step/ })
+  if (await emptyState.isVisible().catch(() => false)) {
+    await emptyState.click()
+    return
+  }
+  // Many "+ Step" buttons (one per divider). The trailing one always
+  // appends, mirroring the old header-button semantics.
+  const stepButtons = page.getByRole("button", { name: /^➕ Step$/ })
+  await stepButtons.last().click()
+}
 
 test.describe("Sequence Builder", () => {
   test.beforeEach(async ({ page }) => {
@@ -9,16 +27,18 @@ test.describe("Sequence Builder", () => {
 
   test("renders the header and the empty-state hint", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Sequence Builder" })).toBeVisible()
-    // Header actions (button name = the title attr or text content)
-    await expect(page.getByRole("button", { name: "Add Step" })).toBeVisible()
+    // Header actions: "Add Step / Add Group / Add Parallel Group" no
+    // longer live in the header — the per-divider buttons cover those
+    // (and the empty-state button covers the from-scratch path).
     await expect(page.getByRole("button", { name: "Add Path" })).toBeVisible()
     await expect(page.getByRole("button", { name: "▶ Run Sequence" })).toBeVisible()
-    // Empty-state copy
+    // Empty-state copy + its inline "Add your first step" button.
     await expect(page.getByText(/No steps yet/)).toBeVisible()
+    await expect(page.getByRole("button", { name: /Add your first step/ })).toBeVisible()
   })
 
   test("Add Step inserts an empty step card with the command picker", async ({ page }) => {
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     // Empty step's trigger button shows the placeholder label.
     await expect(page.getByText("— pick a command —")).toBeVisible()
     // The hint disappears once a step exists.
@@ -26,7 +46,7 @@ test.describe("Sequence Builder", () => {
   })
 
   test("command picker filters by name and selects on click", async ({ page }) => {
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     await page.getByText("— pick a command —").click()
 
     // Picker appears with focused search input.
@@ -35,10 +55,10 @@ test.describe("Sequence Builder", () => {
 
     // Filtering by "copy" should show copyFiles + copyOutSubtitles + flattenOutput's tag... actually only commands whose name OR tag matches "copy".
     await search.fill("copy")
-    await expect(page.getByRole("button", { name: /^copyFiles\s/ })).toBeVisible()
+    await expect(page.getByRole("button", { name: /^Copy Files\s/ })).toBeVisible()
 
     // Click the copyFiles entry → picker closes, step shows the command name.
-    await page.getByRole("button", { name: /^copyFiles\s/ }).click()
+    await page.getByRole("button", { name: /^Copy Files\s/ }).click()
     await expect(search).toBeHidden()
     // The trigger now shows copyFiles instead of the placeholder.
     await expect(page.getByText("— pick a command —")).toBeHidden()
@@ -46,10 +66,10 @@ test.describe("Sequence Builder", () => {
 
   test("View YAML icon opens the modal showing the current sequence", async ({ page }) => {
     // Add a step so the YAML has content.
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     await page.getByText("— pick a command —").click()
     await page.getByPlaceholder("Search commands…").fill("copyFiles")
-    await page.getByRole("button", { name: /^copyFiles\s/ }).click()
+    await page.getByRole("button", { name: /^Copy Files\s/ }).click()
 
     await page.getByRole("button", { name: "View YAML" }).click()
 
@@ -127,15 +147,15 @@ test.describe("Sequence Builder", () => {
 
   test("step reorder via the up arrow swaps adjacent steps", async ({ page }) => {
     // Two distinct steps so we can tell them apart by command name.
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     await page.getByText("— pick a command —").click()
     await page.getByPlaceholder("Search commands…").fill("copyFiles")
-    await page.getByRole("button", { name: /^copyFiles\s/ }).click()
+    await page.getByRole("button", { name: /^Copy Files\s/ }).click()
 
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     await page.getByText("— pick a command —").click()
     await page.getByPlaceholder("Search commands…").fill("moveFiles")
-    await page.getByRole("button", { name: /^moveFiles\s/ }).click()
+    await page.getByRole("button", { name: /^Move Files\s/ }).click()
 
     // Order is now [copyFiles, moveFiles]. Move moveFiles up via its ↑.
     const stepCards = page.locator('[id^="step-"]')
@@ -143,12 +163,12 @@ test.describe("Sequence Builder", () => {
     await stepCards.nth(1).getByRole("button", { name: "↑" }).click()
 
     // First card should now be moveFiles.
-    await expect(stepCards.nth(0)).toContainText("moveFiles")
-    await expect(stepCards.nth(1)).toContainText("copyFiles")
+    await expect(stepCards.nth(0)).toContainText("Move Files")
+    await expect(stepCards.nth(1)).toContainText("Copy Files")
   })
 
   test("step delete via ✕ removes the card after the leave animation", async ({ page }) => {
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     const stepCards = page.locator('[id^="step-"]')
     await expect(stepCards).toHaveCount(1)
 
@@ -163,34 +183,34 @@ test.describe("Sequence Builder", () => {
 
   test("(+) Add divider inserts an empty step at the chosen position", async ({ page }) => {
     // Two steps with distinct commands.
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     await page.getByText("— pick a command —").click()
     await page.getByPlaceholder("Search commands…").fill("copyFiles")
-    await page.getByRole("button", { name: /^copyFiles\s/ }).click()
+    await page.getByRole("button", { name: /^Copy Files\s/ }).click()
 
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     await page.getByText("— pick a command —").click()
     await page.getByPlaceholder("Search commands…").fill("moveFiles")
-    await page.getByRole("button", { name: /^moveFiles\s/ }).click()
+    await page.getByRole("button", { name: /^Move Files\s/ }).click()
 
     // Click the divider between the two steps. Layout is:
     //   [divider 0 — before step 1] [step 1] [divider 1 — between] [step 2] [divider 2 — after]
-    // so the between-steps one is at index 1.
-    await page.getByRole("button", { name: "➕ Add" }).nth(1).click()
+    // so the between-steps "+ Step" button is at index 1.
+    await page.getByRole("button", { name: "➕ Step" }).nth(1).click()
 
     // Three step cards now, middle one empty.
     const stepCards = page.locator('[id^="step-"]')
     await expect(stepCards).toHaveCount(3)
-    await expect(stepCards.nth(0)).toContainText("copyFiles")
+    await expect(stepCards.nth(0)).toContainText("Copy Files")
     await expect(stepCards.nth(1)).toContainText("— pick a command —")
-    await expect(stepCards.nth(2)).toContainText("moveFiles")
+    await expect(stepCards.nth(2)).toContainText("Move Files")
   })
 
   test("typing a path into a step field auto-promotes it to a path variable on commit", async ({ page }) => {
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     await page.getByText("— pick a command —").click()
     await page.getByPlaceholder("Search commands…").fill("copyFiles")
-    await page.getByRole("button", { name: /^copyFiles\s/ }).click()
+    await page.getByRole("button", { name: /^Copy Files\s/ }).click()
 
     // destinationPath has no auto-link (only the main source field does), so
     // its manual input is visible and ready to take typed input.
@@ -207,10 +227,10 @@ test.describe("Sequence Builder", () => {
   })
 
   test("the URL captures sequence state and is restored on reload", async ({ page }) => {
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     await page.getByText("— pick a command —").click()
     await page.getByPlaceholder("Search commands…").fill("copyFiles")
-    await page.getByRole("button", { name: /^copyFiles\s/ }).click()
+    await page.getByRole("button", { name: /^Copy Files\s/ }).click()
 
     // After picking a command, renderAll runs synchronously and updateUrl
     // writes the ?seq= param. Verify the param is present, then reload.
@@ -219,7 +239,7 @@ test.describe("Sequence Builder", () => {
 
     // Same step survives the round-trip via the URL state.
     await expect(page.locator('[id^="step-"]')).toHaveCount(1)
-    await expect(page.locator('[id^="step-"]').first()).toContainText("copyFiles")
+    await expect(page.locator('[id^="step-"]').first()).toContainText("Copy Files")
   })
 
   test("Run via API posts the YAML to /sequences/run, opens the modal, and reflects the umbrella job's status", async ({ page }) => {
@@ -254,10 +274,10 @@ test.describe("Sequence Builder", () => {
     })
 
     // Build a one-step sequence so the YAML body has content to ship.
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     await page.getByText("— pick a command —").click()
     await page.getByPlaceholder("Search commands…").fill("copyFiles")
-    await page.getByRole("button", { name: /^copyFiles\s/ }).click()
+    await page.getByRole("button", { name: /^Copy Files\s/ }).click()
 
     await page.getByRole("button", { name: "▶ Run via API" }).click()
 
@@ -277,15 +297,15 @@ test.describe("Sequence Builder", () => {
   test("auto-linked step-output renders as { linkedTo, output: folder } in the YAML and survives reload", async ({ page }) => {
     // Two consecutive steps — when the second is given a command, its
     // main source field auto-links to the previous step's folder output.
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     await page.getByText("— pick a command —").click()
     await page.getByPlaceholder("Search commands…").fill("copyFiles")
-    await page.getByRole("button", { name: /^copyFiles\s/ }).click()
+    await page.getByRole("button", { name: /^Copy Files\s/ }).click()
 
-    await page.getByRole("button", { name: "Add Step" }).click()
+    await addStep(page)
     await page.getByText("— pick a command —").last().click()
     await page.getByPlaceholder("Search commands…").fill("moveFiles")
-    await page.getByRole("button", { name: /^moveFiles\s/ }).click()
+    await page.getByRole("button", { name: /^Move Files\s/ }).click()
 
     await page.getByRole("button", { name: "View YAML" }).click()
 
@@ -306,5 +326,246 @@ test.describe("Sequence Builder", () => {
     const reloadedYaml = await page.locator("#yaml-modal #yaml-out").innerText()
     expect(reloadedYaml).toMatch(/linkedTo:\s*step\d+/)
     expect(reloadedYaml).toMatch(/output:\s*folder/)
+  })
+})
+
+test.describe("Sequence Builder — groups", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/builder/")
+  })
+
+  test("a divider's + Parallel button inserts a group card with one inner step + parallel badge", async ({ page }) => {
+    // Add one step so a divider exists to click. (Empty state has no
+    // dividers — the only insert affordance is "Add your first step".)
+    await addStep(page)
+    await page.getByRole("button", { name: "➕ Parallel" }).first().click()
+
+    // Group container is present and labeled "parallel".
+    const group = page.locator(".group-card-parallel")
+    await expect(group).toBeVisible()
+    await expect(group.getByText("parallel")).toBeVisible()
+
+    // It contains exactly one empty step card whose trigger shows the
+    // placeholder (the makeStep null-command form).
+    await expect(group.getByText("— pick a command —")).toBeVisible()
+    await expect(group.locator(".step-card")).toHaveCount(1)
+  })
+
+  test("adding a step to a collapsed group expands it so the new card is visible", async ({ page }) => {
+    // Seed with a collapsed serial group containing one step.
+    const yaml = [
+      "steps:",
+      "  - kind: group",
+      "    id: hidden",
+      "    label: Hidden by default",
+      "    isCollapsed: true",
+      "    steps:",
+      "      - id: only",
+      "        command: makeDirectory",
+      "        params:",
+      "          filePath: /a",
+    ].join("\n")
+    const seq = Buffer.from(yaml, "utf8").toString("base64")
+    await page.goto(`/builder/?seq=${encodeURIComponent(seq)}`)
+
+    const groupCard = page.locator('[data-group="hidden"]')
+    await expect(groupCard).toBeVisible()
+    // Body hidden initially — only one step inside, but it's not in DOM.
+    await expect(groupCard.locator(".step-card")).toHaveCount(0)
+
+    // Click "+ Step" inside the group header — group should auto-expand.
+    await groupCard.locator('button[title="Add a step inside this group"]').click()
+    await expect(groupCard.locator(".step-card")).toHaveCount(2)
+  })
+
+  test("parallel group lays inner steps side-by-side at desktop width and stacks at narrow width", async ({ page }) => {
+    // Seed the builder via the URL ?seq= mechanism with a parallel
+    // group containing two steps. Faster + more deterministic than
+    // building it through clicks.
+    const yaml = [
+      "steps:",
+      "  - kind: group",
+      "    id: para",
+      "    label: Parallel pair",
+      "    isParallel: true",
+      "    steps:",
+      "      - id: a",
+      "        command: makeDirectory",
+      "        params:",
+      "          filePath: /a",
+      "      - id: b",
+      "        command: makeDirectory",
+      "        params:",
+      "          filePath: /b",
+    ].join("\n")
+    const seq = Buffer.from(yaml, "utf8").toString("base64")
+    await page.goto(`/builder/?seq=${encodeURIComponent(seq)}`)
+
+    const group = page.locator(".group-card-parallel")
+    await expect(group).toBeVisible()
+    const innerSteps = group.locator(".step-card")
+    await expect(innerSteps).toHaveCount(2)
+
+    // Desktop width: container is wide enough for the two cards to sit
+    // side-by-side, so their bounding boxes overlap horizontally and
+    // share approximately the same Y.
+    await page.setViewportSize({ width: 1400, height: 900 })
+    await page.waitForTimeout(50)
+    const desktopFirst = await innerSteps.nth(0).boundingBox()
+    const desktopSecond = await innerSteps.nth(1).boundingBox()
+    expect(desktopFirst).toBeTruthy()
+    expect(desktopSecond).toBeTruthy()
+    if (desktopFirst && desktopSecond) {
+      // Side-by-side: roughly same Y, second is to the right of first.
+      expect(Math.abs(desktopFirst.y - desktopSecond.y)).toBeLessThan(20)
+      expect(desktopSecond.x).toBeGreaterThan(desktopFirst.x + desktopFirst.width / 2)
+    }
+
+    // Narrow width: container query collapses to single column, so the
+    // second card is below the first.
+    await page.setViewportSize({ width: 480, height: 900 })
+    await page.waitForTimeout(50)
+    const narrowFirst = await innerSteps.nth(0).boundingBox()
+    const narrowSecond = await innerSteps.nth(1).boundingBox()
+    expect(narrowFirst).toBeTruthy()
+    expect(narrowSecond).toBeTruthy()
+    if (narrowFirst && narrowSecond) {
+      expect(narrowSecond.y).toBeGreaterThan(narrowFirst.y + narrowFirst.height / 2)
+    }
+  })
+
+  test("a group can be moved up/down past adjacent top-level items via its header arrows", async ({ page }) => {
+    // Start with: step A → group → step B at the top level. Moving the
+    // group down once should yield: step A → step B → group.
+    const yaml = [
+      "steps:",
+      "  - id: a",
+      "    command: makeDirectory",
+      "    params:",
+      "      filePath: /a",
+      "  - kind: group",
+      "    id: middle",
+      "    label: Middle group",
+      "    steps:",
+      "      - id: m1",
+      "        command: makeDirectory",
+      "        params:",
+      "          filePath: /m",
+      "  - id: b",
+      "    command: makeDirectory",
+      "    params:",
+      "      filePath: /b",
+    ].join("\n")
+    const seq = Buffer.from(yaml, "utf8").toString("base64")
+    await page.goto(`/builder/?seq=${encodeURIComponent(seq)}`)
+
+    const groupCard = page.locator('[data-group="middle"]')
+    await expect(groupCard).toBeVisible()
+
+    // Click the down arrow in the group header.
+    await groupCard.locator('button[title="Move group down"]').click()
+
+    // Inspect the YAML to verify the order changed: a → b → group.
+    await page.getByRole("button", { name: "View YAML" }).click()
+    const yamlOut = await page.locator("#yaml-modal #yaml-out").innerText()
+    const aIdx = yamlOut.indexOf("id: a")
+    const bIdx = yamlOut.indexOf("id: b")
+    const groupIdx = yamlOut.indexOf("id: middle")
+    expect(aIdx).toBeGreaterThan(-1)
+    expect(bIdx).toBeGreaterThan(-1)
+    expect(groupIdx).toBeGreaterThan(-1)
+    expect(aIdx).toBeLessThan(bIdx)
+    expect(bIdx).toBeLessThan(groupIdx)
+  })
+
+  test("a top-level step jumps past a group when the down arrow hits it", async ({ page }) => {
+    // alphaStep → group → omegaStep. Moving alphaStep down once skips
+    // the entire group and lands it between the group and omegaStep.
+    // (Identifiers picked so substring searches in the YAML can't
+    // collide — e.g. the previous "id: b" clashed with "id: barrier".)
+    const yaml = [
+      "steps:",
+      "  - id: alphaStep",
+      "    command: makeDirectory",
+      "    params:",
+      "      filePath: /a",
+      "  - kind: group",
+      "    id: middleGroup",
+      "    steps:",
+      "      - id: innerStep",
+      "        command: makeDirectory",
+      "        params:",
+      "          filePath: /g",
+      "  - id: omegaStep",
+      "    command: makeDirectory",
+      "    params:",
+      "      filePath: /b",
+    ].join("\n")
+    const seq = Buffer.from(yaml, "utf8").toString("base64")
+    await page.goto(`/builder/?seq=${encodeURIComponent(seq)}`)
+
+    const stepACard = page.locator('[id="step-alphaStep"]')
+    await expect(stepACard).toBeVisible()
+    await stepACard.locator('button:has-text("↓")').click()
+
+    await page.getByRole("button", { name: "View YAML" }).click()
+    const yamlOut = await page.locator("#yaml-modal #yaml-out").innerText()
+    const groupIdx = yamlOut.indexOf("id: middleGroup")
+    const aIdx = yamlOut.indexOf("id: alphaStep")
+    const bIdx = yamlOut.indexOf("id: omegaStep")
+    // Expected order: group → alphaStep → omegaStep
+    expect(groupIdx).toBeGreaterThan(-1)
+    expect(aIdx).toBeGreaterThan(-1)
+    expect(bIdx).toBeGreaterThan(-1)
+    expect(groupIdx).toBeLessThan(aIdx)
+    expect(aIdx).toBeLessThan(bIdx)
+  })
+
+  test("the divider's + Group / + Parallel buttons insert a group between items", async ({ page }) => {
+    // Add two top-level steps, then click the between-steps "+ Parallel"
+    // to slot a parallel group in. The group should render with one
+    // empty inner step.
+    await addStep(page)
+    await page.getByText("— pick a command —").click()
+    await page.getByPlaceholder("Search commands…").fill("makeDirectory")
+    await page.getByRole("button", { name: /^Make Directory\s/ }).click()
+
+    await addStep(page)
+    await page.getByText("— pick a command —").click()
+    await page.getByPlaceholder("Search commands…").fill("copyFiles")
+    await page.getByRole("button", { name: /^Copy Files\s/ }).click()
+
+    // Divider layout:
+    //   [d 0] [step 1] [d 1] [step 2] [d 2]
+    // The between-steps "+ Parallel" is index 1.
+    await page.getByRole("button", { name: "➕ Parallel" }).nth(1).click()
+
+    // A parallel group now sits between the two steps.
+    const groupCard = page.locator(".group-card-parallel")
+    await expect(groupCard).toBeVisible()
+    await expect(groupCard.locator(".step-card")).toHaveCount(1)
+  })
+
+  test("step collapse chevron round-trips through the URL", async ({ page }) => {
+    await addStep(page)
+    await page.getByText("— pick a command —").click()
+    await page.getByPlaceholder("Search commands…").fill("makeDirectory")
+    await page.getByRole("button", { name: /^Make Directory\s/ }).click()
+
+    // Body is open by default — the field label is visible.
+    await expect(page.getByText("File Path")).toBeVisible()
+
+    // Click the step's collapse chevron (the first chevron-shaped button
+    // in the step header).
+    const stepCard = page.locator(".step-card").first()
+    await stepCard.locator('button[title*="Collapse step"]').click()
+
+    // Body hidden.
+    await expect(page.getByText("File Path")).toBeHidden()
+
+    // Reload — the URL persisted isCollapsed: true.
+    await page.reload()
+    await expect(page.locator(".step-card").first()).toBeVisible()
+    await expect(page.getByText("File Path")).toBeHidden()
   })
 })
