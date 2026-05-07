@@ -2,7 +2,8 @@ import { readFile } from "node:fs/promises"
 import { vol } from "memfs"
 import { afterEach, beforeAll, afterAll, describe, expect, test } from "vitest"
 
-import { cancelJob, getAllJobs, getChildJobs, getJob, resetStore } from "../jobStore.js"
+import { cancelJob, getAllJobs, getChildJobs, getJob, getSubject, resetStore } from "../jobStore.js"
+import type { JobEvent } from "../jobStore.js"
 import { installLogCapture, uninstallLogCapture } from "../logCapture.js"
 import { sequenceRoutes } from "./sequenceRoutes.js"
 
@@ -722,6 +723,111 @@ describe("POST /sequences/run — groups", () => {
     expect(byStepId.afterGroup.status).toBe("skipped")
     expect(getJob(jobId)?.status).toBe("cancelled")
     expect(vol.existsSync("/after-cancel-group")).toBe(false)
+  })
+
+  test("emits step-started and step-finished on the umbrella subject", async () => {
+    // Each runOneStep call inside the sequence runner emits a structured
+    // step-started event on the UMBRELLA subject just before it
+    // subscribes the child observable, and a step-finished event the
+    // moment the child outcome is decided. The builder's "Run via API"
+    // modal subscribes to /jobs/<umbrella>/logs and uses these to follow
+    // which child is active, so it can wire up that child's
+    // ProgressEvent stream (which fires on the CHILD subject, not the
+    // umbrella's).
+    //
+    // Seed enough work in step 1 so it's still running when the test
+    // resumes from the response and subscribes to the umbrella subject.
+    // Step 1's step-started fires synchronously inside runSequenceJob
+    // (before the await response.json() resolves) so we deliberately
+    // catch step1-finished, step2-started, step2-finished.
+    const seedFiles: Record<string, string> = {}
+    for (let index = 0; index < 64; index += 1) {
+      seedFiles[`/step-event-src/file${index}.txt`] = "padding-".repeat(500) + index
+    }
+    vol.fromJSON(seedFiles)
+
+    const response = await post("/sequences/run", {
+      steps: [
+        { id: "first", command: "copyFiles", params: { sourcePath: "/step-event-src", destinationPath: "/step-event-dst" } },
+        { id: "second", command: "makeDirectory", params: { filePath: "/step-event-after" } },
+      ],
+    })
+    const { jobId } = await response.json() as { jobId: string }
+
+    const subject = getSubject(jobId)
+    expect(subject).toBeDefined()
+    const events: JobEvent[] = []
+    subject!.subscribe((event) => {
+      if (typeof event !== "string") events.push(event)
+    })
+
+    await flushAfter(200)
+
+    const isStepEvent = (event: JobEvent | undefined, type: string, stepId: string): boolean => (
+      event !== undefined && event.type === type && (event as { stepId: string | null }).stepId === stepId
+    )
+    const stepEvents = events.filter((event) => (
+      event.type === "step-started" || event.type === "step-finished"
+    ))
+    const firstFinished = stepEvents.find((event) => isStepEvent(event, "step-finished", "first"))
+    const secondStarted = stepEvents.find((event) => isStepEvent(event, "step-started", "second"))
+    const secondFinished = stepEvents.find((event) => isStepEvent(event, "step-finished", "second"))
+
+    expect(firstFinished).toBeDefined()
+    expect(secondStarted).toBeDefined()
+    expect(secondFinished).toBeDefined()
+
+    // Each event must carry the corresponding child job id so the modal
+    // can open /jobs/<childJobId>/logs without parsing log text.
+    const children = getChildJobs(jobId)
+    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child.id]))
+
+    type StepEventLike = { type: string, childJobId: string, stepId: string | null, status: string }
+    expect((firstFinished as StepEventLike).childJobId).toBe(byStepId.first)
+    expect((secondStarted as StepEventLike).childJobId).toBe(byStepId.second)
+    expect((secondFinished as StepEventLike).childJobId).toBe(byStepId.second)
+
+    // step-finished's `status` mirrors the child's terminal status — the
+    // modal uses this to know when to tear down the open per-child SSE.
+    expect((firstFinished as StepEventLike).status).toBe("completed")
+    expect((secondFinished as StepEventLike).status).toBe("completed")
+    // step-started always carries `running` since the child has just
+    // transitioned past the runner's pre-subscribe validation.
+    expect((secondStarted as StepEventLike).status).toBe("running")
+  })
+
+  test("step-finished status reflects a failed child", async () => {
+    // Slow step 1 keeps the umbrella subject alive long enough for the
+    // test to subscribe before any step-finished events fire. Step 2
+    // then fails synchronously (deleteFolder with confirm:false against
+    // a non-empty path) and we assert its step-finished carries
+    // status: "failed".
+    const seedFiles: Record<string, string> = { "/step-fail-work/keep": "" }
+    for (let index = 0; index < 64; index += 1) {
+      seedFiles[`/step-fail-src/file${index}.txt`] = "padding-".repeat(500) + index
+    }
+    vol.fromJSON(seedFiles)
+
+    const response = await post("/sequences/run", {
+      steps: [
+        { id: "slow", command: "copyFiles", params: { sourcePath: "/step-fail-src", destinationPath: "/step-fail-dst" } },
+        { id: "boom", command: "deleteFolder", params: { folderPath: "/step-fail-work", confirm: false } },
+      ],
+    })
+    const { jobId } = await response.json() as { jobId: string }
+
+    const events: JobEvent[] = []
+    getSubject(jobId)!.subscribe((event) => {
+      if (typeof event !== "string") events.push(event)
+    })
+
+    await flushAfter(200)
+
+    const boomFinished = events.find((event) => (
+      event.type === "step-finished" && (event as { stepId: string | null }).stepId === "boom"
+    ))
+    expect(boomFinished).toBeDefined()
+    expect((boomFinished as { status: string }).status).toBe("failed")
   })
 
   test("isCollapsed on a step parses without affecting runtime", async () => {
