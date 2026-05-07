@@ -58,9 +58,13 @@ fileRoutes.openapi(
     },
   }),
   async (context) => {
-    const { path } = context.req.valid("query")
+    const { path, includeDuration } = context.req.valid("query")
+    const wantsDuration = (
+      includeDuration === "1"
+      || includeDuration === "true"
+    )
     try {
-      const result = await listFilesWithMetadata(path)
+      const result = await listFilesWithMetadata(path, { includeDuration: wantsDuration })
       return context.json({ ...result, error: null }, 200)
     }
     catch (error) {

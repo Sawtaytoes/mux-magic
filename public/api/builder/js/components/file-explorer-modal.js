@@ -82,39 +82,52 @@ function renderListing() {
   const rowsHtml = entries.map((entry) => {
     const checked = selectedNames.has(entry.name) ? 'checked' : ''
     const sizeCell = entry.isDirectory ? '—' : esc(formatSize(entry.size))
-    const watchBtn = entry.isFile
-      ? `<button class="fe-watch text-blue-400 hover:text-blue-300" data-name="${esc(entry.name)}" title="Play in browser">▶</button>`
-      : '<span class="text-slate-700">—</span>'
+    // Server returns null for non-video files / directories / mediainfo
+    // failures. Show an em-dash so the column doesn't look empty.
+    const durationCell = entry.duration ? esc(entry.duration) : '—'
     const copyBtn = entry.isFile
       ? `<button class="fe-copy text-slate-400 hover:text-slate-200" data-name="${esc(entry.name)}" title="Copy absolute path">📋</button>`
       : '<span class="text-slate-700">—</span>'
     const icon = entry.isDirectory ? '📁' : '🎬'
-    const nameCell = `<span class="${entry.isDirectory ? 'text-slate-400' : 'text-slate-200'}">${icon} ${esc(entry.name)}</span>`
+    // Clicking the name itself triggers playback for files. Directories
+    // get no click target yet — once the path-bar nav lands, they'll
+    // navigate into the folder. Hover state hints at the affordance for
+    // files; directories stay flat-styled.
+    const nameContent = `${icon} ${esc(entry.name)}`
+    const nameCell = entry.isFile
+      ? `<button class="fe-name text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full" data-name="${esc(entry.name)}" title="Play in browser">${nameContent}</button>`
+      : `<span class="text-slate-400">${nameContent}</span>`
     return `<tr class="border-b border-slate-800 hover:bg-slate-800/30">
       <td class="py-1 px-2">
         <input type="checkbox" class="fe-checkbox" data-name="${esc(entry.name)}" ${checked}
           ${entry.isDirectory ? 'disabled title="Directories not deletable from this UI"' : ''}>
       </td>
       <td class="py-1 px-2 break-all">${nameCell}</td>
+      <td class="py-1 px-2 text-right text-slate-300 font-mono text-xs whitespace-nowrap">${durationCell}</td>
       <td class="py-1 px-2 text-right text-slate-400 font-mono text-xs whitespace-nowrap">${sizeCell}</td>
       <td class="py-1 px-2 text-slate-400 font-mono text-xs whitespace-nowrap">${esc(formatMtime(entry.mtime))}</td>
-      <td class="py-1 px-2 text-center">${watchBtn}</td>
       <td class="py-1 px-2 text-center">${copyBtn}</td>
     </tr>`
   }).join('')
-  body().innerHTML = `<table class="w-full text-sm">
-    <thead class="text-[10px] uppercase tracking-wider text-slate-500 sticky top-0 bg-slate-900">
+  // Sticky <thead> needs both top-0 AND a high z-index so tbody rows
+  // scroll UNDER it instead of rendering above. Also: the parent body
+  // div had p-3 padding earlier — that pushed the sticky element off
+  // top:0 of the scroll viewport, so rows above the scroll position
+  // bled through. Padding now lives inside the table block so the
+  // thead snaps cleanly to the top of the scroll container.
+  body().innerHTML = `<div class="px-3 py-2"><table class="w-full text-sm">
+    <thead class="text-[10px] uppercase tracking-wider text-slate-300 sticky top-0 bg-slate-800 z-10 shadow-sm">
       <tr>
-        <th class="py-1 px-2 text-left w-6"><input type="checkbox" id="fe-select-all" title="Select all files"></th>
-        <th class="py-1 px-2 text-left">Name</th>
-        <th class="py-1 px-2 text-right">Size</th>
-        <th class="py-1 px-2 text-left">Modified</th>
-        <th class="py-1 px-2 w-8"></th>
-        <th class="py-1 px-2 w-8"></th>
+        <th class="py-2 px-2 text-left w-6"><input type="checkbox" id="fe-select-all" title="Select all files"></th>
+        <th class="py-2 px-2 text-left">Name</th>
+        <th class="py-2 px-2 text-right">Duration</th>
+        <th class="py-2 px-2 text-right">Size</th>
+        <th class="py-2 px-2 text-left">Modified</th>
+        <th class="py-2 px-2 w-8"></th>
       </tr>
     </thead>
     <tbody>${rowsHtml}</tbody>
-  </table>`
+  </table></div>`
   wireRowActions()
   renderSelectionCount()
 }
@@ -128,7 +141,7 @@ function wireRowActions() {
       renderSelectionCount()
     })
   })
-  body().querySelectorAll('.fe-watch').forEach((btn) => {
+  body().querySelectorAll('.fe-name').forEach((btn) => {
     btn.addEventListener('click', () => {
       const name = btn.getAttribute('data-name')
       openVideoModal(joinPath(currentPath, name))
@@ -197,6 +210,11 @@ async function loadListing() {
   try {
     const url = new URL('/files/list', window.location.origin)
     url.searchParams.set('path', currentPath)
+    // Always request video durations — the user explicitly asked for
+    // timecodes in the explorer to compare against DVDCompare's listing.
+    // The server caps mediainfo concurrency at 8 so a folder of 50 files
+    // is still ~1-2s.
+    url.searchParams.set('includeDuration', '1')
     const resp = await fetch(url)
     const data = await resp.json()
     if (data.error) {

@@ -471,7 +471,9 @@
         <button onclick="closeFileExplorerModal()" class="text-slate-500 hover:text-slate-200 text-lg leading-none w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800">✕</button>
       </div>
     </div>
-    <div id="file-explorer-body" class="flex-1 overflow-auto p-3 text-sm text-slate-200"></div>
+    <!-- No padding here so the sticky <thead> inside snaps to top:0 of -->
+<!-- the scroll viewport. Padding lives on the table itself. -->
+    <div id="file-explorer-body" class="flex-1 overflow-auto text-sm text-slate-200"></div>
     <div class="shrink-0 flex items-center justify-between px-4 py-2 border-t border-slate-700 bg-slate-950/50">
       <span id="file-explorer-selection-count" class="text-xs text-slate-400">0 selected</span>
       <button id="file-explorer-delete-btn" onclick="confirmFileExplorerDelete()"
@@ -483,22 +485,25 @@
 </div>
 
 <!-- Video-playback sub-modal opened from the file-explorer's ▶ button. -->
-<!-- Ring + heavy slate border so it reads as a modal even with the bg-black -->
-<!-- player area underneath; ESC closes via the document-level keydown -->
-<!-- listener wired in file-explorer-modal.js. -->
-<div id="video-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/90" onclick="closeVideoModal(event)">
-  <div class="bg-slate-900 border-2 border-slate-500 ring-2 ring-slate-700/50 rounded-xl flex flex-col shadow-2xl" style="width:min(95vw,1000px);max-height:90vh" onclick="event.stopPropagation()">
-    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-600">
-      <code id="video-modal-name" class="text-xs text-slate-200 font-mono truncate"></code>
+<!-- Lifted off the bg-black/90 backdrop with a slate-700 panel + bright -->
+<!-- slate-300 outer border. The video's own letterboxing is bg-black, so -->
+<!-- a darker panel would blend right into it; bg-slate-800 (header / -->
+<!-- footer) and bg-black (body) give a clear visual frame around the -->
+<!-- player. ESC closes via the document-level keydown listener wired in -->
+<!-- file-explorer-modal.js. -->
+<div id="video-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-6" onclick="closeVideoModal(event)">
+  <div class="bg-slate-800 border-4 border-slate-300 rounded-xl flex flex-col shadow-2xl" style="width:min(90vw,1000px);max-height:88vh" onclick="event.stopPropagation()">
+    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b-2 border-slate-400 bg-slate-800 rounded-t-lg">
+      <code id="video-modal-name" class="text-xs text-slate-100 font-mono truncate"></code>
       <div class="flex items-center gap-3 shrink-0 ml-3">
-        <button id="video-modal-copy-path" class="text-xs text-blue-400 hover:text-blue-300" title="Copy absolute path for VLC / external player">📋 Copy path</button>
-        <button onclick="closeVideoModal()" class="text-slate-500 hover:text-slate-200 text-lg leading-none w-7 h-7 flex items-center justify-center rounded hover:bg-slate-800">✕</button>
+        <button id="video-modal-copy-path" class="text-xs text-blue-300 hover:text-blue-200" title="Copy absolute path for VLC / external player">📋 Copy path</button>
+        <button onclick="closeVideoModal()" class="text-slate-300 hover:text-white text-lg leading-none w-7 h-7 flex items-center justify-center rounded hover:bg-slate-700">✕</button>
       </div>
     </div>
     <div class="flex-1 min-h-0 flex items-center justify-center bg-black">
       <video id="video-modal-player" class="max-w-full max-h-full" controls preload="metadata" autoplay></video>
     </div>
-    <div class="shrink-0 px-4 py-2 border-t border-slate-600 text-[11px] text-slate-500">
+    <div class="shrink-0 px-4 py-2 border-t-2 border-slate-400 bg-slate-800 text-[11px] text-slate-300 rounded-b-lg">
       Many disc rips use codecs (DTS, TrueHD, HEVC) browsers can't decode natively. If playback fails or audio is missing, copy the path and open in VLC.
     </div>
   </div>

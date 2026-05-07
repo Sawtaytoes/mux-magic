@@ -479,6 +479,7 @@ export const listDirectoryEntriesResponseSchema = z.object({
 // File-explorer modal — listing, delete-mode, bulk delete
 export const listFilesRequestSchema = z.object({
   path: z.string().describe("Absolute directory path to list. Must be absolute and traversal-free."),
+  includeDuration: z.string().optional().describe("Pass '1' / 'true' to compute video runtime per file via mediainfo. Adds ~50-200ms per file (concurrent up to 8). Off by default."),
 })
 
 export const fileExplorerEntrySchema = z.object({
@@ -487,6 +488,7 @@ export const fileExplorerEntrySchema = z.object({
   isDirectory: z.boolean().describe("True for directories"),
   size: z.number().describe("File size in bytes; 0 for directories"),
   mtime: z.string().nullable().describe("Last-modified ISO timestamp; null when the per-entry stat() failed"),
+  duration: z.string().nullable().describe("Video runtime as 'M:SS' / 'H:MM:SS' (DVDCompare format). null when not requested, not a video extension, or mediainfo failed."),
 })
 
 export const listFilesResponseSchema = z.object({

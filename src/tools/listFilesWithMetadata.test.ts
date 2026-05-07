@@ -12,12 +12,13 @@ describe(listFilesWithMetadata.name, () => {
     })
   })
 
-  test("returns every direct child entry with size + mtime", async () => {
+  test("returns every direct child entry with size + mtime + null duration by default", async () => {
     const result = await listFilesWithMetadata("G:\\Disc-Rips\\SOLDIER - 4K")
     expect(result.entries).toHaveLength(3)
     const byName = Object.fromEntries(result.entries.map((e) => [e.name, e]))
     expect(byName["SOLDIER_t01.mkv"].size).toBe("movie-content".length)
     expect(byName["SOLDIER_t01.mkv"].isFile).toBe(true)
+    expect(byName["SOLDIER_t01.mkv"].duration).toBeNull()
     expect(byName["subdir"].isDirectory).toBe(true)
     expect(byName["subdir"].isFile).toBe(false)
   })
