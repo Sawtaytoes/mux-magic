@@ -4,7 +4,6 @@ import {
   from,
   map,
   mergeAll,
-  mergeMap,
   switchMap,
   toArray,
 } from "rxjs"
@@ -18,6 +17,7 @@ import { getUserSearchInput } from "../tools/getUserSearchInput.js"
 import { naturalSort } from "../tools/naturalSort.js"
 import { getFiles } from "../tools/getFiles.js"
 import { searchTvdb } from "../tools/searchTvdb.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const nameTvShowEpisodes = ({
   searchTerm,
@@ -285,7 +285,7 @@ export const nameTvShowEpisodes = ({
     )),
     toArray(),
     mergeAll(),
-    mergeMap(({
+    withFileProgress(({
       fileInfo,
       renamedFilename,
     }) => (
@@ -293,7 +293,7 @@ export const nameTvShowEpisodes = ({
       .renameFile(
         renamedFilename
       )
-    )),
+    ), { concurrency: Infinity }),
     logAndRethrow(
       nameTvShowEpisodes
     )

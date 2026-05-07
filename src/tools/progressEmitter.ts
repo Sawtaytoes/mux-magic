@@ -226,7 +226,7 @@ type WithFileProgressOptions = {
 // e.g. when an app-command runs outside the API server (CLI direct
 // invocation), in which case the emitter has no subject to publish to.
 export const withFileProgress = <T, U>(
-  perFile: (fileInfo: T) => Observable<U>,
+  perFile: (fileInfo: T, index: number) => Observable<U>,
   options: WithFileProgressOptions = {},
 ): OperatorFunction<T, U> => (source) => (
   source
@@ -234,19 +234,20 @@ export const withFileProgress = <T, U>(
     toArray(),
     concatMap((files) => {
       const concurrency = options.concurrency ?? 1
+      const indexedFiles = files.map((file, index) => ({ file, index }))
       const jobId = getActiveJobId()
       if (jobId === undefined) {
-        return from(files).pipe(
-          mergeMap((file) => perFile(file), concurrency),
+        return from(indexedFiles).pipe(
+          mergeMap(({ file, index }) => perFile(file, index), concurrency),
         )
       }
       const emitter = createProgressEmitter(jobId, {
         totalFiles: files.length,
       })
-      return from(files).pipe(
+      return from(indexedFiles).pipe(
         mergeMap(
-          (file) => (
-            perFile(file)
+          ({ file, index }) => (
+            perFile(file, index)
             .pipe(
               rxFinalize(() => emitter.finishFile()),
             )

@@ -38,6 +38,7 @@ import {
 } from "../tools/searchDvdCompare.js"
 import { getUserSearchInput } from "../tools/getUserSearchInput.js"
 import type { FileInfo } from "../tools/getFiles.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 const getNextFilenameCount = (
   previousCount?: number,
@@ -436,8 +437,11 @@ export const nameSpecialFeatures = ({
       toArray(),
       // Unfold the array.
       mergeAll(),
-      // Rename everything by calling the mapped function.
-      mergeAll(),
+      // Rename everything by calling the mapped function. withFileProgress
+      // here plays the same flatten-and-subscribe role as mergeAll while
+      // ticking the per-job progress emitter on each rename observable's
+      // completion.
+      withFileProgress((renameObservable) => renameObservable, { concurrency: Infinity }),
       logAndRethrow(nameSpecialFeatures),
     )
   )

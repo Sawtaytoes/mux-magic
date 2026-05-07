@@ -27,6 +27,7 @@ import {
 } from "../tools/getMediaInfo.js"
 import { logInfo } from "../tools/logMessage.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 export type AspectRatioData = (
   Record<
@@ -300,7 +301,7 @@ export const storeAspectRatioData = ({
         filePaths
       )
       .pipe(
-        map(({
+        withFileProgress(({
           localMediaFilePath,
           plexMediaFilePath,
         }) => (
@@ -434,11 +435,12 @@ export const storeAspectRatioData = ({
               )
             }),
           )
-        )),
-        mergeAll(
-          threadCount
-          || 2
-        ),
+        ), {
+          concurrency: (
+            threadCount
+            || 2
+          ),
+        }),
         reduce(
           (
             aspectRatioCalculationData,

@@ -19,3 +19,6 @@ test-results/
 
 # Vitest browser-mode failure screenshots
 **/__screenshots__/
+
+# Claude Code per-machine permission overrides
+.claude/settings.local.json

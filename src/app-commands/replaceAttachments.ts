@@ -1,5 +1,4 @@
 import {
-  concatAll,
   concatMap,
   filter,
   map,
@@ -11,6 +10,7 @@ import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { getFiles } from "../tools/getFiles.js"
 import { logInfo } from "../tools/logMessage.js"
 import { replaceAttachmentsMkvMerge, replaceAttachmentsMkvMergeDefaultProps } from "../cli-spawn-operations/replaceAttachmentsMkvMerge.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ReplaceAttachmentsRequiredProps = {
   destinationFilesPath: string
@@ -83,7 +83,7 @@ export const replaceAttachments = ({
             mediaFilePath
           )
         )),
-        map(({
+        withFileProgress(({
           destinationFilePath,
           mediaFileInfo,
           mediaFilePath,
@@ -108,7 +108,6 @@ export const replaceAttachments = ({
             ),
           )
         )),
-        concatAll(),
         toArray(),
       )
     )),
