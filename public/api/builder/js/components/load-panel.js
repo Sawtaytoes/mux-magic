@@ -23,14 +23,14 @@ export function toggleLoad() {
 
 // ─── YAML → state ────────────────────────────────────────────────────────────
 
-const isGroupItem = (item) => !!(item && typeof item === 'object' && item.kind === 'group')
+export const isGroupItem = (item) => !!(item && typeof item === 'object' && item.kind === 'group')
 
 // Hydrate a single bare-step item from YAML into the in-memory step
 // shape. Captures id, alias, isCollapsed, and walks the command's
 // fields to assign params or restore links. Same logic the old loader
 // applied to every top-level entry — extracted so it can be reused for
 // inner steps inside a group.
-function loadStepItem(item, COMMANDS) {
+export function loadStepItem(item, COMMANDS) {
   if (!item.command) throw new Error('Each step must have a "command" key')
   if (!COMMANDS[item.command]) throw new Error(`Unknown command: ${item.command}`)
   const step = bridge().makeStep(item.command)
@@ -95,7 +95,7 @@ function loadStepItem(item, COMMANDS) {
 
 // Hydrate a group item: walks its inner `steps` array, refusing nested
 // groups (the schema bans nesting; surface it here as a clear error).
-function loadGroupItem(item, COMMANDS) {
+export function loadGroupItem(item, COMMANDS) {
   if (!Array.isArray(item.steps) || item.steps.length === 0) {
     throw new Error('A group must have a non-empty "steps" array')
   }

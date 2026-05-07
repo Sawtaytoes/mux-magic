@@ -30,6 +30,12 @@ import {
   togglePageMenu,
   attachPageHeaderListeners,
 } from './components/page-header.js'
+import {
+  copyStepYaml,
+  copyGroupYaml,
+  pasteCardAt,
+} from './components/card-clipboard.js'
+import { attachSortables } from './components/drag-and-drop.js'
 import { pathVarOptionText, refreshPathVarOptions } from './util/path-var-options.js'
 
 window.mediaTools = window.mediaTools || {}
@@ -54,6 +60,10 @@ Object.assign(window.mediaTools, {
   loadYaml,
   loadYamlFromText,
   togglePageMenu,
+  copyStepYaml,
+  copyGroupYaml,
+  pasteCardAt,
+  attachSortables,
 })
 
 attachPageHeaderListeners()

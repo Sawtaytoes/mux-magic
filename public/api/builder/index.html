@@ -6,6 +6,7 @@
 <title>Sequence Builder</title>
 <script src="/vendor/tailwind-3.4.17.js"></script>
 <script src="/vendor/js-yaml-4.1.1.min.js"></script>
+<script src="/vendor/Sortable-1.15.2.min.js"></script>
 <script src="/sse-utils.js"></script>
 <script src="/command-labels.js"></script>
 <script type="module" src="/builder/js/main.js"></script>
@@ -20,6 +21,15 @@
   }
   .step-enter { animation: stepEnter 200ms ease-out; }
   .step-leave { animation: stepLeave 200ms ease-in forwards; pointer-events: none; }
+
+  /* Drag-and-drop visuals (SortableJS). The grip handle gets a grab
+     cursor; the placeholder Sortable inserts at the hover position
+     fades the original card so the user sees where it'll land; the
+     card actively being dragged gets a subtle blue ring. */
+  [data-drag-handle] { cursor: grab; touch-action: none; }
+  [data-drag-handle]:active { cursor: grabbing; }
+  .drag-ghost { opacity: 0.35; }
+  .drag-chosen { box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5); }
 
   /* View-transition timing for the move-step swap */
   ::view-transition-old(*),
@@ -1639,10 +1649,11 @@ function esc(v) {
 // (stage 1 refactor).
 
 function renderInsertDivider(index) {
-  // Three insert buttons so the user can choose what kind of item lands
-  // between any two siblings — a bare step, a serial group, or a
-  // parallel group. Hover-only chrome (group-hover) keeps the divider
-  // unobtrusive when the user isn't aiming at it.
+  // Four insert buttons so the user can choose what kind of item lands
+  // between any two siblings — a bare step, a serial group, a parallel
+  // group, or a paste from the clipboard. Hover-only chrome
+  // (group-hover) keeps the divider unobtrusive when the user isn't
+  // aiming at it.
   return `<div class="col-span-full flex items-center group -my-0.5">
     <div class="flex-1 h-px bg-slate-700/50 group-hover:bg-slate-600 transition-colors"></div>
     <div class="flex items-center gap-1 mx-1">
@@ -1657,6 +1668,10 @@ function renderInsertDivider(index) {
       <button onclick="insertGroupAt(${index}, true)" title="Insert a parallel group here"
         class="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-blue-400 rounded-full border border-transparent hover:border-blue-500/40 hover:bg-slate-800 transition-all whitespace-nowrap">
         ➕ Parallel
+      </button>
+      <button onclick="pasteCardAt({itemIndex: ${index}}, this)" title="Paste a copied step or group here"
+        class="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-emerald-400 rounded-full border border-transparent hover:border-emerald-500/40 hover:bg-slate-800 transition-all whitespace-nowrap">
+        📋 Paste
       </button>
     </div>
     <div class="flex-1 h-px bg-slate-700/50 group-hover:bg-slate-600 transition-colors"></div>
@@ -1686,9 +1701,15 @@ function renderAll() {
   if (!steps.length) {
     parts.push(`<div class="flex flex-col items-center gap-2 mt-4">
       <p class="text-slate-500 text-xs">No steps yet.</p>
-      <button onclick="addPicked()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded font-medium">
-        + Add your first step
-      </button>
+      <div class="flex items-center gap-2">
+        <button onclick="addPicked()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded font-medium">
+          + Add your first step
+        </button>
+        <button onclick="pasteCardAt({itemIndex: 0}, this)" title="Paste a copied step or group"
+          class="text-xs text-slate-300 hover:text-emerald-400 px-4 py-2 rounded font-medium border border-slate-700 hover:border-emerald-500/40">
+          📋 Paste
+        </button>
+      </div>
     </div>`)
   } else {
     // Leading divider so there's an inline `+ Add` between the paths
@@ -1762,6 +1783,12 @@ function renderAll() {
     }
   }
 
+  // Re-attach Sortable instances to every reorderable container
+  // (#steps-el and each [data-group-body]). The previous instances
+  // are destroyed inside attachSortables since renderAll just replaced
+  // their host nodes via innerHTML.
+  window.mediaTools.attachSortables?.()
+
   updateYaml()
   updateUrl()
 }
@@ -1826,8 +1853,10 @@ function renderGroup(group, itemIndex, startingFlatIndex) {
   const isLastItem = itemIndex === steps.length - 1
 
   return `
-<div data-group="${group.id}" class="group-card ${isParallel ? 'group-card-parallel' : 'group-card-serial'} bg-slate-900/50 rounded-xl border border-slate-700/70 overflow-hidden">
+<div data-group="${group.id}" data-sortable-item class="group-card ${isParallel ? 'group-card-parallel' : 'group-card-serial'} bg-slate-900/50 rounded-xl border border-slate-700/70 overflow-hidden">
   <div class="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-700/70 bg-slate-900/70">
+    <button data-drag-handle title="Drag to reorder"
+      class="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 select-none">⠿</button>
     <button onclick="toggleGroupCollapsed('${group.id}')" title="${group.isCollapsed ? 'Expand group' : 'Collapse group'}"
       class="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700">
       ${renderCollapseChevron(group.isCollapsed)}
@@ -1844,6 +1873,8 @@ function renderGroup(group, itemIndex, startingFlatIndex) {
       class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700">${renderDoubleChevron(false)}</button>
     <button onclick="addStepToGroup('${group.id}')" title="Add a step inside this group"
       class="text-[10px] text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded border border-slate-700 hover:border-slate-500">+ Step</button>
+    <button onclick="pasteCardAt({parentGroupId: '${group.id}'}, this)" title="Paste a copied step into this group"
+      class="text-[10px] text-slate-400 hover:text-emerald-400 px-2 py-0.5 rounded border border-slate-700 hover:border-emerald-500/40">📋 Paste</button>
     <!-- Group move arrows: same affordance as a step's, but they swap
          the entire group with its top-level neighbor (which can itself
          be a step or another group). -->
@@ -1851,6 +1882,8 @@ function renderGroup(group, itemIndex, startingFlatIndex) {
       class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↑</button>
     <button onclick="moveGroup('${group.id}',1)" title="Move group down" ${isLastItem ? 'disabled' : ''}
       class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↓</button>
+    <button onclick="copyGroupYaml('${group.id}', this)" title="Copy this group's YAML"
+      class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent">📋</button>
     <button onclick="removeGroup('${group.id}')" title="Remove this group (its inner steps go too)"
       class="text-[10px] text-slate-500 hover:text-red-400 px-2 py-0.5 rounded border border-slate-700 hover:border-red-500/40">✕</button>
   </div>
@@ -1926,8 +1959,10 @@ function renderStep(step, index, context = {}) {
   // via the .parallel-group child rule so siblings sit shoulder-to-shoulder
   // when the container is wide and wrap when it isn't.
   return `
-<div id="step-${step.id}" style="view-transition-name: step-${step.id}" class="step-card bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+<div id="step-${step.id}" data-sortable-item data-step-card="${step.id}" style="view-transition-name: step-${step.id}" class="step-card bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
   <div class="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-700 bg-slate-800/80">
+    <button data-drag-handle title="Drag to reorder"
+      class="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 shrink-0 select-none">⠿</button>
     <button onclick="toggleStepCollapsed('${step.id}')" title="${step.isCollapsed ? 'Expand step' : 'Collapse step'}"
       class="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 shrink-0">
       ${renderCollapseChevron(step.isCollapsed)}
@@ -1960,6 +1995,8 @@ function renderStep(step, index, context = {}) {
         class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↑</button>
       <button onclick="moveStep('${step.id}',1)" ${isLast ? 'disabled' : ''}
         class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↓</button>
+      <button onclick="copyStepYaml('${step.id}', this)" title="Copy this step's YAML"
+        class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent">📋</button>
       <button onclick="removeStep('${step.id}')"
         class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs">✕</button>
     </div>
@@ -2353,6 +2390,16 @@ function closeYamlModal(event) { return window.mediaTools.closeYamlModal(event) 
 function toggleLoad() { return window.mediaTools.toggleLoad() }
 function loadYaml() { return window.mediaTools.loadYaml() }
 function loadYamlFromText(text) { return window.mediaTools.loadYamlFromText(text) }
+
+// ─── Per-card YAML clipboard ──────────────────────────────────────────────────
+// Implementations live in /builder/js/components/card-clipboard.js —
+// these forwarders back the per-step / per-group `📋` buttons in
+// renderStep / renderGroup and the `📋 Paste` button in
+// renderInsertDivider.
+
+function copyStepYaml(stepId, buttonElement) { return window.mediaTools.copyStepYaml(stepId, buttonElement) }
+function copyGroupYaml(groupId, buttonElement) { return window.mediaTools.copyGroupYaml(groupId, buttonElement) }
+function pasteCardAt(target, anchorElement) { return window.mediaTools.pasteCardAt(target, anchorElement) }
 
 // togglePageMenu lives in /builder/js/components/page-header.js — this
 // forwarder preserves the inline HTML onclick="togglePageMenu(...)"
@@ -4702,9 +4749,11 @@ Object.defineProperty(window.mediaTools, 'COMMANDS', {
 
 Object.assign(window.mediaTools, {
   renderAll,
+  renderAllAnimated,
   refreshLinkedInputs,
   scheduleUpdateUrl,
   scrollPathVarIntoView,
+  scrollStepIntoView,
   schedulePathLookup,
   pathPickerKeydown,
   randomHex,
@@ -4712,6 +4761,7 @@ Object.assign(window.mediaTools, {
   restoreFromUrl,
   buildParams,
   makeStep,
+  clearStaleStepLinksAfterMove,
   updateUrl,
   closeApiRunModal,
   kickTmdbResolutions,
