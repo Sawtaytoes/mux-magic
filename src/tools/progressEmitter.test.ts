@@ -214,4 +214,22 @@ describe(withFileProgress.name, () => {
 
     expect(captured).toEqual(["done-a", "done-b"])
   })
+
+  test("passes a sequential 0-based index as the second argument to perFile", () => {
+    const captured: Array<{ file: string, index: number }> = []
+
+    of("a.mkv", "b.mkv", "c.mkv").pipe(
+      withFileProgress((file, index) => of({ file, index })),
+    ).subscribe((value) => {
+      captured.push(value)
+    })
+
+    vi.advanceTimersByTime(5_000)
+
+    expect(captured).toEqual([
+      { file: "a.mkv", index: 0 },
+      { file: "b.mkv", index: 1 },
+      { file: "c.mkv", index: 2 },
+    ])
+  })
 })
