@@ -1,11 +1,8 @@
 import { dirname } from "node:path"
 import {
-  concatAll,
-  concatMap,
   filter,
   groupBy,
   map,
-  mergeMap,
   reduce,
   take,
   tap,
@@ -19,6 +16,7 @@ import {
 } from "../tools/getMediaInfo.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { logInfo } from "../tools/logMessage.js"
+import { mergeMapOrdered, runTasks } from "../tools/taskScheduler.js"
 
 export const hasSurroundSound = ({
   isRecursive,
@@ -49,13 +47,22 @@ export const hasSurroundSound = ({
         .fullPath
       )
     )),
-    mergeMap((
+    // Outer: emit one log line per directory in directory-encounter
+    // order. Plain mergeMapOrdered (no runTask wrap) — the inner per-
+    // file IO is what competes for scheduler slots; wrapping the outer
+    // group in runTask too would deadlock at MAX_THREADS groups.
+    mergeMapOrdered((
       groupObservable,
     ) => (
       groupObservable
       .pipe(
         filterIsVideoFile(),
-        map((
+        // Inner: per-file getMediaInfo runs as a parallel Task,
+        // capped by MAX_THREADS across all directories. take(1)
+        // below short-circuits as soon as ANY file in the directory
+        // is detected as surround sound — RxJS unsubscribes the
+        // remaining in-flight Tasks, freeing their scheduler slots.
+        runTasks((
           fileInfo,
         ) => (
           getMediaInfo(
@@ -74,169 +81,174 @@ export const hasSurroundSound = ({
             filter(
               Boolean
             ),
-            concatMap(({
+            map(({
               track,
             }) => (
               track
-            )),
-            filter((
-              track,
-            ): track is AudioTrack => (
-              (
-                track
-                ["@type"]
-              )
-              === "Audio"
+              .filter((
+                trackEntry,
+              ): trackEntry is AudioTrack => (
+                (
+                  trackEntry
+                  ["@type"]
+                )
+                === "Audio"
+              ))
             )),
             map((
-              track,
-            ) => {
-              const audioFormat = (
-                (
-                  track
-                  .Format_Commercial_IfAny
-                )
-                || (
-                  track
-                  .Format_Commercial
-                )
-                || (
-                  track
-                  .Format
-                )
-              )
-
-              const channelLayout = (
-                (
-                  track
-                  .ChannelLayout_Original
-                )
-                || (
-                  track
-                  .ChannelLayout
-                )
-              )
-
-              const formatAdditionalFeatures = (
-                track
-                .Format_AdditionalFeatures
-              )
-
-              const numberOfChannels = (
-                Number(
+              audioTracks,
+            ) => (
+              audioTracks
+              .map((
+                track,
+              ) => {
+                const audioFormat = (
                   (
                     track
-                    .Channels_Original
+                    .Format_Commercial_IfAny
                   )
                   || (
                     track
-                    .Channels
+                    .Format_Commercial
                   )
-                  || 2
+                  || (
+                    track
+                    .Format
+                  )
                 )
-              )
 
-              if (
-                (
-                  audioFormat
-                  ?.includes('Atmos')
+                const channelLayout = (
+                  (
+                    track
+                    .ChannelLayout_Original
+                  )
+                  || (
+                    track
+                    .ChannelLayout
+                  )
                 )
-                || (
-                  formatAdditionalFeatures
-                  === 'XLL X'
+
+                const formatAdditionalFeatures = (
+                  track
+                  .Format_AdditionalFeatures
                 )
-                || (
-                  formatAdditionalFeatures
-                  === 'XLL X IMAX'
+
+                const numberOfChannels = (
+                  Number(
+                    (
+                      track
+                      .Channels_Original
+                    )
+                    || (
+                      track
+                      .Channels
+                    )
+                    || 2
+                  )
                 )
-              ) {
-                return {
-                  channelCount: 16,
-                  track,
+
+                if (
+                  (
+                    audioFormat
+                    ?.includes('Atmos')
+                  )
+                  || (
+                    formatAdditionalFeatures
+                    === 'XLL X'
+                  )
+                  || (
+                    formatAdditionalFeatures
+                    === 'XLL X IMAX'
+                  )
+                ) {
+                  return {
+                    channelCount: 16,
+                    track,
+                  }
                 }
-              }
 
-              // This might not work correctly.
+                // This might not work correctly.
 
-              const formatSettingsMode = (
-                track
-                .Format_Settings_Mode
-              )
+                const formatSettingsMode = (
+                  track
+                  .Format_Settings_Mode
+                )
 
-              if (
-                formatSettingsMode
-                === 'Dolby Surround EX'
-              ) {
-                return {
-                  channelCount: 8,
-                  track,
+                if (
+                  formatSettingsMode
+                  === 'Dolby Surround EX'
+                ) {
+                  return {
+                    channelCount: 8,
+                    track,
+                  }
                 }
-              }
 
-              // This might not work correctly.
+                // This might not work correctly.
 
-              if (
-                formatSettingsMode
-                === 'Dolby Surround'
-              ) {
-                return {
-                  channelCount: 4,
-                  track,
+                if (
+                  formatSettingsMode
+                  === 'Dolby Surround'
+                ) {
+                  return {
+                    channelCount: 4,
+                    track,
+                  }
                 }
-              }
 
-              if (
-                channelLayout
-              ) {
+                if (
+                  channelLayout
+                ) {
+                  return {
+                    channelCount: (
+                      channelLayout
+                      .split(' ')
+                      .length
+                    ),
+                    track,
+                  }
+                }
+
                 return {
                   channelCount: (
-                    channelLayout
-                    .split(' ')
-                    .length
+                    numberOfChannels
                   ),
                   track,
                 }
-              }
-
-              return {
-                channelCount: (
-                  numberOfChannels
-                ),
-                track,
-              }
-            }),
-            reduce(
-              (
-                selectedValue,
-                value,
-                index,
-              ) => (
+              })
+              .reduce(
                 (
-                  (
-                    selectedValue
-                    .channelCount
-                  )
-                  >= (
-                    value
-                    .channelCount
-                  )
-                )
-                ? selectedValue
-                : {
-                  ...value,
+                  selectedValue,
+                  value,
                   index,
+                ) => (
+                  (
+                    (
+                      selectedValue
+                      .channelCount
+                    )
+                    >= (
+                      value
+                      .channelCount
+                    )
+                  )
+                  ? selectedValue
+                  : {
+                    ...value,
+                    index,
+                  }
+                ),
+                {
+                  channelCount: 0,
+                  index: -1,
+                  track: {}
+                } as {
+                  channelCount: number
+                  index: number,
+                  track: AudioTrack
                 }
-              ),
-              {
-                channelCount: 0,
-                index: -1,
-                track: {}
-              } as {
-                channelCount: number
-                index: number,
-                track: AudioTrack
-              }
-            ),
+              )
+            )),
             filter(({
               channelCount
             }) => (
@@ -247,11 +259,10 @@ export const hasSurroundSound = ({
               props,
             ) => ({
               ...props,
-              fileInfo
+              fileInfo,
             })),
           )
         )),
-        concatAll(),
         take(1),
         tap(({
           channelCount,
