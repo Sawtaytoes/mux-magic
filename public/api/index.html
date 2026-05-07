@@ -453,6 +453,15 @@ const logEventSourcesByJobId = new Map();
 // server already aggregates across all active trackers.
 const progressByJobId = new Map();
 
+// Highest SSE `id` we've appended to logsByJobId for each job. The
+// server tags every log line with its index in job.logs as the SSE id;
+// on reconnect or disclosure re-open the server replays the buffer
+// from index 0, but the browser auto-stamps each MessageEvent with
+// `lastEventId`. We compare against this map and skip lines whose
+// index is at or below what we already have — so the cache stops
+// duplicating after the first session opens it.
+const lastLogIndexByJobId = new Map();
+
 function mergeProgress(jobId, event) {
   const current = progressByJobId.get(jobId) ?? {};
   const merged = { ...current };
@@ -569,8 +578,23 @@ function appendLogLine(jobId, line) {
 function ensureLogStream(jobId) {
   if (logEventSourcesByJobId.has(jobId)) return;
   const handle = createTolerantEventSource(`/jobs/${jobId}/logs`, {
-    onMessage: (data) => {
+    onMessage: (data, event) => {
       if (typeof data.line === "string") {
+        // Dedup: server tags each line with its job.logs index. On a
+        // fresh EventSource the server replays from 0; lastLogIndexByJobId
+        // remembers the highest index we've already appended, so the
+        // replay's first N lines (already in our cache) get dropped.
+        const rawId = event && event.lastEventId;
+        if (rawId !== "" && rawId !== undefined && rawId !== null) {
+          const idNum = Number(rawId);
+          if (Number.isFinite(idNum)) {
+            const lastSeen = lastLogIndexByJobId.get(jobId);
+            if (lastSeen !== undefined && idNum <= lastSeen) {
+              return;
+            }
+            lastLogIndexByJobId.set(jobId, idNum);
+          }
+        }
         appendLogLine(jobId, data.line);
       } else if (data.type === "progress") {
         // Top-level rollup fields merge field-by-field; currentFiles
