@@ -1,9 +1,7 @@
 import {
-  concatAll,
   concatMap,
   filter,
   from,
-  map,
   take,
   tap,
   toArray,
@@ -15,6 +13,7 @@ import { naturalSort } from "../tools/naturalSort.js"
 import { getFiles } from "../tools/getFiles.js"
 import { logInfo } from "../tools/logMessage.js"
 import { splitChaptersMkvMerge, splitChaptersMkvMergeDefaultProps } from "../cli-spawn-operations/splitChaptersMkvMerge.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 type SplitChaptersRequiredProps = {
   chapterSplitsList: string[]
@@ -63,7 +62,7 @@ export const splitChapters = ({
           chapterSplitsList
           .length
         ),
-        map((
+        withFileProgress((
           fileInfo,
           index,
         ) => (
@@ -95,7 +94,6 @@ export const splitChapters = ({
             ),
           )
         )),
-        concatAll(),
         toArray(),
       )
     )),
