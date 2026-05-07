@@ -1253,10 +1253,14 @@ function setParam(id, fieldName, value) {
   step.params[fieldName] = value
   refreshLinkedInputs()
   updateYaml()
-  // Debounced — setParam fires per-keystroke from oninput, so writing the
-  // URL synchronously every call caused typing lag. The blur / beforeunload
-  // listeners flush any pending write so refresh still preserves the value.
-  scheduleUpdateUrl()
+  // Synchronous URL write — the prior debounced `scheduleUpdateUrl` flow
+  // relied on a flushScheduledUpdateUrl beforeunload listener to commit
+  // pending writes before refresh, but in practice the flush sometimes
+  // didn't stick (history.replaceState during unload is unreliable).
+  // Writing per keystroke is cheap enough at typical sequence sizes;
+  // if larger sequences ever introduce typing lag we can revisit with
+  // throttling rather than the lossy debounce.
+  updateUrl()
 }
 
 // When the user commits a typed path (onchange = blur or Enter), lift it
@@ -1397,6 +1401,26 @@ function renderAll() {
   }
 
   const previousIds = lastRenderedStepIds
+  // Capture which input the user is currently editing (if any) so we can
+  // restore focus after the innerHTML swap. Without this, async settles
+  // (resolveTmdbForStep, runReverseLookup) yank focus out from under the
+  // user mid-keystroke. Inputs that opt in carry data-step + data-field;
+  // text-input cursor position (selectionStart/End) is preserved when
+  // the browser supports it for the input's type.
+  const activeEl = document.activeElement
+  const focusSnapshot = (
+    activeEl
+    && activeEl.tagName === 'INPUT'
+    && activeEl.dataset?.step
+    && activeEl.dataset?.field
+  )
+    ? {
+        step: activeEl.dataset.step,
+        field: activeEl.dataset.field,
+        selectionStart: (() => { try { return activeEl.selectionStart } catch { return null } })(),
+        selectionEnd: (() => { try { return activeEl.selectionEnd } catch { return null } })(),
+      }
+    : null
   el.innerHTML = parts.join('')
 
   // Fade-in animation for newly inserted step cards
@@ -1407,6 +1431,22 @@ function renderAll() {
     }
   }
   lastRenderedStepIds = new Set(steps.map(s => s.id))
+
+  if (focusSnapshot) {
+    const restoredInput = document.querySelector(
+      `input[data-step="${focusSnapshot.step}"][data-field="${focusSnapshot.field}"]`,
+    )
+    if (restoredInput) {
+      restoredInput.focus()
+      // setSelectionRange throws on input types that don't support it
+      // (number is one of them in some browsers); ignore the error.
+      if (focusSnapshot.selectionStart !== null) {
+        try {
+          restoredInput.setSelectionRange(focusSnapshot.selectionStart, focusSnapshot.selectionEnd)
+        } catch {}
+      }
+    }
+  }
 
   updateYaml()
   updateUrl()
@@ -1542,10 +1582,12 @@ function renderFields(step, stepIndex) {
           companionHref = `https://www.themoviedb.org/movie/${encodeURIComponent(step.params.tmdbId)}`
           companionText = step.params.tmdbName || companion || ''
         } else if (step.params.tmdbResolutionPending) {
-          // Resolution in flight — show whatever name we have for
-          // continuity; the next renderAll (after the resolver
-          // settles) rewrites both text and href.
+          // TMDB resolution in flight — suppress text so the user
+          // doesn't see the variant-laden DVDCompare name flash to the
+          // canonical TMDB name. Companion stays hidden until the
+          // resolver settles and renderAll fires with the final state.
           companionHref = 'https://www.themoviedb.org/'
+          companionText = ''
         } else if (companion) {
           const parsedDvdCompare = parseDvdCompareDisplayName(companion)
           const fallbackTitle = parsedDvdCompare?.baseTitle || step.params.searchTerm || null
@@ -1581,7 +1623,7 @@ function renderFields(step, stepIndex) {
         dvdCompareReleaseLink = `<a data-step="${step.id}" data-right-link="${field.name}" href="${esc(releaseHref)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(lookupConfig.label)}</a>`
       }
       return `<div>${label}<div class="flex items-center gap-2">
-        <input type="number" value="${esc(num)}" placeholder="${esc(field.placeholder ?? '')}"
+        <input type="number" data-step="${step.id}" data-field="${field.name}" value="${esc(num)}" placeholder="${esc(field.placeholder ?? '')}"
           oninput="setParam('${step.id}','${field.name}',this.value===''?undefined:Number(this.value)); scheduleReverseLookup('${step.id}','${field.name}',this.value); updateLookupLinks('${step.id}','${field.name}',this.value)"
           class="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" />
         <button onclick="openLookup('${field.lookupType}','${step.id}','${field.name}')"
@@ -3440,7 +3482,18 @@ async function runReverseLookup(stepId, fieldName, id, requestToken) {
     if (reverseLookupTokens.get(key) !== requestToken) return
 
     step.params[field.companionNameField] = name
-    setCompanionDisplay(stepId, fieldName, name)
+    // For special-features dvdCompareId we DON'T want to flash the
+    // variant-laden dvdCompareName ("Soldier (UHD Blu-ray) (1998)") to
+    // the user before the TMDB resolver gets a chance to canonicalize
+    // ("Soldier (1998)"). Mark TMDB pending and leave the companion
+    // hidden — the chained resolveTmdbForStep below settles and renderAll
+    // shows the final name in one go.
+    if (fieldName === 'dvdCompareId' && step.command === 'nameSpecialFeatures') {
+      step.params.tmdbResolutionPending = true
+      setCompanionDisplay(stepId, fieldName, '')
+    } else {
+      setCompanionDisplay(stepId, fieldName, name)
+    }
     updateYaml()
     // Persist the freshly-resolved companion into the URL so a refresh
     // doesn't lose it. setParam is what previously owned URL writes,
@@ -3752,6 +3805,12 @@ function lookupSelectRelease(hash, label) {
     // film selection changed. Clear it before kicking off the new
     // resolution so the link doesn't briefly point at the wrong movie.
     clearTmdbResolution(step)
+    // Set the pending flag synchronously BEFORE renderAll so the first
+    // render after the modal pick shows the empty/pending state instead
+    // of flashing the variant-laden dvdCompareName for a frame.
+    if (group?.baseTitle && step.command === 'nameSpecialFeatures') {
+      step.params.tmdbResolutionPending = true
+    }
     refreshLinkedInputs()
     updateYaml()
     renderAll()
