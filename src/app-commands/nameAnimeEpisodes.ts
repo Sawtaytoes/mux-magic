@@ -24,6 +24,7 @@ import { naturalSort } from "../tools/naturalSort.js"
 import { getFiles } from "../tools/getFiles.js"
 import { logInfo } from "../tools/logMessage.js"
 import { searchMal } from "../tools/searchMal.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const nameAnimeEpisodes = ({
   malId,
@@ -283,7 +284,7 @@ export const nameAnimeEpisodes = ({
     toArray(),
     mergeAll(),
     mergeAll(),
-    mergeMap(({
+    withFileProgress(({
       fileInfo,
       renamedFilename,
     }) => (
@@ -291,7 +292,7 @@ export const nameAnimeEpisodes = ({
       .renameFile(
         renamedFilename
       )
-    )),
+    ), { concurrency: Infinity }),
     logAndRethrow(
       nameAnimeEpisodes
     )
