@@ -476,3 +476,57 @@ export const listDirectoryEntriesResponseSchema = z.object({
   separator: z.string().describe("OS-native path separator ('\\\\' on Windows, '/' on Linux/macOS). Use this when joining new path segments client-side."),
   error: z.string().nullable().optional().describe("Error message if the listing failed (e.g. missing path, permission denied). When present, entries is empty."),
 })
+
+// File-explorer modal — listing, delete-mode, bulk delete
+export const listFilesRequestSchema = z.object({
+  path: z.string().describe("Absolute directory path to list. Must be absolute and traversal-free."),
+  includeDuration: z.string().optional().describe("Pass '1' / 'true' to compute video runtime per file via mediainfo. Adds ~50-200ms per file (concurrent up to 8). Off by default."),
+})
+
+export const fileExplorerEntrySchema = z.object({
+  name: z.string().describe("Basename of the entry"),
+  isFile: z.boolean().describe("True for regular files (not directories or symlinks)"),
+  isDirectory: z.boolean().describe("True for directories"),
+  size: z.number().describe("File size in bytes; 0 for directories"),
+  mtime: z.string().nullable().describe("Last-modified ISO timestamp; null when the per-entry stat() failed"),
+  duration: z.string().nullable().describe("Video runtime as 'M:SS' / 'H:MM:SS' (DVDCompare format). null when not requested, not a video extension, or mediainfo failed."),
+})
+
+export const listFilesResponseSchema = z.object({
+  entries: z.array(fileExplorerEntrySchema).describe("Entries in the directory, sorted directories-first then alphabetically"),
+  separator: z.string().describe("OS-native path separator"),
+  error: z.string().nullable().describe("Error message when the listing failed; null on success"),
+})
+
+export const deleteModeRequestSchema = z.object({
+  path: z.string().optional().describe("Optional folder path. When supplied, the response reflects the EFFECTIVE mode for that path — e.g. 'trash' downgrades to 'permanent' on Windows network drives where the Recycle Bin can't service the file. Without a path, the response carries the global DELETE_TO_TRASH setting."),
+})
+
+export const deleteModeResponseSchema = z.object({
+  mode: z.enum(["trash", "permanent"]).describe("'trash' = files go to the OS Recycle Bin (default). 'permanent' = files are unlinked outright. Controlled via the DELETE_TO_TRASH env var; downgraded automatically for Windows network drives."),
+  reason: z.string().nullable().describe("Explains why mode is 'permanent' when the global setting is 'trash' — typically network-drive detection. Null when mode matches the global setting."),
+})
+
+export const deleteFilesRequestSchema = z.object({
+  paths: z.array(z.string()).min(1).describe("Absolute paths to delete. Each is independently validated for absolute-path / no-traversal safety."),
+})
+
+export const deleteFilesResultSchema = z.object({
+  path: z.string().describe("The path the API attempted to delete"),
+  ok: z.boolean().describe("True when the delete succeeded"),
+  mode: z.enum(["trash", "permanent"]).describe("Strategy actually used for this path — may be 'permanent' even when the global setting is 'trash' (network-drive paths)"),
+  error: z.string().nullable().describe("Error message on failure; null on success"),
+})
+
+export const deleteFilesResponseSchema = z.object({
+  results: z.array(deleteFilesResultSchema).describe("Per-path outcome — partial successes are surfaced rather than rolled back"),
+})
+
+export const openExternalRequestSchema = z.object({
+  path: z.string().describe("Absolute path to hand off to the OS shell. The default application for the file's extension opens it (VLC for .mkv, Preview for .pdf, etc.)."),
+})
+
+export const openExternalResponseSchema = z.object({
+  ok: z.boolean().describe("True when the launcher process spawned. The launcher is detached/unref'd so this only reports the spawn — actual app launch may still fail asynchronously."),
+  error: z.string().nullable().describe("Error message when validation or spawn failed; null on success"),
+})
