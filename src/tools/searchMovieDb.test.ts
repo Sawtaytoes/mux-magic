@@ -83,6 +83,21 @@ describe("searchMovieDb (network)", () => {
     vi.restoreAllMocks()
   })
 
+  test("appends &year= when a year is provided so TMDB disambiguates same-titled films", async () => {
+    const fetchSpy = vi.fn(async () => (
+      new Response(JSON.stringify({ results: [{ id: 9425, title: "Soldier", release_date: "1998-10-23" }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    ))
+    globalThis.fetch = fetchSpy as unknown as typeof globalThis.fetch
+
+    await firstValueFrom(searchMovieDb("Soldier", "1998"))
+
+    const [url] = fetchSpy.mock.calls[0] as unknown as [string]
+    expect(url).toBe("https://api.themoviedb.org/3/search/movie?query=Soldier&include_adult=false&language=en-US&page=1&year=1998")
+  })
+
   test("hits /search/movie with the bearer token + url-encoded query", async () => {
     const fetchSpy = vi.fn(async () => (
       new Response(JSON.stringify({ results: [{ id: 1, title: "Test", release_date: "2024-01-01" }] }), {

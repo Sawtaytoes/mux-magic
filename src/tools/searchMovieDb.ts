@@ -84,17 +84,26 @@ const tmdbFetch = async (
 
 export const searchMovieDb = (
   searchTerm: string,
-): Observable<MovieDbResult[]> => (
-  from(
-    tmdbFetch(
-      `/search/movie?query=${encodeURIComponent(searchTerm)}&include_adult=false&language=en-US&page=1`,
-    ),
+  year?: string,
+): Observable<MovieDbResult[]> => {
+  // TMDB's `year` filter narrows results to films whose release_date or
+  // primary_release_date matches. Critical for disambiguation: a search
+  // for "Soldier" without a year returns the top-popularity film, which
+  // may not be the user's intended era — adding year=1998 lifts the
+  // 1998 entry to the top.
+  const yearParam = year ? `&year=${encodeURIComponent(year)}` : ""
+  return (
+    from(
+      tmdbFetch(
+        `/search/movie?query=${encodeURIComponent(searchTerm)}&include_adult=false&language=en-US&page=1${yearParam}`,
+      ),
+    )
+    .pipe(
+      map((body) => mapTmdbSearchResults((body as { results?: MovieDbRawSearchResult[] }).results)),
+      logAndSwallow(searchMovieDb),
+    )
   )
-  .pipe(
-    map((body) => mapTmdbSearchResults((body as { results?: MovieDbRawSearchResult[] }).results)),
-    logAndSwallow(searchMovieDb),
-  )
-)
+}
 
 export const lookupMovieDbById = (
   movieDbId: number,
