@@ -14,6 +14,8 @@ import {
   toArray,
 } from "rxjs"
 
+import { extname } from "node:path"
+
 import { canonicalizeMovieTitle, type MovieIdentity } from "../tools/canonicalizeMovieTitle.js"
 import { logAndRethrow } from "../tools/logAndRethrow.js"
 import {
@@ -159,6 +161,44 @@ export type FileMatch =
   | { fileInfo: FileInfo, timecode: string, kind: "cut", cut: Cut }
   | { fileInfo: FileInfo, timecode: string, kind: "extra", renamedFilename: string }
   | { fileInfo: FileInfo, timecode: string, kind: "unmatched" }
+
+const stripExtension = (filename: string): string => (
+  filename.slice(0, filename.length - extname(filename).length)
+)
+
+// Topological reorder: a rename whose target name equals another file's
+// CURRENT name has to run AFTER that other file's rename completes —
+// otherwise the OS rejects it ("File or folder already exists") and the
+// downstream logAndSwallow drops the file silently. Defer such renames
+// to the end of the queue and run sequentially (concurrency: 1) so the
+// freed-up slot is available by the time the deferred rename fires.
+// Cycles aren't handled — they'd need a two-phase temp-rename pass —
+// but realistic disc-rip layouts don't produce them. The within-run
+// duplicate-target counter ((2)/(3) prefix in the scan below) still
+// kicks in on top of this for files matching the same extra.
+export const reorderRenamesForOnDiskConflicts = <
+  T extends { fileInfo: FileInfo, renamedFilename: string }
+>(renames: T[]): T[] => {
+  const sourceStems = new Set(
+    renames.map(({ fileInfo }) => stripExtension(fileInfo.filename)),
+  )
+  const upfront: T[] = []
+  const deferred: T[] = []
+  for (const rename of renames) {
+    const ownStem = stripExtension(rename.fileInfo.filename)
+    const collidesWithAnotherSource = (
+      sourceStems.has(rename.renamedFilename)
+      && rename.renamedFilename !== ownStem
+    )
+    if (collidesWithAnotherSource) {
+      deferred.push(rename)
+    }
+    else {
+      upfront.push(rename)
+    }
+  }
+  return [...upfront, ...deferred]
+}
 
 // Files shorter than this never get the main-feature fallback rename.
 // 30 min is a generous floor — typical movie cuts exceed it by a wide
@@ -430,10 +470,19 @@ export const nameSpecialFeatures = ({
               `Renaming matched files (${renames.length} of ${matches.length})…`,
             )
 
+            // Reorder so renames-into-another-file's-current-name happen
+            // after the file holding that name has already moved away.
+            // Required for the within-run conflict (e.g. an existing
+            // "International Trailer without Narration -trailer.mkv" being
+            // renamed to "with Narration", while another file is being
+            // renamed to "without Narration") which previously raced and
+            // silently dropped one file via logAndSwallow.
+            const orderedRenames = reorderRenamesForOnDiskConflicts(renames)
+
             // Render the renames through the duplicate-counter +
             // rename-observable scan as before, then append the summary.
             const renamesStream$ = (
-              of(...renames)
+              of(...orderedRenames)
               .pipe(
                 scan(
                   (
@@ -490,8 +539,11 @@ export const nameSpecialFeatures = ({
       // Rename everything by calling the mapped function. withFileProgress
       // here plays the same flatten-and-subscribe role as mergeAll while
       // ticking the per-job progress emitter on each rename observable's
-      // completion.
-      withFileProgress((renameObservable) => renameObservable, { concurrency: Infinity }),
+      // completion. Concurrency is intentionally 1 so the topologically
+      // ordered renames above (reorderRenamesForOnDiskConflicts) actually
+      // execute in order — running these in parallel re-introduces the
+      // race between renames-out-of and renames-into the same target name.
+      withFileProgress((renameObservable) => renameObservable, { concurrency: 1 }),
       logAndRethrow(nameSpecialFeatures),
     )
   )
