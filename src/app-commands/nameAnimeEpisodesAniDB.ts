@@ -21,6 +21,7 @@ import { getUserSearchInput } from "../tools/getUserSearchInput.js"
 import { logInfo } from "../tools/logMessage.js"
 import { lookupAnidbById, pickAnidbSeriesName, searchAnidb } from "../tools/searchAnidb.js"
 import { naturalSort } from "../tools/naturalSort.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 
 // Episode title preference: English → x-jat (romaji) → first available.
 const pickEpisodeTitle = (
@@ -137,7 +138,7 @@ export const nameAnimeEpisodesAniDB = ({
     toArray(),
     mergeAll(),
     mergeAll(),
-    mergeMap(({ fileInfo, renamedFilename }) => fileInfo.renameFile(renamedFilename)),
+    withFileProgress(({ fileInfo, renamedFilename }) => fileInfo.renameFile(renamedFilename), { concurrency: Infinity }),
     logAndRethrow(nameAnimeEpisodesAniDB),
   )
 )
