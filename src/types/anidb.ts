@@ -21,22 +21,43 @@ export type AnidbAnime = {
   titles: { lang: string, type: AnidbTitleType, value: string }[],
 }
 
-// User-facing grouping for the rename command. AniDB has six episode
-// types but most users only think in three buckets:
-//   - regular  → type=1 (the main run)
-//   - specials → type=2 (S), 3 (C, OP/ED songs), 4 (T, trailers), 5 (P, parodies)
-//   - others   → type=6 (O, alternate cuts like director's-cut episodes)
-export type AnidbEpisodeCategory = "regular" | "specials" | "others"
+// User-facing grouping for the rename command. Each AniDB episode
+// type maps to a single category so the user can run one rename per
+// type — they're typically named separately (a Specials folder, a
+// Credits folder, etc.) and mixing them in one prompt loop confused
+// the picker. The mapping is 1:1 with AniDB's `<epno type="N">`:
+//   regular  → 1   specials → 2 (S)   credits → 3 (C, OP/ED)
+//   trailers → 4   parodies → 5 (P)   others  → 6 (O, alt cuts)
+export type AnidbEpisodeCategory = (
+  | "regular"
+  | "specials"
+  | "credits"
+  | "trailers"
+  | "parodies"
+  | "others"
+)
 
 const TYPES_BY_CATEGORY: Record<AnidbEpisodeCategory, AnidbEpisodeType[]> = {
   regular: [1],
-  specials: [2, 3, 4, 5],
+  specials: [2],
+  credits: [3],
+  trailers: [4],
+  parodies: [5],
   others: [6],
 }
 
 export const episodeTypesForCategory = (
   category: AnidbEpisodeCategory,
 ): AnidbEpisodeType[] => TYPES_BY_CATEGORY[category]
+
+// regular and others use the existing index-paired flow (the file at
+// position N maps to the Nth episode after sort). Everything else
+// requires the length-matched per-file picker because users
+// typically have a smaller, partial set of those files and the
+// 1:1 index mapping doesn't hold.
+export const isPickerCategory = (
+  category: AnidbEpisodeCategory,
+): boolean => category !== "regular" && category !== "others"
 
 // Display-only letter prefix mirroring AniDB's UI convention: regular
 // epnos render as plain numbers, the rest carry an S/C/T/P/O tag.
@@ -75,4 +96,43 @@ export const epnoOrderingValue = (
   const numericPart = Number(epno.replace(/[^0-9]/g, ""))
   const base = ORDERING_BASE_BY_TYPE[type] ?? 0
   return base + (Number.isFinite(numericPart) ? numericPart : 0)
+}
+
+// AniDB rounds reported episode lengths UP, in two precision tiers:
+//   - At or below 15 minutes: rounded up to the nearest whole minute
+//     (e.g., 12m45s → 13).
+//   - 16 minutes and above:    rounded up to the nearest 5 minutes
+//     (e.g., 32m45s → 35; 31m → 35; 30m → 30).
+//
+// A 32-minute file matched against a 35-minute AniDB special isn't
+// a 3-minute mismatch — it's exactly what you'd expect once you
+// account for the rounding. anidbLengthTolerance + the helpers below
+// let the picker rank "within rounding window" matches as 0 delta and
+// keep the duration sanity-check warning from screaming on every
+// 16+-minute pair.
+const ANIDB_ROUNDING_BREAKPOINT_MINUTES = 16
+
+export const anidbLengthTolerance = (anidbLength: number): number => (
+  anidbLength >= ANIDB_ROUNDING_BREAKPOINT_MINUTES ? 5 : 1
+)
+
+// Distance from `fileMinutes` to the nearest edge of the AniDB
+// rounding window for `anidbLength`. Returns 0 when the file's
+// duration is consistent with what AniDB would have reported (i.e.,
+// within the rounding-up window). Always non-negative.
+export const effectiveDurationDeltaMinutes = (
+  fileMinutes: number,
+  anidbLength: number,
+): number => {
+  const tolerance = anidbLengthTolerance(anidbLength)
+  // Round-up window: actual duration in (anidbLength - tolerance,
+  // anidbLength]. Files inside this window match exactly.
+  const lowerEdgeExclusive = anidbLength - tolerance
+  if (fileMinutes > lowerEdgeExclusive && fileMinutes <= anidbLength) {
+    return 0
+  }
+  if (fileMinutes <= lowerEdgeExclusive) {
+    return lowerEdgeExclusive - fileMinutes + 1
+  }
+  return fileMinutes - anidbLength
 }

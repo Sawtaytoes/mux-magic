@@ -38,9 +38,9 @@ const builder = (yargs: Argv) => (
     "episodeType",
     {
       alias: "t",
-      choices: ["regular", "specials", "others"] as const,
+      choices: ["regular", "specials", "credits", "trailers", "parodies", "others"] as const,
       default: "regular" as const,
-      describe: "Which AniDB episode types to rename. \"specials\" runs the length-matched per-file picker for types 2-5 (S/C/T/P) and emits Plex's s00eNN. \"others\" pairs files index-by-index against type=6 (e.g., director's-cut 'O' episodes).",
+      describe: "Which AniDB episode types to rename. Each non-regular sub-type is run separately: specials (S), credits (C, OP/ED), trailers (T), parodies (P) all run the length-matched per-file picker and emit Plex's s00eNN. Others (type=6 alts) and regular are index-paired with a duration sanity-check warning.",
       nargs: 1,
       type: "string",
     },

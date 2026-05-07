@@ -518,6 +518,14 @@
   <div id="cmd-picker-list" class="overflow-y-auto py-1"></div>
 </div>
 
+<!-- Enum field picker popover (shared across all enum-typed fields) -->
+<div id="enum-picker-popover" class="hidden fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col" style="width:300px;max-height:400px">
+  <input id="enum-picker-input" type="text" placeholder="Search options…"
+    oninput="enumPicker.filter(this.value)" onkeydown="enumPicker.keydown(event)"
+    class="bg-slate-800 text-slate-200 text-sm rounded-t-lg px-3 py-2 border-b border-slate-700 focus:outline-none placeholder-slate-500">
+  <div id="enum-picker-list" class="overflow-y-auto py-1"></div>
+</div>
+
 <!-- Location/link picker popover (path variables + previous-step folder outputs) -->
 <div id="link-picker-popover" class="hidden fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col" style="width:360px;max-height:400px">
   <input id="link-picker-input" type="text" placeholder="Search locations…"
@@ -881,7 +889,7 @@ const COMMANDS = {
   },
   nameAnimeEpisodesAniDB: {
     summary: "Rename anime episode files using AniDB metadata (better OVA/special coverage than MAL)",
-    note: "Specials runs an interactive length-matched per-file picker — answer the prompts in the job log. Others maps type=6 alternates (e.g., director's-cut 'O' episodes) by index. Episode-range selection is still planned — see README §AniDB command notes.",
+    note: "Specials / Credits / Trailers / Parodies each run an interactive length-matched per-file picker — answer the prompts in the job log. Space skips the current file; Esc cancels the loop and applies any matches confirmed so far. Regular and Others are index-paired with a duration sanity-check warning when the file and AniDB lengths diverge by >2m. If AniDB lists both a 'Complete' and 'Part N' form, you'll be asked which one your files match. Episode-range selection is still planned — see README §AniDB command notes.",
     tag: "Naming Operations",
     outputFolderName: null,
     fields: [
@@ -895,8 +903,11 @@ const COMMANDS = {
         default: "regular",
         options: [
           { value: "regular", label: "Regular (type=1)" },
-          { value: "specials", label: "Specials (S/C/T/P)" },
-          { value: "others", label: "Others (type=6, alt cuts)" },
+          { value: "specials", label: "Specials (S, type=2)" },
+          { value: "credits", label: "Credits / OP / ED (C, type=3)" },
+          { value: "trailers", label: "Trailers (T, type=4)" },
+          { value: "parodies", label: "Parodies (P, type=5)" },
+          { value: "others", label: "Others (O, type=6, alt cuts)" },
         ],
       },
     ]
@@ -2139,19 +2150,21 @@ function renderFields(step, stepIndex) {
     }
 
     if (field.type === 'enum') {
-      // Fixed list of choices rendered as a native <select>. Each
-      // option carries a value/label pair; the field's default value
-      // wins when the step has no stored param yet. setParam takes the
-      // raw string so YAML round-trips cleanly without coercion.
+      // Fixed list of choices rendered as the same popover-picker
+      // (autocomplete + arrow keys + Enter) the command picker uses.
+      // Trigger button shows the active option's label; click opens
+      // the picker. Matches the command-picker UX so dropdowns across
+      // the builder feel consistent.
       const selected = val ?? field.default ?? ''
-      const options = (field.options ?? []).map((option) => (
-        `<option value="${esc(option.value)}" ${option.value === selected ? 'selected' : ''}>${esc(option.label)}</option>`
-      )).join('')
-      return `<div>${label}<select
-        onchange="setParam('${step.id}','${field.name}',this.value)"
-        class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500">
-        ${options}
-      </select></div>`
+      const selectedOption = (field.options ?? []).find((option) => option.value === selected)
+      const triggerLabel = selectedOption?.label ?? selected
+      return `<div>${label}<button type="button"
+        onclick="enumPicker.open({stepId: '${step.id}', fieldName: '${esc(field.name)}'}, this)"
+        data-enum-picker-trigger
+        class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer">
+        <span class="flex-1 min-w-0 truncate">${esc(triggerLabel)}</span>
+        <span class="text-slate-400 shrink-0">▾</span>
+      </button></div>`
     }
 
     if (field.type === 'numberWithLookup') {
@@ -2860,14 +2873,41 @@ function showPromptModal(jobId, promptData) {
   })
   document.getElementById('prompt-modal').classList.remove('hidden')
   document._promptKeyHandler = e => {
+    // Number key — pick the candidate at that index.
     const num = parseInt(e.key, 10)
     if (!isNaN(num)) {
       const match = promptData.options.find(o => o.index === num)
-      if (match) submitPromptChoice(jobId, promptData.promptId, match.index)
+      if (match) {
+        submitPromptChoice(jobId, promptData.promptId, match.index)
+      }
+      return
     }
-    if (e.key === '-' || e.key === 'Escape') {
+    // Space → skip the current file. preventDefault stops the page
+    // from scrolling. Falls back silently when no skip option exists.
+    if (e.key === ' ' || e.key === 'Spacebar') {
       const skipOpt = promptData.options.find(o => o.index === -1)
-      if (skipOpt) submitPromptChoice(jobId, promptData.promptId, -1)
+      if (skipOpt) {
+        e.preventDefault()
+        submitPromptChoice(jobId, promptData.promptId, -1)
+      }
+      return
+    }
+    // Esc → cancel the whole prompt loop when -2 is offered.
+    // Falls back to skip (-1) for prompts that don't have a cancel
+    // affordance (e.g., the search-result picker). The minus key is
+    // kept as an alias for skip so existing muscle memory still works.
+    if (e.key === 'Escape' || e.key === '-') {
+      const cancelOpt = promptData.options.find(o => o.index === -2)
+      if (cancelOpt) {
+        e.preventDefault()
+        submitPromptChoice(jobId, promptData.promptId, -2)
+        return
+      }
+      const skipOpt = promptData.options.find(o => o.index === -1)
+      if (skipOpt) {
+        e.preventDefault()
+        submitPromptChoice(jobId, promptData.promptId, -1)
+      }
     }
   }
   document.addEventListener('keydown', document._promptKeyHandler)
@@ -3240,6 +3280,59 @@ const commandPicker = createPopoverPicker({
   emptyHtml: '<p class="text-xs text-slate-500 text-center py-4">No commands match.</p>',
   onSelect: (item, anchor) => {
     changeCommand(anchor.stepId, item.name)
+  },
+})
+
+// ─── Enum picker (per-step enum field — same UX shell as command picker) ──────
+
+const enumPicker = createPopoverPicker({
+  popoverId: 'enum-picker-popover',
+  inputId: 'enum-picker-input',
+  listId: 'enum-picker-list',
+  triggerSelector: '[data-enum-picker-trigger]',
+  alignSide: 'left',
+  width: 300,
+  maxHeight: 400,
+  isSameAnchor: (a, b) => a.stepId === b.stepId && a.fieldName === b.fieldName,
+  // Items resolve at open time from the step's command schema. Going
+  // through findStepById + COMMANDS keeps the trigger's onclick small
+  // (no JSON-stringified options inline) and ensures we always read
+  // the latest schema if a future change rewires field options.
+  buildItems: (anchor) => {
+    const step = findStepById(anchor.stepId)
+    if (!step) return []
+    const command = COMMANDS[step.command]
+    const field = command?.fields?.find((candidate) => candidate.name === anchor.fieldName)
+    return field?.options ?? []
+  },
+  // Highlight the currently-selected option on open so Enter without
+  // typing keeps the existing value (a no-op feels right).
+  findInitialActive: (items, anchor) => {
+    const step = findStepById(anchor.stepId)
+    const currentValue = step?.params?.[anchor.fieldName]
+    const command = step ? COMMANDS[step.command] : null
+    const field = command?.fields?.find((candidate) => candidate.name === anchor.fieldName)
+    const effectiveValue = currentValue ?? field?.default
+    const idx = items.findIndex((item) => item.value === effectiveValue)
+    return idx >= 0 ? idx : 0
+  },
+  matchesQuery: (item, query) => (
+    item.label.toLowerCase().includes(query)
+    || String(item.value).toLowerCase().includes(query)
+  ),
+  itemClass: (item, isActive) => (
+    `w-full text-left px-3 py-1.5 text-xs ${isActive ? 'bg-blue-700 text-white' : 'text-slate-200 hover:bg-slate-800'}`
+  ),
+  renderItem: (item) => esc(item.label),
+  emptyHtml: '<p class="text-xs text-slate-500 text-center py-4">No options match.</p>',
+  // setParam updates state + URL but doesn't repaint — for inputs
+  // bound via `value="..."` the browser keeps the visible value in
+  // sync, but our enum trigger is a <button> whose label is rendered
+  // from state at renderAll time. Force a re-render here so the label
+  // tracks the picked value without waiting for some other event.
+  onSelect: (item, anchor) => {
+    setParam(anchor.stepId, anchor.fieldName, item.value)
+    renderAll()
   },
 })
 

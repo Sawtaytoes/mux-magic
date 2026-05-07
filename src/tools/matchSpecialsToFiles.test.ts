@@ -6,23 +6,23 @@ import type { AnidbEpisode } from "../types/anidb.js"
 
 // matchSpecialsToFiles drives the per-file picker for AniDB specials.
 // We cover the helper end-to-end through its public Observable: stub
-// getMediaInfo to feed deterministic durations, stub
+// readMediaDurationMinutes to feed deterministic durations, stub
 // getUserSearchInput to script the picker responses, then assert on
 // the emitted MatchedSpecial[] (length-ranked candidates, no
-// double-claims, skip handling).
+// double-claims, skip + cancel handling).
 //
-// vi.mock calls are hoisted above the import below so the imported
+// vi.mock calls are hoisted above the imports below so the imported
 // references resolve to the mocked functions, not the real ones.
 
-vi.mock("./getMediaInfo.js", () => ({
-  getMediaInfo: vi.fn(),
+vi.mock("./readMediaDurationMinutes.js", () => ({
+  readMediaDurationMinutes: vi.fn(),
 }))
 
 vi.mock("./getUserSearchInput.js", () => ({
   getUserSearchInput: vi.fn(),
 }))
 
-import { getMediaInfo } from "./getMediaInfo.js"
+import { readMediaDurationMinutes } from "./readMediaDurationMinutes.js"
 import { getUserSearchInput } from "./getUserSearchInput.js"
 import { matchSpecialsToFiles } from "./matchSpecialsToFiles.js"
 
@@ -45,36 +45,28 @@ const buildEpisode = (
   type,
 })
 
-const stubMediaInfoSeconds = (filenameToSeconds: Record<string, number>) => {
-  const mockedGetMediaInfo = vi.mocked(getMediaInfo)
-  mockedGetMediaInfo.mockImplementation((filePath: string) => {
+const stubFileMinutes = (filenameToMinutes: Record<string, number | null>) => {
+  const mocked = vi.mocked(readMediaDurationMinutes)
+  mocked.mockImplementation((filePath: string) => {
     const filename = filePath.split("/").pop() ?? filePath
-    const seconds = filenameToSeconds[filename] ?? 0
-    return of({
-      creatingLibrary: { name: "stub", url: "", version: "0" },
-      media: {
-        "@ref": filePath,
-        track: [
-          { "@type": "General", Duration: String(seconds) } as never,
-        ],
-      },
-    })
+    return of(filenameToMinutes[filename] ?? null)
   })
 }
 
 const stubPickerResponses = (responses: number[]) => {
-  const mockedGetUserSearchInput = vi.mocked(getUserSearchInput)
+  const mocked = vi.mocked(getUserSearchInput)
   let callIndex = 0
-  mockedGetUserSearchInput.mockImplementation(() => {
+  mocked.mockImplementation(() => {
     const next = responses[callIndex] ?? -1
     callIndex += 1
     return of(next)
   })
+  return () => callIndex // returns the count of prompts dispatched
 }
 
 describe("matchSpecialsToFiles", () => {
   test("ranks candidates by absolute minute delta", async () => {
-    stubMediaInfoSeconds({ "ova01.mkv": 32 * 60 })
+    stubFileMinutes({ "ova01.mkv": 32 })
     // Episodes with varied lengths; closest to 32m is S20 (32m), then
     // S21 (35m, Δ3), then S22 (28m, Δ4), then S23 (45m, Δ13).
     const specials: AnidbEpisode[] = [
@@ -102,7 +94,7 @@ describe("matchSpecialsToFiles", () => {
     // Both files are 30m. The picker should offer the same set on the
     // first prompt, but after the user picks S20 it must drop out of
     // the second prompt's candidate list.
-    stubMediaInfoSeconds({ "a.mkv": 30 * 60, "b.mkv": 30 * 60 })
+    stubFileMinutes({ "a.mkv": 30, "b.mkv": 30 })
     const specials: AnidbEpisode[] = [
       buildEpisode(2, "S20", 30, "Memory Snow"),
       buildEpisode(2, "S21", 30, "Frozen Bonds"),
@@ -122,7 +114,7 @@ describe("matchSpecialsToFiles", () => {
   })
 
   test("skipping a file (selectedIndex=-1) drops it from the result", async () => {
-    stubMediaInfoSeconds({ "junk.mkv": 5 * 60, "real.mkv": 32 * 60 })
+    stubFileMinutes({ "junk.mkv": 5, "real.mkv": 32 })
     const specials: AnidbEpisode[] = [buildEpisode(2, "S20", 32, "Memory Snow")]
     // Skip first file, pick first candidate for the second.
     stubPickerResponses([-1, 0])
@@ -139,8 +131,38 @@ describe("matchSpecialsToFiles", () => {
     expect(matches[0].episode.epno).toBe("S20")
   })
 
+  test("cancel (selectedIndex=-2) keeps prior matches and stops prompting subsequent files", async () => {
+    stubFileMinutes({ "a.mkv": 32, "b.mkv": 32, "c.mkv": 32 })
+    const specials: AnidbEpisode[] = [
+      buildEpisode(2, "S20", 32, "Memory Snow"),
+      buildEpisode(2, "S21", 32, "Frozen Bonds"),
+      buildEpisode(2, "S22", 32, "The Frozen Sword"),
+    ]
+    // First file picks 0; second file cancels (-2); third file should
+    // never be prompted.
+    const promptCount = stubPickerResponses([0, -2])
+
+    const matches = await firstValueFrom(
+      matchSpecialsToFiles({
+        fileInfos: [
+          buildFileInfo("a.mkv"),
+          buildFileInfo("b.mkv"),
+          buildFileInfo("c.mkv"),
+        ],
+        specials,
+      }).pipe(toArray()),
+    )
+
+    // Only the first file's match flows downstream.
+    expect(matches.map((match) => match.fileInfo.filename)).toEqual(["a.mkv"])
+    expect(matches[0].episode.epno).toBe("S20")
+    // Two prompts dispatched (for a.mkv and b.mkv); c.mkv is never
+    // prompted because the cancel flag short-circuits the outer loop.
+    expect(promptCount()).toBe(2)
+  })
+
   test("returns nothing when the available specials run out mid-walk", async () => {
-    stubMediaInfoSeconds({ "a.mkv": 30 * 60, "b.mkv": 30 * 60 })
+    stubFileMinutes({ "a.mkv": 30, "b.mkv": 30 })
     // Only one special to claim; the second file should silently drop
     // out (no prompt, no match) rather than throw.
     const specials: AnidbEpisode[] = [buildEpisode(2, "S20", 30, "Memory Snow")]

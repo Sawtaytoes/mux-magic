@@ -90,11 +90,18 @@ Language options accept [ISO 639-2](https://en.wikipedia.org/wiki/List_of_ISO_63
 
 **Cache location.** Set `ANIDB_CACHE_FOLDER` in `.env` (or your container env) to point both caches at a directory that survives restarts — important in Docker where the project-relative `./.cache/anidb/` is ephemeral.
 
-**Episode types (`episodeType` param).** Three modes branch on AniDB's six-way episode classification:
+**Episode types (`episodeType` param).** Six modes — one per AniDB episode-type code — so users can run each subset separately rather than mixing them in one prompt loop:
 
-- `regular` (default) — type=1. Files map to episodes index-for-index after natural sort. Output: `<seriesName> - sNNeNN - <episodeTitle>` using AniDB's epno verbatim.
-- `specials` — types 2-5 (S/C/T/P). Each file's mediainfo duration is matched against AniDB's rough minute-length estimates; the per-file picker surfaces the top length-ranked candidates plus a "Skip this file" option, and already-claimed entries drop out of subsequent prompts. Output: `<seriesName> - s00eNN - <episodeTitle>` (Plex's specials convention; season 0 regardless of `seasonNumber`, sequential index in pick order).
-- `others` — type=6 (director's-cut "O" episodes and other alternate cuts). Index-paired like `regular`. Output: `<seriesName> - sNNeNN - <episodeTitle>` using `seasonNumber` and a sequential index.
+- `regular` (default) — type=1. Files map to episodes index-for-index after natural sort. Each pair also reads the file's mediainfo duration and logs a `DURATION MISMATCH` warning when the file/episode lengths diverge by more than 2 minutes (the rename still applies — the warning is advisory). Output: `<seriesName> - sNNeNN - <episodeTitle>` using AniDB's epno verbatim.
+- `specials` — type=2 (S). Per-file picker (see below). Output: `<seriesName> - s00eNN - <episodeTitle>`.
+- `credits` — type=3 (C, OP/ED songs). Per-file picker. Output: `<seriesName> - s00eNN - <episodeTitle>`.
+- `trailers` — type=4 (T, PVs/promos). Per-file picker. Output: `<seriesName> - s00eNN - <episodeTitle>`.
+- `parodies` — type=5 (P). Per-file picker. Output: `<seriesName> - s00eNN - <episodeTitle>`.
+- `others` — type=6 (O, director's-cut alternates). Same index-paired flow as `regular`, with the same duration sanity-check warning. Output: `<seriesName> - sNNeNN - <episodeTitle>` using `seasonNumber` and a sequential index.
+
+**Per-file picker (specials / credits / trailers / parodies).** Each file's mediainfo duration is matched against AniDB's rough minute-length estimates; the picker surfaces the top length-ranked candidates plus skip and cancel options, and already-claimed entries drop out of subsequent prompts. Keys in the builder modal: `0`–`9` pick a candidate, **Space** skips the current file, **Esc** cancels the loop and applies any matches confirmed so far.
+
+**Complete vs Parts pre-prompt.** When AniDB's filtered list contains both a "complete" entry and "Part N" entries for the same content (common for OVAs and movies with multi-part rips), the rename surfaces a one-time prompt asking which form your files match. The chosen subset feeds into the normal pairing — index-paired for `regular`/`others`, picker for the rest.
 
 In the CLI, the picker prompts hit your terminal one file at a time. In the API/builder, the same prompts ride the existing job-event channel — answer them in the job log surface as the job runs.
 
