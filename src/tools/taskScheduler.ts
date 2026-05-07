@@ -1,4 +1,6 @@
 import {
+  finalize,
+  ignoreElements,
   mergeAll,
   mergeMap,
   Observable,
@@ -6,6 +8,7 @@ import {
   Subject,
   type Subscriber,
   type Subscription,
+  tap,
 } from "rxjs"
 
 // ---------------------------------------------------------------------------
@@ -174,6 +177,132 @@ export const runTasks = <T, R>(
   project: (value: T, index: number) => Observable<R>,
 ): OperatorFunction<T, R> => (
   mergeMap((value: T, index: number) => (
+    runTask(
+      project(
+        value,
+        index,
+      )
+    )
+  ))
+)
+
+// Pipeable form preserving input order on output. Each upstream value
+// is projected via mergeMap (parallel by default), but emissions are
+// released downstream in input-index order — file 5 is held back until
+// files 1-4 have emitted, even if file 5 finishes first.
+//
+// Does NOT route the projected work through `runTask`. Use this when
+// the heavy work is already wrapped (e.g. the projector body uses
+// `runTasks(...)` over a sub-stream), or when the iteration is plain
+// orchestration that shouldn't compete for scheduler slots — e.g.
+// iterating over a `groupBy`'s GroupedObservables when each group's
+// inner per-file work is what actually does IO.
+//
+// Why "not via runTask": if both the outer iteration AND the inner
+// per-element work occupy scheduler slots, MAX_THREADS outer slots
+// can starve inner work (deadlock). Keep one layer scheduled.
+//
+// Memory: out-of-order results buffer in a Map keyed by index until
+// the head-of-queue completes. For commands that emit thousands of
+// large values per element, the buffer grows with the slowest-element
+// lag — fine for the per-file summary use case (one or a few small
+// values per element); revisit if a future caller streams large
+// payloads.
+export const mergeMapOrdered = <T, R>(
+  project: (value: T, index: number) => Observable<R>,
+): OperatorFunction<T, R> => (source) => (
+  new Observable<R>((subscriber) => {
+    let nextEmitIndex = 0
+    const buffered = new Map<number, R[]>()
+    const completed = new Set<number>()
+    let isUpstreamComplete = false
+    let inflightCount = 0
+
+    // Releases buffered results downstream in input-index order. Walks
+    // forward from `nextEmitIndex` while the next slot is marked
+    // completed; stops at the first gap. Called on every inner
+    // completion AND on upstream complete.
+    const tryFlush = (): void => {
+      while (completed.has(nextEmitIndex)) {
+        const items = buffered.get(nextEmitIndex) ?? []
+        items.forEach((item) => {
+          subscriber.next(item)
+        })
+        buffered.delete(nextEmitIndex)
+        completed.delete(nextEmitIndex)
+        nextEmitIndex += 1
+      }
+
+      if (
+        isUpstreamComplete
+        && inflightCount === 0
+      ) {
+        subscriber.complete()
+      }
+    }
+
+    const upstreamSubscription = (
+      source
+      .pipe(
+        mergeMap((value: T, index: number) => {
+          inflightCount += 1
+
+          return (
+            project(
+              value,
+              index,
+            )
+            .pipe(
+              tap((result) => {
+                const arr = buffered.get(index) ?? []
+                arr.push(result)
+                buffered.set(index, arr)
+              }),
+              finalize(() => {
+                inflightCount -= 1
+                completed.add(index)
+                tryFlush()
+              }),
+              // Values were already captured by the tap above; suppress
+              // them here so the outer mergeMap doesn't re-emit them
+              // out of order.
+              ignoreElements(),
+            )
+          )
+        }),
+      )
+      .subscribe({
+        error: (error) => {
+          subscriber.error(error)
+        },
+        complete: () => {
+          isUpstreamComplete = true
+          tryFlush()
+        },
+      })
+    )
+
+    return () => {
+      upstreamSubscription.unsubscribe()
+    }
+  })
+)
+
+// Pipeable form: each upstream value runs as a Task in parallel
+// (capped by the scheduler), with emissions released in input-index
+// order. Thin wrapper over `mergeMapOrdered` that wraps the projector
+// in `runTask` for callers whose per-element work is the unit of
+// scheduled IO/CPU (e.g. one network call + processing per file).
+//
+// Do NOT use this as the OUTER operator over a stream whose inner
+// work also goes through the scheduler — both layers would compete
+// for the same MAX_THREADS pool and risk deadlock. Use plain
+// `mergeMapOrdered` for such orchestration and reserve the runTask
+// wrapping for the deepest per-IO layer.
+export const runTasksOrdered = <T, R>(
+  project: (value: T, index: number) => Observable<R>,
+): OperatorFunction<T, R> => (
+  mergeMapOrdered((value: T, index: number) => (
     runTask(
       project(
         value,

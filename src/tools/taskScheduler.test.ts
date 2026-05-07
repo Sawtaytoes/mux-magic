@@ -1,11 +1,13 @@
-import { defer, Observable, of } from "rxjs"
+import { defer, EMPTY, Observable, of, Subject } from "rxjs"
 import { afterEach, beforeEach, describe, expect, test } from "vitest"
 
 import {
   __resetTaskSchedulerForTests,
   initTaskScheduler,
+  mergeMapOrdered,
   runTask,
   runTasks,
+  runTasksOrdered,
 } from "./taskScheduler.js"
 
 beforeEach(() => {
@@ -238,6 +240,238 @@ describe(runTasks.name, () => {
     })
 
     expect(collected.sort()).toEqual([10, 20, 30])
+  })
+})
+
+describe(runTasksOrdered.name, () => {
+  test("emits results in input-index order even when later Tasks finish first", () => {
+    initTaskScheduler(Infinity)
+
+    const collected: string[] = []
+    const completers = new Map<number, () => void>()
+
+    const work = (value: string, index: number) => (
+      new Observable<string>((subscriber) => {
+        completers.set(index, () => {
+          subscriber.next(`done-${value}`)
+          subscriber.complete()
+        })
+      })
+    )
+
+    of("a", "b", "c", "d")
+    .pipe(
+      runTasksOrdered(work),
+    )
+    .subscribe({
+      next: (value) => {
+        collected.push(value)
+      },
+    })
+
+    // All four Tasks are running (Infinity concurrency).
+    expect(completers.size).toBe(4)
+    // Nothing has emitted yet — no Task completed.
+    expect(collected).toEqual([])
+
+    // Complete in reverse order: d, c, b, a.
+    completers.get(3)!()
+    expect(collected).toEqual([])
+    completers.get(2)!()
+    expect(collected).toEqual([])
+    completers.get(1)!()
+    expect(collected).toEqual([])
+    // Now the head-of-queue completes — all four flush at once in input order.
+    completers.get(0)!()
+    expect(collected).toEqual(["done-a", "done-b", "done-c", "done-d"])
+  })
+
+  test("releases each result as soon as the head-of-queue completes", () => {
+    initTaskScheduler(Infinity)
+
+    const collected: string[] = []
+    const completers = new Map<number, () => void>()
+
+    const work = (value: string, index: number) => (
+      new Observable<string>((subscriber) => {
+        completers.set(index, () => {
+          subscriber.next(`done-${value}`)
+          subscriber.complete()
+        })
+      })
+    )
+
+    of("a", "b", "c")
+    .pipe(
+      runTasksOrdered(work),
+    )
+    .subscribe({
+      next: (value) => {
+        collected.push(value)
+      },
+    })
+
+    // Complete head first → emits immediately.
+    completers.get(0)!()
+    expect(collected).toEqual(["done-a"])
+
+    // Skip 1, complete 2 → must wait for 1.
+    completers.get(2)!()
+    expect(collected).toEqual(["done-a"])
+
+    // Complete 1 → both 1 and 2 flush.
+    completers.get(1)!()
+    expect(collected).toEqual(["done-a", "done-b", "done-c"])
+  })
+
+  test("preserves multi-emission order within a Task and across Tasks", () => {
+    initTaskScheduler(Infinity)
+
+    const collected: string[] = []
+
+    of("a", "b")
+    .pipe(
+      runTasksOrdered((value) => of(`${value}-1`, `${value}-2`)),
+    )
+    .subscribe({
+      next: (collected_value) => {
+        collected.push(collected_value)
+      },
+    })
+
+    expect(collected).toEqual(["a-1", "a-2", "b-1", "b-2"])
+  })
+
+  test("propagates errors from upstream", () => {
+    initTaskScheduler(Infinity)
+
+    const errored = new Subject<void>()
+    let caughtError: unknown = null
+
+    const upstream = new Subject<number>()
+    upstream
+    .pipe(
+      runTasksOrdered((value) => of(value * 10)),
+    )
+    .subscribe({
+      error: (error) => {
+        caughtError = error
+        errored.next()
+      },
+    })
+
+    upstream.error(new Error("upstream boom"))
+
+    expect((caughtError as Error).message).toBe("upstream boom")
+  })
+
+  test("propagates errors from a Task", () => {
+    initTaskScheduler(Infinity)
+
+    let caughtError: unknown = null
+
+    of(1, 2, 3)
+    .pipe(
+      runTasksOrdered((value) => (
+        value === 2
+        ? new Observable<number>((subscriber) => {
+            subscriber.error(new Error("task-2 failed"))
+          })
+        : of(value)
+      )),
+    )
+    .subscribe({
+      error: (error) => {
+        caughtError = error
+      },
+    })
+
+    expect((caughtError as Error).message).toBe("task-2 failed")
+  })
+
+  test("completes immediately on empty upstream", () => {
+    initTaskScheduler(Infinity)
+
+    let isComplete = false
+
+    EMPTY
+    .pipe(
+      runTasksOrdered((value: number) => of(value)),
+    )
+    .subscribe({
+      complete: () => {
+        isComplete = true
+      },
+    })
+
+    expect(isComplete).toBe(true)
+  })
+
+  test("unsubscribe tears down in-flight Tasks", () => {
+    initTaskScheduler(Infinity)
+
+    let workSubscribeCount = 0
+    let workUnsubscribeCount = 0
+
+    const subscription = (
+      of(1, 2, 3)
+      .pipe(
+        runTasksOrdered(() => (
+          new Observable(() => {
+            workSubscribeCount += 1
+            return () => {
+              workUnsubscribeCount += 1
+            }
+          })
+        )),
+      )
+      .subscribe()
+    )
+
+    expect(workSubscribeCount).toBe(3)
+
+    subscription.unsubscribe()
+
+    expect(workUnsubscribeCount).toBe(3)
+  })
+})
+
+describe(mergeMapOrdered.name, () => {
+  test("orders results without involving the Task scheduler", () => {
+    // No initTaskScheduler call — proves the operator works when the
+    // scheduler isn't initialized at all (it shouldn't reach runTask).
+    __resetTaskSchedulerForTests()
+
+    const collected: string[] = []
+    const completers = new Map<number, () => void>()
+
+    const work = (value: string, index: number) => (
+      new Observable<string>((subscriber) => {
+        completers.set(index, () => {
+          subscriber.next(`done-${value}`)
+          subscriber.complete()
+        })
+      })
+    )
+
+    of("a", "b", "c")
+    .pipe(
+      mergeMapOrdered(work),
+    )
+    .subscribe({
+      next: (value) => {
+        collected.push(value)
+      },
+    })
+
+    expect(completers.size).toBe(3)
+
+    completers.get(2)!()
+    completers.get(1)!()
+    expect(collected).toEqual([])
+
+    completers.get(0)!()
+    expect(collected).toEqual(["done-a", "done-b", "done-c"])
   })
 })
 
