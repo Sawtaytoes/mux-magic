@@ -69,3 +69,18 @@ export type ProgressEvent = {
     ratio: number | null
   }>
 }
+
+// Sequence-runner step boundary, pushed onto the UMBRELLA job's per-job
+// SSE subject (not the child's). Fires once per step transition: a
+// `step-started` event when the runner picks up an inner step and is
+// about to subscribe its observable, and a `step-finished` event with
+// the terminal status the moment the outcome is decided. Carries the
+// child's job id so a UI subscribed to the umbrella stream can open a
+// per-child SSE for ProgressEvents (which fire on the CHILD subject,
+// not the umbrella's) without parsing the human-facing log text.
+export type StepEvent = {
+  type: "step-started" | "step-finished"
+  childJobId: string
+  stepId: string | null
+  status: JobStatus
+}

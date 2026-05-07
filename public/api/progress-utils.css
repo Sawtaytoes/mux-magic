@@ -1,0 +1,96 @@
+/* Shared progress-bar styles. Used by:
+   - /api/index.html (Jobs page) — every running card mounts a bar.
+   - /api/builder/index.html (Sequence Builder "Run via API" modal) — one
+     bar per modal that follows the currently-running child step.
+   Page-specific overrides (e.g. smaller bars inside step rows) live in
+   the page's own <style> block. */
+
+.progress-row {
+  margin-top: 10px;
+}
+
+.progress-bar {
+  background: #0f172a;
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  height: 100%;
+  width: 0%;
+  transition: width 250ms linear;
+}
+
+.progress-bar.indeterminate .progress-fill {
+  /* While the fill is indeterminate (no ratio), animate a thin chunk
+     sliding right-to-left so the user knows work is happening but
+     the magnitude is unknown — same UX shape Material/Bootstrap use. */
+  width: 30%;
+  animation: indeterminate-slide 1.6s ease-in-out infinite;
+}
+
+@keyframes indeterminate-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(330%); }
+}
+
+.progress-label {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Per-file rows shown beneath the main bar when multiple Tasks run
+   in parallel. One row per active tracker — sorted in arrival order
+   (Map insertion semantics on the server). */
+.progress-files {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress-file-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 2px 8px;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-file-ratio {
+  color: #cbd5e1;
+}
+
+.progress-file-bar {
+  grid-column: 1 / -1;
+  background: #0f172a;
+  border-radius: 2px;
+  height: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-file-fill {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  height: 100%;
+  width: 0%;
+  transition: width 250ms linear;
+}
+
+.progress-file-bar.indeterminate .progress-file-fill {
+  width: 30%;
+  animation: indeterminate-slide 1.6s ease-in-out infinite;
+}

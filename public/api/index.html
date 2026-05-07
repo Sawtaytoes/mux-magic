@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Jobs</title>
+<link rel="stylesheet" href="/progress-utils.css" />
 <style>
   * { box-sizing: border-box; }
 
@@ -262,87 +263,13 @@
   }
   .step .log-pane { max-height: 220px; }
 
-  .progress-row {
-    margin-top: 10px;
-  }
-  .progress-bar {
-    background: #0f172a;
-    border-radius: 4px;
-    height: 6px;
-    overflow: hidden;
-    position: relative;
-  }
-  .progress-fill {
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
-    height: 100%;
-    width: 0%;
-    transition: width 250ms linear;
-  }
-  .progress-bar.indeterminate .progress-fill {
-    /* While the fill is indeterminate (no ratio), animate a thin chunk
-       sliding right-to-left so the user knows work is happening but
-       the magnitude is unknown — same UX shape Material/Bootstrap use. */
-    width: 30%;
-    animation: indeterminate-slide 1.6s ease-in-out infinite;
-  }
-  @keyframes indeterminate-slide {
-    0%   { transform: translateX(-100%); }
-    100% { transform: translateX(330%); }
-  }
-  .progress-label {
-    margin-top: 4px;
-    font-size: 0.78rem;
-    color: #94a3b8;
-    font-variant-numeric: tabular-nums;
-  }
+  /* .progress-* base styles are in /progress-utils.css (shared with the
+     builder's "Run via API" modal). The overrides below shrink the bar
+     when it's mounted inside a step row (per-step bars are visually
+     subordinate to the parent card's bar). */
   .step .progress-row { margin-top: 8px; }
   .step .progress-bar { height: 4px; }
   .step .progress-label { font-size: 0.72rem; }
-
-  /* Per-file rows shown beneath the main bar when multiple Tasks run
-     in parallel. One row per active tracker — sorted in arrival order
-     (Map insertion semantics on the server). */
-  .progress-files {
-    margin-top: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .progress-file-row {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto;
-    gap: 2px 8px;
-    font-size: 0.72rem;
-    color: #94a3b8;
-    font-variant-numeric: tabular-nums;
-  }
-  .progress-file-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .progress-file-ratio {
-    color: #cbd5e1;
-  }
-  .progress-file-bar {
-    grid-column: 1 / -1;
-    background: #0f172a;
-    border-radius: 2px;
-    height: 3px;
-    overflow: hidden;
-    position: relative;
-  }
-  .progress-file-fill {
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
-    height: 100%;
-    width: 0%;
-    transition: width 250ms linear;
-  }
-  .progress-file-bar.indeterminate .progress-file-fill {
-    width: 30%;
-    animation: indeterminate-slide 1.6s ease-in-out infinite;
-  }
 
   #status-bar {
     max-width: 900px;
@@ -361,6 +288,7 @@
 <div class="jobs" id="jobs"></div>
 
 <script src="/sse-utils.js"></script>
+<script src="/progress-utils.js"></script>
 <script src="/command-labels.js"></script>
 <script src="/reload-on-restart.js"></script>
 <script>
@@ -464,16 +392,11 @@ const progressByJobId = new Map();
 const lastLogIndexByJobId = new Map();
 
 function mergeProgress(jobId, event) {
-  const current = progressByJobId.get(jobId) ?? {};
-  const merged = { ...current };
-  if (event.ratio !== undefined) merged.ratio = event.ratio;
-  if (event.filesDone !== undefined) merged.filesDone = event.filesDone;
-  if (event.filesTotal !== undefined) merged.filesTotal = event.filesTotal;
-  // currentFiles is authoritative when present; absence means "no
-  // active files" and we clear the previous list. Server omits the
-  // field entirely when activeFiles is empty.
-  merged.currentFiles = Array.isArray(event.currentFiles) ? event.currentFiles : [];
-  progressByJobId.set(jobId, merged);
+  // Delegate the merge to the shared util so the /jobs page and the
+  // builder's "Run via API" modal stay in lockstep (top-level fields
+  // merge field-by-field; currentFiles is whole-array replace because
+  // the server's per-tick payload is authoritative).
+  progressByJobId.set(jobId, ProgressUtils.mergeProgress(progressByJobId.get(jobId), event));
 }
 
 // Updates a mounted progress bar in place (no whole-card re-render
@@ -484,62 +407,7 @@ function mergeProgress(jobId, event) {
 function paintProgressBar(jobId) {
   const container = document.querySelector(`[data-progress-id="${jobId}"]`);
   if (!container) return;
-  const snapshot = progressByJobId.get(jobId) ?? {};
-  const bar = container.querySelector(".progress-bar");
-  const fill = container.querySelector(".progress-fill");
-  const label = container.querySelector(".progress-label");
-  const ratio = (typeof snapshot.ratio === "number") ? snapshot.ratio : null;
-  if (ratio === null) {
-    bar.classList.add("indeterminate");
-    fill.style.width = "";
-  } else {
-    bar.classList.remove("indeterminate");
-    const pct = Math.max(0, Math.min(1, ratio)) * 100;
-    fill.style.width = pct.toFixed(1) + "%";
-  }
-  // Top-line label: rollup counts + overall percent. Per-file detail
-  // moved into the .progress-files stack below the bar.
-  const parts = [];
-  if (typeof snapshot.filesDone === "number" && typeof snapshot.filesTotal === "number") {
-    parts.push(`${snapshot.filesDone}/${snapshot.filesTotal} files`);
-  }
-  if (ratio !== null) {
-    parts.push(`${(ratio * 100).toFixed(0)}%`);
-  }
-  label.textContent = parts.join(" · ");
-
-  // Per-file rows. Each in-flight tracker becomes one row with a thin
-  // bar — multiple visible simultaneously when Tasks run in parallel.
-  // Empty list → drop the container so the spacing collapses.
-  const filesContainer = container.querySelector(".progress-files");
-  const currentFiles = Array.isArray(snapshot.currentFiles) ? snapshot.currentFiles : [];
-  if (currentFiles.length === 0) {
-    if (filesContainer) filesContainer.replaceChildren();
-    return;
-  }
-  if (!filesContainer) return;
-  filesContainer.replaceChildren(
-    ...currentFiles.map((entry) => {
-      const row = makeEl("div", "progress-file-row");
-      const name = makeEl("div", "progress-file-name");
-      name.textContent = String(entry.path).split(/[\\/]/).pop() || entry.path;
-      name.title = entry.path;
-      const ratioCell = makeEl("div", "progress-file-ratio");
-      const fileBar = makeEl("div", "progress-file-bar");
-      const fileFill = makeEl("div", "progress-file-fill");
-      fileBar.append(fileFill);
-      if (typeof entry.ratio === "number") {
-        ratioCell.textContent = `${(entry.ratio * 100).toFixed(0)}%`;
-        fileBar.classList.remove("indeterminate");
-        fileFill.style.width = (Math.max(0, Math.min(1, entry.ratio)) * 100).toFixed(1) + "%";
-      } else {
-        ratioCell.textContent = "";
-        fileBar.classList.add("indeterminate");
-      }
-      row.append(name, ratioCell, fileBar);
-      return row;
-    }),
-  );
+  ProgressUtils.paintProgressBar(container, progressByJobId.get(jobId));
 }
 
 function mountProgressBar(parent, jobId) {
@@ -547,14 +415,8 @@ function mountProgressBar(parent, jobId) {
   // never emit progress (silent-fast rule on the server) so they get
   // no bar at all — keeps the UI quiet for 200ms ops.
   if (!progressByJobId.has(jobId)) return;
-  const row = makeEl("div", "progress-row");
+  const row = ProgressUtils.createProgressRow();
   row.dataset.progressId = jobId;
-  const bar = makeEl("div", "progress-bar");
-  const fill = makeEl("div", "progress-fill");
-  bar.append(fill);
-  const label = makeEl("div", "progress-label");
-  const filesContainer = makeEl("div", "progress-files");
-  row.append(bar, label, filesContainer);
   parent.append(row);
   paintProgressBar(jobId);
 }

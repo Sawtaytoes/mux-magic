@@ -5,6 +5,7 @@ import {
   completeSubject,
   createJob,
   createSubject,
+  emitJobEvent,
   getJob,
   updateJob,
 } from "./jobStore.js"
@@ -259,10 +260,34 @@ export const runSequenceJob = (
       return { kind: "failed", stepId, error: message }
     }
 
+    // Tell the umbrella stream a step is about to subscribe. Fires AFTER
+    // the synchronous validation paths above have all cleared and we are
+    // genuinely about to start work — a UI subscribed to the umbrella's
+    // SSE uses this to open a per-child SSE and follow that step's
+    // ProgressEvents (which fire on the child subject, not this one).
+    emitJobEvent(jobId, {
+      type: "step-started",
+      childJobId: childId,
+      stepId,
+      status: "running",
+    })
+
     const finalChild = await runJob(childId, stepObservable, {
       extractOutputs: config.extractOutputs,
     })
     const childStatus = finalChild?.status
+
+    // Mirror image of step-started — fires the moment the outcome is
+    // decided, regardless of whether the step completed, failed, or was
+    // cancelled. The modal's step-finished handler closes the open
+    // per-child SSE so it can wire up the next step's events on the next
+    // step-started.
+    emitJobEvent(jobId, {
+      type: "step-finished",
+      childJobId: childId,
+      stepId,
+      status: childStatus ?? "failed",
+    })
 
     if (childStatus === "cancelled") {
       return { kind: "cancelled" }

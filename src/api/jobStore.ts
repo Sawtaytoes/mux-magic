@@ -5,14 +5,19 @@ import {
   __resetAllProgressEmittersForTests,
   disposeProgressEmitter,
 } from "../tools/progressEmitter.js"
-import type { Job, ProgressEvent, PromptEvent } from "./types.js"
+import type { Job, ProgressEvent, PromptEvent, StepEvent } from "./types.js"
+
+// Union of every non-string payload the per-job SSE subject can carry.
+// String log lines ride the same channel for free (Subject is widened
+// to `string | JobEvent` below).
+export type JobEvent = PromptEvent | ProgressEvent | StepEvent
 
 // ---------------------------------------------------------------------------
 // Module-level state — only mutated through the exported functions below.
 // ---------------------------------------------------------------------------
 
 const jobs = new Map<string, Job>()
-const subjects = new Map<string, Subject<string | PromptEvent | ProgressEvent>>()
+const subjects = new Map<string, Subject<string | JobEvent>>()
 // Live RxJS Subscriptions keyed by jobId. Populated by jobRunner /
 // sequenceRunner when a job starts running, removed on natural completion
 // or by cancelJob below. Not exposed — Subscription objects aren't
@@ -124,8 +129,8 @@ export const appendJobLog = (
 
 export const createSubject = (
   id: string,
-): Subject<string | PromptEvent | ProgressEvent> => {
-  const subject = new Subject<string | PromptEvent | ProgressEvent>()
+): Subject<string | JobEvent> => {
+  const subject = new Subject<string | JobEvent>()
 
   subjects.set(id, subject)
 
@@ -134,13 +139,13 @@ export const createSubject = (
 
 export const getSubject = (
   id: string,
-): Subject<string | PromptEvent | ProgressEvent> | undefined => (
+): Subject<string | JobEvent> | undefined => (
   subjects.get(id)
 )
 
 export const emitJobEvent = (
   id: string,
-  event: PromptEvent | ProgressEvent,
+  event: JobEvent,
 ): void => {
   subjects.get(id)?.next(event)
 }
