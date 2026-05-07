@@ -4616,6 +4616,15 @@ function formatStepResults(step) {
 // between sections.
 function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) {
   const unrenamed = summaryRecord?.unrenamedFilenames ?? []
+  // possibleNames are DVDCompare extras with no timecode in the listing
+  // — image galleries, photo galleries, untimed *The Film cuts. Surfaced
+  // beside the leftover-files callout so the user has the candidate
+  // labels right in front of them when manually identifying what each
+  // unrenamed file might be. Array.isArray guard keeps replays of older
+  // job results (pre-dating the new field) from blowing up.
+  const possibleNames = Array.isArray(summaryRecord?.possibleNames)
+    ? summaryRecord.possibleNames
+    : []
   const counts = `Renamed ${renamePairs.length}. Files not renamed: ${unrenamed.length}.`
   const countsBlock = `<p class="text-slate-300 mb-2">${esc(counts)}</p>`
   const renameRowsHtml = renamePairs.map((item) => (
@@ -4631,8 +4640,14 @@ function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) 
   const leftoverItems = unrenamed.map((filename) => (
     `<li class="break-words">• ${esc(filename)}</li>`
   )).join('')
+  const possibleNameItems = possibleNames.map((name) => (
+    `<li class="break-words">• ${esc(name)}</li>`
+  )).join('')
+  const possibleNamesBlock = possibleNames.length > 0
+    ? `<div class="mt-2 pt-2 border-t border-yellow-700/50"><p class="font-medium mb-1">Possible names (no timecode in listing):</p><ul class="font-mono space-y-0.5">${possibleNameItems}</ul></div>`
+    : ''
   const leftoversBlock = unrenamed.length > 0
-    ? `<div class="bg-yellow-900/30 border border-yellow-700 text-yellow-100 rounded px-2 py-1.5"><p class="font-medium mb-1">Files not renamed (review by hand):</p><ul class="font-mono space-y-0.5">${leftoverItems}</ul>${linkBlock}</div>`
+    ? `<div class="bg-yellow-900/30 border border-yellow-700 text-yellow-100 rounded px-2 py-1.5"><p class="font-medium mb-1">Files not renamed (review by hand):</p><ul class="font-mono space-y-0.5">${leftoverItems}</ul>${possibleNamesBlock}${linkBlock}</div>`
     : ''
   return `${countsBlock}${renameBlock}${leftoversBlock}`
 }

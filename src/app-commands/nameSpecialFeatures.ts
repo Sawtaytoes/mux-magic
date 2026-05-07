@@ -139,11 +139,14 @@ const resolveUrl = ({
 
 // Per-rename emission shape. The pipeline emits one of these per file
 // it actually renamed (`{ oldName, newName }`), then a single trailing
-// summary record (`{ unrenamedFilenames }`) so the builder can render
-// "Files not renamed: …" alongside the rename table.
+// summary record (`{ unrenamedFilenames, possibleNames }`) so the
+// builder can render "Files not renamed: …" plus an optional "Possible
+// names (no timecode in listing): …" hint underneath. `possibleNames`
+// is empty whenever every file was successfully renamed — only useful
+// when the user has a leftover to manually identify.
 export type NameSpecialFeaturesResult =
   | { oldName: string, newName: string }
-  | { unrenamedFilenames: string[] }
+  | { unrenamedFilenames: string[], possibleNames: string[] }
 
 // Per-file match outcome. The post-processor walks the buffered list of
 // these and assigns final renamedFilenames, including the (1)/(2) prefix
@@ -302,16 +305,37 @@ export const nameSpecialFeatures = ({
 )) => {
   const deviation: TimecodeDeviation = { fixedOffset, timecodePaddingAmount }
 
+  // Pipe is split into two chained .pipe() calls. RxJS's pipe type
+  // overloads cap at ~9 operators; the diagnostic taps pushed this
+  // chain past the limit, which caused TS to fall back to
+  // Observable<unknown> and broke the typed CLI subscriber. Splitting
+  // here keeps each chain inside the inferable range.
   return (
     resolveUrl({ dvdCompareId, dvdCompareReleaseHash, searchTerm, url })
     .pipe(
+      tap(() => console.log("Loading DVDCompare page…")),
       concatMap((resolvedUrl) => searchDvdCompare({ url: resolvedUrl })),
+      tap((scrape) => console.log(
+        `Scraped extras text: ${scrape.extras.length} chars, `
+        + `${scrape.extras.split("\n").filter(Boolean).length} non-empty lines`,
+      )),
       // Resolve everything that depends on the scrape result (parsed
       // extras+cuts, canonical movie identity) before walking files.
       concatMap((scrape) => (
         parseSpecialFeatures(scrape.extras)
         .pipe(
-          mergeMap(({ extras, cuts }) => (
+          tap(({ extras, cuts, possibleNames }) => {
+            const timecodedExtras = extras.filter((e) => e.timecode).length
+            const childTimecodedExtras = extras
+              .flatMap((e) => e.children ?? [])
+              .filter((c) => c.timecode).length
+            console.log(
+              `Parsed ${extras.length} extras `
+              + `(${timecodedExtras + childTimecodedExtras} with timecodes), `
+              + `${cuts.length} cuts, ${possibleNames.length} untimed suggestions`,
+            )
+          }),
+          mergeMap(({ extras, cuts, possibleNames }) => (
             (
               scrape.filmTitle
               ? canonicalizeMovieTitle({
@@ -321,12 +345,18 @@ export const nameSpecialFeatures = ({
               : of<MovieIdentity>({ title: "", year: "" })
             )
             .pipe(
-              map((movie) => ({ extras, cuts, movie })),
+              map((movie) => ({ extras, cuts, movie, possibleNames })),
             )
           )),
         )
       )),
-      concatMap(({ extras: specialFeatures, cuts, movie }) => (
+    )
+    .pipe(
+      tap(() => console.log(
+        `Reading file metadata… (padding=${timecodePaddingAmount ?? 0}, `
+        + `offset=${fixedOffset ?? 0})`,
+      )),
+      concatMap(({ extras: specialFeatures, cuts, movie, possibleNames }) => (
         getFilesAtDepth({ depth: 0, sourcePath })
         .pipe(
           mergeMap((fileInfo) => (
@@ -337,6 +367,9 @@ export const nameSpecialFeatures = ({
                 fileInfo,
                 timecode: convertDurationToDvdCompareTimecode(duration),
               })),
+              tap(({ timecode }) => console.log(
+                `  ${fileInfo.filename}: ${timecode}`,
+              )),
             )
           )),
           // Per-file match: cut first (timecode-deterministic), then
@@ -383,6 +416,20 @@ export const nameSpecialFeatures = ({
               .filter((match) => !renamedFullPaths.has(match.fileInfo.fullPath))
               .map((match) => match.fileInfo.filename)
 
+            // Only surface possibleNames suggestions when there's actually
+            // a leftover file to identify. On the happy path the list is
+            // noise — every file matched, so the user doesn't need a
+            // sidebar of untimed extras to choose from.
+            const possibleNamesForSummary = (
+              unrenamedFilenames.length > 0
+                ? possibleNames
+                : []
+            )
+
+            console.log(
+              `Renaming matched files (${renames.length} of ${matches.length})…`,
+            )
+
             // Render the renames through the duplicate-counter +
             // rename-observable scan as before, then append the summary.
             const renamesStream$ = (
@@ -427,7 +474,10 @@ export const nameSpecialFeatures = ({
               )
             )
             const summary$: Observable<Observable<NameSpecialFeaturesResult>> = (
-              of(of<NameSpecialFeaturesResult>({ unrenamedFilenames }))
+              of(of<NameSpecialFeaturesResult>({
+                unrenamedFilenames,
+                possibleNames: possibleNamesForSummary,
+              }))
             )
             return concat(renamesStream$, summary$)
           }),
