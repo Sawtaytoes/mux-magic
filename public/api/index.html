@@ -296,6 +296,19 @@ const jobsEl = document.getElementById("jobs");
 // out which top-level card to re-render and refresh the whole subtree.
 const jobsById = new Map();
 
+// Per-sequence Steps disclosure state. We re-render the parent card on
+// every child event, so the <details> open/closed state would reset on
+// each render — track explicit user toggles here so a re-render
+// preserves them. Absent entry means "use default for current status"
+// (open while running, collapsed once terminal), which gives a tidy
+// view as old jobs accumulate and reclaims the screen real estate the
+// user complained about.
+const stepsOpenByJobId = new Map();
+
+function defaultStepsOpen(job) {
+  return job.status === "running" || job.status === "pending";
+}
+
 function makeEl(tag, className) {
   const el = document.createElement(tag);
   if (className) el.className = className;
@@ -670,16 +683,37 @@ function renderJob(job) {
   mountLogsDisclosure(card, job.id, job.status, true);
 
   // Steps — children of this job (only present when this is a sequence
-  // umbrella). Rendered as a compact list with each step's own status,
-  // logs disclosure, cancel button (if running), and error (if any).
+  // umbrella). Rendered as a <details>/<summary> disclosure so the
+  // user can collapse the per-step subtree (often dozens of rows) when
+  // they're done watching it. Default is open while the umbrella is
+  // running so live progress is visible without an extra click; once
+  // the umbrella reaches a terminal state the default flips to
+  // collapsed so finished jobs don't hog vertical space. Explicit user
+  // toggles override that default and persist across re-renders via
+  // stepsOpenByJobId.
   const children = getChildren(job.id);
   if (children.length > 0) {
-    const stepsBox = makeEl("div", "steps");
-    const heading = makeEl("div", "steps-heading");
+    const stepsBox = makeEl("details", "steps");
+    const initialOpen = stepsOpenByJobId.has(job.id)
+      ? stepsOpenByJobId.get(job.id)
+      : defaultStepsOpen(job);
+    // .open defaults to false; assigning true queues an async toggle
+    // event before any user interaction. Skip recording that one event
+    // so our own bootstrap doesn't get persisted as a user toggle.
+    let ignoreSelfToggle = initialOpen !== false;
+    stepsBox.open = initialOpen;
+    const heading = makeEl("summary", "steps-heading");
     heading.textContent = `Steps (${children.length})`;
     stepsBox.append(heading);
     children.forEach((child, index) => {
       stepsBox.append(renderStepRow(child, index));
+    });
+    stepsBox.addEventListener("toggle", () => {
+      if (ignoreSelfToggle) {
+        ignoreSelfToggle = false;
+        return;
+      }
+      stepsOpenByJobId.set(job.id, stepsBox.open);
     });
     card.append(stepsBox);
   }
