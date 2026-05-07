@@ -1492,12 +1492,18 @@ function renderFields(step, stepIndex) {
       const companion = field.companionNameField ? step.params[field.companionNameField] : null
       // Out-links to spot-check the rename heuristic. The primary anchor
       // points at the lookup service the field belongs to (DVDCompare,
-      // MAL, AniDB, TVDB). For nameSpecialFeatures we also surface a
-      // TMDB search link sourced from the resolved film name, since
-      // canonicalizeMovieTitle drives the rename via TMDB internally.
+      // MAL, AniDB, TVDB). For nameSpecialFeatures we also surface the
+      // matched TMDB film alongside, since canonicalizeMovieTitle drives
+      // the rename via TMDB internally.
+      //
+      // The primary anchor is rendered in the DOM regardless of whether
+      // an id is currently set — its `hidden` class is toggled via
+      // refreshLookupFieldDisplay on each keystroke so paste/typing
+      // shows the link immediately without waiting for a full re-render.
+      const lookupConfig = LOOKUP_LINKS[field.lookupType]
       const linkData = getLookupLinkData(step, field)
-      const primaryLink = linkData
-        ? `<a href="${esc(linkData.url)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(linkData.label)}</a>`
+      const primaryLink = lookupConfig
+        ? `<a data-step="${step.id}" data-lookup-link="${field.name}" href="${esc(linkData?.url ?? '#')}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 ${linkData ? '' : 'hidden'}">↗ ${esc(linkData?.label ?? lookupConfig.label)}</a>`
         : ''
       // For nameSpecialFeatures we surface the matched TMDB film
       // alongside the DVDCompare anchor. Three states:
@@ -1511,26 +1517,26 @@ function renderFields(step, stepIndex) {
         if (step.params.tmdbId) {
           const tmdbUrl = `https://www.themoviedb.org/movie/${encodeURIComponent(step.params.tmdbId)}`
           const linkText = step.params.tmdbName ? `${step.params.tmdbName} on TMDB` : 'open on TMDB'
-          tmdbLink = `<a href="${esc(tmdbUrl)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(linkText)}</a>`
+          tmdbLink = `<a data-step="${step.id}" data-tmdb-link="${field.name}" href="${esc(tmdbUrl)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(linkText)}</a>`
         } else if (step.params.tmdbResolutionPending) {
-          tmdbLink = `<span class="shrink-0 text-xs text-slate-500 inline-flex items-center gap-1">↗ resolving TMDB…</span>`
-        } else {
+          tmdbLink = `<span data-step="${step.id}" data-tmdb-link="${field.name}" class="shrink-0 text-xs text-slate-500 inline-flex items-center gap-1">↗ resolving TMDB…</span>`
+        } else if (step.params.dvdCompareId || step.params.searchTerm) {
           const parsedDvdCompare = parseDvdCompareDisplayName(step.params.dvdCompareName)
           const fallbackTitle = parsedDvdCompare?.baseTitle || step.params.searchTerm || null
           const fallbackYear = parsedDvdCompare?.year || ''
           if (fallbackTitle) {
             const searchQuery = fallbackYear ? `${fallbackTitle} y:${fallbackYear}` : fallbackTitle
             const searchUrl = `https://www.themoviedb.org/search/movie?query=${encodeURIComponent(searchQuery)}`
-            tmdbLink = `<a href="${esc(searchUrl)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ search TMDB</a>`
+            tmdbLink = `<a data-step="${step.id}" data-tmdb-link="${field.name}" href="${esc(searchUrl)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ search TMDB</a>`
           }
         }
       }
       const linksRow = primaryLink || tmdbLink
-        ? `<div class="shrink-0 ml-auto flex items-center gap-3">${primaryLink}${tmdbLink}</div>`
+        ? `<div data-step="${step.id}" data-links-row="${field.name}" class="shrink-0 ml-auto flex items-center gap-3 ${(linkData || tmdbLink) ? '' : 'hidden'}">${primaryLink}${tmdbLink}</div>`
         : ''
       return `<div>${label}<div class="flex items-center gap-2">
         <input type="number" value="${esc(num)}" placeholder="${esc(field.placeholder ?? '')}"
-          oninput="scheduleReverseLookup('${step.id}','${field.name}',this.value)"
+          oninput="scheduleReverseLookup('${step.id}','${field.name}',this.value); refreshLookupFieldDisplay('${step.id}','${field.name}',this.value)"
           onchange="setParam('${step.id}','${field.name}',this.value===''?undefined:Number(this.value))"
           class="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" />
         <button onclick="openLookup('${field.lookupType}','${step.id}','${field.name}')"
@@ -2826,9 +2832,11 @@ function parseDvdCompareDisplayName(displayName) {
 // Fires /queries/searchMovieDb with the cleaned title + year and stores
 // the top hit's id + label on the step so the input-area TMDB link can
 // jump straight to the matched movie page. Called from lookupSelectRelease
-// (modal pick — clean data) and runReverseLookup (typed id — parsed from
-// the returned display name). Re-renders on result so the link updates
-// without waiting for the next interaction.
+// (modal pick — clean data), runReverseLookup (typed id — parsed from
+// the returned display name), and kickTmdbResolutions (post-YAML-load
+// catch-up). Re-renders on result so the link updates without waiting
+// for the next interaction. Sets tmdbResolutionAttempted so kick won't
+// re-fire after a "no match" response.
 async function resolveTmdbForStep(stepId, baseTitle, year) {
   const step = steps.find((candidate) => candidate.id === stepId)
   if (!step || !baseTitle) {
@@ -2860,15 +2868,47 @@ async function resolveTmdbForStep(stepId, baseTitle, year) {
     console.error('resolveTmdbForStep failed', err)
   } finally {
     delete step.params.tmdbResolutionPending
+    step.params.tmdbResolutionAttempted = true
     renderAll()
   }
 }
 
 // Drops the previously-resolved TMDB match. Called when the user clears
 // the dvdCompareId or types a new one, since the old match is stale.
+// Also resets the attempted flag so kickTmdbResolutions will re-fire
+// once a fresh name resolves.
 function clearTmdbResolution(step) {
   delete step.params.tmdbId
   delete step.params.tmdbName
+  delete step.params.tmdbResolutionAttempted
+}
+
+// Sweeps every nameSpecialFeatures step that has a dvdCompareName but
+// no resolved TMDB match yet, and fires the resolver. Called after YAML
+// load (seq-URL restore + Load-panel paste) so a shared seq URL whose
+// author predates the persisted-resolution work still gets the direct
+// "↗ Title (year) on TMDB" link without forcing the user to re-pick
+// the release. Idempotent — flags guard against double-firing.
+function kickTmdbResolutions() {
+  for (const step of steps) {
+    if (step.command !== 'nameSpecialFeatures') {
+      continue
+    }
+    if (step.params.tmdbId) {
+      continue
+    }
+    if (step.params.tmdbResolutionPending) {
+      continue
+    }
+    if (step.params.tmdbResolutionAttempted) {
+      continue
+    }
+    const parsed = parseDvdCompareDisplayName(step.params.dvdCompareName)
+    if (!parsed?.baseTitle) {
+      continue
+    }
+    resolveTmdbForStep(step.id, parsed.baseTitle, parsed.year)
+  }
 }
 
 // ─── Reverse lookup (manual ID/hash edit → fetch display name) ───────────────
@@ -2883,6 +2923,69 @@ function setCompanionDisplay(stepId, fieldName, text) {
   el.title = text
   if (text) el.classList.remove('hidden')
   else el.classList.add('hidden')
+}
+
+// Direct-DOM updater for the input-area lookup links. Wired into the
+// numberWithLookup field's `oninput` so paste / keystroke immediately
+// flips the primary anchor's href to the new id and hides it when the
+// input is cleared — without needing a full renderAll on every keystroke
+// (which would lose input focus and re-introduce the typing-lag problem
+// scheduleUpdateUrl was carved out to avoid).
+//
+// The TMDB anchor is hidden on every change because the prior resolution
+// is keyed off the old id and is now stale; the chained reverse-lookup
+// will eventually fire resolveTmdbForStep, which calls renderAll and
+// rebuilds the TMDB anchor with the fresh match.
+function refreshLookupFieldDisplay(stepId, fieldName, rawValue) {
+  const linksRow = document.querySelector(`[data-step="${stepId}"][data-links-row="${fieldName}"]`)
+  if (!linksRow) {
+    return
+  }
+  const primary = linksRow.querySelector(`[data-lookup-link="${fieldName}"]`)
+  const tmdb = linksRow.querySelector(`[data-tmdb-link="${fieldName}"]`)
+
+  const step = steps.find((candidate) => candidate.id === stepId)
+  if (!step) {
+    return
+  }
+  const cmd = COMMANDS[step.command]
+  const field = cmd?.fields.find((candidate) => candidate.name === fieldName)
+  if (!field) {
+    return
+  }
+
+  const numericValue = (rawValue !== undefined && rawValue !== '') ? Number(rawValue) : null
+  const hasValidId = numericValue !== null && Number.isFinite(numericValue) && numericValue > 0
+
+  if (primary) {
+    if (hasValidId) {
+      const lookup = LOOKUP_LINKS[field.lookupType]
+      if (lookup) {
+        const tempParams = { ...step.params, [fieldName]: numericValue }
+        primary.setAttribute('href', lookup.buildUrl(numericValue, tempParams))
+        primary.classList.remove('hidden')
+      } else {
+        primary.classList.add('hidden')
+      }
+    } else {
+      primary.classList.add('hidden')
+    }
+  }
+
+  // The TMDB anchor (resolved or pending or search-fallback) is always
+  // stale on id change. Hide it; renderAll will rebuild after the
+  // chained resolveTmdbForStep settles.
+  if (tmdb) {
+    tmdb.classList.add('hidden')
+  }
+
+  const primaryVisible = primary && !primary.classList.contains('hidden')
+  const tmdbVisible = tmdb && !tmdb.classList.contains('hidden')
+  if (primaryVisible || tmdbVisible) {
+    linksRow.classList.remove('hidden')
+  } else {
+    linksRow.classList.add('hidden')
+  }
 }
 
 function scheduleReverseLookup(stepId, fieldName, rawValue) {
@@ -3669,6 +3772,7 @@ Object.assign(window.mediaTools, {
   makeStep,
   updateUrl,
   closeApiRunModal,
+  kickTmdbResolutions,
 })
 
 // Initial bootstrap (initPaths / restoreFromUrl / renderAll) is invoked

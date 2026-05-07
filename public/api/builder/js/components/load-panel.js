@@ -119,6 +119,11 @@ export function loadYamlFromText(text) {
     newSteps.push(step)
   }
   setSteps(newSteps)
+  // Kick TMDB resolutions for any nameSpecialFeatures step whose YAML
+  // didn't already carry a tmdbId (older shared seq URLs predate the
+  // persisted-resolution work). Safe to call when nothing matches —
+  // the function is idempotent and gated on per-step flags.
+  bridge().kickTmdbResolutions?.()
 }
 
 // ─── Click handler for the panel's Load button ──────────────────────────────
