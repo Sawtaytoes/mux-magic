@@ -32,6 +32,7 @@ import { getFolder } from "../tools/getFolder.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
 import { logInfo } from "../tools/logMessage.js"
 import { mergeSubtitlesMkvMerge, mergeSubtitlesMkvMergeDefaultProps } from "../cli-spawn-operations/mergeSubtitlesMkvMerge.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
 import {
   parseMediaFileChapterTimestamp,
   convertTimecodeToMilliseconds,
@@ -108,7 +109,7 @@ export const mergeTracks = ({
         mediaFiles
       )
       .pipe(
-        map((
+        withFileProgress((
           mediaFileInfo,
         ) => (
           from(
@@ -430,7 +431,6 @@ export const mergeTracks = ({
         )),
       )
     )),
-    concatAll(),
     toArray(),
     logAndRethrow(
       mergeTracks
