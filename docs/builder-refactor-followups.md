@@ -124,7 +124,7 @@ Use `@testing-library/dom` queries (`getByRole`, `getByText`, etc.) for DOM asse
 
 Independently scoped — pick any. Order is by ascending entanglement so the gnarly stuff lands when surrounding context is clearer:
 
-1. **`load-panel`** — `toggleLoad`, `loadYaml`, `loadYamlFromText`. Mirrors `yaml-modal`'s shape; the panel markup is at the top of `<body>`.
+1. **`load-modal`** — `openLoadModal`, `closeLoadModal`, `loadYamlFromText`. Mirrors `yaml-modal`'s shape; the modal markup lives next to `yaml-modal` near the bottom of `<body>`.
 2. **`page-header`** — `togglePageMenu`, click-outside listener, the Esc handler that currently lives in inline near line ~1850. The header markup itself stays in `index.html`. Some HTML `onclick`s currently call `window.mediaTools.X()` inline (see `Add Path` button) — those become delegated listeners after this stage.
 3. **`api-run-modal`** — `runViaApi`, `cancelApiRun`, `closeApiRunModal`, `copyApiRunLogs`. SSE-driven (uses `createTolerantEventSource`); slightly more dependencies but well-bounded.
 4. **`command-picker`** — `openCmdPicker`, `closeCmdPicker`, `cmdPickerKeydown` and the filtered list popover. Has its own state (`cmdPickerState`) so a small `command-picker-state.js` may help.

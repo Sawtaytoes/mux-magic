@@ -22,14 +22,21 @@ import {
   copyYaml,
 } from './components/yaml-modal.js'
 import {
-  toggleLoad,
-  loadYaml,
+  openLoadModal,
+  closeLoadModal,
   loadYamlFromText,
-} from './components/load-panel.js'
+} from './components/load-modal.js'
 import {
   togglePageMenu,
   attachPageHeaderListeners,
 } from './components/page-header.js'
+import {
+  copyStepYaml,
+  copyGroupYaml,
+  pasteCardAt,
+} from './components/card-clipboard.js'
+import { attachSortables } from './components/drag-and-drop.js'
+import { attachModalEscapeListener } from './util/modal-keys.js'
 import { pathVarOptionText, refreshPathVarOptions } from './util/path-var-options.js'
 
 window.mediaTools = window.mediaTools || {}
@@ -50,13 +57,18 @@ Object.assign(window.mediaTools, {
   openYamlModal,
   closeYamlModal,
   copyYaml,
-  toggleLoad,
-  loadYaml,
+  openLoadModal,
+  closeLoadModal,
   loadYamlFromText,
   togglePageMenu,
+  copyStepYaml,
+  copyGroupYaml,
+  pasteCardAt,
+  attachSortables,
 })
 
 attachPageHeaderListeners()
+attachModalEscapeListener()
 
 // Delegate path-var-card events on the steps list. Bound once; survives
 // every renderAll since the parent is never replaced.

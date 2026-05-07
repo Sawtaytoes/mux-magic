@@ -12,25 +12,92 @@ import {
 // step-card, at which point those bridge entries collapse.
 const bridge = () => window.mediaTools
 
-// ─── Panel toggle ────────────────────────────────────────────────────────────
+// ─── Modal lifecycle ─────────────────────────────────────────────────────────
 
-// Show/hide the paste-YAML panel. Always clears any previously-displayed
-// parse error so reopening the panel doesn't leave a stale red message.
-export function toggleLoad() {
-  document.getElementById('load-panel').classList.toggle('hidden')
+// Paste-driven load: open the modal, attach a document-level paste
+// listener, and let any Ctrl+V / ⌘+V anywhere on the page hydrate the
+// builder. The modal itself is intentionally text-only (no textarea,
+// no Load button) — the user's clipboard is the only input. This
+// matches what they actually do today (paste a saved sequence) and
+// drops the dead-weight textarea path.
+//
+// The paste listener is scoped to the modal's open state. We attach
+// it on open, detach on close; a stray paste with no modal open is a
+// no-op.
+let isPasteListenerAttached = false
+
+function attachPasteListener() {
+  if (isPasteListenerAttached) {
+    return
+  }
+  document.addEventListener('paste', onDocumentPaste)
+  isPasteListenerAttached = true
+}
+
+function detachPasteListener() {
+  if (!isPasteListenerAttached) {
+    return
+  }
+  document.removeEventListener('paste', onDocumentPaste)
+  isPasteListenerAttached = false
+}
+
+function onDocumentPaste(event) {
+  const text = event.clipboardData?.getData('text/plain') ?? ''
+  if (!text.trim()) {
+    return
+  }
+  // Suppress default insertion: if focus had been left in some input
+  // when the modal opened, the paste would otherwise dump into it.
+  event.preventDefault()
+  handlePastedYaml(text)
+}
+
+// Hydrate the builder from the pasted YAML. On parse error keep the
+// modal open and surface the message into #load-error so the user
+// can read what failed without losing their clipboard payload.
+function handlePastedYaml(text) {
+  const errorElement = document.getElementById('load-error')
+  errorElement.classList.add('hidden')
+  try {
+    loadYamlFromText(text)
+    bridge().renderAll()
+    bridge().updateUrl()
+    closeLoadModal()
+  } catch (error) {
+    errorElement.textContent = error.message
+    errorElement.classList.remove('hidden')
+  }
+}
+
+export function openLoadModal() {
   document.getElementById('load-error').classList.add('hidden')
+  document.getElementById('load-modal').classList.remove('hidden')
+  attachPasteListener()
+}
+
+// Closes when called programmatically (event omitted) or when the
+// user clicks the modal backdrop. Clicks bubbling up from the inner
+// panel won't match the backdrop element so the modal stays open.
+// Mirrors closeYamlModal's guard pattern.
+export function closeLoadModal(event) {
+  if (event && event.target !== document.getElementById('load-modal')) {
+    return
+  }
+  document.getElementById('load-modal').classList.add('hidden')
+  detachPasteListener()
 }
 
 // ─── YAML → state ────────────────────────────────────────────────────────────
 
-const isGroupItem = (item) => !!(item && typeof item === 'object' && item.kind === 'group')
+export const isGroupItem = (item) => !!(item && typeof item === 'object' && item.kind === 'group')
 
 // Hydrate a single bare-step item from YAML into the in-memory step
 // shape. Captures id, alias, isCollapsed, and walks the command's
 // fields to assign params or restore links. Same logic the old loader
 // applied to every top-level entry — extracted so it can be reused for
 // inner steps inside a group.
-function loadStepItem(item, COMMANDS) {
+export function loadStepItem(item, COMMANDS) {
   if (!item.command) throw new Error('Each step must have a "command" key')
   if (!COMMANDS[item.command]) throw new Error(`Unknown command: ${item.command}`)
   const step = bridge().makeStep(item.command)
@@ -95,7 +162,7 @@ function loadStepItem(item, COMMANDS) {
 
 // Hydrate a group item: walks its inner `steps` array, refusing nested
 // groups (the schema bans nesting; surface it here as a clear error).
-function loadGroupItem(item, COMMANDS) {
+export function loadGroupItem(item, COMMANDS) {
   if (!Array.isArray(item.steps) || item.steps.length === 0) {
     throw new Error('A group must have a non-empty "steps" array')
   }
@@ -118,8 +185,8 @@ function loadGroupItem(item, COMMANDS) {
 // Replaces `paths` and `steps` with the contents of a saved YAML
 // document. Two formats are accepted: the canonical `{ paths, steps }`
 // object form emitted by toYamlStr, and the legacy plain-array-of-steps
-// form. Errors propagate to the caller (loadYaml renders them in the
-// panel; restoreFromUrl swallows them).
+// form. Errors propagate to the caller (handlePastedYaml renders them
+// into the modal; restoreFromUrl swallows them).
 export function loadYamlFromText(text) {
   const data = window.jsyaml.load(text)
   const COMMANDS = bridge().COMMANDS
@@ -163,21 +230,4 @@ export function loadYamlFromText(text) {
   // without dvdCompareId.
   bridge().kickReverseLookups?.()
   bridge().kickTmdbResolutions?.()
-}
-
-// ─── Click handler for the panel's Load button ──────────────────────────────
-
-export function loadYaml() {
-  const text = document.getElementById('load-input').value.trim()
-  const errorElement = document.getElementById('load-error')
-  errorElement.classList.add('hidden')
-  try {
-    loadYamlFromText(text)
-    document.getElementById('load-panel').classList.add('hidden')
-    bridge().renderAll()
-    bridge().updateUrl()
-  } catch (error) {
-    errorElement.textContent = error.message
-    errorElement.classList.remove('hidden')
-  }
 }

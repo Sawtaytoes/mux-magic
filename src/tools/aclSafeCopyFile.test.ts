@@ -155,4 +155,27 @@ describe(aclSafeCopyFile.name, () => {
 
     expect(onProgress).not.toHaveBeenCalled()
   })
+
+  test("aborts via signal and unlinks the partial destination", async () => {
+    vol
+    .fromJSON({
+      "G:\\cache\\source.mkv": "x".repeat(1024 * 64),
+      "G:\\Anime": null,
+    })
+
+    const abortController = new AbortController()
+    abortController.abort()
+
+    await expect(
+      aclSafeCopyFile(
+        "G:\\cache\\source.mkv",
+        "G:\\Anime\\target.mkv",
+        { signal: abortController.signal },
+      )
+    )
+    .rejects
+    .toBeDefined()
+
+    expect(vol.existsSync("G:\\Anime\\target.mkv")).toBe(false)
+  })
 })

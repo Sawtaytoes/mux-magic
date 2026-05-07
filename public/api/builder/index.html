@@ -6,6 +6,7 @@
 <title>Sequence Builder</title>
 <script src="/vendor/tailwind-3.4.17.js"></script>
 <script src="/vendor/js-yaml-4.1.1.min.js"></script>
+<script src="/vendor/Sortable-1.15.2.min.js"></script>
 <script src="/sse-utils.js"></script>
 <script src="/command-labels.js"></script>
 <script type="module" src="/builder/js/main.js"></script>
@@ -20,6 +21,15 @@
   }
   .step-enter { animation: stepEnter 200ms ease-out; }
   .step-leave { animation: stepLeave 200ms ease-in forwards; pointer-events: none; }
+
+  /* Drag-and-drop visuals (SortableJS). The grip handle gets a grab
+     cursor; the placeholder Sortable inserts at the hover position
+     fades the original card so the user sees where it'll land; the
+     card actively being dragged gets a subtle blue ring. */
+  [data-drag-handle] { cursor: grab; touch-action: none; }
+  [data-drag-handle]:active { cursor: grabbing; }
+  .drag-ghost { opacity: 0.35; }
+  .drag-chosen { box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5); }
 
   /* View-transition timing for the move-step swap */
   ::view-transition-old(*),
@@ -323,7 +333,7 @@
         <span class="page-menu-sep w-px h-6 bg-slate-700 mx-1"></span>
         <div class="page-menu-group">
           <div class="page-menu-row">
-            <button onclick="toggleLoad()" id="load-btn" title="Load YAML"
+            <button onclick="openLoadModal()" id="load-btn" title="Load YAML"
               class="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
                 <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5" />
@@ -353,25 +363,38 @@
     </div>
   </div>
 
-  <!-- Load YAML panel -->
-  <div id="load-panel" class="hidden shrink-0 px-4 py-3 border-b border-slate-700 bg-slate-800/60">
-    <p class="text-xs text-slate-400 mb-2">Paste saved YAML to restore sequence</p>
-    <textarea id="load-input" rows="5"
-      class="w-full bg-slate-900 text-slate-200 text-xs font-mono p-2 rounded border border-slate-600 resize-y focus:outline-none focus:border-blue-500"
-      placeholder="- command: copyFiles&#10;  params:&#10;    sourcePath: /src&#10;    destinationPath: /dst"></textarea>
-    <div class="flex items-center gap-3 mt-2">
-      <button onclick="loadYaml()" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded">Load</button>
-      <button onclick="toggleLoad()" class="text-xs text-slate-400 hover:text-slate-300">Cancel</button>
-      <span id="load-error" class="text-xs text-red-400 hidden"></span>
-    </div>
-  </div>
-
   <!-- Step list -->
   <div class="flex-1 overflow-y-auto">
     <div id="steps-el" class="max-w-3xl mx-auto px-4 py-4 flex flex-col gap-3"></div>
   </div>
 
 
+</div>
+
+<!-- Load YAML modal: paste-driven. Open it via the page-header Load
+     icon; pasting anywhere on the page (Ctrl+V / ⌘+V) hydrates the
+     builder and closes the modal. The text-only body keeps the surface
+     tiny and consistent with the YAML view modal next door. -->
+<div id="load-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70" onclick="closeLoadModal(event)">
+  <div class="bg-slate-900 border border-slate-700 rounded-xl flex flex-col" style="width:min(90vw,560px)" onclick="event.stopPropagation()">
+    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
+      <span class="text-xs font-medium text-slate-400">Load YAML</span>
+      <button onclick="closeLoadModal()" class="text-xs text-slate-400 hover:text-slate-200">✕ Close</button>
+    </div>
+    <div class="px-6 py-8 text-center space-y-3">
+      <p class="text-sm text-slate-300">Paste your saved sequence YAML anywhere on the page.</p>
+      <p class="text-xs text-slate-500">
+        Press
+        <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono text-[10px]">Ctrl + V</kbd>
+        /
+        <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono text-[10px]">⌘ + V</kbd>
+        to paste ·
+        <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono text-[10px]">Esc</kbd>
+        to cancel
+      </p>
+      <p id="load-error" class="text-xs text-red-400 hidden"></p>
+    </div>
+  </div>
 </div>
 
 <!-- YAML modal -->
@@ -1639,10 +1662,11 @@ function esc(v) {
 // (stage 1 refactor).
 
 function renderInsertDivider(index) {
-  // Three insert buttons so the user can choose what kind of item lands
-  // between any two siblings — a bare step, a serial group, or a
-  // parallel group. Hover-only chrome (group-hover) keeps the divider
-  // unobtrusive when the user isn't aiming at it.
+  // Four insert buttons so the user can choose what kind of item lands
+  // between any two siblings — a bare step, a serial group, a parallel
+  // group, or a paste from the clipboard. Hover-only chrome
+  // (group-hover) keeps the divider unobtrusive when the user isn't
+  // aiming at it.
   return `<div class="col-span-full flex items-center group -my-0.5">
     <div class="flex-1 h-px bg-slate-700/50 group-hover:bg-slate-600 transition-colors"></div>
     <div class="flex items-center gap-1 mx-1">
@@ -1657,6 +1681,10 @@ function renderInsertDivider(index) {
       <button onclick="insertGroupAt(${index}, true)" title="Insert a parallel group here"
         class="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-blue-400 rounded-full border border-transparent hover:border-blue-500/40 hover:bg-slate-800 transition-all whitespace-nowrap">
         ➕ Parallel
+      </button>
+      <button onclick="pasteCardAt({itemIndex: ${index}}, this)" title="Paste a copied step or group here"
+        class="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-emerald-400 rounded-full border border-transparent hover:border-emerald-500/40 hover:bg-slate-800 transition-all whitespace-nowrap">
+        📋 Paste
       </button>
     </div>
     <div class="flex-1 h-px bg-slate-700/50 group-hover:bg-slate-600 transition-colors"></div>
@@ -1686,9 +1714,15 @@ function renderAll() {
   if (!steps.length) {
     parts.push(`<div class="flex flex-col items-center gap-2 mt-4">
       <p class="text-slate-500 text-xs">No steps yet.</p>
-      <button onclick="addPicked()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded font-medium">
-        + Add your first step
-      </button>
+      <div class="flex items-center gap-2">
+        <button onclick="addPicked()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded font-medium">
+          + Add your first step
+        </button>
+        <button onclick="pasteCardAt({itemIndex: 0}, this)" title="Paste a copied step or group"
+          class="text-xs text-slate-300 hover:text-emerald-400 px-4 py-2 rounded font-medium border border-slate-700 hover:border-emerald-500/40">
+          📋 Paste
+        </button>
+      </div>
     </div>`)
   } else {
     // Leading divider so there's an inline `+ Add` between the paths
@@ -1762,6 +1796,12 @@ function renderAll() {
     }
   }
 
+  // Re-attach Sortable instances to every reorderable container
+  // (#steps-el and each [data-group-body]). The previous instances
+  // are destroyed inside attachSortables since renderAll just replaced
+  // their host nodes via innerHTML.
+  window.mediaTools.attachSortables?.()
+
   updateYaml()
   updateUrl()
 }
@@ -1775,6 +1815,17 @@ function renderCollapseChevron(isCollapsed) {
   const rotateClass = isCollapsed ? '-rotate-90' : ''
   return `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 transition-transform ${rotateClass}">
     <polyline points="5,8 10,13 15,8" />
+  </svg>`
+}
+
+// Two-papers "copy" icon — the universal duplicate-content glyph
+// (front sheet + back sheet peeking up-and-left). Distinct from the
+// 📋 clipboard glyph used on Paste buttons so the user can tell at a
+// glance which action is which: copy=duplicate, paste=clipboard.
+function renderCopyIcon() {
+  return `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
+    <rect x="7" y="7" width="9" height="10" rx="1.5" />
+    <path d="M4 13V5.5A1.5 1.5 0 0 1 5.5 4H12" />
   </svg>`
 }
 
@@ -1826,8 +1877,10 @@ function renderGroup(group, itemIndex, startingFlatIndex) {
   const isLastItem = itemIndex === steps.length - 1
 
   return `
-<div data-group="${group.id}" class="group-card ${isParallel ? 'group-card-parallel' : 'group-card-serial'} bg-slate-900/50 rounded-xl border border-slate-700/70 overflow-hidden">
+<div data-group="${group.id}" data-sortable-item class="group-card ${isParallel ? 'group-card-parallel' : 'group-card-serial'} bg-slate-900/50 rounded-xl border border-slate-700/70 overflow-hidden">
   <div class="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-700/70 bg-slate-900/70">
+    <button data-drag-handle title="Drag to reorder"
+      class="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 select-none">⠿</button>
     <button onclick="toggleGroupCollapsed('${group.id}')" title="${group.isCollapsed ? 'Expand group' : 'Collapse group'}"
       class="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700">
       ${renderCollapseChevron(group.isCollapsed)}
@@ -1844,6 +1897,8 @@ function renderGroup(group, itemIndex, startingFlatIndex) {
       class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700">${renderDoubleChevron(false)}</button>
     <button onclick="addStepToGroup('${group.id}')" title="Add a step inside this group"
       class="text-[10px] text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded border border-slate-700 hover:border-slate-500">+ Step</button>
+    <button onclick="pasteCardAt({parentGroupId: '${group.id}'}, this)" title="Paste a copied step into this group"
+      class="text-[10px] text-slate-400 hover:text-emerald-400 px-2 py-0.5 rounded border border-slate-700 hover:border-emerald-500/40">📋 Paste</button>
     <!-- Group move arrows: same affordance as a step's, but they swap
          the entire group with its top-level neighbor (which can itself
          be a step or another group). -->
@@ -1851,6 +1906,8 @@ function renderGroup(group, itemIndex, startingFlatIndex) {
       class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↑</button>
     <button onclick="moveGroup('${group.id}',1)" title="Move group down" ${isLastItem ? 'disabled' : ''}
       class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↓</button>
+    <button onclick="copyGroupYaml('${group.id}', this)" title="Copy this group's YAML"
+      class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent">${renderCopyIcon()}</button>
     <button onclick="removeGroup('${group.id}')" title="Remove this group (its inner steps go too)"
       class="text-[10px] text-slate-500 hover:text-red-400 px-2 py-0.5 rounded border border-slate-700 hover:border-red-500/40">✕</button>
   </div>
@@ -1926,8 +1983,10 @@ function renderStep(step, index, context = {}) {
   // via the .parallel-group child rule so siblings sit shoulder-to-shoulder
   // when the container is wide and wrap when it isn't.
   return `
-<div id="step-${step.id}" style="view-transition-name: step-${step.id}" class="step-card bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+<div id="step-${step.id}" data-sortable-item data-step-card="${step.id}" style="view-transition-name: step-${step.id}" class="step-card bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
   <div class="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-700 bg-slate-800/80">
+    <button data-drag-handle title="Drag to reorder"
+      class="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 shrink-0 select-none">⠿</button>
     <button onclick="toggleStepCollapsed('${step.id}')" title="${step.isCollapsed ? 'Expand step' : 'Collapse step'}"
       class="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 shrink-0">
       ${renderCollapseChevron(step.isCollapsed)}
@@ -1960,6 +2019,8 @@ function renderStep(step, index, context = {}) {
         class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↑</button>
       <button onclick="moveStep('${step.id}',1)" ${isLast ? 'disabled' : ''}
         class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↓</button>
+      <button onclick="copyStepYaml('${step.id}', this)" title="Copy this step's YAML"
+        class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent">${renderCopyIcon()}</button>
       <button onclick="removeStep('${step.id}')"
         class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs">✕</button>
     </div>
@@ -2345,14 +2406,24 @@ function openYamlModal() { return window.mediaTools.openYamlModal() }
 function closeYamlModal(event) { return window.mediaTools.closeYamlModal(event) }
 
 // ─── Load YAML ────────────────────────────────────────────────────────────────
-// Implementations live in /builder/js/components/load-panel.js — these
+// Implementations live in /builder/js/components/load-modal.js — these
 // forwarders preserve inline call sites (HTML onclick="..." bindings,
 // applySnapshot's loadYamlFromText, restoreFromUrl's loadYamlFromText)
 // without each having to reach through window.mediaTools manually.
 
-function toggleLoad() { return window.mediaTools.toggleLoad() }
-function loadYaml() { return window.mediaTools.loadYaml() }
+function openLoadModal() { return window.mediaTools.openLoadModal() }
+function closeLoadModal(event) { return window.mediaTools.closeLoadModal(event) }
 function loadYamlFromText(text) { return window.mediaTools.loadYamlFromText(text) }
+
+// ─── Per-card YAML clipboard ──────────────────────────────────────────────────
+// Implementations live in /builder/js/components/card-clipboard.js —
+// these forwarders back the per-step / per-group `📋` buttons in
+// renderStep / renderGroup and the `📋 Paste` button in
+// renderInsertDivider.
+
+function copyStepYaml(stepId, buttonElement) { return window.mediaTools.copyStepYaml(stepId, buttonElement) }
+function copyGroupYaml(groupId, buttonElement) { return window.mediaTools.copyGroupYaml(groupId, buttonElement) }
+function pasteCardAt(target, anchorElement) { return window.mediaTools.pasteCardAt(target, anchorElement) }
 
 // togglePageMenu lives in /builder/js/components/page-header.js — this
 // forwarder preserves the inline HTML onclick="togglePageMenu(...)"
@@ -4717,9 +4788,11 @@ Object.defineProperty(window.mediaTools, 'COMMANDS', {
 
 Object.assign(window.mediaTools, {
   renderAll,
+  renderAllAnimated,
   refreshLinkedInputs,
   scheduleUpdateUrl,
   scrollPathVarIntoView,
+  scrollStepIntoView,
   schedulePathLookup,
   pathPickerKeydown,
   randomHex,
@@ -4727,6 +4800,7 @@ Object.assign(window.mediaTools, {
   restoreFromUrl,
   buildParams,
   makeStep,
+  clearStaleStepLinksAfterMove,
   updateUrl,
   closeApiRunModal,
   kickTmdbResolutions,

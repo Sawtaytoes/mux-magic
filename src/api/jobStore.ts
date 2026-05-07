@@ -177,6 +177,43 @@ export const unregisterJobSubscription = (
   jobSubscriptions.delete(id)
 }
 
+// Per-job teardown shared between `cancelJob`'s cascade (umbrella → child)
+// and the sequence runner's parallel-group fail-fast (sibling → sibling).
+// Idempotent and safe to call on any status: a `running` job flips to
+// `cancelled` with subscription teardown, a `pending` job flips to
+// `skipped`, anything else (already terminal) is a no-op.
+//
+// Same status-before-unsubscribe ordering as `cancelJob` for the same
+// reason — the runner's promise teardown captures the post-flip snapshot.
+export const cancelOrSkipJob = (
+  id: string,
+): void => {
+  const job = jobs.get(id)
+  if (!job) return
+
+  if (job.status === "running") {
+    updateJob(id, {
+      completedAt: new Date(),
+      status: "cancelled",
+    })
+    const subscription = jobSubscriptions.get(id)
+    if (subscription) {
+      subscription.unsubscribe()
+      jobSubscriptions.delete(id)
+    }
+    completeSubject(id)
+    return
+  }
+
+  if (job.status === "pending") {
+    updateJob(id, {
+      completedAt: new Date(),
+      status: "skipped",
+    })
+    completeSubject(id)
+  }
+}
+
 // Cancellation entry point used by `DELETE /jobs/:id`. Returns true when
 // a running job was cancelled, false when the job is missing or already
 // in a terminal state (caller maps these to 404 / 204 respectively).
@@ -213,28 +250,10 @@ export const cancelJob = (
 
   completeSubject(id)
 
-  for (const child of jobs.values()) {
-    if (child.parentJobId !== id) continue
-
-    if (child.status === "running") {
-      updateJob(child.id, {
-        completedAt: new Date(),
-        status: "cancelled",
-      })
-      const childSub = jobSubscriptions.get(child.id)
-      if (childSub) {
-        childSub.unsubscribe()
-        jobSubscriptions.delete(child.id)
-      }
-      completeSubject(child.id)
-    } else if (child.status === "pending") {
-      updateJob(child.id, {
-        completedAt: new Date(),
-        status: "skipped",
-      })
-      completeSubject(child.id)
-    }
-  }
+  Array
+  .from(jobs.values())
+  .filter((child) => child.parentJobId === id)
+  .forEach((child) => cancelOrSkipJob(child.id))
 
   return true
 }

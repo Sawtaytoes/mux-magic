@@ -5,9 +5,9 @@ import {
   promisify,
 } from "node:util"
 import {
-  from,
+  defer,
   map,
-  type Observable,
+  Observable,
 } from "rxjs"
 
 import { mediaInfoPath } from "./appPaths.js";
@@ -258,6 +258,12 @@ export type MediaInfo = {
   )
 }
 
+// Wraps the mediainfo execFile in an AbortController-aware Observable so
+// an unsubscribe (sequence cancel, parallel-sibling fail-fast) kills the
+// in-flight subprocess instead of letting it run to completion. Node's
+// child_process.execFile honours `{ signal }` natively — when the
+// controller aborts, mediainfo gets SIGTERM and the underlying promise
+// rejects with an AbortError that catchError-as-EMPTY will swallow.
 export const getMediaInfo = (
   filePath: string,
 ): (
@@ -265,33 +271,44 @@ export const getMediaInfo = (
     MediaInfo
   >
 ) => (
-  from(
-    execFile(
-      mediaInfoPath,
-      [
-        "--Output=JSON",
-        filePath,
-      ],
-    )
-  )
-  .pipe(
-    // execFile rejects with a non-null `code` on real failures, so we
-    // don't need to throw on stderr presence — mediainfo is happy to
-    // print warnings/info to stderr on healthy files. Throwing here was
-    // the same shape of bug we fixed in runMkvExtract / getMkvInfo.
-    map(({ stdout }) => stdout),
-    map((
-      mediaInfoJsonString,
-    ) => (
-      JSON
-      .parse(
-        mediaInfoJsonString
-      ) as (
-        MediaInfo
+  new Observable<MediaInfo>((subscriber) => {
+    const abortController = new AbortController()
+
+    const innerSubscription = (
+      defer(() => execFile(
+        mediaInfoPath,
+        [
+          "--Output=JSON",
+          filePath,
+        ],
+        { signal: abortController.signal },
+      ))
+      .pipe(
+        // execFile rejects with a non-null `code` on real failures, so we
+        // don't need to throw on stderr presence — mediainfo is happy to
+        // print warnings/info to stderr on healthy files. Throwing here was
+        // the same shape of bug we fixed in runMkvExtract / getMkvInfo.
+        map(({ stdout }) => stdout),
+        map((
+          mediaInfoJsonString,
+        ) => (
+          JSON
+          .parse(
+            mediaInfoJsonString
+          ) as (
+            MediaInfo
+          )
+        )),
+        logAndSwallow(
+          getMediaInfo
+        ),
       )
-    )),
-    logAndSwallow(
-      getMediaInfo
-    ),
-  )
+      .subscribe(subscriber)
+    )
+
+    return () => {
+      abortController.abort()
+      innerSubscription.unsubscribe()
+    }
+  })
 )
