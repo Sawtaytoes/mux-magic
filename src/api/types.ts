@@ -49,14 +49,17 @@ export type PromptEvent = {
 // `ratio` is a 0..1 overall job ratio (null if the emitter is running
 // in indeterminate mode — e.g. before an upfront stat() resolves).
 // `filesDone` / `filesTotal` carry the per-file rollup for any iterator
-// that walks N files. `currentFile` and `currentFileRatio` are populated
-// only by emitters that have byte-level inner progress (currently just
-// the copy commands via aclSafeCopyFile.onProgress).
+// that walks N files. `currentFiles` is the snapshot of files
+// currently in flight (one entry per active tracker) — multiple
+// entries when per-file Tasks run in parallel. Empty / omitted when no
+// file is actively being processed.
 export type ProgressEvent = {
   type: "progress"
   ratio: number | null
   filesDone?: number
   filesTotal?: number
-  currentFile?: string
-  currentFileRatio?: number | null
+  currentFiles?: Array<{
+    path: string
+    ratio: number | null
+  }>
 }

@@ -18,6 +18,7 @@ import { getFiles } from "../tools/getFiles.js"
 import { logInfo } from "../tools/logMessage.js"
 import { makeDirectory } from "../tools/makeDirectory.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
+import { runTasks } from "../tools/taskScheduler.js"
 
 // Wraps the inner copy pipeline in an Observable whose teardown aborts
 // an internal AbortController. The signal threads into every per-file
@@ -64,28 +65,38 @@ export const copyFiles = ({
             concatMap(({ files, sizes, emitter }) => (
               from(files.map((file, index) => ({ file, size: sizes[index] })))
               .pipe(
-                concatMap(({ file, size }) => {
+                // Per-file copies go through the global Task scheduler — at
+                // MAX_THREADS=N, up to N copies run concurrently. Each gets
+                // its own FileTracker so the UI shows one row per active
+                // copy (path + percent), and the tracker.finish() in the
+                // finalize ensures slot release on cancel.
+                runTasks(({ file, size }) => {
                   const targetPath = join(
                     destinationPath,
                     file.filename.concat(extname(file.fullPath)),
                   )
 
+                  const tracker = (
+                    emitter !== null
+                    ? emitter.startFile(file.fullPath, size)
+                    : null
+                  )
+
                   // aclSafeCopyFile.onProgress fires per chunk with
                   // ABSOLUTE bytesWritten across the lifetime of one file
-                  // copy. The emitter's reportBytes wants per-chunk delta,
+                  // copy. The tracker's reportBytes wants per-chunk delta,
                   // so we track the previous high-water mark per file.
                   let lastBytesWritten = 0
-                  if (emitter !== null) emitter.startFile(file.fullPath, size)
 
                   const copyOptions: CopyOptions = {
                     signal: abortController.signal,
                     ...(
-                      emitter !== null
+                      tracker !== null
                       ? {
                           onProgress: (event) => {
                             const delta = event.bytesWritten - lastBytesWritten
                             lastBytesWritten = event.bytesWritten
-                            emitter.reportBytes(delta)
+                            tracker.reportBytes(delta)
                           },
                         }
                       : {}
@@ -100,10 +111,10 @@ export const copyFiles = ({
                       copyOptions,
                     )),
                     tap(() => {
-                      if (emitter !== null) emitter.finishFile(size)
                       logInfo("COPIED", file.fullPath, targetPath)
                     }),
                     map(() => targetPath),
+                    finalize(() => tracker?.finish(size)),
                   )
                 }),
                 finalize(() => emitter?.finalize()),

@@ -61,7 +61,7 @@ export const runMkvExtract = ({
     // See runMkvMerge.ts for the design rationale — same shape here.
     const jobId = getActiveJobId()
     const emitter = jobId !== undefined ? createProgressEmitter(jobId) : null
-    if (emitter !== null) emitter.startFile(outputFilePath)
+    const tracker = emitter !== null ? emitter.startFile(outputFilePath) : null
 
     const commandArgs = (
       args
@@ -135,7 +135,7 @@ export const runMkvExtract = ({
               percent
             )
           }
-          if (emitter !== null) emitter.setCurrentFileRatio(percent / 100)
+          if (tracker !== null) tracker.setRatio(percent / 100)
         }
         else {
           console
@@ -192,7 +192,7 @@ export const runMkvExtract = ({
         code,
       ) => {
         tty.detach()
-        if (emitter !== null) emitter.finalize()
+        if (tracker !== null) tracker.finish()
 
         if (code === 0) {
           observer.next(outputFilePath)
@@ -212,11 +212,11 @@ export const runMkvExtract = ({
     )
 
     // Wrap the tree-kill teardown so an unsubscribe (e.g. cancelJob)
-    // also clears the emitter's pending throttled timer. Idempotent
-    // with the 'exit'-handler finalize() above.
+    // also drops this file from the emitter's active set. Idempotent
+    // with the 'exit'-handler tracker.finish() above.
     const treeKillTeardown = treeKillOnUnsubscribe(childProcess)
     return () => {
-      if (emitter !== null) emitter.finalize()
+      if (tracker !== null) tracker.finish()
       treeKillTeardown()
     }
   })

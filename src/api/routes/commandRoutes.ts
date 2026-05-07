@@ -380,7 +380,7 @@ export const commandConfigs: Record<CommandName, CommandConfig> = {
     tags: ["File Operations"],
   },
   storeAspectRatioData: {
-    getObservable: (body) => storeAspectRatioData({ folderNames: body.folders, isRecursive: body.isRecursive, mode: body.force ? "overwrite" : "append", outputPath: body.outputPath, recursiveDepth: body.recursiveDepth, rootPath: body.rootPath, sourcePath: body.sourcePath, threadCount: body.threads }),
+    getObservable: (body) => storeAspectRatioData({ folderNames: body.folders, isRecursive: body.isRecursive, mode: body.force ? "overwrite" : "append", outputPath: body.outputPath, recursiveDepth: body.recursiveDepth, rootPath: body.rootPath, sourcePath: body.sourcePath }),
     schema: schemas.storeAspectRatioDataRequestSchema,
     summary: "Analyze and store aspect ratio metadata",
     tags: ["Metadata Operations"],

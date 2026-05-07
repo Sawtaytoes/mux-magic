@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto"
 import { Subject, type Subscription } from "rxjs"
 
+import {
+  __resetAllProgressEmittersForTests,
+  disposeProgressEmitter,
+} from "../tools/progressEmitter.js"
 import type { Job, ProgressEvent, PromptEvent } from "./types.js"
 
 // ---------------------------------------------------------------------------
@@ -146,6 +150,7 @@ export const completeSubject = (
 ): void => {
   subjects.get(id)?.complete()
   subjects.delete(id)
+  disposeProgressEmitter(id)
 }
 
 // ---------------------------------------------------------------------------
@@ -261,4 +266,5 @@ export const resetStore = (): void => {
   jobs.clear()
   subjects.clear()
   jobSubscriptions.clear()
+  __resetAllProgressEmittersForTests()
 }

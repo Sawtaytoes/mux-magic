@@ -63,8 +63,17 @@ logsRoutes.openapi(
         })
       )
 
-      for (const line of job.logs) {
-        await send({ line })
+      // Each log line is tagged with its index in job.logs as the SSE
+      // `id`. The client uses lastEventId to skip lines it has already
+      // received — so a buffer replay on reconnect or disclosure
+      // re-open doesn't accumulate duplicates client-side. Non-line
+      // events (progress, prompt, done) intentionally have no id;
+      // they're not append-only so dedup doesn't apply.
+      for (let logIndex = 0; logIndex < job.logs.length; logIndex += 1) {
+        await stream.writeSSE({
+          data: JSON.stringify({ line: job.logs[logIndex] }),
+          id: String(logIndex),
+        })
       }
 
       if (
@@ -87,6 +96,12 @@ logsRoutes.openapi(
         return
       }
 
+      // Live phase: lines emitted via the subject are appended-then-published
+      // (see appendJobLog). At the moment a string event reaches us here,
+      // job.logs.length - 1 is the index of THIS line — capture it as the
+      // SSE id so it slots in after the replayed entries above.
+      let nextLiveIndex = job.logs.length
+
       await new Promise<void>((resolve) => {
         const sub = subject.subscribe({
           complete: async () => {
@@ -101,7 +116,12 @@ logsRoutes.openapi(
           },
           next: (event) => {
             if (typeof event === "string") {
-              stream.writeSSE({ data: JSON.stringify({ line: event }) })
+              const liveLineIndex = nextLiveIndex
+              nextLiveIndex += 1
+              stream.writeSSE({
+                data: JSON.stringify({ line: event }),
+                id: String(liveLineIndex),
+              })
             } else {
               stream.writeSSE({ data: JSON.stringify(event) })
             }

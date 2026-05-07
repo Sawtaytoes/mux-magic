@@ -1,4 +1,4 @@
-import { of, Subject } from "rxjs"
+import { of } from "rxjs"
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 
 import {
@@ -34,9 +34,9 @@ describe(createProgressEmitter.name, () => {
     const captured = captureProgress("job-fast")
     const emitter = createProgressEmitter("job-fast", { totalFiles: 3 })
 
-    emitter.finishFile()
-    emitter.finishFile()
-    emitter.finishFile()
+    emitter.incrementFilesDone()
+    emitter.incrementFilesDone()
+    emitter.incrementFilesDone()
 
     // 0..999ms: timer hasn't fired yet, finalize cancels it.
     vi.advanceTimersByTime(500)
@@ -50,11 +50,11 @@ describe(createProgressEmitter.name, () => {
     const captured = captureProgress("job-slow")
     const emitter = createProgressEmitter("job-slow", { totalFiles: 4 })
 
-    emitter.finishFile()
+    emitter.incrementFilesDone()
     vi.advanceTimersByTime(300)
-    emitter.finishFile()
+    emitter.incrementFilesDone()
     vi.advanceTimersByTime(300)
-    emitter.finishFile()
+    emitter.incrementFilesDone()
 
     expect(captured).toEqual([])
 
@@ -77,10 +77,12 @@ describe(createProgressEmitter.name, () => {
 
     // Tick continuously across 3 seconds. Without throttling we'd see
     // hundreds of events; we expect at most 3 (one per second window).
-    for (let elapsed = 0; elapsed < 3000; elapsed += 50) {
-      emitter.finishFile()
+    Array
+    .from({ length: 60 })
+    .forEach(() => {
+      emitter.incrementFilesDone()
       vi.advanceTimersByTime(50)
-    }
+    })
 
     // Drain any pending timer.
     vi.advanceTimersByTime(1000)
@@ -92,57 +94,120 @@ describe(createProgressEmitter.name, () => {
 
     // Each emission's filesDone monotonically increases — no duplicates
     // or stale data leaking through the throttle.
-    const filesDoneSequence = captured.map((e) => e.filesDone)
-    const sorted = [...filesDoneSequence].sort((a, b) => (a ?? 0) - (b ?? 0))
+    const filesDoneSequence = captured.map((event) => event.filesDone)
+    const sorted = [...filesDoneSequence].sort((aValue, bValue) => (aValue ?? 0) - (bValue ?? 0))
     expect(filesDoneSequence).toEqual(sorted)
   })
 
-  test("uses byte ratio when totalBytes is configured and reportBytes is driving the inner progress", () => {
+  test("uses byte ratio when totalBytes is configured and tracker.reportBytes is driving the inner progress", () => {
     const captured = captureProgress("job-bytes")
     const emitter = createProgressEmitter("job-bytes", {
       totalBytes: 1000,
     })
 
-    emitter.startFile("/a.mkv", 400)
-    emitter.reportBytes(200)
-    emitter.reportBytes(200)
+    const tracker = emitter.startFile("/a.mkv", 400)
+    tracker.reportBytes(200)
+    tracker.reportBytes(200)
 
     vi.advanceTimersByTime(1000)
 
     expect(captured).toHaveLength(1)
-    // 400 of 1000 cumulative bytes = 0.4
+    // 400 of 1000 cumulative bytes (in-flight) = 0.4
     expect(captured[0].ratio).toBe(0.4)
-    expect(captured[0].currentFile).toBe("/a.mkv")
-    expect(captured[0].currentFileRatio).toBe(1)
+    expect(captured[0].currentFiles).toEqual([
+      { path: "/a.mkv", ratio: 1 },
+    ])
   })
 
-  test("setCurrentFileRatio publishes a per-file percentage from spawn ops without using bytes", () => {
+  test("tracker.setRatio publishes a per-file percentage from spawn ops without using bytes", () => {
     // mkvmerge/mkvextract parse `Progress: X%` from stdout — the
     // percentage is the natural unit and there's no byte-level
-    // signal. setCurrentFileRatio bypasses the byte-based
-    // computation in snapshot() so the parsed percentage flows
-    // straight through.
+    // signal. tracker.setRatio bypasses the byte-based computation
+    // so the parsed percentage flows straight through.
     const captured = captureProgress("job-spawn-file")
     const emitter = createProgressEmitter("job-spawn-file")
 
-    emitter.startFile("/output.mkv")
-    emitter.setCurrentFileRatio(0.42)
+    const tracker = emitter.startFile("/output.mkv")
+    tracker.setRatio(0.42)
 
     vi.advanceTimersByTime(1000)
 
     expect(captured).toHaveLength(1)
-    expect(captured[0].currentFile).toBe("/output.mkv")
-    expect(captured[0].currentFileRatio).toBe(0.42)
-    // No totalFiles/totalBytes was set on this emitter, and setRatio
+    expect(captured[0].currentFiles).toEqual([
+      { path: "/output.mkv", ratio: 0.42 },
+    ])
+    // No totalFiles/totalBytes was set on this emitter, and emitter.setRatio
     // wasn't called either, so the overall ratio stays null.
     expect(captured[0].ratio).toBeNull()
+  })
+
+  test("multiple in-flight trackers each contribute a row to currentFiles", () => {
+    const captured = captureProgress("job-parallel")
+    const emitter = createProgressEmitter("job-parallel", { totalFiles: 3 })
+
+    const trackerA = emitter.startFile("/a.mkv")
+    const trackerB = emitter.startFile("/b.mkv")
+    const trackerC = emitter.startFile("/c.mkv")
+
+    trackerA.setRatio(0.25)
+    trackerB.setRatio(0.50)
+    trackerC.setRatio(0.75)
+
+    vi.advanceTimersByTime(1000)
+
+    expect(captured).toHaveLength(1)
+    expect(captured[0].currentFiles).toEqual([
+      { path: "/a.mkv", ratio: 0.25 },
+      { path: "/b.mkv", ratio: 0.50 },
+      { path: "/c.mkv", ratio: 0.75 },
+    ])
+  })
+
+  test("tracker.finish removes the file from currentFiles and increments filesDone", () => {
+    const captured = captureProgress("job-finish")
+    const emitter = createProgressEmitter("job-finish", { totalFiles: 2 })
+
+    const trackerA = emitter.startFile("/a.mkv")
+    const trackerB = emitter.startFile("/b.mkv")
+
+    trackerA.setRatio(1)
+    trackerA.finish()
+
+    vi.advanceTimersByTime(1000)
+
+    expect(captured).toHaveLength(1)
+    expect(captured[0].filesDone).toBe(1)
+    expect(captured[0].currentFiles).toEqual([
+      { path: "/b.mkv", ratio: null },
+    ])
+
+    trackerB.finish()
+    vi.advanceTimersByTime(1000)
+
+    const finalEvent = captured[captured.length - 1]
+    expect(finalEvent.filesDone).toBe(2)
+    expect(finalEvent.currentFiles).toBeUndefined()
+  })
+
+  test("tracker.finish is idempotent — second call after teardown is a no-op", () => {
+    const captured = captureProgress("job-idempotent")
+    const emitter = createProgressEmitter("job-idempotent", { totalFiles: 1 })
+
+    const tracker = emitter.startFile("/once.mkv", 100)
+    tracker.finish(100)
+    tracker.finish(100) // duplicate — should not double-count
+
+    vi.advanceTimersByTime(1000)
+
+    expect(captured).toHaveLength(1)
+    expect(captured[0].filesDone).toBe(1)
   })
 
   test("setRatio overrides byte/file derived ratio — used by spawn ops with a tool-supplied percentage", () => {
     const captured = captureProgress("job-spawn")
     const emitter = createProgressEmitter("job-spawn", { totalFiles: 10 })
 
-    emitter.finishFile() // would push ratio=0.1 from file-counter math
+    emitter.incrementFilesDone() // would push ratio=0.1 from file-counter math
     emitter.setRatio(0.42) // overrides
 
     vi.advanceTimersByTime(1000)
@@ -155,7 +220,7 @@ describe(createProgressEmitter.name, () => {
     const captured = captureProgress("job-indeterminate")
     const emitter = createProgressEmitter("job-indeterminate")
 
-    emitter.finishFile()
+    emitter.incrementFilesDone()
     vi.advanceTimersByTime(1000)
 
     expect(captured).toHaveLength(1)
@@ -169,6 +234,25 @@ describe(createProgressEmitter.name, () => {
     // outstanding work without side effects.
     vi.advanceTimersByTime(60_000)
     expect(true).toBe(true)
+  })
+
+  test("subsequent calls with the same jobId return the same singleton — totals merge additively", () => {
+    const captured = captureProgress("job-singleton")
+    const first = createProgressEmitter("job-singleton", { totalFiles: 2 })
+
+    // A nested caller (e.g. a spawn op inside an iterator) declares
+    // additional totals — they should fold into the same singleton.
+    const second = createProgressEmitter("job-singleton", { totalFiles: 3 })
+
+    // Both handles drive the same shared state.
+    first.incrementFilesDone()
+    second.incrementFilesDone()
+
+    vi.advanceTimersByTime(1000)
+
+    expect(captured).toHaveLength(1)
+    expect(captured[0].filesDone).toBe(2)
+    expect(captured[0].filesTotal).toBe(5)
   })
 })
 
@@ -190,7 +274,7 @@ describe(withFileProgress.name, () => {
 
     vi.advanceTimersByTime(5_000)
 
-    expect(dataFlow).toEqual([
+    expect(dataFlow.sort()).toEqual([
       "processed-a.mkv",
       "processed-b.mkv",
       "processed-c.mkv",
@@ -212,7 +296,7 @@ describe(withFileProgress.name, () => {
 
     vi.advanceTimersByTime(5_000)
 
-    expect(captured).toEqual(["done-a", "done-b"])
+    expect(captured.sort()).toEqual(["done-a", "done-b"])
   })
 
   test("passes a sequential 0-based index as the second argument to perFile", () => {
