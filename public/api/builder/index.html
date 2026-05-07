@@ -685,6 +685,13 @@ const COMMANDS = {
     summary: "Rename special features (and the main movie file) based on DVDCompare timecodes — title canonicalized via TMDB",
     tag: "Naming Operations",
     outputFolderName: null,
+    // Auto-resolved TMDB match (set by resolveTmdbForStep when the user
+    // picks a DVDCompare release). Not user-editable, but persisted in
+    // YAML so a shared seq URL keeps pointing at the same matched film
+    // across reloads. The app-command itself ignores these — they exist
+    // purely so the input-area "↗ Title (year) on TMDB" link survives a
+    // round-trip.
+    persistedKeys: ["tmdbId", "tmdbName"],
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "dvdCompareId", type: "numberWithLookup", lookupType: "dvdcompare", label: "DVDCompare Film ID", placeholder: "74759", required: true, companionNameField: "dvdCompareName" },
@@ -1492,14 +1499,32 @@ function renderFields(step, stepIndex) {
       const primaryLink = linkData
         ? `<a href="${esc(linkData.url)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(linkData.label)}</a>`
         : ''
-      const tmdbQuery = (
-        step.command === 'nameSpecialFeatures' && field.lookupType === 'dvdcompare'
-        ? (step.params.dvdCompareName || step.params.searchTerm || null)
-        : null
-      )
-      const tmdbLink = tmdbQuery
-        ? `<a href="https://www.themoviedb.org/search?query=${encodeURIComponent(tmdbQuery)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ search TMDB</a>`
-        : ''
+      // For nameSpecialFeatures we surface the matched TMDB film
+      // alongside the DVDCompare anchor. Three states:
+      //   1. tmdbId resolved → direct movie page link with the matched
+      //      title in the link text (debugging signal).
+      //   2. resolution still pending → quiet "↗ resolving TMDB…".
+      //   3. no resolution yet → search-page fallback with the cleaned
+      //      base title + y:year filter so TMDB disambiguates by era.
+      let tmdbLink = ''
+      if (step.command === 'nameSpecialFeatures' && field.lookupType === 'dvdcompare') {
+        if (step.params.tmdbId) {
+          const tmdbUrl = `https://www.themoviedb.org/movie/${encodeURIComponent(step.params.tmdbId)}`
+          const linkText = step.params.tmdbName ? `${step.params.tmdbName} on TMDB` : 'open on TMDB'
+          tmdbLink = `<a href="${esc(tmdbUrl)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(linkText)}</a>`
+        } else if (step.params.tmdbResolutionPending) {
+          tmdbLink = `<span class="shrink-0 text-xs text-slate-500 inline-flex items-center gap-1">↗ resolving TMDB…</span>`
+        } else {
+          const parsedDvdCompare = parseDvdCompareDisplayName(step.params.dvdCompareName)
+          const fallbackTitle = parsedDvdCompare?.baseTitle || step.params.searchTerm || null
+          const fallbackYear = parsedDvdCompare?.year || ''
+          if (fallbackTitle) {
+            const searchQuery = fallbackYear ? `${fallbackTitle} y:${fallbackYear}` : fallbackTitle
+            const searchUrl = `https://www.themoviedb.org/search/movie?query=${encodeURIComponent(searchQuery)}`
+            tmdbLink = `<a href="${esc(searchUrl)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ search TMDB</a>`
+          }
+        }
+      }
       const linksRow = primaryLink || tmdbLink
         ? `<div class="shrink-0 ml-auto flex items-center gap-3">${primaryLink}${tmdbLink}</div>`
         : ''
@@ -1744,6 +1769,18 @@ function buildParams(step, { resolveLinks = false } = {}) {
       const cv = step.params[field.companionNameField]
       if (cv !== undefined && cv !== null && cv !== '') {
         out[field.companionNameField] = cv
+      }
+    }
+  }
+  // persistedKeys are auto-resolved values that aren't tied to a single
+  // field's companion (e.g. nameSpecialFeatures' TMDB match, set after
+  // the DVDCompare film is picked). Emit them in YAML so a reload
+  // restores the resolution without re-firing the lookup.
+  if (Array.isArray(cmd.persistedKeys)) {
+    for (const persistedKey of cmd.persistedKeys) {
+      const persistedValue = step.params[persistedKey]
+      if (persistedValue !== undefined && persistedValue !== null && persistedValue !== '') {
+        out[persistedKey] = persistedValue
       }
     }
   }
@@ -2766,6 +2803,74 @@ function displayDvdCompareVariant(variant) {
   return variant === 'Blu-ray 4K' ? 'UHD Blu-ray' : variant
 }
 
+// Pulls baseTitle + year out of a dvdCompareName like
+//   "Soldier (UHD Blu-ray) (1998)"
+// produced by lookupDvdCompareFilm / lookupSelectRelease. Used by the
+// TMDB resolver and the search-fallback link so the variant chunk
+// doesn't poison the query (TMDB has no "(UHD Blu-ray)" entry).
+function parseDvdCompareDisplayName(displayName) {
+  if (!displayName) {
+    return null
+  }
+  const yearMatch = displayName.match(/\s*\((\d{4})\)\s*$/)
+  const withoutYear = yearMatch
+    ? displayName.slice(0, yearMatch.index).trim()
+    : displayName.trim()
+  const variantMatch = withoutYear.match(/\s*\((?:UHD Blu-ray|Blu-ray 4K|Blu-ray|DVD)\)\s*$/i)
+  const baseTitle = variantMatch
+    ? withoutYear.slice(0, variantMatch.index).trim()
+    : withoutYear
+  return { baseTitle, year: yearMatch?.[1] || '' }
+}
+
+// Fires /queries/searchMovieDb with the cleaned title + year and stores
+// the top hit's id + label on the step so the input-area TMDB link can
+// jump straight to the matched movie page. Called from lookupSelectRelease
+// (modal pick — clean data) and runReverseLookup (typed id — parsed from
+// the returned display name). Re-renders on result so the link updates
+// without waiting for the next interaction.
+async function resolveTmdbForStep(stepId, baseTitle, year) {
+  const step = steps.find((candidate) => candidate.id === stepId)
+  if (!step || !baseTitle) {
+    return
+  }
+  step.params.tmdbResolutionPending = true
+  try {
+    const response = await fetch('/queries/searchMovieDb', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ searchTerm: baseTitle, year: year || undefined }),
+    })
+    if (!response.ok) {
+      return
+    }
+    const data = await response.json()
+    const top = (data.results || [])[0]
+    if (top && top.movieDbId) {
+      step.params.tmdbId = top.movieDbId
+      step.params.tmdbName = top.year ? `${top.title} (${top.year})` : top.title
+    } else {
+      // TMDB returned no match — clear any stale value so the link
+      // degrades to the search fallback rather than pointing at the
+      // previous film's page.
+      delete step.params.tmdbId
+      delete step.params.tmdbName
+    }
+  } catch (err) {
+    console.error('resolveTmdbForStep failed', err)
+  } finally {
+    delete step.params.tmdbResolutionPending
+    renderAll()
+  }
+}
+
+// Drops the previously-resolved TMDB match. Called when the user clears
+// the dvdCompareId or types a new one, since the old match is stale.
+function clearTmdbResolution(step) {
+  delete step.params.tmdbId
+  delete step.params.tmdbName
+}
+
 // ─── Reverse lookup (manual ID/hash edit → fetch display name) ───────────────
 
 const reverseLookupTimers = new Map()  // key=`${stepId}-${fieldName}` → timeoutId
@@ -2809,6 +2914,11 @@ function scheduleReverseLookup(stepId, fieldName, rawValue) {
       delete step.params[hashField.companionNameField]
       setCompanionDisplay(stepId, 'dvdCompareReleaseHash', '')
     }
+    // The TMDB match was resolved against the previous film — clear it
+    // so the link doesn't keep pointing at the old movie while the user
+    // is mid-keystroke. The follow-up resolve runs in runReverseLookup
+    // once the new id resolves.
+    clearTmdbResolution(step)
   }
 
   if (!rawValue) return
@@ -2882,6 +2992,17 @@ async function runReverseLookup(stepId, fieldName, id, requestToken) {
       if (hashField) {
         const hashValue = step.params.dvdCompareReleaseHash ?? hashField.default ?? 1
         runReverseLookup(stepId, 'dvdCompareReleaseHash', Number(hashValue), String(hashValue))
+      }
+      // Same flow as lookupSelectRelease: resolve TMDB so the user can
+      // jump straight to the matched movie. The display name returned
+      // by /queries/lookupDvdCompare is "Title (variant) (year)" — we
+      // parse it back into clean baseTitle + year before searching so
+      // the variant chunk doesn't poison the TMDB query.
+      if (step.command === 'nameSpecialFeatures') {
+        const parsed = parseDvdCompareDisplayName(name)
+        if (parsed?.baseTitle) {
+          resolveTmdbForStep(stepId, parsed.baseTitle, parsed.year)
+        }
       }
     }
   } catch (err) {
@@ -3154,9 +3275,16 @@ function lookupSelectRelease(hash, label) {
       step.params.dvdCompareName = `${group.baseTitle}${variantSuffix}${yearSuffix}`
     }
     if (label) step.params.dvdCompareReleaseLabel = label
+    // The previously-resolved TMDB match (if any) is stale now that the
+    // film selection changed. Clear it before kicking off the new
+    // resolution so the link doesn't briefly point at the wrong movie.
+    clearTmdbResolution(step)
     refreshLinkedInputs()
     updateYaml()
     renderAll()
+    if (group?.baseTitle && step.command === 'nameSpecialFeatures') {
+      resolveTmdbForStep(step.id, group.baseTitle, group.year || '')
+    }
   }
   closeLookupModal()
 }

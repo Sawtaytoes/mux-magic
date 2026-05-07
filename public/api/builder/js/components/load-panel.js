@@ -104,6 +104,18 @@ export function loadYamlFromText(text) {
         if (companionValue !== undefined) step.params[field.companionNameField] = companionValue
       }
     }
+    // persistedKeys mirror buildParams: restore auto-resolved values
+    // (e.g. nameSpecialFeatures' tmdbId/tmdbName) so a shared seq URL
+    // keeps pointing at the same matched film without re-firing the
+    // resolution on load.
+    if (Array.isArray(cmd.persistedKeys)) {
+      for (const persistedKey of cmd.persistedKeys) {
+        const persistedValue = item.params?.[persistedKey]
+        if (persistedValue !== undefined) {
+          step.params[persistedKey] = persistedValue
+        }
+      }
+    }
     newSteps.push(step)
   }
   setSteps(newSteps)
