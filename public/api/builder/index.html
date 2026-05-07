@@ -3317,73 +3317,109 @@ function updateStepUI(step) {
     }
   }
 
-  // Render results when the step has finished
+  // Render results when the step has finished. formatStepResults returns
+  // either a plain string (legacy text mode → rendered into a <pre>) or
+  // { html } (HTML mode → rendered into a .results-body <div>). The two
+  // shapes use different inner elements so we rebuild the container if
+  // the mode differs from a previous render.
   let resultsEl = card.querySelector('.step-results')
-  const formatted = step.results && step.results.length > 0 ? formatStepResults(step.command, step.results) : ''
-  if (formatted) {
+  const formatted = step.results && step.results.length > 0 ? formatStepResults(step) : ''
+  const formattedHtml = formatted && typeof formatted === 'object' && formatted.html ? formatted.html : null
+  const formattedText = !formattedHtml && typeof formatted === 'string' && formatted ? formatted : ''
+  if (formattedHtml || formattedText) {
+    if (resultsEl) {
+      const wantsHtml = !!formattedHtml
+      const isHtml = !resultsEl.querySelector('pre')
+      if (wantsHtml !== isHtml) {
+        resultsEl.remove()
+        resultsEl = null
+      }
+    }
     if (!resultsEl) {
       const fieldsEl = card.querySelector('.space-y-2')
       if (fieldsEl) {
+        const innerEl = formattedHtml
+          ? `<div class="results-body text-xs bg-slate-950 rounded px-2 py-1.5 mt-1 break-words"></div>`
+          : `<pre class="text-emerald-300 bg-slate-950 rounded px-2 py-1.5 mt-1 font-mono whitespace-pre-wrap break-words"></pre>`
         fieldsEl.insertAdjacentHTML('beforebegin',
           `<details class="step-results text-xs mb-2" open>
             <summary class="cursor-pointer text-emerald-400 hover:text-emerald-300 select-none flex items-center gap-2">
               <span>Results</span>
               <button type="button" class="copy-btn ml-auto text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300" title="Copy results to clipboard">📋 Copy</button>
             </summary>
-            <pre class="text-emerald-300 bg-slate-950 rounded px-2 py-1.5 mt-1 font-mono whitespace-pre-wrap break-words"></pre>
+            ${innerEl}
           </details>`)
         resultsEl = card.querySelector('.step-results')
       }
     }
     if (resultsEl) {
-      resultsEl.querySelector('pre').textContent = formatted
+      if (formattedHtml) {
+        const body = resultsEl.querySelector('.results-body')
+        if (body) {
+          body.innerHTML = formattedHtml
+        }
+      } else {
+        resultsEl.querySelector('pre').textContent = formattedText
+      }
     }
   } else if (resultsEl) {
     resultsEl.remove()
   }
 }
 
-function formatStepResults(commandName, results) {
+// Returns either a plain string (legacy text mode, rendered via <pre>) or
+// `{ html: string }` (HTML mode, rendered via innerHTML on a <div>). HTML
+// mode is currently only used by nameSpecialFeatures so the leftover-files
+// list can be styled as a yellow callout and a click-through DVDCompare
+// link can sit beside it.
+function formatStepResults(step) {
+  const commandName = step.command
+  const results = step.results
+
   if (commandName === 'getAudioOffsets') {
     return results.flat().map(item => `${item?.offsetInMilliseconds}ms`).join('\n')
   }
 
   // nameSpecialFeatures emits both rename pairs ({ oldName, newName })
-  // and a trailing summary record ({ unrenamedFilenames: [...] }). When
-  // we see the summary alongside renames, render both: the rename table
-  // first, then a "Files not renamed" section. Covers the user's "show
-  // me what didn't get named at the end" request.
+  // and a trailing summary record ({ unrenamedFilenames: [...] }). Render
+  // a structured block: a count summary, the rename rows, and (when
+  // applicable) a yellow "review by hand" callout with the leftover
+  // filenames plus a click-through to the matched DVDCompare release.
+  if (commandName === 'nameSpecialFeatures') {
+    const summaryRecord = results.find((item) => (
+      item && typeof item === 'object'
+      && Array.isArray(item.unrenamedFilenames)
+    ))
+    const renamePairs = summaryRecord
+      ? results.filter((item) => item !== summaryRecord)
+      : results
+    const allRenamePairs = renamePairs.every((item) => (
+      item && typeof item === 'object'
+      && typeof item.oldName === 'string'
+      && typeof item.newName === 'string'
+    ))
+    if (allRenamePairs && (renamePairs.length > 0 || summaryRecord)) {
+      return { html: renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) }
+    }
+  }
+
+  // Generic rename-pair detection for other commands that emit
+  // { source, destination } / { from, to } shapes — still text mode.
   const renameLikeFields = [
     ['source', 'destination'],
     ['oldName', 'newName'],
     ['from', 'to'],
   ]
-  const summaryRecord = results.find((item) => (
-    item && typeof item === 'object'
-    && Array.isArray(item.unrenamedFilenames)
-  ))
-  const renamePairs = summaryRecord
-    ? results.filter((item) => item !== summaryRecord)
-    : results
-  const renameField = renamePairs.length > 0 && renameLikeFields.find(([fromKey, toKey]) => (
-    renamePairs.every((item) => (
+  const renameField = results.length > 0 && renameLikeFields.find(([fromKey, toKey]) => (
+    results.every((item) => (
       item && typeof item === 'object'
       && typeof item[fromKey] === 'string'
       && typeof item[toKey] === 'string'
     ))
   ))
-  if (renameField || summaryRecord) {
-    const lines = []
-    if (renameField) {
-      const [fromKey, toKey] = renameField
-      lines.push(...renamePairs.map((item) => `${item[fromKey]} → ${item[toKey]}`))
-    }
-    if (summaryRecord && summaryRecord.unrenamedFilenames.length > 0) {
-      if (lines.length > 0) lines.push('')
-      lines.push('Files not renamed:')
-      lines.push(...summaryRecord.unrenamedFilenames.map((filename) => `  • ${filename}`))
-    }
-    if (lines.length > 0) return lines.join('\n')
+  if (renameField) {
+    const [fromKey, toKey] = renameField
+    return results.map((item) => `${item[fromKey]} → ${item[toKey]}`).join('\n')
   }
 
   // Plain string list — render one per line so paths and filenames
@@ -3401,6 +3437,36 @@ function formatStepResults(commandName, results) {
   }
 }
 
+// Builds the HTML body for nameSpecialFeatures. The outer container is
+// supplied by the caller (the .results-body div), so this returns just
+// the inner block sequence: count summary, rename rows, then (when
+// unrenamed files exist) a yellow callout with the bullet list and the
+// DVDCompare link. Inline blocks are joined without intervening newlines
+// so whitespace-pre-wrap on any ancestor doesn't introduce blank lines
+// between sections.
+function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) {
+  const unrenamed = summaryRecord?.unrenamedFilenames ?? []
+  const counts = `Renamed ${renamePairs.length}. Files not renamed: ${unrenamed.length}.`
+  const countsBlock = `<p class="text-slate-300 mb-2">${esc(counts)}</p>`
+  const renameRowsHtml = renamePairs.map((item) => (
+    `<div>${esc(item.oldName)} → ${esc(item.newName)}</div>`
+  )).join('')
+  const renameBlock = renamePairs.length > 0
+    ? `<div class="text-emerald-300 font-mono mb-2 break-words">${renameRowsHtml}</div>`
+    : ''
+  const linkData = getLookupLinkData(step)
+  const linkBlock = linkData
+    ? `<a href="${esc(linkData.url)}" target="_blank" rel="noopener" class="text-blue-300 hover:text-blue-200 underline inline-flex items-center gap-1 mt-1">↗ ${esc(linkData.label)}</a>`
+    : ''
+  const leftoverItems = unrenamed.map((filename) => (
+    `<li class="break-words">• ${esc(filename)}</li>`
+  )).join('')
+  const leftoversBlock = unrenamed.length > 0
+    ? `<div class="bg-yellow-900/30 border border-yellow-700 text-yellow-100 rounded px-2 py-1.5"><p class="font-medium mb-1">Files not renamed (review by hand):</p><ul class="font-mono space-y-0.5">${leftoverItems}</ul>${linkBlock}</div>`
+    : ''
+  return `${countsBlock}${renameBlock}${leftoversBlock}`
+}
+
 // ─── Copy buttons ─────────────────────────────────────────────────────────────
 
 // Delegated click for any `.copy-btn` inside a <details> (Results / Logs).
@@ -3408,11 +3474,14 @@ function formatStepResults(commandName, results) {
 // bubbling up to the <summary> (which would toggle the disclosure).
 async function copyDetailsContent(button) {
   const details = button.closest('details')
-  const pre = details?.querySelector('pre')
-  if (!pre) return
+  // The results disclosure may use either a <pre> (legacy text mode) or a
+  // .results-body <div> (HTML mode for nameSpecialFeatures). innerText
+  // preserves block layout so HTML-mode copies retain line breaks.
+  const body = details?.querySelector('pre, .results-body')
+  if (!body) return
   const original = button.textContent
   try {
-    await navigator.clipboard.writeText(pre.textContent || '')
+    await navigator.clipboard.writeText(body.innerText || body.textContent || '')
     button.textContent = '✓ Copied'
   } catch {
     button.textContent = '✗ Failed'
