@@ -32,7 +32,7 @@ describe(canonicalizeMovieTitle.name, () => {
       dvdCompareYear: "1982",
     }))
 
-    expect(vi.mocked(searchMovieDb)).toHaveBeenCalledWith("Dragon Lord")
+    expect(vi.mocked(searchMovieDb)).toHaveBeenCalledWith("Dragon Lord", "1982")
   })
 
   test("returns the first TMDB result's title + year when one is found", async () => {

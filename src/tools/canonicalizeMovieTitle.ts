@@ -35,7 +35,7 @@ export const canonicalizeMovieTitle = ({
   }
 
   return (
-    searchMovieDb(cleanedTitle)
+    searchMovieDb(cleanedTitle, dvdCompareYear || undefined)
     .pipe(
       map((results) => {
         const top = results[0]

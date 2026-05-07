@@ -219,12 +219,12 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/searchMovieDb",
     summary: "Search The Movie Database (TMDB) for a film",
-    description: "Returns up to 20 movies matching the search term. Used by the builder to populate the movieDbId field for nameMovies. Requires TMDB_API_KEY in the environment.",
+    description: "Returns up to 20 movies matching the search term. Optional `year` narrows results so the builder can resolve the right film when title is shared across eras (e.g. 'Soldier' 1998 vs 1982). Used by the builder to populate the movieDbId field for nameMovies and to confirm the canonical match for nameSpecialFeatures. Requires TMDB_API_KEY in the environment.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.searchTermRequestSchema },
+          "application/json": { schema: schemas.searchMovieDbRequestSchema },
         },
       },
     },
@@ -240,7 +240,7 @@ queryRoutes.openapi(
   async (context) => {
     const body = context.req.valid("json")
     try {
-      const results = await lastValueFrom(searchMovieDb(body.searchTerm))
+      const results = await lastValueFrom(searchMovieDb(body.searchTerm, body.year))
       return context.json({ results, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)

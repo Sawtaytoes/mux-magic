@@ -1,6 +1,6 @@
 ﻿import type { Argv, CommandBuilder, CommandModule } from "yargs"
 
-import { nameSpecialFeatures } from "../app-commands/nameSpecialFeatures.js"
+import { nameSpecialFeatures, type NameSpecialFeaturesResult } from "../app-commands/nameSpecialFeatures.js"
 import { subscribeCli } from "../tools/subscribeCli.js"
 
 type InferArgvOptions<T> = T extends Argv<infer U> ? U : never
@@ -60,6 +60,8 @@ export const nameSpecialFeaturesCommand: CommandModule<{}, Args> = {
   builder: builder as CommandBuilder<{}, Args>,
 
   handler: (argv) => {
+    const cliObserver = subscribeCli()
+    let renamedCount = 0
     nameSpecialFeatures({
       fixedOffset: (
         argv
@@ -78,6 +80,23 @@ export const nameSpecialFeaturesCommand: CommandModule<{}, Args> = {
         .url
       ),
     })
-    .subscribe(subscribeCli())
+    .subscribe({
+      next: (event: NameSpecialFeaturesResult) => {
+        if ("unrenamedFilenames" in event) {
+          console.log(`Renamed ${renamedCount}. Files not renamed: ${event.unrenamedFilenames.length}.`)
+          if (event.unrenamedFilenames.length > 0) {
+            console.log("Files not renamed:")
+            event.unrenamedFilenames.forEach((filename) => {
+              console.log(`  • ${filename}`)
+            })
+          }
+          return
+        }
+        renamedCount += 1
+        console.log(`${event.oldName} → ${event.newName}`)
+      },
+      complete: cliObserver.complete,
+      error: cliObserver.error,
+    })
   },
 }

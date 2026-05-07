@@ -798,7 +798,7 @@ const COMMANDS = {
     outputFolderName: null,
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
-      { name: "malId", type: "numberWithLookup", lookupType: "mal", label: "MAL ID", placeholder: "12345", required: true, companionNameField: "malName" },
+      { name: "malId", type: "numberWithLookup", lookupType: "mal", label: "MAL ID", placeholder: "39534", required: true, companionNameField: "malName" },
       { name: "seasonNumber", type: "number", label: "Season Number", default: 1 },
     ]
   },
@@ -817,9 +817,16 @@ const COMMANDS = {
     summary: "Rename special features (and the main movie file) based on DVDCompare timecodes — title canonicalized via TMDB",
     tag: "Naming Operations",
     outputFolderName: null,
+    // Auto-resolved TMDB match (set by resolveTmdbForStep when the user
+    // picks a DVDCompare release). Not user-editable, but persisted in
+    // YAML so a shared seq URL keeps pointing at the same matched film
+    // across reloads. The app-command itself ignores these — they exist
+    // purely so the input-area "↗ Title (year) on TMDB" link survives a
+    // round-trip.
+    persistedKeys: ["tmdbId", "tmdbName"],
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
-      { name: "dvdCompareId", type: "numberWithLookup", lookupType: "dvdcompare", label: "DVDCompare Film ID", placeholder: "12345", required: true, companionNameField: "dvdCompareName" },
+      { name: "dvdCompareId", type: "numberWithLookup", lookupType: "dvdcompare", label: "DVDCompare Film ID", placeholder: "74759", required: true, companionNameField: "dvdCompareName" },
       { name: "dvdCompareReleaseHash", type: "number", label: "Release Hash", default: 1, companionNameField: "dvdCompareReleaseLabel" },
       { name: "fixedOffset", type: "number", label: "Fixed Offset (ms)", default: 0 },
       { name: "timecodePadding", type: "number", label: "Timecode Padding", default: 2 },
@@ -831,7 +838,7 @@ const COMMANDS = {
     outputFolderName: null,
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
-      { name: "tvdbId", type: "numberWithLookup", lookupType: "tvdb", label: "TVDB ID", placeholder: "12345", required: true, companionNameField: "tvdbName" },
+      { name: "tvdbId", type: "numberWithLookup", lookupType: "tvdb", label: "TVDB ID", placeholder: "76703", required: true, companionNameField: "tvdbName" },
       { name: "seasonNumber", type: "number", label: "Season Number", required: true },
     ]
   },
@@ -1535,10 +1542,14 @@ function setParam(id, fieldName, value) {
   step.params[fieldName] = value
   refreshLinkedInputs()
   updateYaml()
-  // Debounced — setParam fires per-keystroke from oninput, so writing the
-  // URL synchronously every call caused typing lag. The blur / beforeunload
-  // listeners flush any pending write so refresh still preserves the value.
-  scheduleUpdateUrl()
+  // Synchronous URL write — the prior debounced `scheduleUpdateUrl` flow
+  // relied on a flushScheduledUpdateUrl beforeunload listener to commit
+  // pending writes before refresh, but in practice the flush sometimes
+  // didn't stick (history.replaceState during unload is unreliable).
+  // Writing per keystroke is cheap enough at typical sequence sizes;
+  // if larger sequences ever introduce typing lag we can revisit with
+  // throttling rather than the lossy debounce.
+  updateUrl()
 }
 
 // When the user commits a typed path (onchange = blur or Enter), lift it
@@ -1703,6 +1714,26 @@ function renderAll() {
   }
 
   const previousIds = lastRenderedStepIds
+  // Capture which input the user is currently editing (if any) so we can
+  // restore focus after the innerHTML swap. Without this, async settles
+  // (resolveTmdbForStep, runReverseLookup) yank focus out from under the
+  // user mid-keystroke. Inputs that opt in carry data-step + data-field;
+  // text-input cursor position (selectionStart/End) is preserved when
+  // the browser supports it for the input's type.
+  const activeEl = document.activeElement
+  const focusSnapshot = (
+    activeEl
+    && activeEl.tagName === 'INPUT'
+    && activeEl.dataset?.step
+    && activeEl.dataset?.field
+  )
+    ? {
+        step: activeEl.dataset.step,
+        field: activeEl.dataset.field,
+        selectionStart: (() => { try { return activeEl.selectionStart } catch { return null } })(),
+        selectionEnd: (() => { try { return activeEl.selectionEnd } catch { return null } })(),
+      }
+    : null
   el.innerHTML = parts.join('')
 
   // Fade-in animation for newly inserted step cards (walks groups too).
@@ -1714,6 +1745,22 @@ function renderAll() {
     }
   }
   lastRenderedStepIds = new Set(allFlatSteps.map((e) => e.step.id))
+
+  if (focusSnapshot) {
+    const restoredInput = document.querySelector(
+      `input[data-step="${focusSnapshot.step}"][data-field="${focusSnapshot.field}"]`,
+    )
+    if (restoredInput) {
+      restoredInput.focus()
+      // setSelectionRange throws on input types that don't support it
+      // (number is one of them in some browsers); ignore the error.
+      if (focusSnapshot.selectionStart !== null) {
+        try {
+          restoredInput.setSelectionRange(focusSnapshot.selectionStart, focusSnapshot.selectionEnd)
+        } catch {}
+      }
+    }
+  }
 
   updateYaml()
   updateUrl()
@@ -1968,30 +2015,86 @@ function renderFields(step, stepIndex) {
     if (field.type === 'numberWithLookup') {
       const num = val ?? field.default ?? ''
       const companion = field.companionNameField ? step.params[field.companionNameField] : null
-      // Out-link to the DVDCompare release page so the user can spot-
-      // check what the rename heuristic is matching against. Only
-      // surfaces for dvdcompare-typed fields with a populated id; the
-      // hash defaults to 1 when the user hasn't picked a release yet.
-      const externalLink = (
-        field.lookupType === 'dvdcompare' && num
-        ? (() => {
-          const hash = step.params.dvdCompareReleaseHash ?? 1
-          const releaseUrl = `https://www.dvdcompare.net/comparisons/film.php?fid=${esc(String(num))}#${esc(String(hash))}`
-          return `<a href="${releaseUrl}" target="_blank" rel="noopener" class="text-xs text-blue-400 hover:text-blue-300 mt-0.5 inline-flex items-center gap-1">↗ open release on DVDCompare</a>`
-        })()
-        : ''
+      const lookupConfig = LOOKUP_LINKS[field.lookupType]
+      const idValue = step.params[field.name]
+      // Companion display, made clickable. The link target depends on
+      // the card's command:
+      //   nameSpecialFeatures (lookupType === 'dvdcompare'):
+      //     companion ↦ matched TMDB movie page when resolved, else
+      //     TMDB search-fallback URL, else TMDB home. Text is the
+      //     TMDB-resolved name when available, otherwise the
+      //     DVDCompare name (with variant suffix) for context until
+      //     the resolver settles.
+      //   All other cards (mal/anidb/tvdb): companion ↦ that lookup
+      //     service's page for the typed id, or the service's home
+      //     page when no id is set yet (so the anchor is still
+      //     actionable). Text is the resolved title.
+      // The single-place anchor replaces the prior "↗ open on X" pill
+      // and the "↗ {tmdbName} on TMDB" right-side anchor — they were
+      // duplicating the destination.
+      const isNameSpecialFeaturesCard = (
+        step.command === 'nameSpecialFeatures'
+        && field.lookupType === 'dvdcompare'
       )
+      let companionText = companion ?? ''
+      let companionHref = lookupConfig?.homeUrl ?? '#'
+      if (isNameSpecialFeaturesCard) {
+        if (step.params.tmdbId) {
+          companionHref = `https://www.themoviedb.org/movie/${encodeURIComponent(step.params.tmdbId)}`
+          companionText = step.params.tmdbName || companion || ''
+        } else if (step.params.tmdbResolutionPending) {
+          // TMDB resolution in flight — suppress text so the user
+          // doesn't see the variant-laden DVDCompare name flash to the
+          // canonical TMDB name. Companion stays hidden until the
+          // resolver settles and renderAll fires with the final state.
+          companionHref = 'https://www.themoviedb.org/'
+          companionText = ''
+        } else if (companion) {
+          const parsedDvdCompare = parseDvdCompareDisplayName(companion)
+          const fallbackTitle = parsedDvdCompare?.baseTitle || step.params.searchTerm || null
+          if (fallbackTitle) {
+            const searchQuery = parsedDvdCompare?.year
+              ? `${fallbackTitle} y:${parsedDvdCompare.year}`
+              : fallbackTitle
+            companionHref = `https://www.themoviedb.org/search/movie?query=${encodeURIComponent(searchQuery)}`
+          } else {
+            companionHref = 'https://www.themoviedb.org/'
+          }
+        }
+      } else if (lookupConfig && idValue) {
+        companionHref = lookupConfig.buildUrl(idValue, step.params)
+      }
+      // The truncating wrapper takes flex-1 so the right-side anchor
+      // still lands at the row's right edge, but the actual <a> inside
+      // is inline — its bounding box (and click area) matches the text
+      // width rather than spanning the full row.
+      const companionLink = lookupConfig
+        ? `<div class="flex-1 min-w-0 truncate"><a data-step="${step.id}" data-companion="${field.name}" href="${esc(companionHref)}" target="_blank" rel="noopener" class="text-xs text-blue-400 hover:text-blue-300 hover:underline ${companionText ? '' : 'hidden'}" title="${esc(companionText)}">${esc(companionText)}</a></div>`
+        : `<p data-step="${step.id}" data-companion="${field.name}" class="flex-1 min-w-0 text-xs text-slate-500 truncate ${companionText ? '' : 'hidden'}" title="${esc(companionText)}">${esc(companionText)}</p>`
+      // DVDCompare release anchor sits to the right of the TMDB-bound
+      // companion on the special-features card so the user has a
+      // direct path back to the source release. Always rendered (with
+      // homeUrl when no id) so an empty card still has an actionable
+      // link to the site.
+      let dvdCompareReleaseLink = ''
+      if (field.lookupType === 'dvdcompare' && lookupConfig) {
+        const releaseHref = idValue
+          ? lookupConfig.buildUrl(idValue, step.params)
+          : lookupConfig.homeUrl
+        dvdCompareReleaseLink = `<a data-step="${step.id}" data-right-link="${field.name}" href="${esc(releaseHref)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(lookupConfig.label)}</a>`
+      }
       return `<div>${label}<div class="flex items-center gap-2">
-        <input type="number" value="${esc(num)}" placeholder="${esc(field.placeholder ?? '')}"
-          oninput="scheduleReverseLookup('${step.id}','${field.name}',this.value)"
-          onchange="setParam('${step.id}','${field.name}',this.value===''?undefined:Number(this.value))"
+        <input type="number" data-step="${step.id}" data-field="${field.name}" value="${esc(num)}" placeholder="${esc(field.placeholder ?? '')}"
+          oninput="setParam('${step.id}','${field.name}',this.value===''?undefined:Number(this.value)); scheduleReverseLookup('${step.id}','${field.name}',this.value); updateLookupLinks('${step.id}','${field.name}',this.value)"
           class="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" />
         <button onclick="openLookup('${field.lookupType}','${step.id}','${field.name}')"
           title="Look up ${esc(field.label)}"
           class="shrink-0 text-xs bg-slate-700 hover:bg-blue-700 text-slate-200 hover:text-white px-2.5 py-1.5 rounded border border-slate-600 hover:border-blue-500">🔍</button>
       </div>
-      <p data-step="${step.id}" data-companion="${field.name}" class="text-xs text-slate-500 mt-0.5 truncate ${companion ? '' : 'hidden'}" title="${esc(companion ?? '')}">${esc(companion ?? '')}</p>
-      ${externalLink}
+      <div class="flex items-start gap-2 mt-0.5">
+        ${companionLink}
+        ${dvdCompareReleaseLink}
+      </div>
       </div>`
     }
 
@@ -2211,6 +2314,18 @@ function buildParams(step, { resolveLinks = false } = {}) {
       const cv = step.params[field.companionNameField]
       if (cv !== undefined && cv !== null && cv !== '') {
         out[field.companionNameField] = cv
+      }
+    }
+  }
+  // persistedKeys are auto-resolved values that aren't tied to a single
+  // field's companion (e.g. nameSpecialFeatures' TMDB match, set after
+  // the DVDCompare film is picked). Emit them in YAML so a reload
+  // restores the resolution without re-firing the lookup.
+  if (Array.isArray(cmd.persistedKeys)) {
+    for (const persistedKey of cmd.persistedKeys) {
+      const persistedValue = step.params[persistedKey]
+      if (persistedValue !== undefined && persistedValue !== null && persistedValue !== '') {
+        out[persistedKey] = persistedValue
       }
     }
   }
@@ -2638,6 +2753,81 @@ const LOOKUP_TITLES = {
   anidb: 'Look up AniDB ID',
   tvdb: 'Look up TVDB ID',
   dvdcompare: 'Look up DVDCompare Film ID',
+}
+
+// External-link metadata per lookup service. `buildUrl` returns the raw
+// canonical web URL for spot-checking what the rename heuristic is matching
+// against; the call site is responsible for esc()-escaping into href. The
+// dvdcompare builder reads `dvdCompareReleaseHash` from the step params so
+// the link points at the same release the matcher will use. `homeUrl` is
+// the bare site root used when the field has no id yet — keeps the anchor
+// actionable on a freshly-added card.
+const LOOKUP_LINKS = {
+  mal: {
+    label: 'open on MyAnimeList',
+    homeUrl: 'https://myanimelist.net/',
+    buildUrl: (id) => `https://myanimelist.net/anime/${id}`,
+  },
+  anidb: {
+    label: 'open on AniDB',
+    homeUrl: 'https://anidb.net/',
+    buildUrl: (id) => `https://anidb.net/anime/${id}`,
+  },
+  tvdb: {
+    label: 'open on TVDB',
+    homeUrl: 'https://thetvdb.com/',
+    buildUrl: (id) => `https://thetvdb.com/?tab=series&id=${id}`,
+  },
+  dvdcompare: {
+    label: 'open release on DVDCompare',
+    homeUrl: 'https://www.dvdcompare.net/',
+    buildUrl: (id, params) => (
+      `https://www.dvdcompare.net/comparisons/film.php?fid=${id}#${params?.dvdCompareReleaseHash ?? 1}`
+    ),
+  },
+}
+
+// Resolves the external link for a step (or for one specific field on the
+// step). Three modes:
+//   1. With `field`: only that field's lookup link, used by the input-area
+//      anchor inside renderFields.
+//   2. Without `field`: scans the card for its primary numberWithLookup
+//      field with a known lookup type — used for the card header and the
+//      result-area link.
+//   3. Fallback for nameSpecialFeatures: when no dvdCompareId is set but
+//      the user pasted a `url`, that pasted URL is itself the link.
+// Returns `{ url, label }` or `null`. Callers HTML-escape `url` themselves.
+function getLookupLinkData(step, field) {
+  if (field) {
+    const lookup = LOOKUP_LINKS[field.lookupType]
+    if (!lookup) {
+      return null
+    }
+    const id = step.params[field.name]
+    if (id === undefined || id === null || id === '') {
+      return null
+    }
+    return { url: lookup.buildUrl(id, step.params), label: lookup.label }
+  }
+  const cmd = COMMANDS[step.command]
+  if (!cmd) {
+    return null
+  }
+  const lookupField = cmd.fields.find((candidate) => (
+    candidate.type === 'numberWithLookup'
+    && LOOKUP_LINKS[candidate.lookupType]
+  ))
+  if (lookupField) {
+    const id = step.params[lookupField.name]
+    if (id !== undefined && id !== null && id !== '') {
+      const lookup = LOOKUP_LINKS[lookupField.lookupType]
+      return { url: lookup.buildUrl(id, step.params), label: lookup.label }
+    }
+  }
+  if (step.command === 'nameSpecialFeatures' && step.params.url) {
+    return { url: step.params.url, label: 'open URL on DVDCompare' }
+  }
+  return null
 }
 
 // ─── Shared popover-picker shell ──────────────────────────────────────────────
@@ -3482,6 +3672,149 @@ function displayDvdCompareVariant(variant) {
   return variant === 'Blu-ray 4K' ? 'UHD Blu-ray' : variant
 }
 
+// Pulls baseTitle + year out of a dvdCompareName like
+//   "Soldier (UHD Blu-ray) (1998)"
+// produced by lookupDvdCompareFilm / lookupSelectRelease. Used by the
+// TMDB resolver and the search-fallback link so the variant chunk
+// doesn't poison the query (TMDB has no "(UHD Blu-ray)" entry).
+function parseDvdCompareDisplayName(displayName) {
+  if (!displayName) {
+    return null
+  }
+  const yearMatch = displayName.match(/\s*\((\d{4})\)\s*$/)
+  const withoutYear = yearMatch
+    ? displayName.slice(0, yearMatch.index).trim()
+    : displayName.trim()
+  const variantMatch = withoutYear.match(/\s*\((?:UHD Blu-ray|Blu-ray 4K|Blu-ray|DVD)\)\s*$/i)
+  const baseTitle = variantMatch
+    ? withoutYear.slice(0, variantMatch.index).trim()
+    : withoutYear
+  return { baseTitle, year: yearMatch?.[1] || '' }
+}
+
+// Fires /queries/searchMovieDb with the cleaned title + year and stores
+// the top hit's id + label on the step so the input-area TMDB link can
+// jump straight to the matched movie page. Called from lookupSelectRelease
+// (modal pick — clean data), runReverseLookup (typed id — parsed from
+// the returned display name), and kickTmdbResolutions (post-YAML-load
+// catch-up). Re-renders on result so the link updates without waiting
+// for the next interaction. Sets tmdbResolutionAttempted so kick won't
+// re-fire after a "no match" response.
+async function resolveTmdbForStep(stepId, baseTitle, year) {
+  const step = steps.find((candidate) => candidate.id === stepId)
+  if (!step || !baseTitle) {
+    return
+  }
+  step.params.tmdbResolutionPending = true
+  try {
+    const response = await fetch('/queries/searchMovieDb', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ searchTerm: baseTitle, year: year || undefined }),
+    })
+    if (!response.ok) {
+      return
+    }
+    const data = await response.json()
+    const top = (data.results || [])[0]
+    if (top && top.movieDbId) {
+      step.params.tmdbId = top.movieDbId
+      step.params.tmdbName = top.year ? `${top.title} (${top.year})` : top.title
+    } else {
+      // TMDB returned no match — clear any stale value so the link
+      // degrades to the search fallback rather than pointing at the
+      // previous film's page.
+      delete step.params.tmdbId
+      delete step.params.tmdbName
+    }
+  } catch (err) {
+    console.error('resolveTmdbForStep failed', err)
+  } finally {
+    delete step.params.tmdbResolutionPending
+    step.params.tmdbResolutionAttempted = true
+    renderAll()
+  }
+}
+
+// Drops the previously-resolved TMDB match. Called when the user clears
+// the dvdCompareId or types a new one, since the old match is stale.
+// Also resets the attempted flag so kickTmdbResolutions will re-fire
+// once a fresh name resolves.
+function clearTmdbResolution(step) {
+  delete step.params.tmdbId
+  delete step.params.tmdbName
+  delete step.params.tmdbResolutionAttempted
+}
+
+// Sweeps every step's numberWithLookup fields that have an id and
+// re-fires the reverse lookup. Called after YAML load so a shared seq
+// URL whose companion was resolved against an old endpoint (e.g.
+// pre-English-translation TVDB code that returned the Japanese title)
+// re-resolves to the current canonical name on every load. Also kicks
+// the chain that runReverseLookup runs for nameSpecialFeatures
+// (dvdCompareReleaseHash + resolveTmdbForStep), so kickTmdbResolutions
+// is rarely needed once this runs — it stays as a safety net for
+// seq URLs that happen to have a dvdCompareName without a dvdCompareId
+// (which shouldn't happen in practice).
+function kickReverseLookups() {
+  for (const step of steps) {
+    if (!step.command) {
+      continue
+    }
+    const cmd = COMMANDS[step.command]
+    if (!cmd) {
+      continue
+    }
+    for (const field of cmd.fields) {
+      if (field.type !== 'numberWithLookup') {
+        continue
+      }
+      if (!field.companionNameField) {
+        continue
+      }
+      const idValue = step.params[field.name]
+      const numericId = Number(idValue)
+      if (!Number.isFinite(numericId) || numericId <= 0) {
+        continue
+      }
+      const token = String(numericId)
+      const key = `${step.id}-${field.name}`
+      // Seed the token so runReverseLookup's stale-check passes — that
+      // check exists for in-flight typing, but our kicks are unprompted.
+      reverseLookupTokens.set(key, token)
+      runReverseLookup(step.id, field.name, numericId, token)
+    }
+  }
+}
+
+// Sweeps every nameSpecialFeatures step that has a dvdCompareName but
+// no resolved TMDB match yet, and fires the resolver. Called after YAML
+// load (seq-URL restore + Load-panel paste) so a shared seq URL whose
+// author predates the persisted-resolution work still gets the direct
+// "↗ Title (year) on TMDB" link without forcing the user to re-pick
+// the release. Idempotent — flags guard against double-firing.
+function kickTmdbResolutions() {
+  for (const step of steps) {
+    if (step.command !== 'nameSpecialFeatures') {
+      continue
+    }
+    if (step.params.tmdbId) {
+      continue
+    }
+    if (step.params.tmdbResolutionPending) {
+      continue
+    }
+    if (step.params.tmdbResolutionAttempted) {
+      continue
+    }
+    const parsed = parseDvdCompareDisplayName(step.params.dvdCompareName)
+    if (!parsed?.baseTitle) {
+      continue
+    }
+    resolveTmdbForStep(step.id, parsed.baseTitle, parsed.year)
+  }
+}
+
 // ─── Reverse lookup (manual ID/hash edit → fetch display name) ───────────────
 
 const reverseLookupTimers = new Map()  // key=`${stepId}-${fieldName}` → timeoutId
@@ -3494,6 +3827,77 @@ function setCompanionDisplay(stepId, fieldName, text) {
   el.title = text
   if (text) el.classList.remove('hidden')
   else el.classList.add('hidden')
+}
+
+// Direct-DOM updater wired into the numberWithLookup field's `oninput`
+// so paste / keystroke immediately flips the rendered anchor hrefs to
+// reflect the new id — without needing a full renderAll (which would
+// lose input focus and re-introduce the typing-lag problem
+// scheduleUpdateUrl was carved out to avoid).
+//
+// Two anchors get updated in lock-step so all card types (mal / anidb /
+// tvdb / dvdcompare) react identically:
+//
+//   1. The companion link ([data-companion]). Same element setCompanionDisplay
+//      writes text into; we additionally rewrite href here so typing a
+//      new id immediately points at the right service page.
+//   2. The right-side DVDCompare release anchor ([data-right-link]).
+//      Only present on dvdcompare fields. Falls back to the
+//      lookup.homeUrl when the id is empty.
+//
+// For the special-features card the companion is bound to TMDB. Typing
+// a new dvdCompareId invalidates any prior TMDB resolution, so the href
+// is reset to TMDB home until the chained resolveTmdbForStep settles
+// and renderAll rebuilds the anchor with the fresh match.
+function updateLookupLinks(stepId, fieldName, rawValue) {
+  const step = steps.find((candidate) => candidate.id === stepId)
+  if (!step) {
+    return
+  }
+  const cmd = COMMANDS[step.command]
+  const field = cmd?.fields.find((candidate) => candidate.name === fieldName)
+  if (!field || field.type !== 'numberWithLookup') {
+    return
+  }
+  const lookupConfig = LOOKUP_LINKS[field.lookupType]
+  if (!lookupConfig) {
+    return
+  }
+
+  const numericValue = (rawValue !== undefined && rawValue !== '') ? Number(rawValue) : null
+  const hasValidId = numericValue !== null && Number.isFinite(numericValue) && numericValue > 0
+  const isNameSpecialFeaturesCard = (
+    step.command === 'nameSpecialFeatures'
+    && field.lookupType === 'dvdcompare'
+  )
+
+  const companion = document.querySelector(
+    `[data-step="${stepId}"][data-companion="${fieldName}"]`,
+  )
+  if (companion && companion.tagName === 'A') {
+    let companionHref
+    if (isNameSpecialFeaturesCard) {
+      companionHref = 'https://www.themoviedb.org/'
+    } else if (hasValidId) {
+      const tempParams = { ...step.params, [fieldName]: numericValue }
+      companionHref = lookupConfig.buildUrl(numericValue, tempParams)
+    } else {
+      companionHref = lookupConfig.homeUrl
+    }
+    companion.setAttribute('href', companionHref)
+  }
+
+  if (field.lookupType === 'dvdcompare') {
+    const rightLink = document.querySelector(
+      `[data-step="${stepId}"][data-right-link="${fieldName}"]`,
+    )
+    if (rightLink) {
+      const href = hasValidId
+        ? lookupConfig.buildUrl(numericValue, { ...step.params, [fieldName]: numericValue })
+        : lookupConfig.homeUrl
+      rightLink.setAttribute('href', href)
+    }
+  }
 }
 
 function scheduleReverseLookup(stepId, fieldName, rawValue) {
@@ -3525,6 +3929,11 @@ function scheduleReverseLookup(stepId, fieldName, rawValue) {
       delete step.params[hashField.companionNameField]
       setCompanionDisplay(stepId, 'dvdCompareReleaseHash', '')
     }
+    // The TMDB match was resolved against the previous film — clear it
+    // so the link doesn't keep pointing at the old movie while the user
+    // is mid-keystroke. The follow-up resolve runs in runReverseLookup
+    // once the new id resolves.
+    clearTmdbResolution(step)
   }
 
   if (!rawValue) return
@@ -3585,8 +3994,24 @@ async function runReverseLookup(stepId, fieldName, id, requestToken) {
     if (reverseLookupTokens.get(key) !== requestToken) return
 
     step.params[field.companionNameField] = name
-    setCompanionDisplay(stepId, fieldName, name)
+    // For special-features dvdCompareId we DON'T want to flash the
+    // variant-laden dvdCompareName ("Soldier (UHD Blu-ray) (1998)") to
+    // the user before the TMDB resolver gets a chance to canonicalize
+    // ("Soldier (1998)"). Mark TMDB pending and leave the companion
+    // hidden — the chained resolveTmdbForStep below settles and renderAll
+    // shows the final name in one go.
+    if (fieldName === 'dvdCompareId' && step.command === 'nameSpecialFeatures') {
+      step.params.tmdbResolutionPending = true
+      setCompanionDisplay(stepId, fieldName, '')
+    } else {
+      setCompanionDisplay(stepId, fieldName, name)
+    }
     updateYaml()
+    // Persist the freshly-resolved companion into the URL so a refresh
+    // doesn't lose it. setParam is what previously owned URL writes,
+    // but it only fires on input blur — companion updates from the
+    // reverse-lookup path were never reaching the URL otherwise.
+    scheduleUpdateUrl()
 
     // The release label depends on which film we're looking at, so a
     // dvdCompareId change must also refresh the hash field's companion.
@@ -3597,7 +4022,25 @@ async function runReverseLookup(stepId, fieldName, id, requestToken) {
       const hashField = cmd?.fields.find(f => f.name === 'dvdCompareReleaseHash')
       if (hashField) {
         const hashValue = step.params.dvdCompareReleaseHash ?? hashField.default ?? 1
-        runReverseLookup(stepId, 'dvdCompareReleaseHash', Number(hashValue), String(hashValue))
+        const hashKey = `${stepId}-dvdCompareReleaseHash`
+        const hashToken = String(hashValue)
+        // The chained call's staleness check reads reverseLookupTokens,
+        // which scheduleReverseLookup set for the dvdCompareId key but
+        // not for dvdCompareReleaseHash. Seed it so the nested
+        // runReverseLookup actually applies its result.
+        reverseLookupTokens.set(hashKey, hashToken)
+        runReverseLookup(stepId, 'dvdCompareReleaseHash', Number(hashValue), hashToken)
+      }
+      // Same flow as lookupSelectRelease: resolve TMDB so the user can
+      // jump straight to the matched movie. The display name returned
+      // by /queries/lookupDvdCompare is "Title (variant) (year)" — we
+      // parse it back into clean baseTitle + year before searching so
+      // the variant chunk doesn't poison the TMDB query.
+      if (step.command === 'nameSpecialFeatures') {
+        const parsed = parseDvdCompareDisplayName(name)
+        if (parsed?.baseTitle) {
+          resolveTmdbForStep(stepId, parsed.baseTitle, parsed.year)
+        }
       }
     }
   } catch (err) {
@@ -3870,9 +4313,22 @@ function lookupSelectRelease(hash, label) {
       step.params.dvdCompareName = `${group.baseTitle}${variantSuffix}${yearSuffix}`
     }
     if (label) step.params.dvdCompareReleaseLabel = label
+    // The previously-resolved TMDB match (if any) is stale now that the
+    // film selection changed. Clear it before kicking off the new
+    // resolution so the link doesn't briefly point at the wrong movie.
+    clearTmdbResolution(step)
+    // Set the pending flag synchronously BEFORE renderAll so the first
+    // render after the modal pick shows the empty/pending state instead
+    // of flashing the variant-laden dvdCompareName for a frame.
+    if (group?.baseTitle && step.command === 'nameSpecialFeatures') {
+      step.params.tmdbResolutionPending = true
+    }
     refreshLinkedInputs()
     updateYaml()
     renderAll()
+    if (group?.baseTitle && step.command === 'nameSpecialFeatures') {
+      resolveTmdbForStep(step.id, group.baseTitle, group.year || '')
+    }
   }
   closeLookupModal()
 }
@@ -4031,73 +4487,109 @@ function updateStepUI(step) {
     }
   }
 
-  // Render results when the step has finished
+  // Render results when the step has finished. formatStepResults returns
+  // either a plain string (legacy text mode → rendered into a <pre>) or
+  // { html } (HTML mode → rendered into a .results-body <div>). The two
+  // shapes use different inner elements so we rebuild the container if
+  // the mode differs from a previous render.
   let resultsEl = card.querySelector('.step-results')
-  const formatted = step.results && step.results.length > 0 ? formatStepResults(step.command, step.results) : ''
-  if (formatted) {
+  const formatted = step.results && step.results.length > 0 ? formatStepResults(step) : ''
+  const formattedHtml = formatted && typeof formatted === 'object' && formatted.html ? formatted.html : null
+  const formattedText = !formattedHtml && typeof formatted === 'string' && formatted ? formatted : ''
+  if (formattedHtml || formattedText) {
+    if (resultsEl) {
+      const wantsHtml = !!formattedHtml
+      const isHtml = !resultsEl.querySelector('pre')
+      if (wantsHtml !== isHtml) {
+        resultsEl.remove()
+        resultsEl = null
+      }
+    }
     if (!resultsEl) {
       const fieldsEl = card.querySelector('.space-y-2')
       if (fieldsEl) {
+        const innerEl = formattedHtml
+          ? `<div class="results-body text-xs bg-slate-950 rounded px-2 py-1.5 mt-1 break-words"></div>`
+          : `<pre class="text-emerald-300 bg-slate-950 rounded px-2 py-1.5 mt-1 font-mono whitespace-pre-wrap break-words"></pre>`
         fieldsEl.insertAdjacentHTML('beforebegin',
           `<details class="step-results text-xs mb-2" open>
             <summary class="cursor-pointer text-emerald-400 hover:text-emerald-300 select-none flex items-center gap-2">
               <span>Results</span>
               <button type="button" class="copy-btn ml-auto text-[10px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300" title="Copy results to clipboard">📋 Copy</button>
             </summary>
-            <pre class="text-emerald-300 bg-slate-950 rounded px-2 py-1.5 mt-1 font-mono whitespace-pre-wrap break-words"></pre>
+            ${innerEl}
           </details>`)
         resultsEl = card.querySelector('.step-results')
       }
     }
     if (resultsEl) {
-      resultsEl.querySelector('pre').textContent = formatted
+      if (formattedHtml) {
+        const body = resultsEl.querySelector('.results-body')
+        if (body) {
+          body.innerHTML = formattedHtml
+        }
+      } else {
+        resultsEl.querySelector('pre').textContent = formattedText
+      }
     }
   } else if (resultsEl) {
     resultsEl.remove()
   }
 }
 
-function formatStepResults(commandName, results) {
+// Returns either a plain string (legacy text mode, rendered via <pre>) or
+// `{ html: string }` (HTML mode, rendered via innerHTML on a <div>). HTML
+// mode is currently only used by nameSpecialFeatures so the leftover-files
+// list can be styled as a yellow callout and a click-through DVDCompare
+// link can sit beside it.
+function formatStepResults(step) {
+  const commandName = step.command
+  const results = step.results
+
   if (commandName === 'getAudioOffsets') {
     return results.flat().map(item => `${item?.offsetInMilliseconds}ms`).join('\n')
   }
 
   // nameSpecialFeatures emits both rename pairs ({ oldName, newName })
-  // and a trailing summary record ({ unrenamedFilenames: [...] }). When
-  // we see the summary alongside renames, render both: the rename table
-  // first, then a "Files not renamed" section. Covers the user's "show
-  // me what didn't get named at the end" request.
+  // and a trailing summary record ({ unrenamedFilenames: [...] }). Render
+  // a structured block: a count summary, the rename rows, and (when
+  // applicable) a yellow "review by hand" callout with the leftover
+  // filenames plus a click-through to the matched DVDCompare release.
+  if (commandName === 'nameSpecialFeatures') {
+    const summaryRecord = results.find((item) => (
+      item && typeof item === 'object'
+      && Array.isArray(item.unrenamedFilenames)
+    ))
+    const renamePairs = summaryRecord
+      ? results.filter((item) => item !== summaryRecord)
+      : results
+    const allRenamePairs = renamePairs.every((item) => (
+      item && typeof item === 'object'
+      && typeof item.oldName === 'string'
+      && typeof item.newName === 'string'
+    ))
+    if (allRenamePairs && (renamePairs.length > 0 || summaryRecord)) {
+      return { html: renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) }
+    }
+  }
+
+  // Generic rename-pair detection for other commands that emit
+  // { source, destination } / { from, to } shapes — still text mode.
   const renameLikeFields = [
     ['source', 'destination'],
     ['oldName', 'newName'],
     ['from', 'to'],
   ]
-  const summaryRecord = results.find((item) => (
-    item && typeof item === 'object'
-    && Array.isArray(item.unrenamedFilenames)
-  ))
-  const renamePairs = summaryRecord
-    ? results.filter((item) => item !== summaryRecord)
-    : results
-  const renameField = renamePairs.length > 0 && renameLikeFields.find(([fromKey, toKey]) => (
-    renamePairs.every((item) => (
+  const renameField = results.length > 0 && renameLikeFields.find(([fromKey, toKey]) => (
+    results.every((item) => (
       item && typeof item === 'object'
       && typeof item[fromKey] === 'string'
       && typeof item[toKey] === 'string'
     ))
   ))
-  if (renameField || summaryRecord) {
-    const lines = []
-    if (renameField) {
-      const [fromKey, toKey] = renameField
-      lines.push(...renamePairs.map((item) => `${item[fromKey]} → ${item[toKey]}`))
-    }
-    if (summaryRecord && summaryRecord.unrenamedFilenames.length > 0) {
-      if (lines.length > 0) lines.push('')
-      lines.push('Files not renamed:')
-      lines.push(...summaryRecord.unrenamedFilenames.map((filename) => `  • ${filename}`))
-    }
-    if (lines.length > 0) return lines.join('\n')
+  if (renameField) {
+    const [fromKey, toKey] = renameField
+    return results.map((item) => `${item[fromKey]} → ${item[toKey]}`).join('\n')
   }
 
   // Plain string list — render one per line so paths and filenames
@@ -4115,6 +4607,36 @@ function formatStepResults(commandName, results) {
   }
 }
 
+// Builds the HTML body for nameSpecialFeatures. The outer container is
+// supplied by the caller (the .results-body div), so this returns just
+// the inner block sequence: count summary, rename rows, then (when
+// unrenamed files exist) a yellow callout with the bullet list and the
+// DVDCompare link. Inline blocks are joined without intervening newlines
+// so whitespace-pre-wrap on any ancestor doesn't introduce blank lines
+// between sections.
+function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) {
+  const unrenamed = summaryRecord?.unrenamedFilenames ?? []
+  const counts = `Renamed ${renamePairs.length}. Files not renamed: ${unrenamed.length}.`
+  const countsBlock = `<p class="text-slate-300 mb-2">${esc(counts)}</p>`
+  const renameRowsHtml = renamePairs.map((item) => (
+    `<div>${esc(item.oldName)} → ${esc(item.newName)}</div>`
+  )).join('')
+  const renameBlock = renamePairs.length > 0
+    ? `<div class="text-emerald-300 font-mono mb-2 break-words">${renameRowsHtml}</div>`
+    : ''
+  const linkData = getLookupLinkData(step)
+  const linkBlock = linkData
+    ? `<a href="${esc(linkData.url)}" target="_blank" rel="noopener" class="text-blue-300 hover:text-blue-200 underline inline-flex items-center gap-1 mt-1">↗ ${esc(linkData.label)}</a>`
+    : ''
+  const leftoverItems = unrenamed.map((filename) => (
+    `<li class="break-words">• ${esc(filename)}</li>`
+  )).join('')
+  const leftoversBlock = unrenamed.length > 0
+    ? `<div class="bg-yellow-900/30 border border-yellow-700 text-yellow-100 rounded px-2 py-1.5"><p class="font-medium mb-1">Files not renamed (review by hand):</p><ul class="font-mono space-y-0.5">${leftoverItems}</ul>${linkBlock}</div>`
+    : ''
+  return `${countsBlock}${renameBlock}${leftoversBlock}`
+}
+
 // ─── Copy buttons ─────────────────────────────────────────────────────────────
 
 // Delegated click for any `.copy-btn` inside a <details> (Results / Logs).
@@ -4122,11 +4644,14 @@ function formatStepResults(commandName, results) {
 // bubbling up to the <summary> (which would toggle the disclosure).
 async function copyDetailsContent(button) {
   const details = button.closest('details')
-  const pre = details?.querySelector('pre')
-  if (!pre) return
+  // The results disclosure may use either a <pre> (legacy text mode) or a
+  // .results-body <div> (HTML mode for nameSpecialFeatures). innerText
+  // preserves block layout so HTML-mode copies retain line breaks.
+  const body = details?.querySelector('pre, .results-body')
+  if (!body) return
   const original = button.textContent
   try {
-    await navigator.clipboard.writeText(pre.textContent || '')
+    await navigator.clipboard.writeText(body.innerText || body.textContent || '')
     button.textContent = '✓ Copied'
   } catch {
     button.textContent = '✗ Failed'
@@ -4189,6 +4714,8 @@ Object.assign(window.mediaTools, {
   makeStep,
   updateUrl,
   closeApiRunModal,
+  kickTmdbResolutions,
+  kickReverseLookups,
 })
 
 // Initial bootstrap (initPaths / restoreFromUrl / renderAll) is invoked

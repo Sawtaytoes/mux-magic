@@ -78,6 +78,18 @@ function loadStepItem(item, COMMANDS) {
       if (companionValue !== undefined) step.params[field.companionNameField] = companionValue
     }
   }
+  // persistedKeys mirror buildParams: restore auto-resolved values
+  // (e.g. nameSpecialFeatures' tmdbId/tmdbName) so a shared seq URL
+  // keeps pointing at the same matched film without re-firing the
+  // resolution on load.
+  if (Array.isArray(cmd.persistedKeys)) {
+    for (const persistedKey of cmd.persistedKeys) {
+      const persistedValue = item.params?.[persistedKey]
+      if (persistedValue !== undefined) {
+        step.params[persistedKey] = persistedValue
+      }
+    }
+  }
   return step
 }
 
@@ -141,6 +153,16 @@ export function loadYamlFromText(text) {
     isGroupItem(item) ? loadGroupItem(item, COMMANDS) : loadStepItem(item, COMMANDS)
   ))
   setSteps(newItems)
+  // Re-resolve every numberWithLookup field's companion against the
+  // current backend (TVDB English-title code, refreshed MAL/AniDB/TMDB
+  // data, etc.) so a stale companion stored in the seq URL doesn't
+  // outlive the bug it captured. The kick also chains TMDB resolution
+  // for nameSpecialFeatures via runReverseLookup, subsuming most of
+  // what kickTmdbResolutions does — kickTmdbResolutions stays as a
+  // safety net for the edge case where a seq URL carries dvdCompareName
+  // without dvdCompareId.
+  bridge().kickReverseLookups?.()
+  bridge().kickTmdbResolutions?.()
 }
 
 // ─── Click handler for the panel's Load button ──────────────────────────────

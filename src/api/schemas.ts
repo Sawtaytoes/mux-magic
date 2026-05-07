@@ -373,6 +373,11 @@ export const searchTvdbResponseSchema = z.object({
   error: z.string().nullable().optional().describe("Error message if the search failed (e.g. network/server error). When present, results is empty."),
 })
 
+export const searchMovieDbRequestSchema = z.object({
+  searchTerm: z.string().describe("Title to search for"),
+  year: z.string().optional().describe("Release year to narrow results (4-digit yyyy). Disambiguates same-titled films across eras."),
+})
+
 export const searchMovieDbResultSchema = z.object({
   imageUrl: z.string().optional().describe("Poster image URL"),
   movieDbId: z.number().describe("TMDB movie ID"),
