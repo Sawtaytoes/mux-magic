@@ -14,7 +14,7 @@ import { isGroup } from './yaml-modal.js'
 // inner body share the same `group: { name: 'sequence' }` so a step
 // can drag across containers (top ↔ inside group). Groups themselves
 // are rejected from dropping inside another group via onMove (the
-// schema bans nesting; matches the load-panel error).
+// schema bans nesting; matches the load-modal error).
 const bridge = () => window.mediaTools
 
 const SORTABLE_OPTIONS_BASE = {

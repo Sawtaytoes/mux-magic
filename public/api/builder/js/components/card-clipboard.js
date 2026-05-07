@@ -9,7 +9,7 @@ import {
   isGroupItem,
   loadGroupItem,
   loadStepItem,
-} from './load-panel.js'
+} from './load-modal.js'
 
 // Per-card YAML clipboard helpers. The whole-sequence Copy lives in
 // yaml-modal.js (`copyYaml`); this module is the single-card analogue,
@@ -278,7 +278,7 @@ export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInPare
   }
 
   // Path merge runs before hydration so loadStepItem's `@pathId` lookup
-  // (in load-panel.js) can find the pasted paths and keep them as
+  // (in load-modal.js) can find the pasted paths and keep them as
   // string-form links rather than dropping them to literal strings.
   mergePastedPaths(normalized.paths)
 

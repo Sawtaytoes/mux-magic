@@ -333,7 +333,7 @@
         <span class="page-menu-sep w-px h-6 bg-slate-700 mx-1"></span>
         <div class="page-menu-group">
           <div class="page-menu-row">
-            <button onclick="toggleLoad()" id="load-btn" title="Load YAML"
+            <button onclick="openLoadModal()" id="load-btn" title="Load YAML"
               class="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
                 <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5" />
@@ -363,25 +363,38 @@
     </div>
   </div>
 
-  <!-- Load YAML panel -->
-  <div id="load-panel" class="hidden shrink-0 px-4 py-3 border-b border-slate-700 bg-slate-800/60">
-    <p class="text-xs text-slate-400 mb-2">Paste saved YAML to restore sequence</p>
-    <textarea id="load-input" rows="5"
-      class="w-full bg-slate-900 text-slate-200 text-xs font-mono p-2 rounded border border-slate-600 resize-y focus:outline-none focus:border-blue-500"
-      placeholder="- command: copyFiles&#10;  params:&#10;    sourcePath: /src&#10;    destinationPath: /dst"></textarea>
-    <div class="flex items-center gap-3 mt-2">
-      <button onclick="loadYaml()" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded">Load</button>
-      <button onclick="toggleLoad()" class="text-xs text-slate-400 hover:text-slate-300">Cancel</button>
-      <span id="load-error" class="text-xs text-red-400 hidden"></span>
-    </div>
-  </div>
-
   <!-- Step list -->
   <div class="flex-1 overflow-y-auto">
     <div id="steps-el" class="max-w-3xl mx-auto px-4 py-4 flex flex-col gap-3"></div>
   </div>
 
 
+</div>
+
+<!-- Load YAML modal: paste-driven. Open it via the page-header Load
+     icon; pasting anywhere on the page (Ctrl+V / ⌘+V) hydrates the
+     builder and closes the modal. The text-only body keeps the surface
+     tiny and consistent with the YAML view modal next door. -->
+<div id="load-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70" onclick="closeLoadModal(event)">
+  <div class="bg-slate-900 border border-slate-700 rounded-xl flex flex-col" style="width:min(90vw,560px)" onclick="event.stopPropagation()">
+    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
+      <span class="text-xs font-medium text-slate-400">Load YAML</span>
+      <button onclick="closeLoadModal()" class="text-xs text-slate-400 hover:text-slate-200">✕ Close</button>
+    </div>
+    <div class="px-6 py-8 text-center space-y-3">
+      <p class="text-sm text-slate-300">Paste your saved sequence YAML anywhere on the page.</p>
+      <p class="text-xs text-slate-500">
+        Press
+        <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono text-[10px]">Ctrl + V</kbd>
+        /
+        <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono text-[10px]">⌘ + V</kbd>
+        to paste ·
+        <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono text-[10px]">Esc</kbd>
+        to cancel
+      </p>
+      <p id="load-error" class="text-xs text-red-400 hidden"></p>
+    </div>
+  </div>
 </div>
 
 <!-- YAML modal -->
@@ -2393,13 +2406,13 @@ function openYamlModal() { return window.mediaTools.openYamlModal() }
 function closeYamlModal(event) { return window.mediaTools.closeYamlModal(event) }
 
 // ─── Load YAML ────────────────────────────────────────────────────────────────
-// Implementations live in /builder/js/components/load-panel.js — these
+// Implementations live in /builder/js/components/load-modal.js — these
 // forwarders preserve inline call sites (HTML onclick="..." bindings,
 // applySnapshot's loadYamlFromText, restoreFromUrl's loadYamlFromText)
 // without each having to reach through window.mediaTools manually.
 
-function toggleLoad() { return window.mediaTools.toggleLoad() }
-function loadYaml() { return window.mediaTools.loadYaml() }
+function openLoadModal() { return window.mediaTools.openLoadModal() }
+function closeLoadModal(event) { return window.mediaTools.closeLoadModal(event) }
 function loadYamlFromText(text) { return window.mediaTools.loadYamlFromText(text) }
 
 // ─── Per-card YAML clipboard ──────────────────────────────────────────────────
