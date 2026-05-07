@@ -123,6 +123,53 @@
     flex-shrink: 0;
   }
 
+  /* Per-step run/stop button. One <button> with two stacked icons; the
+     `.is-running` class cross-fades them (rotate + scale) so the user
+     gets a clear visual transition when starting or cancelling a step,
+     instead of the old two-button play+cancel arrangement that put the
+     stop button right under the cursor that just clicked play. */
+  .step-run-stop {
+    position: relative;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.25rem;
+    color: #34d399;            /* emerald — matches the old ▶ */
+    transition: color 200ms ease, background-color 200ms ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step-run-stop:hover { background-color: #334155; color: #6ee7b7; }
+  .step-run-stop:disabled { opacity: 0.3; cursor: not-allowed; }
+  .step-run-stop:disabled:hover { background-color: transparent; color: #34d399; }
+  .step-run-stop.is-running { color: #fbbf24; }   /* amber — matches the old ⏹ */
+  .step-run-stop.is-running:hover { color: #fcd34d; background-color: #334155; }
+  .step-run-stop-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    transition: opacity 200ms ease, transform 200ms ease;
+  }
+  .step-run-stop-stop {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+  }
+  .step-run-stop.is-running .step-run-stop-play {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+  }
+  .step-run-stop.is-running .step-run-stop-stop {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+  /* Honor reduced-motion preferences — snap instead of rotate-fade. */
+  @media (prefers-reduced-motion: reduce) {
+    .step-run-stop, .step-run-stop-icon { transition: none; }
+  }
+
   /* Below ~600px of card width: alias breaks to its own row above the
      other header controls (cmd-picker keeps its flex-1 fill behavior).
      Picked at 600px so the cmd-picker still has room to render moderate
@@ -1443,12 +1490,13 @@ function renderStep(step, index) {
     <button onclick="toggleStepActions('${step.id}')" title="Step actions"
       class="step-hamburger-btn w-6 h-6 items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 text-base leading-none">≡</button>
     <div class="step-actions" data-step-actions="${step.id}">
-      <button onclick="runStep('${step.id}')" ${step.command ? '' : 'disabled'}
-        title="Run this step only"
-        class="w-6 h-6 flex items-center justify-center rounded text-emerald-400 hover:text-emerald-300 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent text-xs">▶</button>
-      <button onclick="cancelStep('${step.id}')" data-step-cancel="${step.id}"
-        title="Cancel this step"
-        class="${step.status === 'running' && step.jobId ? '' : 'hidden'} w-6 h-6 flex items-center justify-center rounded text-amber-400 hover:text-amber-300 hover:bg-slate-700 text-xs">⏹</button>
+      <button onclick="runOrStopStep('${step.id}')" ${step.command ? '' : 'disabled'}
+        title="${step.status === 'running' && step.jobId ? 'Cancel this step' : 'Run this step only'}"
+        data-step-run-stop="${step.id}"
+        class="step-run-stop ${step.status === 'running' && step.jobId ? 'is-running' : ''}">
+        <span class="step-run-stop-icon step-run-stop-play">▶</span>
+        <span class="step-run-stop-icon step-run-stop-stop">⏹</span>
+      </button>
       <button onclick="moveStep('${step.id}',-1)" ${isFirst ? 'disabled' : ''}
         class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↑</button>
       <button onclick="moveStep('${step.id}',1)" ${isLast ? 'disabled' : ''}
@@ -1787,6 +1835,21 @@ async function cancelStep(stepId) {
     await fetch(`/jobs/${step.jobId}`, { method: 'DELETE' })
   } catch (err) {
     console.error('cancelStep failed', err)
+  }
+}
+
+// Single-button dispatcher behind the morphing ▶/⏹ chip on each step
+// card. Routes to cancelStep when the step is actively running with a
+// job id, otherwise to runStep. Wrapping both behind one button is
+// what lets the icon morph in place — the user never has two adjacent
+// targets racing for the same cursor position.
+function runOrStopStep(stepId) {
+  const step = steps.find((s) => s.id === stepId)
+  if (!step) return
+  if (step.status === 'running' && step.jobId) {
+    cancelStep(stepId)
+  } else {
+    runStep(stepId)
   }
 }
 
@@ -3449,13 +3512,14 @@ function updateStepUI(step) {
     }
   }
 
-  // Cancel button visibility — only meaningful when the step is running AND
-  // the job has been created. renderStep produces the button always (hidden
-  // by default) so we just toggle here, mirroring api-run-cancel-btn's
-  // visibility wiring.
-  const cancelBtn = card.querySelector(`[data-step-cancel="${step.id}"]`)
-  if (cancelBtn) {
-    cancelBtn.classList.toggle('hidden', !(step.status === 'running' && step.jobId))
+  // Run/stop button morph — same chip, two states. Toggle .is-running
+  // and the title attribute; the CSS in the head block handles the
+  // ▶ ↔ ⏹ cross-fade.
+  const runStopBtn = card.querySelector(`[data-step-run-stop="${step.id}"]`)
+  if (runStopBtn) {
+    const isRunningStep = step.status === 'running' && step.jobId
+    runStopBtn.classList.toggle('is-running', isRunningStep)
+    runStopBtn.title = isRunningStep ? 'Cancel this step' : 'Run this step only'
   }
 
   // Update error
