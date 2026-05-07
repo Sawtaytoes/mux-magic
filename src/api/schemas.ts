@@ -311,7 +311,6 @@ export const storeAspectRatioDataRequestSchema = z.object({
   rootPath: z.string().optional().describe("Root path for relative paths"),
   folders: z.array(z.string()).default([]).describe("Specific folders to process"),
   force: z.boolean().default(false).describe("Force overwrite existing data"),
-  threads: z.number().optional().describe("Number of threads to use"),
 })
 
 export const getSubtitleMetadataRequestSchema = z.object({

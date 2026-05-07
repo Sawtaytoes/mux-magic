@@ -1,18 +1,15 @@
 import {
-  cpus,
-} from "node:os"
-import {
   bufferCount,
   concatMap,
   filter,
   find,
   from,
   map,
-  mergeAll,
   Observable,
   reduce,
 } from "rxjs";
 
+import { runTasks } from "../tools/taskScheduler.js";
 import { runReadlineFfmpeg } from "./runReadlineFfmpeg.js";
 
 export type AspectRatioCalculation = {
@@ -189,10 +186,6 @@ export const getAspectRatioData = ({
   duration,
   filePath,
   isHdr,
-  threadCount = (
-    cpus()
-    .length
-  ),
 }: {
   /**
    * When anamorphic, pass this in to compute the aspect ratio relative to: `(displayAspectRatio / (videoWidth / videoHeight))`.
@@ -201,7 +194,6 @@ export const getAspectRatioData = ({
   duration: number
   filePath: string
   isHdr: boolean
-  threadCount?: number
 }): (
   Observable<
     AspectRatioCalculation
@@ -257,16 +249,13 @@ export const getAspectRatioData = ({
         seconds,
       })
     )),
-    map((
+    runTasks((
       args,
     ) => (
       runReadlineFfmpeg({
         args,
       })
     )),
-    mergeAll(
-      threadCount
-    ),
   )
   .pipe(
     filter((

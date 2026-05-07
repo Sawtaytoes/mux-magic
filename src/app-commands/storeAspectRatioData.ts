@@ -1,5 +1,4 @@
 import { access, constants, readFile, writeFile } from "node:fs/promises"
-import { cpus } from "node:os"
 import { join, sep } from "node:path"
 import {
   catchError,
@@ -8,7 +7,6 @@ import {
   filter,
   from,
   map,
-  mergeAll,
   of,
   reduce,
   tap,
@@ -28,6 +26,7 @@ import {
 import { logInfo } from "../tools/logMessage.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
+import { runTasks } from "../tools/taskScheduler.js"
 
 export type AspectRatioData = (
   Record<
@@ -100,10 +99,6 @@ export const storeAspectRatioData = ({
   recursiveDepth,
   rootPath,
   sourcePath,
-  threadCount = (
-      cpus()
-      .length
-  ),
 }: {
   folderNames: string[]
   isRecursive: boolean
@@ -115,7 +110,6 @@ export const storeAspectRatioData = ({
   recursiveDepth: number
   rootPath?: string
   sourcePath: string
-  threadCount?: number
 }) => (
   of(
     join(
@@ -255,7 +249,7 @@ export const storeAspectRatioData = ({
             )
           ),
         })),
-        map(({
+        runTasks(({
           localMediaFilePath,
           plexMediaFilePath,
         }) => (
@@ -279,9 +273,6 @@ export const storeAspectRatioData = ({
             }))
           )
         )),
-        mergeAll(
-          threadCount
-        ),
         toArray(),
         map((
           filePaths,
@@ -436,10 +427,7 @@ export const storeAspectRatioData = ({
             }),
           )
         ), {
-          concurrency: (
-            threadCount
-            || 2
-          ),
+          concurrency: Infinity,
         }),
         reduce(
           (

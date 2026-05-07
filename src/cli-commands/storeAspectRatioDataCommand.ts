@@ -1,6 +1,4 @@
-﻿import { cpus } from "node:os"
-
-import type { Argv, CommandBuilder, CommandModule } from "yargs"
+﻿import type { Argv, CommandBuilder, CommandModule } from "yargs"
 
 import { storeAspectRatioData } from "../app-commands/storeAspectRatioData.js"
 import { subscribeCli } from "../tools/subscribeCli.js"
@@ -26,8 +24,8 @@ const builder = (yargs: Argv) => (
     "Recursively looks through all folders in 'G:\\Anime' and 'G:\\Movies' and child folders, finds any new files that don't have aspect ratio data, calculates it, and appends the JSON file.",
   )
   .example(
-    "$0 storeAspectRatioData \"~/media-files\" -t 2",
-    "Looks through all folders in '~/media-files', finds any new files that don't have aspect ratio data, calculates it limited to only 2 CPU threads, and appends the JSON file.",
+    "MAX_THREADS=2 $0 storeAspectRatioData \"~/media-files\"",
+    "Looks through all folders in '~/media-files', finds any new files that don't have aspect ratio data, calculates it limited to only 2 CPU threads (set via the MAX_THREADS env var), and appends the JSON file.",
   )
   .positional(
     "sourcePath",
@@ -100,17 +98,6 @@ const builder = (yargs: Argv) => (
       type: "string",
     },
   )
-  .option(
-    "threads",
-    {
-      alias: "t",
-      default: cpus().length,
-      describe: "Number of processing threads to use. Useful when limiting system usage. This defaults to your system's reported thread count.",
-      nargs: 1,
-      number: true,
-      type: "number",
-    },
-  )
 )
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
@@ -151,10 +138,6 @@ export const storeAspectRatioDataCommand: CommandModule<{}, Args> = {
       sourcePath: (
         argv
         .sourcePath
-      ),
-      threadCount: (
-        argv
-        .threads
       ),
     })
     .subscribe(subscribeCli())
