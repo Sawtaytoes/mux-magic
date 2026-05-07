@@ -1035,17 +1035,19 @@ const progressByStepId = new Map()
 function mountStepCardProgress(stepId) {
   const card = document.getElementById(`step-${stepId}`)
   if (!card) return
-  // Card body is the .px-3.py-2 wrapper around the fields. When the
-  // step is collapsed, that wrapper isn't rendered; skip in that case
-  // (the bar will appear once the user expands the card and a fresh
-  // progress event lands).
-  const body = card.querySelector('.px-3.py-2')
-  if (!body) return
-  if (body.querySelector('[data-step-progress]')) return
+  // Already mounted? bail.
+  if (card.querySelector(':scope > [data-step-progress]')) return
+  // The card's first child div is the header (flex row with controls).
+  // Mount the progress row as the IMMEDIATE next sibling so it spans
+  // the card's full width below the header, regardless of whether the
+  // fields-body wrapper is rendered (collapsed cards skip that body).
+  const header = card.firstElementChild
+  if (!header) return
   const host = document.createElement('div')
   host.dataset.stepProgress = stepId
+  host.className = 'px-3 py-2 border-b border-slate-700 bg-slate-800/40'
   host.append(ProgressUtils.createProgressRow())
-  body.append(host)
+  header.insertAdjacentElement('afterend', host)
 }
 
 function paintStepCardProgress(stepId) {
