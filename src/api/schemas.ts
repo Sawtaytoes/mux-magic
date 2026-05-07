@@ -520,3 +520,12 @@ export const deleteFilesResultSchema = z.object({
 export const deleteFilesResponseSchema = z.object({
   results: z.array(deleteFilesResultSchema).describe("Per-path outcome — partial successes are surfaced rather than rolled back"),
 })
+
+export const openExternalRequestSchema = z.object({
+  path: z.string().describe("Absolute path to hand off to the OS shell. The default application for the file's extension opens it (VLC for .mkv, Preview for .pdf, etc.)."),
+})
+
+export const openExternalResponseSchema = z.object({
+  ok: z.boolean().describe("True when the launcher process spawned. The launcher is detached/unref'd so this only reports the spawn — actual app launch may still fail asynchronously."),
+  error: z.string().nullable().describe("Error message when validation or spawn failed; null on success"),
+})

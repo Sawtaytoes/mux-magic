@@ -12,6 +12,7 @@ import {
 } from "../../tools/deleteFiles.js"
 import { isNetworkPath } from "../../tools/isNetworkPath.js"
 import { listFilesWithMetadata } from "../../tools/listFilesWithMetadata.js"
+import { openInExternalApp } from "../../tools/openInExternalApp.js"
 import {
   PathSafetyError,
   validateReadablePath,
@@ -110,6 +111,41 @@ fileRoutes.openapi(
       reason = "Path is on a network drive — Windows Recycle Bin can't service network shares, so deletes will be permanent."
     }
     return context.json({ mode: effectiveMode, reason }, 200)
+  },
+)
+
+fileRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/files/open-external",
+    summary: "Hand a file off to the OS shell to open in the default app",
+    description: "Used by the file-explorer modal as a fallback when a video's codecs (DTS / TrueHD / HEVC without hardware decode) can't be decoded in-browser. Calls the platform's shell-open mechanism: `cmd /C start` on Windows, `open` on macOS, `xdg-open` on Linux. The launcher process is detached + unref'd so the API request returns immediately.",
+    tags: ["File Operations"],
+    request: {
+      body: {
+        content: {
+          "application/json": { schema: schemas.openExternalRequestSchema },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Launcher spawned (or validation/spawn error)",
+        content: {
+          "application/json": { schema: schemas.openExternalResponseSchema },
+        },
+      },
+    },
+  }),
+  async (context) => {
+    const { path } = context.req.valid("json")
+    try {
+      openInExternalApp(path)
+      return context.json({ ok: true, error: null }, 200)
+    }
+    catch (error) {
+      return context.json({ ok: false, error: messageFromError(error) }, 200)
+    }
   },
 )
 

@@ -53,12 +53,15 @@ function formatMtime(iso) {
 function renderModeBadge() {
   const el = modeBadge()
   if (!el) return
+  // Frame the badge as the action it describes ("Delete → X") rather
+  // than just the destination. Standalone "Recycle Bin" or "Permanent"
+  // didn't read as a delete target at a glance.
   if (deleteMode === 'trash') {
-    el.textContent = 'Recycle Bin'
+    el.textContent = 'Delete → Recycle Bin'
     el.className = 'text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-emerald-900/50 text-emerald-300 border border-emerald-700/50'
     el.title = 'Deletes go to the OS Recycle Bin (DELETE_TO_TRASH=true)'
   } else {
-    el.textContent = 'Permanent'
+    el.textContent = 'Delete → Permanent'
     el.className = 'text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-rose-900/50 text-rose-300 border border-rose-700/50'
     // Reason is supplied by the server when the mode auto-downgraded —
     // typically a network drive that the OS Recycle Bin can't service.
@@ -274,8 +277,12 @@ function handleEscapeKey(event) {
 
 // Bound once at module load — the listener is cheap to leave attached
 // (no work when no modal is open) and survives rerenders since we never
-// detach.
-document.addEventListener('keydown', handleEscapeKey)
+// detach. capture:true is critical: when the user clicks into the video
+// element's seek bar, focus moves into the <video>'s native controls
+// shadow DOM and ESC keypresses are absorbed by the bubbling-phase
+// handlers there. Capturing on the way DOWN catches it before the video
+// element gets a chance.
+document.addEventListener('keydown', handleEscapeKey, { capture: true })
 
 export async function confirmFileExplorerDelete() {
   if (selectedNames.size === 0) return
@@ -326,8 +333,9 @@ export function openVideoModal(absolutePath) {
   // swallow it since the controls + the codec-caveat footer make the
   // failure obvious.
   player.play().catch(() => { /* unsupported codec; user falls back to VLC */ })
-  // Wire copy-path button per-open so the closure captures the path
-  // currently shown.
+  // Wire per-open buttons so each closure captures the path currently
+  // shown — onclick assignment overwrites any previous handler so we
+  // don't accumulate stale closures across opens.
   const copyBtn = document.getElementById('video-modal-copy-path')
   copyBtn.onclick = async () => {
     try {
@@ -338,6 +346,29 @@ export function openVideoModal(absolutePath) {
     } catch {
       window.prompt('Copy this path manually:', absolutePath)
     }
+  }
+  const openExternalBtn = document.getElementById('video-modal-open-external')
+  openExternalBtn.onclick = async () => {
+    const original = openExternalBtn.textContent
+    openExternalBtn.textContent = '⏳ Launching…'
+    try {
+      const resp = await fetch('/files/open-external', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: absolutePath }),
+      })
+      const data = await resp.json()
+      if (data.ok) {
+        openExternalBtn.textContent = '✓ Launched'
+      } else {
+        openExternalBtn.textContent = '✗ Failed'
+        console.error('Launch failed:', data.error)
+      }
+    } catch (err) {
+      openExternalBtn.textContent = '✗ Failed'
+      console.error('Launch failed:', err)
+    }
+    setTimeout(() => { openExternalBtn.textContent = original }, 1500)
   }
 }
 
