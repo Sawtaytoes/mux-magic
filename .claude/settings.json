@@ -6,17 +6,14 @@
       "Bash(git restore *)",
       "Bash(git checkout *)",
       "Bash(git merge *)",
-      "Bash(yarn remove *)",
-      "Bash(yarn info *)",
-      "Bash(yarn list *)",
-      "Bash(yarn up *)",
-      "Bash(yarn outdated *)",
-      "Bash(yarn plugin *)",
-      "Bash(yarn e2e *)",
-      "Bash(npx playwright *)",
+      "Bash(yarn *)",
+      "PowerShell(yarn *)",
+      "Bash(npx *)",
+      "PowerShell(npx *)",
       "Bash(npm view *)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "PowerShell(gh --version 2>&1)"
     ]
   }
 }
