@@ -20,11 +20,21 @@ export function renderPathVarCard(pv, isFirst) {
   const deleteBtn = !isFirst
     ? `<button data-action="remove-path" data-pv-id="${pv.id}"
         title="Remove path variable" aria-label="Remove path variable"
-        class="ml-auto text-xs text-slate-500 hover:text-red-400 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700">✕</button>`
+        class="text-xs text-slate-500 hover:text-red-400 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700">✕</button>`
     : ''
+  // Replaces the static folder emoji with a clickable trigger that opens
+  // the file-explorer modal scoped to this variable's value. Read-only
+  // mode (no pickerOnSelect) — the user is just browsing a folder they
+  // already named. Disabled when the value is empty so we don't pop a
+  // modal pointed at nothing.
+  const browseBtn = `<button data-action="browse-path-var" data-pv-id="${pv.id}"
+        title="${pv.value ? 'Browse files in this folder' : 'Set a path value to enable Browse'}"
+        aria-label="Browse files in this folder"
+        ${pv.value ? '' : 'disabled'}
+        class="text-xs text-slate-500 hover:text-slate-300 disabled:cursor-not-allowed disabled:hover:text-slate-500 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700 shrink-0">📁</button>`
   return `<div data-path-var="${pv.id}" class="col-span-full bg-slate-800/40 rounded-xl border border-dashed border-slate-600 px-4 py-3">
     <div class="flex items-center gap-2 mb-2">
-      <span class="text-slate-500 text-xs shrink-0">📁</span>
+      ${browseBtn}
       ${labelHtml}
       <span class="text-xs text-slate-600 font-mono shrink-0">path variable</span>
       ${deleteBtn}
@@ -112,6 +122,14 @@ export function attachPathVarListeners(container) {
     if (!btn) return
     if (btn.dataset.action === 'remove-path') {
       removePath(btn.dataset.pvId)
+    } else if (btn.dataset.action === 'browse-path-var') {
+      const pv = getPaths().find((p) => p.id === btn.dataset.pvId)
+      if (pv && pv.value) {
+        // Read-only browse — no pickerOnSelect callback. The user is
+        // inspecting a folder they already named, not assigning a new
+        // path to this variable.
+        window.openFileExplorer(pv.value)
+      }
     }
   })
   container.addEventListener('keydown', (event) => {
