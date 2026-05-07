@@ -495,22 +495,26 @@ export const listFilesResponseSchema = z.object({
   error: z.string().nullable().describe("Error message when the listing failed; null on success"),
 })
 
+export const deleteModeRequestSchema = z.object({
+  path: z.string().optional().describe("Optional folder path. When supplied, the response reflects the EFFECTIVE mode for that path — e.g. 'trash' downgrades to 'permanent' on Windows network drives where the Recycle Bin can't service the file. Without a path, the response carries the global DELETE_TO_TRASH setting."),
+})
+
 export const deleteModeResponseSchema = z.object({
-  mode: z.enum(["trash", "permanent"]).describe("'trash' = files go to the OS Recycle Bin (default). 'permanent' = files are unlinked outright. Controlled via the DELETE_TO_TRASH env var."),
-  allowedRoots: z.array(z.string()).describe("Configured ALLOWED_DELETE_ROOTS; the UI surfaces these so the user knows which directories are eligible for delete."),
+  mode: z.enum(["trash", "permanent"]).describe("'trash' = files go to the OS Recycle Bin (default). 'permanent' = files are unlinked outright. Controlled via the DELETE_TO_TRASH env var; downgraded automatically for Windows network drives."),
+  reason: z.string().nullable().describe("Explains why mode is 'permanent' when the global setting is 'trash' — typically network-drive detection. Null when mode matches the global setting."),
 })
 
 export const deleteFilesRequestSchema = z.object({
-  paths: z.array(z.string()).min(1).describe("Absolute paths to delete. Each is independently validated against ALLOWED_DELETE_ROOTS."),
+  paths: z.array(z.string()).min(1).describe("Absolute paths to delete. Each is independently validated for absolute-path / no-traversal safety."),
 })
 
 export const deleteFilesResultSchema = z.object({
   path: z.string().describe("The path the API attempted to delete"),
   ok: z.boolean().describe("True when the delete succeeded"),
+  mode: z.enum(["trash", "permanent"]).describe("Strategy actually used for this path — may be 'permanent' even when the global setting is 'trash' (network-drive paths)"),
   error: z.string().nullable().describe("Error message on failure; null on success"),
 })
 
 export const deleteFilesResponseSchema = z.object({
-  mode: z.enum(["trash", "permanent"]).describe("Mode the batch ran with"),
   results: z.array(deleteFilesResultSchema).describe("Per-path outcome — partial successes are surfaced rather than rolled back"),
 })

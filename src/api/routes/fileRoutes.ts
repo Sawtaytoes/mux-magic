@@ -5,10 +5,14 @@ import { Readable } from "node:stream"
 
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi"
 
-import { deleteFiles, getDeleteMode } from "../../tools/deleteFiles.js"
+import {
+  deleteFiles,
+  getDeleteMode,
+  getEffectiveDeleteMode,
+} from "../../tools/deleteFiles.js"
+import { isNetworkPath } from "../../tools/isNetworkPath.js"
 import { listFilesWithMetadata } from "../../tools/listFilesWithMetadata.js"
 import {
-  getAllowedDeleteRoots,
   PathSafetyError,
   validateReadablePath,
 } from "../../tools/pathSafety.js"
@@ -73,26 +77,36 @@ fileRoutes.openapi(
     method: "get",
     path: "/files/delete-mode",
     summary: "Report whether deletes go to the OS trash or are permanent",
-    description: "The Builder UI calls this once when opening the file-explorer modal so the confirm dialog can label its action accurately ('Move N files to Recycle Bin?' vs 'Permanently delete N files?'). Mode is controlled by the DELETE_TO_TRASH env var; default 'trash'.",
+    description: "Called by the file-explorer modal so the confirm dialog can label its action accurately. The base mode is controlled by the DELETE_TO_TRASH env var (default 'trash'). When `path` is supplied AND the path lives on a Windows network drive, the response downgrades to 'permanent' since the OS Recycle Bin can't service network shares — the UI surfaces this via the badge so the user isn't surprised when 'trash' silently became permanent.",
     tags: ["File Operations"],
+    request: {
+      query: schemas.deleteModeRequestSchema,
+    },
     responses: {
       200: {
-        description: "Active delete mode",
+        description: "Active delete mode for the queried path (or the global setting when no path supplied)",
         content: {
           "application/json": { schema: schemas.deleteModeResponseSchema },
         },
       },
     },
   }),
-  async (context) => (
-    context.json(
-      {
-        mode: getDeleteMode(),
-        allowedRoots: getAllowedDeleteRoots(),
-      },
-      200,
-    )
-  ),
+  async (context) => {
+    const { path } = context.req.valid("query")
+    const baseMode = getDeleteMode()
+    if (!path) {
+      return context.json({ mode: baseMode, reason: null }, 200)
+    }
+    const effectiveMode = getEffectiveDeleteMode(path)
+    let reason: string | null = null
+    if (baseMode === "permanent") {
+      reason = "DELETE_TO_TRASH is set to false"
+    }
+    else if (effectiveMode === "permanent" && isNetworkPath(path)) {
+      reason = "Path is on a network drive — Windows Recycle Bin can't service network shares, so deletes will be permanent."
+    }
+    return context.json({ mode: effectiveMode, reason }, 200)
+  },
 )
 
 fileRoutes.openapi(

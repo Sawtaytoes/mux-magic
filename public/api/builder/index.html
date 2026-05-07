@@ -483,9 +483,12 @@
 </div>
 
 <!-- Video-playback sub-modal opened from the file-explorer's ▶ button. -->
+<!-- Ring + heavy slate border so it reads as a modal even with the bg-black -->
+<!-- player area underneath; ESC closes via the document-level keydown -->
+<!-- listener wired in file-explorer-modal.js. -->
 <div id="video-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/90" onclick="closeVideoModal(event)">
-  <div class="bg-slate-900 border border-slate-700 rounded-xl flex flex-col" style="width:min(95vw,1000px);max-height:90vh" onclick="event.stopPropagation()">
-    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
+  <div class="bg-slate-900 border-2 border-slate-500 ring-2 ring-slate-700/50 rounded-xl flex flex-col shadow-2xl" style="width:min(95vw,1000px);max-height:90vh" onclick="event.stopPropagation()">
+    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-600">
       <code id="video-modal-name" class="text-xs text-slate-200 font-mono truncate"></code>
       <div class="flex items-center gap-3 shrink-0 ml-3">
         <button id="video-modal-copy-path" class="text-xs text-blue-400 hover:text-blue-300" title="Copy absolute path for VLC / external player">📋 Copy path</button>
@@ -493,9 +496,9 @@
       </div>
     </div>
     <div class="flex-1 min-h-0 flex items-center justify-center bg-black">
-      <video id="video-modal-player" class="max-w-full max-h-full" controls preload="metadata"></video>
+      <video id="video-modal-player" class="max-w-full max-h-full" controls preload="metadata" autoplay></video>
     </div>
-    <div class="shrink-0 px-4 py-2 border-t border-slate-700 text-[11px] text-slate-500">
+    <div class="shrink-0 px-4 py-2 border-t border-slate-600 text-[11px] text-slate-500">
       Many disc rips use codecs (DTS, TrueHD, HEVC) browsers can't decode natively. If playback fails or audio is missing, copy the path and open in VLC.
     </div>
   </div>

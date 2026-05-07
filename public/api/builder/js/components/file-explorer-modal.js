@@ -14,7 +14,7 @@ import { esc } from '../util/esc.js'
 let currentPath = ''
 let entries = []
 let deleteMode = 'trash'
-let allowedRoots = []
+let deleteModeReason = null
 const selectedNames = new Set()
 
 // ─── DOM helpers ─────────────────────────────────────────────────────────────
@@ -60,7 +60,11 @@ function renderModeBadge() {
   } else {
     el.textContent = 'Permanent'
     el.className = 'text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-rose-900/50 text-rose-300 border border-rose-700/50'
-    el.title = 'Deletes are permanent — no recovery (DELETE_TO_TRASH=false)'
+    // Reason is supplied by the server when the mode auto-downgraded —
+    // typically a network drive that the OS Recycle Bin can't service.
+    // Surface it in the tooltip and (when present) inline next to the
+    // badge so the user isn't blindsided by a permanent delete.
+    el.title = deleteModeReason || 'Deletes are permanent — no recovery (DELETE_TO_TRASH=false)'
   }
 }
 
@@ -172,16 +176,18 @@ function joinPath(dir, child) {
 
 async function loadDeleteMode() {
   try {
-    const resp = await fetch('/files/delete-mode')
+    const url = new URL('/files/delete-mode', window.location.origin)
+    if (currentPath) url.searchParams.set('path', currentPath)
+    const resp = await fetch(url)
     const data = await resp.json()
     deleteMode = data.mode
-    allowedRoots = data.allowedRoots || []
+    deleteModeReason = data.reason || null
   } catch {
     // If the endpoint is missing, default to 'permanent' so the UI is
     // honest about the safety story instead of falsely promising a
     // Recycle Bin fallback that doesn't exist.
     deleteMode = 'permanent'
-    allowedRoots = []
+    deleteModeReason = 'Could not determine delete mode (endpoint unreachable)'
   }
   renderModeBadge()
 }
@@ -213,6 +219,9 @@ export async function openFileExplorer(path) {
   currentPath = path
   pathLabel().textContent = path
   modal().classList.remove('hidden')
+  // delete-mode now wants the path so it can downgrade trash → permanent
+  // for network drives. loadDeleteMode reads currentPath, so it must run
+  // AFTER the assignment above.
   await Promise.all([loadDeleteMode(), loadListing()])
 }
 
@@ -227,6 +236,28 @@ export function closeFileExplorerModal(event) {
   // open — closing the parent should kill the child.
   closeVideoModal()
 }
+
+// Document-level keydown listener — ESC closes whichever modal is on
+// top. Video sub-modal takes priority since it's z-[60] over the
+// explorer's z-50; closing it first matches the visual stack so the
+// user only loses one layer per press.
+function handleEscapeKey(event) {
+  if (event.key !== 'Escape') return
+  if (videoModal() && !videoModal().classList.contains('hidden')) {
+    event.preventDefault()
+    closeVideoModal()
+    return
+  }
+  if (modal() && !modal().classList.contains('hidden')) {
+    event.preventDefault()
+    closeFileExplorerModal()
+  }
+}
+
+// Bound once at module load — the listener is cheap to leave attached
+// (no work when no modal is open) and survives rerenders since we never
+// detach.
+document.addEventListener('keydown', handleEscapeKey)
 
 export async function confirmFileExplorerDelete() {
   if (selectedNames.size === 0) return
@@ -268,6 +299,15 @@ export function openVideoModal(absolutePath) {
   const player = videoPlayer()
   player.src = url.toString()
   videoModal().classList.remove('hidden')
+  // The HTML attribute handles autoplay on the first open, but the
+  // <video> element is reused across subsequent opens — changing src
+  // doesn't re-trigger the attribute, so call play() explicitly. The
+  // user's click on ▶ counts as a user gesture so autoplay policies
+  // allow this. play() returns a Promise that rejects when the codec
+  // is unsupported (DTS/HEVC on browsers without hardware decode);
+  // swallow it since the controls + the codec-caveat footer make the
+  // failure obvious.
+  player.play().catch(() => { /* unsupported codec; user falls back to VLC */ })
   // Wire copy-path button per-open so the closure captures the path
   // currently shown.
   const copyBtn = document.getElementById('video-modal-copy-path')
