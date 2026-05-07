@@ -82,6 +82,38 @@ describe(mapTvdbSearchResults.name, () => {
     .toEqual([expect.objectContaining({ tvdbId: 3, name: "Real Name" })])
   })
 
+  test("prefers the English translation over the canonical name (anime case)", () => {
+    expect(mapTvdbSearchResults([
+      baseRaw({
+        tvdb_id: "76703",
+        name: "ポケットモンスター",
+        translations: { eng: "Pokémon", jpn: "ポケットモンスター" },
+      }),
+    ]))
+    .toEqual([expect.objectContaining({ tvdbId: 76703, name: "Pokémon" })])
+  })
+
+  test("falls back to name_translated when translations.eng is missing", () => {
+    expect(mapTvdbSearchResults([
+      baseRaw({
+        tvdb_id: "1",
+        name: "Canonical",
+        name_translated: "Translated",
+      }),
+    ]))
+    .toEqual([expect.objectContaining({ name: "Translated" })])
+  })
+
+  test("falls back to canonical name when no translation is provided", () => {
+    expect(mapTvdbSearchResults([
+      baseRaw({
+        tvdb_id: "1",
+        name: "Canonical Only",
+      }),
+    ]))
+    .toEqual([expect.objectContaining({ name: "Canonical Only" })])
+  })
+
   test("preserves the original order of results that pass the filter", () => {
     expect(mapTvdbSearchResults([
       baseRaw({ tvdb_id: "3", name: "Third" }),
