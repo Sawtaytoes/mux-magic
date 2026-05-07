@@ -1,11 +1,9 @@
-import { platform } from "node:os"
-
-import { chromium, type Browser } from "playwright"
 import {
   from,
   type Observable,
 } from "rxjs"
 
+import { gotoPage, launchBrowser, performAndWaitForNavigation } from "./launchBrowser.js"
 import { logAndSwallow } from "./logAndSwallow.js"
 
 export type DvdCompareVariant = "DVD" | "Blu-ray" | "Blu-ray 4K"
@@ -32,17 +30,6 @@ export type DvdCompareRelease = {
 }
 
 const DVDCOMPARE_BASE = "https://www.dvdcompare.net"
-
-const launchBrowser = (): Promise<Browser> => (
-  chromium.launch({
-    // --no-sandbox: required when running as root in a Docker container.
-    // --disable-dev-shm-usage: Docker's default /dev/shm is 64MB which
-    //   isn't enough for Chromium and causes opaque "Target closed" errors.
-    //   Both flags are no-ops on macOS hosts and irrelevant on Windows.
-    args: platform() === "win32" ? [] : ["--no-sandbox", "--disable-dev-shm-usage"],
-    headless: true,
-  })
-)
 
 const decodeHtmlEntities = (text: string): string => (
   text
@@ -326,7 +313,7 @@ export const searchDvdCompare = ({
       // unchecked-by-default release-picker form regardless of the user's
       // saved cookie state.
       const fullUrl = url.replace(/(.+)(#.+)/, "$1&sel=on$2")
-      await page.goto(fullUrl)
+      await gotoPage(page, fullUrl)
 
       // Capture the page <title> before the form submission triggers a
       // navigation — title content survives the round-trip but reading
@@ -354,17 +341,21 @@ export const searchDvdCompare = ({
 
       await releasePackageCheckbox.check()
 
-      await Promise.all([
-        page.waitForLoadState("networkidle"),
-        releasePackagesForm.locator('[type="submit"]').click(),
-      ])
+      await performAndWaitForNavigation(page, () => (
+        releasePackagesForm.locator('[type="submit"]').click()
+      ))
 
-      const extrasLabel = (
+      // Multi-disc releases (UHD + BD combos like the Arrow Limited
+      // Edition) render one "Extras" label per disc with its own sibling
+      // `.description`. Locator.all() collects every one so we don't
+      // silently drop disc-2's extras — which on these releases is often
+      // where the bulk of the bonus content lives.
+      const extrasLabels = await (
         page
         .locator('xpath=.//div[contains(@class, "label") and contains(text(), "Extras")]')
-        .first()
+        .all()
       )
-      if ((await extrasLabel.count()) === 0) {
+      if (extrasLabels.length === 0) {
         throw new Error("No extras for this release.")
       }
 
@@ -372,18 +363,24 @@ export const searchDvdCompare = ({
       // separate per-item lines inside .description. Inject a newline
       // for every <br> on a clone of the node so the parser's
       // `.split("\n")` actually sees per-item rows.
-      const extras = await extrasLabel.evaluate((element) => {
-        const description = (
-          element?.parentElement?.querySelector(".description")
-          ?? element?.parentElement?.parentElement?.querySelector(".description")
-        )
-        if (!description) return ""
-        const cloned = description.cloneNode(true) as HTMLElement
-        cloned.querySelectorAll("br").forEach((br) => {
-          br.replaceWith("\n")
-        })
-        return cloned.textContent ?? ""
-      })
+      const extrasPerDisc = await Promise.all(
+        extrasLabels.map((label) => label.evaluate((element) => {
+          const description = (
+            element?.parentElement?.querySelector(".description")
+            ?? element?.parentElement?.parentElement?.querySelector(".description")
+          )
+          if (!description) return ""
+          const cloned = description.cloneNode(true) as HTMLElement
+          cloned.querySelectorAll("br").forEach((br) => {
+            br.replaceWith("\n")
+          })
+          return cloned.textContent ?? ""
+        }))
+      )
+      // Join with double-newline so the downstream parser sees a clean
+      // line break between disc-1 and disc-2 entries, and any "DISC TWO"
+      // header inside the second block stays at column 0.
+      const extras = extrasPerDisc.filter(Boolean).join("\n\n")
 
       return { extras, filmTitle }
     }

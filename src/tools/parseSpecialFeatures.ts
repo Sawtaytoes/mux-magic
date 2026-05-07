@@ -137,11 +137,36 @@ export const parseCuts = (specialFeatureText: string): Cut[] => (
   .map(parseCutLine)
 )
 
+const discHeaderRegex = /^DISC (ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT)/
+
+// Lines from the raw DVDCompare extras text that have no timecode — the
+// natural set of "couldn't possibly match by timecode" entries. Surfaces
+// image galleries (which the main extras pipeline drops via the
+// `images)` / `pages)` filter), photo galleries, and `*The Film` cut
+// labels DVDCompare published without runtimes. The user's leftover
+// files almost always correspond to one of these, so the rename pipeline
+// emits this list in its trailing summary record so the user has the
+// candidate labels right in front of them.
+export const parseUntimedSuggestions = (specialFeatureText: string): string[] => (
+  specialFeatureText
+  .split("\n")
+  .map((line) => line.trim())
+  .filter(Boolean)
+  .filter((line) => !discHeaderRegex.test(line))
+  .filter((line) => !timecodeRegex.test(line))
+  .map((line) => (
+    cutLineRegex.test(line)
+      ? line
+      : line.replace(/^[\-–—]+\s*/u, "").replace(/:$/, "").trim()
+  ))
+  .filter(Boolean)
+)
+
 export const parseSpecialFeatures = (
   specialFeatureText: string,
 ): (
   Observable<
-    { extras: SpecialFeature[], cuts: Cut[] }
+    { extras: SpecialFeature[], cuts: Cut[], possibleNames: string[] }
   >
 ) => (
   from(
@@ -468,9 +493,13 @@ export const parseSpecialFeatures = (
     // Cuts come from the same source text but use a separate (sync)
     // parser. Pair them with the reduced extras so callers see one
     // structured payload regardless of which side they consume.
+    // possibleNames are untimed suggestions surfaced for the user when a
+    // file ends up unrenamed — they're cheap to compute and travel with
+    // the rest of the parser output for callers that want them.
     map((extras) => ({
       extras,
       cuts: parseCuts(specialFeatureText),
+      possibleNames: parseUntimedSuggestions(specialFeatureText),
     })),
     logAndSwallow(
       parseSpecialFeatures

@@ -42,8 +42,8 @@ const builder = (yargs: Argv) => (
     "timecodePadding",
     {
       alias: "p",
-      default: 0,
-      describe: "A range an amount that timecodes may be off. Typically, it's safe to have this be `1` second, but it can be `2+` depending on someone's wrong metadata.",
+      default: 2,
+      describe: "Seconds that timecodes may be off. Defaults to 2, matching typical DVDCompare-vs-rip drift. Pass 0 for exact-match-only.",
       nargs: 1,
       number: true,
       type: "number",
