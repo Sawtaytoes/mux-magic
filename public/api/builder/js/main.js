@@ -21,6 +21,15 @@ import {
   closeYamlModal,
   copyYaml,
 } from './components/yaml-modal.js'
+import {
+  toggleLoad,
+  loadYaml,
+  loadYamlFromText,
+} from './components/load-panel.js'
+import {
+  togglePageMenu,
+  attachPageHeaderListeners,
+} from './components/page-header.js'
 import { pathVarOptionText, refreshPathVarOptions } from './util/path-var-options.js'
 
 window.mediaTools = window.mediaTools || {}
@@ -41,7 +50,13 @@ Object.assign(window.mediaTools, {
   openYamlModal,
   closeYamlModal,
   copyYaml,
+  toggleLoad,
+  loadYaml,
+  loadYamlFromText,
+  togglePageMenu,
 })
+
+attachPageHeaderListeners()
 
 // Delegate path-var-card events on the steps list. Bound once; survives
 // every renderAll since the parent is never replaced.

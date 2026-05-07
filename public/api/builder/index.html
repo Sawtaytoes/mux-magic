@@ -149,10 +149,16 @@
 <div class="flex flex-col" style="height:100dvh;overflow:hidden">
 
   <!-- Header -->
-  <div class="shrink-0 border-b border-slate-700 bg-slate-900 z-10">
+  <div id="page-header" class="shrink-0 border-b border-slate-700 bg-slate-900 z-10">
     <div class="page-header-inner flex items-center px-4 py-3 gap-3">
-      <button id="page-nav-toggle" onclick="togglePageMenu('page-actions-nav')" title="Menu"
-        class="page-menu-toggle w-7 h-7 items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-base leading-none">≡</button>
+      <button id="page-nav-toggle" onclick="togglePageMenu('page-actions-nav')" title="Menu" aria-label="Open menu"
+        class="page-menu-toggle w-7 h-7 items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+          <path d="M4 6h16" />
+          <path d="M4 12h16" />
+          <path d="M4 18h16" />
+        </svg>
+      </button>
       <h1 class="text-lg font-bold tracking-tight">
         <a href="/" class="text-slate-100 hover:text-blue-300 transition-colors">Sequence Builder</a>
       </h1>
@@ -179,7 +185,7 @@
         <div class="page-menu-group">
           <button onclick="addPicked()" title="Append an empty step"
             class="text-xs bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded font-medium">Add Step</button>
-          <button onclick="window.mediaTools.addPath()" title="Add a path variable"
+          <button data-action="add-path" title="Add a path variable"
             class="text-xs bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded font-medium">Add Path</button>
           <button id="run-btn" onclick="runSequence()" title="Run the entire sequence (client-side: each step posts to /commands and tails its job)"
             class="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium">
@@ -1747,146 +1753,20 @@ function copyYaml() { return window.mediaTools.copyYaml() }
 function openYamlModal() { return window.mediaTools.openYamlModal() }
 function closeYamlModal(event) { return window.mediaTools.closeYamlModal(event) }
 
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') {
-    closeYamlModal()
-    closeApiRunModal()
-    document.querySelectorAll('.page-menu.open').forEach(m => m.classList.remove('open'))
-  }
-})
-
-// Click-outside to close any open page-header popover. Skip clicks on
-// the toggles (their own onclick already toggles state) and clicks on
-// popover contents (so users can hit a button inside without the
-// popover dismissing first).
-document.addEventListener('click', (event) => {
-  const openMenus = document.querySelectorAll('.page-menu.open')
-  if (!openMenus.length) return
-  const navToggle = document.getElementById('page-nav-toggle')
-  const ctrlToggle = document.getElementById('page-controls-toggle')
-  if (navToggle?.contains(event.target) || ctrlToggle?.contains(event.target)) return
-  for (const menu of openMenus) {
-    if (menu.contains(event.target)) return
-  }
-  openMenus.forEach(m => m.classList.remove('open'))
-})
-
 // ─── Load YAML ────────────────────────────────────────────────────────────────
+// Implementations live in /builder/js/components/load-panel.js — these
+// forwarders preserve inline call sites (HTML onclick="..." bindings,
+// applySnapshot's loadYamlFromText, restoreFromUrl's loadYamlFromText)
+// without each having to reach through window.mediaTools manually.
 
-function toggleLoad() {
-  const panel = document.getElementById('load-panel')
-  panel.classList.toggle('hidden')
-  document.getElementById('load-error').classList.add('hidden')
-}
+function toggleLoad() { return window.mediaTools.toggleLoad() }
+function loadYaml() { return window.mediaTools.loadYaml() }
+function loadYamlFromText(text) { return window.mediaTools.loadYamlFromText(text) }
 
-// Toggle one of the two page-header popovers (#page-actions-nav,
-// #page-actions-controls). Only one is open at a time — clicking the
-// other toggle closes the first. Only meaningful at viewport widths
-// < 900px; at wider widths the toggle buttons are hidden via CSS, so a
-// stale .open class is harmless.
-function togglePageMenu(menuId) {
-  const target = document.getElementById(menuId)
-  if (!target) return
-  const wasOpen = target.classList.contains('open')
-  document.querySelectorAll('.page-menu.open').forEach(m => m.classList.remove('open'))
-  if (!wasOpen) target.classList.add('open')
-}
-
-function loadYamlFromText(text) {
-  const data = jsyaml.load(text)
-
-  let stepsData
-  if (data && typeof data === 'object' && !Array.isArray(data) && data.steps !== undefined) {
-    // New format: { paths: {...}, steps: [...] }
-    if (data.paths && typeof data.paths === 'object') {
-      paths = Object.entries(data.paths).map(([id, pv]) => ({
-        id,
-        label: pv.label || id,
-        value: pv.value || '',
-      }))
-    }
-    if (!paths.length) initPaths()
-    stepsData = data.steps || []
-  } else if (Array.isArray(data)) {
-    // Old format: plain array of steps
-    initPaths()
-    stepsData = data
-  } else {
-    throw new Error('Expected a YAML sequence or object with "steps" key')
-  }
-
-  steps = []
-  // Reset the step counter for this load so we don't keep bumping it across
-  // reloads. Each loaded step's explicit `id` (when present) is preserved;
-  // anything missing falls through to the generated `step{N}` form. After
-  // the loop, advance the counter past every step{N}-shaped ID we restored
-  // so future makeStep calls won't collide with a loaded ID.
-  stepCounter = 0
-  for (const item of stepsData) {
-    if (!item.command) throw new Error('Each step must have a "command" key')
-    if (!COMMANDS[item.command]) throw new Error(`Unknown command: ${item.command}`)
-    const step = makeStep(item.command)
-    if (typeof item.id === 'string' && item.id) {
-      step.id = item.id
-      const match = /^step(\d+)$/.exec(item.id)
-      if (match) {
-        const restoredCount = Number(match[1])
-        if (restoredCount > stepCounter) stepCounter = restoredCount
-      }
-    }
-    if (typeof item.alias === 'string') step.alias = item.alias
-    const cmd = COMMANDS[item.command]
-    for (const field of cmd.fields) {
-      const v = item.params?.[field.name]
-      if (v !== undefined) {
-        if (typeof v === 'string' && v.startsWith('@')) {
-          // Path-variable reference — restore as a string link if the path
-          // exists, otherwise keep the literal so the user can fix it.
-          const pvId = v.slice(1)
-          if (paths.find(p => p.id === pvId)) {
-            step.links[field.name] = pvId
-          } else {
-            step.params[field.name] = v
-          }
-        } else if (
-          v && typeof v === 'object' && !Array.isArray(v) &&
-          typeof v.linkedTo === 'string'
-        ) {
-          // Step-output reference — restore as the object form. We do not
-          // verify that the referenced step+output exist here; that happens
-          // at run/resolve time so partial sequences keep loading.
-          step.links[field.name] = {
-            linkedTo: v.linkedTo,
-            output: v.output || 'folder',
-          }
-        } else {
-          step.params[field.name] = v
-        }
-      }
-      // Companion display-name field (purely visual)
-      if (field.companionNameField) {
-        const cv = item.params?.[field.companionNameField]
-        if (cv !== undefined) step.params[field.companionNameField] = cv
-      }
-    }
-    steps.push(step)
-  }
-}
-
-function loadYaml() {
-  const text = document.getElementById('load-input').value.trim()
-  const errEl = document.getElementById('load-error')
-  errEl.classList.add('hidden')
-  try {
-    loadYamlFromText(text)
-    document.getElementById('load-panel').classList.add('hidden')
-    renderAll()
-    updateUrl()
-  } catch (e) {
-    errEl.textContent = e.message
-    errEl.classList.remove('hidden')
-  }
-}
+// togglePageMenu lives in /builder/js/components/page-header.js — this
+// forwarder preserves the inline HTML onclick="togglePageMenu(...)"
+// bindings on the two toggle buttons.
+function togglePageMenu(menuId) { return window.mediaTools.togglePageMenu(menuId) }
 
 // ─── Run sequence ─────────────────────────────────────────────────────────────
 
@@ -3474,11 +3354,31 @@ document.addEventListener('click', (event) => {
 // after this inline script finishes, so by the time it does, the
 // entries below are in place.
 //
-// We keep `paths` and `steps` as getters so the array references stay
-// live across reassignments (e.g., loadYamlFromText does `paths = ...`).
+// `paths`, `steps`, and `stepCounter` are exposed as accessor
+// properties so reads stay live across reassignments and writes from
+// extracted modules reach back into the inline scope (e.g.,
+// loadYamlFromText does `paths = ...` / `steps = []`). `COMMANDS` is
+// read-only — modules don't mutate the registry.
 
-Object.defineProperty(window.mediaTools, 'paths', { get: () => paths, configurable: true })
-Object.defineProperty(window.mediaTools, 'steps', { get: () => steps, configurable: true })
+Object.defineProperty(window.mediaTools, 'paths', {
+  get: () => paths,
+  set: (newPaths) => { paths = newPaths },
+  configurable: true,
+})
+Object.defineProperty(window.mediaTools, 'steps', {
+  get: () => steps,
+  set: (newSteps) => { steps = newSteps },
+  configurable: true,
+})
+Object.defineProperty(window.mediaTools, 'stepCounter', {
+  get: () => stepCounter,
+  set: (newCounter) => { stepCounter = newCounter },
+  configurable: true,
+})
+Object.defineProperty(window.mediaTools, 'COMMANDS', {
+  get: () => COMMANDS,
+  configurable: true,
+})
 
 Object.assign(window.mediaTools, {
   renderAll,
@@ -3491,6 +3391,9 @@ Object.assign(window.mediaTools, {
   initPaths,
   restoreFromUrl,
   buildParams,
+  makeStep,
+  updateUrl,
+  closeApiRunModal,
 })
 
 // Initial bootstrap (initPaths / restoreFromUrl / renderAll) is invoked

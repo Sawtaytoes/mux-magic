@@ -155,7 +155,7 @@ In `cli.ts`, register it with `.command(someCommandCommand)`.
 
 This repo can be cloned into sibling working trees named `media-tools-worker-<name>/` so several Claudes can work in parallel without stepping on each other. **Identify your role from your repo's folder name:**
 
-- **Primary** (`media-tools/`, no suffix): you're the canonical Claude. `master` lives here; worker trees clone from it. Existing push rule applies unchanged: do NOT push to `master` unless the user explicitly says so.
+- **Primary** (`media-tools/`, no suffix): you're the canonical Claude. `master` lives here; worker trees clone from it. Existing push rule applies unchanged: do NOT push to `master` unless the user explicitly says so. Because nothing leaves the local repo until the user asks, **commit-as-you-go is the safeguard** — each logical group must land in its own commit so unpushed work is never sitting in the working tree as a single uncommitted blob the user can't recover.
 - **Worker** (`media-tools-worker-<name>/`): you're the worker named `<name>`. Work happens on a feature branch and is pushed continuously, not held until the user asks.
 
 ### Worker workflow
