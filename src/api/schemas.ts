@@ -475,3 +475,42 @@ export const listDirectoryEntriesResponseSchema = z.object({
   separator: z.string().describe("OS-native path separator ('\\\\' on Windows, '/' on Linux/macOS). Use this when joining new path segments client-side."),
   error: z.string().nullable().optional().describe("Error message if the listing failed (e.g. missing path, permission denied). When present, entries is empty."),
 })
+
+// File-explorer modal — listing, delete-mode, bulk delete
+export const listFilesRequestSchema = z.object({
+  path: z.string().describe("Absolute directory path to list. Must be absolute and traversal-free."),
+})
+
+export const fileExplorerEntrySchema = z.object({
+  name: z.string().describe("Basename of the entry"),
+  isFile: z.boolean().describe("True for regular files (not directories or symlinks)"),
+  isDirectory: z.boolean().describe("True for directories"),
+  size: z.number().describe("File size in bytes; 0 for directories"),
+  mtime: z.string().nullable().describe("Last-modified ISO timestamp; null when the per-entry stat() failed"),
+})
+
+export const listFilesResponseSchema = z.object({
+  entries: z.array(fileExplorerEntrySchema).describe("Entries in the directory, sorted directories-first then alphabetically"),
+  separator: z.string().describe("OS-native path separator"),
+  error: z.string().nullable().describe("Error message when the listing failed; null on success"),
+})
+
+export const deleteModeResponseSchema = z.object({
+  mode: z.enum(["trash", "permanent"]).describe("'trash' = files go to the OS Recycle Bin (default). 'permanent' = files are unlinked outright. Controlled via the DELETE_TO_TRASH env var."),
+  allowedRoots: z.array(z.string()).describe("Configured ALLOWED_DELETE_ROOTS; the UI surfaces these so the user knows which directories are eligible for delete."),
+})
+
+export const deleteFilesRequestSchema = z.object({
+  paths: z.array(z.string()).min(1).describe("Absolute paths to delete. Each is independently validated against ALLOWED_DELETE_ROOTS."),
+})
+
+export const deleteFilesResultSchema = z.object({
+  path: z.string().describe("The path the API attempted to delete"),
+  ok: z.boolean().describe("True when the delete succeeded"),
+  error: z.string().nullable().describe("Error message on failure; null on success"),
+})
+
+export const deleteFilesResponseSchema = z.object({
+  mode: z.enum(["trash", "permanent"]).describe("Mode the batch ran with"),
+  results: z.array(deleteFilesResultSchema).describe("Per-path outcome — partial successes are surfaced rather than rolled back"),
+})
