@@ -10,6 +10,11 @@ import type { PromptOption } from "../api/types.js"
 export const getUserSearchInput = (params: {
   message: string
   options: PromptOption[]
+  // Forwarded to the SSE PromptEvent so the Builder's prompt modal can
+  // render a ▶ Play button. Optional — only the per-file matcher prompts
+  // know which file they're asking about; global prompts (search results)
+  // omit it.
+  filePath?: string
 }) => (
   new Observable<number>((observer) => {
     const jobId = getActiveJobId()
@@ -22,6 +27,7 @@ export const getUserSearchInput = (params: {
         options: params.options,
         promptId,
         type: "prompt",
+        filePath: params.filePath,
       })
 
       registerPrompt(promptId)

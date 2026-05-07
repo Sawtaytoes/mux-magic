@@ -40,6 +40,12 @@ export type PromptEvent = {
   options: PromptOption[]
   promptId: string
   type: "prompt"
+  // Optional absolute file path that this prompt is "about" — when set,
+  // the Builder's prompt modal renders a ▶ Play button that streams the
+  // file via /files/stream and opens the existing video sub-modal so the
+  // user can preview before picking. Null/undefined for prompts that
+  // aren't tied to a specific file (e.g. global search-results prompts).
+  filePath?: string
 }
 
 // Job-progress payload pushed onto the per-job SSE subject by

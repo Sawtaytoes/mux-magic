@@ -314,6 +314,7 @@ export const getIsSimilarTimecode = (
 
 export const getSpecialFeatureFromTimecode = ({
   filename,
+  filePath,
   fixedOffset,
   specialFeatures,
   timecode: mediaTimecode,
@@ -321,6 +322,11 @@ export const getSpecialFeatureFromTimecode = ({
 }: (
   {
     filename: string,
+    // Absolute path for the file being prompted about. Forwarded to
+    // getUserSearchInput so the Builder's prompt modal can render a
+    // ▶ Play button. Optional so CLI / non-Builder callers don't have
+    // to thread it through if they don't need it.
+    filePath?: string,
     specialFeatures: SpecialFeature[],
     timecode: string,
   }
@@ -395,6 +401,7 @@ export const getSpecialFeatureFromTimecode = ({
         return (
           getUserSearchInput({
             message: `${filename}\n${mediaTimecode}`,
+            filePath,
             options: [
               ...matchingExtras
               .map((
@@ -501,6 +508,7 @@ export const getSpecialFeatureFromTimecode = ({
           return (
             getUserSearchInput({
               message: `${filename}\n${text}`,
+              filePath,
               options: [
                 ...specialFeatureTypes
                 .map((

@@ -424,6 +424,7 @@ export const nameSpecialFeatures = ({
             return (
               getSpecialFeatureFromTimecode({
                 filename: fileInfo.filename,
+                filePath: fileInfo.fullPath,
                 fixedOffset,
                 specialFeatures,
                 timecode,
