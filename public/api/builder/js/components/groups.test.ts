@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, vi } from "vitest"
 
-// Round-trip tests for the group support in load-panel + yaml-modal.
+// Round-trip tests for the group support in load-modal + yaml-modal.
 // Both modules read window.mediaTools at call time (not import time)
 // so we populate a stub bridge in beforeEach. The COMMANDS registry
 // is just enough surface for the two commands used here (makeDirectory
@@ -58,7 +58,7 @@ let mediaTools: MediaToolsMock
 beforeEach(async () => {
   // js-yaml is loaded into window in the production page via a vendor
   // <script>; in tests we import the module and put it on window so
-  // load-panel + yaml-modal find it.
+  // load-modal + yaml-modal find it.
   const yamlModule = await import("js-yaml")
   ;(window as Window).jsyaml = yamlModule
 
@@ -138,7 +138,7 @@ beforeEach(async () => {
 
 describe("loadYamlFromText: groups", () => {
   test("parses a top-level kind:group entry into a group object with inner steps", async () => {
-    const { loadYamlFromText } = await import("./load-panel.js")
+    const { loadYamlFromText } = await import("./load-modal.js")
     loadYamlFromText([
       "paths:",
       "  workDir:",
@@ -180,7 +180,7 @@ describe("loadYamlFromText: groups", () => {
   })
 
   test("parses isCollapsed on step + group entries", async () => {
-    const { loadYamlFromText } = await import("./load-panel.js")
+    const { loadYamlFromText } = await import("./load-modal.js")
     loadYamlFromText([
       "steps:",
       "  - id: collapsedStep",
@@ -207,7 +207,7 @@ describe("loadYamlFromText: groups", () => {
   })
 
   test("rejects nested groups with a clear error", async () => {
-    const { loadYamlFromText } = await import("./load-panel.js")
+    const { loadYamlFromText } = await import("./load-modal.js")
     expect(() => {
       loadYamlFromText([
         "steps:",
@@ -284,7 +284,7 @@ describe("toYamlStr: groups", () => {
   })
 
   test("round-trips a group through load → toYaml without losing data", async () => {
-    const { loadYamlFromText } = await import("./load-panel.js")
+    const { loadYamlFromText } = await import("./load-modal.js")
     const { toYamlStr } = await import("./yaml-modal.js")
 
     const original = [

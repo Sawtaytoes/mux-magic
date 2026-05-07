@@ -11,7 +11,7 @@ const bridge = () => window.mediaTools
 // Convert a single in-memory step object into its YAML-shape dict.
 // Keys are emitted in a deterministic order (id → alias → command →
 // params → isCollapsed) so saved YAML is stable to diff.
-function stepToYaml(step) {
+export function stepToYaml(step) {
   return {
     id: step.id,
     ...(step.alias ? { alias: step.alias } : {}),
@@ -23,7 +23,7 @@ function stepToYaml(step) {
 
 // Group → YAML. Only emit isParallel / isCollapsed / label when they
 // carry information so default groups stay uncluttered.
-function groupToYaml(group) {
+export function groupToYaml(group) {
   const innerFilled = group.steps.filter((step) => step.command !== null)
   return {
     kind: 'group',
@@ -35,13 +35,13 @@ function groupToYaml(group) {
   }
 }
 
-const isGroup = (item) => !!(item && typeof item === 'object' && item.kind === 'group')
+export const isGroup = (item) => !!(item && typeof item === 'object' && item.kind === 'group')
 
 // A top-level item contributes content if it's a step with a command,
 // or a group containing at least one filled inner step. Empty entries
 // (placeholders the user hasn't filled in yet) get dropped on save so
 // the YAML doesn't carry junk.
-function topLevelHasContent(item) {
+export function topLevelHasContent(item) {
   if (isGroup(item)) {
     return item.steps.some((step) => step.command !== null)
   }
