@@ -6,6 +6,7 @@ import {
   Observable,
 } from "rxjs"
 
+import { treeKillOnUnsubscribe } from "../cli-spawn-operations/treeKillChild.js"
 import { mkvMergePath } from "./appPaths.js";
 import { logAndSwallow } from "./logAndSwallow.js"
 import { createTtyAffordances } from "./createTtyAffordances.js";
@@ -214,6 +215,12 @@ export const getMkvInfo = (
       },
     )
 
+    // Kill the mkvmerge subtree on unsubscribe. Without this, a sequence
+    // cancel or parallel-sibling fail-fast leaves identify-mode mkvmerge
+    // running until it finishes (usually fast, but not always — large
+    // attachments can stall it). Same teardown the streaming wrappers
+    // (runMkvMerge, runMkvExtract, runMkvPropEdit, runFfmpeg) already use.
+    return treeKillOnUnsubscribe(childProcess)
   })
   .pipe(
     map((
