@@ -142,6 +142,22 @@
       justify-content: flex-end;
     }
   }
+
+  /* Link-picker popover detail rows render filesystem paths. Default
+     break-all splits whole words ("subtitle" → "s\nubtitle"); we want
+     the browser to break preferentially at path separators (the JS
+     side injects U+200B after each / and \) and at spaces, falling
+     back to language-aware hyphenation for the rare word that still
+     can't fit. The custom hyphenate-character marks any mid-word
+     break with a return arrow so the reader sees "this continued on
+     the next line" instead of "two new tokens". */
+  .path-detail {
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: auto;
+    -webkit-hyphenate-character: "\21B5";
+    hyphenate-character: "\21B5";
+  }
 </style>
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans text-sm">
@@ -2412,6 +2428,17 @@ function describeLinkTarget(step, fieldName) {
   return { label: '— manual —' }
 }
 
+// Inject a zero-width space after each path separator and space so the
+// browser has explicit break opportunities at those points instead of
+// chopping mid-word. Combined with overflow-wrap: break-word + hyphens:
+// auto on .path-detail, this turns `D:\Anime\…\subtitle-extraction-…`
+// into clean per-segment wraps; only when a single segment still
+// doesn't fit does the browser fall back to hyphenated breaks (which
+// the custom hyphenate-character marks with ↵).
+function makePathBreakable(text) {
+  return text.replace(/([/\\ ])/g, "$1\u200B")
+}
+
 function buildLinkPickerItems(stepId, fieldName) {
   const step = steps.find((candidate) => candidate.id === stepId)
   if (!step) {
@@ -2509,8 +2536,10 @@ const linkPicker = createPopoverPicker({
   ),
   renderItem: (item, isActive) => {
     const labelClass = `text-xs ${isActive ? 'text-white' : 'text-slate-200'} ${item.kind === 'path' ? 'font-medium' : 'font-mono'}`
-    const detailClass = `font-mono text-[11px] pl-4 break-all whitespace-normal ${isActive ? 'text-blue-100' : 'text-slate-400'}`
-    const detail = item.detail ? `<div class="${detailClass}">${esc(item.detail)}</div>` : ''
+    const detailClass = `path-detail font-mono text-[11px] pl-4 ${isActive ? 'text-blue-100' : 'text-slate-400'}`
+    const detail = item.detail
+      ? `<div class="${detailClass}">${makePathBreakable(esc(item.detail))}</div>`
+      : ''
     return `<div class="${labelClass}">${esc(item.label)}</div>${detail}`
   },
   onSelect: (item, anchor) => {
