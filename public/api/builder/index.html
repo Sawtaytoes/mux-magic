@@ -1805,6 +1805,17 @@ function renderCollapseChevron(isCollapsed) {
   </svg>`
 }
 
+// Two-papers "copy" icon — the universal duplicate-content glyph
+// (front sheet + back sheet peeking up-and-left). Distinct from the
+// 📋 clipboard glyph used on Paste buttons so the user can tell at a
+// glance which action is which: copy=duplicate, paste=clipboard.
+function renderCopyIcon() {
+  return `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
+    <rect x="7" y="7" width="9" height="10" rx="1.5" />
+    <path d="M4 13V5.5A1.5 1.5 0 0 1 5.5 4H12" />
+  </svg>`
+}
+
 // Double-chevron icon for the "collapse all / expand all" actions on
 // groups + the page header. Visually scales the single-chevron
 // vocabulary: one chevron toggles ONE thing, two chevrons toggles
@@ -1883,7 +1894,7 @@ function renderGroup(group, itemIndex, startingFlatIndex) {
     <button onclick="moveGroup('${group.id}',1)" title="Move group down" ${isLastItem ? 'disabled' : ''}
       class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↓</button>
     <button onclick="copyGroupYaml('${group.id}', this)" title="Copy this group's YAML"
-      class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent">📋</button>
+      class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent">${renderCopyIcon()}</button>
     <button onclick="removeGroup('${group.id}')" title="Remove this group (its inner steps go too)"
       class="text-[10px] text-slate-500 hover:text-red-400 px-2 py-0.5 rounded border border-slate-700 hover:border-red-500/40">✕</button>
   </div>
@@ -1996,7 +2007,7 @@ function renderStep(step, index, context = {}) {
       <button onclick="moveStep('${step.id}',1)" ${isLast ? 'disabled' : ''}
         class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↓</button>
       <button onclick="copyStepYaml('${step.id}', this)" title="Copy this step's YAML"
-        class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent">📋</button>
+        class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent">${renderCopyIcon()}</button>
       <button onclick="removeStep('${step.id}')"
         class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs">✕</button>
     </div>

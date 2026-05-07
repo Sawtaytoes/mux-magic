@@ -1,4 +1,5 @@
 import { getPaths, getSteps, getStepCounter, setStepCounter } from '../state.js'
+import { esc } from '../util/esc.js'
 import {
   groupToYaml,
   isGroup,
@@ -223,12 +224,30 @@ function mergePastedPaths(pastedPaths) {
 // array at `itemIndex`. Pasting a `kind: group` payload into a group
 // is rejected (matches the existing no-nesting rule).
 export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInParent = null } = {}, anchorElement = null) {
-  const showError = (message) => showInlineError(anchorElement, message)
+  const showError = (message, options) => showClipboardToast(message, { severity: 'error', ...options })
+  if (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function') {
+    showError(
+      'Your browser does not expose clipboard read here. Try a Chromium- or Firefox-based browser on a secure (https / localhost) page.',
+      { durationMs: 12000 },
+    )
+    return
+  }
   let text
   try {
     text = await navigator.clipboard.readText()
-  } catch {
-    showError('Clipboard read blocked. Allow clipboard access and try again.')
+  } catch (error) {
+    // Chrome / Edge prompt for permission on first call. If the user
+    // dismisses the prompt or has previously denied, the call rejects
+    // with NotAllowedError. Spell out the recovery path so the user
+    // doesn't have to guess what to do next.
+    if (error?.name === 'NotAllowedError') {
+      showError(
+        'Browser blocked clipboard access. Click the clipboard icon in the address bar (or open Site settings) and allow clipboard read for this page, then click Paste again.',
+        { durationMs: 12000 },
+      )
+      return
+    }
+    showError('Could not read clipboard: ' + (error?.message || 'unknown error'), { durationMs: 8000 })
     return
   }
   if (!text || !text.trim()) {
@@ -294,39 +313,62 @@ export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInPare
   })
 }
 
-// Drop a transient red message next to the divider's paste button. The
-// load-panel has its own dedicated #load-error chip; for paste we
-// don't have a fixed slot, so we attach a fading toast just below the
-// triggering button. Auto-fades after 3s.
-function showInlineError(anchorElement, message) {
-  if (!anchorElement) {
-    console.error('[card-clipboard] paste error:', message)
+// Top-of-viewport banner for clipboard / paste feedback. The previous
+// implementation hid a tiny chip under the divider's button; users
+// missed it because the divider chrome is squeezed and the chip blends
+// into the dim background. A fixed centered banner with a manual
+// dismiss × is impossible to miss — and survives long enough for the
+// user to read a permission-recovery message without racing the timer.
+//
+// Single shared element (#clipboard-toast) keyed off document.body so
+// rapid retries stack onto the same banner instead of piling up DOM.
+function showClipboardToast(message, { severity = 'error', durationMs = 6000 } = {}) {
+  // Test environments (Vitest + happy-dom / jsdom) sometimes mount
+  // without a body — bail and log so test runs stay quiet but
+  // assertions can still spy on console.
+  if (typeof document === 'undefined' || !document.body) {
+    console.error('[card-clipboard] toast (' + severity + '): ' + message)
     return
   }
-  // Reuse a single toast element per anchor so rapid retries don't
-  // pile up DOM nodes.
-  const existing = anchorElement.parentElement?.querySelector('[data-paste-error]')
-  if (existing) {
-    existing.remove()
+  let toast = document.getElementById('clipboard-toast')
+  if (!toast) {
+    toast = document.createElement('div')
+    toast.id = 'clipboard-toast'
+    toast.setAttribute('role', 'status')
+    toast.setAttribute('aria-live', 'polite')
+    toast.style.position = 'fixed'
+    toast.style.top = '0.75rem'
+    toast.style.left = '50%'
+    toast.style.transform = 'translateX(-50%)'
+    toast.style.zIndex = '100'
+    toast.style.maxWidth = 'min(90vw, 36rem)'
+    document.body.appendChild(toast)
   }
-  const toast = document.createElement('div')
-  toast.dataset.pasteError = '1'
-  toast.className = 'absolute z-50 mt-1 px-2 py-1 text-[11px] text-red-300 bg-red-950/90 border border-red-700 rounded shadow whitespace-nowrap'
-  toast.style.top = '100%'
-  toast.style.left = '0'
-  toast.textContent = message
-  const parent = anchorElement.parentElement
-  if (parent) {
-    const previousPosition = parent.style.position
-    if (!previousPosition) {
-      parent.style.position = 'relative'
-    }
-    parent.appendChild(toast)
-    setTimeout(() => {
-      toast.remove()
-      if (!previousPosition) {
-        parent.style.position = ''
-      }
-    }, 3000)
+  const colorClass = severity === 'error'
+    ? 'bg-red-950/95 border-red-700 text-red-200'
+    : 'bg-amber-950/95 border-amber-700 text-amber-200'
+  toast.className = `${colorClass} border rounded-lg px-4 py-2.5 text-sm shadow-lg flex items-start gap-3`
+  toast.innerHTML = `
+    <span class="flex-1 leading-relaxed">${esc(message)}</span>
+    <button type="button" data-toast-close
+      class="text-current opacity-70 hover:opacity-100 leading-none text-base shrink-0">✕</button>
+  `
+  toast.style.display = 'flex'
+  const closeButton = toast.querySelector('[data-toast-close]')
+  if (closeButton) {
+    closeButton.addEventListener('click', () => {
+      toast.style.display = 'none'
+    })
+  }
+  // Stash the timer ID on the element so a second toast clears the
+  // first one's pending dismiss instead of inheriting it (which would
+  // hide the new message early).
+  if (toast._dismissTimer) {
+    clearTimeout(toast._dismissTimer)
+  }
+  if (durationMs > 0) {
+    toast._dismissTimer = setTimeout(() => {
+      toast.style.display = 'none'
+    }, durationMs)
   }
 }

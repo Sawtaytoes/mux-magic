@@ -153,17 +153,25 @@ beforeEach(async () => {
 
 // Mock the clipboard. navigator.clipboard isn't writable in JSDOM by
 // default; defineProperty + a held value let each test set what
-// pasteCardAt will see.
+// pasteCardAt will see. `clipboardError` lets a test simulate the
+// NotAllowedError that browsers throw when the user denies the
+// clipboard-read permission prompt.
 let clipboardText = ""
+let clipboardError: Error | null = null
 const setClipboardText = (text: string) => {
   clipboardText = text
+  clipboardError = null
+}
+const setClipboardError = (error: Error) => {
+  clipboardError = error
 }
 
 beforeEach(() => {
   clipboardText = ""
+  clipboardError = null
   Object.defineProperty(navigator, "clipboard", {
     value: {
-      readText: () => Promise.resolve(clipboardText),
+      readText: () => clipboardError ? Promise.reject(clipboardError) : Promise.resolve(clipboardText),
       writeText: (text: string) => {
         clipboardText = text
         return Promise.resolve()
@@ -172,6 +180,9 @@ beforeEach(() => {
     configurable: true,
     writable: true,
   })
+  // Wipe any toast left behind by a previous test so DOM assertions
+  // start from a clean slate.
+  document.getElementById("clipboard-toast")?.remove()
 })
 
 describe("cardToYamlStr", () => {
@@ -419,5 +430,27 @@ describe("pasteCardAt", () => {
     await pasteCardAt({ itemIndex: 0 })
     expect(mediaTools.steps).toHaveLength(1)
     expect(mediaTools.renderAllAnimated).not.toHaveBeenCalled()
+  })
+
+  test("NotAllowedError shows a permission-recovery toast and does not mutate state", async () => {
+    const { pasteCardAt } = await import("./card-clipboard.js")
+    const stepOne = mediaTools.makeStep("makeDirectory")
+    mediaTools.steps.push(stepOne)
+    // Real browsers throw a DOMException when clipboard permission is
+    // denied. DOMException isn't always available in test envs — fall
+    // back to a plain Error with the matching `name`.
+    const denialError = typeof DOMException !== "undefined"
+      ? new DOMException("Read permission denied.", "NotAllowedError")
+      : Object.assign(new Error("Read permission denied."), { name: "NotAllowedError" })
+    setClipboardError(denialError)
+
+    await pasteCardAt({ itemIndex: 0 })
+
+    expect(mediaTools.steps).toHaveLength(1)
+    expect(mediaTools.renderAllAnimated).not.toHaveBeenCalled()
+    const toast = document.getElementById("clipboard-toast")
+    expect(toast).not.toBeNull()
+    expect(toast?.textContent).toMatch(/clipboard access/i)
+    expect(toast?.textContent).toMatch(/address bar|site settings/i)
   })
 })
