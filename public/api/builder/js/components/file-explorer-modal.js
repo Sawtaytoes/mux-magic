@@ -16,15 +16,23 @@ let entries = []
 let deleteMode = 'trash'
 let deleteModeReason = null
 const selectedNames = new Set()
+// Set when openFileExplorer is invoked in picker mode. The picker badge
+// renders, the "Delete selected" button hides, and the title bar grows a
+// "📌 Use this folder" trigger that calls this back with currentPath.
+// Cleared on close so the next non-picker open behaves normally.
+let pickerOnSelect = null
 
 // ─── DOM helpers ─────────────────────────────────────────────────────────────
 
 const modal = () => document.getElementById('file-explorer-modal')
 const body = () => document.getElementById('file-explorer-body')
-const pathLabel = () => document.getElementById('file-explorer-path')
+const breadcrumb = () => document.getElementById('file-explorer-breadcrumb')
 const selectionCount = () => document.getElementById('file-explorer-selection-count')
+const footer = () => document.getElementById('file-explorer-footer')
 const deleteBtn = () => document.getElementById('file-explorer-delete-btn')
 const modeBadge = () => document.getElementById('file-explorer-mode-badge')
+const pickerBadge = () => document.getElementById('file-explorer-picker-badge')
+const pickBtn = () => document.getElementById('file-explorer-pick-btn')
 
 // Pretty byte size — KB/MB/GB scale; 1 decimal at MB+ for the typical
 // disc-rip sizes (1.x GB), otherwise integer to keep small files terse.
@@ -49,6 +57,88 @@ function formatMtime(iso) {
 }
 
 // ─── Render ──────────────────────────────────────────────────────────────────
+
+// Splits the current path into clickable ancestor links. Click any
+// segment to navigate up to that level; the trailing segment is the
+// current directory and renders as plain text. Builds the cumulative
+// target path as we walk segments so we don't have to round-trip through
+// the OS separator's regex-escape dance.
+function buildBreadcrumbSegments(path, sep) {
+  if (!path) return []
+  const parts = path.split(sep)
+  const segments = []
+  let cumulative = ''
+  parts.forEach((part, idx) => {
+    if (idx === 0) {
+      // Windows: 'G:' from 'G:\\foo' — root is 'G:\\'.
+      // POSIX: '' from '/home/foo' — root is '/'.
+      if (part === '') {
+        cumulative = sep
+        segments.push({ label: sep, target: sep })
+      } else {
+        cumulative = part + sep
+        segments.push({ label: part, target: cumulative })
+      }
+      return
+    }
+    // Skip trailing-separator empties (e.g. path 'G:\\').
+    if (part === '') return
+    cumulative += (idx === 1 ? '' : sep) + part
+    // For non-root nodes, trim any trailing separator from the target.
+    const target = cumulative.replace(new RegExp(sep === '\\' ? '\\\\$' : sep + '$'), '')
+    segments.push({ label: part, target })
+  })
+  return segments
+}
+
+function renderBreadcrumb() {
+  const el = breadcrumb()
+  if (!el) return
+  el.innerHTML = ''
+  if (!currentPath) return
+  const sep = pathSeparator
+  const segments = buildBreadcrumbSegments(currentPath, sep)
+
+  segments.forEach((seg, idx) => {
+    const isLast = idx === segments.length - 1
+    if (isLast) {
+      const text = document.createElement('span')
+      text.className = 'text-slate-200 truncate'
+      text.textContent = seg.label
+      el.appendChild(text)
+    } else {
+      const link = document.createElement('button')
+      link.className = 'text-blue-300 hover:text-blue-200 underline-offset-2 hover:underline truncate shrink-0'
+      link.textContent = seg.label
+      link.title = `Navigate to ${seg.target}`
+      link.onclick = () => navigateTo(seg.target)
+      el.appendChild(link)
+      const sepEl = document.createElement('span')
+      sepEl.className = 'text-slate-500 shrink-0'
+      sepEl.textContent = ` ${sep} `
+      el.appendChild(sepEl)
+    }
+  })
+}
+
+function navigateTo(newPath) {
+  currentPath = newPath
+  selectedNames.clear()
+  // Reload listing + delete-mode (network-drive detection is path-aware,
+  // so navigating from a network share into a local dir flips the mode).
+  loadDeleteMode()
+  loadListing()
+  renderBreadcrumb()
+}
+
+function renderPickerUi() {
+  const isPicker = typeof pickerOnSelect === 'function'
+  pickerBadge().classList.toggle('hidden', !isPicker)
+  pickBtn().classList.toggle('hidden', !isPicker)
+  // Hide the bulk-delete footer in picker mode — accidental destructive
+  // operations during a pick flow would be a bad surprise.
+  footer().classList.toggle('hidden', isPicker)
+}
 
 function renderModeBadge() {
   const el = modeBadge()
@@ -92,14 +182,15 @@ function renderListing() {
       ? `<button class="fe-copy text-slate-400 hover:text-slate-200" data-name="${esc(entry.name)}" title="Copy absolute path">📋</button>`
       : '<span class="text-slate-700">—</span>'
     const icon = entry.isDirectory ? '📁' : '🎬'
-    // Clicking the name itself triggers playback for files. Directories
-    // get no click target yet — once the path-bar nav lands, they'll
-    // navigate into the folder. Hover state hints at the affordance for
-    // files; directories stay flat-styled.
+    // Clicking the name navigates (directories) or plays (files). Both
+    // render as buttons with the same hover affordance so the row's
+    // interactivity is obvious.
     const nameContent = `${icon} ${esc(entry.name)}`
-    const nameCell = entry.isFile
-      ? `<button class="fe-name text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full" data-name="${esc(entry.name)}" title="Play in browser">${nameContent}</button>`
-      : `<span class="text-slate-400">${nameContent}</span>`
+    const nameCell = entry.isDirectory
+      ? `<button class="fe-name fe-dir text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full" data-name="${esc(entry.name)}" title="Open this folder">${nameContent}</button>`
+      : entry.isFile
+        ? `<button class="fe-name fe-file text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full" data-name="${esc(entry.name)}" title="Play in browser">${nameContent}</button>`
+        : `<span class="text-slate-400">${nameContent}</span>`
     return `<tr class="border-b border-slate-800 hover:bg-slate-800/30">
       <td class="py-1 px-2">
         <input type="checkbox" class="fe-checkbox" data-name="${esc(entry.name)}" ${checked}
@@ -144,7 +235,13 @@ function wireRowActions() {
       renderSelectionCount()
     })
   })
-  body().querySelectorAll('.fe-name').forEach((btn) => {
+  body().querySelectorAll('.fe-dir').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const name = btn.getAttribute('data-name')
+      navigateTo(joinPath(currentPath, name))
+    })
+  })
+  body().querySelectorAll('.fe-file').forEach((btn) => {
     btn.addEventListener('click', () => {
       const name = btn.getAttribute('data-name')
       openVideoModal(joinPath(currentPath, name))
@@ -228,6 +325,10 @@ async function loadListing() {
     pathSeparator = data.separator || pathSeparator
     selectedNames.clear()
     renderListing()
+    // Re-render the breadcrumb after the listing call lands — the very
+    // first open won't have pathSeparator until the server replies, so
+    // the initial render in openFileExplorer might use the fallback.
+    renderBreadcrumb()
   } catch (err) {
     body().innerHTML = `<p class="text-rose-400 text-sm py-4">${esc(String(err))}</p>`
   }
@@ -235,15 +336,35 @@ async function loadListing() {
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
-export async function openFileExplorer(path) {
+// `options.pickerOnSelect`: when set, the modal renders in picker mode —
+// the "PICKER" badge appears, the bulk-delete footer hides, and a
+// "📌 Use this folder" button in the title bar invokes this callback
+// with the currently-displayed directory path (then closes the modal).
+// Click-to-play and click-to-navigate row behavior is unchanged in
+// picker mode so the user can preview / dive in without exiting.
+export async function openFileExplorer(path, options = {}) {
   if (!path) return
   currentPath = path
-  pathLabel().textContent = path
+  pickerOnSelect = typeof options.pickerOnSelect === 'function' ? options.pickerOnSelect : null
+  renderBreadcrumb()
+  renderPickerUi()
   modal().classList.remove('hidden')
   // delete-mode now wants the path so it can downgrade trash → permanent
   // for network drives. loadDeleteMode reads currentPath, so it must run
   // AFTER the assignment above.
   await Promise.all([loadDeleteMode(), loadListing()])
+}
+
+export function confirmFileExplorerPick() {
+  if (!pickerOnSelect) return
+  const cb = pickerOnSelect
+  // Clear before invoking so the callback's setParam → renderAll cycle
+  // doesn't see a stale picker reference if it ends up reopening the
+  // modal for some reason.
+  pickerOnSelect = null
+  modal().classList.add('hidden')
+  renderPickerUi()
+  cb(currentPath)
 }
 
 export function refreshFileExplorer() {
@@ -253,6 +374,11 @@ export function refreshFileExplorer() {
 export function closeFileExplorerModal(event) {
   if (event && event.target !== modal()) return
   modal().classList.add('hidden')
+  // Clear picker mode on close so the next open without options reverts
+  // to read-only browsing — the "Use this folder" button and badge
+  // shouldn't linger across opens.
+  pickerOnSelect = null
+  renderPickerUi()
   // Pause/clear any playing video too if its sub-modal happens to be
   // open — closing the parent should kill the child.
   closeVideoModal()

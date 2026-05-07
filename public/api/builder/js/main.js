@@ -42,6 +42,8 @@ import {
   refreshFileExplorer,
   closeFileExplorerModal,
   confirmFileExplorerDelete,
+  confirmFileExplorerPick,
+  openVideoModal,
   closeVideoModal,
 } from './components/file-explorer-modal.js'
 import { pathVarOptionText, refreshPathVarOptions } from './util/path-var-options.js'
@@ -76,6 +78,8 @@ Object.assign(window.mediaTools, {
   refreshFileExplorer,
   closeFileExplorerModal,
   confirmFileExplorerDelete,
+  confirmFileExplorerPick,
+  openVideoModal,
   closeVideoModal,
 })
 
@@ -85,6 +89,8 @@ window.openFileExplorer = openFileExplorer
 window.refreshFileExplorer = refreshFileExplorer
 window.closeFileExplorerModal = closeFileExplorerModal
 window.confirmFileExplorerDelete = confirmFileExplorerDelete
+window.confirmFileExplorerPick = confirmFileExplorerPick
+window.openVideoModal = openVideoModal
 window.closeVideoModal = closeVideoModal
 
 attachPageHeaderListeners()
