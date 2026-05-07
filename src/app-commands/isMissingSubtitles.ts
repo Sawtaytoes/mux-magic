@@ -1,7 +1,4 @@
 import {
-  cpus,
-} from "node:os"
-import {
   concatMap,
   filter,
   map,
@@ -75,7 +72,7 @@ export const isMissingSubtitles = ({
           )
         }),
       )
-    ), { concurrency: cpus().length }),
+    ), { concurrency: Infinity }),
     logAndRethrow(
       isMissingSubtitles
     ),
