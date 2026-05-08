@@ -61,8 +61,8 @@ const builder = (yargs: Argv) => (
     {
       alias: "r",
       boolean: true,
-      default: false,
-      describe: "Recursively looks in folders for media files.",
+      default: true,
+      describe: "Recursively look in folders for media files. Defaults to true since Plex-style libraries are nested (`Movies/<title>/<file>`); pass `--no-isRecursive` to scan only `sourcePath`.",
       nargs: 0,
       type: "boolean",
     },
@@ -81,8 +81,8 @@ const builder = (yargs: Argv) => (
     "recursiveDepth",
     {
       alias: "d",
-      default: 0,
-      describe: "How many deep of child directories to follow (2 or 3) when using `isRecursive`.",
+      default: 3,
+      describe: "How many directory levels deep to scan, counting `sourcePath` as level 1. Default 3 covers Plex's edition layout (e.g. `Movies/Soldier (1998)/Soldier (1998) {edition-Director's Cut}/file.mkv` — 4 segments long, 3 levels of descent from `Movies`). Non-editioned `Movies/<title>/<file>` only needs 2, but over-recursing is safer than missing files. Only used with `--isRecursive`.",
       nargs: 1,
       number: true,
       type: "number",
@@ -92,7 +92,7 @@ const builder = (yargs: Argv) => (
     "rootPath",
     {
       alias: "p",
-      describe: "Plex might see your files differently than the computer running this command. To ensure the JSON file is correctly built, you can specify the root path Plex uses. This will automatically change the path separator (`/` or `\\` to match) the one provided.",
+      describe: "Path your media player (Plex, Jellyfin, Emby) sees for your library — written into the output JSON's file paths so the player can match its catalog. The path **does not have to exist on this machine and is not validated**; in many setups it won't (e.g. Plex sees `/media/Movies` but you're scanning `G:\\Movies` — pass `/media/Movies` here). Path separator is auto-converted to match the format you provide.",
       nargs: 1,
       number: true,
       type: "string",

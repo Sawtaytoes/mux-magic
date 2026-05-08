@@ -308,10 +308,10 @@ export const splitChaptersRequestSchema = z.object({
 
 export const storeAspectRatioDataRequestSchema = z.object({
   sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  recursiveDepth: z.number().default(0).describe("Maximum recursion depth"),
+  isRecursive: z.boolean().default(true).describe("Search recursively in subdirectories. **Defaults to true** so most callers don't need to pass it — typical Plex-style libraries are nested (`Movies/<title>/<file>` or with editions, `Movies/<title>/<title> {edition-…}/<file>`)."),
+  recursiveDepth: z.number().default(3).describe("How many directory levels deep to scan, counting `sourcePath` as level 1. **Default 3** covers Plex's edition layout: `Movies/Soldier (1998)/Soldier (1998) {edition-Director's Cut}/file.mkv` is 4 segments long, and 3 levels of descent from `Movies` reaches the file. Non-editioned `Movies/<title>/<file>` only needs 2, but over-recursing is safer than missing files. Only used when `isRecursive` is true."),
   outputPath: z.string().optional().describe("Output path for aspect ratio data"),
-  rootPath: z.string().optional().describe("Root path for relative paths"),
+  rootPath: z.string().optional().describe("Path prefix your media player (Plex, Jellyfin, Emby) sees for your library — written into the output JSON's file paths so the player can match its catalog. **Does not need to exist on this machine and is not validated** (it's a label substituted in place of `sourcePath`, not a filesystem reference). Common case: scanning `G:\\Movies` on Windows but Plex sees `/media/Movies` — pass `/media/Movies` here. Path separator is auto-converted to match the format you provide."),
   folders: z.array(z.string()).default([]).describe("Specific folders to process"),
   force: z.boolean().default(false).describe("Force overwrite existing data"),
 })
