@@ -555,3 +555,12 @@ export const renameFileResponseSchema = z.object({
   newPath: z.string().nullable().describe("The validated/normalized new absolute path on success; null on failure."),
   error: z.string().nullable().describe("Error message on failure (path validation, target-already-exists, missing source, etc.); null on success."),
 })
+
+export const audioCodecRequestSchema = z.object({
+  path: z.string().describe("Absolute path to a media file. Must be absolute and traversal-free."),
+})
+
+export const audioCodecResponseSchema = z.object({
+  audioFormat: z.string().nullable().describe("Raw mediainfo `Format` value of the first audio track (e.g. 'AC-3', 'DTS', 'AAC', 'MLP FBA', 'E-AC-3', 'Opus'). null when the file has no audio track or mediainfo failed."),
+  error: z.string().nullable().describe("Error message when validation or mediainfo failed; null on success."),
+})

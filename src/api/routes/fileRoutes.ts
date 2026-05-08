@@ -5,7 +5,7 @@ import { extname } from "node:path"
 import { Readable } from "node:stream"
 
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi"
-import { lastValueFrom } from "rxjs"
+import { firstValueFrom, lastValueFrom } from "rxjs"
 
 import { renameFileOrFolder } from "../../tools/createRenameFileOrFolder.js"
 import {
@@ -19,6 +19,7 @@ import {
   getDeleteMode,
   getEffectiveDeleteMode,
 } from "../../tools/deleteFiles.js"
+import { getMediaInfo } from "../../tools/getMediaInfo.js"
 import { isNetworkPath } from "../../tools/isNetworkPath.js"
 import { listFilesWithMetadata } from "../../tools/listFilesWithMetadata.js"
 import { openInExternalApp } from "../../tools/openInExternalApp.js"
@@ -150,6 +151,59 @@ fileRoutes.openapi(
       reason = "Path is on a network drive — Windows Recycle Bin can't service network shares, so deletes will be permanent."
     }
     return context.json({ mode: effectiveMode, reason }, 200)
+  },
+)
+
+fileRoutes.openapi(
+  createRoute({
+    method: "get",
+    path: "/files/audio-codec",
+    summary: "Report the audio codec/format of a file's first audio track",
+    description: "Used by the file-explorer modal's <video> sub-modal to decide whether to point at /files/stream (browser can decode) or /transcode/audio (browser can't decode the source audio — DTS, TrueHD, AC-3 outside Edge, etc.). Returns the raw mediainfo `Format` value of the first audio track; the caller maps that to a MediaSource.isTypeSupported() probe and picks the URL. Validates path via `validateReadablePath` (absolute, no traversal). Returns audioFormat=null on no-audio-track or mediainfo failure rather than 5xx-ing.",
+    tags: ["File Operations"],
+    request: {
+      query: schemas.audioCodecRequestSchema,
+    },
+    responses: {
+      200: {
+        description: "First audio track's raw mediainfo Format, or null when unavailable",
+        content: {
+          "application/json": { schema: schemas.audioCodecResponseSchema },
+        },
+      },
+    },
+  }),
+  async (context) => {
+    const { path } = context.req.valid("query")
+    let validated: string
+    try {
+      validated = validateReadablePath(path)
+    }
+    catch (error) {
+      if (error instanceof PathSafetyError) {
+        return context.json({ audioFormat: null, error: error.message }, 200)
+      }
+      return context.json({ audioFormat: null, error: messageFromError(error) }, 200)
+    }
+    try {
+      const mediaInfo = await firstValueFrom(getMediaInfo(validated))
+      const tracks = mediaInfo.media?.track ?? []
+      const firstAudio = tracks.find((track) => track["@type"] === "Audio")
+      if (!firstAudio) {
+        return context.json({ audioFormat: null, error: null }, 200)
+      }
+      const format = (
+        "Format" in firstAudio
+        && typeof firstAudio.Format === "string"
+        && firstAudio.Format.length > 0
+      )
+        ? firstAudio.Format
+        : null
+      return context.json({ audioFormat: format, error: null }, 200)
+    }
+    catch (error) {
+      return context.json({ audioFormat: null, error: messageFromError(error) }, 200)
+    }
   },
 )
 
