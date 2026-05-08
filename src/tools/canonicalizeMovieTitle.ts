@@ -1,4 +1,4 @@
-import { catchError, map, of, type Observable } from "rxjs"
+import { catchError, defaultIfEmpty, map, of, type Observable } from "rxjs"
 
 import { searchMovieDb } from "./searchMovieDb.js"
 
@@ -48,6 +48,15 @@ export const canonicalizeMovieTitle = ({
         }
       }),
       catchError(() => of(fallback)),
+      // searchMovieDb wraps its inner pipe with `logAndSwallow` which
+      // returns EMPTY on error (no emission, just complete). That
+      // bypasses the catchError above — so without defaultIfEmpty,
+      // a TMDB error would silently complete this stream with zero
+      // emissions, and the downstream `concatMap` in nameSpecialFeatures
+      // would never see a movie identity. The whole rename pipeline
+      // would then no-op without surfacing why. defaultIfEmpty
+      // guarantees we always emit at least the fallback.
+      defaultIfEmpty(fallback),
     )
   )
 }

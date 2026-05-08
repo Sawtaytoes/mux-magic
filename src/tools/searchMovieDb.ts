@@ -66,20 +66,48 @@ const requireTmdbApiKey = (): string => {
   return apiKey
 }
 
+// 10-second timeout. Without an AbortController, a stalled TMDB
+// connection (rate-limit, TLS hang, packet loss) hangs fetch
+// indefinitely — and since `logAndSwallow` downstream only catches
+// errors, the whole observable chain (e.g. `canonicalizeMovieTitle`
+// in `nameSpecialFeatures`) freezes silently with no terminal SSE
+// "done" event. Timing out turns the hang into an error → swallowed
+// → chain proceeds with the DVDCompare-derived fallback identity.
+const TMDB_FETCH_TIMEOUT_MS = 10_000
+
 const tmdbFetch = async (
   pathAndQuery: string,
 ): Promise<unknown> => {
-  const response = await fetch(`${TMDB_BASE_URL}${pathAndQuery}`, {
-    headers: {
-      "Accept": "application/json",
-      "Authorization": `Bearer ${requireTmdbApiKey()}`,
-    },
-  })
-  if (!response.ok) {
-    const body = await response.text().catch(() => "")
-    throw new Error(`TMDB ${response.status} ${response.statusText}: ${body}`)
+  const abortController = new AbortController()
+  const timeoutHandle = setTimeout(
+    () => abortController.abort(),
+    TMDB_FETCH_TIMEOUT_MS,
+  )
+  try {
+    const response = await fetch(`${TMDB_BASE_URL}${pathAndQuery}`, {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${requireTmdbApiKey()}`,
+      },
+      signal: abortController.signal,
+    })
+    if (!response.ok) {
+      const body = await response.text().catch(() => "")
+      throw new Error(`TMDB ${response.status} ${response.statusText}: ${body}`)
+    }
+    return await response.json()
   }
-  return response.json()
+  catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(
+        `TMDB request timed out after ${TMDB_FETCH_TIMEOUT_MS}ms: ${pathAndQuery}`,
+      )
+    }
+    throw error
+  }
+  finally {
+    clearTimeout(timeoutHandle)
+  }
 }
 
 export const searchMovieDb = (
