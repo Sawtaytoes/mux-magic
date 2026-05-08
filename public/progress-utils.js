@@ -48,6 +48,15 @@
     if (ratio !== null) {
       parts.push((ratio * 100).toFixed(0) + '%')
     }
+    // Speed + ETA — only when BandwidthFormat is loaded and the snapshot
+    // carries server-side transfer fields (bytesPerSecond / bytesRemaining).
+    if (typeof global.BandwidthFormat !== 'undefined') {
+      var fmt = global.BandwidthFormat
+      var bw = fmt.formatBandwidth(snap.bytesPerSecond)
+      if (bw) parts.push(bw)
+      var eta = fmt.formatEta(snap.bytesRemaining, snap.bytesPerSecond)
+      if (eta) parts.push(eta)
+    }
     label.textContent = parts.join(' · ')
   }
 

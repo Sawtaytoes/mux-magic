@@ -9,6 +9,12 @@ import {
   ensureLogStream,
 } from "/jobs/log-stream.js";
 
+// Convenience alias — BandwidthFormat is loaded as a plain <script> before
+// this module entry point, so window.BandwidthFormat resolves at call time.
+function getBandwidthFormat() {
+  return window.BandwidthFormat ?? null;
+}
+
 // Authoritative client-side mirror of every job seen over /jobs/stream.
 // Indexed by id — children are NOT rendered as standalone cards, they
 // appear inside their parent's Steps section.
@@ -199,6 +205,49 @@ function renderStepRow(child, index) {
   return row;
 }
 
+// Compute an aggregate ETA string for a running sequence job.
+// Sums bytesRemaining across all running children that have progress data.
+// Falls back to the active step's data alone when only one step is reporting.
+// Returns "" when no speed data is available.
+function aggregateEtaForJob(job) {
+  const fmt = getBandwidthFormat();
+  if (!fmt) return "";
+  if (job.status !== "running") return "";
+
+  const children = getChildren(job.id);
+  const runningChildren = children.filter((child) => child.status === "running");
+
+  // Try aggregate across all running children first.
+  let totalRemaining = 0;
+  let totalSpeed = 0;
+  let hasAnyData = false;
+
+  for (const child of runningChildren) {
+    const snap = progressByJobId.get(child.id);
+    if (!snap) continue;
+    const remaining = snap.bytesRemaining;
+    const speed = snap.bytesPerSecond;
+    if (typeof remaining === "number" && remaining > 0
+      && typeof speed === "number" && speed > 0) {
+      totalRemaining += remaining;
+      totalSpeed += speed;
+      hasAnyData = true;
+    }
+  }
+
+  if (hasAnyData) {
+    return fmt.formatEta(totalRemaining, totalSpeed / Math.max(runningChildren.length, 1));
+  }
+
+  // Fall back to the job's own progress snapshot (non-sequence running job).
+  const ownSnap = progressByJobId.get(job.id);
+  if (ownSnap) {
+    return fmt.formatEta(ownSnap.bytesRemaining, ownSnap.bytesPerSecond);
+  }
+
+  return "";
+}
+
 export function renderJob(job) {
   const card = makeEl("div", "job");
   card.dataset.id = job.id;
@@ -208,7 +257,15 @@ export function renderJob(job) {
   cmd.textContent = commandLabel(job.commandName ?? job.command ?? "unknown");
   const badge = makeEl("div", `status ${job.status}`);
   badge.textContent = job.status;
-  header.append(cmd, badge);
+
+  const etaText = aggregateEtaForJob(job);
+  if (etaText) {
+    const etaBadge = makeEl("div", "eta-badge");
+    etaBadge.textContent = etaText;
+    header.append(cmd, etaBadge, badge);
+  } else {
+    header.append(cmd, badge);
+  }
 
   const meta = makeEl("div", "meta");
   const started = job.startedAt ? new Date(job.startedAt).toLocaleString() : "—";
