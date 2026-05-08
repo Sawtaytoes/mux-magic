@@ -1,7 +1,9 @@
-import { describe, expect, test } from "vitest"
+import { firstValueFrom } from "rxjs"
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 
 import {
   displayDvdCompareVariant,
+  findDvdCompareResults,
   parseDvdCompareFilmTitle,
   parseDvdCompareReleasesHtml,
   parseDvdCompareSearchHtml,
@@ -303,5 +305,131 @@ describe(parseDvdCompareFilmTitle.name, () => {
       variant: "Blu-ray",
       year: "1992",
     })
+  })
+})
+
+// Minimal HTML for a DVDCompare film page (the parseDvdCompareFilmTitle
+// helper only needs the <title> tag).
+const SOLDIER_FILM_PAGE_HTML = `<!DOCTYPE html>
+<html>
+<head><title>DVD Compare: Soldier (1998)</title></head>
+<body><p>Film page content.</p></body>
+</html>`
+
+// Minimal HTML for a DVDCompare search results page with multiple matches.
+const MULTI_RESULT_SEARCH_HTML = `<!DOCTYPE html>
+<html>
+<head><title>DVD Compare Search Results</title></head>
+<body>
+<a href="film.php?fid=1001">Soldier (1998)</a>
+<a href="film.php?fid=1002">Soldier (Blu-ray) (1998)</a>
+<a href="film.php?fid=1003">Soldier (Blu-ray 4K) (1998)</a>
+</body>
+</html>`
+
+describe(findDvdCompareResults.name, () => {
+  const originalFetch = globalThis.fetch
+
+  beforeEach(() => {
+    // Reset to original before each test; individual tests set their own stub.
+  })
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+    vi.restoreAllMocks()
+  })
+
+  // Helpers to build a fake Response with a given URL (simulating a redirect).
+  const makeSearchPageResponse = (html: string, finalUrl: string) => ({
+    url: finalUrl,
+    text: async () => html,
+  })
+
+  test("returns isDirectListing:false with all candidates when the search lands on a multi-result page", async () => {
+    globalThis.fetch = vi.fn(async () => (
+      makeSearchPageResponse(
+        MULTI_RESULT_SEARCH_HTML,
+        "https://www.dvdcompare.net/comparisons/search.php",
+      )
+    )) as unknown as typeof globalThis.fetch
+
+    const outcome = await firstValueFrom(findDvdCompareResults("Soldier"))
+
+    expect(outcome.isDirectListing).toBe(false)
+    expect(outcome.results).toEqual([
+      { id: 1001, baseTitle: "Soldier", variant: "DVD", year: "1998" },
+      { id: 1002, baseTitle: "Soldier", variant: "Blu-ray", year: "1998" },
+      { id: 1003, baseTitle: "Soldier", variant: "Blu-ray 4K", year: "1998" },
+    ])
+  })
+
+  test("returns isDirectListing:true with the film's parsed details when the search redirects to a film page (e.g. 'solider')", async () => {
+    // DVDCompare silently corrects 'solider' → 'Soldier' and redirects
+    // straight to the film page; response.url points at film.php.
+    globalThis.fetch = vi.fn(async () => (
+      makeSearchPageResponse(
+        SOLDIER_FILM_PAGE_HTML,
+        "https://www.dvdcompare.net/comparisons/film.php?fid=12345",
+      )
+    )) as unknown as typeof globalThis.fetch
+
+    const outcome = await firstValueFrom(findDvdCompareResults("solider"))
+
+    expect(outcome.isDirectListing).toBe(true)
+    expect(outcome.results).toEqual([
+      { id: 12345, baseTitle: "Soldier", variant: "DVD", year: "1998" },
+    ])
+  })
+
+  test("returns isDirectListing:true with a fallback stub when the redirect film page title can't be parsed", async () => {
+    // Page exists (200) but has no recognizable year in the <title>, so
+    // parseDvdCompareFilmTitle returns null. We fall back to a minimal stub
+    // so the caller still has the fid and can proceed.
+    const unparsableHtml = `<html><head><title>Rewind @ www.dvdcompare.net - Some Untitled Page</title></head><body></body></html>`
+    globalThis.fetch = vi.fn(async () => (
+      makeSearchPageResponse(
+        unparsableHtml,
+        "https://www.dvdcompare.net/comparisons/film.php?fid=99999",
+      )
+    )) as unknown as typeof globalThis.fetch
+
+    const outcome = await firstValueFrom(findDvdCompareResults("anything"))
+
+    expect(outcome.isDirectListing).toBe(true)
+    expect(outcome.results).toHaveLength(1)
+    expect(outcome.results[0]).toMatchObject({ id: 99999, variant: "DVD" })
+  })
+
+  test("returns isDirectListing:false with an empty results array when the search page has no film links", async () => {
+    const emptyHtml = `<html><head><title>DVD Compare Search Results</title></head><body><p>No results found.</p></body></html>`
+    globalThis.fetch = vi.fn(async () => (
+      makeSearchPageResponse(
+        emptyHtml,
+        "https://www.dvdcompare.net/comparisons/search.php",
+      )
+    )) as unknown as typeof globalThis.fetch
+
+    const outcome = await firstValueFrom(findDvdCompareResults("xyzzy-nonexistent"))
+
+    expect(outcome.isDirectListing).toBe(false)
+    expect(outcome.results).toEqual([])
+  })
+
+  test("sends the search term as the 'param' form field to search.php", async () => {
+    const fetchSpy = vi.fn(async () => (
+      makeSearchPageResponse(
+        MULTI_RESULT_SEARCH_HTML,
+        "https://www.dvdcompare.net/comparisons/search.php",
+      )
+    ))
+    globalThis.fetch = fetchSpy as unknown as typeof globalThis.fetch
+
+    await firstValueFrom(findDvdCompareResults("Soldier"))
+
+    const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe("https://www.dvdcompare.net/comparisons/search.php")
+    expect(init.method).toBe("POST")
+    expect(init.body).toContain("param=Soldier")
+    expect(init.body).toContain("searchtype=text")
   })
 })
