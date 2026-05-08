@@ -189,7 +189,6 @@ Order matters; events are most recent first:
 | recent | Merged **#43** W2b — split `public/builder/index.html` (5288 lines) | 10 ES modules + CSS + ~335-line thin shell. Worker also fixed real bugs along the way (undo/redo binding via `setLastSnapshot()` setter; lookup-modal state references). yarn build passes. |
 | recent | Merged **#44** W2a — split `public/index.html` (jobs UI) | 6 modules + 273-line CSS + ~35-line thin shell. yarn typecheck + yarn build pass. No browser smoke (sandbox). |
 | recent | Merged **#42** W24 — Home Assistant integration options doc | Recommended MQTT with auto-discovery + `mqtt` npm package + Mosquitto HA add-on. **PR comment posted**: 2 open questions on Mosquitto availability + alerts-vs-dashboard scope. W24b implementation gated on those. |
-| recent | Merged **#41** W23 — GH Actions Node 20 deprecation bump | `docker/login-action@v3→v4`, `docker/build-push-action@v5→v6`. `actions/checkout@master` left as user's floating ref. Single-workflow audit. |
 | recent | Merged **#39** W10 N1/N3/N4 — edition folders + collision + N3 doc | Big diff, real implementation, tests added. yarn typecheck passed. **N2 modal explicitly deferred per user instruction.** |
 | recent | Merged **#40** W9 DVDCompare direct-listing fix | 5 new tests; detection via `response.url` redirect to `film.php?fid=…`. |
 | recent | Merged **#38** W19 README screenshots tooling | **PR comment posted**: PNGs not committed; user must run `yarn screenshots` before README image refs work. |
