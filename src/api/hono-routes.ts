@@ -13,8 +13,7 @@ import { serverIdRoutes } from "./routes/serverIdRoutes.js"
 
 export const app = new OpenAPIHono()
 
-app.use("/vendor/*", serveStatic({ root: "./public" }))
-app.use("/*", serveStatic({ root: "./public/api" }))
+app.use("/*", serveStatic({ root: "./public" }))
 
 app.route("/", jobRoutes)
 app.route("/", logsRoutes)

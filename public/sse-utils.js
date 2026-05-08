@@ -1,5 +1,5 @@
 // Shared SSE client helpers. Loaded as a plain <script src="/sse-utils.js">
-// so any page served from public/api/ can use it without bundling.
+// so any page served from public/ can use it without bundling.
 (function (global) {
   'use strict'
 

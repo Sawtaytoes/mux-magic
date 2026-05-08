@@ -1,6 +1,6 @@
 /* Shared progress-bar styles. Used by:
-   - /api/index.html (Jobs page) — every running card mounts a bar.
-   - /api/builder/index.html (Sequence Builder "Run via API" modal) — one
+   - /index.html (Jobs page) — every running card mounts a bar.
+   - /builder/index.html (Sequence Builder "Run via API" modal) — one
      bar per modal that follows the currently-running child step.
    Page-specific overrides (e.g. smaller bars inside step rows) live in
    the page's own <style> block. */

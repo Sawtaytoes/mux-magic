@@ -8,7 +8,7 @@ import { playwright } from "@vitest/browser-playwright"
 //                Inherits the memfs setup so any fs-touching code keeps
 //                a clean in-memory volume.
 //
-//   - "browser": ES module component tests under public/api/builder/js/.
+//   - "browser": ES module component tests under public/builder/js/.
 //                Runs in a real Chromium via @vitest/browser + Playwright
 //                provider — gives us actual DOM/event semantics with no
 //                jsdom in the dep tree. Skips the node-only memfs setup.
