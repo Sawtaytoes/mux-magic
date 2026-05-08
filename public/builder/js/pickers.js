@@ -16,21 +16,32 @@ const commandLabel = (name) => (typeof window.commandLabel === 'function' ? wind
 // ─── Shared popover-picker shell ──────────────────────────────────────────────
 
 export function createPopoverPicker(config) {
-  let state = null
+  const pickerState = { current: null }
 
-  function getPopover() { return document.getElementById(config.popoverId) }
-  function getInput()   { return document.getElementById(config.inputId)   }
-  function getList()    { return document.getElementById(config.listId)    }
+  function getPopover() {
+    return document.getElementById(config.popoverId)
+  }
+  function getInput() {
+    return document.getElementById(config.inputId)
+  }
+  function getList() {
+    return document.getElementById(config.listId)
+  }
 
-  function isSameAnchor(a, b) {
-    return config.isSameAnchor ? config.isSameAnchor(a, b) : JSON.stringify(a) === JSON.stringify(b)
+  function isSameAnchor(firstAnchor, secondAnchor) {
+    return config.isSameAnchor
+      ? config.isSameAnchor(firstAnchor, secondAnchor)
+      : JSON.stringify(firstAnchor) === JSON.stringify(secondAnchor)
   }
 
   function open(anchor, anchorElement) {
-    if (state && isSameAnchor(state.anchor, anchor)) { close(); return }
+    if (pickerState.current && isSameAnchor(pickerState.current.anchor, anchor)) {
+      close()
+      return
+    }
     const items = config.buildItems(anchor)
     const initialActiveIndex = config.findInitialActive ? config.findInitialActive(items, anchor) : 0
-    state = { anchor, items, filtered: items, query: '', activeIndex: initialActiveIndex }
+    pickerState.current = { anchor, items, filtered: items, query: '', activeIndex: initialActiveIndex }
     positionPopover(anchorElement)
     getPopover().classList.remove('hidden')
     const input = getInput()
@@ -41,18 +52,25 @@ export function createPopoverPicker(config) {
 
   function close() {
     getPopover()?.classList.add('hidden')
-    state = null
+    pickerState.current = null
   }
 
   function positionPopover(anchorElement) {
     const popover = getPopover()
     const triggerRect = anchorElement.getBoundingClientRect()
     const margin = 8
-    let left = config.alignSide === 'right'
+    const initialLeft = config.alignSide === 'right'
       ? triggerRect.right - config.width
       : triggerRect.left
-    if (left + config.width > window.innerWidth - margin) left = window.innerWidth - config.width - margin
-    if (left < margin) left = margin
+    const clampedLeft = (() => {
+      if (initialLeft + config.width > window.innerWidth - margin) {
+        return Math.max(margin, window.innerWidth - config.width - margin)
+      }
+      if (initialLeft < margin) {
+        return margin
+      }
+      return initialLeft
+    })()
     const spaceBelow = window.innerHeight - triggerRect.bottom - margin
     const spaceAbove = triggerRect.top - margin
     const isFlippedAbove = spaceBelow < 200 && spaceAbove > spaceBelow
@@ -60,34 +78,42 @@ export function createPopoverPicker(config) {
     // viewport-relative terms that stay correct regardless of scroll offset.
     // Clamp into the visible viewport so the popover never drifts off-screen.
     popover.style.bottom = ''
-    let top, height
-    if (isFlippedAbove) {
-      height = Math.min(config.maxHeight, Math.max(0, spaceAbove))
-      top = triggerRect.top - height - 4
-    } else {
-      height = Math.min(config.maxHeight, Math.max(0, spaceBelow))
-      top = triggerRect.bottom + 4
-    }
-    top = Math.max(margin, Math.min(top, window.innerHeight - height - margin))
-    popover.style.top = `${top}px`
-    popover.style.left = `${left}px`
+    const { top, height } = (() => {
+      if (isFlippedAbove) {
+        const flippedHeight = Math.min(config.maxHeight, Math.max(0, spaceAbove))
+        return { top: triggerRect.top - flippedHeight - 4, height: flippedHeight }
+      }
+      const droppedHeight = Math.min(config.maxHeight, Math.max(0, spaceBelow))
+      return { top: triggerRect.bottom + 4, height: droppedHeight }
+    })()
+    const clampedTop = Math.max(margin, Math.min(top, window.innerHeight - height - margin))
+    popover.style.top = `${clampedTop}px`
+    popover.style.left = `${clampedLeft}px`
     popover.style.maxHeight = `${height}px`
   }
 
   function filter(query) {
-    if (!state) return
+    const state = pickerState.current
+    if (!state) {
+      return
+    }
     state.query = query
     state.activeIndex = 0
     render()
   }
 
   function render() {
-    if (!state) return
+    const state = pickerState.current
+    if (!state) {
+      return
+    }
     const list = getList()
     const query = state.query.trim().toLowerCase()
     const filtered = query ? state.items.filter((item) => config.matchesQuery(item, query)) : state.items
     state.filtered = filtered
-    if (state.activeIndex >= filtered.length) state.activeIndex = 0
+    if (state.activeIndex >= filtered.length) {
+      state.activeIndex = 0
+    }
     const emptyHtml = config.emptyHtml ?? '<p class="text-xs text-slate-500 text-center py-4">No matches.</p>'
     list.innerHTML = filtered.length === 0
       ? emptyHtml
@@ -101,18 +127,32 @@ export function createPopoverPicker(config) {
   }
 
   function selectAtIndex(index) {
-    if (!state) return
+    const state = pickerState.current
+    if (!state) {
+      return
+    }
     const item = state.filtered[index]
-    if (!item) return
+    if (!item) {
+      return
+    }
     const anchor = state.anchor
     close()
     config.onSelect(item, anchor)
   }
 
   function keydown(event) {
-    if (!state) return
-    if (event.key === 'Escape') { event.preventDefault(); close(); return }
-    if (!state.filtered?.length) return
+    const state = pickerState.current
+    if (!state) {
+      return
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      close()
+      return
+    }
+    if (!state.filtered?.length) {
+      return
+    }
     if (event.key === 'ArrowDown') {
       event.preventDefault()
       state.activeIndex = (state.activeIndex + 1) % state.filtered.length
@@ -129,22 +169,34 @@ export function createPopoverPicker(config) {
 
   function attachListDelegation() {
     const list = getList()
-    if (!list) return
+    if (!list) {
+      return
+    }
     list.addEventListener('mousedown', (event) => {
-      if (event.target.closest('[data-picker-idx]')) event.preventDefault()
+      if (event.target.closest('[data-picker-idx]')) {
+        event.preventDefault()
+      }
     })
     list.addEventListener('click', (event) => {
       const button = event.target.closest('[data-picker-idx]')
-      if (!button) return
+      if (!button) {
+        return
+      }
       selectAtIndex(Number(button.dataset.pickerIdx))
     })
   }
   attachListDelegation()
 
   document.addEventListener('mousedown', (event) => {
-    if (!state) return
-    if (getPopover().contains(event.target)) return
-    if (event.target.closest(config.triggerSelector)) return
+    if (!pickerState.current) {
+      return
+    }
+    if (getPopover().contains(event.target)) {
+      return
+    }
+    if (event.target.closest(config.triggerSelector)) {
+      return
+    }
     close()
   }, true)
 
@@ -353,7 +405,7 @@ export const linkPicker = createPopoverPicker({
 
 // ─── Path typeahead (filesystem autocomplete) ─────────────────────────────────
 
-let pathPickerState = null
+const pathPickerState = { current: null }
 
 // Re-open the path picker on focus/click of an input that already
 // has a value. Without this, after blur the picker is closed and
@@ -398,42 +450,53 @@ export function onPathFieldInput(inputElement, stepId, fieldName, value) {
 
 export function schedulePathLookup(inputElement, target, value) {
   const trimmed = (value ?? '').trim()
-  if (!trimmed) { closePathPicker(); return }
+  if (!trimmed) {
+    closePathPicker()
+    return
+  }
   const trailingSlash = /[\\/]$/.test(trimmed)
-  const lastSep = Math.max(trimmed.lastIndexOf('/'), trimmed.lastIndexOf('\\'))
-  const parentPath = lastSep <= 0 ? trimmed : trimmed.slice(0, lastSep) || '/'
-  const query = trailingSlash ? '' : (lastSep < 0 ? trimmed : trimmed.slice(lastSep + 1))
+  const lastSeparatorIndex = Math.max(trimmed.lastIndexOf('/'), trimmed.lastIndexOf('\\'))
+  const parentPath = lastSeparatorIndex <= 0 ? trimmed : trimmed.slice(0, lastSeparatorIndex) || '/'
+  const query = trailingSlash
+    ? ''
+    : (lastSeparatorIndex < 0 ? trimmed : trimmed.slice(lastSeparatorIndex + 1))
 
-  if (!pathPickerState || pathPickerState.inputElement !== inputElement) {
-    pathPickerState = {
+  const existing = pathPickerState.current
+  if (!existing || existing.inputElement !== inputElement) {
+    pathPickerState.current = {
       inputElement, target, parentPath, query,
       entries: null, activeIndex: 0, requestToken: 0, debounceTimerId: null,
     }
   } else {
-    pathPickerState.target = target
-    pathPickerState.query = query
+    existing.target = target
+    existing.query = query
   }
+  const state = pathPickerState.current
 
-  if (pathPickerState.debounceTimerId) clearTimeout(pathPickerState.debounceTimerId)
+  if (state.debounceTimerId) {
+    clearTimeout(state.debounceTimerId)
+  }
   positionPathPicker(inputElement)
 
-  if (pathPickerState.cachedParentPath === parentPath && pathPickerState.entries) {
-    pathPickerState.parentPath = parentPath
-    pathPickerState.activeIndex = 0
+  if (state.cachedParentPath === parentPath && state.entries) {
+    state.parentPath = parentPath
+    state.activeIndex = 0
     renderPathPickerList()
     return
   }
 
-  pathPickerState.parentPath = parentPath
-  pathPickerState.debounceTimerId = setTimeout(() => {
-    pathPickerState.debounceTimerId = null
+  state.parentPath = parentPath
+  state.debounceTimerId = setTimeout(() => {
+    state.debounceTimerId = null
     runPathLookup(parentPath)
   }, 250)
 }
 
 async function runPathLookup(parentPath) {
-  if (!pathPickerState) return
-  const myToken = ++pathPickerState.requestToken
+  if (!pathPickerState.current) {
+    return
+  }
+  const requestToken = ++pathPickerState.current.requestToken
   try {
     const response = await fetch('/queries/listDirectoryEntries', {
       method: 'POST',
@@ -441,21 +504,30 @@ async function runPathLookup(parentPath) {
       body: JSON.stringify({ path: parentPath }),
     })
     const data = await response.json()
-    if (!pathPickerState || pathPickerState.requestToken !== myToken) return
-    if (data.separator) pathPickerState.separator = data.separator
-    if (data.error) {
-      pathPickerState.entries = []; pathPickerState.error = data.error
-    } else {
-      pathPickerState.entries = data.entries ?? []
-      pathPickerState.error = null
-      pathPickerState.cachedParentPath = parentPath
+    const state = pathPickerState.current
+    if (!state || state.requestToken !== requestToken) {
+      return
     }
-    pathPickerState.activeIndex = 0
+    if (data.separator) {
+      state.separator = data.separator
+    }
+    if (data.error) {
+      state.entries = []
+      state.error = data.error
+    } else {
+      state.entries = data.entries ?? []
+      state.error = null
+      state.cachedParentPath = parentPath
+    }
+    state.activeIndex = 0
     renderPathPickerList()
-  } catch (err) {
-    if (!pathPickerState || pathPickerState.requestToken !== myToken) return
-    pathPickerState.entries = []
-    pathPickerState.error = err?.message ?? String(err)
+  } catch (error) {
+    const state = pathPickerState.current
+    if (!state || state.requestToken !== requestToken) {
+      return
+    }
+    state.entries = []
+    state.error = error?.message ?? String(error)
     renderPathPickerList()
   }
 }
@@ -466,78 +538,103 @@ function positionPathPicker(inputElement) {
   const popoverWidth = 380
   const popoverMaxHeight = 280
   const margin = 8
-  let left = rect.left
-  if (left + popoverWidth > window.innerWidth - margin) left = window.innerWidth - popoverWidth - margin
-  if (left < margin) left = margin
+  const initialLeft = rect.left
+  const clampedLeft = (() => {
+    if (initialLeft + popoverWidth > window.innerWidth - margin) {
+      return Math.max(margin, window.innerWidth - popoverWidth - margin)
+    }
+    if (initialLeft < margin) {
+      return margin
+    }
+    return initialLeft
+  })()
   const spaceBelow = window.innerHeight - rect.bottom - margin
   const spaceAbove = rect.top - margin
   const flipAbove = spaceBelow < 160 && spaceAbove > spaceBelow
   // Clear `bottom` so it never conflicts with the `top` we set below.
   popover.style.bottom = ''
-  let top, height
-  if (flipAbove) {
-    height = Math.min(popoverMaxHeight, Math.max(0, spaceAbove))
-    top = rect.top - height - 4
-  } else {
-    height = Math.min(popoverMaxHeight, Math.max(0, spaceBelow))
-    top = rect.bottom + 4
-  }
-  top = Math.max(margin, Math.min(top, window.innerHeight - height - margin))
-  popover.style.left = `${left}px`
-  popover.style.top = `${top}px`
+  const { top, height } = (() => {
+    if (flipAbove) {
+      const flippedHeight = Math.min(popoverMaxHeight, Math.max(0, spaceAbove))
+      return { top: rect.top - flippedHeight - 4, height: flippedHeight }
+    }
+    const droppedHeight = Math.min(popoverMaxHeight, Math.max(0, spaceBelow))
+    return { top: rect.bottom + 4, height: droppedHeight }
+  })()
+  const clampedTop = Math.max(margin, Math.min(top, window.innerHeight - height - margin))
+  popover.style.left = `${clampedLeft}px`
+  popover.style.top = `${clampedTop}px`
   popover.style.maxHeight = `${height}px`
   popover.classList.remove('hidden')
 }
 
 function renderPathPickerList() {
   const list = document.getElementById('path-picker-list')
-  if (!pathPickerState) { list.innerHTML = ''; return }
-  if (pathPickerState.entries === null) {
-    list.innerHTML = '<p class="text-xs text-slate-500 text-center py-3">Loading…</p>'; return
+  const state = pathPickerState.current
+  if (!state) {
+    list.innerHTML = ''
+    return
   }
-  if (pathPickerState.error) {
-    list.innerHTML = `<p class="text-xs text-red-400 text-center py-3 break-words px-3">${esc(pathPickerState.error)}</p>`; return
+  if (state.entries === null) {
+    list.innerHTML = '<p class="text-xs text-slate-500 text-center py-3">Loading…</p>'
+    return
   }
-  const queryLower = pathPickerState.query.toLowerCase()
-  const matches = pathPickerState.entries
-    .filter(e => e.isDirectory)
-    .filter(e => !queryLower || e.name.toLowerCase().startsWith(queryLower))
-    .sort((a, b) => a.name.localeCompare(b.name))
-  pathPickerState.matches = matches
-  if (pathPickerState.activeIndex >= matches.length) pathPickerState.activeIndex = 0
+  if (state.error) {
+    list.innerHTML = `<p class="text-xs text-red-400 text-center py-3 break-words px-3">${esc(state.error)}</p>`
+    return
+  }
+  const queryLower = state.query.toLowerCase()
+  const matches = state.entries
+    .filter((entry) => entry.isDirectory)
+    .filter((entry) => !queryLower || entry.name.toLowerCase().startsWith(queryLower))
+    .sort((firstEntry, secondEntry) => firstEntry.name.localeCompare(secondEntry.name))
+  state.matches = matches
+  if (state.activeIndex >= matches.length) {
+    state.activeIndex = 0
+  }
   if (matches.length === 0) {
-    list.innerHTML = '<p class="text-xs text-slate-500 text-center py-3">No matching entries.</p>'; return
+    list.innerHTML = '<p class="text-xs text-slate-500 text-center py-3">No matching entries.</p>'
+    return
   }
   list.innerHTML = matches.map((entry, index) => {
-    const active = index === pathPickerState.activeIndex
+    const isActive = index === state.activeIndex
     // tabindex="-1" so the input's keydown handler's preventDefault
     // on Tab actually keeps focus on the input — without this, Tab
     // would focus the first button in the dropdown (default
     // tabindex=0 on <button>) and the user would lose the input.
     return `<button onmousedown="event.preventDefault()" onclick="pathPickerSelectByIndex(${index})"
       data-path-idx="${index}" tabindex="-1"
-      class="w-full text-left px-3 py-1 flex items-center gap-2 ${active ? 'bg-blue-700 text-white' : 'text-slate-200 hover:bg-slate-800'}">
+      class="w-full text-left px-3 py-1 flex items-center gap-2 ${isActive ? 'bg-blue-700 text-white' : 'text-slate-200 hover:bg-slate-800'}">
       <span class="shrink-0 text-slate-400">📁</span>
       <span class="font-mono text-xs flex-1 min-w-0 truncate">${esc(entry.name)}</span>
     </button>`
   }).join('')
-  const activeEl = list.querySelector(`[data-path-idx="${pathPickerState.activeIndex}"]`)
-  activeEl?.scrollIntoView({ block: 'nearest' })
+  const activeElement = list.querySelector(`[data-path-idx="${state.activeIndex}"]`)
+  activeElement?.scrollIntoView({ block: 'nearest' })
 }
 
 export function pathPickerSelectByIndex(index) {
-  if (!pathPickerState?.matches) return
-  const entry = pathPickerState.matches[index]
-  if (!entry) return
+  const state = pathPickerState.current
+  if (!state?.matches) {
+    return
+  }
+  const entry = state.matches[index]
+  if (!entry) {
+    return
+  }
   applyPathPickerSelection(entry)
 }
 
 function applyPathPickerSelection(entry) {
-  if (!pathPickerState) return
-  const { inputElement, target, parentPath } = pathPickerState
-  const separator = pathPickerState.separator || '/'
+  const state = pathPickerState.current
+  if (!state) {
+    return
+  }
+  const { inputElement, target, parentPath } = state
+  const separator = state.separator || '/'
   const base = parentPath.endsWith('/') || parentPath.endsWith('\\')
-    ? parentPath.slice(0, -1) : parentPath
+    ? parentPath.slice(0, -1)
+    : parentPath
   const newValue = `${base}${separator}${entry.name}${separator}`
   inputElement.value = newValue
   if (target.mode === 'step') {
@@ -550,8 +647,11 @@ function applyPathPickerSelection(entry) {
 }
 
 function commitTrimmedPath() {
-  if (!pathPickerState) return
-  const { inputElement, target } = pathPickerState
+  const state = pathPickerState.current
+  if (!state) {
+    return
+  }
+  const { inputElement, target } = state
   const current = inputElement.value
   const trimmed = current.replace(/[\\/]+$/, '')
   if (trimmed !== current) {
@@ -566,39 +666,59 @@ function commitTrimmedPath() {
 }
 
 export function pathPickerKeydown(event) {
-  if (!pathPickerState) return
-  if (event.key === 'Escape') { event.preventDefault(); commitTrimmedPath(); return }
-  const matches = pathPickerState.matches
+  const state = pathPickerState.current
+  if (!state) {
+    return
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    commitTrimmedPath()
+    return
+  }
+  const matches = state.matches
   if (!matches?.length) {
-    if (event.key === 'Enter' || event.key === 'Tab') { event.preventDefault(); commitTrimmedPath() }
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault()
+      commitTrimmedPath()
+    }
     return
   }
   if (event.key === 'ArrowDown') {
     event.preventDefault()
-    pathPickerState.activeIndex = (pathPickerState.activeIndex + 1) % matches.length
+    state.activeIndex = (state.activeIndex + 1) % matches.length
     renderPathPickerList()
   } else if (event.key === 'ArrowUp') {
     event.preventDefault()
-    pathPickerState.activeIndex = (pathPickerState.activeIndex - 1 + matches.length) % matches.length
+    state.activeIndex = (state.activeIndex - 1 + matches.length) % matches.length
     renderPathPickerList()
   } else if (event.key === 'Tab' || event.key === 'Enter') {
     event.preventDefault()
-    pathPickerSelectByIndex(pathPickerState.activeIndex)
+    pathPickerSelectByIndex(state.activeIndex)
   }
 }
 
 export function closePathPicker() {
   document.getElementById('path-picker-popover')?.classList.add('hidden')
-  if (pathPickerState?.debounceTimerId) clearTimeout(pathPickerState.debounceTimerId)
-  pathPickerState = null
+  const state = pathPickerState.current
+  if (state?.debounceTimerId) {
+    clearTimeout(state.debounceTimerId)
+  }
+  pathPickerState.current = null
 }
 
 export function attachPathPickerDismissal() {
   document.addEventListener('mousedown', (event) => {
-    if (!pathPickerState) return
+    const state = pathPickerState.current
+    if (!state) {
+      return
+    }
     const popover = document.getElementById('path-picker-popover')
-    if (popover.contains(event.target)) return
-    if (event.target === pathPickerState.inputElement) return
+    if (popover.contains(event.target)) {
+      return
+    }
+    if (event.target === state.inputElement) {
+      return
+    }
     closePathPicker()
   }, true)
 }
