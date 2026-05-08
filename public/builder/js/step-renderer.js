@@ -49,7 +49,7 @@ export function renderInsertDivider(index) {
         class="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-blue-400 rounded-full border border-transparent hover:border-blue-500/40 hover:bg-slate-800 transition-all whitespace-nowrap">
         ➕ Step
       </button>
-      <button onclick="insertGroupAt(${index}, false)" title="Insert a serial group here"
+      <button onclick="insertGroupAt(${index}, false)" title="Insert a sequential group here"
         class="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-blue-400 rounded-full border border-transparent hover:border-blue-500/40 hover:bg-slate-800 transition-all whitespace-nowrap">
         ➕ Group
       </button>
@@ -93,7 +93,7 @@ export function renderGroup(group, itemIndex, startingFlatIndex) {
   const stepCount = group.steps.length
   const parallelBadge = isParallel
     ? '<span class="text-[10px] uppercase tracking-wide font-semibold text-blue-300 bg-blue-950/60 border border-blue-700/50 rounded px-1.5 py-0.5">parallel</span>'
-    : '<span class="text-[10px] uppercase tracking-wide font-semibold text-slate-400 bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5">serial</span>'
+    : '<span class="text-[10px] uppercase tracking-wide font-semibold text-slate-400 bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5">sequential</span>'
   const innerStepsHtml = (
     group.isCollapsed
     ? ''
