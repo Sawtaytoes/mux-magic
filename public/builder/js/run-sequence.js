@@ -124,8 +124,9 @@ async function postSequenceYaml(yaml, onDone) {
 // ─── Build partial YAML for a single group ────────────────────────────────────
 
 function buildGroupYaml(group) {
-  const pathsObj = {}
-  for (const pv of paths) pathsObj[pv.id] = { label: pv.label, value: pv.value }
+  const pathsObj = Object.fromEntries(
+    paths.map((pathVar) => [pathVar.id, { label: pathVar.label, value: pathVar.value }])
+  )
   const data = {
     paths: pathsObj,
     steps: [groupToYaml(group)],
