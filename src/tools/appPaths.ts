@@ -1,4 +1,5 @@
 import { platform } from "node:os"
+import { resolve as resolvePath } from "node:path"
 
 const isWindows = platform() === 'win32'
 
@@ -7,9 +8,13 @@ const isWindows = platform() === 'win32'
 export const audioOffsetFinderPath = "audio-offset-finder"
 
 // 7.0.2-essentials_build
+// Resolve to an absolute path on Windows so spawn callers that override
+// `cwd` (e.g. runFfmpegAudioTranscode uses `cwd: os.tmpdir()`) can still
+// find the binary. On Linux/macOS the bare `ffmpeg` is looked up via
+// PATH, which works regardless of cwd.
 export const ffmpegPath = (
   isWindows
-  ? "assets/ffmpeg/bin/ffmpeg.exe"
+  ? resolvePath("assets/ffmpeg/bin/ffmpeg.exe")
   : "ffmpeg"
 )
 
