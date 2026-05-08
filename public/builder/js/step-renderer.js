@@ -284,8 +284,8 @@ export function renderStep(step, index, context = {}) {
         class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↑</button>
       <button onclick="moveStep('${step.id}',1)" ${isLast ? 'disabled' : ''}
         class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↓</button>
-      <button onclick="copyStepYaml('${step.id}', this)" title="Copy this step's YAML"
-        class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent">${renderCopyIcon()}</button>
+      ${step.command ? `<button onclick="copyStepYaml('${step.id}', this)" title="Copy this step's YAML"
+        class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent">${renderCopyIcon()}</button>` : ''}
       <button onclick="removeStep('${step.id}')"
         class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs">✕</button>
     </div>
@@ -351,13 +351,29 @@ export function renderFields(step, stepIndex) {
       )
       let companionText = companion ?? ''
       let companionHref = lookupConfig?.homeUrl ?? '#'
+      // For the nameSpecialFeatures card: the inline companion link
+      // (movie name) targets DVDCompare's release page so clicking the
+      // title opens the actual disc release. The right-side link
+      // becomes "Open on TheMovieDB" — TMDB lookup is auxiliary, not
+      // primary, since this command is DVDCompare-driven.
+      let tmdbHref = ''
+      let tmdbLabel = 'Open on TheMovieDB'
       if (isNameSpecialFeaturesCard) {
+        // Movie name on the left → DVDCompare release URL when an ID
+        // is set; falls back to the DVDCompare home page otherwise.
+        if (idValue) {
+          companionHref = lookupConfig.buildUrl(idValue, step.params)
+        }
+        // TMDB target on the right.
         if (step.params.tmdbId) {
-          companionHref = `https://www.themoviedb.org/movie/${encodeURIComponent(step.params.tmdbId)}`
-          companionText = step.params.tmdbName || companion || ''
+          tmdbHref = `https://www.themoviedb.org/movie/${encodeURIComponent(step.params.tmdbId)}`
+          // Override the link text when we know the resolved title so
+          // the user sees "Open on TheMovieDB: Title (Year)".
+          if (step.params.tmdbName) {
+            tmdbLabel = `Open on TheMovieDB: ${step.params.tmdbName}`
+          }
         } else if (step.params.tmdbResolutionPending) {
-          companionHref = 'https://www.themoviedb.org/'
-          companionText = ''
+          tmdbHref = 'https://www.themoviedb.org/'
         } else if (companion) {
           const parsedDvdCompare = parseDvdCompareDisplayName(companion)
           const fallbackTitle = parsedDvdCompare?.baseTitle || step.params.searchTerm || null
@@ -365,10 +381,12 @@ export function renderFields(step, stepIndex) {
             const searchQuery = parsedDvdCompare?.year
               ? `${fallbackTitle} y:${parsedDvdCompare.year}`
               : fallbackTitle
-            companionHref = `https://www.themoviedb.org/search/movie?query=${encodeURIComponent(searchQuery)}`
+            tmdbHref = `https://www.themoviedb.org/search/movie?query=${encodeURIComponent(searchQuery)}`
           } else {
-            companionHref = 'https://www.themoviedb.org/'
+            tmdbHref = 'https://www.themoviedb.org/'
           }
+        } else {
+          tmdbHref = 'https://www.themoviedb.org/'
         }
       } else if (lookupConfig && idValue) {
         companionHref = lookupConfig.buildUrl(idValue, step.params)
@@ -376,12 +394,14 @@ export function renderFields(step, stepIndex) {
       const companionLink = lookupConfig
         ? `<div class="flex-1 min-w-0 truncate"><a data-step="${step.id}" data-companion="${field.name}" href="${esc(companionHref)}" target="_blank" rel="noopener" class="text-xs text-blue-400 hover:text-blue-300 hover:underline ${companionText ? '' : 'hidden'}" title="${esc(companionText)}">${esc(companionText)}</a></div>`
         : `<p data-step="${step.id}" data-companion="${field.name}" class="flex-1 min-w-0 text-xs text-slate-500 truncate ${companionText ? '' : 'hidden'}" title="${esc(companionText)}">${esc(companionText)}</p>`
-      let dvdCompareReleaseLink = ''
-      if (field.lookupType === 'dvdcompare' && lookupConfig) {
+      let rightSideLink = ''
+      if (isNameSpecialFeaturesCard) {
+        rightSideLink = `<a data-step="${step.id}" data-right-link="${field.name}" href="${esc(tmdbHref)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(tmdbLabel)}</a>`
+      } else if (field.lookupType === 'dvdcompare' && lookupConfig) {
         const releaseHref = idValue
           ? lookupConfig.buildUrl(idValue, step.params)
           : lookupConfig.homeUrl
-        dvdCompareReleaseLink = `<a data-step="${step.id}" data-right-link="${field.name}" href="${esc(releaseHref)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(lookupConfig.label)}</a>`
+        rightSideLink = `<a data-step="${step.id}" data-right-link="${field.name}" href="${esc(releaseHref)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(lookupConfig.label)}</a>`
       }
       return `<div>${label}<div class="flex items-center gap-2">
         <input type="number" data-step="${step.id}" data-field="${field.name}" value="${esc(num)}" placeholder="${esc(field.placeholder ?? '')}"
@@ -393,7 +413,7 @@ export function renderFields(step, stepIndex) {
       </div>
       <div class="flex items-start gap-2 mt-0.5">
         ${companionLink}
-        ${dvdCompareReleaseLink}
+        ${rightSideLink}
       </div>
       </div>`
     }
