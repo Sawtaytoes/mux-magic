@@ -229,12 +229,19 @@ export const COMMANDS = {
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
       { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
-      { name: "hasDefaultRules", type: "boolean", label: "Use Default Rules", default: false },
-      // `linkable: true` exposes a "Link to step output" picker above the
-      // JSON editor so the user can wire this field to an upstream step's
-      // named output.
-      { name: "rules", type: "json", label: "Rules (JSON)", required: false, linkable: true,
-        placeholder: '[{"type":"setScriptInfo","key":"YCbCr Matrix","value":"TV.709"}]' },
+      // `predicates` and `hasDefaultRules` ride alongside `rules` and are
+      // edited together inside the structured `subtitleRules` editor below.
+      // Listing them as `hidden` keeps buildParams emitting them into YAML
+      // without the step renderer trying to show a separate input row.
+      { name: "predicates", type: "hidden" },
+      { name: "hasDefaultRules", type: "hidden", default: false },
+      // `subtitleRules` is the structured form-builder for the
+      // modifySubtitleMetadata DSL — see
+      // public/builder/js/components/dsl-rules-builder.js. It renders
+      // its own dispatcher in renderFields. `linkable: true` keeps the
+      // "Link to step output" picker for the rules array (e.g. wire to
+      // an upstream computeDefaultSubtitleRules step's `rules` output).
+      { name: "rules", type: "subtitleRules", label: "Rules", required: false, linkable: true },
     ]
   },
   // Analysis

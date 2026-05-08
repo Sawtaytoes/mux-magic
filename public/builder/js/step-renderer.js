@@ -4,6 +4,7 @@
 // insert dividers, status badges, field rows, and the sequence-end card.
 
 import { COMMANDS } from './commands.js'
+import { renderRulesField } from './components/dsl-rules-builder.js'
 import { steps, paths, flattenSteps, isGroup, getLinkedValue } from './sequence-state.js'
 
 // commandLabel is provided by the global /command-labels.js script.
@@ -296,6 +297,26 @@ export function renderFields(step, stepIndex) {
     const val = step.params[field.name]
     const tooltipKey = `${step.command}:${field.name}`
     const label = `<label class="block text-xs text-slate-400 mb-1 cursor-help" data-tooltip-key="${esc(tooltipKey)}">${esc(field.label)}${field.required ? ' <span class="text-red-400">*</span>' : ''}</label>`
+
+    // `hidden` fields ride along in the params payload but do not render
+    // a control. Used by composite editors (e.g. subtitleRules) that own
+    // multiple fields under a single UI surface.
+    if (field.type === 'hidden') {
+      return ''
+    }
+
+    // `subtitleRules` is the structured DSL form-builder for
+    // modifySubtitleMetadata's rules / predicates / hasDefaultRules.
+    // Source: public/builder/js/components/dsl-rules-builder.js.
+    if (field.type === 'subtitleRules') {
+      const link = step.links?.[field.name]
+      const isLinked = link && typeof link === 'object' && link.linkedTo
+      const pickerHtml = field.linkable ? renderStepOutputPicker(step, field, stepIndex, link) : ''
+      if (isLinked) {
+        return `<div>${label}${pickerHtml}<div class="text-xs text-slate-400 bg-slate-900 rounded px-2 py-1.5 border border-slate-700 italic font-mono">Linked → ${esc(link.linkedTo)}.${esc(link.output ?? 'folder')}</div></div>`
+      }
+      return `<div>${label}${pickerHtml}${renderRulesField({ step })}</div>`
+    }
 
     if (field.type === 'boolean') {
       const checked = val ?? field.default ?? false

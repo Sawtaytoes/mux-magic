@@ -57,8 +57,9 @@ import {
   steps as _steps, paths as _paths,
   setSteps, setPaths, setStepCounter,
   getPaths, getSteps, getStepCounter,
-  initPaths, randomHex, makeStep, getLinkedValue,
+  initPaths, randomHex, makeStep, getLinkedValue, findStepById,
 } from './sequence-state.js'
+import { registerDslRulesGlobals } from './components/dsl-rules-builder.js'
 import { COMMANDS } from './commands.js'
 import {
   updateUrl,
@@ -214,6 +215,7 @@ Object.assign(window.mediaTools, {
   randomHex,
   makeStep,
   getLinkedValue,
+  findStepById,
 
   // sequence-editor
   updateUrl,
@@ -351,6 +353,7 @@ attachPathPickerDismissal()
 attachSequenceKeyboardShortcuts()
 attachCopyButtonListener()
 attachFieldTooltipListeners()
+registerDslRulesGlobals()
 
 // Help-modal globals — used by the ⓘ button in step-card headers and
 // the ✕ Close button in the modal markup itself.
