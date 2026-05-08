@@ -91,7 +91,6 @@ import {
   buildParams,
   scrollStepIntoView,
   scrollPathVarIntoView,
-  schedulePathLookup,
   renderAllAnimated,
   attachSequenceKeyboardShortcuts,
 } from './sequence-editor.js'
@@ -103,6 +102,7 @@ import {
   pathPickerKeydown,
   pathPickerSelectByIndex,
   attachPathPickerDismissal,
+  schedulePathLookup,
 } from './pickers.js'
 import {
   runOrStopStep,
