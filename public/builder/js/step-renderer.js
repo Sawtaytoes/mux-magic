@@ -137,6 +137,8 @@ export function renderGroup(group, itemIndex, startingFlatIndex) {
       class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↓</button>
     <button onclick="copyGroupYaml('${group.id}', this)" title="Copy this group's YAML"
       class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent">${renderCopyIcon()}</button>
+    <button onclick="runGroup('${group.id}')" title="Run this group via /sequences/run"
+      class="text-[10px] text-emerald-500 hover:text-emerald-300 px-2 py-0.5 rounded border border-emerald-700/50 hover:border-emerald-500 hover:bg-emerald-950/30">▶ Run</button>
     <button onclick="removeGroup('${group.id}')" title="Remove this group (its inner steps go too)"
       class="text-[10px] text-slate-500 hover:text-red-400 px-2 py-0.5 rounded border border-slate-700 hover:border-red-500/40">✕</button>
   </div>

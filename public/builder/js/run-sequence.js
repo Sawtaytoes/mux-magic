@@ -3,9 +3,15 @@
 // Client-side step execution, job SSE tailing, the prompt modal, and
 // the "Run via API" umbrella-job modal. Also owns per-step UI mutation
 // (status badge, run/stop morph, log display, results display).
+//
+// Run modes:
+//   runSequence()   — top-level "Run" button → POST /sequences/run (full YAML)
+//   runGroup(id)    — group ▶ button        → POST /sequences/run (partial YAML)
+//   runStep(stepId) — individual step ▶      → POST /commands/:cmd (per-job API)
 
-import { flattenSteps, findStepById } from './sequence-state.js'
+import { flattenSteps, findStepById, isGroup, steps, paths } from './sequence-state.js'
 import { buildParams, setParam } from './sequence-editor.js'
+import { groupToYaml } from './components/yaml-modal.js'
 import { renderStatusBadge, esc, LOOKUP_LINKS } from './step-renderer.js'
 import {
   handleStepCardProgressEvent,
@@ -81,31 +87,71 @@ async function runOneStep(step) {
   return step.status === 'completed'
 }
 
+// ─── Shared /sequences/run helper ────────────────────────────────────────────
+
+// Posts `yaml` to /sequences/run, opens the api-run modal, and streams the
+// SSE log. `onDone` is called (with no args) when the stream closes.
+async function postSequenceYaml(yaml, onDone) {
+  let response
+  try {
+    response = await fetch('/sequences/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ yaml }),
+    })
+  } catch (error) {
+    openApiRunModal({ jobId: null, status: 'failed' })
+    document.getElementById('api-run-logs').textContent = `Network error: ${error?.message ?? error}`
+    onDone?.()
+    return
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '(no body)')
+    openApiRunModal({ jobId: null, status: 'failed' })
+    document.getElementById('api-run-logs').textContent = `HTTP ${response.status}: ${errorText}`
+    onDone?.()
+    return
+  }
+
+  const { jobId } = await response.json()
+  openApiRunModal({ jobId, status: 'running' })
+  tailApiRunLogs(jobId, onDone)
+}
+
+// ─── Build partial YAML for a single group ────────────────────────────────────
+
+function buildGroupYaml(group) {
+  const pathsObj = {}
+  for (const pv of paths) pathsObj[pv.id] = { label: pv.label, value: pv.value }
+  const data = {
+    paths: pathsObj,
+    steps: [groupToYaml(group)],
+  }
+  return window.jsyaml.dump(data, { lineWidth: -1, flowLevel: 3, indent: 2 })
+}
+
+// ─── Top-level sequence run (main "Run" button) ───────────────────────────────
+
 export async function runSequence() {
-  const runnableSteps = flattenSteps()
-    .map((entry) => entry.step)
-    .filter((step) => step.command !== null)
-  if (running || !runnableSteps.length) return
-  running = true
-  stepLogs.clear()
-  document.getElementById('run-btn').disabled = true
+  const yaml = window.mediaTools.toYamlStr()
+  if (yaml === '# No steps yet') return
+  const runBtn = document.getElementById('run-btn')
+  if (runBtn) runBtn.disabled = true
+  await postSequenceYaml(yaml, () => {
+    if (runBtn) runBtn.disabled = false
+  })
+}
 
-  for (const step of runnableSteps) {
-    step.status = 'pending'
-    step.error = null
-    step.results = null
-    step.logs = null
-    step.outputs = null
-    updateStepUI(step)
-  }
+// ─── Group run (group ▶ button) ───────────────────────────────────────────────
 
-  for (const step of runnableSteps) {
-    const success = await runOneStep(step)
-    if (!success) break
-  }
-
-  running = false
-  document.getElementById('run-btn').disabled = false
+export async function runGroup(groupId) {
+  const group = steps.find((item) => isGroup(item) && item.id === groupId)
+  if (!group) return
+  const hasContent = group.steps.some((s) => s.command !== null)
+  if (!hasContent) return
+  const yaml = buildGroupYaml(group)
+  await postSequenceYaml(yaml, () => {})
 }
 
 export async function runStep(stepId) {
@@ -267,35 +313,11 @@ let apiRunChildStepId = null
 export async function runViaApi() {
   const yaml = window.mediaTools.toYamlStr()
   if (yaml === '# No steps yet') return
-
   const runApiBtn = document.getElementById('run-api-btn')
-  runApiBtn.disabled = true
-
-  let response
-  try {
-    response = await fetch('/sequences/run', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ yaml }),
-    })
-  } catch (error) {
-    runApiBtn.disabled = false
-    openApiRunModal({ jobId: null, status: 'failed' })
-    document.getElementById('api-run-logs').textContent = `Network error: ${error?.message ?? error}`
-    return
-  }
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => '(no body)')
-    runApiBtn.disabled = false
-    openApiRunModal({ jobId: null, status: 'failed' })
-    document.getElementById('api-run-logs').textContent = `HTTP ${response.status}: ${errorText}`
-    return
-  }
-
-  const { jobId } = await response.json()
-  openApiRunModal({ jobId, status: 'running' })
-  tailApiRunLogs(jobId, () => { runApiBtn.disabled = false })
+  if (runApiBtn) runApiBtn.disabled = true
+  await postSequenceYaml(yaml, () => {
+    if (runApiBtn) runApiBtn.disabled = false
+  })
 }
 
 export function openApiRunModal({ jobId, status }) {
