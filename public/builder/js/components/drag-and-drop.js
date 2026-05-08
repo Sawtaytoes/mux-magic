@@ -73,11 +73,25 @@ function getStepsArrayFor(containerElement) {
 // container's children that match `draggable`) into actual splice
 // positions. Sortable already exposes `oldDraggableIndex` /
 // `newDraggableIndex` for this exact purpose, so we use those.
+// Defer the post-drag re-render to the next microtask. Sortable
+// finishes its own DOM cleanup (removes the drag-ghost clone, strips
+// chosenClass/ghostClass) AFTER onEnd returns. Calling renderAll
+// synchronously here destroys Sortable's instances mid-cleanup, which
+// orphans the ghost clone in the DOM and leaves the previous drag
+// in a half-rendered ghost-overlay state — visible as the
+// "stuck-with-numbered-overlap" bug when the user drags rapidly.
+// Microtask defer lets Sortable's own cleanup finish before we wipe
+// and rebuild the DOM, and keeps the render synchronous-enough that
+// the user's next action sees fresh state. Bypassing the
+// view-transition wrapper too: Sortable already animated the move
+// (animation: 150) so the second view-transition is just race fuel.
+const scheduleRender = () => queueMicrotask(() => bridge().renderAll())
+
 function onEnd(event) {
   const sourceContainer = getStepsArrayFor(event.from)
   const targetContainer = getStepsArrayFor(event.to)
   if (!sourceContainer || !targetContainer) {
-    bridge().renderAllAnimated()
+    scheduleRender()
     return
   }
   const sourceArray = sourceContainer.steps
@@ -85,7 +99,7 @@ function onEnd(event) {
   const oldIndex = event.oldDraggableIndex
   const newIndex = event.newDraggableIndex
   if (oldIndex === undefined || newIndex === undefined) {
-    bridge().renderAllAnimated()
+    scheduleRender()
     return
   }
   // Same container, no move? Bail before mutating anything.
@@ -94,7 +108,7 @@ function onEnd(event) {
   }
   const [movedItem] = sourceArray.splice(oldIndex, 1)
   if (!movedItem) {
-    bridge().renderAllAnimated()
+    scheduleRender()
     return
   }
   // After the source-array splice, the target array's insertion index
@@ -116,7 +130,7 @@ function onEnd(event) {
   }
 
   bridge().clearStaleStepLinksAfterMove()
-  bridge().renderAllAnimated()
+  scheduleRender()
 }
 
 // Public entry point invoked by `renderAll` after the DOM has been
