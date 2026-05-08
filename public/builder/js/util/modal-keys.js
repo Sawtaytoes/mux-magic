@@ -32,6 +32,10 @@ export function attachModalEscapeListener() {
     return
   }
   isAttached = true
+  // capture:true fires before any focused element (e.g. a <video> seek bar or
+  // native form control) gets a chance to absorb the event in the bubbling
+  // phase. Without it, clicking a native-controls seek bar moves focus into
+  // the browser's shadow DOM and ESC never reaches a bubbling-phase listener.
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') {
       return
@@ -45,5 +49,5 @@ export function attachModalEscapeListener() {
       return
     }
     document.getElementById(openModalId).classList.add('hidden')
-  })
+  }, { capture: true })
 }
