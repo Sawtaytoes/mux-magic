@@ -356,6 +356,7 @@ export function promotePathToPathVar(stepId, fieldName, rawValue) {
   if (step.links?.[fieldName]) return
   const value = (rawValue ?? '').trim()
   if (!value) return
+  // Re-use an existing path variable that already holds this value.
   const existing = paths.find(p => p.value === value)
   if (existing) {
     step.links[fieldName] = existing.id
@@ -363,6 +364,17 @@ export function promotePathToPathVar(stepId, fieldName, rawValue) {
     bridge().renderAll()
     return
   }
+  // If basePath (paths[0]) is still empty, populate it in-place rather than
+  // creating a sibling path variable. This keeps the common case of "user
+  // types a path into the very first step" tidy.
+  if (paths.length > 0 && paths[0].id === 'basePath' && !paths[0].value) {
+    paths[0].value = value
+    step.links[fieldName] = paths[0].id
+    delete step.params[fieldName]
+    bridge().renderAll()
+    return
+  }
+  // basePath is occupied — create a new named path variable.
   const newPath = { id: 'path_' + randomHex(), label: 'Path ' + paths.length, value }
   paths.push(newPath)
   step.links[fieldName] = newPath.id
