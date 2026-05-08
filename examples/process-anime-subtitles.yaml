@@ -16,11 +16,11 @@
 #   2. copyFiles         — bring the filtered files back into workDir
 #   3. copyOutSubtitles  — extract the .ass subtitle files into a sibling
 #   4. deleteFilesByExtension — strip non-.ass cruft from the extracted set
-#   5. computeDefaultSubtitleRules — heuristic rules tailored to this series
-#   6. modifySubtitleMetadata     — apply them in place (no-op if empty)
-#   7. mergeTracks       — re-merge the subtitles into the media files
-#   8. copyFiles         — copy the merged result up to the parent series folder
-#   9. deleteFolder      — clean up the work directory
+#   5. modifySubtitleMetadata     — apply default-rules heuristic in place via
+#                                   `hasDefaultRules: true` (no-op if no .ass)
+#   6. mergeTracks       — re-merge the subtitles into the media files
+#   7. copyFiles         — copy the merged result up to the parent series folder
+#   8. deleteFolder      — clean up the work directory
 #
 # OPTIONAL TRACK REORDERING:
 # If your series needs reordered tracks (subtitlesTrackIndexes), insert
@@ -83,14 +83,6 @@ steps:
       extensions: [idx, vob, srt]
       isRecursive: true
 
-  - id: computeRules
-    command: computeDefaultSubtitleRules
-    params:
-      sourcePath:
-        linkedTo: extractSubs
-        output: folder
-      isRecursive: true
-
   - id: applyRules
     command: modifySubtitleMetadata
     params:
@@ -98,9 +90,8 @@ steps:
         linkedTo: extractSubs
         output: folder
       isRecursive: true
-      rules:
-        linkedTo: computeRules
-        output: rules
+      hasDefaultRules: true
+      rules: []
 
   - id: mergeBack
     command: mergeTracks

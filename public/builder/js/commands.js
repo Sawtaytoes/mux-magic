@@ -222,34 +222,19 @@ export const COMMANDS = {
     ]
   },
   modifySubtitleMetadata: {
-    summary: "Apply DSL-driven modifications to ASS subtitle metadata",
+    summary: "Apply DSL-driven modifications to ASS subtitle metadata. Toggle hasDefaultRules to prepend the in-tree heuristic rules.",
     tag: "Subtitle Operations",
     outputFolderName: null,
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
       { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
+      { name: "hasDefaultRules", type: "boolean", label: "Use Default Rules", default: false },
       // `linkable: true` exposes a "Link to step output" picker above the
       // JSON editor so the user can wire this field to an upstream step's
-      // `rules` named output (e.g. computeDefaultSubtitleRules).
-      { name: "rules", type: "json", label: "Rules (JSON)", required: true, linkable: true,
+      // named output.
+      { name: "rules", type: "json", label: "Rules (JSON)", required: false, linkable: true,
         placeholder: '[{"type":"setScriptInfo","key":"YCbCr Matrix","value":"TV.709"}]' },
-    ]
-  },
-  computeDefaultSubtitleRules: {
-    summary: "Compute the default ASS modification rule set from .ass file metadata",
-    tag: "Subtitle Operations",
-    outputFolderName: null,
-    // Named runtime outputs this step publishes via the API's extractOutputs
-    // hook. Downstream steps can consume them through the link picker on
-    // any field flagged `linkable: true`.
-    outputs: [
-      { name: "rules", label: "rules (subtitle modification rules array)" },
-    ],
-    fields: [
-      { name: "sourcePath", type: "path", label: "Source Path", required: true },
-      { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
     ]
   },
   // Analysis

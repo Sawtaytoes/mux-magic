@@ -24,8 +24,7 @@ Cross-reference: the rule object schema (style names, replacement fields, font s
 - `copyFiles` — [`src/app-commands/copyFiles.ts`](../src/app-commands/copyFiles.ts)
 - `copyOutSubtitles` — [`src/app-commands/copyOutSubtitles.ts`](../src/app-commands/copyOutSubtitles.ts)
 - `deleteFilesByExtension` — [`src/app-commands/deleteFilesByExtension.ts`](../src/app-commands/deleteFilesByExtension.ts)
-- `computeDefaultSubtitleRules` — [`src/app-commands/computeDefaultSubtitleRules.ts`](../src/app-commands/computeDefaultSubtitleRules.ts)
-- `modifySubtitleMetadata` — [`src/app-commands/modifySubtitleMetadata.ts`](../src/app-commands/modifySubtitleMetadata.ts)
+- `modifySubtitleMetadata` — [`src/app-commands/modifySubtitleMetadata.ts`](../src/app-commands/modifySubtitleMetadata.ts) (set `hasDefaultRules: true` to prepend the in-tree heuristic)
 - `mergeTracks` — [`src/app-commands/mergeTracks.ts`](../src/app-commands/mergeTracks.ts)
 - `deleteFolder` — [`src/app-commands/deleteFolder.ts`](../src/app-commands/deleteFolder.ts)
 
@@ -75,18 +74,8 @@ steps:
       recursiveDepth: 0
       extensions: [idx, vob, srt]
 
-  - id: computeRules
-    alias: Compute default ASS modification rules
-    command: computeDefaultSubtitleRules
-    params:
-      sourcePath:
-        linkedTo: extractSubs
-        output: folder
-      isRecursive: true
-      recursiveDepth: 0
-
   - id: applyRules
-    alias: Apply ASS modification rules to extracted subs
+    alias: Apply default ASS modification rules to extracted subs
     command: modifySubtitleMetadata
     params:
       sourcePath:
@@ -94,9 +83,8 @@ steps:
         output: folder
       isRecursive: true
       recursiveDepth: 0
-      rules:
-        linkedTo: computeRules
-        output: rules
+      hasDefaultRules: true
+      rules: []
 
   - id: mergeSubs
     alias: Merge modified subtitles back into MKVs
@@ -169,7 +157,7 @@ The cleanup `deleteFolder` runs *inside* the sequence as the last step rather th
 
 ## 3. Subtitle DSL — modify ASS metadata in place
 
-**Intent:** Apply a hand-written list of ASS modification rules to every `.ass` file in a folder. This is the standalone version of step 6 in example 1 — instead of pulling rules from `computeDefaultSubtitleRules` via `linkedTo`, the rules are literal YAML so you can see what the DSL looks like.
+**Intent:** Apply a hand-written list of ASS modification rules to every `.ass` file in a folder. This is the standalone version of the rules step in example 1 — instead of relying on `hasDefaultRules: true`'s built-in heuristic, the rules are literal YAML so you can see what the DSL looks like. Both can be combined: when `hasDefaultRules: true` is set, the heuristic rules run FIRST and your literal rules run after, so you can override defaults selectively.
 
 **Produces:** The `.ass` files in `subtitlesDir` are rewritten in place. No new files, no folder output; downstream steps that need to operate on these files reference `subtitlesDir` (or the upstream extraction step's folder) directly, not `{ linkedTo: applyRules, output: folder }` — `modifySubtitleMetadata` doesn't synthesize a folder.
 
@@ -179,7 +167,7 @@ The cleanup `deleteFolder` runs *inside* the sequence as the last step rather th
 - Rule type definitions — `src/tools/assTypes.ts`
 - See also [`docs/dsl/subtitle-coverage.md`](./dsl/subtitle-coverage.md) — TODO: pending W16
 
-**Source in media-sync:** the rules array used in production is computed server-side by `computeDefaultSubtitleRules` and chained into `modifySubtitleMetadata` via `{ linkedTo: computeRules, output: rules }` (see example 1, step 6). The standalone literal-rules form below is the same call shape with the rules inlined for documentation.
+**Source in media-sync:** the production flow uses `modifySubtitleMetadata` with `hasDefaultRules: true` (see example 1) so the heuristic computes the standard fansub fixups in-process. The standalone literal-rules form below is the same call shape with the rules inlined for documentation. Set `hasDefaultRules: true` alongside literal rules to combine — defaults run first, your rules run after.
 
 ```yaml
 paths:

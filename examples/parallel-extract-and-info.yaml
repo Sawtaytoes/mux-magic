@@ -11,9 +11,9 @@
 # serially — only the API path honors isParallel).
 #
 # Outline:
-#   1. extractSubs (parallel)         — copy out the .ass tracks
-#   2. computeRules (parallel)        — derive default subtitle rules
-#   3. After the group: applyRules    — consume the rules emitted by step 2
+#   1. extractSubs (parallel)      — copy out the .ass tracks
+#   2. analyzeAudio (parallel)     — independent metadata-only audio scan
+#   3. After the group: applyRules — apply default-rules heuristic
 #
 # isCollapsed is set on the post-group step purely to demonstrate the
 # new builder accordion — collapsed cards are pure view state and run
@@ -33,15 +33,15 @@ steps:
 
   - kind: group
     id: extractInParallel
-    label: Extract subs + compute rules in parallel
+    label: Extract subs + analyze audio in parallel
     isParallel: true
     steps:
       - id: extractSubs
         command: copyOutSubtitles
         params:
           sourcePath: '@workDir'
-      - id: computeRules
-        command: computeDefaultSubtitleRules
+      - id: analyzeAudio
+        command: hasBetterAudio
         params:
           sourcePath: '@workDir'
 
@@ -50,6 +50,5 @@ steps:
     isCollapsed: true
     params:
       sourcePath: '@workDir'
-      rules:
-        linkedTo: computeRules
-        output: rules
+      hasDefaultRules: true
+      rules: []

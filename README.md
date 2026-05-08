@@ -372,25 +372,16 @@ steps:
 
 ##### b) `output: <name>` — named runtime output
 
-Some commands publish structured runtime values for downstream steps. Each such command declares its output schema; the value is captured when that command's job completes and made available to later steps. Currently:
-
-| Command | Named outputs |
-|---|---|
-| `computeDefaultSubtitleRules` | `rules` (an array of subtitle modification rules) |
+Some commands publish structured runtime values for downstream steps. Each such command declares its output schema; the value is captured when that command's job completes and made available to later steps. No commands currently expose named outputs other than the synthesized `folder`. Earlier versions had a `computeDefaultSubtitleRules` step whose `rules` named output flowed into `modifySubtitleMetadata`; that has been folded into `modifySubtitleMetadata`'s `hasDefaultRules: true` toggle (see [docs/dsl/subtitle-rules.md](docs/dsl/subtitle-rules.md) `Default rules toggle`).
 
 ```yaml
 steps:
-  - id: computeRules
-    command: computeDefaultSubtitleRules
-    params:
-      sourcePath: '@workDir'
   - id: applyRules
     command: modifySubtitleMetadata
     params:
       sourcePath: '@workDir'
-      rules:
-        linkedTo: computeRules
-        output: rules               # → the rules array computeRules emitted
+      hasDefaultRules: true        # default heuristic prepended to rules
+      rules: []                    # optional user overrides run after defaults
 ```
 
 To discover which commands publish named outputs, hit `GET /doc` — every command's spec includes its outputs declaration. New commands may add named outputs without breaking existing sequences.
@@ -414,7 +405,7 @@ A useful pattern: have your service hold the higher-level configuration (e.g., "
 
 ### Worked example: anime subtitle pipeline
 
-The repo ships [`examples/process-anime-subtitles.yaml`](examples/process-anime-subtitles.yaml) — a complete multi-step pipeline that filters track languages, extracts subtitles, computes default rules, applies them, re-merges, copies the result up to the parent series folder, and cleans up the work directory. It's a dense reference for path-vars + folder outputs + named outputs together. A companion test at `examples/process-anime-subtitles.test.ts` validates the document and walks every link reference, so a regression in any command's metadata fails CI before the example silently rots.
+The repo ships [`examples/process-anime-subtitles.yaml`](examples/process-anime-subtitles.yaml) — a complete multi-step pipeline that filters track languages, extracts subtitles, applies default subtitle modification rules in place via `modifySubtitleMetadata` with `hasDefaultRules: true`, re-merges, copies the result up to the parent series folder, and cleans up the work directory. It's a dense reference for path-vars + folder outputs together. A companion test at `examples/process-anime-subtitles.test.ts` validates the document and walks every link reference, so a regression in any command's metadata fails CI before the example silently rots.
 
 ### Minimal copy-paste example
 
