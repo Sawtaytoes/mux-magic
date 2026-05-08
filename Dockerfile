@@ -18,7 +18,7 @@ RUN log() { echo "[$(date +"%Y-%m-%d %H:%M:%S")] $1"; };
 RUN \
   touch .env && \
   apt update && \
-  apt install -y --no-install-recommends build-essential ca-certificates ffmpeg git locales mediainfo pipx python3 wget && \
+  apt install -y --no-install-recommends build-essential ca-certificates ffmpeg git locales mediainfo pipx procps python3 wget && \
   \
   sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen && \
   \
