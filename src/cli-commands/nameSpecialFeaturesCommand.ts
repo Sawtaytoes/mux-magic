@@ -1,4 +1,4 @@
-﻿import type { Argv, CommandBuilder, CommandModule } from "yargs"
+import type { Argv, CommandBuilder, CommandModule } from "yargs"
 
 import { nameSpecialFeatures, type NameSpecialFeaturesResult } from "../app-commands/nameSpecialFeatures.js"
 import { subscribeCli } from "../tools/subscribeCli.js"
@@ -49,6 +49,24 @@ const builder = (yargs: Argv) => (
       type: "number",
     },
   )
+  .option(
+    "moveToEditionFolders",
+    {
+      alias: "e",
+      boolean: true,
+      default: false,
+      describe: "After renaming, move main-feature files that carry a {edition-…} tag into a nested folder: <sourceParent>/<Title (Year)>/<Title (Year) {edition-…}>/<file>. Special-feature files are not moved.",
+    },
+  )
+  .option(
+    "nonInteractive",
+    {
+      alias: "n",
+      boolean: true,
+      default: false,
+      describe: "When a rename target already exists on disk, automatically append (2), (3), … instead of emitting a review-needed collision event. Use this in scripts or when running without a UI that can display the collision prompt.",
+    },
+  )
 )
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
@@ -66,6 +84,14 @@ export const nameSpecialFeaturesCommand: CommandModule<{}, Args> = {
       fixedOffset: (
         argv
         .fixedOffset
+      ),
+      moveToEditionFolders: (
+        argv
+        .moveToEditionFolders
+      ),
+      nonInteractive: (
+        argv
+        .nonInteractive
       ),
       sourcePath: (
         argv
@@ -90,6 +116,24 @@ export const nameSpecialFeaturesCommand: CommandModule<{}, Args> = {
               console.log(`  • ${filename}`)
             })
           }
+          if (event.unnamedFileCandidates && event.unnamedFileCandidates.length > 0) {
+            console.log("Possible candidate associations for unnamed files:")
+            event.unnamedFileCandidates.forEach(({ filename, candidates }) => {
+              console.log(`  • ${filename}`)
+              candidates.slice(0, 3).forEach((c) => console.log(`      - ${c}`))
+            })
+          }
+          return
+        }
+        if ("collision" in event) {
+          console.warn(
+            `[REVIEW NEEDED] "${event.filename}" → "${event.targetFilename}" already exists. `
+            + "Pass --non-interactive to auto-suffix instead.",
+          )
+          return
+        }
+        if ("movedToEditionFolder" in event) {
+          console.log(`Moved to edition folder: ${event.filename} → ${event.destinationPath}`)
           return
         }
         renamedCount += 1
