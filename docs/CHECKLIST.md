@@ -12,7 +12,7 @@ States: `briefed → running → pushed → pr-open → awaiting-decision → re
 
 | ID | Question | Notes |
 |----|----------|-------|
-| **W26b** | Approve **Road A** for DSL subtitle coverage? Heuristics in TS + optional `when:` aggregate predicates only — no `${expr}` mini-language. | Design record [docs/dsl/subtitle-coverage.md](dsl/subtitle-coverage.md). |
+| **W26b** | ~~Approve Road A?~~ **Decided 2026-05-08:** G1 (`when:` equality predicates) + G2 (structured math ops, no `${expr}`) + G3 (`setStyleFields.applyIf` with `lt/gt/eq` comparators). G4/G5 fall out of G1. Design record updated in [docs/dsl/subtitle-coverage.md §Decisions](dsl/subtitle-coverage.md). **Ready to spawn worker.** | — |
 
 ### Open PRs awaiting your review/merge
 

@@ -245,6 +245,93 @@ follow-ups under the GAP work):
   wire is exercised only in production by media-sync's
   `processAnimeSubtitles`.
 
+## Decisions (2026-05-08)
+
+W26b approved with **expanded scope**: G1 + G2 (structured math) + G3 (closes G4/G5 implicitly via G1). Doc's original Road A recommended G1 only; the user's call extended to G3 (style-field comparators) and to a structured-math-ops version of G2 that sidesteps the expression-language pitfall.
+
+### G1 — `when:` aggregate equality predicates
+
+Predicate vocabulary (all string-equality, no comparators):
+
+- `anyScriptInfo`, `allScriptInfo`, `noneScriptInfo`, `notAllScriptInfo` — match against `[Script Info]` keys.
+- `anyStyle`, `allStyle`, `noneStyle` — match against `[V4+ Styles]` rows (each row treated as a key→value map).
+
+Schema sketch (additive, opt-in, all rule types):
+
+```yaml
+- type: setScriptInfo
+  key: "YCbCr Matrix"
+  value: TV.709
+  when:
+    anyScriptInfo:
+      "YCbCr Matrix": TV.601
+    notAllScriptInfo:
+      PlayResX: "640"
+      PlayResY: "480"
+```
+
+### G2 — structured math ops (NOT `${expr}`)
+
+Closes the computed-values gap without an expression parser. A field's value can be `computeFrom: { property, scope, ops: [...] }`:
+
+```yaml
+- type: setStyleFields
+  fields:
+    MarginV:
+      computeFrom:
+        property: PlayResY
+        scope: scriptInfo       # scriptInfo | style
+        ops:
+          - divide: 1080
+          - multiply: 90
+          - round
+```
+
+Op vocabulary:
+
+- Numeric-operand ops: `divide: N`, `multiply: N`, `add: N`, `subtract: N`, `min: N`, `max: N`.
+- Bare-string no-arg ops: `"round"`, `"floor"`, `"ceil"`.
+- Order-preserving array. Ops apply left-to-right to a numeric accumulator initialized from the metadata `property`.
+- **Out of scope**: cross-property composition (e.g. `multiply: { fromProperty: PlayResX }`). Not in this iteration; can be added later if needed.
+
+This handles the existing `marginV = round(PlayResY / 1080 * 90)` and `marginLR = round(200 / 1920 * PlayResX)` heuristics declaratively.
+
+### G3 — `setStyleFields.applyIf` with comparators
+
+```yaml
+- type: setStyleFields
+  fields:
+    MarginL: "200"
+    MarginR: "200"
+  applyIf:
+    anyStyleMatches:
+      MarginL: { lt: 50 }
+      # OR: MarginL: { eq: 0 }
+      # OR: MarginL: { gt: 1000 }
+```
+
+Comparator vocabulary: `lt`, `gt`, `eq`, `lte`, `gte`. Per-field; numeric coercion of the style value happens before comparison. This is the only place comparators live in the DSL — `when:` (G1) stays equality-only.
+
+### Implementation order
+
+Suggested for the W26b worker:
+
+1. G1 first (smallest schema surface, used by G4/G5 case automatically).
+2. G3 next (style comparator predicate).
+3. G2 last (structured math ops — needs an executor walk in the rule applier).
+
+Each step: schema (Zod) → applier extension → tests against the existing branches in `buildDefaultSubtitleModificationRules.test.ts` ported to YAML form. Existing TypeScript heuristic in `computeDefaultSubtitleRules` stays untouched; it now becomes one of two ways (scripted-TS or hand-authored-YAML) to express the same set of rules.
+
+### G2 NOT-in-scope decisions
+
+- No expression mini-language (`${round(playResY/1080*90)}`).
+- No cross-property composition in a single `computeFrom` (would need either `${expr}` or a much wider op vocabulary).
+- No conditional ops (`ifGt: 90`, etc.) — that's what G1's `when:` is for at the rule level.
+
+If a user needs something the structured DSL can't express, the answer remains the same as Road A's: write a TypeScript command alongside `computeDefaultSubtitleRules` and pipe its output via `{ linkedTo, output }`.
+
+---
+
 ## Recommendation: Road A
 
 Two paths forward:
