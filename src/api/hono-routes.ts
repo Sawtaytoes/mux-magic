@@ -10,6 +10,7 @@ import { logsRoutes } from "./routes/logRoutes.js"
 import { queryRoutes } from "./routes/queryRoutes.js"
 import { sequenceRoutes } from "./routes/sequenceRoutes.js"
 import { serverIdRoutes } from "./routes/serverIdRoutes.js"
+import { transcodeRoutes } from "./routes/transcodeRoutes.js"
 import { versionRoutes } from "./routes/versionRoutes.js"
 
 export const app = new OpenAPIHono()
@@ -24,6 +25,7 @@ app.route("/", queryRoutes)
 app.route("/", sequenceRoutes)
 app.route("/", fileRoutes)
 app.route("/", serverIdRoutes)
+app.route("/", transcodeRoutes)
 app.route("/", versionRoutes)
 
 addDocRoutes(app)
