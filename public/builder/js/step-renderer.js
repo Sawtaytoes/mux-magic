@@ -491,7 +491,7 @@ function renderStepOutputPicker(step, field, stepIndex, link) {
     <span class="text-xs text-slate-500 shrink-0">Link to:</span>
     <select onchange="setLink('${step.id}','${field.name}',this.value)"
       class="text-xs bg-slate-700 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 max-w-[280px] truncate">
-      <option value=""${!isLinked ? ' selected' : ''}>— manual —</option>
+      <option value=""${!isLinked ? ' selected' : ''}>— custom —</option>
       ${options}
     </select>
   </div>`
@@ -501,7 +501,7 @@ function renderStepOutputPicker(step, field, stepIndex, link) {
 
 function describeLinkTarget(step, fieldName) {
   const link = step.links?.[fieldName]
-  if (!link) return { label: '— manual —' }
+  if (!link) return { label: '— custom —' }
   if (typeof link === 'string') {
     const pathVar = paths.find((candidate) => candidate.id === link)
     if (!pathVar) return { label: '(missing path)' }
@@ -517,7 +517,7 @@ function describeLinkTarget(step, fieldName) {
       sourceStepId: sourceLocation.step.id,
     }
   }
-  return { label: '— manual —' }
+  return { label: '— custom —' }
 }
 
 function renderPathField(step, field, stepIndex) {
@@ -547,8 +547,8 @@ function renderPathField(step, field, stepIndex) {
     <input type="text" value="${esc(computed ?? val)}" ${(link && typeof link === 'object' && link.linkedTo) ? 'readonly' : ''}
       data-step="${step.id}" data-field="${field.name}"
       class="${computed !== null ? 'linked-input' : 'manual-input'} w-full bg-slate-${computed !== null ? '900' : '700'} text-slate-${computed !== null ? '400' : '200'} text-xs rounded px-2 py-1.5 border border-slate-${computed !== null ? '700' : '600'} focus:outline-none focus:border-blue-500 font-mono"
-      oninput="onPathFieldInput(this,'${step.id}','${field.name}',this.value)" onkeydown="pathPickerKeydown(event)" onchange="promotePathToPathVar('${step.id}','${field.name}',this.value)" />
-    ${computed !== null && (link && typeof link === 'object' && link.linkedTo) ? `<input type="text" value="${esc(val)}" data-step="${step.id}" data-field="${field.name}" class="manual-input hidden w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" oninput="onPathFieldInput(this,'${step.id}','${field.name}',this.value)" onkeydown="pathPickerKeydown(event)" onchange="promotePathToPathVar('${step.id}','${field.name}',this.value)" />` : ''}
+      oninput="onPathFieldInput(this,'${step.id}','${field.name}',this.value)" onkeydown="pathPickerKeydown(event)" onfocus="onPathFieldFocus(this,'${step.id}','${field.name}',this.value)" onblur="onPathFieldBlur(this,'${step.id}','${field.name}',this.value)" onchange="promotePathToPathVar('${step.id}','${field.name}',this.value)" />
+    ${computed !== null && (link && typeof link === 'object' && link.linkedTo) ? `<input type="text" value="${esc(val)}" data-step="${step.id}" data-field="${field.name}" class="manual-input hidden w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" oninput="onPathFieldInput(this,'${step.id}','${field.name}',this.value)" onkeydown="pathPickerKeydown(event)" onfocus="onPathFieldFocus(this,'${step.id}','${field.name}',this.value)" onblur="onPathFieldBlur(this,'${step.id}','${field.name}',this.value)" onchange="promotePathToPathVar('${step.id}','${field.name}',this.value)" />` : ''}
   </div>`
 }
 

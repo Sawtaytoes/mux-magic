@@ -240,7 +240,7 @@ function makePathBreakable(text) {
 
 function describeLinkTarget(step, fieldName) {
   const link = step.links?.[fieldName]
-  if (!link) return { label: '— manual —' }
+  if (!link) return { label: '— custom —' }
   if (typeof link === 'string') {
     const pathVar = paths.find((candidate) => candidate.id === link)
     if (!pathVar) return { label: '(missing path)' }
@@ -254,14 +254,14 @@ function describeLinkTarget(step, fieldName) {
       sourceStepId: sourceLocation.step.id,
     }
   }
-  return { label: '— manual —' }
+  return { label: '— custom —' }
 }
 
 function buildLinkPickerItems(stepId, fieldName) {
   const flatOrder = flattenSteps()
   const currentIndex = flatOrder.findIndex((entry) => entry.step.id === stepId)
   if (currentIndex < 0) return []
-  // No '— manual —' item: closing the picker and typing in the path
+  // No '— custom —' item: closing the picker and typing in the path
   // input itself is now the way to enter a new path. The footer hint in
   // the popover (index.html) tells the user this. The path-input handler
   // (onPathFieldInput) clears any existing link on first keystroke and
@@ -354,6 +354,32 @@ export const linkPicker = createPopoverPicker({
 // ─── Path typeahead (filesystem autocomplete) ─────────────────────────────────
 
 let pathPickerState = null
+
+// Re-open the path picker on focus/click of an input that already
+// has a value. Without this, after blur the picker is closed and
+// clicking back into the field shows nothing — the user has to type
+// a character to wake it up. Now: focus → if there's a value, kick
+// the lookup again so the dropdown reappears for the same path.
+export function onPathFieldFocus(inputElement, stepId, fieldName, value) {
+  if (!value) {
+    return
+  }
+  schedulePathLookup(inputElement, { mode: 'step', stepId, fieldName }, value)
+}
+
+// Trim trailing path separator on blur. Typing through the picker
+// leaves a trailing `\` or `/` so the next segment can be typed —
+// once the user moves on, the trailing separator is just visual
+// clutter (and would confuse downstream consumers expecting a clean
+// path). Updates both the input value and the underlying step param.
+export function onPathFieldBlur(inputElement, stepId, fieldName, value) {
+  const trimmed = (value ?? '').replace(/[\\/]+$/, '')
+  if (trimmed === value) {
+    return
+  }
+  inputElement.value = trimmed
+  setParam(stepId, fieldName, trimmed || undefined)
+}
 
 export function onPathFieldInput(inputElement, stepId, fieldName, value) {
   // If the field is currently linked to a path variable (string link),
@@ -484,8 +510,12 @@ function renderPathPickerList() {
   }
   list.innerHTML = matches.map((entry, index) => {
     const active = index === pathPickerState.activeIndex
+    // tabindex="-1" so the input's keydown handler's preventDefault
+    // on Tab actually keeps focus on the input — without this, Tab
+    // would focus the first button in the dropdown (default
+    // tabindex=0 on <button>) and the user would lose the input.
     return `<button onmousedown="event.preventDefault()" onclick="pathPickerSelectByIndex(${index})"
-      data-path-idx="${index}"
+      data-path-idx="${index}" tabindex="-1"
       class="w-full text-left px-3 py-1 flex items-center gap-2 ${active ? 'bg-blue-700 text-white' : 'text-slate-200 hover:bg-slate-800'}">
       <span class="shrink-0 text-slate-400">📁</span>
       <span class="font-mono text-xs flex-1 min-w-0 truncate">${esc(entry.name)}</span>

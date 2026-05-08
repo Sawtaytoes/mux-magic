@@ -98,6 +98,8 @@ import {
   commandPicker,
   enumPicker,
   linkPicker,
+  onPathFieldBlur,
+  onPathFieldFocus,
   onPathFieldInput,
   pathPickerKeydown,
   pathPickerSelectByIndex,
@@ -284,6 +286,10 @@ window.setLink = setLink
 window.changeCommand = changeCommand
 
 // path / pickers
+Object.assign(window, {
+  onPathFieldBlur,
+  onPathFieldFocus,
+})
 window.onPathFieldInput = onPathFieldInput
 window.pathPickerKeydown = pathPickerKeydown
 window.pathPickerSelectByIndex = pathPickerSelectByIndex
