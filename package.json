@@ -59,6 +59,7 @@
     "@yarnpkg/sdks": "^3.2.3",
     "cpx2": "^8.0.2",
     "esbuild": "^0.28.0",
+    "msw": "^2.14.4",
     "openapi-typescript": "^7.13.0",
     "rimraf": "^6.1.3",
     "tsx": "^4.21.0",
@@ -67,5 +68,10 @@
   },
   "resolutions": {
     "mal-scraper@^2.13.1": "patch:mal-scraper@npm%3A2.13.1#./.yarn/patches/mal-scraper-npm-2.13.1-8a68a57707.patch"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }
