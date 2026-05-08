@@ -12,6 +12,7 @@
     "e2e:ui": "playwright test --ui",
     "generate-schemas": "tsx --env-file ./.env src/generateSchemas.ts",
     "install-playwright-browser": "yarn dlx playwright install chromium",
+    "screenshots": "tsx scripts/screenshots.ts",
     "media": "tsx --env-file ./.env src/cli.ts",
     "preapi-dev-server": "yarn build-version",
     "preapi-server": "yarn build-version",
