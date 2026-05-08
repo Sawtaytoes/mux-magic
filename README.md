@@ -219,6 +219,21 @@ All commands are started with `POST`. The body is JSON. `sourcePath` is required
 
 > **Not yet available via API:** `copyOutSubtitles`, `getAudioOffsets`, `inverseTelecineDiscRips`, `mergeOrderedChapters`.
 
+#### Browser-safe audio playback (Builder file-explorer modal)
+
+The Builder's file-explorer modal includes a `<video>` preview that plays files directly via `GET /files/stream`. For most rips the audio decodes fine, but disc rips often carry codecs no browser can decode (DTS, TrueHD, MLP, AC-3 outside of Edge, EAC-3 outside of Apple devices). To avoid silent video, the modal probes the source's audio codec via `GET /files/audio-codec?path=…` and, when needed, automatically swaps `<video>.src` to `GET /transcode/audio?path=…&codec=opus`. That endpoint re-encodes only the audio (video stream is `-c:v copy`, so no GPU is involved) and serves the result as Opus-in-WebM with HTTP Range support.
+
+**The transcode endpoint requires media to be mounted at `/media` inside the server container.** The path-safety check is hardcoded — paths outside `/media` return 403. Mount the volume in your Docker Compose / run command, e.g.:
+
+```yaml
+volumes:
+  - /your/host/media-library:/media:ro
+```
+
+If the volume isn't mounted (or the file lives elsewhere), the modal falls back to the direct `/files/stream` path; you'll see video without audio for unsupported-codec sources, and the **Open in external app** fallback (VLC etc.) is always available as a last resort.
+
+The transcode cache lives under `os.tmpdir()/media-tools-transcode-cache/` and is bounded at 4 GB by default — override via `TRANSCODE_CACHE_MAX_BYTES`. Concurrent encodes are gated at 4 by default — override via `MAX_TRANSCODE_CONCURRENCY`. Same-source-and-params requests coalesce onto one in-flight encode automatically.
+
 #### Example: start a job and stream its logs
 
 ```sh
