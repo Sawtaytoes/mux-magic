@@ -4,6 +4,26 @@ A Node.js toolkit for batch media file operations: MKV track manipulation, file 
 
 ---
 
+## Screenshots
+
+### Jobs UI
+
+The Jobs page gives a live view of every running and completed job. It polls the server over SSE, so status badges and log lines update without a page refresh.
+
+![Jobs UI showing running, completed, and failed jobs](docs/images/jobs.png)
+
+### Sequence Builder
+
+The Sequence Builder lets you compose multi-step pipelines visually. Each step card has a command picker, inline path typeahead, and step-output linking. The **View YAML** button shows the sequence document you can POST directly to `/sequences/run`.
+
+![Sequence Builder with a two-step pipeline](docs/images/builder.png)
+
+![Sequence Builder YAML modal](docs/images/builder-yaml.png)
+
+> **Regenerating screenshots.** Start the server (`yarn api-server`) then run `yarn screenshots`. This launches headless Chromium with `?mock=1` (MSW fake-data mode — no real files needed) and writes PNGs to `docs/images/`. Playwright Chromium must be installed first (`yarn install-playwright-browser`).
+
+---
+
 ## Prerequisites
 
 - **Node.js** 22+
