@@ -2,38 +2,51 @@
 
 > Live status board for the multi-worker effort. Orchestrator (this Claude session) owns this file. Workers do **not** modify it.
 >
-> **GITEA_TOKEN is now configured** in `D:\Projects\Personal\media-sync\.env` (scope: repository RW, user R). Media-sync workers can now auto-open Gitea PRs via API instead of returning compare URLs.
+> **GITEA_TOKEN is now configured** in `D:\Projects\Personal\media-sync\.env`. Media-sync workers auto-open Gitea PRs via API.
+>
+> **Auto-merge mode is on.** When a PR opens with passing tests + clean AGENTS.md self-check, orchestrator merges immediately. User reviews by pulling master + testing. (See `feedback_auto_merge.md` memory.)
 
 States: `briefed → running → pushed → pr-open → awaiting-decision → ready-for-merge → merged | closed`
 
-## What's left for the user
+## ⚠️ Tomorrow's list (user's words)
 
-### Pending decisions (no PR action — your call)
+1. **Fix special features naming freezing the server.** (Details in the next subsection.)
+2. **Allowing renaming unnamed files via selects when everything is over.** Currently after a `nameSpecialFeatures` run, files in the "Files not renamed" summary get the W7b interactive renamer with autocomplete, but user wants a *selects-driven* (dropdown) flow when the run completes — pick from the candidate list instead of typing. Likely lives in the post-run summary card; check `public/builder/js/components/specials-mapping-modal.js` (W8b just added the smart-suggestion modal — extend or sister-component this).
 
-| ID | Question | Notes |
-|----|----------|-------|
-| **W26b** | **Decided 2026-05-08:** G1 (`when:` equality predicates with `matches`/`excludes` and named-predicate `$ref`) + G2 (structured math ops, no `${expr}`) + G3 (`setStyleFields.applyIf` with `lt/gt/eq` comparators). G4/G5 fall out of G1. **PLUS:** drop `computeDefaultSubtitleRules` as a separate command and add `hasDefaultRules: boolean` toggle on `modifySubtitleMetadata` (defaults run before user rules). Design record: [subtitle-coverage.md](dsl/subtitle-coverage.md) (rationale) + [subtitle-rules.md](dsl/subtitle-rules.md) (authoring reference). **Ready to spawn worker.** | — |
+### nameSpecialFeatures per-file matcher hang — STILL BROKEN
 
-### Open PRs awaiting your review/merge
+Per-file matcher (the "International Short Trailer without Narration" prompt from `getSpecialFeatureFromTimecode.ts:402`) hangs after first user click. Was fixed once during this session; regressed.
 
-_None — all 6 session PRs merged ✅_
+**State left for tomorrow:**
+- `5075391` — temporarily disabled `getUserSearchInput`'s teardown function (added in `8a7749b`) on hypothesis that it fires prematurely during pipe traversal. Need to test whether disabling fixes the hang.
+- `de18d83` — diagnostic logs in `promptStore.resolvePrompt` (HIT/MISS) and `cancelPrompt` (loud error if it removes a still-pending entry). Pull master, restart server, click a prompt, paste output to verify which path fires.
 
-### Held — auto-spawn on dependency
+**If teardown disable fixes it:** restore conditionally — distinguish "natural complete" (no cleanup; resolvePrompt already deleted) from "external unsubscribe" (do cleanup). Or accept the small bounded leak.
 
-- **W8b** — specials checkbox-list smart-suggestion (Option C UX, extend `possibleNames` to `{ name, timecode? }[]`). Spawns once W7b (#51) merges — both touch `nameSpecialFeatures.ts` and W8b changes the `possibleNames` shape.
+**If teardown disable doesn't fix it:** diagnostic logs will tell us where. MISS = click reached server but promptId unknown. HIT but still hangs = bug downstream of resolvePrompt (in `getSpecialFeatureFromTimecode`'s second mergeMap or further).
 
-### Queued for future cleanup work (after main queue clears)
+**Why no unit tests caught this:** the bug is in the *integration* of multiple async pieces — Observable factory teardown timing, async promise resolution, Map state in promptStore, mergeMap-of-mergeMap composition. Each piece works in isolation. No existing test subscribes to `getUserSearchInput`, calls `resolvePrompt`, and asserts the chain completes. **Building such a test should be a follow-up** — it'd catch this exact regression class.
 
-These came from the user's notes file (`g:\Anime\media-tools-tasks.md`) and follow-ups in this session; not blocking, but tracked here so they don't get lost.
+### Outstanding follow-ups from this session
 
-- **W-tooltips** — Card setting tooltips / docs modal. Hovering a setting in each step card shows a tooltip explaining what it does (or click-to-open a docs modal explaining everything). Applies to **both** media-tools and media-sync builders/jobs UIs.
-- **W-fp-cleanup** — Functional-style cleanup of legacy `var` / `let`-mutation / `for`-loop patterns in `public/**/*.js` across **both** media-tools AND media-sync. AGENTS.md guardrails (added in `44cf3b5`, expanded with `is`/`has` rule in this session) prevent NEW violations; this is the bulk cleanup of the existing pre-guardrail code. Behavior-preserving refactor only; rely on existing test suites + manual smoke for verification.
-- **W-dsl-ui** — Builder UI for the subtitle-rules DSL. Currently `modifySubtitleMetadata.rules` is a raw JSON textarea; this worker builds form controls for: rules list (sortable, type-discriminated), per-rule field editors, `when:` / `applyIf` predicate builders, `computeFrom` op-list builder, named-predicates manager, AND a `readonly` (NOT `disabled`) display of computed default rules above the user rules when `hasDefaultRules: true`. **Spawn after W26b ships** (the schema needs to be locked first). See [docs/dsl/subtitle-rules.md §Builder UI requirements](dsl/subtitle-rules.md).
-- **W-mediasync-dsl-migration** — In media-sync, replace usages of the about-to-be-dropped `computeDefaultSubtitleRules` command with `modifySubtitleMetadata` calls that have `hasDefaultRules: true`. **Must ship right after W26b's media-tools side merges and deploys**, otherwise media-sync's sequence YAMLs break against the live media-tools API. Concrete files (from grep):
-  - `packages/sync-anime-and-manga/src/processAnimeSubtitles.ts` — actual sequence definition (line ~142 has the step). Drop the `computeDefaultSubtitleRules` step entirely; pass `hasDefaultRules: true` on the `modifySubtitleMetadata` step that consumed its `rules` output.
-  - `packages/sync-anime-and-manga/src/mediaToolsApi.test.ts` — test fixtures (lines 91/98) reference the command name; update to whatever step replaces it.
-  - `packages/sync-anime-and-manga/src/mediaToolsApi.ts` — docstring example at line ~703 mentions it.
-  - `packages/sync-anime-and-manga/src/schema.generated/mediaToolsApiSchema.ts` — auto-generated; will refresh from media-tools' OpenAPI spec once W26b deploys.
+- **W-fp-cleanup-ms** — sister cleanup pass for media-sync's `packages/web-server/public/jobs/script.js` and friends. Mirror of the merged W-fp-cleanup-mt PR #56 pattern. Spawn when ready.
+- **W-tooltips for media-sync** — W-tooltips (PR #55) shipped media-tools only. Sister pass for media-sync's jobs UI.
+
+## Decisions captured this session
+
+| ID | Decision | Status |
+|----|----------|--------|
+| W22b | `/transcode/audio` endpoint with Opus/WebM auto-swap; auto-detect via `MediaSource.isTypeSupported()`; drop subs entirely; hardcoded `/media` originally, **later relaxed to `validateReadablePath`** (Docker + Windows compatibility). Range strategy: Option B (transcode-to-temp). | **Merged via PR #52.** Subsequent fixes: `ffmpeg ENOENT` in Docker (`ee82554`); Windows ffmpeg path absolute (`4260a62`). |
+| W7b (incl. N2) | Single PR for all three Phase B pieces + N2 modal fold-in (multi-select prompt with ▶ Play). | **Merged via PR #51.** |
+| W8b | Extend `possibleNames` to `{ name, timecode? }[]`. Smart-suggestion-first modal (Option C). | **Merged via PR #53.** |
+| W24b | media-sync HA webhook reporter; two URLs (`WEBHOOK_ERRORS_PRESENT_URL` + `WEBHOOK_ERRORS_CLEARED_URL`); fire `errors_cleared` from `dismissError` when pending count drops to 0; truly silent when unset; POST + JSON. | **Merged via Gitea PR #7.** |
+| W25 | Per-source + total duration in jobs UI; live ticker + final time. | **Merged via Gitea PR #11.** |
+| W26b | DSL extension: G1 (`when:` predicates with `matches`/`excludes` + `$ref`) + G2 (structured `computeFrom` math ops, no `${expr}`) + G3 (`applyIf` `lt/gt/eq` comparators). Drop `computeDefaultSubtitleRules` command; add `hasDefaultRules: boolean` toggle on `modifySubtitleMetadata`. See [subtitle-rules.md](dsl/subtitle-rules.md). | **Merged via PR #54.** Sister media-sync migration **merged via Gitea PR #12**. |
+| W-tooltips (media-tools) | Per-field tooltips + per-card help modal sourced from Zod `.describe()` text via build-time extractor. | **Merged via PR #55.** |
+| W-fp-cleanup-mt | Functional-style cleanup of `public/builder/js/**/*.js`. 15 files cleaned; some legacy state machines left intact (file-explorer-modal). | **Merged via PR #56.** |
+| W-dsl-ui | Structured form-builder for the subtitle-rules DSL — replaces JSON textarea. Predicates manager, rule-type cards, `when:`/`applyIf`/`computeFrom` builders, `hasDefaultRules` toggle with readonly default-rules preview. Drag-to-reorder punted; rule rows use up/down arrows + insert-strips. | **Merged via PR #57.** Tweak applied in `<this-commit>`: stripped `linkable: true` from the `rules` field since the only command that emitted a `rules` output (`computeDefaultSubtitleRules`) was dropped in W26b. |
+| AGENTS.md guardrails | Top-of-file "applies to ALL source files" block + pre-PR grep self-check. Six rules: no `for`/`while`, `const`-only no `var`/`let`-mutation, spelled-out names, `is`/`has` boolean prefix, single-object args for 2+ params, brace all `if`/`else`/`for`/`while`. | **Shipped in `44cf3b5`. Validated** by every subsequent worker including W26b's "AGENTS rules 3 + 6" sweep commit. |
+| Auto-merge mode | User delegated PR merge authority. When tests + AGENTS.md self-check pass, orchestrator merges immediately. | Saved to memory `feedback_auto_merge.md`. |
 
 ## Decisions captured this session
 

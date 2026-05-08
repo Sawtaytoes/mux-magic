@@ -238,10 +238,12 @@ export const COMMANDS = {
       // `subtitleRules` is the structured form-builder for the
       // modifySubtitleMetadata DSL — see
       // public/builder/js/components/dsl-rules-builder.js. It renders
-      // its own dispatcher in renderFields. `linkable: true` keeps the
-      // "Link to step output" picker for the rules array (e.g. wire to
-      // an upstream computeDefaultSubtitleRules step's `rules` output).
-      { name: "rules", type: "subtitleRules", label: "Rules", required: false, linkable: true },
+      // its own dispatcher in renderFields. NOT `linkable` — the only
+      // command that emitted a `rules` output (computeDefaultSubtitleRules)
+      // was dropped in W26b in favor of the `hasDefaultRules` toggle, so
+      // there's nothing upstream to wire into. Strip the link picker
+      // until/unless a new rules-emitting command appears.
+      { name: "rules", type: "subtitleRules", label: "Rules", required: false },
     ]
   },
   // Analysis
