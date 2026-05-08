@@ -36,6 +36,13 @@ States: `briefed → running → pushed → pr-open → awaiting-decision → re
 
 - **W8b** — specials checkbox-list smart-suggestion (Option C UX, extend `possibleNames` to `{ name, timecode? }[]`). Spawns once W7b (#51) merges — both touch `nameSpecialFeatures.ts` and W8b changes the `possibleNames` shape.
 
+### Queued for future cleanup work (after main queue clears)
+
+These came from the user's notes file (`g:\Anime\media-tools-tasks.md`); not blocking, but tracked here so they don't get lost.
+
+- **W-tooltips** — Card setting tooltips / docs modal. Hovering a setting in each step card shows a tooltip explaining what it does (or click-to-open a docs modal explaining everything). Applies to **both** media-tools and media-sync builders/jobs UIs.
+- **W-fp-cleanup** — Functional-style cleanup of legacy `var` / `let`-mutation / `for`-loop patterns in `public/**/*.js` across **both** media-tools AND media-sync. AGENTS.md guardrails (added in `44cf3b5`) prevent NEW violations; this is the bulk cleanup of the existing pre-guardrail code. Behavior-preserving refactor only; rely on existing test suites + manual smoke for verification.
+
 ## Decisions captured this session
 
 | ID | Decision | Status |
