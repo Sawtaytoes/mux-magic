@@ -25,13 +25,13 @@ function findVisibleModalId() {
 // but tests may exercise it across cases that share the same document.
 // Without the flag, a second call piles a second listener on the
 // document and Esc starts firing twice.
-let isAttached = false
+const attachState = { isAttached: false }
 
 export function attachModalEscapeListener() {
-  if (isAttached) {
+  if (attachState.isAttached) {
     return
   }
-  isAttached = true
+  attachState.isAttached = true
   // capture:true fires before any focused element (e.g. a <video> seek bar or
   // native form control) gets a chance to absorb the event in the bubbling
   // phase. Without it, clicking a native-controls seek bar moves focus into

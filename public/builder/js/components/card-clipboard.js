@@ -32,15 +32,14 @@ const bridge = () => window.mediaTools
 // ignored. Returns a Set so the caller can dedupe across a group.
 function collectPathIdsUsed(item) {
   const stepsToWalk = isGroup(item) ? item.steps : [item]
-  const pathIds = new Set()
-  for (const step of stepsToWalk) {
-    for (const linkValue of Object.values(step.links ?? {})) {
+  return stepsToWalk.reduce((pathIds, step) => {
+    Object.values(step.links ?? {}).forEach((linkValue) => {
       if (typeof linkValue === 'string') {
         pathIds.add(linkValue)
       }
-    }
-  }
-  return pathIds
+    })
+    return pathIds
+  }, new Set())
 }
 
 // Serialize a single step or group to the canonical
@@ -51,12 +50,11 @@ function collectPathIdsUsed(item) {
 // every unrelated path along.
 export function cardToYamlStr(item) {
   const usedPathIds = collectPathIdsUsed(item)
-  const pathsObj = {}
-  for (const pathVar of getPaths()) {
-    if (usedPathIds.has(pathVar.id)) {
-      pathsObj[pathVar.id] = { label: pathVar.label, value: pathVar.value }
-    }
-  }
+  const pathsObj = Object.fromEntries(
+    getPaths()
+    .filter((pathVar) => usedPathIds.has(pathVar.id))
+    .map((pathVar) => [pathVar.id, { label: pathVar.label, value: pathVar.value }])
+  )
   const itemYaml = isGroup(item) ? groupToYaml(item) : stepToYaml(item)
   return window.jsyaml.dump(
     { paths: pathsObj, steps: [itemYaml] },
@@ -77,17 +75,18 @@ function flashCopySuccess(buttonElement) {
 }
 
 function findStepItem(stepId) {
-  for (const item of getSteps()) {
+  return getSteps().reduce((found, item) => {
+    if (found) {
+      return found
+    }
     if (isGroup(item)) {
-      const innerStep = item.steps.find((step) => step.id === stepId)
-      if (innerStep) {
-        return innerStep
-      }
-    } else if (item.id === stepId) {
+      return item.steps.find((step) => step.id === stepId) ?? null
+    }
+    if (item.id === stepId) {
       return item
     }
-  }
-  return null
+    return null
+  }, null)
 }
 
 function findGroupItem(groupId) {
@@ -158,16 +157,16 @@ function allocateGroupId() {
 // the existing whole-sequence loader: dangling refs surface at
 // run/resolve time, not at load time.
 function remapInternalLinks(pastedSteps, oldToNewStepId) {
-  for (const step of pastedSteps) {
-    for (const [field, source] of Object.entries(step.links ?? {})) {
+  pastedSteps.forEach((step) => {
+    Object.entries(step.links ?? {}).forEach(([field, source]) => {
       if (source && typeof source === 'object' && typeof source.linkedTo === 'string') {
         const newId = oldToNewStepId.get(source.linkedTo)
         if (newId) {
           step.links[field] = { linkedTo: newId, output: source.output }
         }
       }
-    }
-  }
+    })
+  })
 }
 
 // Hydrate one pasted top-level item, give it (and any inner steps) a
@@ -177,11 +176,11 @@ function hydratePastedItem(rawItem, COMMANDS) {
   const oldToNewStepId = new Map()
   if (isGroupItem(rawItem)) {
     const group = loadGroupItem(rawItem, COMMANDS)
-    for (const innerStep of group.steps) {
+    group.steps.forEach((innerStep) => {
       const oldId = innerStep.id
       innerStep.id = allocateStepId()
       oldToNewStepId.set(oldId, innerStep.id)
-    }
+    })
     group.id = allocateGroupId()
     remapInternalLinks(group.steps, oldToNewStepId)
     return { item: group, firstStepId: group.steps[0]?.id ?? null }
@@ -203,16 +202,16 @@ function mergePastedPaths(pastedPaths) {
     return
   }
   const paths = getPaths()
-  for (const [pathId, pathVar] of Object.entries(pastedPaths)) {
+  Object.entries(pastedPaths).forEach(([pathId, pathVar]) => {
     if (paths.find((existing) => existing.id === pathId)) {
-      continue
+      return
     }
     paths.push({
       id: pathId,
       label: pathVar?.label || pathId,
       value: pathVar?.value || '',
     })
-  }
+  })
 }
 
 // Paste handler invoked by the per-divider button. Reads the clipboard,
@@ -223,18 +222,9 @@ function mergePastedPaths(pastedPaths) {
 // `indexInParent`. Otherwise ⇒ insert into the top-level `steps`
 // array at `itemIndex`. Pasting a `kind: group` payload into a group
 // is rejected (matches the existing no-nesting rule).
-export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInParent = null } = {}, anchorElement = null) {
-  const showError = (message, options) => showClipboardToast(message, { severity: 'error', ...options })
-  if (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function') {
-    showError(
-      'Your browser does not expose clipboard read here. Try a Chromium- or Firefox-based browser on a secure (https / localhost) page.',
-      { durationMs: 12000 },
-    )
-    return
-  }
-  let text
+async function readClipboardText(showError) {
   try {
-    text = await navigator.clipboard.readText()
+    return await navigator.clipboard.readText()
   } catch (error) {
     // Chrome / Edge prompt for permission on first call. If the user
     // dismisses the prompt or has previously denied, the call rejects
@@ -245,27 +235,50 @@ export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInPare
         'Browser blocked clipboard access. Click the clipboard icon in the address bar (or open Site settings) and allow clipboard read for this page, then click Paste again.',
         { durationMs: 12000 },
       )
-      return
+      return null
     }
     showError('Could not read clipboard: ' + (error?.message || 'unknown error'), { durationMs: 8000 })
+    return null
+  }
+}
+
+export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInParent = null } = {}, anchorElement = null) {
+  const showError = (message, options) => showClipboardToast(message, { severity: 'error', ...options })
+  if (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function') {
+    showError(
+      'Your browser does not expose clipboard read here. Try a Chromium- or Firefox-based browser on a secure (https / localhost) page.',
+      { durationMs: 12000 },
+    )
+    return
+  }
+  const text = await readClipboardText(showError)
+  if (text === null) {
     return
   }
   if (!text || !text.trim()) {
     showError('Clipboard is empty.')
     return
   }
-  let parsed
-  try {
-    parsed = window.jsyaml.load(text)
-  } catch (error) {
-    showError('Could not parse clipboard YAML: ' + error.message)
+  const parsed = (() => {
+    try {
+      return window.jsyaml.load(text)
+    } catch (error) {
+      showError('Could not parse clipboard YAML: ' + error.message)
+      return undefined
+    }
+  })()
+  if (parsed === undefined) {
     return
   }
-  let normalized
-  try {
-    normalized = extractItemsAndPaths(parsed)
-  } catch (error) {
-    showError(error.message)
+  const normalized = (() => {
+    try {
+      return extractItemsAndPaths(parsed)
+    } catch (error) {
+      showError(error.message)
+      return null
+    }
+  })()
+  if (!normalized) {
     return
   }
   if (!normalized.items.length) {
@@ -283,11 +296,15 @@ export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInPare
   mergePastedPaths(normalized.paths)
 
   const COMMANDS = bridge().COMMANDS
-  let hydrated
-  try {
-    hydrated = normalized.items.map((rawItem) => hydratePastedItem(rawItem, COMMANDS))
-  } catch (error) {
-    showError(error.message)
+  const hydrated = (() => {
+    try {
+      return normalized.items.map((rawItem) => hydratePastedItem(rawItem, COMMANDS))
+    } catch (error) {
+      showError(error.message)
+      return null
+    }
+  })()
+  if (!hydrated) {
     return
   }
 
@@ -330,20 +347,20 @@ function showClipboardToast(message, { severity = 'error', durationMs = 6000 } =
     console.error('[card-clipboard] toast (' + severity + '): ' + message)
     return
   }
-  let toast = document.getElementById('clipboard-toast')
-  if (!toast) {
-    toast = document.createElement('div')
-    toast.id = 'clipboard-toast'
-    toast.setAttribute('role', 'status')
-    toast.setAttribute('aria-live', 'polite')
-    toast.style.position = 'fixed'
-    toast.style.top = '0.75rem'
-    toast.style.left = '50%'
-    toast.style.transform = 'translateX(-50%)'
-    toast.style.zIndex = '100'
-    toast.style.maxWidth = 'min(90vw, 36rem)'
-    document.body.appendChild(toast)
-  }
+  const toast = document.getElementById('clipboard-toast') ?? (() => {
+    const created = document.createElement('div')
+    created.id = 'clipboard-toast'
+    created.setAttribute('role', 'status')
+    created.setAttribute('aria-live', 'polite')
+    created.style.position = 'fixed'
+    created.style.top = '0.75rem'
+    created.style.left = '50%'
+    created.style.transform = 'translateX(-50%)'
+    created.style.zIndex = '100'
+    created.style.maxWidth = 'min(90vw, 36rem)'
+    document.body.appendChild(created)
+    return created
+  })()
   const colorClass = severity === 'error'
     ? 'bg-red-950/95 border-red-700 text-red-200'
     : 'bg-amber-950/95 border-amber-700 text-amber-200'

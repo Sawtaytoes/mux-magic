@@ -24,22 +24,22 @@ const bridge = () => window.mediaTools
 // The paste listener is scoped to the modal's open state. We attach
 // it on open, detach on close; a stray paste with no modal open is a
 // no-op.
-let isPasteListenerAttached = false
+const pasteListenerState = { isAttached: false }
 
 function attachPasteListener() {
-  if (isPasteListenerAttached) {
+  if (pasteListenerState.isAttached) {
     return
   }
   document.addEventListener('paste', onDocumentPaste)
-  isPasteListenerAttached = true
+  pasteListenerState.isAttached = true
 }
 
 function detachPasteListener() {
-  if (!isPasteListenerAttached) {
+  if (!pasteListenerState.isAttached) {
     return
   }
   document.removeEventListener('paste', onDocumentPaste)
-  isPasteListenerAttached = false
+  pasteListenerState.isAttached = false
 }
 
 function onDocumentPaste(event) {
@@ -98,21 +98,31 @@ export const isGroupItem = (item) => !!(item && typeof item === 'object' && item
 // applied to every top-level entry — extracted so it can be reused for
 // inner steps inside a group.
 export function loadStepItem(item, COMMANDS) {
-  if (!item.command) throw new Error('Each step must have a "command" key')
-  if (!COMMANDS[item.command]) throw new Error(`Unknown command: ${item.command}`)
+  if (!item.command) {
+    throw new Error('Each step must have a "command" key')
+  }
+  if (!COMMANDS[item.command]) {
+    throw new Error(`Unknown command: ${item.command}`)
+  }
   const step = bridge().makeStep(item.command)
   if (typeof item.id === 'string' && item.id) {
     step.id = item.id
     const match = /^step(\d+)$/.exec(item.id)
     if (match) {
       const restoredCount = Number(match[1])
-      if (restoredCount > getStepCounter()) setStepCounter(restoredCount)
+      if (restoredCount > getStepCounter()) {
+        setStepCounter(restoredCount)
+      }
     }
   }
-  if (typeof item.alias === 'string') step.alias = item.alias
-  if (item.isCollapsed === true) step.isCollapsed = true
-  const cmd = COMMANDS[item.command]
-  for (const field of cmd.fields) {
+  if (typeof item.alias === 'string') {
+    step.alias = item.alias
+  }
+  if (item.isCollapsed === true) {
+    step.isCollapsed = true
+  }
+  const commandDefinition = COMMANDS[item.command]
+  commandDefinition.fields.forEach((field) => {
     const value = item.params?.[field.name]
     if (value !== undefined) {
       if (typeof value === 'string' && value.startsWith('@')) {
@@ -142,20 +152,22 @@ export function loadStepItem(item, COMMANDS) {
     // Companion display-name field (purely visual)
     if (field.companionNameField) {
       const companionValue = item.params?.[field.companionNameField]
-      if (companionValue !== undefined) step.params[field.companionNameField] = companionValue
+      if (companionValue !== undefined) {
+        step.params[field.companionNameField] = companionValue
+      }
     }
-  }
+  })
   // persistedKeys mirror buildParams: restore auto-resolved values
   // (e.g. nameSpecialFeatures' tmdbId/tmdbName) so a shared seq URL
   // keeps pointing at the same matched film without re-firing the
   // resolution on load.
-  if (Array.isArray(cmd.persistedKeys)) {
-    for (const persistedKey of cmd.persistedKeys) {
+  if (Array.isArray(commandDefinition.persistedKeys)) {
+    commandDefinition.persistedKeys.forEach((persistedKey) => {
       const persistedValue = item.params?.[persistedKey]
       if (persistedValue !== undefined) {
         step.params[persistedKey] = persistedValue
       }
-    }
+    })
   }
   return step
 }
@@ -191,23 +203,26 @@ export function loadYamlFromText(text) {
   const data = window.jsyaml.load(text)
   const COMMANDS = bridge().COMMANDS
 
-  let stepsData
-  if (data && typeof data === 'object' && !Array.isArray(data) && data.steps !== undefined) {
-    if (data.paths && typeof data.paths === 'object') {
-      setPaths(Object.entries(data.paths).map(([id, pv]) => ({
-        id,
-        label: pv.label || id,
-        value: pv.value || '',
-      })))
+  const stepsData = (() => {
+    if (data && typeof data === 'object' && !Array.isArray(data) && data.steps !== undefined) {
+      if (data.paths && typeof data.paths === 'object') {
+        setPaths(Object.entries(data.paths).map(([id, pathVar]) => ({
+          id,
+          label: pathVar.label || id,
+          value: pathVar.value || '',
+        })))
+      }
+      if (!getPaths().length) {
+        bridge().initPaths()
+      }
+      return data.steps || []
     }
-    if (!getPaths().length) bridge().initPaths()
-    stepsData = data.steps || []
-  } else if (Array.isArray(data)) {
-    bridge().initPaths()
-    stepsData = data
-  } else {
+    if (Array.isArray(data)) {
+      bridge().initPaths()
+      return data
+    }
     throw new Error('Expected a YAML sequence or object with "steps" key')
-  }
+  })()
 
   // Reset the step counter for this load so we don't keep bumping it across
   // reloads. Each loaded step's explicit `id` (when present) is preserved

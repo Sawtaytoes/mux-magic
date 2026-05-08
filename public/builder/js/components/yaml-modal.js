@@ -50,10 +50,13 @@ export function topLevelHasContent(item) {
 
 export function toYamlStr() {
   const items = getSteps().filter(topLevelHasContent)
-  const hasContent = items.length || getPaths().some((p) => p.value)
-  if (!hasContent) return '# No steps yet'
-  const pathsObj = {}
-  for (const pv of getPaths()) pathsObj[pv.id] = { label: pv.label, value: pv.value }
+  const hasContent = items.length || getPaths().some((path) => path.value)
+  if (!hasContent) {
+    return '# No steps yet'
+  }
+  const pathsObj = Object.fromEntries(
+    getPaths().map((pathVar) => [pathVar.id, { label: pathVar.label, value: pathVar.value }])
+  )
   const data = {
     paths: pathsObj,
     // Each step ships its stable string ID so { linkedTo: stepN, output: ... }
@@ -74,6 +77,7 @@ export function updateYaml() {
     document.getElementById('yaml-out').textContent = toYamlStr()
   }
 }
+
 
 export function openYamlModal() {
   document.getElementById('yaml-out').textContent = toYamlStr()
@@ -97,19 +101,19 @@ export function closeYamlModal(event) {
 // user clicked from.
 export function copyYaml() {
   navigator.clipboard.writeText(toYamlStr()).then(() => {
-    const headerBtn = document.getElementById('copy-btn')
-    if (headerBtn) {
-      headerBtn.classList.add('!text-emerald-400', '!border-emerald-500')
+    const headerButton = document.getElementById('copy-btn')
+    if (headerButton) {
+      headerButton.classList.add('!text-emerald-400', '!border-emerald-500')
       setTimeout(() => {
-        headerBtn.classList.remove('!text-emerald-400', '!border-emerald-500')
+        headerButton.classList.remove('!text-emerald-400', '!border-emerald-500')
       }, 2000)
     }
-    const modalBtn = document.getElementById('modal-copy-btn')
-    if (modalBtn) {
-      const original = modalBtn.textContent
-      modalBtn.textContent = 'Copied!'
+    const modalButton = document.getElementById('modal-copy-btn')
+    if (modalButton) {
+      const original = modalButton.textContent
+      modalButton.textContent = 'Copied!'
       setTimeout(() => {
-        modalBtn.textContent = original
+        modalButton.textContent = original
       }, 2000)
     }
   })

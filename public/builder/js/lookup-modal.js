@@ -245,13 +245,17 @@ function renderSimpleSearchResults() {
 }
 
 function renderDvdCompareSearchResults() {
-  const groups = new Map()
-  for (const r of lookupState.results) {
-    if (lookupState.formatFilter !== 'all' && lookupState.formatFilter !== r.variant) continue
-    const key = `${r.baseTitle}|${r.year}`
-    if (!groups.has(key)) groups.set(key, { baseTitle: r.baseTitle, year: r.year, variants: [] })
-    groups.get(key).variants.push({ id: r.id, variant: r.variant })
-  }
+  const groups = lookupState.results.reduce((accumulator, result) => {
+    if (lookupState.formatFilter !== 'all' && lookupState.formatFilter !== result.variant) {
+      return accumulator
+    }
+    const key = `${result.baseTitle}|${result.year}`
+    if (!accumulator.has(key)) {
+      accumulator.set(key, { baseTitle: result.baseTitle, year: result.year, variants: [] })
+    }
+    accumulator.get(key).variants.push({ id: result.id, variant: result.variant })
+    return accumulator
+  }, new Map())
 
   if (groups.size === 0) {
     return '<p class="text-xs text-slate-500 text-center py-4">No results match the selected format.</p>'
@@ -568,34 +572,54 @@ export function clearTmdbResolution(step) {
 // ─── Kick (post-load catch-ups) ───────────────────────────────────────────────
 
 export function kickReverseLookups() {
-  for (const step of steps) {
-    if (!step.command) continue
-    const cmd = COMMANDS[step.command]
-    if (!cmd) continue
-    for (const field of cmd.fields) {
-      if (field.type !== 'numberWithLookup') continue
-      if (!field.companionNameField) continue
+  steps.forEach((step) => {
+    if (!step.command) {
+      return
+    }
+    const commandDefinition = COMMANDS[step.command]
+    if (!commandDefinition) {
+      return
+    }
+    commandDefinition.fields.forEach((field) => {
+      if (field.type !== 'numberWithLookup') {
+        return
+      }
+      if (!field.companionNameField) {
+        return
+      }
       const idValue = step.params[field.name]
       const numericId = Number(idValue)
-      if (!Number.isFinite(numericId) || numericId <= 0) continue
+      if (!Number.isFinite(numericId) || numericId <= 0) {
+        return
+      }
       const token = String(numericId)
       const key = `${step.id}-${field.name}`
       reverseLookupTokens.set(key, token)
       runReverseLookup(step.id, field.name, numericId, token)
-    }
-  }
+    })
+  })
 }
 
 export function kickTmdbResolutions() {
-  for (const step of steps) {
-    if (step.command !== 'nameSpecialFeatures') continue
-    if (step.params.tmdbId) continue
-    if (step.params.tmdbResolutionPending) continue
-    if (step.params.tmdbResolutionAttempted) continue
+  steps.forEach((step) => {
+    if (step.command !== 'nameSpecialFeatures') {
+      return
+    }
+    if (step.params.tmdbId) {
+      return
+    }
+    if (step.params.tmdbResolutionPending) {
+      return
+    }
+    if (step.params.tmdbResolutionAttempted) {
+      return
+    }
     const parsed = parseDvdCompareDisplayName(step.params.dvdCompareName)
-    if (!parsed?.baseTitle) continue
+    if (!parsed?.baseTitle) {
+      return
+    }
     resolveTmdbForStep(step.id, parsed.baseTitle, parsed.year)
-  }
+  })
 }
 
 // ─── Reverse lookup (typed ID → fetch display name) ───────────────────────────
@@ -720,38 +744,47 @@ async function runReverseLookup(stepId, fieldName, id, requestToken) {
   const field = cmd?.fields.find(f => f.name === fieldName)
   if (!field?.companionNameField) return
 
-  let endpoint, body
-  if (field.lookupType === 'mal') {
-    endpoint = '/queries/lookupMal'
-    body = { malId: id }
-  } else if (field.lookupType === 'anidb') {
-    endpoint = '/queries/lookupAnidb'
-    body = { anidbId: id }
-  } else if (field.lookupType === 'tvdb') {
-    endpoint = '/queries/lookupTvdb'
-    body = { tvdbId: id }
-  } else if (field.lookupType === 'tmdb') {
-    endpoint = '/queries/lookupMovieDb'
-    body = { movieDbId: id }
-  } else if (field.lookupType === 'dvdcompare') {
-    endpoint = '/queries/lookupDvdCompare'
-    body = { dvdCompareId: id }
-  } else if (fieldName === 'dvdCompareReleaseHash') {
-    if (!step.params.dvdCompareId) return
-    endpoint = '/queries/lookupDvdCompareRelease'
-    body = { dvdCompareId: step.params.dvdCompareId, hash: String(id) }
-  } else {
+  const request = (() => {
+    if (field.lookupType === 'mal') {
+      return { endpoint: '/queries/lookupMal', body: { malId: id } }
+    }
+    if (field.lookupType === 'anidb') {
+      return { endpoint: '/queries/lookupAnidb', body: { anidbId: id } }
+    }
+    if (field.lookupType === 'tvdb') {
+      return { endpoint: '/queries/lookupTvdb', body: { tvdbId: id } }
+    }
+    if (field.lookupType === 'tmdb') {
+      return { endpoint: '/queries/lookupMovieDb', body: { movieDbId: id } }
+    }
+    if (field.lookupType === 'dvdcompare') {
+      return { endpoint: '/queries/lookupDvdCompare', body: { dvdCompareId: id } }
+    }
+    if (fieldName === 'dvdCompareReleaseHash') {
+      if (!step.params.dvdCompareId) {
+        return null
+      }
+      return {
+        endpoint: '/queries/lookupDvdCompareRelease',
+        body: { dvdCompareId: step.params.dvdCompareId, hash: String(id) },
+      }
+    }
+    return null
+  })()
+  if (!request) {
     return
   }
 
   try {
-    const resp = await fetch(endpoint, {
+    const response = await fetch(request.endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(request.body),
     })
-    if (!resp.ok) return
-    const data = await resp.json()
+    if (!response.ok) {
+      return
+    }
+    const data = await response.json()
     const name = data.name ?? data.label
     if (!name) return
 

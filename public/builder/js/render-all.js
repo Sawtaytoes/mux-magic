@@ -12,10 +12,16 @@ const progressByStepId = new Map()
 
 export function mountStepCardProgress(stepId) {
   const card = document.getElementById(`step-${stepId}`)
-  if (!card) return
-  if (card.querySelector(':scope > [data-step-progress]')) return
+  if (!card) {
+    return
+  }
+  if (card.querySelector(':scope > [data-step-progress]')) {
+    return
+  }
   const header = card.firstElementChild
-  if (!header) return
+  if (!header) {
+    return
+  }
   const host = document.createElement('div')
   host.dataset.stepProgress = stepId
   host.className = 'px-3 py-2 border-b border-slate-700 bg-slate-800/40'
@@ -25,9 +31,13 @@ export function mountStepCardProgress(stepId) {
 
 export function paintStepCardProgress(stepId) {
   const card = document.getElementById(`step-${stepId}`)
-  if (!card) return
+  if (!card) {
+    return
+  }
   const host = card.querySelector('[data-step-progress]')
-  if (!host) return
+  if (!host) {
+    return
+  }
   window.ProgressUtils.paintProgressBar(host, progressByStepId.get(stepId))
 }
 
@@ -40,22 +50,18 @@ export function handleStepCardProgressEvent(stepId, event) {
 export function unmountStepCardProgress(stepId) {
   progressByStepId.delete(stepId)
   const card = document.getElementById(`step-${stepId}`)
-  if (!card) return
+  if (!card) {
+    return
+  }
   const host = card.querySelector('[data-step-progress]')
   host?.remove()
 }
 
-let lastRenderedStepIds = new Set()
+const lastRenderedStepIds = { current: new Set() }
 
-export function renderAll() {
-  initPaths()
-  const el = document.getElementById('steps-el')
-  const parts = []
-
-  paths.forEach((pv, i) => parts.push(window.mediaTools.renderPathVarCard(pv, i === 0)))
-
+function buildStepsHtmlParts() {
   if (!steps.length) {
-    parts.push(`<div class="flex flex-col items-center gap-2 mt-4">
+    return [`<div class="flex flex-col items-center gap-2 mt-4">
       <p class="text-slate-500 text-xs">No steps yet.</p>
       <div class="flex items-center gap-2">
         <button onclick="addPicked()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded font-medium">
@@ -66,56 +72,85 @@ export function renderAll() {
           📋 Paste
         </button>
       </div>
-    </div>`)
-  } else {
-    const drawerMode = isDrawerMode()
-    parts.push(renderInsertDivider(0))
-    let flatStepIndex = 0
-    steps.forEach((item, itemIndex) => {
-      if (isGroup(item)) {
-        parts.push(renderGroup(item, itemIndex, flatStepIndex))
-        flatStepIndex += item.steps.length
-      } else {
-        parts.push(
-          drawerMode
-            ? renderStepCompact(item, flatStepIndex)
-            : renderStep(item, flatStepIndex)
-        )
-        flatStepIndex += 1
-      }
-      parts.push(renderInsertDivider(itemIndex + 1))
-    })
-    parts.push(renderSequenceEndCard())
+    </div>`]
   }
+  const isDrawerModeOn = isDrawerMode()
+  const { parts: stepParts } = steps.reduce((accumulator, item, itemIndex) => {
+    if (isGroup(item)) {
+      accumulator.parts.push(renderGroup(item, itemIndex, accumulator.flatStepIndex))
+      accumulator.flatStepIndex += item.steps.length
+    } else {
+      accumulator.parts.push(
+        isDrawerModeOn
+          ? renderStepCompact(item, accumulator.flatStepIndex)
+          : renderStep(item, accumulator.flatStepIndex)
+      )
+      accumulator.flatStepIndex += 1
+    }
+    accumulator.parts.push(renderInsertDivider(itemIndex + 1))
+    return accumulator
+  }, { parts: [renderInsertDivider(0)], flatStepIndex: 0 })
+  stepParts.push(renderSequenceEndCard())
+  return stepParts
+}
 
-  const previousIds = lastRenderedStepIds
-  // Capture focus snapshot before innerHTML swap
-  const activeEl = document.activeElement
-  const focusSnapshot = (
-    activeEl
-    && activeEl.tagName === 'INPUT'
-    && activeEl.dataset?.step
-    && activeEl.dataset?.field
+function captureFocusSnapshot() {
+  const activeElement = document.activeElement
+  const isCapturable = (
+    activeElement
+    && activeElement.tagName === 'INPUT'
+    && activeElement.dataset?.step
+    && activeElement.dataset?.field
   )
-    ? {
-        step: activeEl.dataset.step,
-        field: activeEl.dataset.field,
-        selectionStart: (() => { try { return activeEl.selectionStart } catch { return null } })(),
-        selectionEnd: (() => { try { return activeEl.selectionEnd } catch { return null } })(),
-      }
-    : null
+  if (!isCapturable) {
+    return null
+  }
+  const safeSelectionStart = (() => {
+    try {
+      return activeElement.selectionStart
+    } catch {
+      return null
+    }
+  })()
+  const safeSelectionEnd = (() => {
+    try {
+      return activeElement.selectionEnd
+    } catch {
+      return null
+    }
+  })()
+  return {
+    step: activeElement.dataset.step,
+    field: activeElement.dataset.field,
+    selectionStart: safeSelectionStart,
+    selectionEnd: safeSelectionEnd,
+  }
+}
 
-  el.innerHTML = parts.join('')
+export function renderAll() {
+  initPaths()
+  const stepsContainer = document.getElementById('steps-el')
+  const pathParts = paths.map((pathVar, pathIndex) => (
+    window.mediaTools.renderPathVarCard(pathVar, pathIndex === 0)
+  ))
+  const parts = pathParts.concat(buildStepsHtmlParts())
+
+  const previousIds = lastRenderedStepIds.current
+  const focusSnapshot = captureFocusSnapshot()
+
+  stepsContainer.innerHTML = parts.join('')
 
   // Fade-in animation for newly inserted step cards
   const allFlatSteps = flattenSteps()
-  for (const entry of allFlatSteps) {
+  allFlatSteps.forEach((entry) => {
     if (!previousIds.has(entry.step.id)) {
       const card = document.getElementById(`step-${entry.step.id}`)
-      if (card) card.classList.add('step-enter')
+      if (card) {
+        card.classList.add('step-enter')
+      }
     }
-  }
-  lastRenderedStepIds = new Set(allFlatSteps.map((e) => e.step.id))
+  })
+  lastRenderedStepIds.current = new Set(allFlatSteps.map((entry) => entry.step.id))
 
   // Restore focus
   if (focusSnapshot) {
@@ -138,8 +173,10 @@ export function renderAll() {
   // In drawer-experiment mode: if a drawer is open, refresh its content so
   // param changes (e.g. from linked inputs) are reflected live.
   if (isDrawerMode()) {
-    const openId = window.getOpenStepId?.()
-    if (openId) window.openStepDrawer?.(openId)
+    const openStepId = window.getOpenStepId?.()
+    if (openStepId) {
+      window.openStepDrawer?.(openStepId)
+    }
   }
 
   // Re-mount per-step progress bars after innerHTML swap

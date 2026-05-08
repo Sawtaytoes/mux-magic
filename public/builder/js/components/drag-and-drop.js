@@ -101,20 +101,20 @@ function getStepsArrayFor(containerElement) {
 // happens after onEnd returns but before the next paint. rAF
 // waits for the paint, so renderAll wipes a settled DOM not a
 // mid-cleanup one.
-let isProcessingDrag = false
+const dragState = { isProcessing: false }
 
 const scheduleRender = () => {
   window.requestAnimationFrame(() => {
     bridge().renderAll()
-    isProcessingDrag = false
+    dragState.isProcessing = false
   })
 }
 
 function onEnd(event) {
-  if (isProcessingDrag) {
+  if (dragState.isProcessing) {
     return
   }
-  isProcessingDrag = true
+  dragState.isProcessing = true
   const sourceContainer = getStepsArrayFor(event.from)
   const targetContainer = getStepsArrayFor(event.to)
   if (!sourceContainer || !targetContainer) {
@@ -132,7 +132,7 @@ function onEnd(event) {
   // Same container, no move? Bail before mutating anything. Still
   // clear the in-flight flag so the next drag isn't blocked.
   if (sourceArray === targetArray && oldIndex === newIndex) {
-    isProcessingDrag = false
+    dragState.isProcessing = false
     return
   }
   const [movedItem] = sourceArray.splice(oldIndex, 1)

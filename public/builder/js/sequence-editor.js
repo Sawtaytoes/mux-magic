@@ -34,20 +34,22 @@ export function updateUrl() {
   pushUndoSnapshot(yaml)
 }
 
-let updateUrlTimeoutId = null
+const updateUrlState = { timeoutId: null }
 
 export function scheduleUpdateUrl() {
-  if (updateUrlTimeoutId) clearTimeout(updateUrlTimeoutId)
-  updateUrlTimeoutId = setTimeout(() => {
-    updateUrlTimeoutId = null
+  if (updateUrlState.timeoutId) {
+    clearTimeout(updateUrlState.timeoutId)
+  }
+  updateUrlState.timeoutId = setTimeout(() => {
+    updateUrlState.timeoutId = null
     updateUrl()
   }, 300)
 }
 
 export function flushScheduledUpdateUrl() {
-  if (updateUrlTimeoutId) {
-    clearTimeout(updateUrlTimeoutId)
-    updateUrlTimeoutId = null
+  if (updateUrlState.timeoutId) {
+    clearTimeout(updateUrlState.timeoutId)
+    updateUrlState.timeoutId = null
     updateUrl()
   }
 }
@@ -60,7 +62,9 @@ export function restoreFromUrl() {
     try {
       const yaml = decodeURIComponent(escape(atob(seq)))
       bridge().loadYamlFromText(yaml)
-      if (base && paths.length > 0 && !paths[0].value) paths[0].value = base
+      if (base && paths.length > 0 && !paths[0].value) {
+        paths[0].value = base
+      }
     } catch {}
   } else if (base) {
     initPaths()
@@ -92,7 +96,9 @@ export function applySnapshot(snapshotYaml) {
 
 export function undo() {
   flushScheduledUpdateUrl()
-  if (undoStack.length === 0) return
+  if (undoStack.length === 0) {
+    return
+  }
   const previous = undoStack.pop()
   redoStack.push(lastSnapshot)
   setLastSnapshot(previous)
@@ -100,7 +106,9 @@ export function undo() {
 }
 
 export function redo() {
-  if (redoStack.length === 0) return
+  if (redoStack.length === 0) {
+    return
+  }
   const next = redoStack.pop()
   undoStack.push(lastSnapshot)
   setLastSnapshot(next)
@@ -113,9 +121,11 @@ export function startNewSequence() {
   flushScheduledUpdateUrl()
   const hasContent = (
     flattenSteps().some((entry) => entry.step.command !== null)
-    || paths.some((p) => p.value)
+    || paths.some((path) => path.value)
   )
-  if (hasContent && !window.confirm('Clear the current sequence and start fresh? Ctrl+Z will bring it back.')) return
+  if (hasContent && !window.confirm('Clear the current sequence and start fresh? Ctrl+Z will bring it back.')) {
+    return
+  }
   setSteps([])
   window.mediaTools.paths = []
   initPaths()
@@ -151,8 +161,12 @@ export function insertGroupAt(index, isParallel) {
 
 export function addStepToGroup(groupId) {
   const group = steps.find((item) => isGroup(item) && item.id === groupId)
-  if (!group) return
-  if (group.isCollapsed) group.isCollapsed = false
+  if (!group) {
+    return
+  }
+  if (group.isCollapsed) {
+    group.isCollapsed = false
+  }
   const step = makeStep(null)
   group.steps.push(step)
   renderAllAnimated((behavior) => scrollStepIntoView(step.id, behavior))
@@ -161,24 +175,28 @@ export function addStepToGroup(groupId) {
 export function removeStep(id) {
   const finishRemoval = () => {
     const location = findStepLocation(id)
-    if (!location) return
+    if (!location) {
+      return
+    }
     if (location.parentGroup) {
       const group = location.parentGroup
       group.steps.splice(location.indexInParent, 1)
       if (group.steps.length === 0) {
         const groupItemIndex = steps.indexOf(group)
-        if (groupItemIndex >= 0) steps.splice(groupItemIndex, 1)
+        if (groupItemIndex >= 0) {
+          steps.splice(groupItemIndex, 1)
+        }
       }
     } else {
       steps.splice(location.itemIndex, 1)
     }
-    for (const entry of flattenSteps()) {
-      for (const [field, source] of Object.entries(entry.step.links)) {
+    flattenSteps().forEach((entry) => {
+      Object.entries(entry.step.links).forEach(([field, source]) => {
         if (source && typeof source === 'object' && source.linkedTo === id) {
           delete entry.step.links[field]
         }
-      }
-    }
+      })
+    })
     renderAllAnimated()
   }
   const card = document.getElementById(`step-${id}`)
@@ -192,44 +210,56 @@ export function removeStep(id) {
 
 export function removeGroup(groupId) {
   const groupItemIndex = steps.findIndex((item) => isGroup(item) && item.id === groupId)
-  if (groupItemIndex < 0) return
+  if (groupItemIndex < 0) {
+    return
+  }
   const group = steps[groupItemIndex]
-  const innerIds = new Set(group.steps.map((s) => s.id))
+  const innerIds = new Set(group.steps.map((step) => step.id))
   steps.splice(groupItemIndex, 1)
-  for (const entry of flattenSteps()) {
-    for (const [field, source] of Object.entries(entry.step.links)) {
+  flattenSteps().forEach((entry) => {
+    Object.entries(entry.step.links).forEach(([field, source]) => {
       if (source && typeof source === 'object' && innerIds.has(source.linkedTo)) {
         delete entry.step.links[field]
       }
-    }
-  }
+    })
+  })
   renderAllAnimated()
 }
 
-export function moveStep(id, dir) {
+export function moveStep(id, direction) {
   const location = findStepLocation(id)
-  if (!location) return
+  if (!location) {
+    return
+  }
   if (location.parentGroup) {
     const siblings = location.parentGroup.steps
     const localIndex = location.indexInParent
-    const targetLocalIndex = localIndex + dir
-    if (targetLocalIndex < 0 || targetLocalIndex >= siblings.length) return
+    const targetLocalIndex = localIndex + direction
+    if (targetLocalIndex < 0 || targetLocalIndex >= siblings.length) {
+      return
+    }
     ;[siblings[localIndex], siblings[targetLocalIndex]] = [siblings[targetLocalIndex], siblings[localIndex]]
   } else {
     const localIndex = location.itemIndex
-    const targetLocalIndex = localIndex + dir
-    if (targetLocalIndex < 0 || targetLocalIndex >= steps.length) return
+    const targetLocalIndex = localIndex + direction
+    if (targetLocalIndex < 0 || targetLocalIndex >= steps.length) {
+      return
+    }
     ;[steps[localIndex], steps[targetLocalIndex]] = [steps[targetLocalIndex], steps[localIndex]]
   }
   clearStaleStepLinksAfterMove()
   renderAllAnimated()
 }
 
-export function moveGroup(groupId, dir) {
+export function moveGroup(groupId, direction) {
   const groupItemIndex = steps.findIndex((item) => isGroup(item) && item.id === groupId)
-  if (groupItemIndex < 0) return
-  const targetIndex = groupItemIndex + dir
-  if (targetIndex < 0 || targetIndex >= steps.length) return
+  if (groupItemIndex < 0) {
+    return
+  }
+  const targetIndex = groupItemIndex + direction
+  if (targetIndex < 0 || targetIndex >= steps.length) {
+    return
+  }
   ;[steps[groupItemIndex], steps[targetIndex]] = [steps[targetIndex], steps[groupItemIndex]]
   clearStaleStepLinksAfterMove()
   renderAllAnimated()
@@ -238,50 +268,66 @@ export function moveGroup(groupId, dir) {
 export function clearStaleStepLinksAfterMove() {
   const flatOrder = flattenSteps()
   flatOrder.forEach((entry, flatIndex) => {
-    for (const [field, source] of Object.entries(entry.step.links)) {
-      if (!source || typeof source !== 'object' || !source.linkedTo) continue
-      const sourceFlatIndex = flatOrder.findIndex((e) => e.step.id === source.linkedTo)
-      if (sourceFlatIndex < 0 || sourceFlatIndex >= flatIndex) delete entry.step.links[field]
-    }
+    Object.entries(entry.step.links).forEach(([field, source]) => {
+      if (!source || typeof source !== 'object' || !source.linkedTo) {
+        return
+      }
+      const sourceFlatIndex = flatOrder.findIndex((flatEntry) => flatEntry.step.id === source.linkedTo)
+      if (sourceFlatIndex < 0 || sourceFlatIndex >= flatIndex) {
+        delete entry.step.links[field]
+      }
+    })
   })
 }
 
 export function toggleStepCollapsed(id) {
   const step = findStepById(id)
-  if (!step) return
+  if (!step) {
+    return
+  }
   step.isCollapsed = !step.isCollapsed
   bridge().renderAll()
 }
 
 export function toggleGroupCollapsed(id) {
   const group = steps.find((item) => isGroup(item) && item.id === id)
-  if (!group) return
+  if (!group) {
+    return
+  }
   group.isCollapsed = !group.isCollapsed
   bridge().renderAll()
 }
 
 export function setGroupChildrenCollapsed(id, isCollapsed) {
   const group = steps.find((item) => isGroup(item) && item.id === id)
-  if (!group) return
-  group.steps.forEach((step) => { step.isCollapsed = isCollapsed })
+  if (!group) {
+    return
+  }
+  group.steps.forEach((step) => {
+    step.isCollapsed = isCollapsed
+  })
   bridge().renderAll()
 }
 
 export function setAllCollapsed(isCollapsed) {
-  for (const item of steps) {
+  steps.forEach((item) => {
     if (isGroup(item)) {
       item.isCollapsed = isCollapsed
-      item.steps.forEach((step) => { step.isCollapsed = isCollapsed })
+      item.steps.forEach((step) => {
+        step.isCollapsed = isCollapsed
+      })
     } else {
       item.isCollapsed = isCollapsed
     }
-  }
+  })
   bridge().renderAll()
 }
 
 export function setGroupLabel(groupId, label) {
   const group = steps.find((item) => isGroup(item) && item.id === groupId)
-  if (!group) return
+  if (!group) {
+    return
+  }
   group.label = label
   bridge().updateYaml()
   scheduleUpdateUrl()
@@ -317,9 +363,13 @@ export function stepAliasBlur(input, stepId) {
 
 export function setStepAlias(stepId, alias) {
   const step = findStepById(stepId)
-  if (!step) return
+  if (!step) {
+    return
+  }
   const trimmed = alias.trim()
-  if (step.alias === trimmed) return
+  if (step.alias === trimmed) {
+    return
+  }
   step.alias = trimmed
   bridge().updateYaml()
   scheduleUpdateUrl()
@@ -327,14 +377,18 @@ export function setStepAlias(stepId, alias) {
 
 export function toggleStepActions(stepId) {
   const actions = document.querySelector(`[data-step-actions="${stepId}"]`)
-  if (actions) actions.classList.toggle('open')
+  if (actions) {
+    actions.classList.toggle('open')
+  }
 }
 
 // ─── Param / link mutation ────────────────────────────────────────────────────
 
 export function setParam(id, fieldName, value) {
   const step = findStepById(id)
-  if (!step) return
+  if (!step) {
+    return
+  }
   step.params[fieldName] = value
   refreshLinkedInputs()
   bridge().updateYaml()
@@ -343,21 +397,33 @@ export function setParam(id, fieldName, value) {
 
 export function setParamJson(id, field, raw) {
   const step = findStepById(id)
-  if (!step) return
-  try { step.params[field] = JSON.parse(raw) }
-  catch { step.params[field] = raw }
+  if (!step) {
+    return
+  }
+  try {
+    step.params[field] = JSON.parse(raw)
+  }
+  catch {
+    step.params[field] = raw
+  }
   bridge().updateYaml()
   scheduleUpdateUrl()
 }
 
 export function promotePathToPathVar(stepId, fieldName, rawValue) {
   const step = findStepById(stepId)
-  if (!step) return
-  if (step.links?.[fieldName]) return
+  if (!step) {
+    return
+  }
+  if (step.links?.[fieldName]) {
+    return
+  }
   const value = (rawValue ?? '').trim()
-  if (!value) return
+  if (!value) {
+    return
+  }
   // Re-use an existing path variable that already holds this value.
-  const existing = paths.find(p => p.value === value)
+  const existing = paths.find((path) => path.value === value)
   if (existing) {
     step.links[fieldName] = existing.id
     delete step.params[fieldName]
@@ -383,15 +449,21 @@ export function promotePathToPathVar(stepId, fieldName, rawValue) {
 }
 
 export async function browsePathField(stepId, fieldName, initialPath) {
-  if (typeof window.openFileExplorer !== 'function') return
-  let startPath = initialPath
-  if (!startPath) {
-    try {
-      const resp = await fetch('/files/default-path')
-      const data = await resp.json()
-      startPath = data.path || '/'
-    } catch { startPath = '/' }
+  if (typeof window.openFileExplorer !== 'function') {
+    return
   }
+  const startPath = await (async () => {
+    if (initialPath) {
+      return initialPath
+    }
+    try {
+      const response = await fetch('/files/default-path')
+      const data = await response.json()
+      return data.path || '/'
+    } catch {
+      return '/'
+    }
+  })()
   window.openFileExplorer(startPath, {
     pickerOnSelect: (selectedPath) => {
       setLink(stepId, fieldName, '')
@@ -403,29 +475,40 @@ export async function browsePathField(stepId, fieldName, initialPath) {
 
 export function setLink(id, field, choice) {
   const step = findStepById(id)
-  if (!step) return
+  if (!step) {
+    return
+  }
   if (!choice) {
     delete step.links[field]
   } else if (choice.startsWith('path:')) {
     step.links[field] = choice.slice('path:'.length)
   } else if (choice.startsWith('step:')) {
     const after = choice.slice('step:'.length)
-    const sep = after.indexOf(':')
-    const stepId = sep >= 0 ? after.slice(0, sep) : after
-    const output = sep >= 0 ? after.slice(sep + 1) : 'folder'
-    step.links[field] = { linkedTo: stepId, output }
+    const separatorIndex = after.indexOf(':')
+    const linkedStepId = separatorIndex >= 0 ? after.slice(0, separatorIndex) : after
+    const output = separatorIndex >= 0 ? after.slice(separatorIndex + 1) : 'folder'
+    step.links[field] = { linkedTo: linkedStepId, output }
   } else {
     delete step.links[field]
   }
   const linkedInput = document.querySelector(`[data-step="${id}"][data-field="${field}"].linked-input`)
   const manualInput = document.querySelector(`[data-step="${id}"][data-field="${field}"].manual-input`)
-  const val = getLinkedValue(step, field)
-  if (val !== null) {
-    if (linkedInput) { linkedInput.value = val; linkedInput.classList.remove('hidden') }
-    if (manualInput) manualInput.classList.add('hidden')
+  const linkedValue = getLinkedValue(step, field)
+  if (linkedValue !== null) {
+    if (linkedInput) {
+      linkedInput.value = linkedValue
+      linkedInput.classList.remove('hidden')
+    }
+    if (manualInput) {
+      manualInput.classList.add('hidden')
+    }
   } else {
-    if (linkedInput) linkedInput.classList.add('hidden')
-    if (manualInput) manualInput.classList.remove('hidden')
+    if (linkedInput) {
+      linkedInput.classList.add('hidden')
+    }
+    if (manualInput) {
+      manualInput.classList.remove('hidden')
+    }
   }
   refreshLinkedInputs()
   bridge().updateYaml()
@@ -433,42 +516,54 @@ export function setLink(id, field, choice) {
 }
 
 export function refreshLinkedInputs() {
-  for (const entry of flattenSteps()) {
+  flattenSteps().forEach((entry) => {
     const step = entry.step
-    for (const [field] of Object.entries(step.links)) {
-      const inp = document.querySelector(`[data-step="${step.id}"][data-field="${field}"].linked-input`)
-      if (inp) inp.value = getLinkedValue(step, field) ?? ''
-    }
-  }
+    Object.keys(step.links).forEach((field) => {
+      const input = document.querySelector(`[data-step="${step.id}"][data-field="${field}"].linked-input`)
+      if (input) {
+        input.value = getLinkedValue(step, field) ?? ''
+      }
+    })
+  })
 }
 
 export function changeCommand(id, command) {
-  if (!command) return
+  if (!command) {
+    return
+  }
   const step = findStepById(id)
-  if (!step) return
+  if (!step) {
+    return
+  }
   const wasEmpty = step.command === null
   step.command = command
   step.params = {}
   step.links = {}
   step.status = null
   step.error = null
-  const cmd = COMMANDS[command]
-  for (const f of cmd.fields) if (f.default !== undefined) step.params[f.name] = f.default
+  const commandDefinition = COMMANDS[command]
+  commandDefinition.fields.forEach((field) => {
+    if (field.default !== undefined) {
+      step.params[field.name] = field.default
+    }
+  })
   if (wasEmpty) {
-    const msf = mainSrcField(command)
-    if (msf) {
+    const mainSourceFieldName = mainSrcField(command)
+    if (mainSourceFieldName) {
       const location = findStepLocation(id)
       const isInsideParallelGroup = !!(location?.parentGroup?.isParallel)
       if (isInsideParallelGroup) {
-        if (paths.length) step.links[msf] = paths[0].id
+        if (paths.length) {
+          step.links[mainSourceFieldName] = paths[0].id
+        }
       } else {
-        const flat = flattenSteps()
-        const currentFlatIndex = flat.findIndex((entry) => entry.step.id === id)
-        const prevStep = currentFlatIndex > 0 ? flat[currentFlatIndex - 1].step : null
-        if (prevStep && prevStep.command) {
-          step.links[msf] = { linkedTo: prevStep.id, output: 'folder' }
+        const flatEntries = flattenSteps()
+        const currentFlatIndex = flatEntries.findIndex((entry) => entry.step.id === id)
+        const previousStep = currentFlatIndex > 0 ? flatEntries[currentFlatIndex - 1].step : null
+        if (previousStep && previousStep.command) {
+          step.links[mainSourceFieldName] = { linkedTo: previousStep.id, output: 'folder' }
         } else if (paths.length) {
-          step.links[msf] = paths[0].id
+          step.links[mainSourceFieldName] = paths[0].id
         }
       }
     }
@@ -477,53 +572,67 @@ export function changeCommand(id, command) {
 }
 
 export function buildParams(step, { resolveLinks = false } = {}) {
-  const cmd = COMMANDS[step.command]
-  const out = {}
-  for (const field of cmd.fields) {
-    let val = step.params[field.name]
+  const commandDefinition = COMMANDS[step.command]
+  const result = {}
+  commandDefinition.fields.forEach((field) => {
+    const baseValue = step.params[field.name]
     const link = step.links?.[field.name]
-    if (link) {
+    const resolvedValue = (() => {
+      if (!link) {
+        return baseValue
+      }
       if (resolveLinks) {
         const linkedValue = getLinkedValue(step, field.name)
-        if (linkedValue !== null) val = linkedValue
-      } else if (typeof link === 'string') {
-        val = '@' + link
-      } else if (link && typeof link === 'object' && link.linkedTo) {
-        val = { linkedTo: link.linkedTo, output: link.output || 'folder' }
+        return linkedValue !== null ? linkedValue : baseValue
+      }
+      if (typeof link === 'string') {
+        return '@' + link
+      }
+      if (link && typeof link === 'object' && link.linkedTo) {
+        return { linkedTo: link.linkedTo, output: link.output || 'folder' }
+      }
+      return baseValue
+    })()
+    const skipPrimary = (
+      resolvedValue === undefined || resolvedValue === null || resolvedValue === ''
+      || (Array.isArray(resolvedValue) && resolvedValue.length === 0)
+      || (!field.required && field.default !== undefined && resolvedValue === field.default)
+    )
+    if (!skipPrimary) {
+      result[field.name] = resolvedValue
+    }
+    if (field.companionNameField) {
+      const companionValue = step.params[field.companionNameField]
+      if (companionValue !== undefined && companionValue !== null && companionValue !== '') {
+        result[field.companionNameField] = companionValue
       }
     }
-    const skipPrimary = (
-      val === undefined || val === null || val === ''
-      || (Array.isArray(val) && val.length === 0)
-      || (!field.required && field.default !== undefined && val === field.default)
-    )
-    if (!skipPrimary) out[field.name] = val
-    if (field.companionNameField) {
-      const cv = step.params[field.companionNameField]
-      if (cv !== undefined && cv !== null && cv !== '') out[field.companionNameField] = cv
-    }
-  }
-  if (Array.isArray(cmd.persistedKeys)) {
-    for (const persistedKey of cmd.persistedKeys) {
+  })
+  if (Array.isArray(commandDefinition.persistedKeys)) {
+    commandDefinition.persistedKeys.forEach((persistedKey) => {
       const persistedValue = step.params[persistedKey]
       if (persistedValue !== undefined && persistedValue !== null && persistedValue !== '') {
-        out[persistedKey] = persistedValue
+        result[persistedKey] = persistedValue
       }
-    }
+    })
   }
-  return out
+  return result
 }
 
 // ─── Scroll helpers ───────────────────────────────────────────────────────────
 
 export function scrollStepIntoView(stepId, behavior = 'smooth') {
   const card = document.getElementById(`step-${stepId}`)
-  if (card) card.scrollIntoView({ behavior, block: 'center' })
+  if (card) {
+    card.scrollIntoView({ behavior, block: 'center' })
+  }
 }
 
 export function scrollPathVarIntoView(pathVarId) {
   const card = document.querySelector(`[data-path-var="${pathVarId}"]`)
-  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
 }
 
 // ─── View-transition animated render wrapper ──────────────────────────────────
@@ -532,11 +641,15 @@ export function renderAllAnimated(afterRender) {
   if (typeof document.startViewTransition === 'function') {
     document.startViewTransition(() => {
       bridge().renderAll()
-      if (afterRender) afterRender('instant')
+      if (afterRender) {
+        afterRender('instant')
+      }
     })
   } else {
     bridge().renderAll()
-    if (afterRender) afterRender('smooth')
+    if (afterRender) {
+      afterRender('smooth')
+    }
   }
 }
 
@@ -550,8 +663,12 @@ export function attachSequenceKeyboardShortcuts() {
       || target.tagName === 'TEXTAREA'
       || target.isContentEditable
     )
-    if (isTextField) return
-    if (!(event.ctrlKey || event.metaKey)) return
+    if (isTextField) {
+      return
+    }
+    if (!(event.ctrlKey || event.metaKey)) {
+      return
+    }
     const key = event.key.toLowerCase()
     if (key === 'z' && !event.shiftKey) {
       event.preventDefault()

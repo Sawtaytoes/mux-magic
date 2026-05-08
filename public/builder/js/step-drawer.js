@@ -28,7 +28,9 @@ let _pointerDownOnBackdrop = false
 // ─── DOM bootstrap ────────────────────────────────────────────────────────────
 
 function ensureDrawerDOM() {
-  if (_drawerEl) return
+  if (_drawerEl) {
+    return
+  }
 
   // Backdrop
   _backdropEl = document.createElement('div')
@@ -64,26 +66,31 @@ function ensureDrawerDOM() {
 
 function _maybeCloseOnBackdropClick() {
   // Don't close if focus is inside a form input or picker popover.
-  const active = document.activeElement
-  if (active && (
-    active.tagName === 'INPUT' ||
-    active.tagName === 'TEXTAREA' ||
-    active.tagName === 'SELECT' ||
-    active.closest?.('.hidden') === null && active.closest?.('[id$="-popover"]')
-  )) return
+  const activeElement = document.activeElement
+  const isFocusInsideInteractive = activeElement && (
+    activeElement.tagName === 'INPUT' ||
+    activeElement.tagName === 'TEXTAREA' ||
+    activeElement.tagName === 'SELECT' ||
+    (activeElement.closest?.('.hidden') === null && activeElement.closest?.('[id$="-popover"]'))
+  )
+  if (isFocusInsideInteractive) {
+    return
+  }
   closeStepDrawer()
 }
 
 // ─── Escape key handler ───────────────────────────────────────────────────────
 
-function _onKeydown(e) {
-  if (e.key === 'Escape' && _openStepId !== null) {
+function _onKeydown(event) {
+  if (event.key === 'Escape' && _openStepId !== null) {
     // Only close if no picker/modal is open above us (they have higher z-index
     // and handle Escape themselves; we check for open modals as a safety net).
     const openModal = document.querySelector(
       '.fixed.z-50:not(.hidden), .fixed.z-\\[60\\]:not(.hidden)'
     )
-    if (!openModal) closeStepDrawer()
+    if (!openModal) {
+      closeStepDrawer()
+    }
   }
 }
 
@@ -95,9 +102,12 @@ export function openStepDrawer(stepId) {
   _openStepId = stepId
 
   // Find step in flat list
-  const allFlat = flattenSteps()
-  const entry = allFlat.find((e) => e.step.id === stepId)
-  if (!entry) { closeStepDrawer(); return }
+  const allFlatSteps = flattenSteps()
+  const entry = allFlatSteps.find((flatEntry) => flatEntry.step.id === stepId)
+  if (!entry) {
+    closeStepDrawer()
+    return
+  }
 
   const { step, flatIndex } = entry
 
@@ -114,7 +124,9 @@ export function openStepDrawer(stepId) {
 }
 
 export function closeStepDrawer() {
-  if (!_drawerEl) return
+  if (!_drawerEl) {
+    return
+  }
   _openStepId = null
   _drawerEl.classList.remove('open')
   _backdropEl.classList.remove('open')
@@ -128,21 +140,21 @@ export function getOpenStepId() {
 // ─── Drawer content renderer ──────────────────────────────────────────────────
 
 function _renderDrawerContent(step, flatIndex) {
-  const cmd = step.command ? COMMANDS[step.command] : null
+  const commandDefinition = step.command ? COMMANDS[step.command] : null
   const operationLabel = step.command ? commandLabel(step.command) : '— none —'
   const alias = step.alias || step.command || 'Unnamed Step'
 
-  const summaryHtml = cmd
-    ? `<p class="text-xs text-slate-400 mb-2">${esc(cmd.summary)}</p>
-       ${cmd.note ? `<p class="text-xs text-amber-300 bg-amber-950/40 border border-amber-800/50 rounded px-2 py-1 mb-2">${esc(cmd.note)}</p>` : ''}
-       ${cmd.outputFolderName ? `<p class="text-xs text-amber-500/80 mb-2">→ outputs to <code class="text-amber-400 bg-slate-900 px-1 rounded">${esc(cmd.outputFolderName)}/</code> subfolder</p>` : ''}`
+  const summaryHtml = commandDefinition
+    ? `<p class="text-xs text-slate-400 mb-2">${esc(commandDefinition.summary)}</p>
+       ${commandDefinition.note ? `<p class="text-xs text-amber-300 bg-amber-950/40 border border-amber-800/50 rounded px-2 py-1 mb-2">${esc(commandDefinition.note)}</p>` : ''}
+       ${commandDefinition.outputFolderName ? `<p class="text-xs text-amber-500/80 mb-2">→ outputs to <code class="text-amber-400 bg-slate-900 px-1 rounded">${esc(commandDefinition.outputFolderName)}/</code> subfolder</p>` : ''}`
     : ''
 
   const errorHtml = step.error
     ? `<p class="text-xs text-red-400 bg-red-950/40 rounded px-2 py-1 mb-2 font-mono">${esc(step.error)}</p>`
     : ''
 
-  const fieldsHtml = cmd
+  const fieldsHtml = commandDefinition
     ? `<div class="space-y-2">${renderFields(step, flatIndex)}</div>`
     : `<p class="text-xs text-slate-500 italic">No command selected — choose one from the dropdown.</p>`
 

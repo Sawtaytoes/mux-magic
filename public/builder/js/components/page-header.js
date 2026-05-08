@@ -20,10 +20,14 @@ const bridge = () => window.mediaTools
 // stale .open class is harmless.
 export function togglePageMenu(menuId) {
   const target = document.getElementById(menuId)
-  if (!target) return
+  if (!target) {
+    return
+  }
   const wasOpen = target.classList.contains('open')
   closeAllPageMenus()
-  if (!wasOpen) target.classList.add('open')
+  if (!wasOpen) {
+    target.classList.add('open')
+  }
 }
 
 function closeAllPageMenus() {
@@ -48,7 +52,9 @@ export function attachPageHeaderListeners() {
   if (header) {
     header.addEventListener('click', (event) => {
       const button = event.target.closest?.('[data-action]')
-      if (!button || !header.contains(button)) return
+      if (!button || !header.contains(button)) {
+        return
+      }
       if (button.dataset.action === 'add-path') {
         bridge().addPath()
       }
@@ -57,18 +63,25 @@ export function attachPageHeaderListeners() {
 
   document.addEventListener('click', (event) => {
     const openMenus = document.querySelectorAll('.page-menu.open')
-    if (!openMenus.length) return
+    if (!openMenus.length) {
+      return
+    }
     const navToggle = document.getElementById('page-nav-toggle')
     const controlsToggle = document.getElementById('page-controls-toggle')
-    if (navToggle?.contains(event.target) || controlsToggle?.contains(event.target)) return
-    for (const menu of openMenus) {
-      if (menu.contains(event.target)) return
+    if (navToggle?.contains(event.target) || controlsToggle?.contains(event.target)) {
+      return
+    }
+    const isClickInsideAnyMenu = Array.from(openMenus).some((menu) => menu.contains(event.target))
+    if (isClickInsideAnyMenu) {
+      return
     }
     closeAllPageMenus()
   })
 
   document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return
+    if (event.key !== 'Escape') {
+      return
+    }
     bridge().closeYamlModal()
     bridge().closeApiRunModal()
     closeAllPageMenus()
