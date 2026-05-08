@@ -40,3 +40,36 @@ export const validateReadablePath = (path: string): string => {
   }
   return normalized
 }
+
+// The single allowed media root for the /transcode/* endpoints. Hardcoded
+// (not env-var) per `docs/options/ffmpeg-audio-reencode-endpoint.md` §12.
+// Operators must mount their media at this path inside the server
+// container. The README explains the requirement to end-users.
+export const MEDIA_ROOT = "/media"
+
+// Returns the path normalized + validated under MEDIA_ROOT. Throws
+// PathSafetyError when the input is not absolute, contains traversal,
+// or normalizes to anything outside MEDIA_ROOT. Wraps validateReadablePath
+// so callers get one consistent error type.
+export const validateMediaPath = (path: string): string => {
+  const normalized = validateReadablePath(path)
+  // POSIX-style comparison — MEDIA_ROOT is hardcoded as "/media", so the
+  // normalized path must either equal it or live inside it. The trailing
+  // separator on the prefix prevents "/media-other/..." from sneaking past
+  // a startsWith check.
+  const rootWithSeparator = (
+    MEDIA_ROOT.endsWith(sep) || MEDIA_ROOT.endsWith("/")
+  )
+  ? MEDIA_ROOT
+  : `${MEDIA_ROOT}/`
+  if (
+    normalized !== MEDIA_ROOT
+    && !normalized.startsWith(rootWithSeparator)
+    && !normalized.startsWith(`${MEDIA_ROOT}${sep}`)
+  ) {
+    throw new PathSafetyError(
+      `Path is outside the allowed media root (${MEDIA_ROOT}): ${path}`,
+    )
+  }
+  return normalized
+}
