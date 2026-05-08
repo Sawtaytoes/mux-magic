@@ -43,6 +43,8 @@ import {
   closeVideoModal,
 } from './components/file-explorer-modal.js'
 import { pathVarOptionText, refreshPathVarOptions } from './util/path-var-options.js'
+import { openStepDrawer, closeStepDrawer, getOpenStepId } from './step-drawer.js'
+import { isDrawerMode } from './step-renderer.js'
 
 // New modules from the W2b split
 import { renderAll } from './render-all.js'
@@ -319,6 +321,14 @@ window.addPath = addPath
 window.setPathLabel = setPathLabel
 window.setPathValue = setPathValue
 window.removePath = removePath
+
+// ─── Drawer experiment globals ────────────────────────────────────────────────
+// Only activated when useDrawerStepCards === 'true' in localStorage.
+// Exposing these unconditionally is harmless — step-renderer only renders
+// the compact cards (which call openStepDrawer) when the flag is on.
+window.openStepDrawer = openStepDrawer
+window.closeStepDrawer = closeStepDrawer
+window.getOpenStepId = getOpenStepId
 
 // ─── Attach listeners and bootstrap ──────────────────────────────────────────
 

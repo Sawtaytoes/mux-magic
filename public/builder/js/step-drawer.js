@@ -11,11 +11,10 @@
 // input or a picker popover (checked via document.activeElement).
 
 import { COMMANDS } from './commands.js'
-import { steps, flattenSteps, isGroup } from './sequence-state.js'
+import { flattenSteps } from './sequence-state.js'
 import { renderFields, esc } from './step-renderer.js'
-import { commandLabel as _commandLabel } from './step-renderer.js'
 
-// commandLabel may also be a global helper — fall back gracefully.
+// commandLabel is injected by /command-labels.js as a global script.
 const commandLabel = (name) =>
   typeof window.commandLabel === 'function' ? window.commandLabel(name) : name
 

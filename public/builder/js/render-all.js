@@ -135,6 +135,13 @@ export function renderAll() {
   // Re-attach Sortable instances
   window.mediaTools.attachSortables?.()
 
+  // In drawer-experiment mode: if a drawer is open, refresh its content so
+  // param changes (e.g. from linked inputs) are reflected live.
+  if (isDrawerMode()) {
+    const openId = window.getOpenStepId?.()
+    if (openId) window.openStepDrawer?.(openId)
+  }
+
   // Re-mount per-step progress bars after innerHTML swap
   progressByStepId.forEach((_, stepId) => {
     mountStepCardProgress(stepId)
