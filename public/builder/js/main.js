@@ -107,6 +107,7 @@ import {
 import {
   runOrStopStep,
   runSequence,
+  runGroup,
   runViaApi,
   closeApiRunModal,
   cancelApiRun,
@@ -296,6 +297,7 @@ window.linkPicker = linkPicker
 // run sequence
 window.runOrStopStep = runOrStopStep
 window.runSequence = runSequence
+window.runGroup = runGroup
 window.runViaApi = runViaApi
 window.cancelApiRun = cancelApiRun
 window.copyApiRunLogs = copyApiRunLogs
