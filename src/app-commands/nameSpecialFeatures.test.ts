@@ -7,7 +7,10 @@ import type { MovieIdentity } from "../tools/canonicalizeMovieTitle.js"
 import {
   buildMovieBaseName,
   buildMovieFeatureName,
+  buildUnnamedFileCandidates,
   findMatchingCut,
+  isMainFeatureFilename,
+  parseEditionFromFilename,
   postProcessMatches,
   reorderRenamesForOnDiskConflicts,
   type FileMatch,
@@ -269,5 +272,109 @@ describe(reorderRenamesForOnDiskConflicts.name, () => {
       { fileInfo: makeFileInfo("Already Named.mkv"), renamedFilename: "Already Named" },
     ]
     expect(reorderRenamesForOnDiskConflicts(renames)).toEqual(renames)
+  })
+})
+
+// ── N1: Edition-aware folder layout helpers ────────────────────────────────
+
+describe(parseEditionFromFilename.name, () => {
+  test("extracts the edition string from a filename with a {edition-…} tag", () => {
+    expect(parseEditionFromFilename("Dragon Lord (1982) {edition-Hong Kong Version}.mkv"))
+    .toBe("Hong Kong Version")
+  })
+
+  test("returns null when the filename has no {edition-…} tag", () => {
+    expect(parseEditionFromFilename("Dragon Lord (1982).mkv")).toBeNull()
+  })
+
+  test("works on a bare stem (no extension)", () => {
+    expect(parseEditionFromFilename("Dragon Lord (1982) {edition-Director's Cut}"))
+    .toBe("Director's Cut")
+  })
+
+  test("returns null for a special-feature filename that looks similar", () => {
+    // Plex suffix present — there's no {edition-…} block here anyway
+    expect(parseEditionFromFilename("Making Of -behindthescenes.mkv")).toBeNull()
+  })
+})
+
+describe(isMainFeatureFilename.name, () => {
+  test("returns true for a plain 'Title (Year)' filename", () => {
+    expect(isMainFeatureFilename("Dragon Lord (1982).mkv")).toBe(true)
+  })
+
+  test("returns true for a 'Title (Year) {edition-…}' filename", () => {
+    expect(isMainFeatureFilename("Dragon Lord (1982) {edition-Hong Kong Version}.mkv")).toBe(true)
+  })
+
+  test("returns false for a file ending in -trailer", () => {
+    expect(isMainFeatureFilename("Theatrical Trailer -trailer.mkv")).toBe(false)
+  })
+
+  test("returns false for a file ending in -behindthescenes", () => {
+    expect(isMainFeatureFilename("Making Of -behindthescenes.mkv")).toBe(false)
+  })
+
+  test("returns false for a file ending in -featurette", () => {
+    expect(isMainFeatureFilename("EPK -featurette.mkv")).toBe(false)
+  })
+
+  test("returns false for a file ending in -deleted", () => {
+    expect(isMainFeatureFilename("Cut Scene -deleted.mkv")).toBe(false)
+  })
+
+  test("returns false for a file ending in -interview", () => {
+    expect(isMainFeatureFilename("Director Chat -interview.mkv")).toBe(false)
+  })
+
+  test("returns false for a file ending in -scene", () => {
+    expect(isMainFeatureFilename("Opening Scene -scene.mkv")).toBe(false)
+  })
+
+  test("returns false for a file ending in -short", () => {
+    expect(isMainFeatureFilename("Short Film -short.mkv")).toBe(false)
+  })
+
+  test("returns false for a file ending in -other", () => {
+    expect(isMainFeatureFilename("Storyboard -other.mkv")).toBe(false)
+  })
+})
+
+// ── N4: Unnamed-file follow-up candidates ─────────────────────────────────
+
+describe(buildUnnamedFileCandidates.name, () => {
+  test("returns empty when there are no unnamed files", () => {
+    expect(buildUnnamedFileCandidates([], ["Image Gallery"])).toEqual([])
+  })
+
+  test("returns empty when there are no possible-name suggestions", () => {
+    expect(buildUnnamedFileCandidates(["MOVIE_t23.mkv"], [])).toEqual([])
+  })
+
+  test("returns a candidate list for each unnamed file when both lists are non-empty", () => {
+    const result = buildUnnamedFileCandidates(["MOVIE_t23.mkv"], ["Image Gallery"])
+    expect(result).toHaveLength(1)
+    expect(result[0].filename).toBe("MOVIE_t23.mkv")
+    expect(result[0].candidates).toEqual(["Image Gallery"])
+  })
+
+  test("ranks candidates that share more words with the filename first", () => {
+    const result = buildUnnamedFileCandidates(
+      ["image-gallery-extra.mkv"],
+      ["Promotional Featurette", "Image Gallery (1200 images)", "Deleted Scenes"],
+    )
+    // "Image Gallery" shares 'image' and 'gallery' with the stem — should
+    // rank above "Promotional Featurette" and "Deleted Scenes" (0 shared words).
+    expect(result[0].candidates[0]).toBe("Image Gallery (1200 images)")
+  })
+
+  test("produces one entry per unnamed file, each with the full candidate list", () => {
+    const result = buildUnnamedFileCandidates(
+      ["MOVIE_t01.mkv", "MOVIE_t02.mkv"],
+      ["Deleted Scene", "Featurette"],
+    )
+    expect(result).toHaveLength(2)
+    expect(result[0].candidates).toHaveLength(2)
+    expect(result[1].candidates).toHaveLength(2)
   })
 })
