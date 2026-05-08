@@ -624,7 +624,7 @@ export const moveFileToEditionFolder = (
 }
 
 export const nameSpecialFeatures = ({
-  autoNameDuplicates = true,
+  autoNameDuplicates = false,
   dvdCompareId,
   dvdCompareReleaseHash,
   fixedOffset,
