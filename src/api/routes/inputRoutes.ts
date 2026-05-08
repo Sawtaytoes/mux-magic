@@ -1,5 +1,6 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi"
 
+import { isFakeRequest } from "../../fake-data/index.js"
 import { resolvePrompt } from "../promptStore.js"
 import { jobNotFoundSchema } from "../schemas.js"
 
@@ -58,6 +59,13 @@ inputRoutes.openapi(
     },
   }),
   (context) => {
+    // Fake mode never enqueues real prompts, so resolvePrompt would
+    // 404 even though the UI's submit was the expected action — short-
+    // circuit to a 200 ack so the Builder's prompt modal closes cleanly
+    // when designers exercise the prompt UI in fake mode.
+    if (isFakeRequest(context)) {
+      return context.json({ ok: true as const }, 200)
+    }
     const body = context.req.valid("json")
     const resolved = resolvePrompt(body.promptId, body.selectedIndex)
 

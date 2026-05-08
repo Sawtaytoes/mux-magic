@@ -3,6 +3,19 @@ import { sep as pathSeparator } from "node:path"
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi"
 import { lastValueFrom } from "rxjs"
 
+import {
+  fakeGetSubtitleMetadata,
+  fakeLabelLookup,
+  fakeListDirectoryEntries,
+  fakeListDvdCompareReleases,
+  fakeNameLookup,
+  fakeSearchAnidb,
+  fakeSearchDvdCompare,
+  fakeSearchMal,
+  fakeSearchMovieDb,
+  fakeSearchTvdb,
+  isFakeRequest,
+} from "../../fake-data/index.js"
 import { getSubtitleMetadata } from "../../app-commands/getSubtitleMetadata.js"
 import {
   findDvdCompareResults,
@@ -57,6 +70,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeGetSubtitleMetadata(), 200)
+    }
     const body = context.req.valid("json")
     const subtitlesMetadata = await lastValueFrom(
       getSubtitleMetadata({
@@ -93,6 +109,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeSearchMal(), 200)
+    }
     const body = context.req.valid("json")
     try {
       const results = await lastValueFrom(searchMal(body.searchTerm))
@@ -129,6 +148,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeSearchAnidb(), 200)
+    }
     const body = context.req.valid("json")
     try {
       const results = await lastValueFrom(searchAnidb(body.searchTerm))
@@ -165,6 +187,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeNameLookup(), 200)
+    }
     const body = context.req.valid("json")
     try {
       const anime = await lastValueFrom(lookupAnidbById(body.anidbId))
@@ -202,6 +227,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeSearchTvdb(), 200)
+    }
     const body = context.req.valid("json")
     try {
       const results = await lastValueFrom(searchTvdb(body.searchTerm))
@@ -238,6 +266,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeSearchMovieDb(), 200)
+    }
     const body = context.req.valid("json")
     try {
       const results = await lastValueFrom(searchMovieDb(body.searchTerm, body.year))
@@ -274,6 +305,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeSearchDvdCompare(), 200)
+    }
     const body = context.req.valid("json")
     try {
       const results = await lastValueFrom(findDvdCompareResults(body.searchTerm))
@@ -310,6 +344,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeListDvdCompareReleases(), 200)
+    }
     const body = context.req.valid("json")
     try {
       const result = await lastValueFrom(listDvdCompareReleases(body.dvdCompareId))
@@ -346,6 +383,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeNameLookup(), 200)
+    }
     const body = context.req.valid("json")
     const result = await lastValueFrom(lookupMalById(body.malId))
     return context.json({ name: result?.name ?? null }, 200)
@@ -376,6 +416,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeNameLookup(), 200)
+    }
     const body = context.req.valid("json")
     const result = await lastValueFrom(lookupTvdbById(body.tvdbId))
     return context.json({ name: result?.name ?? null }, 200)
@@ -406,6 +449,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeNameLookup(), 200)
+    }
     const body = context.req.valid("json")
     const result = await lastValueFrom(lookupMovieDbById(body.movieDbId))
     return context.json({ name: result?.name ?? null }, 200)
@@ -436,6 +482,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeNameLookup(), 200)
+    }
     const body = context.req.valid("json")
     const result = await lastValueFrom(lookupDvdCompareFilm(body.dvdCompareId))
     return context.json({ name: result?.name ?? null }, 200)
@@ -466,6 +515,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeLabelLookup(), 200)
+    }
     const body = context.req.valid("json")
     const result = await lastValueFrom(lookupDvdCompareRelease(body.dvdCompareId, body.hash))
     return context.json({ label: result?.label ?? null }, 200)
@@ -496,6 +548,9 @@ queryRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeListDirectoryEntries(), 200)
+    }
     const body = context.req.valid("json")
     try {
       const result = await lastValueFrom(listDirectoryEntries(body.path))
