@@ -524,11 +524,11 @@ function renderPathField(step, field, stepIndex) {
         <span class="text-slate-400 shrink-0">▾</span>
       </button>
     </div>
-    <input type="text" value="${esc(computed ?? val)}" ${computed !== null ? 'readonly' : ''}
+    <input type="text" value="${esc(computed ?? val)}" ${(link && typeof link === 'object' && link.linkedTo) ? 'readonly' : ''}
       data-step="${step.id}" data-field="${field.name}"
       class="${computed !== null ? 'linked-input' : 'manual-input'} w-full bg-slate-${computed !== null ? '900' : '700'} text-slate-${computed !== null ? '400' : '200'} text-xs rounded px-2 py-1.5 border border-slate-${computed !== null ? '700' : '600'} focus:outline-none focus:border-blue-500 font-mono"
-      ${computed !== null ? '' : `oninput="onPathFieldInput(this,'${step.id}','${field.name}',this.value)" onkeydown="pathPickerKeydown(event)" onchange="promotePathToPathVar('${step.id}','${field.name}',this.value)"`} />
-    ${computed !== null ? `<input type="text" value="${esc(val)}" data-step="${step.id}" data-field="${field.name}" class="manual-input hidden w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" oninput="onPathFieldInput(this,'${step.id}','${field.name}',this.value)" onkeydown="pathPickerKeydown(event)" onchange="promotePathToPathVar('${step.id}','${field.name}',this.value)" />` : ''}
+      oninput="onPathFieldInput(this,'${step.id}','${field.name}',this.value)" onkeydown="pathPickerKeydown(event)" onchange="promotePathToPathVar('${step.id}','${field.name}',this.value)" />
+    ${computed !== null && (link && typeof link === 'object' && link.linkedTo) ? `<input type="text" value="${esc(val)}" data-step="${step.id}" data-field="${field.name}" class="manual-input hidden w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" oninput="onPathFieldInput(this,'${step.id}','${field.name}',this.value)" onkeydown="pathPickerKeydown(event)" onchange="promotePathToPathVar('${step.id}','${field.name}',this.value)" />` : ''}
   </div>`
 }
 

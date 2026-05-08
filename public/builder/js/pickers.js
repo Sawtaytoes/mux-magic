@@ -350,6 +350,16 @@ export const linkPicker = createPopoverPicker({
 let pathPickerState = null
 
 export function onPathFieldInput(inputElement, stepId, fieldName, value) {
+  // If the field is currently linked to a path variable (string link),
+  // typing in it is an override — clear the link so the user's value
+  // sticks instead of being overwritten by the next render reading
+  // `getLinkedValue` from the still-set link. Step-output links
+  // (object form) stay readonly in the renderer, so we won't reach
+  // here for them; the typeof guard is defence-in-depth anyway.
+  const step = findStepById(stepId)
+  if (step?.links?.[fieldName] && typeof step.links[fieldName] === 'string') {
+    delete step.links[fieldName]
+  }
   setParam(stepId, fieldName, value || undefined)
   schedulePathLookup(inputElement, { mode: 'step', stepId, fieldName }, value)
 }
