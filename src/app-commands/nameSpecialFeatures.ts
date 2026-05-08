@@ -513,50 +513,51 @@ export const reorderForDuplicatePrompts = (
   if (duplicateGroups.length === 0) {
     return of(renames)
   }
-  // Walk each duplicate group sequentially, accumulating the reordered
-  // list. `concatMap` over the groups keeps prompts strictly ordered so
-  // the UI never shows two duplicate-pick modals at once.
+  // Walk each duplicate group sequentially. `concatMap` over the
+  // groups keeps prompts strictly ordered so the UI never shows two
+  // duplicate-pick modals at once. Each iteration emits one
+  // { group, selectedIndex } pair; we collect them with toArray and
+  // fold into the final reordered renames in a single pass at the
+  // end. Avoids the prior reduce-of-observables pattern that caused
+  // a hang after the first prompt was answered.
   return from(duplicateGroups).pipe(
-    reduce(
-      (accumulated$, group) => (
-        accumulated$.pipe(
-          concatMap((currentRenames) => (
-            getUserSearchInput({
-              message: (
-                `These ${group.length} files all match "${group[0].renamedFilename}".\n`
-                + "Pick the one that should keep the un-suffixed name "
-                + "— the rest get (2)/(3)/… appended."
-              ),
-              options: [
-                ...group.map((rename, index) => ({
-                  index,
-                  label: rename.fileInfo.filename,
-                })),
-                { index: -1, label: "Skip — keep DVDCompare order" },
-              ],
-              filePaths: group.map((rename, index) => ({
-                index,
-                path: rename.fileInfo.fullPath,
-              })),
-            })
-            .pipe(
-              map((selectedIndex) => {
-                if (selectedIndex < 0) {
-                  return currentRenames
-                }
-                const chosen = group[selectedIndex]
-                if (!chosen) {
-                  return currentRenames
-                }
-                return promoteRenameToFront(currentRenames, chosen)
-              }),
-            )
-          )),
-        )
-      ),
-      of(renames) as Observable<{ fileInfo: FileInfo, renamedFilename: string }[]>,
-    ),
-    concatMap((stream$) => stream$),
+    concatMap((group) => (
+      getUserSearchInput({
+        message: (
+          `These ${group.length} files all match "${group[0].renamedFilename}".\n`
+          + "Pick the one that should keep the un-suffixed name "
+          + "— the rest get (2)/(3)/… appended."
+        ),
+        options: [
+          ...group.map((rename, index) => ({
+            index,
+            label: rename.fileInfo.filename,
+          })),
+          { index: -1, label: "Skip — keep DVDCompare order" },
+        ],
+        filePaths: group.map((rename, index) => ({
+          index,
+          path: rename.fileInfo.fullPath,
+        })),
+      })
+      .pipe(
+        map((selectedIndex) => ({ group, selectedIndex })),
+      )
+    )),
+    toArray(),
+    map((picks) => picks.reduce(
+      (currentRenames, { group, selectedIndex }) => {
+        if (selectedIndex < 0) {
+          return currentRenames
+        }
+        const chosen = group[selectedIndex]
+        if (!chosen) {
+          return currentRenames
+        }
+        return promoteRenameToFront(currentRenames, chosen)
+      },
+      renames,
+    )),
   )
 }
 
