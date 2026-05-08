@@ -218,13 +218,18 @@ Recommendation flipped from Option A (MQTT) to **Option C (webhook)**. Reasoning
   - `fireErrorsPresent({ kind, message, runId, ... })` POSTs to `process.env.WEBHOOK_ERRORS_PRESENT_URL`.
   - `fireErrorsCleared()` POSTs to `process.env.WEBHOOK_ERRORS_CLEARED_URL`.
   Both wrap in `try`/`catch` and log but never throw — webhook delivery never blocks the sync pipeline.
+- **HTTP method: POST.** Both URLs receive `POST` with `Content-Type: application/json` and the JSON body. HA's webhook trigger accepts GET/POST/PUT/HEAD but POST is canonical for "I'm sending you event data." (Decision 2026-05-07.)
 - **No new dependencies** — uses Node's built-in `fetch` (≥18).
-- **Per-URL gating:** if `WEBHOOK_ERRORS_PRESENT_URL` is unset, failure-side fires no-op (log once at startup: "errors-present webhook disabled"). Same for `WEBHOOK_ERRORS_CLEARED_URL` and the dismiss side. Both unset = full no-op.
+- **Per-URL gating, truly silent:** if either env var is unset, the corresponding fire path is a no-op. **No startup warning, no log lines, no error output.** The check is inline at the call site (`if (!process.env.WEBHOOK_ERRORS_PRESENT_URL) { return }`), not a startup-time announcement. Both unset = the entire integration is invisible. (Decision 2026-05-07: user wants the integration to feel optional, not "disabled with messaging.")
 - **Env vars documented** in media-sync's `.env.example` and README.
 - **Payload shape:**
   - `errors_present` URL: `{ kind, message, runId, firedAt, attributes? }`. `attributes` is a forward-compat bag.
   - `errors_cleared` URL: `{ firedAt }`. HA only needs to know the dismissal happened.
   HA's webhook trigger exposes the body as `trigger.json` for use in templated notifications.
-- **Where `errors_cleared` fires from:** the existing media-sync UI's "Dismiss all errors" action. The UI calls a sync-side endpoint (or already mutates state directly — needs a glance during W24b pickup); that handler is where the webhook fire belongs. The webhook MUST fire after the dismissal succeeds, never before, so HA's view never goes ahead of reality.
+- **Where `errors_cleared` fires from (revised 2026-05-07):** there is **no "Dismiss all errors" UI button in media-sync today** — only single-error dismissal via `DELETE /api/jobs/errors/:errorId` → `jobService.dismissError(errorId)`. Rather than building a new bulk-dismiss UI, **fire `errors_cleared` from inside `dismissError` whenever the dismissal causes the pending-error count to drop to 0** (i.e. the user just cleared the last error). This:
+  - Reuses the existing UI (no new button, no new endpoint).
+  - Matches the binary-state model HA wants: "media-sync has errors: yes / no."
+  - The fire MUST happen after the store mutation succeeds, never before.
+  - When the user dismisses an error but pending count is still >0, no fire — the integration only cares about transitions into the "no errors" state.
 - **Pairing semantics:** if only one URL is configured, the integration is asymmetric — HA may show errors but never see them clear (or vice versa). The W24b worker output must include a clear note: "configure both URLs or neither."
 - **media-tools:** **skipped** for v1 per scope decision above.
