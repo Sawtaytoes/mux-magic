@@ -2,7 +2,7 @@
 
 ## Status
 
-**Pending — handed off.** Planning doc for an agent to pick up. The implementation is gated on picking a Range-handling strategy (section 5) and answering the open questions (section 11).
+**Decisions captured 2026-05-07** (see section 12). Ready for W22b implementation. Range strategy: Option B (transcode-to-temp + Range, doc recommendation).
 
 ## 1. Goal
 
@@ -215,3 +215,13 @@ One new route file and a couple of helpers:
 4. **Multi-audio-track sources.** When the source has English + a director's commentary, we default to `0:a:0`. Does the UI need a selector? If so, the modal needs a small pre-flight `getMediaInfo` call to enumerate tracks before constructing the URL.
 5. **MEDIA_ROOTS migration.** The existing `/files/stream` doesn't enforce media-root allowlisting. Migrating it is a separate behavior change — what's the rollout plan (warn-only mode for one release? hard-fail from day one)?
 6. **Temp-store location on Docker.** When the API runs inside the Docker image, `os.tmpdir()` is the container's `/tmp` — ephemeral, sometimes tmpfs-backed, sometimes size-capped. Should there be an explicit `TRANSCODE_CACHE_DIR` env var so operators can mount a real volume?
+
+## 12. Decisions (2026-05-07)
+
+1. **Trigger — Auto-detect.** Modal calls `MediaSource.isTypeSupported(...)` on the source's audio codec (already known via `getMediaInfo`) and silently swaps the `<video>`'s `src` from `/files/stream?path=…` to `/transcode/audio?path=…&codec=…` when the browser can't decode the source audio. No user-facing toggle.
+2. **Default codec — Opus in WebM.** Better quality-per-bit at 192 kbit/s. Supported everywhere modern (Safari 14.1+).
+3. **Subtitles — drop entirely.** No `-map 0:s?`. Defer to the in-progress subtitles-side-channel work.
+4. **Path safety — hardcoded `/media` root, not env-var.** The endpoint accepts only paths that resolve under `/media` inside the container. Any other path returns 403. **Document in README** that browser-safe playback only works when the media is mounted at `/media` inside the server container; otherwise the browser either fails to play the file or falls back to the (potentially buggy) direct `/files/stream` path. Replaces the MEDIA_ROOTS env-var proposal in section 8.
+5. **Range strategy — Option B (transcode-to-temp + Range)** as proposed in section 9.
+6. **Multi-audio-track selector** (section 11 Q4) — deferred. Default to `0:a:0` for now.
+7. **Temp-store on Docker** (section 11 Q6) — defer until the first user reports a `/tmp` size issue. Use `os.tmpdir()` for v1.

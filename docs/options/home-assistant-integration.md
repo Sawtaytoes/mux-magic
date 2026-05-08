@@ -196,3 +196,35 @@ secrets or `.env` file excluded from git.
    different hosts (not the same Docker Compose stack), does the broker URL
    differ, or is there one central Mosquitto instance on the HA host that
    both reach over the network?
+
+---
+
+## 8. Decisions (2026-05-07)
+
+Recommendation flipped from Option A (MQTT) to **Option C (webhook)**. Reasoning given by the user: zero npm dependencies, no broker setup beyond the URL, and the goal is alerts-only (not dashboards or retained state), which is exactly the surface webhooks are designed for.
+
+1. **Transport — Option C (HA webhook).** Apps `fetch()` POST to the HA webhook URL configured at runtime. No `mqtt` npm package, no Mosquitto coordination on the app side (the user already has Mosquitto running, but it isn't load-bearing for this integration).
+2. **Scope — media-sync only.** Skip media-tools for v1. The sync script is the higher-priority signal source. Media-tools may follow later but is not in W24b's scope.
+3. **Two webhook URLs, two env vars** — `WEBHOOK_ERRORS_PRESENT_URL` (POST'd when a sync run fails) and `WEBHOOK_ERRORS_CLEARED_URL` (POST'd when the user clicks "Dismiss all errors" in the media-sync UI). Each URL fires its own HA automation directly — no payload-event branching needed in HA. Either URL unset disables only that side (no warnings); both unset disables the integration entirely. Considered a single-endpoint "error-count" state-mirror design but rejected — user prefers the simpler URL-as-event-channel HA pattern even at the cost of two env vars.
+4. **Signals to publish — error state transitions.** Each URL has its own purpose:
+   - **`WEBHOOK_ERRORS_PRESENT_URL`** — fired when a sync run fails (or a per-step failure occurs). Payload includes the failure details so HA can reference them in notifications.
+   - **`WEBHOOK_ERRORS_CLEARED_URL`** — fired when the user clicks "Dismiss all errors" in the media-sync UI. Tells HA the situation is resolved so it can flip its sensor back to off, clear a persistent notification, etc.
+   This makes the receiving HA side a single binary state ("media-sync has errors: yes/no") instead of an incident stream the user has to manually acknowledge in HA. No dashboard YAML, no metrics counters, no recurring "still alive" pings.
+5. **HA-side setup docs — included.** The W24b worker output must include step-by-step instructions for: creating the webhook trigger automation in HA UI, copying the resulting webhook URL, and dropping it into media-sync's env (.env / Docker Compose). Even though the user already has Mosquitto, the webhook flow is different and the worker should not assume HA-side wiring is in place.
+
+### Implementation footprint (revised — supersedes section 6 for media-sync)
+
+- **media-sync:** new `packages/web-server/src/webhookReporter.ts` (or wherever the sync scheduler emits completion events). Two functions:
+  - `fireErrorsPresent({ kind, message, runId, ... })` POSTs to `process.env.WEBHOOK_ERRORS_PRESENT_URL`.
+  - `fireErrorsCleared()` POSTs to `process.env.WEBHOOK_ERRORS_CLEARED_URL`.
+  Both wrap in `try`/`catch` and log but never throw — webhook delivery never blocks the sync pipeline.
+- **No new dependencies** — uses Node's built-in `fetch` (≥18).
+- **Per-URL gating:** if `WEBHOOK_ERRORS_PRESENT_URL` is unset, failure-side fires no-op (log once at startup: "errors-present webhook disabled"). Same for `WEBHOOK_ERRORS_CLEARED_URL` and the dismiss side. Both unset = full no-op.
+- **Env vars documented** in media-sync's `.env.example` and README.
+- **Payload shape:**
+  - `errors_present` URL: `{ kind, message, runId, firedAt, attributes? }`. `attributes` is a forward-compat bag.
+  - `errors_cleared` URL: `{ firedAt }`. HA only needs to know the dismissal happened.
+  HA's webhook trigger exposes the body as `trigger.json` for use in templated notifications.
+- **Where `errors_cleared` fires from:** the existing media-sync UI's "Dismiss all errors" action. The UI calls a sync-side endpoint (or already mutates state directly — needs a glance during W24b pickup); that handler is where the webhook fire belongs. The webhook MUST fire after the dismissal succeeds, never before, so HA's view never goes ahead of reality.
+- **Pairing semantics:** if only one URL is configured, the integration is asymmetric — HA may show errors but never see them clear (or vice versa). The W24b worker output must include a clear note: "configure both URLs or neither."
+- **media-tools:** **skipped** for v1 per scope decision above.
