@@ -22,7 +22,10 @@ import {
 const MODAL_ID = 'specials-mapping-modal'
 
 // Private module state — only one mapping modal can be open at a time.
-let activeContext = null
+// Held inside a const object so the module never reassigns a `let` (per
+// AGENTS.md rule 2). The current context is the wrapped object's
+// `.value`, swapped in/out as the modal opens and closes.
+const moduleState = { activeContext: null }
 
 const getModal = () => document.getElementById(MODAL_ID)
 
@@ -218,14 +221,14 @@ const ensureExtension = ({ desiredName, originalFilename }) => {
 }
 
 const handleConfirmClick = async () => {
-  if (!activeContext) {
+  if (!moduleState.activeContext) {
     return
   }
   const modal = getModal()
   if (!modal) {
     return
   }
-  const { onRenameApplied, sourcePath, suggestions } = activeContext
+  const { onRenameApplied, sourcePath, suggestions } = moduleState.activeContext
   const rows = Array.from(modal.querySelectorAll('[data-mapping-row]'))
   const renamePlan = rows
     .map((row) => {
@@ -361,7 +364,7 @@ export const closeSpecialsMappingModal = () => {
   }
   modal.classList.add('hidden')
   modal.innerHTML = ''
-  activeContext = null
+  moduleState.activeContext = null
 }
 
 // Public API. Mount + open the smart-suggestion modal for a leftover
@@ -402,7 +405,7 @@ export const openSpecialsMappingModal = async ({
   }))
   const suggestions = rankSuggestions({ possibleNames, unrenamedFiles })
 
-  activeContext = {
+  moduleState.activeContext = {
     onRenameApplied,
     sourcePath,
     suggestions,
