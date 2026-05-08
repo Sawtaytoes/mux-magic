@@ -55,4 +55,4 @@ RUN yarn install-playwright-browser --with-deps chromium
 
 EXPOSE $PORT
 
-CMD ["yarn", "server"]
+CMD ["yarn", "start-server"]

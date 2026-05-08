@@ -3,8 +3,6 @@
   "packageManager": "yarn@4.9.0",
   "version": "1.0.0",
   "scripts": {
-    "api-dev-server": "tsx watch --env-file ./.env src/api-server.ts",
-    "api-server": "tsx --env-file ./.env src/api-server.ts",
     "build": "rimraf build/ && esbuild --format=cjs --minify --bundle --platform=node --external:./xhr-sync-worker.js \"--external:chromium-bidi/*\" --outfile=build/media-tools.cjs src/cli.ts",
     "build-version": "node scripts/build-version.cjs",
     "copy-assets": "rimraf dist/assets && mkdir 'dist/assets' && npx cpx2 'assets/**/*' dist/assets/",
@@ -19,7 +17,8 @@
     "prebuild": "yarn build-version",
     "preserver": "yarn build-version",
     "sea": "rimraf dist/ && yarn build && node --experimental-sea-config sea-config.json && mkdir dist && node -e \"require('fs').copyFileSync(process.execPath, 'dist/media-tools.exe')\" && npx postject 'dist/media-tools.exe' NODE_SEA_BLOB 'build/sea-prep.blob' --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 && yarn copy-assets",
-    "server": "tsx --env-file ./.env src/start-servers.ts",
+    "start-server": "tsx --env-file ./.env src/server.ts",
+    "start": "tsx watch --env-file ./.env src/server.ts",
     "test": "vitest",
     "typecheck": "tsc --noEmit"
   },

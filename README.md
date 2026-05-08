@@ -20,7 +20,7 @@ The Sequence Builder lets you compose multi-step pipelines visually. Each step c
 
 ![Sequence Builder YAML modal](docs/images/builder-yaml.png)
 
-> **Regenerating screenshots.** Start the server (`yarn api-server`) then run `yarn screenshots`. This launches headless Chromium with `?mock=1` (MSW fake-data mode — no real files needed) and writes PNGs to `docs/images/`. Playwright Chromium must be installed first (`yarn install-playwright-browser`).
+> **Regenerating screenshots.** Start the server (`yarn start-server`) then run `yarn screenshots`. This launches headless Chromium with `?mock=1` (MSW fake-data mode — no real files needed) and writes PNGs to `docs/images/`. Playwright Chromium must be installed first (`yarn install-playwright-browser`).
 
 ---
 
