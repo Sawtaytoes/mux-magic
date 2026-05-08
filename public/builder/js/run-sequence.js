@@ -12,6 +12,7 @@
 import { flattenSteps, findStepById, isGroup, steps, paths } from './sequence-state.js'
 import { buildParams, setParam } from './sequence-editor.js'
 import { groupToYaml } from './components/yaml-modal.js'
+import { openSpecialsMappingModal } from './components/specials-mapping-modal.js'
 import { renderStatusBadge, esc, LOOKUP_LINKS } from './step-renderer.js'
 import {
   handleStepCardProgressEvent,
@@ -747,6 +748,7 @@ function getNameSpecialFeaturesSourcePath(step) {
 
 function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) {
   const unrenamed = Array.isArray(summaryRecord?.unrenamedFilenames) ? summaryRecord.unrenamedFilenames : []
+  const possibleNamesRaw = Array.isArray(summaryRecord?.possibleNames) ? summaryRecord.possibleNames : []
   const counts = `Renamed ${renamePairs.length}. Files not renamed: ${unrenamed.length}.`
   const sourcePath = getNameSpecialFeaturesSourcePath(step)
   const browseBtnBlock = sourcePath
@@ -754,7 +756,21 @@ function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) 
         class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded border border-slate-600 ml-2"
         title="Open the file explorer scoped to this step's source folder">📁 Browse files</button>`
     : ''
-  const countsBlock = `<div class="flex items-center mb-2" data-rename-counts><p class="text-slate-300" data-rename-counts-label>${esc(counts)}</p>${browseBtnBlock}</div>`
+  // Smart-match button — only mounts when both lists have content per
+  // the design doc's mount condition. Wired via a data-attribute that
+  // wireNameSpecialFeaturesResults picks up after innerHTML is set
+  // (avoids the `onclick=` inline-handler pattern for closure access).
+  const hasSmartMatchData = (
+    sourcePath
+    && unrenamed.length > 0
+    && possibleNamesRaw.length > 0
+  )
+  const smartMatchBtnBlock = hasSmartMatchData
+    ? `<button type="button" data-specials-smart-match
+        class="text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded border border-blue-600 ml-2"
+        title="Open the smart-suggestion modal to map leftover files in bulk">✨ Smart match…</button>`
+    : ''
+  const countsBlock = `<div class="flex items-center mb-2" data-rename-counts><p class="text-slate-300" data-rename-counts-label>${esc(counts)}</p>${browseBtnBlock}${smartMatchBtnBlock}</div>`
   const renameRowsHtml = renamePairs.map((item) => `<div>${esc(item.oldName)} → ${esc(item.newName)}</div>`).join('')
   const renameBlock = renamePairs.length > 0
     ? `<div class="text-emerald-300 font-mono mb-2 break-words">${renameRowsHtml}</div>`
@@ -816,7 +832,37 @@ function renderInteractiveRenameBlock({ filenames, linkBlock }) {
 function wireNameSpecialFeaturesResults({ body, step, summaryRecord }) {
   const sourcePath = getNameSpecialFeaturesSourcePath(step)
   const allKnownNames = Array.isArray(summaryRecord?.allKnownNames) ? summaryRecord.allKnownNames : []
-  const possibleNames = Array.isArray(summaryRecord?.possibleNames) ? summaryRecord.possibleNames : []
+  // The wire-format `possibleNames` is `{ name, timecode? }[]` per the
+  // smart-suggestion modal contract. The autocomplete dropdown only
+  // needs the name labels, so flatten to strings here at the boundary
+  // and leave name-autocomplete.js consuming `string[]` as before.
+  const possibleNamesRaw = Array.isArray(summaryRecord?.possibleNames) ? summaryRecord.possibleNames : []
+  const possibleNames = possibleNamesRaw.map((entry) => (
+    typeof entry === 'string' ? entry : entry?.name ?? ''
+  )).filter(Boolean)
+  const possibleNameObjects = possibleNamesRaw.map((entry) => (
+    typeof entry === 'string'
+      ? { name: entry, timecode: undefined }
+      : { name: entry?.name ?? '', timecode: entry?.timecode }
+  )).filter((entry) => entry.name.length > 0)
+
+  const smartMatchButton = body.querySelector('[data-specials-smart-match]')
+  if (smartMatchButton) {
+    smartMatchButton.addEventListener('click', () => {
+      const unrenamedFilenames = Array.isArray(summaryRecord?.unrenamedFilenames)
+        ? summaryRecord.unrenamedFilenames
+        : []
+      openSpecialsMappingModal({
+        onRenameApplied: (successfulRenames) => {
+          handleSmartMatchRenames({ step, successfulRenames, summaryRecord })
+        },
+        possibleNames: possibleNameObjects,
+        sourcePath,
+        unrenamedFilenames,
+      })
+    })
+  }
+
   const rows = body.querySelectorAll('[data-rename-row]')
   rows.forEach((row) => {
     const inputElement = row.querySelector('[data-rename-input]')
@@ -851,6 +897,29 @@ function wireNameSpecialFeaturesResults({ body, step, summaryRecord }) {
       })
     })
   })
+}
+
+// Apply the smart-match modal's batch of successful renames back into
+// the step card's in-memory state. Mirrors the per-row interactive
+// flow's "drop renamed entry from the summary, push the {oldName,
+// newName} pair into step.results" pattern so the counts tick up and
+// the leftover list shrinks in lockstep with the modal.
+function handleSmartMatchRenames({ step, successfulRenames, summaryRecord }) {
+  if (!Array.isArray(successfulRenames) || successfulRenames.length === 0) {
+    return
+  }
+  if (Array.isArray(summaryRecord?.unrenamedFilenames)) {
+    const renamedSet = new Set(successfulRenames.map(({ oldFilename }) => oldFilename))
+    summaryRecord.unrenamedFilenames = summaryRecord.unrenamedFilenames.filter((name) => (
+      !renamedSet.has(name)
+    ))
+  }
+  if (Array.isArray(step.results)) {
+    successfulRenames.forEach(({ newFilename, oldFilename }) => {
+      step.results.push({ newName: newFilename, oldName: oldFilename })
+    })
+  }
+  updateStepUI(step)
 }
 
 async function handleInteractiveRenameClick({
