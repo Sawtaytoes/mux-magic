@@ -4,7 +4,7 @@ import { Observable } from "rxjs"
 
 import { getActiveJobId } from "../api/logCapture.js"
 import { emitJobEvent } from "../api/jobStore.js"
-import { registerPrompt } from "../api/promptStore.js"
+import { cancelPrompt, registerPrompt } from "../api/promptStore.js"
 import type { PromptOption } from "../api/types.js"
 
 export const getUserSearchInput = (params: {
@@ -47,7 +47,14 @@ export const getUserSearchInput = (params: {
           observer.error(error)
         })
 
-      return
+      // Teardown: when the surrounding observable chain unsubscribes
+      // mid-prompt (job cancelled, parallel sibling failed, etc.),
+      // drop the pending prompt entry from the store so it doesn't
+      // leak. Idempotent — safe even if the prompt already resolved
+      // by the time teardown runs.
+      return () => {
+        cancelPrompt(promptId)
+      }
     }
 
     process.stdout.write(`${params.message}\n`)

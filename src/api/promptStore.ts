@@ -22,6 +22,16 @@ export const resolvePrompt = (
   return true
 }
 
+// Drop a pending prompt without resolving it. Called by
+// getUserSearchInput's observable teardown when the surrounding
+// chain is unsubscribed (job cancelled, parallel sibling failed,
+// etc.) so the in-flight prompt entry doesn't leak in pendingPrompts
+// forever. Idempotent — silently no-ops if the prompt was already
+// resolved or cancelled.
+export const cancelPrompt = (promptId: string): void => {
+  pendingPrompts.delete(promptId)
+}
+
 export const resetPromptStore = (): void => {
   pendingPrompts.clear()
 }
