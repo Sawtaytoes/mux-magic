@@ -151,11 +151,8 @@ const warnIfDurationMismatch = ({
   }
   logInfo(
     "DURATION MISMATCH",
-    fileName,
-    `(${fileMinutes}m)`,
-    `↔`,
-    `epno=${episode.epno}`,
-    `(${episode.length}m, Δ ${effectiveDelta}m beyond AniDB's rounding window)`,
+    `${fileName} (${fileMinutes}m)`,
+    `epno=${episode.epno} (${episode.length}m, Δ ${effectiveDelta}m beyond AniDB's rounding window)`,
   )
 }
 

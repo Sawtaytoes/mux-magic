@@ -56,16 +56,20 @@ export function createPopoverPicker(config) {
     const spaceBelow = window.innerHeight - triggerRect.bottom - margin
     const spaceAbove = triggerRect.top - margin
     const isFlippedAbove = spaceBelow < 200 && spaceAbove > spaceBelow
-    let height
+    // Always use `top` (not `bottom`) so the popover is positioned in
+    // viewport-relative terms that stay correct regardless of scroll offset.
+    // Clamp into the visible viewport so the popover never drifts off-screen.
+    popover.style.bottom = ''
+    let top, height
     if (isFlippedAbove) {
-      height = Math.min(config.maxHeight, spaceAbove)
-      popover.style.top = ''
-      popover.style.bottom = `${window.innerHeight - triggerRect.top + 4}px`
+      height = Math.min(config.maxHeight, Math.max(0, spaceAbove))
+      top = triggerRect.top - height - 4
     } else {
-      height = Math.min(config.maxHeight, spaceBelow)
-      popover.style.top = `${triggerRect.bottom + 4}px`
-      popover.style.bottom = ''
+      height = Math.min(config.maxHeight, Math.max(0, spaceBelow))
+      top = triggerRect.bottom + 4
     }
+    top = Math.max(margin, Math.min(top, window.innerHeight - height - margin))
+    popover.style.top = `${top}px`
     popover.style.left = `${left}px`
     popover.style.maxHeight = `${height}px`
   }
@@ -426,14 +430,17 @@ function positionPathPicker(inputElement) {
   const spaceBelow = window.innerHeight - rect.bottom - margin
   const spaceAbove = rect.top - margin
   const flipAbove = spaceBelow < 160 && spaceAbove > spaceBelow
+  // Clear `bottom` so it never conflicts with the `top` we set below.
+  popover.style.bottom = ''
   let top, height
   if (flipAbove) {
-    height = Math.min(popoverMaxHeight, spaceAbove)
+    height = Math.min(popoverMaxHeight, Math.max(0, spaceAbove))
     top = rect.top - height - 4
   } else {
-    height = Math.min(popoverMaxHeight, spaceBelow)
+    height = Math.min(popoverMaxHeight, Math.max(0, spaceBelow))
     top = rect.bottom + 4
   }
+  top = Math.max(margin, Math.min(top, window.innerHeight - height - margin))
   popover.style.left = `${left}px`
   popover.style.top = `${top}px`
   popover.style.maxHeight = `${height}px`
