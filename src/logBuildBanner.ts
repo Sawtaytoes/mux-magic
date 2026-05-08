@@ -26,14 +26,13 @@ try {
   }
   const sha = data.gitShaShort || data.gitSha || "unknown"
   const built = data.buildTime || "unknown"
-  const pkg = data.packageVersion ? "v" + data.packageVersion : "v0.0.0"
   const node = data.nodeVersion || process.version
   console.log(
-    `media-tools git=${sha} built=${built} ${pkg} node=${node}`,
+    `media-tools git=${sha} built=${built} node=${node}`,
   )
 }
 catch {
   console.log(
-    `media-tools git=dev built=unknown v0.0.0 node=${process.version}`,
+    `media-tools git=dev built=unknown node=${process.version}`,
   )
 }

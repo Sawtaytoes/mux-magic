@@ -63,7 +63,6 @@
     el.textContent = (
       "git: " + (data.gitShaShort || data.gitSha || "unknown")
       + " · built " + formatBuildTime(data.buildTime)
-      + " · v" + (data.packageVersion || "0.0.0")
       + " · node " + (data.nodeVersion || "unknown")
     )
   }
