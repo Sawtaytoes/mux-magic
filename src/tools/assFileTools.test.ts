@@ -164,9 +164,9 @@ describe("applyAssRules — setScriptInfo", () => {
   test("changes YCbCr Matrix: TV.601 to TV.709", () => {
     const input = SAMPLE_1.replace("YCbCr Matrix: TV.709", "YCbCr Matrix: TV.601")
     const parsed = parseAssFile(input)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       { type: "setScriptInfo", key: "YCbCr Matrix", value: "TV.709" },
-    ])
+    ] })
 
     expect(getScriptInfoValue(serializeAssFile(result), "YCbCr Matrix")).toBe("TV.709")
   })
@@ -174,9 +174,9 @@ describe("applyAssRules — setScriptInfo", () => {
   test("changes ScriptType: 3.2.2 to v4.00+", () => {
     const input = SAMPLE_2.replace("ScriptType: v4.00+", "ScriptType: 3.2.2")
     const parsed = parseAssFile(input)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       { type: "setScriptInfo", key: "ScriptType", value: "v4.00+" },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
@@ -189,9 +189,9 @@ describe("applyAssRules — setScriptInfo", () => {
   test("adds a key if it doesn't exist", () => {
     const input = SAMPLE_1.replace("\nScaledBorderAndShadow: yes", "")
     const parsed = parseAssFile(input)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       { type: "setScriptInfo", key: "ScaledBorderAndShadow", value: "yes" },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
@@ -209,13 +209,13 @@ describe("applyAssRules — setScriptInfo", () => {
 describe("applyAssRules — scaleResolution", () => {
   test("scales PlayResX and PlayResY from 640x360 to 1920x1080", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       {
         type: "scaleResolution",
         from: { width: 640, height: 360 },
         to: { width: 1920, height: 1080 },
       },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
@@ -228,13 +228,13 @@ describe("applyAssRules — scaleResolution", () => {
 
   test("updates existing LayoutResX and LayoutResY", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       {
         type: "scaleResolution",
         from: { width: 640, height: 360 },
         to: { width: 1920, height: 1080 },
       },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
@@ -247,13 +247,13 @@ describe("applyAssRules — scaleResolution", () => {
 
   test("does not add LayoutResX/Y when absent and addLayoutRes is not set", () => {
     const parsed = parseAssFile(SAMPLE_1)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       {
         type: "scaleResolution",
         from: { width: 640, height: 360 },
         to: { width: 1920, height: 1080 },
       },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
@@ -270,14 +270,14 @@ describe("applyAssRules — scaleResolution", () => {
 
   test("adds LayoutResX/Y when absent and addLayoutRes:true", () => {
     const parsed = parseAssFile(SAMPLE_1)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       {
         type: "scaleResolution",
         from: { width: 640, height: 360 },
         to: { width: 1920, height: 1080 },
         hasLayoutRes: true,
       },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
@@ -295,13 +295,13 @@ describe("applyAssRules — scaleResolution", () => {
   test("ensures ScaledBorderAndShadow: yes by default", () => {
     const input = SAMPLE_1.replace("\nScaledBorderAndShadow: yes", "")
     const parsed = parseAssFile(input)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       {
         type: "scaleResolution",
         from: { width: 640, height: 360 },
         to: { width: 1920, height: 1080 },
       },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
@@ -317,13 +317,13 @@ describe("applyAssRules — scaleResolution", () => {
 
   test("does not scale when source resolution does not match", () => {
     const parsed = parseAssFile(SAMPLE_1)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       {
         type: "scaleResolution",
         from: { width: 1280, height: 720 },
         to: { width: 1920, height: 1080 },
       },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
@@ -337,13 +337,13 @@ describe("applyAssRules — scaleResolution", () => {
 describe("applyAssRules — setStyleFields", () => {
   test("changes MarginL, MarginR, MarginV on all non-skipped styles (sample 1: 10,10,18 → 200,200,90)", () => {
     const parsed = parseAssFile(SAMPLE_1)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       {
         type: "setStyleFields",
         ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending",
         fields: { MarginL: "200", MarginR: "200", MarginV: "90" },
       },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionName === "V4+ Styles")
     if (section?.sectionType !== "formatted") return
@@ -358,13 +358,13 @@ describe("applyAssRules — setStyleFields", () => {
 
   test("changes MarginL, MarginR, MarginV on all non-skipped styles (sample 2: 10,10,20 → 200,200,90)", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       {
         type: "setStyleFields",
         ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending",
         fields: { MarginL: "200", MarginR: "200", MarginV: "90" },
       },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionName === "V4+ Styles")
     if (section?.sectionType !== "formatted") return
@@ -379,13 +379,13 @@ describe("applyAssRules — setStyleFields", () => {
 
   test("skips the Signs style when skipNamePattern matches", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       {
         type: "setStyleFields",
         ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending",
         fields: { MarginL: "200", MarginR: "200", MarginV: "90" },
       },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionName === "V4+ Styles")
     if (section?.sectionType !== "formatted") return
@@ -400,13 +400,13 @@ describe("applyAssRules — setStyleFields", () => {
 
   test("applies all fields to Flashback style (not skipped)", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       {
         type: "setStyleFields",
         ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending",
         fields: { MarginL: "200", MarginR: "200", MarginV: "90" },
       },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionName === "V4+ Styles")
     if (section?.sectionType !== "formatted") return
@@ -419,12 +419,12 @@ describe("applyAssRules — setStyleFields", () => {
 
   test("applies to all styles when skipNamePattern is not set", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules(parsed, [
+    const result = applyAssRules({ assFile: parsed, rules: [
       {
         type: "setStyleFields",
         fields: { MarginV: "90" },
       },
-    ])
+    ] })
 
     const section = result.sections.find((s) => s.sectionName === "V4+ Styles")
     if (section?.sectionType !== "formatted") return
