@@ -466,6 +466,9 @@ export const getSpecialFeatureFromTimecode = ({
       text,
       type,
     }) => {
+      console.log(
+        `[getSpecialFeatureFromTimecode] picked extra: text="${text}" type=${type} parentType=${parentType}`,
+      )
       const specialFeatureMatchRename = (
         specialFeatureMatchRenames
         .find(({

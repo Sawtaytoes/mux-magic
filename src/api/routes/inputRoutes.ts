@@ -67,6 +67,10 @@ inputRoutes.openapi(
       return context.json({ ok: true as const }, 200)
     }
     const body = context.req.valid("json")
+    console.log(
+      `[inputRoutes] POST /jobs/${context.req.param("id")}/input promptId=${body.promptId} `
+      + `selectedIndex=${body.selectedIndex}`,
+    )
     const resolved = resolvePrompt(body.promptId, body.selectedIndex)
 
     if (!resolved) {
