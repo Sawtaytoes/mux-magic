@@ -223,31 +223,53 @@ export const filterRulesByWhen = ({
 // computeFrom — math ops over a numeric accumulator
 // ---------------------------------------------------------------------------
 
-const isNumericOp = (op: ComputeFromOp): op is Exclude<ComputeFromOp, string> => (
-  typeof op !== "string"
+const isNumericOperation = (
+  operation: ComputeFromOp,
+): operation is Exclude<ComputeFromOp, string> => (
+  typeof operation !== "string"
 )
 
 const applyComputeFromOps = ({
   initialValue,
-  ops,
+  operations,
 }: {
   initialValue: number
-  ops: ComputeFromOp[]
+  operations: ComputeFromOp[]
 }): number => (
-  ops.reduce((accumulator, op) => {
-    if (!isNumericOp(op)) {
-      if (op === "round") return Math.round(accumulator)
-      if (op === "floor") return Math.floor(accumulator)
-      if (op === "ceil") return Math.ceil(accumulator)
-      if (op === "abs") return Math.abs(accumulator)
+  operations.reduce((accumulator, operation) => {
+    if (!isNumericOperation(operation)) {
+      if (operation === "round") {
+        return Math.round(accumulator)
+      }
+      if (operation === "floor") {
+        return Math.floor(accumulator)
+      }
+      if (operation === "ceil") {
+        return Math.ceil(accumulator)
+      }
+      if (operation === "abs") {
+        return Math.abs(accumulator)
+      }
       return accumulator
     }
-    if ("add" in op) return accumulator + op.add
-    if ("subtract" in op) return accumulator - op.subtract
-    if ("multiply" in op) return accumulator * op.multiply
-    if ("divide" in op) return accumulator / op.divide
-    if ("min" in op) return Math.min(accumulator, op.min)
-    if ("max" in op) return Math.max(accumulator, op.max)
+    if ("add" in operation) {
+      return accumulator + operation.add
+    }
+    if ("subtract" in operation) {
+      return accumulator - operation.subtract
+    }
+    if ("multiply" in operation) {
+      return accumulator * operation.multiply
+    }
+    if ("divide" in operation) {
+      return accumulator / operation.divide
+    }
+    if ("min" in operation) {
+      return Math.min(accumulator, operation.min)
+    }
+    if ("max" in operation) {
+      return Math.max(accumulator, operation.max)
+    }
     return accumulator
   }, initialValue)
 )
@@ -278,7 +300,7 @@ const resolveStyleFieldValue = ({
     : styleRow[property]
   )
   const initialValue = Number(sourceValue ?? "0") || 0
-  const finalValue = applyComputeFromOps({ initialValue, ops })
+  const finalValue = applyComputeFromOps({ initialValue, operations: ops })
   return String(finalValue)
 }
 
@@ -302,11 +324,21 @@ const styleMatchesEntry = ({
     return false
   }
 
-  if (fieldValue.eq !== undefined && numericStyleValue !== fieldValue.eq) return false
-  if (fieldValue.lt !== undefined && !(numericStyleValue < fieldValue.lt)) return false
-  if (fieldValue.gt !== undefined && !(numericStyleValue > fieldValue.gt)) return false
-  if (fieldValue.lte !== undefined && !(numericStyleValue <= fieldValue.lte)) return false
-  if (fieldValue.gte !== undefined && !(numericStyleValue >= fieldValue.gte)) return false
+  if (fieldValue.eq !== undefined && numericStyleValue !== fieldValue.eq) {
+    return false
+  }
+  if (fieldValue.lt !== undefined && !(numericStyleValue < fieldValue.lt)) {
+    return false
+  }
+  if (fieldValue.gt !== undefined && !(numericStyleValue > fieldValue.gt)) {
+    return false
+  }
+  if (fieldValue.lte !== undefined && !(numericStyleValue <= fieldValue.lte)) {
+    return false
+  }
+  if (fieldValue.gte !== undefined && !(numericStyleValue >= fieldValue.gte)) {
+    return false
+  }
   return true
 }
 
@@ -332,24 +364,30 @@ export const evaluateApplyIfPredicate = ({
   const { styles } = fileMetadata
 
   if (applyIf.anyStyleMatches) {
-    const passes = styles.some((styleRow) => (
+    const isPassing = styles.some((styleRow) => (
       styleRowMatchesClause({ clause: applyIf.anyStyleMatches!, styleRow })
     ))
-    if (!passes) return false
+    if (!isPassing) {
+      return false
+    }
   }
 
   if (applyIf.allStyleMatches) {
-    const passes = styles.every((styleRow) => (
+    const isPassing = styles.every((styleRow) => (
       styleRowMatchesClause({ clause: applyIf.allStyleMatches!, styleRow })
     ))
-    if (!passes) return false
+    if (!isPassing) {
+      return false
+    }
   }
 
   if (applyIf.noneStyleMatches) {
-    const passes = styles.every((styleRow) => (
+    const isPassing = styles.every((styleRow) => (
       !styleRowMatchesClause({ clause: applyIf.noneStyleMatches!, styleRow })
     ))
-    if (!passes) return false
+    if (!isPassing) {
+      return false
+    }
   }
 
   return true
