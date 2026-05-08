@@ -14,15 +14,8 @@ export const resolvePrompt = (
 ): boolean => {
   const resolve = pendingPrompts.get(promptId)
 
-  if (!resolve) {
-    console.error(
-      `[promptStore] resolvePrompt: no pending prompt for id ${promptId}; `
-      + `pending=${Array.from(pendingPrompts.keys()).join(",") || "(none)"}`,
-    )
-    return false
-  }
+  if (!resolve) return false
 
-  console.log(`[promptStore] resolvePrompt fired for id ${promptId} index=${index}`)
   pendingPrompts.delete(promptId)
   resolve(index)
 
