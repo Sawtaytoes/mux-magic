@@ -140,8 +140,8 @@ The API runs long-running commands as background **jobs** and streams their outp
 ### Start the server
 
 ```sh
-yarn server                                    # default port 3000 & CLI server at 3002
-PORT=8080 CLI_SERVER_PORT=8081 yarn server     # custom port
+yarn server                                    # default port 3000
+PORT=8080 yarn server                          # custom port
 ```
 
 ### Job lifecycle
