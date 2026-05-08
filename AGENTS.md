@@ -7,6 +7,33 @@ Guidelines for AI agents working on this codebase.
 A Node.js CLI and REST API for batch media file operations (MKV track manipulation,
 file renaming, subtitle merging, etc.) using mkvtoolnix, ffmpeg, and mediainfo.
 
+## Code rules — apply to ALL source files
+
+These rules apply to **every** source file: TypeScript, modern JS, and the plain `<script>`-tag JS in `public/**`. There is no "this is a small browser JS file, the TS rules don't count" exception. `public/format-bandwidth.js`, `public/jobs/job-card.js`, `src/**/*.ts` — same rules. Don't pattern-match off file extension; pattern-match off "is this source code in this repo."
+
+The four below are the most-violated; the detailed reference lives in [Key conventions](#key-conventions) further down.
+
+1. **No `for` / `for...of` / `while` loops over arrays.** Use `forEach` / `map` / `filter` / `reduce` (or `concatMap` / `mergeMap` in observable code). C-style `for (let i = 0; ...)` and `for (const x of arr)` are both banned.
+2. **`const` only. No `var`. No `let` mutation.** If you reach for `let` to accumulate a value, you want `reduce` or `map`. `var` is banned outright — `public/**.js` runs in modern Chrome, there's no hoisting excuse.
+3. **Spell every variable name out.** Single letters (`i`, `h`, `m`, `s`, `c`, `el`) and 2-3 letter abbreviations (`bps`, `idx`, `ctx`, `opts`, `dest`, `src`, `val`, `err`) are banned. Use `index`, `hours`, `minutes`, `seconds`, `context`, `element`, `bitsPerSecond`, `options`, `destination`, `source`, `value`, `error`.
+4. **Always brace `if` / `else` / `for` / `while`.** Even for early returns and one-liners. `if (!x) return null` is wrong; only the multi-line braced form is allowed.
+
+### Before opening a PR — self-check your diff
+
+The agents shipping PRs in this repo have repeatedly violated rules 1–4. Before you announce a PR, search your diff (`git diff master...HEAD -- '*.ts' '*.js' '*.mjs'`) for these literal substrings, and fix every hit:
+
+| Search for | Means you violated |
+|------------|--------------------|
+| `for (` or `for(` | rule 1 |
+| `for ... of` (in your additions) | rule 1 |
+| `var ` (with trailing space) | rule 2 |
+| `let ` followed by reassignment of the same name later | rule 2 |
+| Single-letter loop counters / accumulator names | rule 3 |
+| `if (` on a line whose closing `)` is followed by anything other than ` {` | rule 4 |
+| Multi-paragraph JSDoc blocks (`/** ... */` over more than one short line) | over-commenting (default: no comments — see "Doing tasks" guidance) |
+
+Workers that ship code containing any of the above will get the PR sent back. Catch it yourself first.
+
 ## Key conventions
 
 ### Package manager
