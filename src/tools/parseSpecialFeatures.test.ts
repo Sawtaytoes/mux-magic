@@ -108,8 +108,8 @@ describe(`${parseSpecialFeatures.name} — extras vs cuts split`, () => {
     ].join("\n")
     const result = await firstValueFrom(parseSpecialFeatures(text))
     expect(result.possibleNames).toEqual([
-      "Image Gallery (96 images)",
-      "Photo Gallery (8 pages)",
+      { name: "Image Gallery (96 images)", timecode: undefined },
+      { name: "Photo Gallery (8 pages)", timecode: undefined },
     ])
   })
 })
@@ -130,8 +130,8 @@ describe(parseUntimedSuggestions.name, () => {
       "Photo Gallery (8 pages)",
     ].join("\n")
     expect(parseUntimedSuggestions(text)).toEqual([
-      "Image Gallery (96 images)",
-      "Photo Gallery (8 pages)",
+      { name: "Image Gallery (96 images)", timecode: undefined },
+      { name: "Photo Gallery (8 pages)", timecode: undefined },
     ])
   })
 
@@ -141,7 +141,7 @@ describe(parseUntimedSuggestions.name, () => {
       "Behind the Scenes (12:34)",
     ].join("\n")
     expect(parseUntimedSuggestions(text)).toEqual([
-      "* The Film – Director's Cut",
+      { name: "* The Film – Director's Cut", timecode: undefined },
     ])
   })
 
@@ -160,7 +160,9 @@ describe(parseUntimedSuggestions.name, () => {
       "DISC TWO (Blu-ray)",
       "Some Untimed Extra",
     ].join("\n")
-    expect(parseUntimedSuggestions(text)).toEqual(["Some Untimed Extra"])
+    expect(parseUntimedSuggestions(text)).toEqual([
+      { name: "Some Untimed Extra", timecode: undefined },
+    ])
   })
 
   test("strips leading dash bullets on extras but preserves the *The Film cut prefix", () => {
@@ -170,9 +172,9 @@ describe(parseUntimedSuggestions.name, () => {
       "– Sub-extra without a timecode",
     ].join("\n")
     expect(parseUntimedSuggestions(text)).toEqual([
-      "Image Gallery (8 pages)",
-      "* The Film – Hong Kong Version",
-      "Sub-extra without a timecode",
+      { name: "Image Gallery (8 pages)", timecode: undefined },
+      { name: "* The Film – Hong Kong Version", timecode: undefined },
+      { name: "Sub-extra without a timecode", timecode: undefined },
     ])
   })
 
@@ -184,8 +186,8 @@ describe(parseUntimedSuggestions.name, () => {
       "Image Gallery (4 images)",
     ].join("\n")
     expect(parseUntimedSuggestions(text)).toEqual([
-      "Image Gallery (4 images)",
-      "Image Gallery (4 images)",
+      { name: "Image Gallery (4 images)", timecode: undefined },
+      { name: "Image Gallery (4 images)", timecode: undefined },
     ])
   })
 })

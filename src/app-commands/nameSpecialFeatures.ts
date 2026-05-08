@@ -35,6 +35,7 @@ import { getMediaInfo } from "../tools/getMediaInfo.js"
 import {
   parseSpecialFeatures,
   type Cut,
+  type PossibleName,
   type SpecialFeature,
 } from "../tools/parseSpecialFeatures.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
@@ -192,8 +193,10 @@ const resolveUrl = ({
 // so the builder can render "Files not renamed: …" plus an optional
 // "Possible names (no timecode in listing): …" hint underneath, AND
 // drive the autocomplete dropdown in the interactive renamer.
-// `possibleNames` is empty whenever every file was successfully renamed —
-// only useful when the user has a leftover to manually identify.
+// `possibleNames` is `{ name, timecode? }[]` so the smart-suggestion
+// modal (Option C) can rank candidates by duration proximity when a
+// timecode is available; the field is empty whenever every file was
+// successfully renamed.
 // `allKnownNames` carries every extras label (timecoded + untimed) and
 // cut name in DVDCompare-order so the UI's fuzzy autocomplete has the
 // full set without re-parsing.
@@ -206,7 +209,7 @@ const resolveUrl = ({
 // file is successfully moved into its edition-aware nested folder.
 export type NameSpecialFeaturesResult =
   | { oldName: string, newName: string }
-  | { unrenamedFilenames: string[], possibleNames: string[], allKnownNames: string[], unnamedFileCandidates?: UnnamedFileCandidate[] }
+  | { unrenamedFilenames: string[], possibleNames: PossibleName[], allKnownNames: string[], unnamedFileCandidates?: UnnamedFileCandidate[] }
   | { collision: true, filename: string, targetFilename: string }
   | { movedToEditionFolder: true, filename: string, destinationPath: string }
 
@@ -225,7 +228,7 @@ export const flattenAllKnownNames = ({
 }: {
   cuts: Cut[]
   extras: SpecialFeature[]
-  possibleNames: string[]
+  possibleNames: PossibleName[]
 }): string[] => {
   const fromExtras = extras.flatMap((extra) => {
     const children = (extra.children ?? []).map((child) => child.text)
@@ -234,10 +237,11 @@ export const flattenAllKnownNames = ({
   const fromCuts = cuts
     .map((cut) => cut.name)
     .filter(Boolean)
+  const fromPossibleNames = possibleNames.map((entry) => entry.name)
   const combined = [
     ...fromExtras,
     ...fromCuts,
-    ...possibleNames,
+    ...fromPossibleNames,
   ]
     .map((label) => label.trim())
     .filter(Boolean)
@@ -435,11 +439,16 @@ export const postProcessMatches = (
 // be named something like "MOVIE_t23.mkv" while the suggestion is
 // "Image Gallery (1200 images)"). Callers that want more signals (runtime
 // proximity) can extend this later.
-export const buildUnnamedFileCandidates = (
+export const buildUnnamedFileCandidates = ({
+  possibleNames,
+  unrenamedFilenames,
+}: {
+  possibleNames: PossibleName[],
   unrenamedFilenames: string[],
-  possibleNames: string[],
-): UnnamedFileCandidate[] => {
-  if (unrenamedFilenames.length === 0 || possibleNames.length === 0) return []
+}): UnnamedFileCandidate[] => {
+  if (unrenamedFilenames.length === 0 || possibleNames.length === 0) {
+    return []
+  }
 
   return unrenamedFilenames.map((filename) => {
     const stem = stripExtension(filename).toLowerCase()
@@ -447,16 +456,16 @@ export const buildUnnamedFileCandidates = (
 
     // Score each candidate by how many of its words appear in the stem.
     const scored = possibleNames.map((candidate) => {
-      const candidateWords = candidate.toLowerCase().split(/[\W_]+/).filter(Boolean)
-      const overlap = candidateWords.filter((w) => stemWords.has(w)).length
+      const candidateWords = candidate.name.toLowerCase().split(/[\W_]+/).filter(Boolean)
+      const overlap = candidateWords.filter((word) => stemWords.has(word)).length
       return { candidate, overlap }
     })
     // Sort descending by overlap; ties preserve original order.
-    scored.sort((a, b) => b.overlap - a.overlap)
+    scored.sort((firstEntry, secondEntry) => secondEntry.overlap - firstEntry.overlap)
 
     return {
       filename,
-      candidates: scored.map((s) => s.candidate),
+      candidates: scored.map((entry) => entry.candidate.name),
     }
   })
 }
@@ -782,10 +791,10 @@ export const nameSpecialFeatures = ({
             // association report. Only populated when there are both
             // unnamed files AND untimed DVDCompare suggestions — the
             // common case where the user still has files that need a name.
-            const unnamedFileCandidates = buildUnnamedFileCandidates(
+            const unnamedFileCandidates = buildUnnamedFileCandidates({
+              possibleNames: possibleNamesForSummary,
               unrenamedFilenames,
-              possibleNamesForSummary,
-            )
+            })
 
             if (unnamedFileCandidates.length > 0) {
               console.log("Unnamed files with DVDCompare candidate associations:")
