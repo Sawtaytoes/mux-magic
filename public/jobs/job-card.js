@@ -121,11 +121,12 @@ function renderCancelButton(jobId) {
 
 // Mounts a logs <details> for the given job. Re-renders existing
 // accumulated lines on every render so whole-card swaps don't lose
-// scrollback. Opens by default while the job is running. Lazy-opens
-// the SSE for terminal jobs on first disclosure-toggle.
-function mountLogsDisclosure(parent, jobId, jobStatus, openByDefault) {
+// scrollback. Always closed initially — the per-step UI indicators
+// surface enough status that users don't need logs by default;
+// click-to-open avoids the wall-of-text on every running job.
+// Lazy-opens the SSE for terminal jobs on first disclosure-toggle.
+function mountLogsDisclosure(parent, jobId, jobStatus) {
   const details = makeEl("details");
-  if (openByDefault && jobStatus === "running") details.open = true;
   const summary = makeEl("summary");
   const summaryText = document.createTextNode("Logs");
   // Lazy getter — captures the live logsByJobId entry so a copy issued
@@ -199,7 +200,7 @@ function renderStepRow(child, index) {
   // Skipped/pending steps have no logs and no params beyond what the
   // parent shows — keep them as single-row placeholders.
   if (child.status !== "skipped" && child.status !== "pending") {
-    mountLogsDisclosure(row, child.id, child.status, true);
+    mountLogsDisclosure(row, child.id, child.status);
   }
 
   return row;
@@ -323,7 +324,7 @@ export function renderJob(job) {
   }
 
   // Live log pane for the job's own log stream.
-  mountLogsDisclosure(card, job.id, job.status, true);
+  mountLogsDisclosure(card, job.id, job.status);
 
   // Steps — children of this job (only present when this is a sequence
   // umbrella). Rendered as a <details>/<summary> disclosure so the user
