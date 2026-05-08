@@ -99,9 +99,20 @@ const resolveUrl = ({
     return (
       findDvdCompareResults(searchTerm)
       .pipe(
-        switchMap((results) => {
+        switchMap(({ isDirectListing, results }) => {
           if (results.length === 0) {
             throw new Error(`No DVDCompare results found for: ${searchTerm}`)
+          }
+
+          // DVDCompare redirected straight to the film page — no picker
+          // needed. Auto-select the lone result and build the URL directly.
+          if (isDirectListing) {
+            const result = results[0]!
+            console.log(
+              `DVDCompare search landed on a film page directly (fid=${result.id}). `
+              + "Auto-selecting listing ID; use dvdCompareReleaseHash to choose a release.",
+            )
+            return of(`${DVDCOMPARE_FILM_BASE}${result.id}#${hash}`)
           }
 
           return (

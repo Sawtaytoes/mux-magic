@@ -399,6 +399,7 @@ export const searchDvdCompareResultSchema = z.object({
 })
 
 export const searchDvdCompareResponseSchema = z.object({
+  isDirectListing: z.boolean().optional().describe("True when DVDCompare's search redirected straight to a film page instead of returning a list of candidates. When true the single entry in results was auto-selected — callers should skip the movie-picker step and prompt for a Release Hash directly."),
   results: z.array(searchDvdCompareResultSchema).describe("DVDCompare search results"),
   error: z.string().nullable().optional().describe("Error message if the search failed (e.g. network/server error). When present, results is empty."),
 })
