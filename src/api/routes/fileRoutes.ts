@@ -7,6 +7,12 @@ import { Readable } from "node:stream"
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi"
 
 import {
+  fakeDefaultPath,
+  fakeDeleteMode,
+  fakeListFiles,
+  isFakeRequest,
+} from "../../fake-data/index.js"
+import {
   deleteFiles,
   getDeleteMode,
   getEffectiveDeleteMode,
@@ -56,9 +62,12 @@ fileRoutes.openapi(
       },
     },
   }),
-  async (context) => (
-    context.json({ path: homedir() }, 200)
-  ),
+  async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeDefaultPath(), 200)
+    }
+    return context.json({ path: homedir() }, 200)
+  },
 )
 
 fileRoutes.openapi(
@@ -81,6 +90,9 @@ fileRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeListFiles(), 200)
+    }
     const { path, includeDuration } = context.req.valid("query")
     const wantsDuration = (
       includeDuration === "1"
@@ -119,6 +131,9 @@ fileRoutes.openapi(
     },
   }),
   async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeDeleteMode(), 200)
+    }
     const { path } = context.req.valid("query")
     const baseMode = getDeleteMode()
     if (!path) {
