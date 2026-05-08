@@ -17,7 +17,8 @@ The four below are the most-violated; the detailed reference lives in [Key conve
 2. **`const` only. No `var`. No `let` mutation.** If you reach for `let` to accumulate a value, you want `reduce` or `map`. `var` is banned outright — `public/**.js` runs in modern Chrome, there's no hoisting excuse.
 3. **Spell every variable name out.** Single letters (`i`, `h`, `m`, `s`, `c`, `el`) and 2-3 letter abbreviations (`bps`, `idx`, `ctx`, `opts`, `dest`, `src`, `val`, `err`) are banned. Use `index`, `hours`, `minutes`, `seconds`, `context`, `element`, `bitsPerSecond`, `options`, `destination`, `source`, `value`, `error`.
 4. **Booleans must start with `is` or `has`.** Function params, object properties, schema fields, CLI flags, local variables — all of them. `deleteSourceOnSuccess` is wrong; `isSourceDeletedOnSuccess` is right. `useDefaultRules` is wrong; `hasDefaultRules` is right. The prefix tells a reader at a glance that the value is yes/no, not a string or function. Matches the existing `isRecursive` / `hasChapterSyncOffset` / `hasFirstAudioLanguage` patterns.
-5. **Always brace `if` / `else` / `for` / `while`.** Even for early returns and one-liners. `if (!x) return null` is wrong; only the multi-line braced form is allowed.
+5. **Function arguments: single destructured object, not positional.** Any function that takes 2+ arguments uses a single object parameter with destructuring. `mountLogsDisclosure(parent, jobId, status)` is wrong; `mountLogsDisclosure({ parent, jobId, status })` is right. Callers pass `{ parent, jobId, status }`. Reasons: argument order doesn't matter at the call site, params are self-documenting, dropping/adding/renaming a param doesn't reshuffle every caller. Single-arg functions stay as-is (`getMediaInfo(filePath)`); the rule only kicks in at 2+. Existing positional functions are not retroactively required to change, but any function you create or whose signature you modify must follow this.
+6. **Always brace `if` / `else` / `for` / `while`.** Even for early returns and one-liners. `if (!x) return null` is wrong; only the multi-line braced form is allowed.
 
 ### Before opening a PR — self-check your diff
 
@@ -31,7 +32,8 @@ The agents shipping PRs in this repo have repeatedly violated rules 1–4. Befor
 | `let ` followed by reassignment of the same name later | rule 2 |
 | Single-letter loop counters / accumulator names | rule 3 |
 | Boolean field/var without `is`/`has` prefix (added in your diff) | rule 4 |
-| `if (` on a line whose closing `)` is followed by anything other than ` {` | rule 5 |
+| New/modified function signature with 2+ positional params (instead of single destructured object) | rule 5 |
+| `if (` on a line whose closing `)` is followed by anything other than ` {` | rule 6 |
 | Multi-paragraph JSDoc blocks (`/** ... */` over more than one short line) | over-commenting (default: no comments — see "Doing tasks" guidance) |
 
 Workers that ship code containing any of the above will get the PR sent back. Catch it yourself first.

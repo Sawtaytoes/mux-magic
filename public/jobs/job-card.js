@@ -125,7 +125,7 @@ function renderCancelButton(jobId) {
 // surface enough status that users don't need logs by default;
 // click-to-open avoids the wall-of-text on every running job.
 // Lazy-opens the SSE for terminal jobs on first disclosure-toggle.
-function mountLogsDisclosure(parent, jobId, jobStatus) {
+function mountLogsDisclosure({ parent, jobId, jobStatus }) {
   const details = makeEl("details");
   const summary = makeEl("summary");
   const summaryText = document.createTextNode("Logs");
@@ -200,7 +200,7 @@ function renderStepRow(child, index) {
   // Skipped/pending steps have no logs and no params beyond what the
   // parent shows — keep them as single-row placeholders.
   if (child.status !== "skipped" && child.status !== "pending") {
-    mountLogsDisclosure(row, child.id, child.status);
+    mountLogsDisclosure({ parent: row, jobId: child.id, jobStatus: child.status });
   }
 
   return row;
@@ -324,7 +324,7 @@ export function renderJob(job) {
   }
 
   // Live log pane for the job's own log stream.
-  mountLogsDisclosure(card, job.id, job.status);
+  mountLogsDisclosure({ parent: card, jobId: job.id, jobStatus: job.status });
 
   // Steps — children of this job (only present when this is a sequence
   // umbrella). Rendered as a <details>/<summary> disclosure so the user
