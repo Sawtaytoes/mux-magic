@@ -214,11 +214,19 @@ export const commandPicker = createPopoverPicker({
   width: 340,
   maxHeight: 400,
   isSameAnchor: (anchorA, anchorB) => anchorA.stepId === anchorB.stepId,
+  // Sectioned by API tag (TAG_ORDER preserves the API's logical
+  // grouping — File Operations, Subtitle Operations, Track Operations,
+  // etc.) and alphabetical by friendly label WITHIN each section.
+  // Friendly label is what the user sees, so sort by that rather than
+  // the camelCase command id.
   buildItems: () => (
     TAG_ORDER.flatMap((tag) => (
       Object.entries(COMMANDS)
         .filter(([, command]) => command.tag === tag)
         .map(([name]) => ({ name, tag }))
+        .sort((leftItem, rightItem) => (
+          commandLabel(leftItem.name).localeCompare(commandLabel(rightItem.name))
+        ))
     ))
   ),
   matchesQuery: (item, query) => (
