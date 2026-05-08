@@ -224,7 +224,86 @@
   }
 }
 
-/* Link-picker popover detail rows render filesystem paths. Default
+/* ─── Compact step card (drawer experiment) ──────────────────────────────────
+   Compact cards have no body section — just the single-row header.
+   We keep .step-card on them so progress bars (mountStepCardProgress) still
+   find the right DOM shape; we just don't render the collapsed body div. */
+.step-card-compact {
+  container-type: inline-size;
+  container-name: step-card;
+}
+
+/* Clickable info area subtle hover; pointer cursor to hint it's interactive. */
+.step-compact-open { cursor: pointer; }
+
+/* ─── Step drawer (sidebar / bottom-sheet) ───────────────────────────────────
+   The drawer is a fixed panel. On wide screens (>= 640px) it attaches to the
+   right edge. On narrow screens it rises from the bottom as a sheet.
+
+   The backdrop covers the rest of the page to trap focus and allow
+   click-outside-to-close. Both start hidden (translateX / translateY offset)
+   and transition open when .open is added. */
+
+.step-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+.step-drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Wide: right sidebar */
+.step-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 90vw);
+  background: rgb(15 23 42); /* slate-900 */
+  border-left: 1px solid rgb(51 65 85); /* slate-700 */
+  z-index: 201;
+  transform: translateX(100%);
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.step-drawer.open {
+  transform: translateX(0);
+}
+
+/* Narrow: bottom sheet */
+@media (max-width: 639px) {
+  .step-drawer {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: min(80dvh, 80vh);
+    border-left: none;
+    border-top: 1px solid rgb(51 65 85);
+    border-radius: 1rem 1rem 0 0;
+    transform: translateY(100%);
+  }
+  .step-drawer.open {
+    transform: translateY(0);
+  }
+}
+
+/* Honour reduced-motion — snap instead of slide. */
+@media (prefers-reduced-motion: reduce) {
+  .step-drawer,
+  .step-drawer-backdrop { transition: none; }
+}
+
+/* ─── Link-picker popover detail rows render filesystem paths. ─────────────── Default
    break-all splits whole words ("subtitle" → "s\nubtitle"); we want
    the browser to break preferentially at path separators (the JS
    side injects U+200B after each / and \) and at spaces, falling
