@@ -2,6 +2,7 @@ import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi"
 import { type Context } from "hono"
 import { type Observable } from "rxjs"
 
+import { getEffectiveCommandConfigs, isFakeRequest } from "../../fake-data/index.js"
 import { makeDirectory } from "../../tools/makeDirectory.js"
 import { changeTrackLanguages } from "../../app-commands/changeTrackLanguages.js"
 import { computeDefaultSubtitleRules } from "../../app-commands/computeDefaultSubtitleRules.js"
@@ -430,7 +431,12 @@ commandRoutes.openapi(
 )
 
 commandNames.forEach((commandName) => {
-  const { deprecated, extractOutputs, getObservable, outputFolderName, schema, summary, tags } = commandConfigs[commandName]
+  // Schema / summary / tags / outputFolderName are static metadata —
+  // closed over at registration time so the OpenAPI doc is generated
+  // from the real config. The runtime parts (`getObservable`,
+  // `extractOutputs`) are looked up per-request so a `?fake=1` query
+  // can swap them out without touching the OpenAPI surface.
+  const { deprecated, outputFolderName, schema, summary, tags } = commandConfigs[commandName]
 
   commandRoutes.openapi(
     createRoute({
@@ -463,11 +469,13 @@ commandNames.forEach((commandName) => {
     }),
     async (context) => {
       const body = context.req.valid("json")
+      const useFake = isFakeRequest(context)
+      const effectiveConfig = getEffectiveCommandConfigs(useFake)[commandName]
       return startCommandJob({
         command: commandName,
-        commandObservable: getObservable(body),
+        commandObservable: effectiveConfig.getObservable(body),
         context,
-        extractOutputs,
+        extractOutputs: effectiveConfig.extractOutputs,
         outputFolderName,
         params: body,
       })

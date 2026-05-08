@@ -1,3 +1,4 @@
+import { getEffectiveCommandConfigs } from "../fake-data/index.js"
 import { logError, logInfo } from "../tools/logMessage.js"
 import { withJobContext } from "./logCapture.js"
 import {
@@ -99,12 +100,21 @@ type StepRunOutcome =
 export const runSequenceJob = (
   jobId: string,
   body: SequenceBody,
+  options: { useFake?: boolean } = {},
 ): void => {
   createSubject(jobId)
   updateJob(jobId, {
     startedAt: new Date(),
     status: "running",
   })
+
+  const useFake = options.useFake ?? false
+  // Resolve which configs map to consult for each step. The real map's
+  // identity is preserved when useFake is false (no extra cost on the
+  // production path); switching to the fake map flips every step's
+  // observable to a scripted timer source. Both maps share the same
+  // keys and metadata so resolveSequenceParams treats them identically.
+  const effectiveConfigs = getEffectiveCommandConfigs(useFake)
 
   const pathsById: Record<string, SequencePath> = body.paths ?? {}
   const stepsById: Record<string, StepRuntimeRecord> = {}
@@ -222,13 +232,17 @@ export const runSequenceJob = (
       return { kind: "failed", stepId, error }
     }
 
-    const config: CommandConfig = commandConfigs[step.command]
+    const config: CommandConfig = effectiveConfigs[step.command]
 
     const { resolved, errors } = resolveSequenceParams({
       rawParams: step.params ?? {},
       pathsById,
       stepsById,
-      commandConfigsByName: commandConfigs,
+      // resolveSequenceParams reads command schemas/outputFolderName,
+      // both of which match between real and fake configs — pass the
+      // effective map either way so the link-resolution path doesn't
+      // need a second branch.
+      commandConfigsByName: effectiveConfigs,
     })
 
     if (errors.length > 0) {
