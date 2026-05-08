@@ -246,6 +246,7 @@ export const nameSpecialFeaturesRequestSchema = z.object({
   timecodePadding: z.number().default(2).describe("Timecode padding amount (in seconds) — DVDCompare runtimes routinely drift 1–2s from rip metadata, so 2 matches typical real-world cases. Set to 0 for an exact-match-only run."),
   moveToEditionFolders: z.boolean().default(false).describe("After renaming, move main-feature files that carry a {edition-…} tag into <sourceParent>/<Title (Year)>/<Title (Year) {edition-…}>/<file>. Special-feature files are not moved."),
   nonInteractive: z.boolean().default(false).describe("When true, rename collisions auto-resolve by appending (2), (3), … instead of emitting a review-needed collision event. Use in automated/scripted runs without a UI to confirm."),
+  autoNameDuplicates: z.boolean().default(true).describe("When true (default for sequence/API runs), two-or-more files matching the same target name within a single run are auto-disambiguated with (2)/(3)/… suffixes. When false (the Builder UI's interactive default), the run emits a 'duplicate' prompt for each ambiguous group so the user can pick which file is which from a multi-option modal that includes a ▶ Play preview."),
 })
 
 export const nameTvShowEpisodesRequestSchema = z.object({
@@ -536,4 +537,21 @@ export const openExternalRequestSchema = z.object({
 export const openExternalResponseSchema = z.object({
   ok: z.boolean().describe("True when the launcher process spawned. The launcher is detached/unref'd so this only reports the spawn — actual app launch may still fail asynchronously."),
   error: z.string().nullable().describe("Error message when validation or spawn failed; null on success"),
+})
+
+// Phase B — interactive renaming used by the nameSpecialFeatures result
+// card. Both paths are validated against pathSafety (absolute + no
+// traversal). The endpoint reuses the existing renameFileOrFolder helper
+// which already aborts when the destination already exists, so the API
+// can't silently clobber a file. The validated newPath is echoed back
+// so the UI can replace the row in-place without a refetch.
+export const renameFileRequestSchema = z.object({
+  oldPath: z.string().describe("Absolute path to the file currently on disk."),
+  newPath: z.string().describe("Absolute destination path the file should be renamed to. Must already not exist on disk — the underlying helper aborts to avoid silent overwrites."),
+})
+
+export const renameFileResponseSchema = z.object({
+  ok: z.boolean().describe("True when the rename completed successfully."),
+  newPath: z.string().nullable().describe("The validated/normalized new absolute path on success; null on failure."),
+  error: z.string().nullable().describe("Error message on failure (path validation, target-already-exists, missing source, etc.); null on success."),
 })

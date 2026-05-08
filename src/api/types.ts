@@ -46,6 +46,14 @@ export type PromptEvent = {
   // user can preview before picking. Null/undefined for prompts that
   // aren't tied to a specific file (e.g. global search-results prompts).
   filePath?: string
+  // Optional per-option file paths for multi-file prompts (e.g. the
+  // duplicate-detection picker emitted by nameSpecialFeatures when two
+  // or more files match the same target name). Each entry pairs an
+  // option's `index` with the absolute path the option represents so
+  // the Builder can render a ▶ Play button on each row. Independent of
+  // `filePath`: `filePath` is for "preview the file the prompt is
+  // about", `filePaths` is for "preview the file each option is".
+  filePaths?: Array<{ index: number, path: string }>
 }
 
 // Job-progress payload pushed onto the per-job SSE subject by

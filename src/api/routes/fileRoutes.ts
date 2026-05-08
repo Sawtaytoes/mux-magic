@@ -5,7 +5,9 @@ import { extname } from "node:path"
 import { Readable } from "node:stream"
 
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi"
+import { lastValueFrom } from "rxjs"
 
+import { renameFileOrFolder } from "../../tools/createRenameFileOrFolder.js"
 import {
   fakeDefaultPath,
   fakeDeleteMode,
@@ -213,6 +215,67 @@ fileRoutes.openapi(
     const { paths } = context.req.valid("json")
     const result = await deleteFiles(paths)
     return context.json(result, 200)
+  },
+)
+
+fileRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/files/rename",
+    summary: "Rename a single file in place",
+    description: "Used by the nameSpecialFeatures result card so the user can fix unrenamed entries one row at a time. Both `oldPath` and `newPath` are validated for absolute / no-traversal safety. The underlying helper aborts when `newPath` already exists, so the API can't silently overwrite an existing file.",
+    tags: ["File Operations"],
+    request: {
+      body: {
+        content: {
+          "application/json": { schema: schemas.renameFileRequestSchema },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Rename outcome — `ok: true` plus the validated new path on success, `ok: false` plus a message on failure.",
+        content: {
+          "application/json": { schema: schemas.renameFileResponseSchema },
+        },
+      },
+    },
+  }),
+  async (context) => {
+    const { oldPath, newPath } = context.req.valid("json")
+    const validation = (() => {
+      try {
+        return {
+          ok: true as const,
+          oldPath: validateReadablePath(oldPath),
+          newPath: validateReadablePath(newPath),
+        }
+      }
+      catch (error) {
+        if (error instanceof PathSafetyError) {
+          return { ok: false as const, error: error.message }
+        }
+        return { ok: false as const, error: messageFromError(error) }
+      }
+    })()
+    if (!validation.ok) {
+      return context.json({ ok: false, newPath: null, error: validation.error }, 200)
+    }
+    try {
+      await lastValueFrom(
+        renameFileOrFolder({
+          newPath: validation.newPath,
+          oldPath: validation.oldPath,
+        }),
+      )
+      return context.json({ ok: true, newPath: validation.newPath, error: null }, 200)
+    }
+    catch (error) {
+      return context.json(
+        { ok: false, newPath: null, error: messageFromError(error) },
+        200,
+      )
+    }
   },
 )
 

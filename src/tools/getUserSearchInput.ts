@@ -15,6 +15,13 @@ export const getUserSearchInput = (params: {
   // know which file they're asking about; global prompts (search results)
   // omit it.
   filePath?: string
+  // Forwarded to the SSE PromptEvent for multi-file prompts (e.g. the
+  // duplicate-detection picker, where N files all map to the same target
+  // name). Each entry pairs an option index with the file the option
+  // represents so the UI can render a ▶ Play button per row. Independent
+  // of `filePath` — `filePath` is for "preview the file being picked
+  // FOR", while `filePaths` is for "preview the file each option IS".
+  filePaths?: Array<{ index: number, path: string }>
 }) => (
   new Observable<number>((observer) => {
     const jobId = getActiveJobId()
@@ -28,6 +35,7 @@ export const getUserSearchInput = (params: {
         promptId,
         type: "prompt",
         filePath: params.filePath,
+        filePaths: params.filePaths,
       })
 
       registerPrompt(promptId)

@@ -67,6 +67,15 @@ const builder = (yargs: Argv) => (
       describe: "When a rename target already exists on disk, automatically append (2), (3), … instead of emitting a review-needed collision event. Use this in scripts or when running without a UI that can display the collision prompt.",
     },
   )
+  .option(
+    "autoNameDuplicates",
+    {
+      alias: "a",
+      boolean: true,
+      default: true,
+      describe: "When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/… suffixes deterministically. Pass --no-autoNameDuplicates (or set false in the YAML) to instead emit a duplicate-pick prompt for each ambiguous group. Defaults to true so non-interactive runs keep today's behavior.",
+    },
+  )
 )
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
@@ -81,6 +90,10 @@ export const nameSpecialFeaturesCommand: CommandModule<{}, Args> = {
     const cliObserver = subscribeCli()
     let renamedCount = 0
     nameSpecialFeatures({
+      autoNameDuplicates: (
+        argv
+        .autoNameDuplicates
+      ),
       fixedOffset: (
         argv
         .fixedOffset
