@@ -17,20 +17,7 @@ States: `briefed → running → pushed → pr-open → awaiting-decision → re
 
 ### Open PRs awaiting your review/merge
 
-**media-tools (GitHub):**
-
-- **[#51 W7b](https://github.com/Sawtaytoes/media-tools/pull/51)** — file-explorer Phase B: rename endpoint + searchable suggestions + duplicate-pick modal w/ playback (folds in W10-N2). 595/595 tests, AGENTS.md self-check clean.
-- **[#52 W22b](https://github.com/Sawtaytoes/media-tools/pull/52)** — `/transcode/audio` endpoint with Opus/WebM auto-swap + `/files/audio-codec` probe + modal swap. 593/595 tests (2 skipped on Windows; `/media` is POSIX-only).
-
-**media-sync (Gitea):**
-
-- **[PR #8 W24b](https://gitea.octen.dev/sawtaytoes/Media-Sync/pulls/8)** — HA webhook reporter (two URLs, fire-on-count-zero, truly silent). 286/286 tests.
-- **[PR #9 W15](https://gitea.octen.dev/sawtaytoes/Media-Sync/pulls/9)** — SSE restart-on-version-change (depends on already-merged W14b-ms).
-- **[PR #10 W19](https://gitea.octen.dev/sawtaytoes/Media-Sync/pulls/10)** — README screenshots tooling. **Caveat:** PNGs not committed; run `yarn screenshots` after merging for the README image refs to resolve.
-
-### In flight (background)
-
-- **W25** — media-sync per-source + total duration in jobs UI (live ticker while running + final time on completion). Notification expected when PR opens.
+_None — all 6 session PRs merged ✅_
 
 ### Held — auto-spawn on dependency
 
@@ -47,12 +34,12 @@ These came from the user's notes file (`g:\Anime\media-tools-tasks.md`); not blo
 
 | ID | Decision | Status |
 |----|----------|--------|
-| W22b | Auto-detect via `MediaSource.isTypeSupported()`; Opus/WebM default; drop subs entirely; hardcode `/media` as the only allowed path root (not env-var). README documents volume-mount requirement. Range strategy: Option B (transcode-to-temp). See [docs/options/ffmpeg-audio-reencode-endpoint.md §12](options/ffmpeg-audio-reencode-endpoint.md). | **Shipped in PR #52.** |
-| W7b (incl. N2) | Single PR for all three Phase B pieces + N2 modal fold-in (multi-select prompt with ▶ Play). See [docs/file-explorer-phase-b.md](file-explorer-phase-b.md). | **Shipped in PR #51.** |
+| W22b | Auto-detect via `MediaSource.isTypeSupported()`; Opus/WebM default; drop subs entirely; hardcode `/media` as the only allowed path root (not env-var). README documents volume-mount requirement. Range strategy: Option B (transcode-to-temp). See [docs/options/ffmpeg-audio-reencode-endpoint.md §12](options/ffmpeg-audio-reencode-endpoint.md). | **Merged via PR #52.** |
+| W7b (incl. N2) | Single PR for all three Phase B pieces + N2 modal fold-in (multi-select prompt with ▶ Play). See [docs/file-explorer-phase-b.md](file-explorer-phase-b.md). | **Merged via PR #51.** |
 | W10-N2 | Folded into W7b. No separate worker. | Closed via #51. |
-| W8b | Extend `possibleNames` to `{ name, timecode? }[]`. Implement Option C smart-suggestion-first UX. See [docs/options/specials-checkbox-list.md](options/specials-checkbox-list.md). | **Held** until W7b merges. |
-| W24b | media-sync only (skip media-tools); webhook (Option C, not MQTT — zero npm deps); two URLs `WEBHOOK_ERRORS_PRESENT_URL` + `WEBHOOK_ERRORS_CLEARED_URL`; fire `errors_cleared` from existing `dismissError` when pending count drops to 0 (no bulk-dismiss UI exists); truly silent when env vars unset; POST + JSON body. See [docs/options/home-assistant-integration.md §8](options/home-assistant-integration.md). | **Shipped in Gitea PR #8.** |
-| W25 | Both per-source + total duration; live ticker while running + final time on completion. | Worker spawned, in flight. |
+| W8b | Extend `possibleNames` to `{ name, timecode? }[]`. Implement Option C smart-suggestion-first UX. See [docs/options/specials-checkbox-list.md](options/specials-checkbox-list.md). | **Held** — ready to spawn now that W7b is merged. |
+| W24b | media-sync only (skip media-tools); webhook (Option C, not MQTT — zero npm deps); two URLs `WEBHOOK_ERRORS_PRESENT_URL` + `WEBHOOK_ERRORS_CLEARED_URL`; fire `errors_cleared` from existing `dismissError` when pending count drops to 0 (no bulk-dismiss UI exists); truly silent when env vars unset; POST + JSON body. See [docs/options/home-assistant-integration.md §8](options/home-assistant-integration.md). | **Merged via Gitea PR #7.** (My duplicate PR #8 closed.) |
+| W25 | Both per-source + total duration; live ticker while running + final time on completion. | **Merged via Gitea PR #11.** |
 | AGENTS.md guardrails | Top-of-file "applies to ALL source files" rule block + pre-PR grep self-check (no `for`, no `var`, no `let` mutation, spelled-out names, brace all `if`s). Self-check applies to `.ts`, `.js`, `.mjs`, `public/**`. | **Shipped in `44cf3b5`. Validated by W7b worker** which caught `let` / abbreviation / single-letter-callback violations during its self-check. |
 | Version display | Drop `v X.Y.Z` from UI footer + boot banner. package.json isn't bumped per release; git SHA + build time are the actual identity. | **Shipped in `66b3414`.** |
 | Step alias display | Empty step.alias defaults to friendly `commandLabel(step.command)` (e.g. "Name Special Features") instead of internal `step.command` (`nameSpecialFeatures`). Stored YAML stays empty. | **Shipped in `200eef0`.** |
@@ -60,28 +47,32 @@ These came from the user's notes file (`g:\Anime\media-tools-tasks.md`); not blo
 | W26b | Still pending — needs your call. | — |
 | W18b | Still pending — needs your call. | — |
 
-## Merged / shipped this session
+## Merged this session
 
 ### media-tools (GitHub)
 
-- **#50 W4** — kbps/Mbps/Gbps speed + ETA (merged; you flagged the code style; AGENTS.md guardrails added in response — see below).
-- **#51 W7b** *(in review)* — file-explorer Phase B + N2 fold-in.
-- **#52 W22b** *(in review)* — `/transcode/audio` + `/files/audio-codec` + modal auto-swap.
+- **#50 W4** — kbps/Mbps/Gbps speed + ETA (you flagged the code style; AGENTS.md guardrails added in response).
+- **#51 W7b** — file-explorer Phase B + N2 fold-in (rename + suggestions + duplicate-pick modal w/ playback).
+- **#52 W22b** — `/transcode/audio` + `/files/audio-codec` + modal auto-swap.
 - **master commits this session:**
-  - `5a4227f` — W24b doc clarifications (POST, dismiss-on-zero, truly silent)
-  - `b98de28` — Strike W23 historical row from CHECKLIST
-  - `c66fc10` — Sequence Builder import fix
-  - `66b3414` — Drop misleading `v X.Y.Z` from version displays
+  - `ea0564c` — `storeAspectRatioData` defaults (`isRecursive=true`, `recursiveDepth=3`) + clearer `rootPath` docs
+  - `a0cd781` — CHECKLIST: queue W-tooltips and W-fp-cleanup for after-review
   - `200eef0` — Step alias defaults to friendly label
-  - `44cf3b5` (earlier in session) — AGENTS.md code-rules block + self-check
-  - `280342e` (earlier) — Orchestration framework + CHECKLIST scaffolding
-  - `03709e0` / `8066591` (earlier) — W22b + W24b decisions docs
+  - `66b3414` — Drop misleading `v X.Y.Z` from version displays
+  - `c66fc10` — Sequence Builder import fix (`schedulePathLookup` from `pickers.js`)
+  - `b98de28` — Strike W23 historical row from CHECKLIST
+  - `5a4227f` — W24b doc clarifications (POST, dismiss-on-zero, truly silent)
+  - `44cf3b5` — AGENTS.md code-rules block + pre-PR self-check
+  - `280342e` — Orchestration framework + CHECKLIST scaffolding
+  - `03709e0` / `8066591` — W22b + W24b decisions docs
 
 ### media-sync (Gitea)
 
-- **PR #8 W24b** *(in review)* — HA webhook reporter.
-- **PR #9 W15** *(in review)* — SSE restart-on-version-change.
-- **PR #10 W19** *(in review)* — README screenshots tooling.
+- **PR #5 W15** — SSE restart-on-version-change.
+- **PR #6 W19** — README screenshots tooling. **Caveat:** PNGs not committed; run `yarn screenshots` for the README image refs to resolve.
+- **PR #7 W24b** — HA webhook reporter (two URLs, fire-on-count-zero, truly silent).
+- **PR #11 W25** — Per-source + total duration with live ticker.
+- *Closed as duplicates:* my session-opened PRs #8/#9/#10 (same head branches as the merged #5/#6/#7).
 
 ## Operational notes
 
