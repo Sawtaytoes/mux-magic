@@ -534,15 +534,15 @@ export const reorderForDuplicatePrompts = (
       getUserSearchInput({
         message: (
           `These ${group.length} files all match "${group[0].renamedFilename}".\n`
-          + "Pick the one that should keep the un-suffixed name "
-          + "— the rest get (2)/(3)/… appended."
+          + "Pick the one that's the real match — the rest will be left "
+          + "unrenamed so you can identify them separately."
         ),
         options: [
           ...group.map((rename, index) => ({
             index,
             label: rename.fileInfo.filename,
           })),
-          { index: -1, label: "Skip — keep DVDCompare order" },
+          { index: -1, label: "Skip — auto-suffix all with (2)/(3)/…" },
         ],
         filePaths: group.map((rename, index) => ({
           index,
@@ -557,13 +557,28 @@ export const reorderForDuplicatePrompts = (
     map((picks) => picks.reduce(
       (currentRenames, { group, selectedIndex }) => {
         if (selectedIndex < 0) {
+          // User skipped → preserve all renames; the downstream counter
+          // scan auto-suffixes (2)/(3)/… in DVDCompare order.
           return currentRenames
         }
         const chosen = group[selectedIndex]
         if (!chosen) {
           return currentRenames
         }
-        return promoteRenameToFront(currentRenames, chosen)
+        // Drop the non-chosen group members from the rename list.
+        // Their fileInfo is still in the upstream `matches` array, so
+        // they'll surface in `unrenamedFilenames` for the post-rename
+        // summary — letting the user identify each via the Phase B
+        // interactive renamer rather than wearing a misleading (2)
+        // suffix the user explicitly rejected by picking only one.
+        const droppedFullPaths = new Set(
+          group
+          .filter((rename) => rename !== chosen)
+          .map((rename) => rename.fileInfo.fullPath),
+        )
+        return currentRenames.filter((rename) => (
+          !droppedFullPaths.has(rename.fileInfo.fullPath)
+        ))
       },
       renames,
     )),
