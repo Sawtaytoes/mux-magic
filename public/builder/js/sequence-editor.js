@@ -1,0 +1,555 @@
+// ─── Sequence editor ─────────────────────────────────────────────────────────
+//
+// URL persistence, undo/redo, step + group CRUD, param mutation, link
+// helpers, and the animated render wrapper. These are the "actions" that
+// the HTML onclick handlers and other modules call into.
+
+import { COMMANDS } from './commands.js'
+import {
+  steps, paths, setSteps,
+  findStepById, findStepLocation, flattenSteps,
+  makeStep, makeGroup, initPaths, isGroup, randomHex,
+  mainSrcField, getLinkedValue,
+  undoStack, redoStack, lastSnapshot, isApplyingSnapshot,
+  pushUndoSnapshot, refreshUndoRedoButtons,
+  setIsApplyingSnapshot, setLastSnapshot,
+} from './sequence-state.js'
+
+// Bridge to the module side for toYamlStr / loadYamlFromText / renderAll.
+// These live in other modules but are needed here for URL persistence and
+// the applySnapshot cycle. We call them via window.mediaTools to keep the
+// import graph acyclic during the migration.
+const bridge = () => window.mediaTools
+
+// ─── URL persistence ──────────────────────────────────────────────────────────
+
+export function updateUrl() {
+  const params = new URLSearchParams()
+  const yaml = bridge().toYamlStr()
+  if (yaml !== '# No steps yet') {
+    params.set('seq', btoa(unescape(encodeURIComponent(yaml))))
+  }
+  const query = params.toString()
+  history.replaceState(null, '', window.location.pathname + (query ? '?' + query : ''))
+  pushUndoSnapshot(yaml)
+}
+
+let updateUrlTimeoutId = null
+
+export function scheduleUpdateUrl() {
+  if (updateUrlTimeoutId) clearTimeout(updateUrlTimeoutId)
+  updateUrlTimeoutId = setTimeout(() => {
+    updateUrlTimeoutId = null
+    updateUrl()
+  }, 300)
+}
+
+export function flushScheduledUpdateUrl() {
+  if (updateUrlTimeoutId) {
+    clearTimeout(updateUrlTimeoutId)
+    updateUrlTimeoutId = null
+    updateUrl()
+  }
+}
+
+export function restoreFromUrl() {
+  const params = new URLSearchParams(window.location.search)
+  const seq = params.get('seq')
+  const base = params.get('base')  // old format backward compat
+  if (seq) {
+    try {
+      const yaml = decodeURIComponent(escape(atob(seq)))
+      bridge().loadYamlFromText(yaml)
+      if (base && paths.length > 0 && !paths[0].value) paths[0].value = base
+    } catch {}
+  } else if (base) {
+    initPaths()
+    paths[0].value = base
+  }
+}
+
+// ─── Undo / redo ──────────────────────────────────────────────────────────────
+
+export function applySnapshot(snapshotYaml) {
+  setIsApplyingSnapshot(true)
+  try {
+    // Reset arrays via setters so extracted modules that hold references
+    // to the module-level bindings pick up the new values.
+    setSteps([])
+    window.mediaTools.paths = []
+    if (snapshotYaml === '# No steps yet') {
+      initPaths()
+    } else {
+      bridge().loadYamlFromText(snapshotYaml)
+    }
+    bridge().renderAll()
+    updateUrl()
+  } finally {
+    setIsApplyingSnapshot(false)
+  }
+  refreshUndoRedoButtons()
+}
+
+export function undo() {
+  flushScheduledUpdateUrl()
+  if (undoStack.length === 0) return
+  const previous = undoStack.pop()
+  redoStack.push(lastSnapshot)
+  setLastSnapshot(previous)
+  applySnapshot(previous)
+}
+
+export function redo() {
+  if (redoStack.length === 0) return
+  const next = redoStack.pop()
+  undoStack.push(lastSnapshot)
+  setLastSnapshot(next)
+  applySnapshot(next)
+}
+
+// ─── New sequence / restore ───────────────────────────────────────────────────
+
+export function startNewSequence() {
+  flushScheduledUpdateUrl()
+  const hasContent = (
+    flattenSteps().some((entry) => entry.step.command !== null)
+    || paths.some((p) => p.value)
+  )
+  if (hasContent && !window.confirm('Clear the current sequence and start fresh? Ctrl+Z will bring it back.')) return
+  setSteps([])
+  window.mediaTools.paths = []
+  initPaths()
+  bridge().renderAll()
+  updateUrl()
+}
+
+// ─── Step / group CRUD ────────────────────────────────────────────────────────
+
+export function addPicked() {
+  const step = makeStep(null)
+  steps.push(step)
+  renderAllAnimated((behavior) => scrollStepIntoView(step.id, behavior))
+}
+
+export function insertAt(index) {
+  const step = makeStep(null)
+  steps.splice(index, 0, step)
+  renderAllAnimated((behavior) => scrollStepIntoView(step.id, behavior))
+}
+
+export function addGroupBlock(isParallel) {
+  const group = makeGroup({ isParallel })
+  steps.push(group)
+  renderAllAnimated((behavior) => scrollStepIntoView(group.steps[0].id, behavior))
+}
+
+export function insertGroupAt(index, isParallel) {
+  const group = makeGroup({ isParallel })
+  steps.splice(index, 0, group)
+  renderAllAnimated((behavior) => scrollStepIntoView(group.steps[0].id, behavior))
+}
+
+export function addStepToGroup(groupId) {
+  const group = steps.find((item) => isGroup(item) && item.id === groupId)
+  if (!group) return
+  if (group.isCollapsed) group.isCollapsed = false
+  const step = makeStep(null)
+  group.steps.push(step)
+  renderAllAnimated((behavior) => scrollStepIntoView(step.id, behavior))
+}
+
+export function removeStep(id) {
+  const finishRemoval = () => {
+    const location = findStepLocation(id)
+    if (!location) return
+    if (location.parentGroup) {
+      const group = location.parentGroup
+      group.steps.splice(location.indexInParent, 1)
+      if (group.steps.length === 0) {
+        const groupItemIndex = steps.indexOf(group)
+        if (groupItemIndex >= 0) steps.splice(groupItemIndex, 1)
+      }
+    } else {
+      steps.splice(location.itemIndex, 1)
+    }
+    for (const entry of flattenSteps()) {
+      for (const [field, source] of Object.entries(entry.step.links)) {
+        if (source && typeof source === 'object' && source.linkedTo === id) {
+          delete entry.step.links[field]
+        }
+      }
+    }
+    renderAllAnimated()
+  }
+  const card = document.getElementById(`step-${id}`)
+  if (card) {
+    card.classList.add('step-leave')
+    setTimeout(finishRemoval, 200)
+  } else {
+    finishRemoval()
+  }
+}
+
+export function removeGroup(groupId) {
+  const groupItemIndex = steps.findIndex((item) => isGroup(item) && item.id === groupId)
+  if (groupItemIndex < 0) return
+  const group = steps[groupItemIndex]
+  const innerIds = new Set(group.steps.map((s) => s.id))
+  steps.splice(groupItemIndex, 1)
+  for (const entry of flattenSteps()) {
+    for (const [field, source] of Object.entries(entry.step.links)) {
+      if (source && typeof source === 'object' && innerIds.has(source.linkedTo)) {
+        delete entry.step.links[field]
+      }
+    }
+  }
+  renderAllAnimated()
+}
+
+export function moveStep(id, dir) {
+  const location = findStepLocation(id)
+  if (!location) return
+  if (location.parentGroup) {
+    const siblings = location.parentGroup.steps
+    const localIndex = location.indexInParent
+    const targetLocalIndex = localIndex + dir
+    if (targetLocalIndex < 0 || targetLocalIndex >= siblings.length) return
+    ;[siblings[localIndex], siblings[targetLocalIndex]] = [siblings[targetLocalIndex], siblings[localIndex]]
+  } else {
+    const localIndex = location.itemIndex
+    const targetLocalIndex = localIndex + dir
+    if (targetLocalIndex < 0 || targetLocalIndex >= steps.length) return
+    ;[steps[localIndex], steps[targetLocalIndex]] = [steps[targetLocalIndex], steps[localIndex]]
+  }
+  clearStaleStepLinksAfterMove()
+  renderAllAnimated()
+}
+
+export function moveGroup(groupId, dir) {
+  const groupItemIndex = steps.findIndex((item) => isGroup(item) && item.id === groupId)
+  if (groupItemIndex < 0) return
+  const targetIndex = groupItemIndex + dir
+  if (targetIndex < 0 || targetIndex >= steps.length) return
+  ;[steps[groupItemIndex], steps[targetIndex]] = [steps[targetIndex], steps[groupItemIndex]]
+  clearStaleStepLinksAfterMove()
+  renderAllAnimated()
+}
+
+export function clearStaleStepLinksAfterMove() {
+  const flatOrder = flattenSteps()
+  flatOrder.forEach((entry, flatIndex) => {
+    for (const [field, source] of Object.entries(entry.step.links)) {
+      if (!source || typeof source !== 'object' || !source.linkedTo) continue
+      const sourceFlatIndex = flatOrder.findIndex((e) => e.step.id === source.linkedTo)
+      if (sourceFlatIndex < 0 || sourceFlatIndex >= flatIndex) delete entry.step.links[field]
+    }
+  })
+}
+
+export function toggleStepCollapsed(id) {
+  const step = findStepById(id)
+  if (!step) return
+  step.isCollapsed = !step.isCollapsed
+  bridge().renderAll()
+}
+
+export function toggleGroupCollapsed(id) {
+  const group = steps.find((item) => isGroup(item) && item.id === id)
+  if (!group) return
+  group.isCollapsed = !group.isCollapsed
+  bridge().renderAll()
+}
+
+export function setGroupChildrenCollapsed(id, isCollapsed) {
+  const group = steps.find((item) => isGroup(item) && item.id === id)
+  if (!group) return
+  group.steps.forEach((step) => { step.isCollapsed = isCollapsed })
+  bridge().renderAll()
+}
+
+export function setAllCollapsed(isCollapsed) {
+  for (const item of steps) {
+    if (isGroup(item)) {
+      item.isCollapsed = isCollapsed
+      item.steps.forEach((step) => { step.isCollapsed = isCollapsed })
+    } else {
+      item.isCollapsed = isCollapsed
+    }
+  }
+  bridge().renderAll()
+}
+
+export function setGroupLabel(groupId, label) {
+  const group = steps.find((item) => isGroup(item) && item.id === groupId)
+  if (!group) return
+  group.label = label
+  bridge().updateYaml()
+  scheduleUpdateUrl()
+}
+
+// ─── Step alias editing ───────────────────────────────────────────────────────
+
+export function stepAliasFocus(input) {
+  input.dataset.original = input.value
+  delete input.dataset.revert
+  input.select()
+}
+
+export function stepAliasKeydown(event, stepId) {
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    event.target.blur()
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    event.target.dataset.revert = '1'
+    event.target.value = event.target.dataset.original ?? ''
+    event.target.blur()
+  }
+}
+
+export function stepAliasBlur(input, stepId) {
+  if (input.dataset.revert) {
+    delete input.dataset.revert
+    return
+  }
+  setStepAlias(stepId, input.value)
+}
+
+export function setStepAlias(stepId, alias) {
+  const step = findStepById(stepId)
+  if (!step) return
+  const trimmed = alias.trim()
+  if (step.alias === trimmed) return
+  step.alias = trimmed
+  bridge().updateYaml()
+  scheduleUpdateUrl()
+}
+
+export function toggleStepActions(stepId) {
+  const actions = document.querySelector(`[data-step-actions="${stepId}"]`)
+  if (actions) actions.classList.toggle('open')
+}
+
+// ─── Param / link mutation ────────────────────────────────────────────────────
+
+export function setParam(id, fieldName, value) {
+  const step = findStepById(id)
+  if (!step) return
+  step.params[fieldName] = value
+  refreshLinkedInputs()
+  bridge().updateYaml()
+  updateUrl()
+}
+
+export function setParamJson(id, field, raw) {
+  const step = findStepById(id)
+  if (!step) return
+  try { step.params[field] = JSON.parse(raw) }
+  catch { step.params[field] = raw }
+  bridge().updateYaml()
+  scheduleUpdateUrl()
+}
+
+export function promotePathToPathVar(stepId, fieldName, rawValue) {
+  const step = findStepById(stepId)
+  if (!step) return
+  if (step.links?.[fieldName]) return
+  const value = (rawValue ?? '').trim()
+  if (!value) return
+  const existing = paths.find(p => p.value === value)
+  if (existing) {
+    step.links[fieldName] = existing.id
+    delete step.params[fieldName]
+    bridge().renderAll()
+    return
+  }
+  const newPath = { id: 'path_' + randomHex(), label: 'Path ' + paths.length, value }
+  paths.push(newPath)
+  step.links[fieldName] = newPath.id
+  delete step.params[fieldName]
+  bridge().renderAll()
+}
+
+export async function browsePathField(stepId, fieldName, initialPath) {
+  if (typeof window.openFileExplorer !== 'function') return
+  let startPath = initialPath
+  if (!startPath) {
+    try {
+      const resp = await fetch('/files/default-path')
+      const data = await resp.json()
+      startPath = data.path || '/'
+    } catch { startPath = '/' }
+  }
+  window.openFileExplorer(startPath, {
+    pickerOnSelect: (selectedPath) => {
+      setLink(stepId, fieldName, '')
+      setParam(stepId, fieldName, selectedPath)
+      bridge().renderAll()
+    },
+  })
+}
+
+export function setLink(id, field, choice) {
+  const step = findStepById(id)
+  if (!step) return
+  if (!choice) {
+    delete step.links[field]
+  } else if (choice.startsWith('path:')) {
+    step.links[field] = choice.slice('path:'.length)
+  } else if (choice.startsWith('step:')) {
+    const after = choice.slice('step:'.length)
+    const sep = after.indexOf(':')
+    const stepId = sep >= 0 ? after.slice(0, sep) : after
+    const output = sep >= 0 ? after.slice(sep + 1) : 'folder'
+    step.links[field] = { linkedTo: stepId, output }
+  } else {
+    delete step.links[field]
+  }
+  const linkedInput = document.querySelector(`[data-step="${id}"][data-field="${field}"].linked-input`)
+  const manualInput = document.querySelector(`[data-step="${id}"][data-field="${field}"].manual-input`)
+  const val = getLinkedValue(step, field)
+  if (val !== null) {
+    if (linkedInput) { linkedInput.value = val; linkedInput.classList.remove('hidden') }
+    if (manualInput) manualInput.classList.add('hidden')
+  } else {
+    if (linkedInput) linkedInput.classList.add('hidden')
+    if (manualInput) manualInput.classList.remove('hidden')
+  }
+  refreshLinkedInputs()
+  bridge().updateYaml()
+  scheduleUpdateUrl()
+}
+
+export function refreshLinkedInputs() {
+  for (const entry of flattenSteps()) {
+    const step = entry.step
+    for (const [field] of Object.entries(step.links)) {
+      const inp = document.querySelector(`[data-step="${step.id}"][data-field="${field}"].linked-input`)
+      if (inp) inp.value = getLinkedValue(step, field) ?? ''
+    }
+  }
+}
+
+export function changeCommand(id, command) {
+  if (!command) return
+  const step = findStepById(id)
+  if (!step) return
+  const wasEmpty = step.command === null
+  step.command = command
+  step.params = {}
+  step.links = {}
+  step.status = null
+  step.error = null
+  const cmd = COMMANDS[command]
+  for (const f of cmd.fields) if (f.default !== undefined) step.params[f.name] = f.default
+  if (wasEmpty) {
+    const msf = mainSrcField(command)
+    if (msf) {
+      const location = findStepLocation(id)
+      const isInsideParallelGroup = !!(location?.parentGroup?.isParallel)
+      if (isInsideParallelGroup) {
+        if (paths.length) step.links[msf] = paths[0].id
+      } else {
+        const flat = flattenSteps()
+        const currentFlatIndex = flat.findIndex((entry) => entry.step.id === id)
+        const prevStep = currentFlatIndex > 0 ? flat[currentFlatIndex - 1].step : null
+        if (prevStep && prevStep.command) {
+          step.links[msf] = { linkedTo: prevStep.id, output: 'folder' }
+        } else if (paths.length) {
+          step.links[msf] = paths[0].id
+        }
+      }
+    }
+  }
+  bridge().renderAll()
+}
+
+export function buildParams(step, { resolveLinks = false } = {}) {
+  const cmd = COMMANDS[step.command]
+  const out = {}
+  for (const field of cmd.fields) {
+    let val = step.params[field.name]
+    const link = step.links?.[field.name]
+    if (link) {
+      if (resolveLinks) {
+        const linkedValue = getLinkedValue(step, field.name)
+        if (linkedValue !== null) val = linkedValue
+      } else if (typeof link === 'string') {
+        val = '@' + link
+      } else if (link && typeof link === 'object' && link.linkedTo) {
+        val = { linkedTo: link.linkedTo, output: link.output || 'folder' }
+      }
+    }
+    const skipPrimary = (
+      val === undefined || val === null || val === ''
+      || (Array.isArray(val) && val.length === 0)
+      || (!field.required && field.default !== undefined && val === field.default)
+    )
+    if (!skipPrimary) out[field.name] = val
+    if (field.companionNameField) {
+      const cv = step.params[field.companionNameField]
+      if (cv !== undefined && cv !== null && cv !== '') out[field.companionNameField] = cv
+    }
+  }
+  if (Array.isArray(cmd.persistedKeys)) {
+    for (const persistedKey of cmd.persistedKeys) {
+      const persistedValue = step.params[persistedKey]
+      if (persistedValue !== undefined && persistedValue !== null && persistedValue !== '') {
+        out[persistedKey] = persistedValue
+      }
+    }
+  }
+  return out
+}
+
+// ─── Scroll helpers ───────────────────────────────────────────────────────────
+
+export function scrollStepIntoView(stepId, behavior = 'smooth') {
+  const card = document.getElementById(`step-${stepId}`)
+  if (card) card.scrollIntoView({ behavior, block: 'center' })
+}
+
+export function scrollPathVarIntoView(pathVarId) {
+  const card = document.querySelector(`[data-path-var="${pathVarId}"]`)
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+// ─── View-transition animated render wrapper ──────────────────────────────────
+
+export function renderAllAnimated(afterRender) {
+  if (typeof document.startViewTransition === 'function') {
+    document.startViewTransition(() => {
+      bridge().renderAll()
+      if (afterRender) afterRender('instant')
+    })
+  } else {
+    bridge().renderAll()
+    if (afterRender) afterRender('smooth')
+  }
+}
+
+// ─── Global keyboard shortcuts ────────────────────────────────────────────────
+
+export function attachSequenceKeyboardShortcuts() {
+  document.addEventListener('keydown', (event) => {
+    const target = event.target
+    const isTextField = target && (
+      target.tagName === 'INPUT'
+      || target.tagName === 'TEXTAREA'
+      || target.isContentEditable
+    )
+    if (isTextField) return
+    if (!(event.ctrlKey || event.metaKey)) return
+    const key = event.key.toLowerCase()
+    if (key === 'z' && !event.shiftKey) {
+      event.preventDefault()
+      undo()
+    } else if ((key === 'z' && event.shiftKey) || key === 'y') {
+      event.preventDefault()
+      redo()
+    }
+  })
+
+  window.addEventListener('beforeunload', flushScheduledUpdateUrl)
+  window.addEventListener('blur', flushScheduledUpdateUrl, true)
+}
