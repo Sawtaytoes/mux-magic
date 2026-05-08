@@ -13,6 +13,16 @@
 <script src="/reload-on-restart.js"></script>
 <script src="/version-footer.js" defer></script>
 <link rel="stylesheet" href="/progress-utils.css" />
+<script type="module">
+// Opt-in MSW bootstrap — see /mocks/browser.js. Module scripts execute
+// in document order, with later modules waiting for earlier ones'
+// top-level await to settle, so this guarantees the service worker
+// is registered before main.js starts firing fetches/EventSources.
+// No-op (and zero CDN cost) when neither `?mock=1` nor
+// localStorage.useMocks is set.
+import { enableMocksIfRequested } from "/mocks/browser.js"
+await enableMocksIfRequested()
+</script>
 <script type="module" src="/builder/js/main.js"></script>
 <style>
   @keyframes stepEnter {

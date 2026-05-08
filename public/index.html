@@ -292,7 +292,19 @@
 <script src="/command-labels.js"></script>
 <script src="/reload-on-restart.js"></script>
 <script src="/version-footer.js" defer></script>
-<script>
+<script type="module">
+// Opt-in MSW bootstrap. The dynamic import keeps the regular page weight
+// at zero — only browsers loaded with `?mock=1` (or localStorage.useMocks
+// truthy) pull MSW from the CDN and register the service worker. We
+// `await` the registration BEFORE the main bootstrap module below
+// runs (browsers execute module scripts sequentially in document
+// order, blocking later ones on earlier ones' top-level await), so
+// the very first /jobs/stream EventSource sees the worker active and
+// gets the canned data.
+const { enableMocksIfRequested } = await import("/mocks/browser.js");
+await enableMocksIfRequested();
+</script>
+<script type="module">
 const statusBar = document.getElementById("status-bar");
 const jobsEl = document.getElementById("jobs");
 
