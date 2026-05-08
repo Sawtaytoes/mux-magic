@@ -45,8 +45,7 @@ COPY . .
 RUN \
   npm install -g -y corepack@latest && \
   corepack enable yarn && \
-  yarn install && \
-  yarn add @lydell/node-pty@npm:node-pty@1.0.0
+  yarn install
 
 # Playwright Chromium binary + the matching apt-level system libs
 # (libnss3, libxkbcommon0, fonts, etc.). Has to run AFTER yarn install
