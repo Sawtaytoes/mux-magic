@@ -13,7 +13,6 @@ States: `briefed → running → pushed → pr-open → awaiting-decision → re
 | ID | Question | Notes |
 |----|----------|-------|
 | **W26b** | Approve **Road A** for DSL subtitle coverage? Heuristics in TS + optional `when:` aggregate predicates only — no `${expr}` mini-language. | Design record [docs/dsl/subtitle-coverage.md](dsl/subtitle-coverage.md). |
-| **W18b** | Pick a registry → TrueNAS notification approach. | Urgency reduced — W21 confirmed deploy is current. Design record [docs/diagnostics/docker-registry-truenas.md](diagnostics/docker-registry-truenas.md). |
 
 ### Open PRs awaiting your review/merge
 
@@ -45,7 +44,6 @@ These came from the user's notes file (`g:\Anime\media-tools-tasks.md`); not blo
 | Step alias display | Empty step.alias defaults to friendly `commandLabel(step.command)` (e.g. "Name Special Features") instead of internal `step.command` (`nameSpecialFeatures`). Stored YAML stays empty. | **Shipped in `200eef0`.** |
 | Sequence Builder import bug | Move `schedulePathLookup` import from `sequence-editor.js` to `pickers.js` (where it's defined). Bad import introduced by W3-restart merge (#48) caused SyntaxError on builder boot. | **Shipped in `c66fc10`.** |
 | W26b | Still pending — needs your call. | — |
-| W18b | Still pending — needs your call. | — |
 
 ## Merged this session
 
