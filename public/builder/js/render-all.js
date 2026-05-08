@@ -4,7 +4,7 @@
 // current in-memory state and re-attaches Sortable instances + progress bars.
 
 import { steps, paths, flattenSteps, isGroup, initPaths } from './sequence-state.js'
-import { renderInsertDivider, renderSequenceEndCard, renderStep, renderGroup } from './step-renderer.js'
+import { renderInsertDivider, renderSequenceEndCard, renderStep, renderStepCompact, renderGroup, isDrawerMode } from './step-renderer.js'
 
 // Per-step ProgressEvent snapshot. Keyed by stepId. Cleared on done /
 // step-finished / cancel via unmountStepCardProgress.
@@ -68,6 +68,7 @@ export function renderAll() {
       </div>
     </div>`)
   } else {
+    const drawerMode = isDrawerMode()
     parts.push(renderInsertDivider(0))
     let flatStepIndex = 0
     steps.forEach((item, itemIndex) => {
@@ -75,7 +76,11 @@ export function renderAll() {
         parts.push(renderGroup(item, itemIndex, flatStepIndex))
         flatStepIndex += item.steps.length
       } else {
-        parts.push(renderStep(item, flatStepIndex))
+        parts.push(
+          drawerMode
+            ? renderStepCompact(item, flatStepIndex)
+            : renderStep(item, flatStepIndex)
+        )
         flatStepIndex += 1
       }
       parts.push(renderInsertDivider(itemIndex + 1))
@@ -129,6 +134,13 @@ export function renderAll() {
 
   // Re-attach Sortable instances
   window.mediaTools.attachSortables?.()
+
+  // In drawer-experiment mode: if a drawer is open, refresh its content so
+  // param changes (e.g. from linked inputs) are reflected live.
+  if (isDrawerMode()) {
+    const openId = window.getOpenStepId?.()
+    if (openId) window.openStepDrawer?.(openId)
+  }
 
   // Re-mount per-step progress bars after innerHTML swap
   progressByStepId.forEach((_, stepId) => {
