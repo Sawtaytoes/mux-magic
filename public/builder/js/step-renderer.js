@@ -162,15 +162,10 @@ export function isDrawerMode() {
 export function renderStepCompact(step, index, context = {}) {
   const cmd = step.command ? COMMANDS[step.command] : null
   const statusBadge = step.status ? renderStatusBadge(step.status) : ''
-  let siblings, localIndex
-  if (context.parentGroupId) {
-    const group = steps.find((item) => isGroup(item) && item.id === context.parentGroupId)
-    siblings = group?.steps ?? []
-    localIndex = siblings.indexOf(step)
-  } else {
-    siblings = steps
-    localIndex = siblings.indexOf(step)
-  }
+  const siblings = context.parentGroupId
+    ? (steps.find((item) => isGroup(item) && item.id === context.parentGroupId)?.steps ?? [])
+    : steps
+  const localIndex = siblings.indexOf(step)
   const isFirst = localIndex <= 0
   const isLast = localIndex < 0 || localIndex >= siblings.length - 1
 
@@ -223,15 +218,10 @@ export function renderStepCompact(step, index, context = {}) {
 export function renderStep(step, index, context = {}) {
   const cmd = step.command ? COMMANDS[step.command] : null
   const statusBadge = step.status ? renderStatusBadge(step.status) : ''
-  let siblings, localIndex
-  if (context.parentGroupId) {
-    const group = steps.find((item) => isGroup(item) && item.id === context.parentGroupId)
-    siblings = group?.steps ?? []
-    localIndex = siblings.indexOf(step)
-  } else {
-    siblings = steps
-    localIndex = siblings.indexOf(step)
-  }
+  const siblings = context.parentGroupId
+    ? (steps.find((item) => isGroup(item) && item.id === context.parentGroupId)?.steps ?? [])
+    : steps
+  const localIndex = siblings.indexOf(step)
   const isFirst = localIndex <= 0
   const isLast = localIndex < 0 || localIndex >= siblings.length - 1
 
