@@ -5,7 +5,6 @@ import { type Observable } from "rxjs"
 import { getEffectiveCommandConfigs, isFakeRequest } from "../../fake-data/index.js"
 import { makeDirectory } from "../../tools/makeDirectory.js"
 import { changeTrackLanguages } from "../../app-commands/changeTrackLanguages.js"
-import { computeDefaultSubtitleRules } from "../../app-commands/computeDefaultSubtitleRules.js"
 import { copyFiles } from "../../app-commands/copyFiles.js"
 import { flattenOutput } from "../../app-commands/flattenOutput.js"
 import { copyOutSubtitles } from "../../app-commands/copyOutSubtitles.js"
@@ -80,7 +79,6 @@ const startCommandJob = ({
 export const commandNames = [
   "makeDirectory",
   "changeTrackLanguages",
-  "computeDefaultSubtitleRules",
   "copyFiles",
   "flattenOutput",
   "copyOutSubtitles",
@@ -156,15 +154,6 @@ export const commandConfigs: Record<CommandName, CommandConfig> = {
     schema: schemas.changeTrackLanguagesRequestSchema,
     summary: "Change language tags for media tracks",
     tags: ["Track Operations"],
-  },
-  computeDefaultSubtitleRules: {
-    getObservable: (body) => computeDefaultSubtitleRules({ isRecursive: body.isRecursive, recursiveDepth: body.recursiveDepth, sourcePath: body.sourcePath }),
-    // Pin the rules array as a named runtime output so a downstream
-    // modifySubtitleMetadata step can consume it via { linkedTo, output: 'rules' }.
-    extractOutputs: (results) => ({ rules: results }),
-    schema: schemas.computeDefaultSubtitleRulesRequestSchema,
-    summary: "Compute the default ASS modification rules from .ass file metadata. Emits a `rules` named output for the next sequence step to consume.",
-    tags: ["Subtitle Operations"],
   },
   copyFiles: {
     getObservable: (body) => copyFiles({ destinationPath: body.destinationPath, sourcePath: body.sourcePath }),
@@ -272,9 +261,9 @@ export const commandConfigs: Record<CommandName, CommandConfig> = {
     tags: ["File Operations"],
   },
   modifySubtitleMetadata: {
-    getObservable: (body) => modifySubtitleMetadata({ isRecursive: body.isRecursive, recursiveDepth: body.recursiveDepth, rules: body.rules, sourcePath: body.sourcePath }),
+    getObservable: (body) => modifySubtitleMetadata({ hasDefaultRules: body.hasDefaultRules, isRecursive: body.isRecursive, predicates: body.predicates, recursiveDepth: body.recursiveDepth, rules: body.rules, sourcePath: body.sourcePath }),
     schema: schemas.modifySubtitleMetadataRequestSchema,
-    summary: "Apply DSL-driven modifications to ASS subtitle metadata",
+    summary: "Apply DSL-driven modifications to ASS subtitle metadata. Set hasDefaultRules:true to prepend the in-tree default-rules heuristic.",
     tags: ["Subtitle Operations"],
   },
   keepLanguages: {

@@ -5,12 +5,24 @@ import {
   defer,
   EMPTY,
   filter,
+  from,
   map,
+  switchMap,
   tap,
+  toArray,
 } from "rxjs"
 
-import { type AssModificationRule } from "../tools/assTypes.js"
-import { applyAssRules } from "../tools/applyAssRules.js"
+import {
+  type AssModificationRule,
+  type NamedPredicates,
+} from "../tools/assTypes.js"
+import {
+  applyAssRules,
+  buildFileMetadata,
+  filterRulesByWhen,
+  type FileBatchMetadata,
+} from "../tools/applyAssRules.js"
+import { buildDefaultSubtitleModificationRules } from "../tools/buildDefaultSubtitleModificationRules.js"
 import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { logInfo } from "../tools/logMessage.js"
@@ -24,6 +36,8 @@ type ModifySubtitleMetadataRequiredProps = {
 }
 
 type ModifySubtitleMetadataOptionalProps = {
+  hasDefaultRules?: boolean
+  predicates?: NamedPredicates
   recursiveDepth?: number
 }
 
@@ -32,23 +46,20 @@ export type ModifySubtitleMetadataProps = (
   & ModifySubtitleMetadataOptionalProps
 )
 
-export const modifySubtitleMetadata = ({
+// Read + parse all .ass files in the source directory once. The resulting
+// snapshots feed both `when:` predicate evaluation across the batch and
+// `hasDefaultRules: true` heuristic computation. Returning the parsed
+// AssFile alongside the metadata lets the per-file write step skip a
+// second parse pass.
+const readAndParseAssFiles = ({
   isRecursive,
   recursiveDepth,
-  rules,
   sourcePath,
-}: ModifySubtitleMetadataProps) => {
-  // No-op fast path so the YAML pipeline can always include a
-  // modifySubtitleMetadata step. The conditional 'do we have rules to
-  // apply?' decision lives in whatever produces the rules array (e.g.
-  // computeDefaultSubtitleRules) — not in branching encoded in the
-  // sequence YAML.
-  if (!rules || rules.length === 0) {
-    logInfo("MODIFY SUBTITLE METADATA", "No rules provided — skipping (no-op).")
-    return EMPTY
-  }
-
-  return (
+}: {
+  isRecursive: boolean
+  recursiveDepth?: number
+  sourcePath: string
+}) => (
   getFilesAtDepth({
     depth: (
       isRecursive
@@ -61,42 +72,98 @@ export const modifySubtitleMetadata = ({
     filter((fileInfo) => (
       extname(fileInfo.fullPath).toLowerCase() === ".ass"
     )),
-    withFileProgress((fileInfo) => (
-      defer(() => (
-        readFile(
-          fileInfo.fullPath,
-          "utf-8",
-        )
-      ))
+    concatMap((fileInfo) => (
+      defer(() => readFile(fileInfo.fullPath, "utf-8"))
       .pipe(
-        map((content) => (
-          serializeAssFile(
-            applyAssRules(
-              parseAssFile(content),
-              rules,
-            )
-          )
-        )),
-        concatMap((updatedContent) => (
-          writeFile(
-            fileInfo.fullPath,
-            updatedContent,
-            "utf-8",
-          )
-        )),
-        tap(() => {
-          logInfo(
-            "MODIFIED SUBTITLE METADATA",
-            fileInfo.fullPath,
-          )
+        map((content) => {
+          const assFile = parseAssFile(content)
+          const fileMetadata = buildFileMetadata({ assFile, filePath: fileInfo.fullPath })
+          return { assFile, fileMetadata, filePath: fileInfo.fullPath }
         }),
-        // Emit a per-file record so the API job's `results` is a useful
-        // list of modified files instead of an array of nulls (writeFile
-        // resolves void, which JSON-serializes to null).
-        map(() => ({ filePath: fileInfo.fullPath })),
       )
     )),
-    logAndRethrow(modifySubtitleMetadata),
+    toArray(),
   )
+)
+
+export const modifySubtitleMetadata = ({
+  hasDefaultRules,
+  isRecursive,
+  predicates,
+  recursiveDepth,
+  rules,
+  sourcePath,
+}: ModifySubtitleMetadataProps) => {
+  const userRules = rules ?? []
+  const isDefaultRulesEnabled = hasDefaultRules ?? false
+  const namedPredicates = predicates ?? {}
+
+  // Fast path so the YAML pipeline can always include a
+  // modifySubtitleMetadata step. When neither user-supplied rules nor
+  // hasDefaultRules are present there's nothing to do.
+  if (!isDefaultRulesEnabled && userRules.length === 0) {
+    logInfo("MODIFY SUBTITLE METADATA", "No rules provided — skipping (no-op).")
+    return EMPTY
+  }
+
+  return (
+    readAndParseAssFiles({ isRecursive, recursiveDepth, sourcePath })
+    .pipe(
+      switchMap((parsedFiles) => {
+        if (parsedFiles.length === 0) {
+          logInfo("MODIFY SUBTITLE METADATA", "No .ass files found — nothing to do.")
+          return EMPTY
+        }
+
+        const batchMetadata: FileBatchMetadata[] = parsedFiles.map(({ fileMetadata }) => fileMetadata)
+
+        const defaultRules: AssModificationRule[] = (
+          isDefaultRulesEnabled
+          ? buildDefaultSubtitleModificationRules(batchMetadata)
+          : []
+        )
+
+        // Defaults run first so user rules can override them.
+        const combinedRules = [...defaultRules, ...userRules]
+
+        const activeRules = filterRulesByWhen({
+          batchMetadata,
+          predicates: namedPredicates,
+          rules: combinedRules,
+        })
+
+        if (activeRules.length === 0) {
+          logInfo(
+            "MODIFY SUBTITLE METADATA",
+            "All rules filtered out by `when:` predicates — no files written.",
+          )
+          return EMPTY
+        }
+
+        return from(parsedFiles)
+        .pipe(
+          withFileProgress(({ assFile, fileMetadata, filePath }) => (
+            defer(() => {
+              const updatedAssFile = applyAssRules({
+                assFile,
+                fileMetadata,
+                rules: activeRules,
+              })
+              const updatedContent = serializeAssFile(updatedAssFile)
+              return writeFile(filePath, updatedContent, "utf-8")
+            })
+            .pipe(
+              tap(() => {
+                logInfo("MODIFIED SUBTITLE METADATA", filePath)
+              }),
+              // Per-file record so the API job's `results` is a useful list
+              // of modified files instead of an array of nulls.
+              map(() => ({ filePath })),
+            )
+          )),
+        )
+      }),
+      logAndRethrow(modifySubtitleMetadata),
+    )
   )
 }

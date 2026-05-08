@@ -135,7 +135,7 @@ describe(runJob.name, () => {
   })
 
   test("populates job.outputs when extractOutputs is provided and the job completes", async () => {
-    const job = createJob({ commandName: "computeDefaultSubtitleRules" })
+    const job = createJob({ commandName: "modifySubtitleMetadata" })
 
     // runJob's `next` handler does job.results.concat(value), which flattens
     // arrays by one level. So an observable that emits one rules-array ends
@@ -176,7 +176,7 @@ describe(runJob.name, () => {
   })
 
   test("does not run extractOutputs when the job ends in failure", async () => {
-    const job = createJob({ commandName: "computeDefaultSubtitleRules" })
+    const job = createJob({ commandName: "modifySubtitleMetadata" })
 
     let extractCalled = false
     runJob(
