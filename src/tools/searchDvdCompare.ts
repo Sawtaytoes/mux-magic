@@ -80,9 +80,18 @@ export const parseDvdCompareSearchHtml = (
   return results
 }
 
+export type DvdCompareSearchOutcome = {
+  // When true, DVDCompare's search.php redirected directly to a film
+  // page instead of returning a list of candidates. The caller should
+  // auto-select the single result's ID and skip the movie-picker step,
+  // then immediately prompt the user for a Release Hash.
+  isDirectListing: boolean
+  results: DvdCompareResult[]
+}
+
 export const findDvdCompareResults = (
   searchTerm: string,
-): Observable<DvdCompareResult[]> => (
+): Observable<DvdCompareSearchOutcome> => (
   from((async () => {
     const formData = new URLSearchParams({
       param: searchTerm,
@@ -100,18 +109,21 @@ export const findDvdCompareResults = (
 
     // DVDCompare redirects search.php to a specific film.php page when
     // there's only one match. fetch follows the redirect by default, so
-    // the final response.url points at the film. Treat that as a single
-    // search result so the builder UI can fast-path through the variant
-    // step into the release picker.
+    // the final response.url points at the film.php URL. Expose
+    // isDirectListing=true so callers can auto-select the ID and skip
+    // straight to the Release Hash prompt instead of showing a picker.
     const redirectMatch = response.url.match(/film\.php\?fid=(\d+)/)
     if (redirectMatch) {
       const fid = Number(redirectMatch[1])
       const filmInfo = parseDvdCompareFilmTitle(html, fid)
-      if (filmInfo) return [filmInfo]
-      return [{ baseTitle: "", id: fid, variant: "DVD" as const, year: "" }]
+      const result: DvdCompareResult = (
+        filmInfo
+        ?? { baseTitle: "", id: fid, variant: "DVD" as const, year: "" }
+      )
+      return { isDirectListing: true, results: [result] }
     }
 
-    return parseDvdCompareSearchHtml(html)
+    return { isDirectListing: false, results: parseDvdCompareSearchHtml(html) }
   })())
 )
 

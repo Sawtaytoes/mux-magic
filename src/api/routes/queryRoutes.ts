@@ -310,12 +310,16 @@ queryRoutes.openapi(
     }
     const body = context.req.valid("json")
     try {
-      const results = await lastValueFrom(findDvdCompareResults(body.searchTerm))
-      return context.json({ results, error: null }, 200)
+      const outcome = await lastValueFrom(findDvdCompareResults(body.searchTerm))
+      return context.json({
+        isDirectListing: outcome.isDirectListing,
+        results: outcome.results,
+        error: null,
+      }, 200)
     } catch (err) {
       const message = messageFromError(err)
       console.error("[searchDvdCompare]", message)
-      return context.json({ results: [], error: message }, 200)
+      return context.json({ isDirectListing: false, results: [], error: message }, 200)
     }
   },
 )
