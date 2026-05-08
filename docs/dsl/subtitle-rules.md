@@ -2,10 +2,11 @@
 
 The `modifySubtitleMetadata` command takes a list of declarative **rules** that transform `.ass` subtitle files. The rules are pure data (no expressions, no scripting); the engine in `src/tools/applyAssRules.ts` walks the list and applies each rule in order.
 
-Two ways to feed rules in:
+Three ways to feed rules in (combine freely):
 
-1. **Hand-author** them in YAML/JSON inside a sequence step's `params.rules`.
-2. **Compute** them at runtime via `computeDefaultSubtitleRules` and pipe via `{ linkedTo, output }` (see [subtitle-coverage.md](subtitle-coverage.md) for that side).
+1. **Hand-author** rules in YAML/JSON inside a sequence step's `params.rules`.
+2. **Default rules** computed server-side from the `.ass` files you're processing — opt in via `hasDefaultRules: true`. These are the standard fansub-anime fixups (TV.709 colorspace, scaled MarginV, ScriptType pin, signs/songs protection). When both are present, defaults run **first**, user rules run **after** so user rules can override.
+3. **Sequence-piped rules** from another step via `{ linkedTo, output }` — for advanced cases where a custom TS command computes rules outside the DSL's expressive range. See [subtitle-coverage.md §When the DSL isn't enough](subtitle-coverage.md).
 
 This doc is the **authoring reference** — every rule type, every field, what they do, and the patterns that actually show up.
 
@@ -33,6 +34,61 @@ rules:                    # REQUIRED. Ordered list of rules to apply.
 ```
 
 **Order matters.** Rules apply top-to-bottom per file. Later rules see the output of earlier ones.
+
+---
+
+## Default rules toggle
+
+`modifySubtitleMetadata` accepts a `hasDefaultRules: boolean` flag (defaults to `false`). When true, the engine computes a baseline rules set from the `.ass` files at `sourcePath` and prepends it to your `rules:` array.
+
+```yaml
+- command: modifySubtitleMetadata
+  params:
+    sourcePath: /media/Anime/MyShow
+    hasDefaultRules: true       # opt in to the standard fansub fixups
+    rules:
+      # User overrides / additions go here. Apply AFTER defaults.
+      - type: setStyleFields
+        fields: { Fontname: "Arial" }
+```
+
+### What "default rules" means
+
+Computed from the `.ass` metadata at the moment of execution. The heuristic is in `src/tools/buildDefaultSubtitleModificationRules.ts`. It always emits these (each conditional on the relevant aggregate predicate):
+
+| # | Rule | When it emits |
+|---|------|---------------|
+| 1 | `setScriptInfo ScriptType = "v4.00+"` | Always. |
+| 2 | `setScriptInfo "YCbCr Matrix" = "TV.709"` | If any file has `YCbCr Matrix=TV.601` outside SD-DVD shape (640×480). |
+| 3 | `scaleResolution from 640×360 to 1920×1080` | (Currently dead-coded `false` per existing TODO; no-op even when `hasDefaultRules: true`.) |
+| 4 | `setStyleFields MarginV = round(PlayResY/1080 × 90)` | Always. Computed via `computeFrom`. |
+| 5 | `setStyleFields MarginL/MarginR = round(200/1920 × PlayResX)` | Only when at least one non-ignored style has narrow MarginL/R below threshold. |
+| 6 | `ignoredStyleNamesRegexString: "signs?\|op\|ed\|opening\|ending"` | Bundled with rules 4 + 5 to protect Signs/Songs styles from being overwritten. |
+
+Anything more specific than these — or completely different — should be authored as explicit `rules:` entries (which run after the defaults and can override them).
+
+### Order with custom rules
+
+Defaults first, then user rules. So if you wanted to force `MarginV: "100"` on every style:
+
+```yaml
+hasDefaultRules: true
+rules:
+  - type: setStyleFields
+    fields:
+      MarginV: "100"
+```
+
+The default's computed `MarginV` runs first; your literal `"100"` runs after and wins.
+
+### Builder UI requirements
+
+When the Builder renders a `modifySubtitleMetadata` step with `hasDefaultRules: true`:
+
+- Default rules appear **above** the user rules, in the same graphical layout (same per-rule form, same field controls).
+- Default rule controls are rendered **`readonly`**, NOT `disabled`. They're active rules that will run; the user just can't edit them inline. `readonly` keeps them in the keyboard tab order and visible to screen readers; `disabled` would hide them from assistive tech, which is wrong because the values matter.
+- Visual distinction: muted background or a "default" badge so users know which rules they CAN'T edit vs the user rules they CAN.
+- Same layout means an author can visually understand the order: "first this default ScriptType pin runs, then this default YCbCr fix, then my custom Fontname override at the bottom."
 
 ---
 

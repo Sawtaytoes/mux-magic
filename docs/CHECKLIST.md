@@ -12,7 +12,7 @@ States: `briefed → running → pushed → pr-open → awaiting-decision → re
 
 | ID | Question | Notes |
 |----|----------|-------|
-| **W26b** | ~~Approve Road A?~~ **Decided 2026-05-08:** G1 (`when:` equality predicates) + G2 (structured math ops, no `${expr}`) + G3 (`setStyleFields.applyIf` with `lt/gt/eq` comparators). G4/G5 fall out of G1. Design record updated in [docs/dsl/subtitle-coverage.md §Decisions](dsl/subtitle-coverage.md). **Ready to spawn worker.** | — |
+| **W26b** | **Decided 2026-05-08:** G1 (`when:` equality predicates with `matches`/`excludes` and named-predicate `$ref`) + G2 (structured math ops, no `${expr}`) + G3 (`setStyleFields.applyIf` with `lt/gt/eq` comparators). G4/G5 fall out of G1. **PLUS:** drop `computeDefaultSubtitleRules` as a separate command and add `hasDefaultRules: boolean` toggle on `modifySubtitleMetadata` (defaults run before user rules). Design record: [subtitle-coverage.md](dsl/subtitle-coverage.md) (rationale) + [subtitle-rules.md](dsl/subtitle-rules.md) (authoring reference). **Ready to spawn worker.** | — |
 
 ### Open PRs awaiting your review/merge
 
@@ -24,10 +24,16 @@ _None — all 6 session PRs merged ✅_
 
 ### Queued for future cleanup work (after main queue clears)
 
-These came from the user's notes file (`g:\Anime\media-tools-tasks.md`); not blocking, but tracked here so they don't get lost.
+These came from the user's notes file (`g:\Anime\media-tools-tasks.md`) and follow-ups in this session; not blocking, but tracked here so they don't get lost.
 
 - **W-tooltips** — Card setting tooltips / docs modal. Hovering a setting in each step card shows a tooltip explaining what it does (or click-to-open a docs modal explaining everything). Applies to **both** media-tools and media-sync builders/jobs UIs.
-- **W-fp-cleanup** — Functional-style cleanup of legacy `var` / `let`-mutation / `for`-loop patterns in `public/**/*.js` across **both** media-tools AND media-sync. AGENTS.md guardrails (added in `44cf3b5`) prevent NEW violations; this is the bulk cleanup of the existing pre-guardrail code. Behavior-preserving refactor only; rely on existing test suites + manual smoke for verification.
+- **W-fp-cleanup** — Functional-style cleanup of legacy `var` / `let`-mutation / `for`-loop patterns in `public/**/*.js` across **both** media-tools AND media-sync. AGENTS.md guardrails (added in `44cf3b5`, expanded with `is`/`has` rule in this session) prevent NEW violations; this is the bulk cleanup of the existing pre-guardrail code. Behavior-preserving refactor only; rely on existing test suites + manual smoke for verification.
+- **W-dsl-ui** — Builder UI for the subtitle-rules DSL. Currently `modifySubtitleMetadata.rules` is a raw JSON textarea; this worker builds form controls for: rules list (sortable, type-discriminated), per-rule field editors, `when:` / `applyIf` predicate builders, `computeFrom` op-list builder, named-predicates manager, AND a `readonly` (NOT `disabled`) display of computed default rules above the user rules when `hasDefaultRules: true`. **Spawn after W26b ships** (the schema needs to be locked first). See [docs/dsl/subtitle-rules.md §Builder UI requirements](dsl/subtitle-rules.md).
+- **W-mediasync-dsl-migration** — In media-sync, replace usages of the about-to-be-dropped `computeDefaultSubtitleRules` command with `modifySubtitleMetadata` calls that have `hasDefaultRules: true`. **Must ship right after W26b's media-tools side merges and deploys**, otherwise media-sync's sequence YAMLs break against the live media-tools API. Concrete files (from grep):
+  - `packages/sync-anime-and-manga/src/processAnimeSubtitles.ts` — actual sequence definition (line ~142 has the step). Drop the `computeDefaultSubtitleRules` step entirely; pass `hasDefaultRules: true` on the `modifySubtitleMetadata` step that consumed its `rules` output.
+  - `packages/sync-anime-and-manga/src/mediaToolsApi.test.ts` — test fixtures (lines 91/98) reference the command name; update to whatever step replaces it.
+  - `packages/sync-anime-and-manga/src/mediaToolsApi.ts` — docstring example at line ~703 mentions it.
+  - `packages/sync-anime-and-manga/src/schema.generated/mediaToolsApiSchema.ts` — auto-generated; will refresh from media-tools' OpenAPI spec once W26b deploys.
 
 ## Decisions captured this session
 
