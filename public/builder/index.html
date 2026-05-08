@@ -11,6 +11,7 @@
 <script src="/progress-utils.js"></script>
 <script src="/format-bandwidth.js"></script>
 <script src="/command-labels.js"></script>
+<script src="/builder/js/command-descriptions.js"></script>
 <script src="/reload-on-restart.js"></script>
 <script src="/version-footer.js" defer></script>
 <link rel="stylesheet" href="/progress-utils.css" />
@@ -332,6 +333,25 @@ await enableMocksIfRequested()
 <!-- Path typeahead popover -->
 <div id="path-picker-popover" class="hidden fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col" style="width:380px;max-height:280px">
   <div id="path-picker-list" class="overflow-y-auto py-1"></div>
+</div>
+
+<!-- Field tooltip popover — single shared element repositioned on
+     mouseenter of any [data-tooltip-key] label. Content lives in
+     window.commandDescriptions, populated at prebuild from the Zod
+     schemas in src/api/schemas.ts. See field-tooltip.js. -->
+<div id="field-tooltip-popover" class="hidden fixed z-50 pointer-events-none bg-slate-900 border border-slate-600 rounded-md shadow-xl px-3 py-2 text-xs text-slate-200 leading-relaxed" style="max-width:340px"></div>
+
+<!-- Per-command help modal — opened from the ⓘ button on each step
+     card header. Lists every field's schema description so the user
+     gets the full picture in one place. See command-help-modal.js. -->
+<div id="command-help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70" onclick="closeCommandHelpModal(event)">
+  <div class="bg-slate-900 border border-slate-700 rounded-xl flex flex-col" style="width:min(90vw,640px);max-height:85vh" onclick="event.stopPropagation()">
+    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
+      <span id="command-help-title" class="text-sm font-medium text-slate-200">Command help</span>
+      <button onclick="closeCommandHelpModal()" class="text-xs text-slate-400 hover:text-slate-200">✕ Close</button>
+    </div>
+    <div id="command-help-body" class="flex-1 overflow-auto px-4 py-3 text-sm text-slate-300 leading-relaxed"></div>
+  </div>
 </div>
 
 </body>

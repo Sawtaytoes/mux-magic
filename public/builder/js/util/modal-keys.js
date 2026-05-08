@@ -12,7 +12,7 @@
 // detach runs in one place; the other modals just hide via class
 // toggle since they have no side effects on close.
 
-const MODAL_IDS_IN_PRIORITY_ORDER = ['load-modal', 'yaml-modal', 'api-run-modal']
+const MODAL_IDS_IN_PRIORITY_ORDER = ['load-modal', 'yaml-modal', 'api-run-modal', 'command-help-modal']
 
 function findVisibleModalId() {
   return MODAL_IDS_IN_PRIORITY_ORDER.find((id) => {

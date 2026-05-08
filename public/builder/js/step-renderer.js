@@ -270,6 +270,8 @@ export function renderStep(step, index, context = {}) {
       <span class="text-slate-400 shrink-0">▾</span>
     </button>
     ${statusBadge}
+    ${step.command ? `<button onclick="openCommandHelpModal({commandName: '${step.command}'})" title="Show docs for this command's settings"
+      class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-blue-300 hover:bg-slate-700 text-xs">ⓘ</button>` : ''}
     <button onclick="toggleStepActions('${step.id}')" title="Step actions"
       class="step-hamburger-btn w-6 h-6 items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 text-base leading-none">≡</button>
     <div class="step-actions" data-step-actions="${step.id}">
@@ -302,11 +304,12 @@ export function renderFields(step, stepIndex) {
   const cmd = COMMANDS[step.command]
   return cmd.fields.map(field => {
     const val = step.params[field.name]
-    const label = `<label class="block text-xs text-slate-400 mb-1">${esc(field.label)}${field.required ? ' <span class="text-red-400">*</span>' : ''}</label>`
+    const tooltipKey = `${step.command}:${field.name}`
+    const label = `<label class="block text-xs text-slate-400 mb-1 cursor-help" data-tooltip-key="${esc(tooltipKey)}">${esc(field.label)}${field.required ? ' <span class="text-red-400">*</span>' : ''}</label>`
 
     if (field.type === 'boolean') {
       const checked = val ?? field.default ?? false
-      return `<label class="flex items-center gap-2 cursor-pointer select-none py-0.5">
+      return `<label class="flex items-center gap-2 cursor-pointer select-none py-0.5" data-tooltip-key="${esc(tooltipKey)}">
         <input type="checkbox" ${checked ? 'checked' : ''} onchange="setParam('${step.id}','${field.name}',this.checked)"
           class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer" />
         <span class="text-xs text-slate-300">${esc(field.label)}</span>
@@ -532,9 +535,10 @@ function renderPathField(step, field, stepIndex) {
     target.sourceStepId ? `data-linked-step="${target.sourceStepId}"` : '',
   ].filter(Boolean).join(' ')
   const browsePathArg = JSON.stringify(computed ?? val).replace(/"/g, '&quot;')
+  const tooltipKey = `${step.command}:${field.name}`
   return `<div>
     <div class="flex items-center gap-2 mb-1">
-      <label class="text-xs text-slate-400">${esc(field.label)}${field.required ? ' <span class="text-red-400">*</span>' : ''}</label>
+      <label class="text-xs text-slate-400 cursor-help" data-tooltip-key="${esc(tooltipKey)}">${esc(field.label)}${field.required ? ' <span class="text-red-400">*</span>' : ''}</label>
       <button type="button" onclick="browsePathField('${step.id}','${field.name}',${browsePathArg})"
         title="Browse to pick a folder for this field"
         class="ml-auto text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 cursor-pointer">📁</button>

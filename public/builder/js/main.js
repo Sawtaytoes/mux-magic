@@ -32,6 +32,11 @@ import {
   pasteCardAt,
 } from './components/card-clipboard.js'
 import { attachSortables } from './components/drag-and-drop.js'
+import { attachFieldTooltipListeners } from './components/field-tooltip.js'
+import {
+  openCommandHelpModal,
+  closeCommandHelpModal,
+} from './components/command-help-modal.js'
 import { attachModalEscapeListener } from './util/modal-keys.js'
 import {
   openFileExplorer,
@@ -339,6 +344,12 @@ attachModalEscapeListener()
 attachPathPickerDismissal()
 attachSequenceKeyboardShortcuts()
 attachCopyButtonListener()
+attachFieldTooltipListeners()
+
+// Help-modal globals — used by the ⓘ button in step-card headers and
+// the ✕ Close button in the modal markup itself.
+window.openCommandHelpModal = openCommandHelpModal
+window.closeCommandHelpModal = closeCommandHelpModal
 
 // Delegate path-var-card events on the steps list.
 const stepsEl = document.getElementById('steps-el')
