@@ -244,6 +244,8 @@ export const nameSpecialFeaturesRequestSchema = z.object({
   searchTerm: z.string().optional().describe("Title to search on DVDCompare.net (used when no url or dvdCompareId)"),
   fixedOffset: z.number().default(0).describe("Fixed timecode offset in milliseconds"),
   timecodePadding: z.number().default(2).describe("Timecode padding amount (in seconds) — DVDCompare runtimes routinely drift 1–2s from rip metadata, so 2 matches typical real-world cases. Set to 0 for an exact-match-only run."),
+  moveToEditionFolders: z.boolean().default(false).describe("After renaming, move main-feature files that carry a {edition-…} tag into <sourceParent>/<Title (Year)>/<Title (Year) {edition-…}>/<file>. Special-feature files are not moved."),
+  nonInteractive: z.boolean().default(false).describe("When true, rename collisions auto-resolve by appending (2), (3), … instead of emitting a review-needed collision event. Use in automated/scripted runs without a UI to confirm."),
 })
 
 export const nameTvShowEpisodesRequestSchema = z.object({
