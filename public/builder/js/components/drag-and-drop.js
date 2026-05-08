@@ -21,7 +21,19 @@ const SORTABLE_OPTIONS_BASE = {
   group: { name: 'sequence', pull: true, put: true },
   handle: '[data-drag-handle]',
   draggable: '[data-sortable-item]',
-  animation: 150,
+  // animation: 0 — items snap to their new position instead of
+  // tweening for 150ms. The tweening was the source of the
+  // "drag-down-then-up-fast" duplicate-step / ghost-overlap bug:
+  // if a second drag started while the first's tween was still
+  // running, Sortable's internal index calculations raced with
+  // the in-flight animation and committed the array splice based
+  // on stale DOM positions, producing two copies of the same step
+  // in the data array. The user characterized this as the
+  // difference between "stop tweening" (cancel mid-animation,
+  // start fresh — what we want) and "finish tweening" (block new
+  // drags until the current one settles — what Sortable was
+  // doing). animation: 0 = no tween to interrupt = no race.
+  animation: 0,
   ghostClass: 'drag-ghost',
   chosenClass: 'drag-chosen',
   fallbackOnBody: true,
@@ -73,19 +85,17 @@ function getStepsArrayFor(containerElement) {
 // container's children that match `draggable`) into actual splice
 // positions. Sortable already exposes `oldDraggableIndex` /
 // `newDraggableIndex` for this exact purpose, so we use those.
-// Defer the post-drag re-render to the next microtask. Sortable
-// finishes its own DOM cleanup (removes the drag-ghost clone, strips
-// chosenClass/ghostClass) AFTER onEnd returns. Calling renderAll
-// synchronously here destroys Sortable's instances mid-cleanup, which
-// orphans the ghost clone in the DOM and leaves the previous drag
-// in a half-rendered ghost-overlay state — visible as the
-// "stuck-with-numbered-overlap" bug when the user drags rapidly.
-// Microtask defer lets Sortable's own cleanup finish before we wipe
-// and rebuild the DOM, and keeps the render synchronous-enough that
-// the user's next action sees fresh state. Bypassing the
-// view-transition wrapper too: Sortable already animated the move
-// (animation: 150) so the second view-transition is just race fuel.
-const scheduleRender = () => queueMicrotask(() => bridge().renderAll())
+// Defer the post-drag re-render to the next animation frame.
+// Sortable finishes its own DOM cleanup (removes the drag-ghost
+// clone, strips chosenClass/ghostClass) AFTER onEnd returns —
+// queueMicrotask was too eager (ran before the browser painted
+// Sortable's cleanup), so the renderAll could still wipe DOM that
+// Sortable was mid-modifying. requestAnimationFrame waits for the
+// next paint window, after Sortable's cleanup has actually
+// committed visually. Bypassing the view-transition wrapper too:
+// Sortable already animates the move so the view-transition was
+// just race fuel for nothing visual we weren't already getting.
+const scheduleRender = () => window.requestAnimationFrame(() => bridge().renderAll())
 
 function onEnd(event) {
   const sourceContainer = getStepsArrayFor(event.from)
