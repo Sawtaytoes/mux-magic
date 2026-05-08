@@ -634,7 +634,14 @@ export function updateLookupLinks(stepId, fieldName, rawValue) {
   if (companion && companion.tagName === 'A') {
     let companionHref
     if (isNameSpecialFeaturesCard) {
-      companionHref = 'https://www.themoviedb.org/'
+      // Movie name on the left → DVDCompare release URL when an ID
+      // is set; falls back to DVDCompare home otherwise. (Swapped in
+      // this session — used to point at TMDB; the user wanted the
+      // primary click to open DVDCompare since that's the source of
+      // truth for this command.)
+      companionHref = hasValidId
+        ? lookupConfig.buildUrl(numericValue, { ...step.params, [fieldName]: numericValue })
+        : lookupConfig.homeUrl
     } else if (hasValidId) {
       const tempParams = { ...step.params, [fieldName]: numericValue }
       companionHref = lookupConfig.buildUrl(numericValue, tempParams)
@@ -649,9 +656,20 @@ export function updateLookupLinks(stepId, fieldName, rawValue) {
       `[data-step="${stepId}"][data-right-link="${fieldName}"]`,
     )
     if (rightLink) {
-      const href = hasValidId
-        ? lookupConfig.buildUrl(numericValue, { ...step.params, [fieldName]: numericValue })
-        : lookupConfig.homeUrl
+      let href
+      if (isNameSpecialFeaturesCard) {
+        // Right-side link is now the TMDB target. Mirrors the
+        // initial-render logic in step-renderer.js.
+        if (step.params.tmdbId) {
+          href = `https://www.themoviedb.org/movie/${encodeURIComponent(step.params.tmdbId)}`
+        } else {
+          href = 'https://www.themoviedb.org/'
+        }
+      } else {
+        href = hasValidId
+          ? lookupConfig.buildUrl(numericValue, { ...step.params, [fieldName]: numericValue })
+          : lookupConfig.homeUrl
+      }
       rightLink.setAttribute('href', href)
     }
   }
