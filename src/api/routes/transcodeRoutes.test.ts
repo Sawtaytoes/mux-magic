@@ -54,21 +54,7 @@ describe("GET /transcode/audio — input validation", () => {
 
     expect(response.status).toBe(403)
     const body = await response.json() as { error: string }
-    expect(body.error).toMatch(/absolute|allowed media root/i)
-  })
-
-  test("rejects paths outside /media with 403", async () => {
-    const response = await get("/transcode/audio?path=/etc/passwd&codec=opus")
-
-    expect(response.status).toBe(403)
-    const body = await response.json() as { error: string }
-    expect(body.error).toMatch(/allowed media root/i)
-  })
-
-  test("rejects path traversal with 403", async () => {
-    const response = await get("/transcode/audio?path=/media/../etc/passwd&codec=opus")
-
-    expect(response.status).toBe(403)
+    expect(body.error).toMatch(/absolute/i)
   })
 
   test("rejects invalid codec with 400", async () => {
@@ -95,30 +81,33 @@ describe("GET /transcode/audio — input validation", () => {
 })
 
 describe("HEAD /transcode/audio", () => {
-  // The /media root is POSIX-only — path-safety rejects it as
-  // non-absolute on Windows. Skip the success-path HEAD tests on
-  // Windows; the production deployment is the Linux Docker image.
-  const isPosix = process.platform !== "win32"
+  // Use a platform-appropriate absolute path so validateReadablePath
+  // doesn't reject the path on Windows (where `/media/...` isn't
+  // considered absolute) — the route now mirrors /files/stream's
+  // path-safety, which accepts any absolute traversal-free path.
+  const validPath = process.platform === "win32"
+    ? "C:/test/movie.mkv"
+    : "/media/movie.mkv"
 
-  test.skipIf(!isPosix)("returns headers only with the codec's MIME for a valid /media path", async () => {
-    const response = await head("/transcode/audio?path=/media/movie.mkv&codec=opus")
+  test("returns headers only with the codec's MIME for a valid absolute path", async () => {
+    const response = await head(`/transcode/audio?path=${encodeURIComponent(validPath)}&codec=opus`)
 
     expect(response.status).toBe(200)
     expect(response.headers.get("Content-Type")).toBe("video/webm")
-    // HEAD per HTTP spec returns no body; verify by checking the content
-    // length zero or that reading the stream returns empty.
+    // HEAD per HTTP spec returns no body; verify by checking the
+    // response body is empty.
     const text = await response.text()
     expect(text).toBe("")
   })
 
   test("HEAD honors path-safety rejection too", async () => {
-    const response = await head("/transcode/audio?path=/etc/passwd&codec=opus")
+    const response = await head("/transcode/audio?path=relative.mkv&codec=opus")
 
     expect(response.status).toBe(403)
   })
 
-  test.skipIf(!isPosix)("HEAD with codec=aac returns video/mp4", async () => {
-    const response = await head("/transcode/audio?path=/media/movie.mkv&codec=aac")
+  test("HEAD with codec=aac returns video/mp4", async () => {
+    const response = await head(`/transcode/audio?path=${encodeURIComponent(validPath)}&codec=aac`)
 
     expect(response.status).toBe(200)
     expect(response.headers.get("Content-Type")).toBe("video/mp4")

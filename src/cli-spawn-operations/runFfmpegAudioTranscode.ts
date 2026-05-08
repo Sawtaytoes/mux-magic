@@ -96,21 +96,19 @@ export const runFfmpegAudioTranscode = ({
   new Observable<"ready">((observer) => {
     const commandArgs = buildFfmpegArgs(cacheKey)
 
-    // Defence-in-depth (design doc §8): empty PATH and cwd in tmpdir so
-    // the encoder cannot resolve any relative-path inputs even if the
-    // caller's validation slipped. The input is passed positionally as
-    // an absolute, traversal-checked path; output is pipe:1.
-    //
-    // Cast through `unknown` because the project augments NodeJS.ProcessEnv
-    // (in `src/environment.d.ts`) to require TVDB_API_KEY — that token has
-    // no business reaching the encoder, so we hand spawn() a deliberately
-    // narrow env and silence the type-system's complaint here.
+    // Inherit process.env (matches the existing runFfmpeg.ts pattern)
+    // so the OS can find ffmpeg via PATH — the W22b design doc's
+    // "empty PATH" defence-in-depth was over-cautious and broke the
+    // ffmpeg lookup itself in Docker (where ffmpeg lives at /usr/bin
+    // and the bare "ffmpeg" command requires PATH to resolve). Input
+    // is still passed positionally as an absolute, traversal-checked
+    // path; output is pipe:1; cwd is os.tmpdir().
     const childProcess = spawn(
       ffmpegPath,
       commandArgs,
       {
         cwd: tmpdir(),
-        env: { PATH: "" } as unknown as NodeJS.ProcessEnv,
+        env: process.env,
       },
     )
 

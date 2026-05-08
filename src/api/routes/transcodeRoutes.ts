@@ -17,7 +17,7 @@ import {
 import { runFfmpegAudioTranscode } from "../../cli-spawn-operations/runFfmpegAudioTranscode.js"
 import {
   PathSafetyError,
-  validateMediaPath,
+  validateReadablePath,
 } from "../../tools/pathSafety.js"
 import {
   mimeTypeForCodec,
@@ -32,7 +32,10 @@ import {
 // /files/stream). Implementation follows the design doc decisions
 // captured in `docs/options/ffmpeg-audio-reencode-endpoint.md` §12:
 //
-//   * Hardcoded /media root via `validateMediaPath`.
+//   * Path safety via `validateReadablePath` (absolute + no traversal),
+//     matching `/files/stream`. The hardcoded /media-only root from W22b
+//     was dropped — it broke local-dev users on Windows (G:/Movies) and
+//     wasn't earning enough security to justify the breakage.
 //   * Default codec Opus in WebM. AAC in fMP4 as fallback.
 //   * No subtitle passthrough.
 //   * Range strategy: encode-to-temp + serve completed file with Range.
@@ -425,7 +428,7 @@ const handleTranscodeRequest = async ({
   const params = validation.params
   let validatedAbsPath: string
   try {
-    validatedAbsPath = validateMediaPath(params.path)
+    validatedAbsPath = validateReadablePath(params.path)
   }
   catch (error) {
     if (error instanceof PathSafetyError) {
@@ -519,25 +522,13 @@ const handleTranscodeRequest = async ({
 // Plain `.get()` / `.on()` — these stream binary, so the OpenAPI doc
 // generator would mis-describe them as JSON. Same approach taken by
 // /files/stream in fileRoutes.ts.
-transcodeRoutes.get("/transcode/audio", async (context) => (
+// Single handler for GET + HEAD. Hono auto-routes HEAD through GET
+// handlers (and a separately-registered `.on("HEAD", ...)` does NOT
+// take precedence), so we detect HEAD via `context.req.method` and
+// short-circuit inside handleTranscodeRequest before any encoding.
+transcodeRoutes.on(["GET", "HEAD"], "/transcode/audio", async (context) => (
   handleTranscodeRequest({
-    isHeadRequest: false,
-    rangeHeader: context.req.header("range"),
-    rawAudioStream: context.req.query("audioStream"),
-    rawBitrate: context.req.query("bitrate"),
-    rawCodec: context.req.query("codec"),
-    rawPath: context.req.query("path"),
-    requestSignal: (
-      context.req.raw && "signal" in context.req.raw
-      ? context.req.raw.signal
-      : undefined
-    ),
-  })
-))
-
-transcodeRoutes.on("HEAD", "/transcode/audio", async (context) => (
-  handleTranscodeRequest({
-    isHeadRequest: true,
+    isHeadRequest: context.req.method === "HEAD",
     rangeHeader: context.req.header("range"),
     rawAudioStream: context.req.query("audioStream"),
     rawBitrate: context.req.query("bitrate"),
