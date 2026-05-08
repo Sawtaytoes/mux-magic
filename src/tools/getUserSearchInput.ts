@@ -47,14 +47,15 @@ export const getUserSearchInput = (params: {
           observer.error(error)
         })
 
-      // Teardown: when the surrounding observable chain unsubscribes
-      // mid-prompt (job cancelled, parallel sibling failed, etc.),
-      // drop the pending prompt entry from the store so it doesn't
-      // leak. Idempotent — safe even if the prompt already resolved
-      // by the time teardown runs.
-      return () => {
-        cancelPrompt(promptId)
-      }
+      // TEMPORARY: teardown disabled to test the hypothesis that
+      // 8a7749b's cancelPrompt-on-unsubscribe is firing prematurely
+      // and causing the per-file matcher hang. If the hang stops
+      // reproducing without this teardown, we'll either: (a) put it
+      // back conditionally (only on actual cancel, not on natural
+      // pipe complete), or (b) leave it off and accept the small
+      // pendingPrompts leak as the cost of a working prompt flow.
+      // return () => { cancelPrompt(promptId) }
+      return
     }
 
     process.stdout.write(`${params.message}\n`)
