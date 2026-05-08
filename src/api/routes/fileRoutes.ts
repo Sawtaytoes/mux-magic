@@ -5,7 +5,9 @@ import { extname } from "node:path"
 import { Readable } from "node:stream"
 
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi"
+import { firstValueFrom, lastValueFrom } from "rxjs"
 
+import { renameFileOrFolder } from "../../tools/createRenameFileOrFolder.js"
 import {
   fakeDefaultPath,
   fakeDeleteMode,
@@ -17,6 +19,7 @@ import {
   getDeleteMode,
   getEffectiveDeleteMode,
 } from "../../tools/deleteFiles.js"
+import { getMediaInfo } from "../../tools/getMediaInfo.js"
 import { isNetworkPath } from "../../tools/isNetworkPath.js"
 import { listFilesWithMetadata } from "../../tools/listFilesWithMetadata.js"
 import { openInExternalApp } from "../../tools/openInExternalApp.js"
@@ -153,6 +156,59 @@ fileRoutes.openapi(
 
 fileRoutes.openapi(
   createRoute({
+    method: "get",
+    path: "/files/audio-codec",
+    summary: "Report the audio codec/format of a file's first audio track",
+    description: "Used by the file-explorer modal's <video> sub-modal to decide whether to point at /files/stream (browser can decode) or /transcode/audio (browser can't decode the source audio — DTS, TrueHD, AC-3 outside Edge, etc.). Returns the raw mediainfo `Format` value of the first audio track; the caller maps that to a MediaSource.isTypeSupported() probe and picks the URL. Validates path via `validateReadablePath` (absolute, no traversal). Returns audioFormat=null on no-audio-track or mediainfo failure rather than 5xx-ing.",
+    tags: ["File Operations"],
+    request: {
+      query: schemas.audioCodecRequestSchema,
+    },
+    responses: {
+      200: {
+        description: "First audio track's raw mediainfo Format, or null when unavailable",
+        content: {
+          "application/json": { schema: schemas.audioCodecResponseSchema },
+        },
+      },
+    },
+  }),
+  async (context) => {
+    const { path } = context.req.valid("query")
+    let validated: string
+    try {
+      validated = validateReadablePath(path)
+    }
+    catch (error) {
+      if (error instanceof PathSafetyError) {
+        return context.json({ audioFormat: null, error: error.message }, 200)
+      }
+      return context.json({ audioFormat: null, error: messageFromError(error) }, 200)
+    }
+    try {
+      const mediaInfo = await firstValueFrom(getMediaInfo(validated))
+      const tracks = mediaInfo.media?.track ?? []
+      const firstAudio = tracks.find((track) => track["@type"] === "Audio")
+      if (!firstAudio) {
+        return context.json({ audioFormat: null, error: null }, 200)
+      }
+      const format = (
+        "Format" in firstAudio
+        && typeof firstAudio.Format === "string"
+        && firstAudio.Format.length > 0
+      )
+        ? firstAudio.Format
+        : null
+      return context.json({ audioFormat: format, error: null }, 200)
+    }
+    catch (error) {
+      return context.json({ audioFormat: null, error: messageFromError(error) }, 200)
+    }
+  },
+)
+
+fileRoutes.openapi(
+  createRoute({
     method: "post",
     path: "/files/open-external",
     summary: "Hand a file off to the OS shell to open in the default app",
@@ -213,6 +269,67 @@ fileRoutes.openapi(
     const { paths } = context.req.valid("json")
     const result = await deleteFiles(paths)
     return context.json(result, 200)
+  },
+)
+
+fileRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/files/rename",
+    summary: "Rename a single file in place",
+    description: "Used by the nameSpecialFeatures result card so the user can fix unrenamed entries one row at a time. Both `oldPath` and `newPath` are validated for absolute / no-traversal safety. The underlying helper aborts when `newPath` already exists, so the API can't silently overwrite an existing file.",
+    tags: ["File Operations"],
+    request: {
+      body: {
+        content: {
+          "application/json": { schema: schemas.renameFileRequestSchema },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Rename outcome — `ok: true` plus the validated new path on success, `ok: false` plus a message on failure.",
+        content: {
+          "application/json": { schema: schemas.renameFileResponseSchema },
+        },
+      },
+    },
+  }),
+  async (context) => {
+    const { oldPath, newPath } = context.req.valid("json")
+    const validation = (() => {
+      try {
+        return {
+          ok: true as const,
+          oldPath: validateReadablePath(oldPath),
+          newPath: validateReadablePath(newPath),
+        }
+      }
+      catch (error) {
+        if (error instanceof PathSafetyError) {
+          return { ok: false as const, error: error.message }
+        }
+        return { ok: false as const, error: messageFromError(error) }
+      }
+    })()
+    if (!validation.ok) {
+      return context.json({ ok: false, newPath: null, error: validation.error }, 200)
+    }
+    try {
+      await lastValueFrom(
+        renameFileOrFolder({
+          newPath: validation.newPath,
+          oldPath: validation.oldPath,
+        }),
+      )
+      return context.json({ ok: true, newPath: validation.newPath, error: null }, 200)
+    }
+    catch (error) {
+      return context.json(
+        { ok: false, newPath: null, error: messageFromError(error) },
+        200,
+      )
+    }
   },
 )
 

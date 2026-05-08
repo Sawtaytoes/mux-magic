@@ -548,21 +548,83 @@ const videoModal = () => document.getElementById('video-modal')
 const videoPlayer = () => document.getElementById('video-modal-player')
 const videoNameLabel = () => document.getElementById('video-modal-name')
 
-export function openVideoModal(absolutePath) {
-  const url = new URL('/files/stream', window.location.origin)
-  url.searchParams.set('path', absolutePath)
+// Mediainfo Format strings (case-insensitive) that no major browser
+// will decode in <video>. When the source's first audio track matches,
+// the modal points at /transcode/audio (Opus/WebM auto-encode) instead
+// of /files/stream so the user gets audible playback. Anything else
+// falls through to /files/stream — the doc-recommended "leave the
+// existing path as-is" default.
+const browserUnsupportedAudioFormats = new Set([
+  'ac-3',
+  'dts',
+  'e-ac-3',
+  'eac3',
+  'mlp',
+  'mlp fba',
+  'pcm',
+  'truehd',
+])
+
+const isAudioFormatBrowserSafe = (audioFormat) => {
+  if (typeof audioFormat !== 'string' || audioFormat.length === 0) {
+    return true
+  }
+  return !browserUnsupportedAudioFormats.has(audioFormat.toLowerCase())
+}
+
+const buildPlaybackUrl = (absolutePath, audioFormat) => {
+  if (isAudioFormatBrowserSafe(audioFormat)) {
+    const streamUrl = new URL('/files/stream', window.location.origin)
+    streamUrl.searchParams.set('path', absolutePath)
+    return streamUrl.toString()
+  }
+  const transcodeUrl = new URL('/transcode/audio', window.location.origin)
+  transcodeUrl.searchParams.set('path', absolutePath)
+  transcodeUrl.searchParams.set('codec', 'opus')
+  return transcodeUrl.toString()
+}
+
+const fetchAudioFormat = async (absolutePath) => {
+  try {
+    const url = new URL('/files/audio-codec', window.location.origin)
+    url.searchParams.set('path', absolutePath)
+    const response = await fetch(url.toString(), { cache: 'no-store' })
+    if (!response.ok) {
+      return null
+    }
+    const data = await response.json()
+    if (
+      typeof data.audioFormat === 'string'
+      && data.audioFormat.length > 0
+    ) {
+      return data.audioFormat
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+export async function openVideoModal(absolutePath) {
   videoNameLabel().textContent = absolutePath
   const player = videoPlayer()
-  player.src = url.toString()
+  // Pre-flight the modal open so the loading window isn't a hidden one
+  // — the codec lookup typically resolves in <100ms and the player's
+  // <video> tag handles the brief empty src gracefully.
   videoModal().classList.remove('hidden')
+  // Ask the server which audio codec the source uses so we can pick
+  // between /files/stream (browser-decodable) and /transcode/audio
+  // (Opus re-encode for DTS / TrueHD / AC-3 / etc.).
+  const audioFormat = await fetchAudioFormat(absolutePath)
+  player.src = buildPlaybackUrl(absolutePath, audioFormat)
   // The HTML attribute handles autoplay on the first open, but the
   // <video> element is reused across subsequent opens — changing src
   // doesn't re-trigger the attribute, so call play() explicitly. The
   // user's click on ▶ counts as a user gesture so autoplay policies
   // allow this. play() returns a Promise that rejects when the codec
-  // is unsupported (DTS/HEVC on browsers without hardware decode);
-  // swallow it since the controls + the codec-caveat footer make the
-  // failure obvious.
+  // is unsupported (HEVC on browsers without hardware decode); swallow
+  // it since the controls + the codec-caveat footer make the failure
+  // obvious.
   player.play().catch(() => { /* unsupported codec; user falls back to VLC */ })
   // Wire per-open buttons so each closure captures the path currently
   // shown — onclick assignment overwrites any previous handler so we

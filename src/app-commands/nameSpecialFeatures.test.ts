@@ -9,12 +9,16 @@ import {
   buildMovieFeatureName,
   buildUnnamedFileCandidates,
   findMatchingCut,
+  flattenAllKnownNames,
+  groupRenamesByTarget,
   isMainFeatureFilename,
   parseEditionFromFilename,
   postProcessMatches,
+  promoteRenameToFront,
   reorderRenamesForOnDiskConflicts,
   type FileMatch,
 } from "./nameSpecialFeatures.js"
+import type { SpecialFeature } from "../tools/parseSpecialFeatures.js"
 
 const makeFileInfo = (filename: string): FileInfo => ({
   filename,
@@ -376,5 +380,102 @@ describe(buildUnnamedFileCandidates.name, () => {
     expect(result).toHaveLength(2)
     expect(result[0].candidates).toHaveLength(2)
     expect(result[1].candidates).toHaveLength(2)
+  })
+})
+
+// ── Phase B: allKnownNames + duplicate-pick reordering helpers ───────────
+
+const makeExtra = (
+  text: string,
+  options: { children?: string[], timecode?: string } = {},
+): SpecialFeature => ({
+  text,
+  type: "unknown",
+  parentType: "unknown",
+  timecode: options.timecode,
+  children: options.children?.map((childText) => ({
+    text: childText,
+    type: "unknown",
+    parentType: "unknown",
+  })),
+})
+
+describe(flattenAllKnownNames.name, () => {
+  test("returns extras parents and children in scrape order, then cuts, then untimed suggestions, deduped", () => {
+    const result = flattenAllKnownNames({
+      cuts: [
+        { name: "Director's Cut", timecode: undefined },
+        { name: "Theatrical", timecode: "1:30:00" },
+      ],
+      extras: [
+        makeExtra("Featurette A", { timecode: "0:10:00", children: ["Sub A1", "Sub A2"] }),
+        makeExtra("Photo Gallery"),
+      ],
+      possibleNames: ["Photo Gallery", "Image Gallery (300 images)"],
+    })
+    expect(result).toEqual([
+      "Featurette A",
+      "Sub A1",
+      "Sub A2",
+      "Photo Gallery",
+      "Director's Cut",
+      "Theatrical",
+      "Image Gallery (300 images)",
+    ])
+  })
+
+  test("drops empty cut names and empty / whitespace-only labels", () => {
+    const result = flattenAllKnownNames({
+      cuts: [
+        { name: "", timecode: undefined },
+        { name: "Hong Kong Version", timecode: undefined },
+      ],
+      extras: [makeExtra("  Image Gallery  ")],
+      possibleNames: [""],
+    })
+    expect(result).toEqual(["Image Gallery", "Hong Kong Version"])
+  })
+
+  test("returns an empty array when nothing was parsed", () => {
+    expect(flattenAllKnownNames({ cuts: [], extras: [], possibleNames: [] })).toEqual([])
+  })
+})
+
+describe(groupRenamesByTarget.name, () => {
+  test("groups multiple renames sharing the same target and preserves input order within each group", () => {
+    const renameOne = { renamedFilename: "Behind the Scenes -behindthescenes" }
+    const renameTwo = { renamedFilename: "Trailer -trailer" }
+    const renameThree = { renamedFilename: "Behind the Scenes -behindthescenes" }
+    const groups = groupRenamesByTarget([renameOne, renameTwo, renameThree])
+    expect(groups.get("Behind the Scenes -behindthescenes")).toEqual([renameOne, renameThree])
+    expect(groups.get("Trailer -trailer")).toEqual([renameTwo])
+  })
+
+  test("returns single-entry groups for non-duplicate targets", () => {
+    const renameOne = { renamedFilename: "A" }
+    const renameTwo = { renamedFilename: "B" }
+    const groups = groupRenamesByTarget([renameOne, renameTwo])
+    expect(groups.size).toBe(2)
+  })
+})
+
+describe(promoteRenameToFront.name, () => {
+  test("moves the chosen entry to the front while preserving the relative order of the rest", () => {
+    const first = { id: 1 }
+    const second = { id: 2 }
+    const third = { id: 3 }
+    expect(promoteRenameToFront([first, second, third], second)).toEqual([second, first, third])
+  })
+
+  test("returns the array unchanged when the chosen entry is not present", () => {
+    const first = { id: 1 }
+    const stranger = { id: 99 }
+    expect(promoteRenameToFront([first], stranger)).toEqual([first])
+  })
+
+  test("returns the array unchanged when the chosen entry is already at the front", () => {
+    const first = { id: 1 }
+    const second = { id: 2 }
+    expect(promoteRenameToFront([first, second], first)).toEqual([first, second])
   })
 })

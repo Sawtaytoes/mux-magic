@@ -3,11 +3,13 @@ import {
   concatMap,
   defaultIfEmpty,
   defer,
+  from,
   map,
   mergeAll,
   mergeMap,
   Observable,
   of,
+  reduce,
   scan,
   switchMap,
   tap,
@@ -33,6 +35,7 @@ import { getMediaInfo } from "../tools/getMediaInfo.js"
 import {
   parseSpecialFeatures,
   type Cut,
+  type SpecialFeature,
 } from "../tools/parseSpecialFeatures.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import {
@@ -185,11 +188,15 @@ const resolveUrl = ({
 
 // Per-rename emission shape. The pipeline emits one of these per file
 // it actually renamed (`{ oldName, newName }`), then a single trailing
-// summary record (`{ unrenamedFilenames, possibleNames }`) so the
-// builder can render "Files not renamed: …" plus an optional "Possible
-// names (no timecode in listing): …" hint underneath. `possibleNames`
-// is empty whenever every file was successfully renamed — only useful
-// when the user has a leftover to manually identify.
+// summary record (`{ unrenamedFilenames, possibleNames, allKnownNames }`)
+// so the builder can render "Files not renamed: …" plus an optional
+// "Possible names (no timecode in listing): …" hint underneath, AND
+// drive the autocomplete dropdown in the interactive renamer.
+// `possibleNames` is empty whenever every file was successfully renamed —
+// only useful when the user has a leftover to manually identify.
+// `allKnownNames` carries every extras label (timecoded + untimed) and
+// cut name in DVDCompare-order so the UI's fuzzy autocomplete has the
+// full set without re-parsing.
 //
 // The `collision` variant is only emitted in interactive (non-automated)
 // mode when a rename target already exists on disk. The UI can render
@@ -199,9 +206,43 @@ const resolveUrl = ({
 // file is successfully moved into its edition-aware nested folder.
 export type NameSpecialFeaturesResult =
   | { oldName: string, newName: string }
-  | { unrenamedFilenames: string[], possibleNames: string[], unnamedFileCandidates?: UnnamedFileCandidate[] }
+  | { unrenamedFilenames: string[], possibleNames: string[], allKnownNames: string[], unnamedFileCandidates?: UnnamedFileCandidate[] }
   | { collision: true, filename: string, targetFilename: string }
   | { movedToEditionFolder: true, filename: string, destinationPath: string }
+
+// Flatten the parser's structured `extras` + `cuts` + standalone
+// `possibleNames` (the untimed-suggestions list) into a single ordered
+// array of every label the user might want to pick from. Order matches
+// the DVDCompare scrape order: parents and children appear in their
+// nested position, cut labels follow, and the untimed-suggestion list
+// brings up the rear (most of which already appear in `extras`, but the
+// final `Array.from(new Set(...))` dedupes while preserving first-seen
+// order). The UI dropdown is driven off this list.
+export const flattenAllKnownNames = ({
+  cuts,
+  extras,
+  possibleNames,
+}: {
+  cuts: Cut[]
+  extras: SpecialFeature[]
+  possibleNames: string[]
+}): string[] => {
+  const fromExtras = extras.flatMap((extra) => {
+    const children = (extra.children ?? []).map((child) => child.text)
+    return [extra.text, ...children]
+  })
+  const fromCuts = cuts
+    .map((cut) => cut.name)
+    .filter(Boolean)
+  const combined = [
+    ...fromExtras,
+    ...fromCuts,
+    ...possibleNames,
+  ]
+    .map((label) => label.trim())
+    .filter(Boolean)
+  return Array.from(new Set(combined))
+}
 
 // A candidate association for an unnamed file — used in the follow-up
 // association report when files remain unnamed after the main pass and
@@ -420,6 +461,105 @@ export const buildUnnamedFileCandidates = (
   })
 }
 
+// Group renames by target name and detect intra-run duplicates (groups
+// where two-or-more files all map to the same target). Each group keeps
+// the input order so callers can reason about positional semantics
+// (e.g. which entry currently holds index 0 — that's the one the
+// existing scan would assign the un-suffixed name to). Returns a map
+// from target → ordered list of renames sharing it.
+export const groupRenamesByTarget = <
+  T extends { renamedFilename: string }
+>(renames: T[]): Map<string, T[]> => {
+  const groups = new Map<string, T[]>()
+  renames.forEach((rename) => {
+    const existing = groups.get(rename.renamedFilename)
+    if (existing) {
+      existing.push(rename)
+      return
+    }
+    groups.set(rename.renamedFilename, [rename])
+  })
+  return groups
+}
+
+// Promote one rename to the front of the array while preserving the
+// relative order of every other entry. Used by the duplicate-detection
+// branch: once the user picks which file should claim the un-suffixed
+// target name, that file is bubbled up so the existing scan-counter
+// assigns it the un-suffixed name and the others fall through to
+// `(2)/(3)/…`. When `chosen` is not in the list the array is returned
+// unchanged.
+export const promoteRenameToFront = <T>(renames: T[], chosen: T): T[] => {
+  if (!renames.includes(chosen)) {
+    return renames
+  }
+  return [chosen, ...renames.filter((rename) => rename !== chosen)]
+}
+
+// Build a Phase-B duplicate-detection prompt observable. For each group
+// of >1 files mapping to the same target name, emit a multi-select
+// `getUserSearchInput` prompt with one option per file (each option
+// carrying a per-row `filePath` so the Builder can render a ▶ Play
+// button on every row). The user picks which file claims the
+// un-suffixed target name; the chosen file is moved to the front of
+// the group, and the rest fall through to the existing scan-counter
+// for `(2)/(3)/…` suffixing. -1 (skip) preserves DVDCompare order.
+export const reorderForDuplicatePrompts = (
+  renames: { fileInfo: FileInfo, renamedFilename: string }[],
+): Observable<{ fileInfo: FileInfo, renamedFilename: string }[]> => {
+  const groups = groupRenamesByTarget(renames)
+  const duplicateGroups = Array.from(groups.values())
+    .filter((group) => group.length > 1)
+  if (duplicateGroups.length === 0) {
+    return of(renames)
+  }
+  // Walk each duplicate group sequentially, accumulating the reordered
+  // list. `concatMap` over the groups keeps prompts strictly ordered so
+  // the UI never shows two duplicate-pick modals at once.
+  return from(duplicateGroups).pipe(
+    reduce(
+      (accumulated$, group) => (
+        accumulated$.pipe(
+          concatMap((currentRenames) => (
+            getUserSearchInput({
+              message: (
+                `These ${group.length} files all match "${group[0].renamedFilename}".\n`
+                + "Pick the one that should keep the un-suffixed name "
+                + "— the rest get (2)/(3)/… appended."
+              ),
+              options: [
+                ...group.map((rename, index) => ({
+                  index,
+                  label: rename.fileInfo.filename,
+                })),
+                { index: -1, label: "Skip — keep DVDCompare order" },
+              ],
+              filePaths: group.map((rename, index) => ({
+                index,
+                path: rename.fileInfo.fullPath,
+              })),
+            })
+            .pipe(
+              map((selectedIndex) => {
+                if (selectedIndex < 0) {
+                  return currentRenames
+                }
+                const chosen = group[selectedIndex]
+                if (!chosen) {
+                  return currentRenames
+                }
+                return promoteRenameToFront(currentRenames, chosen)
+              }),
+            )
+          )),
+        )
+      ),
+      of(renames) as Observable<{ fileInfo: FileInfo, renamedFilename: string }[]>,
+    ),
+    concatMap((stream$) => stream$),
+  )
+}
+
 // Find a unique target path by appending (2), (3), … until a path that
 // does not already exist on disk is found. Returns the first free path.
 export const findUniqueTargetPath = async (
@@ -474,6 +614,7 @@ export const moveFileToEditionFolder = (
 }
 
 export const nameSpecialFeatures = ({
+  autoNameDuplicates = true,
   dvdCompareId,
   dvdCompareReleaseHash,
   fixedOffset,
@@ -485,6 +626,14 @@ export const nameSpecialFeatures = ({
   url,
 }: (
   {
+    // When true (default for sequence/API runs): two-or-more files
+    // matching the same target name within a single run are auto-
+    // disambiguated via the deterministic (2)/(3)/… suffix counter.
+    // When false (the Builder UI's default): each ambiguous group emits
+    // a `getUserSearchInput` prompt so the user can pick which file
+    // should keep the un-suffixed target name; the others fall through
+    // to the same (2)/(3)/… counter.
+    autoNameDuplicates?: boolean,
     dvdCompareId?: number,
     dvdCompareReleaseHash?: number,
     // When true, main-feature files with an {edition-…} tag are moved
@@ -656,8 +805,30 @@ export const nameSpecialFeatures = ({
             // renamed to "with Narration", while another file is being
             // renamed to "without Narration") which previously raced and
             // silently dropped one file via logAndSwallow.
-            const orderedRenames = reorderRenamesForOnDiskConflicts(renames)
+            const conflictOrderedRenames = reorderRenamesForOnDiskConflicts(renames)
 
+            // Phase-B duplicate-detection prompt: when two-or-more renames
+            // share the same target name AND `autoNameDuplicates: false`,
+            // ask the user (via the SSE prompt channel) which file should
+            // claim the un-suffixed target name. The chosen file is moved
+            // to the front of its group in the ordered list; the rest fall
+            // through to the existing scan-based (2)/(3) counter so their
+            // names disambiguate deterministically. When the user picks
+            // -1 (skip) the original DVDCompare order is preserved, which
+            // is also the behavior under `autoNameDuplicates: true`.
+            const promptForDuplicates$ = (
+              autoNameDuplicates
+                ? of(conflictOrderedRenames)
+                : reorderForDuplicatePrompts(conflictOrderedRenames)
+            )
+
+            return promptForDuplicates$.pipe(
+              concatMap((orderedRenames) => {
+            const allKnownNames = flattenAllKnownNames({
+              cuts,
+              extras: specialFeatures,
+              possibleNames,
+            })
             // Render the renames through the duplicate-counter +
             // rename-observable scan as before, then append the summary.
             // N4 collision handling: for each rename we check (via the
@@ -794,6 +965,7 @@ export const nameSpecialFeatures = ({
               of(of<NameSpecialFeaturesResult>({
                 unrenamedFilenames,
                 possibleNames: possibleNamesForSummary,
+                allKnownNames,
                 unnamedFileCandidates: (
                   unnamedFileCandidates.length > 0
                     ? unnamedFileCandidates
@@ -802,6 +974,8 @@ export const nameSpecialFeatures = ({
               }))
             )
             return concat(renamesStream$, summary$)
+              }),
+            )
           }),
         )
       )),

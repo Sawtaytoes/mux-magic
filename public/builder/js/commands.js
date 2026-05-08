@@ -373,6 +373,12 @@ export const COMMANDS = {
       { name: "dvdCompareReleaseHash", type: "number", label: "Release Hash", default: 1, companionNameField: "dvdCompareReleaseLabel" },
       { name: "fixedOffset", type: "number", label: "Fixed Offset (ms)", default: 0 },
       { name: "timecodePadding", type: "number", label: "Timecode Padding", default: 2 },
+      // Defaults to false in the Builder so the Phase-B "which file is
+      // which?" pick modal becomes the interactive UX. The schema /
+      // sequence-runner default remains true so non-interactive callers
+      // (sequence YAML / direct API) keep today's deterministic
+      // (2)/(3)/… behavior unless they opt in explicitly.
+      { name: "autoNameDuplicates", type: "boolean", label: "Auto-name duplicates", default: false },
     ]
   },
   nameTvShowEpisodes: {
