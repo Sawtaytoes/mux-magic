@@ -17,6 +17,7 @@ import {
   handleStepCardProgressEvent,
   unmountStepCardProgress,
 } from './render-all.js'
+import { attachAutocomplete } from './util/name-autocomplete.js'
 
 let running = false
 const stepLogs = new Map()
@@ -230,6 +231,17 @@ function showPromptModal(jobId, promptData) {
   } else {
     previewEl.classList.add('hidden')
   }
+  // Phase B / W10-N2: per-option file paths drive a per-row ▶ Play
+  // button on the duplicate-pick modal. Build a lookup so the rendering
+  // loop below can decide row-by-row whether to attach a button.
+  const filePathsByIndex = new Map()
+  if (Array.isArray(promptData.filePaths)) {
+    promptData.filePaths.forEach((entry) => {
+      if (entry && typeof entry.index === 'number' && typeof entry.path === 'string') {
+        filePathsByIndex.set(entry.index, entry.path)
+      }
+    })
+  }
   const optionsEl = document.getElementById('prompt-options')
   optionsEl.innerHTML = ''
   const sortedOptions = [...promptData.options].sort((a, b) => {
@@ -242,9 +254,47 @@ function showPromptModal(jobId, promptData) {
     const rankB = b.index === 0 ? 9.5 : b.index
     return rankA - rankB
   })
-  sortedOptions.forEach(option => {
-    const btn = document.createElement('button')
+  sortedOptions.forEach((option) => {
     const isSkip = option.index === -1
+    const rowFilePath = filePathsByIndex.get(option.index) ?? null
+    if (rowFilePath) {
+      // Multi-file row: option button on the left, ▶ Play on the right.
+      // Wrapper div keeps both controls in one row without nesting a
+      // button-inside-a-button.
+      const row = document.createElement('div')
+      row.className = (
+        'flex items-stretch gap-2 rounded-lg border border-slate-600'
+        + ' hover:border-blue-500 transition-colors'
+      )
+      const pickBtn = document.createElement('button')
+      pickBtn.className = (
+        'flex-1 text-left text-sm px-4 py-2.5 rounded-l-lg'
+        + ' text-slate-200 hover:bg-blue-700'
+      )
+      const keyHintMulti = option.index >= 0 && option.index <= 9
+        ? `<span class="text-xs font-mono bg-slate-700 px-1.5 py-0.5 rounded mr-2">${option.index}</span>`
+        : ''
+      pickBtn.innerHTML = `${keyHintMulti}${esc(option.label)}`
+      pickBtn.onclick = () => submitPromptChoice(jobId, promptData.promptId, option.index)
+      const playBtn = document.createElement('button')
+      playBtn.className = (
+        'shrink-0 text-xs px-3 rounded-r-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium'
+      )
+      playBtn.textContent = '▶ Play'
+      playBtn.title = 'Preview this file before picking'
+      playBtn.onclick = (event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        if (typeof window.openVideoModal === 'function') {
+          window.openVideoModal(rowFilePath)
+        }
+      }
+      row.appendChild(pickBtn)
+      row.appendChild(playBtn)
+      optionsEl.appendChild(row)
+      return
+    }
+    const btn = document.createElement('button')
     btn.className = `text-left text-sm px-4 py-2.5 rounded-lg border transition-colors ${
       isSkip
         ? 'border-slate-600 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
@@ -598,7 +648,12 @@ export function updateStepUI(step) {
     if (resultsEl) {
       if (formattedHtml) {
         const body = resultsEl.querySelector('.results-body')
-        if (body) body.innerHTML = formattedHtml
+        if (body) {
+          body.innerHTML = formattedHtml
+          if (formatted && typeof formatted.wire === 'function') {
+            formatted.wire(body)
+          }
+        }
       } else {
         resultsEl.querySelector('pre').textContent = formattedText
       }
@@ -655,7 +710,10 @@ function formatStepResults(step) {
       && typeof item.newName === 'string'
     ))
     if (allRenamePairs && (renamePairs.length > 0 || summaryRecord)) {
-      return { html: renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) }
+      return {
+        html: renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord),
+        wire: (body) => wireNameSpecialFeaturesResults({ body, step, summaryRecord }),
+      }
     }
   }
 
@@ -678,21 +736,23 @@ function formatStepResults(step) {
   try { return JSON.stringify(value, null, 2) } catch { return String(value) }
 }
 
+function getNameSpecialFeaturesSourcePath(step) {
+  if (step.params?.sourcePath && !String(step.params.sourcePath).startsWith('@')) {
+    return String(step.params.sourcePath)
+  }
+  return getLinkedValueForStep(step, 'sourcePath') ?? ''
+}
+
 function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) {
-  const unrenamed = summaryRecord?.unrenamedFilenames ?? []
-  const possibleNames = Array.isArray(summaryRecord?.possibleNames) ? summaryRecord.possibleNames : []
+  const unrenamed = Array.isArray(summaryRecord?.unrenamedFilenames) ? summaryRecord.unrenamedFilenames : []
   const counts = `Renamed ${renamePairs.length}. Files not renamed: ${unrenamed.length}.`
-  const sourcePath = (
-    step.params?.sourcePath && !String(step.params.sourcePath).startsWith('@')
-      ? String(step.params.sourcePath)
-      : (getLinkedValueForStep(step, 'sourcePath') ?? '')
-  )
+  const sourcePath = getNameSpecialFeaturesSourcePath(step)
   const browseBtnBlock = sourcePath
     ? `<button onclick="openFileExplorer(${JSON.stringify(sourcePath).replace(/"/g, '&quot;')})"
         class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded border border-slate-600 ml-2"
         title="Open the file explorer scoped to this step's source folder">📁 Browse files</button>`
     : ''
-  const countsBlock = `<div class="flex items-center mb-2"><p class="text-slate-300">${esc(counts)}</p>${browseBtnBlock}</div>`
+  const countsBlock = `<div class="flex items-center mb-2" data-rename-counts><p class="text-slate-300" data-rename-counts-label>${esc(counts)}</p>${browseBtnBlock}</div>`
   const renameRowsHtml = renamePairs.map((item) => `<div>${esc(item.oldName)} → ${esc(item.newName)}</div>`).join('')
   const renameBlock = renamePairs.length > 0
     ? `<div class="text-emerald-300 font-mono mb-2 break-words">${renameRowsHtml}</div>`
@@ -701,15 +761,187 @@ function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) 
   const linkBlock = linkData
     ? `<a href="${esc(linkData.url)}" target="_blank" rel="noopener" class="text-blue-300 hover:text-blue-200 underline inline-flex items-center gap-1 mt-1">↗ ${esc(linkData.label)}</a>`
     : ''
-  const leftoverItems = unrenamed.map((filename) => `<li class="break-words">• ${esc(filename)}</li>`).join('')
-  const possibleNameItems = possibleNames.map((name) => `<li class="break-words">• ${esc(name)}</li>`).join('')
-  const possibleNamesBlock = possibleNames.length > 0
-    ? `<div class="mt-2 pt-2 border-t border-yellow-700/50"><p class="font-medium mb-1">Possible names (no timecode in listing):</p><ul class="font-mono space-y-0.5">${possibleNameItems}</ul></div>`
-    : ''
   const leftoversBlock = unrenamed.length > 0
-    ? `<div class="bg-yellow-900/30 border border-yellow-700 text-yellow-100 rounded px-2 py-1.5"><p class="font-medium mb-1">Files not renamed (review by hand):</p><ul class="font-mono space-y-0.5">${leftoverItems}</ul>${possibleNamesBlock}${linkBlock}</div>`
+    ? renderInteractiveRenameBlock({ filenames: unrenamed, linkBlock })
     : ''
   return `${countsBlock}${renameBlock}${leftoversBlock}`
+}
+
+// Interactive renamer block for the "Files not renamed" callout.
+// Each row: read-only filename + autocomplete-backed input + Rename
+// button. Wiring (autocomplete + click handlers) is attached after the
+// HTML is set via `wireNameSpecialFeaturesResults`.
+function renderInteractiveRenameBlock({ filenames, linkBlock }) {
+  const rowsHtml = filenames.map((filename, index) => `
+    <div class="flex flex-col gap-1 py-1.5 border-b border-yellow-700/30 last:border-b-0" data-rename-row data-rename-index="${index}" data-rename-filename="${esc(filename)}">
+      <div class="font-mono text-xs break-words text-yellow-100">${esc(filename)}</div>
+      <div class="flex gap-2 items-stretch">
+        <div class="relative flex-1">
+          <input
+            type="text"
+            data-rename-input
+            placeholder="Type a new name (no extension) or pick from suggestions…"
+            class="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500"
+          />
+          <div data-rename-dropdown class="hidden absolute left-0 right-0 top-full mt-0.5 z-30 max-h-56 overflow-y-auto bg-slate-900 border border-slate-600 rounded shadow-xl"></div>
+        </div>
+        <button
+          type="button"
+          data-rename-submit
+          class="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-1 rounded font-medium"
+          disabled
+          title="Rename this file to the typed name"
+        >
+          Rename
+        </button>
+      </div>
+      <p data-rename-status class="hidden text-[11px] font-mono"></p>
+    </div>
+  `).join('')
+  return (
+    '<div class="bg-yellow-900/30 border border-yellow-700 text-yellow-100 rounded px-2 py-1.5" data-rename-list-block>'
+    + '<p class="font-medium mb-1">Files not renamed (review by hand):</p>'
+    + `<div data-rename-rows>${rowsHtml}</div>`
+    + linkBlock
+    + '</div>'
+  )
+}
+
+// Wire up event listeners on the rendered interactive renamer rows.
+// Receives the body element holding the rendered HTML so each call
+// scopes its queries — important because step cards re-render on every
+// rename and the listener teardown lives implicitly in DOM removal.
+function wireNameSpecialFeaturesResults({ body, step, summaryRecord }) {
+  const sourcePath = getNameSpecialFeaturesSourcePath(step)
+  const allKnownNames = Array.isArray(summaryRecord?.allKnownNames) ? summaryRecord.allKnownNames : []
+  const possibleNames = Array.isArray(summaryRecord?.possibleNames) ? summaryRecord.possibleNames : []
+  const rows = body.querySelectorAll('[data-rename-row]')
+  rows.forEach((row) => {
+    const inputElement = row.querySelector('[data-rename-input]')
+    const dropdownElement = row.querySelector('[data-rename-dropdown]')
+    const submitButton = row.querySelector('[data-rename-submit]')
+    const statusElement = row.querySelector('[data-rename-status]')
+    const filename = row.getAttribute('data-rename-filename') ?? ''
+    if (!inputElement || !dropdownElement || !submitButton) {
+      return
+    }
+    attachAutocomplete({
+      allKnownNames,
+      dropdownElement,
+      inputElement,
+      possibleNames,
+      onPick: () => {
+        submitButton.disabled = inputElement.value.trim().length === 0
+      },
+    })
+    inputElement.addEventListener('input', () => {
+      submitButton.disabled = inputElement.value.trim().length === 0
+    })
+    submitButton.addEventListener('click', () => {
+      handleInteractiveRenameClick({
+        filename,
+        inputElement,
+        sourcePath,
+        statusElement,
+        step,
+        submitButton,
+        summaryRecord,
+      })
+    })
+  })
+}
+
+async function handleInteractiveRenameClick({
+  filename,
+  inputElement,
+  sourcePath,
+  statusElement,
+  step,
+  submitButton,
+  summaryRecord,
+}) {
+  const desiredName = inputElement.value.trim()
+  if (desiredName.length === 0) {
+    return
+  }
+  if (!sourcePath) {
+    showRenameStatus(statusElement, 'error', 'Cannot determine source folder for this step.')
+    return
+  }
+  submitButton.disabled = true
+  const originalText = submitButton.textContent
+  submitButton.textContent = '⏳ Renaming…'
+  showRenameStatus(statusElement, 'info', '')
+  try {
+    const oldPath = joinSourcePath(sourcePath, filename)
+    const extensionMatch = filename.match(/\.[^.\\/]+$/)
+    const extension = extensionMatch ? extensionMatch[0] : ''
+    const newFilename = (
+      desiredName.toLowerCase().endsWith(extension.toLowerCase())
+        ? desiredName
+        : `${desiredName}${extension}`
+    )
+    const newPath = joinSourcePath(sourcePath, newFilename)
+    const response = await fetch('/files/rename', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldPath, newPath }),
+    })
+    const data = await response.json()
+    if (!response.ok || data.ok !== true) {
+      const message = data?.error ?? `HTTP ${response.status}`
+      showRenameStatus(statusElement, 'error', message)
+      submitButton.disabled = false
+      submitButton.textContent = originalText
+      return
+    }
+    // Success — drop the renamed entry from the summary and re-render
+    // the step. Per the design doc this avoids a round-trip refetch:
+    // mutate the in-memory results then let updateStepUI rebuild from
+    // the same `step.results` reference. The renamePairs list is also
+    // appended so the user sees the rename count tick up.
+    if (Array.isArray(summaryRecord?.unrenamedFilenames)) {
+      summaryRecord.unrenamedFilenames = summaryRecord.unrenamedFilenames.filter((name) => name !== filename)
+    }
+    if (Array.isArray(step.results)) {
+      step.results.push({ oldName: filename, newName: newFilename })
+    }
+    showRenameStatus(statusElement, 'success', `Renamed → ${newFilename}`)
+    updateStepUI(step)
+  }
+  catch (error) {
+    showRenameStatus(statusElement, 'error', String(error?.message ?? error))
+    submitButton.disabled = false
+    submitButton.textContent = originalText
+  }
+}
+
+function showRenameStatus(statusElement, kind, message) {
+  if (!statusElement) {
+    return
+  }
+  if (!message) {
+    statusElement.classList.add('hidden')
+    statusElement.textContent = ''
+    return
+  }
+  statusElement.classList.remove('hidden')
+  statusElement.textContent = message
+  const colorByKind = {
+    error: 'text-red-300',
+    info: 'text-slate-300',
+    success: 'text-emerald-300',
+  }
+  statusElement.className = `text-[11px] font-mono ${colorByKind[kind] ?? 'text-slate-300'}`
+}
+
+// Join a folder path and a filename using the OS-appropriate separator.
+// Mirrors the heuristic the file-explorer modal uses: backslash if the
+// folder already contains one (Windows), forward slash otherwise.
+function joinSourcePath(folder, filename) {
+  const trimmedFolder = folder.replace(/[\\/]+$/, '')
+  const separator = trimmedFolder.includes('\\') ? '\\' : '/'
+  return `${trimmedFolder}${separator}${filename}`
 }
 
 // ─── Copy buttons (delegated) ─────────────────────────────────────────────────
