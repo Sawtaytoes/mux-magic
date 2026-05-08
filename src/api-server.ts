@@ -1,3 +1,9 @@
+// Banner first — see `logBuildBanner.ts` for why this is a
+// side-effect-only import at the top of the file (so `yarn api-server`
+// gets the same boot banner as `yarn server` without going through
+// `start-servers.ts`).
+import "./logBuildBanner.js"
+
 import { serve } from "@hono/node-server"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
