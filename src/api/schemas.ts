@@ -125,12 +125,6 @@ export const deleteFolderRequestSchema = z.object({
   confirm: z.literal(true).describe("Required safety guard: must be the literal value true. Without it the request is rejected so a misclick can't nuke a directory."),
 })
 
-export const computeDefaultSubtitleRulesRequestSchema = z.object({
-  sourcePath: z.string().describe("Directory containing .ass subtitle files."),
-  isRecursive: z.boolean().default(false).describe("Recursively scan subdirectories."),
-  recursiveDepth: z.number().default(0).describe("Maximum recursion depth (0 = default depth of 2)."),
-})
-
 export const remuxToMkvRequestSchema = z.object({
   sourcePath: z.string().describe("Directory containing files to remux."),
   extensions: z.array(z.string()).min(1).describe("List of file extensions to remux (with or without leading dot), e.g. ['.ts', '.m2ts']").openapi({ example: [".ts"] }),
@@ -139,12 +133,119 @@ export const remuxToMkvRequestSchema = z.object({
   isSourceDeletedOnSuccess: z.boolean().default(false).describe("Delete each source file after its remux completes successfully."),
 })
 
+// A predicate body is either a flat key→value equality map (literal form)
+// or a `{ $ref: <name> }` reference into the request's top-level
+// `predicates:` map. Used by `when:` clauses' matches/excludes blocks.
+export const predicateBodySchema = z.union([
+  z.object({ $ref: z.string() })
+    .describe("Reference to a named predicate defined in the top-level `predicates:` map."),
+  z.record(z.string(), z.string())
+    .describe("Flat key→value equality map (e.g. { 'YCbCr Matrix': 'TV.601', PlayResX: '640' })."),
+]).describe("Predicate body — either an inline literal key→value map or a `{ $ref: <name> }` pointer at a named predicate.")
+
+// A single clause inside a `when:` block. The shorthand form is a bare
+// key→value map (sugar for `matches:` only). The explicit form lets you
+// combine `matches:` AND `excludes:`. Per-file the clause matches if
+// matches passes AND excludes does not.
+const whenPredicateClauseSchema = z.union([
+  z.object({
+    matches: predicateBodySchema.optional(),
+    excludes: predicateBodySchema.optional(),
+  })
+    .describe("Explicit form: combine matches: + excludes: blocks. Per-file the clause matches if `matches` passes AND `excludes` does NOT."),
+  z.record(z.string(), z.string())
+    .describe("Shorthand form: bare key→value map equivalent to `matches: { …keys… }` only."),
+]).describe("A single `when:` clause. Bare keys are sugar for `matches:` only; the explicit form supports `excludes:` for negation.")
+
+// Top-level `when:` predicate block. All listed clauses are ANDed.
+export const whenPredicateSchema = z.object({
+  anyScriptInfo: whenPredicateClauseSchema.optional()
+    .describe("True when at least one .ass file's [Script Info] satisfies the per-file clause."),
+  allScriptInfo: whenPredicateClauseSchema.optional()
+    .describe("True when every .ass file's [Script Info] satisfies the per-file clause."),
+  noneScriptInfo: whenPredicateClauseSchema.optional()
+    .describe("True when no .ass file's [Script Info] satisfies the per-file clause."),
+  notAllScriptInfo: whenPredicateClauseSchema.optional()
+    .describe("True when at least one .ass file's [Script Info] does NOT satisfy the per-file clause."),
+  anyStyle: whenPredicateClauseSchema.optional()
+    .describe("True when at least one [V4+ Styles] row across all files satisfies the per-style clause."),
+  allStyle: whenPredicateClauseSchema.optional()
+    .describe("True when every [V4+ Styles] row across all files satisfies the per-style clause."),
+  noneStyle: whenPredicateClauseSchema.optional()
+    .describe("True when no [V4+ Styles] row in any file satisfies the per-style clause."),
+}).describe("Aggregate-batch gate applied to the rule. All present clauses are ANDed. When omitted, the rule always fires. See docs/dsl/subtitle-rules.md `when:` predicates section.")
+
+// Comparator vocabulary for `applyIf`. Each entry maps a per-style field
+// name to either a string-equality value OR one of these comparators
+// against the numeric coercion of the style field's value.
+export const comparatorSchema = z.object({
+  eq: z.number().optional().describe("Strictly equal to the style field's numeric value."),
+  lt: z.number().optional().describe("Strictly less than the style field's numeric value."),
+  gt: z.number().optional().describe("Strictly greater than the style field's numeric value."),
+  lte: z.number().optional().describe("Less than or equal to the style field's numeric value."),
+  gte: z.number().optional().describe("Greater than or equal to the style field's numeric value."),
+})
+  .refine(
+    (value) => Object.values(value).some((operand) => typeof operand === "number"),
+    { message: "Comparator must specify at least one of eq/lt/gt/lte/gte." },
+  )
+  .describe("Comparator block — one of eq/lt/gt/lte/gte applied against the per-style field's number-coerced value.")
+
+const applyIfFieldMatchSchema = z.union([
+  z.string().describe("Equality match — the style field must equal this string."),
+  comparatorSchema,
+])
+
+const applyIfStyleClauseSchema = z.record(z.string(), applyIfFieldMatchSchema)
+  .describe("Per-style field map — each entry is a string equality OR a comparator block.")
+
+// Per-file/per-style applicability filter on `setStyleFields`. Distinct
+// from `when:`, which decides whether the rule emits at all.
+export const applyIfPredicateSchema = z.object({
+  anyStyleMatches: applyIfStyleClauseSchema.optional()
+    .describe("Apply the rule's `fields` only when at least one [V4+ Styles] row in the file matches every entry in this clause."),
+  allStyleMatches: applyIfStyleClauseSchema.optional()
+    .describe("Apply only when every non-ignored style in the file matches every entry in this clause."),
+  noneStyleMatches: applyIfStyleClauseSchema.optional()
+    .describe("Apply only when no style row matches every entry in this clause."),
+}).describe("Per-file applicability gate. Files with no style row that satisfies the predicate are left untouched for this rule. Distinct from `when:`, which gates emission across the whole batch.")
+
+// One math op for `computeFrom.ops` — either an operand-bearing
+// `{ verb: number }` OR a bare-string no-arg op.
+const computeFromOpSchema = z.union([
+  z.object({ add: z.number() }).strict(),
+  z.object({ subtract: z.number() }).strict(),
+  z.object({ multiply: z.number() }).strict(),
+  z.object({ divide: z.number().refine((value) => value !== 0, { message: "divide: 0 is rejected — division by zero." }) }).strict(),
+  z.object({ min: z.number() }).strict(),
+  z.object({ max: z.number() }).strict(),
+  z.literal("round"),
+  z.literal("floor"),
+  z.literal("ceil"),
+  z.literal("abs"),
+]).describe("A single math op. Numeric ops carry an operand; bare-string ops (round/floor/ceil/abs) take no argument.")
+
+export const computeFromSchema = z.object({
+  computeFrom: z.object({
+    property: z.string().describe("Source metadata key — `[Script Info]` key name when scope is 'scriptInfo', `[V4+ Styles]` field name when scope is 'style'."),
+    scope: z.enum(["scriptInfo", "style"]).describe("Where to read the source value from. 'scriptInfo' reads the file's [Script Info] map; 'style' reads the per-row [V4+ Styles] field."),
+    ops: z.array(computeFromOpSchema).describe("Ordered list of math ops applied left-to-right to the number-coerced source value. Final accumulator is `Number.toString()`'d into the field."),
+  }),
+}).describe("Computed style-field value: read a metadata property, apply ops left-to-right, write the resulting number as a string. See docs/dsl/subtitle-rules.md Computed values.")
+
+const styleFieldValueSchema = z.union([
+  z.string().describe("Literal string value for the style field."),
+  computeFromSchema,
+])
+
 const setScriptInfoRuleSchema = z.object({
   type: z.literal("setScriptInfo"),
   key: z.string()
     .describe("Key name in the [Script Info] section of the ASS file (e.g. 'YCbCr Matrix', 'ScriptType', 'PlayResX'). The key is matched case-sensitively. If the key does not already exist it is appended after the last existing property."),
   value: z.string()
     .describe("New value to assign to the key (e.g. 'TV.709', 'v4.00+', '1920')."),
+  when: whenPredicateSchema.optional()
+    .describe("Optional aggregate-batch gate. When present, the rule is skipped entirely if the predicate fails across the batch."),
 }).openapi({
   description: "Sets or adds a single key-value pair in the [Script Info] section of an ASS subtitle file. Use this to correct metadata fields such as YCbCr Matrix, ScriptType, or resolution values.",
 })
@@ -162,18 +263,24 @@ const scaleResolutionRuleSchema = z.object({
   hasLayoutRes: z.boolean().default(false).describe("When true, creates LayoutResX and LayoutResY even if they are not already present. Only takes effect when isLayoutResSynced is also true. Defaults to false."),
   hasScaledBorderAndShadow: z.boolean().default(true).describe("When true, sets 'ScaledBorderAndShadow: yes' in [Script Info] after scaling, which ensures borders and shadows scale proportionally at the new resolution. Defaults to true."),
   isLayoutResSynced: z.boolean().default(true).describe("When true, updates LayoutResX and LayoutResY if they already exist in the file. Keys that are absent are left alone unless hasLayoutRes is also true. Defaults to true."),
+  when: whenPredicateSchema.optional()
+    .describe("Optional aggregate-batch gate. Distinct from the per-file `from:` guard — `when:` decides whether the rule emits at all across the batch, while `from:` is a per-file no-op when the file's resolution doesn't match."),
 }).openapi({
   description: "Updates PlayResX/PlayResY in the [Script Info] section to rescale the subtitle canvas. 'from' is an optional guard — if provided and the file's current resolution does not match, the rule is skipped; omit to apply unconditionally. isLayoutResSynced updates LayoutResX/Y only if they already exist; pair it with hasLayoutRes:true to also create them when absent.",
 })
 
 const setStyleFieldsRuleSchema = z.object({
   type: z.literal("setStyleFields"),
-  fields: z.record(z.string(), z.string())
-  .describe("Map of ASS style field names to their new string values. Field names must use the exact ASS column names from the Format line (e.g. 'MarginL', 'MarginR', 'MarginV', 'Fontsize', 'PrimaryColour'). Only the listed fields are changed; all other style fields are left untouched."),
+  fields: z.record(z.string(), styleFieldValueSchema)
+  .describe("Map of ASS style field names to their new values. Each value is either a string literal (e.g. 'MarginV: \"90\"') or a `computeFrom` block that derives the value from a metadata property. Field names must use the exact ASS column names from the Format line (e.g. 'MarginL', 'MarginR', 'MarginV', 'Fontsize', 'PrimaryColour'). Only the listed fields are changed; all other style fields are left untouched."),
   ignoredStyleNamesRegexString: z.string().optional()
     .describe("Optional case-insensitive regular expression matched against each style's Name field. Styles whose name matches are left unchanged. Use this to protect sign/song styles from being overwritten — e.g. 'signs?|op|ed|opening|ending'."),
+  applyIf: applyIfPredicateSchema.optional()
+    .describe("Per-file applicability filter (e.g. `{ anyStyleMatches: { MarginL: { lt: 50 } } }`). When omitted, all non-ignored styles get the fields. Files with no style row that satisfies the predicate are left untouched for this rule."),
+  when: whenPredicateSchema.optional()
+    .describe("Optional aggregate-batch gate. When present, the rule is skipped entirely if the predicate fails across the batch."),
 }).openapi({
-  description: "Overwrites specific fields on every style entry in the [V4+ Styles] section of an ASS file. Optionally skips styles whose Name matches a regex (e.g. sign or song styles). Use this to bulk-update margins, font sizes, or colors across all dialogue styles.",
+  description: "Overwrites specific fields on every style entry in the [V4+ Styles] section of an ASS file. Optionally skips styles whose Name matches a regex (e.g. sign or song styles). Use this to bulk-update margins, font sizes, or colors across all dialogue styles. Field values can be literal strings or `computeFrom` blocks that derive from metadata.",
 })
 
 export const assModificationRuleSchema = z.discriminatedUnion("type", [
@@ -186,6 +293,9 @@ export const modifySubtitleMetadataRequestSchema = z.object({
   sourcePath: z.string().describe("Source directory path containing .ass files"),
   isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
   recursiveDepth: z.number().default(0).describe("Maximum recursion depth (0 = default depth of 2)"),
+  hasDefaultRules: z.boolean().default(false).describe("When true, the command runs the in-tree default-rules heuristic (`buildDefaultSubtitleModificationRules`) against the .ass files at `sourcePath` and PREPENDS the computed rules to `rules`. Defaults run first, user rules run after, so user rules can override. The heuristic emits: `setScriptInfo ScriptType=v4.00+`, `setScriptInfo YCbCr Matrix=TV.709` (when any file has TV.601 outside SD-DVD 640x480), `setStyleFields MarginV=round(PlayResY/1080*90)`, optional `MarginL/R=round(200/1920*PlayResX)` when narrow margins are detected on non-ignored styles, with `ignoredStyleNamesRegexString=\"signs?|op|ed|opening|ending\"`. See docs/dsl/subtitle-rules.md `Default rules toggle` for the full table."),
+  predicates: z.record(z.string(), z.record(z.string(), z.string())).optional()
+    .describe("Optional named-predicate map. Keys are predicate names; values are flat string-equality key→value maps. Referenced from rule `when:` clauses via `{ $ref: <name> }` inside `matches:` or `excludes:`. See docs/dsl/subtitle-rules.md Named predicates."),
   rules: z.preprocess(
     (value) => {
       if (typeof value === "string") {
@@ -200,7 +310,7 @@ export const modifySubtitleMetadataRequestSchema = z.object({
       return value
     },
     z.array(assModificationRuleSchema),
-  ).describe("Ordered list of DSL modification rules to apply to each .ass file"),
+  ).default([]).describe("Ordered list of DSL modification rules to apply to each .ass file. Empty when only relying on `hasDefaultRules: true` for the rule set."),
 })
 
 export const keepLanguagesRequestSchema = z.object({

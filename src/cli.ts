@@ -6,7 +6,6 @@ import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 
 import { changeTrackLanguagesCommand } from "./cli-commands/changeTrackLanguagesCommand.js"
-import { computeDefaultSubtitleRulesCommand } from "./cli-commands/computeDefaultSubtitleRulesCommand.js"
 import { copyFilesCommand } from "./cli-commands/copyFilesCommand.js"
 import { copyOutSubtitlesCommand } from "./cli-commands/copyOutSubtitlesCommand.js"
 import { extractSubtitlesCommand } from "./cli-commands/extractSubtitlesCommand.js"
@@ -79,7 +78,6 @@ yargs(
   "Usage: $0 <cmd> [args]"
 )
 .command(changeTrackLanguagesCommand)
-.command(computeDefaultSubtitleRulesCommand)
 .command(copyFilesCommand)
 .command(copyOutSubtitlesCommand)
 .command(extractSubtitlesCommand)

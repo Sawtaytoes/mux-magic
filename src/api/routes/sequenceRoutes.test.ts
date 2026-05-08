@@ -172,16 +172,11 @@ describe("POST /sequences/run", () => {
     expect(vol.existsSync("/work/keep-me")).toBe(true)
   })
 
-  test("flattens single array emissions into named outputs so { linkedTo, output } resolves to a flat list", async () => {
-    // Regression: sequenceRunner used to push() each emission, while
-    // jobRunner concat()s them — so an observable emitting a single
-    // rules-array (e.g. computeDefaultSubtitleRules) would land here as
-    // [[rule1, rule2]] and the downstream `linkedTo: …, output: 'rules'`
-    // resolved to an array-of-array. modifySubtitleMetadata's reduce then
-    // saw each "rule" as an array (no .type), fell through its switch, and
-    // wrote files back unchanged — sequence reported "completed" with no
-    // visible changes. Driving compute → modify end-to-end against a
-    // seeded .ass file proves the projection now matches jobRunner: the
+  test("modifySubtitleMetadata with hasDefaultRules:true bumps ScriptType end-to-end through the sequence runner", async () => {
+    // The standalone version of the rules pipeline: now that
+    // computeDefaultSubtitleRules is gone, modifySubtitleMetadata runs the
+    // default-rules heuristic itself when hasDefaultRules is true. Drives
+    // a seeded .ass file through the sequence runner and asserts the
     // ScriptType bump from v4.00 → v4.00+ actually lands in the file.
     vol.fromJSON({
       "G:\\Seq\\episode-01.ass": "[Script Info]\nScriptType: v4.00\nTitle: Test\n",
@@ -190,13 +185,13 @@ describe("POST /sequences/run", () => {
     const response = await post("/sequences/run", {
       paths: { workDir: { value: "G:\\Seq" } },
       steps: [
-        { id: "compRules", command: "computeDefaultSubtitleRules", params: { sourcePath: "@workDir" } },
         {
           id: "applyRules",
           command: "modifySubtitleMetadata",
           params: {
             sourcePath: "@workDir",
-            rules: { linkedTo: "compRules", output: "rules" },
+            hasDefaultRules: true,
+            rules: [],
           },
         },
       ],

@@ -130,7 +130,7 @@ describe(resolveSequenceParams.name, () => {
   test("resolves named runtime outputs when the source step produced them", () => {
     const stepsById: Record<string, StepRuntimeRecord> = {
       compRules: {
-        command: "computeDefaultSubtitleRules",
+        command: "modifySubtitleMetadata",
         resolvedParams: { sourcePath: "D:\\Work" },
         outputs: { rules: [{ type: "setScriptInfo", key: "ScriptType", value: "v4.00+" }] },
       },
@@ -139,7 +139,7 @@ describe(resolveSequenceParams.name, () => {
       rawParams: { rules: { linkedTo: "compRules", output: "rules" } },
       pathsById: {},
       stepsById,
-      commandConfigsByName: { computeDefaultSubtitleRules: makeConfig() },
+      commandConfigsByName: { modifySubtitleMetadata: makeConfig() },
     })
     expect(resolved.rules).toEqual([
       { type: "setScriptInfo", key: "ScriptType", value: "v4.00+" },
@@ -150,7 +150,7 @@ describe(resolveSequenceParams.name, () => {
   test("collects an error when a named output reference points at an unproduced output", () => {
     const stepsById: Record<string, StepRuntimeRecord> = {
       compRules: {
-        command: "computeDefaultSubtitleRules",
+        command: "modifySubtitleMetadata",
         resolvedParams: { sourcePath: "D:\\Work" },
         outputs: { rules: [] },
       },
@@ -159,7 +159,7 @@ describe(resolveSequenceParams.name, () => {
       rawParams: { rules: { linkedTo: "compRules", output: "missing" } },
       pathsById: {},
       stepsById,
-      commandConfigsByName: { computeDefaultSubtitleRules: makeConfig() },
+      commandConfigsByName: { modifySubtitleMetadata: makeConfig() },
     })
     expect(resolved).toEqual({})
     expect(errors).toHaveLength(1)

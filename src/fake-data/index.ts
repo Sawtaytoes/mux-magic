@@ -59,11 +59,11 @@ type Scenario = "success" | "failure" | "inProgress"
 // Hand-picked rotation: the first three commands are pinned to the
 // canonical scenarios (so a smoke test always hits all three) and the
 // rest cycle deterministically. Pinning specific names makes manual
-// testing predictable: makeDirectory always succeeds, computeDefaultSubtitleRules
+// testing predictable: makeDirectory always succeeds, modifySubtitleMetadata
 // always fails, copyOutSubtitles always stays in-flight.
 const SCENARIO_OVERRIDES: Partial<Record<CommandName, Scenario>> = {
   makeDirectory: "success",
-  computeDefaultSubtitleRules: "failure",
+  modifySubtitleMetadata: "failure",
   copyOutSubtitles: "inProgress",
 }
 
@@ -97,9 +97,8 @@ const buildFakeConfig = (
   return {
     ...real,
     getObservable,
-    // For commands that declare `extractOutputs` (currently just
-    // computeDefaultSubtitleRules → rules), keep a fake projector so a
-    // downstream linkedTo:rules step still resolves. Other commands
+    // For commands that declare `extractOutputs`, keep a fake projector
+    // so a downstream linkedTo step still resolves. Other commands
     // inherit the absent extractOutputs.
     ...(real.extractOutputs
       ? {

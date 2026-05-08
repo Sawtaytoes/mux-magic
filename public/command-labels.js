@@ -41,7 +41,6 @@ window.commandLabels = {
   copyOutSubtitles: "Extract Subtitles (deprecated)",
   isMissingSubtitles: "Check Missing Subtitles",
   modifySubtitleMetadata: "Modify Subtitle Metadata",
-  computeDefaultSubtitleRules: "Compute Default Subtitle Rules",
   adjustSubtitlePositioning: "Adjust Subtitle Positioning",
   getSubtitleMetadata: "Get Subtitle Metadata",
 
