@@ -261,7 +261,13 @@ function buildLinkPickerItems(stepId, fieldName) {
   const flatOrder = flattenSteps()
   const currentIndex = flatOrder.findIndex((entry) => entry.step.id === stepId)
   if (currentIndex < 0) return []
-  const items = [{ kind: 'manual', value: '', label: '— manual —', detail: '' }]
+  // No '— manual —' item: closing the picker and typing in the path
+  // input itself is now the way to enter a new path. The footer hint in
+  // the popover (index.html) tells the user this. The path-input handler
+  // (onPathFieldInput) clears any existing link on first keystroke and
+  // promotePathToPathVar (on blur) saves the typed value as a new path
+  // var (or reuses an existing one with the same value).
+  const items = []
   paths.forEach((pathVar) => {
     items.push({
       kind: 'path',
