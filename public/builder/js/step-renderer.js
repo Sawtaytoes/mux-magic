@@ -180,7 +180,7 @@ export function renderStepCompact(step, index, context = {}) {
 
   const aliasText = step.alias
     ? esc(step.alias)
-    : `<span class="text-slate-500 italic">${esc(step.command || 'unnamed')}</span>`
+    : `<span class="text-slate-500 italic">${esc(step.command ? commandLabel(step.command) : 'unnamed')}</span>`
 
   return `
 <div id="step-${step.id}" data-sortable-item data-step-card="${step.id}" style="view-transition-name: step-${step.id}"
@@ -258,7 +258,7 @@ export function renderStep(step, index, context = {}) {
     </button>
     <span class="text-xs font-mono text-slate-500 shrink-0 w-5 text-center">${index + 1}</span>
     <input type="text" value="${esc(step.alias)}"
-      placeholder="${esc(step.command || 'Click to name this step')}"
+      placeholder="${esc(step.command ? commandLabel(step.command) : 'Click to name this step')}"
       data-step-alias="${step.id}"
       onfocus="stepAliasFocus(this)"
       onkeydown="stepAliasKeydown(event,'${step.id}')"
