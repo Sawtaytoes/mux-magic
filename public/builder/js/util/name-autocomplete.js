@@ -66,7 +66,7 @@ export const filterCandidates = ({
       score: scoreCandidate(candidate, normalizedQuery, queryWords),
     }))
     .filter((entry) => entry.score > 0)
-  scored.sort((a, b) => b.score - a.score)
+  scored.sort((firstEntry, secondEntry) => secondEntry.score - firstEntry.score)
   const untimed = scored
     .filter(({ candidate }) => possibleSet.has(candidate))
     .map(({ candidate }) => candidate)

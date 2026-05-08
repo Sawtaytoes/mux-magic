@@ -243,26 +243,32 @@ fileRoutes.openapi(
   }),
   async (context) => {
     const { oldPath, newPath } = context.req.valid("json")
-    let validatedOldPath: string
-    let validatedNewPath: string
-    try {
-      validatedOldPath = validateReadablePath(oldPath)
-      validatedNewPath = validateReadablePath(newPath)
-    }
-    catch (error) {
-      if (error instanceof PathSafetyError) {
-        return context.json({ ok: false, newPath: null, error: error.message }, 200)
+    const validation = (() => {
+      try {
+        return {
+          ok: true as const,
+          oldPath: validateReadablePath(oldPath),
+          newPath: validateReadablePath(newPath),
+        }
       }
-      return context.json({ ok: false, newPath: null, error: messageFromError(error) }, 200)
+      catch (error) {
+        if (error instanceof PathSafetyError) {
+          return { ok: false as const, error: error.message }
+        }
+        return { ok: false as const, error: messageFromError(error) }
+      }
+    })()
+    if (!validation.ok) {
+      return context.json({ ok: false, newPath: null, error: validation.error }, 200)
     }
     try {
       await lastValueFrom(
         renameFileOrFolder({
-          newPath: validatedNewPath,
-          oldPath: validatedOldPath,
+          newPath: validation.newPath,
+          oldPath: validation.oldPath,
         }),
       )
-      return context.json({ ok: true, newPath: validatedNewPath, error: null }, 200)
+      return context.json({ ok: true, newPath: validation.newPath, error: null }, 200)
     }
     catch (error) {
       return context.json(

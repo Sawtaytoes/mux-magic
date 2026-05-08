@@ -261,37 +261,39 @@ function showPromptModal(jobId, promptData) {
       // Multi-file row: option button on the left, ▶ Play on the right.
       // Wrapper div keeps both controls in one row without nesting a
       // button-inside-a-button.
-      const row = document.createElement('div')
-      row.className = (
+      const rowElement = document.createElement('div')
+      rowElement.className = (
         'flex items-stretch gap-2 rounded-lg border border-slate-600'
         + ' hover:border-blue-500 transition-colors'
       )
-      const pickBtn = document.createElement('button')
-      pickBtn.className = (
+      const pickButton = document.createElement('button')
+      pickButton.className = (
         'flex-1 text-left text-sm px-4 py-2.5 rounded-l-lg'
         + ' text-slate-200 hover:bg-blue-700'
       )
       const keyHintMulti = option.index >= 0 && option.index <= 9
         ? `<span class="text-xs font-mono bg-slate-700 px-1.5 py-0.5 rounded mr-2">${option.index}</span>`
         : ''
-      pickBtn.innerHTML = `${keyHintMulti}${esc(option.label)}`
-      pickBtn.onclick = () => submitPromptChoice(jobId, promptData.promptId, option.index)
-      const playBtn = document.createElement('button')
-      playBtn.className = (
+      pickButton.innerHTML = `${keyHintMulti}${esc(option.label)}`
+      pickButton.onclick = () => {
+        submitPromptChoice(jobId, promptData.promptId, option.index)
+      }
+      const playButton = document.createElement('button')
+      playButton.className = (
         'shrink-0 text-xs px-3 rounded-r-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium'
       )
-      playBtn.textContent = '▶ Play'
-      playBtn.title = 'Preview this file before picking'
-      playBtn.onclick = (event) => {
+      playButton.textContent = '▶ Play'
+      playButton.title = 'Preview this file before picking'
+      playButton.onclick = (event) => {
         event.preventDefault()
         event.stopPropagation()
         if (typeof window.openVideoModal === 'function') {
           window.openVideoModal(rowFilePath)
         }
       }
-      row.appendChild(pickBtn)
-      row.appendChild(playBtn)
-      optionsEl.appendChild(row)
+      rowElement.appendChild(pickButton)
+      rowElement.appendChild(playButton)
+      optionsEl.appendChild(rowElement)
       return
     }
     const btn = document.createElement('button')
