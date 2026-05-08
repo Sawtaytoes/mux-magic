@@ -85,19 +85,36 @@ function getStepsArrayFor(containerElement) {
 // container's children that match `draggable`) into actual splice
 // positions. Sortable already exposes `oldDraggableIndex` /
 // `newDraggableIndex` for this exact purpose, so we use those.
-// Defer the post-drag re-render to the next animation frame.
-// Sortable finishes its own DOM cleanup (removes the drag-ghost
-// clone, strips chosenClass/ghostClass) AFTER onEnd returns —
-// queueMicrotask was too eager (ran before the browser painted
-// Sortable's cleanup), so the renderAll could still wipe DOM that
-// Sortable was mid-modifying. requestAnimationFrame waits for the
-// next paint window, after Sortable's cleanup has actually
-// committed visually. Bypassing the view-transition wrapper too:
-// Sortable already animates the move so the view-transition was
-// just race fuel for nothing visual we weren't already getting.
-const scheduleRender = () => window.requestAnimationFrame(() => bridge().renderAll())
+// Serialize drags. Fast double-drags trigger Sortable's onEnd
+// twice before the first render commits, with the second call's
+// oldIndex/newIndex inconsistent with the post-first-mutation
+// data array — that produced duplicated step entries (e.g. the
+// same Copy Files at positions 3 AND 4) under
+// drag-down-then-drag-up-fast. While a render is pending, ignore
+// subsequent onEnd events; the user's second drag is dropped
+// (better than corrupted state). The flag clears in the same
+// rAF callback that runs renderAll, so by the next frame the
+// Sortable instances are fresh and a new drag can start cleanly.
+//
+// rAF (not microtask) for the defer because Sortable's own DOM
+// cleanup — ghost-clone removal, chosenClass/ghostClass strip —
+// happens after onEnd returns but before the next paint. rAF
+// waits for the paint, so renderAll wipes a settled DOM not a
+// mid-cleanup one.
+let isProcessingDrag = false
+
+const scheduleRender = () => {
+  window.requestAnimationFrame(() => {
+    bridge().renderAll()
+    isProcessingDrag = false
+  })
+}
 
 function onEnd(event) {
+  if (isProcessingDrag) {
+    return
+  }
+  isProcessingDrag = true
   const sourceContainer = getStepsArrayFor(event.from)
   const targetContainer = getStepsArrayFor(event.to)
   if (!sourceContainer || !targetContainer) {
@@ -112,8 +129,10 @@ function onEnd(event) {
     scheduleRender()
     return
   }
-  // Same container, no move? Bail before mutating anything.
+  // Same container, no move? Bail before mutating anything. Still
+  // clear the in-flight flag so the next drag isn't blocked.
   if (sourceArray === targetArray && oldIndex === newIndex) {
+    isProcessingDrag = false
     return
   }
   const [movedItem] = sourceArray.splice(oldIndex, 1)

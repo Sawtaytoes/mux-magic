@@ -139,6 +139,17 @@ export const parseCuts = (specialFeatureText: string): Cut[] => (
 
 const discHeaderRegex = /^DISC (ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT)/
 
+// One entry in the trailing summary record's `possibleNames` list. The
+// `timecode` slot is populated when DVDCompare published a runtime for
+// the candidate but the main matcher rejected it (out of tolerance) —
+// reserved for the client-side smart-suggestion modal so it can rank
+// suggestions by duration proximity. For purely untimed sources the
+// field is undefined and the client falls back to filename fuzz alone.
+export type PossibleName = {
+  name: string,
+  timecode?: string,
+}
+
 // Lines from the raw DVDCompare extras text that have no timecode — the
 // natural set of "couldn't possibly match by timecode" entries. Surfaces
 // image galleries (which the main extras pipeline drops via the
@@ -146,8 +157,11 @@ const discHeaderRegex = /^DISC (ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT)/
 // labels DVDCompare published without runtimes. The user's leftover
 // files almost always correspond to one of these, so the rename pipeline
 // emits this list in its trailing summary record so the user has the
-// candidate labels right in front of them.
-export const parseUntimedSuggestions = (specialFeatureText: string): string[] => (
+// candidate labels right in front of them. Each entry carries an
+// optional `timecode` slot (always undefined for the untimed pool, but
+// the shape lets callers attach a timecode when the source did publish
+// one and the main matcher rejected it as out of tolerance).
+export const parseUntimedSuggestions = (specialFeatureText: string): PossibleName[] => (
   specialFeatureText
   .split("\n")
   .map((line) => line.trim())
@@ -160,13 +174,14 @@ export const parseUntimedSuggestions = (specialFeatureText: string): string[] =>
       : line.replace(/^[\-–—]+\s*/u, "").replace(/:$/, "").trim()
   ))
   .filter(Boolean)
+  .map((name) => ({ name, timecode: undefined }))
 )
 
 export const parseSpecialFeatures = (
   specialFeatureText: string,
 ): (
   Observable<
-    { extras: SpecialFeature[], cuts: Cut[], possibleNames: string[] }
+    { extras: SpecialFeature[], cuts: Cut[], possibleNames: PossibleName[] }
   >
 ) => (
   from(
