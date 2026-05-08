@@ -605,6 +605,34 @@ const fetchAudioFormat = async (absolutePath) => {
   }
 }
 
+// Cached on first modal open. /version exposes isContainerized
+// (server checks /.dockerenv) so the modal can hide host-only
+// affordances like 'Open in player' when there's no host shell to
+// hand the file off to. Default false until the first fetch lands
+// — open-external just shows ✗ Failed if clicked before the cache
+// settles, same as before.
+let cachedIsContainerized = false
+let containerizedFetchedAt = 0
+
+const refreshContainerizedFlag = async () => {
+  // Only fetch once per session — /.dockerenv doesn't change at runtime.
+  if (containerizedFetchedAt > 0) {
+    return
+  }
+  containerizedFetchedAt = Date.now()
+  try {
+    const response = await fetch('/version', { cache: 'no-store' })
+    if (!response.ok) {
+      return
+    }
+    const data = await response.json()
+    cachedIsContainerized = data.isContainerized === true
+  } catch {
+    // Leave default (false). Worst case the button shows in Docker
+    // and the user gets ✗ Failed on click — same as before this fix.
+  }
+}
+
 export async function openVideoModal(absolutePath) {
   videoNameLabel().textContent = absolutePath
   const player = videoPlayer()
@@ -612,6 +640,11 @@ export async function openVideoModal(absolutePath) {
   // — the codec lookup typically resolves in <100ms and the player's
   // <video> tag handles the brief empty src gracefully.
   videoModal().classList.remove('hidden')
+  // Kick the containerized check (fire-and-forget after first call).
+  // The button-hiding code below reads cachedIsContainerized which
+  // may still be false on the first ever open — acceptable; subsequent
+  // opens will hide the button.
+  refreshContainerizedFlag()
   // Ask the server which audio codec the source uses so we can pick
   // between /files/stream (browser-decodable) and /transcode/audio
   // (Opus re-encode for DTS / TrueHD / AC-3 / etc.).
@@ -641,6 +674,15 @@ export async function openVideoModal(absolutePath) {
     }
   }
   const openExternalBtn = document.getElementById('video-modal-open-external')
+  // Hide 'Open in player' when running in Docker — the server-side
+  // openInExternalApp shells out to `cmd /C start` / `open` /
+  // `xdg-open`, none of which work from inside a container. Showing
+  // a button that always returns ✗ Failed is just dead UI.
+  if (cachedIsContainerized) {
+    openExternalBtn.classList.add('hidden')
+    return
+  }
+  openExternalBtn.classList.remove('hidden')
   openExternalBtn.onclick = async () => {
     const original = openExternalBtn.textContent
     openExternalBtn.textContent = '⏳ Launching…'

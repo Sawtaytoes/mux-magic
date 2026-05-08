@@ -14,7 +14,8 @@
       "Bash(echo \"EXIT: $?\")",
       "PowerShell(gh --version 2>&1)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Bash(echo \"TC=$?\")"
     ]
   }
 }

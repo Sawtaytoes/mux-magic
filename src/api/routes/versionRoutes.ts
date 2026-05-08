@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs"
 import { readFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -24,6 +25,7 @@ const versionFileSchema = z.object({
   buildTime: z.string().nullable(),
   packageVersion: z.string().nullable(),
   nodeVersion: z.string(),
+  isContainerized: z.boolean().describe("True when running inside a Docker container (detected via /.dockerenv). Used by the UI to hide host-only affordances like 'Open in player' that depend on the OS shell-open mechanism, which doesn't work from within a container."),
 })
 
 type VersionPayload = z.infer<typeof versionFileSchema>
@@ -63,18 +65,29 @@ const readPackageVersion = async (): Promise<string | null> => {
   }
 }
 
+// Cached at module load — checking the filesystem once is fine
+// since the Docker bind-mount (or its absence) doesn't change at
+// runtime and we don't want every /version hit to stat the root.
+const isContainerized = existsSync("/.dockerenv")
+
 const buildDevFallback = async (): Promise<VersionPayload> => ({
   gitSha: "dev",
   gitShaShort: "dev",
   buildTime: null,
   packageVersion: await readPackageVersion(),
   nodeVersion: process.version,
+  isContainerized,
 })
 
 const readVersionPayload = async (): Promise<VersionPayload> => {
   try {
     const raw = await readFile(versionFilePath, "utf8")
-    const parsed = versionFileSchema.safeParse(JSON.parse(raw))
+    // Stamp `isContainerized` onto the parsed payload — older
+    // version.json files written before the schema bump won't have
+    // it, but the live runtime check is the source of truth anyway.
+    const data = JSON.parse(raw) as Record<string, unknown>
+    data.isContainerized = isContainerized
+    const parsed = versionFileSchema.safeParse(data)
 
     if (!parsed.success) {
       return await buildDevFallback()
