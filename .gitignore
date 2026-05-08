@@ -26,3 +26,7 @@ test-results/
 
 # Claude Code per-machine permission overrides
 .claude/settings.local.json
+
+# Sub-agent worktrees created by Agent isolation:"worktree" (each is a
+# full repo checkout — never meant to be committed to the parent).
+.claude/worktrees/

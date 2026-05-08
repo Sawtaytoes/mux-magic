@@ -10,7 +10,34 @@
       "Bash(npm view *)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "PowerShell(gh --version 2>&1)"
+      "PowerShell(gh --version 2>&1)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" pr merge 20 --merge --delete-branch)",
+      "Read(//d/Projects/Personal/media-sync/**)",
+      "Bash(gh auth *)",
+      "Bash(ls \"D:/Projects/Personal/media-sync-worktrees/18-docker-registry-truenas\")",
+      "Read(//d/Projects/Personal/media-sync-worktrees/18-docker-registry-truenas/**)",
+      "Read(//d/Projects/Personal/media-sync-worktrees/17-run-details-grouping/packages/web-server/public/jobs/**)",
+      "Bash(mkdir -p \"D:/Projects/Personal/media-sync-worktrees/18-docker-registry-truenas/docs/diagnostics\")",
+      "Read(//d/Projects/Personal/media-sync-worktrees/17-run-details-grouping/**)",
+      "Bash(ls C:/Users/satur/.claude/plans/ 2>&1 | head -20)",
+      "Read(//c/Users/satur/.claude/plans/**)",
+      "Bash(not exist *)",
+      "PowerShell(if \\(-not \\(Test-Path \"C:\\\\Users\\\\satur\\\\.claude\\\\plans\"\\)\\) { New-Item -ItemType Directory -Path \"C:\\\\Users\\\\satur\\\\.claude\\\\plans\" -Force | Out-Null }; Test-Path \"C:\\\\Users\\\\satur\\\\.claude\\\\plans\")",
+      "Bash(gh pr create --repo Sawtaytoes/media-tools --draft --base master --head worker/11-fake-data-options --title 'docs\\(options\\): fake-data approaches' --body 'Worker W11 — pause-for-call. Adds `docs/options/fake-data.md` proposing 4 options for running the Jobs/Builder UI against fake API data. *)",
+      "Bash(gh pr create --repo Sawtaytoes/media-tools --draft --base master --head worker/13-diagnostics-stale-image --title 'docs\\(diagnostics\\): docker stale image + tree-kill ps bug' --body 'Worker W13 — pause-for-call. Splits two errors: *)",
+      "Bash(gh pr create --repo Sawtaytoes/media-tools --draft --base master --head worker/14-version-display-options --title 'docs\\(options\\): version-display for both apps' --body 'Worker W14 — pause-for-call. Adds `docs/options/version-display.md` proposing 4 options for surfacing build identity in both apps. *)",
+      "Bash(gh run *)",
+      "Bash(gh pr create --repo Sawtaytoes/media-tools --draft --base master --head worker/16-dsl-subtitle-coverage --title 'docs\\(dsl\\): subtitle JS->YAML coverage' --body 'Worker W16 — pause-for-call. Adds `docs/dsl/subtitle-coverage.md` mapping the 8 branches of `buildDefaultSubtitleModificationRules` to the current YAML DSL. *)",
+      "Bash(gh pr create --repo Sawtaytoes/media-tools --base master --head worker/20-sequence-docs-examples --title 'docs\\(sequence\\): real-world examples from media-sync' --body 'Worker W20. Adds `docs/sequence-examples.md` with 3 real-world sequence YAML examples sourced from media-sync: *)",
+      "Bash(cp \"D:/Projects/Personal/media-sync/.env\" \"D:/Projects/Personal/media-sync-worktrees/17b-run-details-impl/.env\" && echo \".env copied\" && echo \"=== port from .env ===\" && grep '^PORT=' \"D:/Projects/Personal/media-sync-worktrees/17b-run-details-impl/.env\")",
+      "Bash(gh pr *)"
+    ],
+    "additionalDirectories": [
+      "D:\\Projects\\Personal\\media-sync-worktrees",
+      "D:\\Projects\\Personal\\media-sync-worktrees\\18-docker-registry-truenas\\docs",
+      "D:\\Projects\\Personal\\media-sync-worktrees\\17-run-details-grouping\\docs\\options",
+      "D:\\Projects\\Personal\\media-sync"
     ]
   }
 }
