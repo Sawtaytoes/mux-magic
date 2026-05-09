@@ -5,14 +5,12 @@ import { commandNames } from "../api/routes/commandRoutes.js"
 import {
   getEffectiveCommandConfigs,
   getFakeCommandConfigs,
-  setFakeModeEnabled,
 } from "./index.js"
 import { failureScenario } from "./scenarios/failure.js"
 import { inProgressScenario } from "./scenarios/inProgress.js"
 import { successScenario } from "./scenarios/success.js"
 
 afterEach(() => {
-  setFakeModeEnabled(false)
   vi.restoreAllMocks()
 })
 

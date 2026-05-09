@@ -8,42 +8,49 @@ import {
   commandNames,
 } from "../api/routes/commandRoutes.js"
 import { failureScenario } from "./scenarios/failure.js"
+import { getAudioOffsetsScenario } from "./scenarios/getAudioOffsets.js"
 import { inProgressScenario } from "./scenarios/inProgress.js"
 import { nameSpecialFeaturesScenario } from "./scenarios/nameSpecialFeatures.js"
+import {
+  nameAnimeEpisodesAniDBScenario,
+  nameAnimeEpisodesScenario,
+  nameTvShowEpisodesScenario,
+  renameDemosScenario,
+  renameMovieClipDownloadsScenario,
+} from "./scenarios/renameCommands.js"
+import { replaceFlacWithPcmAudioScenario } from "./scenarios/replaceFlacWithPcmAudio.js"
+import { storeAspectRatioDataScenario } from "./scenarios/storeAspectRatioData.js"
 import { successScenario } from "./scenarios/success.js"
 
-// ---------------------------------------------------------------------------
-// Server-level flag — set once at boot from the --fake-data CLI arg or the
-// MEDIA_TOOLS_FAKE_DATA env var. When true, every route handler treats every
-// request as fake without needing the per-request ?fake=1 query string.
-// ---------------------------------------------------------------------------
-
-let serverFakeMode = false
-
-export const setFakeModeEnabled = (enabled: boolean): void => {
-  serverFakeMode = enabled
-}
-
-export const isFakeModeEnabled = (): boolean => (
-  serverFakeMode
-)
-
-// Per-request opt-in via `?fake=1`. The truthy values mirror what feels
-// natural in a URL — `1`, `true`, `yes`. Any other value (including
-// missing) is treated as off.
+// Recognize all fake-mode values: "1"/"true"/"yes" for default (success),
+// "failure"/"fail" for scripted-error mode, "inProgress" for stuck mode.
 const isFakeQuery = (raw: string | undefined): boolean => {
   if (!raw) return false
   const lowered = raw.toLowerCase()
-  return lowered === "1" || lowered === "true" || lowered === "yes"
+  return (
+    lowered === "1" || lowered === "true" || lowered === "yes"
+    || lowered === "failure" || lowered === "fail"
+    || lowered === "inprogress" || lowered === "progress"
+  )
 }
 
-// Detect whether THIS request should use fake responses. Honors both
-// the server flag (always-on) and the per-request `?fake=1` query so
-// fake jobs can run alongside real ones on the same server instance.
+// Detect whether THIS request should use fake responses via `?fake=1`.
 export const isFakeRequest = (context: Context): boolean => (
-  serverFakeMode
-  || isFakeQuery(context.req.query("fake"))
+  isFakeQuery(context.req.query("fake"))
 )
+
+// Returns the global scenario override requested by this fake call.
+// null means "use per-command defaults" (the normal success path).
+// Called by route handlers alongside isFakeRequest so they can forward
+// the scenario to getEffectiveCommandConfigs / runSequenceJob.
+export const getFakeScenario = (context: Context): Scenario | null => {
+  const raw = context.req.query("fake")
+  if (!raw) return null
+  const lowered = raw.toLowerCase()
+  if (lowered === "failure" || lowered === "fail") return "failure"
+  if (lowered === "inprogress" || lowered === "progress") return "inProgress"
+  return null
+}
 
 // ---------------------------------------------------------------------------
 // Fake commandConfigs map
@@ -56,16 +63,20 @@ export const isFakeRequest = (context: Context): boolean => (
 // steps will hit at least one of each.
 // ---------------------------------------------------------------------------
 
-type Scenario = "success" | "failure" | "inProgress"
+export type Scenario = "success" | "failure" | "inProgress"
 
 // Hand-picked rotation: the first three commands are pinned to the
 // canonical scenarios (so a smoke test always hits all three) and the
 // rest cycle deterministically. Pinning specific names makes manual
 // testing predictable: makeDirectory always succeeds, modifySubtitleMetadata
 // always fails, copyOutSubtitles always stays in-flight.
+// In dry-run mode all commands default to success — failure injection is
+// opt-in via the UI's "Failure mode" toggle (which appends ?fake=failure).
+// Only copyOutSubtitles stays pinned to inProgress as the smoke-test
+// target for the cancelled/stuck UI state.
 const SCENARIO_OVERRIDES: Partial<Record<CommandName, Scenario>> = {
   makeDirectory: "success",
-  modifySubtitleMetadata: "failure",
+  modifySubtitleMetadata: "success",
   copyOutSubtitles: "inProgress",
 }
 
@@ -77,10 +88,44 @@ const SCENARIO_OVERRIDES: Partial<Record<CommandName, Scenario>> = {
 type ObservableFactory = (body: unknown, options: { label?: string }) => Observable<unknown>
 
 const OBSERVABLE_OVERRIDES: Partial<Record<CommandName, ObservableFactory>> = {
+  getAudioOffsets: getAudioOffsetsScenario,
+  nameAnimeEpisodes: nameAnimeEpisodesScenario,
+  nameAnimeEpisodesAniDB: nameAnimeEpisodesAniDBScenario,
   nameSpecialFeatures: nameSpecialFeaturesScenario,
+  nameTvShowEpisodes: nameTvShowEpisodesScenario,
+  renameDemos: renameDemosScenario,
+  renameMovieClipDownloads: renameMovieClipDownloadsScenario,
+  replaceFlacWithPcmAudio: replaceFlacWithPcmAudioScenario,
+  storeAspectRatioData: storeAspectRatioDataScenario,
 }
 
-const ROTATION: readonly Scenario[] = ["success", "success", "failure", "success", "inProgress"]
+// Default rotation is all-success. Failure injection is opt-in through the
+// UI's "Failure mode" toggle (sets ?fake=failure on fetches). This keeps
+// dry-run from unexpectedly blocking a sequence with a scripted failure.
+const ROTATION: readonly Scenario[] = ["success", "success", "success", "success", "success"]
+
+// totalMs overrides for the success scenario. Commands are grouped by
+// their real-world I/O profile so the dry-run timing feels proportional.
+// Commands not listed here use successScenario's 4 s default.
+const TIMING_OVERRIDES: Partial<Record<CommandName, number>> = {
+  // Filesystem renames / deletes — effectively instant
+  makeDirectory: 400,
+  deleteFilesByExtension: 400,
+  deleteFolder: 400,
+  moveFiles: 800,
+  flattenOutput: 800,
+  // Subtitle metadata — small ASS files, fast JSON rewrite
+  modifySubtitleMetadata: 900,
+  // Metadata checks — fast scan, no heavy I/O
+  hasBetterAudio: 700,
+  hasBetterVersion: 700,
+  hasDuplicateMusicFiles: 700,
+  hasImaxEnhancedAudio: 700,
+  hasManyAudioTracks: 700,
+  hasSurroundSound: 700,
+  hasWrongDefaultTrack: 700,
+  isMissingSubtitles: 700,
+}
 
 const scenarioForCommand = (
   command: CommandName,
@@ -93,11 +138,12 @@ const scenarioForCommand = (
 const buildFakeConfig = (
   command: CommandName,
   scenario: Scenario,
+  bypassOverrides = false,
 ): CommandConfig => {
   const real = realCommandConfigs[command]
   const label = `fake/${command}`
 
-  const customFactory = OBSERVABLE_OVERRIDES[command]
+  const customFactory = bypassOverrides ? undefined : OBSERVABLE_OVERRIDES[command]
 
   const getObservable = (body: unknown) => {
     if (customFactory) return customFactory(body, { label })
@@ -107,7 +153,7 @@ const buildFakeConfig = (
     if (scenario === "inProgress") {
       return inProgressScenario(body, { label })
     }
-    return successScenario(body, { label })
+    return successScenario(body, { label, totalMs: TIMING_OVERRIDES[command] })
   }
 
   return {
@@ -139,17 +185,25 @@ export const getFakeCommandConfigs = (): Record<CommandName, CommandConfig> => {
   return map
 }
 
-// Resolves which `commandConfigs` map a caller should use. Routes /
-// the sequence runner pass a `useFake` boolean derived from
-// `isFakeRequest(context)` (per-request) or `isFakeModeEnabled()`
-// (server-instance) and get the right map back.
+// Resolves which `commandConfigs` map a caller should use.
+// `globalScenario` is non-null only when the request carries
+// `?fake=failure` or `?fake=inProgress` — it overrides every command's
+// scenario uniformly, bypassing OBSERVABLE_OVERRIDES so the whole
+// sequence behaves predictably (all fail, or all stay in-flight).
 export const getEffectiveCommandConfigs = (
   useFake: boolean,
-): Record<CommandName, CommandConfig> => (
-  useFake
-  ? getFakeCommandConfigs()
-  : realCommandConfigs
-)
+  globalScenario?: Scenario | null,
+): Record<CommandName, CommandConfig> => {
+  if (!useFake) return realCommandConfigs
+  if (!globalScenario) return getFakeCommandConfigs()
+  // Global override — build fresh (not memoized; only used for the
+  // opt-in failure/inProgress modes, not the default success path).
+  const map = {} as Record<CommandName, CommandConfig>
+  commandNames.forEach((name) => {
+    map[name] = buildFakeConfig(name, globalScenario, true)
+  })
+  return map
+}
 
 // ---------------------------------------------------------------------------
 // Canned read-only data for /files, /inputs, /queries

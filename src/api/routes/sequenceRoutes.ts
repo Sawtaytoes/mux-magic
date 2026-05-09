@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi"
 import yaml from "js-yaml"
 
-import { isFakeRequest } from "../../fake-data/index.js"
+import { getFakeScenario, isFakeRequest } from "../../fake-data/index.js"
 import { createJob } from "../jobStore.js"
 import { runSequenceJob, type SequenceBody } from "../sequenceRunner.js"
 import { commandNames } from "./commandRoutes.js"
@@ -395,7 +395,7 @@ sequenceRoutes.openapi(
       params: parsed,
     })
 
-    runSequenceJob(job.id, parsed, { useFake: isFakeRequest(context) })
+    runSequenceJob(job.id, parsed, { useFake: isFakeRequest(context), globalScenario: getFakeScenario(context) })
 
     return context.json({
       jobId: job.id,

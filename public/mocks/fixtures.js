@@ -138,32 +138,38 @@ export const mockJobs = [
   // ── nameSpecialFeatures ──────────────────────────────────────────────────
   // Emits per-file: collision objects, rename objects, then one prompt object
   // for any files the disc DB couldn't auto-match.
+  // Collision shape: 5 total, 3 sharing the same targetFilename so the UI's
+  // "multiple sources → one destination" conflict path gets exercised.
   {
     id: nameSpecialFeaturesJobId,
     commandName: "nameSpecialFeatures",
     status: "completed",
     params: { sourcePath: "C:\\fake\\Disc-Rips\\SOME MOVIE - 4K", dvdCompareId: 12345, fixedOffset: 0, timecodePadding: 2 },
     results: [
-      { collision: true, filename: "Featurette -featurette",             targetFilename: "Featurette -featurette" },
-      { collision: true, filename: "director John Smith -interview",     targetFilename: "director John Smith -interview" },
-      { collision: true, filename: "actor Jane Doe -interview",          targetFilename: "actor Jane Doe -interview" },
-      { oldName: "International Trailer -trailer",                       newName: "International Trailer with Narration -trailer" },
-      { oldName: "Random Custom Name -featurette",                       newName: "Making Of The Film -featurette" },
+      // 3 collisions all targeting the same name
+      { collision: true, filename: "MOVIE_t01.mkv", targetFilename: "Behind the Scenes -featurette" },
+      { collision: true, filename: "MOVIE_t02.mkv", targetFilename: "Behind the Scenes -featurette" },
+      { collision: true, filename: "MOVIE_t03.mkv", targetFilename: "Behind the Scenes -featurette" },
+      // 2 more collisions with distinct targets
+      { collision: true, filename: "MOVIE_t04.mkv", targetFilename: "Theatrical Trailer -trailer" },
+      { collision: true, filename: "MOVIE_t05.mkv", targetFilename: "Director's Commentary -other" },
+      // Successful renames
+      { oldName: "MOVIE_t06.mkv", newName: "Making Of The Film -featurette" },
+      { oldName: "MOVIE_t07.mkv", newName: "Deleted Scenes -deleted" },
       {
-        unrenamedFilenames: ["Making Of", "Bonus Disc"],
+        unrenamedFilenames: ["MOVIE_t08.mkv", "MOVIE_t09.mkv"],
         possibleNames: [
-          { name: "Making Of The Film" },
-          { name: "Behind the Scenes" },
-          { name: "Bonus Content" },
+          { name: "Image Gallery" },
+          { name: "The Making of Inception" },
         ],
         allKnownNames: [
-          "Making Of The Film", "Behind the Scenes", "Bonus Content",
-          "director John Smith", "actor Jane Doe",
-          "International Trailer with Narration", "Featurette",
+          "Behind the Scenes", "Theatrical Trailer", "Director's Commentary",
+          "Making Of The Film", "Deleted Scenes", "Image Gallery",
+          "The Making of Inception",
         ],
         unnamedFileCandidates: [
-          { filename: "Making Of",   candidates: ["Making Of The Film", "Behind the Scenes", "Bonus Content"] },
-          { filename: "Bonus Disc",  candidates: ["Making Of The Film", "Behind the Scenes", "Bonus Content"] },
+          { filename: "MOVIE_t08.mkv", candidates: ["Image Gallery", "The Making of Inception", "Behind the Scenes"] },
+          { filename: "MOVIE_t09.mkv", candidates: ["The Making of Inception", "Image Gallery"] },
         ],
       },
     ],
@@ -347,18 +353,22 @@ export const mockJobLogs = {
     "Scraped extras text: 1494 chars, 27 non-empty lines",
     "Parsed 11 extras (23 with timecodes), 0 cuts, 4 untimed suggestions",
     "Reading file metadata… (padding=2, offset=0)",
-    "  -featurette: 6:36",
-    "  director John Smith -interview: 4:27",
-    "  actor Jane Doe -interview: 1:38",
-    "  International Trailer -trailer: 1:50",
-    "  Random Custom Name -featurette: 11:50",
-    "  Making Of: 14:57",
-    "  Bonus Disc: 2:34",
-    "Collision: Featurette -featurette already exists",
-    "Collision: director John Smith -interview already exists",
-    "Collision: actor Jane Doe -interview already exists",
-    "Renamed: International Trailer -trailer → International Trailer with Narration -trailer",
-    "Renamed: Random Custom Name -featurette → Making Of The Film -featurette",
+    "  MOVIE_t01.mkv: 6:36",
+    "  MOVIE_t02.mkv: 6:31",
+    "  MOVIE_t03.mkv: 6:29",
+    "  MOVIE_t04.mkv: 1:50",
+    "  MOVIE_t05.mkv: 4:27",
+    "  MOVIE_t06.mkv: 11:50",
+    "  MOVIE_t07.mkv: 0:48",
+    "  MOVIE_t08.mkv: 14:57",
+    "  MOVIE_t09.mkv: 2:34",
+    "Collision: MOVIE_t01.mkv → Behind the Scenes -featurette already exists",
+    "Collision: MOVIE_t02.mkv → Behind the Scenes -featurette already exists",
+    "Collision: MOVIE_t03.mkv → Behind the Scenes -featurette already exists",
+    "Collision: MOVIE_t04.mkv → Theatrical Trailer -trailer already exists",
+    "Collision: MOVIE_t05.mkv → Director's Commentary -other already exists",
+    "Renamed: MOVIE_t06.mkv → Making Of The Film -featurette",
+    "Renamed: MOVIE_t07.mkv → Deleted Scenes -deleted",
     "Prompt: 2 files could not be matched automatically",
   ],
   [keepLanguagesJobId]: [

@@ -1,12 +1,7 @@
-import { afterEach, describe, expect, test } from "vitest"
+import { describe, expect, test } from "vitest"
 
 import { fileRoutes } from "../api/routes/fileRoutes.js"
 import { queryRoutes } from "../api/routes/queryRoutes.js"
-import { setFakeModeEnabled } from "./index.js"
-
-afterEach(() => {
-  setFakeModeEnabled(false)
-})
 
 const post = (routes: typeof queryRoutes, path: string, body: unknown) => (
   routes.request(path, {
@@ -52,31 +47,3 @@ describe("?fake=1 query-toggle on read-only routes", () => {
   })
 })
 
-describe("server-flag fake mode", () => {
-  test("setFakeModeEnabled(true) makes every request fake without ?fake=1", async () => {
-    setFakeModeEnabled(true)
-
-    const filesResponse = await fileRoutes.request("/files/default-path")
-    expect(filesResponse.status).toBe(200)
-    const filesBody = await filesResponse.json() as { path: string }
-    expect(filesBody.path).toBe("/fake/home")
-
-    const malResponse = await post(queryRoutes, "/queries/searchMal", { searchTerm: "x" })
-    expect(malResponse.status).toBe(200)
-    const malBody = await malResponse.json() as { results: unknown[] }
-    expect(malBody.results.length).toBeGreaterThan(0)
-  })
-
-  test("toggling back to false restores the real behavior on the next call (real /files/default-path returns the OS homedir)", async () => {
-    setFakeModeEnabled(true)
-    const fakeResp = await fileRoutes.request("/files/default-path")
-    expect((await fakeResp.json() as { path: string }).path).toBe("/fake/home")
-
-    setFakeModeEnabled(false)
-    const realResp = await fileRoutes.request("/files/default-path")
-    const realBody = await realResp.json() as { path: string }
-    // OS homedir is platform-specific but never the canned path.
-    expect(realBody.path).not.toBe("/fake/home")
-    expect(realBody.path.length).toBeGreaterThan(0)
-  })
-})
