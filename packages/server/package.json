@@ -8,5 +8,8 @@
     "start": "tsx --env-file=../../.env src/server.ts",
     "start-server": "tsx --env-file=../../.env src/server.ts",
     "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
   }
 }

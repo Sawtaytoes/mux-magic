@@ -1,0 +1,31 @@
+{
+  "name": "@media-tools/shared",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Shared utilities used by @media-tools/server and the media-sync sibling repo.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fast-sort": "^3.4.1"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@media-tools/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "React 19 + Vite frontend for media-tools.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.62.0",
+    "jotai": "^2.10.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "babel-plugin-react-compiler": "^19.0.0-beta-201e55d-20241215",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^6.0.3",
+    "vite": "^6.0.0"
+  }
+}

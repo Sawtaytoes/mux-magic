@@ -1,7 +1,11 @@
 {
-  "name": "media-file-naming",
+  "name": "media-tools",
+  "private": true,
   "packageManager": "yarn@4.14.1",
   "version": "1.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "rimraf build/ && esbuild --format=cjs --minify --bundle --platform=node --external:./xhr-sync-worker.js \"--external:chromium-bidi/*\" --outfile=build/media-tools.cjs packages/server/src/cli.ts",
     "build-command-descriptions": "tsx scripts/build-command-descriptions.ts",

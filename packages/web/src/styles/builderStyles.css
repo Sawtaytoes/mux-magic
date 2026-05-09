@@ -1,0 +1,338 @@
+/* ─── Step enter/leave animations ────────────────────────────────────────── */
+
+@keyframes stepEnter {
+  from { opacity: 0; transform: translateY(-6px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes stepLeave {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-6px) scale(0.985); }
+}
+.step-enter { animation: stepEnter 200ms ease-out; }
+.step-leave { animation: stepLeave 200ms ease-in forwards; pointer-events: none; }
+
+/* Drag-and-drop visuals (SortableJS). The grip handle gets a grab
+   cursor; the placeholder Sortable inserts at the hover position
+   fades the original card so the user sees where it'll land; the
+   card actively being dragged gets a subtle blue ring. */
+[data-drag-handle] { cursor: grab; touch-action: none; }
+[data-drag-handle]:active { cursor: grabbing; }
+.drag-ghost { opacity: 0.35; }
+.drag-chosen { box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5); }
+
+/* View-transition timing for the move-step swap */
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 220ms;
+}
+
+/* Each step has its own `view-transition-name` so it gets a separate
+   snapshot during the add/move/remove animation. Without an explicit
+   name on the header, the header becomes part of the ROOT snapshot,
+   which the browser layers BELOW per-element snapshots — making the
+   animating step momentarily render on top of the header.
+   Stamping a `view-transition-name` on the header gives it its own
+   snapshot pair (::view-transition-group(page-header)), and the
+   z-index on that group keeps it above every step snapshot for the
+   duration of the transition. */
+#page-header { view-transition-name: page-header; }
+::view-transition-group(page-header) { z-index: 100; }
+
+/* Page-header menus always collapse behind their toggle buttons.
+   ≡ (nav) and ⋮ (controls) are permanently visible; undo/redo is
+   pinned in the header bar. Both menus open as absolute popovers. */
+.page-menu-toggle { display: inline-flex; }
+.page-header-inner {
+  position: relative;
+  justify-content: space-between;
+}
+
+.page-menu { display: none; }
+.page-menu-group,
+.page-menu-row {
+  display: contents;
+}
+
+.page-menu.open {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  position: absolute;
+  top: calc(100% - 0.25rem);
+  min-width: 14rem;
+  padding: 0.75rem;
+  background: rgb(15 23 42);
+  border: 1px solid rgb(51 65 85);
+  border-radius: 0.5rem;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  z-index: 50;
+}
+/* Anchor each popover under its toggle. */
+.page-menu-nav.open      { left:  0.75rem; }
+.page-menu-controls.open { right: 0.75rem; }
+
+.page-menu.open .page-menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.page-menu.open .page-menu-row {
+  display: flex;
+  flex-direction: row;
+  gap: 0.4rem;
+}
+.page-menu.open .page-menu-group > button,
+.page-menu.open .page-menu-group > a {
+  width: 100%;
+  text-align: center;
+  margin-left: 0;
+}
+.page-menu.open .page-menu-row > * {
+  flex: 1;
+}
+/* Inline pixel separators become full-width horizontal dividers. */
+.page-menu.open .page-menu-sep {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: rgb(51 65 85);
+  margin: 0.25rem 0;
+}
+
+/* On the smallest screens, hide the pinned undo/redo + collapse/expand
+   cluster — they're still reachable via the ⋮ menu. */
+@media (max-width: 480px) {
+  #header-pinned { display: none; }
+}
+
+/* Each step card establishes its own size container so headers adapt
+   to the card's actual width, not the viewport — matters because the
+   pane width changes with the YAML modal / load panel toggles. */
+.step-card { container-type: inline-size; container-name: step-card; }
+
+/* Field grouping for side-by-side layout on wider cards. Groups use
+   container queries so they adapt to card width (when 2 cards display
+   side-by-side), not just the viewport. Single column on narrow, two
+   columns on wider cards (>= 500px container width). */
+.field-group-two-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@container step-card (min-width: 500px) {
+  .field-group-two-col {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Checkbox + fill: first column shrinks to its natural width (the checkbox
+   label), second column takes all remaining space (e.g. Depth number input). */
+.field-group-check-fill {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@container step-card (min-width: 500px) {
+  .field-group-check-fill {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+}
+
+.step-alias { flex: 1 1 8rem; min-width: 6rem; }
+.step-hamburger-btn { display: none; }
+/* Same Tailwind-cascade trick as .page-actions: define display:flex
+   here so the @container rule below can flip to display:none without
+   fighting Tailwind's `.flex` utility. */
+.step-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* Per-step run/stop button. One <button> with two stacked icons; the
+   `.is-running` class cross-fades them (rotate + scale) so the user
+   gets a clear visual transition when starting or cancelling a step,
+   instead of the old two-button play+cancel arrangement that put the
+   stop button right under the cursor that just clicked play. */
+.step-run-stop {
+  position: relative;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  color: #34d399;            /* emerald — matches the old ▶ */
+  transition: color 200ms ease, background-color 200ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.step-run-stop:hover { background-color: #334155; color: #6ee7b7; }
+.step-run-stop:disabled { opacity: 0.3; cursor: not-allowed; }
+.step-run-stop:disabled:hover { background-color: transparent; color: #34d399; }
+.step-run-stop.is-running { color: #fbbf24; }   /* amber — matches the old ⏹ */
+.step-run-stop.is-running:hover { color: #fcd34d; background-color: #334155; }
+.step-run-stop-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.step-run-stop-stop {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+}
+.step-run-stop.is-running .step-run-stop-play {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
+}
+.step-run-stop.is-running .step-run-stop-stop {
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+/* Honor reduced-motion preferences — snap instead of rotate-fade. */
+@media (prefers-reduced-motion: reduce) {
+  .step-run-stop, .step-run-stop-icon { transition: none; }
+}
+
+/* Below ~600px of card width: alias breaks to its own row above the
+   other header controls (cmd-picker keeps its flex-1 fill behavior).
+   Picked at 600px so the cmd-picker still has room to render moderate
+   command names ('flattenOutput' ~ 12rem) before alias gives up its
+   inline slot. */
+@container step-card (max-width: 600px) {
+  .step-alias { flex-basis: 100%; order: -1; }
+}
+
+/* Below ~460px: collapse action icons into a hamburger toggle. The
+   icons reappear in a wrapped row when the toggle is open. */
+@container step-card (max-width: 460px) {
+  .step-hamburger-btn { display: inline-flex; }
+  .step-actions { display: none; }
+  .step-actions.open {
+    display: flex;
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* Group container — both kinds (serial / parallel) carry their own
+   size container so the parallel side-by-side layout adapts to its
+   own width rather than the viewport. */
+.group-card { container-type: inline-size; container-name: group-card; }
+
+/* Parallel groups: lay inner step cards out as a row that wraps to a
+   column when the container narrows. Each child card flexes to fill
+   available width while honoring a 280px minimum so two cards side-
+   by-side stay legible (and three+ cards wrap before getting cramped). */
+.group-card-parallel .parallel-group > .step-card {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+/* Below ~640px the parallel-group container is too narrow for two
+   cards side-by-side — collapse to a single column to avoid awkward
+   half-width cards. */
+@container group-card (max-width: 640px) {
+  .group-card-parallel .parallel-group {
+    flex-direction: column;
+  }
+}
+
+/* ─── Compact step card (drawer experiment) ──────────────────────────────────
+   Compact cards have no body section — just the single-row header.
+   We keep .step-card on them so progress bars (mountStepCardProgress) still
+   find the right DOM shape; we just don't render the collapsed body div. */
+.step-card-compact {
+  container-type: inline-size;
+  container-name: step-card;
+}
+
+/* Clickable info area subtle hover; pointer cursor to hint it's interactive. */
+.step-compact-open { cursor: pointer; }
+
+/* ─── Step drawer (sidebar / bottom-sheet) ───────────────────────────────────
+   The drawer is a fixed panel. On wide screens (>= 640px) it attaches to the
+   right edge. On narrow screens it rises from the bottom as a sheet.
+
+   The backdrop covers the rest of the page to trap focus and allow
+   click-outside-to-close. Both start hidden (translateX / translateY offset)
+   and transition open when .open is added. */
+
+.step-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+.step-drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Wide: right sidebar */
+.step-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 90vw);
+  background: rgb(15 23 42); /* slate-900 */
+  border-left: 1px solid rgb(51 65 85); /* slate-700 */
+  z-index: 201;
+  transform: translateX(100%);
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.step-drawer.open {
+  transform: translateX(0);
+}
+
+/* Narrow: bottom sheet */
+@media (max-width: 639px) {
+  .step-drawer {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: min(80dvh, 80vh);
+    border-left: none;
+    border-top: 1px solid rgb(51 65 85);
+    border-radius: 1rem 1rem 0 0;
+    transform: translateY(100%);
+  }
+  .step-drawer.open {
+    transform: translateY(0);
+  }
+}
+
+/* Honour reduced-motion — snap instead of slide. */
+@media (prefers-reduced-motion: reduce) {
+  .step-drawer,
+  .step-drawer-backdrop { transition: none; }
+}
+
+/* ─── Link-picker popover detail rows render filesystem paths. ─────────────── Default
+   break-all splits whole words ("subtitle" → "s\nubtitle"); we want
+   the browser to break preferentially at path separators (the JS
+   side injects U+200B after each / and \) and at spaces, falling
+   back to language-aware hyphenation for the rare word that still
+   can't fit. The custom hyphenate-character marks any mid-word
+   break with a return arrow so the reader sees "this continued on
+   the next line" instead of "two new tokens". */
+.path-detail {
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
+  -webkit-hyphenate-character: "\21B5";
+  hyphenate-character: "\21B5";
+}
