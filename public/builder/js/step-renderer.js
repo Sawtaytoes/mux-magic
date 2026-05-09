@@ -295,25 +295,31 @@ export function renderFields(step, stepIndex) {
   const cmd = COMMANDS[step.command]
   const fieldsHtml = []
   const groupedFieldNames = new Set()
+  const groupsByFirstField = new Map()
 
-  // Build set of fields that are part of a group
+  // Build set of fields that are part of a group, and map first field to group
   if (cmd.groups && Array.isArray(cmd.groups)) {
     cmd.groups.forEach(group => {
-      if (Array.isArray(group.fields)) {
+      if (Array.isArray(group.fields) && group.fields.length > 0) {
         group.fields.forEach(name => groupedFieldNames.add(name))
+        // Map the first field in the group to the group definition
+        groupsByFirstField.set(group.fields[0], group)
       }
     })
   }
 
-  // Render grouped fields first
-  if (cmd.groups && Array.isArray(cmd.groups)) {
-    cmd.groups.forEach(group => {
-      if (!Array.isArray(group.fields) || group.fields.length === 0) return
+  // Render fields in order, rendering groups when we hit their first field
+  const renderedGroups = new Set()
 
+  cmd.fields.forEach(field => {
+    // If this field is the first in a group, render the whole group
+    const group = groupsByFirstField.get(field.name)
+    if (group && !renderedGroups.has(group)) {
+      renderedGroups.add(group)
       const groupFieldsHtml = group.fields
         .map(fieldName => {
-          const field = cmd.fields.find(f => f.name === fieldName)
-          return field ? renderFieldHtml(step, field, stepIndex) : ''
+          const f = cmd.fields.find(fld => fld.name === fieldName)
+          return f ? renderFieldHtml(step, f, stepIndex) : ''
         })
         .filter(Boolean)
         .join('')
@@ -323,18 +329,14 @@ export function renderFields(step, stepIndex) {
           `<div class="${group.layout}">${groupFieldsHtml}</div>`
         )
       }
-    })
-  }
-
-  // Render ungrouped fields
-  cmd.fields
-    .filter(field => !groupedFieldNames.has(field.name))
-    .forEach(field => {
+    } else if (!groupedFieldNames.has(field.name)) {
+      // Render ungrouped fields normally
       const fieldHtml = renderFieldHtml(step, field, stepIndex)
       if (fieldHtml) {
         fieldsHtml.push(fieldHtml)
       }
-    })
+    }
+  })
 
   return fieldsHtml.join('')
 }
@@ -427,11 +429,6 @@ function renderFieldHtml(step, field, stepIndex) {
         // TMDB target on the right.
         if (step.params.tmdbId) {
           tmdbHref = `https://www.themoviedb.org/movie/${encodeURIComponent(step.params.tmdbId)}`
-          // Override the link text when we know the resolved title so
-          // the user sees "Open on TheMovieDB: Title (Year)".
-          if (step.params.tmdbName) {
-            tmdbLabel = `Open on TheMovieDB: ${step.params.tmdbName}`
-          }
         } else if (step.params.tmdbResolutionPending) {
           tmdbHref = 'https://www.themoviedb.org/'
         } else if (companion) {
