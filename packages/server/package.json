@@ -1,0 +1,12 @@
+{
+  "name": "@media-tools/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Hono API server + CLI for batch media file operations.",
+  "scripts": {
+    "start": "tsx --env-file=../../.env src/server.ts",
+    "start-server": "tsx --env-file=../../.env src/server.ts",
+    "typecheck": "tsc --noEmit"
+  }
+}
