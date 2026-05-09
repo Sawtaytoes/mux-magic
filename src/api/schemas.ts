@@ -350,7 +350,7 @@ export const nameSpecialFeaturesRequestSchema = z.object({
   sourcePath: z.string().describe("Directory where special features are located."),
   url: z.string().optional().describe("DVDCompare.net URL including the chosen release's hash tag."),
   dvdCompareId: z.number().optional().describe("DVDCompare film ID — when provided, constructs URL directly and bypasses search."),
-  dvdCompareReleaseHash: z.number().optional().describe("Release package hash (URL fragment, defaults to 1)."),
+  dvdCompareReleaseHash: z.number().optional().describe("The hash (URL fragment #) from the DVDCompare release page denoting which release variant is selected for that film. Defaults to 1 (the first release option)."),
   searchTerm: z.string().optional().describe("Title to search on DVDCompare.net (used when no url or dvdCompareId)."),
   fixedOffset: z.number().default(0).describe("Timecodes are pushed positively or negatively by this amount (in milliseconds)."),
   timecodePadding: z.number().default(2).describe("Seconds that timecodes may be off. Defaults to 2, matching typical DVDCompare-vs-rip drift. Pass 0 for exact-match-only."),
