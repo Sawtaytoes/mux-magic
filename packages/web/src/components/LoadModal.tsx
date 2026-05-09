@@ -1,91 +1,79 @@
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useEffect, useState } from "react";
-import { pathsAtom } from "../state/pathsAtom";
-import { stepCounterAtom, stepsAtom } from "../state/stepsAtom";
-import { loadModalOpenAtom } from "../state/uiAtoms";
-import type { Commands } from "../types";
-import { loadYamlFromText } from "./loadYaml";
+import { useAtom, useAtomValue, useSetAtom } from "jotai"
+import { useEffect, useState } from "react"
+import { pathsAtom } from "../state/pathsAtom"
+import { stepCounterAtom, stepsAtom } from "../state/stepsAtom"
+import { loadModalOpenAtom } from "../state/uiAtoms"
+import type { Commands } from "../types"
+import { loadYamlFromText } from "./loadYaml"
 
 export const LoadModal = () => {
-  const [isOpen, setIsOpen] = useAtom(loadModalOpenAtom);
-  const setSteps = useSetAtom(stepsAtom);
-  const setPaths = useSetAtom(pathsAtom);
-  const setStepCounter = useSetAtom(stepCounterAtom);
-  const currentPaths = useAtomValue(pathsAtom);
-  const currentStepCounter = useAtomValue(stepCounterAtom);
-  const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useAtom(loadModalOpenAtom)
+  const setSteps = useSetAtom(stepsAtom)
+  const setPaths = useSetAtom(pathsAtom)
+  const setStepCounter = useSetAtom(stepCounterAtom)
+  const currentPaths = useAtomValue(pathsAtom)
+  const currentStepCounter = useAtomValue(stepCounterAtom)
+  const [error, setError] = useState<string | null>(null)
 
   const close = () => {
-    setIsOpen(false);
-    setError(null);
-  };
+    setIsOpen(false)
+    setError(null)
+  }
 
   // Backdrop click: close only when the click landed directly on the backdrop,
   // not on content inside it (event.target check mirrors the legacy guard).
   const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) close();
-  };
+    if (event.target === event.currentTarget) close()
+  }
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return
 
     const handlePaste = (event: ClipboardEvent) => {
-      const text = event.clipboardData?.getData("text/plain") ?? "";
-      if (!text.trim()) return;
+      const text = event.clipboardData?.getData("text/plain") ?? ""
+      if (!text.trim()) return
       // Prevent paste inserting into any focused input that was open when the
       // modal opened — the clipboard content is the only intended input here.
-      event.preventDefault();
-      setError(null);
+      event.preventDefault()
+      setError(null)
 
       try {
-        const commands = window.mediaTools.COMMANDS as Commands;
-        const result = loadYamlFromText(
-          text,
-          commands,
-          currentPaths,
-          currentStepCounter,
-        );
-        setSteps(result.steps);
-        setPaths(result.paths);
-        setStepCounter(result.stepCounter);
+        const commands = window.mediaTools.COMMANDS as Commands
+        const result = loadYamlFromText(text, commands, currentPaths, currentStepCounter)
+        setSteps(result.steps)
+        setPaths(result.paths)
+        setStepCounter(result.stepCounter)
         // Side-effects owned by legacy JS during the transitional period.
-        window.mediaTools.renderAll?.();
-        window.mediaTools.updateUrl?.();
-        window.mediaTools.kickReverseLookups?.();
-        window.mediaTools.kickTmdbResolutions?.();
-        close();
+        window.mediaTools.renderAll?.()
+        window.mediaTools.updateUrl?.()
+        window.mediaTools.kickReverseLookups?.()
+        window.mediaTools.kickTmdbResolutions?.()
+        close()
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setError(err instanceof Error ? err.message : "Unknown error")
       }
-    };
+    }
 
-    document.addEventListener("paste", handlePaste);
+    document.addEventListener("paste", handlePaste)
     return () => {
-      document.removeEventListener("paste", handlePaste);
-    };
-  }, [
-    isOpen,
-    currentPaths,
-    currentStepCounter,
-    setSteps,
-    setPaths,
-    setStepCounter,
-  ]);
+      document.removeEventListener("paste", handlePaste)
+    }
+  }, [isOpen, currentPaths, currentStepCounter, setSteps, setPaths, setStepCounter])
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
+      if (event.key === "Escape") close()
+    }
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown)
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isOpen])
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <div
@@ -100,10 +88,7 @@ export const LoadModal = () => {
       >
         <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
           <span className="text-xs font-medium text-slate-400">Load YAML</span>
-          <button
-            onClick={close}
-            className="text-xs text-slate-400 hover:text-slate-200"
-          >
+          <button onClick={close} className="text-xs text-slate-400 hover:text-slate-200">
             ✕ Close
           </button>
         </div>
@@ -134,5 +119,5 @@ export const LoadModal = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
