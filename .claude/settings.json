@@ -15,7 +15,8 @@
       "PowerShell(gh --version 2>&1)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Bash(echo \"TC=$?\")"
+      "Bash(echo \"TC=$?\")",
+      "Read(//d/Projects/Personal/media-tools/**)"
     ]
   }
 }
