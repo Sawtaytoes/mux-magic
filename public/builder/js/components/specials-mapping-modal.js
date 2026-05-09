@@ -70,10 +70,11 @@ const renderFileTimecode = (timecode) => (
     : '<span class="text-slate-500 text-[10px] italic">(no duration)</span>'
 )
 
-// Build the <option> list for the per-row dropdown. A "none" option is
-// always first (unselected by default) so users can skip renaming a file.
+// Build the <option> list for the per-row dropdown. A "skip" option is
+// always first and is pre-selected for 0% confidence rows.
 const renderCandidateOptions = ({ rankedCandidates, selectedName }) => {
-  const noneOption = '<option value="">— skip this file —</option>'
+  const noneSelected = selectedName === ''
+  const noneOption = `<option value=""${noneSelected ? ' selected' : ''}>— skip this file —</option>`
   const candidateOptions = rankedCandidates.map(({ candidate, confidence }) => {
     const percent = Math.round(confidence * 100)
     const isSelected = candidate.name === selectedName
@@ -107,11 +108,13 @@ const renderRow = ({ index, suggestion }) => {
     + `<div class="mt-0.5">${renderFileTimecode(suggestion.fileTimecode)}</div>`
     + `</td>`
     + `<td class="px-2 py-1.5 align-top w-[40%]">`
-    + `<div class="flex gap-1.5 items-start">`
-    + `<input type="text" data-mapping-input class="flex-1 text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500" placeholder="Or type a custom name…" />`
-    + `<button type="button" data-mapping-suggest class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded shrink-0" title="Show suggestions">✓</button>`
+    + `<div class="flex gap-1 items-center">`
+    + `<select data-mapping-select class="flex-1 text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500">`
+    + renderCandidateOptions({ rankedCandidates: suggestion.rankedCandidates, selectedName })
+    + `</select>`
+    + `<button type="button" data-mapping-custom title="Enter a custom name" class="shrink-0 text-slate-400 hover:text-slate-200 text-xs px-1.5 py-1 rounded hover:bg-slate-700">✏</button>`
     + `</div>`
-    + `<div data-mapping-suggestions class="hidden absolute left-2 right-2 top-full mt-0.5 z-30 max-h-40 overflow-y-auto bg-slate-900 border border-slate-600 rounded shadow-xl text-xs"></div>`
+    + `<input type="text" data-mapping-input class="hidden w-full text-xs font-mono bg-slate-950 text-slate-100 border border-blue-500 rounded px-1.5 py-1 mt-1 focus:outline-none" placeholder="Type custom name, press Enter to apply" />`
     + `<p data-mapping-row-error class="hidden text-[10px] font-mono mt-1 text-red-300"></p>`
     + `</td>`
     + `<td class="px-2 py-1.5 align-top text-center">${renderConfidenceBadge(topCandidate.confidence)}</td>`
@@ -140,16 +143,15 @@ const renderModalHtml = ({ suggestions }) => {
     + `</div>`
     + `<div class="px-4 py-3 flex-1 overflow-y-auto">`
     + `<p class="text-xs text-slate-300 mb-2">`
-    + `Each leftover file is paired with the highest-scoring DVDCompare candidate. `
-    + `Adjust the dropdown for any row that looks wrong, uncheck "Include" to skip a row, then click Rename to apply.`
+    + `Pick a name from the dropdown or click ✏ to type a custom name. Set a row to "skip" to leave it unchanged. Click Rename to apply.`
     + `</p>`
     + lowConfidenceLine
     + `<table class="w-full border-separate border-spacing-y-1.5 text-xs">`
     + `<thead><tr class="text-left text-slate-400 text-[10px] uppercase tracking-wider">`
+    + `<th class="px-1 py-1 w-6"></th>`
     + `<th class="px-2 py-1">File</th>`
-    + `<th class="px-2 py-1">Suggested name</th>`
+    + `<th class="px-2 py-1">Rename to</th>`
     + `<th class="px-2 py-1 text-center">Confidence</th>`
-    + `<th class="px-2 py-1 text-right">Action</th>`
     + `</tr></thead>`
     + `<tbody>${rowsHtml}</tbody>`
     + `</table>`
@@ -251,8 +253,12 @@ const handleConfirmClick = async () => {
       if (!suggestion) {
         return null
       }
+      // Custom input takes priority over select when it has a value
       const inputElement = row.querySelector('[data-mapping-input]')
-      const desiredName = String(inputElement?.value ?? '').trim()
+      const selectElement = row.querySelector('[data-mapping-select]')
+      const customValue = String(inputElement?.value ?? '').trim()
+      const selectValue = String(selectElement?.value ?? '').trim()
+      const desiredName = customValue.length > 0 ? customValue : selectValue
       if (desiredName.length === 0) {
         return null
       }
@@ -268,7 +274,7 @@ const handleConfirmClick = async () => {
     .filter(Boolean)
 
   if (renamePlan.length === 0) {
-    setStatusMessage({ kind: 'error', message: 'Nothing selected to rename.' })
+    closeSpecialsMappingModal()
     return
   }
 
@@ -488,85 +494,79 @@ export const openSpecialsMappingModal = async ({
     confirmButton.addEventListener('click', handleConfirmClick)
   }
 
-  // Wire duplicate detection on all input fields. Only non-empty
-  // inputs are checked for duplicates; skipped files (empty) are ignored.
+  // Get the effective name for a row: custom input takes priority over select
+  const getRowValue = (row) => {
+    const customInput = row.querySelector('[data-mapping-input]')
+    const selectEl = row.querySelector('[data-mapping-select]')
+    const custom = String(customInput?.value ?? '').trim()
+    return custom.length > 0 ? custom : String(selectEl?.value ?? '').trim()
+  }
+
+  // Validate: only non-empty selections checked for duplicates
   const validateSelections = () => {
     const rows = Array.from(modal.querySelectorAll('[data-mapping-row]'))
-    const selectedNames = {} // lowercase name -> count
-
+    const selectedNames = {}
     rows.forEach((row) => {
-      const input = row.querySelector('[data-mapping-input]')
-      const value = String(input?.value ?? '').trim()
-      if (value.length > 0) {
-        const key = value.toLowerCase()
-        selectedNames[key] = (selectedNames[key] || 0) + 1
-      }
+      const v = getRowValue(row)
+      if (v.length > 0) selectedNames[v.toLowerCase()] = (selectedNames[v.toLowerCase()] || 0) + 1
     })
-
     let hasDuplicates = false
     rows.forEach((row) => {
-      const input = row.querySelector('[data-mapping-input]')
+      const v = getRowValue(row)
       const errorEl = row.querySelector('[data-mapping-row-error]')
-      const value = String(input?.value ?? '').trim()
-
-      const isDuplicate = value.length > 0 && selectedNames[value.toLowerCase()] > 1
+      const customInput = row.querySelector('[data-mapping-input]')
+      const selectEl = row.querySelector('[data-mapping-select]')
+      const isDuplicate = v.length > 0 && selectedNames[v.toLowerCase()] > 1
       if (isDuplicate) {
         hasDuplicates = true
-        if (errorEl) {
-          errorEl.classList.remove('hidden')
-          errorEl.textContent = 'Duplicate name'
-        }
-        if (input) input.classList.add('border-red-500')
+        if (errorEl) { errorEl.classList.remove('hidden'); errorEl.textContent = 'Duplicate name' }
+        if (customInput && !customInput.classList.contains('hidden')) customInput.classList.add('border-red-500')
+        else if (selectEl) selectEl.classList.add('border-red-500')
       } else {
         if (errorEl) errorEl.classList.add('hidden')
-        if (input) input.classList.remove('border-red-500')
+        if (customInput) customInput.classList.remove('border-red-500')
+        if (selectEl) selectEl.classList.remove('border-red-500')
       }
     })
-
     if (confirmButton) confirmButton.disabled = hasDuplicates
   }
 
-  const inputs = modal.querySelectorAll('[data-mapping-input]')
-  inputs.forEach((input) => {
-    input.addEventListener('input', validateSelections)
-  })
+  // Wire selects and custom inputs for live validation
+  modal.querySelectorAll('[data-mapping-select]').forEach((el) => el.addEventListener('change', validateSelections))
+  modal.querySelectorAll('[data-mapping-input]').forEach((el) => el.addEventListener('input', validateSelections))
 
-  // Wire suggestion buttons to show/hide dropdown
-  const suggestionButtons = modal.querySelectorAll('[data-mapping-suggest]')
-  suggestionButtons.forEach((button) => {
-    button.addEventListener('click', (e) => {
-      e.preventDefault()
-      e.stopPropagation()
+  // Wire ✏ button to show/hide the custom text input
+  modal.querySelectorAll('[data-mapping-custom]').forEach((button) => {
+    button.addEventListener('click', () => {
       const row = button.closest('[data-mapping-row]')
       if (!row) return
-      const suggestionsDiv = row.querySelector('[data-mapping-suggestions]')
-      const indexAttribute = row.getAttribute('data-mapping-index') ?? '-1'
-      const index = Number(indexAttribute)
-      const suggestion = suggestions[index]
-      if (!suggestion) return
-
-      const isHidden = suggestionsDiv.classList.contains('hidden')
+      const customInput = row.querySelector('[data-mapping-input]')
+      const selectEl = row.querySelector('[data-mapping-select]')
+      if (!customInput) return
+      const isHidden = customInput.classList.contains('hidden')
       if (isHidden) {
-        // Show suggestions
-        const html = suggestion.rankedCandidates.map(({ candidate, confidence }) => {
-          const percent = Math.round(confidence * 100)
-          return `<div class="px-2 py-1 hover:bg-slate-800 cursor-pointer border-b border-slate-700 last:border-b-0" data-suggestion="${esc(candidate.name)}">${esc(candidate.name)} — ${percent}%</div>`
-        }).join('')
-        suggestionsDiv.innerHTML = html
-        suggestionsDiv.classList.remove('hidden')
-
-        // Wire clicks to populate input
-        suggestionsDiv.querySelectorAll('[data-suggestion]').forEach((el) => {
-          el.addEventListener('click', () => {
-            const input = row.querySelector('[data-mapping-input]')
-            if (input) input.value = el.getAttribute('data-suggestion')
-            suggestionsDiv.classList.add('hidden')
-            validateSelections()
-          })
-        })
+        customInput.classList.remove('hidden')
+        customInput.focus()
+        button.title = 'Back to suggestions'
+        button.textContent = '↩'
       } else {
-        // Hide suggestions
-        suggestionsDiv.classList.add('hidden')
+        customInput.classList.add('hidden')
+        customInput.value = ''
+        if (selectEl) selectEl.classList.remove('border-red-500')
+        button.title = 'Enter a custom name'
+        button.textContent = '✏'
+        validateSelections()
+      }
+    })
+  })
+
+  // Enter key in custom input commits the value (hides input, keeps value)
+  modal.querySelectorAll('[data-mapping-input]').forEach((input) => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        validateSelections()
+        input.blur()
       }
     })
   })
