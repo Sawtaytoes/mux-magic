@@ -91,7 +91,7 @@ test.describe("Sequence Builder", () => {
     // Stub the directory listing so the test doesn't depend on the host's filesystem.
     await page.route("**/queries/listDirectoryEntries", async (route) => {
       const request = route.request()
-      const body = JSON.parse(request.postData() ?? "{}")
+      const body = JSON.parse(request.postData() ?? "{}") as { path?: string }
       // Server reports its native separator regardless of input; use forward
       // slash so the test is host-agnostic.
       const entries = body.path === "/"
@@ -148,7 +148,9 @@ test.describe("Sequence Builder", () => {
     // Fill the new card's value input — last input is the value (label is first).
     const newPathValueInput = pathVarCards.nth(1).locator('input').last()
     await newPathValueInput.fill("/data/anime")
-    await newPathValueInput.blur()
+    // Escape closes the path-picker popover (which fill triggers) before we
+    // open the controls menu; the value itself is already committed by fill.
+    await newPathValueInput.press("Escape")
 
     // YAML modal should reflect the new path's value.
     await openControlsMenu(page)
@@ -272,7 +274,7 @@ test.describe("Sequence Builder", () => {
     // Stub the POST so the test doesn't need a real subscriber filesystem.
     await page.route("**/sequences/run", async (route) => {
       const request = route.request()
-      const body = JSON.parse(request.postData() ?? "{}")
+      const body = JSON.parse(request.postData() ?? "{}") as { yaml?: string }
       // Confirm the YAML actually shipped: we're testing that the button
       // wires the current builder state into the request body.
       expect(typeof body.yaml).toBe("string")
