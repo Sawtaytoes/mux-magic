@@ -1,6 +1,6 @@
 # React Migration Checklist
 
-Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave A-4 leaf components)
+Last updated: 2026-05-09 by Claude Haiku 4.5 (Wave A complete)
 
 ## Phase Status
 
@@ -8,10 +8,10 @@ Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave A-4 leaf components)
 |----|-------------|--------|--------|-------|
 | PR #1 | Bootstrap (monorepo, Vite, Biome) | [x] Done | react-migration | typecheck + biome + eslint all green; manual verify confirmed both servers running cleanly |
 | PR #2 | LoadModal — first component | [x] Done | react-migration | atoms + bridge + loadYaml.ts + LoadModal.tsx + tests; js-yaml + testing-library added; legacy load-modal.js deleted; Storybook files created (install deferred) |
-| Wave A-1 | YamlModal | [ ] Not started | | |
-| Wave A-2 | CommandHelpModal | [ ] Not started | | |
-| Wave A-3 | FieldTooltip | [ ] Not started | | |
-| Wave A-4 | CollapseChevron, CopyIcon, InsertDivider, StatusBadge | [x] Done | worktree-wave-a4-leaf-components | InsertDivider created; tests + stories + MDX for all 4; biome + typecheck green; legacy JS kept (still used by unmigrated step-card/group-card) |
+| Wave A-1 | YamlModal | [x] Done | react-migration | reads stepsAtom+pathsAtom via yamlSerializer.toYamlStr; copy+backdrop close; tests+stories+MDX |
+| Wave A-2 | CommandHelpModal | [x] Done | react-migration | commandHelpModalCommandAtom drives which command shows; field entries with required badge + type badge; tests+stories+MDX |
+| Wave A-3 | FieldTooltip | [x] Done | react-migration | wraps label children; portal-rendered tooltip; 200ms hover delay via ref; viewport-clamped position; tests+stories+MDX |
+| Wave A-4 | CollapseChevron, CopyIcon, InsertDivider, StatusBadge | [x] Done | react-migration | separate-prop API for InsertDivider (onInsertSequentialGroup/onInsertParallelGroup); tests+stories+MDX for all 4; conflict with parallel worker resolved |
 | Wave B-0 | RenderFields (unblocks B) | [ ] Not started | | |
 | Wave B | All field types (parallel) | [ ] Not started | | |
 | Wave C-0 | Popover primitive (unblocks C) | [ ] Not started | | |
