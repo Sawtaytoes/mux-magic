@@ -1,21 +1,32 @@
 import { COMMANDS } from './commands.js'
-import { renderRulesField } from './components/dsl-rules-builder.js'
-import { steps, paths, flattenSteps, isGroup, getLinkedValue } from './sequence-state.js'
+import { steps, isGroup } from './sequence-state.js'
 import { esc } from './util/html-escape.js'
+import { commandLabel } from './util/command-label.js'
 import { renderCollapseChevron } from './components/collapse-chevron.js'
 import { renderCopyIcon } from './components/copy-icon.js'
 import { renderDoubleChevron } from './components/double-chevron.js'
 import { renderStatusBadge } from './components/status-badge.js'
-
-// commandLabel is provided by the global /command-labels.js script.
-const commandLabel = (name) => (typeof window.commandLabel === 'function' ? window.commandLabel(name) : name)
+import { renderFields } from './fields/render-fields.js'
 
 export { esc, renderCollapseChevron, renderCopyIcon, renderDoubleChevron, renderStatusBadge }
 export { renderInsertDivider } from './components/insert-divider.js'
 export { renderSequenceEndCard } from './components/sequence-end-card.js'
+export { LOOKUP_LINKS } from './util/lookup-links.js'
+
+/**
+ * @typedef {{ id: string, command: string | null, params: Record<string, unknown>, links: Record<string, unknown>, status?: string, alias?: string, isCollapsed?: boolean, jobId?: string, error?: string }} Step
+ * @typedef {{ id: string, isParallel?: boolean, isCollapsed?: boolean, label: string, steps: Step[] }} Group
+ * @typedef {{ parentGroupId?: string }} StepContext
+ */
 
 // ─── Group renderer ───────────────────────────────────────────────────────────
 
+/**
+ * @param {Group} group
+ * @param {number} itemIndex
+ * @param {number} startingFlatIndex
+ * @returns {string}
+ */
 export function renderGroup(group, itemIndex, startingFlatIndex) {
   const isParallel = group.isParallel === true
   const stepCount = group.steps.length
@@ -42,7 +53,7 @@ export function renderGroup(group, itemIndex, startingFlatIndex) {
       class="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 select-none">⠿</button>
     <button onclick="toggleGroupCollapsed('${group.id}')" title="${group.isCollapsed ? 'Expand group' : 'Collapse group'}"
       class="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700">
-      ${renderCollapseChevron({ isCollapsed: group.isCollapsed })}
+      ${renderCollapseChevron({ isCollapsed: group.isCollapsed ?? false })}
     </button>
     <input type="text" value="${esc(group.label)}"
       placeholder="${isParallel ? 'Parallel group' : 'Group'} (${stepCount} step${stepCount === 1 ? '' : 's'})"
@@ -83,12 +94,14 @@ export function isDrawerMode() {
 }
 
 // ─── Compact step card (drawer experiment mode) ───────────────────────────────
-//
-// Renders a minimal row: drag handle, index, alias, operation name, actions.
-// Clicking the row (not a button) opens the step drawer via openStepDrawer().
 
+/**
+ * @param {Step} step
+ * @param {number} index
+ * @param {StepContext} [context]
+ * @returns {string}
+ */
 export function renderStepCompact(step, index, context = {}) {
-  const cmd = step.command ? COMMANDS[step.command] : null
   const statusBadge = step.status ? renderStatusBadge({ status: step.status }) : ''
   const siblings = context.parentGroupId
     ? (steps.find((item) => isGroup(item) && item.id === context.parentGroupId)?.steps ?? [])
@@ -143,8 +156,14 @@ export function renderStepCompact(step, index, context = {}) {
 
 // ─── Step renderer ────────────────────────────────────────────────────────────
 
+/**
+ * @param {Step} step
+ * @param {number} index
+ * @param {StepContext} [context]
+ * @returns {string}
+ */
 export function renderStep(step, index, context = {}) {
-  const cmd = step.command ? COMMANDS[step.command] : null
+  const cmd = /** @type {any} */ (step.command ? COMMANDS[/** @type {keyof typeof COMMANDS} */ (step.command)] : null)
   const statusBadge = step.status ? renderStatusBadge({ status: step.status }) : ''
   const siblings = context.parentGroupId
     ? (steps.find((item) => isGroup(item) && item.id === context.parentGroupId)?.steps ?? [])
@@ -162,7 +181,7 @@ export function renderStep(step, index, context = {}) {
        ${cmd.note ? `<p class="text-xs text-amber-300 bg-amber-950/40 border border-amber-800/50 rounded px-2 py-1 mb-2">${esc(cmd.note)}</p>` : ''}
        ${cmd.outputFolderName ? `<p class="text-xs text-amber-500/80 mb-2">→ outputs to <code class="text-amber-400 bg-slate-900 px-1 rounded">${esc(cmd.outputFolderName)}/</code> subfolder</p>` : ''}
        ${step.error ? `<p class="text-xs text-red-400 bg-red-950/40 rounded px-2 py-1 mb-2 font-mono">${esc(step.error)}</p>` : ''}
-       <div class="space-y-2">${renderFields(step, index)}</div>`
+       <div class="space-y-2">${renderFields({ step, stepIndex: index })}</div>`
     : `<p class="text-xs text-slate-500 italic">No command selected — choose one from the dropdown above.</p>`
 
   return `
@@ -172,7 +191,7 @@ export function renderStep(step, index, context = {}) {
       class="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 shrink-0 select-none">⠿</button>
     <button onclick="toggleStepCollapsed('${step.id}')" title="${step.isCollapsed ? 'Expand step' : 'Collapse step'}"
       class="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 shrink-0">
-      ${renderCollapseChevron({ isCollapsed: step.isCollapsed })}
+      ${renderCollapseChevron({ isCollapsed: step.isCollapsed ?? false })}
     </button>
     <span class="text-xs font-mono text-slate-500 shrink-0 w-5 text-center">${index + 1}</span>
     <input type="text" value="${esc(step.alias)}"
@@ -214,384 +233,4 @@ export function renderStep(step, index, context = {}) {
     ${body}
   </div>`}
 </div>`
-}
-
-// ─── Field renderers ──────────────────────────────────────────────────────────
-
-function isFieldVisible(visibleWhen, params) {
-  if (!visibleWhen) return true
-  // visibleWhen format: { fieldName: "fieldToCheck", value: trueValue }
-  const fieldValue = params?.[visibleWhen.fieldName]
-  return fieldValue === visibleWhen.value
-}
-
-export function renderFields(step, stepIndex) {
-  const cmd = COMMANDS[step.command]
-  const fieldsHtml = []
-  const groupedFieldNames = new Set()
-  const groupsByFirstField = new Map()
-
-  // Build set of fields that are part of a group, and map first field to group
-  if (cmd.groups && Array.isArray(cmd.groups)) {
-    cmd.groups.forEach(group => {
-      if (Array.isArray(group.fields) && group.fields.length > 0) {
-        group.fields.forEach(name => groupedFieldNames.add(name))
-        // Map the first field in the group to the group definition
-        groupsByFirstField.set(group.fields[0], group)
-      }
-    })
-  }
-
-  // Render fields in order, rendering groups when we hit their first field
-  const renderedGroups = new Set()
-
-  cmd.fields.forEach(field => {
-    // Check if field should be visible based on condition
-    if (field.visibleWhen && !isFieldVisible(field.visibleWhen, step.params)) {
-      return
-    }
-
-    // If this field is the first in a group, render the whole group
-    const group = groupsByFirstField.get(field.name)
-    if (group && !renderedGroups.has(group)) {
-      renderedGroups.add(group)
-      const groupFieldsHtml = group.fields
-        .map(fieldName => {
-          const f = cmd.fields.find(fld => fld.name === fieldName)
-          if (!f) return ''
-          // Check visibility for grouped fields too
-          if (f.visibleWhen && !isFieldVisible(f.visibleWhen, step.params)) {
-            return ''
-          }
-          return renderFieldHtml(step, f, stepIndex)
-        })
-        .filter(Boolean)
-        .join('')
-
-      if (groupFieldsHtml) {
-        fieldsHtml.push(
-          `<div class="${group.layout}">${groupFieldsHtml}</div>`
-        )
-      }
-    } else if (!groupedFieldNames.has(field.name)) {
-      // Render ungrouped fields normally
-      const fieldHtml = renderFieldHtml(step, field, stepIndex)
-      if (fieldHtml) {
-        fieldsHtml.push(fieldHtml)
-      }
-    }
-  })
-
-  return fieldsHtml.join('')
-}
-
-function renderFieldHtml(step, field, stepIndex) {
-  const val = step.params[field.name]
-  const tooltipKey = `${step.command}:${field.name}`
-  const label = `<label class="block text-xs text-slate-400 mb-1 cursor-help" data-tooltip-key="${esc(tooltipKey)}">${esc(field.label)}${field.required ? ' <span class="text-red-400">*</span>' : ''}</label>`
-
-  // `hidden` fields ride along in the params payload but do not render
-  // a control. Used by composite editors (e.g. subtitleRules) that own
-  // multiple fields under a single UI surface.
-  if (field.type === 'hidden') {
-    return ''
-  }
-
-  // `subtitleRules` is the structured DSL form-builder for
-  // modifySubtitleMetadata's rules / predicates / hasDefaultRules.
-  // Source: public/builder/js/components/dsl-rules-builder.js.
-  if (field.type === 'subtitleRules') {
-    const link = step.links?.[field.name]
-    const isLinked = link && typeof link === 'object' && link.linkedTo
-    const pickerHtml = field.linkable ? renderStepOutputPicker(step, field, stepIndex, link) : ''
-    if (isLinked) {
-      return `<div>${label}${pickerHtml}<div class="text-xs text-slate-400 bg-slate-900 rounded px-2 py-1.5 border border-slate-700 italic font-mono">Linked → ${esc(link.linkedTo)}.${esc(link.output ?? 'folder')}</div></div>`
-    }
-    return `<div>${label}${pickerHtml}${renderRulesField({ step })}</div>`
-  }
-
-  if (field.type === 'boolean') {
-    const checked = val ?? field.default ?? false
-    return `<label class="flex items-center gap-2 cursor-pointer select-none py-0.5" data-tooltip-key="${esc(tooltipKey)}">
-      <input type="checkbox" ${checked ? 'checked' : ''} onchange="setParam('${step.id}','${field.name}',this.checked)"
-        class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer" />
-      <span class="text-xs text-slate-300">${esc(field.label)}</span>
-    </label>`
-  }
-
-  if (field.type === 'path') return renderPathField(step, field, stepIndex)
-
-  if (field.type === 'number') {
-    const num = val ?? field.default ?? ''
-    const companion = field.companionNameField ? step.params[field.companionNameField] : null
-    const reverseLookup = field.companionNameField ? `oninput="scheduleReverseLookup('${step.id}','${field.name}',this.value)"` : ''
-    return `<div>${label}<input type="number" value="${esc(num)}"
-      ${reverseLookup}
-      onchange="setParam('${step.id}','${field.name}',this.value===''?undefined:Number(this.value))"
-      class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" />
-      ${field.companionNameField ? `<p data-step="${step.id}" data-companion="${field.name}" class="text-xs text-slate-500 mt-0.5 truncate ${companion ? '' : 'hidden'}" title="${esc(companion ?? '')}">${esc(companion ?? '')}</p>` : ''}
-    </div>`
-  }
-
-  if (field.type === 'enum') {
-    const selected = val ?? field.default ?? ''
-    const selectedOption = (field.options ?? []).find((option) => option.value === selected)
-    const triggerLabel = selectedOption?.label ?? selected
-    return `<div>${label}<button type="button"
-      onclick="enumPicker.open({stepId: '${step.id}', fieldName: '${esc(field.name)}'}, this)"
-      data-enum-picker-trigger
-      class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer">
-      <span class="flex-1 min-w-0 truncate">${esc(triggerLabel)}</span>
-      <span class="text-slate-400 shrink-0">▾</span>
-    </button></div>`
-  }
-
-  if (field.type === 'numberWithLookup') {
-      const num = val ?? field.default ?? ''
-      const companion = field.companionNameField ? step.params[field.companionNameField] : null
-      const lookupConfig = LOOKUP_LINKS[field.lookupType]
-      const idValue = step.params[field.name]
-      const isNameSpecialFeaturesCard = (
-        step.command === 'nameSpecialFeatures'
-        && field.lookupType === 'dvdcompare'
-      )
-      let companionText = companion ?? ''
-      let companionHref = lookupConfig?.homeUrl ?? '#'
-      // For the nameSpecialFeatures card: the inline companion link
-      // (movie name) targets DVDCompare's release page so clicking the
-      // title opens the actual disc release. The right-side link
-      // becomes "Open on TheMovieDB" — TMDB lookup is auxiliary, not
-      // primary, since this command is DVDCompare-driven.
-      let tmdbHref = ''
-      let tmdbLabel = 'Open on TheMovieDB'
-      if (isNameSpecialFeaturesCard) {
-        // Movie name on the left → DVDCompare release URL when an ID
-        // is set; falls back to the DVDCompare home page otherwise.
-        if (idValue) {
-          companionHref = lookupConfig.buildUrl(idValue, step.params)
-        }
-        // TMDB target on the right.
-        if (step.params.tmdbId) {
-          tmdbHref = `https://www.themoviedb.org/movie/${encodeURIComponent(step.params.tmdbId)}`
-        } else if (step.params.tmdbResolutionPending) {
-          tmdbHref = 'https://www.themoviedb.org/'
-        } else if (companion) {
-          const parsedDvdCompare = parseDvdCompareDisplayName(companion)
-          const fallbackTitle = parsedDvdCompare?.baseTitle || step.params.searchTerm || null
-          if (fallbackTitle) {
-            const searchQuery = parsedDvdCompare?.year
-              ? `${fallbackTitle} y:${parsedDvdCompare.year}`
-              : fallbackTitle
-            tmdbHref = `https://www.themoviedb.org/search/movie?query=${encodeURIComponent(searchQuery)}`
-          } else {
-            tmdbHref = 'https://www.themoviedb.org/'
-          }
-        } else {
-          tmdbHref = 'https://www.themoviedb.org/'
-        }
-      } else if (lookupConfig && idValue) {
-        companionHref = lookupConfig.buildUrl(idValue, step.params)
-      }
-      const companionLink = lookupConfig
-        ? `<div class="flex-1 min-w-0 truncate"><a data-step="${step.id}" data-companion="${field.name}" href="${esc(companionHref)}" target="_blank" rel="noopener" class="text-xs text-blue-400 hover:text-blue-300 hover:underline ${companionText ? '' : 'hidden'}" title="${esc(companionText)}">${esc(companionText)}</a></div>`
-        : `<p data-step="${step.id}" data-companion="${field.name}" class="flex-1 min-w-0 text-xs text-slate-500 truncate ${companionText ? '' : 'hidden'}" title="${esc(companionText)}">${esc(companionText)}</p>`
-      let rightSideLink = ''
-      if (isNameSpecialFeaturesCard) {
-        rightSideLink = `<a data-step="${step.id}" data-right-link="${field.name}" href="${esc(tmdbHref)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(tmdbLabel)}</a>`
-      } else if (field.lookupType === 'dvdcompare' && lookupConfig) {
-        const releaseHref = idValue
-          ? lookupConfig.buildUrl(idValue, step.params)
-          : lookupConfig.homeUrl
-        rightSideLink = `<a data-step="${step.id}" data-right-link="${field.name}" href="${esc(releaseHref)}" target="_blank" rel="noopener" class="shrink-0 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">↗ ${esc(lookupConfig.label)}</a>`
-      }
-      return `<div>${label}<div class="flex items-center gap-2">
-        <input type="number" data-step="${step.id}" data-field="${field.name}" value="${esc(num)}" placeholder="${esc(field.placeholder ?? '')}"
-          oninput="setParam('${step.id}','${field.name}',this.value===''?undefined:Number(this.value)); scheduleReverseLookup('${step.id}','${field.name}',this.value); updateLookupLinks('${step.id}','${field.name}',this.value)"
-          class="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" />
-        <button onclick="openLookup('${field.lookupType}','${step.id}','${field.name}')"
-          title="Look up ${esc(field.label)}"
-          class="shrink-0 text-xs bg-slate-700 hover:bg-blue-700 text-slate-200 hover:text-white px-2.5 py-1.5 rounded border border-slate-600 hover:border-blue-500">🔍</button>
-      </div>
-      <div class="flex items-start gap-2 mt-0.5">
-        ${companionLink}
-        ${rightSideLink}
-      </div>
-      </div>`
-    }
-
-    if (field.type === 'languageCode') {
-      const str = val ?? ''
-      return `<div>${label}<input type="text" value="${esc(str)}" placeholder="eng"
-        oninput="setParam('${step.id}','${field.name}',this.value||undefined)"
-        maxlength="3"
-        class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" /></div>`
-    }
-
-    if (field.type === 'languageCodes') {
-      const str = Array.isArray(val) ? val.join(', ') : (val ?? '')
-      return `<div>${label}<input type="text" value="${esc(str)}" placeholder="${esc(field.placeholder ?? 'eng, jpn')}"
-        oninput="setParam('${step.id}','${field.name}',this.value.split(',').map(s=>s.trim()).filter(Boolean))"
-        class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" /></div>`
-    }
-
-    if (field.type === 'stringArray') {
-      const str = Array.isArray(val) ? val.join(', ') : (val ?? '')
-      return `<div>${label}<input type="text" value="${esc(str)}" placeholder="${esc(field.placeholder ?? '')}"
-        oninput="setParam('${step.id}','${field.name}',this.value.split(',').map(s=>s.trim()).filter(Boolean))"
-        class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" /></div>`
-    }
-
-    if (field.type === 'numberArray') {
-      const str = Array.isArray(val) ? val.join(', ') : (val ?? '')
-      return `<div>${label}<input type="text" value="${esc(str)}" placeholder="${esc(field.placeholder ?? '0, 100')}"
-        oninput="setParam('${step.id}','${field.name}',this.value.split(',').map(s=>s.trim()).filter(Boolean).map(Number).filter(n=>!isNaN(n)))"
-        class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" /></div>`
-    }
-
-    if (field.type === 'json') {
-      const str = val !== undefined ? (typeof val === 'string' ? val : JSON.stringify(val, null, 2)) : ''
-      const link = step.links?.[field.name]
-      const isLinked = link && typeof link === 'object' && link.linkedTo
-      const pickerHtml = field.linkable ? renderStepOutputPicker(step, field, stepIndex, link) : ''
-      if (isLinked) {
-        return `<div>${label}${pickerHtml}<div class="text-xs text-slate-400 bg-slate-900 rounded px-2 py-1.5 border border-slate-700 italic font-mono">Linked → ${esc(link.linkedTo)}.${esc(link.output ?? 'folder')}</div></div>`
-      }
-      return `<div>${label}${pickerHtml}<textarea rows="3" placeholder="${esc(field.placeholder ?? '[]')}"
-        oninput="setParamJson('${step.id}','${field.name}',this.value)"
-        class="w-full bg-slate-900 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono resize-y">${esc(str)}</textarea></div>`
-    }
-
-    // string
-    const str = val ?? ''
-    return `<div>${label}<input type="text" value="${esc(str)}" placeholder="${esc(field.placeholder ?? '')}"
-      oninput="setParam('${step.id}','${field.name}',this.value||undefined)"
-      class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" /></div>`
-}
-
-// ─── Step-output link picker ──────────────────────────────────────────────────
-
-function renderStepOutputPicker(step, field, stepIndex, link) {
-  const isLinked = link && typeof link === 'object' && link.linkedTo
-  const options = (
-    flattenSteps()
-    .slice(0, stepIndex)
-    .map((entry) => entry.step)
-    .filter((s) => s.command && Array.isArray(COMMANDS[s.command]?.outputs) && COMMANDS[s.command].outputs.length > 0)
-    .flatMap((s) => (
-      COMMANDS[s.command].outputs.map((out) => {
-        const value = `step:${s.id}:${out.name}`
-        const isSelected = isLinked && link.linkedTo === s.id && link.output === out.name
-        const lbl = `Step (${esc(commandLabel(s.command))}) → ${esc(out.label ?? out.name)}`
-        return `<option value="${value}"${isSelected ? ' selected' : ''}>${lbl}</option>`
-      })
-    ))
-    .join('')
-  )
-  return `<div class="flex items-center gap-2 mb-1">
-    <span class="text-xs text-slate-500 shrink-0">Link to:</span>
-    <select onchange="setLink('${step.id}','${field.name}',this.value)"
-      class="text-xs bg-slate-700 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 max-w-[280px] truncate">
-      <option value=""${!isLinked ? ' selected' : ''}>— custom —</option>
-      ${options}
-    </select>
-  </div>`
-}
-
-// ─── Path field renderer ──────────────────────────────────────────────────────
-
-function describeLinkTarget(step, fieldName) {
-  const link = step.links?.[fieldName]
-  if (!link) return { label: '— custom —' }
-  if (typeof link === 'string') {
-    const pathVar = paths.find((candidate) => candidate.id === link)
-    if (!pathVar) return { label: '(missing path)' }
-    return { label: pathVar.label || pathVar.value || 'path variable', pathVarId: pathVar.id }
-  }
-  if (typeof link === 'object' && link.linkedTo) {
-    // Import flattenSteps inline to avoid circular dep issues at render time
-    const flatOrder = flattenSteps()
-    const sourceLocation = flatOrder.find((e) => e.step.id === link.linkedTo) ?? null
-    if (!sourceLocation) return { label: '(missing step)' }
-    return {
-      label: `Step ${sourceLocation.flatIndex + 1}: ${commandLabel(sourceLocation.step.command) || '?'}`,
-      sourceStepId: sourceLocation.step.id,
-    }
-  }
-  return { label: '— custom —' }
-}
-
-function renderPathField(step, field, stepIndex) {
-  const val = step.params[field.name] ?? ''
-  const link = step.links[field.name]
-  const computed = link ? (getLinkedValue(step, field.name) ?? '') : null
-  const target = describeLinkTarget(step, field.name)
-  const triggerData = [
-    `data-step="${step.id}"`,
-    `data-field="${field.name}"`,
-    target.pathVarId ? `data-pv-id="${target.pathVarId}"` : '',
-    target.sourceStepId ? `data-linked-step="${target.sourceStepId}"` : '',
-  ].filter(Boolean).join(' ')
-  const browsePathArg = JSON.stringify(computed ?? val).replace(/"/g, '&quot;')
-  const tooltipKey = `${step.command}:${field.name}`
-  return `<div>
-    <div class="flex items-center gap-2 mb-1">
-      <label class="text-xs text-slate-400 cursor-help" data-tooltip-key="${esc(tooltipKey)}">${esc(field.label)}${field.required ? ' <span class="text-red-400">*</span>' : ''}</label>
-      <button type="button" onclick="browsePathField('${step.id}','${field.name}',${browsePathArg})"
-        title="Browse to pick a folder for this field"
-        class="ml-auto text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 cursor-pointer">📁</button>
-      <button type="button" onclick="linkPicker.open({stepId: '${step.id}', fieldName: '${field.name}'}, this)" data-link-picker-trigger ${triggerData}
-        class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer">
-        <span class="truncate" data-link-trigger-label>${esc(target.label)}</span>
-        <span class="text-slate-400 shrink-0">▾</span>
-      </button>
-    </div>
-    <input type="text" value="${esc(computed ?? val)}" ${(link && typeof link === 'object' && link.linkedTo) ? 'readonly' : ''}
-      data-step="${step.id}" data-field="${field.name}"
-      class="${computed !== null ? 'linked-input' : 'manual-input'} w-full bg-slate-${computed !== null ? '900' : '700'} text-slate-${computed !== null ? '400' : '200'} text-xs rounded px-2 py-1.5 border border-slate-${computed !== null ? '700' : '600'} focus:outline-none focus:border-blue-500 font-mono"
-      oninput="onPathFieldInput(this,'${step.id}','${field.name}',this.value)" onkeydown="pathPickerKeydown(event)" onfocus="onPathFieldFocus(this,'${step.id}','${field.name}',this.value)" onblur="onPathFieldBlur(this,'${step.id}','${field.name}',this.value)" onchange="promotePathToPathVar('${step.id}','${field.name}',this.value)" />
-    ${computed !== null && (link && typeof link === 'object' && link.linkedTo) ? `<input type="text" value="${esc(val)}" data-step="${step.id}" data-field="${field.name}" class="manual-input hidden w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" oninput="onPathFieldInput(this,'${step.id}','${field.name}',this.value)" onkeydown="pathPickerKeydown(event)" onfocus="onPathFieldFocus(this,'${step.id}','${field.name}',this.value)" onblur="onPathFieldBlur(this,'${step.id}','${field.name}',this.value)" onchange="promotePathToPathVar('${step.id}','${field.name}',this.value)" />` : ''}
-  </div>`
-}
-
-// ─── LOOKUP_LINKS (needed by renderFields for numberWithLookup) ───────────────
-// This data also lives in lookup-modal.js; the renderer needs it to build
-// the href on the companion anchor. Centralise it here and re-export.
-
-export const LOOKUP_LINKS = {
-  mal: {
-    label: 'open on MyAnimeList',
-    homeUrl: 'https://myanimelist.net/',
-    buildUrl: (id) => `https://myanimelist.net/anime/${id}`,
-  },
-  anidb: {
-    label: 'open on AniDB',
-    homeUrl: 'https://anidb.net/',
-    buildUrl: (id) => `https://anidb.net/anime/${id}`,
-  },
-  tvdb: {
-    label: 'open on TVDB',
-    homeUrl: 'https://thetvdb.com/',
-    buildUrl: (id) => `https://thetvdb.com/?tab=series&id=${id}`,
-  },
-  dvdcompare: {
-    label: 'open release on DVDCompare',
-    homeUrl: 'https://www.dvdcompare.net/',
-    buildUrl: (id, params) => (
-      `https://www.dvdcompare.net/comparisons/film.php?fid=${id}#${params?.dvdCompareReleaseHash ?? 1}`
-    ),
-  },
-}
-
-// Needed by renderFields for numberWithLookup (nameSpecialFeatures branch)
-function parseDvdCompareDisplayName(displayName) {
-  if (!displayName) return null
-  const yearMatch = displayName.match(/\s*\((\d{4})\)\s*$/)
-  const withoutYear = yearMatch
-    ? displayName.slice(0, yearMatch.index).trim()
-    : displayName.trim()
-  const variantMatch = withoutYear.match(/\s*\((?:UHD Blu-ray|Blu-ray 4K|Blu-ray|DVD)\)\s*$/i)
-  const baseTitle = variantMatch
-    ? withoutYear.slice(0, variantMatch.index).trim()
-    : withoutYear
-  return { baseTitle, year: yearMatch?.[1] || '' }
 }

@@ -58,6 +58,11 @@
     "ask": [
       "Bash(yarn dlx *)",
       "PowerShell(yarn dlx *)"
+    ],
+    "additionalDirectories": [
+      "d:\\Projects\\Personal\\media-tools\\public\\builder\\js\\util",
+      "d:\\Projects\\Personal\\media-tools\\public\\builder\\js\\fields",
+      "d:\\Projects\\Personal\\media-tools\\public\\builder\\js"
     ]
   }
 }
