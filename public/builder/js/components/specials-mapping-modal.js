@@ -160,7 +160,7 @@ const renderRow = ({ index, suggestion }) => {
     + `<button type="button" data-mapping-custom title="Enter a custom name" class="shrink-0 text-slate-400 hover:text-slate-200 text-xs px-1.5 py-1 rounded hover:bg-slate-700">✏</button>`
     + `</div>`
     + `<input type="text" data-mapping-input class="hidden w-full text-xs font-mono bg-slate-950 text-slate-100 border border-blue-500 rounded px-1.5 py-1 mt-1 focus:outline-none" placeholder="Type custom name, press Enter to apply" />`
-    + `<div class="flex gap-1 items-center mt-1">`
+    + `<div data-mapping-suffix-row class="flex gap-1 items-center mt-1">`
     + `<label class="text-[10px] text-slate-500 shrink-0">Type:</label>`
     + `<select data-mapping-suffix class="flex-1 text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-500">`
     + renderSuffixOptions(initialSuffix)
@@ -416,25 +416,22 @@ const handleConfirmClick = async () => {
   if (cancelButton) {
     cancelButton.disabled = false
   }
-  if (successfulRenames.length === renamePlan.length) {
-    setStatusMessage({
-      kind: 'success',
-      message: `Renamed ${successfulRenames.length} / ${renamePlan.length}.`,
-    })
-  }
-  else {
-    setStatusMessage({
-      kind: 'error',
-      message: `Renamed ${successfulRenames.length} / ${renamePlan.length} (see per-row errors).`,
-    })
-  }
 
   if (typeof onRenameApplied === 'function' && successfulRenames.length > 0) {
     onRenameApplied(successfulRenames)
   }
 
+  if (successfulRenames.length === renamePlan.length) {
+    closeSpecialsMappingModal()
+    return
+  }
+
+  setStatusMessage({
+    kind: 'error',
+    message: `Renamed ${successfulRenames.length} / ${renamePlan.length} (see per-row errors).`,
+  })
   if (confirmButton) {
-    confirmButton.disabled = successfulRenames.length === renamePlan.length
+    confirmButton.disabled = false
   }
 }
 
@@ -605,7 +602,20 @@ export const openSpecialsMappingModal = async ({
   modal.querySelectorAll('[data-mapping-suffix]').forEach((el) => el.addEventListener('change', validateSelections))
   modal.querySelectorAll('[data-mapping-input]').forEach((el) => el.addEventListener('input', validateSelections))
 
-  // Wire ✏ button to show/hide the custom text input
+  // Show or hide the type suffix row based on whether a name is selected
+  const updateSuffixVisibility = (row) => {
+    const selectEl = row.querySelector('[data-mapping-select]')
+    const customInput = row.querySelector('[data-mapping-input]')
+    const suffixRow = row.querySelector('[data-mapping-suffix-row]')
+    if (!suffixRow) return
+    const customActive = customInput && !customInput.classList.contains('hidden')
+    const hasName = customActive
+      ? String(customInput.value ?? '').trim().length > 0
+      : String(selectEl?.value ?? '').trim().length > 0
+    suffixRow.classList.toggle('hidden', !hasName)
+  }
+
+  // Wire ✏ button to show custom input and hide the select (and vice-versa)
   modal.querySelectorAll('[data-mapping-custom]').forEach((button) => {
     button.addEventListener('click', () => {
       const row = button.closest('[data-mapping-row]')
@@ -616,19 +626,43 @@ export const openSpecialsMappingModal = async ({
       const isHidden = customInput.classList.contains('hidden')
       if (isHidden) {
         customInput.classList.remove('hidden')
+        if (selectEl) selectEl.classList.add('hidden')
         customInput.focus()
         button.title = 'Back to suggestions'
         button.textContent = '↩'
       } else {
         customInput.classList.add('hidden')
         customInput.value = ''
-        if (selectEl) selectEl.classList.remove('border-red-500')
+        if (selectEl) {
+          selectEl.classList.remove('hidden')
+          selectEl.classList.remove('border-red-500')
+        }
         button.title = 'Enter a custom name'
         button.textContent = '✏'
         validateSelections()
       }
+      updateSuffixVisibility(row)
     })
   })
+
+  // Show/hide type row when select changes
+  modal.querySelectorAll('[data-mapping-select]').forEach((selectEl) => {
+    selectEl.addEventListener('change', () => {
+      const row = selectEl.closest('[data-mapping-row]')
+      if (row) updateSuffixVisibility(row)
+    })
+  })
+
+  // Show/hide type row as user types custom name
+  modal.querySelectorAll('[data-mapping-input]').forEach((input) => {
+    input.addEventListener('input', () => {
+      const row = input.closest('[data-mapping-row]')
+      if (row) updateSuffixVisibility(row)
+    })
+  })
+
+  // Initial suffix visibility pass
+  modal.querySelectorAll('[data-mapping-row]').forEach(updateSuffixVisibility)
 
   // Enter key in custom input commits the value (hides input, keeps value)
   modal.querySelectorAll('[data-mapping-input]').forEach((input) => {
