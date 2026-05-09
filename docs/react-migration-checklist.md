@@ -1,6 +1,6 @@
 # React Migration Checklist
 
-Last updated: 2026-05-09 by Claude Sonnet 4.6 (PR #2)
+Last updated: 2026-05-09 by Claude Sonnet 4.6 (Storybook follow-up)
 
 ## Phase Status
 
@@ -42,7 +42,7 @@ Last updated: 2026-05-09 by Claude Sonnet 4.6 (PR #2)
 
 ## Deferred from PR #2
 
-- **Storybook v10 install**: `LoadModal.stories.tsx` and `LoadModal.mdx` are created; install `@storybook/react-vite` + addons (`a11y`, `vitest`, `themes`) + `msw-storybook-addon` before Wave A begins.
+- ~~**Storybook v10 install**~~: Done (79929fc). `@storybook/react-vite`, `addon-docs`, `addon-a11y`, `addon-themes`, `addon-vitest`, `msw-storybook-addon` installed; `yarn workspace @media-tools/web storybook` runs at :6006 with LoadModal story visible.
 - **Hono dev proxy** (carried from PR #1): The Vite bundle is injected into `public/builder/index.html` via a hardcoded `http://localhost:5173/src/app.tsx` dev script tag. This works in dev but needs the Hono proxy for a clean production path. Remove the script tag from the legacy HTML when the proxy lands.
 - **ESLint plugin install** (carried from PR #1): `eslint-plugin-react-compiler`, `eslint-plugin-testing-library`, `eslint-plugin-import-x` are referenced in `eslint.config.js` but not installed. Install in a dedicated PR before CI is enabled.
 
