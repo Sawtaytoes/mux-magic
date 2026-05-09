@@ -3,6 +3,7 @@ import {
   concatMap,
   defaultIfEmpty,
   defer,
+  EMPTY,
   from,
   map,
   mergeAll,
@@ -278,8 +279,8 @@ const stripExtension = (filename: string): string => (
 // downstream logAndSwallow drops the file silently. Defer such renames
 // to the end of the queue and run sequentially (concurrency: 1) so the
 // freed-up slot is available by the time the deferred rename fires.
-// Cycles aren't handled — they'd need a two-phase temp-rename pass —
-// but realistic disc-rip layouts don't produce them. The within-run
+// Cycles (A→B, B→A) need a two-phase temp-rename pass to break the
+// deadlock, but realistic disc-rip layouts don't produce them. The within-run
 // duplicate-target counter ((2)/(3) prefix in the scan below) still
 // kicks in on top of this for files matching the same extra.
 export const reorderRenamesForOnDiskConflicts = <
@@ -890,32 +891,37 @@ export const nameSpecialFeatures = ({
                         // we're not in nonInteractive mode, emit a
                         // collision event instead of attempting the rename.
                         defer(async () => {
+                          const ext = extname(fileInfo.fullPath)
+                          const desiredPath = join(sourcePath, finalName.concat(ext))
+                          // Self-rename: file already lives at the target path
+                          // (common when re-running after a prior successful run).
+                          // Skip silently rather than emitting a collision event.
+                          if (fileInfo.fullPath === desiredPath) {
+                            return { resolvedName: finalName, isCollision: false, isNoop: true }
+                          }
                           if (nonInteractive) {
                             // Auto-suffix mode: find a free path via
                             // findUniqueTargetPath (handles both intra-run
                             // and pre-existing on-disk cases uniformly).
-                            const ext = extname(fileInfo.fullPath)
-                            const desiredPath = join(
-                              sourcePath,
-                              finalName.concat(ext),
-                            )
                             const uniquePath = await findUniqueTargetPath(desiredPath)
                             const uniqueName = basename(uniquePath, ext)
-                            return { resolvedName: uniqueName, isCollision: false }
+                            return { resolvedName: uniqueName, isCollision: false, isNoop: false }
                           }
                           // Interactive mode: check if the target already
                           // exists on disk (distinct from intra-run dupes
                           // which the scan counter handles).
-                          const ext = extname(fileInfo.fullPath)
-                          const targetPath = join(sourcePath, finalName.concat(ext))
-                          const targetExistsOnDisk = await access(targetPath).then(() => true, () => false)
+                          const targetExistsOnDisk = await access(desiredPath).then(() => true, () => false)
                           return {
                             resolvedName: finalName,
                             isCollision: targetExistsOnDisk && !intraRunDuplicate,
+                            isNoop: false,
                           }
                         })
                         .pipe(
-                          concatMap(({ resolvedName, isCollision }): Observable<NameSpecialFeaturesResult> => {
+                          concatMap(({ resolvedName, isCollision, isNoop }): Observable<NameSpecialFeaturesResult> => {
+                            if (isNoop) {
+                              return EMPTY
+                            }
                             if (isCollision) {
                               console.warn(
                                 `Collision: "${resolvedName}" already exists. `

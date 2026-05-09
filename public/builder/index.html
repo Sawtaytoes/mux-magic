@@ -222,12 +222,14 @@ await enableMocksIfRequested()
 <div id="prompt-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80">
   <div class="bg-slate-900 border border-slate-600 rounded-xl flex flex-col gap-4 p-6" style="width:min(90vw,560px);max-height:85vh">
     <div>
-      <p class="text-xs text-slate-400 mb-1 font-medium">Job requires input</p>
+      <div class="flex items-center gap-2 mb-1">
+        <p class="text-xs text-slate-400 font-medium">Job requires input</p>
+        <!-- Conditionally populated by showPromptModal when promptData.filePath -->
+        <!-- is set — opens the file-explorer's video sub-modal so the user can -->
+        <!-- preview before answering. Hidden when the prompt isn't file-specific. -->
+        <div id="prompt-preview" class="hidden"></div>
+      </div>
       <pre id="prompt-message" class="text-lg text-slate-100 font-mono font-medium whitespace-pre-wrap break-words"></pre>
-      <!-- Conditionally populated by showPromptModal when promptData.filePath -->
-      <!-- is set — opens the file-explorer's video sub-modal so the user can -->
-      <!-- preview before answering. Empty when the prompt isn't file-specific. -->
-      <div id="prompt-preview" class="mt-2 hidden"></div>
     </div>
     <div id="prompt-options" class="flex flex-col gap-2 overflow-y-auto"></div>
     <p class="text-xs text-slate-500">Press a number key to select, or click an option.</p>

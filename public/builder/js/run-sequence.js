@@ -198,6 +198,7 @@ export async function runStep(stepId) {
   step.status = 'pending'
   step.error = null
   step.results = null
+  step._smartMatchAutoOpened = undefined
   step.logs = null
   step.outputs = null
   updateStepUI(step)
@@ -253,8 +254,8 @@ function showPromptModal(jobId, promptData) {
   previewEl.innerHTML = ''
   if (promptData.filePath) {
     const playBtn = document.createElement('button')
-    playBtn.className = 'text-xs bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded font-medium'
-    playBtn.textContent = '▶ Play to preview'
+    playBtn.className = 'text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-medium leading-none'
+    playBtn.textContent = '▶ Play'
     playBtn.onclick = () => {
       if (typeof window.openVideoModal === 'function') window.openVideoModal(promptData.filePath)
     }
@@ -738,14 +739,15 @@ function formatStepResults(step) {
       item && typeof item === 'object' && Array.isArray(item.unrenamedFilenames)
     ))
     const renamePairs = summaryRecord ? results.filter((item) => item !== summaryRecord) : results
-    const allRenamePairs = renamePairs.every((item) => (
+    // Strip collision entries (no oldName/newName — they appear in unrenamedFilenames already).
+    const validRenamePairs = renamePairs.filter((item) => (
       item && typeof item === 'object'
       && typeof item.oldName === 'string'
       && typeof item.newName === 'string'
     ))
-    if (allRenamePairs && (renamePairs.length > 0 || summaryRecord)) {
+    if (validRenamePairs.length > 0 || summaryRecord) {
       return {
-        html: renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord),
+        html: renderNameSpecialFeaturesResultsHtml(step, validRenamePairs, summaryRecord),
         wire: (body) => wireNameSpecialFeaturesResults({ body, step, summaryRecord }),
       }
     }
@@ -799,7 +801,7 @@ function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) 
   const smartMatchBtnBlock = hasSmartMatchData
     ? `<button type="button" data-specials-smart-match
         class="text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded border border-blue-600 ml-2"
-        title="Open the smart-suggestion modal to map leftover files in bulk">✨ Smart match…</button>`
+        title="Open the modal to rename unnamed files">✨ Fix Unnamed</button>`
     : ''
   const countsBlock = `<div class="flex items-center mb-2" data-rename-counts><p class="text-slate-300" data-rename-counts-label>${esc(counts)}</p>${browseBtnBlock}${smartMatchBtnBlock}</div>`
   const renameRowsHtml = renamePairs.map((item) => `<div>${esc(item.oldName)} → ${esc(item.newName)}</div>`).join('')
@@ -816,40 +818,18 @@ function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) 
   return `${countsBlock}${renameBlock}${leftoversBlock}`
 }
 
-// Interactive renamer block for the "Files not renamed" callout.
-// Each row: read-only filename + autocomplete-backed input + Rename
-// button. Wiring (autocomplete + click handlers) is attached after the
-// HTML is set via `wireNameSpecialFeaturesResults`.
+// Simple list of unrenamed files with Play buttons. Users can rename
+// these via the "Fix Unnamed" modal instead of inline.
 function renderInteractiveRenameBlock({ filenames, linkBlock }) {
   const rowsHtml = filenames.map((filename, index) => `
-    <div class="flex flex-col gap-1 py-1.5 border-b border-yellow-700/30 last:border-b-0" data-rename-row data-rename-index="${index}" data-rename-filename="${esc(filename)}">
-      <div class="font-mono text-xs break-words text-yellow-100">${esc(filename)}</div>
-      <div class="flex gap-2 items-stretch">
-        <div class="relative flex-1">
-          <input
-            type="text"
-            data-rename-input
-            placeholder="Type a new name (no extension) or pick from suggestions…"
-            class="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500"
-          />
-          <div data-rename-dropdown class="hidden absolute left-0 right-0 top-full mt-0.5 z-30 max-h-56 overflow-y-auto bg-slate-900 border border-slate-600 rounded shadow-xl"></div>
-        </div>
-        <button
-          type="button"
-          data-rename-submit
-          class="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-1 rounded font-medium"
-          disabled
-          title="Rename this file to the typed name"
-        >
-          Rename
-        </button>
-      </div>
-      <p data-rename-status class="hidden text-[11px] font-mono"></p>
+    <div class="flex items-start gap-2 py-1 border-b border-yellow-700/30 last:border-b-0" data-rename-row data-rename-index="${index}" data-rename-filename="${esc(filename)}">
+      <div class="font-mono text-xs break-words text-yellow-100 flex-1">${esc(filename)}</div>
+      <button type="button" data-rename-play class="text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-medium leading-none shrink-0" title="Preview this file">▶ Play</button>
     </div>
   `).join('')
   return (
     '<div class="bg-yellow-900/30 border border-yellow-700 text-yellow-100 rounded px-2 py-1.5" data-rename-list-block>'
-    + '<p class="font-medium mb-1">Files not renamed (review by hand):</p>'
+    + '<p class="font-medium mb-1">Files not renamed:</p>'
     + `<div data-rename-rows>${rowsHtml}</div>`
     + linkBlock
     + '</div>'
@@ -877,56 +857,54 @@ function wireNameSpecialFeaturesResults({ body, step, summaryRecord }) {
       : { name: entry?.name ?? '', timecode: entry?.timecode }
   )).filter((entry) => entry.name.length > 0)
 
+  const openSmartMatchModal = () => {
+    const unrenamedFilenames = Array.isArray(summaryRecord?.unrenamedFilenames)
+      ? summaryRecord.unrenamedFilenames
+      : []
+    openSpecialsMappingModal({
+      onRenameApplied: (successfulRenames) => {
+        handleSmartMatchRenames({ step, successfulRenames, summaryRecord })
+      },
+      onRunStep: () => runStep(step.id),
+      possibleNames: possibleNameObjects,
+      sourcePath,
+      unrenamedFilenames,
+    })
+  }
+
   const smartMatchButton = body.querySelector('[data-specials-smart-match]')
   if (smartMatchButton) {
-    smartMatchButton.addEventListener('click', () => {
-      const unrenamedFilenames = Array.isArray(summaryRecord?.unrenamedFilenames)
-        ? summaryRecord.unrenamedFilenames
-        : []
-      openSpecialsMappingModal({
-        onRenameApplied: (successfulRenames) => {
-          handleSmartMatchRenames({ step, successfulRenames, summaryRecord })
-        },
-        possibleNames: possibleNameObjects,
-        sourcePath,
-        unrenamedFilenames,
-      })
-    })
+    smartMatchButton.addEventListener('click', openSmartMatchModal)
+  }
+
+  // Auto-open once per step completion so the user can't miss unmatched files.
+  // The flag is reset in runStep so it fires again on the next run.
+  const unrenamedForAutoOpen = Array.isArray(summaryRecord?.unrenamedFilenames)
+    ? summaryRecord.unrenamedFilenames
+    : []
+  const hasSmartMatchDataForAutoOpen = (
+    !!sourcePath
+    && unrenamedForAutoOpen.length > 0
+    && possibleNameObjects.length > 0
+  )
+  if (hasSmartMatchDataForAutoOpen && !step._smartMatchAutoOpened) {
+    step._smartMatchAutoOpened = true
+    openSmartMatchModal()
   }
 
   const rows = body.querySelectorAll('[data-rename-row]')
   rows.forEach((row) => {
-    const inputElement = row.querySelector('[data-rename-input]')
-    const dropdownElement = row.querySelector('[data-rename-dropdown]')
-    const submitButton = row.querySelector('[data-rename-submit]')
-    const statusElement = row.querySelector('[data-rename-status]')
+    const playButton = row.querySelector('[data-rename-play]')
     const filename = row.getAttribute('data-rename-filename') ?? ''
-    if (!inputElement || !dropdownElement || !submitButton) {
-      return
+    if (playButton) {
+      if (sourcePath && typeof window.openVideoModal === 'function') {
+        playButton.addEventListener('click', () => {
+          window.openVideoModal(joinSourcePath(sourcePath, filename))
+        })
+      } else {
+        playButton.remove()
+      }
     }
-    attachAutocomplete({
-      allKnownNames,
-      dropdownElement,
-      inputElement,
-      possibleNames,
-      onPick: () => {
-        submitButton.disabled = inputElement.value.trim().length === 0
-      },
-    })
-    inputElement.addEventListener('input', () => {
-      submitButton.disabled = inputElement.value.trim().length === 0
-    })
-    submitButton.addEventListener('click', () => {
-      handleInteractiveRenameClick({
-        filename,
-        inputElement,
-        sourcePath,
-        statusElement,
-        step,
-        submitButton,
-        summaryRecord,
-      })
-    })
   })
 }
 
