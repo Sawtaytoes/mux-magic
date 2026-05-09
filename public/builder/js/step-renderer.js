@@ -12,6 +12,7 @@ export { renderInsertDivider } from './components/insert-divider.js'
 export { renderSequenceEndCard } from './components/sequence-end-card.js'
 export { LOOKUP_LINKS } from './util/lookup-links.js'
 export { renderGroupCard, renderStepCard, renderStepCompactCard }
+export { renderFields } from './fields/render-fields.js'
 
 /**
  * @typedef {{ id: string, command: string | null, params: Record<string, unknown>, links: Record<string, unknown>, status?: string, alias?: string, isCollapsed?: boolean, jobId?: string, error?: string }} Step

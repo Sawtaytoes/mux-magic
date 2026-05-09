@@ -467,6 +467,7 @@ export const openSpecialsMappingModal = async ({
   onRenameApplied,
   onRunStep,
   possibleNames,
+  skipDiskCheck = false,
   sourcePath,
   unrenamedFilenames,
 }) => {
@@ -480,17 +481,25 @@ export const openSpecialsMappingModal = async ({
     return
   }
   const modal = ensureModalMounted()
-  modal.innerHTML = (
-    `<div class="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-full max-w-md p-6">`
-    + `<p class="text-sm text-slate-300">Loading file durations…</p>`
-    + `</div>`
-  )
   modal.classList.remove('hidden')
 
-  const { durationByFilename, existingFilenames, stemToFullName } = await fetchDurationsForFolder({
-    filenames: unrenamedFilenames,
-    sourcePath,
-  })
+  let durationByFilename, existingFilenames, stemToFullName
+  if (skipDiskCheck) {
+    // Fake/dry-run mode: skip the disk lookup and treat all files as present.
+    durationByFilename = new Map()
+    existingFilenames = null
+    stemToFullName = new Map()
+  } else {
+    modal.innerHTML = (
+      `<div class="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-full max-w-md p-6">`
+      + `<p class="text-sm text-slate-300">Loading file durations…</p>`
+      + `</div>`
+    )
+    ;({ durationByFilename, existingFilenames, stemToFullName } = await fetchDurationsForFolder({
+      filenames: unrenamedFilenames,
+      sourcePath,
+    }))
+  }
   // Filter out filenames no longer on disk (renamed in a prior session).
   // Disk entries include extensions (e.g. "SOLDIER_t00.mkv") while
   // unrenamedFilenames may be bare stems — compare stems to avoid false

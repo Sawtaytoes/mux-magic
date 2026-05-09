@@ -60,7 +60,10 @@
       "Bash(disown)",
       "Bash(awk '{print $5}')",
       "Bash(xargs -r kill)",
-      "PowerShell(Get-NetTCPConnection -LocalPort 54321 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force; \"Killed PID $_\" })"
+      "PowerShell(Get-NetTCPConnection -LocalPort 54321 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force; \"Killed PID $_\" })",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(k,'→',v\\) for k,v in d.get\\('scripts',{}\\).items\\(\\)]\")",
+      "Bash(findstr :3003)",
+      "Bash(taskkill /PID 43756 /F)"
     ],
     "ask": [
       "Bash(yarn dlx *)",
