@@ -1,6 +1,6 @@
 # React Migration Checklist
 
-Last updated: 2026-05-09 by Claude Haiku 4.5 (Wave A complete)
+Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave E complete)
 
 ## Phase Status
 
@@ -17,7 +17,7 @@ Last updated: 2026-05-09 by Claude Haiku 4.5 (Wave A complete)
 | Wave C-0 | Popover primitive (unblocks C) | [ ] Not started | | |
 | Wave C | All pickers (parallel) | [ ] Not started | | |
 | Wave D | StepCard, GroupCard, PathVarCard, DragAndDrop | [ ] Not started | | |
-| Wave E | PageHeader, LookupModal, RunSequence, etc. | [ ] Not started | | |
+| Wave E | PageHeader, LookupModal, RunSequence, etc. | [x] Done | worktree-wave-e | PageHeader, LookupModal, FileExplorerModal, ApiRunModal, PromptModal — all with tests + stories |
 | Wave F | Jobs page | [ ] Not started | | |
 | Final | Delete legacy files, bridge cleanup | [ ] Not started | | |
 
