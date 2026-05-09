@@ -1,29 +1,18 @@
 import { afterEach, describe, expect, test, vi } from "vitest"
 
-// Validation-layer tests for /transcode/audio. The acquire → encode →
-// serve flow lives behind RxJS + ffmpeg + the temp-store and is
-// exercised manually rather than mocked here — these tests cover the
-// input validation gates that decide whether a request even reaches the
-// encoder.
+// Validation-layer tests for /transcode/audio. The streaming encode
+// flow lives behind RxJS + ffmpeg and is exercised manually rather than
+// mocked here — these tests cover the input validation gates that
+// decide whether a request even reaches the encoder.
 //
-// Mock runFfmpegAudioTranscode and the temp store so that even if a
-// validation slip lets a request through, the test never spawns ffmpeg
-// or writes to os.tmpdir().
+// Mock buildFfmpegArgs and the temp store so that even if a validation
+// slip lets a request through, the test never spawns ffmpeg.
 vi.mock("../../cli-spawn-operations/runFfmpegAudioTranscode.js", () => ({
-  runFfmpegAudioTranscode: vi.fn(() => ({ subscribe: vi.fn() })),
+  buildFfmpegArgs: vi.fn(() => []),
 }))
 
 vi.mock("../../tools/transcodeTempStore.js", () => ({
   mimeTypeForCodec: (_codec: string) => "video/mp4",
-  transcodeTempStore: {
-    acquire: vi.fn(() => ({ isFresh: false, tempPath: "/tmp/never-used" })),
-    markReady: vi.fn(async () => {}),
-    release: vi.fn(async () => {}),
-    invalidate: vi.fn(async () => {}),
-    cleanupOnShutdown: vi.fn(),
-    __resetForTests: vi.fn(),
-    __snapshotForTests: vi.fn(() => []),
-  },
 }))
 
 import { transcodeRoutes } from "./transcodeRoutes.js"

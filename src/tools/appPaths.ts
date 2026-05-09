@@ -7,7 +7,7 @@ const isWindows = platform() === 'win32'
 // export const audioOffsetFinderPath = ".venv/bin/audio-offset-finder" .// This local version doesn't run for whatever reason.
 export const audioOffsetFinderPath = "audio-offset-finder"
 
-export const ffmpegPath = ffmpegStaticPath ?? "ffmpeg"
+export const ffmpegPath: string = (ffmpegStaticPath as unknown as string | null) ?? "ffmpeg"
 
 // MediaInfo_CLI_25.03_Windows_x64
 export const mediaInfoPath = (

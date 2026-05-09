@@ -39,7 +39,7 @@ export type RunFfmpegAudioTranscodeOptions = {
   tempPath: string
 }
 
-const buildFfmpegArgs = (
+export const buildFfmpegArgs = (
   cacheKey: TranscodeCacheKey,
 ): string[] => {
   const sharedHead = [
