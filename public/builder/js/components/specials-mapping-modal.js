@@ -107,12 +107,11 @@ const renderRow = ({ index, suggestion }) => {
     + `<div class="mt-0.5">${renderFileTimecode(suggestion.fileTimecode)}</div>`
     + `</td>`
     + `<td class="px-2 py-1.5 align-top w-[40%]">`
-    + `<select data-mapping-select class="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500">`
-    + renderCandidateOptions({
-        rankedCandidates: suggestion.rankedCandidates,
-        selectedName,
-      })
-    + `</select>`
+    + `<div class="flex gap-1.5 items-start">`
+    + `<input type="text" data-mapping-input class="flex-1 text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500" placeholder="Or type a custom name…" />`
+    + `<button type="button" data-mapping-suggest class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded shrink-0" title="Show suggestions">✓</button>`
+    + `</div>`
+    + `<div data-mapping-suggestions class="hidden absolute left-2 right-2 top-full mt-0.5 z-30 max-h-40 overflow-y-auto bg-slate-900 border border-slate-600 rounded shadow-xl text-xs"></div>`
     + `<p data-mapping-row-error class="hidden text-[10px] font-mono mt-1 text-red-300"></p>`
     + `</td>`
     + `<td class="px-2 py-1.5 align-top text-center">${renderConfidenceBadge(topCandidate.confidence)}</td>`
@@ -252,8 +251,8 @@ const handleConfirmClick = async () => {
       if (!suggestion) {
         return null
       }
-      const selectElement = row.querySelector('[data-mapping-select]')
-      const desiredName = String(selectElement?.value ?? '').trim()
+      const inputElement = row.querySelector('[data-mapping-input]')
+      const desiredName = String(inputElement?.value ?? '').trim()
       if (desiredName.length === 0) {
         return null
       }
@@ -489,15 +488,15 @@ export const openSpecialsMappingModal = async ({
     confirmButton.addEventListener('click', handleConfirmClick)
   }
 
-  // Wire duplicate detection on all select elements. Only non-empty
-  // selections are checked for duplicates; skipped files (empty) are ignored.
+  // Wire duplicate detection on all input fields. Only non-empty
+  // inputs are checked for duplicates; skipped files (empty) are ignored.
   const validateSelections = () => {
     const rows = Array.from(modal.querySelectorAll('[data-mapping-row]'))
     const selectedNames = {} // lowercase name -> count
 
     rows.forEach((row) => {
-      const select = row.querySelector('[data-mapping-select]')
-      const value = String(select?.value ?? '').trim()
+      const input = row.querySelector('[data-mapping-input]')
+      const value = String(input?.value ?? '').trim()
       if (value.length > 0) {
         const key = value.toLowerCase()
         selectedNames[key] = (selectedNames[key] || 0) + 1
@@ -506,9 +505,9 @@ export const openSpecialsMappingModal = async ({
 
     let hasDuplicates = false
     rows.forEach((row) => {
-      const select = row.querySelector('[data-mapping-select]')
+      const input = row.querySelector('[data-mapping-input]')
       const errorEl = row.querySelector('[data-mapping-row-error]')
-      const value = String(select?.value ?? '').trim()
+      const value = String(input?.value ?? '').trim()
 
       const isDuplicate = value.length > 0 && selectedNames[value.toLowerCase()] > 1
       if (isDuplicate) {
@@ -517,20 +516,61 @@ export const openSpecialsMappingModal = async ({
           errorEl.classList.remove('hidden')
           errorEl.textContent = 'Duplicate name'
         }
-        if (select) select.classList.add('border-red-500')
+        if (input) input.classList.add('border-red-500')
       } else {
         if (errorEl) errorEl.classList.add('hidden')
-        if (select) select.classList.remove('border-red-500')
+        if (input) input.classList.remove('border-red-500')
       }
     })
 
     if (confirmButton) confirmButton.disabled = hasDuplicates
   }
 
-  const selects = modal.querySelectorAll('[data-mapping-select]')
-  selects.forEach((select) => {
-    select.addEventListener('change', validateSelections)
+  const inputs = modal.querySelectorAll('[data-mapping-input]')
+  inputs.forEach((input) => {
+    input.addEventListener('input', validateSelections)
   })
+
+  // Wire suggestion buttons to show/hide dropdown
+  const suggestionButtons = modal.querySelectorAll('[data-mapping-suggest]')
+  suggestionButtons.forEach((button) => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const row = button.closest('[data-mapping-row]')
+      if (!row) return
+      const suggestionsDiv = row.querySelector('[data-mapping-suggestions]')
+      const indexAttribute = row.getAttribute('data-mapping-index') ?? '-1'
+      const index = Number(indexAttribute)
+      const suggestion = suggestions[index]
+      if (!suggestion) return
+
+      const isHidden = suggestionsDiv.classList.contains('hidden')
+      if (isHidden) {
+        // Show suggestions
+        const html = suggestion.rankedCandidates.map(({ candidate, confidence }) => {
+          const percent = Math.round(confidence * 100)
+          return `<div class="px-2 py-1 hover:bg-slate-800 cursor-pointer border-b border-slate-700 last:border-b-0" data-suggestion="${esc(candidate.name)}">${esc(candidate.name)} — ${percent}%</div>`
+        }).join('')
+        suggestionsDiv.innerHTML = html
+        suggestionsDiv.classList.remove('hidden')
+
+        // Wire clicks to populate input
+        suggestionsDiv.querySelectorAll('[data-suggestion]').forEach((el) => {
+          el.addEventListener('click', () => {
+            const input = row.querySelector('[data-mapping-input]')
+            if (input) input.value = el.getAttribute('data-suggestion')
+            suggestionsDiv.classList.add('hidden')
+            validateSelections()
+          })
+        })
+      } else {
+        // Hide suggestions
+        suggestionsDiv.classList.add('hidden')
+      }
+    })
+  })
+
   validateSelections()
 
 
