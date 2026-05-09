@@ -1250,7 +1250,10 @@ function renderWhenBuilder({
         <option value="">+ Add clause…</option>
         ${availableClauses.map((clauseName) => `<option value="${clauseName}">${clauseName}</option>`).join('')}
       </select>`
-  return `<details class="mt-2 border border-slate-700/60 rounded">
+  const detailsKey = `${stepId}:when:${ruleIndex}`
+  const openAttr = !isReadOnly && openDetailsKeys.has(detailsKey) ? ' open' : ''
+  const toggleAttr = isReadOnly ? '' : `data-details-key="${detailsKey}" ontoggle="dslRules.onDetailsToggle(this.dataset.detailsKey,this.open)"`
+  return `<details${openAttr} class="mt-2 border border-slate-700/60 rounded" ${toggleAttr}>
     <summary class="cursor-pointer text-xs text-slate-400 px-2 py-1 select-none">When (advanced — leave empty to always fire)</summary>
     <div class="px-2 py-1.5">
       ${clauseRows || '<p class="text-xs text-slate-500 italic">No clauses. Rule fires on every batch.</p>'}
@@ -1339,7 +1342,10 @@ function renderApplyIfBuilder({ stepId, ruleIndex, applyIfValue, isReadOnly }) {
         <option value="">+ Add clause…</option>
         ${availableClauses.map((clauseName) => `<option value="${clauseName}">${clauseName}</option>`).join('')}
       </select>`
-  return `<details class="mt-2 border border-slate-700/60 rounded">
+  const applyIfKey = `${stepId}:applyif:${ruleIndex}`
+  const applyIfOpenAttr = !isReadOnly && openDetailsKeys.has(applyIfKey) ? ' open' : ''
+  const applyIfToggleAttr = isReadOnly ? '' : `data-details-key="${applyIfKey}" ontoggle="dslRules.onDetailsToggle(this.dataset.detailsKey,this.open)"`
+  return `<details${applyIfOpenAttr} class="mt-2 border border-slate-700/60 rounded" ${applyIfToggleAttr}>
     <summary class="cursor-pointer text-xs text-slate-400 px-2 py-1 select-none">applyIf (per-style filter — leave empty to apply to all non-ignored styles)</summary>
     <div class="px-2 py-1.5">
       ${clauseRows || '<p class="text-xs text-slate-500 italic">No clauses. Applies to all non-ignored styles.</p>'}
@@ -1634,7 +1640,7 @@ function renderInsertRuleStrip({ stepId, insertIndex }) {
   </div>`
 }
 
-function renderPredicatesManager({ stepId, predicates, isOpen }) {
+function renderPredicatesManager({ stepId, predicates }) {
   const predicateNames = Object.keys(predicates)
   const renderEntry = ({ predicateName, entryKey, entryValue }) => {
     const entryKeyJson = JSON.stringify(entryKey).replace(/"/g, '&quot;')
@@ -1669,10 +1675,11 @@ function renderPredicatesManager({ stepId, predicates, isOpen }) {
     </div>`
   }).join('')
   const visibilityClass = predicateNames.length === 0 ? 'hidden' : ''
-  const openAttr = isOpen ? ' open' : ''
-  return `<details${openAttr} class="mt-1 border border-slate-700/60 rounded"
-    data-predicates-details="${stepId}"
-    ontoggle="dslRules.onPredicatesDetailsToggle('${stepId}',this.open)">
+  const predicatesKey = `${stepId}:predicates`
+  const predOpenAttr = openDetailsKeys.has(predicatesKey) ? ' open' : ''
+  return `<details${predOpenAttr} class="mt-1 border border-slate-700/60 rounded"
+    data-details-key="${predicatesKey}"
+    ontoggle="dslRules.onDetailsToggle(this.dataset.detailsKey,this.open)">
     <summary class="cursor-pointer text-xs text-slate-400 px-2 py-1 select-none flex items-center gap-2">
       <span>Predicates (named conditions reusable via $ref)</span>
       <span class="text-[10px] text-slate-500">${predicateNames.length} defined</span>
@@ -1687,10 +1694,11 @@ function renderPredicatesManager({ stepId, predicates, isOpen }) {
   </details>`
 }
 
-// Tracks which step's Built-in Heuristic Rules / Predicates details panels are
-// currently open. Survives renderAll because it's module-level state, not DOM state.
-const defaultRulesDetailsOpen = new Set()
-const predicatesDetailsOpen = new Set()
+// All open <details> keys inside DSL rule builders, keyed by a composite string
+// (e.g. '<stepId>:defaults', '<stepId>:predicates', '<stepId>:when:<idx>').
+// Module-level so the Set survives renderAll; DOM-queried at render time to guard
+// against spurious ontoggle events on element insertion/removal.
+const openDetailsKeys = new Set()
 
 export function renderRulesField({ step }) {
   const stepId = step.id
@@ -1736,21 +1744,24 @@ export function renderRulesField({ step }) {
 
   const headerInsertStrip = renderInsertRuleStrip({ stepId, insertIndex: 0 })
 
-  // Snapshot live DOM open state before renderAll replaces innerHTML.
-  // ontoggle can fire spuriously on element insertion/removal so the module-level
-  // Sets can drift. Querying the existing DOM at render time is authoritative.
-  const livePredDetails = document.querySelector(`[data-predicates-details="${stepId}"]`)
-  if (livePredDetails) {
-    if (livePredDetails.open) predicatesDetailsOpen.add(stepId)
-    else predicatesDetailsOpen.delete(stepId)
+  // Snapshot all open <details> in this step's DSL builder before renderAll
+  // replaces innerHTML. ontoggle can fire spuriously on element insertion/removal,
+  // so querying the live DOM is authoritative.
+  const dslBuilderEl = document.querySelector(`.dsl-rules-builder[data-step="${stepId}"]`)
+  if (dslBuilderEl) {
+    dslBuilderEl.querySelectorAll('[data-details-key]').forEach((detailsEl) => {
+      if (detailsEl.open) {
+        openDetailsKeys.add(detailsEl.dataset.detailsKey)
+      } else {
+        openDetailsKeys.delete(detailsEl.dataset.detailsKey)
+      }
+    })
   }
-  const liveDetails = document.querySelector(`[data-default-rules-details="${stepId}"]`)
-  if (liveDetails) {
-    if (liveDetails.open) defaultRulesDetailsOpen.add(stepId)
-    else defaultRulesDetailsOpen.delete(stepId)
+  const defaultsKey = `${stepId}:defaults`
+  if (isHasDefaultRules) {
+    openDetailsKeys.add(defaultsKey)
   }
-  if (isHasDefaultRules) defaultRulesDetailsOpen.add(stepId)
-  const detailsOpen = defaultRulesDetailsOpen.has(stepId) ? ' open' : ''
+  const detailsOpen = openDetailsKeys.has(defaultsKey) ? ' open' : ''
 
   return `<div class="dsl-rules-builder space-y-2" data-step="${stepId}" data-field="rules">
     <div class="flex items-center justify-between">
@@ -1762,8 +1773,8 @@ export function renderRulesField({ step }) {
       Prepend built-in heuristic rules
     </label>
     <details${detailsOpen} class="border border-slate-700 rounded"
-      data-default-rules-details="${stepId}"
-      ontoggle="dslRules.onDefaultRulesDetailsToggle('${stepId}',this.open)">
+      data-details-key="${defaultsKey}"
+      ontoggle="dslRules.onDetailsToggle(this.dataset.detailsKey,this.open)">
       <summary class="cursor-pointer select-none px-2 py-1.5 text-xs text-slate-400 hover:text-slate-300 list-none flex items-center gap-1">
         <span class="text-slate-500">${detailsOpen ? '▾' : '▸'}</span>
         Built-in Heuristic Rules
@@ -1772,24 +1783,16 @@ export function renderRulesField({ step }) {
         ${defaultRulesSection}
       </div>
     </details>
-    ${renderPredicatesManager({ stepId, predicates, isOpen: predicatesDetailsOpen.has(stepId) })}
+    ${renderPredicatesManager({ stepId, predicates })}
     ${rules.length === 0 ? `<p class="text-xs text-slate-500 italic mt-1">No user rules yet.</p>${headerInsertStrip}` : (headerInsertStrip + ruleCards)}
   </div>`
 }
 
-export function onPredicatesDetailsToggle(stepId, isOpen) {
+export function onDetailsToggle(detailsKey, isOpen) {
   if (isOpen) {
-    predicatesDetailsOpen.add(stepId)
+    openDetailsKeys.add(detailsKey)
   } else {
-    predicatesDetailsOpen.delete(stepId)
-  }
-}
-
-export function onDefaultRulesDetailsToggle(stepId, isOpen) {
-  if (isOpen) {
-    defaultRulesDetailsOpen.add(stepId)
-  } else {
-    defaultRulesDetailsOpen.delete(stepId)
+    openDetailsKeys.delete(detailsKey)
   }
 }
 
@@ -1855,7 +1858,6 @@ export function registerDslRulesGlobals() {
     removeApplyIfEntry,
 
     setHasDefaultRules,
-    onPredicatesDetailsToggle,
-    onDefaultRulesDetailsToggle,
+    onDetailsToggle,
   }
 }

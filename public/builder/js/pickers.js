@@ -439,6 +439,10 @@ export const linkPicker = createPopoverPicker({
 // ─── Path typeahead (filesystem autocomplete) ─────────────────────────────────
 
 const pathPickerState = { current: null }
+// Stores the path value each step/field had at the moment of focus so that
+// updateLinkedPathVar can compare against it (not against pathVar.value which
+// onPathFieldInput already updates on every keystroke).
+const pathFocusValues = new Map()
 
 // Re-open the path picker on focus/click of an input that already
 // has a value. Without this, after blur the picker is closed and
@@ -446,6 +450,7 @@ const pathPickerState = { current: null }
 // a character to wake it up. Now: focus → if there's a value, kick
 // the lookup again so the dropdown reappears for the same path.
 export function onPathFieldFocus(inputElement, stepId, fieldName, value) {
+  pathFocusValues.set(`${stepId}:${fieldName}`, value ?? '')
   if (!value) {
     return
   }
@@ -456,12 +461,37 @@ export function onPathFieldFocus(inputElement, stepId, fieldName, value) {
 // directly instead of writing step.params (which would be overwritten by
 // refreshLinkedInputs back to the old path var value). Returns true if the
 // update was handled via the path var.
+// When a source-path field is committed with a new value, delete any
+// folderMultiSelect params in the same step whose sourceField points to it —
+// previously-selected folders are meaningless under a different source path.
+function clearDependentFolderFields({ stepId, sourceFieldName }) {
+  const step = findStepById(stepId)
+  if (!step) {
+    return
+  }
+  const commandDef = COMMANDS[step.command]
+  if (!commandDef) {
+    return
+  }
+  const cleared = commandDef.fields.filter(
+    (field) => field.type === 'folderMultiSelect' && field.sourceField === sourceFieldName
+  )
+  cleared.forEach((field) => { delete step.params[field.name] })
+  if (cleared.length > 0) {
+    window.mediaTools?.renderAll?.()
+  }
+}
+
 function updateLinkedPathVar(stepId, fieldName, newValue) {
   const step = findStepById(stepId)
   const link = step?.links?.[fieldName]
-  if (typeof link !== 'string') return false
-  const pathVar = paths.find((p) => p.id === link)
-  if (!pathVar) return false
+  if (typeof link !== 'string') {
+    return false
+  }
+  const pathVar = paths.find((pathVariable) => pathVariable.id === link)
+  if (!pathVar) {
+    return false
+  }
   pathVar.value = newValue || ''
   refreshLinkedInputs()
   scheduleUpdateUrl()
@@ -474,10 +504,24 @@ function updateLinkedPathVar(stepId, fieldName, newValue) {
 // clutter (and would confuse downstream consumers expecting a clean
 // path). Updates both the input value and the underlying step param.
 export function onPathFieldBlur(inputElement, stepId, fieldName, value) {
+  const focusKey = `${stepId}:${fieldName}`
+  const hasFocusSnapshot = pathFocusValues.has(focusKey)
+  const valueAtFocus = hasFocusSnapshot ? (pathFocusValues.get(focusKey) ?? '') : null
+  pathFocusValues.delete(focusKey)
+
   const trimmed = (value ?? '').replace(/[\\/]+$/, '')
+
+  // Detect path change using the focus-time snapshot. pathVar.value is already
+  // equal to the current value (updated by onPathFieldInput on every keystroke),
+  // so comparing against pathVar.value here would always show no change.
+  if (hasFocusSnapshot && valueAtFocus !== (trimmed || '')) {
+    clearDependentFolderFields({ stepId, sourceFieldName: fieldName })
+  }
+
   if (trimmed === value) {
     return
   }
+
   inputElement.value = trimmed
   if (!updateLinkedPathVar(stepId, fieldName, trimmed)) {
     setParam(stepId, fieldName, trimmed || undefined)

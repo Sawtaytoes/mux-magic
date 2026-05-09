@@ -403,11 +403,18 @@ function renderFieldHtml(step, field, stepIndex) {
     const rawNum = val ?? field.default ?? ''
     const num = (field.min != null && rawNum !== '' && Number(rawNum) < field.min) ? field.min : rawNum
     const companion = field.companionNameField ? step.params[field.companionNameField] : null
-    const reverseLookup = field.companionNameField ? `oninput="scheduleReverseLookup('${step.id}','${field.name}',this.value)"` : ''
+    const reverseLookupAttr = field.companionNameField ? `oninput="scheduleReverseLookup('${step.id}','${field.name}',this.value)"` : ''
     const minAttr = field.min != null ? `min="${esc(field.min)}"` : ''
+    const minVal = field.min ?? Number.NEGATIVE_INFINITY
+    // oninput saves valid complete numbers immediately so page-unload never loses
+    // a typed-but-not-blurred value. onchange handles clear (empty → undefined).
+    const onInputAttr = `oninput="if(this.value!==''&&!isNaN(Number(this.value)))setParam('${step.id}','${field.name}',Math.max(${minVal},Number(this.value)))"`
+    const onChangeAttr = `onchange="setParam('${step.id}','${field.name}',this.value===''?undefined:Math.max(${minVal},Number(this.value)))"`
     return `<div>${label}<input type="number" value="${esc(num)}" ${minAttr}
-      ${reverseLookup}
-      onchange="setParam('${step.id}','${field.name}',this.value===''?undefined:Math.max(${field.min ?? Number.NEGATIVE_INFINITY},Number(this.value)))"
+      aria-label="${esc(field.label)}"
+      ${reverseLookupAttr}
+      ${onInputAttr}
+      ${onChangeAttr}
       class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" />
       ${field.companionNameField ? `<p data-step="${step.id}" data-companion="${field.name}" class="text-xs text-slate-500 mt-0.5 truncate ${companion ? '' : 'hidden'}" title="${esc(companion ?? '')}">${esc(companion ?? '')}</p>` : ''}
     </div>`

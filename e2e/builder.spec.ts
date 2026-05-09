@@ -568,4 +568,107 @@ test.describe("Sequence Builder — groups", () => {
     await expect(page.locator(".step-card").first()).toBeVisible()
     await expect(page.getByText("File Path")).toBeHidden()
   })
+
+  test("recursiveDepth is saved even if the field was not blurred before reload", async ({ page }) => {
+    await addStep(page)
+    await page.getByText("— pick a command —").click()
+    await page.getByPlaceholder("Search commands…").fill("deleteFilesByExtension")
+    await page.getByRole("button", { name: /^Delete Files by Extension\s/ }).click()
+
+    // Enable Recursive so the depth field appears.
+    await page.getByLabel("Recursive").check()
+
+    const depthInput = page.getByRole("spinbutton", { name: /Depth/ })
+    await depthInput.fill("5")
+    // Do NOT blur — just reload immediately to simulate closing the tab.
+    await page.reload()
+
+    await expect(page.getByRole("spinbutton", { name: /Depth/ })).toHaveValue("5")
+  })
+
+  test("DSL rules Predicates panel stays open after adding a predicate entry", async ({ page }) => {
+    await addStep(page)
+    await page.getByText("— pick a command —").click()
+    await page.getByPlaceholder("Search commands…").fill("modifySubtitleMetadata")
+    await page.getByRole("button", { name: /^Modify Subtitle Metadata\s/ }).click()
+
+    // Open the Predicates <details> panel.
+    const predicatesDetails = page.locator("details[data-details-key$=':predicates']")
+    await predicatesDetails.locator("summary").click()
+    await expect(predicatesDetails).toHaveAttribute("open")
+
+    // Add a predicate — triggers renderAll which used to close the panel.
+    await page.getByRole("button", { name: "+ Add predicate" }).click()
+
+    // Panel must still be open.
+    await expect(predicatesDetails).toHaveAttribute("open")
+  })
+
+  test("DSL rules When panel stays open after adding a when clause", async ({ page }) => {
+    await addStep(page)
+    await page.getByText("— pick a command —").click()
+    await page.getByPlaceholder("Search commands…").fill("modifySubtitleMetadata")
+    await page.getByRole("button", { name: /^Modify Subtitle Metadata\s/ }).click()
+
+    // Add a setScriptInfo rule so there is something to expand When on.
+    await page.getByRole("button", { name: "+ setScriptInfo" }).first().click()
+
+    // Open the When <details> panel inside the rule card.
+    const whenDetails = page.locator("details[data-details-key$=':when:0']")
+    await whenDetails.locator("summary").click()
+    await expect(whenDetails).toHaveAttribute("open")
+
+    // Add a when clause — triggers renderAll.
+    await whenDetails.locator("select").selectOption("anyScriptInfo")
+
+    // Panel must still be open.
+    await expect(whenDetails).toHaveAttribute("open")
+  })
+
+  test("folderMultiSelect clears selected folders when source path changes", async ({ page }) => {
+    await page.route("**/queries/listDirectoryEntries", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          entries: [
+            { name: "Anime", isDirectory: true, isFile: false },
+            { name: "Movies", isDirectory: true, isFile: false },
+          ],
+          error: null,
+        }),
+      })
+    })
+
+    await addStep(page)
+    await page.getByText("— pick a command —").click()
+    await page.getByPlaceholder("Search commands…").fill("storeAspectRatioData")
+    await page.getByRole("button", { name: /^Store Aspect Ratio Data\s/ }).click()
+
+    // Set source path so the folder picker knows where to load from.
+    const stepCard = page.locator(".step-card").first()
+    const sourceInput = stepCard.locator("input[data-field='sourcePath']")
+    await sourceInput.focus()
+    await sourceInput.fill("G:\\TestSource")
+    // Press Escape to commit and close the path-typeahead popover before blur.
+    await sourceInput.press("Escape")
+    await sourceInput.blur()
+
+    await page.getByRole("button", { name: /Browse folders/ }).click()
+    await expect(page.locator("#folder-picker-modal")).toBeVisible()
+    await page.getByRole("button", { name: "Anime" }).click()
+    await page.getByRole("button", { name: "Confirm" }).click()
+
+    // The selected folder tag must appear in the step card (not inside the hidden modal body).
+    const folderTag = stepCard.locator("span.font-mono", { hasText: "Anime" })
+    await expect(folderTag).toBeVisible()
+
+    // Now change the source path — previously selected folders must be cleared.
+    await sourceInput.focus()
+    await sourceInput.fill("G:\\OtherSource")
+    await sourceInput.press("Escape")
+    await sourceInput.blur()
+
+    await expect(folderTag).toBeHidden()
+  })
 })
