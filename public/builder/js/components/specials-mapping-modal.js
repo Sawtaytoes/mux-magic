@@ -19,6 +19,44 @@ import {
   rankSuggestions,
 } from '../util/specials-fuzzy.js'
 
+const PLEX_EXTRA_TYPES = [
+  { suffix: '', label: '— no type —' },
+  { suffix: '-trailer', label: 'Trailer' },
+  { suffix: '-featurette', label: 'Featurette' },
+  { suffix: '-interview', label: 'Interview' },
+  { suffix: '-behindthescenes', label: 'Behind the Scenes' },
+  { suffix: '-scene', label: 'Scene' },
+  { suffix: '-deleted', label: 'Deleted Scene' },
+  { suffix: '-short', label: 'Short' },
+  { suffix: '-other', label: 'Other' },
+]
+
+// Extract a known Plex suffix from a filename stem, or '' if none.
+const extractSuffixFromStem = (stem) => {
+  const lower = stem.toLowerCase()
+  const known = ['-trailer','-behindthescenes','-deleted','-featurette','-interview','-scene','-short','-other']
+  return known.find((s) => lower.endsWith(s)) ?? ''
+}
+
+// Infer a Plex suffix from a human-readable name via keyword matching.
+const inferSuffixFromName = (name) => {
+  const lower = name.toLowerCase()
+  if (lower.includes('trailer')) return '-trailer'
+  if (lower.includes('interview')) return '-interview'
+  if (lower.includes('behind the scenes') || lower.includes('behindthescenes')) return '-behindthescenes'
+  if (lower.includes('deleted')) return '-deleted'
+  if (lower.includes('featurette')) return '-featurette'
+  if (lower.includes('scene')) return '-scene'
+  if (lower.includes('short')) return '-short'
+  return '-other'
+}
+
+const renderSuffixOptions = (selectedSuffix) => (
+  PLEX_EXTRA_TYPES.map(({ suffix, label }) => (
+    `<option value="${esc(suffix)}"${suffix === selectedSuffix ? ' selected' : ''}>${esc(label)}</option>`
+  )).join('')
+)
+
 const MODAL_ID = 'specials-mapping-modal'
 
 // Private module state — only one mapping modal can be open at a time.
@@ -98,6 +136,13 @@ const renderRow = ({ index, suggestion }) => {
     : 'border border-slate-700 bg-slate-800/40'
   // If top candidate is 0%, skip it (select "— skip this file —" instead)
   const selectedName = topCandidate.confidence === 0 ? '' : topCandidate.candidate.name
+
+  // Pre-select suffix: extract from current filename first, then infer from suggestion
+  const existingSuffix = extractSuffixFromStem(suggestion.filename)
+  const initialSuffix = existingSuffix !== ''
+    ? existingSuffix
+    : (selectedName ? inferSuffixFromName(selectedName) : '')
+
   return (
     `<tr data-mapping-row data-mapping-index="${index}" class="${rowClass}">`
     + `<td class="px-1.5 py-1.5 align-top">`
@@ -107,7 +152,7 @@ const renderRow = ({ index, suggestion }) => {
     + `<div class="font-mono text-xs text-slate-100 break-words">${esc(suggestion.filename)}</div>`
     + `<div class="mt-0.5">${renderFileTimecode(suggestion.fileTimecode)}</div>`
     + `</td>`
-    + `<td class="px-2 py-1.5 align-top w-[40%]">`
+    + `<td class="px-2 py-1.5 align-top">`
     + `<div class="flex gap-1 items-center">`
     + `<select data-mapping-select class="flex-1 text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500">`
     + renderCandidateOptions({ rankedCandidates: suggestion.rankedCandidates, selectedName })
@@ -115,6 +160,12 @@ const renderRow = ({ index, suggestion }) => {
     + `<button type="button" data-mapping-custom title="Enter a custom name" class="shrink-0 text-slate-400 hover:text-slate-200 text-xs px-1.5 py-1 rounded hover:bg-slate-700">✏</button>`
     + `</div>`
     + `<input type="text" data-mapping-input class="hidden w-full text-xs font-mono bg-slate-950 text-slate-100 border border-blue-500 rounded px-1.5 py-1 mt-1 focus:outline-none" placeholder="Type custom name, press Enter to apply" />`
+    + `<div class="flex gap-1 items-center mt-1">`
+    + `<label class="text-[10px] text-slate-500 shrink-0">Type:</label>`
+    + `<select data-mapping-suffix class="flex-1 text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-500">`
+    + renderSuffixOptions(initialSuffix)
+    + `</select>`
+    + `</div>`
     + `<p data-mapping-row-error class="hidden text-[10px] font-mono mt-1 text-red-300"></p>`
     + `</td>`
     + `<td class="px-2 py-1.5 align-top text-center">${renderConfidenceBadge(topCandidate.confidence)}</td>`
@@ -256,12 +307,15 @@ const handleConfirmClick = async () => {
       // Custom input takes priority over select when it has a value
       const inputElement = row.querySelector('[data-mapping-input]')
       const selectElement = row.querySelector('[data-mapping-select]')
+      const suffixElement = row.querySelector('[data-mapping-suffix]')
       const customValue = String(inputElement?.value ?? '').trim()
       const selectValue = String(selectElement?.value ?? '').trim()
-      const desiredName = customValue.length > 0 ? customValue : selectValue
-      if (desiredName.length === 0) {
+      const baseName = customValue.length > 0 ? customValue : selectValue
+      if (baseName.length === 0) {
         return null
       }
+      const suffix = String(suffixElement?.value ?? '').trim()
+      const desiredName = suffix.length > 0 ? `${baseName} ${suffix}` : baseName
       // Look up the actual filename with extension from the stem mapping
       const actualFilename = stemToFullName?.get(suggestion.filename) ?? suggestion.filename
       return {
@@ -314,6 +368,17 @@ const handleConfirmClick = async () => {
       })
       const data = await response.json()
       if (!response.ok || data?.ok !== true) {
+        // "Already exists" means the file is already at the target path — treat as no-op success
+        const errorMsg = String(data?.error ?? '')
+        const isAlreadyExists = errorMsg.toLowerCase().includes('already exists')
+        if (isAlreadyExists) {
+          if (rowStatusElement) {
+            rowStatusElement.classList.remove('hidden')
+            rowStatusElement.textContent = `Already named → ${newFilename}`
+            rowStatusElement.className = 'text-[10px] font-mono mt-1 text-slate-400'
+          }
+          return accumulator.concat({ newFilename, oldFilename: plan.filename })
+        }
         const message = data?.error ?? `HTTP ${response.status}`
         if (rowStatusElement) {
           rowStatusElement.classList.remove('hidden')
@@ -494,12 +559,16 @@ export const openSpecialsMappingModal = async ({
     confirmButton.addEventListener('click', handleConfirmClick)
   }
 
-  // Get the effective name for a row: custom input takes priority over select
+  // Get the effective full name (base + suffix) for a row
   const getRowValue = (row) => {
     const customInput = row.querySelector('[data-mapping-input]')
     const selectEl = row.querySelector('[data-mapping-select]')
+    const suffixEl = row.querySelector('[data-mapping-suffix]')
     const custom = String(customInput?.value ?? '').trim()
-    return custom.length > 0 ? custom : String(selectEl?.value ?? '').trim()
+    const base = custom.length > 0 ? custom : String(selectEl?.value ?? '').trim()
+    if (base.length === 0) return ''
+    const suffix = String(suffixEl?.value ?? '').trim()
+    return suffix.length > 0 ? `${base} ${suffix}` : base
   }
 
   // Validate: only non-empty selections checked for duplicates
@@ -533,6 +602,7 @@ export const openSpecialsMappingModal = async ({
 
   // Wire selects and custom inputs for live validation
   modal.querySelectorAll('[data-mapping-select]').forEach((el) => el.addEventListener('change', validateSelections))
+  modal.querySelectorAll('[data-mapping-suffix]').forEach((el) => el.addEventListener('change', validateSelections))
   modal.querySelectorAll('[data-mapping-input]').forEach((el) => el.addEventListener('input', validateSelections))
 
   // Wire ✏ button to show/hide the custom text input
