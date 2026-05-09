@@ -155,11 +155,12 @@ const scenarioForCommand = (
 const buildFakeConfig = (
   command: CommandName,
   scenario: Scenario,
+  bypassOverrides = false,
 ): CommandConfig => {
   const real = realCommandConfigs[command]
   const label = `fake/${command}`
 
-  const customFactory = OBSERVABLE_OVERRIDES[command]
+  const customFactory = bypassOverrides ? undefined : OBSERVABLE_OVERRIDES[command]
 
   const getObservable = (body: unknown) => {
     if (customFactory) return customFactory(body, { label })
@@ -216,7 +217,7 @@ export const getEffectiveCommandConfigs = (
   // opt-in failure/inProgress modes, not the default success path).
   const map = {} as Record<CommandName, CommandConfig>
   commandNames.forEach((name) => {
-    map[name] = buildFakeConfig(name, globalScenario)
+    map[name] = buildFakeConfig(name, globalScenario, true)
   })
   return map
 }

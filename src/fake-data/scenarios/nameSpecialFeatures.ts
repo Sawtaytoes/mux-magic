@@ -2,7 +2,6 @@ import { concat, ignoreElements, Observable, of, timer } from "rxjs"
 
 import { emitJobEvent } from "../../api/jobStore.js"
 import { getActiveJobId } from "../../api/logCapture.js"
-import { getUserSearchInput } from "../../tools/getUserSearchInput.js"
 import { logInfo } from "../../tools/logMessage.js"
 
 // Completes after `ms` without emitting any values — used as a sequenced
@@ -91,11 +90,8 @@ export const nameSpecialFeaturesScenario = (
     of<unknown>({ oldName: "MOVIE_t03.mkv", newName: "Inception (2010) -deleted" }),
     pause(400),
 
-    // Phase 4 — interactive prompt for the two unnamed files.
-    // getUserSearchInput emits a SSE `prompt` event on the active job's
-    // channel and suspends until the UI sends a /inputs/respond answer.
-    // The response index is ignored here — the fake always surfaces the
-    // same final summary regardless of what the user picks.
+    // Phase 4 — two files remain unmatched; auto-skip after a short pause
+    // so the sequence doesn't block waiting for user input.
     effect(() => {
       logInfo(label, "Unnamed files with DVDCompare candidate associations:")
       logInfo(label, "  • MOVIE_t04.mkv")
@@ -106,18 +102,7 @@ export const nameSpecialFeaturesScenario = (
       logInfo(label, "      - Image Gallery (250 images)")
       emitProgress(0.8)
     }),
-    getUserSearchInput({
-      message: (
-        "2 files remain unmatched.\n"
-        + "Pick the closest DVDCompare entry, or skip to leave them unnamed."
-      ),
-      options: [
-        { index: 0, label: "Image Gallery (250 images)" },
-        { index: 1, label: "Director's Commentary" },
-        { index: -1, label: "Skip — leave both unnamed" },
-      ],
-      filePath: "/fake/disc/MOVIE_t04.mkv",
-    }).pipe(ignoreElements()),
+    pause(300),
 
     // Phase 5 — final summary
     effect(() => {
