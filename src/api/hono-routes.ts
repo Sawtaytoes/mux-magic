@@ -15,7 +15,15 @@ import { versionRoutes } from "./routes/versionRoutes.js"
 
 export const app = new OpenAPIHono()
 
-app.use("/*", serveStatic({ root: "./public" }))
+app.use("/*", serveStatic({
+  root: "./public",
+  onFound: (_path, c) => {
+    // Prevent browsers from caching static assets so JS/HTML changes are
+    // always reflected immediately without a hard refresh.
+    c.header("Cache-Control", "no-cache, no-store, must-revalidate")
+    c.header("Pragma", "no-cache")
+  },
+}))
 
 app.route("/", jobRoutes)
 app.route("/", logsRoutes)
