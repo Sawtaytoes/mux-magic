@@ -88,6 +88,7 @@ in module files must be removed before those modules can be used in the API.
 1. **Write a test when you fix a bug.** If you fix something, add a test (unit, route, or e2e as appropriate) that would have caught it. No fix ships without a regression guard.
 2. **Run `yarn test` and `yarn typecheck` before every commit.** Both must be clean. Run `yarn e2e` before merging code that touches the builder UI or API routes. Don't announce a commit/PR as done while tests are red.
 3. **Keep tests in sync with code changes.** When you change behavior, update the tests that assert the old behavior. Leaving a test that no longer matches the current intent (even if it still passes) is misleading; leaving a test that fails is a blocker. Tests are documentation — they must describe what the code *actually does now*, not what it used to do.
+4. **Verify Playwright tests pass before reporting a fix.** After writing an e2e test, run it (`npx playwright test e2e/builder.spec.ts --grep "<test name>"`) and confirm it passes. Merge conflicts, module refactors, and missed sub-file updates can silently break tests that look logically correct — observed test output is the only reliable signal. Never report a UI fix as done without a passing test run.
 
 ### Unit tests (vitest)
 
