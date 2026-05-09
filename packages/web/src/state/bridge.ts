@@ -1,5 +1,5 @@
 import { getDefaultStore } from "jotai"
-import type { PathVar, SequenceItem } from "../types"
+import type { FileExplorerState, LookupState, PathVar, PromptData, SequenceItem } from "../types"
 import { pathsAtom } from "./pathsAtom"
 import {
   commandPickerStateAtom,
@@ -19,11 +19,6 @@ import {
   promptModalAtom,
   runningAtom,
 } from "./uiAtoms"
-import type {
-  FileExplorerState,
-  LookupState,
-  PromptData,
-} from "../types"
 
 // ─── Window type augmentations ────────────────────────────────────────────────
 
@@ -145,7 +140,6 @@ export const initBridge = () => {
   window.openLoadModal = openLoadModal
   window.closeLoadModal = closeLoadModal
 
-<<<<<<< HEAD
   // ─── Picker bridges ─────────────────────────────────────────────────────────
   // Legacy step-card onclick handlers call window.commandPicker.open(anchor, el)
   // etc. Each bridge captures the trigger element's rect and writes into the
@@ -361,11 +355,7 @@ export const initBridge = () => {
 
   // ─── Wave E: Lookup modal ─────────────────────────────────────────────────
 
-  window.mediaTools.openLookup = (
-    lookupType: string,
-    stepId: string,
-    fieldName: string,
-  ) => {
+  window.mediaTools.openLookup = (lookupType: string, stepId: string, fieldName: string) => {
     store.set(lookupModalAtom, {
       lookupType: lookupType as LookupState["lookupType"],
       stepId,
@@ -399,11 +389,10 @@ export const initBridge = () => {
     } as FileExplorerState)
   }
 
-  window.mediaTools.closeFileExplorerModal = () =>
-    store.set(fileExplorerAtom, null)
+  window.mediaTools.closeFileExplorerModal = () => store.set(fileExplorerAtom, null)
 
   // Also expose directly on window for legacy result-card onclick calls.
-  ;(window as Record<string, unknown>).openFileExplorer = (
+  ;(window as unknown as Record<string, unknown>).openFileExplorer = (
     path: string,
     options?: { pickerOnSelect?: (selectedPath: string) => void },
   ) => window.mediaTools.openFileExplorer(path, options)
@@ -434,10 +423,7 @@ export const initBridge = () => {
 
   // ─── Wave E: Prompt modal ─────────────────────────────────────────────────
 
-  window.mediaTools.showPromptModal = (
-    jobId: string,
-    promptData: Omit<PromptData, "jobId">,
-  ) => {
+  window.mediaTools.showPromptModal = (jobId: string, promptData: Omit<PromptData, "jobId">) => {
     store.set(promptModalAtom, { jobId, ...promptData })
   }
 
@@ -446,8 +432,5 @@ export const initBridge = () => {
   // ─── Wave E: Dry-run sync (legacy → atoms) ────────────────────────────────
   // Seed from localStorage on init so React header reflects persisted state.
   store.set(dryRunAtom, localStorage.getItem("isDryRun") === "1")
-  store.set(
-    failureModeAtom,
-    localStorage.getItem("dryRunScenario") === "failure",
-  )
+  store.set(failureModeAtom, localStorage.getItem("dryRunScenario") === "failure")
 }
