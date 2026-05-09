@@ -96,6 +96,9 @@ const renderRow = ({ index, suggestion }) => {
     : 'border border-slate-700 bg-slate-800/40'
   return (
     `<tr data-mapping-row data-mapping-index="${index}" class="${rowClass}">`
+    + `<td class="px-1.5 py-1.5 align-top">`
+    + `<button type="button" data-mapping-play class="text-cyan-400 hover:text-cyan-300 text-[13px] leading-none font-medium px-1.5" title="Preview this file">▶</button>`
+    + `</td>`
     + `<td class="px-2 py-1.5 align-top">`
     + `<div class="font-mono text-xs text-slate-100 break-words">${esc(suggestion.filename)}</div>`
     + `<div class="mt-0.5">${renderFileTimecode(suggestion.fileTimecode)}</div>`
@@ -158,7 +161,6 @@ const renderModalHtml = ({ suggestions }) => {
     + `<div class="px-4 py-3 border-t border-slate-700 flex items-center justify-end gap-2">`
     + `<p data-mapping-status class="text-xs text-slate-300 mr-auto"></p>`
     + `<button type="button" data-mapping-cancel class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded">Cancel</button>`
-    + `<button type="button" data-mapping-run-step class="text-xs bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded">&#9654; Run step</button>`
     + `<button type="button" data-mapping-confirm class="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded font-medium">Rename selected</button>`
     + `</div>`
     + `</div>`
@@ -166,33 +168,43 @@ const renderModalHtml = ({ suggestions }) => {
 }
 
 const fetchDurationsForFolder = async ({ filenames, sourcePath }) => {
-  const filenameSet = new Set(filenames)
+  // Build a set of stems from the input filenames for matching against disk entries.
+  const filenameStems = new Set(filenames.map((f) => {
+    const dot = f.lastIndexOf('.')
+    return dot > 0 ? f.slice(0, dot) : f
+  }))
   try {
     const url = new URL('/files/list', window.location.origin)
     url.searchParams.set('path', sourcePath)
     url.searchParams.set('includeDuration', '1')
     const response = await fetch(url)
     if (!response.ok) {
-      return { durationByFilename: new Map(), existingFilenames: null }
+      return { durationByFilename: new Map(), existingFilenames: null, stemToFullName: null }
     }
     const data = await response.json()
     if (!Array.isArray(data?.entries)) {
-      return { durationByFilename: new Map(), existingFilenames: null }
+      return { durationByFilename: new Map(), existingFilenames: null, stemToFullName: null }
     }
     const durationByFilename = new Map()
     const existingFilenames = new Set()
+    const stemToFullName = new Map()
     data.entries.forEach((entry) => {
       if (typeof entry?.name === 'string') {
         existingFilenames.add(entry.name)
-        if (filenameSet.has(entry.name) && typeof entry?.duration === 'string') {
-          durationByFilename.set(entry.name, entry.duration)
+        const dot = entry.name.lastIndexOf('.')
+        const stem = dot > 0 ? entry.name.slice(0, dot) : entry.name
+        if (filenameStems.has(stem)) {
+          if (typeof entry?.duration === 'string') {
+            durationByFilename.set(stem, entry.duration)
+          }
+          stemToFullName.set(stem, entry.name)
         }
       }
     })
-    return { durationByFilename, existingFilenames }
+    return { durationByFilename, existingFilenames, stemToFullName }
   }
   catch {
-    return { durationByFilename: new Map(), existingFilenames: null }
+    return { durationByFilename: new Map(), existingFilenames: null, stemToFullName: null }
   }
 }
 
@@ -233,7 +245,7 @@ const handleConfirmClick = async () => {
   if (!modal) {
     return
   }
-  const { onRenameApplied, sourcePath, suggestions } = moduleState.activeContext
+  const { onRenameApplied, sourcePath, stemToFullName, suggestions } = moduleState.activeContext
   const rows = Array.from(modal.querySelectorAll('[data-mapping-row]'))
   const renamePlan = rows
     .map((row) => {
@@ -249,9 +261,12 @@ const handleConfirmClick = async () => {
       if (!includeInput?.checked || desiredName.length === 0) {
         return null
       }
+      // Look up the actual filename with extension from the stem mapping
+      const actualFilename = stemToFullName?.get(suggestion.filename) ?? suggestion.filename
       return {
         desiredName,
         filename: suggestion.filename,
+        actualFilename,
         row,
       }
     })
@@ -275,10 +290,10 @@ const handleConfirmClick = async () => {
   const successfulRenames = await renamePlan.reduce(async (previousPromise, plan, planIndex) => {
     const accumulator = await previousPromise
     setStatusMessage({ kind: 'info', message: `Renaming ${planIndex} / ${renamePlan.length}…` })
-    const oldPath = joinSourcePath({ folder: sourcePath, filename: plan.filename })
+    const oldPath = joinSourcePath({ folder: sourcePath, filename: plan.actualFilename })
     const newFilename = ensureExtension({
       desiredName: plan.desiredName,
-      originalFilename: plan.filename,
+      originalFilename: plan.actualFilename,
     })
     const newPath = joinSourcePath({ folder: sourcePath, filename: newFilename })
     const rowStatusElement = plan.row.querySelector('[data-mapping-row-status]')
@@ -401,7 +416,7 @@ export const openSpecialsMappingModal = async ({
   )
   modal.classList.remove('hidden')
 
-  const { durationByFilename, existingFilenames } = await fetchDurationsForFolder({
+  const { durationByFilename, existingFilenames, stemToFullName } = await fetchDurationsForFolder({
     filenames: unrenamedFilenames,
     sourcePath,
   })
@@ -451,6 +466,7 @@ export const openSpecialsMappingModal = async ({
   moduleState.activeContext = {
     onRenameApplied,
     sourcePath,
+    stemToFullName,
     suggestions,
   }
 
@@ -459,7 +475,6 @@ export const openSpecialsMappingModal = async ({
   const closeButton = modal.querySelector('[data-mapping-close]')
   const cancelButton = modal.querySelector('[data-mapping-cancel]')
   const confirmButton = modal.querySelector('[data-mapping-confirm]')
-  const runStepButton = modal.querySelector('[data-mapping-run-step]')
   if (closeButton) {
     closeButton.addEventListener('click', closeSpecialsMappingModal)
   }
@@ -469,14 +484,23 @@ export const openSpecialsMappingModal = async ({
   if (confirmButton) {
     confirmButton.addEventListener('click', handleConfirmClick)
   }
-  if (runStepButton) {
-    if (typeof onRunStep === 'function') {
-      runStepButton.addEventListener('click', () => {
-        closeSpecialsMappingModal()
-        onRunStep()
+
+  // Wire Play buttons on each row
+  const playButtons = modal.querySelectorAll('[data-mapping-play]')
+  playButtons.forEach((button) => {
+    const row = button.closest('[data-mapping-row]')
+    if (!row) return
+    const indexAttribute = row.getAttribute('data-mapping-index') ?? '-1'
+    const index = Number(indexAttribute)
+    const suggestion = suggestions[index]
+    if (suggestion && sourcePath && typeof window.openVideoModal === 'function') {
+      button.addEventListener('click', () => {
+        // Use the actual filename with extension if available
+        const actualFilename = stemToFullName?.get(suggestion.filename) ?? suggestion.filename
+        window.openVideoModal(joinSourcePath({ folder: sourcePath, filename: actualFilename }))
       })
     } else {
-      runStepButton.remove()
+      button.remove()
     }
-  }
+  })
 }
