@@ -16,10 +16,5 @@ const meta: Meta<typeof CollapseChevron> = {
 export default meta
 type Story = StoryObj<typeof CollapseChevron>
 
-export const Expanded: Story = {
-  args: { isCollapsed: false },
-}
-
-export const Collapsed: Story = {
-  args: { isCollapsed: true },
-}
+export const Expanded: Story = { args: { isCollapsed: false } }
+export const Collapsed: Story = { args: { isCollapsed: true } }

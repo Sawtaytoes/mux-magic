@@ -66,14 +66,30 @@
       "PowerShell(yarn *)",
       "Read(**)",
       "Skill(update-config:*)",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "Read(//c/Users/satur/.claude/**)"
+    ],
+    "deny": [
+      "Bash(Get-ChildItem *)"
     ],
     "ask": [
       "Bash(yarn dlx *)",
       "PowerShell(yarn dlx *)"
-    ],
-    "deny": [
-      "Bash(Get-ChildItem *)"
+    ]
+  },
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.worktree_path // empty' | { read -r wt; if [ -n \"$wt\" ] && [ -d '.claude' ]; then cp -r '.claude' \"$wt/.claude\" 2>/dev/null || true; fi; }",
+            "shell": "bash",
+            "statusMessage": "Copying Claude settings to worktree..."
+          }
+        ]
+      }
     ]
   }
 }
