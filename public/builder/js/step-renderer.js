@@ -291,6 +291,13 @@ export function renderStep(step, index, context = {}) {
 
 // ─── Field renderers ──────────────────────────────────────────────────────────
 
+function isFieldVisible(visibleWhen, params) {
+  if (!visibleWhen) return true
+  // visibleWhen format: { fieldName: "fieldToCheck", value: trueValue }
+  const fieldValue = params?.[visibleWhen.fieldName]
+  return fieldValue === visibleWhen.value
+}
+
 export function renderFields(step, stepIndex) {
   const cmd = COMMANDS[step.command]
   const fieldsHtml = []
@@ -312,6 +319,11 @@ export function renderFields(step, stepIndex) {
   const renderedGroups = new Set()
 
   cmd.fields.forEach(field => {
+    // Check if field should be visible based on condition
+    if (field.visibleWhen && !isFieldVisible(field.visibleWhen, step.params)) {
+      return
+    }
+
     // If this field is the first in a group, render the whole group
     const group = groupsByFirstField.get(field.name)
     if (group && !renderedGroups.has(group)) {
@@ -319,7 +331,12 @@ export function renderFields(step, stepIndex) {
       const groupFieldsHtml = group.fields
         .map(fieldName => {
           const f = cmd.fields.find(fld => fld.name === fieldName)
-          return f ? renderFieldHtml(step, f, stepIndex) : ''
+          if (!f) return ''
+          // Check visibility for grouped fields too
+          if (f.visibleWhen && !isFieldVisible(f.visibleWhen, step.params)) {
+            return ''
+          }
+          return renderFieldHtml(step, f, stepIndex)
         })
         .filter(Boolean)
         .join('')
