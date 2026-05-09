@@ -1,6 +1,6 @@
 # React Migration Checklist
 
-Last updated: 2026-05-09 by Claude Sonnet 4.6 (Storybook follow-up)
+Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave A-4 leaf components)
 
 ## Phase Status
 
@@ -11,7 +11,7 @@ Last updated: 2026-05-09 by Claude Sonnet 4.6 (Storybook follow-up)
 | Wave A-1 | YamlModal | [ ] Not started | | |
 | Wave A-2 | CommandHelpModal | [ ] Not started | | |
 | Wave A-3 | FieldTooltip | [ ] Not started | | |
-| Wave A-4 | CollapseChevron, CopyIcon, InsertDivider, StatusBadge | [ ] Not started | | |
+| Wave A-4 | CollapseChevron, CopyIcon, InsertDivider, StatusBadge | [x] Done | worktree-wave-a4-leaf-components | InsertDivider created; tests + stories + MDX for all 4; biome + typecheck green; legacy JS kept (still used by unmigrated step-card/group-card) |
 | Wave B-0 | RenderFields (unblocks B) | [ ] Not started | | |
 | Wave B | All field types (parallel) | [ ] Not started | | |
 | Wave C-0 | Popover primitive (unblocks C) | [ ] Not started | | |

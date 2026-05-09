@@ -1,0 +1,22 @@
+{/* CollapseChevron.mdx */}
+
+import { Meta, Canvas, Controls } from "@storybook/blocks";
+import * as CollapseChevronStories from "./CollapseChevron.stories";
+
+<Meta of={CollapseChevronStories} />
+
+# CollapseChevron
+
+A small chevron icon used on collapsible step and group cards. Rotates −90° when `isCollapsed` is true via a CSS transition.
+
+## Props
+
+<Controls />
+
+## Expanded
+
+<Canvas of={CollapseChevronStories.Expanded} />
+
+## Collapsed
+
+<Canvas of={CollapseChevronStories.Collapsed} />
