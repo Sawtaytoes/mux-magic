@@ -82,6 +82,30 @@ const OBSERVABLE_OVERRIDES: Partial<Record<CommandName, ObservableFactory>> = {
 
 const ROTATION: readonly Scenario[] = ["success", "success", "failure", "success", "inProgress"]
 
+// totalMs overrides for the success scenario. Commands that are nearly
+// instant in production (filesystem ops, small deletes, quick checks)
+// get a short window so the dry-run experience feels realistic.
+// Commands not listed here use successScenario's 4 s default.
+const TIMING_OVERRIDES: Partial<Record<CommandName, number>> = {
+  // Filesystem ops — effectively instant
+  makeDirectory: 400,
+  deleteFilesByExtension: 400,
+  deleteFolder: 400,
+  moveFiles: 800,
+  flattenOutput: 800,
+  // Metadata checks — fast scan, no heavy I/O
+  hasBetterAudio: 600,
+  hasBetterVersion: 600,
+  hasDuplicateMusicFiles: 600,
+  hasImaxEnhancedAudio: 600,
+  hasManyAudioTracks: 600,
+  hasSurroundSound: 600,
+  hasWrongDefaultTrack: 600,
+  isMissingSubtitles: 600,
+  getAudioOffsets: 600,
+  storeAspectRatioData: 600,
+}
+
 const scenarioForCommand = (
   command: CommandName,
   index: number,
@@ -107,7 +131,7 @@ const buildFakeConfig = (
     if (scenario === "inProgress") {
       return inProgressScenario(body, { label })
     }
-    return successScenario(body, { label })
+    return successScenario(body, { label, totalMs: TIMING_OVERRIDES[command] })
   }
 
   return {
