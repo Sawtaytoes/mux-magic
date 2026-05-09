@@ -1,5 +1,6 @@
-import { useAtom } from "jotai"
-import { commandHelpModalCommandAtom } from "../state/uiAtoms"
+import { useAtom, useAtomValue } from "jotai"
+import { useEffect } from "react"
+import { commandHelpCommandNameAtom, commandHelpModalOpenAtom } from "../state/uiAtoms"
 import type { CommandDefinition, CommandField } from "../types"
 
 interface FieldEntryProps {
@@ -39,19 +40,26 @@ const FieldEntry = ({ commandName, field }: FieldEntryProps) => {
   )
 }
 
-interface CommandHelpModalProps {
-  isOpen: boolean
-  onClose: () => void
-}
+export const CommandHelpModal = () => {
+  const [isOpen, setIsOpen] = useAtom(commandHelpModalOpenAtom)
+  const commandName = useAtomValue(commandHelpCommandNameAtom)
 
-export const CommandHelpModal = ({ isOpen, onClose }: CommandHelpModalProps) => {
-  const [commandName] = useAtom(commandHelpModalCommandAtom)
+  const close = () => setIsOpen(false)
 
   const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
-      onClose()
+      close()
     }
   }
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close()
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [isOpen])
 
   if (!isOpen || !commandName) {
     return null
@@ -88,7 +96,7 @@ export const CommandHelpModal = ({ isOpen, onClose }: CommandHelpModalProps) => 
           <span className="text-xs font-medium text-slate-400">Help: {commandLabelText}</span>
           <button
             type="button"
-            onClick={onClose}
+            onClick={close}
             className="text-xs text-slate-400 hover:text-slate-200"
           >
             ✕ Close

@@ -4,6 +4,7 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 
 import { ApiRunModal } from "./components/ApiRunModal"
+import { CommandHelpModal } from "./components/CommandHelpModal"
 import { CommandPicker } from "./components/CommandPicker"
 import { EnumPicker } from "./components/EnumPicker"
 import { FileExplorerModal } from "./components/FileExplorerModal"
@@ -13,6 +14,7 @@ import { LookupModal } from "./components/LookupModal"
 import { PageHeader } from "./components/PageHeader"
 import { PathPicker } from "./components/PathPicker"
 import { PromptModal } from "./components/PromptModal"
+import { YamlModal } from "./components/YamlModal"
 import { AppRouter } from "./router"
 import { initBridge } from "./state/bridge"
 import "./styles/tailwindStyles.css"
@@ -56,6 +58,32 @@ if (loadModalContainer) {
     <StrictMode>
       <JotaiProvider store={store}>
         <LoadModal />
+      </JotaiProvider>
+    </StrictMode>,
+  )
+}
+
+// ─── Wave A: YamlModal ────────────────────────────────────────────────────────
+
+const yamlModalContainer = document.getElementById("yaml-modal-container")
+if (yamlModalContainer) {
+  createRoot(yamlModalContainer).render(
+    <StrictMode>
+      <JotaiProvider store={store}>
+        <YamlModal />
+      </JotaiProvider>
+    </StrictMode>,
+  )
+}
+
+// ─── Wave A: CommandHelpModal ─────────────────────────────────────────────────
+
+const commandHelpModalContainer = document.getElementById("command-help-modal-container")
+if (commandHelpModalContainer) {
+  createRoot(commandHelpModalContainer).render(
+    <StrictMode>
+      <JotaiProvider store={store}>
+        <CommandHelpModal />
       </JotaiProvider>
     </StrictMode>,
   )

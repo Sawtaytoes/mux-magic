@@ -1,14 +1,10 @@
 import { atom } from "jotai"
-import type {
-  ApiRunState,
-  FileExplorerState,
-  LookupState,
-  PromptData,
-} from "../types"
+import type { ApiRunState, FileExplorerState, LookupState, PromptData } from "../types"
 
 export const loadModalOpenAtom = atom<boolean>(false)
 export const yamlModalOpenAtom = atom<boolean>(false)
-export const commandHelpModalCommandAtom = atom<string | null>(null)
+export const commandHelpModalOpenAtom = atom<boolean>(false)
+export const commandHelpCommandNameAtom = atom<string | null>(null)
 export const selectedStepIdAtom = atom<string | null>(null)
 export const dryRunAtom = atom<boolean>(false)
 export const failureModeAtom = atom<boolean>(false)

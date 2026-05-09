@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { commandHelpModalCommandAtom } from "../state/uiAtoms"
+import { commandHelpCommandNameAtom, commandHelpModalOpenAtom } from "../state/uiAtoms"
 import { CommandHelpModal } from "./CommandHelpModal"
 
 const mockCommand = {
@@ -13,9 +13,10 @@ const mockCommand = {
   ],
 }
 
-const makeStore = (commandName: string | null) => {
+const makeStore = (commandName: string | null, isOpen = commandName !== null) => {
   const store = createStore()
-  store.set(commandHelpModalCommandAtom, commandName)
+  store.set(commandHelpCommandNameAtom, commandName)
+  store.set(commandHelpModalOpenAtom, isOpen)
   return store
 }
 
@@ -30,21 +31,21 @@ afterEach(() => {
 })
 
 describe("CommandHelpModal", () => {
-  it("renders nothing when closed", () => {
-    const store = makeStore("ffmpeg")
+  it("renders nothing when closed (isOpen=false)", () => {
+    const store = makeStore("ffmpeg", false)
     const { container } = render(
       <Provider store={store}>
-        <CommandHelpModal isOpen={false} onClose={vi.fn()} />
+        <CommandHelpModal />
       </Provider>,
     )
     expect(container.firstChild).toBeNull()
   })
 
   it("renders nothing when commandName atom is null", () => {
-    const store = makeStore(null)
+    const store = makeStore(null, true)
     const { container } = render(
       <Provider store={store}>
-        <CommandHelpModal isOpen={true} onClose={vi.fn()} />
+        <CommandHelpModal />
       </Provider>,
     )
     expect(container.firstChild).toBeNull()
@@ -55,7 +56,7 @@ describe("CommandHelpModal", () => {
     const store = makeStore("ffmpeg")
     render(
       <Provider store={store}>
-        <CommandHelpModal isOpen={true} onClose={vi.fn()} />
+        <CommandHelpModal />
       </Provider>,
     )
     expect(screen.getByText(/Help:/)).toBeInTheDocument()
@@ -66,7 +67,7 @@ describe("CommandHelpModal", () => {
     const store = makeStore("ffmpeg")
     render(
       <Provider store={store}>
-        <CommandHelpModal isOpen={true} onClose={vi.fn()} />
+        <CommandHelpModal />
       </Provider>,
     )
     expect(screen.getByText("Encodes video with ffmpeg.")).toBeInTheDocument()
@@ -77,7 +78,7 @@ describe("CommandHelpModal", () => {
     const store = makeStore("ffmpeg")
     render(
       <Provider store={store}>
-        <CommandHelpModal isOpen={true} onClose={vi.fn()} />
+        <CommandHelpModal />
       </Provider>,
     )
     expect(screen.getByText("Input file")).toBeInTheDocument()
@@ -89,38 +90,37 @@ describe("CommandHelpModal", () => {
     const store = makeStore("ffmpeg")
     render(
       <Provider store={store}>
-        <CommandHelpModal isOpen={true} onClose={vi.fn()} />
+        <CommandHelpModal />
       </Provider>,
     )
     expect(screen.getByText("required")).toBeInTheDocument()
   })
 
-  it("calls onClose when close button is clicked", async () => {
+  it("close button sets isOpen atom to false", async () => {
     wrapWithBridge()
     const user = userEvent.setup()
-    const onClose = vi.fn()
     const store = makeStore("ffmpeg")
     render(
       <Provider store={store}>
-        <CommandHelpModal isOpen={true} onClose={onClose} />
+        <CommandHelpModal />
       </Provider>,
     )
     await user.click(screen.getByRole("button", { name: /✕ close/i }))
-    expect(onClose).toHaveBeenCalledOnce()
+    expect(store.get(commandHelpModalOpenAtom)).toBe(false)
+    expect(screen.queryByText(/Help:/)).toBeNull()
   })
 
-  it("calls onClose when backdrop is clicked", async () => {
+  it("backdrop click sets isOpen atom to false", async () => {
     wrapWithBridge()
     const user = userEvent.setup()
-    const onClose = vi.fn()
     const store = makeStore("ffmpeg")
     const { container } = render(
       <Provider store={store}>
-        <CommandHelpModal isOpen={true} onClose={onClose} />
+        <CommandHelpModal />
       </Provider>,
     )
     const backdrop = container.querySelector(".fixed.inset-0") as HTMLElement
     await user.click(backdrop)
-    expect(onClose).toHaveBeenCalledOnce()
+    expect(store.get(commandHelpModalOpenAtom)).toBe(false)
   })
 })

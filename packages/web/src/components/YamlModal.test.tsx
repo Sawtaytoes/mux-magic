@@ -4,6 +4,7 @@ import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { pathsAtom } from "../state/pathsAtom"
 import { stepsAtom } from "../state/stepsAtom"
+import { yamlModalOpenAtom } from "../state/uiAtoms"
 import { YamlModal } from "./YamlModal"
 
 const makeStep = (override = {}) => ({
@@ -18,6 +19,17 @@ const makeStep = (override = {}) => ({
   ...override,
 })
 
+const renderModal = (initialOpen = false) => {
+  const store = createStore()
+  store.set(yamlModalOpenAtom, initialOpen)
+  render(
+    <Provider store={store}>
+      <YamlModal />
+    </Provider>,
+  )
+  return store
+}
+
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
@@ -25,32 +37,30 @@ afterEach(() => {
 
 describe("YamlModal", () => {
   it("renders nothing when closed", () => {
-    const store = createStore()
-    const { container } = render(
-      <Provider store={store}>
-        <YamlModal isOpen={false} onClose={vi.fn()} />
-      </Provider>,
-    )
+    const { container } = (() => {
+      const store = createStore()
+      return render(
+        <Provider store={store}>
+          <YamlModal />
+        </Provider>,
+      )
+    })()
     expect(container.firstChild).toBeNull()
   })
 
   it("renders the modal when open", () => {
-    const store = createStore()
-    render(
-      <Provider store={store}>
-        <YamlModal isOpen={true} onClose={vi.fn()} />
-      </Provider>,
-    )
+    renderModal(true)
     expect(screen.getByText("YAML")).toBeInTheDocument()
   })
 
   it("shows no-steps placeholder when sequence is empty", () => {
     const store = createStore()
+    store.set(yamlModalOpenAtom, true)
     store.set(stepsAtom, [])
     store.set(pathsAtom, [])
     render(
       <Provider store={store}>
-        <YamlModal isOpen={true} onClose={vi.fn()} />
+        <YamlModal />
       </Provider>,
     )
     expect(screen.getByText(/# No steps yet/)).toBeInTheDocument()
@@ -58,65 +68,55 @@ describe("YamlModal", () => {
 
   it("shows serialized YAML for a non-empty sequence", () => {
     const store = createStore()
+    store.set(yamlModalOpenAtom, true)
     store.set(stepsAtom, [makeStep()])
     store.set(pathsAtom, [{ id: "basePath", label: "basePath", value: "/media" }])
     render(
       <Provider store={store}>
-        <YamlModal isOpen={true} onClose={vi.fn()} />
+        <YamlModal />
       </Provider>,
     )
     expect(screen.getByText(/command:/)).toBeInTheDocument()
   })
 
-  it("calls onClose when the close button is clicked", async () => {
+  it("close button sets atom to false", async () => {
     const user = userEvent.setup()
-    const onClose = vi.fn()
-    const store = createStore()
-    render(
-      <Provider store={store}>
-        <YamlModal isOpen={true} onClose={onClose} />
-      </Provider>,
-    )
+    const store = renderModal(true)
+
     await user.click(screen.getByRole("button", { name: /✕ close/i }))
-    expect(onClose).toHaveBeenCalledOnce()
+
+    expect(store.get(yamlModalOpenAtom)).toBe(false)
+    expect(screen.queryByText("YAML")).toBeNull()
   })
 
-  it("calls onClose when the backdrop is clicked", async () => {
+  it("backdrop click sets atom to false", async () => {
     const user = userEvent.setup()
-    const onClose = vi.fn()
-    const store = createStore()
-    const { container } = render(
-      <Provider store={store}>
-        <YamlModal isOpen={true} onClose={onClose} />
-      </Provider>,
-    )
-    const backdrop = container.querySelector(".fixed.inset-0") as HTMLElement
-    await user.click(backdrop)
-    expect(onClose).toHaveBeenCalledOnce()
+    const store = renderModal(true)
+
+    await user.click(screen.getByTestId("yaml-modal-backdrop"))
+
+    expect(store.get(yamlModalOpenAtom)).toBe(false)
   })
 
-  it("does not close when inner content is clicked", async () => {
+  it("clicking inner content does not close the modal", async () => {
     const user = userEvent.setup()
-    const onClose = vi.fn()
-    const store = createStore()
-    render(
-      <Provider store={store}>
-        <YamlModal isOpen={true} onClose={onClose} />
-      </Provider>,
-    )
+    const store = renderModal(true)
+
     await user.click(screen.getByText("YAML"))
-    expect(onClose).not.toHaveBeenCalled()
+
+    expect(store.get(yamlModalOpenAtom)).toBe(true)
   })
 
   it("copies YAML to clipboard when Copy is clicked", async () => {
     const user = userEvent.setup()
     const store = createStore()
+    store.set(yamlModalOpenAtom, true)
     store.set(stepsAtom, [makeStep()])
     store.set(pathsAtom, [])
     vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined)
     render(
       <Provider store={store}>
-        <YamlModal isOpen={true} onClose={vi.fn()} />
+        <YamlModal />
       </Provider>,
     )
     await user.click(screen.getByRole("button", { name: /copy/i }))

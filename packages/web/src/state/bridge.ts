@@ -11,6 +11,8 @@ import {
 import { stepCounterAtom, stepsAtom } from "./stepsAtom"
 import {
   apiRunModalAtom,
+  commandHelpCommandNameAtom,
+  commandHelpModalOpenAtom,
   dryRunAtom,
   failureModeAtom,
   fileExplorerAtom,
@@ -18,6 +20,7 @@ import {
   lookupModalAtom,
   promptModalAtom,
   runningAtom,
+  yamlModalOpenAtom,
 } from "./uiAtoms"
 
 // ─── Window type augmentations ────────────────────────────────────────────────
@@ -28,6 +31,10 @@ declare global {
     mediaTools: Record<string, any>
     openLoadModal: () => void
     closeLoadModal: () => void
+    openYamlModal: () => void
+    closeYamlModal: () => void
+    openCommandHelpModal: (args: { commandName: string }) => void
+    closeCommandHelpModal: () => void
     openVideoModal?: (path: string) => void
     commandLabel?: (name: string) => string
     getCommandFieldDescription?: (args: { commandName: string; fieldName: string }) => string
@@ -139,6 +146,25 @@ export const initBridge = () => {
   window.mediaTools.closeLoadModal = closeLoadModal
   window.openLoadModal = openLoadModal
   window.closeLoadModal = closeLoadModal
+
+  // ─── Wave A: YamlModal + CommandHelpModal ─────────────────────────────────
+
+  const openYamlModal = () => store.set(yamlModalOpenAtom, true)
+  const closeYamlModal = () => store.set(yamlModalOpenAtom, false)
+  const openCommandHelpModal = ({ commandName }: { commandName: string }) => {
+    store.set(commandHelpCommandNameAtom, commandName)
+    store.set(commandHelpModalOpenAtom, true)
+  }
+  const closeCommandHelpModal = () => store.set(commandHelpModalOpenAtom, false)
+
+  window.mediaTools.openYamlModal = openYamlModal
+  window.mediaTools.closeYamlModal = closeYamlModal
+  window.mediaTools.openCommandHelpModal = openCommandHelpModal
+  window.mediaTools.closeCommandHelpModal = closeCommandHelpModal
+  window.openYamlModal = openYamlModal
+  window.closeYamlModal = closeYamlModal
+  window.openCommandHelpModal = openCommandHelpModal
+  window.closeCommandHelpModal = closeCommandHelpModal
 
   // ─── Picker bridges ─────────────────────────────────────────────────────────
   // Legacy step-card onclick handlers call window.commandPicker.open(anchor, el)

@@ -1,35 +1,36 @@
-import { useAtom } from "jotai"
+import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useState } from "react"
 import { pathsAtom } from "../state/pathsAtom"
 import { stepsAtom } from "../state/stepsAtom"
+import { yamlModalOpenAtom } from "../state/uiAtoms"
 import { toYamlStr } from "./yamlSerializer"
 
-interface YamlModalProps {
-  isOpen: boolean
-  onClose: () => void
-}
-
-export const YamlModal = ({ isOpen, onClose }: YamlModalProps) => {
-  const [steps] = useAtom(stepsAtom)
-  const [paths] = useAtom(pathsAtom)
-  const [yamlContent, setYamlContent] = useState("")
+export const YamlModal = () => {
+  const [isOpen, setIsOpen] = useAtom(yamlModalOpenAtom)
+  const steps = useAtomValue(stepsAtom)
+  const paths = useAtomValue(pathsAtom)
   const [copyLabel, setCopyLabel] = useState("Copy")
 
-  useEffect(() => {
-    if (isOpen) {
-      setYamlContent(toYamlStr(steps, paths))
-    }
-  }, [isOpen, steps, paths])
+  const close = () => setIsOpen(false)
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(yamlContent)
+    await navigator.clipboard.writeText(toYamlStr(steps, paths))
     setCopyLabel("Copied!")
     setTimeout(() => setCopyLabel("Copy"), 2000)
   }
 
   const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) onClose()
+    if (event.target === event.currentTarget) close()
   }
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close()
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -37,6 +38,7 @@ export const YamlModal = ({ isOpen, onClose }: YamlModalProps) => {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
       onClick={handleBackdropClick}
+      data-testid="yaml-modal-backdrop"
     >
       <div
         className="bg-slate-900 border border-slate-700 rounded-xl flex flex-col"
@@ -55,7 +57,7 @@ export const YamlModal = ({ isOpen, onClose }: YamlModalProps) => {
             </button>
             <button
               type="button"
-              onClick={onClose}
+              onClick={close}
               className="text-xs text-slate-400 hover:text-slate-200"
             >
               ✕ Close
@@ -63,7 +65,7 @@ export const YamlModal = ({ isOpen, onClose }: YamlModalProps) => {
           </div>
         </div>
         <pre className="flex-1 overflow-auto p-4 text-xs text-emerald-400 font-mono leading-relaxed whitespace-pre">
-          {yamlContent}
+          {toYamlStr(steps, paths)}
         </pre>
       </div>
     </div>
