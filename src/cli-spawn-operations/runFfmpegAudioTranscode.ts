@@ -20,8 +20,9 @@ import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 //   * No subtitles (`-map 0:s?` is intentionally absent per design doc
 //     §12 decision 3 — bitmap subs won't render in <video> and bloat
 //     the file; text subs are a separate side-channel concern).
-//   * Output container is fragmented MP4 for AAC, WebM for Opus. Both
-//     are streamable + playable as soon as the first fragment lands.
+//   * Output container is always fragmented MP4. Both Opus and AAC land
+//     in fMP4 so H.264/H.265 video copy works — WebM only accepts VP8/
+//     VP9/AV1 and rejects H.264 at the mux stage, killing the encode.
 //
 // The encoder writes into a caller-supplied tempPath via stdout → fs
 // WriteStream. Subscribers receive `"ready"` once the encoder exits
@@ -70,21 +71,13 @@ const buildFfmpegArgs = (
       cacheKey.bitrate,
     ]
   )
-  const containerSection = (
-    cacheKey.codec === "opus"
-    ? [
-      "-f",
-      "webm",
-      "pipe:1",
-    ]
-    : [
-      "-movflags",
-      "frag_keyframe+empty_moov+default_base_moof",
-      "-f",
-      "mp4",
-      "pipe:1",
-    ]
-  )
+  const containerSection = [
+    "-movflags",
+    "frag_keyframe+empty_moov+default_base_moof",
+    "-f",
+    "mp4",
+    "pipe:1",
+  ]
   return sharedHead.concat(codecSection, containerSection)
 }
 

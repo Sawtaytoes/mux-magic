@@ -14,11 +14,7 @@ vi.mock("../../cli-spawn-operations/runFfmpegAudioTranscode.js", () => ({
 }))
 
 vi.mock("../../tools/transcodeTempStore.js", () => ({
-  mimeTypeForCodec: (codec: string) => (
-    codec === "opus"
-    ? "video/webm"
-    : "video/mp4"
-  ),
+  mimeTypeForCodec: (_codec: string) => "video/mp4",
   transcodeTempStore: {
     acquire: vi.fn(() => ({ isFresh: false, tempPath: "/tmp/never-used" })),
     markReady: vi.fn(async () => {}),
@@ -93,7 +89,7 @@ describe("HEAD /transcode/audio", () => {
     const response = await head(`/transcode/audio?path=${encodeURIComponent(validPath)}&codec=opus`)
 
     expect(response.status).toBe(200)
-    expect(response.headers.get("Content-Type")).toBe("video/webm")
+    expect(response.headers.get("Content-Type")).toBe("video/mp4")
     // HEAD per HTTP spec returns no body; verify by checking the
     // response body is empty.
     const text = await response.text()
