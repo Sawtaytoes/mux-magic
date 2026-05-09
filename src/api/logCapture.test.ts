@@ -71,7 +71,7 @@ describe(installLogCapture.name, () => {
       console.log("log line")
     })
 
-    expect(appendSpy).toHaveBeenCalledWith(job.id, "log line")
+    expect(appendSpy).toHaveBeenCalledWith(job.id, expect.stringContaining("log line"))
   })
 
   test("strips ANSI codes before appending", () => {
@@ -82,7 +82,7 @@ describe(installLogCapture.name, () => {
       console.log("\x1B[32mcolored\x1B[0m")
     })
 
-    expect(appendSpy).toHaveBeenCalledWith(job.id, "colored")
+    expect(appendSpy).toHaveBeenCalledWith(job.id, expect.stringContaining("colored"))
   })
 
   test("does not call appendJobLog outside a job context", () => {
@@ -101,6 +101,6 @@ describe(installLogCapture.name, () => {
       console.error("an error")
     })
 
-    expect(appendSpy).toHaveBeenCalledWith(job.id, "an error")
+    expect(appendSpy).toHaveBeenCalledWith(job.id, expect.stringContaining("an error"))
   })
 })

@@ -229,6 +229,7 @@ Object.assign(window.mediaTools, {
   scrollStepIntoView,
   scrollPathVarIntoView,
   schedulePathLookup,
+  pathPickerKeydown,
   renderAllAnimated,
 
   // run-sequence

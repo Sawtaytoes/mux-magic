@@ -6,6 +6,13 @@ import { expect, test, type Page } from "@playwright/test"
 // The header no longer carries an "Add Step" button — the per-divider
 // buttons cover insert-anywhere and the empty-state button covers the
 // from-scratch path.
+// Opens the ⋮ "Sequence actions" controls popover. The header controls
+// (Add Path, View YAML, Run Sequence, Run via API, etc.) always live
+// behind this toggle — the menu never expands inline.
+async function openControlsMenu(page: Page) {
+  await page.getByRole("button", { name: "Sequence actions" }).click()
+}
+
 async function addStep(page: Page) {
   const emptyState = page.getByRole("button", { name: /Add your first step/ })
   if (await emptyState.isVisible().catch(() => false)) {
@@ -27,10 +34,11 @@ test.describe("Sequence Builder", () => {
 
   test("renders the header and the empty-state hint", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Sequence Builder" })).toBeVisible()
-    // Header actions: "Add Step / Add Group / Add Parallel Group" no
-    // longer live in the header — the per-divider buttons cover those
-    // (and the empty-state button covers the from-scratch path).
-    await expect(page.getByRole("button", { name: "Add Path" })).toBeVisible()
+    // All controls live behind the ⋮ "Sequence actions" toggle — verify
+    // the toggle itself is present, then spot-check one control inside.
+    const controlsToggle = page.getByRole("button", { name: "Sequence actions" })
+    await expect(controlsToggle).toBeVisible()
+    await controlsToggle.click()
     await expect(page.getByRole("button", { name: "▶ Run Sequence" })).toBeVisible()
     // Empty-state copy + its inline "Add your first step" button.
     await expect(page.getByText(/No steps yet/)).toBeVisible()
@@ -71,6 +79,7 @@ test.describe("Sequence Builder", () => {
     await page.getByPlaceholder("Search commands…").fill("copyFiles")
     await page.getByRole("button", { name: /^Copy Files\s/ }).click()
 
+    await openControlsMenu(page)
     await page.getByRole("button", { name: "View YAML" }).click()
 
     const modal = page.locator("#yaml-modal")
@@ -129,6 +138,7 @@ test.describe("Sequence Builder", () => {
   })
 
   test("Add Path creates a new path-variable card whose value lands in the YAML", async ({ page }) => {
+    await openControlsMenu(page)
     await page.getByRole("button", { name: "Add Path" }).click()
 
     // Two path-var cards exist now: Base Path + Path 1.
@@ -141,6 +151,7 @@ test.describe("Sequence Builder", () => {
     await newPathValueInput.blur()
 
     // YAML modal should reflect the new path's value.
+    await openControlsMenu(page)
     await page.getByRole("button", { name: "View YAML" }).click()
     await expect(page.locator("#yaml-out")).toContainText("/data/anime")
   })
@@ -207,6 +218,21 @@ test.describe("Sequence Builder", () => {
   })
 
   test("typing a path into a step field auto-promotes it to a path variable on commit", async ({ page }) => {
+    // Stub listings to avoid real filesystem calls from the picker.
+    await page.route("**/queries/listDirectoryEntries", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ entries: [], separator: "/", error: null }),
+      })
+    })
+
+    // Pre-occupy Base Path so promotePathToPathVar creates a NEW path variable
+    // rather than filling the empty Base Path in-place.
+    const basePathValueInput = page.locator("[data-path-var]").first().locator('input[type="text"]').last()
+    await basePathValueInput.fill("/media")
+    await basePathValueInput.press("Escape")
+
     await addStep(page)
     await page.getByText("— pick a command —").click()
     await page.getByPlaceholder("Search commands…").fill("copyFiles")
@@ -279,6 +305,7 @@ test.describe("Sequence Builder", () => {
     await page.getByPlaceholder("Search commands…").fill("copyFiles")
     await page.getByRole("button", { name: /^Copy Files\s/ }).click()
 
+    await openControlsMenu(page)
     await page.getByRole("button", { name: "▶ Run via API" }).click()
 
     // Modal opens with the umbrella job id surfaced.
@@ -307,6 +334,7 @@ test.describe("Sequence Builder", () => {
     await page.getByPlaceholder("Search commands…").fill("moveFiles")
     await page.getByRole("button", { name: /^Move Files\s/ }).click()
 
+    await openControlsMenu(page)
     await page.getByRole("button", { name: "View YAML" }).click()
 
     const modal = page.locator("#yaml-modal")
@@ -321,6 +349,7 @@ test.describe("Sequence Builder", () => {
     // Close the modal and reload — the link must round-trip through the URL.
     await page.keyboard.press("Escape")
     await page.reload()
+    await openControlsMenu(page)
     await page.getByRole("button", { name: "View YAML" }).click()
 
     const reloadedYaml = await page.locator("#yaml-modal #yaml-out").innerText()
@@ -466,6 +495,7 @@ test.describe("Sequence Builder — groups", () => {
     await groupCard.locator('button[title="Move group down"]').click()
 
     // Inspect the YAML to verify the order changed: a → b → group.
+    await openControlsMenu(page)
     await page.getByRole("button", { name: "View YAML" }).click()
     const yamlOut = await page.locator("#yaml-modal #yaml-out").innerText()
     const aIdx = yamlOut.indexOf("id: a")
@@ -508,6 +538,7 @@ test.describe("Sequence Builder — groups", () => {
     await expect(stepACard).toBeVisible()
     await stepACard.locator('button:has-text("↓")').click()
 
+    await openControlsMenu(page)
     await page.getByRole("button", { name: "View YAML" }).click()
     const yamlOut = await page.locator("#yaml-modal #yaml-out").innerText()
     const groupIdx = yamlOut.indexOf("id: middleGroup")
