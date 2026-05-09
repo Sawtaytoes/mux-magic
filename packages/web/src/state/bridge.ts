@@ -20,6 +20,8 @@ declare global {
     openLoadModal: () => void
     closeLoadModal: () => void
     commandLabel?: (name: string) => string
+    getCommandFieldDescription?: (args: { commandName: string; fieldName: string }) => string
+    getCommandSummary?: (args: { commandName: string }) => string
     changeCommand?: (stepId: string, commandName: string) => void
     setParam?: (stepId: string, fieldName: string, value: unknown) => void
     setLink?: (stepId: string, fieldName: string, value: string) => void

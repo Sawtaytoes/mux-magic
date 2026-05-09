@@ -19,6 +19,7 @@ export type CommandField = {
 export type CommandDefinition = {
   tag?: string
   summary?: string
+  note?: string
   fields: CommandField[]
   persistedKeys?: string[]
   outputFolderName?: string | null
