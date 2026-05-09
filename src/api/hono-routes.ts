@@ -3,6 +3,7 @@ import { OpenAPIHono } from "@hono/zod-openapi"
 
 import { commandRoutes } from "./routes/commandRoutes.js"
 import { addDocRoutes } from "./routes/docRoutes.js"
+import { featuresRoutes } from "./routes/featuresRoutes.js"
 import { fileRoutes } from "./routes/fileRoutes.js"
 import { inputRoutes } from "./routes/inputRoutes.js"
 import { jobRoutes } from "./routes/jobRoutes.js"
@@ -25,6 +26,7 @@ app.use("/*", serveStatic({
   },
 }))
 
+app.route("/", featuresRoutes)
 app.route("/", jobRoutes)
 app.route("/", logsRoutes)
 app.route("/", inputRoutes)

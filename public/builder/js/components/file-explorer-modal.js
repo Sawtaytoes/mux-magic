@@ -910,7 +910,12 @@ export async function openVideoModal(absolutePath) {
     videoModalStatus().classList.add('hidden')
   }, { once: true })
 
-  if (isTranscodingAudio) {
+  // TODO: MSE transcode path (seeking, audio remux via ffmpeg) is under
+  // development. Disabled by default until seek / InvalidStateError /
+  // audio-only bugs are fully resolved. Enable by setting
+  // EXPERIMENTAL_FFMPEG_TRANSCODING=true in .env.
+  const features = await fetch('/features').then((r) => r.json()).catch(() => ({}))
+  if (isTranscodingAudio && features.experimentalFfmpegTranscoding) {
     // Use MSE for transcode streams: HEAD returns X-Duration and
     // X-Video-Codec so we can set mediaSource.duration immediately and
     // pick the right SourceBuffer codec string.
