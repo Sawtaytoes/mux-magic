@@ -1105,6 +1105,28 @@ yarn workspace server run start-server   # Hono serves dist/
 
 ---
 
+## Post-Migration: Rename to MuxMagic
+
+**Planned after the Final PR is merged and the user confirms migration complete.**
+
+The project will be renamed from `media-tools` → **MuxMagic**. This is a pure rename — no architecture changes.
+
+Scope of the rename:
+
+| Item | Before | After |
+|------|--------|-------|
+| npm package scope | `@media-tools/server`, `@media-tools/web`, `@media-tools/shared` | `@muxmagic/server`, `@muxmagic/web`, `@muxmagic/shared` |
+| GitHub repo | `media-tools` | `muxmagic` |
+| Local directory | `d:/Projects/Personal/media-tools` | `d:/Projects/Personal/muxmagic` |
+| Docker image | `ghcr.io/<owner>/media-tools` | `ghcr.io/<owner>/muxmagic` |
+| npm published package | `@media-tools/shared` | `@muxmagic/shared` (republish under new scope; deprecate old) |
+
+**Until then**: all workers continue using `@media-tools/*` package names and the `media-tools` directory. Do not pre-emptively rename any package name, import path, or workspace reference during the React migration phases. The rename is a single dedicated pass after the Final PR.
+
+The local directory and repo rename requires coordination outside this repo (CI config, nginx-proxy-manager labels, any `media-sync` `package.json` references). The user will handle this manually after migration is done.
+
+---
+
 ## Things We Are NOT Doing
 
 - **SSR or React Server Components** — this is a local-user tool, SPA is correct
