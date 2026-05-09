@@ -1,13 +1,13 @@
 # React Migration Checklist
 
-Last updated: 2026-05-09 by Claude Opus 4.7 (PR #1)
+Last updated: 2026-05-09 by Claude Sonnet 4.6 (PR #2)
 
 ## Phase Status
 
 | PR | Description | Status | Branch | Notes |
 |----|-------------|--------|--------|-------|
 | PR #1 | Bootstrap (monorepo, Vite, Biome) | [x] Done | react-migration | typecheck + biome + eslint all green; manual verify confirmed both servers running cleanly |
-| PR #2 | LoadModal — first component | [ ] Not started | | |
+| PR #2 | LoadModal — first component | [x] Done | react-migration | atoms + bridge + loadYaml.ts + LoadModal.tsx + tests; js-yaml + testing-library added; legacy load-modal.js deleted; Storybook files created (install deferred) |
 | Wave A-1 | YamlModal | [ ] Not started | | |
 | Wave A-2 | CommandHelpModal | [ ] Not started | | |
 | Wave A-3 | FieldTooltip | [ ] Not started | | |
@@ -40,6 +40,12 @@ Last updated: 2026-05-09 by Claude Opus 4.7 (PR #1)
 - **Changesets + version workflow**: not part of PR #1; will be added before the first wave merges so version bumps stay automated.
 - **CI workflow (`.github/workflows/ci.yml`)**: not part of PR #1; the verification gates here run locally. Land alongside Changesets.
 
+## Deferred from PR #2
+
+- **Storybook v10 install**: `LoadModal.stories.tsx` and `LoadModal.mdx` are created; install `@storybook/react-vite` + addons (`a11y`, `vitest`, `themes`) + `msw-storybook-addon` before Wave A begins.
+- **Hono dev proxy** (carried from PR #1): The Vite bundle is injected into `public/builder/index.html` via a hardcoded `http://localhost:5173/src/app.tsx` dev script tag. This works in dev but needs the Hono proxy for a clean production path. Remove the script tag from the legacy HTML when the proxy lands.
+- **ESLint plugin install** (carried from PR #1): `eslint-plugin-react-compiler`, `eslint-plugin-testing-library`, `eslint-plugin-import-x` are referenced in `eslint.config.js` but not installed. Install in a dedicated PR before CI is enabled.
+
 ## Open Questions
 
-(none yet)
+(none)

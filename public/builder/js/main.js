@@ -40,11 +40,6 @@ import {
   copyYaml,
 } from './components/yaml-modal.js'
 import {
-  openLoadModal,
-  closeLoadModal,
-  loadYamlFromText,
-} from './components/load-modal.js'
-import {
   togglePageMenu,
   attachPageHeaderListeners,
 } from './components/page-header.js'
@@ -210,11 +205,6 @@ Object.assign(window.mediaTools, {
   closeYamlModal,
   copyYaml,
 
-  // load-modal
-  loadYamlFromText,
-  openLoadModal,
-  closeLoadModal,
-
   // page-header
   togglePageMenu,
 
@@ -277,12 +267,11 @@ window.confirmFileExplorerPick = confirmFileExplorerPick
 window.openVideoModal = openVideoModal
 window.closeVideoModal = closeVideoModal
 
-// yaml / load modal
+// yaml modal
 window.openYamlModal = openYamlModal
 window.closeYamlModal = closeYamlModal
 window.copyYaml = copyYaml
-window.openLoadModal = openLoadModal
-window.closeLoadModal = closeLoadModal
+// openLoadModal / closeLoadModal are now provided by the React bridge (state/bridge.ts)
 
 // page header
 window.togglePageMenu = togglePageMenu

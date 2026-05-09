@@ -160,31 +160,9 @@ await enableMocksIfRequested()
 
 </div>
 
-<!-- Load YAML modal: paste-driven. Open it via the page-header Load
-     icon; pasting anywhere on the page (Ctrl+V / ⌘+V) hydrates the
-     builder and closes the modal. The text-only body keeps the surface
-     tiny and consistent with the YAML view modal next door. -->
-<div id="load-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70" onclick="closeLoadModal(event)">
-  <div class="bg-slate-900 border border-slate-700 rounded-xl flex flex-col" style="width:min(90vw,560px)" onclick="event.stopPropagation()">
-    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
-      <span class="text-xs font-medium text-slate-400">Load YAML</span>
-      <button onclick="closeLoadModal()" class="text-xs text-slate-400 hover:text-slate-200">✕ Close</button>
-    </div>
-    <div class="px-6 py-8 text-center space-y-3">
-      <p class="text-sm text-slate-300">Paste your saved sequence YAML anywhere on the page.</p>
-      <p class="text-xs text-slate-500">
-        Press
-        <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono text-[10px]">Ctrl + V</kbd>
-        /
-        <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono text-[10px]">⌘ + V</kbd>
-        to paste ·
-        <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded font-mono text-[10px]">Esc</kbd>
-        to cancel
-      </p>
-      <p id="load-error" class="text-xs text-red-400 hidden"></p>
-    </div>
-  </div>
-</div>
+<!-- LoadModal is now React-rendered. The React bundle (loaded below)
+     mounts into this container via createRoot. -->
+<div id="load-modal-container"></div>
 
 <!-- YAML modal -->
 <div id="yaml-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70" onclick="closeYamlModal(event)">
@@ -367,5 +345,10 @@ await enableMocksIfRequested()
   </div>
 </div>
 
+<!-- DEV: loads the Vite React bundle so React components (LoadModal, etc.)
+     are active on this legacy page. Remove this script when the Hono dev
+     proxy is enabled — at that point Vite serves all pages directly.
+     See react-migration-plan.md § "Vite + Hono Coexistence". -->
+<script type="module" src="http://localhost:5173/src/app.tsx"></script>
 </body>
 </html>

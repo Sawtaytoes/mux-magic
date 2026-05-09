@@ -1,0 +1,37 @@
+{/* LoadModal.mdx */}
+
+import { Meta, Canvas, Controls } from "@storybook/blocks";
+import * as LoadModalStories from "./LoadModal.stories";
+
+<Meta of={LoadModalStories} />
+
+# LoadModal
+
+A paste-driven YAML loader. Open it via the Load icon in the page header; press
+**Ctrl+V** / **⌘+V** anywhere on the page to hydrate the builder, or **Esc** to dismiss.
+
+## Behaviour
+
+- **Open** → attaches a `document` paste listener (scoped to the modal's open lifetime).
+- **Valid paste** → parses YAML, loads steps + paths into Jotai atoms, calls legacy
+  `renderAll()` + `updateUrl()`, then closes itself.
+- **Invalid paste** → keeps the modal open and surfaces the parse error inline.
+- **Empty paste** → no-op; modal stays open.
+- **Backdrop click or Esc** → closes without loading.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `loadModalOpenAtom` | Controls visibility; set to `true` by `window.openLoadModal()` |
+| `stepsAtom` | Written on successful load |
+| `pathsAtom` | Written on successful load |
+| `stepCounterAtom` | Written on successful load |
+
+## Open state
+
+<Canvas of={LoadModalStories.Open} />
+
+## Error state
+
+<Canvas of={LoadModalStories.WithError} />

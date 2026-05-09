@@ -7,6 +7,9 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Transitional slot: LoadModal mounts here when the Vite SPA shares
+         the page with legacy DOM (e.g. the builder HTML during migration). -->
+    <div id="load-modal-container"></div>
     <script type="module" src="/src/app.tsx"></script>
   </body>
 </html>

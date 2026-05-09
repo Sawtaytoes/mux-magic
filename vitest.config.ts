@@ -53,6 +53,9 @@ export default defineConfig({
           },
         },
       },
+      // React component tests for packages/web — uses the web package's own
+      // vitest.config.ts which applies the React Compiler babel plugin.
+      "packages/web/vitest.config.ts",
     ],
   },
 })
