@@ -4,7 +4,7 @@
 // current in-memory state and re-attaches Sortable instances + progress bars.
 
 import { steps, paths, flattenSteps, isGroup, initPaths } from './sequence-state.js'
-import { renderInsertDivider, renderSequenceEndCard, renderStep, renderStepCompact, renderGroup, isDrawerMode } from './step-renderer.js'
+import { renderInsertDivider, renderSequenceEndCard, renderGroupCard, renderStepCard, renderStepCompactCard, isDrawerMode } from './step-renderer.js'
 
 // Per-step ProgressEvent snapshot. Keyed by stepId. Cleared on done /
 // step-finished / cancel via unmountStepCardProgress.
@@ -77,19 +77,24 @@ function buildStepsHtmlParts() {
   const isDrawerModeOn = isDrawerMode()
   const { parts: stepParts } = steps.reduce((accumulator, item, itemIndex) => {
     if (isGroup(item)) {
-      accumulator.parts.push(renderGroup(item, itemIndex, accumulator.flatStepIndex))
+      accumulator.parts.push(renderGroupCard({
+        group: item,
+        itemIndex,
+        startingFlatIndex: accumulator.flatStepIndex,
+        renderStep: (step, index, context) => renderStepCard({ step, index, context }),
+      }))
       accumulator.flatStepIndex += item.steps.length
     } else {
       accumulator.parts.push(
         isDrawerModeOn
-          ? renderStepCompact(item, accumulator.flatStepIndex)
-          : renderStep(item, accumulator.flatStepIndex)
+          ? renderStepCompactCard({ step: item, index: accumulator.flatStepIndex })
+          : renderStepCard({ step: item, index: accumulator.flatStepIndex })
       )
       accumulator.flatStepIndex += 1
     }
-    accumulator.parts.push(renderInsertDivider(itemIndex + 1))
+    accumulator.parts.push(renderInsertDivider({ index: itemIndex + 1 }))
     return accumulator
-  }, { parts: [renderInsertDivider(0)], flatStepIndex: 0 })
+  }, { parts: [renderInsertDivider({ index: 0 })], flatStepIndex: 0 })
   stepParts.push(renderSequenceEndCard())
   return stepParts
 }

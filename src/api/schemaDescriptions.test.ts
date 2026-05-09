@@ -70,7 +70,7 @@ describe("schema-driven command descriptions", () => {
     )
 
     expect(sourcePathDescription).toContain("copied up one level")
-    expect(deleteSourceFolderDescription).toContain("delete sourcePath after copying")
+    expect(deleteSourceFolderDescription).toContain("Delete the source folder after copying")
   })
 
   test("modifySubtitleMetadata surfaces the long hasDefaultRules description", () => {

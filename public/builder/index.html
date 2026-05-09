@@ -46,6 +46,7 @@ await enableMocksIfRequested()
       <h1 class="text-lg font-bold tracking-tight">
         <a href="/" class="text-slate-100 hover:text-blue-300 transition-colors">Sequence Builder</a>
       </h1>
+      <button id="dry-run-badge" onclick="toggleDryRun()" class="hidden text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/35 active:scale-95 text-amber-400 border border-amber-500/40 self-center transition-all" title="Dry run ON — click to disable">DRY RUN</button>
       <div id="page-actions-nav" class="page-menu page-menu-nav">
         <div class="page-menu-group">
           <button onclick="startNewSequence()" title="Clear the current sequence and start fresh (Ctrl+Z to undo)"
@@ -56,12 +57,27 @@ await enableMocksIfRequested()
           <a href="/" class="text-xs text-slate-400 hover:text-slate-300">Jobs ↗</a>
         </div>
       </div>
-      <!-- Undo/redo always pinned in header — common enough to keep one click away -->
-      <div class="ml-auto flex items-center gap-1">
+      <!-- Pinned header actions: undo/redo + collapse/expand; hidden on smallest screens -->
+      <div id="header-pinned" class="ml-auto flex items-center gap-1">
         <button id="undo-btn" onclick="undo()" title="Undo (Ctrl+Z)" disabled
           class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7">↶</button>
         <button id="redo-btn" onclick="redo()" title="Redo (Ctrl+Y / Ctrl+Shift+Z)" disabled
           class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7">↷</button>
+        <span class="w-px h-4 bg-slate-700 mx-0.5"></span>
+        <button onclick="setAllCollapsed(true)" title="Collapse every step + group"
+          class="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 -rotate-90">
+            <polyline points="5,5 10,10 15,5" />
+            <polyline points="5,11 10,16 15,11" />
+          </svg>
+        </button>
+        <button onclick="setAllCollapsed(false)" title="Expand every step + group"
+          class="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
+            <polyline points="5,5 10,10 15,5" />
+            <polyline points="5,11 10,16 15,11" />
+          </svg>
+        </button>
       </div>
       <span class="w-px h-6 bg-slate-700 mx-1"></span>
       <div id="page-actions-controls" class="page-menu page-menu-controls">
@@ -71,8 +87,18 @@ await enableMocksIfRequested()
             class="flex items-center justify-between gap-2 text-xs text-slate-300 cursor-pointer select-none"
             title="Toggle dry-run mode — simulate commands without touching files">
             <span class="leading-none">Dry Run</span>
-            <span id="dry-run-track" class="relative shrink-0 inline-flex w-8 h-4 rounded-full bg-slate-600 border border-slate-500 transition-colors">
+            <span id="dry-run-track" class="relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden bg-slate-600 border border-slate-500 transition-colors">
               <span id="dry-run-thumb" class="absolute top-px left-px w-3 h-3 rounded-full bg-white shadow-sm" style="transition:transform 150ms ease"></span>
+            </span>
+          </button>
+          <!-- Failure mode — only visible when dry-run is active. Sends
+               ?fake=failure instead of ?fake=1 on all command fetches. -->
+          <button id="failure-mode-btn" onclick="toggleFailureMode()"
+            class="hidden flex items-center justify-between gap-2 text-xs text-red-300 cursor-pointer select-none"
+            title="Simulate failures — all commands will fail (dry-run only)">
+            <span class="leading-none">Simulate Failures</span>
+            <span id="failure-mode-track" class="relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden bg-slate-600 border border-slate-500 transition-colors">
+              <span id="failure-mode-thumb" class="absolute top-px left-px w-3 h-3 rounded-full bg-white shadow-sm" style="transition:transform 150ms ease"></span>
             </span>
           </button>
           <button id="run-btn" onclick="runSequence()" title="Run the entire sequence via the server-side sequence API (/sequences/run)"
@@ -92,30 +118,6 @@ await enableMocksIfRequested()
                inline equivalent: adding a path variable. -->
           <button data-action="add-path" title="Add a path variable"
             class="text-xs bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded font-medium">Add Path</button>
-          <div class="page-menu-row">
-            <!-- Page-wide collapse / expand. Same double-chevron icons as
-                 each group's "collapse-all-children" header buttons so the
-                 vocabulary scales: one chevron toggles a card, two chevrons
-                 toggle a subtree. SVG is inlined here (rather than rendered
-                 by the JS helper) because this markup is static and the
-                 inline script hasn't run yet at parse time. -->
-            <button onclick="setAllCollapsed(true)" title="Collapse every step + group"
-              class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded border border-slate-600">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 -rotate-90">
-                <polyline points="5,5 10,10 15,5" />
-                <polyline points="5,11 10,16 15,11" />
-              </svg>
-              <span>All</span>
-            </button>
-            <button onclick="setAllCollapsed(false)" title="Expand every step + group"
-              class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded border border-slate-600">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
-                <polyline points="5,5 10,10 15,5" />
-                <polyline points="5,11 10,16 15,11" />
-              </svg>
-              <span>All</span>
-            </button>
-          </div>
         </div>
         <span class="page-menu-sep w-px h-6 bg-slate-700 mx-1"></span>
         <div class="page-menu-group">
@@ -145,7 +147,7 @@ await enableMocksIfRequested()
           </div>
         </div>
       </div>
-      <button id="page-controls-toggle" onclick="togglePageMenu('page-actions-controls')" title="Sequence actions"
+      <button id="page-controls-toggle" onclick="togglePageMenu('page-actions-controls')" title="Sequence actions" aria-label="Sequence actions"
         class="page-menu-toggle w-7 h-7 items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-base leading-none">⋮</button>
     </div>
   </div>
@@ -230,12 +232,14 @@ await enableMocksIfRequested()
 <div id="prompt-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80">
   <div class="bg-slate-900 border border-slate-600 rounded-xl flex flex-col gap-4 p-6" style="width:min(90vw,560px);max-height:85vh">
     <div>
-      <p class="text-xs text-slate-400 mb-1 font-medium">Job requires input</p>
+      <div class="flex items-center gap-2 mb-1">
+        <p class="text-xs text-slate-400 font-medium">Job requires input</p>
+        <!-- Conditionally populated by showPromptModal when promptData.filePath -->
+        <!-- is set — opens the file-explorer's video sub-modal so the user can -->
+        <!-- preview before answering. Hidden when the prompt isn't file-specific. -->
+        <div id="prompt-preview" class="hidden"></div>
+      </div>
       <pre id="prompt-message" class="text-lg text-slate-100 font-mono font-medium whitespace-pre-wrap break-words"></pre>
-      <!-- Conditionally populated by showPromptModal when promptData.filePath -->
-      <!-- is set — opens the file-explorer's video sub-modal so the user can -->
-      <!-- preview before answering. Empty when the prompt isn't file-specific. -->
-      <div id="prompt-preview" class="mt-2 hidden"></div>
     </div>
     <div id="prompt-options" class="flex flex-col gap-2 overflow-y-auto"></div>
     <p class="text-xs text-slate-500">Press a number key to select, or click an option.</p>
@@ -300,16 +304,14 @@ await enableMocksIfRequested()
     <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b-2 border-slate-400 bg-slate-800 rounded-t-lg">
       <code id="video-modal-name" class="text-xs text-slate-100 font-mono truncate"></code>
       <div class="flex items-center gap-3 shrink-0 ml-3">
-        <button id="video-modal-open-external" class="text-xs text-emerald-300 hover:text-emerald-200" title="Open in your OS's default app (VLC, etc.)">🎬 Open in player</button>
         <button id="video-modal-copy-path" class="text-xs text-blue-300 hover:text-blue-200" title="Copy absolute path to clipboard">📋 Copy path</button>
+        <button id="video-modal-open-external" class="text-xs text-emerald-300 hover:text-emerald-200" title="Open in your OS's default app (VLC, etc.)">🎬 Open in player</button>
         <button onclick="closeVideoModal()" class="text-slate-300 hover:text-white text-lg leading-none w-7 h-7 flex items-center justify-center rounded hover:bg-slate-700">✕</button>
       </div>
     </div>
-    <div class="flex-1 min-h-0 flex items-center justify-center bg-black">
-      <video id="video-modal-player" class="max-w-full max-h-full" controls preload="metadata" autoplay></video>
-    </div>
-    <div class="shrink-0 px-4 py-2 border-t-2 border-slate-400 bg-slate-800 text-[11px] text-slate-300 rounded-b-lg">
-      Many disc rips use codecs (DTS, TrueHD, HEVC) browsers can't decode natively. If playback fails or audio is missing, copy the path and open in VLC.
+    <div class="flex-1 min-h-0 flex flex-col items-center justify-center bg-black gap-2">
+      <p id="video-modal-status" class="hidden text-slate-400 text-sm animate-pulse">Transcoding audio — first play may take a moment…</p>
+      <video id="video-modal-player" class="max-w-full max-h-full bg-black" controls preload="metadata" autoplay></video>
     </div>
   </div>
 </div>

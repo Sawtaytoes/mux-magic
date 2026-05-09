@@ -53,7 +53,17 @@
       "PowerShell(gh --version 2>&1)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Read(**)"
+      "Read(**)",
+      "Bash(findstr \":3010\")",
+      "Bash(findstr LISTENING)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3)",
+      "Bash(node --input-type=module)",
+      "Bash(node --check public/builder/js/components/dsl-rules-builder.js)",
+      "Bash(node --check public/builder/js/pickers.js)",
+      "Bash(node --check public/builder/js/step-renderer.js)",
+      "Bash(node --check public/builder/js/main.js)",
+      "Bash(git show *)"
     ],
     "ask": [
       "Bash(yarn dlx *)",

@@ -20,8 +20,9 @@ import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 //   * No subtitles (`-map 0:s?` is intentionally absent per design doc
 //     §12 decision 3 — bitmap subs won't render in <video> and bloat
 //     the file; text subs are a separate side-channel concern).
-//   * Output container is fragmented MP4 for AAC, WebM for Opus. Both
-//     are streamable + playable as soon as the first fragment lands.
+//   * Output container is always fragmented MP4. Both Opus and AAC land
+//     in fMP4 so H.264/H.265 video copy works — WebM only accepts VP8/
+//     VP9/AV1 and rejects H.264 at the mux stage, killing the encode.
 //
 // The encoder writes into a caller-supplied tempPath via stdout → fs
 // WriteStream. Subscribers receive `"ready"` once the encoder exits
@@ -38,14 +39,29 @@ export type RunFfmpegAudioTranscodeOptions = {
   tempPath: string
 }
 
-const buildFfmpegArgs = (
+// TODO(GPU): add NVIDIA hardware-acceleration when available.
+//   Detection: run `ffmpeg -hwaccels` at startup; if "cuda" is listed,
+//   enable NVDEC for input-side decoding with:
+//     ["-hwaccel", "cuda", "-hwaccel_output_format", "cuda"]
+//   inserted before "-i", and switch `-c:v copy` to
+//     ["-c:v", "h264_nvenc", "-preset", "p1"]
+//   for re-encoding paths. Fall back to CPU-only args when no GPU is
+//   detected so the server works on non-NVIDIA machines.
+export const buildFfmpegArgs = (
   cacheKey: TranscodeCacheKey,
+  startSeconds = 0,
 ): string[] => {
+  const seekSection: string[] = (
+    startSeconds > 0
+    ? ["-ss", String(startSeconds)]
+    : []
+  )
   const sharedHead = [
     "-hide_banner",
     "-loglevel",
     "warning",
     "-nostats",
+    ...seekSection,
     "-i",
     cacheKey.absPath,
     "-map",
@@ -58,33 +74,29 @@ const buildFfmpegArgs = (
   const codecSection = (
     cacheKey.codec === "opus"
     ? [
+      "-ac",
+      "2",
       "-c:a",
       "libopus",
       "-b:a",
       cacheKey.bitrate,
     ]
     : [
+      "-ac",
+      "2",
       "-c:a",
       "aac",
       "-b:a",
       cacheKey.bitrate,
     ]
   )
-  const containerSection = (
-    cacheKey.codec === "opus"
-    ? [
-      "-f",
-      "webm",
-      "pipe:1",
-    ]
-    : [
-      "-movflags",
-      "frag_keyframe+empty_moov+default_base_moof",
-      "-f",
-      "mp4",
-      "pipe:1",
-    ]
-  )
+  const containerSection = [
+    "-movflags",
+    "frag_keyframe+empty_moov+default_base_moof",
+    "-f",
+    "mp4",
+    "pipe:1",
+  ]
   return sharedHead.concat(codecSection, containerSection)
 }
 

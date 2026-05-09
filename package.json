@@ -16,7 +16,7 @@
     "preapi-dev-server": "yarn build-version && yarn build-command-descriptions",
     "preapi-server": "yarn build-version && yarn build-command-descriptions",
     "prebuild": "yarn build-version && yarn build-command-descriptions",
-    "preserver": "yarn build-version && yarn build-command-descriptions",
+    "preserver": "node scripts/copy-assets-to-worktree.cjs && yarn build-version && yarn build-command-descriptions",
     "sea": "rimraf dist/ && yarn build && node --experimental-sea-config sea-config.json && mkdir dist && node -e \"require('fs').copyFileSync(process.execPath, 'dist/media-tools.exe')\" && npx postject 'dist/media-tools.exe' NODE_SEA_BLOB 'build/sea-prep.blob' --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 && yarn copy-assets",
     "start-server": "tsx --env-file ./.env src/server.ts",
     "start": "tsx watch --env-file ./.env src/server.ts",

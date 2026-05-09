@@ -100,6 +100,12 @@
   margin: 0.25rem 0;
 }
 
+/* On the smallest screens, hide the pinned undo/redo + collapse/expand
+   cluster — they're still reachable via the ⋮ menu. */
+@media (max-width: 480px) {
+  #header-pinned { display: none; }
+}
+
 /* Each step card establishes its own size container so headers adapt
    to the card's actual width, not the viewport — matters because the
    pane width changes with the YAML modal / load panel toggles. */

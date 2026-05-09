@@ -547,6 +547,249 @@ export async function confirmFileExplorerDelete() {
 const videoModal = () => document.getElementById('video-modal')
 const videoPlayer = () => document.getElementById('video-modal-player')
 const videoNameLabel = () => document.getElementById('video-modal-name')
+const videoModalStatus = () => document.getElementById('video-modal-status')
+
+// MSE cleanup function for the currently-open video. Aborts the active
+// fetch and revokes the object URL when the modal closes or a new video
+// opens. Null when no MSE session is active (direct <video src> path).
+let mseCleanup = null
+
+function clearMseCleanup() {
+  if (typeof mseCleanup === 'function') {
+    mseCleanup()
+    mseCleanup = null
+  }
+}
+
+// Sets up a MediaSource Extensions pipeline for the transcode stream.
+// Provides:
+//   - Correct total duration from MediaInfo (so the timeline is accurate)
+//   - Seeking via ?start=<seconds> re-encode (input-side fast seek)
+//   - QuotaExceededError recovery by evicting old buffered content
+//
+// Falls back to direct player.src when MSE is unsupported or the video
+// codec isn't in the browser's supported set.
+async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
+  // Server now returns the full RFC 6381 codec string (e.g. "avc1.640029").
+  // Fallback table handles legacy responses that return just the base type.
+  const legacyCodecFallbacks = {
+    avc1: 'avc1.640029', // H.264 High@L4.1 — covers most Blu-ray rips
+    hvc1: 'hvc1.1.6.L150.B0', // H.265 Main@L5.0@High
+    av01: 'av01.0.08M.08', // AV1 Main 4:2:0
+  }
+  const videoCodecFull = (
+    videoCodecTag && videoCodecTag.includes('.')
+    ? videoCodecTag
+    : legacyCodecFallbacks[videoCodecTag]
+  )
+  const mimeType = videoCodecFull ? `video/mp4; codecs="${videoCodecFull},opus"` : null
+
+  if (
+    !mimeType
+    || typeof MediaSource === 'undefined'
+    || !MediaSource.isTypeSupported(mimeType)
+  ) {
+    // Codec unsupported in this browser — fall back to direct streaming
+    // (no seeking, growing duration display, but still fast start).
+    player.src = transcodeUrl
+    player.play().catch(() => {})
+    return
+  }
+
+  let ms = new MediaSource()
+  let objectUrl = URL.createObjectURL(ms)
+  player.src = objectUrl
+
+  let sb = null
+  let activeController = null
+  // Monotonic counter. Each startStream call claims a version; every
+  // async step checks isStale() before touching the SourceBuffer. This
+  // prevents two concurrent calls (from rapid seek events) from
+  // interleaving remove/appendBuffer operations and corrupting state.
+  let activeVersion = 0
+
+  const waitForUpdate = () =>
+    new Promise((resolve) => sb.addEventListener('updateend', resolve, { once: true }))
+
+  const startStream = async (startSeconds) => {
+    const myVersion = ++activeVersion
+    const isStale = () => myVersion !== activeVersion
+
+    if (activeController) activeController.abort()
+    const controller = new AbortController()
+    activeController = controller
+
+    const url = startSeconds > 0
+      ? `${transcodeUrl}&start=${startSeconds.toFixed(3)}`
+      : transcodeUrl
+
+    let resp
+    try {
+      resp = await fetch(url, { signal: controller.signal })
+    } catch (e) {
+      if (e.name !== 'AbortError') console.error('[MSE] fetch error', e)
+      return
+    }
+    if (!resp.ok) {
+      console.error('[MSE] fetch failed:', resp.status, url)
+      return
+    }
+    if (!resp.body) {
+      console.error('[MSE] response has no body', url)
+      return
+    }
+    if (isStale()) return
+
+    // For seeks: clear buffered data so the new fMP4's init segment
+    // (ftyp+moov) can reset the codec decoder.
+    //
+    // removeSourceBuffer+addSourceBuffer caused Chrome to re-evaluate the
+    // seeking state and fire a new 'seeking' event, which looped back into
+    // startStream and aborted the in-flight fetch indefinitely.
+    //
+    // changeType() with the same mimeType silently dropped the video track
+    // while audio continued — Chrome's codec pipeline wasn't properly reset.
+    //
+    // A fresh moov from the new ffmpeg stream is the cleanest reset: Chrome
+    // reinitializes both decoders when it sees the new init segment arrive.
+    if (ms.readyState !== 'open') {
+      // MediaSource ended (the previous stream ran to completion and called
+      // endOfStream()) or is closed. abort(), remove(), and setting
+      // timestampOffset all require readyState='open', so rebuild from scratch.
+      URL.revokeObjectURL(objectUrl)
+      ms = new MediaSource()
+      objectUrl = URL.createObjectURL(ms)
+      player.src = objectUrl
+      await new Promise((resolve) => ms.addEventListener('sourceopen', resolve, { once: true }))
+      if (isStale()) return
+      if (Number.isFinite(duration) && duration > 0) ms.duration = duration
+      sb = ms.addSourceBuffer(mimeType)
+      // Fresh SB: appendState is WAITING_FOR_SEGMENT, no abort() needed.
+      sb.timestampOffset = startSeconds
+    } else {
+      if (sb.updating) {
+        await waitForUpdate()
+        if (isStale()) return
+      }
+
+      // abort() resets Chrome's appendState from PARSING_MEDIA_SEGMENT back to
+      // WAITING_FOR_SEGMENT — the only MSE-spec way to do it. Required before
+      // setting timestampOffset or calling remove(). Safe when updating=false.
+      sb.abort()
+      // ffmpeg -ss resets output PTS to 0; timestampOffset shifts that back to
+      // the seek position so Chrome resolves the seek against player.currentTime.
+      sb.timestampOffset = startSeconds
+
+      // Always clear existing buffer so the new fMP4 init segment (moov) from
+      // ffmpeg resets both video and audio codec decoders cleanly. Skipping
+      // this for startSeconds===0 left stale codec state on seeks back to start.
+      if (sb.buffered.length > 0) {
+        sb.remove(0, Infinity)
+        await waitForUpdate()
+        if (isStale()) return
+      }
+    }
+
+    const reader = resp.body.getReader()
+    // Soft look-ahead limit. For high-bitrate NAS content the pump can
+    // fill the MSE quota (≈150 MB) in under a second. Pausing once the
+    // buffer is 30 s ahead keeps the quota free while giving the player
+    // plenty of runway. The hard QuotaExceededError handler below is the
+    // fallback for content whose single keyframe interval exceeds the limit.
+    const MAX_AHEAD_SECS = 30
+
+    const pump = async () => {
+      if (isStale() || controller.signal.aborted) return
+
+      // Throttle: pause when the buffer is already far enough ahead.
+      if (sb.buffered.length > 0) {
+        const ahead = sb.buffered.end(sb.buffered.length - 1) - player.currentTime
+        if (ahead > MAX_AHEAD_SECS) {
+          setTimeout(() => { if (!isStale()) pump() }, 1000)
+          return
+        }
+      }
+
+      let chunk
+      try { chunk = await reader.read() } catch { return }
+
+      if (chunk.done) {
+        if (!isStale()) {
+          const finish = () => { try { ms.endOfStream() } catch {} }
+          if (sb.updating) sb.addEventListener('updateend', finish, { once: true })
+          else finish()
+        }
+        return
+      }
+
+      // Retry loop: keep the same chunk in hand until it either lands or
+      // the stream becomes stale. QuotaExceededError does NOT kill the
+      // pump — it evicts played content or waits for the player to
+      // advance, then retries the same bytes.
+      let data = chunk.value
+      while (true) {
+        if (isStale() || controller.signal.aborted) return
+        if (sb.updating) {
+          await waitForUpdate()
+          if (isStale()) return
+        }
+        try {
+          sb.appendBuffer(data)
+          break  // success — fall through to the updateend listener
+        } catch (e) {
+          if (e.name !== 'QuotaExceededError') {
+            console.error('[MSE] appendBuffer error:', e.name, e.message)
+            return
+          }
+          // Evict played content (keep last 5 s for backward scrub).
+          if (sb.buffered.length > 0 && sb.buffered.start(0) < player.currentTime - 5) {
+            sb.remove(sb.buffered.start(0), player.currentTime - 5)
+            await waitForUpdate()
+            if (isStale()) return
+            // Retry in next loop iteration.
+          } else {
+            // Nothing to evict (player hasn't advanced yet). Wait up to
+            // 1 s for the player to consume some buffer, then retry.
+            await Promise.race([
+              new Promise((res) => player.addEventListener('timeupdate', res, { once: true })),
+              new Promise((res) => setTimeout(res, 1000)),
+            ])
+          }
+        }
+      }
+
+      sb.addEventListener('updateend', pump, { once: true })
+    }
+
+    pump()
+  }
+
+  const onSeeking = () => {
+    const t = player.currentTime
+    // Skip re-fetch when the target is already in a buffered range.
+    for (let i = 0; i < (sb?.buffered.length ?? 0); i++) {
+      if (t >= sb.buffered.start(i) && t <= sb.buffered.end(i)) return
+    }
+    startStream(t)
+  }
+
+  await new Promise((resolve) => ms.addEventListener('sourceopen', resolve, { once: true }))
+
+  if (Number.isFinite(duration) && duration > 0) ms.duration = duration
+  sb = ms.addSourceBuffer(mimeType)
+  startStream(0)
+  // Add seeking listener after startStream(0) so that any seeking event the
+  // browser fires during initial setup (currentTime=0) doesn't abort the
+  // startup stream before the first fragment arrives.
+  player.addEventListener('seeking', onSeeking)
+  player.play().catch(() => {})
+
+  mseCleanup = () => {
+    player.removeEventListener('seeking', onSeeking)
+    if (activeController) activeController.abort()
+    URL.revokeObjectURL(objectUrl)
+  }
+}
 
 // Mediainfo Format strings (case-insensitive) that no major browser
 // will decode in <video>. When the source's first audio track matches,
@@ -588,7 +831,10 @@ const fetchAudioFormat = async (absolutePath) => {
   try {
     const url = new URL('/files/audio-codec', window.location.origin)
     url.searchParams.set('path', absolutePath)
-    const response = await fetch(url.toString(), { cache: 'no-store' })
+    const response = await fetch(url.toString(), {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(30_000),
+    })
     if (!response.ok) {
       return null
     }
@@ -636,6 +882,14 @@ const refreshContainerizedFlag = async () => {
 export async function openVideoModal(absolutePath) {
   videoNameLabel().textContent = absolutePath
   const player = videoPlayer()
+  // Tear down any previous MSE session before setting up the new one.
+  clearMseCleanup()
+  // Reset the player so it is idle while the async codec-check and HEAD
+  // requests are in flight. Without this, the element still holds the
+  // revoked object URL from the previous video and may enter an error
+  // state, which can cause the next setupMsePlayer call to silently stall.
+  player.pause()
+  player.src = ''
   // Pre-flight the modal open so the loading window isn't a hidden one
   // — the codec lookup typically resolves in <100ms and the player's
   // <video> tag handles the brief empty src gracefully.
@@ -649,16 +903,45 @@ export async function openVideoModal(absolutePath) {
   // between /files/stream (browser-decodable) and /transcode/audio
   // (Opus re-encode for DTS / TrueHD / AC-3 / etc.).
   const audioFormat = await fetchAudioFormat(absolutePath)
-  player.src = buildPlaybackUrl(absolutePath, audioFormat)
-  // The HTML attribute handles autoplay on the first open, but the
-  // <video> element is reused across subsequent opens — changing src
-  // doesn't re-trigger the attribute, so call play() explicitly. The
-  // user's click on ▶ counts as a user gesture so autoplay policies
-  // allow this. play() returns a Promise that rejects when the codec
-  // is unsupported (HEVC on browsers without hardware decode); swallow
-  // it since the controls + the codec-caveat footer make the failure
-  // obvious.
-  player.play().catch(() => { /* unsupported codec; user falls back to VLC */ })
+  const playbackUrl = buildPlaybackUrl(absolutePath, audioFormat)
+  const isTranscodingAudio = playbackUrl.includes('/transcode/audio')
+  videoModalStatus().classList.toggle('hidden', !isTranscodingAudio)
+  player.addEventListener('canplay', () => {
+    videoModalStatus().classList.add('hidden')
+  }, { once: true })
+
+  // TODO: MSE transcode path (seeking, audio remux via ffmpeg) is under
+  // development. Disabled by default until seek / InvalidStateError /
+  // audio-only bugs are fully resolved. Enable by setting
+  // EXPERIMENTAL_FFMPEG_TRANSCODING=true in .env.
+  const features = await fetch('/features').then((r) => r.json()).catch(() => ({}))
+  if (isTranscodingAudio && features.experimentalFfmpegTranscoding) {
+    // Use MSE for transcode streams: HEAD returns X-Duration and
+    // X-Video-Codec so we can set mediaSource.duration immediately and
+    // pick the right SourceBuffer codec string.
+    let duration = NaN
+    let videoCodecTag = null
+    try {
+      const headResp = await fetch(playbackUrl, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(30_000),
+      })
+      duration = parseFloat(headResp.headers.get('X-Duration') || '')
+      videoCodecTag = headResp.headers.get('X-Video-Codec')
+    } catch {
+      // HEAD failed — setupMsePlayer will fall back to direct src
+    }
+    // setupMsePlayer calls player.play() internally (both MSE and fallback paths).
+    await setupMsePlayer(player, playbackUrl, duration, videoCodecTag)
+  } else {
+    player.src = playbackUrl
+    // The HTML attribute handles autoplay on the first open, but the
+    // <video> element is reused across subsequent opens — changing src
+    // doesn't re-trigger the attribute, so call play() explicitly. The
+    // user's click on ▶ counts as a user gesture so autoplay policies
+    // allow this.
+    player.play().catch(() => {})
+  }
   // Wire per-open buttons so each closure captures the path currently
   // shown — onclick assignment overwrites any previous handler so we
   // don't accumulate stale closures across opens.
@@ -709,6 +992,7 @@ export async function openVideoModal(absolutePath) {
 
 export function closeVideoModal(event) {
   if (event && event.target !== videoModal()) return
+  clearMseCleanup()
   const player = videoPlayer()
   if (player) {
     player.pause()
@@ -716,4 +1000,5 @@ export function closeVideoModal(event) {
     player.load()
   }
   if (videoModal()) videoModal().classList.add('hidden')
+  videoModalStatus().classList.add('hidden')
 }

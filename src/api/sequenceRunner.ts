@@ -1,4 +1,4 @@
-import { getEffectiveCommandConfigs } from "../fake-data/index.js"
+import { getEffectiveCommandConfigs, type Scenario } from "../fake-data/index.js"
 import { logError, logInfo } from "../tools/logMessage.js"
 import { withJobContext } from "./logCapture.js"
 import {
@@ -100,7 +100,7 @@ type StepRunOutcome =
 export const runSequenceJob = (
   jobId: string,
   body: SequenceBody,
-  options: { useFake?: boolean } = {},
+  options: { useFake?: boolean, globalScenario?: Scenario | null } = {},
 ): void => {
   createSubject(jobId)
   updateJob(jobId, {
@@ -114,7 +114,7 @@ export const runSequenceJob = (
   // production path); switching to the fake map flips every step's
   // observable to a scripted timer source. Both maps share the same
   // keys and metadata so resolveSequenceParams treats them identically.
-  const effectiveConfigs = getEffectiveCommandConfigs(useFake)
+  const effectiveConfigs = getEffectiveCommandConfigs(useFake, options.globalScenario)
 
   const pathsById: Record<string, SequencePath> = body.paths ?? {}
   const stepsById: Record<string, StepRuntimeRecord> = {}

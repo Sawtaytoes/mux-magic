@@ -1,29 +1,26 @@
-import { createReadStream } from "node:fs"
-import { stat } from "node:fs/promises"
+import { spawn } from "node:child_process"
+import { tmpdir } from "node:os"
 import { Readable } from "node:stream"
 
 import { OpenAPIHono } from "@hono/zod-openapi"
 import {
-  defer,
-  EMPTY,
   firstValueFrom,
   mergeMap,
   Observable,
-  of,
-  shareReplay,
   Subject,
 } from "rxjs"
 
-import { runFfmpegAudioTranscode } from "../../cli-spawn-operations/runFfmpegAudioTranscode.js"
+import { buildFfmpegArgs } from "../../cli-spawn-operations/runFfmpegAudioTranscode.js"
 import {
   PathSafetyError,
   validateReadablePath,
 } from "../../tools/pathSafety.js"
+import { ffmpegPath } from "../../tools/appPaths.js"
+import { getMediaInfo } from "../../tools/getMediaInfo.js"
 import {
   mimeTypeForCodec,
   type TranscodeCacheKey,
   type TranscodeCodec,
-  transcodeTempStore,
 } from "../../tools/transcodeTempStore.js"
 
 // Browser-safe audio playback endpoint. Pairs with the file-explorer
@@ -36,13 +33,22 @@ import {
 //     matching `/files/stream`. The hardcoded /media-only root from W22b
 //     was dropped — it broke local-dev users on Windows (G:/Movies) and
 //     wasn't earning enough security to justify the breakage.
-//   * Default codec Opus in WebM. AAC in fMP4 as fallback.
+//   * Default codec Opus in fMP4. AAC in fMP4 as fallback.
 //   * No subtitle passthrough.
-//   * Range strategy: encode-to-temp + serve completed file with Range.
+//   * Streaming strategy: ffmpeg stdout piped directly to the HTTP
+//     response body via Readable.toWeb(). fMP4 with empty_moov means
+//     the browser can start decoding from the first fragment — no
+//     encode-to-temp wait.
+//   * ?start=<seconds> seeks ffmpeg to that position (input-side fast
+//     seek via -ss) for MSE-based client seeking.
+//
+// HEAD response includes X-Duration (float, seconds from MediaInfo) and
+// X-Video-Codec (avc1/hvc1/av01) so the MSE client can configure its
+// MediaSource without a separate round-trip.
 //
 // Concurrency gate: `MAX_TRANSCODE_CONCURRENCY` distinct encodes via an
-// RxJS `mergeMap`. Same-key requests coalesce onto one in-flight encode
-// via a per-key `shareReplay` observable.
+// RxJS `mergeMap` on a Subject queue. New requests queue behind running
+// ones until a slot opens.
 
 export const transcodeRoutes = new OpenAPIHono()
 
@@ -69,6 +75,7 @@ type ValidatedParams = {
   bitrate: string
   codec: TranscodeCodec
   path: string
+  startSeconds: number
 }
 
 type ValidationFailure = {
@@ -156,11 +163,28 @@ const validateCodec = (
   }
 }
 
+const validateStart = (
+  rawStart: string | undefined,
+): { error: string | null, value: number } => {
+  if (typeof rawStart !== "string" || rawStart.length === 0) {
+    return { error: null, value: 0 }
+  }
+  const parsed = Number(rawStart)
+  if (Number.isNaN(parsed) || parsed < 0) {
+    return {
+      error: `start must be a non-negative number (seconds); received: ${rawStart}`,
+      value: 0,
+    }
+  }
+  return { error: null, value: parsed }
+}
+
 const validateAllParams = (
   rawPath: string | undefined,
   rawCodec: string | undefined,
   rawBitrate: string | undefined,
   rawAudioStream: string | undefined,
+  rawStart: string | undefined,
 ): ValidationResult => {
   if (typeof rawPath !== "string" || rawPath.length === 0) {
     return {
@@ -192,6 +216,13 @@ const validateAllParams = (
       params: null,
     }
   }
+  const startResult = validateStart(rawStart)
+  if (startResult.error !== null) {
+    return {
+      failure: { message: startResult.error, status: 400 },
+      params: null,
+    }
+  }
   return {
     failure: null,
     params: {
@@ -199,6 +230,7 @@ const validateAllParams = (
       bitrate: bitrateResult.value,
       codec: codecResult.value,
       path: rawPath,
+      startSeconds: startResult.value,
     },
   }
 }
@@ -210,94 +242,61 @@ const messageFromError = (error: unknown): string => {
   return String(error)
 }
 
-// Per-key in-flight encode tracker. Keyed on the same hashed string the
-// store uses, so concurrent requests for the same encode share one
-// observable. Removed when the encode settles (success or failure).
-type InFlightEncode = Observable<"ready">
+type StreamResult = {
+  kill: () => void
+  stream: ReadableStream
+}
 
-const buildHashKeyForLookup = (cacheKey: TranscodeCacheKey): string => (
-  // Local mirror of the hashing scheme used inside transcodeTempStore;
-  // re-hashing here avoids exporting the internal hash from the store
-  // module (the store keeps it private to discourage stringly-typed
-  // bookkeeping outside the module).
-  [
-    cacheKey.absPath,
-    cacheKey.codec,
-    cacheKey.bitrate,
-    String(cacheKey.audioStream),
-  ].join("|")
-)
-
-const inFlightEncodes = new Map<string, InFlightEncode>()
-const transcodeQueue$ = new Subject<{
+type StreamRequest = {
   cacheKey: TranscodeCacheKey
-  resolver: (encode: InFlightEncode) => void
-  tempPath: string
-}>()
+  startSeconds: number
+  resolver: (result: StreamResult) => void
+}
 
-// Drains queued requests through the global concurrency gate. Each
-// queued item resolves with a `shareReplay`-backed observable that
-// represents the in-flight encode; downstream awaiters subscribe and
-// see the same `"ready"` emission once the encoder finishes. The queue
-// itself is a long-lived subscription so the route can resolve incoming
-// requests synchronously without bootstrapping a new pipeline per call.
-transcodeQueue$
+const streamQueue$ = new Subject<StreamRequest>()
+
+// Drains queued requests through the global concurrency gate. Each slot
+// runs one ffmpeg process; its inner Observable stays active until the
+// process exits, holding the slot. The stdout Readable is handed off
+// to the HTTP handler immediately via resolver so bytes flow to the
+// browser as soon as the first fMP4 fragment is muxed.
+streamQueue$
 .pipe(
   mergeMap(
-    ({ cacheKey, resolver, tempPath }) => {
-      const encode$ = (
-        runFfmpegAudioTranscode({ cacheKey, tempPath })
-        .pipe(
-          shareReplay({ bufferSize: 1, refCount: false }),
+    ({ cacheKey, startSeconds, resolver }) => (
+      new Observable<void>((observer) => {
+        const childProcess = spawn(
+          ffmpegPath,
+          buildFfmpegArgs(cacheKey, startSeconds),
+          { cwd: tmpdir(), env: process.env },
         )
-      )
-      resolver(encode$)
-      // Subscribe internally so the `shareReplay` cache is populated
-      // even when the HTTP handler unsubscribes after consuming the
-      // first emission. Without this, a fast unsubscribe would tear
-      // down the encoder mid-flight via refCount: true semantics —
-      // bufferSize: 1 + refCount: false keeps the cached `"ready"`
-      // available for any late subscriber.
-      return encode$
-    },
+
+        childProcess.stderr.on("data", (data) => {
+          console.warn("[transcode/audio] ffmpeg stderr:", data.toString())
+        })
+
+        const stream = Readable.toWeb(childProcess.stdout) as ReadableStream
+        resolver({ kill: () => { childProcess.kill() }, stream })
+
+        childProcess.on("exit", () => { observer.complete() })
+        childProcess.on("error", (error) => { observer.error(error) })
+
+        return () => { childProcess.kill() }
+      })
+    ),
     parseConcurrency(),
   ),
 )
-.subscribe({
-  // Errors from individual encodes already settle their own observable
-  // chain; swallow here to keep the queue alive across failures.
-  error: () => {},
-})
+.subscribe({ error: () => {} })
 
-const acquireInFlightEncode = (
+const acquireTranscodeStream = (
   cacheKey: TranscodeCacheKey,
-  tempPath: string,
-): Promise<InFlightEncode> => {
-  const lookupKey = buildHashKeyForLookup(cacheKey)
-  const existing = inFlightEncodes.get(lookupKey)
-  if (existing !== undefined) {
-    return Promise.resolve(existing)
-  }
-  return new Promise<InFlightEncode>((resolve) => {
-    transcodeQueue$.next({
-      cacheKey,
-      resolver: (encode) => {
-        const wrapped = (
-          encode
-          .pipe(
-            mergeMap((emission) => {
-              inFlightEncodes.delete(lookupKey)
-              return of(emission)
-            }),
-          )
-        )
-        inFlightEncodes.set(lookupKey, wrapped)
-        resolve(wrapped)
-      },
-      tempPath,
-    })
+  startSeconds: number,
+): Promise<StreamResult> => (
+  new Promise((resolve) => {
+    streamQueue$.next({ cacheKey, resolver: resolve, startSeconds })
   })
-}
+)
 
 const buildHeadersForCodec = (codec: TranscodeCodec): Record<string, string> => ({
   "Cache-Control": "no-store",
@@ -306,108 +305,126 @@ const buildHeadersForCodec = (codec: TranscodeCodec): Record<string, string> => 
   "X-Accel-Buffering": "no",
 })
 
-// Range-aware response builder. Mirrors the parsing logic from
-// `fileRoutes.ts`'s /files/stream handler so a transcoded WebM/MP4
-// behaves identically to a static file from the browser's perspective.
-const respondWithRange = async ({
-  codec,
-  rangeHeader,
-  tempPath,
-}: {
-  codec: TranscodeCodec
-  rangeHeader: string | undefined
-  tempPath: string
-}): Promise<Response> => {
-  const stats = await stat(tempPath)
-  const totalSize = stats.size
-  const baseHeaders = buildHeadersForCodec(codec)
+// Runs MediaInfo on the validated path and extracts the fields the MSE
+// client needs: total duration in seconds and the video codec tag
+// (avc1/hvc1/av01). Both are optional — a MediaInfo failure is
+// non-fatal; the client falls back to direct <video src>.
+const fetchStreamInfo = async (
+  absPath: string,
+): Promise<{ durationSeconds: number | null, videoCodecTag: string | null }> => {
+  const mediaInfo = await firstValueFrom(getMediaInfo(absPath))
+  const tracks = mediaInfo.media?.track ?? []
+  const general = tracks.find((t) => t["@type"] === "General")
+  const video = tracks.find((t) => t["@type"] === "Video")
 
-  if (typeof rangeHeader !== "string" || rangeHeader.length === 0) {
-    const stream = (
-      Readable.toWeb(createReadStream(tempPath)) as ReadableStream
-    )
-    return new Response(stream, {
-      headers: {
-        ...baseHeaders,
-        "Accept-Ranges": "bytes",
-        "Content-Length": String(totalSize),
-      },
-      status: 200,
-    })
-  }
-
-  const match = rangeHeader.match(/^bytes=(\d+)-(\d*)$/)
-  if (!match) {
-    return new Response(
-      JSON.stringify({ error: `Unsupported Range header: ${rangeHeader}` }),
-      {
-        headers: { "Content-Type": "application/json" },
-        status: 416,
-      },
-    )
-  }
-  const startByte = Number(match[1])
-  const endByte = (
-    match[2] === ""
-    ? totalSize - 1
-    : Number(match[2])
-  )
+  let durationSeconds: number | null = null
   if (
-    Number.isNaN(startByte)
-    || Number.isNaN(endByte)
-    || startByte > endByte
-    || endByte >= totalSize
+    general
+    && "Duration" in general
+    && typeof general.Duration === "string"
   ) {
-    return new Response(null, {
-      headers: { "Content-Range": `bytes */${totalSize}` },
-      status: 416,
-    })
+    const secs = parseFloat(general.Duration)
+    if (!Number.isNaN(secs) && secs > 0) {
+      durationSeconds = secs
+    }
   }
-  const stream = (
-    Readable.toWeb(
-      createReadStream(tempPath, { end: endByte, start: startByte }),
-    ) as ReadableStream
-  )
-  return new Response(stream, {
-    headers: {
-      ...baseHeaders,
-      "Accept-Ranges": "bytes",
-      "Content-Length": String(endByte - startByte + 1),
-      "Content-Range": `bytes ${startByte}-${endByte}/${totalSize}`,
-    },
-    status: 206,
-  })
+
+  let videoCodecTag: string | null = null
+  if (video && "Format" in video && typeof video.Format === "string") {
+    const fmt = video.Format.toUpperCase()
+    const profile = (
+      "Format_Profile" in video && typeof video.Format_Profile === "string"
+      ? video.Format_Profile
+      : ""
+    )
+    // MediaInfo returns level and tier as separate fields from profile.
+    const level = (
+      "Format_Level" in video && typeof (video as Record<string, unknown>).Format_Level === "string"
+      ? (video as Record<string, unknown>).Format_Level as string
+      : ""
+    )
+    const tier = (
+      "Format_Tier" in video && typeof (video as Record<string, unknown>).Format_Tier === "string"
+      ? (video as Record<string, unknown>).Format_Tier as string
+      : ""
+    )
+    if (fmt === "AVC") {
+      videoCodecTag = buildAvcCodecString(profile, level)
+    }
+    else if (fmt === "HEVC") {
+      videoCodecTag = buildHevcCodecString(profile, level, tier)
+    }
+    else if (fmt === "AV1") {
+      videoCodecTag = "av01.0.08M.08"
+    }
+  }
+
+  return { durationSeconds, videoCodecTag }
 }
 
-// Small helper: subscribe to the encode observable and resolve when it
-// emits `"ready"`. Wraps `firstValueFrom` so a thrown error becomes a
-// rejected promise the route handler can catch and translate to 500.
-const awaitEncodeReady = (encode$: InFlightEncode): Promise<void> => (
-  firstValueFrom(
-    encode$
-    .pipe(
-      mergeMap(() => EMPTY),
-    ),
-    { defaultValue: undefined as void },
-  )
-  .then(() => undefined)
-)
+// H.264 profile name → two-hex-digit profile_idc used in the codec string.
+const AVC_PROFILE_HEX: Record<string, string> = {
+  "Baseline": "42",
+  "Constrained Baseline": "42",
+  "Main": "4D",
+  "Extended": "58",
+  "High": "64",
+  "High 10": "6E",
+  "High 4:2:2": "7A",
+  "High 4:4:4": "F4",
+  "High 4:4:4 Predictive": "F4",
+}
+
+// Derives the RFC 6381 codec string for H.264, e.g. "avc1.640029" for
+// High@L4.1. Falls back to High@L4.1 for any unparseable inputs.
+// MediaInfo returns profile and level as separate fields (not "High@L4.1").
+const buildAvcCodecString = (formatProfile: string, formatLevel: string): string => {
+  const fallback = "avc1.640029" // High@L4.1 — covers most Blu-ray rips
+  const profileHex = AVC_PROFILE_HEX[formatProfile.trim()] ?? "64"
+  const levelFloat = parseFloat(formatLevel)
+  if (Number.isNaN(levelFloat) || levelFloat <= 0) {
+    return fallback
+  }
+  const levelHex = Math.round(levelFloat * 10).toString(16).padStart(2, "0").toUpperCase()
+  return `avc1.${profileHex}00${levelHex}`
+}
+
+// Derives the RFC 6381 codec string for HEVC, e.g. "hvc1.2.4.H153.B0"
+// for Main 10@L5.1@High. Falls back to Main@L5.0@High for any unparseable inputs.
+// MediaInfo returns profile, level, and tier as separate fields.
+const buildHevcCodecString = (formatProfile: string, formatLevel: string, formatTier: string): string => {
+  const fallback = "hvc1.1.6.L150.B0" // Main@L5.0@High
+  const lowerProfile = formatProfile.toLowerCase()
+  // Profile IDC: Main=1, Main 10=2
+  const profileIdc = lowerProfile.startsWith("main 10") ? 2 : 1
+  // Compatibility flags: 0x06 for Main (bits 1+2 set), 0x04 for Main 10 (bit 2 set)
+  const compatFlags = profileIdc === 1 ? "6" : "4"
+  const levelFloat = parseFloat(formatLevel)
+  if (Number.isNaN(levelFloat) || levelFloat <= 0) {
+    return fallback
+  }
+  // HEVC level indicator = level * 30 (e.g. 5.1 → 153)
+  const levelIndicator = Math.round(levelFloat * 30)
+  // MediaInfo Format_Tier is "High" or "Main" (absent → Main tier)
+  const tierFlag = formatTier.toLowerCase() === "high" ? "H" : "L"
+  return `hvc1.${profileIdc}.${compatFlags}.${tierFlag}${levelIndicator}.B0`
+}
 
 const handleTranscodeRequest = async ({
   isHeadRequest,
-  rangeHeader,
   rawAudioStream,
   rawBitrate,
   rawCodec,
   rawPath,
+  rawStart,
   requestSignal,
 }: {
   isHeadRequest: boolean
-  rangeHeader: string | undefined
   rawAudioStream: string | undefined
   rawBitrate: string | undefined
   rawCodec: string | undefined
   rawPath: string | undefined
+  rawStart: string | undefined
   requestSignal: AbortSignal | undefined
 }): Promise<Response> => {
   const validation = validateAllParams(
@@ -415,6 +432,7 @@ const handleTranscodeRequest = async ({
     rawCodec,
     rawBitrate,
     rawAudioStream,
+    rawStart,
   )
   if (validation.failure !== null) {
     return new Response(
@@ -449,12 +467,24 @@ const handleTranscodeRequest = async ({
     )
   }
 
-  // HEAD short-circuits — no need to spin up the encoder, just answer
-  // with the mime + cache headers so `<video preload="metadata">` can
-  // confirm the URL is feasible without paying the encoder cost.
+  // HEAD short-circuits — run MediaInfo to return duration and video
+  // codec tag so the MSE client can configure its MediaSource before
+  // starting the stream.
   if (isHeadRequest) {
+    let durationSeconds: number | null = null
+    let videoCodecTag: string | null = null
+    try {
+      ;({ durationSeconds, videoCodecTag } = await fetchStreamInfo(validatedAbsPath))
+    }
+    catch {
+      // MediaInfo failure is non-fatal — client falls back to direct src
+    }
     return new Response(null, {
-      headers: buildHeadersForCodec(params.codec),
+      headers: {
+        ...buildHeadersForCodec(params.codec),
+        ...(durationSeconds !== null ? { "X-Duration": String(durationSeconds) } : {}),
+        ...(videoCodecTag !== null ? { "X-Video-Codec": videoCodecTag } : {}),
+      },
       status: 200,
     })
   }
@@ -466,49 +496,17 @@ const handleTranscodeRequest = async ({
     codec: params.codec,
   }
 
-  const acquireResult = transcodeTempStore.acquire(cacheKey)
-
-  // Hook request abort to release the refcount even when the client
-  // disconnects mid-stream. Idempotent: release() on an already-evicted
-  // entry is a no-op.
-  if (requestSignal !== undefined) {
-    requestSignal.addEventListener(
-      "abort",
-      () => {
-        transcodeTempStore.release(cacheKey).catch(() => {})
-      },
-      { once: true },
-    )
-  }
-
   try {
-    if (acquireResult.isFresh) {
-      const encode$ = await acquireInFlightEncode(
-        cacheKey,
-        acquireResult.tempPath,
-      )
-      await awaitEncodeReady(encode$)
+    const { kill, stream } = await acquireTranscodeStream(cacheKey, params.startSeconds)
+    if (requestSignal !== undefined) {
+      requestSignal.addEventListener("abort", () => { kill() }, { once: true })
     }
-    else {
-      // A concurrent request started or already finished the encode.
-      // Wait for the in-flight observable if one is still tracked;
-      // otherwise the on-disk file is already complete.
-      const lookupKey = buildHashKeyForLookup(cacheKey)
-      const existing = inFlightEncodes.get(lookupKey)
-      if (existing !== undefined) {
-        await awaitEncodeReady(existing)
-      }
-    }
-
-    const response = await respondWithRange({
-      codec: params.codec,
-      rangeHeader,
-      tempPath: acquireResult.tempPath,
+    return new Response(stream, {
+      headers: buildHeadersForCodec(params.codec),
+      status: 200,
     })
-    return response
   }
   catch (error) {
-    transcodeTempStore.release(cacheKey).catch(() => {})
     return new Response(
       JSON.stringify({ error: messageFromError(error) }),
       {
@@ -529,11 +527,11 @@ const handleTranscodeRequest = async ({
 transcodeRoutes.on(["GET", "HEAD"], "/transcode/audio", async (context) => (
   handleTranscodeRequest({
     isHeadRequest: context.req.method === "HEAD",
-    rangeHeader: context.req.header("range"),
     rawAudioStream: context.req.query("audioStream"),
     rawBitrate: context.req.query("bitrate"),
     rawCodec: context.req.query("codec"),
     rawPath: context.req.query("path"),
+    rawStart: context.req.query("start"),
     requestSignal: (
       context.req.raw && "signal" in context.req.raw
       ? context.req.raw.signal
@@ -541,23 +539,6 @@ transcodeRoutes.on(["GET", "HEAD"], "/transcode/audio", async (context) => (
     ),
   })
 ))
-
-// Best-effort cleanup of the on-disk cache when the server shuts down.
-// Safe to call multiple times; the helper internally guards on directory
-// existence. Wired here (not inside transcodeTempStore) so the store
-// module stays decoupled from process-level event listeners.
-process.on("exit", () => {
-  transcodeTempStore.cleanupOnShutdown()
-})
-process.on("SIGINT", () => {
-  transcodeTempStore.cleanupOnShutdown()
-  process.exit(130)
-})
-
-// Test-only export: lets the integration tests reach into the in-flight
-// map to assert coalescing behavior without exposing the implementation
-// to runtime callers.
-export const __inFlightEncodesForTests = inFlightEncodes
 
 // Also exported for tests that want to drive a deterministic gate
 // without waiting on the env-var-driven default.
@@ -569,12 +550,3 @@ export const __defaultsForTests = {
 // Re-export helper for tests that want to exercise the default-bitrate
 // path without round-tripping through a request.
 export const __defaultBitrateForCodec = defaultBitrateForCodec
-
-// Defer-wrapped re-export for tests that need to plug in a stub for the
-// underlying ffmpeg spawn. Tests vi.mock the spawn module directly; this
-// export gives them a stable touchpoint to verify the coalescing path.
-export const __runFfmpegAudioTranscode$ = (
-  options: Parameters<typeof runFfmpegAudioTranscode>[0],
-): Observable<"ready"> => (
-  defer(() => runFfmpegAudioTranscode(options))
-)

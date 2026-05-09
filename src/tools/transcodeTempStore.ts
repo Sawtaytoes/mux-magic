@@ -16,9 +16,8 @@ import { join } from "node:path"
 // `os.tmpdir()/media-tools-transcode-cache/`.
 //
 // The cache key is hashed (sha-256, hex) so the on-disk filename is
-// always safe regardless of source-path content. The file extension is
-// chosen by codec (`.webm` for opus, `.mp4` for aac) so a file manager
-// peeking at `os.tmpdir()` shows recognizable types.
+// always safe regardless of source-path content. All entries use `.mp4`
+// (fMP4) so a file manager peeking at `os.tmpdir()` shows recognizable types.
 //
 // Refcounting model:
 //   - `acquire()` increments the entry's refCount and (if not present)
@@ -81,17 +80,9 @@ const ensureCacheDirectory = (): string => {
   return directoryPath
 }
 
-const extensionForCodec = (codec: TranscodeCodec): string => (
-  codec === "opus"
-  ? ".webm"
-  : ".mp4"
-)
+const extensionForCodec = (_codec: TranscodeCodec): string => ".mp4"
 
-export const mimeTypeForCodec = (codec: TranscodeCodec): string => (
-  codec === "opus"
-  ? "video/webm"
-  : "video/mp4"
-)
+export const mimeTypeForCodec = (_codec: TranscodeCodec): string => "video/mp4"
 
 const hashKey = (key: TranscodeCacheKey): string => (
   createHash("sha256")
