@@ -90,15 +90,16 @@ function renderBody() {
 
   body.innerHTML = state.entries.map((name) => {
     const isSelected = state.selected.has(name)
+    const safeAttr = name.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
     return `
-      <button onclick="folderPicker.toggleFolder(${JSON.stringify(name)})"
+      <button data-folder-name="${safeAttr}" onclick="folderPicker.toggleFolderFromEl(this)"
         class="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-xs transition-colors ${
           isSelected
           ? 'bg-blue-600/30 border border-blue-500/50 text-blue-200'
           : 'hover:bg-slate-800 border border-transparent text-slate-300'
         }">
         <span class="text-base leading-none">${isSelected ? '☑' : '☐'}</span>
-        <span class="font-mono truncate">📁 ${name}</span>
+        <span class="font-mono truncate">📁 ${safeAttr}</span>
       </button>
     `
   }).join('')
@@ -184,6 +185,13 @@ function toggleFolder(name) {
   renderBody()
 }
 
+function toggleFolderFromEl(el) {
+  const name = el.closest('[data-folder-name]')?.getAttribute('data-folder-name')
+  if (name !== null && name !== undefined) {
+    toggleFolder(name)
+  }
+}
+
 function selectAll() {
   state.entries.forEach((name) => state.selected.add(name))
   renderBody()
@@ -213,5 +221,5 @@ export function registerFolderPickerGlobals() {
   if (typeof window === 'undefined') {
     return
   }
-  window.folderPicker = { open, close, toggleFolder, selectAll, confirm, removeFolder }
+  window.folderPicker = { open, close, toggleFolder, toggleFolderFromEl, selectAll, confirm, removeFolder }
 }
