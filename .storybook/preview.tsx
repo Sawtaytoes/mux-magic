@@ -23,8 +23,8 @@ const preview: Preview = {
     backgrounds: {
       default: "dark",
       values: [
-        { name: "dark", value: "#0f172a" }, // slate-900
-        { name: "light", value: "#f8fafc" }, // slate-50
+        { name: "dark", value: "#0f1729" },
+        // { name: "light", value: "#f8fafc" }, // no light mode yet
       ],
     },
   },
