@@ -95,6 +95,8 @@ const renderRow = ({ index, suggestion }) => {
   const rowClass = isLowConfidence
     ? 'border border-amber-600/50 bg-amber-900/20'
     : 'border border-slate-700 bg-slate-800/40'
+  // If top candidate is 0%, skip it (select "— skip this file —" instead)
+  const selectedName = topCandidate.confidence === 0 ? '' : topCandidate.candidate.name
   return (
     `<tr data-mapping-row data-mapping-index="${index}" class="${rowClass}">`
     + `<td class="px-1.5 py-1.5 align-top">`
@@ -108,18 +110,12 @@ const renderRow = ({ index, suggestion }) => {
     + `<select data-mapping-select class="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500">`
     + renderCandidateOptions({
         rankedCandidates: suggestion.rankedCandidates,
-        selectedName: topCandidate.candidate.name,
+        selectedName,
       })
     + `</select>`
+    + `<p data-mapping-row-error class="hidden text-[10px] font-mono mt-1 text-red-300"></p>`
     + `</td>`
     + `<td class="px-2 py-1.5 align-top text-center">${renderConfidenceBadge(topCandidate.confidence)}</td>`
-    + `<td class="px-2 py-1.5 align-top text-right">`
-    + `<label class="inline-flex items-center gap-1 text-xs text-slate-200 cursor-pointer">`
-    + `<input type="checkbox" data-mapping-include checked class="w-3.5 h-3.5 cursor-pointer" />`
-    + `Include`
-    + `</label>`
-    + `<p data-mapping-row-status class="hidden text-[10px] font-mono mt-1"></p>`
-    + `</td>`
     + `</tr>`
   )
 }
@@ -256,10 +252,9 @@ const handleConfirmClick = async () => {
       if (!suggestion) {
         return null
       }
-      const includeInput = row.querySelector('[data-mapping-include]')
       const selectElement = row.querySelector('[data-mapping-select]')
       const desiredName = String(selectElement?.value ?? '').trim()
-      if (!includeInput?.checked || desiredName.length === 0) {
+      if (desiredName.length === 0) {
         return null
       }
       // Look up the actual filename with extension from the stem mapping
@@ -279,9 +274,7 @@ const handleConfirmClick = async () => {
   }
 
   // Check for duplicate target names
-  const targetNames = renamePlan
-    .map((p) => String(p.desiredName).toLowerCase())
-    .filter(Boolean)
+  const targetNames = renamePlan.map((p) => String(p.desiredName).toLowerCase())
   const uniqueTargets = new Set(targetNames)
   if (uniqueTargets.size < targetNames.length) {
     setStatusMessage({ kind: 'error', message: 'Two or more files would have the same name. Please adjust the selections.' })
@@ -495,6 +488,55 @@ export const openSpecialsMappingModal = async ({
   if (confirmButton) {
     confirmButton.addEventListener('click', handleConfirmClick)
   }
+
+  // Wire duplicate detection on all select elements
+  const validateSelections = () => {
+    const rows = Array.from(modal.querySelectorAll('[data-mapping-row]'))
+    const selectedMap = new Map() // name -> [rows with that name]
+    rows.forEach((row) => {
+      const select = row.querySelector('[data-mapping-select]')
+      const value = String(select?.value ?? '').trim()
+      if (value.length > 0) {
+        const key = value.toLowerCase()
+        if (!selectedMap.has(key)) {
+          selectedMap.set(key, [])
+        }
+        selectedMap.get(key).push(row)
+      }
+    })
+
+    let hasDuplicates = false
+    rows.forEach((row) => {
+      const select = row.querySelector('[data-mapping-select]')
+      const errorEl = row.querySelector('[data-mapping-row-error]')
+      const value = String(select?.value ?? '').trim()
+      const isDuplicate = value.length > 0 && selectedMap.get(value.toLowerCase()).length > 1
+      if (isDuplicate) {
+        hasDuplicates = true
+        if (errorEl) {
+          errorEl.classList.remove('hidden')
+          errorEl.textContent = 'Duplicate name'
+        }
+        select.classList.add('border-red-500')
+      } else {
+        if (errorEl) {
+          errorEl.classList.add('hidden')
+        }
+        select.classList.remove('border-red-500')
+      }
+    })
+
+    if (confirmButton) {
+      confirmButton.disabled = hasDuplicates
+    }
+  }
+
+  const selects = modal.querySelectorAll('[data-mapping-select]')
+  selects.forEach((select) => {
+    select.addEventListener('change', validateSelections)
+  })
+  validateSelections()
+
 
   // Wire Play buttons on each row
   const playButtons = modal.querySelectorAll('[data-mapping-play]')
