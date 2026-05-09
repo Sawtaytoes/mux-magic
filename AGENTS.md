@@ -220,7 +220,7 @@ Query routes that wrap filesystem / network calls return `{ ..., error: string |
 ### Browser-driven tests (Playwright Test)
 
 - Framework: `@playwright/test`. Tests live in `e2e/*.spec.ts`.
-- Run headless once: `yarn e2e`. Run interactively: `yarn e2e:ui` (opens Playwright's UI mode for stepping through).
+- **Always use `yarn` for Playwright, never `npx playwright`.** Run headless once: `yarn e2e`. Run interactively: `yarn e2e:ui` (opens Playwright's UI mode for stepping through). For individual tests: `yarn dlx playwright test e2e/builder.spec.ts --grep "<test name>"`. Do not use `npx playwright` — it pulls from the public registry instead of your locked local version.
 - `playwright.config.ts` boots `yarn api-server` automatically before tests run; in dev it reuses an already-running server, in CI it starts a fresh one.
 - The first run requires `yarn install-playwright-browser` to fetch the Chromium binary.
 - For tests that depend on backend data (search/lookup/listDirectoryEntries), use `page.route('**/queries/<endpoint>', ...)` to stub the network rather than hitting real services. See the path-typeahead test in `e2e/builder.spec.ts` for the pattern.
