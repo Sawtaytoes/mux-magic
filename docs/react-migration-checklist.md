@@ -54,6 +54,10 @@ After the Final PR is merged and the user confirms migration complete, the proje
 
 See `docs/react-migration-plan.md` § "Post-Migration: Rename to MuxMagic" for the full scope table.
 
+## Follow-up Refactors
+
+- **Unify CSS colors to variables** — `builderStyles.css` has bare hardcoded colors (`#34d399`, `#6ee7b7`, `#fbbf24`, `rgb(15 23 42)`, `rgb(51 65 85)`, etc.). Extract to CSS custom properties (`:root { --color-emerald: #34d399; ... }`) so changing a color in one place affects all uses. Tailwind v4 generates a CSS variable for each utility color; reuse those definitions. Do this as a standalone refactor PR after PR #2 is merged.
+
 ## Open Questions
 
 (none)
