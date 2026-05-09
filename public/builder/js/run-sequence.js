@@ -37,13 +37,27 @@ function isDryRun() {
   return localStorage.getItem('isDryRun') === '1'
 }
 
+function isDryRunFailure() {
+  return localStorage.getItem('dryRunScenario') === 'failure'
+}
+
+function getDryRunFakeParam() {
+  return isDryRunFailure() ? 'failure' : '1'
+}
+
 export function toggleDryRun() {
   localStorage.setItem('isDryRun', isDryRun() ? '0' : '1')
   syncDryRunUI()
 }
 
+export function toggleFailureMode() {
+  localStorage.setItem('dryRunScenario', isDryRunFailure() ? '' : 'failure')
+  syncDryRunUI()
+}
+
 export function syncDryRunUI() {
   const active = isDryRun()
+  const failure = isDryRunFailure()
   const track = document.getElementById('dry-run-track')
   const thumb = document.getElementById('dry-run-thumb')
   const btn = document.getElementById('dry-run-btn')
@@ -59,6 +73,16 @@ export function syncDryRunUI() {
   btn.title = active
     ? 'Dry run ON — simulate commands without touching files (click to disable)'
     : 'Toggle dry-run mode — simulate commands without touching files'
+  const failureBtn = document.getElementById('failure-mode-btn')
+  const failureTrack = document.getElementById('failure-mode-track')
+  const failureThumb = document.getElementById('failure-mode-thumb')
+  if (failureBtn) failureBtn.classList.toggle('hidden', !active)
+  if (failureTrack) {
+    failureTrack.className = `relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden border transition-colors ${
+      failure ? 'bg-red-600 border-red-500' : 'bg-slate-600 border-slate-500'
+    }`
+  }
+  if (failureThumb) failureThumb.style.transform = failure ? 'translateX(1rem)' : ''
 }
 
 // ─── Step cancellation ────────────────────────────────────────────────────────
@@ -92,7 +116,7 @@ async function runOneStep(step) {
   const params = buildParams(step, { resolveLinks: true })
   let response
   try {
-    response = await fetch(`/commands/${step.command}${isDryRun() ? '?fake=1' : ''}`, {
+    response = await fetch(`/commands/${step.command}${isDryRun() ? `?fake=${getDryRunFakeParam()}` : ''}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),

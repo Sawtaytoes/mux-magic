@@ -2,6 +2,8 @@ import { renderStatusBadge, esc, LOOKUP_LINKS } from '../step-renderer.js'
 import { findStepById } from '../sequence-state.js'
 import { openSpecialsMappingModal } from '../components/specials-mapping-modal.js'
 
+const isDryRun = () => localStorage.getItem('isDryRun') === '1'
+
 function getLookupLinkData(step) {
   const cmd = step.command ? (window.mediaTools.COMMANDS?.[step.command] ?? null) : null
   if (!cmd) return null
@@ -168,6 +170,11 @@ function wireNameSpecialFeaturesResults({ body, step, summaryRecord }) {
       // same running-guard logic as the step card's ▶ button.
       onRunStep: () => window.runOrStopStep?.(step.id),
       possibleNames: possibleNameObjects,
+      // In dry-run/MSW mock mode the source path is fake — skip the disk
+      // existence check so files are always shown rather than "No unnamed
+      // files remain" (which appears when the mock /files/list returns
+      // generic entries that don't match the fake filenames).
+      skipDiskCheck: isDryRun() || localStorage.getItem('useMocks') === '1',
       sourcePath,
       unrenamedFilenames,
     })
@@ -355,8 +362,8 @@ export function updateStepUI(step) {
     if (badge) {
       badge.outerHTML = html
     } else {
-      const btns = card.querySelector('.flex.items-center.gap-1.shrink-0')
-      if (btns) btns.insertAdjacentHTML('beforebegin', html)
+      const trigger = card.querySelector('[data-cmd-picker-trigger]')
+      if (trigger) trigger.insertAdjacentHTML('afterend', html)
     }
   }
 

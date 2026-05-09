@@ -54,20 +54,25 @@
       "Skill(update-config)",
       "Skill(update-config:*)",
       "Read(**)",
-      "Bash(findstr \":3010\")",
-      "Bash(findstr LISTENING)",
-      "Bash(python3 -c ' *)",
-      "Bash(python3)",
-      "Bash(node --input-type=module)",
-      "Bash(node --check public/builder/js/components/dsl-rules-builder.js)",
-      "Bash(node --check public/builder/js/pickers.js)",
-      "Bash(node --check public/builder/js/step-renderer.js)",
-      "Bash(node --check public/builder/js/main.js)",
-      "Bash(git show *)"
+      "Bash(ls \"d:/Projects/Personal/media-tools/assets/\" 2>&1 && ls \"d:/Projects/Personal/media-tools/.claude/worktrees/frolicking-cuddling-tarjan/assets/\" 2>&1)",
+      "Read(//d/Projects/Personal/media-tools/assets/**)",
+      "Bash(PORT=54321 nohup node --env-file ./.env --import tsx/esm src/server.ts)",
+      "Bash(disown)",
+      "Bash(awk '{print $5}')",
+      "Bash(xargs -r kill)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 54321 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force; \"Killed PID $_\" })",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(k,'→',v\\) for k,v in d.get\\('scripts',{}\\).items\\(\\)]\")",
+      "Bash(findstr :3003)",
+      "Bash(taskkill /PID 43756 /F)"
     ],
     "ask": [
       "Bash(yarn dlx *)",
       "PowerShell(yarn dlx *)"
+    ],
+    "additionalDirectories": [
+      "d:\\Projects\\Personal\\media-tools\\public\\builder\\js\\util",
+      "d:\\Projects\\Personal\\media-tools\\public\\builder\\js\\fields",
+      "d:\\Projects\\Personal\\media-tools\\public\\builder\\js"
     ]
   }
 }

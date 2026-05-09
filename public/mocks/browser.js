@@ -15,10 +15,10 @@
 // this is required for MSW to intercept the first request, since SW
 // registration is async and unhandled requests fall through to the
 // network.
-
-import { setupWorker } from "https://esm.sh/msw@2.14.4/browser"
-
-import { handlers } from "./handlers.js"
+//
+// MSW and its handlers are loaded lazily (dynamic import) so the CDN
+// fetch only fires when mocks are actually requested. Non-mock page
+// loads never touch esm.sh.
 
 // Reuse a single worker instance across calls so a stray double-invoke
 // from a refactor doesn't try to register the SW twice.
@@ -55,8 +55,13 @@ const isMocksRequested = () => {
   return false
 }
 
-export const getWorker = () => {
+// Lazy: only fetches esm.sh and handlers.js when mocks are needed.
+export const getWorker = async () => {
   if (!workerInstance) {
+    const [{ setupWorker }, { handlers }] = await Promise.all([
+      import("https://esm.sh/msw@2.14.4/browser"),
+      import("./handlers.js"),
+    ])
     workerInstance = setupWorker(...handlers)
   }
   return workerInstance
@@ -71,26 +76,25 @@ export const enableMocksIfRequested = () => {
     startPromise = Promise.resolve(false)
     return startPromise
   }
-  const worker = getWorker()
-  startPromise = worker
-  .start({
-    serviceWorker: {
-      // Phase 1 wrote the worker to /api/mockServiceWorker.js (the
-      // server statically serves the public/api/ tree at the root).
-      // If W1's flatten merges, this path will need to drop /api/.
-      url: "/mockServiceWorker.js",
-    },
-    // Quiet the default 'request not handled' warnings — the existing
-    // page code makes calls (e.g. /files/default-path) that aren't in
-    // the canned handler list, and warning-spamming makes the [mocks
-    // enabled] confirmation harder to spot. Real bypass requests still
-    // fall through to the network.
-    onUnhandledRequest: "bypass",
-  })
-  .then(() => {
-    // eslint-disable-next-line no-console
-    console.info("[mocks] enabled")
-    return true
-  })
+  startPromise = getWorker()
+    .then((worker) => worker.start({
+      serviceWorker: {
+        // Phase 1 wrote the worker to /api/mockServiceWorker.js (the
+        // server statically serves the public/api/ tree at the root).
+        // If W1's flatten merges, this path will need to drop /api/.
+        url: "/mockServiceWorker.js",
+      },
+      // Quiet the default 'request not handled' warnings — the existing
+      // page code makes calls (e.g. /files/default-path) that aren't in
+      // the canned handler list, and warning-spamming makes the [mocks
+      // enabled] confirmation harder to spot. Real bypass requests still
+      // fall through to the network.
+      onUnhandledRequest: "bypass",
+    }))
+    .then(() => {
+      // eslint-disable-next-line no-console
+      console.info("[mocks] enabled")
+      return true
+    })
   return startPromise
 }

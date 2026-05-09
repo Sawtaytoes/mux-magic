@@ -42,7 +42,7 @@ export default defineConfig({
   // Boots the api-server before tests run; reuses an existing server in
   // dev so re-running locally is fast (no cold-start penalty).
   webServer: {
-    command: "yarn api-server",
+    command: "yarn start-server",
     url: `${baseURL}/builder/`,
     reuseExistingServer: !process.env.CI,
     stdout: "ignore",

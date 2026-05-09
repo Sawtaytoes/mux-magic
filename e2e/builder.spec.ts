@@ -14,15 +14,22 @@ async function openControlsMenu(page: Page) {
 }
 
 async function addStep(page: Page) {
+  // #steps-el starts empty; wait until renderAll() populates it. The module
+  // bootstrap has a CDN import (esm.sh/msw) that can delay main.js execution
+  // past the 'load' event in some Chromium builds, so isVisible() alone is
+  // not sufficient — we need an explicit DOM-ready signal first.
+  await page.waitForFunction(
+    () => (document.getElementById("steps-el")?.childElementCount ?? 0) > 0,
+    { timeout: 10_000 },
+  )
   const emptyState = page.getByRole("button", { name: /Add your first step/ })
-  if (await emptyState.isVisible().catch(() => false)) {
+  if (await emptyState.isVisible()) {
     await emptyState.click()
     return
   }
   // Many "+ Step" buttons (one per divider). The trailing one always
   // appends, mirroring the old header-button semantics.
-  const stepButtons = page.getByRole("button", { name: /^➕ Step$/ })
-  await stepButtons.last().click()
+  await page.getByRole("button", { name: /^➕ Step$/ }).last().click()
 }
 
 test.describe("Sequence Builder", () => {
@@ -724,5 +731,172 @@ test.describe("Sequence Builder — groups", () => {
     await widthInput.pressSequentially("1920")
     await expect(widthInput).toBeFocused()
     await expect(widthInput).toHaveValue("1920")
+  })
+})
+
+test.describe("Sequence Builder — step card status badge", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/builder/")
+  })
+
+  test("status badge updates to 'completed' after a successful Run via API", async ({ page }) => {
+    // Build a one-step sequence so there is a step card to watch.
+    await addStep(page)
+    await page.getByText("— pick a command —").click()
+    await page.getByPlaceholder("Search commands…").fill("makeDirectory")
+    await page.getByRole("button", { name: /^Make Directory\s/ }).click()
+
+    // Read the actual step ID from the DOM so the SSE stub can reference it.
+    const stepCard = page.locator('[id^="step-"]').first()
+    const stepCardId = await stepCard.getAttribute("id") ?? ""
+    const stepId = stepCardId.replace("step-", "")
+
+    // Enable dry-run so the fetch targets /sequences/run?fake=1.
+    await page.evaluate(() => { localStorage.setItem("isDryRun", "1") })
+
+    await page.route("**/sequences/run*", async (route) => {
+      await route.fulfill({
+        status: 202,
+        contentType: "application/json",
+        body: JSON.stringify({ jobId: "umb-badge-ok", logsUrl: "/jobs/umb-badge-ok/logs" }),
+      })
+    })
+
+    // Parent SSE: step-started → (child SSE fires) → step-finished → done.
+    await page.route("**/jobs/umb-badge-ok/logs", async (route) => {
+      const sseBody = [
+        `data: ${JSON.stringify({ type: "step-started", stepId, childJobId: "child-badge-ok", status: "running" })}\n\n`,
+        `data: ${JSON.stringify({ type: "step-finished", stepId, childJobId: "child-badge-ok", status: "completed" })}\n\n`,
+        `data: ${JSON.stringify({ done: true, status: "completed" })}\n\n`,
+      ].join("")
+      await route.fulfill({ status: 200, contentType: "text/event-stream", headers: { "Cache-Control": "no-cache" }, body: sseBody })
+    })
+
+    // Child SSE: emits done(completed) — this is the primary update path for the step badge.
+    await page.route("**/jobs/child-badge-ok/logs", async (route) => {
+      const sseBody = `data: ${JSON.stringify({ done: true, status: "completed", results: [], outputs: null })}\n\n`
+      await route.fulfill({ status: 200, contentType: "text/event-stream", headers: { "Cache-Control": "no-cache" }, body: sseBody })
+    })
+
+    await openControlsMenu(page)
+    await page.getByRole("button", { name: "▶ Run via API" }).click()
+
+    await expect(page.locator("#api-run-modal")).toBeVisible()
+    // The api-run modal's own status badge should flip to completed.
+    await expect(page.locator("#api-run-status")).toHaveText("completed")
+    // The step card's inline status badge should also show completed.
+    await expect(stepCard.locator(".status-badge")).toHaveText("completed")
+  })
+
+  test("status badge updates to 'failed' after a failed Run via API", async ({ page }) => {
+    await addStep(page)
+    await page.getByText("— pick a command —").click()
+    await page.getByPlaceholder("Search commands…").fill("makeDirectory")
+    await page.getByRole("button", { name: /^Make Directory\s/ }).click()
+
+    const stepCard = page.locator('[id^="step-"]').first()
+    const stepCardId = await stepCard.getAttribute("id") ?? ""
+    const stepId = stepCardId.replace("step-", "")
+
+    await page.evaluate(() => { localStorage.setItem("isDryRun", "1") })
+
+    await page.route("**/sequences/run*", async (route) => {
+      await route.fulfill({
+        status: 202,
+        contentType: "application/json",
+        body: JSON.stringify({ jobId: "umb-badge-fail", logsUrl: "/jobs/umb-badge-fail/logs" }),
+      })
+    })
+
+    await page.route("**/jobs/umb-badge-fail/logs", async (route) => {
+      const sseBody = [
+        `data: ${JSON.stringify({ type: "step-started", stepId, childJobId: "child-badge-fail", status: "running" })}\n\n`,
+        `data: ${JSON.stringify({ type: "step-finished", stepId, childJobId: "child-badge-fail", status: "failed" })}\n\n`,
+        `data: ${JSON.stringify({ done: true, status: "failed" })}\n\n`,
+      ].join("")
+      await route.fulfill({ status: 200, contentType: "text/event-stream", headers: { "Cache-Control": "no-cache" }, body: sseBody })
+    })
+
+    await page.route("**/jobs/child-badge-fail/logs", async (route) => {
+      const sseBody = `data: ${JSON.stringify({ done: true, status: "failed", results: [], outputs: null })}\n\n`
+      await route.fulfill({ status: 200, contentType: "text/event-stream", headers: { "Cache-Control": "no-cache" }, body: sseBody })
+    })
+
+    await openControlsMenu(page)
+    await page.getByRole("button", { name: "▶ Run via API" }).click()
+
+    await expect(page.locator("#api-run-modal")).toBeVisible()
+    await expect(page.locator("#api-run-status")).toHaveText("failed")
+    await expect(stepCard.locator(".status-badge")).toHaveText("failed")
+  })
+
+  test("step card clears stale 'failed' state when re-run succeeds", async ({ page }) => {
+    await addStep(page)
+    await page.getByText("— pick a command —").click()
+    await page.getByPlaceholder("Search commands…").fill("makeDirectory")
+    await page.getByRole("button", { name: /^Make Directory\s/ }).click()
+
+    const stepCard = page.locator('[id^="step-"]').first()
+    const stepCardId = await stepCard.getAttribute("id") ?? ""
+    const stepId = stepCardId.replace("step-", "")
+
+    await page.evaluate(() => { localStorage.setItem("isDryRun", "1") })
+
+    // --- First run: failure ---
+    let runCount = 0
+    await page.route("**/sequences/run*", async (route) => {
+      runCount++
+      const suffix = runCount === 1 ? "f" : "s"
+      await route.fulfill({
+        status: 202,
+        contentType: "application/json",
+        body: JSON.stringify({ jobId: `umb-rerun-${suffix}`, logsUrl: `/jobs/umb-rerun-${suffix}/logs` }),
+      })
+    })
+
+    await page.route("**/jobs/umb-rerun-f/logs", async (route) => {
+      const sseBody = [
+        `data: ${JSON.stringify({ type: "step-started", stepId, childJobId: "child-rerun-f", status: "running" })}\n\n`,
+        `data: ${JSON.stringify({ type: "step-finished", stepId, childJobId: "child-rerun-f", status: "failed" })}\n\n`,
+        `data: ${JSON.stringify({ done: true, status: "failed" })}\n\n`,
+      ].join("")
+      await route.fulfill({ status: 200, contentType: "text/event-stream", headers: { "Cache-Control": "no-cache" }, body: sseBody })
+    })
+    await page.route("**/jobs/child-rerun-f/logs", async (route) => {
+      const sseBody = `data: ${JSON.stringify({ done: true, status: "failed", results: [], outputs: null })}\n\n`
+      await route.fulfill({ status: 200, contentType: "text/event-stream", headers: { "Cache-Control": "no-cache" }, body: sseBody })
+    })
+
+    await openControlsMenu(page)
+    await page.getByRole("button", { name: "▶ Run via API" }).click()
+    await expect(page.locator("#api-run-modal")).toBeVisible()
+    await expect(stepCard.locator(".status-badge")).toHaveText("failed")
+
+    // Close the modal by clicking the backdrop.
+    await page.locator("#api-run-modal").click({ position: { x: 5, y: 5 } })
+    await expect(page.locator("#api-run-modal")).toBeHidden()
+
+    // --- Second run: success ---
+    await page.route("**/jobs/umb-rerun-s/logs", async (route) => {
+      const sseBody = [
+        `data: ${JSON.stringify({ type: "step-started", stepId, childJobId: "child-rerun-s", status: "running" })}\n\n`,
+        `data: ${JSON.stringify({ type: "step-finished", stepId, childJobId: "child-rerun-s", status: "completed" })}\n\n`,
+        `data: ${JSON.stringify({ done: true, status: "completed" })}\n\n`,
+      ].join("")
+      await route.fulfill({ status: 200, contentType: "text/event-stream", headers: { "Cache-Control": "no-cache" }, body: sseBody })
+    })
+    await page.route("**/jobs/child-rerun-s/logs", async (route) => {
+      const sseBody = `data: ${JSON.stringify({ done: true, status: "completed", results: [], outputs: null })}\n\n`
+      await route.fulfill({ status: 200, contentType: "text/event-stream", headers: { "Cache-Control": "no-cache" }, body: sseBody })
+    })
+
+    await openControlsMenu(page)
+    await page.getByRole("button", { name: "▶ Run via API" }).click()
+    await expect(page.locator("#api-run-modal")).toBeVisible()
+
+    // The step card must have reset to 'running' on step-started, then flipped to 'completed'.
+    await expect(stepCard.locator(".status-badge")).toHaveText("completed")
+    // Error element from the first run should be gone.
+    await expect(stepCard.locator(".step-error")).toBeHidden()
   })
 })

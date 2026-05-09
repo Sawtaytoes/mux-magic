@@ -155,7 +155,7 @@ function _renderDrawerContent(step, flatIndex) {
     : ''
 
   const fieldsHtml = commandDefinition
-    ? `<div class="space-y-2">${renderFields(step, flatIndex)}</div>`
+    ? `<div class="space-y-2">${renderFields({ step, stepIndex: flatIndex })}</div>`
     : `<p class="text-xs text-slate-500 italic">No command selected — choose one from the dropdown.</p>`
 
   return `
