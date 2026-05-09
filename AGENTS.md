@@ -19,6 +19,9 @@ The four below are the most-violated; the detailed reference lives in [Key conve
 4. **Booleans must start with `is` or `has`.** Function params, object properties, schema fields, CLI flags, local variables — all of them. `deleteSourceOnSuccess` is wrong; `isSourceDeletedOnSuccess` is right. `useDefaultRules` is wrong; `hasDefaultRules` is right. The prefix tells a reader at a glance that the value is yes/no, not a string or function. Matches the existing `isRecursive` / `hasChapterSyncOffset` / `hasFirstAudioLanguage` patterns.
 5. **Function arguments: single destructured object, not positional.** Any function that takes 2+ arguments uses a single object parameter with destructuring. `mountLogsDisclosure(parent, jobId, status)` is wrong; `mountLogsDisclosure({ parent, jobId, status })` is right. Callers pass `{ parent, jobId, status }`. Reasons: argument order doesn't matter at the call site, params are self-documenting, dropping/adding/renaming a param doesn't reshuffle every caller. Single-arg functions stay as-is (`getMediaInfo(filePath)`); the rule only kicks in at 2+. Existing positional functions are not retroactively required to change, but any function you create or whose signature you modify must follow this.
 6. **Always brace `if` / `else` / `for` / `while`.** Even for early returns and one-liners. `if (!x) return null` is wrong; only the multi-line braced form is allowed.
+7. **`const` + arrow functions only — no `function` declarations.** `function loadYaml(text) { ... }` is wrong; `const loadYaml = (text: string) => parse(text)` is right. The only exception is when `this` binding is explicitly required (essentially never in this codebase — hooks, event handlers, and utilities all close over the outer scope). React components are arrow functions too: `const LoadModal = () => (<div>...</div>)`, not `function LoadModal() { ... }`.
+8. **Prefer implicit returns; reach for `{}` only when you must.** Write functions as single expressions that return a new value. If a function genuinely needs `{}` and an explicit `return`, that's usually a sign it should be split into smaller functions. Async/await and tests are the two normal exceptions; otherwise an arrow body wrapped in `{ return ... }` is a code smell.
+9. **No barrel files.** No `index.ts` or `index.css` re-export files inside component, state, util, or icon folders. Import each module by its full path: `import { LoadModal } from "./components/LoadModal"`, not `from "./components"`. The single allowed barrel is `packages/shared/src/index.ts`, which exists only because `@media-tools/shared` is published to npm and consumers need a stable public entry point. Enforced by `import-x/no-barrel-files` in `eslint.config.js`.
 
 ### Before opening a PR — self-check your diff
 
@@ -34,6 +37,9 @@ The agents shipping PRs in this repo have repeatedly violated rules 1–4. Befor
 | Boolean field/var without `is`/`has` prefix (added in your diff) | rule 4 |
 | New/modified function signature with 2+ positional params (instead of single destructured object) | rule 5 |
 | `if (` on a line whose closing `)` is followed by anything other than ` {` | rule 6 |
+| `^function ` or `^export function ` (lines starting with `function`) | rule 7 |
+| Arrow body `=> {` followed by a single `return` statement | rule 8 (split or inline) |
+| Import path ending in a folder rather than a file (`from "./components"`, `from "../state"`) | rule 9 |
 | Multi-paragraph JSDoc blocks (`/** ... */` over more than one short line) | over-commenting (default: no comments — see "Doing tasks" guidance) |
 
 Workers that ship code containing any of the above will get the PR sent back. Catch it yourself first.
@@ -80,6 +86,67 @@ in module files must be removed before those modules can be used in the API.
   ```
 
   Same rule for `else`, `for`, `while`. The brace cost is one line; the safety against silent edit mistakes (adding a second statement that quietly falls outside the conditional) is worth it.
+
+### Function style (arrow functions, implicit returns)
+
+All functions in this codebase are `const` + arrow functions. The `function` keyword is reserved for the rare case where a `this` binding is genuinely required — that case hasn't come up in this repo yet, and almost certainly won't come up in React code either (hooks, event handlers, and utilities all close over the outer scope, and JSX components do not need their own `this`).
+
+Prefer **implicit returns**: the function body is a single expression, no `{}`, no `return` keyword. If you find yourself writing `=> { return foo(...) }`, drop the braces and the keyword.
+
+```ts
+// WRONG
+function loadYaml(text) {
+  return parse(text)
+}
+
+const flattenSteps = (steps) => {
+  return steps.flatMap((step) =>
+    isGroup(step) ? step.children : [step]
+  )
+}
+
+// RIGHT
+const loadYaml = (text: string) => parse(text)
+
+const flattenSteps = (steps: Step[]) =>
+  steps.flatMap((step) =>
+    isGroup(step) ? step.children : [step]
+  )
+```
+
+Two normal exceptions where `{}` + explicit `return` is fine:
+
+- **`async` / `await` flows** that need sequential statements:
+
+  ```ts
+  const fetchJobs = async () => {
+    const response = await client.GET("/jobs")
+    return response.data
+  }
+  ```
+
+- **Tests** — Vitest's `it(name, async () => { ... })` is sequential by design and reads cleaner with explicit statements.
+
+If a non-async, non-test function genuinely needs `{}`, that's a signal to split it into smaller pieces.
+
+### Module exports — no barrel files
+
+There are **no `index.ts` re-export files** inside component, state, util, hook, or icon folders. Import every module by its full path:
+
+```ts
+// WRONG
+import { LoadModal } from "./components"
+import { stepsAtom, pathsAtom } from "./state"
+
+// RIGHT
+import { LoadModal } from "./components/LoadModal"
+import { stepsAtom } from "./state/stepsAtom"
+import { pathsAtom } from "./state/pathsAtom"
+```
+
+The single allowed barrel in the entire repo is `packages/shared/src/index.ts`. It exists because `@media-tools/shared` is published to npm and external consumers need a stable import surface — without that one barrel, every consumer would have to know the package's internal file layout. Inside the monorepo, no such barrier exists; full paths keep imports honest, make dead code visible to bundlers, and prevent the "import the whole folder to get one thing" pattern that hides accidental coupling.
+
+Enforced by `import-x/no-barrel-files` in `eslint.config.js`.
 
 ## Testing
 
