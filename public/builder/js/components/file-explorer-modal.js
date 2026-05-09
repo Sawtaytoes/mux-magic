@@ -674,9 +674,25 @@ async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
     sb.timestampOffset = startSeconds
 
     const reader = resp.body.getReader()
+    // Soft look-ahead limit. For high-bitrate NAS content the pump can
+    // fill the MSE quota (≈150 MB) in under a second. Pausing once the
+    // buffer is 30 s ahead keeps the quota free while giving the player
+    // plenty of runway. The hard QuotaExceededError handler below is the
+    // fallback for content whose single keyframe interval exceeds the limit.
+    const MAX_AHEAD_SECS = 30
 
     const pump = async () => {
       if (isStale() || controller.signal.aborted) return
+
+      // Throttle: pause when the buffer is already far enough ahead.
+      if (sb.buffered.length > 0) {
+        const ahead = sb.buffered.end(sb.buffered.length - 1) - player.currentTime
+        if (ahead > MAX_AHEAD_SECS) {
+          setTimeout(() => { if (!isStale()) pump() }, 1000)
+          return
+        }
+      }
+
       let chunk
       try { chunk = await reader.read() } catch { return }
 
@@ -689,27 +705,40 @@ async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
         return
       }
 
-      if (sb.updating) {
-        await waitForUpdate()
-        if (isStale()) return
-      }
-      if (controller.signal.aborted) return
-
-      try {
-        sb.appendBuffer(chunk.value)
-      } catch (e) {
-        if (e.name === 'QuotaExceededError' && sb.buffered.length > 0) {
-          // Evict content >30 s behind the playhead to free quota.
-          const removeEnd = Math.max(0, player.currentTime - 30)
-          if (removeEnd > sb.buffered.start(0)) {
-            sb.remove(sb.buffered.start(0), removeEnd)
-            await waitForUpdate()
-            if (!isStale()) try { sb.appendBuffer(chunk.value) } catch {}
-          }
-        } else {
-          console.error('[MSE] appendBuffer error:', e.name, e.message)
+      // Retry loop: keep the same chunk in hand until it either lands or
+      // the stream becomes stale. QuotaExceededError does NOT kill the
+      // pump — it evicts played content or waits for the player to
+      // advance, then retries the same bytes.
+      let data = chunk.value
+      while (true) {
+        if (isStale() || controller.signal.aborted) return
+        if (sb.updating) {
+          await waitForUpdate()
+          if (isStale()) return
         }
-        return
+        try {
+          sb.appendBuffer(data)
+          break  // success — fall through to the updateend listener
+        } catch (e) {
+          if (e.name !== 'QuotaExceededError') {
+            console.error('[MSE] appendBuffer error:', e.name, e.message)
+            return
+          }
+          // Evict played content (keep last 5 s for backward scrub).
+          if (sb.buffered.length > 0 && sb.buffered.start(0) < player.currentTime - 5) {
+            sb.remove(sb.buffered.start(0), player.currentTime - 5)
+            await waitForUpdate()
+            if (isStale()) return
+            // Retry in next loop iteration.
+          } else {
+            // Nothing to evict (player hasn't advanced yet). Wait up to
+            // 1 s for the player to consume some buffer, then retry.
+            await Promise.race([
+              new Promise((res) => player.addEventListener('timeupdate', res, { once: true })),
+              new Promise((res) => setTimeout(res, 1000)),
+            ])
+          }
+        }
       }
 
       sb.addEventListener('updateend', pump, { once: true })
