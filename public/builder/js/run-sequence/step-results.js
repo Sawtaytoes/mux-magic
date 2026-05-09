@@ -279,7 +279,12 @@ function formatStepResults(step) {
   const results = step.results
 
   if (commandName === 'getAudioOffsets') {
-    return results.flat().map(item => `${item?.offsetInMilliseconds}ms`).join('\n')
+    return results.flat().map((item) => {
+      const destPath = item?.destinationFilePath ?? ''
+      const filename = destPath.split(/[\\/]/).pop() ?? destPath
+      const label = filename || item?.sourceFilePath?.split(/[\\/]/).pop() || ''
+      return label ? `${label}: ${item?.offsetInMilliseconds}ms` : `${item?.offsetInMilliseconds}ms`
+    }).join('\n')
   }
 
   if (commandName === 'nameSpecialFeatures') {

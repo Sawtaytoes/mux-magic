@@ -53,7 +53,14 @@
       "PowerShell(gh --version 2>&1)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Read(**)"
+      "Read(**)",
+      "Bash(ls \"d:/Projects/Personal/media-tools/assets/\" 2>&1 && ls \"d:/Projects/Personal/media-tools/.claude/worktrees/frolicking-cuddling-tarjan/assets/\" 2>&1)",
+      "Read(//d/Projects/Personal/media-tools/assets/**)",
+      "Bash(PORT=54321 nohup node --env-file ./.env --import tsx/esm src/server.ts)",
+      "Bash(disown)",
+      "Bash(awk '{print $5}')",
+      "Bash(xargs -r kill)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 54321 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force; \"Killed PID $_\" })"
     ],
     "ask": [
       "Bash(yarn dlx *)",

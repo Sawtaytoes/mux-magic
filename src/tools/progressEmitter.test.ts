@@ -163,7 +163,12 @@ describe(createProgressEmitter.name, () => {
     ])
   })
 
-  test("tracker.finish removes the file from currentFiles and increments filesDone", () => {
+  test("tracker.finish removes the file from currentFiles but does NOT increment filesDone", () => {
+    // tracker.finish() is display-only: it removes the active-file row from
+    // currentFiles so the UI stops showing the bar. The filesDone counter is
+    // the domain of emitter.incrementFilesDone() alone. withFileProgress wires
+    // that call via rxFinalize so per-pair counting and per-file ffmpeg tracking
+    // never double-count.
     const captured = captureProgress("job-finish")
     const emitter = createProgressEmitter("job-finish", { totalFiles: 2 })
 
@@ -176,7 +181,7 @@ describe(createProgressEmitter.name, () => {
     vi.advanceTimersByTime(1000)
 
     expect(captured).toHaveLength(1)
-    expect(captured[0].filesDone).toBe(1)
+    expect(captured[0].filesDone).toBe(0)
     expect(captured[0].currentFiles).toEqual([
       { path: "/b.mkv", ratio: null },
     ])
@@ -185,7 +190,7 @@ describe(createProgressEmitter.name, () => {
     vi.advanceTimersByTime(1000)
 
     const finalEvent = captured[captured.length - 1]
-    expect(finalEvent.filesDone).toBe(2)
+    expect(finalEvent.filesDone).toBe(0)
     expect(finalEvent.currentFiles).toBeUndefined()
   })
 
@@ -195,12 +200,13 @@ describe(createProgressEmitter.name, () => {
 
     const tracker = emitter.startFile("/once.mkv", 100)
     tracker.finish(100)
-    tracker.finish(100) // duplicate — should not double-count
+    tracker.finish(100) // duplicate — no-op (file already removed from activeFiles)
 
     vi.advanceTimersByTime(1000)
 
     expect(captured).toHaveLength(1)
-    expect(captured[0].filesDone).toBe(1)
+    // tracker.finish does not increment filesDone; use emitter.incrementFilesDone()
+    expect(captured[0].filesDone).toBe(0)
   })
 
   test("setRatio overrides byte/file derived ratio — used by spawn ops with a tool-supplied percentage", () => {

@@ -22,22 +22,6 @@ import { replaceFlacWithPcmAudioScenario } from "./scenarios/replaceFlacWithPcmA
 import { storeAspectRatioDataScenario } from "./scenarios/storeAspectRatioData.js"
 import { successScenario } from "./scenarios/success.js"
 
-// ---------------------------------------------------------------------------
-// Server-level flag — set once at boot from the --fake-data CLI arg or the
-// MEDIA_TOOLS_FAKE_DATA env var. When true, every route handler treats every
-// request as fake without needing the per-request ?fake=1 query string.
-// ---------------------------------------------------------------------------
-
-let serverFakeMode = false
-
-export const setFakeModeEnabled = (enabled: boolean): void => {
-  serverFakeMode = enabled
-}
-
-export const isFakeModeEnabled = (): boolean => (
-  serverFakeMode
-)
-
 // Recognize all fake-mode values: "1"/"true"/"yes" for default (success),
 // "failure"/"fail" for scripted-error mode, "inProgress" for stuck mode.
 const isFakeQuery = (raw: string | undefined): boolean => {
@@ -50,10 +34,9 @@ const isFakeQuery = (raw: string | undefined): boolean => {
   )
 }
 
-// Detect whether THIS request should use fake responses.
+// Detect whether THIS request should use fake responses via `?fake=1`.
 export const isFakeRequest = (context: Context): boolean => (
-  serverFakeMode
-  || isFakeQuery(context.req.query("fake"))
+  isFakeQuery(context.req.query("fake"))
 )
 
 // Returns the global scenario override requested by this fake call.

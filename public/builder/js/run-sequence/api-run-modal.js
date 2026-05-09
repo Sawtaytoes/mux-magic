@@ -1,4 +1,6 @@
 import { handleStepCardProgressEvent, unmountStepCardProgress } from '../render-all.js'
+import { findStepById } from '../sequence-state.js'
+import { updateStepLogs, updateStepUI } from './step-results.js'
 
 let apiRunEventSource = null
 let apiRunCurrentJobId = null
@@ -112,10 +114,33 @@ function tailApiRunLogs(jobId, onDone) {
   apiRunEventSource = createTolerantEventSource(`/jobs/${jobId}/logs`, {
     onMessage: (data) => {
       if (data.type === 'step-started') {
+        // Reset step card state before each new run so stale error/results don't persist.
+        const startedStep = findStepById(data.stepId)
+        if (startedStep) {
+          startedStep.status = 'running'
+          startedStep.error = null
+          startedStep.results = null
+          startedStep.logs = null
+          startedStep.outputs = null
+          startedStep._smartMatchAutoOpened = undefined
+          updateStepUI(startedStep)
+        }
         openApiRunChildProgressStream(data.childJobId, data.stepId)
         return
       }
       if (data.type === 'step-finished') {
+        // Fallback: update step status if the child's done event hasn't fired yet.
+        const finishedStep = findStepById(data.stepId)
+        if (finishedStep && finishedStep.status === 'running') {
+          if (data.status === 'completed' || data.status === 'cancelled') {
+            finishedStep.status = data.status
+            finishedStep.error = null
+          } else {
+            finishedStep.status = 'failed'
+            finishedStep.error = `Job ended with status: ${data.status}`
+          }
+          updateStepUI(finishedStep)
+        }
         if (data.childJobId === apiRunChildJobId) {
           closeApiRunChildProgressStream()
           hideApiRunProgress()
@@ -160,6 +185,25 @@ function openApiRunChildProgressStream(childJobId, stepId) {
         const host = document.getElementById('api-run-progress-host')
         window.ProgressUtils.paintProgressBar(host, apiRunChildSnapshot)
         if (stepId) handleStepCardProgressEvent(stepId, data)
+      } else if (data.line && stepId) {
+        const step = findStepById(stepId)
+        const logs = (step?.logs ?? []).concat(data.line)
+        updateStepLogs(stepId, logs)
+      } else if (data.done && stepId) {
+        // Primary update path: child job's done event carries the final status/results.
+        const step = findStepById(stepId)
+        if (step) {
+          if (data.status === 'completed' || data.status === 'cancelled') {
+            step.status = data.status
+            step.error = null
+          } else {
+            step.status = 'failed'
+            step.error = `Job ended with status: ${data.status}`
+          }
+          if (Array.isArray(data.results) && data.results.length > 0) step.results = data.results
+          if (data.outputs && typeof data.outputs === 'object') step.outputs = data.outputs
+          updateStepUI(step)
+        }
       }
     },
     onPossiblyDisconnected: () => {},
