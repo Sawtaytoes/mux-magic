@@ -1,3 +1,8 @@
+/** User-facing label for DVDCompare format variants. */
+export function displayDvdCompareVariant(variant) {
+  return variant === 'Blu-ray 4K' ? 'UHD Blu-ray' : variant
+}
+
 /**
  * @param {string | null | undefined} displayName
  * @returns {{ baseTitle: string, year: string } | null}
