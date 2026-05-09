@@ -168,6 +168,7 @@ export async function runStep(stepId) {
   step.status = 'pending'
   step.error = null
   step.results = null
+  step._smartMatchAutoOpened = undefined
   step.logs = null
   step.outputs = null
   updateStepUI(step)
@@ -847,21 +848,39 @@ function wireNameSpecialFeaturesResults({ body, step, summaryRecord }) {
       : { name: entry?.name ?? '', timecode: entry?.timecode }
   )).filter((entry) => entry.name.length > 0)
 
+  const openSmartMatchModal = () => {
+    const unrenamedFilenames = Array.isArray(summaryRecord?.unrenamedFilenames)
+      ? summaryRecord.unrenamedFilenames
+      : []
+    openSpecialsMappingModal({
+      onRenameApplied: (successfulRenames) => {
+        handleSmartMatchRenames({ step, successfulRenames, summaryRecord })
+      },
+      onRunStep: () => runStep(step.id),
+      possibleNames: possibleNameObjects,
+      sourcePath,
+      unrenamedFilenames,
+    })
+  }
+
   const smartMatchButton = body.querySelector('[data-specials-smart-match]')
   if (smartMatchButton) {
-    smartMatchButton.addEventListener('click', () => {
-      const unrenamedFilenames = Array.isArray(summaryRecord?.unrenamedFilenames)
-        ? summaryRecord.unrenamedFilenames
-        : []
-      openSpecialsMappingModal({
-        onRenameApplied: (successfulRenames) => {
-          handleSmartMatchRenames({ step, successfulRenames, summaryRecord })
-        },
-        possibleNames: possibleNameObjects,
-        sourcePath,
-        unrenamedFilenames,
-      })
-    })
+    smartMatchButton.addEventListener('click', openSmartMatchModal)
+  }
+
+  // Auto-open once per step completion so the user can't miss unmatched files.
+  // The flag is reset in runStep so it fires again on the next run.
+  const unrenamedForAutoOpen = Array.isArray(summaryRecord?.unrenamedFilenames)
+    ? summaryRecord.unrenamedFilenames
+    : []
+  const hasSmartMatchDataForAutoOpen = (
+    !!sourcePath
+    && unrenamedForAutoOpen.length > 0
+    && possibleNameObjects.length > 0
+  )
+  if (hasSmartMatchDataForAutoOpen && !step._smartMatchAutoOpened) {
+    step._smartMatchAutoOpened = true
+    openSmartMatchModal()
   }
 
   const rows = body.querySelectorAll('[data-rename-row]')

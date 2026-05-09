@@ -158,6 +158,7 @@ const renderModalHtml = ({ suggestions }) => {
     + `<div class="px-4 py-3 border-t border-slate-700 flex items-center justify-end gap-2">`
     + `<p data-mapping-status class="text-xs text-slate-300 mr-auto"></p>`
     + `<button type="button" data-mapping-cancel class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded">Cancel</button>`
+    + `<button type="button" data-mapping-run-step class="text-xs bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded">&#9654; Run step</button>`
     + `<button type="button" data-mapping-confirm class="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded font-medium">Rename selected</button>`
     + `</div>`
     + `</div>`
@@ -172,22 +173,26 @@ const fetchDurationsForFolder = async ({ filenames, sourcePath }) => {
     url.searchParams.set('includeDuration', '1')
     const response = await fetch(url)
     if (!response.ok) {
-      return new Map()
+      return { durationByFilename: new Map(), existingFilenames: null }
     }
     const data = await response.json()
     if (!Array.isArray(data?.entries)) {
-      return new Map()
+      return { durationByFilename: new Map(), existingFilenames: null }
     }
     const durationByFilename = new Map()
+    const existingFilenames = new Set()
     data.entries.forEach((entry) => {
-      if (filenameSet.has(entry?.name) && typeof entry?.duration === 'string') {
-        durationByFilename.set(entry.name, entry.duration)
+      if (typeof entry?.name === 'string') {
+        existingFilenames.add(entry.name)
+        if (filenameSet.has(entry.name) && typeof entry?.duration === 'string') {
+          durationByFilename.set(entry.name, entry.duration)
+        }
       }
     })
-    return durationByFilename
+    return { durationByFilename, existingFilenames }
   }
   catch {
-    return new Map()
+    return { durationByFilename: new Map(), existingFilenames: null }
   }
 }
 
@@ -374,6 +379,7 @@ export const closeSpecialsMappingModal = () => {
 // record / re-render.
 export const openSpecialsMappingModal = async ({
   onRenameApplied,
+  onRunStep,
   possibleNames,
   sourcePath,
   unrenamedFilenames,
@@ -395,11 +401,19 @@ export const openSpecialsMappingModal = async ({
   )
   modal.classList.remove('hidden')
 
-  const durationByFilename = await fetchDurationsForFolder({
+  const { durationByFilename, existingFilenames } = await fetchDurationsForFolder({
     filenames: unrenamedFilenames,
     sourcePath,
   })
-  const unrenamedFiles = unrenamedFilenames.map((filename) => ({
+  // Filter out filenames no longer on disk (renamed in a prior session).
+  const presentFilenames = existingFilenames
+    ? unrenamedFilenames.filter((f) => existingFilenames.has(f))
+    : unrenamedFilenames
+  if (presentFilenames.length === 0) {
+    modal.classList.add('hidden')
+    return
+  }
+  const unrenamedFiles = presentFilenames.map((filename) => ({
     filename,
     timecode: durationByFilename.get(filename),
   }))
@@ -416,6 +430,7 @@ export const openSpecialsMappingModal = async ({
   const closeButton = modal.querySelector('[data-mapping-close]')
   const cancelButton = modal.querySelector('[data-mapping-cancel]')
   const confirmButton = modal.querySelector('[data-mapping-confirm]')
+  const runStepButton = modal.querySelector('[data-mapping-run-step]')
   if (closeButton) {
     closeButton.addEventListener('click', closeSpecialsMappingModal)
   }
@@ -424,5 +439,15 @@ export const openSpecialsMappingModal = async ({
   }
   if (confirmButton) {
     confirmButton.addEventListener('click', handleConfirmClick)
+  }
+  if (runStepButton) {
+    if (typeof onRunStep === 'function') {
+      runStepButton.addEventListener('click', () => {
+        closeSpecialsMappingModal()
+        onRunStep()
+      })
+    } else {
+      runStepButton.remove()
+    }
   }
 }
