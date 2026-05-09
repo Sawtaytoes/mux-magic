@@ -570,12 +570,18 @@ function clearMseCleanup() {
 // Falls back to direct player.src when MSE is unsupported or the video
 // codec isn't in the browser's supported set.
 async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
-  const codecStrings = {
-    avc1: 'avc1.640028',   // H.264 High profile Level 4.0
-    hvc1: 'hvc1.1.6.L150.90', // H.265 Main profile Level 5.0
+  // Server now returns the full RFC 6381 codec string (e.g. "avc1.640029").
+  // Fallback table handles legacy responses that return just the base type.
+  const legacyCodecFallbacks = {
+    avc1: 'avc1.640029', // H.264 High@L4.1 — covers most Blu-ray rips
+    hvc1: 'hvc1.1.6.L150.B0', // H.265 Main@L5.0@High
     av01: 'av01.0.08M.08', // AV1 Main 4:2:0
   }
-  const videoCodecFull = codecStrings[videoCodecTag]
+  const videoCodecFull = (
+    videoCodecTag && videoCodecTag.includes('.')
+    ? videoCodecTag
+    : legacyCodecFallbacks[videoCodecTag]
+  )
   const mimeType = videoCodecFull ? `video/mp4; codecs="${videoCodecFull},opus"` : null
 
   if (

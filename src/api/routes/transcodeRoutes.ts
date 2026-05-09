@@ -332,15 +332,82 @@ const fetchStreamInfo = async (
   let videoCodecTag: string | null = null
   if (video && "Format" in video && typeof video.Format === "string") {
     const fmt = video.Format.toUpperCase()
-    videoCodecTag = (
-      fmt === "AVC" ? "avc1"
-      : fmt === "HEVC" ? "hvc1"
-      : fmt === "AV1" ? "av01"
-      : null
+    const profile = (
+      "Format_Profile" in video && typeof video.Format_Profile === "string"
+      ? video.Format_Profile
+      : ""
     )
+    // MediaInfo returns level and tier as separate fields from profile.
+    const level = (
+      "Format_Level" in video && typeof (video as Record<string, unknown>).Format_Level === "string"
+      ? (video as Record<string, unknown>).Format_Level as string
+      : ""
+    )
+    const tier = (
+      "Format_Tier" in video && typeof (video as Record<string, unknown>).Format_Tier === "string"
+      ? (video as Record<string, unknown>).Format_Tier as string
+      : ""
+    )
+    if (fmt === "AVC") {
+      videoCodecTag = buildAvcCodecString(profile, level)
+    }
+    else if (fmt === "HEVC") {
+      videoCodecTag = buildHevcCodecString(profile, level, tier)
+    }
+    else if (fmt === "AV1") {
+      videoCodecTag = "av01.0.08M.08"
+    }
   }
 
   return { durationSeconds, videoCodecTag }
+}
+
+// H.264 profile name → two-hex-digit profile_idc used in the codec string.
+const AVC_PROFILE_HEX: Record<string, string> = {
+  "Baseline": "42",
+  "Constrained Baseline": "42",
+  "Main": "4D",
+  "Extended": "58",
+  "High": "64",
+  "High 10": "6E",
+  "High 4:2:2": "7A",
+  "High 4:4:4": "F4",
+  "High 4:4:4 Predictive": "F4",
+}
+
+// Derives the RFC 6381 codec string for H.264, e.g. "avc1.640029" for
+// High@L4.1. Falls back to High@L4.1 for any unparseable inputs.
+// MediaInfo returns profile and level as separate fields (not "High@L4.1").
+const buildAvcCodecString = (formatProfile: string, formatLevel: string): string => {
+  const fallback = "avc1.640029" // High@L4.1 — covers most Blu-ray rips
+  const profileHex = AVC_PROFILE_HEX[formatProfile.trim()] ?? "64"
+  const levelFloat = parseFloat(formatLevel)
+  if (Number.isNaN(levelFloat) || levelFloat <= 0) {
+    return fallback
+  }
+  const levelHex = Math.round(levelFloat * 10).toString(16).padStart(2, "0").toUpperCase()
+  return `avc1.${profileHex}00${levelHex}`
+}
+
+// Derives the RFC 6381 codec string for HEVC, e.g. "hvc1.2.4.H153.B0"
+// for Main 10@L5.1@High. Falls back to Main@L5.0@High for any unparseable inputs.
+// MediaInfo returns profile, level, and tier as separate fields.
+const buildHevcCodecString = (formatProfile: string, formatLevel: string, formatTier: string): string => {
+  const fallback = "hvc1.1.6.L150.B0" // Main@L5.0@High
+  const lowerProfile = formatProfile.toLowerCase()
+  // Profile IDC: Main=1, Main 10=2
+  const profileIdc = lowerProfile.startsWith("main 10") ? 2 : 1
+  // Compatibility flags: 0x06 for Main (bits 1+2 set), 0x04 for Main 10 (bit 2 set)
+  const compatFlags = profileIdc === 1 ? "6" : "4"
+  const levelFloat = parseFloat(formatLevel)
+  if (Number.isNaN(levelFloat) || levelFloat <= 0) {
+    return fallback
+  }
+  // HEVC level indicator = level * 30 (e.g. 5.1 → 153)
+  const levelIndicator = Math.round(levelFloat * 30)
+  // MediaInfo Format_Tier is "High" or "Main" (absent → Main tier)
+  const tierFlag = formatTier.toLowerCase() === "high" ? "H" : "L"
+  return `hvc1.${profileIdc}.${compatFlags}.${tierFlag}${levelIndicator}.B0`
 }
 
 const handleTranscodeRequest = async ({

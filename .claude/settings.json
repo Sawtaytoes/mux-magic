@@ -15,7 +15,18 @@
       "PowerShell(gh --version 2>&1)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Bash(echo \"TC=$?\")"
+      "Bash(echo \"TC=$?\")",
+      "Bash(Get-Content \"C:\\\\Users\\\\satur\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Projects-Personal-media-tools--claude-worktrees-purring-herding-flame\\\\6527d3bc-255d-489f-8664-842f7de7a388\\\\tasks\\\\bch50ycs3.output\")",
+      "Bash(curl -s \"http://localhost:3000/transcode/audio?path=C:/Windows/Media/tada.wav&codec=opus\" -o /tmp/test-transcode.webm -w \"HTTP %{http_code} size=%{size_download}\")",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "PowerShell(& \"C:\\\\Program Files\\\\MediaInfo\\\\MediaInfo.exe\" \"G:\\\\Disc-Rips\\\\SOLDIER - 4K\\\\Weapons of Mass Creation 2025 interviews with visual effects supervisors Craig Barron and Van Ling and miniature supervisor Michael Joyce -interview.mkv\" 2>&1)",
+      "PowerShell(netstat -ano)",
+      "Read(//g/Disc-Rips/SOLDIER - 4K/**)",
+      "PowerShell(cmd /c \"dir G:\\\\Disc-Rips 2>&1\")",
+      "Bash(curl -s \"http://localhost:3000/transcode/audio?path=G%3A%5CMovies%5CSnoopy%2C+Come+Home+%281972%29%5CSnoopy%2C+Come+Home+%281972%29.mkv&codec=opus\" --max-time 5 -o /tmp/test_stream_start0.mp4)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(\"assets/mediainfo/MediaInfo.exe\" --Output=JSON \"G:\\\\Movies\\\\Snoopy, Come Home \\(1972\\)\\\\Snoopy, Come Home \\(1972\\).mkv\")",
+      "Bash(python3 -c ' *)"
     ]
   }
 }
