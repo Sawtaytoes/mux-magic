@@ -28,108 +28,108 @@ export const makeDirectoryRequestSchema = z.object({
 })
 
 export const copyFilesRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  destinationPath: z.string().describe("Destination directory path"),
+  sourcePath: z.string().describe("Directory to copy files from."),
+  destinationPath: z.string().describe("Directory to copy files into. Created if it does not already exist."),
 })
 
 export const flattenOutputRequestSchema = z.object({
-  sourcePath: z.string().describe("Output folder produced by a previous step (e.g. /work/SUBTITLED). Its contents are copied up one level, overwriting same-named originals."),
-  deleteSourceFolder: z.boolean().default(false).describe("If true, delete sourcePath after copying. Default false: source is preserved so you can inspect intermediate state during a long sequence; clean up later with deleteFolder."),
+  sourcePath: z.string().describe("Output folder produced by a previous step (e.g. /work/SUBTITLED). Its contents are copied up one level into its parent."),
+  deleteSourceFolder: z.boolean().default(false).describe("Delete the source folder after copying. By default the source is preserved (debug-friendly)."),
 })
 
 export const moveFilesRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  destinationPath: z.string().describe("Destination directory path"),
+  sourcePath: z.string().describe("Directory to move files from. Deleted after all files are copied."),
+  destinationPath: z.string().describe("Directory to move files into. Created if it does not already exist."),
 })
 
 export const extractSubtitlesRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  subtitlesLanguage: z.enum(iso6392LanguageCodes).optional().describe("Filter subtitles by language"),
+  sourcePath: z.string().describe("Directory containing media files or containing other directories of media files."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
+  subtitlesLanguage: z.enum(iso6392LanguageCodes).optional().describe("A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed."),
 })
 
 /** @deprecated Renamed to {@link extractSubtitlesRequestSchema}. Kept as an alias so existing callers don't break. */
 export const copyOutSubtitlesRequestSchema = extractSubtitlesRequestSchema
 
 export const getAudioOffsetsRequestSchema = z.object({
-  sourceFilesPath: z.string().describe("Path to source audio files"),
-  destinationFilesPath: z.string().describe("Path to destination audio files"),
+  sourceFilesPath: z.string().describe("Directory with media files with tracks you want to copy."),
+  destinationFilesPath: z.string().describe("Directory containing media files with tracks you want replaced."),
 })
 
 export const changeTrackLanguagesRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  audioLanguage: z.enum(iso6392LanguageCodes).optional().describe("Audio track language code"),
-  subtitlesLanguage: z.enum(iso6392LanguageCodes).optional().describe("Subtitle track language code"),
-  videoLanguage: z.enum(iso6392LanguageCodes).optional().describe("Video track language code"),
+  sourcePath: z.string().describe("Directory with media files whose tracks need language metadata corrections."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
+  audioLanguage: z.enum(iso6392LanguageCodes).optional().describe("A 3-letter ISO-6392 language code for audio tracks. All tracks will be labeled with this language."),
+  subtitlesLanguage: z.enum(iso6392LanguageCodes).optional().describe("A 3-letter ISO-6392 language code for subtitles tracks. All tracks will be labeled with this language."),
+  videoLanguage: z.enum(iso6392LanguageCodes).optional().describe("A 3-letter ISO-6392 language code for video tracks. All tracks will be labeled with this language."),
 })
 
 export const fixIncorrectDefaultTracksRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
+  sourcePath: z.string().describe("Directory containing media files or containing other directories of media files."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
 })
 
 export const hasBetterAudioRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  recursiveDepth: z.number().default(0).describe("Maximum recursion depth"),
+  sourcePath: z.string().describe("Directory containing media files or containing other directories of media files."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
+  recursiveDepth: z.number().default(0).describe("How many deep of child directories to follow (2 or 3) when using isRecursive."),
 })
 
 export const hasBetterVersionRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  recursiveDepth: z.number().default(0).describe("Maximum recursion depth"),
+  sourcePath: z.string().describe("Directory containing media files or containing other directories of media files."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
+  recursiveDepth: z.number().default(0).describe("How many deep of child directories to follow (2 or 3) when using isRecursive."),
 })
 
 export const hasDuplicateMusicFilesRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  recursiveDepth: z.number().default(0).describe("Maximum recursion depth"),
+  sourcePath: z.string().describe("Directory containing music files or containing other directories of music files."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for music files."),
+  recursiveDepth: z.number().default(0).describe("How many deep of child directories to follow (2 or 3) when using isRecursive."),
 })
 
 export const hasImaxEnhancedAudioRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
+  sourcePath: z.string().describe("Directory containing media files or containing other directories of media files."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
 })
 
 export const hasManyAudioTracksRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
+  sourcePath: z.string().describe("Directory containing media files or containing other directories of media files."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
 })
 
 export const hasSurroundSoundRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  recursiveDepth: z.number().default(0).describe("Maximum recursion depth"),
+  sourcePath: z.string().describe("Directory containing media files or containing other directories of media files."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
+  recursiveDepth: z.number().default(0).describe("How many deep of child directories to follow (2 or 3) when using isRecursive."),
 })
 
 export const hasWrongDefaultTrackRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
+  sourcePath: z.string().describe("Directory containing media files or containing other directories of media files."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
 })
 
 export const isMissingSubtitlesRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
+  sourcePath: z.string().describe("Directory containing media files or containing other directories of media files."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
 })
 
 export const deleteFilesByExtensionRequestSchema = z.object({
-  sourcePath: z.string().describe("Directory path to search for files to delete"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  recursiveDepth: z.number().default(0).describe("Maximum recursion depth (0 = default depth of 2)"),
-  extensions: z.array(z.string()).min(1).describe("List of file extensions to delete (with or without leading dot), e.g. ['.srt', 'idx']").openapi({ example: [".srt", "idx"] }),
+  sourcePath: z.string().describe("Directory to search for files to delete."),
+  isRecursive: z.boolean().default(false).describe("Recursively search subdirectories for matching files."),
+  recursiveDepth: z.number().default(0).describe("Maximum recursion depth when --isRecursive is set (0 = default depth of 2)."),
+  extensions: z.array(z.string()).min(1).describe("List of file extensions to delete (with or without leading dot), e.g. ['.srt', 'idx'].").openapi({ example: [".srt", "idx"] }),
 })
 
 export const deleteFolderRequestSchema = z.object({
-  folderPath: z.string().describe("Folder path to delete recursively"),
-  confirm: z.literal(true).describe("Required safety guard: must be the literal value true. Without it the request is rejected so a misclick can't nuke a directory."),
+  folderPath: z.string().describe("Folder to delete (recursively)."),
+  confirm: z.literal(true).describe("Required: pass --confirm to acknowledge this is destructive. Without it the command refuses to run."),
 })
 
 export const remuxToMkvRequestSchema = z.object({
   sourcePath: z.string().describe("Directory containing files to remux."),
-  extensions: z.array(z.string()).min(1).describe("List of file extensions to remux (with or without leading dot), e.g. ['.ts', '.m2ts']").openapi({ example: [".ts"] }),
+  extensions: z.array(z.string()).min(1).describe("List of file extensions to remux (with or without leading dot), e.g. ['.ts', '.m2ts'].").openapi({ example: [".ts"] }),
   isRecursive: z.boolean().default(false).describe("Recursively scan subdirectories."),
-  recursiveDepth: z.number().default(0).describe("Maximum recursion depth when isRecursive is set (0 = default depth of 2)."),
+  recursiveDepth: z.number().default(0).describe("Maximum recursion depth when --isRecursive is set (0 = default depth of 2)."),
   isSourceDeletedOnSuccess: z.boolean().default(false).describe("Delete each source file after its remux completes successfully."),
 })
 
@@ -290,9 +290,9 @@ export const assModificationRuleSchema = z.discriminatedUnion("type", [
 ])
 
 export const modifySubtitleMetadataRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path containing .ass files"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  recursiveDepth: z.number().default(0).describe("Maximum recursion depth (0 = default depth of 2)"),
+  sourcePath: z.string().describe("Directory containing .ass subtitle files to modify."),
+  isRecursive: z.boolean().default(false).describe("Recursively search subdirectories for .ass files."),
+  recursiveDepth: z.number().default(0).describe("Maximum recursion depth when --isRecursive is set (0 = default depth of 2)."),
   hasDefaultRules: z.boolean().default(false).describe("When true, the command runs the in-tree default-rules heuristic (`buildDefaultSubtitleModificationRules`) against the .ass files at `sourcePath` and PREPENDS the computed rules to `rules`. Defaults run first, user rules run after, so user rules can override. The heuristic emits: `setScriptInfo ScriptType=v4.00+`, `setScriptInfo YCbCr Matrix=TV.709` (when any file has TV.601 outside SD-DVD 640x480), `setStyleFields MarginV=round(PlayResY/1080*90)`, optional `MarginL/R=round(200/1920*PlayResX)` when narrow margins are detected on non-ignored styles, with `ignoredStyleNamesRegexString=\"signs?|op|ed|opening|ending\"`. See docs/dsl/subtitle-rules.md `Default rules toggle` for the full table."),
   predicates: z.record(z.string(), z.record(z.string(), z.string())).optional()
     .describe("Optional named-predicate map. Keys are predicate names; values are flat string-equality key→value maps. Referenced from rule `when:` clauses via `{ $ref: <name> }` inside `matches:` or `excludes:`. See docs/dsl/subtitle-rules.md Named predicates."),
@@ -314,123 +314,123 @@ export const modifySubtitleMetadataRequestSchema = z.object({
 })
 
 export const keepLanguagesRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  audioLanguages: z.array(z.enum(iso6392LanguageCodes)).default([]).describe("Audio languages to keep"),
-  subtitlesLanguages: z.array(z.enum(iso6392LanguageCodes)).default([]).describe("Subtitle languages to keep"),
-  useFirstAudioLanguage: z.boolean().default(false).describe("Keep first audio language only"),
-  useFirstSubtitlesLanguage: z.boolean().default(false).describe("Keep first subtitle language only"),
+  sourcePath: z.string().describe("Directory where media files are located."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
+  audioLanguages: z.array(z.enum(iso6392LanguageCodes)).default([]).describe("A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed."),
+  subtitlesLanguages: z.array(z.enum(iso6392LanguageCodes)).default([]).describe("A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed."),
+  useFirstAudioLanguage: z.boolean().default(false).describe("The language of the first audio track is the only language kept for audio tracks."),
+  useFirstSubtitlesLanguage: z.boolean().default(false).describe("The language of the first subtitles track is the only language kept for subtitles tracks."),
 })
 
 export const mergeTracksRequestSchema = z.object({
-  mediaFilesPath: z.string().describe("Path to media files"),
-  subtitlesPath: z.string().describe("Path to subtitle files"),
-  hasChapterSyncOffset: z.boolean().default(false).describe("Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a `chapters.xml` inside `subtitlesPath`. Use when the source release the subtitles came from and your destination differ in intro padding — the chapter-1 timestamp diff is shipped to mkvmerge as `--sync -1:<ms>`. Falls back to `globalOffset` (or per-file `offsets[index]`) when false or when no `chapters.xml` is found."),
-  globalOffset: z.number().default(0).describe("Global audio offset in milliseconds"),
-  includeChapters: z.boolean().default(false).describe("Include chapter markers"),
-  offsets: z.array(z.number()).default([]).describe("Per-file audio offsets in milliseconds"),
+  mediaFilesPath: z.string().describe("Directory with media files that need subtitles."),
+  subtitlesPath: z.string().describe("Directory containing subdirectories with subtitle files and attachments/ that match the name of the media files in mediaFilesPath."),
+  hasChapterSyncOffset: z.boolean().default(false).describe("Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the subtitles path. Falls back to globalOffset (or per-file offsets) when no chapters.xml is found."),
+  globalOffset: z.number().default(0).describe("The offset in milliseconds to apply to all audio being transferred."),
+  includeChapters: z.boolean().default(false).describe("Adds chapters along with other tracks."),
+  offsets: z.array(z.number()).default([]).describe("Space-separated list of time-alignment offsets to set for each individual file in milliseconds."),
 })
 
 export const nameAnimeEpisodesRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  searchTerm: z.string().optional().describe("Anime title to search for (CLI fallback when no malId)"),
-  seasonNumber: z.number().default(1).describe("Season number"),
-  malId: z.number().optional().describe("MyAnimeList ID — when provided, skips the interactive search and uses this ID directly"),
+  sourcePath: z.string().describe("Directory where all episodes are located."),
+  searchTerm: z.string().optional().describe("Name of the anime for searching MyAnimeList.com."),
+  seasonNumber: z.number().default(1).describe("The season number to output when renaming useful for TVDB which has separate season number. For aniDB, use the default value 1."),
+  malId: z.number().optional().describe("MyAnimeList ID — when provided, skips the interactive search and uses this ID directly."),
 })
 
 export const nameAnimeEpisodesAniDBRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  searchTerm: z.string().optional().describe("Anime title to search for via the manami-project anime-offline-database (used when no anidbId is provided; CLI falls back to interactive picker)"),
-  seasonNumber: z.number().default(1).describe("Season number for the Plex-style sNNeNN output filename. Ignored when episodeType is \"specials\" (Plex's specials live in season 0)."),
-  anidbId: z.number().optional().describe("AniDB anime id (aid) — when provided, skips the search and uses this aid directly"),
-  episodeType: z.enum(["regular", "specials", "credits", "trailers", "parodies", "others"]).default("regular").describe("Which AniDB episode types to rename. Each non-regular sub-type is its own category so users can run them separately:\n  - \"regular\"  type=1 — index-paired with a duration sanity-check warning when files and AniDB episodes diverge by >2m.\n  - \"specials\" type=2 (S) — length-matched per-file picker, Plex s00eNN.\n  - \"credits\"  type=3 (C, OP/ED) — length-matched per-file picker, Plex s00eNN.\n  - \"trailers\" type=4 (T) — length-matched per-file picker, Plex s00eNN.\n  - \"parodies\" type=5 (P) — length-matched per-file picker, Plex s00eNN.\n  - \"others\"   type=6 (O, director's-cut alts) — index-paired like regular."),
+  sourcePath: z.string().describe("Directory where all episodes are located."),
+  searchTerm: z.string().optional().describe("Anime name for searching AniDB (via DuckDuckGo)."),
+  seasonNumber: z.number().default(1).describe("Season number for the output filename (Plex-style sNNeNN). Ignored when --episodeType=specials."),
+  anidbId: z.number().optional().describe("AniDB anime id (aid). When provided, skips the interactive search."),
+  episodeType: z.enum(["regular", "specials", "credits", "trailers", "parodies", "others"]).default("regular").describe("Which AniDB episode types to rename. Each non-regular sub-type is run separately: specials (S), credits (C, OP/ED), trailers (T), parodies (P) all run the length-matched per-file picker and emit Plex's s00eNN. Others (type=6 alts) and regular are index-paired with a duration sanity-check warning."),
 }).describe("Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Episode-range selection is planned — see README §AniDB command notes.")
 
 export const nameSpecialFeaturesRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  url: z.string().optional().describe("Direct DVDCompare.net URL (overrides dvdCompareId and searchTerm)"),
-  dvdCompareId: z.number().optional().describe("DVDCompare film ID — constructs URL directly, bypasses search"),
-  dvdCompareReleaseHash: z.number().optional().describe("Release package hash (URL fragment, defaults to 1)"),
-  searchTerm: z.string().optional().describe("Title to search on DVDCompare.net (used when no url or dvdCompareId)"),
-  fixedOffset: z.number().default(0).describe("Fixed timecode offset in milliseconds"),
-  timecodePadding: z.number().default(2).describe("Timecode padding amount (in seconds) — DVDCompare runtimes routinely drift 1–2s from rip metadata, so 2 matches typical real-world cases. Set to 0 for an exact-match-only run."),
-  moveToEditionFolders: z.boolean().default(false).describe("After renaming, move main-feature files that carry a {edition-…} tag into <sourceParent>/<Title (Year)>/<Title (Year) {edition-…}>/<file>. Special-feature files are not moved."),
-  nonInteractive: z.boolean().default(false).describe("When true, rename collisions auto-resolve by appending (2), (3), … instead of emitting a review-needed collision event. Use in automated/scripted runs without a UI to confirm."),
-  autoNameDuplicates: z.boolean().default(false).describe("When true, two-or-more files matching the same target name within a single run are auto-disambiguated with (2)/(3)/… suffixes deterministically. When false (the default — interactive-by-default), the run emits a 'duplicate' prompt for each ambiguous group so the user can pick which file is which from a multi-option modal that includes a ▶ Play preview. Non-interactive callers (CLI's `--autoNameDuplicates`, sequence YAMLs that need silent runs) should pass `true` explicitly."),
+  sourcePath: z.string().describe("Directory where special features are located."),
+  url: z.string().optional().describe("DVDCompare.net URL including the chosen release's hash tag."),
+  dvdCompareId: z.number().optional().describe("DVDCompare film ID — when provided, constructs URL directly and bypasses search."),
+  dvdCompareReleaseHash: z.number().optional().describe("Release package hash (URL fragment, defaults to 1)."),
+  searchTerm: z.string().optional().describe("Title to search on DVDCompare.net (used when no url or dvdCompareId)."),
+  fixedOffset: z.number().default(0).describe("Timecodes are pushed positively or negatively by this amount (in milliseconds)."),
+  timecodePadding: z.number().default(2).describe("Seconds that timecodes may be off. Defaults to 2, matching typical DVDCompare-vs-rip drift. Pass 0 for exact-match-only."),
+  moveToEditionFolders: z.boolean().default(false).describe("After renaming, move main-feature files that carry a {edition-…} tag into a nested folder: <sourceParent>/<Title (Year)>/<Title (Year) {edition-…}>/<file>. Special-feature files are not moved."),
+  nonInteractive: z.boolean().default(false).describe("When a rename target already exists on disk, automatically append (2), (3), … instead of emitting a review-needed collision event. Use this in scripts or when running without a UI that can display the collision prompt."),
+  autoNameDuplicates: z.boolean().default(false).describe("When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/… suffixes deterministically. Pass false to instead emit a duplicate-pick prompt for each ambiguous group. Defaults to false so interactive runs prompt the user."),
 })
 
 export const nameTvShowEpisodesRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  searchTerm: z.string().optional().describe("TV show title to search for (CLI fallback when no tvdbId)"),
-  seasonNumber: z.number().default(1).describe("Season number"),
-  tvdbId: z.number().optional().describe("TVDB ID — when provided, skips the interactive search and uses this ID directly"),
+  sourcePath: z.string().describe("Directory where all episodes for that season are located."),
+  searchTerm: z.string().optional().describe("Name of the TV show for searching TVDB.com."),
+  seasonNumber: z.number().default(1).describe("The season number to lookup when renaming."),
+  tvdbId: z.number().optional().describe("TVDB ID — when provided, skips the interactive search and uses this ID directly."),
 })
 
 export const renameDemosRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
+  sourcePath: z.string().describe("Directory where demo files are located."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
 })
 
 export const renameMovieClipDownloadsRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
+  sourcePath: z.string().describe("Directory where downloaded movie demos are located."),
 })
 
 export const reorderTracksRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  videoTrackIndexes: z.array(z.number()).default([]).describe("Video track order indices"),
-  audioTrackIndexes: z.array(z.number()).default([]).describe("Audio track order indices"),
-  subtitlesTrackIndexes: z.array(z.number()).default([]).describe("Subtitle track order indices"),
+  sourcePath: z.string().describe("Directory with media files whose tracks need reordering."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
+  videoTrackIndexes: z.array(z.number()).default([]).describe("The order of all video tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file."),
+  audioTrackIndexes: z.array(z.number()).default([]).describe("The order of all audio tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file."),
+  subtitlesTrackIndexes: z.array(z.number()).default([]).describe("The order of all subtitles tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file."),
 })
 
 export const replaceAttachmentsRequestSchema = z.object({
-  sourceFilesPath: z.string().describe("Path to source files with attachments"),
-  destinationFilesPath: z.string().describe("Path to destination files"),
+  sourceFilesPath: z.string().describe("Directory with media files with attachments you want to copy."),
+  destinationFilesPath: z.string().describe("Directory containing media files with attachments you want replaced."),
 })
 
 export const replaceFlacWithPcmAudioRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
+  sourcePath: z.string().describe("Directory containing media files or containing other directories of media files."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
 })
 
 export const replaceTracksRequestSchema = z.object({
-  sourceFilesPath: z.string().describe("Path to source files"),
-  destinationFilesPath: z.string().describe("Path to destination files"),
-  hasChapterSyncOffset: z.boolean().default(false).describe("Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a `chapters.xml` inside `sourceFilesPath`. Use when source and destination releases differ in intro padding — the chapter-1 timestamp diff is shipped to mkvmerge as `--sync -1:<ms>`. Falls back to `globalOffset` (or per-file `offsets[index]`) when false or when no `chapters.xml` is found."),
-  globalOffset: z.number().default(0).describe("Global audio offset in milliseconds"),
-  includeChapters: z.boolean().default(false).describe("Include chapter markers"),
-  audioLanguages: z.array(z.enum(iso6392LanguageCodes)).default([]).describe("Audio languages to include"),
-  subtitlesLanguages: z.array(z.enum(iso6392LanguageCodes)).default([]).describe("Subtitle languages to include"),
-  videoLanguages: z.array(z.enum(iso6392LanguageCodes)).default([]).describe("Video languages to include"),
-  offsets: z.array(z.number()).default([]).describe("Per-file audio offsets in milliseconds"),
+  sourceFilesPath: z.string().describe("Directory with media files with tracks you want to copy."),
+  destinationFilesPath: z.string().describe("Directory containing media files with tracks you want replaced."),
+  hasChapterSyncOffset: z.boolean().default(false).describe("Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the source files path. Falls back to globalOffset (or per-file offsets) when false or when no chapters.xml is found."),
+  globalOffset: z.number().default(0).describe("The offset in milliseconds to apply to all audio being transferred."),
+  includeChapters: z.boolean().default(false).describe("Adds chapters along with other tracks."),
+  audioLanguages: z.array(z.enum(iso6392LanguageCodes)).default([]).describe("A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed."),
+  subtitlesLanguages: z.array(z.enum(iso6392LanguageCodes)).default([]).describe("A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed."),
+  videoLanguages: z.array(z.enum(iso6392LanguageCodes)).default([]).describe("A 3-letter ISO-6392 language code for video tracks to keep. All others will be removed."),
+  offsets: z.array(z.number()).default([]).describe("Space-separated list of time-alignment offsets to set for each individual file in milliseconds."),
 })
 
 export const setDisplayWidthRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  recursiveDepth: z.number().default(0).describe("Maximum recursion depth"),
-  displayWidth: z.number().default(853).describe("Display width in pixels"),
+  sourcePath: z.string().describe("Directory where video files are located."),
+  isRecursive: z.boolean().default(false).describe("Recursively looks in folders for media files."),
+  recursiveDepth: z.number().default(0).describe("How many deep of child directories to follow (2 or 3) when using isRecursive."),
+  displayWidth: z.number().default(853).describe("Display width of the video file. For DVDs, they're all 3:2, but you can set them to the proper 4:3 or 16:9 aspect ratio with anamorphic (non-square) pixels using this value."),
 })
 
 export const splitChaptersRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  chapterSplits: z.array(z.string()).describe("Chapter split definitions"),
+  sourcePath: z.string().describe("Directory where video files are located."),
+  chapterSplits: z.array(z.string()).describe("Space-separated list of comma-separated chapter markers. Splits occur at the beginning of the chapter."),
 })
 
 export const storeAspectRatioDataRequestSchema = z.object({
-  sourcePath: z.string().describe("Source directory path"),
-  isRecursive: z.boolean().default(true).describe("Search recursively in subdirectories. **Defaults to true** so most callers don't need to pass it — typical Plex-style libraries are nested (`Movies/<title>/<file>` or with editions, `Movies/<title>/<title> {edition-…}/<file>`)."),
-  recursiveDepth: z.number().default(3).describe("How many directory levels deep to scan, counting `sourcePath` as level 1. **Default 3** covers Plex's edition layout: `Movies/Soldier (1998)/Soldier (1998) {edition-Director's Cut}/file.mkv` is 4 segments long, and 3 levels of descent from `Movies` reaches the file. Non-editioned `Movies/<title>/<file>` only needs 2, but over-recursing is safer than missing files. Only used when `isRecursive` is true."),
-  outputPath: z.string().optional().describe("Output path for aspect ratio data"),
-  rootPath: z.string().optional().describe("Path prefix your media player (Plex, Jellyfin, Emby) sees for your library — written into the output JSON's file paths so the player can match its catalog. **Does not need to exist on this machine and is not validated** (it's a label substituted in place of `sourcePath`, not a filesystem reference). Common case: scanning `G:\\Movies` on Windows but Plex sees `/media/Movies` — pass `/media/Movies` here. Path separator is auto-converted to match the format you provide."),
-  folders: z.array(z.string()).default([]).describe("Specific folders to process"),
-  force: z.boolean().default(false).describe("Force overwrite existing data"),
+  sourcePath: z.string().describe("Directory containing media files or containing other directories of media files."),
+  isRecursive: z.boolean().default(true).describe("Recursively look in folders for media files. Defaults to true since Plex-style libraries are nested (Movies/<title>/<file>); pass --no-isRecursive to scan only sourcePath."),
+  recursiveDepth: z.number().default(3).describe("How many directory levels deep to scan, counting sourcePath as level 1. Default 3 covers Plex's edition layout (e.g. Movies/Soldier (1998)/Soldier (1998) {edition-Director's Cut}/file.mkv — 4 segments long, 3 levels of descent from Movies). Non-editioned Movies/<title>/<file> only needs 2, but over-recursing is safer than missing files. Only used with --isRecursive."),
+  outputPath: z.string().optional().describe("Location of the resulting JSON file. If using append mode, it will search here for the JSON file. By default, this uses the sourcePath."),
+  rootPath: z.string().optional().describe("Path your media player (Plex, Jellyfin, Emby) sees for your library — written into the output JSON's file paths so the player can match its catalog. The path does not have to exist on this machine and is not validated; in many setups it won't (e.g. Plex sees /media/Movies but you're scanning G:\\Movies — pass /media/Movies here). Path separator is auto-converted to match the format you provide."),
+  folders: z.array(z.string()).default([]).describe("List of folder names relative to the sourcePath that you want to look through. If you're searching a root path with lots of media files, but only some are in Plex, this can reduce the list down to only those provided to Plex. Ensure these folder names match the ones in Plex."),
+  force: z.boolean().default(false).describe("Instead of appending the current JSON file, it will rescan every file."),
 })
 
 export const getSubtitleMetadataRequestSchema = z.object({
-  sourcePath: z.string().describe("Directory containing .ass subtitle files to inspect"),
-  isRecursive: z.boolean().default(false).describe("Search recursively in subdirectories"),
-  recursiveDepth: z.number().default(0).describe("Maximum recursion depth (0 = default depth of 2)"),
+  sourcePath: z.string().describe("Directory containing .ass subtitle files to inspect."),
+  isRecursive: z.boolean().default(false).describe("Recursively search subdirectories for .ass files."),
+  recursiveDepth: z.number().default(0).describe("Maximum recursion depth when --isRecursive is set (0 = default depth of 2)."),
 })
 
 export const subtitleFileMetadataSchema = z.object({
