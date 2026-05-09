@@ -671,4 +671,25 @@ test.describe("Sequence Builder — groups", () => {
 
     await expect(folderTag).toBeHidden()
   })
+
+  test("typing in DSL scaleResolution width field does not lose focus", async ({ page }) => {
+    await addStep(page)
+    await page.getByText("— pick a command —").click()
+    await page.getByPlaceholder("Search commands…").fill("modifySubtitleMetadata")
+    await page.getByRole("button", { name: /^Modify Subtitle Metadata\s/ }).click()
+
+    // Add a scaleResolution rule.
+    await page.getByRole("button", { name: "+ scaleResolution" }).first().click()
+
+    // Find the "From width" input.
+    const widthInput = page.getByRole("spinbutton", { name: "From width" }).first()
+    await widthInput.click()
+    await widthInput.selectText()
+    await expect(widthInput).toBeFocused()
+
+    // Type a value — each keystroke must NOT trigger renderAll and lose focus.
+    await widthInput.pressSequentially("1920")
+    await expect(widthInput).toBeFocused()
+    await expect(widthInput).toHaveValue("1920")
+  })
 })

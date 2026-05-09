@@ -214,7 +214,7 @@ function getPredicates(stepId) {
   return isPlainObject(predicates) ? predicates : {}
 }
 
-function commitRules({ stepId, nextRules }) {
+function commitRules({ stepId, nextRules, isLiveEdit = false }) {
   const step = findStepOrNull(stepId)
   if (!step) {
     return
@@ -224,10 +224,14 @@ function commitRules({ stepId, nextRules }) {
   } else {
     delete step.params.rules
   }
-  bridge().renderAll?.()
+  if (isLiveEdit) {
+    bridge().scheduleUpdateUrl?.()
+  } else {
+    bridge().renderAll?.()
+  }
 }
 
-function commitPredicates({ stepId, nextPredicates }) {
+function commitPredicates({ stepId, nextPredicates, isLiveEdit = false }) {
   const step = findStepOrNull(stepId)
   if (!step) {
     return
@@ -237,7 +241,11 @@ function commitPredicates({ stepId, nextPredicates }) {
   } else {
     delete step.params.predicates
   }
-  bridge().renderAll?.()
+  if (isLiveEdit) {
+    bridge().scheduleUpdateUrl?.()
+  } else {
+    bridge().renderAll?.()
+  }
 }
 
 // ─── Mutation primitives ──────────────────────────────────────────────────────
@@ -380,7 +388,7 @@ export function setPredicateEntryValue({ stepId, predicateName, entryKey, value 
   const current = getPredicates(stepId)
   const body = isPlainObject(current[predicateName]) ? current[predicateName] : {}
   const nextBody = { ...body, [entryKey]: value }
-  commitPredicates({ stepId, nextPredicates: { ...current, [predicateName]: nextBody } })
+  commitPredicates({ stepId, nextPredicates: { ...current, [predicateName]: nextBody }, isLiveEdit: true })
 }
 
 export function removePredicateEntry({ stepId, predicateName, entryKey }) {
@@ -442,7 +450,7 @@ export function setScriptInfoField({ stepId, ruleIndex, fieldName, value }) {
     ruleIndex,
     updater: (rule) => ({ ...rule, [fieldName]: value }),
   })
-  commitRules({ stepId, nextRules: next })
+  commitRules({ stepId, nextRules: next, isLiveEdit: true })
 }
 
 // ─── scaleResolution mutations ────────────────────────────────────────────────
@@ -462,7 +470,7 @@ export function setScaleResolutionDimension({
       }
     },
   })
-  commitRules({ stepId, nextRules: next })
+  commitRules({ stepId, nextRules: next, isLiveEdit: true })
 }
 
 export function setScaleResolutionFlag({ stepId, ruleIndex, flagName, value }) {
@@ -537,7 +545,7 @@ export function setStyleFieldLiteralValue({
       return { ...rule, fields: { ...fields, [fieldKey]: value } }
     },
   })
-  commitRules({ stepId, nextRules: next })
+  commitRules({ stepId, nextRules: next, isLiveEdit: true })
 }
 
 export function setStyleFieldComputedToggle({
@@ -600,13 +608,13 @@ export function setIgnoredStyleNamesRegex({ stepId, ruleIndex, value }) {
       return nextRule
     },
   })
-  commitRules({ stepId, nextRules: next })
+  commitRules({ stepId, nextRules: next, isLiveEdit: true })
 }
 
 // ─── computeFrom editor mutations ─────────────────────────────────────────────
 
 export function setComputeFromField({
-  stepId, ruleIndex, fieldKey, propertyName, value,
+  stepId, ruleIndex, fieldKey, propertyName, value, isLiveEdit = false,
 }) {
   const current = getRules(stepId)
   const next = updateRuleAt({
@@ -629,7 +637,7 @@ export function setComputeFromField({
       }
     },
   })
-  commitRules({ stepId, nextRules: next })
+  commitRules({ stepId, nextRules: next, isLiveEdit })
 }
 
 export function addComputeFromOp({
@@ -736,7 +744,7 @@ export function setComputeFromOpOperand({
       }
     },
   })
-  commitRules({ stepId, nextRules: next })
+  commitRules({ stepId, nextRules: next, isLiveEdit: true })
 }
 
 export function removeComputeFromOp({
@@ -806,7 +814,7 @@ export function moveComputeFromOp({
 
 // ─── when: clause mutations ───────────────────────────────────────────────────
 
-function setWhenSlot({ stepId, ruleIndex, mutator }) {
+function setWhenSlot({ stepId, ruleIndex, mutator, isLiveEdit = false }) {
   const current = getRules(stepId)
   const next = updateRuleAt({
     rules: current,
@@ -824,7 +832,7 @@ function setWhenSlot({ stepId, ruleIndex, mutator }) {
       return nextRule
     },
   })
-  commitRules({ stepId, nextRules: next })
+  commitRules({ stepId, nextRules: next, isLiveEdit })
 }
 
 export function addWhenClause({ stepId, ruleIndex, clauseName }) {
@@ -929,6 +937,7 @@ export function setWhenEntryValue({
   setWhenSlot({
     stepId,
     ruleIndex,
+    isLiveEdit: true,
     mutator: (when) => {
       const clause = normalizeWhenClause(when[clauseName])
       const slotBody = isPlainObject(clause[slot]) && !isRefBody(clause[slot])
@@ -962,7 +971,7 @@ export function removeWhenEntry({
 
 // ─── applyIf clause mutations ─────────────────────────────────────────────────
 
-function setApplyIfSlot({ stepId, ruleIndex, mutator }) {
+function setApplyIfSlot({ stepId, ruleIndex, mutator, isLiveEdit = false }) {
   const current = getRules(stepId)
   const next = updateRuleAt({
     rules: current,
@@ -980,7 +989,7 @@ function setApplyIfSlot({ stepId, ruleIndex, mutator }) {
       return nextRule
     },
   })
-  commitRules({ stepId, nextRules: next })
+  commitRules({ stepId, nextRules: next, isLiveEdit })
 }
 
 export function addApplyIfClause({ stepId, ruleIndex, clauseName }) {
@@ -1086,6 +1095,7 @@ export function setApplyIfEntryOperand({
   setApplyIfSlot({
     stepId,
     ruleIndex,
+    isLiveEdit: true,
     mutator: (applyIf) => {
       const clause = isPlainObject(applyIf[clauseName]) ? applyIf[clauseName] : {}
       const existingEntry = clause[entryKey]
@@ -1413,7 +1423,7 @@ function renderComputeFromEditor({
         class="text-xs text-slate-400 hover:text-blue-400 mt-1">+ op</button>`
   const onPropertyInput = isReadOnly
     ? ''
-    : `oninput="dslRules.setComputeFromField({stepId:'${stepId}',ruleIndex:${ruleIndex},fieldKey:${fieldKeyJson},propertyName:'property',value:this.value})"`
+    : `oninput="dslRules.setComputeFromField({stepId:'${stepId}',ruleIndex:${ruleIndex},fieldKey:${fieldKeyJson},propertyName:'property',value:this.value,isLiveEdit:true})"`
   const onScopeChange = isReadOnly
     ? ''
     : `onchange="dslRules.setComputeFromField({stepId:'${stepId}',ruleIndex:${ruleIndex},fieldKey:${fieldKeyJson},propertyName:'scope',value:this.value})"`
@@ -1517,22 +1527,22 @@ function renderRuleBody({ stepId, ruleIndex, rule, predicates, isReadOnly }) {
     return `<div class="grid grid-cols-2 gap-2">
       <div>
         <label class="block text-xs text-slate-400 mb-1">From width</label>
-        <input type="number" value="${esc(fromGroup.width ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('from', 'width')}
+        <input type="number" aria-label="From width" value="${esc(fromGroup.width ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('from', 'width')}
           class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" />
       </div>
       <div>
         <label class="block text-xs text-slate-400 mb-1">From height</label>
-        <input type="number" value="${esc(fromGroup.height ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('from', 'height')}
+        <input type="number" aria-label="From height" value="${esc(fromGroup.height ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('from', 'height')}
           class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" />
       </div>
       <div>
         <label class="block text-xs text-slate-400 mb-1">To width</label>
-        <input type="number" value="${esc(toGroup.width ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('to', 'width')}
+        <input type="number" aria-label="To width" value="${esc(toGroup.width ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('to', 'width')}
           class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" />
       </div>
       <div>
         <label class="block text-xs text-slate-400 mb-1">To height</label>
-        <input type="number" value="${esc(toGroup.height ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('to', 'height')}
+        <input type="number" aria-label="To height" value="${esc(toGroup.height ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('to', 'height')}
           class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" />
       </div>
     </div>
