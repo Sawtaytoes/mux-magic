@@ -549,6 +549,145 @@ const videoPlayer = () => document.getElementById('video-modal-player')
 const videoNameLabel = () => document.getElementById('video-modal-name')
 const videoModalStatus = () => document.getElementById('video-modal-status')
 
+// MSE cleanup function for the currently-open video. Aborts the active
+// fetch and revokes the object URL when the modal closes or a new video
+// opens. Null when no MSE session is active (direct <video src> path).
+let mseCleanup = null
+
+function clearMseCleanup() {
+  if (typeof mseCleanup === 'function') {
+    mseCleanup()
+    mseCleanup = null
+  }
+}
+
+// Sets up a MediaSource Extensions pipeline for the transcode stream.
+// Provides:
+//   - Correct total duration from MediaInfo (so the timeline is accurate)
+//   - Seeking via ?start=<seconds> re-encode (input-side fast seek)
+//   - QuotaExceededError recovery by evicting old buffered content
+//
+// Falls back to direct player.src when MSE is unsupported or the video
+// codec isn't in the browser's supported set.
+async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
+  const codecStrings = {
+    avc1: 'avc1.640028',   // H.264 High profile Level 4.0
+    hvc1: 'hvc1.1.6.L150.90', // H.265 Main profile Level 5.0
+    av01: 'av01.0.08M.08', // AV1 Main 4:2:0
+  }
+  const videoCodecFull = codecStrings[videoCodecTag]
+  const mimeType = videoCodecFull ? `video/mp4; codecs="${videoCodecFull},opus"` : null
+
+  if (
+    !mimeType
+    || typeof MediaSource === 'undefined'
+    || !MediaSource.isTypeSupported(mimeType)
+  ) {
+    // Codec unsupported in this browser — fall back to direct streaming
+    // (no seeking, growing duration display, but still fast start).
+    player.src = transcodeUrl
+    player.play().catch(() => {})
+    return
+  }
+
+  const ms = new MediaSource()
+  const objectUrl = URL.createObjectURL(ms)
+  player.src = objectUrl
+
+  let sb = null
+  let activeController = null
+
+  const waitForUpdate = () =>
+    new Promise((resolve) => sb.addEventListener('updateend', resolve, { once: true }))
+
+  const startStream = async (startSeconds) => {
+    if (activeController) activeController.abort()
+    const controller = new AbortController()
+    activeController = controller
+
+    const url = startSeconds > 0
+      ? `${transcodeUrl}&start=${startSeconds.toFixed(3)}`
+      : transcodeUrl
+
+    try {
+      const resp = await fetch(url, { signal: controller.signal })
+      if (!resp.ok || !resp.body) return
+
+      // Clear the existing buffer when seeking so the new position's
+      // fragments don't collide with stale buffered ranges.
+      if (startSeconds > 0 && sb.buffered.length > 0) {
+        if (sb.updating) await waitForUpdate()
+        sb.remove(0, Infinity)
+        await waitForUpdate()
+      }
+
+      const reader = resp.body.getReader()
+
+      const pump = async () => {
+        if (controller.signal.aborted) return
+        let chunk
+        try { chunk = await reader.read() } catch { return }
+
+        if (chunk.done) {
+          if (controller === activeController) {
+            const finish = () => { try { ms.endOfStream() } catch {} }
+            if (sb.updating) sb.addEventListener('updateend', finish, { once: true })
+            else finish()
+          }
+          return
+        }
+
+        if (sb.updating) await waitForUpdate()
+        if (controller.signal.aborted) return
+
+        try {
+          sb.appendBuffer(chunk.value)
+        } catch (e) {
+          if (e.name === 'QuotaExceededError' && sb.buffered.length > 0) {
+            // Evict content >30 s behind the playhead to free quota.
+            const removeEnd = Math.max(0, player.currentTime - 30)
+            if (removeEnd > sb.buffered.start(0)) {
+              sb.remove(sb.buffered.start(0), removeEnd)
+              await waitForUpdate()
+              try { sb.appendBuffer(chunk.value) } catch {}
+            }
+          }
+          return
+        }
+
+        sb.addEventListener('updateend', pump, { once: true })
+      }
+
+      pump()
+    } catch (e) {
+      if (e.name !== 'AbortError') console.error('[MSE]', e)
+    }
+  }
+
+  const onSeeking = () => {
+    const t = player.currentTime
+    // Only re-fetch when the target isn't already in a buffered range.
+    for (let i = 0; i < (sb?.buffered.length ?? 0); i++) {
+      if (t >= sb.buffered.start(i) && t <= sb.buffered.end(i)) return
+    }
+    startStream(t)
+  }
+
+  await new Promise((resolve) => ms.addEventListener('sourceopen', resolve, { once: true }))
+
+  if (Number.isFinite(duration) && duration > 0) ms.duration = duration
+  sb = ms.addSourceBuffer(mimeType)
+  player.addEventListener('seeking', onSeeking)
+  startStream(0)
+  player.play().catch(() => {})
+
+  mseCleanup = () => {
+    player.removeEventListener('seeking', onSeeking)
+    if (activeController) activeController.abort()
+    URL.revokeObjectURL(objectUrl)
+  }
+}
+
 // Mediainfo Format strings (case-insensitive) that no major browser
 // will decode in <video>. When the source's first audio track matches,
 // the modal points at /transcode/audio (Opus/WebM auto-encode) instead
@@ -637,6 +776,8 @@ const refreshContainerizedFlag = async () => {
 export async function openVideoModal(absolutePath) {
   videoNameLabel().textContent = absolutePath
   const player = videoPlayer()
+  // Tear down any previous MSE session before setting up the new one.
+  clearMseCleanup()
   // Pre-flight the modal open so the loading window isn't a hidden one
   // — the codec lookup typically resolves in <100ms and the player's
   // <video> tag handles the brief empty src gracefully.
@@ -656,13 +797,31 @@ export async function openVideoModal(absolutePath) {
   player.addEventListener('canplay', () => {
     videoModalStatus().classList.add('hidden')
   }, { once: true })
-  player.src = playbackUrl
-  // The HTML attribute handles autoplay on the first open, but the
-  // <video> element is reused across subsequent opens — changing src
-  // doesn't re-trigger the attribute, so call play() explicitly. The
-  // user's click on ▶ counts as a user gesture so autoplay policies
-  // allow this.
-  player.play().catch(() => {})
+
+  if (isTranscodingAudio) {
+    // Use MSE for transcode streams: HEAD returns X-Duration and
+    // X-Video-Codec so we can set mediaSource.duration immediately and
+    // pick the right SourceBuffer codec string.
+    let duration = NaN
+    let videoCodecTag = null
+    try {
+      const headResp = await fetch(playbackUrl, { method: 'HEAD' })
+      duration = parseFloat(headResp.headers.get('X-Duration') || '')
+      videoCodecTag = headResp.headers.get('X-Video-Codec')
+    } catch {
+      // HEAD failed — setupMsePlayer will fall back to direct src
+    }
+    // setupMsePlayer calls player.play() internally (both MSE and fallback paths).
+    await setupMsePlayer(player, playbackUrl, duration, videoCodecTag)
+  } else {
+    player.src = playbackUrl
+    // The HTML attribute handles autoplay on the first open, but the
+    // <video> element is reused across subsequent opens — changing src
+    // doesn't re-trigger the attribute, so call play() explicitly. The
+    // user's click on ▶ counts as a user gesture so autoplay policies
+    // allow this.
+    player.play().catch(() => {})
+  }
   // Wire per-open buttons so each closure captures the path currently
   // shown — onclick assignment overwrites any previous handler so we
   // don't accumulate stale closures across opens.
@@ -713,6 +872,7 @@ export async function openVideoModal(absolutePath) {
 
 export function closeVideoModal(event) {
   if (event && event.target !== videoModal()) return
+  clearMseCleanup()
   const player = videoPlayer()
   if (player) {
     player.pause()

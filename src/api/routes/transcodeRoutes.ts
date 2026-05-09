@@ -4,6 +4,7 @@ import { Readable } from "node:stream"
 
 import { OpenAPIHono } from "@hono/zod-openapi"
 import {
+  firstValueFrom,
   mergeMap,
   Observable,
   Subject,
@@ -15,6 +16,7 @@ import {
   validateReadablePath,
 } from "../../tools/pathSafety.js"
 import { ffmpegPath } from "../../tools/appPaths.js"
+import { getMediaInfo } from "../../tools/getMediaInfo.js"
 import {
   mimeTypeForCodec,
   type TranscodeCacheKey,
@@ -37,6 +39,12 @@ import {
 //     response body via Readable.toWeb(). fMP4 with empty_moov means
 //     the browser can start decoding from the first fragment — no
 //     encode-to-temp wait.
+//   * ?start=<seconds> seeks ffmpeg to that position (input-side fast
+//     seek via -ss) for MSE-based client seeking.
+//
+// HEAD response includes X-Duration (float, seconds from MediaInfo) and
+// X-Video-Codec (avc1/hvc1/av01) so the MSE client can configure its
+// MediaSource without a separate round-trip.
 //
 // Concurrency gate: `MAX_TRANSCODE_CONCURRENCY` distinct encodes via an
 // RxJS `mergeMap` on a Subject queue. New requests queue behind running
@@ -67,6 +75,7 @@ type ValidatedParams = {
   bitrate: string
   codec: TranscodeCodec
   path: string
+  startSeconds: number
 }
 
 type ValidationFailure = {
@@ -154,11 +163,28 @@ const validateCodec = (
   }
 }
 
+const validateStart = (
+  rawStart: string | undefined,
+): { error: string | null, value: number } => {
+  if (typeof rawStart !== "string" || rawStart.length === 0) {
+    return { error: null, value: 0 }
+  }
+  const parsed = Number(rawStart)
+  if (Number.isNaN(parsed) || parsed < 0) {
+    return {
+      error: `start must be a non-negative number (seconds); received: ${rawStart}`,
+      value: 0,
+    }
+  }
+  return { error: null, value: parsed }
+}
+
 const validateAllParams = (
   rawPath: string | undefined,
   rawCodec: string | undefined,
   rawBitrate: string | undefined,
   rawAudioStream: string | undefined,
+  rawStart: string | undefined,
 ): ValidationResult => {
   if (typeof rawPath !== "string" || rawPath.length === 0) {
     return {
@@ -190,6 +216,13 @@ const validateAllParams = (
       params: null,
     }
   }
+  const startResult = validateStart(rawStart)
+  if (startResult.error !== null) {
+    return {
+      failure: { message: startResult.error, status: 400 },
+      params: null,
+    }
+  }
   return {
     failure: null,
     params: {
@@ -197,6 +230,7 @@ const validateAllParams = (
       bitrate: bitrateResult.value,
       codec: codecResult.value,
       path: rawPath,
+      startSeconds: startResult.value,
     },
   }
 }
@@ -215,6 +249,7 @@ type StreamResult = {
 
 type StreamRequest = {
   cacheKey: TranscodeCacheKey
+  startSeconds: number
   resolver: (result: StreamResult) => void
 }
 
@@ -228,11 +263,11 @@ const streamQueue$ = new Subject<StreamRequest>()
 streamQueue$
 .pipe(
   mergeMap(
-    ({ cacheKey, resolver }) => (
+    ({ cacheKey, startSeconds, resolver }) => (
       new Observable<void>((observer) => {
         const childProcess = spawn(
           ffmpegPath,
-          buildFfmpegArgs(cacheKey),
+          buildFfmpegArgs(cacheKey, startSeconds),
           { cwd: tmpdir(), env: process.env },
         )
 
@@ -256,9 +291,10 @@ streamQueue$
 
 const acquireTranscodeStream = (
   cacheKey: TranscodeCacheKey,
+  startSeconds: number,
 ): Promise<StreamResult> => (
   new Promise((resolve) => {
-    streamQueue$.next({ cacheKey, resolver: resolve })
+    streamQueue$.next({ cacheKey, resolver: resolve, startSeconds })
   })
 )
 
@@ -269,12 +305,51 @@ const buildHeadersForCodec = (codec: TranscodeCodec): Record<string, string> => 
   "X-Accel-Buffering": "no",
 })
 
+// Runs MediaInfo on the validated path and extracts the fields the MSE
+// client needs: total duration in seconds and the video codec tag
+// (avc1/hvc1/av01). Both are optional — a MediaInfo failure is
+// non-fatal; the client falls back to direct <video src>.
+const fetchStreamInfo = async (
+  absPath: string,
+): Promise<{ durationSeconds: number | null, videoCodecTag: string | null }> => {
+  const mediaInfo = await firstValueFrom(getMediaInfo(absPath))
+  const tracks = mediaInfo.media?.track ?? []
+  const general = tracks.find((t) => t["@type"] === "General")
+  const video = tracks.find((t) => t["@type"] === "Video")
+
+  let durationSeconds: number | null = null
+  if (
+    general
+    && "Duration" in general
+    && typeof general.Duration === "string"
+  ) {
+    const ms = parseFloat(general.Duration)
+    if (!Number.isNaN(ms) && ms > 0) {
+      durationSeconds = ms / 1000
+    }
+  }
+
+  let videoCodecTag: string | null = null
+  if (video && "Format" in video && typeof video.Format === "string") {
+    const fmt = video.Format.toUpperCase()
+    videoCodecTag = (
+      fmt === "AVC" ? "avc1"
+      : fmt === "HEVC" ? "hvc1"
+      : fmt === "AV1" ? "av01"
+      : null
+    )
+  }
+
+  return { durationSeconds, videoCodecTag }
+}
+
 const handleTranscodeRequest = async ({
   isHeadRequest,
   rawAudioStream,
   rawBitrate,
   rawCodec,
   rawPath,
+  rawStart,
   requestSignal,
 }: {
   isHeadRequest: boolean
@@ -282,6 +357,7 @@ const handleTranscodeRequest = async ({
   rawBitrate: string | undefined
   rawCodec: string | undefined
   rawPath: string | undefined
+  rawStart: string | undefined
   requestSignal: AbortSignal | undefined
 }): Promise<Response> => {
   const validation = validateAllParams(
@@ -289,6 +365,7 @@ const handleTranscodeRequest = async ({
     rawCodec,
     rawBitrate,
     rawAudioStream,
+    rawStart,
   )
   if (validation.failure !== null) {
     return new Response(
@@ -323,12 +400,24 @@ const handleTranscodeRequest = async ({
     )
   }
 
-  // HEAD short-circuits — no need to spin up the encoder, just answer
-  // with the mime + cache headers so `<video preload="metadata">` can
-  // confirm the URL is feasible without paying the encoder cost.
+  // HEAD short-circuits — run MediaInfo to return duration and video
+  // codec tag so the MSE client can configure its MediaSource before
+  // starting the stream.
   if (isHeadRequest) {
+    let durationSeconds: number | null = null
+    let videoCodecTag: string | null = null
+    try {
+      ;({ durationSeconds, videoCodecTag } = await fetchStreamInfo(validatedAbsPath))
+    }
+    catch {
+      // MediaInfo failure is non-fatal — client falls back to direct src
+    }
     return new Response(null, {
-      headers: buildHeadersForCodec(params.codec),
+      headers: {
+        ...buildHeadersForCodec(params.codec),
+        ...(durationSeconds !== null ? { "X-Duration": String(durationSeconds) } : {}),
+        ...(videoCodecTag !== null ? { "X-Video-Codec": videoCodecTag } : {}),
+      },
       status: 200,
     })
   }
@@ -341,7 +430,7 @@ const handleTranscodeRequest = async ({
   }
 
   try {
-    const { kill, stream } = await acquireTranscodeStream(cacheKey)
+    const { kill, stream } = await acquireTranscodeStream(cacheKey, params.startSeconds)
     if (requestSignal !== undefined) {
       requestSignal.addEventListener("abort", () => { kill() }, { once: true })
     }
@@ -375,6 +464,7 @@ transcodeRoutes.on(["GET", "HEAD"], "/transcode/audio", async (context) => (
     rawBitrate: context.req.query("bitrate"),
     rawCodec: context.req.query("codec"),
     rawPath: context.req.query("path"),
+    rawStart: context.req.query("start"),
     requestSignal: (
       context.req.raw && "signal" in context.req.raw
       ? context.req.raw.signal

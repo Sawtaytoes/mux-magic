@@ -41,12 +41,19 @@ export type RunFfmpegAudioTranscodeOptions = {
 
 export const buildFfmpegArgs = (
   cacheKey: TranscodeCacheKey,
+  startSeconds = 0,
 ): string[] => {
+  const seekSection: string[] = (
+    startSeconds > 0
+    ? ["-ss", String(startSeconds)]
+    : []
+  )
   const sharedHead = [
     "-hide_banner",
     "-loglevel",
     "warning",
     "-nostats",
+    ...seekSection,
     "-i",
     cacheKey.absPath,
     "-map",
@@ -59,12 +66,16 @@ export const buildFfmpegArgs = (
   const codecSection = (
     cacheKey.codec === "opus"
     ? [
+      "-ac",
+      "2",
       "-c:a",
       "libopus",
       "-b:a",
       cacheKey.bitrate,
     ]
     : [
+      "-ac",
+      "2",
       "-c:a",
       "aac",
       "-b:a",
