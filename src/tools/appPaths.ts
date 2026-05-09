@@ -1,5 +1,5 @@
+import ffmpegStaticPath from "ffmpeg-static"
 import { platform } from "node:os"
-import { resolve as resolvePath } from "node:path"
 
 const isWindows = platform() === 'win32'
 
@@ -7,16 +7,7 @@ const isWindows = platform() === 'win32'
 // export const audioOffsetFinderPath = ".venv/bin/audio-offset-finder" .// This local version doesn't run for whatever reason.
 export const audioOffsetFinderPath = "audio-offset-finder"
 
-// 7.0.2-essentials_build
-// Resolve to an absolute path on Windows so spawn callers that override
-// `cwd` (e.g. runFfmpegAudioTranscode uses `cwd: os.tmpdir()`) can still
-// find the binary. On Linux/macOS the bare `ffmpeg` is looked up via
-// PATH, which works regardless of cwd.
-export const ffmpegPath = (
-  isWindows
-  ? resolvePath("assets/ffmpeg/bin/ffmpeg.exe")
-  : "ffmpeg"
-)
+export const ffmpegPath = ffmpegStaticPath ?? "ffmpeg"
 
 // MediaInfo_CLI_25.03_Windows_x64
 export const mediaInfoPath = (
