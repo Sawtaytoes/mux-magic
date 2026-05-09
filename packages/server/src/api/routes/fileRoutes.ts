@@ -274,9 +274,12 @@ fileRoutes.openapi(
     const { paths } = context.req.valid("json")
     if (isFakeRequest(context)) {
       const result = {
-        ok: true,
-        deleted: paths as string[],
-        errors: [] as Array<{ path: string; reason: string }>,
+        results: (paths as string[]).map((path) => ({
+          path,
+          ok: true,
+          mode: "trash" as const,
+          error: null,
+        })),
       }
       return context.json(result, 200)
     }
