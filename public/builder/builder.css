@@ -105,6 +105,21 @@
    pane width changes with the YAML modal / load panel toggles. */
 .step-card { container-type: inline-size; container-name: step-card; }
 
+/* Field grouping for side-by-side layout on wider cards. Groups use
+   container queries so they adapt to card width (when 2 cards display
+   side-by-side), not just the viewport. Single column on narrow, two
+   columns on wider cards (>= 500px container width). */
+.field-group-two-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@container step-card (min-width: 500px) {
+  .field-group-two-col {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .step-alias { flex: 1 1 8rem; min-width: 6rem; }
 .step-hamburger-btn { display: none; }
 /* Same Tailwind-cascade trick as .page-actions: define display:flex

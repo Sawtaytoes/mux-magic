@@ -373,6 +373,12 @@ export const COMMANDS = {
       // (sequence YAML / direct API) keep today's deterministic
       // (2)/(3)/… behavior unless they opt in explicitly.
       { name: "autoNameDuplicates", type: "boolean", label: "Auto-name duplicates", default: false },
+    ],
+    // Group small numeric fields side-by-side on wider cards, using
+    // container queries so they adapt to card width (when 2 cards display
+    // side-by-side), not just the viewport.
+    groups: [
+      { fields: ["fixedOffset", "timecodePadding"], layout: "field-group-two-col" },
     ]
   },
   nameTvShowEpisodes: {

@@ -152,6 +152,26 @@ const handleScrollOrResize = () => {
   hideTooltip()
 }
 
+const handleClick = (event) => {
+  const anchorElement = event.target.closest('[data-tooltip-key]')
+
+  if (!anchorElement) {
+    return
+  }
+
+  // On touch devices, pointerover doesn't fire. Clicking/tapping the label
+  // should immediately show the tooltip. On subsequent clicks, hide it.
+  const tooltipElement = getTooltipElement()
+  const isShowing = tooltipElement && !tooltipElement.classList.contains('hidden')
+
+  if (isShowing) {
+    hideTooltip()
+  } else {
+    cancelPendingShow()
+    showTooltipFor({ anchorElement })
+  }
+}
+
 export function attachFieldTooltipListeners() {
   if (tooltipState.isAttached) {
     return
@@ -161,6 +181,8 @@ export function attachFieldTooltipListeners() {
 
   document.addEventListener('pointerover', handlePointerOver)
   document.addEventListener('pointerout', handlePointerOut)
+  // Touch and click support: tapping a label on mobile shows the tooltip
+  document.addEventListener('click', handleClick)
   // Reposition is overkill for a hover tooltip — just hide on scroll
   // since the anchor moved.
   window.addEventListener('scroll', handleScrollOrResize, { capture: true })
