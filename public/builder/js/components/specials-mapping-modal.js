@@ -489,19 +489,18 @@ export const openSpecialsMappingModal = async ({
     confirmButton.addEventListener('click', handleConfirmClick)
   }
 
-  // Wire duplicate detection on all select elements
+  // Wire duplicate detection on all select elements. Only non-empty
+  // selections are checked for duplicates; skipped files (empty) are ignored.
   const validateSelections = () => {
     const rows = Array.from(modal.querySelectorAll('[data-mapping-row]'))
-    const selectedMap = new Map() // name -> [rows with that name]
+    const selectedNames = {} // lowercase name -> count
+
     rows.forEach((row) => {
       const select = row.querySelector('[data-mapping-select]')
       const value = String(select?.value ?? '').trim()
       if (value.length > 0) {
         const key = value.toLowerCase()
-        if (!selectedMap.has(key)) {
-          selectedMap.set(key, [])
-        }
-        selectedMap.get(key).push(row)
+        selectedNames[key] = (selectedNames[key] || 0) + 1
       }
     })
 
@@ -510,25 +509,22 @@ export const openSpecialsMappingModal = async ({
       const select = row.querySelector('[data-mapping-select]')
       const errorEl = row.querySelector('[data-mapping-row-error]')
       const value = String(select?.value ?? '').trim()
-      const isDuplicate = value.length > 0 && selectedMap.get(value.toLowerCase()).length > 1
+
+      const isDuplicate = value.length > 0 && selectedNames[value.toLowerCase()] > 1
       if (isDuplicate) {
         hasDuplicates = true
         if (errorEl) {
           errorEl.classList.remove('hidden')
           errorEl.textContent = 'Duplicate name'
         }
-        select.classList.add('border-red-500')
+        if (select) select.classList.add('border-red-500')
       } else {
-        if (errorEl) {
-          errorEl.classList.add('hidden')
-        }
-        select.classList.remove('border-red-500')
+        if (errorEl) errorEl.classList.add('hidden')
+        if (select) select.classList.remove('border-red-500')
       }
     })
 
-    if (confirmButton) {
-      confirmButton.disabled = hasDuplicates
-    }
+    if (confirmButton) confirmButton.disabled = hasDuplicates
   }
 
   const selects = modal.querySelectorAll('[data-mapping-select]')
