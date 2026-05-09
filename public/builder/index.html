@@ -294,37 +294,9 @@ await enableMocksIfRequested()
   </div>
 </div>
 
-<!-- Command picker popover -->
-<div id="cmd-picker-popover" class="hidden fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col" style="width:340px;max-height:400px">
-  <input id="cmd-picker-input" type="text" placeholder="Search commands…"
-    oninput="commandPicker.filter(this.value)" onkeydown="commandPicker.keydown(event)"
-    class="bg-slate-800 text-slate-200 text-sm rounded-t-lg px-3 py-2 border-b border-slate-700 focus:outline-none placeholder-slate-500">
-  <div id="cmd-picker-list" class="overflow-y-auto py-1"></div>
-</div>
-
-<!-- Enum field picker popover (shared across all enum-typed fields) -->
-<div id="enum-picker-popover" class="hidden fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col" style="width:300px;max-height:400px">
-  <input id="enum-picker-input" type="text" placeholder="Search options…"
-    oninput="enumPicker.filter(this.value)" onkeydown="enumPicker.keydown(event)"
-    class="bg-slate-800 text-slate-200 text-sm rounded-t-lg px-3 py-2 border-b border-slate-700 focus:outline-none placeholder-slate-500">
-  <div id="enum-picker-list" class="overflow-y-auto py-1"></div>
-</div>
-
-<!-- Location/link picker popover (path variables + previous-step folder outputs) -->
-<div id="link-picker-popover" class="hidden fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col" style="width:360px;max-height:400px">
-  <input id="link-picker-input" type="text" placeholder="Search locations…"
-    oninput="linkPicker.filter(this.value)" onkeydown="linkPicker.keydown(event)"
-    class="bg-slate-800 text-slate-200 text-sm rounded-t-lg px-3 py-2 border-b border-slate-700 focus:outline-none placeholder-slate-500">
-  <div id="link-picker-list" class="overflow-y-auto py-1 flex-1"></div>
-  <div class="text-[11px] text-slate-500 px-3 py-1.5 border-t border-slate-700 italic">
-    Don't see what you need? Close this and type a path directly into the field — it saves as a new path automatically.
-  </div>
-</div>
-
-<!-- Path typeahead popover -->
-<div id="path-picker-popover" class="hidden fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col" style="width:380px;max-height:280px">
-  <div id="path-picker-list" class="overflow-y-auto py-1"></div>
-</div>
+<!-- React picker mount point — CommandPicker, EnumPicker, LinkPicker, PathPicker
+     all render via createPortal into document.body from this root. -->
+<div id="pickers-container"></div>
 
 <!-- Field tooltip popover — single shared element repositioned on
      mouseenter of any [data-tooltip-key] label. Content lives in

@@ -13,6 +13,7 @@
     "build-storybook": "storybook build --config-dir ../../.storybook"
   },
   "dependencies": {
+    "@radix-ui/react-popover": "^1.1.15",
     "@tanstack/react-query": "^5.62.0",
     "jotai": "^2.10.3",
     "js-yaml": "^4.1.1",
