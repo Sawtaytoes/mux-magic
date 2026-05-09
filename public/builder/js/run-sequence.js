@@ -39,13 +39,15 @@ export function syncDryRunUI() {
   const track = document.getElementById('dry-run-track')
   const thumb = document.getElementById('dry-run-thumb')
   const btn = document.getElementById('dry-run-btn')
+  const badge = document.getElementById('dry-run-badge')
   if (!track || !thumb || !btn) return
-  // Track is w-8 (32px) h-4 (16px); thumb is w-3 (12px) with top-px left-px (1px).
-  // On: thumb travels 32 - 12 - 2 = 18px = 1.125rem to land symmetrically at right-px.
-  track.className = `relative shrink-0 inline-flex w-8 h-4 rounded-full border transition-colors ${
+  // Track: w-8 (32px) with 1px border each side = 30px inner width.
+  // Thumb: w-3 (12px), top-px left-px (1px offset). On: 30 - 12 - 2×1 = 16px = 1rem travel.
+  track.className = `relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden border transition-colors ${
     active ? 'bg-amber-500 border-amber-400' : 'bg-slate-600 border-slate-500'
   }`
-  thumb.style.transform = active ? 'translateX(1.125rem)' : ''
+  thumb.style.transform = active ? 'translateX(1rem)' : ''
+  if (badge) badge.classList.toggle('hidden', !active)
   btn.title = active
     ? 'Dry run ON — simulate commands without touching files (click to disable)'
     : 'Toggle dry-run mode — simulate commands without touching files'

@@ -46,6 +46,7 @@ await enableMocksIfRequested()
       <h1 class="text-lg font-bold tracking-tight">
         <a href="/" class="text-slate-100 hover:text-blue-300 transition-colors">Sequence Builder</a>
       </h1>
+      <span id="dry-run-badge" class="hidden text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 self-center select-none">DRY RUN</span>
       <div id="page-actions-nav" class="page-menu page-menu-nav">
         <div class="page-menu-group">
           <button onclick="startNewSequence()" title="Clear the current sequence and start fresh (Ctrl+Z to undo)"
@@ -56,12 +57,27 @@ await enableMocksIfRequested()
           <a href="/" class="text-xs text-slate-400 hover:text-slate-300">Jobs ↗</a>
         </div>
       </div>
-      <!-- Undo/redo always pinned in header — common enough to keep one click away -->
-      <div class="ml-auto flex items-center gap-1">
+      <!-- Pinned header actions: undo/redo + collapse/expand; hidden on smallest screens -->
+      <div id="header-pinned" class="ml-auto flex items-center gap-1">
         <button id="undo-btn" onclick="undo()" title="Undo (Ctrl+Z)" disabled
           class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7">↶</button>
         <button id="redo-btn" onclick="redo()" title="Redo (Ctrl+Y / Ctrl+Shift+Z)" disabled
           class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7">↷</button>
+        <span class="w-px h-4 bg-slate-700 mx-0.5"></span>
+        <button onclick="setAllCollapsed(true)" title="Collapse every step + group"
+          class="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 -rotate-90">
+            <polyline points="5,5 10,10 15,5" />
+            <polyline points="5,11 10,16 15,11" />
+          </svg>
+        </button>
+        <button onclick="setAllCollapsed(false)" title="Expand every step + group"
+          class="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
+            <polyline points="5,5 10,10 15,5" />
+            <polyline points="5,11 10,16 15,11" />
+          </svg>
+        </button>
       </div>
       <span class="w-px h-6 bg-slate-700 mx-1"></span>
       <div id="page-actions-controls" class="page-menu page-menu-controls">
@@ -71,7 +87,7 @@ await enableMocksIfRequested()
             class="flex items-center justify-between gap-2 text-xs text-slate-300 cursor-pointer select-none"
             title="Toggle dry-run mode — simulate commands without touching files">
             <span class="leading-none">Dry Run</span>
-            <span id="dry-run-track" class="relative shrink-0 inline-flex w-8 h-4 rounded-full bg-slate-600 border border-slate-500 transition-colors">
+            <span id="dry-run-track" class="relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden bg-slate-600 border border-slate-500 transition-colors">
               <span id="dry-run-thumb" class="absolute top-px left-px w-3 h-3 rounded-full bg-white shadow-sm" style="transition:transform 150ms ease"></span>
             </span>
           </button>
@@ -92,30 +108,6 @@ await enableMocksIfRequested()
                inline equivalent: adding a path variable. -->
           <button data-action="add-path" title="Add a path variable"
             class="text-xs bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded font-medium">Add Path</button>
-          <div class="page-menu-row">
-            <!-- Page-wide collapse / expand. Same double-chevron icons as
-                 each group's "collapse-all-children" header buttons so the
-                 vocabulary scales: one chevron toggles a card, two chevrons
-                 toggle a subtree. SVG is inlined here (rather than rendered
-                 by the JS helper) because this markup is static and the
-                 inline script hasn't run yet at parse time. -->
-            <button onclick="setAllCollapsed(true)" title="Collapse every step + group"
-              class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded border border-slate-600">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 -rotate-90">
-                <polyline points="5,5 10,10 15,5" />
-                <polyline points="5,11 10,16 15,11" />
-              </svg>
-              <span>All</span>
-            </button>
-            <button onclick="setAllCollapsed(false)" title="Expand every step + group"
-              class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded border border-slate-600">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
-                <polyline points="5,5 10,10 15,5" />
-                <polyline points="5,11 10,16 15,11" />
-              </svg>
-              <span>All</span>
-            </button>
-          </div>
         </div>
         <span class="page-menu-sep w-px h-6 bg-slate-700 mx-1"></span>
         <div class="page-menu-group">
