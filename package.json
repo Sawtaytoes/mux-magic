@@ -1,6 +1,6 @@
 {
   "name": "media-file-naming",
-  "packageManager": "yarn@4.9.0",
+  "packageManager": "yarn@4.14.1",
   "version": "1.0.0",
   "scripts": {
     "build": "rimraf build/ && esbuild --format=cjs --minify --bundle --platform=node --external:./xhr-sync-worker.js \"--external:chromium-bidi/*\" --outfile=build/media-tools.cjs src/cli.ts",
