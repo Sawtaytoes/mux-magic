@@ -410,7 +410,22 @@ export const openSpecialsMappingModal = async ({
     ? unrenamedFilenames.filter((f) => existingFilenames.has(f))
     : unrenamedFilenames
   if (presentFilenames.length === 0) {
-    modal.classList.add('hidden')
+    const gone = unrenamedFilenames.length
+    modal.innerHTML = (
+      `<div class="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-full max-w-md p-6 flex flex-col gap-3">`
+      + `<p class="text-sm font-semibold text-slate-100">No unnamed files remain</p>`
+      + `<p class="text-xs text-slate-400">`
+      + `The ${gone === 1 ? 'file' : `${gone} files`} from the last run no longer exist at the expected location — `
+      + `they were likely renamed in a previous session. `
+      + `Re-run the step to refresh the results.`
+      + `</p>`
+      + `<div class="flex justify-end">`
+      + `<button type="button" data-mapping-close class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded">Close</button>`
+      + `</div>`
+      + `</div>`
+    )
+    const closeBtn = modal.querySelector('[data-mapping-close]')
+    if (closeBtn) closeBtn.addEventListener('click', closeSpecialsMappingModal)
     return
   }
   const unrenamedFiles = presentFilenames.map((filename) => ({

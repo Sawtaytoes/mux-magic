@@ -224,8 +224,8 @@ function showPromptModal(jobId, promptData) {
   previewEl.innerHTML = ''
   if (promptData.filePath) {
     const playBtn = document.createElement('button')
-    playBtn.className = 'text-xs bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded font-medium'
-    playBtn.textContent = '▶ Play to preview'
+    playBtn.className = 'text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-medium leading-none'
+    playBtn.textContent = '▶ Play'
     playBtn.onclick = () => {
       if (typeof window.openVideoModal === 'function') window.openVideoModal(promptData.filePath)
     }
@@ -794,7 +794,10 @@ function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) 
 function renderInteractiveRenameBlock({ filenames, linkBlock }) {
   const rowsHtml = filenames.map((filename, index) => `
     <div class="flex flex-col gap-1 py-1.5 border-b border-yellow-700/30 last:border-b-0" data-rename-row data-rename-index="${index}" data-rename-filename="${esc(filename)}">
-      <div class="font-mono text-xs break-words text-yellow-100">${esc(filename)}</div>
+      <div class="flex items-center gap-2">
+        <div class="font-mono text-xs break-words text-yellow-100 flex-1">${esc(filename)}</div>
+        <button type="button" data-rename-play class="text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-medium leading-none shrink-0" title="Preview this file">&#9654; Play</button>
+      </div>
       <div class="flex gap-2 items-stretch">
         <div class="relative flex-1">
           <input
@@ -889,7 +892,17 @@ function wireNameSpecialFeaturesResults({ body, step, summaryRecord }) {
     const dropdownElement = row.querySelector('[data-rename-dropdown]')
     const submitButton = row.querySelector('[data-rename-submit]')
     const statusElement = row.querySelector('[data-rename-status]')
+    const playButton = row.querySelector('[data-rename-play]')
     const filename = row.getAttribute('data-rename-filename') ?? ''
+    if (playButton) {
+      if (sourcePath && typeof window.openVideoModal === 'function') {
+        playButton.addEventListener('click', () => {
+          window.openVideoModal(joinSourcePath(sourcePath, filename))
+        })
+      } else {
+        playButton.remove()
+      }
+    }
     if (!inputElement || !dropdownElement || !submitButton) {
       return
     }
