@@ -6,8 +6,8 @@
 // at teardown.
 //
 // Phase 2 ships the harness only — there are no Node tests using MSW
-// yet, and `handlers` from src/__shared__/msw-handlers.ts is
-// intentionally empty. The harness loads cleanly so adding the first
+// yet, and `handlers` from packages/server/src/shared/msw-handlers.ts
+// is intentionally empty. The harness loads cleanly so adding the first
 // real test in a future phase is a one-file change.
 import {
   afterAll,
@@ -16,7 +16,7 @@ import {
 } from "vitest"
 import { setupServer } from "msw/node"
 
-import { handlers } from "../../__shared__/msw-handlers.js"
+import { handlers } from "../../shared/msw-handlers.js"
 
 export const server = setupServer(...handlers)
 

@@ -23,7 +23,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "node",
-          include: ["src/**/*.test.ts"],
+          include: ["packages/server/src/**/*.test.ts"],
           // vitest.setup.ts owns memfs / scheduler reset; the
           // msw-server file owns the MSW server lifecycle (listen
           // once, reset between tests, close at teardown). Both run
@@ -31,8 +31,8 @@ export default defineConfig({
           // no-op until handlers land, but loading it now means
           // future tests don't need a per-file boilerplate import.
           setupFiles: [
-            "./vitest.setup.ts",
-            "./src/__tests__/setup/msw-server.ts",
+            "./packages/server/vitest.setup.ts",
+            "./packages/server/src/__tests__/setup/msw-server.ts",
           ],
         },
       },

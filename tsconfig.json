@@ -20,6 +20,6 @@
     "useDefineForClassFields": true,
   },
   "include": [
-    "src",
+    "packages/server/src",
   ],
 }

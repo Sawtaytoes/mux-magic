@@ -1,7 +1,7 @@
 // Canned data shared by the browser MSW worker and the Node `setupServer`
 // vitest harness. Pure data — no imports, no MSW symbols. Both the
 // browser handlers (public/mocks/handlers.js) and the Node handlers
-// (src/__shared__/msw-handlers.ts) consume this so the canned scenario
+// (packages/server/src/shared/msw-handlers.ts) consume this so the canned scenario
 // stays in lockstep across the two runtimes.
 //
 // Scenario covers the three terminal states the Jobs UI cares about:

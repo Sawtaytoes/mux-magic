@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url"
 
 import { z } from "@hono/zod-openapi"
 
-import { commandConfigs } from "../src/api/routes/commandRoutes.js"
+import { commandConfigs } from "../packages/server/src/api/routes/commandRoutes.js"
 
 const repoRoot = join(
   dirname(fileURLToPath(import.meta.url)),

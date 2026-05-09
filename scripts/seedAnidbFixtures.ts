@@ -7,12 +7,12 @@
 //   1. Triggers loadAnimeIndex() once  → downloads the manami dataset to
 //      <ANIDB_CACHE_FOLDER>/manami/ if it isn't fresh. The dataset itself
 //      isn't copied into committed fixtures (it's 60+ MB and weekly-rotating);
-//      the test fixture under src/tools/__fixtures__/manami/ is a small
-//      hand-crafted JSON with the same shape.
+//      the test fixture under packages/server/src/tools/__fixtures__/manami/
+//      is a small hand-crafted JSON with the same shape.
 //   2. Calls lookupAnidbById() for two aids → populates
 //      <ANIDB_CACHE_FOLDER>/anime/<aid>.xml from the AniDB HTTP API.
-//   3. Copies the cached XML into src/tools/__fixtures__/anidb/anime/ so
-//      unit tests load real shapes without making network requests.
+//   3. Copies the cached XML into packages/server/src/tools/__fixtures__/anidb/anime/
+//      so unit tests load real shapes without making network requests.
 //
 // Re-run when AniDB changes a response shape, or to refresh a stale cache.
 
@@ -21,11 +21,11 @@ import { join } from "node:path"
 
 import { firstValueFrom } from "rxjs"
 
-import { getAnidbCacheDir } from "../src/tools/getAnidbCacheDir.js"
-import { loadAnimeIndex } from "../src/tools/animeOfflineDatabase.js"
-import { lookupAnidbById } from "../src/tools/searchAnidb.js"
+import { getAnidbCacheDir } from "../packages/server/src/tools/getAnidbCacheDir.js"
+import { loadAnimeIndex } from "../packages/server/src/tools/animeOfflineDatabase.js"
+import { lookupAnidbById } from "../packages/server/src/tools/searchAnidb.js"
 
-const FIXTURES_DIR = join("src", "tools", "__fixtures__", "anidb")
+const FIXTURES_DIR = join("packages", "server", "src", "tools", "__fixtures__", "anidb")
 const CACHE_DIR = getAnidbCacheDir()
 
 // Aids chosen to cover both shape variants in the parser:

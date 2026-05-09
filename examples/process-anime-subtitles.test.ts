@@ -5,11 +5,11 @@ import { dirname, join } from "node:path"
 import yaml from "js-yaml"
 import { describe, expect, test } from "vitest"
 
-import { commandConfigs } from "../src/api/routes/commandRoutes.js"
+import { commandConfigs } from "../packages/server/src/api/routes/commandRoutes.js"
 import {
   resolveSequenceParams,
   type StepRuntimeRecord,
-} from "../src/api/resolveSequenceParams.js"
+} from "../packages/server/src/api/resolveSequenceParams.js"
 
 // memfs is mocked in for `node:fs/promises` (see vitest.setup.ts), so the
 // real on-disk YAML file isn't readable through that. We disable the mock

@@ -11,7 +11,7 @@ const generateSchemas = () => (
     ast,
   ) => (
     writeFile(
-      './src/schema.generated/tvdbApiSchema.ts',
+      './packages/server/src/schema.generated/tvdbApiSchema.ts',
       astToString(ast),
     )
   ))
