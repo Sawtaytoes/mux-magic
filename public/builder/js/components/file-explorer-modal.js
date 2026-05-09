@@ -652,22 +652,27 @@ async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
     //
     // A fresh moov from the new ffmpeg stream is the cleanest reset: Chrome
     // reinitializes both decoders when it sees the new init segment arrive.
-    if (startSeconds > 0) {
-      if (sb.updating) {
-        await waitForUpdate()
-        if (isStale()) return
-      }
-      if (sb.buffered.length > 0) {
-        sb.remove(0, Infinity)
-        await waitForUpdate()
-        if (isStale()) return
-      }
+    // Wait for any in-progress SourceBuffer operation first.
+    if (sb.updating) {
+      await waitForUpdate()
+      if (isStale()) return
     }
 
-    // ffmpeg -ss resets output timestamps to 0. Tell the SourceBuffer to
-    // shift all incoming timestamps by startSeconds so buffered ranges
-    // align with player.currentTime and Chrome can resolve the seek.
+    // Set timestampOffset BEFORE clearing the buffer. Chrome does not reset
+    // appendState after sb.remove() — it stays PARSING_MEDIA_SEGMENT from
+    // the prior appendBuffer even when updating=false. Setting timestampOffset
+    // after the remove triggers an InvalidStateError. Setting it here, right
+    // after the previous updateend settled, avoids that Chrome quirk.
+    //
+    // ffmpeg -ss resets output PTS to 0; shifting by startSeconds makes the
+    // buffered range align with player.currentTime so Chrome resolves the seek.
     sb.timestampOffset = startSeconds
+
+    if (startSeconds > 0 && sb.buffered.length > 0) {
+      sb.remove(0, Infinity)
+      await waitForUpdate()
+      if (isStale()) return
+    }
 
     const reader = resp.body.getReader()
     // Soft look-ahead limit. For high-bitrate NAS content the pump can
