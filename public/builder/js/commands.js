@@ -65,7 +65,7 @@ export const COMMANDS = {
       { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
-      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
     ]
   },
   deleteFolder: {
@@ -98,7 +98,7 @@ export const COMMANDS = {
       { name: "isSourceDeletedOnSuccess", type: "boolean", label: "Delete source on per-file success", default: false },
     ],
     groups: [
-      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
     ]
   },
   // Audio Operations
@@ -256,7 +256,7 @@ export const COMMANDS = {
       { name: "rules", type: "subtitleRules", label: "Rules", required: false },
     ],
     groups: [
-      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
     ]
   },
   // Analysis
@@ -270,7 +270,7 @@ export const COMMANDS = {
       { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
-      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
     ]
   },
   hasBetterVersion: {
@@ -283,7 +283,7 @@ export const COMMANDS = {
       { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
-      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
     ]
   },
   hasDuplicateMusicFiles: {
@@ -296,7 +296,7 @@ export const COMMANDS = {
       { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
-      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
     ]
   },
   hasImaxEnhancedAudio: {
@@ -327,7 +327,7 @@ export const COMMANDS = {
       { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
-      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
     ]
   },
   hasWrongDefaultTrack: {
@@ -445,7 +445,7 @@ export const COMMANDS = {
       { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
-      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
     ]
   },
   // Metadata Operations
@@ -463,7 +463,7 @@ export const COMMANDS = {
       { name: "force", type: "boolean", label: "Force Overwrite", default: false },
     ],
     groups: [
-      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
     ]
   },
 }
