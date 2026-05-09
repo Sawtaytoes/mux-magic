@@ -1,5 +1,5 @@
 {
-  "$schema": "./biome.schema.json",
+  "$schema": "./biome-schema.downloaded.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
