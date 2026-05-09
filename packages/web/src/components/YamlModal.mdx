@@ -1,0 +1,20 @@
+{/* YamlModal.mdx */}
+
+import { Meta, Canvas } from "@storybook/blocks";
+import * as YamlModalStories from "./YamlModal.stories";
+
+<Meta of={YamlModalStories} />
+
+# YamlModal
+
+A full-screen overlay that displays the current sequence as YAML. The user can copy it to the clipboard or close via the ✕ button or the backdrop.
+
+Content is recomputed on open from the current Jotai `stepsAtom` + `pathsAtom` via `toYamlStr` in `yamlSerializer.ts`.
+
+## With steps
+
+<Canvas of={YamlModalStories.WithSteps} />
+
+## Empty sequence
+
+<Canvas of={YamlModalStories.EmptySequence} />

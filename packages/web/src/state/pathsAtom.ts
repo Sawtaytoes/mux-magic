@@ -1,4 +1,4 @@
-import { atom } from "jotai";
-import type { PathVar } from "../types";
+import { atom } from "jotai"
+import type { PathVar } from "../types"
 
-export const pathsAtom = atom<PathVar[]>([]);
+export const pathsAtom = atom<PathVar[]>([])

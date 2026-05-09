@@ -1,0 +1,15 @@
+{/* CollapseChevron.mdx */}
+
+import { Meta, Canvas } from "@storybook/blocks";
+import * as CollapseChevronStories from "./CollapseChevron.stories";
+
+<Meta of={CollapseChevronStories} />
+
+# CollapseChevron
+
+A 14×14px chevron SVG that rotates −90° when `isCollapsed` is true. Used on step card and group card headers to indicate the collapsed/expanded state.
+
+The rotation is a Tailwind transition class so it animates smoothly.
+
+<Canvas of={CollapseChevronStories.Expanded} />
+<Canvas of={CollapseChevronStories.Collapsed} />

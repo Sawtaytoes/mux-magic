@@ -1,0 +1,25 @@
+{/* InsertDivider.mdx */}
+
+import { Meta, Canvas } from "@storybook/blocks";
+import * as InsertDividerStories from "./InsertDivider.stories";
+
+<Meta of={InsertDividerStories} />
+
+# InsertDivider
+
+A horizontal divider rendered between step cards in the builder. Hovering reveals four action buttons for inserting a step, a sequential group, a parallel group, or pasting a copied card at that position.
+
+All actions are passed as callbacks so the component stays stateless and easily testable. The parent (StepCard list) is responsible for supplying the correct index when constructing the callbacks.
+
+## Callbacks
+
+| Prop | Replaces legacy |
+|------|----------------|
+| `onInsertStep` | `insertAt(index)` |
+| `onInsertSequentialGroup` | `insertGroupAt(index, false)` |
+| `onInsertParallelGroup` | `insertGroupAt(index, true)` |
+| `onPaste` | `pasteCardAt({ itemIndex: index }, el)` |
+
+## Default
+
+<Canvas of={InsertDividerStories.Default} />
