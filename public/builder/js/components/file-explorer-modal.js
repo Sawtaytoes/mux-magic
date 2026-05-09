@@ -596,11 +596,19 @@ async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
 
   let sb = null
   let activeController = null
+  // Monotonic counter. Each startStream call claims a version; every
+  // async step checks isStale() before touching the SourceBuffer. This
+  // prevents two concurrent calls (from rapid seek events) from
+  // interleaving remove/appendBuffer operations and corrupting state.
+  let activeVersion = 0
 
   const waitForUpdate = () =>
     new Promise((resolve) => sb.addEventListener('updateend', resolve, { once: true }))
 
   const startStream = async (startSeconds) => {
+    const myVersion = ++activeVersion
+    const isStale = () => myVersion !== activeVersion
+
     if (activeController) activeController.abort()
     const controller = new AbortController()
     activeController = controller
@@ -609,64 +617,104 @@ async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
       ? `${transcodeUrl}&start=${startSeconds.toFixed(3)}`
       : transcodeUrl
 
+    let resp
     try {
-      const resp = await fetch(url, { signal: controller.signal })
-      if (!resp.ok || !resp.body) return
-
-      // Clear the existing buffer when seeking so the new position's
-      // fragments don't collide with stale buffered ranges.
-      if (startSeconds > 0 && sb.buffered.length > 0) {
-        if (sb.updating) await waitForUpdate()
-        sb.remove(0, Infinity)
-        await waitForUpdate()
-      }
-
-      const reader = resp.body.getReader()
-
-      const pump = async () => {
-        if (controller.signal.aborted) return
-        let chunk
-        try { chunk = await reader.read() } catch { return }
-
-        if (chunk.done) {
-          if (controller === activeController) {
-            const finish = () => { try { ms.endOfStream() } catch {} }
-            if (sb.updating) sb.addEventListener('updateend', finish, { once: true })
-            else finish()
-          }
-          return
-        }
-
-        if (sb.updating) await waitForUpdate()
-        if (controller.signal.aborted) return
-
-        try {
-          sb.appendBuffer(chunk.value)
-        } catch (e) {
-          if (e.name === 'QuotaExceededError' && sb.buffered.length > 0) {
-            // Evict content >30 s behind the playhead to free quota.
-            const removeEnd = Math.max(0, player.currentTime - 30)
-            if (removeEnd > sb.buffered.start(0)) {
-              sb.remove(sb.buffered.start(0), removeEnd)
-              await waitForUpdate()
-              try { sb.appendBuffer(chunk.value) } catch {}
-            }
-          }
-          return
-        }
-
-        sb.addEventListener('updateend', pump, { once: true })
-      }
-
-      pump()
+      resp = await fetch(url, { signal: controller.signal })
     } catch (e) {
-      if (e.name !== 'AbortError') console.error('[MSE]', e)
+      if (e.name !== 'AbortError') console.error('[MSE] fetch error', e)
+      return
     }
+    if (!resp.ok) {
+      console.error('[MSE] fetch failed:', resp.status, url)
+      return
+    }
+    if (!resp.body) {
+      console.error('[MSE] response has no body', url)
+      return
+    }
+    if (isStale()) return
+
+    // Clear the existing buffer for seeks. We always remove when
+    // startSeconds > 0 (not just when buffered.length > 0) so that stale
+    // initialization-segment state left by an aborted prior pump is also
+    // flushed. Each await is guarded by isStale() so a superseding
+    // startStream doesn't double-remove.
+    if (startSeconds > 0) {
+      if (sb.updating) {
+        await waitForUpdate()
+        if (isStale()) return
+      }
+      sb.remove(0, Infinity)
+      await waitForUpdate()
+      if (isStale()) return
+      // endOfStream() called by a prior completed pump can shrink ms.duration
+      // to the highest buffered end. Restore it so seeks beyond that point
+      // remain reachable.
+      if (Number.isFinite(duration) && duration > 0 && ms.readyState === 'open') {
+        ms.duration = duration
+      }
+      // Reset the SourceBuffer's codec state so the new initialization
+      // segment (ftyp+moov) in the incoming stream is accepted cleanly.
+      // Without this Chrome may reject the second+ initialization segment
+      // from a new ffmpeg invocation, causing silent pump stalls.
+      try { sb.changeType(mimeType) } catch (e) {
+        console.warn('[MSE] changeType failed (non-fatal):', e.message)
+      }
+    }
+
+    // ffmpeg -ss resets output timestamps to 0. Tell the SourceBuffer to
+    // shift all incoming timestamps by startSeconds so that buffered ranges
+    // align with player.currentTime and the browser can resolve the seek.
+    sb.timestampOffset = startSeconds
+
+    const reader = resp.body.getReader()
+
+    const pump = async () => {
+      if (isStale() || controller.signal.aborted) return
+      let chunk
+      try { chunk = await reader.read() } catch { return }
+
+      if (chunk.done) {
+        if (!isStale()) {
+          const finish = () => { try { ms.endOfStream() } catch {} }
+          if (sb.updating) sb.addEventListener('updateend', finish, { once: true })
+          else finish()
+        }
+        return
+      }
+
+      if (sb.updating) {
+        await waitForUpdate()
+        if (isStale()) return
+      }
+      if (controller.signal.aborted) return
+
+      try {
+        sb.appendBuffer(chunk.value)
+      } catch (e) {
+        if (e.name === 'QuotaExceededError' && sb.buffered.length > 0) {
+          // Evict content >30 s behind the playhead to free quota.
+          const removeEnd = Math.max(0, player.currentTime - 30)
+          if (removeEnd > sb.buffered.start(0)) {
+            sb.remove(sb.buffered.start(0), removeEnd)
+            await waitForUpdate()
+            if (!isStale()) try { sb.appendBuffer(chunk.value) } catch {}
+          }
+        } else {
+          console.error('[MSE] appendBuffer error:', e.name, e.message)
+        }
+        return
+      }
+
+      sb.addEventListener('updateend', pump, { once: true })
+    }
+
+    pump()
   }
 
   const onSeeking = () => {
     const t = player.currentTime
-    // Only re-fetch when the target isn't already in a buffered range.
+    // Skip re-fetch when the target is already in a buffered range.
     for (let i = 0; i < (sb?.buffered.length ?? 0); i++) {
       if (t >= sb.buffered.start(i) && t <= sb.buffered.end(i)) return
     }
@@ -677,8 +725,11 @@ async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
 
   if (Number.isFinite(duration) && duration > 0) ms.duration = duration
   sb = ms.addSourceBuffer(mimeType)
-  player.addEventListener('seeking', onSeeking)
   startStream(0)
+  // Add seeking listener after startStream(0) so that any seeking event the
+  // browser fires during initial setup (currentTime=0) doesn't abort the
+  // startup stream before the first fragment arrives.
+  player.addEventListener('seeking', onSeeking)
   player.play().catch(() => {})
 
   mseCleanup = () => {
@@ -728,7 +779,10 @@ const fetchAudioFormat = async (absolutePath) => {
   try {
     const url = new URL('/files/audio-codec', window.location.origin)
     url.searchParams.set('path', absolutePath)
-    const response = await fetch(url.toString(), { cache: 'no-store' })
+    const response = await fetch(url.toString(), {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(30_000),
+    })
     if (!response.ok) {
       return null
     }
@@ -778,6 +832,12 @@ export async function openVideoModal(absolutePath) {
   const player = videoPlayer()
   // Tear down any previous MSE session before setting up the new one.
   clearMseCleanup()
+  // Reset the player so it is idle while the async codec-check and HEAD
+  // requests are in flight. Without this, the element still holds the
+  // revoked object URL from the previous video and may enter an error
+  // state, which can cause the next setupMsePlayer call to silently stall.
+  player.pause()
+  player.src = ''
   // Pre-flight the modal open so the loading window isn't a hidden one
   // — the codec lookup typically resolves in <100ms and the player's
   // <video> tag handles the brief empty src gracefully.
@@ -805,7 +865,10 @@ export async function openVideoModal(absolutePath) {
     let duration = NaN
     let videoCodecTag = null
     try {
-      const headResp = await fetch(playbackUrl, { method: 'HEAD' })
+      const headResp = await fetch(playbackUrl, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(30_000),
+      })
       duration = parseFloat(headResp.headers.get('X-Duration') || '')
       videoCodecTag = headResp.headers.get('X-Video-Codec')
     } catch {

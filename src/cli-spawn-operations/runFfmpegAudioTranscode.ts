@@ -39,6 +39,14 @@ export type RunFfmpegAudioTranscodeOptions = {
   tempPath: string
 }
 
+// TODO(GPU): add NVIDIA hardware-acceleration when available.
+//   Detection: run `ffmpeg -hwaccels` at startup; if "cuda" is listed,
+//   enable NVDEC for input-side decoding with:
+//     ["-hwaccel", "cuda", "-hwaccel_output_format", "cuda"]
+//   inserted before "-i", and switch `-c:v copy` to
+//     ["-c:v", "h264_nvenc", "-preset", "p1"]
+//   for re-encoding paths. Fall back to CPU-only args when no GPU is
+//   detected so the server works on non-NVIDIA machines.
 export const buildFfmpegArgs = (
   cacheKey: TranscodeCacheKey,
   startSeconds = 0,
