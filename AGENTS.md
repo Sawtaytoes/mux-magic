@@ -20,7 +20,19 @@ The four below are the most-violated; the detailed reference lives in [Key conve
 5. **Function arguments: single destructured object, not positional.** Any function that takes 2+ arguments uses a single object parameter with destructuring. `mountLogsDisclosure(parent, jobId, status)` is wrong; `mountLogsDisclosure({ parent, jobId, status })` is right. Callers pass `{ parent, jobId, status }`. Reasons: argument order doesn't matter at the call site, params are self-documenting, dropping/adding/renaming a param doesn't reshuffle every caller. Single-arg functions stay as-is (`getMediaInfo(filePath)`); the rule only kicks in at 2+. Existing positional functions are not retroactively required to change, but any function you create or whose signature you modify must follow this.
 6. **Always brace `if` / `else` / `for` / `while`.** Even for early returns and one-liners. `if (!x) return null` is wrong; only the multi-line braced form is allowed.
 7. **`const` + arrow functions only — no `function` declarations.** `function loadYaml(text) { ... }` is wrong; `const loadYaml = (text: string) => parse(text)` is right. The only exception is when `this` binding is explicitly required (essentially never in this codebase — hooks, event handlers, and utilities all close over the outer scope). React components are arrow functions too: `const LoadModal = () => (<div>...</div>)`, not `function LoadModal() { ... }`.
-8. **Prefer implicit returns; reach for `{}` only when you must.** Write functions as single expressions that return a new value. If a function genuinely needs `{}` and an explicit `return`, that's usually a sign it should be split into smaller functions. Async/await and tests are the two normal exceptions; otherwise an arrow body wrapped in `{ return ... }` is a code smell.
+8. **Implicit returns only — never write the `return` keyword in production code.** When an arrow function returns a value, the body is the expression itself, wrapped in `()` for multi-line grouping. The canonical shape:
+
+   ```ts
+   const handle = (request) => (
+     request.json()
+   )
+   ```
+
+   Not `(request) => { return request.json() }`, not `(request) => { return request.json(); }`. Multi-step logic uses promise chains (`.then` / `.catch`), ternaries, `&&` / `||`, and `()` grouping — never a `{ return ... }` block.
+
+   Side-effect-only callbacks (no return value at all) are written as `() => { doSomething() }` and are fine — there's no `return` keyword in that form, so the rule isn't engaged. The rule is specifically: when you have a value to return, return it as the expression, not via the `return` keyword.
+
+   The single allowed exception is `return` inside test bodies (`it("name", async () => { ... })`), where bodies are imperative `expect(...)` sequences. Outside tests, search your diff for `return ` and fix every hit.
 9. **No barrel files.** No `index.ts` or `index.css` re-export files inside component, state, util, or icon folders. Import each module by its full path: `import { LoadModal } from "./components/LoadModal"`, not `from "./components"`. The single allowed barrel is `packages/shared/src/index.ts`, which exists only because `@media-tools/shared` is published to npm and consumers need a stable public entry point. Enforced by `import-x/no-barrel-files` in `eslint.config.js`.
 
 ### Before opening a PR — self-check your diff
@@ -38,7 +50,7 @@ The agents shipping PRs in this repo have repeatedly violated rules 1–4. Befor
 | New/modified function signature with 2+ positional params (instead of single destructured object) | rule 5 |
 | `if (` on a line whose closing `)` is followed by anything other than ` {` | rule 6 |
 | `^function ` or `^export function ` (lines starting with `function`) | rule 7 |
-| Arrow body `=> {` followed by a single `return` statement | rule 8 (split or inline) |
+| `return ` keyword in your additions (outside test files) | rule 8 (use `() => (expression)` instead) |
 | Import path ending in a folder rather than a file (`from "./components"`, `from "../state"`) | rule 9 |
 | Multi-paragraph JSDoc blocks (`/** ... */` over more than one short line) | over-commenting (default: no comments — see "Doing tasks" guidance) |
 
@@ -91,43 +103,63 @@ in module files must be removed before those modules can be used in the API.
 
 All functions in this codebase are `const` + arrow functions. The `function` keyword is reserved for the rare case where a `this` binding is genuinely required — that case hasn't come up in this repo yet, and almost certainly won't come up in React code either (hooks, event handlers, and utilities all close over the outer scope, and JSX components do not need their own `this`).
 
-Prefer **implicit returns**: the function body is a single expression, no `{}`, no `return` keyword. If you find yourself writing `=> { return foo(...) }`, drop the braces and the keyword.
+**Implicit returns are mandatory: never write the `return` keyword.** When a function returns a value, the body *is* that value as an expression, wrapped in `()` for grouping when it spans multiple lines. The canonical shape:
 
 ```ts
-// WRONG
+const handle = (request) => (
+  request.json()
+)
+
+const flattenSteps = (steps: Step[]) => (
+  steps.flatMap((step) =>
+    isGroup(step) ? step.children : [step]
+  )
+)
+
+const loadYaml = (text: string) => parse(text)
+```
+
+These are wrong because they use the `return` keyword:
+
+```ts
+// WRONG — function declaration
 function loadYaml(text) {
   return parse(text)
 }
 
-const flattenSteps = (steps) => {
-  return steps.flatMap((step) =>
-    isGroup(step) ? step.children : [step]
-  )
+// WRONG — block body with return
+const loadYaml = (text: string) => {
+  return parse(text)
 }
 
-// RIGHT
-const loadYaml = (text: string) => parse(text)
-
-const flattenSteps = (steps: Step[]) =>
-  steps.flatMap((step) =>
-    isGroup(step) ? step.children : [step]
-  )
+// WRONG — async with return
+const fetchJobs = async () => {
+  const response = await client.GET("/jobs")
+  return response.data
+}
 ```
 
-Two normal exceptions where `{}` + explicit `return` is fine:
+Async returns are still implicit — chain them through Promises:
 
-- **`async` / `await` flows** that need sequential statements:
+```ts
+// RIGHT
+const fetchJobs = () => (
+  client.GET("/jobs").then((response) => response.data)
+)
+```
 
-  ```ts
-  const fetchJobs = async () => {
-    const response = await client.GET("/jobs")
-    return response.data
-  }
-  ```
+Side-effect-only callbacks (no value to return) keep the `{ ... }` form because there's no `return` keyword involved at all:
 
-- **Tests** — Vitest's `it(name, async () => { ... })` is sequential by design and reads cleaner with explicit statements.
+```ts
+// fine — nothing being returned, no `return` written
+.then(() => {
+  console.log("Updated schemas.")
+})
+```
 
-If a non-async, non-test function genuinely needs `{}`, that's a signal to split it into smaller pieces.
+The single allowed place for the `return` keyword is **inside test bodies** — `it("name", async () => { ... })` blocks are imperative `expect(...)` sequences and occasionally need an early `return` for guard conditions. Outside tests, search your diff for `return ` and rewrite every hit as an expression.
+
+If a non-test function feels like it "needs" `return`, the rewrite usually exists: ternaries, `&&` / `||`, optional chaining, promise chains (`.then` / `.catch`), and `()` grouping cover virtually every case. When the rewrite is genuinely awkward, that's a signal to split the function into smaller pieces, each of which *is* an expression.
 
 ### Module exports — no barrel files
 
