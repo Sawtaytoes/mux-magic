@@ -117,7 +117,10 @@ test.describe("MSE video seek", () => {
       { timeout: 20_000 },
     )
 
-    // Seek to 5 s — well within the 60-second duration.
+    // Seek immediately after HAVE_FUTURE_DATA — this is the window where
+    // Chrome's appendState is PARSING_MEDIA_SEGMENT (set by the pump's last
+    // appendBuffer) but updating is already false. Without sb.abort() this
+    // throws InvalidStateError on the timestampOffset assignment.
     await page.evaluate(() => {
       const v = document.getElementById("video-modal-player") as HTMLVideoElement
       v.currentTime = 5
