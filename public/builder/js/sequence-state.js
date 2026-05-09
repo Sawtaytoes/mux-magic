@@ -237,14 +237,10 @@ export function pushUndoSnapshot(currentYaml) {
 }
 
 export function refreshUndoRedoButtons() {
-  const undoButton = document.getElementById('undo-btn')
-  const redoButton = document.getElementById('redo-btn')
-  if (undoButton) {
-    undoButton.disabled = undoStack.length === 0
-  }
-  if (redoButton) {
-    redoButton.disabled = redoStack.length === 0
-  }
+  const undoBtn = document.getElementById('undo-btn')
+  const redoBtn = document.getElementById('redo-btn')
+  if (undoBtn) undoBtn.disabled = undoStack.length === 0
+  if (redoBtn) redoBtn.disabled = redoStack.length === 0
 }
 
 // applySnapshot is defined in sequence-editor.js since it calls renderAll.

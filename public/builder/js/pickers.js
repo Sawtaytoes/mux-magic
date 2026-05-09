@@ -229,6 +229,12 @@ export const commandPicker = createPopoverPicker({
         ))
     ))
   ),
+  findInitialActive: (items, anchor) => {
+    const step = findStepById(anchor.stepId)
+    const currentCommand = step?.command
+    const idx = items.findIndex((item) => item.name === currentCommand)
+    return idx >= 0 ? idx : 0
+  },
   matchesQuery: (item, query) => (
     item.name.toLowerCase().includes(query)
     || commandLabel(item.name).toLowerCase().includes(query)

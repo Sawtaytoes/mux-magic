@@ -291,70 +291,135 @@ export function renderStep(step, index, context = {}) {
 
 // ─── Field renderers ──────────────────────────────────────────────────────────
 
+function isFieldVisible(visibleWhen, params) {
+  if (!visibleWhen) return true
+  // visibleWhen format: { fieldName: "fieldToCheck", value: trueValue }
+  const fieldValue = params?.[visibleWhen.fieldName]
+  return fieldValue === visibleWhen.value
+}
+
 export function renderFields(step, stepIndex) {
   const cmd = COMMANDS[step.command]
-  return cmd.fields.map(field => {
-    const val = step.params[field.name]
-    const tooltipKey = `${step.command}:${field.name}`
-    const label = `<label class="block text-xs text-slate-400 mb-1 cursor-help" data-tooltip-key="${esc(tooltipKey)}">${esc(field.label)}${field.required ? ' <span class="text-red-400">*</span>' : ''}</label>`
+  const fieldsHtml = []
+  const groupedFieldNames = new Set()
+  const groupsByFirstField = new Map()
 
-    // `hidden` fields ride along in the params payload but do not render
-    // a control. Used by composite editors (e.g. subtitleRules) that own
-    // multiple fields under a single UI surface.
-    if (field.type === 'hidden') {
-      return ''
-    }
-
-    // `subtitleRules` is the structured DSL form-builder for
-    // modifySubtitleMetadata's rules / predicates / hasDefaultRules.
-    // Source: public/builder/js/components/dsl-rules-builder.js.
-    if (field.type === 'subtitleRules') {
-      const link = step.links?.[field.name]
-      const isLinked = link && typeof link === 'object' && link.linkedTo
-      const pickerHtml = field.linkable ? renderStepOutputPicker(step, field, stepIndex, link) : ''
-      if (isLinked) {
-        return `<div>${label}${pickerHtml}<div class="text-xs text-slate-400 bg-slate-900 rounded px-2 py-1.5 border border-slate-700 italic font-mono">Linked → ${esc(link.linkedTo)}.${esc(link.output ?? 'folder')}</div></div>`
+  // Build set of fields that are part of a group, and map first field to group
+  if (cmd.groups && Array.isArray(cmd.groups)) {
+    cmd.groups.forEach(group => {
+      if (Array.isArray(group.fields) && group.fields.length > 0) {
+        group.fields.forEach(name => groupedFieldNames.add(name))
+        // Map the first field in the group to the group definition
+        groupsByFirstField.set(group.fields[0], group)
       }
-      return `<div>${label}${pickerHtml}${renderRulesField({ step })}</div>`
+    })
+  }
+
+  // Render fields in order, rendering groups when we hit their first field
+  const renderedGroups = new Set()
+
+  cmd.fields.forEach(field => {
+    // Check if field should be visible based on condition
+    if (field.visibleWhen && !isFieldVisible(field.visibleWhen, step.params)) {
+      return
     }
 
-    if (field.type === 'boolean') {
-      const checked = val ?? field.default ?? false
-      return `<label class="flex items-center gap-2 cursor-pointer select-none py-0.5" data-tooltip-key="${esc(tooltipKey)}">
-        <input type="checkbox" ${checked ? 'checked' : ''} onchange="setParam('${step.id}','${field.name}',this.checked)"
-          class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer" />
-        <span class="text-xs text-slate-300">${esc(field.label)}</span>
-      </label>`
+    // If this field is the first in a group, render the whole group
+    const group = groupsByFirstField.get(field.name)
+    if (group && !renderedGroups.has(group)) {
+      renderedGroups.add(group)
+      const groupFieldsHtml = group.fields
+        .map(fieldName => {
+          const f = cmd.fields.find(fld => fld.name === fieldName)
+          if (!f) return ''
+          // Check visibility for grouped fields too
+          if (f.visibleWhen && !isFieldVisible(f.visibleWhen, step.params)) {
+            return ''
+          }
+          return renderFieldHtml(step, f, stepIndex)
+        })
+        .filter(Boolean)
+        .join('')
+
+      if (groupFieldsHtml) {
+        fieldsHtml.push(
+          `<div class="${group.layout}">${groupFieldsHtml}</div>`
+        )
+      }
+    } else if (!groupedFieldNames.has(field.name)) {
+      // Render ungrouped fields normally
+      const fieldHtml = renderFieldHtml(step, field, stepIndex)
+      if (fieldHtml) {
+        fieldsHtml.push(fieldHtml)
+      }
     }
+  })
 
-    if (field.type === 'path') return renderPathField(step, field, stepIndex)
+  return fieldsHtml.join('')
+}
 
-    if (field.type === 'number') {
-      const num = val ?? field.default ?? ''
-      const companion = field.companionNameField ? step.params[field.companionNameField] : null
-      const reverseLookup = field.companionNameField ? `oninput="scheduleReverseLookup('${step.id}','${field.name}',this.value)"` : ''
-      return `<div>${label}<input type="number" value="${esc(num)}"
-        ${reverseLookup}
-        onchange="setParam('${step.id}','${field.name}',this.value===''?undefined:Number(this.value))"
-        class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" />
-        ${field.companionNameField ? `<p data-step="${step.id}" data-companion="${field.name}" class="text-xs text-slate-500 mt-0.5 truncate ${companion ? '' : 'hidden'}" title="${esc(companion ?? '')}">${esc(companion ?? '')}</p>` : ''}
-      </div>`
+function renderFieldHtml(step, field, stepIndex) {
+  const val = step.params[field.name]
+  const tooltipKey = `${step.command}:${field.name}`
+  const label = `<label class="block text-xs text-slate-400 mb-1 cursor-help" data-tooltip-key="${esc(tooltipKey)}">${esc(field.label)}${field.required ? ' <span class="text-red-400">*</span>' : ''}</label>`
+
+  // `hidden` fields ride along in the params payload but do not render
+  // a control. Used by composite editors (e.g. subtitleRules) that own
+  // multiple fields under a single UI surface.
+  if (field.type === 'hidden') {
+    return ''
+  }
+
+  // `subtitleRules` is the structured DSL form-builder for
+  // modifySubtitleMetadata's rules / predicates / hasDefaultRules.
+  // Source: public/builder/js/components/dsl-rules-builder.js.
+  if (field.type === 'subtitleRules') {
+    const link = step.links?.[field.name]
+    const isLinked = link && typeof link === 'object' && link.linkedTo
+    const pickerHtml = field.linkable ? renderStepOutputPicker(step, field, stepIndex, link) : ''
+    if (isLinked) {
+      return `<div>${label}${pickerHtml}<div class="text-xs text-slate-400 bg-slate-900 rounded px-2 py-1.5 border border-slate-700 italic font-mono">Linked → ${esc(link.linkedTo)}.${esc(link.output ?? 'folder')}</div></div>`
     }
+    return `<div>${label}${pickerHtml}${renderRulesField({ step })}</div>`
+  }
 
-    if (field.type === 'enum') {
-      const selected = val ?? field.default ?? ''
-      const selectedOption = (field.options ?? []).find((option) => option.value === selected)
-      const triggerLabel = selectedOption?.label ?? selected
-      return `<div>${label}<button type="button"
-        onclick="enumPicker.open({stepId: '${step.id}', fieldName: '${esc(field.name)}'}, this)"
-        data-enum-picker-trigger
-        class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer">
-        <span class="flex-1 min-w-0 truncate">${esc(triggerLabel)}</span>
-        <span class="text-slate-400 shrink-0">▾</span>
-      </button></div>`
-    }
+  if (field.type === 'boolean') {
+    const checked = val ?? field.default ?? false
+    return `<label class="flex items-center gap-2 cursor-pointer select-none py-0.5" data-tooltip-key="${esc(tooltipKey)}">
+      <input type="checkbox" ${checked ? 'checked' : ''} onchange="setParam('${step.id}','${field.name}',this.checked)"
+        class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer" />
+      <span class="text-xs text-slate-300">${esc(field.label)}</span>
+    </label>`
+  }
 
-    if (field.type === 'numberWithLookup') {
+  if (field.type === 'path') return renderPathField(step, field, stepIndex)
+
+  if (field.type === 'number') {
+    const num = val ?? field.default ?? ''
+    const companion = field.companionNameField ? step.params[field.companionNameField] : null
+    const reverseLookup = field.companionNameField ? `oninput="scheduleReverseLookup('${step.id}','${field.name}',this.value)"` : ''
+    return `<div>${label}<input type="number" value="${esc(num)}"
+      ${reverseLookup}
+      onchange="setParam('${step.id}','${field.name}',this.value===''?undefined:Number(this.value))"
+      class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" />
+      ${field.companionNameField ? `<p data-step="${step.id}" data-companion="${field.name}" class="text-xs text-slate-500 mt-0.5 truncate ${companion ? '' : 'hidden'}" title="${esc(companion ?? '')}">${esc(companion ?? '')}</p>` : ''}
+    </div>`
+  }
+
+  if (field.type === 'enum') {
+    const selected = val ?? field.default ?? ''
+    const selectedOption = (field.options ?? []).find((option) => option.value === selected)
+    const triggerLabel = selectedOption?.label ?? selected
+    return `<div>${label}<button type="button"
+      onclick="enumPicker.open({stepId: '${step.id}', fieldName: '${esc(field.name)}'}, this)"
+      data-enum-picker-trigger
+      class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer">
+      <span class="flex-1 min-w-0 truncate">${esc(triggerLabel)}</span>
+      <span class="text-slate-400 shrink-0">▾</span>
+    </button></div>`
+  }
+
+  if (field.type === 'numberWithLookup') {
       const num = val ?? field.default ?? ''
       const companion = field.companionNameField ? step.params[field.companionNameField] : null
       const lookupConfig = LOOKUP_LINKS[field.lookupType]
@@ -381,11 +446,6 @@ export function renderFields(step, stepIndex) {
         // TMDB target on the right.
         if (step.params.tmdbId) {
           tmdbHref = `https://www.themoviedb.org/movie/${encodeURIComponent(step.params.tmdbId)}`
-          // Override the link text when we know the resolved title so
-          // the user sees "Open on TheMovieDB: Title (Year)".
-          if (step.params.tmdbName) {
-            tmdbLabel = `Open on TheMovieDB: ${step.params.tmdbName}`
-          }
         } else if (step.params.tmdbResolutionPending) {
           tmdbHref = 'https://www.themoviedb.org/'
         } else if (companion) {
@@ -479,7 +539,6 @@ export function renderFields(step, stepIndex) {
     return `<div>${label}<input type="text" value="${esc(str)}" placeholder="${esc(field.placeholder ?? '')}"
       oninput="setParam('${step.id}','${field.name}',this.value||undefined)"
       class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" /></div>`
-  }).join('')
 }
 
 // ─── Step-output link picker ──────────────────────────────────────────────────

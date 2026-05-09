@@ -145,8 +145,12 @@ export const COMMANDS = {
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
       { name: "audioLanguages", type: "languageCodes", label: "Audio Languages", placeholder: "eng, jpn" },
       { name: "subtitlesLanguages", type: "languageCodes", label: "Subtitles Languages", placeholder: "eng" },
-      { name: "useFirstAudioLanguage", type: "boolean", label: "Use First Audio Language Only", default: false },
-      { name: "useFirstSubtitlesLanguage", type: "boolean", label: "Use First Subtitles Language Only", default: false },
+      { name: "useFirstAudioLanguage", type: "boolean", label: "First Audio Only", default: false },
+      { name: "useFirstSubtitlesLanguage", type: "boolean", label: "First Subtitles Only", default: false },
+    ],
+    groups: [
+      { fields: ["audioLanguages", "useFirstAudioLanguage"], layout: "field-group-two-col" },
+      { fields: ["subtitlesLanguages", "useFirstSubtitlesLanguage"], layout: "field-group-two-col" },
     ]
   },
   mergeTracks: {
@@ -254,7 +258,10 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+    ],
+    groups: [
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
     ]
   },
   hasBetterVersion: {
@@ -373,6 +380,12 @@ export const COMMANDS = {
       // (sequence YAML / direct API) keep today's deterministic
       // (2)/(3)/… behavior unless they opt in explicitly.
       { name: "autoNameDuplicates", type: "boolean", label: "Auto-name duplicates", default: false },
+    ],
+    // Group small numeric fields side-by-side on wider cards, using
+    // container queries so they adapt to card width (when 2 cards display
+    // side-by-side), not just the viewport.
+    groups: [
+      { fields: ["fixedOffset", "timecodePadding"], layout: "field-group-two-col" },
     ]
   },
   nameTvShowEpisodes: {
@@ -427,7 +440,6 @@ export const COMMANDS = {
       { name: "rootPath", type: "path", label: "Root Path" },
       { name: "folders", type: "stringArray", label: "Folders" },
       { name: "force", type: "boolean", label: "Force Overwrite", default: false },
-      { name: "threads", type: "number", label: "Thread Count" },
     ]
   },
 }

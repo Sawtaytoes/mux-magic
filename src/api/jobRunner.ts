@@ -63,6 +63,8 @@ export const runJob = (
 
             if (!job) return
 
+            console.log(`[emission/${job.commandName}]`, JSON.stringify(value))
+
             updateJob(jobId, {
               results: (
                 job

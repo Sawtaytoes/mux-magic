@@ -38,8 +38,11 @@ export const getUserSearchInput = (params: {
         filePaths: params.filePaths,
       })
 
+      let resolved = false
+
       registerPrompt(promptId)
         .then((index) => {
+          resolved = true
           observer.next(index)
           observer.complete()
         })
@@ -47,15 +50,12 @@ export const getUserSearchInput = (params: {
           observer.error(error)
         })
 
-      // TEMPORARY: teardown disabled to test the hypothesis that
-      // 8a7749b's cancelPrompt-on-unsubscribe is firing prematurely
-      // and causing the per-file matcher hang. If the hang stops
-      // reproducing without this teardown, we'll either: (a) put it
-      // back conditionally (only on actual cancel, not on natural
-      // pipe complete), or (b) leave it off and accept the small
-      // pendingPrompts leak as the cost of a working prompt flow.
-      // return () => { cancelPrompt(promptId) }
-      return
+      // Only cancel if the chain was externally unsubscribed (job
+      // cancelled, parallel sibling failed, etc.) — not after natural
+      // completion, where resolvePrompt already deleted the entry.
+      return () => {
+        if (!resolved) cancelPrompt(promptId)
+      }
     }
 
     process.stdout.write(`${params.message}\n`)

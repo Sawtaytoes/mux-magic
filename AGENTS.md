@@ -203,6 +203,17 @@ The push-as-you-go rule is what keeps multiple workers from drifting into each o
 
 **After any `git pull`** (in either repo, primary or worker): if the pull touched `package.json` or `yarn.lock`, run `yarn install` before doing anything else. Skipping this gives confusing "module not found" or "wrong version" failures that look like real bugs but are just stale `node_modules`. Quick check: `git diff HEAD@{1} HEAD -- package.json yarn.lock` shows whether the pull moved either.
 
+## Worktree workflow
+
+When working in a git worktree (created with `EnterWorktree`):
+
+1. **Commit as you go** — after each logical group of changes and passing tests, create a commit. Don't batch work into a single commit at the end.
+2. **Push to a PR, don't merge** — when all work is complete and tests pass, push changes to a GitHub PR and wait for the user to review. Do not merge autonomously; the user will review the PR and tell you when to merge.
+3. **Start a dev server when ready for testing** — once the PR is created and ready for review, start `yarn api-dev-server` on a random port (it picks up `PORT` from `.env`). This allows the user to test the changes in their browser before approving.
+4. **Kill the server after merge** — once the user tells you to merge and the merge is complete, stop the dev server.
+
+The user will review changes by examining the PR and testing the running server, then explicitly ask you to merge when ready.
+
 ## Commit conventions
 
 Commit *as you go*, not at the end of the session. After each logical group of changes lands and tests pass, commit it — one phase at a time. Don't batch a multi-step task into a single end-of-session commit just because the work all happened in one conversation; the user reviews incrementally, and a single 10-file commit is much harder to read than three focused 3-file commits.

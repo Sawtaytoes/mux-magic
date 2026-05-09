@@ -121,6 +121,8 @@ import {
   cancelApiRun,
   copyApiRunLogs,
   attachCopyButtonListener,
+  toggleDryRun,
+  syncDryRunUI,
 } from './run-sequence.js'
 import {
   openLookup,
@@ -227,6 +229,7 @@ Object.assign(window.mediaTools, {
   scrollStepIntoView,
   scrollPathVarIntoView,
   schedulePathLookup,
+  pathPickerKeydown,
   renderAllAnimated,
 
   // run-sequence
@@ -315,6 +318,7 @@ window.runViaApi = runViaApi
 window.cancelApiRun = cancelApiRun
 window.copyApiRunLogs = copyApiRunLogs
 window.closeApiRunModal = (event) => closeApiRunModal(event)
+window.toggleDryRun = toggleDryRun
 
 // lookup modal
 window.openLookup = openLookup
@@ -368,3 +372,4 @@ if (stepsEl) attachPathVarListeners(stepsEl)
 initPaths()
 restoreFromUrl()
 renderAll()
+syncDryRunUI()
