@@ -6,7 +6,5 @@
     "moduleResolution": "NodeNext",
     "noEmit": true
   },
-  "include": [
-    "packages/server/src"
-  ]
+  "include": ["packages/server/src"]
 }

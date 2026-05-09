@@ -1,7 +1,7 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { Provider as JotaiProvider } from "jotai"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
-import { Provider as JotaiProvider } from "jotai"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { AppRouter } from "./router"
 import "./styles/tailwindStyles.css"

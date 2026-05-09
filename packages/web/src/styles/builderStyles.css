@@ -1,24 +1,50 @@
 /* ─── Step enter/leave animations ────────────────────────────────────────── */
 
 @keyframes stepEnter {
-  from { opacity: 0; transform: translateY(-6px) scale(0.985); }
-  to   { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes stepLeave {
-  from { opacity: 1; transform: none; }
-  to   { opacity: 0; transform: translateY(-6px) scale(0.985); }
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
 }
-.step-enter { animation: stepEnter 200ms ease-out; }
-.step-leave { animation: stepLeave 200ms ease-in forwards; pointer-events: none; }
+.step-enter {
+  animation: stepEnter 200ms ease-out;
+}
+.step-leave {
+  animation: stepLeave 200ms ease-in forwards;
+  pointer-events: none;
+}
 
 /* Drag-and-drop visuals (SortableJS). The grip handle gets a grab
    cursor; the placeholder Sortable inserts at the hover position
    fades the original card so the user sees where it'll land; the
    card actively being dragged gets a subtle blue ring. */
-[data-drag-handle] { cursor: grab; touch-action: none; }
-[data-drag-handle]:active { cursor: grabbing; }
-.drag-ghost { opacity: 0.35; }
-.drag-chosen { box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5); }
+[data-drag-handle] {
+  cursor: grab;
+  touch-action: none;
+}
+[data-drag-handle]:active {
+  cursor: grabbing;
+}
+.drag-ghost {
+  opacity: 0.35;
+}
+.drag-chosen {
+  box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5);
+}
 
 /* View-transition timing for the move-step swap */
 ::view-transition-old(*),
@@ -35,19 +61,27 @@
    snapshot pair (::view-transition-group(page-header)), and the
    z-index on that group keeps it above every step snapshot for the
    duration of the transition. */
-#page-header { view-transition-name: page-header; }
-::view-transition-group(page-header) { z-index: 100; }
+#page-header {
+  view-transition-name: page-header;
+}
+::view-transition-group(page-header) {
+  z-index: 100;
+}
 
 /* Page-header menus always collapse behind their toggle buttons.
    ≡ (nav) and ⋮ (controls) are permanently visible; undo/redo is
    pinned in the header bar. Both menus open as absolute popovers. */
-.page-menu-toggle { display: inline-flex; }
+.page-menu-toggle {
+  display: inline-flex;
+}
 .page-header-inner {
   position: relative;
   justify-content: space-between;
 }
 
-.page-menu { display: none; }
+.page-menu {
+  display: none;
+}
 .page-menu-group,
 .page-menu-row {
   display: contents;
@@ -69,8 +103,12 @@
   z-index: 50;
 }
 /* Anchor each popover under its toggle. */
-.page-menu-nav.open      { left:  0.75rem; }
-.page-menu-controls.open { right: 0.75rem; }
+.page-menu-nav.open {
+  left: 0.75rem;
+}
+.page-menu-controls.open {
+  right: 0.75rem;
+}
 
 .page-menu.open .page-menu-group {
   display: flex;
@@ -103,13 +141,18 @@
 /* On the smallest screens, hide the pinned undo/redo + collapse/expand
    cluster — they're still reachable via the ⋮ menu. */
 @media (max-width: 480px) {
-  #header-pinned { display: none; }
+  #header-pinned {
+    display: none;
+  }
 }
 
 /* Each step card establishes its own size container so headers adapt
    to the card's actual width, not the viewport — matters because the
    pane width changes with the YAML modal / load panel toggles. */
-.step-card { container-type: inline-size; container-name: step-card; }
+.step-card {
+  container-type: inline-size;
+  container-name: step-card;
+}
 
 /* Field grouping for side-by-side layout on wider cards. Groups use
    container queries so they adapt to card width (when 2 cards display
@@ -140,8 +183,13 @@
   }
 }
 
-.step-alias { flex: 1 1 8rem; min-width: 6rem; }
-.step-hamburger-btn { display: none; }
+.step-alias {
+  flex: 1 1 8rem;
+  min-width: 6rem;
+}
+.step-hamburger-btn {
+  display: none;
+}
 /* Same Tailwind-cascade trick as .page-actions: define display:flex
    here so the @container rule below can flip to display:none without
    fighting Tailwind's `.flex` utility. */
@@ -162,17 +210,33 @@
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 0.25rem;
-  color: #34d399;            /* emerald — matches the old ▶ */
-  transition: color 200ms ease, background-color 200ms ease;
+  color: #34d399; /* emerald — matches the old ▶ */
+  transition:
+    color 200ms ease,
+    background-color 200ms ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
-.step-run-stop:hover { background-color: #334155; color: #6ee7b7; }
-.step-run-stop:disabled { opacity: 0.3; cursor: not-allowed; }
-.step-run-stop:disabled:hover { background-color: transparent; color: #34d399; }
-.step-run-stop.is-running { color: #fbbf24; }   /* amber — matches the old ⏹ */
-.step-run-stop.is-running:hover { color: #fcd34d; background-color: #334155; }
+.step-run-stop:hover {
+  background-color: #334155;
+  color: #6ee7b7;
+}
+.step-run-stop:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.step-run-stop:disabled:hover {
+  background-color: transparent;
+  color: #34d399;
+}
+.step-run-stop.is-running {
+  color: #fbbf24;
+} /* amber — matches the old ⏹ */
+.step-run-stop.is-running:hover {
+  color: #fcd34d;
+  background-color: #334155;
+}
 .step-run-stop-icon {
   position: absolute;
   inset: 0;
@@ -180,7 +244,9 @@
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
-  transition: opacity 200ms ease, transform 200ms ease;
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
 }
 .step-run-stop-stop {
   opacity: 0;
@@ -196,7 +262,10 @@
 }
 /* Honor reduced-motion preferences — snap instead of rotate-fade. */
 @media (prefers-reduced-motion: reduce) {
-  .step-run-stop, .step-run-stop-icon { transition: none; }
+  .step-run-stop,
+  .step-run-stop-icon {
+    transition: none;
+  }
 }
 
 /* Below ~600px of card width: alias breaks to its own row above the
@@ -205,14 +274,21 @@
    command names ('flattenOutput' ~ 12rem) before alias gives up its
    inline slot. */
 @container step-card (max-width: 600px) {
-  .step-alias { flex-basis: 100%; order: -1; }
+  .step-alias {
+    flex-basis: 100%;
+    order: -1;
+  }
 }
 
 /* Below ~460px: collapse action icons into a hamburger toggle. The
    icons reappear in a wrapped row when the toggle is open. */
 @container step-card (max-width: 460px) {
-  .step-hamburger-btn { display: inline-flex; }
-  .step-actions { display: none; }
+  .step-hamburger-btn {
+    display: inline-flex;
+  }
+  .step-actions {
+    display: none;
+  }
   .step-actions.open {
     display: flex;
     flex-basis: 100%;
@@ -223,7 +299,10 @@
 /* Group container — both kinds (serial / parallel) carry their own
    size container so the parallel side-by-side layout adapts to its
    own width rather than the viewport. */
-.group-card { container-type: inline-size; container-name: group-card; }
+.group-card {
+  container-type: inline-size;
+  container-name: group-card;
+}
 
 /* Parallel groups: lay inner step cards out as a row that wraps to a
    column when the container narrows. Each child card flexes to fill
@@ -252,7 +331,9 @@
 }
 
 /* Clickable info area subtle hover; pointer cursor to hint it's interactive. */
-.step-compact-open { cursor: pointer; }
+.step-compact-open {
+  cursor: pointer;
+}
 
 /* ─── Step drawer (sidebar / bottom-sheet) ───────────────────────────────────
    The drawer is a fixed panel. On wide screens (>= 640px) it attaches to the
@@ -318,7 +399,9 @@
 /* Honour reduced-motion — snap instead of slide. */
 @media (prefers-reduced-motion: reduce) {
   .step-drawer,
-  .step-drawer-backdrop { transition: none; }
+  .step-drawer-backdrop {
+    transition: none;
+  }
 }
 
 /* ─── Link-picker popover detail rows render filesystem paths. ─────────────── Default

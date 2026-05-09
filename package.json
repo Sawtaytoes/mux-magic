@@ -13,6 +13,8 @@
     "copy-assets": "rimraf dist/assets && mkdir 'dist/assets' && npx cpx2 'assets/**/*' dist/assets/",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
+    "format": "biome check --write",
+    "lint": "biome check && eslint .",
     "generate-schemas": "tsx --env-file ./.env packages/server/src/generateSchemas.ts",
     "install-playwright-browser": "yarn dlx playwright install chromium",
     "screenshots": "tsx scripts/screenshots.ts",
@@ -54,6 +56,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
     "@playwright/test": "^1.59.1",
     "@testing-library/dom": "^10.4.1",
     "@total-typescript/ts-reset": "^0.6.1",
@@ -69,6 +72,7 @@
     "@yarnpkg/sdks": "^3.2.3",
     "cpx2": "^8.0.2",
     "esbuild": "^0.28.0",
+    "eslint": "^9.0.0",
     "msw": "^2.14.4",
     "openapi-typescript": "^7.13.0",
     "rimraf": "^6.1.3",
