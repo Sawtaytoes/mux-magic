@@ -1,3 +1,4 @@
+import { type Observable } from "rxjs"
 import { type Context } from "hono"
 
 import {
@@ -8,6 +9,7 @@ import {
 } from "../api/routes/commandRoutes.js"
 import { failureScenario } from "./scenarios/failure.js"
 import { inProgressScenario } from "./scenarios/inProgress.js"
+import { nameSpecialFeaturesScenario } from "./scenarios/nameSpecialFeatures.js"
 import { successScenario } from "./scenarios/success.js"
 
 // ---------------------------------------------------------------------------
@@ -67,6 +69,17 @@ const SCENARIO_OVERRIDES: Partial<Record<CommandName, Scenario>> = {
   copyOutSubtitles: "inProgress",
 }
 
+// Per-command observable factories that bypass the generic scenario
+// rotation entirely. Each factory receives the same (body, options)
+// signature as the scenario helpers so it can log, emit progress, and
+// call getUserSearchInput for interactive prompts — exactly as the real
+// command would, but with canned data and no filesystem or network I/O.
+type ObservableFactory = (body: unknown, options: { label?: string }) => Observable<unknown>
+
+const OBSERVABLE_OVERRIDES: Partial<Record<CommandName, ObservableFactory>> = {
+  nameSpecialFeatures: nameSpecialFeaturesScenario,
+}
+
 const ROTATION: readonly Scenario[] = ["success", "success", "failure", "success", "inProgress"]
 
 const scenarioForCommand = (
@@ -84,7 +97,10 @@ const buildFakeConfig = (
   const real = realCommandConfigs[command]
   const label = `fake/${command}`
 
+  const customFactory = OBSERVABLE_OVERRIDES[command]
+
   const getObservable = (body: unknown) => {
+    if (customFactory) return customFactory(body, { label })
     if (scenario === "failure") {
       return failureScenario(body, { label })
     }
