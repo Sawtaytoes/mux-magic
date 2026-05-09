@@ -41,3 +41,6 @@ test-results/
 packages/web/src/api/schema.generated.ts
 
 *.log
+
+# Local copy of Biome JSON schema (avoids IDE untrusted-URL warning)
+biome.schema.json
