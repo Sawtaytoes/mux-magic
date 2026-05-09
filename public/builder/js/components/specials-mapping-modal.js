@@ -70,11 +70,11 @@ const renderFileTimecode = (timecode) => (
     : '<span class="text-slate-500 text-[10px] italic">(no duration)</span>'
 )
 
-// Build the <option> list for the per-row dropdown. The currently-
-// selected candidate is marked `selected` so the native <select>
-// reflects state without extra JS.
-const renderCandidateOptions = ({ rankedCandidates, selectedName }) => (
-  rankedCandidates.map(({ candidate, confidence }) => {
+// Build the <option> list for the per-row dropdown. A "none" option is
+// always first (unselected by default) so users can skip renaming a file.
+const renderCandidateOptions = ({ rankedCandidates, selectedName }) => {
+  const noneOption = '<option value="">— skip this file —</option>'
+  const candidateOptions = rankedCandidates.map(({ candidate, confidence }) => {
     const percent = Math.round(confidence * 100)
     const isSelected = candidate.name === selectedName
     return (
@@ -83,7 +83,8 @@ const renderCandidateOptions = ({ rankedCandidates, selectedName }) => (
       + '</option>'
     )
   }).join('')
-)
+  return noneOption + candidateOptions
+}
 
 const renderRow = ({ index, suggestion }) => {
   const topCandidate = suggestion.rankedCandidates[0]
@@ -139,7 +140,7 @@ const renderModalHtml = ({ suggestions }) => {
   return (
     `<div class="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">`
     + `<div class="px-4 py-3 border-b border-slate-700 flex items-center justify-between">`
-    + `<h2 class="text-base font-semibold text-slate-100">Smart-match leftover files</h2>`
+    + `<h2 class="text-base font-semibold text-slate-100">Fix Unnamed</h2>`
     + `<button type="button" data-mapping-close class="text-slate-400 hover:text-slate-200 text-xl leading-none px-1">×</button>`
     + `</div>`
     + `<div class="px-4 py-3 flex-1 overflow-y-auto">`
@@ -274,6 +275,16 @@ const handleConfirmClick = async () => {
 
   if (renamePlan.length === 0) {
     setStatusMessage({ kind: 'error', message: 'Nothing selected to rename.' })
+    return
+  }
+
+  // Check for duplicate target names
+  const targetNames = renamePlan
+    .map((p) => String(p.desiredName).toLowerCase())
+    .filter(Boolean)
+  const uniqueTargets = new Set(targetNames)
+  if (uniqueTargets.size < targetNames.length) {
+    setStatusMessage({ kind: 'error', message: 'Two or more files would have the same name. Please adjust the selections.' })
     return
   }
 
