@@ -92,6 +92,7 @@ import {
   setParamAndRender,
   setParamJson,
   promotePathToPathVar,
+  initFieldMin,
   browsePathField,
   setLink,
   refreshLinkedInputs,
@@ -293,6 +294,7 @@ window.setParam = setParam
 window.setParamAndRender = setParamAndRender
 window.setParamJson = setParamJson
 window.promotePathToPathVar = promotePathToPathVar
+window.initFieldMin = initFieldMin
 window.browsePathField = browsePathField
 window.setLink = setLink
 window.changeCommand = changeCommand

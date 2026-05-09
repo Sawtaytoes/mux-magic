@@ -458,6 +458,17 @@ export function promotePathToPathVar(stepId, fieldName, rawValue) {
   bridge().renderAll()
 }
 
+// When a boolean field (e.g. isRecursive) is first enabled, ensure a companion
+// numeric field is at least minValue. Used to coerce recursiveDepth from 0→1.
+export function initFieldMin(stepId, fieldName, minValue) {
+  const step = findStepById(stepId)
+  if (!step) return
+  const cur = step.params[fieldName]
+  if (cur == null || Number(cur) < minValue) {
+    step.params[fieldName] = minValue
+  }
+}
+
 export async function browsePathField(stepId, fieldName, initialPath) {
   if (typeof window.openFileExplorer !== 'function') {
     return

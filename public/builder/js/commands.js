@@ -62,7 +62,7 @@ export const COMMANDS = {
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "extensions", type: "stringArray", label: "Extensions", required: true, placeholder: ".srt, .idx" },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 1, min: 1, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
       { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
@@ -94,7 +94,7 @@ export const COMMANDS = {
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "extensions", type: "stringArray", label: "Extensions", required: true, placeholder: ".ts, .m2ts" },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 1, min: 1, visibleWhen: { fieldName: "isRecursive", value: true } },
       { name: "isSourceDeletedOnSuccess", type: "boolean", label: "Delete source on per-file success", default: false },
     ],
     groups: [
@@ -238,7 +238,7 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 1, min: 1, visibleWhen: { fieldName: "isRecursive", value: true } },
       // `predicates` and `hasDefaultRules` ride alongside `rules` and are
       // edited together inside the structured `subtitleRules` editor below.
       // Listing them as `hidden` keeps buildParams emitting them into YAML
@@ -267,7 +267,7 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 1, min: 1, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
       { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
@@ -280,7 +280,7 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 1, min: 1, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
       { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
@@ -293,7 +293,7 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 1, min: 1, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
       { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
@@ -324,7 +324,7 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 1, min: 1, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
       { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
@@ -442,7 +442,7 @@ export const COMMANDS = {
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "displayWidth", type: "number", label: "Display Width (px)", default: 853 },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 1, min: 1, visibleWhen: { fieldName: "isRecursive", value: true } },
     ],
     groups: [
       { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-check-fill" },
@@ -456,7 +456,7 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 1, min: 1, visibleWhen: { fieldName: "isRecursive", value: true } },
       { name: "outputPath", type: "path", label: "Output Path" },
       { name: "rootPath", type: "string", label: "Root Path" },
       { name: "folders", type: "folderMultiSelect", label: "Folders", sourceField: "sourcePath" },

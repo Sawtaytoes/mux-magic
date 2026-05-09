@@ -385,8 +385,13 @@ function renderFieldHtml(step, field, stepIndex) {
 
   if (field.type === 'boolean') {
     const checked = val ?? field.default ?? false
+    // When isRecursive is checked, coerce recursiveDepth to at least 1 so
+    // depth=0 (which equals "not recursive") is never shown after enabling it.
+    const extraOnChange = field.name === 'isRecursive'
+      ? `;if(this.checked)initFieldMin('${step.id}','recursiveDepth',1)`
+      : ''
     return `<label class="flex items-center gap-2 cursor-pointer select-none py-0.5" data-tooltip-key="${esc(tooltipKey)}">
-      <input type="checkbox" ${checked ? 'checked' : ''} onchange="setParamAndRender('${step.id}','${field.name}',this.checked)"
+      <input type="checkbox" ${checked ? 'checked' : ''} onchange="setParamAndRender('${step.id}','${field.name}',this.checked)${extraOnChange}"
         class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer" />
       <span class="text-xs text-slate-300">${esc(field.label)}</span>
     </label>`
@@ -395,12 +400,14 @@ function renderFieldHtml(step, field, stepIndex) {
   if (field.type === 'path') return renderPathField(step, field, stepIndex)
 
   if (field.type === 'number') {
-    const num = val ?? field.default ?? ''
+    const rawNum = val ?? field.default ?? ''
+    const num = (field.min != null && rawNum !== '' && Number(rawNum) < field.min) ? field.min : rawNum
     const companion = field.companionNameField ? step.params[field.companionNameField] : null
     const reverseLookup = field.companionNameField ? `oninput="scheduleReverseLookup('${step.id}','${field.name}',this.value)"` : ''
-    return `<div>${label}<input type="number" value="${esc(num)}"
+    const minAttr = field.min != null ? `min="${esc(field.min)}"` : ''
+    return `<div>${label}<input type="number" value="${esc(num)}" ${minAttr}
       ${reverseLookup}
-      onchange="setParam('${step.id}','${field.name}',this.value===''?undefined:Number(this.value))"
+      onchange="setParam('${step.id}','${field.name}',this.value===''?undefined:Math.max(${field.min ?? Number.NEGATIVE_INFINITY},Number(this.value)))"
       class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500" />
       ${field.companionNameField ? `<p data-step="${step.id}" data-companion="${field.name}" class="text-xs text-slate-500 mt-0.5 truncate ${companion ? '' : 'hidden'}" title="${esc(companion ?? '')}">${esc(companion ?? '')}</p>` : ''}
     </div>`
