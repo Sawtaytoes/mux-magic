@@ -640,37 +640,33 @@ async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
     }
     if (isStale()) return
 
-    // Clear the existing buffer for seeks. We always remove when
-    // startSeconds > 0 (not just when buffered.length > 0) so that stale
-    // initialization-segment state left by an aborted prior pump is also
-    // flushed. Each await is guarded by isStale() so a superseding
-    // startStream doesn't double-remove.
+    // For seeks: clear buffered data so the new fMP4's init segment
+    // (ftyp+moov) can reset the codec decoder.
+    //
+    // removeSourceBuffer+addSourceBuffer caused Chrome to re-evaluate the
+    // seeking state and fire a new 'seeking' event, which looped back into
+    // startStream and aborted the in-flight fetch indefinitely.
+    //
+    // changeType() with the same mimeType silently dropped the video track
+    // while audio continued — Chrome's codec pipeline wasn't properly reset.
+    //
+    // A fresh moov from the new ffmpeg stream is the cleanest reset: Chrome
+    // reinitializes both decoders when it sees the new init segment arrive.
     if (startSeconds > 0) {
       if (sb.updating) {
         await waitForUpdate()
         if (isStale()) return
       }
-      sb.remove(0, Infinity)
-      await waitForUpdate()
-      if (isStale()) return
-      // endOfStream() called by a prior completed pump can shrink ms.duration
-      // to the highest buffered end. Restore it so seeks beyond that point
-      // remain reachable.
-      if (Number.isFinite(duration) && duration > 0 && ms.readyState === 'open') {
-        ms.duration = duration
-      }
-      // Reset the SourceBuffer's codec state so the new initialization
-      // segment (ftyp+moov) in the incoming stream is accepted cleanly.
-      // Without this Chrome may reject the second+ initialization segment
-      // from a new ffmpeg invocation, causing silent pump stalls.
-      try { sb.changeType(mimeType) } catch (e) {
-        console.warn('[MSE] changeType failed (non-fatal):', e.message)
+      if (sb.buffered.length > 0) {
+        sb.remove(0, Infinity)
+        await waitForUpdate()
+        if (isStale()) return
       }
     }
 
     // ffmpeg -ss resets output timestamps to 0. Tell the SourceBuffer to
-    // shift all incoming timestamps by startSeconds so that buffered ranges
-    // align with player.currentTime and the browser can resolve the seek.
+    // shift all incoming timestamps by startSeconds so buffered ranges
+    // align with player.currentTime and Chrome can resolve the seek.
     sb.timestampOffset = startSeconds
 
     const reader = resp.body.getReader()
