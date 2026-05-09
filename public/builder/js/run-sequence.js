@@ -82,7 +82,19 @@ export function syncDryRunUI() {
   syncToggle('dry-run-track', 'dry-run-thumb', active, 'bg-amber-500 border-amber-400')
   syncToggle('failure-mode-track', 'failure-mode-thumb', failureActive, 'bg-red-600 border-red-500')
 
-  if (badge) badge.classList.toggle('hidden', !active)
+  if (badge) {
+    badge.classList.toggle('hidden', !active)
+    // Swap amber ↔ red depending on failure mode.
+    const isFailure = active && failureActive
+    badge.classList.toggle('text-amber-400', !isFailure)
+    badge.classList.toggle('bg-amber-500/20', !isFailure)
+    badge.classList.toggle('border-amber-500/40', !isFailure)
+    badge.classList.toggle('hover:bg-amber-500/35', !isFailure)
+    badge.classList.toggle('text-red-400', isFailure)
+    badge.classList.toggle('bg-red-500/20', isFailure)
+    badge.classList.toggle('border-red-500/40', isFailure)
+    badge.classList.toggle('hover:bg-red-500/35', isFailure)
+  }
   if (failureBtn) failureBtn.classList.toggle('hidden', !active)
   if (btn) {
     btn.title = active
@@ -491,10 +503,34 @@ function tailApiRunLogs(jobId, onDone) {
   apiRunEventSource = createTolerantEventSource(`/jobs/${jobId}/logs`, {
     onMessage: (data) => {
       if (data.type === 'step-started') {
+        // Reset the step card before the new run so stale error/results don't persist.
+        const startedStep = findStepById(data.stepId)
+        if (startedStep) {
+          startedStep.status = 'running'
+          startedStep.error = null
+          startedStep.results = null
+          startedStep.logs = null
+          startedStep.outputs = null
+          startedStep._smartMatchAutoOpened = undefined
+          updateStepUI(startedStep)
+        }
         openApiRunChildProgressStream(data.childJobId, data.stepId)
         return
       }
       if (data.type === 'step-finished') {
+        // Update the step card status as a fallback in case the child's
+        // `done` event hasn't been processed yet (race between two SSE streams).
+        const finishedStep = findStepById(data.stepId)
+        if (finishedStep && finishedStep.status === 'running') {
+          if (data.status === 'completed' || data.status === 'cancelled') {
+            finishedStep.status = data.status
+            finishedStep.error = null
+          } else {
+            finishedStep.status = 'failed'
+            finishedStep.error = `Job ended with status: ${data.status}`
+          }
+          updateStepUI(finishedStep)
+        }
         if (data.childJobId === apiRunChildJobId) {
           closeApiRunChildProgressStream()
           hideApiRunProgress()
@@ -539,6 +575,22 @@ function openApiRunChildProgressStream(childJobId, stepId) {
         const host = document.getElementById('api-run-progress-host')
         window.ProgressUtils.paintProgressBar(host, apiRunChildSnapshot)
         if (stepId) handleStepCardProgressEvent(stepId, data)
+      } else if (data.done && stepId) {
+        // Primary update path: child job's done event carries full results.
+        // step-finished from the parent is a fallback if this arrives late.
+        const step = findStepById(stepId)
+        if (step) {
+          if (data.status === 'completed' || data.status === 'cancelled') {
+            step.status = data.status
+            step.error = null
+          } else {
+            step.status = 'failed'
+            step.error = `Job ended with status: ${data.status}`
+          }
+          if (Array.isArray(data.results) && data.results.length > 0) step.results = data.results
+          if (data.outputs && typeof data.outputs === 'object') step.outputs = data.outputs
+          updateStepUI(step)
+        }
       }
     },
     onPossiblyDisconnected: () => {},
@@ -925,7 +977,7 @@ function wireNameSpecialFeaturesResults({ body, step, summaryRecord }) {
     && unrenamedForAutoOpen.length > 0
     && possibleNameObjects.length > 0
   )
-  if (hasSmartMatchDataForAutoOpen && !step._smartMatchAutoOpened) {
+  if (hasSmartMatchDataForAutoOpen && !step._smartMatchAutoOpened && !isDryRun()) {
     step._smartMatchAutoOpened = true
     openSmartMatchModal()
   }
