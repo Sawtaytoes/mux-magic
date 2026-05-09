@@ -210,6 +210,15 @@ function confirm() {
   close()
 }
 
+// Read step/field/sourcePath from data attributes so Windows backslashes in
+// paths are never embedded as JS string literals in onclick attributes.
+function openFromEl(el) {
+  const stepId = el.getAttribute('data-step-id') ?? ''
+  const fieldName = el.getAttribute('data-field-name') ?? ''
+  const sourceValue = el.getAttribute('data-source-value') ?? ''
+  open({ stepId, fieldName, sourceValue })
+}
+
 function removeFolder(stepId, fieldName, folderName) {
   const step = window.mediaTools?.findStepById?.(stepId)
   if (!step) {
@@ -224,5 +233,5 @@ export function registerFolderPickerGlobals() {
   if (typeof window === 'undefined') {
     return
   }
-  window.folderPicker = { open, close, toggleFolder, toggleFolderFromEl, selectAll, confirm, removeFolder }
+  window.folderPicker = { open, openFromEl, close, toggleFolder, toggleFolderFromEl, selectAll, confirm, removeFolder }
 }

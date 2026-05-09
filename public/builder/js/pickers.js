@@ -508,6 +508,9 @@ export function onPathFieldInput(inputElement, stepId, fieldName, value) {
       step.links[fieldName] = newPath.id
       delete step.params[fieldName]
     }
+    // Update the link-picker trigger label in-place so it shows the newly
+    // created path variable name without needing a full renderAll.
+    refreshLinkPickerTrigger(stepId, fieldName)
     scheduleUpdateUrl()
   } else {
     setParam(stepId, fieldName, undefined)

@@ -130,7 +130,7 @@
 @container step-card (min-width: 500px) {
   .field-group-check-fill {
     grid-template-columns: auto 1fr;
-    align-items: end;
+    align-items: start;
   }
 }
 

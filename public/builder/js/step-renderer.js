@@ -514,7 +514,6 @@ function renderFieldHtml(step, field, stepIndex) {
       const sourceValue = field.sourceField
         ? (getLinkedValue(step, field.sourceField) ?? step.params[field.sourceField] ?? '')
         : ''
-      const openArgs = `{stepId:'${step.id}',fieldName:'${esc(field.name)}',sourceValue:'${esc(sourceValue)}'}`
       const tags = folders.map((folder) => `
         <span class="inline-flex items-center gap-1 bg-slate-700 text-slate-200 text-xs rounded px-1.5 py-0.5 font-mono">
           📁 ${esc(folder)}
@@ -524,7 +523,11 @@ function renderFieldHtml(step, field, stepIndex) {
       `).join('')
       return `<div>${label}
         <div class="flex flex-wrap gap-1 mb-1.5">${tags}</div>
-        <button type="button" onclick="folderPicker.open(${openArgs})"
+        <button type="button"
+          data-step-id="${step.id}"
+          data-field-name="${esc(field.name)}"
+          data-source-value="${esc(sourceValue)}"
+          onclick="folderPicker.openFromEl(this)"
           class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded border border-slate-600">
           📁 Browse folders…
         </button>

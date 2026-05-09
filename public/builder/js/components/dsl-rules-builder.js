@@ -1684,6 +1684,10 @@ function renderPredicatesManager({ stepId, predicates }) {
   </details>`
 }
 
+// Tracks which step's Built-in Heuristic Rules details panel is currently open.
+// Survives renderAll because it's module-level state, not DOM state.
+const defaultRulesDetailsOpen = new Set()
+
 export function renderRulesField({ step }) {
   const stepId = step.id
   const rules = Array.isArray(step.params.rules) ? step.params.rules : []
@@ -1704,11 +1708,11 @@ export function renderRulesField({ step }) {
     : ''
 
   const defaultRulesSection = isHasDefaultRules
-    ? `<div class="mt-2 pl-2 border-l-2 border-amber-700/40">
-        <p class="text-xs text-amber-300/80 mb-1">Default rules (run before user rules; readonly):</p>
+    ? `<div class="pl-2 border-l-2 border-amber-700/40">
+        <p class="text-xs text-amber-300/80 mb-1">Read-only — run before user rules:</p>
         ${defaultRuleCards}
       </div>`
-    : ''
+    : '<p class="text-xs text-slate-500 italic">Enable the checkbox above to use these rules.</p>'
 
   const ruleCards = rules.map((rule, ruleIndex) => {
     const card = renderRuleCard({
@@ -1728,31 +1732,42 @@ export function renderRulesField({ step }) {
 
   const headerInsertStrip = renderInsertRuleStrip({ stepId, insertIndex: 0 })
 
-  // Keep the details open when hasDefaultRules is on so re-renders (triggered
-  // by the checkbox onchange → setParam → renderAll cycle) don't collapse it.
-  const defaultRulesDetailsOpen = isHasDefaultRules ? ' open' : ''
+  // Details panel is open if the user manually opened it OR if hasDefaultRules
+  // was just enabled (auto-open so they see what they're getting). The module-
+  // level Set survives renderAll so predicate clicks don't collapse the panel.
+  if (isHasDefaultRules) defaultRulesDetailsOpen.add(stepId)
+  const detailsOpen = defaultRulesDetailsOpen.has(stepId) ? ' open' : ''
 
   return `<div class="dsl-rules-builder space-y-2" data-step="${stepId}" data-field="rules">
     <div class="flex items-center justify-between">
       <label class="text-xs text-slate-300 font-medium">Rules</label>
     </div>
-    <details${defaultRulesDetailsOpen} class="border border-slate-700 rounded">
+    <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+      <input type="checkbox" ${isHasDefaultRules ? 'checked' : ''} ${onDefaultRulesToggle}
+        class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-amber-500 cursor-pointer" />
+      Prepend built-in heuristic rules
+    </label>
+    <details${detailsOpen} class="border border-slate-700 rounded"
+      ontoggle="dslRules.onDefaultRulesDetailsToggle('${stepId}',this.open)">
       <summary class="cursor-pointer select-none px-2 py-1.5 text-xs text-slate-400 hover:text-slate-300 list-none flex items-center gap-1">
-        <span class="text-slate-500">${isHasDefaultRules ? '▾' : '▸'}</span>
-        Default Rules
+        <span class="text-slate-500">${detailsOpen ? '▾' : '▸'}</span>
+        Built-in Heuristic Rules
       </summary>
       <div class="px-2 pb-2 pt-1 space-y-2">
-        <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
-          <input type="checkbox" ${isHasDefaultRules ? 'checked' : ''} ${onDefaultRulesToggle}
-            class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-amber-500 cursor-pointer" />
-          Prepend built-in heuristic rules
-        </label>
         ${defaultRulesSection}
       </div>
     </details>
     ${renderPredicatesManager({ stepId, predicates })}
     ${rules.length === 0 ? `<p class="text-xs text-slate-500 italic mt-1">No user rules yet.</p>${headerInsertStrip}` : (headerInsertStrip + ruleCards)}
   </div>`
+}
+
+export function onDefaultRulesDetailsToggle(stepId, isOpen) {
+  if (isOpen) {
+    defaultRulesDetailsOpen.add(stepId)
+  } else {
+    defaultRulesDetailsOpen.delete(stepId)
+  }
 }
 
 // ─── Window-global registration ───────────────────────────────────────────────
@@ -1817,5 +1832,6 @@ export function registerDslRulesGlobals() {
     removeApplyIfEntry,
 
     setHasDefaultRules,
+    onDefaultRulesDetailsToggle,
   }
 }
