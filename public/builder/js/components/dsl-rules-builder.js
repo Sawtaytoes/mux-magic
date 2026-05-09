@@ -1732,9 +1732,17 @@ export function renderRulesField({ step }) {
 
   const headerInsertStrip = renderInsertRuleStrip({ stepId, insertIndex: 0 })
 
-  // Details panel is open if the user manually opened it OR if hasDefaultRules
-  // was just enabled (auto-open so they see what they're getting). The module-
-  // level Set survives renderAll so predicate clicks don't collapse the panel.
+  // Snapshot the live DOM state before renderAll replaces the innerHTML.
+  // This is more reliable than ontoggle because some browsers fire the toggle
+  // event when a <details open> element is inserted or removed, corrupting the
+  // module-level Set. Querying the existing DOM at render time gives ground
+  // truth. renderAll calls buildStepsHtmlParts() (which calls here) BEFORE it
+  // writes stepsContainer.innerHTML, so the old DOM is still present.
+  const liveDetails = document.querySelector(`[data-default-rules-details="${stepId}"]`)
+  if (liveDetails) {
+    if (liveDetails.open) defaultRulesDetailsOpen.add(stepId)
+    else defaultRulesDetailsOpen.delete(stepId)
+  }
   if (isHasDefaultRules) defaultRulesDetailsOpen.add(stepId)
   const detailsOpen = defaultRulesDetailsOpen.has(stepId) ? ' open' : ''
 
@@ -1748,6 +1756,7 @@ export function renderRulesField({ step }) {
       Prepend built-in heuristic rules
     </label>
     <details${detailsOpen} class="border border-slate-700 rounded"
+      data-default-rules-details="${stepId}"
       ontoggle="dslRules.onDefaultRulesDetailsToggle('${stepId}',this.open)">
       <summary class="cursor-pointer select-none px-2 py-1.5 text-xs text-slate-400 hover:text-slate-300 list-none flex items-center gap-1">
         <span class="text-slate-500">${detailsOpen ? '▾' : '▸'}</span>

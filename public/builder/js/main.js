@@ -93,6 +93,7 @@ import {
   setParamJson,
   promotePathToPathVar,
   initFieldMin,
+  flushScheduledUpdateUrl,
   browsePathField,
   setLink,
   refreshLinkedInputs,
@@ -372,6 +373,17 @@ window.closeCommandHelpModal = closeCommandHelpModal
 // Delegate path-var-card events on the steps list.
 const stepsEl = document.getElementById('steps-el')
 if (stepsEl) attachPathVarListeners(stepsEl)
+
+// Flush pending URL/path-var updates and blur any focused input when the user
+// refreshes or closes the tab. This ensures number field values (which save
+// on `onchange`/blur) and debounced path-var edits are not lost.
+window.addEventListener('beforeunload', () => {
+  flushScheduledUpdateUrl()
+  const active = document.activeElement
+  if (active && active !== document.body) {
+    active.blur()
+  }
+})
 
 // Initial bootstrap
 initPaths()

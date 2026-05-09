@@ -206,7 +206,7 @@ function confirm() {
     return
   }
   const folders = [...state.selected].sort((a, b) => a.localeCompare(b))
-  window.setParam(state.stepId, state.fieldName, folders.length ? folders : undefined)
+  window.setParamAndRender(state.stepId, state.fieldName, folders.length ? folders : undefined)
   close()
 }
 
@@ -226,7 +226,7 @@ function removeFolder(stepId, fieldName, folderName) {
   }
   const current = Array.isArray(step.params[fieldName]) ? step.params[fieldName] : []
   const updated = current.filter((f) => f !== folderName)
-  window.setParam(stepId, fieldName, updated.length ? updated : undefined)
+  window.setParamAndRender(stepId, fieldName, updated.length ? updated : undefined)
 }
 
 export function registerFolderPickerGlobals() {

@@ -452,6 +452,22 @@ export function onPathFieldFocus(inputElement, stepId, fieldName, value) {
   schedulePathLookup(inputElement, { mode: 'step', stepId, fieldName }, value)
 }
 
+// If the field is linked to a path variable, update the path var's value
+// directly instead of writing step.params (which would be overwritten by
+// refreshLinkedInputs back to the old path var value). Returns true if the
+// update was handled via the path var.
+function updateLinkedPathVar(stepId, fieldName, newValue) {
+  const step = findStepById(stepId)
+  const link = step?.links?.[fieldName]
+  if (typeof link !== 'string') return false
+  const pathVar = paths.find((p) => p.id === link)
+  if (!pathVar) return false
+  pathVar.value = newValue || ''
+  refreshLinkedInputs()
+  scheduleUpdateUrl()
+  return true
+}
+
 // Trim trailing path separator on blur. Typing through the picker
 // leaves a trailing `\` or `/` so the next segment can be typed —
 // once the user moves on, the trailing separator is just visual
@@ -463,7 +479,9 @@ export function onPathFieldBlur(inputElement, stepId, fieldName, value) {
     return
   }
   inputElement.value = trimmed
-  setParam(stepId, fieldName, trimmed || undefined)
+  if (!updateLinkedPathVar(stepId, fieldName, trimmed)) {
+    setParam(stepId, fieldName, trimmed || undefined)
+  }
 }
 
 export function onPathFieldInput(inputElement, stepId, fieldName, value) {
@@ -709,7 +727,9 @@ function applyPathPickerSelection(entry) {
   const newValue = `${base}${separator}${entry.name}${separator}`
   inputElement.value = newValue
   if (target.mode === 'step') {
-    setParam(target.stepId, target.fieldName, newValue)
+    if (!updateLinkedPathVar(target.stepId, target.fieldName, newValue)) {
+      setParam(target.stepId, target.fieldName, newValue)
+    }
   } else {
     window.mediaTools.setPathValue(target.pathVarId, newValue)
   }
@@ -728,7 +748,9 @@ function commitTrimmedPath() {
   if (trimmed !== current) {
     inputElement.value = trimmed
     if (target.mode === 'step') {
-      setParam(target.stepId, target.fieldName, trimmed || undefined)
+      if (!updateLinkedPathVar(target.stepId, target.fieldName, trimmed)) {
+        setParam(target.stepId, target.fieldName, trimmed || undefined)
+      }
     } else {
       window.mediaTools.setPathValue(target.pathVarId, trimmed)
     }
