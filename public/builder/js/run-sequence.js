@@ -23,6 +23,34 @@ import { attachAutocomplete } from './util/name-autocomplete.js'
 let running = false
 const stepLogs = new Map()
 
+// ─── Dry-run mode ─────────────────────────────────────────────────────────────
+
+function isDryRun() {
+  return localStorage.getItem('isDryRun') === '1'
+}
+
+export function toggleDryRun() {
+  localStorage.setItem('isDryRun', isDryRun() ? '0' : '1')
+  syncDryRunUI()
+}
+
+export function syncDryRunUI() {
+  const active = isDryRun()
+  const track = document.getElementById('dry-run-track')
+  const thumb = document.getElementById('dry-run-thumb')
+  const btn = document.getElementById('dry-run-btn')
+  if (!track || !thumb || !btn) return
+  // Track is w-8 (32px) h-4 (16px); thumb is w-3 (12px) with top-px left-px (1px).
+  // On: thumb travels 32 - 12 - 2 = 18px = 1.125rem to land symmetrically at right-px.
+  track.className = `relative shrink-0 inline-flex w-8 h-4 rounded-full border transition-colors ${
+    active ? 'bg-amber-500 border-amber-400' : 'bg-slate-600 border-slate-500'
+  }`
+  thumb.style.transform = active ? 'translateX(1.125rem)' : ''
+  btn.title = active
+    ? 'Dry run ON — simulate commands without touching files (click to disable)'
+    : 'Toggle dry-run mode — simulate commands without touching files'
+}
+
 // ─── Step cancellation ────────────────────────────────────────────────────────
 
 async function cancelStep(stepId) {
@@ -54,7 +82,7 @@ async function runOneStep(step) {
   const params = buildParams(step, { resolveLinks: true })
   let response
   try {
-    response = await fetch(`/commands/${step.command}`, {
+    response = await fetch(`/commands/${step.command}${isDryRun() ? '?fake=1' : ''}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -96,7 +124,7 @@ async function runOneStep(step) {
 async function postSequenceYaml(yaml, onDone) {
   let response
   try {
-    response = await fetch('/sequences/run', {
+    response = await fetch(`/sequences/run${isDryRun() ? '?fake=1' : ''}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ yaml }),
