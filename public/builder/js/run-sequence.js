@@ -116,7 +116,7 @@ async function runOneStep(step) {
   const params = buildParams(step, { resolveLinks: true })
   let response
   try {
-    response = await fetch(`/commands/${step.command}${isDryRun() ? `?fake=${getDryRunFakeParam()}` : ''}`, {
+    response = await fetch(`/commands/${step.command}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),

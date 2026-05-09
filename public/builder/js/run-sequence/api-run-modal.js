@@ -18,7 +18,7 @@ function isDryRun() {
 export async function postSequenceYaml(yaml, onDone) {
   let response
   try {
-    response = await fetch(`/sequences/run${isDryRun() ? '?fake=1' : ''}`, {
+    response = await fetch(`/sequences/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ yaml }),

@@ -2,6 +2,7 @@ import { OpenAPIHono, createRoute } from "@hono/zod-openapi"
 import { streamSSE } from "hono/streaming"
 import { z } from "zod"
 
+import { isFakeRequest } from "../../fake-data/index.js"
 import { cancelJob, getAllJobs, getJob, jobEvents$ } from "../jobStore.js"
 import * as schemas from "../schemas.js"
 import { startSseKeepalive } from "../sseKeepalive.js"
@@ -190,6 +191,9 @@ jobRoutes.openapi(
   }),
   (context) => {
     const id = context.req.param("id")
+    if (isFakeRequest(context)) {
+      return context.body(null, 204)
+    }
     const job = getJob(id)
 
     if (!job) {

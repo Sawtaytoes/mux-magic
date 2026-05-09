@@ -234,6 +234,9 @@ fileRoutes.openapi(
   }),
   async (context) => {
     const { path } = context.req.valid("json")
+    if (isFakeRequest(context)) {
+      return context.json({ ok: true, error: null }, 200)
+    }
     try {
       openInExternalApp(path)
       return context.json({ ok: true, error: null }, 200)
@@ -269,6 +272,14 @@ fileRoutes.openapi(
   }),
   async (context) => {
     const { paths } = context.req.valid("json")
+    if (isFakeRequest(context)) {
+      const result = {
+        ok: true,
+        deleted: paths as string[],
+        errors: [] as Array<{ path: string; reason: string }>,
+      }
+      return context.json(result, 200)
+    }
     const result = await deleteFiles(paths)
     return context.json(result, 200)
   },

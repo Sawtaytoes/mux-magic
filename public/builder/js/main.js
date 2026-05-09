@@ -2,6 +2,28 @@
 // window.mediaTools bridge, and exposes every onclick-referenced function
 // as a window global so HTML event attributes resolve correctly.
 
+// ─── Fetch wrapper for dry-run mode hardening ───────────────────────────────
+// Auto-append ?fake=X to every same-origin request when isDryRun() is on,
+// so mutating endpoints can't accidentally hit the real filesystem. The wrapper
+// is a superset — when dry-run is OFF, behavior is identical to today.
+const originalFetch = globalThis.fetch
+const isDryRunForFetch = () => localStorage.getItem('isDryRun') === '1'
+const isDryRunFailureForFetch = () => localStorage.getItem('dryRunScenario') === 'failure'
+const dryRunQueryString = () => (
+  isDryRunForFetch() ? `?fake=${isDryRunFailureForFetch() ? 'failure' : '1'}` : ''
+)
+globalThis.fetch = function (resource, init) {
+  if (
+    typeof resource === 'string'
+    && !resource.startsWith('http')
+    && !resource.includes('?')
+    && isDryRunForFetch()
+  ) {
+    resource = resource + dryRunQueryString()
+  }
+  return originalFetch.call(this, resource, init)
+}
+
 import {
   renderPathVarCard,
   attachPathVarListeners,

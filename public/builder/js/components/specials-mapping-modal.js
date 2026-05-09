@@ -19,12 +19,6 @@ import {
   rankSuggestions,
 } from '../util/specials-fuzzy.js'
 
-const isDryRun = () => localStorage.getItem('isDryRun') === '1'
-const isDryRunFailure = () => localStorage.getItem('dryRunScenario') === 'failure'
-const dryRunFakeQueryString = () => (
-  isDryRun() ? `?fake=${isDryRunFailure() ? 'failure' : '1'}` : ''
-)
-
 const PLEX_EXTRA_TYPES = [
   { suffix: '', label: '— no type —' },
   { suffix: '-trailer', label: 'Trailer' },
@@ -367,7 +361,7 @@ const handleConfirmClick = async () => {
     const newPath = joinSourcePath({ folder: sourcePath, filename: newFilename })
     const rowStatusElement = plan.row.querySelector('[data-mapping-row-status]')
     try {
-      const response = await fetch(`/files/rename${dryRunFakeQueryString()}`, {
+      const response = await fetch('/files/rename', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ oldPath, newPath }),

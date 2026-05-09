@@ -166,6 +166,56 @@ describe("POST /files/rename", () => {
   })
 })
 
+describe("DELETE /files", () => {
+  beforeEach(() => {
+    vol.fromJSON({
+      "/work/file1.mkv": "video bytes",
+      "/work/file2.mkv": "another video",
+    })
+  })
+
+  afterEach(() => {
+    vol.reset()
+  })
+
+  test("?fake=1 short-circuits with ok:true and never touches disk", async () => {
+    const response = await fileRoutes.request("/files?fake=1", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paths: ["/work/file1.mkv", "/work/file2.mkv"],
+      }),
+    })
+    const body = await response.json() as { ok: boolean; deleted: string[] }
+
+    expect(response.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(body.deleted).toEqual(["/work/file1.mkv", "/work/file2.mkv"])
+    // Real files must still be present — fake path didn't delete.
+    const stillThere1 = await stat("/work/file1.mkv")
+    const stillThere2 = await stat("/work/file2.mkv")
+    expect(stillThere1.isFile()).toBe(true)
+    expect(stillThere2.isFile()).toBe(true)
+  })
+})
+
+describe("POST /files/open-external", () => {
+  test("?fake=1 short-circuits with ok:true", async () => {
+    const response = await fileRoutes.request("/files/open-external?fake=1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path: "/nonexistent/file.mkv",
+      }),
+    })
+    const body = await response.json() as { ok: boolean; error: string | null }
+
+    expect(response.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(body.error).toBeNull()
+  })
+})
+
 describe("GET /files/audio-codec", () => {
   afterEach(() => {
     vi.clearAllMocks()
