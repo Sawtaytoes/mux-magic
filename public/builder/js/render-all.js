@@ -87,9 +87,9 @@ function buildStepsHtmlParts() {
       )
       accumulator.flatStepIndex += 1
     }
-    accumulator.parts.push(renderInsertDivider(itemIndex + 1))
+    accumulator.parts.push(renderInsertDivider({ index: itemIndex + 1 }))
     return accumulator
-  }, { parts: [renderInsertDivider(0)], flatStepIndex: 0 })
+  }, { parts: [renderInsertDivider({ index: 0 })], flatStepIndex: 0 })
   stepParts.push(renderSequenceEndCard())
   return stepParts
 }

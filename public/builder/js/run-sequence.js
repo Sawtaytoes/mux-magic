@@ -574,7 +574,7 @@ export function updateStepUI(step) {
   // Status badge
   let badge = card.querySelector('.status-badge')
   if (step.status) {
-    const html = renderStatusBadge(step.status)
+    const html = renderStatusBadge({ status: step.status })
     if (badge) {
       badge.outerHTML = html
     } else {

@@ -1,91 +1,18 @@
-// ─── Step / group renderer ────────────────────────────────────────────────────
-//
-// Produces the HTML strings for renderAll: step cards, group containers,
-// insert dividers, status badges, field rows, and the sequence-end card.
-
 import { COMMANDS } from './commands.js'
 import { renderRulesField } from './components/dsl-rules-builder.js'
 import { steps, paths, flattenSteps, isGroup, getLinkedValue } from './sequence-state.js'
+import { esc } from './util/html-escape.js'
+import { renderCollapseChevron } from './components/collapse-chevron.js'
+import { renderCopyIcon } from './components/copy-icon.js'
+import { renderDoubleChevron } from './components/double-chevron.js'
+import { renderStatusBadge } from './components/status-badge.js'
 
 // commandLabel is provided by the global /command-labels.js script.
 const commandLabel = (name) => (typeof window.commandLabel === 'function' ? window.commandLabel(name) : name)
 
-// ─── HTML escape ──────────────────────────────────────────────────────────────
-
-export function esc(v) {
-  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-}
-
-// ─── Icon helpers ─────────────────────────────────────────────────────────────
-
-export function renderCollapseChevron(isCollapsed) {
-  const rotateClass = isCollapsed ? '-rotate-90' : ''
-  return `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 transition-transform ${rotateClass}">
-    <polyline points="5,8 10,13 15,8" />
-  </svg>`
-}
-
-export function renderCopyIcon() {
-  return `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
-    <rect x="7" y="7" width="9" height="10" rx="1.5" />
-    <path d="M4 13V5.5A1.5 1.5 0 0 1 5.5 4H12" />
-  </svg>`
-}
-
-export function renderDoubleChevron(isCollapsedDirection) {
-  const rotateClass = isCollapsedDirection ? '-rotate-90' : ''
-  return `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 transition-transform ${rotateClass}">
-    <polyline points="5,5 10,10 15,5" />
-    <polyline points="5,11 10,16 15,11" />
-  </svg>`
-}
-
-// ─── Insert divider ───────────────────────────────────────────────────────────
-
-export function renderInsertDivider(index) {
-  return `<div class="col-span-full flex items-center group -my-0.5">
-    <div class="flex-1 h-px bg-slate-700/50 group-hover:bg-slate-600 transition-colors"></div>
-    <div class="flex items-center gap-1 mx-1">
-      <button onclick="insertAt(${index})" title="Insert a step here"
-        class="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-blue-400 rounded-full border border-transparent hover:border-blue-500/40 hover:bg-slate-800 transition-all whitespace-nowrap">
-        ➕ Step
-      </button>
-      <button onclick="insertGroupAt(${index}, false)" title="Insert a sequential group here"
-        class="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-blue-400 rounded-full border border-transparent hover:border-blue-500/40 hover:bg-slate-800 transition-all whitespace-nowrap">
-        ➕ Group
-      </button>
-      <button onclick="insertGroupAt(${index}, true)" title="Insert a parallel group here"
-        class="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-blue-400 rounded-full border border-transparent hover:border-blue-500/40 hover:bg-slate-800 transition-all whitespace-nowrap">
-        ➕ Parallel
-      </button>
-      <button onclick="pasteCardAt({itemIndex: ${index}}, this)" title="Paste a copied step or group here"
-        class="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-emerald-400 rounded-full border border-transparent hover:border-emerald-500/40 hover:bg-slate-800 transition-all whitespace-nowrap">
-        📋 Paste
-      </button>
-    </div>
-    <div class="flex-1 h-px bg-slate-700/50 group-hover:bg-slate-600 transition-colors"></div>
-  </div>`
-}
-
-export function renderSequenceEndCard() {
-  return `<div class="col-span-full bg-slate-800/30 rounded-xl border border-dashed border-slate-700 px-4 py-2.5 flex items-center justify-center gap-2 select-none">
-    <span class="text-slate-600">⏹</span>
-    <span class="text-xs font-medium text-slate-500">End of Sequence</span>
-  </div>`
-}
-
-// ─── Status badge ─────────────────────────────────────────────────────────────
-
-export function renderStatusBadge(status) {
-  const map = {
-    pending:   'bg-blue-950 text-blue-300',
-    running:   'bg-blue-950 text-blue-400 animate-pulse',
-    completed: 'bg-emerald-950 text-emerald-400',
-    failed:    'bg-red-950 text-red-400',
-    cancelled: 'bg-slate-700 text-slate-300',
-  }
-  return `<span class="status-badge shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${map[status] ?? ''}">${esc(status)}</span>`
-}
+export { esc, renderCollapseChevron, renderCopyIcon, renderDoubleChevron, renderStatusBadge }
+export { renderInsertDivider } from './components/insert-divider.js'
+export { renderSequenceEndCard } from './components/sequence-end-card.js'
 
 // ─── Group renderer ───────────────────────────────────────────────────────────
 
@@ -115,7 +42,7 @@ export function renderGroup(group, itemIndex, startingFlatIndex) {
       class="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 select-none">⠿</button>
     <button onclick="toggleGroupCollapsed('${group.id}')" title="${group.isCollapsed ? 'Expand group' : 'Collapse group'}"
       class="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700">
-      ${renderCollapseChevron(group.isCollapsed)}
+      ${renderCollapseChevron({ isCollapsed: group.isCollapsed })}
     </button>
     <input type="text" value="${esc(group.label)}"
       placeholder="${isParallel ? 'Parallel group' : 'Group'} (${stepCount} step${stepCount === 1 ? '' : 's'})"
@@ -124,9 +51,9 @@ export function renderGroup(group, itemIndex, startingFlatIndex) {
       class="flex-1 min-w-0 bg-transparent text-sm font-medium text-slate-200 px-1.5 py-0.5 rounded border-0 focus:outline-none focus:bg-slate-900/40 placeholder:text-slate-300 placeholder:font-medium" />
     ${parallelBadge}
     <button onclick="setGroupChildrenCollapsed('${group.id}', true)" title="Collapse all inner steps"
-      class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700">${renderDoubleChevron(true)}</button>
+      class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700">${renderDoubleChevron({ isCollapsed: true })}</button>
     <button onclick="setGroupChildrenCollapsed('${group.id}', false)" title="Expand all inner steps"
-      class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700">${renderDoubleChevron(false)}</button>
+      class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700">${renderDoubleChevron({ isCollapsed: false })}</button>
     <button onclick="addStepToGroup('${group.id}')" title="Add a step inside this group"
       class="text-[10px] text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded border border-slate-700 hover:border-slate-500">+ Step</button>
     <button onclick="pasteCardAt({parentGroupId: '${group.id}'}, this)" title="Paste a copied step into this group"
@@ -162,7 +89,7 @@ export function isDrawerMode() {
 
 export function renderStepCompact(step, index, context = {}) {
   const cmd = step.command ? COMMANDS[step.command] : null
-  const statusBadge = step.status ? renderStatusBadge(step.status) : ''
+  const statusBadge = step.status ? renderStatusBadge({ status: step.status }) : ''
   const siblings = context.parentGroupId
     ? (steps.find((item) => isGroup(item) && item.id === context.parentGroupId)?.steps ?? [])
     : steps
@@ -218,7 +145,7 @@ export function renderStepCompact(step, index, context = {}) {
 
 export function renderStep(step, index, context = {}) {
   const cmd = step.command ? COMMANDS[step.command] : null
-  const statusBadge = step.status ? renderStatusBadge(step.status) : ''
+  const statusBadge = step.status ? renderStatusBadge({ status: step.status }) : ''
   const siblings = context.parentGroupId
     ? (steps.find((item) => isGroup(item) && item.id === context.parentGroupId)?.steps ?? [])
     : steps
@@ -245,7 +172,7 @@ export function renderStep(step, index, context = {}) {
       class="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 shrink-0 select-none">⠿</button>
     <button onclick="toggleStepCollapsed('${step.id}')" title="${step.isCollapsed ? 'Expand step' : 'Collapse step'}"
       class="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 shrink-0">
-      ${renderCollapseChevron(step.isCollapsed)}
+      ${renderCollapseChevron({ isCollapsed: step.isCollapsed })}
     </button>
     <span class="text-xs font-mono text-slate-500 shrink-0 w-5 text-center">${index + 1}</span>
     <input type="text" value="${esc(step.alias)}"
