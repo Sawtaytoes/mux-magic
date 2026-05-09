@@ -547,6 +547,7 @@ export async function confirmFileExplorerDelete() {
 const videoModal = () => document.getElementById('video-modal')
 const videoPlayer = () => document.getElementById('video-modal-player')
 const videoNameLabel = () => document.getElementById('video-modal-name')
+const videoModalStatus = () => document.getElementById('video-modal-status')
 
 // Mediainfo Format strings (case-insensitive) that no major browser
 // will decode in <video>. When the source's first audio track matches,
@@ -649,16 +650,19 @@ export async function openVideoModal(absolutePath) {
   // between /files/stream (browser-decodable) and /transcode/audio
   // (Opus re-encode for DTS / TrueHD / AC-3 / etc.).
   const audioFormat = await fetchAudioFormat(absolutePath)
-  player.src = buildPlaybackUrl(absolutePath, audioFormat)
+  const playbackUrl = buildPlaybackUrl(absolutePath, audioFormat)
+  const isTranscodingAudio = playbackUrl.includes('/transcode/audio')
+  videoModalStatus().classList.toggle('hidden', !isTranscodingAudio)
+  player.addEventListener('canplay', () => {
+    videoModalStatus().classList.add('hidden')
+  }, { once: true })
+  player.src = playbackUrl
   // The HTML attribute handles autoplay on the first open, but the
   // <video> element is reused across subsequent opens — changing src
   // doesn't re-trigger the attribute, so call play() explicitly. The
   // user's click on ▶ counts as a user gesture so autoplay policies
-  // allow this. play() returns a Promise that rejects when the codec
-  // is unsupported (HEVC on browsers without hardware decode); swallow
-  // it since the controls + the codec-caveat footer make the failure
-  // obvious.
-  player.play().catch(() => { /* unsupported codec; user falls back to VLC */ })
+  // allow this.
+  player.play().catch(() => {})
   // Wire per-open buttons so each closure captures the path currently
   // shown — onclick assignment overwrites any previous handler so we
   // don't accumulate stale closures across opens.
@@ -716,4 +720,5 @@ export function closeVideoModal(event) {
     player.load()
   }
   if (videoModal()) videoModal().classList.add('hidden')
+  videoModalStatus().classList.add('hidden')
 }

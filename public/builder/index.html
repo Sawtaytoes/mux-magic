@@ -294,11 +294,9 @@ await enableMocksIfRequested()
         <button onclick="closeVideoModal()" class="text-slate-300 hover:text-white text-lg leading-none w-7 h-7 flex items-center justify-center rounded hover:bg-slate-700">✕</button>
       </div>
     </div>
-    <div class="flex-1 min-h-0 flex items-center justify-center bg-black">
+    <div class="flex-1 min-h-0 flex flex-col items-center justify-center bg-black gap-2">
+      <p id="video-modal-status" class="hidden text-slate-400 text-sm animate-pulse">Transcoding audio — first play may take a moment…</p>
       <video id="video-modal-player" class="max-w-full max-h-full" controls preload="metadata" autoplay></video>
-    </div>
-    <div class="shrink-0 px-4 py-2 border-t-2 border-slate-400 bg-slate-800 text-[11px] text-slate-300 rounded-b-lg">
-      Many disc rips use codecs (DTS, TrueHD, HEVC) browsers can't decode natively. If playback fails or audio is missing, copy the path and open in VLC.
     </div>
   </div>
 </div>
