@@ -1,0 +1,35 @@
+name: Publish @media-tools/shared
+
+# Triggered by tags of the form `shared-vX.Y.Z`. Tag from local:
+#   git tag shared-v0.1.0 && git push --tags
+#
+# Requires the NPM_TOKEN repo secret to be set (an automation token from
+# npmjs.com with publish access to the @media-tools scope).
+#
+# This workflow is part of the React migration bootstrap (PR #1) but the
+# first publish is deferred — see docs/react-migration-checklist.md
+# "Open Questions / Blockers". The first time it runs in anger should be
+# right before media-sync's first @media-tools/shared consumer PR lands.
+on:
+  push:
+    tags:
+      - "shared-v*.*.*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn workspace @media-tools/shared run build
+      - run: yarn workspace @media-tools/shared npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
