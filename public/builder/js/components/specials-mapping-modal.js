@@ -406,8 +406,22 @@ export const openSpecialsMappingModal = async ({
     sourcePath,
   })
   // Filter out filenames no longer on disk (renamed in a prior session).
-  const presentFilenames = existingFilenames
-    ? unrenamedFilenames.filter((f) => existingFilenames.has(f))
+  // Disk entries include extensions (e.g. "SOLDIER_t00.mkv") while
+  // unrenamedFilenames may be bare stems — compare stems to avoid false
+  // misses when the extension is missing from one side.
+  const existingStems = existingFilenames
+    ? new Set(Array.from(existingFilenames).map((name) => {
+        const dot = name.lastIndexOf('.')
+        return dot > 0 ? name.slice(0, dot) : name
+      }))
+    : null
+  const presentFilenames = existingStems
+    ? unrenamedFilenames.filter((f) => {
+        if (existingFilenames.has(f)) return true
+        const dot = f.lastIndexOf('.')
+        const stem = dot > 0 ? f.slice(0, dot) : f
+        return existingStems.has(stem)
+      })
     : unrenamedFilenames
   if (presentFilenames.length === 0) {
     const gone = unrenamedFilenames.length

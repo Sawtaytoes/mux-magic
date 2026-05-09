@@ -709,14 +709,15 @@ function formatStepResults(step) {
       item && typeof item === 'object' && Array.isArray(item.unrenamedFilenames)
     ))
     const renamePairs = summaryRecord ? results.filter((item) => item !== summaryRecord) : results
-    const allRenamePairs = renamePairs.every((item) => (
+    // Strip collision entries (no oldName/newName — they appear in unrenamedFilenames already).
+    const validRenamePairs = renamePairs.filter((item) => (
       item && typeof item === 'object'
       && typeof item.oldName === 'string'
       && typeof item.newName === 'string'
     ))
-    if (allRenamePairs && (renamePairs.length > 0 || summaryRecord)) {
+    if (validRenamePairs.length > 0 || summaryRecord) {
       return {
-        html: renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord),
+        html: renderNameSpecialFeaturesResultsHtml(step, validRenamePairs, summaryRecord),
         wire: (body) => wireNameSpecialFeaturesResults({ body, step, summaryRecord }),
       }
     }
@@ -794,7 +795,7 @@ function renderNameSpecialFeaturesResultsHtml(step, renamePairs, summaryRecord) 
 function renderInteractiveRenameBlock({ filenames, linkBlock }) {
   const rowsHtml = filenames.map((filename, index) => `
     <div class="flex flex-col gap-1 py-1.5 border-b border-yellow-700/30 last:border-b-0" data-rename-row data-rename-index="${index}" data-rename-filename="${esc(filename)}">
-      <div class="flex items-center gap-2">
+      <div class="flex items-start gap-2">
         <div class="font-mono text-xs break-words text-yellow-100 flex-1">${esc(filename)}</div>
         <button type="button" data-rename-play class="text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-medium leading-none shrink-0" title="Preview this file">&#9654; Play</button>
       </div>
