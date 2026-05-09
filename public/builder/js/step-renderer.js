@@ -386,7 +386,7 @@ function renderFieldHtml(step, field, stepIndex) {
   if (field.type === 'boolean') {
     const checked = val ?? field.default ?? false
     return `<label class="flex items-center gap-2 cursor-pointer select-none py-0.5" data-tooltip-key="${esc(tooltipKey)}">
-      <input type="checkbox" ${checked ? 'checked' : ''} onchange="setParam('${step.id}','${field.name}',this.checked)"
+      <input type="checkbox" ${checked ? 'checked' : ''} onchange="setParamAndRender('${step.id}','${field.name}',this.checked)"
         class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer" />
       <span class="text-xs text-slate-300">${esc(field.label)}</span>
     </label>`
@@ -509,7 +509,11 @@ function renderFieldHtml(step, field, stepIndex) {
 
     if (field.type === 'folderMultiSelect') {
       const folders = Array.isArray(val) ? val : []
-      const sourceValue = field.sourceField ? (step.params[field.sourceField] ?? '') : ''
+      // Resolve through path-variable link — after YAML reload the raw param is
+      // empty and the actual value lives in the linked path variable.
+      const sourceValue = field.sourceField
+        ? (getLinkedValue(step, field.sourceField) ?? step.params[field.sourceField] ?? '')
+        : ''
       const openArgs = `{stepId:'${step.id}',fieldName:'${esc(field.name)}',sourceValue:'${esc(sourceValue)}'}`
       const tags = folders.map((folder) => `
         <span class="inline-flex items-center gap-1 bg-slate-700 text-slate-200 text-xs rounded px-1.5 py-0.5 font-mono">

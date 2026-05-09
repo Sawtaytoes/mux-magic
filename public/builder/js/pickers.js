@@ -5,7 +5,7 @@
 // filesystem typeahead.
 
 import { COMMANDS, TAG_ORDER } from './commands.js'
-import { findStepById, flattenSteps, paths } from './sequence-state.js'
+import { findStepById, flattenSteps, paths, randomHex } from './sequence-state.js'
 import { stepOutput } from './sequence-state.js'
 import { setParam, setLink, refreshLinkedInputs, scheduleUpdateUrl } from './sequence-editor.js'
 import { esc } from './step-renderer.js'
@@ -327,13 +327,13 @@ function buildLinkPickerItems(stepId, fieldName) {
   const flatOrder = flattenSteps()
   const currentIndex = flatOrder.findIndex((entry) => entry.step.id === stepId)
   if (currentIndex < 0) return []
-  // No '— custom —' item: closing the picker and typing in the path
-  // input itself is now the way to enter a new path. The footer hint in
-  // the popover (index.html) tells the user this. The path-input handler
-  // (onPathFieldInput) clears any existing link on first keystroke and
-  // promotePathToPathVar (on blur) saves the typed value as a new path
-  // var (or reuses an existing one with the same value).
-  const items = []
+  // '— Custom Path —' creates a new independent path variable from whatever
+  // the user has currently typed. This lets them branch: e.g. two steps that
+  // started from the same base path can diverge without editing each other's
+  // path variable.
+  const items = [
+    { kind: 'custom', value: 'custom', label: '— Custom Path —', detail: 'Create a new independent path variable' },
+  ]
   paths.forEach((pathVar) => {
     items.push({
       kind: 'path',
@@ -412,6 +412,25 @@ export const linkPicker = createPopoverPicker({
     return `<div class="${labelClass}">${esc(item.label)}</div>${detail}`
   },
   onSelect: (item, anchor) => {
+    if (item.kind === 'custom') {
+      // Read the current field value (may be in a linked path var or the raw param).
+      const step = findStepById(anchor.stepId)
+      const currentRaw = step?.params?.[anchor.fieldName] ?? ''
+      const currentLinked = (() => {
+        const link = step?.links?.[anchor.fieldName]
+        if (typeof link === 'string') {
+          return paths.find((p) => p.id === link)?.value ?? ''
+        }
+        return ''
+      })()
+      const currentValue = (currentLinked || currentRaw).trim()
+      const newPath = { id: 'path_' + randomHex(), label: 'Path ' + paths.length, value: currentValue }
+      paths.push(newPath)
+      setLink(anchor.stepId, anchor.fieldName, `path:${newPath.id}`)
+      refreshLinkPickerTrigger(anchor.stepId, anchor.fieldName)
+      window.mediaTools?.renderAll?.()
+      return
+    }
     setLink(anchor.stepId, anchor.fieldName, item.value)
     refreshLinkPickerTrigger(anchor.stepId, anchor.fieldName)
   },
@@ -448,17 +467,52 @@ export function onPathFieldBlur(inputElement, stepId, fieldName, value) {
 }
 
 export function onPathFieldInput(inputElement, stepId, fieldName, value) {
-  // If the field is currently linked to a path variable (string link),
-  // typing in it is an override — clear the link so the user's value
-  // sticks instead of being overwritten by the next render reading
-  // `getLinkedValue` from the still-set link. Step-output links
-  // (object form) stay readonly in the renderer, so we won't reach
-  // here for them; the typeof guard is defence-in-depth anyway.
   const step = findStepById(stepId)
-  if (step?.links?.[fieldName] && typeof step.links[fieldName] === 'string') {
-    delete step.links[fieldName]
+  if (!step) {
+    schedulePathLookup(inputElement, { mode: 'step', stepId, fieldName }, value)
+    return
   }
-  setParam(stepId, fieldName, value || undefined)
+
+  const link = step.links?.[fieldName]
+
+  if (link && typeof link === 'string') {
+    // Already linked to a path variable — update its value in-place so all
+    // other steps that reference the same path variable see the change too,
+    // without needing a full re-render (which would destroy the cursor).
+    const pathVar = paths.find((p) => p.id === link)
+    if (pathVar) {
+      pathVar.value = value || ''
+      scheduleUpdateUrl()
+      schedulePathLookup(inputElement, { mode: 'step', stepId, fieldName }, value)
+      return
+    }
+  }
+
+  // Not yet linked — create and link a path variable on the very first
+  // keystroke. Subsequent keystrokes hit the branch above and update the
+  // same variable. This prevents blur (e.g. clicking the link picker) from
+  // triggering promotePathToPathVar and creating a duplicate.
+  const trimmed = (value ?? '').trim()
+  if (trimmed) {
+    const existing = paths.find((p) => p.value === trimmed)
+    if (existing) {
+      step.links[fieldName] = existing.id
+      delete step.params[fieldName]
+    } else if (paths.length > 0 && paths[0].id === 'basePath' && !paths[0].value) {
+      paths[0].value = trimmed
+      step.links[fieldName] = paths[0].id
+      delete step.params[fieldName]
+    } else {
+      const newPath = { id: 'path_' + randomHex(), label: 'Path ' + paths.length, value: trimmed }
+      paths.push(newPath)
+      step.links[fieldName] = newPath.id
+      delete step.params[fieldName]
+    }
+    scheduleUpdateUrl()
+  } else {
+    setParam(stepId, fieldName, undefined)
+  }
+
   schedulePathLookup(inputElement, { mode: 'step', stepId, fieldName }, value)
 }
 

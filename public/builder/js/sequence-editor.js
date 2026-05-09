@@ -391,8 +391,18 @@ export function setParam(id, fieldName, value) {
   }
   step.params[fieldName] = value
   refreshLinkedInputs()
-  bridge().renderAll?.()
+  bridge().updateYaml()
   updateUrl()
+}
+
+// Like setParam, but also triggers a full re-render so that fields with
+// visibleWhen conditions (e.g. Depth shown only when Recursive is checked)
+// update immediately. Only use for fields whose change should affect
+// other fields' visibility — not for free-text inputs where re-rendering
+// on every keystroke destroys cursor position.
+export function setParamAndRender(id, fieldName, value) {
+  setParam(id, fieldName, value)
+  bridge().renderAll?.()
 }
 
 export function setParamJson(id, field, raw) {

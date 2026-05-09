@@ -89,6 +89,7 @@ import {
   stepAliasBlur,
   toggleStepActions,
   setParam,
+  setParamAndRender,
   setParamJson,
   promotePathToPathVar,
   browsePathField,
@@ -289,6 +290,7 @@ window.stepAliasKeydown = stepAliasKeydown
 window.stepAliasBlur = stepAliasBlur
 window.toggleStepActions = toggleStepActions
 window.setParam = setParam
+window.setParamAndRender = setParamAndRender
 window.setParamJson = setParamJson
 window.promotePathToPathVar = promotePathToPathVar
 window.browsePathField = browsePathField

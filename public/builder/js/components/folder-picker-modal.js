@@ -91,6 +91,9 @@ function renderBody() {
   body.innerHTML = state.entries.map((name) => {
     const isSelected = state.selected.has(name)
     const safeAttr = name.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+    const checkBox = isSelected
+      ? `<span class="w-3.5 h-3.5 shrink-0 rounded flex items-center justify-center bg-blue-500 border border-blue-400 text-white text-[10px] leading-none">✓</span>`
+      : `<span class="w-3.5 h-3.5 shrink-0 rounded border border-slate-500 bg-slate-700"></span>`
     return `
       <button data-folder-name="${safeAttr}" onclick="folderPicker.toggleFolderFromEl(this)"
         class="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-xs transition-colors ${
@@ -98,7 +101,7 @@ function renderBody() {
           ? 'bg-blue-600/30 border border-blue-500/50 text-blue-200'
           : 'hover:bg-slate-800 border border-transparent text-slate-300'
         }">
-        <span class="text-base leading-none">${isSelected ? '☑' : '☐'}</span>
+        ${checkBox}
         <span class="font-mono truncate">📁 ${safeAttr}</span>
       </button>
     `
