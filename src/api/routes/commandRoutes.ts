@@ -2,7 +2,7 @@ import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi"
 import { type Context } from "hono"
 import { type Observable } from "rxjs"
 
-import { getEffectiveCommandConfigs, isFakeRequest } from "../../fake-data/index.js"
+import { getFakeScenario, getEffectiveCommandConfigs, isFakeRequest } from "../../fake-data/index.js"
 import { makeDirectory } from "../../tools/makeDirectory.js"
 import { changeTrackLanguages } from "../../app-commands/changeTrackLanguages.js"
 import { copyFiles } from "../../app-commands/copyFiles.js"
@@ -459,7 +459,7 @@ commandNames.forEach((commandName) => {
     async (context) => {
       const body = context.req.valid("json")
       const useFake = isFakeRequest(context)
-      const effectiveConfig = getEffectiveCommandConfigs(useFake)[commandName]
+      const effectiveConfig = getEffectiveCommandConfigs(useFake, getFakeScenario(context))[commandName]
       return startCommandJob({
         command: commandName,
         commandObservable: effectiveConfig.getObservable(body),

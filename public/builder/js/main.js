@@ -122,6 +122,7 @@ import {
   copyApiRunLogs,
   attachCopyButtonListener,
   toggleDryRun,
+  toggleFailureMode,
   syncDryRunUI,
 } from './run-sequence.js'
 import {
@@ -319,6 +320,8 @@ window.cancelApiRun = cancelApiRun
 window.copyApiRunLogs = copyApiRunLogs
 window.closeApiRunModal = (event) => closeApiRunModal(event)
 window.toggleDryRun = toggleDryRun
+// @ts-ignore
+window.toggleFailureMode = toggleFailureMode
 
 // lookup modal
 window.openLookup = openLookup

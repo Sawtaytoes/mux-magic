@@ -29,7 +29,7 @@ export const makeDirectoryRequestSchema = z.object({
 
 export const copyFilesRequestSchema = z.object({
   sourcePath: z.string().describe("Directory to copy files from."),
-  destinationPath: z.string().describe("Directory to copy files into. Created if it does not already exist."),
+  destinationPath: z.string().default("").describe("Directory to copy files into. Created if it does not already exist."),
 })
 
 export const flattenOutputRequestSchema = z.object({
@@ -39,7 +39,7 @@ export const flattenOutputRequestSchema = z.object({
 
 export const moveFilesRequestSchema = z.object({
   sourcePath: z.string().describe("Directory to move files from. Deleted after all files are copied."),
-  destinationPath: z.string().describe("Directory to move files into. Created if it does not already exist."),
+  destinationPath: z.string().default("").describe("Directory to move files into. Created if it does not already exist."),
 })
 
 export const extractSubtitlesRequestSchema = z.object({

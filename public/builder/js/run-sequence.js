@@ -29,28 +29,66 @@ function isDryRun() {
   return localStorage.getItem('isDryRun') === '1'
 }
 
+function isDryRunFailure() {
+  return localStorage.getItem('dryRunScenario') === 'failure'
+}
+
+// Returns the ?fake= value for current dry-run state.
+function getDryRunFakeParam() {
+  return isDryRunFailure() ? 'failure' : '1'
+}
+
 export function toggleDryRun() {
-  localStorage.setItem('isDryRun', isDryRun() ? '0' : '1')
+  const next = !isDryRun()
+  localStorage.setItem('isDryRun', next ? '1' : '0')
+  if (!next) localStorage.removeItem('dryRunScenario')
   syncDryRunUI()
+}
+
+export function toggleFailureMode() {
+  if (isDryRunFailure()) {
+    localStorage.removeItem('dryRunScenario')
+  } else {
+    localStorage.setItem('dryRunScenario', 'failure')
+  }
+  syncDryRunUI()
+}
+
+/**
+ * @param {string} trackId
+ * @param {string} thumbId
+ * @param {boolean} active
+ * @param {string} activeClass
+ */
+function syncToggle(trackId, thumbId, active, activeClass) {
+  const track = document.getElementById(trackId)
+  const thumb = document.getElementById(thumbId)
+  if (!track || !thumb) return
+  // Track: w-8 (32px) with 1px border each side = 30px inner width.
+  // Thumb: w-3 (12px), top-px left-px (1px). Travel: 30 - 12 - 2 = 16px = 1rem.
+  track.className = `relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden border transition-colors ${
+    active ? activeClass : 'bg-slate-600 border-slate-500'
+  }`
+  thumb.style.transform = active ? 'translateX(1rem)' : ''
 }
 
 export function syncDryRunUI() {
   const active = isDryRun()
-  const track = document.getElementById('dry-run-track')
-  const thumb = document.getElementById('dry-run-thumb')
+  const failureActive = active && isDryRunFailure()
   const btn = document.getElementById('dry-run-btn')
   const badge = document.getElementById('dry-run-badge')
-  if (!track || !thumb || !btn) return
-  // Track: w-8 (32px) with 1px border each side = 30px inner width.
-  // Thumb: w-3 (12px), top-px left-px (1px offset). On: 30 - 12 - 2×1 = 16px = 1rem travel.
-  track.className = `relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden border transition-colors ${
-    active ? 'bg-amber-500 border-amber-400' : 'bg-slate-600 border-slate-500'
-  }`
-  thumb.style.transform = active ? 'translateX(1rem)' : ''
+  const failureBtn = document.getElementById('failure-mode-btn')
+
+  syncToggle('dry-run-track', 'dry-run-thumb', active, 'bg-amber-500 border-amber-400')
+  syncToggle('failure-mode-track', 'failure-mode-thumb', failureActive, 'bg-red-600 border-red-500')
+
   if (badge) badge.classList.toggle('hidden', !active)
-  btn.title = active
-    ? 'Dry run ON — simulate commands without touching files (click to disable)'
-    : 'Toggle dry-run mode — simulate commands without touching files'
+  if (failureBtn) failureBtn.classList.toggle('hidden', !active)
+  if (btn) {
+    btn.title = active
+      ? 'Dry run ON — simulate commands without touching files (click to disable)'
+      : 'Toggle dry-run mode — simulate commands without touching files'
+  }
 }
 
 // ─── Step cancellation ────────────────────────────────────────────────────────
@@ -84,7 +122,7 @@ async function runOneStep(step) {
   const params = buildParams(step, { resolveLinks: true })
   let response
   try {
-    response = await fetch(`/commands/${step.command}${isDryRun() ? '?fake=1' : ''}`, {
+    response = await fetch(`/commands/${step.command}${isDryRun() ? `?fake=${getDryRunFakeParam()}` : ''}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -126,7 +164,7 @@ async function runOneStep(step) {
 async function postSequenceYaml(yaml, onDone) {
   let response
   try {
-    response = await fetch(`/sequences/run${isDryRun() ? '?fake=1' : ''}`, {
+    response = await fetch(`/sequences/run${isDryRun() ? `?fake=${getDryRunFakeParam()}` : ''}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ yaml }),
