@@ -362,8 +362,8 @@ export function updateStepUI(step) {
     if (badge) {
       badge.outerHTML = html
     } else {
-      const btns = card.querySelector('.flex.items-center.gap-1.shrink-0')
-      if (btns) btns.insertAdjacentHTML('beforebegin', html)
+      const trigger = card.querySelector('[data-cmd-picker-trigger]')
+      if (trigger) trigger.insertAdjacentHTML('afterend', html)
     }
   }
 

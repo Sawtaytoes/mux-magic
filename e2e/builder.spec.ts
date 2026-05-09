@@ -14,15 +14,22 @@ async function openControlsMenu(page: Page) {
 }
 
 async function addStep(page: Page) {
+  // #steps-el starts empty; wait until renderAll() populates it. The module
+  // bootstrap has a CDN import (esm.sh/msw) that can delay main.js execution
+  // past the 'load' event in some Chromium builds, so isVisible() alone is
+  // not sufficient — we need an explicit DOM-ready signal first.
+  await page.waitForFunction(
+    () => (document.getElementById("steps-el")?.childElementCount ?? 0) > 0,
+    { timeout: 10_000 },
+  )
   const emptyState = page.getByRole("button", { name: /Add your first step/ })
-  if (await emptyState.isVisible().catch(() => false)) {
+  if (await emptyState.isVisible()) {
     await emptyState.click()
     return
   }
   // Many "+ Step" buttons (one per divider). The trailing one always
   // appends, mirroring the old header-button semantics.
-  const stepButtons = page.getByRole("button", { name: /^➕ Step$/ })
-  await stepButtons.last().click()
+  await page.getByRole("button", { name: /^➕ Step$/ }).last().click()
 }
 
 test.describe("Sequence Builder", () => {
