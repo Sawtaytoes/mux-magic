@@ -46,7 +46,7 @@ await enableMocksIfRequested()
       <h1 class="text-lg font-bold tracking-tight">
         <a href="/" class="text-slate-100 hover:text-blue-300 transition-colors">Sequence Builder</a>
       </h1>
-      <span id="dry-run-badge" class="hidden text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 self-center select-none">DRY RUN</span>
+      <button id="dry-run-badge" onclick="toggleDryRun()" class="hidden text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 self-center" title="Dry run ON — click to disable">DRY RUN</button>
       <div id="page-actions-nav" class="page-menu page-menu-nav">
         <div class="page-menu-group">
           <button onclick="startNewSequence()" title="Clear the current sequence and start fresh (Ctrl+Z to undo)"

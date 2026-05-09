@@ -8,6 +8,7 @@
 import { http, HttpResponse, delay } from "https://esm.sh/msw@2.14.4"
 
 import {
+  commandJobMap,
   mockDirectoryEntries,
   mockFilesList,
   mockJobIds,
@@ -148,18 +149,20 @@ export const handlers = [
     )
   )),
 
-  // Real production path for single-command create — used by the
-  // builder's "Run via API" modal. Same response shape.
-  http.post("*/commands/:name", async () => (
-    HttpResponse.json(
+  // Real production path for single-command create. Dispatches to a
+  // command-specific fixture job when one exists, otherwise falls back to
+  // the generic succeeded job so unknown commands still get a response.
+  http.post("*/commands/:name", async ({ params }) => {
+    const jobId = commandJobMap[String(params.name)] ?? mockJobIds.succeededJobId
+    return HttpResponse.json(
       {
-        jobId: mockJobIds.succeededJobId,
-        logsUrl: `/jobs/${mockJobIds.succeededJobId}/logs`,
+        jobId,
+        logsUrl: `/jobs/${jobId}/logs`,
         outputFolderName: null,
       },
       { status: 202 },
     )
-  )),
+  }),
 
   http.post("*/sequences/run", async () => (
     HttpResponse.json(
