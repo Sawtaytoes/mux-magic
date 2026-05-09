@@ -494,6 +494,7 @@ function openApiRunChildProgressStream(childJobId, stepId) {
   apiRunChildStepId = stepId
   apiRunChildSnapshot = {}
   showApiRunProgress(stepId)
+  if (stepId) stepLogs.set(stepId, [])
   apiRunChildEventSource = createTolerantEventSource(`/jobs/${childJobId}/logs`, {
     onMessage: (data) => {
       if (data.type === 'progress') {
@@ -501,6 +502,18 @@ function openApiRunChildProgressStream(childJobId, stepId) {
         const host = document.getElementById('api-run-progress-host')
         window.ProgressUtils.paintProgressBar(host, apiRunChildSnapshot)
         if (stepId) handleStepCardProgressEvent(stepId, data)
+      } else if (data.line && stepId) {
+        const logs = stepLogs.get(stepId) ?? []
+        logs.push(data.line)
+        stepLogs.set(stepId, logs)
+        updateStepLogs(stepId, logs)
+      } else if (data.done && stepId) {
+        const step = findStepById(stepId)
+        if (step) {
+          if (Array.isArray(data.results) && data.results.length > 0) step.results = data.results
+          if (data.outputs && typeof data.outputs === 'object') step.outputs = data.outputs
+          updateStepUI(step)
+        }
       }
     },
     onPossiblyDisconnected: () => {},
@@ -731,7 +744,12 @@ function formatStepResults(step) {
   const results = step.results
 
   if (commandName === 'getAudioOffsets') {
-    return results.flat().map(item => `${item?.offsetInMilliseconds}ms`).join('\n')
+    return results.flat().map((item) => {
+      const destPath = item?.destinationFilePath ?? ''
+      const filename = destPath.split(/[\\/]/).pop() ?? destPath
+      const label = filename || item?.sourceFilePath?.split(/[\\/]/).pop() || ''
+      return label ? `${label}: ${item?.offsetInMilliseconds}ms` : `${item?.offsetInMilliseconds}ms`
+    }).join('\n')
   }
 
   if (commandName === 'nameSpecialFeatures') {

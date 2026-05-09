@@ -327,8 +327,7 @@ export const createProgressEmitter = (
         finish: (fileSizeBytesOverride) => {
           // Idempotent — callers that wire finish() into both an exit
           // handler AND a teardown function (e.g. runFfmpeg) can fire
-          // twice without double-counting filesDone or double-folding
-          // bytes.
+          // twice without double-folding bytes.
           if (!state.activeFiles.has(trackerId)) {
             return
           }
@@ -338,7 +337,10 @@ export const createProgressEmitter = (
             ?? fileState.totalBytes
             ?? fileState.bytesWritten
           )
-          state.filesDone += 1
+          // filesDone is NOT incremented here — only emitter.incrementFilesDone()
+          // does that. tracker.finish() only manages the currentFiles display.
+          // Callers inside withFileProgress get their filesDone count from the
+          // rxFinalize(() => emitter.incrementFilesDone()) wired by that operator.
           state.activeFiles.delete(trackerId)
           tick(state)
         },
