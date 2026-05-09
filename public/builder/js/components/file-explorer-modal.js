@@ -596,8 +596,8 @@ async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
     return
   }
 
-  const ms = new MediaSource()
-  const objectUrl = URL.createObjectURL(ms)
+  let ms = new MediaSource()
+  let objectUrl = URL.createObjectURL(ms)
   player.src = objectUrl
 
   let sb = null
@@ -652,27 +652,42 @@ async function setupMsePlayer(player, transcodeUrl, duration, videoCodecTag) {
     //
     // A fresh moov from the new ffmpeg stream is the cleanest reset: Chrome
     // reinitializes both decoders when it sees the new init segment arrive.
-    if (sb.updating) {
-      await waitForUpdate()
+    if (ms.readyState !== 'open') {
+      // MediaSource ended (the previous stream ran to completion and called
+      // endOfStream()) or is closed. abort(), remove(), and setting
+      // timestampOffset all require readyState='open', so rebuild from scratch.
+      URL.revokeObjectURL(objectUrl)
+      ms = new MediaSource()
+      objectUrl = URL.createObjectURL(ms)
+      player.src = objectUrl
+      await new Promise((resolve) => ms.addEventListener('sourceopen', resolve, { once: true }))
       if (isStale()) return
-    }
+      if (Number.isFinite(duration) && duration > 0) ms.duration = duration
+      sb = ms.addSourceBuffer(mimeType)
+      // Fresh SB: appendState is WAITING_FOR_SEGMENT, no abort() needed.
+      sb.timestampOffset = startSeconds
+    } else {
+      if (sb.updating) {
+        await waitForUpdate()
+        if (isStale()) return
+      }
 
-    // abort() runs the MSE "reset parser state" algorithm, which is the only
-    // way to move Chrome's internal appendState from PARSING_MEDIA_SEGMENT back
-    // to WAITING_FOR_SEGMENT. Waiting for updating===false is not sufficient —
-    // Chrome keeps appendState at PARSING_MEDIA_SEGMENT after every appendBuffer
-    // completes, and setting timestampOffset in that state throws InvalidStateError.
-    // abort() is safe here: updating is already false, so no events are fired.
-    //
-    // ffmpeg -ss resets output PTS to 0; shifting by startSeconds aligns the
-    // buffered range with player.currentTime so Chrome resolves the seek.
-    sb.abort()
-    sb.timestampOffset = startSeconds
+      // abort() resets Chrome's appendState from PARSING_MEDIA_SEGMENT back to
+      // WAITING_FOR_SEGMENT — the only MSE-spec way to do it. Required before
+      // setting timestampOffset or calling remove(). Safe when updating=false.
+      sb.abort()
+      // ffmpeg -ss resets output PTS to 0; timestampOffset shifts that back to
+      // the seek position so Chrome resolves the seek against player.currentTime.
+      sb.timestampOffset = startSeconds
 
-    if (startSeconds > 0 && sb.buffered.length > 0) {
-      sb.remove(0, Infinity)
-      await waitForUpdate()
-      if (isStale()) return
+      // Always clear existing buffer so the new fMP4 init segment (moov) from
+      // ffmpeg resets both video and audio codec decoders cleanly. Skipping
+      // this for startSeconds===0 left stale codec state on seeks back to start.
+      if (sb.buffered.length > 0) {
+        sb.remove(0, Infinity)
+        await waitForUpdate()
+        if (isStale()) return
+      }
     }
 
     const reader = resp.body.getReader()
