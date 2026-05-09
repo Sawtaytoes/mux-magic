@@ -383,22 +383,6 @@ function renderFieldHtml(step, field, stepIndex) {
     return `<div>${label}${pickerHtml}${renderRulesField({ step })}</div>`
   }
 
-  // `defaultRulesToggle` renders hasDefaultRules as a collapsible details/summary
-  // element that starts closed. When toggled, it controls whether default rules
-  // are displayed in the subtitle rules editor.
-  if (field.type === 'defaultRulesToggle') {
-    const checked = val ?? field.default ?? false
-    return `<details class="space-y-2">
-      <summary class="cursor-pointer">
-        <label class="flex items-center gap-2 cursor-pointer select-none py-0.5" data-tooltip-key="${esc(tooltipKey)}">
-          <input type="checkbox" ${checked ? 'checked' : ''} onchange="setParam('${step.id}','${field.name}',this.checked)"
-            class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-amber-500 cursor-pointer" />
-          <span class="text-xs text-slate-300">${esc(field.label)}</span>
-        </label>
-      </summary>
-    </details>`
-  }
-
   if (field.type === 'boolean') {
     const checked = val ?? field.default ?? false
     return `<label class="flex items-center gap-2 cursor-pointer select-none py-0.5" data-tooltip-key="${esc(tooltipKey)}">
@@ -521,6 +505,26 @@ function renderFieldHtml(step, field, stepIndex) {
       return `<div>${label}<input type="text" value="${esc(str)}" placeholder="${esc(field.placeholder ?? 'eng, jpn')}"
         oninput="setParam('${step.id}','${field.name}',this.value.split(',').map(s=>s.trim()).filter(Boolean))"
         class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" /></div>`
+    }
+
+    if (field.type === 'folderMultiSelect') {
+      const folders = Array.isArray(val) ? val : []
+      const sourceValue = field.sourceField ? (step.params[field.sourceField] ?? '') : ''
+      const openArgs = `{stepId:'${step.id}',fieldName:'${esc(field.name)}',sourceValue:'${esc(sourceValue)}'}`
+      const tags = folders.map((folder) => `
+        <span class="inline-flex items-center gap-1 bg-slate-700 text-slate-200 text-xs rounded px-1.5 py-0.5 font-mono">
+          📁 ${esc(folder)}
+          <button type="button" onclick="folderPicker.removeFolder('${step.id}','${esc(field.name)}','${esc(folder)}')"
+            class="text-slate-400 hover:text-red-400 leading-none">✕</button>
+        </span>
+      `).join('')
+      return `<div>${label}
+        <div class="flex flex-wrap gap-1 mb-1.5">${tags}</div>
+        <button type="button" onclick="folderPicker.open(${openArgs})"
+          class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded border border-slate-600">
+          📁 Browse folders…
+        </button>
+      </div>`
     }
 
     if (field.type === 'stringArray') {

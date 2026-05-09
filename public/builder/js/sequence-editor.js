@@ -391,7 +391,7 @@ export function setParam(id, fieldName, value) {
   }
   step.params[fieldName] = value
   refreshLinkedInputs()
-  bridge().updateYaml()
+  bridge().renderAll?.()
   updateUrl()
 }
 

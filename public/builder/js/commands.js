@@ -244,7 +244,7 @@ export const COMMANDS = {
       // Listing them as `hidden` keeps buildParams emitting them into YAML
       // without the step renderer trying to show a separate input row.
       { name: "predicates", type: "hidden" },
-      { name: "hasDefaultRules", type: "defaultRulesToggle", label: "Use Default Rules", default: false },
+      { name: "hasDefaultRules", type: "hidden", default: false },
       // `subtitleRules` is the structured form-builder for the
       // modifySubtitleMetadata DSL — see
       // public/builder/js/components/dsl-rules-builder.js. It renders
@@ -458,8 +458,8 @@ export const COMMANDS = {
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
       { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
       { name: "outputPath", type: "path", label: "Output Path" },
-      { name: "rootPath", type: "path", label: "Root Path" },
-      { name: "folders", type: "stringArray", label: "Folders" },
+      { name: "rootPath", type: "string", label: "Root Path" },
+      { name: "folders", type: "folderMultiSelect", label: "Folders", sourceField: "sourcePath" },
       { name: "force", type: "boolean", label: "Force Overwrite", default: false },
     ],
     groups: [

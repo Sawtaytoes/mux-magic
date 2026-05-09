@@ -1728,12 +1728,29 @@ export function renderRulesField({ step }) {
 
   const headerInsertStrip = renderInsertRuleStrip({ stepId, insertIndex: 0 })
 
+  // Keep the details open when hasDefaultRules is on so re-renders (triggered
+  // by the checkbox onchange → setParam → renderAll cycle) don't collapse it.
+  const defaultRulesDetailsOpen = isHasDefaultRules ? ' open' : ''
+
   return `<div class="dsl-rules-builder space-y-2" data-step="${stepId}" data-field="rules">
     <div class="flex items-center justify-between">
       <label class="text-xs text-slate-300 font-medium">Rules</label>
     </div>
+    <details${defaultRulesDetailsOpen} class="border border-slate-700 rounded">
+      <summary class="cursor-pointer select-none px-2 py-1.5 text-xs text-slate-400 hover:text-slate-300 list-none flex items-center gap-1">
+        <span class="text-slate-500">${isHasDefaultRules ? '▾' : '▸'}</span>
+        Default Rules
+      </summary>
+      <div class="px-2 pb-2 pt-1 space-y-2">
+        <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+          <input type="checkbox" ${isHasDefaultRules ? 'checked' : ''} ${onDefaultRulesToggle}
+            class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-amber-500 cursor-pointer" />
+          Prepend built-in heuristic rules
+        </label>
+        ${defaultRulesSection}
+      </div>
+    </details>
     ${renderPredicatesManager({ stepId, predicates })}
-    ${defaultRulesSection}
     ${rules.length === 0 ? `<p class="text-xs text-slate-500 italic mt-1">No user rules yet.</p>${headerInsertStrip}` : (headerInsertStrip + ruleCards)}
   </div>`
 }

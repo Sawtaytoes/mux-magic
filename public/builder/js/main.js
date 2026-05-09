@@ -60,6 +60,7 @@ import {
   initPaths, randomHex, makeStep, getLinkedValue, findStepById,
 } from './sequence-state.js'
 import { registerDslRulesGlobals } from './components/dsl-rules-builder.js'
+import { registerFolderPickerGlobals } from './components/folder-picker-modal.js'
 import { COMMANDS } from './commands.js'
 import {
   updateUrl,
@@ -357,6 +358,7 @@ attachSequenceKeyboardShortcuts()
 attachCopyButtonListener()
 attachFieldTooltipListeners()
 registerDslRulesGlobals()
+registerFolderPickerGlobals()
 
 // Help-modal globals — used by the ⓘ button in step-card headers and
 // the ✕ Close button in the modal markup itself.
