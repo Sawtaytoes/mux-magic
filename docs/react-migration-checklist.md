@@ -6,7 +6,7 @@ Last updated: 2026-05-09 by Claude Opus 4.7 (PR #1)
 
 | PR | Description | Status | Branch | Notes |
 |----|-------------|--------|--------|-------|
-| PR #1 | Bootstrap (monorepo, Vite, Biome) | [x] Awaiting manual verify | react-migration | typecheck + biome + eslint all green; Vite boots on :5173; legacy still on :3000 |
+| PR #1 | Bootstrap (monorepo, Vite, Biome) | [x] Done | react-migration | typecheck + biome + eslint all green; manual verify confirmed both servers running cleanly |
 | PR #2 | LoadModal — first component | [ ] Not started | | |
 | Wave A-1 | YamlModal | [ ] Not started | | |
 | Wave A-2 | CommandHelpModal | [ ] Not started | | |
