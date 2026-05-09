@@ -60,6 +60,7 @@ import {
   initPaths, randomHex, makeStep, getLinkedValue, findStepById,
 } from './sequence-state.js'
 import { registerDslRulesGlobals } from './components/dsl-rules-builder.js'
+import { registerFolderPickerGlobals } from './components/folder-picker-modal.js'
 import { COMMANDS } from './commands.js'
 import {
   updateUrl,
@@ -88,8 +89,11 @@ import {
   stepAliasBlur,
   toggleStepActions,
   setParam,
+  setParamAndRender,
   setParamJson,
   promotePathToPathVar,
+  initFieldMin,
+  flushScheduledUpdateUrl,
   browsePathField,
   setLink,
   refreshLinkedInputs,
@@ -122,7 +126,6 @@ import {
   copyApiRunLogs,
   attachCopyButtonListener,
   toggleDryRun,
-  toggleFailureMode,
   syncDryRunUI,
 } from './run-sequence.js'
 import {
@@ -290,8 +293,10 @@ window.stepAliasKeydown = stepAliasKeydown
 window.stepAliasBlur = stepAliasBlur
 window.toggleStepActions = toggleStepActions
 window.setParam = setParam
+window.setParamAndRender = setParamAndRender
 window.setParamJson = setParamJson
 window.promotePathToPathVar = promotePathToPathVar
+window.initFieldMin = initFieldMin
 window.browsePathField = browsePathField
 window.setLink = setLink
 window.changeCommand = changeCommand
@@ -320,8 +325,6 @@ window.cancelApiRun = cancelApiRun
 window.copyApiRunLogs = copyApiRunLogs
 window.closeApiRunModal = (event) => closeApiRunModal(event)
 window.toggleDryRun = toggleDryRun
-// @ts-ignore
-window.toggleFailureMode = toggleFailureMode
 
 // lookup modal
 window.openLookup = openLookup
@@ -361,6 +364,7 @@ attachSequenceKeyboardShortcuts()
 attachCopyButtonListener()
 attachFieldTooltipListeners()
 registerDslRulesGlobals()
+registerFolderPickerGlobals()
 
 // Help-modal globals — used by the ⓘ button in step-card headers and
 // the ✕ Close button in the modal markup itself.
@@ -370,6 +374,17 @@ window.closeCommandHelpModal = closeCommandHelpModal
 // Delegate path-var-card events on the steps list.
 const stepsEl = document.getElementById('steps-el')
 if (stepsEl) attachPathVarListeners(stepsEl)
+
+// Flush pending URL/path-var updates and blur any focused input when the user
+// refreshes or closes the tab. This ensures number field values (which save
+// on `onchange`/blur) and debounced path-var edits are not lost.
+window.addEventListener('beforeunload', () => {
+  const active = document.activeElement
+  if (active && active !== document.body) {
+    active.blur()
+  }
+  flushScheduledUpdateUrl()
+})
 
 // Initial bootstrap
 initPaths()

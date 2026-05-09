@@ -126,6 +126,20 @@
   }
 }
 
+/* Checkbox + fill: first column shrinks to its natural width (the checkbox
+   label), second column takes all remaining space (e.g. Depth number input). */
+.field-group-check-fill {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@container step-card (min-width: 500px) {
+  .field-group-check-fill {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+}
+
 .step-alias { flex: 1 1 8rem; min-width: 6rem; }
 .step-hamburger-btn { display: none; }
 /* Same Tailwind-cascade trick as .page-actions: define display:flex

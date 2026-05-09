@@ -4,7 +4,7 @@ import { getRules, commitRules, updateRuleAt, generateFreshKey } from './state.j
 
 // ─── when: clause mutations ───────────────────────────────────────────────────
 
-function setWhenSlot({ stepId, ruleIndex, mutator }) {
+function setWhenSlot({ stepId, ruleIndex, mutator, isLiveEdit = false }) {
   const current = getRules(stepId)
   commitRules({
     stepId,
@@ -24,6 +24,7 @@ function setWhenSlot({ stepId, ruleIndex, mutator }) {
         return nextRule
       },
     }),
+    isLiveEdit,
   })
 }
 
@@ -107,6 +108,7 @@ export function setWhenEntryValue({ stepId, ruleIndex, clauseName, slot, entryKe
   setWhenSlot({
     stepId,
     ruleIndex,
+    isLiveEdit: true,
     mutator: (when) => {
       const clause = normalizeWhenClause(when[clauseName])
       const slotBody = isPlainObject(clause[slot]) && !isRefBody(clause[slot]) ? clause[slot] : {}
@@ -133,7 +135,7 @@ export function removeWhenEntry({ stepId, ruleIndex, clauseName, slot, entryKey 
 
 // ─── applyIf clause mutations ─────────────────────────────────────────────────
 
-function setApplyIfSlot({ stepId, ruleIndex, mutator }) {
+function setApplyIfSlot({ stepId, ruleIndex, mutator, isLiveEdit = false }) {
   const current = getRules(stepId)
   commitRules({
     stepId,
@@ -153,6 +155,7 @@ function setApplyIfSlot({ stepId, ruleIndex, mutator }) {
         return nextRule
       },
     }),
+    isLiveEdit,
   })
 }
 
@@ -234,6 +237,7 @@ export function setApplyIfEntryOperand({ stepId, ruleIndex, clauseName, entryKey
   setApplyIfSlot({
     stepId,
     ruleIndex,
+    isLiveEdit: true,
     mutator: (applyIf) => {
       const clause = isPlainObject(applyIf[clauseName]) ? applyIf[clauseName] : {}
       const existingEntry = clause[entryKey]

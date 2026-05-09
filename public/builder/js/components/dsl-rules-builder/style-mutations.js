@@ -56,6 +56,7 @@ export function setStyleFieldLiteralValue({ stepId, ruleIndex, fieldKey, value }
         return { ...rule, fields: { ...fields, [fieldKey]: value } }
       },
     }),
+    isLiveEdit: true,
   })
 }
 
@@ -115,5 +116,6 @@ export function setIgnoredStyleNamesRegex({ stepId, ruleIndex, value }) {
         return nextRule
       },
     }),
+    isLiveEdit: true,
   })
 }

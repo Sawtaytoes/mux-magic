@@ -5,6 +5,19 @@ import {
 } from './constants.js'
 import { isPlainObject, isRefBody, normalizeWhenClause } from './clause-utils.js'
 
+// Keys of all open <details> inside DSL rule builders. Module-level so the
+// Set survives renderAll calls; DOM is queried before each render to stay
+// authoritative (ontoggle can fire spuriously on insertion/removal).
+const openDetailsKeys = new Set()
+
+export function onDetailsToggle(detailsKey, isOpen) {
+  if (isOpen) {
+    openDetailsKeys.add(detailsKey)
+  } else {
+    openDetailsKeys.delete(detailsKey)
+  }
+}
+
 // ─── When clause rendering ────────────────────────────────────────────────────
 
 function renderPredicateOptions({ predicates, selectedRefName }) {
@@ -101,7 +114,10 @@ function renderWhenBuilder({ stepId, ruleIndex, whenValue, predicates, isReadOnl
         <option value="">+ Add clause…</option>
         ${availableClauses.map((clauseName) => `<option value="${clauseName}">${clauseName}</option>`).join('')}
       </select>`
-  return `<details class="mt-2 border border-slate-700/60 rounded">
+  const detailsKey = `${stepId}:when:${ruleIndex}`
+  const openAttr = !isReadOnly && openDetailsKeys.has(detailsKey) ? ' open' : ''
+  const toggleAttr = isReadOnly ? '' : `data-details-key="${detailsKey}" ontoggle="dslRules.onDetailsToggle(this.dataset.detailsKey,this.open)"`
+  return `<details${openAttr} class="mt-2 border border-slate-700/60 rounded" ${toggleAttr}>
     <summary class="cursor-pointer text-xs text-slate-400 px-2 py-1 select-none">When (advanced — leave empty to always fire)</summary>
     <div class="px-2 py-1.5">
       ${clauseRows || '<p class="text-xs text-slate-500 italic">No clauses. Rule fires on every batch.</p>'}
@@ -183,7 +199,10 @@ function renderApplyIfBuilder({ stepId, ruleIndex, applyIfValue, isReadOnly }) {
         <option value="">+ Add clause…</option>
         ${availableClauses.map((clauseName) => `<option value="${clauseName}">${clauseName}</option>`).join('')}
       </select>`
-  return `<details class="mt-2 border border-slate-700/60 rounded">
+  const applyIfKey = `${stepId}:applyif:${ruleIndex}`
+  const applyIfOpenAttr = !isReadOnly && openDetailsKeys.has(applyIfKey) ? ' open' : ''
+  const applyIfToggleAttr = isReadOnly ? '' : `data-details-key="${applyIfKey}" ontoggle="dslRules.onDetailsToggle(this.dataset.detailsKey,this.open)"`
+  return `<details${applyIfOpenAttr} class="mt-2 border border-slate-700/60 rounded" ${applyIfToggleAttr}>
     <summary class="cursor-pointer text-xs text-slate-400 px-2 py-1 select-none">applyIf (per-style filter — leave empty to apply to all non-ignored styles)</summary>
     <div class="px-2 py-1.5">
       ${clauseRows || '<p class="text-xs text-slate-500 italic">No clauses. Applies to all non-ignored styles.</p>'}
@@ -243,7 +262,7 @@ function renderComputeFromEditor({ stepId, ruleIndex, fieldKey, computeFrom, isR
         class="text-xs text-slate-400 hover:text-blue-400 mt-1">+ op</button>`
   const onPropertyInput = isReadOnly
     ? ''
-    : `oninput="dslRules.setComputeFromField({stepId:'${stepId}',ruleIndex:${ruleIndex},fieldKey:${fieldKeyJson},propertyName:'property',value:this.value})"`
+    : `oninput="dslRules.setComputeFromField({stepId:'${stepId}',ruleIndex:${ruleIndex},fieldKey:${fieldKeyJson},propertyName:'property',value:this.value,isLiveEdit:true})"`
   const onScopeChange = isReadOnly
     ? ''
     : `onchange="dslRules.setComputeFromField({stepId:'${stepId}',ruleIndex:${ruleIndex},fieldKey:${fieldKeyJson},propertyName:'scope',value:this.value})"`
@@ -347,22 +366,22 @@ function renderRuleBody({ stepId, ruleIndex, rule, predicates, isReadOnly }) {
     return `<div class="grid grid-cols-2 gap-2">
       <div>
         <label class="block text-xs text-slate-400 mb-1">From width</label>
-        <input type="number" value="${esc(fromGroup.width ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('from', 'width')}
+        <input type="number" aria-label="From width" value="${esc(fromGroup.width ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('from', 'width')}
           class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" />
       </div>
       <div>
         <label class="block text-xs text-slate-400 mb-1">From height</label>
-        <input type="number" value="${esc(fromGroup.height ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('from', 'height')}
+        <input type="number" aria-label="From height" value="${esc(fromGroup.height ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('from', 'height')}
           class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" />
       </div>
       <div>
         <label class="block text-xs text-slate-400 mb-1">To width</label>
-        <input type="number" value="${esc(toGroup.width ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('to', 'width')}
+        <input type="number" aria-label="To width" value="${esc(toGroup.width ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('to', 'width')}
           class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" />
       </div>
       <div>
         <label class="block text-xs text-slate-400 mb-1">To height</label>
-        <input type="number" value="${esc(toGroup.height ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('to', 'height')}
+        <input type="number" aria-label="To height" value="${esc(toGroup.height ?? 0)}" ${isReadOnly ? 'readonly' : ''} ${onDimensionInput('to', 'height')}
           class="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono" />
       </div>
     </div>
@@ -496,7 +515,11 @@ function renderPredicatesManager({ stepId, predicates }) {
     </div>`
   }).join('')
   const visibilityClass = predicateNames.length === 0 ? 'hidden' : ''
-  return `<details class="mt-1 border border-slate-700/60 rounded">
+  const predicatesKey = `${stepId}:predicates`
+  const predOpenAttr = openDetailsKeys.has(predicatesKey) ? ' open' : ''
+  return `<details${predOpenAttr} class="mt-1 border border-slate-700/60 rounded"
+    data-details-key="${predicatesKey}"
+    ontoggle="dslRules.onDetailsToggle(this.dataset.detailsKey,this.open)">
     <summary class="cursor-pointer text-xs text-slate-400 px-2 py-1 select-none flex items-center gap-2">
       <span>Predicates (named conditions reusable via $ref)</span>
       <span class="text-[10px] text-slate-500">${predicateNames.length} defined</span>
@@ -542,6 +565,20 @@ export function renderRulesField({ step }) {
   }).join('')
 
   const headerInsertStrip = renderInsertRuleStrip({ stepId, insertIndex: 0 })
+
+  // Snapshot open <details> from the live DOM before innerHTML is replaced.
+  // ontoggle fires spuriously on element insertion/removal, so the live DOM
+  // is the authoritative source of truth at render time.
+  const dslBuilderEl = document.querySelector(`.dsl-rules-builder[data-step="${stepId}"]`)
+  if (dslBuilderEl) {
+    dslBuilderEl.querySelectorAll('[data-details-key]').forEach((detailsEl) => {
+      if (detailsEl.open) {
+        openDetailsKeys.add(detailsEl.dataset.detailsKey)
+      } else {
+        openDetailsKeys.delete(detailsEl.dataset.detailsKey)
+      }
+    })
+  }
 
   return `<div class="dsl-rules-builder space-y-2" data-step="${stepId}" data-field="rules">
     <div class="flex items-center justify-between">

@@ -102,11 +102,13 @@ export {
   setApplyIfEntryKey, setApplyIfEntryComparator, setApplyIfEntryOperand, removeApplyIfEntry,
 }
 
-export { renderRulesField } from './dsl-rules-builder/render.js'
+import { renderRulesField, onDetailsToggle } from './dsl-rules-builder/render.js'
+export { renderRulesField, onDetailsToggle }
 
 export function registerDslRulesGlobals() {
   if (typeof window === 'undefined') { return }
   window.dslRules = {
+    onDetailsToggle,
     addPredicate,
     renamePredicate,
     removePredicate,

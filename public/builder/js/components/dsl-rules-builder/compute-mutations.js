@@ -2,7 +2,7 @@ import { COMPUTE_FROM_OPS_BARE } from './constants.js'
 import { isPlainObject } from './clause-utils.js'
 import { getRules, commitRules, updateRuleAt } from './state.js'
 
-export function setComputeFromField({ stepId, ruleIndex, fieldKey, propertyName, value }) {
+export function setComputeFromField({ stepId, ruleIndex, fieldKey, propertyName, value, isLiveEdit = false }) {
   const current = getRules(stepId)
   commitRules({
     stepId,
@@ -22,6 +22,7 @@ export function setComputeFromField({ stepId, ruleIndex, fieldKey, propertyName,
         }
       },
     }),
+    isLiveEdit,
   })
 }
 
@@ -106,6 +107,7 @@ export function setComputeFromOpOperand({ stepId, ruleIndex, fieldKey, opIndex, 
         }
       },
     }),
+    isLiveEdit: true,
   })
 }
 

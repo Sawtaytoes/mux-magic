@@ -12,6 +12,7 @@ import { renderJsonField } from './json-field.js'
 import { renderSubtitleRulesField } from './subtitle-rules-field.js'
 import { renderPathField } from './path-field.js'
 import { renderStringField } from './string-field.js'
+import { renderFolderMultiSelectField } from './folder-multi-select-field.js'
 
 /**
  * @param {{ step: object, field: object, stepIndex: number }} props
@@ -30,6 +31,7 @@ function renderField({ step, field, stepIndex }) {
   if (field.type === 'stringArray') return renderStringArrayField({ step, field })
   if (field.type === 'numberArray') return renderNumberArrayField({ step, field })
   if (field.type === 'json') return renderJsonField({ step, field, stepIndex })
+  if (field.type === 'folderMultiSelect') return renderFolderMultiSelectField({ step, field })
   return renderStringField({ step, field })
 }
 

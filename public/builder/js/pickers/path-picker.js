@@ -1,8 +1,28 @@
 import { findStepById } from '../sequence-state.js'
 import { esc } from '../util/html-escape.js'
 import { setParam } from '../sequence-editor.js'
+import { COMMANDS } from '../commands.js'
 
 const pathPickerState = { current: null }
+
+// Stores field value at focus time so onPathFieldBlur can compare to detect
+// real path changes (onPathFieldInput updates the param on every keystroke,
+// making a direct param comparison always equal at blur time).
+const pathFocusValues = new Map()
+
+function clearDependentFolderFields({ stepId, sourceFieldName }) {
+  const step = findStepById(stepId)
+  if (!step) { return }
+  const commandDef = COMMANDS[step.command]
+  if (!commandDef) { return }
+  const cleared = commandDef.fields.filter(
+    (field) => field.type === 'folderMultiSelect' && field.sourceField === sourceFieldName
+  )
+  cleared.forEach((field) => { delete step.params[field.name] })
+  if (cleared.length > 0) {
+    window.mediaTools?.renderAll?.()
+  }
+}
 
 // Re-open the path picker on focus/click of an input that already
 // has a value. Without this, after blur the picker is closed and
@@ -10,19 +30,25 @@ const pathPickerState = { current: null }
 // a character to wake it up. Now: focus → if there's a value, kick
 // the lookup again so the dropdown reappears for the same path.
 export function onPathFieldFocus(inputElement, stepId, fieldName, value) {
+  const focusKey = `${stepId}:${fieldName}`
+  pathFocusValues.set(focusKey, value ?? '')
   if (!value) {
     return
   }
   schedulePathLookup(inputElement, { mode: 'step', stepId, fieldName }, value)
 }
 
-// Trim trailing path separator on blur. Typing through the picker
-// leaves a trailing `\` or `/` so the next segment can be typed —
-// once the user moves on, the trailing separator is just visual
-// clutter (and would confuse downstream consumers expecting a clean
-// path). Updates both the input value and the underlying step param.
+// Trim trailing path separator on blur. Also clears folder fields that
+// reference this path if the path changed since focus.
 export function onPathFieldBlur(inputElement, stepId, fieldName, value) {
+  const focusKey = `${stepId}:${fieldName}`
+  const hasFocusSnapshot = pathFocusValues.has(focusKey)
+  const valueAtFocus = hasFocusSnapshot ? (pathFocusValues.get(focusKey) ?? '') : null
+  pathFocusValues.delete(focusKey)
   const trimmed = (value ?? '').replace(/[\\/]+$/, '')
+  if (hasFocusSnapshot && valueAtFocus !== (trimmed || '')) {
+    clearDependentFolderFields({ stepId, sourceFieldName: fieldName })
+  }
   if (trimmed === value) {
     return
   }

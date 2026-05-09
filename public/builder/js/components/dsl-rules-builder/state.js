@@ -20,7 +20,7 @@ export function getPredicates(stepId) {
   return isPlainObject(predicates) ? predicates : {}
 }
 
-export function commitRules({ stepId, nextRules }) {
+export function commitRules({ stepId, nextRules, isLiveEdit = false }) {
   const step = findStepOrNull(stepId)
   if (!step) { return }
   if (Array.isArray(nextRules) && nextRules.length > 0) {
@@ -28,10 +28,14 @@ export function commitRules({ stepId, nextRules }) {
   } else {
     delete step.params.rules
   }
-  bridge().renderAll?.()
+  if (isLiveEdit) {
+    bridge().scheduleUpdateUrl?.()
+  } else {
+    bridge().renderAll?.()
+  }
 }
 
-export function commitPredicates({ stepId, nextPredicates }) {
+export function commitPredicates({ stepId, nextPredicates, isLiveEdit = false }) {
   const step = findStepOrNull(stepId)
   if (!step) { return }
   if (isPlainObject(nextPredicates) && Object.keys(nextPredicates).length > 0) {
@@ -39,7 +43,11 @@ export function commitPredicates({ stepId, nextPredicates }) {
   } else {
     delete step.params.predicates
   }
-  bridge().renderAll?.()
+  if (isLiveEdit) {
+    bridge().scheduleUpdateUrl?.()
+  } else {
+    bridge().renderAll?.()
+  }
 }
 
 // Pick the first `<baseName>`, `<baseName>2`, `<baseName>3`, … not already in `usedNames`.

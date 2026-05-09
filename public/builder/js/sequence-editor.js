@@ -395,6 +395,16 @@ export function setParam(id, fieldName, value) {
   updateUrl()
 }
 
+// Like setParam, but also triggers a full re-render so that fields with
+// visibleWhen conditions (e.g. Depth shown only when Recursive is checked)
+// update immediately. Only use for fields whose change should affect
+// other fields' visibility — not for free-text inputs where re-rendering
+// on every keystroke destroys cursor position.
+export function setParamAndRender(id, fieldName, value) {
+  setParam(id, fieldName, value)
+  bridge().renderAll?.()
+}
+
 export function setParamJson(id, field, raw) {
   const step = findStepById(id)
   if (!step) {
@@ -446,6 +456,17 @@ export function promotePathToPathVar(stepId, fieldName, rawValue) {
   step.links[fieldName] = newPath.id
   delete step.params[fieldName]
   bridge().renderAll()
+}
+
+// When a boolean field (e.g. isRecursive) is first enabled, ensure a companion
+// numeric field is at least minValue. Used to coerce recursiveDepth from 0→1.
+export function initFieldMin(stepId, fieldName, minValue) {
+  const step = findStepById(stepId)
+  if (!step) return
+  const cur = step.params[fieldName]
+  if (cur == null || Number(cur) < minValue) {
+    step.params[fieldName] = minValue
+  }
 }
 
 export async function browsePathField(stepId, fieldName, initialPath) {

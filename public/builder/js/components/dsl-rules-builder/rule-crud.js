@@ -69,7 +69,7 @@ export function setPredicateEntryKey({ stepId, predicateName, oldKey, newKey }) 
 export function setPredicateEntryValue({ stepId, predicateName, entryKey, value }) {
   const current = getPredicates(stepId)
   const body = isPlainObject(current[predicateName]) ? current[predicateName] : {}
-  commitPredicates({ stepId, nextPredicates: { ...current, [predicateName]: { ...body, [entryKey]: value } } })
+  commitPredicates({ stepId, nextPredicates: { ...current, [predicateName]: { ...body, [entryKey]: value } }, isLiveEdit: true })
 }
 
 export function removePredicateEntry({ stepId, predicateName, entryKey }) {
@@ -123,6 +123,7 @@ export function setScriptInfoField({ stepId, ruleIndex, fieldName, value }) {
     nextRules: updateRuleAt({
       rules: current, ruleIndex, updater: (rule) => ({ ...rule, [fieldName]: value }),
     }),
+    isLiveEdit: true,
   })
 }
 
@@ -140,6 +141,7 @@ export function setScaleResolutionDimension({ stepId, ruleIndex, group, dimensio
         return { ...rule, [group]: { ...groupValue, [dimension]: value } }
       },
     }),
+    isLiveEdit: true,
   })
 }
 
