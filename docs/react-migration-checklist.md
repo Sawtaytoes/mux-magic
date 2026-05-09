@@ -1,6 +1,6 @@
 # React Migration Checklist
 
-Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave C: pickers)
+Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave C: pickers + Wave E: page-structure components)
 
 ## Phase Status
 
@@ -17,7 +17,7 @@ Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave C: pickers)
 | Wave C-0 | Popover primitive (unblocks C) | [x] Done | react-migration | thin Radix @radix-ui/react-popover re-export in primitives/Popover.tsx for Wave D+ |
 | Wave C | All pickers (parallel) | [x] Done | react-migration | CommandPicker, EnumPicker, LinkPicker, PathPicker — Jotai atoms + bridge + createPortal; legacy picker JS deleted; tests+stories for all 4 |
 | Wave D | StepCard, GroupCard, PathVarCard, DragAndDrop | [ ] Not started | | |
-| Wave E | PageHeader, LookupModal, RunSequence, etc. | [ ] Not started | | |
+| Wave E | PageHeader, LookupModal, RunSequence, etc. | [x] Done | worktree-wave-e | PageHeader, LookupModal, FileExplorerModal, ApiRunModal, PromptModal — all with tests + stories |
 | Wave F | Jobs page | [ ] Not started | | |
 | Final | Delete legacy files, bridge cleanup | [ ] Not started | | |
 

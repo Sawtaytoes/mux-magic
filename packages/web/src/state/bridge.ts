@@ -9,7 +9,21 @@ import {
   pathPickerStateAtom,
 } from "./pickerAtoms"
 import { stepCounterAtom, stepsAtom } from "./stepsAtom"
-import { loadModalOpenAtom } from "./uiAtoms"
+import {
+  apiRunModalAtom,
+  dryRunAtom,
+  failureModeAtom,
+  fileExplorerAtom,
+  loadModalOpenAtom,
+  lookupModalAtom,
+  promptModalAtom,
+  runningAtom,
+} from "./uiAtoms"
+import type {
+  FileExplorerState,
+  LookupState,
+  PromptData,
+} from "../types"
 
 // ─── Window type augmentations ────────────────────────────────────────────────
 
@@ -19,6 +33,7 @@ declare global {
     mediaTools: Record<string, any>
     openLoadModal: () => void
     closeLoadModal: () => void
+    openVideoModal?: (path: string) => void
     commandLabel?: (name: string) => string
     getCommandFieldDescription?: (args: { commandName: string; fieldName: string }) => string
     getCommandSummary?: (args: { commandName: string }) => string
@@ -130,6 +145,7 @@ export const initBridge = () => {
   window.openLoadModal = openLoadModal
   window.closeLoadModal = closeLoadModal
 
+<<<<<<< HEAD
   // ─── Picker bridges ─────────────────────────────────────────────────────────
   // Legacy step-card onclick handlers call window.commandPicker.open(anchor, el)
   // etc. Each bridge captures the trigger element's rect and writes into the
@@ -342,4 +358,96 @@ export const initBridge = () => {
     ) as HTMLButtonElement | null
     button?.click()
   }
+
+  // ─── Wave E: Lookup modal ─────────────────────────────────────────────────
+
+  window.mediaTools.openLookup = (
+    lookupType: string,
+    stepId: string,
+    fieldName: string,
+  ) => {
+    store.set(lookupModalAtom, {
+      lookupType: lookupType as LookupState["lookupType"],
+      stepId,
+      fieldName,
+      stage: "search",
+      searchTerm: "",
+      searchError: null,
+      results: null,
+      formatFilter: lookupType === "dvdcompare" ? "Blu-ray 4K" : "all",
+      selectedGroup: null,
+      selectedVariant: null,
+      selectedFid: null,
+      releases: null,
+      releasesDebug: null,
+      releasesError: null,
+      loading: false,
+    })
+  }
+
+  window.mediaTools.closeLookupModal = () => store.set(lookupModalAtom, null)
+
+  // ─── Wave E: File explorer modal ──────────────────────────────────────────
+
+  window.mediaTools.openFileExplorer = (
+    path: string,
+    options: { pickerOnSelect?: (selectedPath: string) => void } = {},
+  ) => {
+    store.set(fileExplorerAtom, {
+      path,
+      pickerOnSelect: options.pickerOnSelect ?? null,
+    } as FileExplorerState)
+  }
+
+  window.mediaTools.closeFileExplorerModal = () =>
+    store.set(fileExplorerAtom, null)
+
+  // Also expose directly on window for legacy result-card onclick calls.
+  ;(window as Record<string, unknown>).openFileExplorer = (
+    path: string,
+    options?: { pickerOnSelect?: (selectedPath: string) => void },
+  ) => window.mediaTools.openFileExplorer(path, options)
+
+  // ─── Wave E: Run sequence ─────────────────────────────────────────────────
+
+  window.mediaTools.openApiRunModal = ({
+    jobId,
+    status,
+  }: {
+    jobId: string | null
+    status: string
+  }) => {
+    store.set(runningAtom, status === "running")
+    store.set(apiRunModalAtom, {
+      jobId: jobId ?? null,
+      status: status as never,
+      logs: [],
+      childJobId: null,
+      childStepId: null,
+    })
+  }
+
+  window.mediaTools.closeApiRunModal = () => {
+    store.set(apiRunModalAtom, null)
+    store.set(runningAtom, false)
+  }
+
+  // ─── Wave E: Prompt modal ─────────────────────────────────────────────────
+
+  window.mediaTools.showPromptModal = (
+    jobId: string,
+    promptData: Omit<PromptData, "jobId">,
+  ) => {
+    store.set(promptModalAtom, { jobId, ...promptData })
+  }
+
+  window.mediaTools.closePromptModal = () => store.set(promptModalAtom, null)
+
+  // ─── Wave E: Dry-run sync (legacy → atoms) ────────────────────────────────
+  // Seed from localStorage on init so React header reflects persisted state.
+  store.set(dryRunAtom, localStorage.getItem("isDryRun") === "1")
+  store.set(
+    failureModeAtom,
+    localStorage.getItem("dryRunScenario") === "failure",
+  )
 }

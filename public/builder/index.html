@@ -32,125 +32,9 @@ await enableMocksIfRequested()
 
 <div class="flex flex-col" style="height:100dvh;overflow:hidden">
 
-  <!-- Header -->
-  <div id="page-header" class="shrink-0 border-b border-slate-700 bg-slate-900 z-10">
-    <div class="page-header-inner flex items-center px-4 py-3 gap-3">
-      <button id="page-nav-toggle" onclick="togglePageMenu('page-actions-nav')" title="Menu" aria-label="Open menu"
-        class="page-menu-toggle w-7 h-7 items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
-          <path d="M4 6h16" />
-          <path d="M4 12h16" />
-          <path d="M4 18h16" />
-        </svg>
-      </button>
-      <h1 class="text-lg font-bold tracking-tight">
-        <a href="/" class="text-slate-100 hover:text-blue-300 transition-colors">Sequence Builder</a>
-      </h1>
-      <button id="dry-run-badge" onclick="toggleDryRun()" class="hidden text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/35 active:scale-95 text-amber-400 border border-amber-500/40 self-center transition-all" title="Dry run ON — click to disable">DRY RUN</button>
-      <div id="page-actions-nav" class="page-menu page-menu-nav">
-        <div class="page-menu-group">
-          <button onclick="startNewSequence()" title="Clear the current sequence and start fresh (Ctrl+Z to undo)"
-            class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded font-medium border border-slate-600">New Sequence</button>
-        </div>
-        <span class="page-menu-sep w-px h-6 bg-slate-700 mx-1"></span>
-        <div class="page-menu-group">
-          <a href="/" class="text-xs text-slate-400 hover:text-slate-300">Jobs ↗</a>
-        </div>
-      </div>
-      <!-- Pinned header actions: undo/redo + collapse/expand; hidden on smallest screens -->
-      <div id="header-pinned" class="ml-auto flex items-center gap-1">
-        <button id="undo-btn" onclick="undo()" title="Undo (Ctrl+Z)" disabled
-          class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7">↶</button>
-        <button id="redo-btn" onclick="redo()" title="Redo (Ctrl+Y / Ctrl+Shift+Z)" disabled
-          class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7">↷</button>
-        <span class="w-px h-4 bg-slate-700 mx-0.5"></span>
-        <button onclick="setAllCollapsed(true)" title="Collapse every step + group"
-          class="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 -rotate-90">
-            <polyline points="5,5 10,10 15,5" />
-            <polyline points="5,11 10,16 15,11" />
-          </svg>
-        </button>
-        <button onclick="setAllCollapsed(false)" title="Expand every step + group"
-          class="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
-            <polyline points="5,5 10,10 15,5" />
-            <polyline points="5,11 10,16 15,11" />
-          </svg>
-        </button>
-      </div>
-      <span class="w-px h-6 bg-slate-700 mx-1"></span>
-      <div id="page-actions-controls" class="page-menu page-menu-controls">
-        <!-- Dry run + run actions grouped: dry-run is a modifier for the run buttons -->
-        <div class="page-menu-group">
-          <button id="dry-run-btn" onclick="toggleDryRun()"
-            class="flex items-center justify-between gap-2 text-xs text-slate-300 cursor-pointer select-none"
-            title="Toggle dry-run mode — simulate commands without touching files">
-            <span class="leading-none">Dry Run</span>
-            <span id="dry-run-track" class="relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden bg-slate-600 border border-slate-500 transition-colors">
-              <span id="dry-run-thumb" class="absolute top-px left-px w-3 h-3 rounded-full bg-white shadow-sm" style="transition:transform 150ms ease"></span>
-            </span>
-          </button>
-          <!-- Failure mode — only visible when dry-run is active. Sends
-               ?fake=failure instead of ?fake=1 on all command fetches. -->
-          <button id="failure-mode-btn" onclick="toggleFailureMode()"
-            class="hidden flex items-center justify-between gap-2 text-xs text-red-300 cursor-pointer select-none"
-            title="Simulate failures — all commands will fail (dry-run only)">
-            <span class="leading-none">Simulate Failures</span>
-            <span id="failure-mode-track" class="relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden bg-slate-600 border border-slate-500 transition-colors">
-              <span id="failure-mode-thumb" class="absolute top-px left-px w-3 h-3 rounded-full bg-white shadow-sm" style="transition:transform 150ms ease"></span>
-            </span>
-          </button>
-          <button id="run-btn" onclick="runSequence()" title="Run the entire sequence via the server-side sequence API (/sequences/run)"
-            class="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium">
-            ▶ Run Sequence
-          </button>
-          <button id="run-api-btn" onclick="runViaApi()" title="POST the YAML to /sequences/run as one umbrella job (server-side orchestration)"
-            class="text-xs bg-sky-700 hover:bg-sky-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium">
-            ▶ Run via API
-          </button>
-        </div>
-        <span class="page-menu-sep w-px h-6 bg-slate-700 mx-1"></span>
-        <div class="page-menu-group">
-          <!-- Per-divider "+ Step / + Group / + Parallel" buttons in the
-               step list cover step/group inserts at any position, so the
-               header keeps only the one affordance that doesn't have an
-               inline equivalent: adding a path variable. -->
-          <button data-action="add-path" title="Add a path variable"
-            class="text-xs bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded font-medium">Add Path</button>
-        </div>
-        <span class="page-menu-sep w-px h-6 bg-slate-700 mx-1"></span>
-        <div class="page-menu-group">
-          <div class="page-menu-row">
-            <button onclick="openLoadModal()" id="load-btn" title="Load YAML"
-              class="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
-                <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5" />
-                <path d="M16.5 7.5 12 3m0 0L7.5 7.5M12 3v13.5" />
-              </svg>
-            </button>
-            <button onclick="copyYaml()" id="copy-btn" title="Copy YAML"
-              class="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
-                <path d="M15.75 17.25v3a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-9a1.5 1.5 0 0 1 1.5-1.5H8.25" />
-                <rect x="8.25" y="2.25" width="12" height="15" rx="1.5" ry="1.5" />
-              </svg>
-            </button>
-            <button onclick="openYamlModal()" title="View YAML"
-              class="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
-                <path d="m17.25 6.75 4.5 5.25-4.5 5.25" />
-                <path d="m6.75 17.25-4.5-5.25 4.5-5.25" />
-                <path d="m14.25 4.5-4.5 15" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-      <button id="page-controls-toggle" onclick="togglePageMenu('page-actions-controls')" title="Sequence actions" aria-label="Sequence actions"
-        class="page-menu-toggle w-7 h-7 items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-base leading-none">⋮</button>
-    </div>
-  </div>
+  <!-- Header — React-rendered (Wave E). The React bundle mounts PageHeader
+       into this container via createRoot from app.tsx. -->
+  <div id="page-header-container"></div>
 
   <!-- Step list -->
   <div class="flex-1 overflow-y-auto">
@@ -163,6 +47,10 @@ await enableMocksIfRequested()
 <!-- LoadModal is now React-rendered. The React bundle (loaded below)
      mounts into this container via createRoot. -->
 <div id="load-modal-container"></div>
+
+<!-- Wave E React overlay modals (PromptModal, ApiRunModal, LookupModal,
+     FileExplorerModal) are mounted into this container. -->
+<div id="wave-e-container"></div>
 
 <!-- YAML modal -->
 <div id="yaml-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70" onclick="closeYamlModal(event)">

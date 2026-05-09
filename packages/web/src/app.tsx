@@ -3,11 +3,16 @@ import { getDefaultStore, Provider as JotaiProvider } from "jotai"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 
+import { ApiRunModal } from "./components/ApiRunModal"
 import { CommandPicker } from "./components/CommandPicker"
 import { EnumPicker } from "./components/EnumPicker"
+import { FileExplorerModal } from "./components/FileExplorerModal"
 import { LinkPicker } from "./components/LinkPicker"
 import { LoadModal } from "./components/LoadModal"
+import { LookupModal } from "./components/LookupModal"
+import { PageHeader } from "./components/PageHeader"
 import { PathPicker } from "./components/PathPicker"
+import { PromptModal } from "./components/PromptModal"
 import { AppRouter } from "./router"
 import { initBridge } from "./state/bridge"
 import "./styles/tailwindStyles.css"
@@ -71,6 +76,40 @@ if (pickersContainer) {
         <EnumPicker />
         <LinkPicker />
         <PathPicker />
+      </JotaiProvider>
+    </StrictMode>,
+  )
+}
+
+// ─── Wave E: PageHeader ───────────────────────────────────────────────────────
+// The React PageHeader replaces the #page-header div content.
+
+const pageHeaderContainer = document.getElementById("page-header-container")
+if (pageHeaderContainer) {
+  createRoot(pageHeaderContainer).render(
+    <StrictMode>
+      <JotaiProvider store={store}>
+        <PageHeader />
+      </JotaiProvider>
+    </StrictMode>,
+  )
+}
+
+// ─── Wave E: Overlay modals ───────────────────────────────────────────────────
+// All five modals share one React root. They're portal-mounted overlays so
+// nesting them in a single container has no visual effect.
+
+const waveEContainer = document.getElementById("wave-e-container")
+if (waveEContainer) {
+  createRoot(waveEContainer).render(
+    <StrictMode>
+      <JotaiProvider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <PromptModal />
+          <ApiRunModal />
+          <LookupModal />
+          <FileExplorerModal />
+        </QueryClientProvider>
       </JotaiProvider>
     </StrictMode>,
   )
