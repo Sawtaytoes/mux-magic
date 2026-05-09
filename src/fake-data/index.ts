@@ -12,22 +12,6 @@ import { inProgressScenario } from "./scenarios/inProgress.js"
 import { nameSpecialFeaturesScenario } from "./scenarios/nameSpecialFeatures.js"
 import { successScenario } from "./scenarios/success.js"
 
-// ---------------------------------------------------------------------------
-// Server-level flag — set once at boot from the --fake-data CLI arg or the
-// MEDIA_TOOLS_FAKE_DATA env var. When true, every route handler treats every
-// request as fake without needing the per-request ?fake=1 query string.
-// ---------------------------------------------------------------------------
-
-let serverFakeMode = false
-
-export const setFakeModeEnabled = (enabled: boolean): void => {
-  serverFakeMode = enabled
-}
-
-export const isFakeModeEnabled = (): boolean => (
-  serverFakeMode
-)
-
 // Per-request opt-in via `?fake=1`. The truthy values mirror what feels
 // natural in a URL — `1`, `true`, `yes`. Any other value (including
 // missing) is treated as off.
@@ -37,12 +21,9 @@ const isFakeQuery = (raw: string | undefined): boolean => {
   return lowered === "1" || lowered === "true" || lowered === "yes"
 }
 
-// Detect whether THIS request should use fake responses. Honors both
-// the server flag (always-on) and the per-request `?fake=1` query so
-// fake jobs can run alongside real ones on the same server instance.
+// Detect whether THIS request should use fake responses via `?fake=1`.
 export const isFakeRequest = (context: Context): boolean => (
-  serverFakeMode
-  || isFakeQuery(context.req.query("fake"))
+  isFakeQuery(context.req.query("fake"))
 )
 
 // ---------------------------------------------------------------------------
@@ -165,8 +146,7 @@ export const getFakeCommandConfigs = (): Record<CommandName, CommandConfig> => {
 
 // Resolves which `commandConfigs` map a caller should use. Routes /
 // the sequence runner pass a `useFake` boolean derived from
-// `isFakeRequest(context)` (per-request) or `isFakeModeEnabled()`
-// (server-instance) and get the right map back.
+// `isFakeRequest(context)` and get the right map back.
 export const getEffectiveCommandConfigs = (
   useFake: boolean,
 ): Record<CommandName, CommandConfig> => (
