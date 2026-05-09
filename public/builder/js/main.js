@@ -122,18 +122,6 @@ import {
   attachSequenceKeyboardShortcuts,
 } from './sequence-editor.js'
 import {
-  commandPicker,
-  enumPicker,
-  linkPicker,
-  onPathFieldBlur,
-  onPathFieldFocus,
-  onPathFieldInput,
-  pathPickerKeydown,
-  pathPickerSelectByIndex,
-  attachPathPickerDismissal,
-  schedulePathLookup,
-} from './pickers.js'
-import {
   runOrStopStep,
   runSequence,
   runGroup,
@@ -244,8 +232,6 @@ Object.assign(window.mediaTools, {
   clearStaleStepLinksAfterMove,
   scrollStepIntoView,
   scrollPathVarIntoView,
-  schedulePathLookup,
-  pathPickerKeydown,
   renderAllAnimated,
 
   // run-sequence
@@ -312,21 +298,6 @@ window.browsePathField = browsePathField
 window.setLink = setLink
 window.changeCommand = changeCommand
 
-// path / pickers
-Object.assign(window, {
-  onPathFieldBlur,
-  onPathFieldFocus,
-})
-window.onPathFieldInput = onPathFieldInput
-window.pathPickerKeydown = pathPickerKeydown
-window.pathPickerSelectByIndex = pathPickerSelectByIndex
-
-// Expose picker objects so HTML onkeydown/oninput in index.html can call:
-//   commandPicker.filter(this.value) / commandPicker.keydown(event) etc.
-window.commandPicker = commandPicker
-window.enumPicker = enumPicker
-window.linkPicker = linkPicker
-
 // run sequence
 window.runOrStopStep = runOrStopStep
 window.runSequence = runSequence
@@ -370,7 +341,6 @@ window.getOpenStepId = getOpenStepId
 
 attachPageHeaderListeners()
 attachModalEscapeListener()
-attachPathPickerDismissal()
 attachSequenceKeyboardShortcuts()
 attachCopyButtonListener()
 attachFieldTooltipListeners()

@@ -1,9 +1,10 @@
 import { useAtom } from "jotai"
 import { commandHelpModalCommandAtom } from "../state/uiAtoms"
+import type { CommandDefinition, CommandField } from "../types"
 
 interface FieldEntryProps {
   commandName: string
-  field: { name: string; label: string; type: string; required?: boolean }
+  field: CommandField
 }
 
 const FieldEntry = ({ commandName, field }: FieldEntryProps) => {
@@ -15,7 +16,7 @@ const FieldEntry = ({ commandName, field }: FieldEntryProps) => {
   return (
     <div className="border-b border-slate-800 pb-3 last:border-b-0">
       <div className="flex items-baseline flex-wrap gap-2 mb-1">
-        <span className="text-sm font-semibold text-slate-100">{field.label}</span>
+        <span className="text-sm font-semibold text-slate-100">{field.label ?? field.name}</span>
         <code className="text-[11px] text-slate-500 font-mono">{field.name}</code>
         <span className="text-[10px] uppercase tracking-wide text-slate-400 bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5">
           {field.type}
@@ -47,15 +48,21 @@ export const CommandHelpModal = ({ isOpen, onClose }: CommandHelpModalProps) => 
   const [commandName] = useAtom(commandHelpModalCommandAtom)
 
   const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) onClose()
+    if (event.target === event.currentTarget) {
+      onClose()
+    }
   }
 
-  if (!isOpen || !commandName) return null
+  if (!isOpen || !commandName) {
+    return null
+  }
 
-  const commands = window.mediaTools?.COMMANDS ?? {}
+  const commands = (window.mediaTools?.COMMANDS ?? {}) as Record<string, CommandDefinition>
   const commandConfig = commands[commandName]
 
-  if (!commandConfig) return null
+  if (!commandConfig) {
+    return null
+  }
 
   const summary =
     (typeof window.getCommandSummary === "function"

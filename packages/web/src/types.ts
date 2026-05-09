@@ -1,15 +1,37 @@
+export type EnumOption = {
+  value: string | number | boolean
+  label: string
+}
+
 export type CommandField = {
   name: string
   type: string
+  label?: string
+  required?: boolean
+  default?: unknown
+  options?: EnumOption[]
   companionNameField?: string
+  sourceField?: string
+  lookupType?: string
+  placeholder?: string
 }
 
 export type CommandDefinition = {
+  tag?: string
+  summary?: string
+  note?: string
   fields: CommandField[]
   persistedKeys?: string[]
+  outputFolderName?: string | null
+  outputComputation?: string
 }
 
 export type Commands = Record<string, CommandDefinition>
+
+export type DirEntry = {
+  name: string
+  isDirectory: boolean
+}
 
 export type StepLink =
   | string // path variable ID, e.g. "basePath"

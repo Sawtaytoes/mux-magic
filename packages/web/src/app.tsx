@@ -4,10 +4,14 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 
 import { ApiRunModal } from "./components/ApiRunModal"
+import { CommandPicker } from "./components/CommandPicker"
+import { EnumPicker } from "./components/EnumPicker"
 import { FileExplorerModal } from "./components/FileExplorerModal"
+import { LinkPicker } from "./components/LinkPicker"
 import { LoadModal } from "./components/LoadModal"
 import { LookupModal } from "./components/LookupModal"
 import { PageHeader } from "./components/PageHeader"
+import { PathPicker } from "./components/PathPicker"
 import { PromptModal } from "./components/PromptModal"
 import { AppRouter } from "./router"
 import { initBridge } from "./state/bridge"
@@ -52,6 +56,26 @@ if (loadModalContainer) {
     <StrictMode>
       <JotaiProvider store={store}>
         <LoadModal />
+      </JotaiProvider>
+    </StrictMode>,
+  )
+}
+
+// ─── Pickers (legacy HTML context — transitional) ─────────────────────────────
+// All four pickers render via createPortal into document.body, so they only
+// need a single tiny mount point. Triggers are legacy DOM buttons/inputs that
+// call window.commandPicker.open() / window.enumPicker.open() etc., which write
+// into Jotai atoms via the bridge. Collapsed into the main root in the Final PR.
+
+const pickersContainer = document.getElementById("pickers-container")
+if (pickersContainer) {
+  createRoot(pickersContainer).render(
+    <StrictMode>
+      <JotaiProvider store={store}>
+        <CommandPicker />
+        <EnumPicker />
+        <LinkPicker />
+        <PathPicker />
       </JotaiProvider>
     </StrictMode>,
   )

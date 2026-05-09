@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { InsertDivider } from "./InsertDivider"
 
 const makeProps = () => ({
+  index: 0,
   onInsertStep: vi.fn(),
   onInsertSequentialGroup: vi.fn(),
   onInsertParallelGroup: vi.fn(),
