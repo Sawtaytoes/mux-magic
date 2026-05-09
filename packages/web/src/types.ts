@@ -166,3 +166,36 @@ export type FileExplorerState = {
   path: string
   pickerOnSelect: ((selectedPath: string) => void) | null
 }
+
+// ─── Wave F: Jobs page ────────────────────────────────────────────────────────
+
+export type ProgressSnapshot = {
+  ratio?: number
+  filesDone?: number
+  filesTotal?: number
+  bytesPerSecond?: number
+  bytesRemaining?: number
+  currentFiles?: Array<{ path: string; ratio?: number }>
+}
+
+export type JobStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | "skipped"
+
+export type Job = {
+  id: string
+  commandName?: string
+  command?: string
+  status: JobStatus
+  startedAt?: string
+  completedAt?: string
+  parentJobId?: string
+  stepId?: string
+  params?: Record<string, unknown>
+  error?: string
+  results?: unknown[]
+}

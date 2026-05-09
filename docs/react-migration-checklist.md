@@ -1,6 +1,6 @@
 # React Migration Checklist
 
-Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave D: StepCard, GroupCard, PathVarCard, DragAndDrop)
+Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave F: Jobs page)
 
 ## Phase Status
 
@@ -18,7 +18,7 @@ Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave D: StepCard, GroupCard, Path
 | Wave C | All pickers (parallel) | [x] Done | react-migration | CommandPicker, EnumPicker, LinkPicker, PathPicker — Jotai atoms + bridge + createPortal; legacy picker JS deleted; tests+stories for all 4 |
 | Wave D | StepCard, GroupCard, PathVarCard, DragAndDrop | [x] Done | react-migration | sequenceAtoms.ts (all step/group mutations); StepCard, GroupCard, PathVarCard, useDragAndDrop hook (Sortable.js, animation:0); DoubleChevron icon; RenderFields stub; tests+stories for all; typecheck clean |
 | Wave E | PageHeader, LookupModal, RunSequence, etc. | [x] Done | worktree-wave-e | PageHeader, LookupModal, FileExplorerModal, ApiRunModal, PromptModal — all with tests + stories |
-| Wave F | Jobs page | [ ] Not started | | |
+| Wave F | Jobs page | [x] Done | react-migration | JobCard + StatusBar + ProgressBar + useSseStream + useLogStream + useTolerantEventSource; JobsPage live; public/jobs/ deleted |
 | Final | Delete legacy files, bridge cleanup | [ ] Not started | | |
 
 ## Decisions Made

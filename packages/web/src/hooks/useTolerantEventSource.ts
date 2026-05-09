@@ -1,78 +1,77 @@
 import { useEffect, useRef } from "react"
 
-type SseMessage = Record<string, unknown>
+type DisconnectInfo = { final: boolean }
 
-type UseTolerantEventSourceOptions = {
-  onMessage: (data: SseMessage) => void
-  onPossiblyDisconnected: () => void
+type Options<T> = {
+  url: string
+  enabled?: boolean
+  graceMs?: number
+  onMessage?: (data: T, event: MessageEvent) => void
+  onConnected?: () => void
+  onPossiblyDisconnected?: (info: DisconnectInfo) => void
 }
 
-// Maximum number of reconnect attempts before calling onPossiblyDisconnected.
-const MAX_RETRIES = 3
-// Delay (ms) between reconnect attempts.
-const RETRY_DELAY_MS = 2000
-
-/**
- * Opens a persistent SSE connection to `url`. Reconnects up to MAX_RETRIES
- * times on error before calling `onPossiblyDisconnected`. The connection is
- * closed and cleaned up when the component unmounts or `url` changes.
- *
- * Pass `null` as `url` to keep the hook mounted but idle (no connection open).
- */
-const useTolerantEventSource = (
-  url: string | null,
-  { onMessage, onPossiblyDisconnected }: UseTolerantEventSourceOptions,
-) => {
-  // Store callbacks in refs so callers can pass inline lambdas without
-  // needing to memoize — stale closures are the silent bug here.
+// Wraps EventSource with tolerant-reconnect behaviour: onPossiblyDisconnected
+// only fires after graceMs of continuous CONNECTING state, so brief blips are
+// invisible to the UI. Callback refs prevent re-running when handler identities change.
+export const useTolerantEventSource = <T>({
+  url,
+  enabled = true,
+  graceMs = 5000,
+  onMessage,
+  onConnected,
+  onPossiblyDisconnected,
+}: Options<T>): void => {
   const onMessageRef = useRef(onMessage)
+  const onConnectedRef = useRef(onConnected)
   const onDisconnectedRef = useRef(onPossiblyDisconnected)
   onMessageRef.current = onMessage
+  onConnectedRef.current = onConnected
   onDisconnectedRef.current = onPossiblyDisconnected
 
   useEffect(() => {
-    if (!url) return
+    if (!enabled) return
 
-    let es: EventSource | null = null
-    let retries = 0
-    let retryTimer: ReturnType<typeof setTimeout> | null = null
-    let cancelled = false
+    const es = new EventSource(url)
+    let lostTimer: ReturnType<typeof setTimeout> | null = null
 
-    const connect = () => {
-      if (cancelled) return
-      es = new EventSource(url)
-
-      es.onmessage = (event) => {
-        retries = 0
-        try {
-          const data = JSON.parse(event.data) as SseMessage
-          onMessageRef.current(data)
-        } catch {
-          // Malformed JSON — skip without crashing the stream.
-        }
-      }
-
-      es.onerror = () => {
-        es?.close()
-        es = null
-        if (cancelled) return
-        retries += 1
-        if (retries >= MAX_RETRIES) {
-          onDisconnectedRef.current()
-          return
-        }
-        retryTimer = setTimeout(connect, RETRY_DELAY_MS)
+    const clearLostTimer = () => {
+      if (lostTimer !== null) {
+        clearTimeout(lostTimer)
+        lostTimer = null
       }
     }
 
-    connect()
+    es.onopen = () => {
+      clearLostTimer()
+      onConnectedRef.current?.()
+    }
+
+    es.onmessage = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data) as T
+        onMessageRef.current?.(data, event)
+      } catch {
+        // silently drop malformed JSON
+      }
+    }
+
+    es.onerror = () => {
+      if (es.readyState === EventSource.CLOSED) {
+        clearLostTimer()
+        onDisconnectedRef.current?.({ final: true })
+        return
+      }
+      if (lostTimer !== null) return
+      lostTimer = setTimeout(() => {
+        lostTimer = null
+        onDisconnectedRef.current?.({ final: false })
+      }, graceMs)
+    }
 
     return () => {
-      cancelled = true
-      if (retryTimer !== null) clearTimeout(retryTimer)
-      es?.close()
+      clearLostTimer()
+      es.close()
     }
-  }, [url])
+  }, [url, enabled, graceMs])
 }
-
-export { useTolerantEventSource }
