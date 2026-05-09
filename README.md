@@ -164,6 +164,42 @@ yarn server                                    # default port 3000
 PORT=8080 yarn server                          # custom port
 ```
 
+### Environment variables
+
+All environment variables are optional. Set them in `.env` or pass them to the server:
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3000` | Server port. |
+| `MAX_THREADS` | CPU core count | Concurrent thread limit for all commands. **Important for lower-end systems** — set to 2–4 to reduce memory/CPU usage. Example: `MAX_THREADS=2 yarn server`. |
+| `DELETE_TO_TRASH` | `true` | Send deleted files to trash instead of permanent deletion. Set to `false` for immediate deletion. |
+| `MAX_TRANSCODE_CONCURRENCY` | `4` | Maximum number of concurrent audio transcode jobs (for browser audio playback fallback). Lower this on resource-constrained systems. |
+| `TRANSCODE_CACHE_MAX_BYTES` | `4294967296` (4 GB) | Maximum size of the transcode cache directory. Cache lives in `os.tmpdir()/media-tools-transcode-cache/`. |
+| `ANIDB_CACHE_FOLDER` | `./.cache/anidb` | Cache directory for AniDB metadata. **In Docker, set this to a mounted volume** so cache survives restarts (e.g., `/cache/anidb`). |
+| `TMDB_API_KEY` | — | The Movie Database API key for movie/TV metadata lookup. Get one free at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api). |
+| `REMOTE_SERVER_DOMAIN` | — | Public domain for remote-server links in API documentation. Only needed when the server is accessible from the internet. |
+| `MEDIA_TOOLS_FAKE_DATA` | — | Set to `true` or `1` to populate the UI with mock data (useful for development/screenshots). |
+
+#### Docker example
+
+```dockerfile
+ENV PORT=3000
+ENV MAX_THREADS=2
+ENV DELETE_TO_TRASH=false
+ENV ANIDB_CACHE_FOLDER=/cache/anidb
+ENV TMDB_API_KEY=your-key-here
+
+VOLUME ["/cache/anidb"]
+EXPOSE 3000
+CMD ["yarn", "server"]
+```
+
+Or via `docker run`:
+
+```sh
+docker run -e PORT=3000 -e MAX_THREADS=2 -e ANIDB_CACHE_FOLDER=/cache/anidb -v /host/cache:/cache/anidb media-tools
+```
+
 ### Job lifecycle
 
 1. `POST /jobs/<command>` — creates a job, starts it immediately, returns `{ jobId, logsUrl }` with HTTP 202.
