@@ -247,6 +247,26 @@ export const fakeDeleteMode = () => ({
   reason: null as string | null,
 })
 
+// Fake response for POST /files/rename. The "failure" scenario is what
+// you'd hit by clicking Rename Selected in Fix-Unnamed while the dry-run
+// failure toggle is on — useful for exercising the per-row error path.
+export const fakeRenameFile = (
+  { newPath, scenario }: { newPath: string; scenario: Scenario | null },
+) => {
+  if (scenario === "failure") {
+    return {
+      ok: false as const,
+      newPath: null,
+      error: "fake: rename failed (dry-run failure scenario)",
+    }
+  }
+  return {
+    ok: true as const,
+    newPath,
+    error: null,
+  }
+}
+
 // Search results — three canned entries each, enough to populate a
 // dropdown with selectable options.
 

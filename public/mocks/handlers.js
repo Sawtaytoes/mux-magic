@@ -185,6 +185,19 @@ export const handlers = [
     HttpResponse.json(mockFilesList, { status: 200 })
   )),
 
+  // Rename in mock mode — accept whatever paths the UI sends and report
+  // success without touching the real filesystem. Mirrors the server's
+  // ?fake=1 short-circuit so the Fix-Unnamed → Rename Selected flow
+  // works under either dry-run or useMocks (or both at once).
+  http.post("*/files/rename", async ({ request }) => {
+    const body = await request.json().catch(() => ({}))
+    return HttpResponse.json({
+      ok: true,
+      newPath: body?.newPath ?? null,
+      error: null,
+    }, { status: 200 })
+  }),
+
   // Inputs (Builder typeahead) — the spec called for /inputs; the
   // production route is /queries/listDirectoryEntries. Mocking both.
   http.get("*/inputs", () => (

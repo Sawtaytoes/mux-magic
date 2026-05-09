@@ -127,6 +127,43 @@ describe("POST /files/rename", () => {
 
     expect(response.status).toBe(400)
   })
+
+  test("?fake=1 short-circuits with ok:true and never touches disk", async () => {
+    const response = await fileRoutes.request("/files/rename?fake=1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        oldPath: "/nonexistent/source.mkv",
+        newPath: "/nonexistent/dest.mkv",
+      }),
+    })
+    const body = await response.json() as { ok: boolean; newPath: string | null; error: string | null }
+
+    expect(response.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(body.newPath).toBe("/nonexistent/dest.mkv")
+    expect(body.error).toBeNull()
+    // Real file we seeded must still be present — fake path didn't run rename.
+    const stillThere = await stat("/work/old-name.mkv")
+    expect(stillThere.isFile()).toBe(true)
+  })
+
+  test("?fake=failure short-circuits with ok:false so the UI can exercise its error path", async () => {
+    const response = await fileRoutes.request("/files/rename?fake=failure", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        oldPath: "/nonexistent/source.mkv",
+        newPath: "/nonexistent/dest.mkv",
+      }),
+    })
+    const body = await response.json() as { ok: boolean; newPath: string | null; error: string | null }
+
+    expect(response.status).toBe(200)
+    expect(body.ok).toBe(false)
+    expect(body.newPath).toBeNull()
+    expect(body.error).toMatch(/fake/i)
+  })
 })
 
 describe("GET /files/audio-codec", () => {

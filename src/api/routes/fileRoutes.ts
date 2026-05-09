@@ -12,6 +12,8 @@ import {
   fakeDefaultPath,
   fakeDeleteMode,
   fakeListFiles,
+  fakeRenameFile,
+  getFakeScenario,
   isFakeRequest,
 } from "../../fake-data/index.js"
 import {
@@ -297,6 +299,12 @@ fileRoutes.openapi(
   }),
   async (context) => {
     const { oldPath, newPath } = context.req.valid("json")
+    if (isFakeRequest(context)) {
+      return context.json(
+        fakeRenameFile({ newPath, scenario: getFakeScenario(context) }),
+        200,
+      )
+    }
     const validation = (() => {
       try {
         return {
