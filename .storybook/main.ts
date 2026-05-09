@@ -1,5 +1,6 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import remarkGfm from "remark-gfm";
 import type { StorybookConfig } from "@storybook/react-vite";
 import { mergeConfig } from "vite";
 
@@ -33,4 +34,16 @@ const config: StorybookConfig = {
     }),
 };
 
-export default config;
+// `options.mdxPluginOptions` is read by @storybook/addon-docs' MDX vite plugin
+// via presets.apply("options"). StorybookConfig doesn't type this key, so we
+// spread config (typed) and add options separately in the export.
+export default {
+  ...config,
+  options: {
+    mdxPluginOptions: {
+      mdxCompileOptions: {
+        remarkPlugins: [remarkGfm],
+      },
+    },
+  },
+};
