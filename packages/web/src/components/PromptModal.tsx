@@ -1,106 +1,102 @@
-import { useAtom } from "jotai";
-import { useEffect, useRef } from "react";
-import type { PromptOption } from "../types";
-import { promptModalAtom } from "../state/uiAtoms";
+import { useAtom } from "jotai"
+import { useEffect, useRef } from "react"
+import { promptModalAtom } from "../state/uiAtoms"
+import type { PromptOption } from "../types"
 
-const submitPromptChoice = async (
-  jobId: string,
-  promptId: string,
-  selectedIndex: number,
-) => {
+const submitPromptChoice = async (jobId: string, promptId: string, selectedIndex: number) => {
   try {
     await fetch(`/jobs/${jobId}/input`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ promptId, selectedIndex }),
-    });
+    })
   } catch (error) {
-    console.error("Failed to submit prompt response", error);
+    console.error("Failed to submit prompt response", error)
   }
-};
+}
 
 const sortOptions = (options: PromptOption[]): PromptOption[] =>
   [...options].sort((optionA, optionB) => {
-    const isSkipA = optionA.index < 0;
-    const isSkipB = optionB.index < 0;
-    if (isSkipA && isSkipB) return 0;
-    if (isSkipA) return 1;
-    if (isSkipB) return -1;
-    const rankA = optionA.index === 0 ? 9.5 : optionA.index;
-    const rankB = optionB.index === 0 ? 9.5 : optionB.index;
-    return rankA - rankB;
-  });
+    const isSkipA = optionA.index < 0
+    const isSkipB = optionB.index < 0
+    if (isSkipA && isSkipB) return 0
+    if (isSkipA) return 1
+    if (isSkipB) return -1
+    const rankA = optionA.index === 0 ? 9.5 : optionA.index
+    const rankB = optionB.index === 0 ? 9.5 : optionB.index
+    return rankA - rankB
+  })
 
 export const PromptModal = () => {
-  const [promptData, setPromptData] = useAtom(promptModalAtom);
-  const promptDataRef = useRef(promptData);
-  promptDataRef.current = promptData;
+  const [promptData, setPromptData] = useAtom(promptModalAtom)
+  const promptDataRef = useRef(promptData)
+  promptDataRef.current = promptData
 
-  const close = () => setPromptData(null);
+  const close = () => setPromptData(null)
 
   const pick = async (selectedIndex: number) => {
-    if (!promptData) return;
-    close();
-    await submitPromptChoice(promptData.jobId, promptData.promptId, selectedIndex);
-  };
+    if (!promptData) return
+    close()
+    await submitPromptChoice(promptData.jobId, promptData.promptId, selectedIndex)
+  }
 
   // Keyboard shortcuts: digits select options; Space/Escape skip or cancel.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      const current = promptDataRef.current;
-      if (!current) return;
+      const current = promptDataRef.current
+      if (!current) return
 
-      const num = parseInt(event.key, 10);
+      const num = parseInt(event.key, 10)
       if (!isNaN(num)) {
-        const match = current.options.find((option) => option.index === num);
+        const match = current.options.find((option) => option.index === num)
         if (match) {
-          void submitPromptChoice(current.jobId, current.promptId, match.index);
-          setPromptData(null);
+          void submitPromptChoice(current.jobId, current.promptId, match.index)
+          setPromptData(null)
         }
-        return;
+        return
       }
       if (event.key === " " || event.key === "Spacebar") {
-        const skipOption = current.options.find((option) => option.index === -1);
+        const skipOption = current.options.find((option) => option.index === -1)
         if (skipOption) {
-          event.preventDefault();
-          void submitPromptChoice(current.jobId, current.promptId, -1);
-          setPromptData(null);
+          event.preventDefault()
+          void submitPromptChoice(current.jobId, current.promptId, -1)
+          setPromptData(null)
         }
-        return;
+        return
       }
       if (event.key === "Escape" || event.key === "-") {
-        const cancelOption = current.options.find((option) => option.index === -2);
+        const cancelOption = current.options.find((option) => option.index === -2)
         if (cancelOption) {
-          event.preventDefault();
-          void submitPromptChoice(current.jobId, current.promptId, -2);
-          setPromptData(null);
-          return;
+          event.preventDefault()
+          void submitPromptChoice(current.jobId, current.promptId, -2)
+          setPromptData(null)
+          return
         }
-        const skipOption = current.options.find((option) => option.index === -1);
+        const skipOption = current.options.find((option) => option.index === -1)
         if (skipOption) {
-          event.preventDefault();
-          void submitPromptChoice(current.jobId, current.promptId, -1);
-          setPromptData(null);
+          event.preventDefault()
+          void submitPromptChoice(current.jobId, current.promptId, -1)
+          setPromptData(null)
         }
       }
-    };
+    }
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [setPromptData]);
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [setPromptData])
 
-  if (!promptData) return null;
+  if (!promptData) return null
 
-  const sortedOptions = sortOptions(promptData.options);
+  const sortedOptions = sortOptions(promptData.options)
   const filePathsByIndex = new Map(
     (promptData.filePaths ?? []).map((entry) => [entry.index, entry.path]),
-  );
+  )
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       onClick={(event) => {
-        if (event.target === event.currentTarget) close();
+        if (event.target === event.currentTarget) close()
       }}
     >
       <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 p-5 flex flex-col gap-4">
@@ -114,7 +110,7 @@ export const PromptModal = () => {
               className="text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-medium leading-none"
               onClick={() => {
                 if (typeof window.openVideoModal === "function") {
-                  window.openVideoModal(promptData.filePath!);
+                  window.openVideoModal(promptData.filePath!)
                 }
               }}
             >
@@ -125,14 +121,14 @@ export const PromptModal = () => {
 
         <div id="prompt-options" className="flex flex-col gap-2">
           {sortedOptions.map((option) => {
-            const isSkip = option.index === -1;
-            const rowFilePath = filePathsByIndex.get(option.index) ?? null;
+            const isSkip = option.index === -1
+            const rowFilePath = filePathsByIndex.get(option.index) ?? null
             const keyHint =
               option.index >= 0 && option.index <= 9 ? (
                 <span className="text-xs font-mono bg-slate-700 px-1.5 py-0.5 rounded mr-2">
                   {option.index}
                 </span>
-              ) : null;
+              ) : null
 
             if (rowFilePath) {
               return (
@@ -151,17 +147,17 @@ export const PromptModal = () => {
                     className="shrink-0 text-xs px-3 rounded-r-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium"
                     title="Preview this file before picking"
                     onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
+                      event.preventDefault()
+                      event.stopPropagation()
                       if (typeof window.openVideoModal === "function") {
-                        window.openVideoModal(rowFilePath);
+                        window.openVideoModal(rowFilePath)
                       }
                     }}
                   >
                     ▶ Play
                   </button>
                 </div>
-              );
+              )
             }
 
             return (
@@ -177,10 +173,10 @@ export const PromptModal = () => {
                 {keyHint}
                 {option.label}
               </button>
-            );
+            )
           })}
         </div>
       </div>
     </div>
-  );
-};
+  )
+}

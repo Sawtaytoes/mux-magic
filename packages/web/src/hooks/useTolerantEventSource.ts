@@ -1,16 +1,16 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react"
 
-type SseMessage = Record<string, unknown>;
+type SseMessage = Record<string, unknown>
 
 type UseTolerantEventSourceOptions = {
-  onMessage: (data: SseMessage) => void;
-  onPossiblyDisconnected: () => void;
-};
+  onMessage: (data: SseMessage) => void
+  onPossiblyDisconnected: () => void
+}
 
 // Maximum number of reconnect attempts before calling onPossiblyDisconnected.
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 3
 // Delay (ms) between reconnect attempts.
-const RETRY_DELAY_MS = 2000;
+const RETRY_DELAY_MS = 2000
 
 /**
  * Opens a persistent SSE connection to `url`. Reconnects up to MAX_RETRIES
@@ -25,54 +25,54 @@ const useTolerantEventSource = (
 ) => {
   // Store callbacks in refs so callers can pass inline lambdas without
   // needing to memoize — stale closures are the silent bug here.
-  const onMessageRef = useRef(onMessage);
-  const onDisconnectedRef = useRef(onPossiblyDisconnected);
-  onMessageRef.current = onMessage;
-  onDisconnectedRef.current = onPossiblyDisconnected;
+  const onMessageRef = useRef(onMessage)
+  const onDisconnectedRef = useRef(onPossiblyDisconnected)
+  onMessageRef.current = onMessage
+  onDisconnectedRef.current = onPossiblyDisconnected
 
   useEffect(() => {
-    if (!url) return;
+    if (!url) return
 
-    let es: EventSource | null = null;
-    let retries = 0;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-    let cancelled = false;
+    let es: EventSource | null = null
+    let retries = 0
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let cancelled = false
 
     const connect = () => {
-      if (cancelled) return;
-      es = new EventSource(url);
+      if (cancelled) return
+      es = new EventSource(url)
 
       es.onmessage = (event) => {
-        retries = 0;
+        retries = 0
         try {
-          const data = JSON.parse(event.data) as SseMessage;
-          onMessageRef.current(data);
+          const data = JSON.parse(event.data) as SseMessage
+          onMessageRef.current(data)
         } catch {
           // Malformed JSON — skip without crashing the stream.
         }
-      };
+      }
 
       es.onerror = () => {
-        es?.close();
-        es = null;
-        if (cancelled) return;
-        retries += 1;
+        es?.close()
+        es = null
+        if (cancelled) return
+        retries += 1
         if (retries >= MAX_RETRIES) {
-          onDisconnectedRef.current();
-          return;
+          onDisconnectedRef.current()
+          return
         }
-        retryTimer = setTimeout(connect, RETRY_DELAY_MS);
-      };
-    };
+        retryTimer = setTimeout(connect, RETRY_DELAY_MS)
+      }
+    }
 
-    connect();
+    connect()
 
     return () => {
-      cancelled = true;
-      if (retryTimer !== null) clearTimeout(retryTimer);
-      es?.close();
-    };
-  }, [url]);
-};
+      cancelled = true
+      if (retryTimer !== null) clearTimeout(retryTimer)
+      es?.close()
+    }
+  }, [url])
+}
 
-export { useTolerantEventSource };
+export { useTolerantEventSource }

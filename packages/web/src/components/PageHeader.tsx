@@ -1,40 +1,40 @@
-import { useAtom, useAtomValue } from "jotai";
-import { useEffect, useRef, useState } from "react";
-import { dryRunAtom, failureModeAtom, runningAtom } from "../state/uiAtoms";
+import { useAtom, useAtomValue } from "jotai"
+import { useEffect, useRef, useState } from "react"
+import { dryRunAtom, failureModeAtom, runningAtom } from "../state/uiAtoms"
 
 // ─── Responsive menu state ────────────────────────────────────────────────────
 
-type OpenMenu = "nav" | "controls" | null;
+type OpenMenu = "nav" | "controls" | null
 
 const toggleMenu = (current: OpenMenu, target: OpenMenu): OpenMenu =>
-  current === target ? null : target;
+  current === target ? null : target
 
 // ─── Bridge call helpers ──────────────────────────────────────────────────────
 // These reach into the legacy JS via window.mediaTools during the transitional
 // period. Each one is guarded so TypeScript doesn't complain about unknown keys.
 
 const callBridge = (method: string, ...args: unknown[]) => {
-  const bridge = window.mediaTools as Record<string, unknown> | undefined;
+  const bridge = window.mediaTools as Record<string, unknown> | undefined
   if (typeof bridge?.[method] === "function") {
-    (bridge[method] as (...a: unknown[]) => void)(...args);
+    ;(bridge[method] as (...a: unknown[]) => void)(...args)
   }
-};
+}
 
 // ─── PageHeader ───────────────────────────────────────────────────────────────
 
 export const PageHeader = () => {
-  const [dryRun, setDryRun] = useAtom(dryRunAtom);
-  const [failureMode, setFailureMode] = useAtom(failureModeAtom);
-  const running = useAtomValue(runningAtom);
+  const [dryRun, setDryRun] = useAtom(dryRunAtom)
+  const [failureMode, setFailureMode] = useAtom(failureModeAtom)
+  const running = useAtomValue(runningAtom)
 
-  const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
+  const [openMenu, setOpenMenu] = useState<OpenMenu>(null)
   // Undo/redo disabled state: the legacy syncUndoRedoButtons() mutates these
   // DOM nodes directly. MutationObserver keeps React in sync without touching
   // the legacy module.
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
-  const undoRef = useRef<HTMLButtonElement>(null);
-  const redoRef = useRef<HTMLButtonElement>(null);
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
+  const undoRef = useRef<HTMLButtonElement>(null)
+  const redoRef = useRef<HTMLButtonElement>(null)
 
   // ─── Observe legacy undo/redo DOM mutations ────────────────────────────────
   useEffect(() => {
@@ -42,70 +42,64 @@ export const PageHeader = () => {
       ref: React.RefObject<HTMLButtonElement | null>,
       setEnabled: (v: boolean) => void,
     ) => {
-      if (!ref.current) return () => {};
+      if (!ref.current) return () => {}
       const observer = new MutationObserver(() => {
-        setEnabled(!ref.current!.disabled);
-      });
+        setEnabled(!ref.current!.disabled)
+      })
       observer.observe(ref.current, {
         attributes: true,
         attributeFilter: ["disabled"],
-      });
-      return () => observer.disconnect();
-    };
-    const cleanUndo = observe(undoRef, setCanUndo);
-    const cleanRedo = observe(redoRef, setCanRedo);
+      })
+      return () => observer.disconnect()
+    }
+    const cleanUndo = observe(undoRef, setCanUndo)
+    const cleanRedo = observe(redoRef, setCanRedo)
     return () => {
-      cleanUndo();
-      cleanRedo();
-    };
-  }, []);
+      cleanUndo()
+      cleanRedo()
+    }
+  }, [])
 
   // ─── Click-outside dismissal for responsive menus ─────────────────────────
   useEffect(() => {
-    if (!openMenu) return;
+    if (!openMenu) return
     const handleMouseDown = (event: MouseEvent) => {
-      const target = event.target as Element | null;
+      const target = event.target as Element | null
       // Ignore clicks on the toggle buttons themselves (their onClick already
       // handles open/close) and inside the open menu panel.
-      if (
-        target?.closest("#page-nav-toggle, #page-controls-toggle, .page-menu")
-      )
-        return;
-      setOpenMenu(null);
-    };
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
-  }, [openMenu]);
+      if (target?.closest("#page-nav-toggle, #page-controls-toggle, .page-menu")) return
+      setOpenMenu(null)
+    }
+    document.addEventListener("mousedown", handleMouseDown)
+    return () => document.removeEventListener("mousedown", handleMouseDown)
+  }, [openMenu])
 
   // ─── Esc key: close menus + legacy modals ────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      callBridge("closeYamlModal");
-      callBridge("closeApiRunModal");
-      setOpenMenu(null);
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+      if (event.key !== "Escape") return
+      callBridge("closeYamlModal")
+      callBridge("closeApiRunModal")
+      setOpenMenu(null)
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [])
 
   const toggleDryRun = () => {
-    const next = !dryRun;
-    setDryRun(next);
-    localStorage.setItem("isDryRun", next ? "1" : "0");
-  };
+    const next = !dryRun
+    setDryRun(next)
+    localStorage.setItem("isDryRun", next ? "1" : "0")
+  }
 
   const toggleFailureMode = () => {
-    const next = !failureMode;
-    setFailureMode(next);
-    localStorage.setItem("dryRunScenario", next ? "failure" : "");
-  };
+    const next = !failureMode
+    setFailureMode(next)
+    localStorage.setItem("dryRunScenario", next ? "failure" : "")
+  }
 
   return (
-    <div
-      id="page-header"
-      className="shrink-0 border-b border-slate-700 bg-slate-900 z-10"
-    >
+    <div id="page-header" className="shrink-0 border-b border-slate-700 bg-slate-900 z-10">
       <div className="page-header-inner flex items-center px-4 py-3 gap-3">
         {/* Responsive nav toggle */}
         <button
@@ -158,8 +152,8 @@ export const PageHeader = () => {
           <div className="page-menu-group">
             <button
               onClick={() => {
-                callBridge("startNewSequence");
-                setOpenMenu(null);
+                callBridge("startNewSequence")
+                setOpenMenu(null)
               }}
               title="Clear the current sequence and start fresh (Ctrl+Z to undo)"
               className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded font-medium border border-slate-600"
@@ -255,9 +249,7 @@ export const PageHeader = () => {
               <span
                 id="dry-run-track"
                 className={`relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden border transition-colors ${
-                  dryRun
-                    ? "bg-amber-500 border-amber-400"
-                    : "bg-slate-600 border-slate-500"
+                  dryRun ? "bg-amber-500 border-amber-400" : "bg-slate-600 border-slate-500"
                 }`}
               >
                 <span
@@ -282,9 +274,7 @@ export const PageHeader = () => {
                 <span
                   id="failure-mode-track"
                   className={`relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden border transition-colors ${
-                    failureMode
-                      ? "bg-red-600 border-red-500"
-                      : "bg-slate-600 border-slate-500"
+                    failureMode ? "bg-red-600 border-red-500" : "bg-slate-600 border-slate-500"
                   }`}
                 >
                   <span
@@ -415,5 +405,5 @@ export const PageHeader = () => {
         </button>
       </div>
     </div>
-  );
-};
+  )
+}

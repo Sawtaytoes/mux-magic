@@ -1,20 +1,19 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { createStore, Provider } from "jotai";
-import { promptModalAtom } from "../state/uiAtoms";
-import { PromptModal } from "./PromptModal";
+import type { Meta, StoryObj } from "@storybook/react"
+import { createStore, Provider } from "jotai"
+import { promptModalAtom } from "../state/uiAtoms"
+import { PromptModal } from "./PromptModal"
 
-const store = createStore();
+const store = createStore()
 store.set(promptModalAtom, {
   jobId: "job-demo",
   promptId: "prompt-demo",
-  message:
-    "Multiple files matched — which one should be used for the artwork extraction?",
+  message: "Multiple files matched — which one should be used for the artwork extraction?",
   options: [
     { index: 1, label: "Movie.2023.BluRay.mkv" },
     { index: 2, label: "Movie.2023.WEB-DL.mkv" },
     { index: -1, label: "Skip this step" },
   ],
-});
+})
 
 const meta: Meta<typeof PromptModal> = {
   title: "Wave E/PromptModal",
@@ -26,14 +25,14 @@ const meta: Meta<typeof PromptModal> = {
       </Provider>
     ),
   ],
-};
-export default meta;
+}
+export default meta
 
-type Story = StoryObj<typeof PromptModal>;
+type Story = StoryObj<typeof PromptModal>
 
-export const Default: Story = {};
+export const Default: Story = {}
 
-const storeWithFilePaths = createStore();
+const storeWithFilePaths = createStore()
 storeWithFilePaths.set(promptModalAtom, {
   jobId: "job-fp",
   promptId: "prompt-fp",
@@ -47,7 +46,7 @@ storeWithFilePaths.set(promptModalAtom, {
     { index: 2, label: "Extras disc" },
     { index: -1, label: "Skip" },
   ],
-});
+})
 
 export const WithPerRowPlayButtons: Story = {
   decorators: [
@@ -57,4 +56,4 @@ export const WithPerRowPlayButtons: Story = {
       </Provider>
     ),
   ],
-};
+}

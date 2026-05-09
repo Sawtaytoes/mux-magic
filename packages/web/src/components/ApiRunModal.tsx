@@ -1,17 +1,17 @@
-import { useAtom, useSetAtom } from "jotai";
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { RunStatus } from "../types";
-import { useTolerantEventSource } from "../hooks/useTolerantEventSource";
-import { apiRunModalAtom, promptModalAtom, runningAtom } from "../state/uiAtoms";
+import { useAtom, useSetAtom } from "jotai"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useTolerantEventSource } from "../hooks/useTolerantEventSource"
+import { apiRunModalAtom, promptModalAtom, runningAtom } from "../state/uiAtoms"
+import type { RunStatus } from "../types"
 
 // ─── Progress bar utilities (mirrors the legacy window.ProgressUtils API) ─────
 
-type ProgressSnapshot = Record<string, unknown>;
+type ProgressSnapshot = Record<string, unknown>
 
 const mergeProgress = (
   snapshot: ProgressSnapshot,
   event: Record<string, unknown>,
-): ProgressSnapshot => ({ ...snapshot, ...event });
+): ProgressSnapshot => ({ ...snapshot, ...event })
 
 const STATUS_CLASSES: Record<RunStatus, string> = {
   pending: "bg-slate-700 text-slate-300",
@@ -19,179 +19,176 @@ const STATUS_CLASSES: Record<RunStatus, string> = {
   completed: "bg-emerald-700 text-emerald-100",
   failed: "bg-red-700 text-red-100",
   cancelled: "bg-slate-600 text-slate-100",
-};
+}
 
 export const ApiRunModal = () => {
-  const [modalState, setModalState] = useAtom(apiRunModalAtom);
-  const setPromptData = useSetAtom(promptModalAtom);
-  const setRunning = useSetAtom(runningAtom);
+  const [modalState, setModalState] = useAtom(apiRunModalAtom)
+  const setPromptData = useSetAtom(promptModalAtom)
+  const setRunning = useSetAtom(runningAtom)
 
-  const [logs, setLogs] = useState<string[]>([]);
-  const [status, setStatus] = useState<RunStatus>("pending");
-  const [childJobId, setChildJobId] = useState<string | null>(null);
-  const [childStepId, setChildStepId] = useState<string | null>(null);
-  const [childProgress, setChildProgress] = useState<ProgressSnapshot>({});
+  const [logs, setLogs] = useState<string[]>([])
+  const [status, setStatus] = useState<RunStatus>("pending")
+  const [childJobId, setChildJobId] = useState<string | null>(null)
+  const [childStepId, setChildStepId] = useState<string | null>(null)
+  const [childProgress, setChildProgress] = useState<ProgressSnapshot>({})
 
-  const logsEndRef = useRef<HTMLDivElement>(null);
+  const logsEndRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll logs to bottom on new lines.
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [logs]);
+    logsEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [logs])
 
   // Sync status + log reset when a new job opens.
   useEffect(() => {
-    if (!modalState) return;
-    setStatus(modalState.status);
-    setLogs([]);
-    setChildJobId(null);
-    setChildStepId(null);
-    setChildProgress({});
-  }, [modalState?.jobId]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!modalState) return
+    setStatus(modalState.status)
+    setLogs([])
+    setChildJobId(null)
+    setChildStepId(null)
+    setChildProgress({})
+  }, [modalState?.jobId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const parentUrl = modalState?.jobId ? `/jobs/${modalState.jobId}/logs` : null;
-  const childUrl = childJobId ? `/jobs/${childJobId}/logs` : null;
+  const parentUrl = modalState?.jobId ? `/jobs/${modalState.jobId}/logs` : null
+  const childUrl = childJobId ? `/jobs/${childJobId}/logs` : null
 
   // ─── Parent SSE (sequence-level events) ────────────────────────────────────
 
   const handleParentMessage = useCallback(
     (data: Record<string, unknown>) => {
       if (data["type"] === "step-started") {
-        setChildJobId((data["childJobId"] as string) ?? null);
-        setChildStepId((data["stepId"] as string) ?? null);
-        setChildProgress({});
+        setChildJobId((data["childJobId"] as string) ?? null)
+        setChildStepId((data["stepId"] as string) ?? null)
+        setChildProgress({})
         // Notify legacy step card to reset its UI via bridge.
         if (typeof window.mediaTools?.onStepStarted === "function") {
-          window.mediaTools.onStepStarted(data["stepId"], data["childJobId"]);
+          window.mediaTools.onStepStarted(data["stepId"], data["childJobId"])
         }
-        return;
+        return
       }
       if (data["type"] === "step-finished") {
-        setChildJobId(null);
-        setChildStepId(null);
-        setChildProgress({});
+        setChildJobId(null)
+        setChildStepId(null)
+        setChildProgress({})
         if (typeof window.mediaTools?.onStepFinished === "function") {
-          window.mediaTools.onStepFinished(data["stepId"], data);
+          window.mediaTools.onStepFinished(data["stepId"], data)
         }
-        return;
+        return
       }
       if (data["line"]) {
-        setLogs((prev) => [...prev, data["line"] as string]);
-        return;
+        setLogs((prev) => [...prev, data["line"] as string])
+        return
       }
       if (data["done"]) {
-        const finalStatus = (data["status"] as RunStatus) || "completed";
-        setStatus(finalStatus);
-        setChildJobId(null);
-        setChildStepId(null);
-        setChildProgress({});
-        setRunning(false);
+        const finalStatus = (data["status"] as RunStatus) || "completed"
+        setStatus(finalStatus)
+        setChildJobId(null)
+        setChildStepId(null)
+        setChildProgress({})
+        setRunning(false)
         if (typeof window.mediaTools?.onSequenceDone === "function") {
-          window.mediaTools.onSequenceDone();
+          window.mediaTools.onSequenceDone()
         }
       }
     },
     [setRunning],
-  );
+  )
 
   const handleParentDisconnected = useCallback(() => {
-    setStatus("failed");
-    setChildJobId(null);
-    setChildStepId(null);
-    setChildProgress({});
-    setRunning(false);
-  }, [setRunning]);
+    setStatus("failed")
+    setChildJobId(null)
+    setChildStepId(null)
+    setChildProgress({})
+    setRunning(false)
+  }, [setRunning])
 
   // ─── Child SSE (per-step progress events) ──────────────────────────────────
 
   const handleChildMessage = useCallback(
     (data: Record<string, unknown>) => {
       if (data["type"] === "progress") {
-        setChildProgress((prev) =>
-          mergeProgress(prev, data as ProgressSnapshot),
-        );
+        setChildProgress((prev) => mergeProgress(prev, data as ProgressSnapshot))
         if (childStepId && typeof window.mediaTools?.onStepProgress === "function") {
-          window.mediaTools.onStepProgress(childStepId, data);
+          window.mediaTools.onStepProgress(childStepId, data)
         }
-        return;
+        return
       }
       if (data["line"] && childStepId) {
         if (typeof window.mediaTools?.onStepLog === "function") {
-          window.mediaTools.onStepLog(childStepId, data["line"] as string);
+          window.mediaTools.onStepLog(childStepId, data["line"] as string)
         }
-        return;
+        return
       }
       if (data["done"] && childStepId) {
         if (typeof window.mediaTools?.onChildStepDone === "function") {
-          window.mediaTools.onChildStepDone(childStepId, data);
+          window.mediaTools.onChildStepDone(childStepId, data)
         }
       }
     },
     [childStepId],
-  );
+  )
 
   useTolerantEventSource(parentUrl, {
     onMessage: handleParentMessage,
     onPossiblyDisconnected: handleParentDisconnected,
-  });
+  })
 
   useTolerantEventSource(childUrl, {
     onMessage: handleChildMessage,
     onPossiblyDisconnected: () => {},
-  });
+  })
 
   const close = useCallback(async () => {
-    const jobId = modalState?.jobId;
+    const jobId = modalState?.jobId
     if (jobId && status === "running") {
       try {
-        await fetch(`/jobs/${jobId}`, { method: "DELETE" });
+        await fetch(`/jobs/${jobId}`, { method: "DELETE" })
       } catch {
         // Best-effort cancel.
       }
     }
-    setModalState(null);
-    setRunning(false);
-  }, [modalState?.jobId, status, setModalState, setRunning]);
+    setModalState(null)
+    setRunning(false)
+  }, [modalState?.jobId, status, setModalState, setRunning])
 
   const cancel = useCallback(async () => {
-    if (!modalState?.jobId) return;
+    if (!modalState?.jobId) return
     try {
-      await fetch(`/jobs/${modalState.jobId}`, { method: "DELETE" });
+      await fetch(`/jobs/${modalState.jobId}`, { method: "DELETE" })
     } catch {
       // Best-effort.
     }
-  }, [modalState?.jobId]);
+  }, [modalState?.jobId])
 
   const copyLogs = useCallback(async () => {
-    const text = logs.join("\n");
-    const btn = document.getElementById("api-run-copy-btn") as HTMLButtonElement | null;
-    const original = btn?.textContent ?? "Copy logs";
+    const text = logs.join("\n")
+    const btn = document.getElementById("api-run-copy-btn") as HTMLButtonElement | null
+    const original = btn?.textContent ?? "Copy logs"
     try {
-      await navigator.clipboard.writeText(text);
-      if (btn) btn.textContent = "✓ Copied";
+      await navigator.clipboard.writeText(text)
+      if (btn) btn.textContent = "✓ Copied"
     } catch {
-      if (btn) btn.textContent = "✗ Failed";
+      if (btn) btn.textContent = "✗ Failed"
     }
     setTimeout(() => {
-      if (btn) btn.textContent = original;
-    }, 1200);
-  }, [logs]);
+      if (btn) btn.textContent = original
+    }, 1200)
+  }, [logs])
 
-  if (!modalState) return null;
+  if (!modalState) return null
 
-  const statusClass =
-    STATUS_CLASSES[status] ?? "bg-slate-700 text-slate-300";
+  const statusClass = STATUS_CLASSES[status] ?? "bg-slate-700 text-slate-300"
   const progressPercent =
     typeof childProgress["percent"] === "number"
       ? Math.min(100, Math.max(0, childProgress["percent"] as number))
-      : null;
+      : null
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       id="api-run-modal"
       onClick={(event) => {
-        if (event.target === event.currentTarget) void close();
+        if (event.target === event.currentTarget) void close()
       }}
     >
       <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col gap-0 overflow-hidden max-h-[85dvh]">
@@ -199,10 +196,7 @@ export const ApiRunModal = () => {
         <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700 shrink-0">
           <span className="text-slate-300 text-sm font-medium">Run Sequence</span>
           {modalState.jobId && (
-            <span
-              id="api-run-jobid"
-              className="text-xs text-slate-500 font-mono"
-            >
+            <span id="api-run-jobid" className="text-xs text-slate-500 font-mono">
               job {modalState.jobId}
             </span>
           )}
@@ -236,10 +230,7 @@ export const ApiRunModal = () => {
             id="api-run-progress-host"
             className="px-4 py-2 border-b border-slate-700 bg-slate-900 shrink-0"
           >
-            <p
-              id="api-run-progress-step-label"
-              className="text-xs text-slate-400 mb-1"
-            >
+            <p id="api-run-progress-step-label" className="text-xs text-slate-400 mb-1">
               Step {childStepId}
             </p>
             {progressPercent !== null && (
@@ -274,5 +265,5 @@ export const ApiRunModal = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}

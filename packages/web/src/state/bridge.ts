@@ -77,6 +77,12 @@ declare global {
       open: (anchor: { stepId: string; fieldName: string }, el: HTMLElement) => void
       close: () => void
     }
+    // Wave D — still legacy-implemented; called from React card components
+    runOrStopStep?: (stepId: string) => void
+    copyStepYaml?: (stepId: string) => void
+    copyGroupYaml?: (groupId: string) => void
+    runGroup?: (groupId: string) => void
+    pasteCardAt?: (target: { itemIndex?: number; parentGroupId?: string }) => void
   }
 }
 

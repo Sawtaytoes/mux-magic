@@ -1,47 +1,45 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { createStore, Provider } from "jotai";
-import { apiRunModalAtom } from "../state/uiAtoms";
-import { ApiRunModal } from "./ApiRunModal";
+import type { Meta, StoryObj } from "@storybook/react"
+import { createStore, Provider } from "jotai"
+import { apiRunModalAtom } from "../state/uiAtoms"
+import { ApiRunModal } from "./ApiRunModal"
 
 const makeStore = (
   jobId: string | null,
   status: "pending" | "running" | "completed" | "failed" | "cancelled",
   logs: string[] = [],
 ) => {
-  const store = createStore();
+  const store = createStore()
   store.set(apiRunModalAtom, {
     jobId,
     status,
     logs,
     childJobId: null,
     childStepId: null,
-  });
-  return store;
-};
+  })
+  return store
+}
 
 const meta: Meta<typeof ApiRunModal> = {
   title: "Wave E/ApiRunModal",
   component: ApiRunModal,
   decorators: [
     (Story, context) => {
-      const store = context.parameters["store"] as ReturnType<
-        typeof createStore
-      >;
+      const store = context.parameters["store"] as ReturnType<typeof createStore>
       return (
         <Provider store={store}>
           <Story />
         </Provider>
-      );
+      )
     },
   ],
-};
-export default meta;
+}
+export default meta
 
-type Story = StoryObj<typeof ApiRunModal>;
+type Story = StoryObj<typeof ApiRunModal>
 
 export const Running: Story = {
   parameters: { store: makeStore("job-42", "running") },
-};
+}
 
 export const Completed: Story = {
   parameters: {
@@ -51,7 +49,7 @@ export const Completed: Story = {
       "[rename] Done.",
     ]),
   },
-};
+}
 
 export const Failed: Story = {
   parameters: {
@@ -60,8 +58,8 @@ export const Failed: Story = {
       "[rename] Error: permission denied",
     ]),
   },
-};
+}
 
 export const NoJobYet: Story = {
   parameters: { store: makeStore(null, "pending") },
-};
+}

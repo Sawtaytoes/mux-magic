@@ -1,94 +1,96 @@
-import { useAtom } from "jotai";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import type { FileEntry, SortColumn, SortDirection } from "../types";
-import { fileExplorerAtom } from "../state/uiAtoms";
+import { useAtom } from "jotai"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { fileExplorerAtom } from "../state/uiAtoms"
+import type { FileEntry, SortColumn, SortDirection } from "../types"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const VIDEO_EXTENSIONS = new Set([
-  ".mkv", ".mp4", ".m4v", ".webm", ".avi", ".mov",
-  ".mpg", ".mpeg", ".ts", ".wmv",
-]);
+  ".mkv",
+  ".mp4",
+  ".m4v",
+  ".webm",
+  ".avi",
+  ".mov",
+  ".mpg",
+  ".mpeg",
+  ".ts",
+  ".wmv",
+])
 
 const BROWSER_UNSUPPORTED_AUDIO = new Set([
-  "ac-3", "dts", "e-ac-3", "eac3", "mlp", "mlp fba", "pcm", "truehd",
-]);
+  "ac-3",
+  "dts",
+  "e-ac-3",
+  "eac3",
+  "mlp",
+  "mlp fba",
+  "pcm",
+  "truehd",
+])
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 const isVideoFile = (name: string): boolean => {
-  const dot = name.lastIndexOf(".");
-  return dot >= 0 && VIDEO_EXTENSIONS.has(name.slice(dot).toLowerCase());
-};
+  const dot = name.lastIndexOf(".")
+  return dot >= 0 && VIDEO_EXTENSIONS.has(name.slice(dot).toLowerCase())
+}
 
 const formatSize = (bytes: number): string => {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  if (bytes < 1024 * 1024 * 1024)
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-};
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
+}
 
 const formatMtime = (iso: string | null): string => {
-  if (!iso) return "—";
-  const dateObj = new Date(iso);
-  const yyyy = dateObj.getFullYear();
-  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const dd = String(dateObj.getDate()).padStart(2, "0");
-  const hh = String(dateObj.getHours()).padStart(2, "0");
-  const mi = String(dateObj.getMinutes()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
-};
+  if (!iso) return "—"
+  const dateObj = new Date(iso)
+  const yyyy = dateObj.getFullYear()
+  const mm = String(dateObj.getMonth() + 1).padStart(2, "0")
+  const dd = String(dateObj.getDate()).padStart(2, "0")
+  const hh = String(dateObj.getHours()).padStart(2, "0")
+  const mi = String(dateObj.getMinutes()).padStart(2, "0")
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}`
+}
 
 const durationToSeconds = (timecode: string | null): number | null => {
-  if (!timecode) return null;
-  const parts = timecode.split(":").map(Number);
-  if (parts.some(Number.isNaN)) return null;
-  if (parts.length === 1) return parts[0];
-  if (parts.length === 2) return parts[0] * 60 + parts[1];
-  return parts[0] * 3600 + parts[1] * 60 + parts[2];
-};
+  if (!timecode) return null
+  const parts = timecode.split(":").map(Number)
+  if (parts.some(Number.isNaN)) return null
+  if (parts.length === 1) return parts[0]
+  if (parts.length === 2) return parts[0] * 60 + parts[1]
+  return parts[0] * 3600 + parts[1] * 60 + parts[2]
+}
 
 const joinPath = (dir: string, child: string, separator: string): string => {
-  const trimmed = dir.endsWith(separator) ? dir.slice(0, -1) : dir;
-  return `${trimmed}${separator}${child}`;
-};
+  const trimmed = dir.endsWith(separator) ? dir.slice(0, -1) : dir
+  return `${trimmed}${separator}${child}`
+}
 
-const buildBreadcrumb = (
-  path: string,
-  sep: string,
-): Array<{ label: string; target: string }> => {
-  if (!path) return [];
-  const parts = path.split(sep);
-  const segments: Array<{ label: string; target: string }> = [];
-  let cumulative = "";
+const buildBreadcrumb = (path: string, sep: string): Array<{ label: string; target: string }> => {
+  if (!path) return []
+  const parts = path.split(sep)
+  const segments: Array<{ label: string; target: string }> = []
+  let cumulative = ""
   parts.forEach((part, idx) => {
     if (idx === 0) {
       if (part === "") {
-        cumulative = sep;
-        segments.push({ label: sep, target: sep });
+        cumulative = sep
+        segments.push({ label: sep, target: sep })
       } else {
-        cumulative = part + sep;
-        segments.push({ label: part, target: cumulative });
+        cumulative = part + sep
+        segments.push({ label: part, target: cumulative })
       }
-      return;
+      return
     }
-    if (part === "") return;
-    cumulative += (idx === 1 ? "" : sep) + part;
-    const target = cumulative.replace(
-      new RegExp(sep === "\\" ? "\\\\$" : sep + "$"),
-      "",
-    );
-    segments.push({ label: part, target });
-  });
-  return segments;
-};
+    if (part === "") return
+    cumulative += (idx === 1 ? "" : sep) + part
+    const target = cumulative.replace(new RegExp(sep === "\\" ? "\\\\$" : sep + "$"), "")
+    segments.push({ label: part, target })
+  })
+  return segments
+}
 
 // ─── Sort ─────────────────────────────────────────────────────────────────────
 
@@ -96,98 +98,98 @@ const buildComparator =
   (column: SortColumn, direction: SortDirection) =>
   (entryA: FileEntry, entryB: FileEntry): number => {
     if (entryA.isDirectory !== entryB.isDirectory) {
-      return entryA.isDirectory ? -1 : 1;
+      return entryA.isDirectory ? -1 : 1
     }
-    const dir = direction === "desc" ? -1 : 1;
+    const dir = direction === "desc" ? -1 : 1
     if (column === "name") {
       return (
         entryA.name.localeCompare(entryB.name, undefined, {
           sensitivity: "base",
         }) * dir
-      );
+      )
     }
     if (column === "duration") {
-      const secA = durationToSeconds(entryA.duration);
-      const secB = durationToSeconds(entryB.duration);
-      if (secA === null && secB === null) return 0;
-      if (secA === null) return 1;
-      if (secB === null) return -1;
-      return (secA - secB) * dir;
+      const secA = durationToSeconds(entryA.duration)
+      const secB = durationToSeconds(entryB.duration)
+      if (secA === null && secB === null) return 0
+      if (secA === null) return 1
+      if (secB === null) return -1
+      return (secA - secB) * dir
     }
-    if (column === "size") return (entryA.size - entryB.size) * dir;
+    if (column === "size") return (entryA.size - entryB.size) * dir
     if (column === "mtime") {
-      if (!entryA.mtime && !entryB.mtime) return 0;
-      if (!entryA.mtime) return 1;
-      if (!entryB.mtime) return -1;
-      return (Date.parse(entryA.mtime) - Date.parse(entryB.mtime)) * dir;
+      if (!entryA.mtime && !entryB.mtime) return 0
+      if (!entryA.mtime) return 1
+      if (!entryB.mtime) return -1
+      return (Date.parse(entryA.mtime) - Date.parse(entryB.mtime)) * dir
     }
-    return 0;
-  };
+    return 0
+  }
 
 // ─── VideoModal ───────────────────────────────────────────────────────────────
 
 type VideoModalProps = {
-  path: string | null;
-  onClose: () => void;
-};
+  path: string | null
+  onClose: () => void
+}
 
 const VideoModal = ({ path, onClose }: VideoModalProps) => {
-  const playerRef = useRef<HTMLVideoElement>(null);
-  const mseCleanupRef = useRef<(() => void) | null>(null);
-  const [statusVisible, setStatusVisible] = useState(false);
-  const [isContainerized, setIsContainerized] = useState(false);
-  const [copyLabel, setCopyLabel] = useState("📋 Copy path");
-  const [openLabel, setOpenLabel] = useState("⬡ Open in player");
+  const playerRef = useRef<HTMLVideoElement>(null)
+  const mseCleanupRef = useRef<(() => void) | null>(null)
+  const [statusVisible, setStatusVisible] = useState(false)
+  const [isContainerized, setIsContainerized] = useState(false)
+  const [copyLabel, setCopyLabel] = useState("📋 Copy path")
+  const [openLabel, setOpenLabel] = useState("⬡ Open in player")
 
   const clearMse = useCallback(() => {
-    mseCleanupRef.current?.();
-    mseCleanupRef.current = null;
-  }, []);
+    mseCleanupRef.current?.()
+    mseCleanupRef.current = null
+  }, [])
 
   // Teardown on unmount or path change.
   useEffect(() => {
     return () => {
-      clearMse();
-      const player = playerRef.current;
+      clearMse()
+      const player = playerRef.current
       if (player) {
-        player.pause();
-        player.removeAttribute("src");
-        player.load();
+        player.pause()
+        player.removeAttribute("src")
+        player.load()
       }
-    };
-  }, [clearMse, path]);
+    }
+  }, [clearMse, path])
 
   // Kick containerized flag once.
   useEffect(() => {
     fetch("/version", { cache: "no-store" })
       .then((resp) => resp.json())
       .then((data: { isContainerized?: boolean }) => {
-        setIsContainerized(data.isContainerized === true);
+        setIsContainerized(data.isContainerized === true)
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => {})
+  }, [])
 
   // Set up playback when path changes.
   useEffect(() => {
-    if (!path || !playerRef.current) return;
-    const player = playerRef.current;
-    clearMse();
-    player.pause();
-    player.src = "";
+    if (!path || !playerRef.current) return
+    const player = playerRef.current
+    clearMse()
+    player.pause()
+    player.src = ""
 
     const setupPlayback = async () => {
       // Check audio format to decide stream vs transcode.
-      const audioFormatUrl = new URL("/files/audio-codec", window.location.origin);
-      audioFormatUrl.searchParams.set("path", path);
-      let audioFormat: string | null = null;
+      const audioFormatUrl = new URL("/files/audio-codec", window.location.origin)
+      audioFormatUrl.searchParams.set("path", path)
+      let audioFormat: string | null = null
       try {
         const resp = await fetch(audioFormatUrl.toString(), {
           cache: "no-store",
           signal: AbortSignal.timeout(30_000),
-        });
+        })
         if (resp.ok) {
-          const data = (await resp.json()) as { audioFormat?: string };
-          audioFormat = data.audioFormat ?? null;
+          const data = (await resp.json()) as { audioFormat?: string }
+          audioFormat = data.audioFormat ?? null
         }
       } catch {
         // Leave null — will use direct stream.
@@ -196,68 +198,68 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
       const needsTranscode =
         typeof audioFormat === "string" &&
         audioFormat.length > 0 &&
-        BROWSER_UNSUPPORTED_AUDIO.has(audioFormat.toLowerCase());
+        BROWSER_UNSUPPORTED_AUDIO.has(audioFormat.toLowerCase())
 
-      let playbackUrl: string;
+      let playbackUrl: string
       if (needsTranscode) {
-        const transcodeUrl = new URL("/transcode/audio", window.location.origin);
-        transcodeUrl.searchParams.set("path", path);
-        transcodeUrl.searchParams.set("codec", "opus");
-        playbackUrl = transcodeUrl.toString();
+        const transcodeUrl = new URL("/transcode/audio", window.location.origin)
+        transcodeUrl.searchParams.set("path", path)
+        transcodeUrl.searchParams.set("codec", "opus")
+        playbackUrl = transcodeUrl.toString()
       } else {
-        const streamUrl = new URL("/files/stream", window.location.origin);
-        streamUrl.searchParams.set("path", path);
-        playbackUrl = streamUrl.toString();
+        const streamUrl = new URL("/files/stream", window.location.origin)
+        streamUrl.searchParams.set("path", path)
+        playbackUrl = streamUrl.toString()
       }
 
-      setStatusVisible(needsTranscode);
+      setStatusVisible(needsTranscode)
       player.addEventListener("canplay", () => setStatusVisible(false), {
         once: true,
-      });
-      player.src = playbackUrl;
-      player.play().catch(() => {});
-    };
+      })
+      player.src = playbackUrl
+      player.play().catch(() => {})
+    }
 
-    void setupPlayback();
-  }, [path, clearMse]);
+    void setupPlayback()
+  }, [path, clearMse])
 
   const handleCopyPath = async () => {
-    if (!path) return;
+    if (!path) return
     try {
-      await navigator.clipboard.writeText(path);
-      setCopyLabel("✓ Copied");
+      await navigator.clipboard.writeText(path)
+      setCopyLabel("✓ Copied")
     } catch {
-      window.prompt("Copy this path manually:", path);
-      return;
+      window.prompt("Copy this path manually:", path)
+      return
     }
-    setTimeout(() => setCopyLabel("📋 Copy path"), 1200);
-  };
+    setTimeout(() => setCopyLabel("📋 Copy path"), 1200)
+  }
 
   const handleOpenExternal = async () => {
-    if (!path) return;
-    setOpenLabel("⏳ Launching…");
+    if (!path) return
+    setOpenLabel("⏳ Launching…")
     try {
       const resp = await fetch("/files/open-external", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path }),
-      });
-      const data = (await resp.json()) as { ok: boolean; error?: string };
-      setOpenLabel(data.ok ? "✓ Launched" : "✗ Failed");
+      })
+      const data = (await resp.json()) as { ok: boolean; error?: string }
+      setOpenLabel(data.ok ? "✓ Launched" : "✗ Failed")
     } catch {
-      setOpenLabel("✗ Failed");
+      setOpenLabel("✗ Failed")
     }
-    setTimeout(() => setOpenLabel("⬡ Open in player"), 1500);
-  };
+    setTimeout(() => setOpenLabel("⬡ Open in player"), 1500)
+  }
 
-  if (!path) return null;
+  if (!path) return null
 
   return (
     <div
       id="video-modal"
       className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/80"
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) onClose()
       }}
     >
       <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col overflow-hidden">
@@ -311,230 +313,216 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
         />
       </div>
     </div>
-  );
-};
+  )
+}
 
 // ─── FileExplorerModal ────────────────────────────────────────────────────────
 
 export const FileExplorerModal = () => {
-  const [explorerState, setExplorerState] = useAtom(fileExplorerAtom);
+  const [explorerState, setExplorerState] = useAtom(fileExplorerAtom)
 
-  const [entries, setEntries] = useState<FileEntry[]>([]);
-  const [currentPath, setCurrentPath] = useState("");
-  const [separator, setSeparator] = useState("/");
-  const [deleteMode, setDeleteMode] = useState<"trash" | "permanent">("trash");
-  const [deleteModeReason, setDeleteModeReason] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [sortColumn, setSortColumn] = useState<SortColumn>("default");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [videoPath, setVideoPath] = useState<string | null>(null);
+  const [entries, setEntries] = useState<FileEntry[]>([])
+  const [currentPath, setCurrentPath] = useState("")
+  const [separator, setSeparator] = useState("/")
+  const [deleteMode, setDeleteMode] = useState<"trash" | "permanent">("trash")
+  const [deleteModeReason, setDeleteModeReason] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [sortColumn, setSortColumn] = useState<SortColumn>("default")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [videoPath, setVideoPath] = useState<string | null>(null)
 
   // Open/navigate logic: when explorerState changes, reset and load new path.
   useEffect(() => {
-    if (!explorerState) return;
-    setCurrentPath(explorerState.path);
-    setSelected(new Set());
-    setError(null);
-  }, [explorerState?.path]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!explorerState) return
+    setCurrentPath(explorerState.path)
+    setSelected(new Set())
+    setError(null)
+  }, [explorerState?.path]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadDeleteMode = useCallback(async (path: string) => {
     try {
-      const url = new URL("/files/delete-mode", window.location.origin);
-      if (path) url.searchParams.set("path", path);
-      const resp = await fetch(url);
+      const url = new URL("/files/delete-mode", window.location.origin)
+      if (path) url.searchParams.set("path", path)
+      const resp = await fetch(url)
       const data = (await resp.json()) as {
-        mode: "trash" | "permanent";
-        reason?: string;
-      };
-      setDeleteMode(data.mode);
-      setDeleteModeReason(data.reason ?? null);
+        mode: "trash" | "permanent"
+        reason?: string
+      }
+      setDeleteMode(data.mode)
+      setDeleteModeReason(data.reason ?? null)
     } catch {
-      setDeleteMode("permanent");
-      setDeleteModeReason("Could not determine delete mode");
+      setDeleteMode("permanent")
+      setDeleteModeReason("Could not determine delete mode")
     }
-  }, []);
+  }, [])
 
   const loadListing = useCallback(async (path: string) => {
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
     try {
-      const url = new URL("/files/list", window.location.origin);
-      url.searchParams.set("path", path);
-      url.searchParams.set("includeDuration", "1");
-      const resp = await fetch(url);
+      const url = new URL("/files/list", window.location.origin)
+      url.searchParams.set("path", path)
+      url.searchParams.set("includeDuration", "1")
+      const resp = await fetch(url)
       const data = (await resp.json()) as {
-        entries?: FileEntry[];
-        separator?: string;
-        error?: string;
-      };
+        entries?: FileEntry[]
+        separator?: string
+        error?: string
+      }
       if (data.error) {
-        setError(data.error);
+        setError(data.error)
       } else {
-        setEntries(data.entries ?? []);
-        if (data.separator) setSeparator(data.separator);
-        setSelected(new Set());
+        setEntries(data.entries ?? [])
+        if (data.separator) setSeparator(data.separator)
+        setSelected(new Set())
       }
     } catch (fetchError) {
-      setError(String(fetchError));
+      setError(String(fetchError))
     }
-    setLoading(false);
-  }, []);
+    setLoading(false)
+  }, [])
 
   // Load data when currentPath is set/changes.
   useEffect(() => {
-    if (!currentPath || !explorerState) return;
-    void Promise.all([loadDeleteMode(currentPath), loadListing(currentPath)]);
-  }, [currentPath, explorerState, loadDeleteMode, loadListing]);
+    if (!currentPath || !explorerState) return
+    void Promise.all([loadDeleteMode(currentPath), loadListing(currentPath)])
+  }, [currentPath, explorerState, loadDeleteMode, loadListing])
 
   const navigateTo = useCallback(
     (newPath: string) => {
-      setCurrentPath(newPath);
-      setSelected(new Set());
-      void loadDeleteMode(newPath);
-      void loadListing(newPath);
+      setCurrentPath(newPath)
+      setSelected(new Set())
+      void loadDeleteMode(newPath)
+      void loadListing(newPath)
     },
     [loadDeleteMode, loadListing],
-  );
+  )
 
   const sortedEntries = useMemo(
     () => [...entries].sort(buildComparator(sortColumn, sortDirection)),
     [entries, sortColumn, sortDirection],
-  );
+  )
 
   const toggleSort = (column: SortColumn) => {
     if (sortColumn === column) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
     } else {
-      setSortColumn(column);
-      setSortDirection("asc");
+      setSortColumn(column)
+      setSortDirection("asc")
     }
-  };
+  }
 
   const sortIndicator = (column: SortColumn) => {
-    if (sortColumn !== column) return null;
-    return (
-      <span className="ml-1 text-slate-300">
-        {sortDirection === "asc" ? "▲" : "▼"}
-      </span>
-    );
-  };
+    if (sortColumn !== column) return null
+    return <span className="ml-1 text-slate-300">{sortDirection === "asc" ? "▲" : "▼"}</span>
+  }
 
   const toggleSelected = (name: string, checked: boolean) => {
     setSelected((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(name);
-      else next.delete(name);
-      return next;
-    });
-  };
+      const next = new Set(prev)
+      if (checked) next.add(name)
+      else next.delete(name)
+      return next
+    })
+  }
 
   const selectAll = (checked: boolean) => {
     if (checked) {
-      setSelected(
-        new Set(
-          entries.filter((entry) => entry.isFile).map((entry) => entry.name),
-        ),
-      );
+      setSelected(new Set(entries.filter((entry) => entry.isFile).map((entry) => entry.name)))
     } else {
-      setSelected(new Set());
+      setSelected(new Set())
     }
-  };
+  }
 
   const copyPath = async (name: string) => {
-    const fullPath = joinPath(currentPath, name, separator);
+    const fullPath = joinPath(currentPath, name, separator)
     try {
-      await navigator.clipboard.writeText(fullPath);
+      await navigator.clipboard.writeText(fullPath)
     } catch {
-      window.prompt("Copy this path manually:", fullPath);
+      window.prompt("Copy this path manually:", fullPath)
     }
-  };
+  }
 
   const confirmDelete = async () => {
-    if (selected.size === 0) return;
-    const verb = deleteMode === "trash" ? "Move" : "Permanently delete";
-    const target = deleteMode === "trash" ? " to Recycle Bin" : "";
-    const filesText = `${selected.size} file${selected.size === 1 ? "" : "s"}`;
-    if (!window.confirm(`${verb} ${filesText}${target}?`)) return;
+    if (selected.size === 0) return
+    const verb = deleteMode === "trash" ? "Move" : "Permanently delete"
+    const target = deleteMode === "trash" ? " to Recycle Bin" : ""
+    const filesText = `${selected.size} file${selected.size === 1 ? "" : "s"}`
+    if (!window.confirm(`${verb} ${filesText}${target}?`)) return
 
-    const paths = Array.from(selected).map((name) =>
-      joinPath(currentPath, name, separator),
-    );
+    const paths = Array.from(selected).map((name) => joinPath(currentPath, name, separator))
     try {
       const resp = await fetch("/files", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paths }),
-      });
+      })
       const data = (await resp.json()) as {
-        results: Array<{ ok: boolean; path: string; error?: string }>;
-      };
-      const failed = data.results.filter((result) => !result.ok);
+        results: Array<{ ok: boolean; path: string; error?: string }>
+      }
+      const failed = data.results.filter((result) => !result.ok)
       if (failed.length > 0) {
-        const summary = failed
-          .map((result) => `• ${result.path}: ${result.error}`)
-          .join("\n");
+        const summary = failed.map((result) => `• ${result.path}: ${result.error}`).join("\n")
         window.alert(
           `Deleted ${data.results.length - failed.length} of ${data.results.length}.\n\nFailed:\n${summary}`,
-        );
+        )
       }
-      setSelected(new Set());
-      void loadListing(currentPath);
+      setSelected(new Set())
+      void loadListing(currentPath)
     } catch (fetchError) {
-      window.alert(`Delete request failed: ${fetchError}`);
+      window.alert(`Delete request failed: ${fetchError}`)
     }
-  };
+  }
 
   const handleConfirmPick = () => {
-    const callback = explorerState?.pickerOnSelect;
-    if (!callback) return;
-    setExplorerState(null);
-    callback(currentPath);
-  };
+    const callback = explorerState?.pickerOnSelect
+    if (!callback) return
+    setExplorerState(null)
+    callback(currentPath)
+  }
 
   const close = () => {
-    setExplorerState(null);
-    setVideoPath(null);
-  };
+    setExplorerState(null)
+    setVideoPath(null)
+  }
 
   // Expose openVideoModal on window for legacy result cards that call it.
   useEffect(() => {
     window.openVideoModal = (absolutePath: string) => {
-      setVideoPath(absolutePath);
-    };
+      setVideoPath(absolutePath)
+    }
     return () => {
-      delete window.openVideoModal;
-    };
-  }, []);
+      delete window.openVideoModal
+    }
+  }, [])
 
   // ESC: close video sub-modal first, then explorer.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
+      if (event.key !== "Escape") return
+      event.preventDefault()
       if (videoPath) {
-        setVideoPath(null);
+        setVideoPath(null)
       } else if (explorerState) {
-        close();
+        close()
       }
-    };
-    document.addEventListener("keydown", handleKeyDown, { capture: true });
-    return () =>
-      document.removeEventListener("keydown", handleKeyDown, { capture: true });
-  }, [videoPath, explorerState]); // eslint-disable-line react-hooks/exhaustive-deps
+    }
+    document.addEventListener("keydown", handleKeyDown, { capture: true })
+    return () => document.removeEventListener("keydown", handleKeyDown, { capture: true })
+  }, [videoPath, explorerState]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!explorerState) return null;
+  if (!explorerState) return null
 
-  const isPicker = typeof explorerState.pickerOnSelect === "function";
-  const breadcrumbSegments = buildBreadcrumb(currentPath, separator);
+  const isPicker = typeof explorerState.pickerOnSelect === "function"
+  const breadcrumbSegments = buildBreadcrumb(currentPath, separator)
 
-  const deleteModeLabel =
-    deleteMode === "trash" ? "Delete → Recycle Bin" : "Delete → Permanent";
+  const deleteModeLabel = deleteMode === "trash" ? "Delete → Recycle Bin" : "Delete → Permanent"
   const deleteModeClass =
     deleteMode === "trash"
       ? "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-emerald-900/50 text-emerald-300 border border-emerald-700/50"
-      : "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-rose-900/50 text-rose-300 border border-rose-700/50";
+      : "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-rose-900/50 text-rose-300 border border-rose-700/50"
 
   return (
     <>
@@ -542,7 +530,7 @@ export const FileExplorerModal = () => {
         id="file-explorer-modal"
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
         onClick={(event) => {
-          if (event.target === event.currentTarget) close();
+          if (event.target === event.currentTarget) close()
         }}
       >
         <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col overflow-hidden max-h-[90dvh]">
@@ -554,12 +542,9 @@ export const FileExplorerModal = () => {
               className="flex items-center gap-1 text-xs font-mono flex-1 min-w-0 overflow-hidden"
             >
               {breadcrumbSegments.map((seg, idx) => {
-                const isLast = idx === breadcrumbSegments.length - 1;
+                const isLast = idx === breadcrumbSegments.length - 1
                 return isLast ? (
-                  <span
-                    key={seg.target}
-                    className="text-slate-200 truncate"
-                  >
+                  <span key={seg.target} className="text-slate-200 truncate">
                     {seg.label}
                   </span>
                 ) : (
@@ -573,7 +558,7 @@ export const FileExplorerModal = () => {
                     </button>
                     <span className="text-slate-500">{separator}</span>
                   </span>
-                );
+                )
               })}
             </div>
 
@@ -582,8 +567,7 @@ export const FileExplorerModal = () => {
               className={deleteModeClass}
               title={
                 deleteMode === "permanent"
-                  ? deleteModeReason ??
-                    "Deletes are permanent — no recovery"
+                  ? (deleteModeReason ?? "Deletes are permanent — no recovery")
                   : "Deletes go to the OS Recycle Bin"
               }
             >
@@ -619,22 +603,11 @@ export const FileExplorerModal = () => {
           </div>
 
           {/* Body */}
-          <div
-            id="file-explorer-body"
-            className="flex-1 overflow-y-auto min-h-0"
-          >
-            {loading && (
-              <p className="text-slate-500 text-sm py-4 text-center">
-                Loading…
-              </p>
-            )}
-            {!loading && error && (
-              <p className="text-rose-400 text-sm py-4 px-3">{error}</p>
-            )}
+          <div id="file-explorer-body" className="flex-1 overflow-y-auto min-h-0">
+            {loading && <p className="text-slate-500 text-sm py-4 text-center">Loading…</p>}
+            {!loading && error && <p className="text-rose-400 text-sm py-4 px-3">{error}</p>}
             {!loading && !error && sortedEntries.length === 0 && (
-              <p className="text-slate-500 text-sm py-4 text-center">
-                Folder is empty.
-              </p>
+              <p className="text-slate-500 text-sm py-4 text-center">Folder is empty.</p>
             )}
             {!loading && !error && sortedEntries.length > 0 && (
               <div className="px-3 py-2">
@@ -677,12 +650,8 @@ export const FileExplorerModal = () => {
                   </thead>
                   <tbody>
                     {sortedEntries.map((entry) => {
-                      const isVideo = entry.isFile && isVideoFile(entry.name);
-                      const icon = entry.isDirectory
-                        ? "📁"
-                        : isVideo
-                          ? "🎬"
-                          : "📄";
+                      const isVideo = entry.isFile && isVideoFile(entry.name)
+                      const icon = entry.isDirectory ? "📁" : isVideo ? "🎬" : "📄"
 
                       return (
                         <tr
@@ -699,9 +668,7 @@ export const FileExplorerModal = () => {
                                   : undefined
                               }
                               checked={selected.has(entry.name)}
-                              onChange={(event) =>
-                                toggleSelected(entry.name, event.target.checked)
-                              }
+                              onChange={(event) => toggleSelected(entry.name, event.target.checked)}
                             />
                           </td>
                           <td className="py-1 px-2 break-all">
@@ -710,9 +677,7 @@ export const FileExplorerModal = () => {
                                 className="fe-name fe-dir text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
                                 title="Open this folder"
                                 onClick={() =>
-                                  navigateTo(
-                                    joinPath(currentPath, entry.name, separator),
-                                  )
+                                  navigateTo(joinPath(currentPath, entry.name, separator))
                                 }
                               >
                                 {icon} {entry.name}
@@ -722,9 +687,7 @@ export const FileExplorerModal = () => {
                                 className="fe-name fe-file text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
                                 title="Play in browser"
                                 onClick={() =>
-                                  setVideoPath(
-                                    joinPath(currentPath, entry.name, separator),
-                                  )
+                                  setVideoPath(joinPath(currentPath, entry.name, separator))
                                 }
                               >
                                 {icon} {entry.name}
@@ -758,7 +721,7 @@ export const FileExplorerModal = () => {
                             )}
                           </td>
                         </tr>
-                      );
+                      )
                     })}
                   </tbody>
                 </table>
@@ -772,10 +735,7 @@ export const FileExplorerModal = () => {
               id="file-explorer-footer"
               className="flex items-center gap-3 px-4 py-2 border-t border-slate-700 shrink-0"
             >
-              <span
-                id="file-explorer-selection-count"
-                className="text-xs text-slate-400"
-              >
+              <span id="file-explorer-selection-count" className="text-xs text-slate-400">
                 {selected.size} selected
               </span>
               <button
@@ -792,10 +752,7 @@ export const FileExplorerModal = () => {
       </div>
 
       {/* Video sub-modal */}
-      <VideoModal
-        path={videoPath}
-        onClose={() => setVideoPath(null)}
-      />
+      <VideoModal path={videoPath} onClose={() => setVideoPath(null)} />
     </>
-  );
-};
+  )
+}

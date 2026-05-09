@@ -44,6 +44,7 @@ export type Step = {
   params: Record<string, unknown>
   links: Record<string, StepLink>
   status: string | null
+  jobId?: string | null
   error: string | null
   isCollapsed: boolean
 }

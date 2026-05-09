@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { createStore, Provider } from "jotai";
-import { lookupModalAtom } from "../state/uiAtoms";
-import { LookupModal } from "./LookupModal";
+import type { Meta, StoryObj } from "@storybook/react"
+import { createStore, Provider } from "jotai"
+import { lookupModalAtom } from "../state/uiAtoms"
+import { LookupModal } from "./LookupModal"
 
 const empty = {
   searchTerm: "",
@@ -15,18 +15,18 @@ const empty = {
   releasesDebug: null,
   releasesError: null,
   loading: false,
-};
+}
 
-const malStore = createStore();
+const malStore = createStore()
 malStore.set(lookupModalAtom, {
   ...empty,
   lookupType: "mal" as const,
   stepId: "s1",
   fieldName: "malId",
   stage: "search" as const,
-});
+})
 
-const dvdStore = createStore();
+const dvdStore = createStore()
 dvdStore.set(lookupModalAtom, {
   ...empty,
   lookupType: "dvdcompare" as const,
@@ -38,9 +38,9 @@ dvdStore.set(lookupModalAtom, {
     { name: "Neon Genesis Evangelion (1995)" } as never,
     { name: "Evangelion: 1.11 You Are (Not) Alone" } as never,
   ],
-});
+})
 
-const variantStore = createStore();
+const variantStore = createStore()
 variantStore.set(lookupModalAtom, {
   ...empty,
   lookupType: "dvdcompare" as const,
@@ -56,28 +56,28 @@ variantStore.set(lookupModalAtom, {
       { id: "fid-3", variant: "DVD" },
     ],
   },
-});
+})
 
 const meta: Meta<typeof LookupModal> = {
   title: "Wave E/LookupModal",
   component: LookupModal,
   decorators: [
     (Story, context) => {
-      const store = context.parameters["store"] as ReturnType<typeof createStore>;
+      const store = context.parameters["store"] as ReturnType<typeof createStore>
       return (
         <Provider store={store}>
           <Story />
         </Provider>
-      );
+      )
     },
   ],
-};
-export default meta;
+}
+export default meta
 
-type Story = StoryObj<typeof LookupModal>;
+type Story = StoryObj<typeof LookupModal>
 
-export const MalSearch: Story = { parameters: { store: malStore } };
-export const DvdCompareWithResults: Story = { parameters: { store: dvdStore } };
+export const MalSearch: Story = { parameters: { store: malStore } }
+export const DvdCompareWithResults: Story = { parameters: { store: dvdStore } }
 export const DvdCompareVariantPicker: Story = {
   parameters: { store: variantStore },
-};
+}
