@@ -1,6 +1,6 @@
 # React Migration Checklist
 
-Last updated: 2026-05-09 by Claude Haiku 4.5 (Wave A complete)
+Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave C: pickers)
 
 ## Phase Status
 
@@ -14,8 +14,8 @@ Last updated: 2026-05-09 by Claude Haiku 4.5 (Wave A complete)
 | Wave A-4 | CollapseChevron, CopyIcon, InsertDivider, StatusBadge | [x] Done | react-migration | separate-prop API for InsertDivider (onInsertSequentialGroup/onInsertParallelGroup); tests+stories+MDX for all 4; conflict with parallel worker resolved |
 | Wave B-0 | RenderFields (unblocks B) | [ ] Not started | | |
 | Wave B | All field types (parallel) | [ ] Not started | | |
-| Wave C-0 | Popover primitive (unblocks C) | [ ] Not started | | |
-| Wave C | All pickers (parallel) | [ ] Not started | | |
+| Wave C-0 | Popover primitive (unblocks C) | [x] Done | react-migration | thin Radix @radix-ui/react-popover re-export in primitives/Popover.tsx for Wave D+ |
+| Wave C | All pickers (parallel) | [x] Done | react-migration | CommandPicker, EnumPicker, LinkPicker, PathPicker — Jotai atoms + bridge + createPortal; legacy picker JS deleted; tests+stories for all 4 |
 | Wave D | StepCard, GroupCard, PathVarCard, DragAndDrop | [ ] Not started | | |
 | Wave E | PageHeader, LookupModal, RunSequence, etc. | [ ] Not started | | |
 | Wave F | Jobs page | [ ] Not started | | |
