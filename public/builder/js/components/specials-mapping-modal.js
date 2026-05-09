@@ -157,9 +157,9 @@ const renderRow = ({ index, suggestion }) => {
     + `<select data-mapping-select class="flex-1 text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500">`
     + renderCandidateOptions({ rankedCandidates: suggestion.rankedCandidates, selectedName })
     + `</select>`
+    + `<input type="text" data-mapping-input class="hidden flex-1 text-xs font-mono bg-slate-950 text-slate-100 border border-blue-500 rounded px-1.5 py-1 focus:outline-none" placeholder="Type custom name…" />`
     + `<button type="button" data-mapping-custom title="Enter a custom name" class="shrink-0 text-slate-400 hover:text-slate-200 text-xs px-1.5 py-1 rounded hover:bg-slate-700">✏</button>`
     + `</div>`
-    + `<input type="text" data-mapping-input class="hidden w-full text-xs font-mono bg-slate-950 text-slate-100 border border-blue-500 rounded px-1.5 py-1 mt-1 focus:outline-none" placeholder="Type custom name, press Enter to apply" />`
     + `<div data-mapping-suffix-row class="flex gap-1 items-center mt-1">`
     + `<label class="text-[10px] text-slate-500 shrink-0">Type:</label>`
     + `<select data-mapping-suffix class="flex-1 text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-500">`
@@ -628,7 +628,7 @@ export const openSpecialsMappingModal = async ({
         customInput.classList.remove('hidden')
         if (selectEl) selectEl.classList.add('hidden')
         customInput.focus()
-        button.title = 'Back to suggestions'
+        button.title = 'Back to selection'
         button.textContent = '↩'
       } else {
         customInput.classList.add('hidden')
