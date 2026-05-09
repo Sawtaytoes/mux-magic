@@ -378,11 +378,11 @@ if (stepsEl) attachPathVarListeners(stepsEl)
 // refreshes or closes the tab. This ensures number field values (which save
 // on `onchange`/blur) and debounced path-var edits are not lost.
 window.addEventListener('beforeunload', () => {
-  flushScheduledUpdateUrl()
   const active = document.activeElement
   if (active && active !== document.body) {
     active.blur()
   }
+  flushScheduledUpdateUrl()
 })
 
 // Initial bootstrap

@@ -1634,7 +1634,7 @@ function renderInsertRuleStrip({ stepId, insertIndex }) {
   </div>`
 }
 
-function renderPredicatesManager({ stepId, predicates }) {
+function renderPredicatesManager({ stepId, predicates, isOpen }) {
   const predicateNames = Object.keys(predicates)
   const renderEntry = ({ predicateName, entryKey, entryValue }) => {
     const entryKeyJson = JSON.stringify(entryKey).replace(/"/g, '&quot;')
@@ -1669,7 +1669,10 @@ function renderPredicatesManager({ stepId, predicates }) {
     </div>`
   }).join('')
   const visibilityClass = predicateNames.length === 0 ? 'hidden' : ''
-  return `<details class="mt-1 border border-slate-700/60 rounded">
+  const openAttr = isOpen ? ' open' : ''
+  return `<details${openAttr} class="mt-1 border border-slate-700/60 rounded"
+    data-predicates-details="${stepId}"
+    ontoggle="dslRules.onPredicatesDetailsToggle('${stepId}',this.open)">
     <summary class="cursor-pointer text-xs text-slate-400 px-2 py-1 select-none flex items-center gap-2">
       <span>Predicates (named conditions reusable via $ref)</span>
       <span class="text-[10px] text-slate-500">${predicateNames.length} defined</span>
@@ -1684,9 +1687,10 @@ function renderPredicatesManager({ stepId, predicates }) {
   </details>`
 }
 
-// Tracks which step's Built-in Heuristic Rules details panel is currently open.
-// Survives renderAll because it's module-level state, not DOM state.
+// Tracks which step's Built-in Heuristic Rules / Predicates details panels are
+// currently open. Survives renderAll because it's module-level state, not DOM state.
 const defaultRulesDetailsOpen = new Set()
+const predicatesDetailsOpen = new Set()
 
 export function renderRulesField({ step }) {
   const stepId = step.id
@@ -1732,12 +1736,14 @@ export function renderRulesField({ step }) {
 
   const headerInsertStrip = renderInsertRuleStrip({ stepId, insertIndex: 0 })
 
-  // Snapshot the live DOM state before renderAll replaces the innerHTML.
-  // This is more reliable than ontoggle because some browsers fire the toggle
-  // event when a <details open> element is inserted or removed, corrupting the
-  // module-level Set. Querying the existing DOM at render time gives ground
-  // truth. renderAll calls buildStepsHtmlParts() (which calls here) BEFORE it
-  // writes stepsContainer.innerHTML, so the old DOM is still present.
+  // Snapshot live DOM open state before renderAll replaces innerHTML.
+  // ontoggle can fire spuriously on element insertion/removal so the module-level
+  // Sets can drift. Querying the existing DOM at render time is authoritative.
+  const livePredDetails = document.querySelector(`[data-predicates-details="${stepId}"]`)
+  if (livePredDetails) {
+    if (livePredDetails.open) predicatesDetailsOpen.add(stepId)
+    else predicatesDetailsOpen.delete(stepId)
+  }
   const liveDetails = document.querySelector(`[data-default-rules-details="${stepId}"]`)
   if (liveDetails) {
     if (liveDetails.open) defaultRulesDetailsOpen.add(stepId)
@@ -1766,9 +1772,17 @@ export function renderRulesField({ step }) {
         ${defaultRulesSection}
       </div>
     </details>
-    ${renderPredicatesManager({ stepId, predicates })}
+    ${renderPredicatesManager({ stepId, predicates, isOpen: predicatesDetailsOpen.has(stepId) })}
     ${rules.length === 0 ? `<p class="text-xs text-slate-500 italic mt-1">No user rules yet.</p>${headerInsertStrip}` : (headerInsertStrip + ruleCards)}
   </div>`
+}
+
+export function onPredicatesDetailsToggle(stepId, isOpen) {
+  if (isOpen) {
+    predicatesDetailsOpen.add(stepId)
+  } else {
+    predicatesDetailsOpen.delete(stepId)
+  }
 }
 
 export function onDefaultRulesDetailsToggle(stepId, isOpen) {
@@ -1841,6 +1855,7 @@ export function registerDslRulesGlobals() {
     removeApplyIfEntry,
 
     setHasDefaultRules,
+    onPredicatesDetailsToggle,
     onDefaultRulesDetailsToggle,
   }
 }

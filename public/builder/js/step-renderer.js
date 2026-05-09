@@ -533,7 +533,7 @@ function renderFieldHtml(step, field, stepIndex) {
         <button type="button"
           data-step-id="${step.id}"
           data-field-name="${esc(field.name)}"
-          data-source-value="${esc(sourceValue)}"
+          data-source-field="${esc(field.sourceField ?? '')}"
           onclick="folderPicker.openFromEl(this)"
           class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded border border-slate-600">
           📁 Browse folders…

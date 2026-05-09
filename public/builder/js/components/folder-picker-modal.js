@@ -215,7 +215,13 @@ function confirm() {
 function openFromEl(el) {
   const stepId = el.getAttribute('data-step-id') ?? ''
   const fieldName = el.getAttribute('data-field-name') ?? ''
-  const sourceValue = el.getAttribute('data-source-value') ?? ''
+  const sourceField = el.getAttribute('data-source-field') ?? ''
+  // Resolve source path live from step state so stale data-source-value
+  // attributes (which only update on renderAll) don't produce wrong results.
+  const step = window.mediaTools?.findStepById?.(stepId)
+  const sourceValue = sourceField && step
+    ? (window.mediaTools?.getLinkedValue?.(step, sourceField) ?? step.params?.[sourceField] ?? '')
+    : ''
   open({ stepId, fieldName, sourceValue })
 }
 
