@@ -323,9 +323,9 @@ const fetchStreamInfo = async (
     && "Duration" in general
     && typeof general.Duration === "string"
   ) {
-    const ms = parseFloat(general.Duration)
-    if (!Number.isNaN(ms) && ms > 0) {
-      durationSeconds = ms / 1000
+    const secs = parseFloat(general.Duration)
+    if (!Number.isNaN(secs) && secs > 0) {
+      durationSeconds = secs
     }
   }
 
