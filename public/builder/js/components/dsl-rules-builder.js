@@ -1731,11 +1731,6 @@ export function renderRulesField({ step }) {
   return `<div class="dsl-rules-builder space-y-2" data-step="${stepId}" data-field="rules">
     <div class="flex items-center justify-between">
       <label class="text-xs text-slate-300 font-medium">Rules</label>
-      <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
-        <input type="checkbox" ${isHasDefaultRules ? 'checked' : ''} ${onDefaultRulesToggle}
-          class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-amber-500 cursor-pointer" />
-        hasDefaultRules
-      </label>
     </div>
     ${renderPredicatesManager({ stepId, predicates })}
     ${defaultRulesSection}

@@ -383,6 +383,22 @@ function renderFieldHtml(step, field, stepIndex) {
     return `<div>${label}${pickerHtml}${renderRulesField({ step })}</div>`
   }
 
+  // `defaultRulesToggle` renders hasDefaultRules as a collapsible details/summary
+  // element that starts closed. When toggled, it controls whether default rules
+  // are displayed in the subtitle rules editor.
+  if (field.type === 'defaultRulesToggle') {
+    const checked = val ?? field.default ?? false
+    return `<details class="space-y-2">
+      <summary class="cursor-pointer">
+        <label class="flex items-center gap-2 cursor-pointer select-none py-0.5" data-tooltip-key="${esc(tooltipKey)}">
+          <input type="checkbox" ${checked ? 'checked' : ''} onchange="setParam('${step.id}','${field.name}',this.checked)"
+            class="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-amber-500 cursor-pointer" />
+          <span class="text-xs text-slate-300">${esc(field.label)}</span>
+        </label>
+      </summary>
+    </details>`
+  }
+
   if (field.type === 'boolean') {
     const checked = val ?? field.default ?? false
     return `<label class="flex items-center gap-2 cursor-pointer select-none py-0.5" data-tooltip-key="${esc(tooltipKey)}">

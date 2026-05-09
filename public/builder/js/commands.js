@@ -62,7 +62,10 @@ export const COMMANDS = {
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "extensions", type: "stringArray", label: "Extensions", required: true, placeholder: ".srt, .idx" },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+    ],
+    groups: [
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
     ]
   },
   deleteFolder: {
@@ -91,8 +94,11 @@ export const COMMANDS = {
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "extensions", type: "stringArray", label: "Extensions", required: true, placeholder: ".ts, .m2ts" },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
       { name: "isSourceDeletedOnSuccess", type: "boolean", label: "Delete source on per-file success", default: false },
+    ],
+    groups: [
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
     ]
   },
   // Audio Operations
@@ -232,13 +238,13 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
       // `predicates` and `hasDefaultRules` ride alongside `rules` and are
       // edited together inside the structured `subtitleRules` editor below.
       // Listing them as `hidden` keeps buildParams emitting them into YAML
       // without the step renderer trying to show a separate input row.
       { name: "predicates", type: "hidden" },
-      { name: "hasDefaultRules", type: "hidden", default: false },
+      { name: "hasDefaultRules", type: "defaultRulesToggle", label: "Use Default Rules", default: false },
       // `subtitleRules` is the structured form-builder for the
       // modifySubtitleMetadata DSL — see
       // public/builder/js/components/dsl-rules-builder.js. It renders
@@ -248,6 +254,9 @@ export const COMMANDS = {
       // there's nothing upstream to wire into. Strip the link picker
       // until/unless a new rules-emitting command appears.
       { name: "rules", type: "subtitleRules", label: "Rules", required: false },
+    ],
+    groups: [
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
     ]
   },
   // Analysis
@@ -271,7 +280,10 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+    ],
+    groups: [
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
     ]
   },
   hasDuplicateMusicFiles: {
@@ -281,7 +293,10 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+    ],
+    groups: [
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
     ]
   },
   hasImaxEnhancedAudio: {
@@ -309,7 +324,10 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+    ],
+    groups: [
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
     ]
   },
   hasWrongDefaultTrack: {
@@ -424,7 +442,10 @@ export const COMMANDS = {
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "displayWidth", type: "number", label: "Display Width (px)", default: 853 },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
+    ],
+    groups: [
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
     ]
   },
   // Metadata Operations
@@ -435,11 +456,14 @@ export const COMMANDS = {
     fields: [
       { name: "sourcePath", type: "path", label: "Source Path", required: true },
       { name: "isRecursive", type: "boolean", label: "Recursive", default: false },
-      { name: "recursiveDepth", type: "number", label: "Recursive Depth", default: 0 },
+      { name: "recursiveDepth", type: "number", label: "Depth", default: 0, visibleWhen: { fieldName: "isRecursive", value: true } },
       { name: "outputPath", type: "path", label: "Output Path" },
       { name: "rootPath", type: "path", label: "Root Path" },
       { name: "folders", type: "stringArray", label: "Folders" },
       { name: "force", type: "boolean", label: "Force Overwrite", default: false },
+    ],
+    groups: [
+      { fields: ["isRecursive", "recursiveDepth"], layout: "field-group-two-col" },
     ]
   },
 }
