@@ -1,17 +1,30 @@
+import path from "node:path"
+import { fileURLToPath } from "node:url"
 import { defineConfig } from "vitest/config"
 import { playwright } from "@vitest/browser-playwright"
+import { storybookTest } from "@storybook/addon-vitest/vitest-plugin"
 
-// Two-project setup (vitest v4 dropped defineWorkspace; the workspace
+const dirname =
+  typeof __dirname !== "undefined"
+    ? __dirname
+    : path.dirname(fileURLToPath(import.meta.url))
+
+// Multi-project setup (vitest v4 dropped defineWorkspace; the workspace
 // file moves inline here under test.projects):
 //
-//   - "node":    existing server-side / pure-logic tests under src/.
-//                Inherits the memfs setup so any fs-touching code keeps
-//                a clean in-memory volume.
+//   - "node":      existing server-side / pure-logic tests under src/.
+//                  Inherits the memfs setup so any fs-touching code keeps
+//                  a clean in-memory volume.
 //
-//   - "browser": ES module component tests under public/builder/js/.
-//                Runs in a real Chromium via @vitest/browser + Playwright
-//                provider — gives us actual DOM/event semantics with no
-//                jsdom in the dep tree. Skips the node-only memfs setup.
+//   - "browser":   ES module component tests under public/builder/js/.
+//                  Runs in a real Chromium via @vitest/browser + Playwright
+//                  provider — gives us actual DOM/event semantics with no
+//                  jsdom in the dep tree. Skips the node-only memfs setup.
+//
+//   - "storybook": story-as-test runs driven by @storybook/addon-vitest.
+//                  The plugin renames this project to `storybook:<configDir>`
+//                  when invoked from the Storybook UI's "Run Tests" button
+//                  (VITEST_STORYBOOK=1), which is what the addon filters on.
 export default defineConfig({
   test: {
     // e2e/ holds Playwright Test specs; they have their own runner (`yarn e2e`)
@@ -56,6 +69,21 @@ export default defineConfig({
       // React component tests for packages/web — uses the web package's own
       // vitest.config.ts which applies the React Compiler babel plugin.
       "packages/web/vitest.config.ts",
+      {
+        extends: true,
+        plugins: [
+          storybookTest({ configDir: path.join(dirname, ".storybook") }),
+        ],
+        test: {
+          name: "storybook",
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: "chromium" }],
+          },
+        },
+      },
     ],
   },
 })
