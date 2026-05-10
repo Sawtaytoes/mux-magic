@@ -1,4 +1,10 @@
-import { describe, test, expect, beforeEach, vi } from "vitest"
+import {
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 // Round-trip tests for the group support in load-modal + yaml-modal.
 // Both modules read window.mediaTools at call time (not import time)
@@ -31,10 +37,18 @@ type MediaToolsMock = {
   paths: { id: string; label: string; value: string }[]
   steps: Item[]
   stepCounter: number
-  COMMANDS: Record<string, {
-    name: string
-    fields: { name: string; type: string; default?: unknown; companionNameField?: string }[]
-  }>
+  COMMANDS: Record<
+    string,
+    {
+      name: string
+      fields: {
+        name: string
+        type: string
+        default?: unknown
+        companionNameField?: string
+      }[]
+    }
+  >
   makeStep: (command: string | null) => StepLike
   initPaths: () => void
   buildParams: (step: StepLike) => Record<string, unknown>
@@ -64,7 +78,9 @@ beforeEach(async () => {
 
   let counter = 0
   mediaTools = {
-    paths: [{ id: "basePath", label: "basePath", value: "" }],
+    paths: [
+      { id: "basePath", label: "basePath", value: "" },
+    ],
     steps: [],
     stepCounter: 0,
     COMMANDS: {
@@ -95,7 +111,9 @@ beforeEach(async () => {
     },
     initPaths: () => {
       if (!mediaTools.paths.length) {
-        mediaTools.paths = [{ id: "basePath", label: "basePath", value: "" }]
+        mediaTools.paths = [
+          { id: "basePath", label: "basePath", value: "" },
+        ]
       }
     },
     // buildParams here mirrors the production logic just enough to
@@ -110,17 +128,28 @@ beforeEach(async () => {
         const link = step.links[field.name]
         if (link !== undefined) {
           if (typeof link === "string") {
-            out[field.name] = "@" + link
-          } else if (link && typeof link === "object" && "linkedTo" in link) {
+            out[field.name] = `@${link}`
+          } else if (
+            link &&
+            typeof link === "object" &&
+            "linkedTo" in link
+          ) {
             out[field.name] = {
-              linkedTo: (link as { linkedTo: string }).linkedTo,
-              output: (link as { output?: string }).output ?? "folder",
+              linkedTo: (link as { linkedTo: string })
+                .linkedTo,
+              output:
+                (link as { output?: string }).output ??
+                "folder",
             }
           }
           continue
         }
         const value = step.params[field.name]
-        if (value !== undefined && value !== null && value !== "") {
+        if (
+          value !== undefined &&
+          value !== null &&
+          value !== ""
+        ) {
           out[field.name] = value
         }
       }
@@ -138,35 +167,41 @@ beforeEach(async () => {
 
 describe("loadYamlFromText: groups", () => {
   test("parses a top-level kind:group entry into a group object with inner steps", async () => {
-    const { loadYamlFromText } = await import("./load-modal.js")
-    loadYamlFromText([
-      "paths:",
-      "  workDir:",
-      "    label: Work Directory",
-      "    value: /work",
-      "steps:",
-      "  - id: prepare",
-      "    command: makeDirectory",
-      "    params:",
-      "      filePath: '@workDir'",
-      "  - kind: group",
-      "    id: extractParallel",
-      "    label: Extract subs + media info",
-      "    isParallel: true",
-      "    steps:",
-      "      - id: subs",
-      "        command: makeDirectory",
-      "        params:",
-      "          filePath: '@workDir'",
-      "      - id: info",
-      "        command: makeDirectory",
-      "        params:",
-      "          filePath: '@workDir'",
-    ].join("\n"))
+    const { loadYamlFromText } = await import(
+      "./load-modal.js"
+    )
+    loadYamlFromText(
+      [
+        "paths:",
+        "  workDir:",
+        "    label: Work Directory",
+        "    value: /work",
+        "steps:",
+        "  - id: prepare",
+        "    command: makeDirectory",
+        "    params:",
+        "      filePath: '@workDir'",
+        "  - kind: group",
+        "    id: extractParallel",
+        "    label: Extract subs + media info",
+        "    isParallel: true",
+        "    steps:",
+        "      - id: subs",
+        "        command: makeDirectory",
+        "        params:",
+        "          filePath: '@workDir'",
+        "      - id: info",
+        "        command: makeDirectory",
+        "        params:",
+        "          filePath: '@workDir'",
+      ].join("\n"),
+    )
 
     const items = mediaTools.steps
     expect(items).toHaveLength(2)
-    expect("kind" in items[0] && items[0].kind === "group").toBe(false)
+    expect(
+      "kind" in items[0] && items[0].kind === "group",
+    ).toBe(false)
     expect((items[0] as StepLike).id).toBe("prepare")
 
     const group = items[1] as GroupLike
@@ -180,24 +215,28 @@ describe("loadYamlFromText: groups", () => {
   })
 
   test("parses isCollapsed on step + group entries", async () => {
-    const { loadYamlFromText } = await import("./load-modal.js")
-    loadYamlFromText([
-      "steps:",
-      "  - id: collapsedStep",
-      "    command: makeDirectory",
-      "    params:",
-      "      filePath: /a",
-      "    isCollapsed: true",
-      "  - kind: group",
-      "    id: collapsedGroup",
-      "    isCollapsed: true",
-      "    steps:",
-      "      - id: inner",
-      "        command: makeDirectory",
-      "        params:",
-      "          filePath: /b",
-      "        isCollapsed: true",
-    ].join("\n"))
+    const { loadYamlFromText } = await import(
+      "./load-modal.js"
+    )
+    loadYamlFromText(
+      [
+        "steps:",
+        "  - id: collapsedStep",
+        "    command: makeDirectory",
+        "    params:",
+        "      filePath: /a",
+        "    isCollapsed: true",
+        "  - kind: group",
+        "    id: collapsedGroup",
+        "    isCollapsed: true",
+        "    steps:",
+        "      - id: inner",
+        "        command: makeDirectory",
+        "        params:",
+        "          filePath: /b",
+        "        isCollapsed: true",
+      ].join("\n"),
+    )
 
     const items = mediaTools.steps
     expect((items[0] as StepLike).isCollapsed).toBe(true)
@@ -207,19 +246,23 @@ describe("loadYamlFromText: groups", () => {
   })
 
   test("rejects nested groups with a clear error", async () => {
-    const { loadYamlFromText } = await import("./load-modal.js")
+    const { loadYamlFromText } = await import(
+      "./load-modal.js"
+    )
     expect(() => {
-      loadYamlFromText([
-        "steps:",
-        "  - kind: group",
-        "    steps:",
-        "      - kind: group",
-        "        steps:",
-        "          - id: way-too-deep",
-        "            command: makeDirectory",
-        "            params:",
-        "              filePath: /a",
-      ].join("\n"))
+      loadYamlFromText(
+        [
+          "steps:",
+          "  - kind: group",
+          "    steps:",
+          "      - kind: group",
+          "        steps:",
+          "          - id: way-too-deep",
+          "            command: makeDirectory",
+          "            params:",
+          "              filePath: /a",
+        ].join("\n"),
+      )
     }).toThrowError(/cannot be nested/i)
   })
 })
@@ -227,7 +270,13 @@ describe("loadYamlFromText: groups", () => {
 describe("toYamlStr: groups", () => {
   test("emits group entries with kind:group and the configured flags", async () => {
     const { toYamlStr } = await import("./yaml-modal.js")
-    mediaTools.paths = [{ id: "workDir", label: "Work Directory", value: "/work" }]
+    mediaTools.paths = [
+      {
+        id: "workDir",
+        label: "Work Directory",
+        value: "/work",
+      },
+    ]
     mediaTools.steps = [
       {
         id: "prepare",
@@ -280,11 +329,15 @@ describe("toYamlStr: groups", () => {
     expect(yamlStr).toContain("isCollapsed: true")
     // The first non-collapsed step shouldn't add a key — count
     // occurrences (`isCollapsed: true` appears exactly once).
-    expect((yamlStr.match(/isCollapsed/g) ?? []).length).toBe(1)
+    expect(
+      (yamlStr.match(/isCollapsed/g) ?? []).length,
+    ).toBe(1)
   })
 
   test("round-trips a group through load → toYaml without losing data", async () => {
-    const { loadYamlFromText } = await import("./load-modal.js")
+    const { loadYamlFromText } = await import(
+      "./load-modal.js"
+    )
     const { toYamlStr } = await import("./yaml-modal.js")
 
     const original = [
@@ -316,10 +369,14 @@ describe("toYamlStr: groups", () => {
     const dumped = toYamlStr()
 
     // Reload from the dumped form — the structure must match.
-    const reloaded = window.jsyaml.load(dumped) as { steps: unknown[] }
+    const reloaded = window.jsyaml.load(dumped) as {
+      steps: unknown[]
+    }
     expect(Array.isArray(reloaded.steps)).toBe(true)
     expect(reloaded.steps).toHaveLength(2)
-    expect((reloaded.steps[0] as { id: string }).id).toBe("prepare")
+    expect((reloaded.steps[0] as { id: string }).id).toBe(
+      "prepare",
+    )
     const reGroup = reloaded.steps[1] as {
       kind: string
       id: string
@@ -329,6 +386,9 @@ describe("toYamlStr: groups", () => {
     expect(reGroup.kind).toBe("group")
     expect(reGroup.id).toBe("para")
     expect(reGroup.isParallel).toBe(true)
-    expect(reGroup.steps.map((step) => step.id)).toEqual(["subs", "info"])
+    expect(reGroup.steps.map((step) => step.id)).toEqual([
+      "subs",
+      "info",
+    ])
   })
 })

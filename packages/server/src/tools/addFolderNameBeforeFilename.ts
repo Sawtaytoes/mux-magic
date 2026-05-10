@@ -1,7 +1,4 @@
-import {
-  dirname,
-  join,
-} from "node:path"
+import { dirname, join } from "node:path"
 
 export const addFolderNameBeforeFilename = ({
   filePath,
@@ -9,23 +6,8 @@ export const addFolderNameBeforeFilename = ({
 }: {
   filePath: string
   folderName: string
-}) => (
-  filePath
-  .replace(
-    (
-      dirname(
-        filePath
-      )
-    ),
-    (
-      join(
-        (
-          dirname(
-            filePath
-          )
-        ),
-        folderName,
-      )
-    ),
+}) =>
+  filePath.replace(
+    dirname(filePath),
+    join(dirname(filePath), folderName),
   )
-)

@@ -1,19 +1,10 @@
-import {
-  mkdir,
-} from "node:fs/promises"
-import {
-  dirname,
-} from "node:path"
-import {
-  concatMap,
-  from,
-  map,
-  of,
-} from "rxjs";
+import { mkdir } from "node:fs/promises"
+import { dirname } from "node:path"
+import { concatMap, from, map, of } from "rxjs"
 
-import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js";
+import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js"
 import { AUDIO_CONVERTED_FOLDER_NAME } from "../tools/outputFolderNames.js"
-import { runFfmpeg } from "./runFfmpeg.js";
+import { runFfmpeg } from "./runFfmpeg.js"
 
 export const convertedPath = AUDIO_CONVERTED_FOLDER_NAME
 
@@ -31,7 +22,9 @@ type ConvertFlacToPcmAudioOptionalProps = {
   outputFolderName?: string
 }
 
-export type ConvertFlacToPcmAudioProps = ConvertFlacToPcmAudioRequiredProps & ConvertFlacToPcmAudioOptionalProps
+export type ConvertFlacToPcmAudioProps =
+  ConvertFlacToPcmAudioRequiredProps &
+    ConvertFlacToPcmAudioOptionalProps
 
 export const convertFlacToPcmAudioDefaultProps = {
   outputFolderName: AUDIO_CONVERTED_FOLDER_NAME,
@@ -41,36 +34,19 @@ export const convertFlacToPcmAudio = ({
   audioTrackInfos,
   filePath,
   outputFolderName = convertFlacToPcmAudioDefaultProps.outputFolderName,
-}: ConvertFlacToPcmAudioProps) => (
+}: ConvertFlacToPcmAudioProps) =>
   of(
     addFolderNameBeforeFilename({
       filePath,
       folderName: outputFolderName,
-    })
-  )
-  .pipe(
-    concatMap((
-      outputFilePath,
-    ) => (
+    }),
+  ).pipe(
+    concatMap((outputFilePath) =>
       from(
-        mkdir(
-          (
-            dirname(
-              outputFilePath
-            )
-          ),
-          { recursive: true },
-        )
-      )
-      .pipe(
-        map(() => (
-          outputFilePath
-        )),
-      )
-    )),
-    concatMap((
-      outputFilePath,
-    ) => (
+        mkdir(dirname(outputFilePath), { recursive: true }),
+      ).pipe(map(() => outputFilePath)),
+    ),
+    concatMap((outputFilePath) =>
       runFfmpeg({
         args: [
           "-c",
@@ -79,27 +55,15 @@ export const convertFlacToPcmAudio = ({
           "-map",
           "0",
 
-          ...(
-            audioTrackInfos
-            .flatMap(({
-              audioTrackIndex,
-              bitDepth,
-            }) => ([
+          ...audioTrackInfos.flatMap(
+            ({ audioTrackIndex, bitDepth }) => [
               `-c:a:${audioTrackIndex}`,
               `pcm_s${bitDepth}le`,
-            ]))
+            ],
           ),
         ],
-        inputFilePaths: [
-          filePath
-        ],
+        inputFilePaths: [filePath],
         outputFilePath,
-      })
-      .pipe(
-        map(() => (
-          outputFilePath
-        )),
-      )
-    )),
+      }).pipe(map(() => outputFilePath)),
+    ),
   )
-)

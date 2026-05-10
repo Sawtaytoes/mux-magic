@@ -1,7 +1,11 @@
 import { firstValueFrom } from "rxjs"
 import { describe, expect, test } from "vitest"
 
-import { parseCuts, parseSpecialFeatures, parseUntimedSuggestions } from "./parseSpecialFeatures.js"
+import {
+  parseCuts,
+  parseSpecialFeatures,
+  parseUntimedSuggestions,
+} from "./parseSpecialFeatures.js"
 
 describe(parseCuts.name, () => {
   test("returns an empty array for empty input", () => {
@@ -31,8 +35,9 @@ describe(parseCuts.name, () => {
   })
 
   test("extracts edition + timecode from a typical Dragon Lord-style entry", () => {
-    expect(parseCuts("*The Film – Hong Kong Version (96:06)"))
-    .toEqual([
+    expect(
+      parseCuts("*The Film – Hong Kong Version (96:06)"),
+    ).toEqual([
       { name: "Hong Kong Version", timecode: "1:36:06" },
     ])
   })
@@ -49,26 +54,39 @@ describe(parseCuts.name, () => {
     ].join("\n")
     expect(parseCuts(text)).toEqual([
       { name: "Hong Kong Version", timecode: "1:36:06" },
-      { name: "English Export Version", timecode: "1:30:50" },
+      {
+        name: "English Export Version",
+        timecode: "1:30:50",
+      },
       { name: "Extended Version", timecode: "1:43:02" },
       { name: "Hybrid Version", timecode: "1:48:44" },
     ])
   })
 
   test("yields a name with no timecode when DVDCompare doesn't publish a runtime", () => {
-    expect(parseCuts("* The Film – Director's Cut")).toEqual([
+    expect(
+      parseCuts("* The Film – Director's Cut"),
+    ).toEqual([
       { name: "Director's Cut", timecode: undefined },
     ])
   })
 
   test("ignores lines that have 'The Film' in them but don't start with the asterisk marker", () => {
-    expect(parseCuts("The Filmography of Jackie Chan featurette (12:00)")).toEqual([])
+    expect(
+      parseCuts(
+        "The Filmography of Jackie Chan featurette (12:00)",
+      ),
+    ).toEqual([])
   })
 
   test("strips trailing format-only parens after extracting the name + timecode", () => {
     // "1080p" inside the runtime parens is descriptive noise — the
     // timecode-extraction grabs the runtime, the rest is dropped.
-    expect(parseCuts("*The Film – Hybrid Version (108:44, 1080p)")).toEqual([
+    expect(
+      parseCuts(
+        "*The Film – Hybrid Version (108:44, 1080p)",
+      ),
+    ).toEqual([
       { name: "Hybrid Version", timecode: "1:48:44" },
     ])
   })
@@ -80,23 +98,33 @@ describe(`${parseSpecialFeatures.name} — extras vs cuts split`, () => {
       "DISC ONE (Blu-ray 4K)",
       "*The Film – Hong Kong Version (96:06)",
       "*The Film – English Export Version (90:50)",
-      'Behind the Scenes Teaser (5:21, in Cantonese with English subtitles)',
+      "Behind the Scenes Teaser (5:21, in Cantonese with English subtitles)",
       "Hong Kong Theatrical Trailer (4:13)",
     ].join("\n")
-    const result = await firstValueFrom(parseSpecialFeatures(text))
+    const result = await firstValueFrom(
+      parseSpecialFeatures(text),
+    )
     expect(result.cuts).toEqual([
       { name: "Hong Kong Version", timecode: "1:36:06" },
-      { name: "English Export Version", timecode: "1:30:50" },
+      {
+        name: "English Export Version",
+        timecode: "1:30:50",
+      },
     ])
-    expect(result.extras.map((extra) => extra.text)).toEqual([
+    expect(
+      result.extras.map((extra) => extra.text),
+    ).toEqual([
       expect.stringContaining("Behind the Scenes Teaser"),
-      expect.stringContaining("Hong Kong Theatrical Trailer"),
+      expect.stringContaining(
+        "Hong Kong Theatrical Trailer",
+      ),
     ])
   })
 
   test("yields empty arrays for empty input", async () => {
-    expect(await firstValueFrom(parseSpecialFeatures("")))
-    .toEqual({ extras: [], cuts: [], possibleNames: [] })
+    expect(
+      await firstValueFrom(parseSpecialFeatures("")),
+    ).toEqual({ extras: [], cuts: [], possibleNames: [] })
   })
 
   test("includes possibleNames for untimed lines (e.g. image galleries) the main extras filter drops", async () => {
@@ -106,10 +134,18 @@ describe(`${parseSpecialFeatures.name} — extras vs cuts split`, () => {
       "Image Gallery (96 images)",
       "Photo Gallery (8 pages)",
     ].join("\n")
-    const result = await firstValueFrom(parseSpecialFeatures(text))
+    const result = await firstValueFrom(
+      parseSpecialFeatures(text),
+    )
     expect(result.possibleNames).toEqual([
-      { name: "Image Gallery (96 images)", timecode: undefined },
-      { name: "Photo Gallery (8 pages)", timecode: undefined },
+      {
+        name: "Image Gallery (96 images)",
+        timecode: undefined,
+      },
+      {
+        name: "Photo Gallery (8 pages)",
+        timecode: undefined,
+      },
     ])
   })
 })
@@ -130,8 +166,14 @@ describe(parseUntimedSuggestions.name, () => {
       "Photo Gallery (8 pages)",
     ].join("\n")
     expect(parseUntimedSuggestions(text)).toEqual([
-      { name: "Image Gallery (96 images)", timecode: undefined },
-      { name: "Photo Gallery (8 pages)", timecode: undefined },
+      {
+        name: "Image Gallery (96 images)",
+        timecode: undefined,
+      },
+      {
+        name: "Photo Gallery (8 pages)",
+        timecode: undefined,
+      },
     ])
   })
 
@@ -141,7 +183,10 @@ describe(parseUntimedSuggestions.name, () => {
       "Behind the Scenes (12:34)",
     ].join("\n")
     expect(parseUntimedSuggestions(text)).toEqual([
-      { name: "* The Film – Director's Cut", timecode: undefined },
+      {
+        name: "* The Film – Director's Cut",
+        timecode: undefined,
+      },
     ])
   })
 
@@ -172,9 +217,18 @@ describe(parseUntimedSuggestions.name, () => {
       "– Sub-extra without a timecode",
     ].join("\n")
     expect(parseUntimedSuggestions(text)).toEqual([
-      { name: "Image Gallery (8 pages)", timecode: undefined },
-      { name: "* The Film – Hong Kong Version", timecode: undefined },
-      { name: "Sub-extra without a timecode", timecode: undefined },
+      {
+        name: "Image Gallery (8 pages)",
+        timecode: undefined,
+      },
+      {
+        name: "* The Film – Hong Kong Version",
+        timecode: undefined,
+      },
+      {
+        name: "Sub-extra without a timecode",
+        timecode: undefined,
+      },
     ])
   })
 
@@ -186,8 +240,14 @@ describe(parseUntimedSuggestions.name, () => {
       "Image Gallery (4 images)",
     ].join("\n")
     expect(parseUntimedSuggestions(text)).toEqual([
-      { name: "Image Gallery (4 images)", timecode: undefined },
-      { name: "Image Gallery (4 images)", timecode: undefined },
+      {
+        name: "Image Gallery (4 images)",
+        timecode: undefined,
+      },
+      {
+        name: "Image Gallery (4 images)",
+        timecode: undefined,
+      },
     ])
   })
 })

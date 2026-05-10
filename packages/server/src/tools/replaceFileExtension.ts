@@ -1,6 +1,4 @@
-import {
-  extname,
-} from "node:path"
+import { extname } from "node:path"
 
 export const replaceFileExtension = ({
   filePath,
@@ -8,16 +6,4 @@ export const replaceFileExtension = ({
 }: {
   filePath: string
   fileExtension: string
-}) => (
-  filePath
-  .replace(
-    (
-      extname(
-        filePath
-      )
-    ),
-    (
-      fileExtension
-    ),
-  )
-)
+}) => filePath.replace(extname(filePath), fileExtension)

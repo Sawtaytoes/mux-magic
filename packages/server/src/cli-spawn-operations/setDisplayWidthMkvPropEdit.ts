@@ -6,7 +6,7 @@ export const setDisplayWidthMkvPropEdit = ({
 }: {
   displayWidth: number
   filePath: string
-}) => (
+}) =>
   runMkvPropEdit({
     args: [
       "--edit",
@@ -17,4 +17,3 @@ export const setDisplayWidthMkvPropEdit = ({
     ],
     filePath,
   })
-)

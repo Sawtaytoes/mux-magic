@@ -1,4 +1,8 @@
-import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi"
+import {
+  createRoute,
+  OpenAPIHono,
+  z,
+} from "@hono/zod-openapi"
 
 import { isFakeRequest } from "../../fake-data/index.js"
 import { resolvePrompt } from "../promptStore.js"
@@ -7,8 +11,14 @@ import { jobNotFoundSchema } from "../schemas.js"
 export const inputRoutes = new OpenAPIHono()
 
 const inputBodySchema = z.object({
-  promptId: z.string().describe("Prompt ID from the SSE prompt event"),
-  selectedIndex: z.number().describe("Index of the selected option (-1 to skip/don't rename)"),
+  promptId: z
+    .string()
+    .describe("Prompt ID from the SSE prompt event"),
+  selectedIndex: z
+    .number()
+    .describe(
+      "Index of the selected option (-1 to skip/don't rename)",
+    ),
 })
 
 const inputResponseSchema = z.object({
@@ -67,10 +77,16 @@ inputRoutes.openapi(
       return context.json({ ok: true as const }, 200)
     }
     const body = context.req.valid("json")
-    const resolved = resolvePrompt(body.promptId, body.selectedIndex)
+    const resolved = resolvePrompt(
+      body.promptId,
+      body.selectedIndex,
+    )
 
     if (!resolved) {
-      return context.json({ error: "Job not found" as const }, 404)
+      return context.json(
+        { error: "Job not found" as const },
+        404,
+      )
     }
 
     return context.json({ ok: true as const }, 200)

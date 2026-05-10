@@ -46,10 +46,19 @@ describe("detectMovieFormatVariants", () => {
   })
 
   test("splits Complete vs Parts when both forms are present", () => {
-    const completeEpisode = buildEpisode(1, "1", "Complete Movie", 90)
+    const completeEpisode = buildEpisode(
+      1,
+      "1",
+      "Complete Movie",
+      90,
+    )
     const part1 = buildEpisode(1, "2", "Part 1 of 2", 45)
     const part2 = buildEpisode(1, "3", "Part 2 of 2", 45)
-    const variants = detectMovieFormatVariants([completeEpisode, part1, part2])
+    const variants = detectMovieFormatVariants([
+      completeEpisode,
+      part1,
+      part2,
+    ])
     expect(variants).not.toBeNull()
     expect(variants?.complete).toEqual([completeEpisode])
     expect(variants?.parts).toEqual([part1, part2])
@@ -59,7 +68,11 @@ describe("detectMovieFormatVariants", () => {
     const completeEpisode = buildEpisode(1, "1", "Movie")
     const part1 = buildEpisode(1, "2", "PART 1")
     const part2 = buildEpisode(1, "3", "part 2")
-    const variants = detectMovieFormatVariants([completeEpisode, part1, part2])
+    const variants = detectMovieFormatVariants([
+      completeEpisode,
+      part1,
+      part2,
+    ])
     expect(variants?.complete).toEqual([completeEpisode])
     expect(variants?.parts).toEqual([part1, part2])
   })
@@ -78,8 +91,16 @@ describe("detectMovieFormatVariants", () => {
       ],
       type: 1,
     }
-    const partEpisodeTwo = buildEpisode(1, "3", "Part 2 of 2")
-    const variants = detectMovieFormatVariants([completeEpisode, partEpisodeOne, partEpisodeTwo])
+    const partEpisodeTwo = buildEpisode(
+      1,
+      "3",
+      "Part 2 of 2",
+    )
+    const variants = detectMovieFormatVariants([
+      completeEpisode,
+      partEpisodeOne,
+      partEpisodeTwo,
+    ])
     expect(variants?.parts).toContain(partEpisodeOne)
   })
 })

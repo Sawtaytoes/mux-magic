@@ -1,4 +1,6 @@
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   font-family: system-ui, sans-serif;
@@ -27,7 +29,7 @@ h1 {
   background: #1e293b;
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .job-header {
@@ -52,12 +54,31 @@ h1 {
   font-weight: 600;
 }
 
-.status.pending  { background: #1e3a5f; color: #93c5fd; }
-.status.running  { background: #1e3a5f; color: #60a5fa; animation: pulse 2s infinite; }
-.status.completed { background: #064e3b; color: #34d399; }
-.status.failed   { background: #7f1d1d; color: #f87171; }
-.status.cancelled { background: #334155; color: #cbd5e1; }
-.status.skipped  { background: #1f2937; color: #6b7280; }
+.status.pending {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+.status.running {
+  background: #1e3a5f;
+  color: #60a5fa;
+  animation: pulse 2s infinite;
+}
+.status.completed {
+  background: #064e3b;
+  color: #34d399;
+}
+.status.failed {
+  background: #7f1d1d;
+  color: #f87171;
+}
+.status.cancelled {
+  background: #334155;
+  color: #cbd5e1;
+}
+.status.skipped {
+  background: #1f2937;
+  color: #6b7280;
+}
 
 .cancel-btn {
   background: transparent;
@@ -68,8 +89,13 @@ h1 {
   font-size: 0.75rem;
   cursor: pointer;
 }
-.cancel-btn:hover { background: #78350f33; }
-.cancel-btn:disabled { opacity: 0.4; cursor: default; }
+.cancel-btn:hover {
+  background: #78350f33;
+}
+.cancel-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
 .job-footer {
   display: flex;
@@ -92,11 +118,18 @@ h1 {
   align-items: center;
   gap: 4px;
 }
-.builder-btn:hover { background: #1d4ed833; }
+.builder-btn:hover {
+  background: #1d4ed833;
+}
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .meta {
@@ -146,7 +179,9 @@ summary {
   gap: 8px;
   list-style: none;
 }
-summary::-webkit-details-marker { display: none; }
+summary::-webkit-details-marker {
+  display: none;
+}
 summary::before {
   content: "▶";
   display: inline-block;
@@ -167,10 +202,18 @@ details[open] > summary::before {
   padding: 1px 8px;
   font-size: 0.72rem;
   cursor: pointer;
-  transition: color 150ms, border-color 150ms;
+  transition:
+    color 150ms,
+    border-color 150ms;
 }
-.copy-btn:hover { color: #e2e8f0; border-color: #64748b; }
-.copy-btn.copied { color: #34d399; border-color: #34d399; }
+.copy-btn:hover {
+  color: #e2e8f0;
+  border-color: #64748b;
+}
+.copy-btn.copied {
+  color: #34d399;
+  border-color: #34d399;
+}
 
 .result {
   margin-top: 8px;
@@ -198,8 +241,14 @@ details[open] > summary::before {
   overflow-x: auto;
   white-space: pre;
 }
-.log-pane > div { word-break: break-word; white-space: pre-wrap; }
-.log-pane .log-empty { color: #64748b; font-style: italic; }
+.log-pane > div {
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+.log-pane .log-empty {
+  color: #64748b;
+  font-style: italic;
+}
 
 .steps {
   margin-top: 12px;
@@ -253,15 +302,23 @@ details[open] > summary::before {
   font-size: 0.78rem;
   padding: 6px 8px;
 }
-.step .log-pane { max-height: 220px; }
+.step .log-pane {
+  max-height: 220px;
+}
 
 /* .progress-* base styles are in /progress-utils.css (shared with the
    builder's "Run via API" modal). The overrides below shrink the bar
    when it's mounted inside a step row (per-step bars are visually
    subordinate to the parent card's bar). */
-.step .progress-row { margin-top: 8px; }
-.step .progress-bar { height: 4px; }
-.step .progress-label { font-size: 0.72rem; }
+.step .progress-row {
+  margin-top: 8px;
+}
+.step .progress-bar {
+  height: 4px;
+}
+.step .progress-label {
+  font-size: 0.72rem;
+}
 
 #status-bar {
   max-width: 900px;
@@ -270,4 +327,6 @@ details[open] > summary::before {
   color: #475569;
 }
 
-#status-bar.error { color: #f87171; }
+#status-bar.error {
+  color: #f87171;
+}

@@ -21,9 +21,6 @@ serve(
     port: PORT,
   },
   () => {
-    logInfo(
-      "API SERVER LISTENING PORT",
-      PORT,
-    )
+    logInfo("API SERVER LISTENING PORT", PORT)
   },
 )

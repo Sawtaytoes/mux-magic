@@ -3,17 +3,16 @@ import {
   filter,
   map,
   mergeMap,
-  of,
   type Observable,
+  of,
 } from "rxjs"
-
+import { convertNumberToTimeString } from "./getFileDuration.js"
+import { getUserSearchInput } from "./getUserSearchInput.js"
 import { logAndSwallow } from "./logAndSwallow.js"
-import { convertNumberToTimeString } from "./getFileDuration.js";
-import { getUserSearchInput } from "./getUserSearchInput.js";
 import {
-  specialFeatureTypes,
   type SpecialFeature,
-} from "./parseSpecialFeatures.js";
+  specialFeatureTypes,
+} from "./parseSpecialFeatures.js"
 
 export const specialFeatureMatchRenames = [
   {
@@ -146,113 +145,36 @@ export const getTimecodeAtOffset = (
   timecode: string,
   offset: number,
 ) => {
-  const date = (
-    new Date(
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-    )
-  )
+  const date = new Date(0, 0, 0, 0, 0, 0)
 
   timecode
-  .split(":")
-  .reverse()
-  .map((
-    timeString
-  ) => (
-    Number(
-      timeString
-    )
-  ))
-  .forEach((
-    timeValue,
-    index,
-  ) => {
-    if (
-      index
-      === 0
-    ) {
-      date
-      .setSeconds(
-        timeValue
-      )
-    }
-    else if (
-      index
-      === 1
-    ) {
-      date
-      .setMinutes(
-        timeValue
-      )
-    }
-    else if (
-      index
-      === 2
-    ) {
-      date
-      .setHours(
-        timeValue
-      )
-    }
-  })
+    .split(":")
+    .reverse()
+    .map((timeString) => Number(timeString))
+    .forEach((timeValue, index) => {
+      if (index === 0) {
+        date.setSeconds(timeValue)
+      } else if (index === 1) {
+        date.setMinutes(timeValue)
+      } else if (index === 2) {
+        date.setHours(timeValue)
+      }
+    })
 
-  date
-  .setSeconds(
-    (
-      date
-      .getSeconds()
-    )
-    + offset
-  )
+  date.setSeconds(date.getSeconds() + offset)
 
-  return (
-    [
-      (
-        date
-        .getHours()
-      ),
-      (
-        date
-        .getMinutes()
-      ),
-      (
-        date
-        .getSeconds()
-      ),
-    ]
-    .filter((
-      value,
-      index,
-    ) => (
-      (
-        index
-        === 0
-      )
-      ? (
-        Boolean(
-          value
-        )
-      )
-      : true
-    ))
-    .map((
-      value,
-      index,
-    ) => (
-      index > 0
-      ? (
-        convertNumberToTimeString(
-          value
-        )
-      )
-      : value
-    ))
+  return [
+    date.getHours(),
+    date.getMinutes(),
+    date.getSeconds(),
+  ]
+    .filter((value, index) =>
+      index === 0 ? Boolean(value) : true,
+    )
+    .map((value, index) =>
+      index > 0 ? convertNumberToTimeString(value) : value,
+    )
     .join(":")
-  )
 }
 
 export const getOffsetsFromCenterPoint = ({
@@ -260,21 +182,13 @@ export const getOffsetsFromCenterPoint = ({
   paddingAmount,
 }: {
   /** All numbers will be pushed positively or negatively by this amount. */
-  offset: number,
+  offset: number
   /** Number of items that will be both positively and negatively padded. */
-  paddingAmount: number,
-}) => (
-  Array((paddingAmount * 2) + 1)
-  .fill(null)
-  .map((
-    _,
-    index,
-  ) => (
-    index
-    - paddingAmount
-    + fixedOffset
-  ))
-)
+  paddingAmount: number
+}) =>
+  Array(paddingAmount * 2 + 1)
+    .fill(null)
+    .map((_, index) => index - paddingAmount + fixedOffset)
 
 export type TimecodeDeviation = {
   /**
@@ -282,9 +196,9 @@ export type TimecodeDeviation = {
    *
    * Passing `2` changes `1:20` to `1:22`.
    * */
-  fixedOffset?: number,
+  fixedOffset?: number
   /** A range an amount that timecodes may be off. Typically, it's safe to have this be `1` second, but it can be `2+` depending on someone's wrong metadata. */
-  timecodePaddingAmount?: number,
+  timecodePaddingAmount?: number
 }
 
 export const getIsSimilarTimecode = (
@@ -294,23 +208,14 @@ export const getIsSimilarTimecode = (
     fixedOffset = 0,
     timecodePaddingAmount = 0,
   }: TimecodeDeviation = {},
-) => (
+) =>
   getOffsetsFromCenterPoint({
     offset: fixedOffset,
     paddingAmount: timecodePaddingAmount,
-  })
-  .some((
-    offset,
-  ) => (
-    (
-      getTimecodeAtOffset(
-        timecodeA,
-        offset,
-      )
-    )
-    === timecodeB
-  ))
-)
+  }).some(
+    (offset) =>
+      getTimecodeAtOffset(timecodeA, offset) === timecodeB,
+  )
 
 export const getSpecialFeatureFromTimecode = ({
   filename,
@@ -319,35 +224,22 @@ export const getSpecialFeatureFromTimecode = ({
   specialFeatures,
   timecode: mediaTimecode,
   timecodePaddingAmount,
-}: (
-  {
-    filename: string,
-    // Absolute path for the file being prompted about. Forwarded to
-    // getUserSearchInput so the Builder's prompt modal can render a
-    // ▶ Play button. Optional so CLI / non-Builder callers don't have
-    // to thread it through if they don't need it.
-    filePath?: string,
-    specialFeatures: SpecialFeature[],
-    timecode: string,
-  }
-  & TimecodeDeviation
-)): (
-  Observable<
-    string
-  >
-) => (
-  of(
-    null
-  )
-  .pipe(
+}: {
+  filename: string
+  // Absolute path for the file being prompted about. Forwarded to
+  // getUserSearchInput so the Builder's prompt modal can render a
+  // ▶ Play button. Optional so CLI / non-Builder callers don't have
+  // to thread it through if they don't need it.
+  filePath?: string
+  specialFeatures: SpecialFeature[]
+  timecode: string
+} & TimecodeDeviation): Observable<string> =>
+  of(null).pipe(
     mergeMap(() => {
-      const matchingExtras = (
-        specialFeatures
-        .filter(({
-          timecode: specialFeatureTimecode,
-        }) => (
-          specialFeatureTimecode
-          && (
+      const matchingExtras = specialFeatures
+        .filter(
+          ({ timecode: specialFeatureTimecode }) =>
+            specialFeatureTimecode &&
             getIsSimilarTimecode(
               mediaTimecode,
               specialFeatureTimecode,
@@ -355,215 +247,111 @@ export const getSpecialFeatureFromTimecode = ({
                 fixedOffset,
                 timecodePaddingAmount,
               },
-            )
-          )
-        ))
+            ),
+        )
         .concat(
           specialFeatures
-          .filter(({
-            timecode: specialFeatureTimecode,
-          }) => (
-            !specialFeatureTimecode
-          ))
-          .flatMap(({
-            children,
-          }) => (
-            children
-          ))
-          .filter(
-            Boolean
-          )
-          .filter(({
-            timecode: SpecialFeatureChildTimecode,
-          }) => (
-            SpecialFeatureChildTimecode
-            && (
-              getIsSimilarTimecode(
-                mediaTimecode,
-                SpecialFeatureChildTimecode,
-                {
-                  fixedOffset,
-                  timecodePaddingAmount,
-                },
-              )
+            .filter(
+              ({ timecode: specialFeatureTimecode }) =>
+                !specialFeatureTimecode,
             )
-          ))
+            .flatMap(({ children }) => children)
+            .filter(Boolean)
+            .filter(
+              ({ timecode: SpecialFeatureChildTimecode }) =>
+                SpecialFeatureChildTimecode &&
+                getIsSimilarTimecode(
+                  mediaTimecode,
+                  SpecialFeatureChildTimecode,
+                  {
+                    fixedOffset,
+                    timecodePaddingAmount,
+                  },
+                ),
+            ),
         )
-      )
 
-      if (
-        (
-          matchingExtras
-          .length
-        )
-        > 1
-      ) {
-        return (
-          getUserSearchInput({
-            message: `${filename}\n${mediaTimecode}`,
-            filePath,
-            options: [
-              ...matchingExtras
-              .map((
-                matchingExtra,
-                index,
-              ) => ({
+      if (matchingExtras.length > 1) {
+        return getUserSearchInput({
+          message: `${filename}\n${mediaTimecode}`,
+          filePath,
+          options: [
+            ...matchingExtras.map(
+              (matchingExtra, index) => ({
                 index,
                 label: matchingExtra.text,
-              })),
-              {
-                index: -1,
-                label: "Don't rename / skip",
-              },
-            ],
-          })
-          .pipe(
-            map((
-              selectedIndex,
-            ) => {
-              if (selectedIndex === -1) return undefined
-
-              return (
-                matchingExtras
-                .at(
-                  selectedIndex
-                )
-              )
-            }),
-            filter(
-              Boolean
+              }),
             ),
-          )
+            {
+              index: -1,
+              label: "Don't rename / skip",
+            },
+          ],
+        }).pipe(
+          map((selectedIndex) => {
+            if (selectedIndex === -1) return undefined
+
+            return matchingExtras.at(selectedIndex)
+          }),
+          filter(Boolean),
         )
       }
 
-      if (
-        (
-          matchingExtras
-          .length
-        )
-        === 1
-      ) {
-        return (
-          of(
-            matchingExtras
-            .at(
-              0
-            )
-          )
-          .pipe(
-            filter(
-              Boolean
-            ),
-          )
+      if (matchingExtras.length === 1) {
+        return of(matchingExtras.at(0)).pipe(
+          filter(Boolean),
         )
       }
 
       return EMPTY
     }),
-    mergeMap(({
-      parentType,
-      text,
-      type,
-    }) => {
-      const specialFeatureMatchRename = (
-        specialFeatureMatchRenames
-        .find(({
-          searchTerm,
-        }) => (
-          text
-          .match(
-            searchTerm
-          )
-        ))
-      )
+    mergeMap(({ parentType, text, type }) => {
+      const specialFeatureMatchRename =
+        specialFeatureMatchRenames.find(({ searchTerm }) =>
+          text.match(searchTerm),
+        )
 
-      if (
-        specialFeatureMatchRename
-      ) {
-        const {
-          searchTerm,
-          replacement,
-        } = (
+      if (specialFeatureMatchRename) {
+        const { searchTerm, replacement } =
           specialFeatureMatchRename
-        )
 
-        return (
-          of(
-            text
-            .replace(
-              searchTerm,
-              replacement,
-            )
-          )
-        )
+        return of(text.replace(searchTerm, replacement))
       }
 
-      if (
-        type === "unknown"
-      ) {
-        if (
-          parentType === "unknown"
-        ) {
-          return (
-            getUserSearchInput({
-              message: `${filename}\n${text}`,
-              filePath,
-              options: [
-                ...specialFeatureTypes
-                .map((
-                  specialFeatureType,
-                  index,
-                ) => ({
+      if (type === "unknown") {
+        if (parentType === "unknown") {
+          return getUserSearchInput({
+            message: `${filename}\n${text}`,
+            filePath,
+            options: [
+              ...specialFeatureTypes.map(
+                (specialFeatureType, index) => ({
                   index,
                   label: specialFeatureType,
-                })),
-                {
-                  index: -1,
-                  label: "Don't rename / skip",
-                },
-              ],
-            })
-            .pipe(
-              map((
-                selectedIndex,
-              ) => {
-                if (selectedIndex === -1) return undefined
-
-                return (
-                  specialFeatureTypes
-                  .at(
-                    selectedIndex
-                  )
-                )
-              }),
-              filter(
-                Boolean
+                }),
               ),
-              map((
-                selectedType,
-              ) => (
-                `${text} -${selectedType}`
-              ))
-            )
+              {
+                index: -1,
+                label: "Don't rename / skip",
+              },
+            ],
+          }).pipe(
+            map((selectedIndex) => {
+              if (selectedIndex === -1) return undefined
+
+              return specialFeatureTypes.at(selectedIndex)
+            }),
+            filter(Boolean),
+            map(
+              (selectedType) => `${text} -${selectedType}`,
+            ),
           )
         }
 
-        return (
-          of(
-            `${text} -${parentType}`
-          )
-        )
+        return of(`${text} -${parentType}`)
       }
 
-      return (
-        of(
-          `${text} -${type}`
-        )
-      )
+      return of(`${text} -${type}`)
     }),
-    logAndSwallow(
-      getSpecialFeatureFromTimecode
-    ),
+    logAndSwallow(getSpecialFeatureFromTimecode),
   )
-)

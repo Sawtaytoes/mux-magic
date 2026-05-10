@@ -12,13 +12,22 @@
 // detach runs in one place; the other modals just hide via class
 // toggle since they have no side effects on close.
 
-const MODAL_IDS_IN_PRIORITY_ORDER = ['load-modal', 'yaml-modal', 'api-run-modal', 'command-help-modal']
+const MODAL_IDS_IN_PRIORITY_ORDER = [
+  "load-modal",
+  "yaml-modal",
+  "api-run-modal",
+  "command-help-modal",
+]
 
 function findVisibleModalId() {
-  return MODAL_IDS_IN_PRIORITY_ORDER.find((id) => {
-    const element = document.getElementById(id)
-    return element && !element.classList.contains('hidden')
-  }) ?? null
+  return (
+    MODAL_IDS_IN_PRIORITY_ORDER.find((id) => {
+      const element = document.getElementById(id)
+      return (
+        element && !element.classList.contains("hidden")
+      )
+    }) ?? null
+  )
 }
 
 // Guard against double-attach: main.js calls this once at startup,
@@ -36,18 +45,24 @@ export function attachModalEscapeListener() {
   // native form control) gets a chance to absorb the event in the bubbling
   // phase. Without it, clicking a native-controls seek bar moves focus into
   // the browser's shadow DOM and ESC never reaches a bubbling-phase listener.
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') {
-      return
-    }
-    const openModalId = findVisibleModalId()
-    if (!openModalId) {
-      return
-    }
-    if (openModalId === 'load-modal') {
-      window.mediaTools.closeLoadModal()
-      return
-    }
-    document.getElementById(openModalId).classList.add('hidden')
-  }, { capture: true })
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key !== "Escape") {
+        return
+      }
+      const openModalId = findVisibleModalId()
+      if (!openModalId) {
+        return
+      }
+      if (openModalId === "load-modal") {
+        window.mediaTools.closeLoadModal()
+        return
+      }
+      document
+        .getElementById(openModalId)
+        .classList.add("hidden")
+    },
+    { capture: true },
+  )
 }

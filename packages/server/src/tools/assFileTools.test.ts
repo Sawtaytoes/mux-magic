@@ -1,7 +1,10 @@
 import { describe, expect, test } from "vitest"
 
 import { applyAssRules } from "./applyAssRules.js"
-import { parseAssFile, serializeAssFile } from "./assFileTools.js"
+import {
+  parseAssFile,
+  serializeAssFile,
+} from "./assFileTools.js"
 
 const SAMPLE_1 = `[Script Info]
 Title: Un-fuck CR Style (TH)
@@ -50,37 +53,64 @@ Dialogue: 0,0:00:22.59,0:00:23.63,Default,Tojima,0,0,0,,Let's go!
 Dialogue: 0,0:00:28.28,0:00:31.64,Default,Yukarisu,0,0,0,,You're already torn up. \\NYou sure about this?`
 
 // Helper to get a Script Info property value
-const getScriptInfoValue = (content: string, key: string) => {
+const getScriptInfoValue = (
+  content: string,
+  key: string,
+) => {
   const parsed = parseAssFile(content)
-  const section = parsed.sections.find((section) => section.sectionType === "scriptInfo")
-  if (section?.sectionType !== "scriptInfo") return undefined
-  const entry = section.entries.find(
-    (entry) => entry.type === "property" && entry.key === key,
+  const section = parsed.sections.find(
+    (section) => section.sectionType === "scriptInfo",
   )
-  return entry?.type === "property" ? entry.value : undefined
+  if (section?.sectionType !== "scriptInfo")
+    return undefined
+  const entry = section.entries.find(
+    (entry) =>
+      entry.type === "property" && entry.key === key,
+  )
+  return entry?.type === "property"
+    ? entry.value
+    : undefined
 }
 
 describe("parseAssFile", () => {
   test("parses Script Info properties correctly", () => {
     const result = parseAssFile(SAMPLE_1)
-    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
+    const section = result.sections.find(
+      (section) => section.sectionType === "scriptInfo",
+    )
     expect(section?.sectionType).toBe("scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
 
     expect(
-      section.entries.find((entry) => entry.type === "property" && entry.key === "PlayResX"),
-    ).toEqual({ type: "property", key: "PlayResX", value: "640" })
+      section.entries.find(
+        (entry) =>
+          entry.type === "property" &&
+          entry.key === "PlayResX",
+      ),
+    ).toEqual({
+      type: "property",
+      key: "PlayResX",
+      value: "640",
+    })
 
     expect(
       section.entries.find(
-        (entry) => entry.type === "property" && entry.key === "YCbCr Matrix",
+        (entry) =>
+          entry.type === "property" &&
+          entry.key === "YCbCr Matrix",
       ),
-    ).toEqual({ type: "property", key: "YCbCr Matrix", value: "TV.709" })
+    ).toEqual({
+      type: "property",
+      key: "YCbCr Matrix",
+      value: "TV.709",
+    })
   })
 
   test("preserves Script Info comments in order", () => {
     const result = parseAssFile(SAMPLE_2)
-    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
+    const section = result.sections.find(
+      (section) => section.sectionType === "scriptInfo",
+    )
     if (section?.sectionType !== "scriptInfo") return
 
     expect(section.entries[0]).toEqual({
@@ -104,38 +134,50 @@ describe("parseAssFile", () => {
     expect(section.entries).toHaveLength(1)
     const style = section.entries[0]
     expect(style.entryType).toBe("Style")
-    expect(style.fields["Name"]).toBe("Default")
-    expect(style.fields["Fontname"]).toBe("Trebuchet MS")
-    expect(style.fields["MarginL"]).toBe("10")
-    expect(style.fields["MarginR"]).toBe("10")
-    expect(style.fields["MarginV"]).toBe("18")
-    expect(style.fields["Encoding"]).toBe("0")
+    expect(style.fields.Name).toBe("Default")
+    expect(style.fields.Fontname).toBe("Trebuchet MS")
+    expect(style.fields.MarginL).toBe("10")
+    expect(style.fields.MarginR).toBe("10")
+    expect(style.fields.MarginV).toBe("18")
+    expect(style.fields.Encoding).toBe("0")
   })
 
   test("handles commas inside the Text field of Events entries", () => {
     const result = parseAssFile(SAMPLE_1)
-    const events = result.sections.find((section) => section.sectionName === "Events")
+    const events = result.sections.find(
+      (section) => section.sectionName === "Events",
+    )
     if (events?.sectionType !== "formatted") return
 
-    const dialogueWithComma = events.entries.find(
-      (entry) => entry.fields["Text"]?.includes(","),
+    const dialogueWithComma = events.entries.find((entry) =>
+      entry.fields.Text?.includes(","),
     )
-    expect(dialogueWithComma?.fields["Text"]).toBe(
+    expect(dialogueWithComma?.fields.Text).toBe(
       "{\\i1}I've always loved Kamen Rider,{\\i0}\\N{\\i1}ever since I was a kid.{\\i0}",
     )
-    expect(dialogueWithComma?.fields["Layer"]).toBe("0")
-    expect(dialogueWithComma?.fields["Style"]).toBe("Default")
+    expect(dialogueWithComma?.fields.Layer).toBe("0")
+    expect(dialogueWithComma?.fields.Style).toBe("Default")
   })
 
   test("strips UTF-8 BOM so [Script Info] section is not lost", () => {
-    const withBom = "﻿" + SAMPLE_1
+    const withBom = `﻿${SAMPLE_1}`
     const result = parseAssFile(withBom)
-    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
+    const section = result.sections.find(
+      (section) => section.sectionType === "scriptInfo",
+    )
     expect(section?.sectionType).toBe("scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
     expect(
-      section.entries.find((entry) => entry.type === "property" && entry.key === "PlayResX"),
-    ).toEqual({ type: "property", key: "PlayResX", value: "640" })
+      section.entries.find(
+        (entry) =>
+          entry.type === "property" &&
+          entry.key === "PlayResX",
+      ),
+    ).toEqual({
+      type: "property",
+      key: "PlayResX",
+      value: "640",
+    })
   })
 
   test("round-trip: parse → serialize → parse produces same structure", () => {
@@ -143,18 +185,34 @@ describe("parseAssFile", () => {
     const serialized = serializeAssFile(parsed1)
     const parsed2 = parseAssFile(serialized)
 
-    expect(parsed2.sections.length).toBe(parsed1.sections.length)
+    expect(parsed2.sections.length).toBe(
+      parsed1.sections.length,
+    )
 
     parsed1.sections.forEach((section, idx) => {
-      expect(parsed2.sections[idx].sectionName).toBe(section.sectionName)
-      expect(parsed2.sections[idx].sectionType).toBe(section.sectionType)
+      expect(parsed2.sections[idx].sectionName).toBe(
+        section.sectionName,
+      )
+      expect(parsed2.sections[idx].sectionType).toBe(
+        section.sectionType,
+      )
 
-      if (section.sectionType === "scriptInfo" && parsed2.sections[idx].sectionType === "scriptInfo") {
-        expect(parsed2.sections[idx].entries).toEqual(section.entries)
+      if (
+        section.sectionType === "scriptInfo" &&
+        parsed2.sections[idx].sectionType === "scriptInfo"
+      ) {
+        expect(parsed2.sections[idx].entries).toEqual(
+          section.entries,
+        )
       }
 
-      if (section.sectionType === "formatted" && parsed2.sections[idx].sectionType === "formatted") {
-        expect(parsed2.sections[idx].entries).toEqual(section.entries)
+      if (
+        section.sectionType === "formatted" &&
+        parsed2.sections[idx].sectionType === "formatted"
+      ) {
+        expect(parsed2.sections[idx].entries).toEqual(
+          section.entries,
+        )
       }
     })
   })
@@ -162,41 +220,88 @@ describe("parseAssFile", () => {
 
 describe("applyAssRules — setScriptInfo", () => {
   test("changes YCbCr Matrix: TV.601 to TV.709", () => {
-    const input = SAMPLE_1.replace("YCbCr Matrix: TV.709", "YCbCr Matrix: TV.601")
+    const input = SAMPLE_1.replace(
+      "YCbCr Matrix: TV.709",
+      "YCbCr Matrix: TV.601",
+    )
     const parsed = parseAssFile(input)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      { type: "setScriptInfo", key: "YCbCr Matrix", value: "TV.709" },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "setScriptInfo",
+          key: "YCbCr Matrix",
+          value: "TV.709",
+        },
+      ],
+    })
 
-    expect(getScriptInfoValue(serializeAssFile(result), "YCbCr Matrix")).toBe("TV.709")
+    expect(
+      getScriptInfoValue(
+        serializeAssFile(result),
+        "YCbCr Matrix",
+      ),
+    ).toBe("TV.709")
   })
 
   test("changes ScriptType: 3.2.2 to v4.00+", () => {
-    const input = SAMPLE_2.replace("ScriptType: v4.00+", "ScriptType: 3.2.2")
+    const input = SAMPLE_2.replace(
+      "ScriptType: v4.00+",
+      "ScriptType: 3.2.2",
+    )
     const parsed = parseAssFile(input)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      { type: "setScriptInfo", key: "ScriptType", value: "v4.00+" },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "setScriptInfo",
+          key: "ScriptType",
+          value: "v4.00+",
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
+    const section = result.sections.find(
+      (section) => section.sectionType === "scriptInfo",
+    )
     if (section?.sectionType !== "scriptInfo") return
     const entry = section.entries.find(
-      (entry) => entry.type === "property" && entry.key === "ScriptType",
+      (entry) =>
+        entry.type === "property" &&
+        entry.key === "ScriptType",
     )
-    expect(entry).toEqual({ type: "property", key: "ScriptType", value: "v4.00+" })
+    expect(entry).toEqual({
+      type: "property",
+      key: "ScriptType",
+      value: "v4.00+",
+    })
   })
 
   test("adds a key if it doesn't exist", () => {
-    const input = SAMPLE_1.replace("\nScaledBorderAndShadow: yes", "")
+    const input = SAMPLE_1.replace(
+      "\nScaledBorderAndShadow: yes",
+      "",
+    )
     const parsed = parseAssFile(input)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      { type: "setScriptInfo", key: "ScaledBorderAndShadow", value: "yes" },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "setScriptInfo",
+          key: "ScaledBorderAndShadow",
+          value: "yes",
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
+    const section = result.sections.find(
+      (section) => section.sectionType === "scriptInfo",
+    )
     if (section?.sectionType !== "scriptInfo") return
     const entry = section.entries.find(
-      (entry) => entry.type === "property" && entry.key === "ScaledBorderAndShadow",
+      (entry) =>
+        entry.type === "property" &&
+        entry.key === "ScaledBorderAndShadow",
     )
     expect(entry).toEqual({
       type: "property",
@@ -209,60 +314,101 @@ describe("applyAssRules — setScriptInfo", () => {
 describe("applyAssRules — scaleResolution", () => {
   test("scales PlayResX and PlayResY from 640x360 to 1920x1080", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      {
-        type: "scaleResolution",
-        from: { width: 640, height: 360 },
-        to: { width: 1920, height: 1080 },
-      },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "scaleResolution",
+          from: { width: 640, height: 360 },
+          to: { width: 1920, height: 1080 },
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
+    const section = result.sections.find(
+      (section) => section.sectionType === "scriptInfo",
+    )
     if (section?.sectionType !== "scriptInfo") return
     const get = (key: string) =>
-      section.entries.find((entry) => entry.type === "property" && entry.key === key)
+      section.entries.find(
+        (entry) =>
+          entry.type === "property" && entry.key === key,
+      )
 
-    expect(get("PlayResX")).toEqual({ type: "property", key: "PlayResX", value: "1920" })
-    expect(get("PlayResY")).toEqual({ type: "property", key: "PlayResY", value: "1080" })
+    expect(get("PlayResX")).toEqual({
+      type: "property",
+      key: "PlayResX",
+      value: "1920",
+    })
+    expect(get("PlayResY")).toEqual({
+      type: "property",
+      key: "PlayResY",
+      value: "1080",
+    })
   })
 
   test("updates existing LayoutResX and LayoutResY", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      {
-        type: "scaleResolution",
-        from: { width: 640, height: 360 },
-        to: { width: 1920, height: 1080 },
-      },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "scaleResolution",
+          from: { width: 640, height: 360 },
+          to: { width: 1920, height: 1080 },
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
+    const section = result.sections.find(
+      (section) => section.sectionType === "scriptInfo",
+    )
     if (section?.sectionType !== "scriptInfo") return
     const get = (key: string) =>
-      section.entries.find((entry) => entry.type === "property" && entry.key === key)
+      section.entries.find(
+        (entry) =>
+          entry.type === "property" && entry.key === key,
+      )
 
-    expect(get("LayoutResX")).toEqual({ type: "property", key: "LayoutResX", value: "1920" })
-    expect(get("LayoutResY")).toEqual({ type: "property", key: "LayoutResY", value: "1080" })
+    expect(get("LayoutResX")).toEqual({
+      type: "property",
+      key: "LayoutResX",
+      value: "1920",
+    })
+    expect(get("LayoutResY")).toEqual({
+      type: "property",
+      key: "LayoutResY",
+      value: "1080",
+    })
   })
 
   test("does not add LayoutResX/Y when absent and addLayoutRes is not set", () => {
     const parsed = parseAssFile(SAMPLE_1)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      {
-        type: "scaleResolution",
-        from: { width: 640, height: 360 },
-        to: { width: 1920, height: 1080 },
-      },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "scaleResolution",
+          from: { width: 640, height: 360 },
+          to: { width: 1920, height: 1080 },
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
+    const section = result.sections.find(
+      (section) => section.sectionType === "scriptInfo",
+    )
     if (section?.sectionType !== "scriptInfo") return
 
     const layoutX = section.entries.find(
-      (entry) => entry.type === "property" && entry.key === "LayoutResX",
+      (entry) =>
+        entry.type === "property" &&
+        entry.key === "LayoutResX",
     )
     const layoutY = section.entries.find(
-      (entry) => entry.type === "property" && entry.key === "LayoutResY",
+      (entry) =>
+        entry.type === "property" &&
+        entry.key === "LayoutResY",
     )
     expect(layoutX).toBeUndefined()
     expect(layoutY).toBeUndefined()
@@ -270,43 +416,70 @@ describe("applyAssRules — scaleResolution", () => {
 
   test("adds LayoutResX/Y when absent and addLayoutRes:true", () => {
     const parsed = parseAssFile(SAMPLE_1)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      {
-        type: "scaleResolution",
-        from: { width: 640, height: 360 },
-        to: { width: 1920, height: 1080 },
-        hasLayoutRes: true,
-      },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "scaleResolution",
+          from: { width: 640, height: 360 },
+          to: { width: 1920, height: 1080 },
+          hasLayoutRes: true,
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
+    const section = result.sections.find(
+      (section) => section.sectionType === "scriptInfo",
+    )
     if (section?.sectionType !== "scriptInfo") return
 
     const layoutX = section.entries.find(
-      (entry) => entry.type === "property" && entry.key === "LayoutResX",
+      (entry) =>
+        entry.type === "property" &&
+        entry.key === "LayoutResX",
     )
     const layoutY = section.entries.find(
-      (entry) => entry.type === "property" && entry.key === "LayoutResY",
+      (entry) =>
+        entry.type === "property" &&
+        entry.key === "LayoutResY",
     )
-    expect(layoutX).toEqual({ type: "property", key: "LayoutResX", value: "1920" })
-    expect(layoutY).toEqual({ type: "property", key: "LayoutResY", value: "1080" })
+    expect(layoutX).toEqual({
+      type: "property",
+      key: "LayoutResX",
+      value: "1920",
+    })
+    expect(layoutY).toEqual({
+      type: "property",
+      key: "LayoutResY",
+      value: "1080",
+    })
   })
 
   test("ensures ScaledBorderAndShadow: yes by default", () => {
-    const input = SAMPLE_1.replace("\nScaledBorderAndShadow: yes", "")
+    const input = SAMPLE_1.replace(
+      "\nScaledBorderAndShadow: yes",
+      "",
+    )
     const parsed = parseAssFile(input)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      {
-        type: "scaleResolution",
-        from: { width: 640, height: 360 },
-        to: { width: 1920, height: 1080 },
-      },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "scaleResolution",
+          from: { width: 640, height: 360 },
+          to: { width: 1920, height: 1080 },
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
+    const section = result.sections.find(
+      (section) => section.sectionType === "scriptInfo",
+    )
     if (section?.sectionType !== "scriptInfo") return
     const entry = section.entries.find(
-      (entry) => entry.type === "property" && entry.key === "ScaledBorderAndShadow",
+      (entry) =>
+        entry.type === "property" &&
+        entry.key === "ScaledBorderAndShadow",
     )
     expect(entry).toEqual({
       type: "property",
@@ -317,121 +490,185 @@ describe("applyAssRules — scaleResolution", () => {
 
   test("does not scale when source resolution does not match", () => {
     const parsed = parseAssFile(SAMPLE_1)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      {
-        type: "scaleResolution",
-        from: { width: 1280, height: 720 },
-        to: { width: 1920, height: 1080 },
-      },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "scaleResolution",
+          from: { width: 1280, height: 720 },
+          to: { width: 1920, height: 1080 },
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
+    const section = result.sections.find(
+      (section) => section.sectionType === "scriptInfo",
+    )
     if (section?.sectionType !== "scriptInfo") return
     const playResX = section.entries.find(
-      (entry) => entry.type === "property" && entry.key === "PlayResX",
+      (entry) =>
+        entry.type === "property" &&
+        entry.key === "PlayResX",
     )
-    expect(playResX).toEqual({ type: "property", key: "PlayResX", value: "640" })
+    expect(playResX).toEqual({
+      type: "property",
+      key: "PlayResX",
+      value: "640",
+    })
   })
 })
 
 describe("applyAssRules — setStyleFields", () => {
   test("changes MarginL, MarginR, MarginV on all non-skipped styles (sample 1: 10,10,18 → 200,200,90)", () => {
     const parsed = parseAssFile(SAMPLE_1)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      {
-        type: "setStyleFields",
-        ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending",
-        fields: { MarginL: "200", MarginR: "200", MarginV: "90" },
-      },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "setStyleFields",
+          ignoredStyleNamesRegexString:
+            "signs?|op|ed|opening|ending",
+          fields: {
+            MarginL: "200",
+            MarginR: "200",
+            MarginV: "90",
+          },
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionName === "V4+ Styles")
+    const section = result.sections.find(
+      (section) => section.sectionName === "V4+ Styles",
+    )
     if (section?.sectionType !== "formatted") return
 
     const defaultStyle = section.entries.find(
-      (entry) => entry.entryType === "Style" && entry.fields["Name"] === "Default",
+      (entry) =>
+        entry.entryType === "Style" &&
+        entry.fields.Name === "Default",
     )
-    expect(defaultStyle?.fields["MarginL"]).toBe("200")
-    expect(defaultStyle?.fields["MarginR"]).toBe("200")
-    expect(defaultStyle?.fields["MarginV"]).toBe("90")
+    expect(defaultStyle?.fields.MarginL).toBe("200")
+    expect(defaultStyle?.fields.MarginR).toBe("200")
+    expect(defaultStyle?.fields.MarginV).toBe("90")
   })
 
   test("changes MarginL, MarginR, MarginV on all non-skipped styles (sample 2: 10,10,20 → 200,200,90)", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      {
-        type: "setStyleFields",
-        ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending",
-        fields: { MarginL: "200", MarginR: "200", MarginV: "90" },
-      },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "setStyleFields",
+          ignoredStyleNamesRegexString:
+            "signs?|op|ed|opening|ending",
+          fields: {
+            MarginL: "200",
+            MarginR: "200",
+            MarginV: "90",
+          },
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionName === "V4+ Styles")
+    const section = result.sections.find(
+      (section) => section.sectionName === "V4+ Styles",
+    )
     if (section?.sectionType !== "formatted") return
 
     const defaultStyle = section.entries.find(
-      (entry) => entry.entryType === "Style" && entry.fields["Name"] === "Default",
+      (entry) =>
+        entry.entryType === "Style" &&
+        entry.fields.Name === "Default",
     )
-    expect(defaultStyle?.fields["MarginL"]).toBe("200")
-    expect(defaultStyle?.fields["MarginR"]).toBe("200")
-    expect(defaultStyle?.fields["MarginV"]).toBe("90")
+    expect(defaultStyle?.fields.MarginL).toBe("200")
+    expect(defaultStyle?.fields.MarginR).toBe("200")
+    expect(defaultStyle?.fields.MarginV).toBe("90")
   })
 
   test("skips the Signs style when skipNamePattern matches", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      {
-        type: "setStyleFields",
-        ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending",
-        fields: { MarginL: "200", MarginR: "200", MarginV: "90" },
-      },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "setStyleFields",
+          ignoredStyleNamesRegexString:
+            "signs?|op|ed|opening|ending",
+          fields: {
+            MarginL: "200",
+            MarginR: "200",
+            MarginV: "90",
+          },
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionName === "V4+ Styles")
+    const section = result.sections.find(
+      (section) => section.sectionName === "V4+ Styles",
+    )
     if (section?.sectionType !== "formatted") return
 
     const signsStyle = section.entries.find(
-      (entry) => entry.entryType === "Style" && entry.fields["Name"] === "Signs",
+      (entry) =>
+        entry.entryType === "Style" &&
+        entry.fields.Name === "Signs",
     )
-    expect(signsStyle?.fields["MarginL"]).toBe("10")
-    expect(signsStyle?.fields["MarginR"]).toBe("10")
-    expect(signsStyle?.fields["MarginV"]).toBe("20")
+    expect(signsStyle?.fields.MarginL).toBe("10")
+    expect(signsStyle?.fields.MarginR).toBe("10")
+    expect(signsStyle?.fields.MarginV).toBe("20")
   })
 
   test("applies all fields to Flashback style (not skipped)", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      {
-        type: "setStyleFields",
-        ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending",
-        fields: { MarginL: "200", MarginR: "200", MarginV: "90" },
-      },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "setStyleFields",
+          ignoredStyleNamesRegexString:
+            "signs?|op|ed|opening|ending",
+          fields: {
+            MarginL: "200",
+            MarginR: "200",
+            MarginV: "90",
+          },
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionName === "V4+ Styles")
+    const section = result.sections.find(
+      (section) => section.sectionName === "V4+ Styles",
+    )
     if (section?.sectionType !== "formatted") return
 
     const flashback = section.entries.find(
-      (entry) => entry.entryType === "Style" && entry.fields["Name"] === "Flashback",
+      (entry) =>
+        entry.entryType === "Style" &&
+        entry.fields.Name === "Flashback",
     )
-    expect(flashback?.fields["MarginV"]).toBe("90")
+    expect(flashback?.fields.MarginV).toBe("90")
   })
 
   test("applies to all styles when skipNamePattern is not set", () => {
     const parsed = parseAssFile(SAMPLE_2)
-    const result = applyAssRules({ assFile: parsed, rules: [
-      {
-        type: "setStyleFields",
-        fields: { MarginV: "90" },
-      },
-    ] })
+    const result = applyAssRules({
+      assFile: parsed,
+      rules: [
+        {
+          type: "setStyleFields",
+          fields: { MarginV: "90" },
+        },
+      ],
+    })
 
-    const section = result.sections.find((section) => section.sectionName === "V4+ Styles")
+    const section = result.sections.find(
+      (section) => section.sectionName === "V4+ Styles",
+    )
     if (section?.sectionType !== "formatted") return
 
     section.entries.forEach((entry) => {
       if (entry.entryType !== "Style") return
-      expect(entry.fields["MarginV"]).toBe("90")
+      expect(entry.fields.MarginV).toBe("90")
     })
   })
 })

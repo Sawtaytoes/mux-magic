@@ -8,14 +8,14 @@ import { hideBin } from "yargs/helpers"
 import { changeTrackLanguagesCommand } from "./cli-commands/changeTrackLanguagesCommand.js"
 import { copyFilesCommand } from "./cli-commands/copyFilesCommand.js"
 import { copyOutSubtitlesCommand } from "./cli-commands/copyOutSubtitlesCommand.js"
+import { deleteFilesByExtensionCommand } from "./cli-commands/deleteFilesByExtensionCommand.js"
+import { deleteFolderCommand } from "./cli-commands/deleteFolderCommand.js"
 import { extractSubtitlesCommand } from "./cli-commands/extractSubtitlesCommand.js"
 import { fixIncorrectDefaultTracksCommand } from "./cli-commands/fixIncorrectDefaultTracksCommand.js"
 import { flattenOutputCommand } from "./cli-commands/flattenOutputCommand.js"
 import { getAudioOffsetsCommand } from "./cli-commands/getAudioOffsetsCommand.js"
 import { getSubtitleMetadataCommand } from "./cli-commands/getSubtitleMetadataCommand.js"
 import { hasBetterAudioCommand } from "./cli-commands/hasBetterAudioCommand.js"
-import { deleteFilesByExtensionCommand } from "./cli-commands/deleteFilesByExtensionCommand.js"
-import { deleteFolderCommand } from "./cli-commands/deleteFolderCommand.js"
 import { hasBetterVersionCommand } from "./cli-commands/hasBetterVersionCommand.js"
 import { hasDuplicateMusicFilesCommand } from "./cli-commands/hasDuplicateMusicFilesCommand.js"
 import { hasImaxEnhancedAudioCommand } from "./cli-commands/hasImaxEnhancedAudioCommand.js"
@@ -24,13 +24,13 @@ import { hasSurroundSoundCommand } from "./cli-commands/hasSurroundSoundCommand.
 import { hasWrongDefaultTrackCommand } from "./cli-commands/hasWrongDefaultTrackCommand.js"
 import { inverseTelecineDiscRipsCommand } from "./cli-commands/inverseTelecineDiscRipsCommand.js"
 import { isMissingSubtitlesCommand } from "./cli-commands/isMissingSubtitlesCommand.js"
-import { modifySubtitleMetadataCommand } from "./cli-commands/modifySubtitleMetadataCommand.js"
 import { keepLanguagesCommand } from "./cli-commands/keepLanguagesCommand.js"
 import { mergeOrderedChaptersCommand } from "./cli-commands/mergeOrderedChaptersCommand.js"
 import { mergeTracksCommand } from "./cli-commands/mergeTracksCommand.js"
+import { modifySubtitleMetadataCommand } from "./cli-commands/modifySubtitleMetadataCommand.js"
 import { moveFilesCommand } from "./cli-commands/moveFilesCommand.js"
-import { nameAnimeEpisodesCommand } from "./cli-commands/nameAnimeEpisodesCommand.js"
 import { nameAnimeEpisodesAniDBCommand } from "./cli-commands/nameAnimeEpisodesAniDBCommand.js"
+import { nameAnimeEpisodesCommand } from "./cli-commands/nameAnimeEpisodesCommand.js"
 import { nameSpecialFeaturesCommand } from "./cli-commands/nameSpecialFeaturesCommand.js"
 import { nameTvShowEpisodesCommand } from "./cli-commands/nameTvShowEpisodesCommand.js"
 import { remuxToMkvCommand } from "./cli-commands/remuxToMkvCommand.js"
@@ -44,76 +44,52 @@ import { setDisplayWidthCommand } from "./cli-commands/setDisplayWidthCommand.js
 import { splitChaptersCommand } from "./cli-commands/splitChaptersCommand.js"
 import { storeAspectRatioDataCommand } from "./cli-commands/storeAspectRatioDataCommand.js"
 
-console
-.time(
-  "Command Runtime"
-)
+console.time("Command Runtime")
 
-process
-.on(
-  "uncaughtException",
-  (exception) => {
-    console
-    .error(
-      exception
-    )
-  },
-)
+process.on("uncaughtException", (exception) => {
+  console.error(exception)
+})
 
-yargs(
-  hideBin(
-    process
-    .argv
-  )
-)
-.scriptName(
-  ""
-)
-.wrap(
-  process
-  .stdout
-  .columns
-)
-.usage(
-  "Usage: $0 <cmd> [args]"
-)
-.command(changeTrackLanguagesCommand)
-.command(copyFilesCommand)
-.command(copyOutSubtitlesCommand)
-.command(extractSubtitlesCommand)
-.command(fixIncorrectDefaultTracksCommand)
-.command(flattenOutputCommand)
-.command(getAudioOffsetsCommand)
-.command(getSubtitleMetadataCommand)
-.command(deleteFilesByExtensionCommand)
-.command(deleteFolderCommand)
-.command(hasBetterAudioCommand)
-.command(hasBetterVersionCommand)
-.command(hasDuplicateMusicFilesCommand)
-.command(hasImaxEnhancedAudioCommand)
-.command(hasManyAudioTracksCommand)
-.command(hasSurroundSoundCommand)
-.command(hasWrongDefaultTrackCommand)
-.command(inverseTelecineDiscRipsCommand)
-.command(isMissingSubtitlesCommand)
-.command(modifySubtitleMetadataCommand)
-.command(keepLanguagesCommand)
-.command(mergeOrderedChaptersCommand)
-.command(mergeTracksCommand)
-.command(moveFilesCommand)
-.command(nameAnimeEpisodesCommand)
-.command(nameAnimeEpisodesAniDBCommand)
-.command(nameSpecialFeaturesCommand)
-.command(nameTvShowEpisodesCommand)
-.command(remuxToMkvCommand)
-.command(renameDemosCommand)
-.command(renameMovieClipDownloadsCommand)
-.command(reorderTracksCommand)
-.command(replaceAttachmentsCommand)
-.command(replaceFlacWithPcmAudioCommand)
-.command(replaceTracksCommand)
-.command(setDisplayWidthCommand)
-.command(splitChaptersCommand)
-.command(storeAspectRatioDataCommand)
-.strict()
-.argv
+yargs(hideBin(process.argv))
+  .scriptName("")
+  .wrap(process.stdout.columns)
+  .usage("Usage: $0 <cmd> [args]")
+  .command(changeTrackLanguagesCommand)
+  .command(copyFilesCommand)
+  .command(copyOutSubtitlesCommand)
+  .command(extractSubtitlesCommand)
+  .command(fixIncorrectDefaultTracksCommand)
+  .command(flattenOutputCommand)
+  .command(getAudioOffsetsCommand)
+  .command(getSubtitleMetadataCommand)
+  .command(deleteFilesByExtensionCommand)
+  .command(deleteFolderCommand)
+  .command(hasBetterAudioCommand)
+  .command(hasBetterVersionCommand)
+  .command(hasDuplicateMusicFilesCommand)
+  .command(hasImaxEnhancedAudioCommand)
+  .command(hasManyAudioTracksCommand)
+  .command(hasSurroundSoundCommand)
+  .command(hasWrongDefaultTrackCommand)
+  .command(inverseTelecineDiscRipsCommand)
+  .command(isMissingSubtitlesCommand)
+  .command(modifySubtitleMetadataCommand)
+  .command(keepLanguagesCommand)
+  .command(mergeOrderedChaptersCommand)
+  .command(mergeTracksCommand)
+  .command(moveFilesCommand)
+  .command(nameAnimeEpisodesCommand)
+  .command(nameAnimeEpisodesAniDBCommand)
+  .command(nameSpecialFeaturesCommand)
+  .command(nameTvShowEpisodesCommand)
+  .command(remuxToMkvCommand)
+  .command(renameDemosCommand)
+  .command(renameMovieClipDownloadsCommand)
+  .command(reorderTracksCommand)
+  .command(replaceAttachmentsCommand)
+  .command(replaceFlacWithPcmAudioCommand)
+  .command(replaceTracksCommand)
+  .command(setDisplayWidthCommand)
+  .command(splitChaptersCommand)
+  .command(storeAspectRatioDataCommand)
+  .strict().argv

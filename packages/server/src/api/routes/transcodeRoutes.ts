@@ -11,12 +11,12 @@ import {
 } from "rxjs"
 
 import { buildFfmpegArgs } from "../../cli-spawn-operations/runFfmpegAudioTranscode.js"
+import { ffmpegPath } from "../../tools/appPaths.js"
+import { getMediaInfo } from "../../tools/getMediaInfo.js"
 import {
   PathSafetyError,
   validateReadablePath,
 } from "../../tools/pathSafety.js"
-import { ffmpegPath } from "../../tools/appPaths.js"
-import { getMediaInfo } from "../../tools/getMediaInfo.js"
 import {
   mimeTypeForCodec,
   type TranscodeCacheKey,
@@ -83,23 +83,26 @@ type ValidationFailure = {
   status: 400
 }
 
-type ValidationResult = (
-  | { failure: ValidationFailure, params: null }
-  | { failure: null, params: ValidatedParams }
-)
+type ValidationResult =
+  | { failure: ValidationFailure; params: null }
+  | { failure: null; params: ValidatedParams }
 
-const defaultBitrateForCodec = (codec: TranscodeCodec): string => (
-  codec === "opus"
-  ? "192k"
-  : "256k"
-)
+const defaultBitrateForCodec = (
+  codec: TranscodeCodec,
+): string => (codec === "opus" ? "192k" : "256k")
 
 const validateBitrate = (
   rawBitrate: string | undefined,
   codec: TranscodeCodec,
-): { error: string | null, value: string } => {
-  if (typeof rawBitrate !== "string" || rawBitrate.length === 0) {
-    return { error: null, value: defaultBitrateForCodec(codec) }
+): { error: string | null; value: string } => {
+  if (
+    typeof rawBitrate !== "string" ||
+    rawBitrate.length === 0
+  ) {
+    return {
+      error: null,
+      value: defaultBitrateForCodec(codec),
+    }
   }
   const match = rawBitrate.match(BITRATE_REGEX)
   if (!match) {
@@ -126,16 +129,19 @@ const validateBitrate = (
 
 const validateAudioStream = (
   rawAudioStream: string | undefined,
-): { error: string | null, value: number } => {
-  if (typeof rawAudioStream !== "string" || rawAudioStream.length === 0) {
+): { error: string | null; value: number } => {
+  if (
+    typeof rawAudioStream !== "string" ||
+    rawAudioStream.length === 0
+  ) {
     return { error: null, value: 0 }
   }
   const parsed = Number(rawAudioStream)
   if (
-    Number.isNaN(parsed)
-    || !Number.isFinite(parsed)
-    || parsed < 0
-    || !Number.isInteger(parsed)
+    Number.isNaN(parsed) ||
+    !Number.isFinite(parsed) ||
+    parsed < 0 ||
+    !Number.isInteger(parsed)
   ) {
     return {
       error: `audioStream must be a non-negative integer; received: ${rawAudioStream}`,
@@ -147,8 +153,11 @@ const validateAudioStream = (
 
 const validateCodec = (
   rawCodec: string | undefined,
-): { error: string | null, value: TranscodeCodec } => {
-  if (typeof rawCodec !== "string" || rawCodec.length === 0) {
+): { error: string | null; value: TranscodeCodec } => {
+  if (
+    typeof rawCodec !== "string" ||
+    rawCodec.length === 0
+  ) {
     return { error: null, value: "opus" }
   }
   if (rawCodec === "opus") {
@@ -165,8 +174,11 @@ const validateCodec = (
 
 const validateStart = (
   rawStart: string | undefined,
-): { error: string | null, value: number } => {
-  if (typeof rawStart !== "string" || rawStart.length === 0) {
+): { error: string | null; value: number } => {
+  if (
+    typeof rawStart !== "string" ||
+    rawStart.length === 0
+  ) {
     return { error: null, value: 0 }
   }
   const parsed = Number(rawStart)
@@ -202,17 +214,27 @@ const validateAllParams = (
       params: null,
     }
   }
-  const bitrateResult = validateBitrate(rawBitrate, codecResult.value)
+  const bitrateResult = validateBitrate(
+    rawBitrate,
+    codecResult.value,
+  )
   if (bitrateResult.error !== null) {
     return {
-      failure: { message: bitrateResult.error, status: 400 },
+      failure: {
+        message: bitrateResult.error,
+        status: 400,
+      },
       params: null,
     }
   }
-  const audioStreamResult = validateAudioStream(rawAudioStream)
+  const audioStreamResult =
+    validateAudioStream(rawAudioStream)
   if (audioStreamResult.error !== null) {
     return {
-      failure: { message: audioStreamResult.error, status: 400 },
+      failure: {
+        message: audioStreamResult.error,
+        status: 400,
+      },
       params: null,
     }
   }
@@ -261,44 +283,64 @@ const streamQueue$ = new Subject<StreamRequest>()
 // to the HTTP handler immediately via resolver so bytes flow to the
 // browser as soon as the first fMP4 fragment is muxed.
 streamQueue$
-.pipe(
-  mergeMap(
-    ({ cacheKey, startSeconds, resolver }) => (
-      new Observable<void>((observer) => {
-        const childProcess = spawn(
-          ffmpegPath,
-          buildFfmpegArgs(cacheKey, startSeconds),
-          { cwd: tmpdir(), env: process.env },
-        )
+  .pipe(
+    mergeMap(
+      ({ cacheKey, startSeconds, resolver }) =>
+        new Observable<void>((observer) => {
+          const childProcess = spawn(
+            ffmpegPath,
+            buildFfmpegArgs(cacheKey, startSeconds),
+            { cwd: tmpdir(), env: process.env },
+          )
 
-        childProcess.stderr.on("data", (data) => {
-          console.warn("[transcode/audio] ffmpeg stderr:", data.toString())
-        })
+          childProcess.stderr.on("data", (data) => {
+            console.warn(
+              "[transcode/audio] ffmpeg stderr:",
+              data.toString(),
+            )
+          })
 
-        const stream = Readable.toWeb(childProcess.stdout) as ReadableStream
-        resolver({ kill: () => { childProcess.kill() }, stream })
+          const stream = Readable.toWeb(
+            childProcess.stdout,
+          ) as ReadableStream
+          resolver({
+            kill: () => {
+              childProcess.kill()
+            },
+            stream,
+          })
 
-        childProcess.on("exit", () => { observer.complete() })
-        childProcess.on("error", (error) => { observer.error(error) })
+          childProcess.on("exit", () => {
+            observer.complete()
+          })
+          childProcess.on("error", (error) => {
+            observer.error(error)
+          })
 
-        return () => { childProcess.kill() }
-      })
+          return () => {
+            childProcess.kill()
+          }
+        }),
+      parseConcurrency(),
     ),
-    parseConcurrency(),
-  ),
-)
-.subscribe({ error: () => {} })
+  )
+  .subscribe({ error: () => {} })
 
 const acquireTranscodeStream = (
   cacheKey: TranscodeCacheKey,
   startSeconds: number,
-): Promise<StreamResult> => (
+): Promise<StreamResult> =>
   new Promise((resolve) => {
-    streamQueue$.next({ cacheKey, resolver: resolve, startSeconds })
+    streamQueue$.next({
+      cacheKey,
+      resolver: resolve,
+      startSeconds,
+    })
   })
-)
 
-const buildHeadersForCodec = (codec: TranscodeCodec): Record<string, string> => ({
+const buildHeadersForCodec = (
+  codec: TranscodeCodec,
+): Record<string, string> => ({
   "Cache-Control": "no-store",
   "Content-Disposition": "inline",
   "Content-Type": mimeTypeForCodec(codec),
@@ -311,17 +353,26 @@ const buildHeadersForCodec = (codec: TranscodeCodec): Record<string, string> => 
 // non-fatal; the client falls back to direct <video src>.
 const fetchStreamInfo = async (
   absPath: string,
-): Promise<{ durationSeconds: number | null, videoCodecTag: string | null }> => {
-  const mediaInfo = await firstValueFrom(getMediaInfo(absPath))
+): Promise<{
+  durationSeconds: number | null
+  videoCodecTag: string | null
+}> => {
+  const mediaInfo = await firstValueFrom(
+    getMediaInfo(absPath),
+  )
   const tracks = mediaInfo.media?.track ?? []
-  const general = tracks.find((track) => track["@type"] === "General")
-  const video = tracks.find((track) => track["@type"] === "Video")
+  const general = tracks.find(
+    (track) => track["@type"] === "General",
+  )
+  const video = tracks.find(
+    (track) => track["@type"] === "Video",
+  )
 
   let durationSeconds: number | null = null
   if (
-    general
-    && "Duration" in general
-    && typeof general.Duration === "string"
+    general &&
+    "Duration" in general &&
+    typeof general.Duration === "string"
   ) {
     const secs = parseFloat(general.Duration)
     if (!Number.isNaN(secs) && secs > 0) {
@@ -330,31 +381,41 @@ const fetchStreamInfo = async (
   }
 
   let videoCodecTag: string | null = null
-  if (video && "Format" in video && typeof video.Format === "string") {
+  if (
+    video &&
+    "Format" in video &&
+    typeof video.Format === "string"
+  ) {
     const fmt = video.Format.toUpperCase()
-    const profile = (
-      "Format_Profile" in video && typeof video.Format_Profile === "string"
-      ? video.Format_Profile
-      : ""
-    )
+    const profile =
+      "Format_Profile" in video &&
+      typeof video.Format_Profile === "string"
+        ? video.Format_Profile
+        : ""
     // MediaInfo returns level and tier as separate fields from profile.
-    const level = (
-      "Format_Level" in video && typeof (video as Record<string, unknown>).Format_Level === "string"
-      ? (video as Record<string, unknown>).Format_Level as string
-      : ""
-    )
-    const tier = (
-      "Format_Tier" in video && typeof (video as Record<string, unknown>).Format_Tier === "string"
-      ? (video as Record<string, unknown>).Format_Tier as string
-      : ""
-    )
+    const level =
+      "Format_Level" in video &&
+      typeof (video as Record<string, unknown>)
+        .Format_Level === "string"
+        ? ((video as Record<string, unknown>)
+            .Format_Level as string)
+        : ""
+    const tier =
+      "Format_Tier" in video &&
+      typeof (video as Record<string, unknown>)
+        .Format_Tier === "string"
+        ? ((video as Record<string, unknown>)
+            .Format_Tier as string)
+        : ""
     if (fmt === "AVC") {
       videoCodecTag = buildAvcCodecString(profile, level)
-    }
-    else if (fmt === "HEVC") {
-      videoCodecTag = buildHevcCodecString(profile, level, tier)
-    }
-    else if (fmt === "AV1") {
+    } else if (fmt === "HEVC") {
+      videoCodecTag = buildHevcCodecString(
+        profile,
+        level,
+        tier,
+      )
+    } else if (fmt === "AV1") {
       videoCodecTag = "av01.0.08M.08"
     }
   }
@@ -364,11 +425,11 @@ const fetchStreamInfo = async (
 
 // H.264 profile name → two-hex-digit profile_idc used in the codec string.
 const AVC_PROFILE_HEX: Record<string, string> = {
-  "Baseline": "42",
+  Baseline: "42",
   "Constrained Baseline": "42",
-  "Main": "4D",
-  "Extended": "58",
-  "High": "64",
+  Main: "4D",
+  Extended: "58",
+  High: "64",
   "High 10": "6E",
   "High 4:2:2": "7A",
   "High 4:4:4": "F4",
@@ -378,25 +439,38 @@ const AVC_PROFILE_HEX: Record<string, string> = {
 // Derives the RFC 6381 codec string for H.264, e.g. "avc1.640029" for
 // High@L4.1. Falls back to High@L4.1 for any unparseable inputs.
 // MediaInfo returns profile and level as separate fields (not "High@L4.1").
-const buildAvcCodecString = (formatProfile: string, formatLevel: string): string => {
+const buildAvcCodecString = (
+  formatProfile: string,
+  formatLevel: string,
+): string => {
   const fallback = "avc1.640029" // High@L4.1 — covers most Blu-ray rips
-  const profileHex = AVC_PROFILE_HEX[formatProfile.trim()] ?? "64"
+  const profileHex =
+    AVC_PROFILE_HEX[formatProfile.trim()] ?? "64"
   const levelFloat = parseFloat(formatLevel)
   if (Number.isNaN(levelFloat) || levelFloat <= 0) {
     return fallback
   }
-  const levelHex = Math.round(levelFloat * 10).toString(16).padStart(2, "0").toUpperCase()
+  const levelHex = Math.round(levelFloat * 10)
+    .toString(16)
+    .padStart(2, "0")
+    .toUpperCase()
   return `avc1.${profileHex}00${levelHex}`
 }
 
 // Derives the RFC 6381 codec string for HEVC, e.g. "hvc1.2.4.H153.B0"
 // for Main 10@L5.1@High. Falls back to Main@L5.0@High for any unparseable inputs.
 // MediaInfo returns profile, level, and tier as separate fields.
-const buildHevcCodecString = (formatProfile: string, formatLevel: string, formatTier: string): string => {
+const buildHevcCodecString = (
+  formatProfile: string,
+  formatLevel: string,
+  formatTier: string,
+): string => {
   const fallback = "hvc1.1.6.L150.B0" // Main@L5.0@High
   const lowerProfile = formatProfile.toLowerCase()
   // Profile IDC: Main=1, Main 10=2
-  const profileIdc = lowerProfile.startsWith("main 10") ? 2 : 1
+  const profileIdc = lowerProfile.startsWith("main 10")
+    ? 2
+    : 1
   // Compatibility flags: 0x06 for Main (bits 1+2 set), 0x04 for Main 10 (bit 2 set)
   const compatFlags = profileIdc === 1 ? "6" : "4"
   const levelFloat = parseFloat(formatLevel)
@@ -406,7 +480,8 @@ const buildHevcCodecString = (formatProfile: string, formatLevel: string, format
   // HEVC level indicator = level * 30 (e.g. 5.1 → 153)
   const levelIndicator = Math.round(levelFloat * 30)
   // MediaInfo Format_Tier is "High" or "Main" (absent → Main tier)
-  const tierFlag = formatTier.toLowerCase() === "high" ? "H" : "L"
+  const tierFlag =
+    formatTier.toLowerCase() === "high" ? "H" : "L"
   return `hvc1.${profileIdc}.${compatFlags}.${tierFlag}${levelIndicator}.B0`
 }
 
@@ -447,8 +522,7 @@ const handleTranscodeRequest = async ({
   let validatedAbsPath: string
   try {
     validatedAbsPath = validateReadablePath(params.path)
-  }
-  catch (error) {
+  } catch (error) {
     if (error instanceof PathSafetyError) {
       return new Response(
         JSON.stringify({ error: error.message }),
@@ -474,16 +548,20 @@ const handleTranscodeRequest = async ({
     let durationSeconds: number | null = null
     let videoCodecTag: string | null = null
     try {
-      ;({ durationSeconds, videoCodecTag } = await fetchStreamInfo(validatedAbsPath))
-    }
-    catch {
+      ;({ durationSeconds, videoCodecTag } =
+        await fetchStreamInfo(validatedAbsPath))
+    } catch {
       // MediaInfo failure is non-fatal — client falls back to direct src
     }
     return new Response(null, {
       headers: {
         ...buildHeadersForCodec(params.codec),
-        ...(durationSeconds !== null ? { "X-Duration": String(durationSeconds) } : {}),
-        ...(videoCodecTag !== null ? { "X-Video-Codec": videoCodecTag } : {}),
+        ...(durationSeconds !== null
+          ? { "X-Duration": String(durationSeconds) }
+          : {}),
+        ...(videoCodecTag !== null
+          ? { "X-Video-Codec": videoCodecTag }
+          : {}),
       },
       status: 200,
     })
@@ -497,16 +575,24 @@ const handleTranscodeRequest = async ({
   }
 
   try {
-    const { kill, stream } = await acquireTranscodeStream(cacheKey, params.startSeconds)
+    const { kill, stream } = await acquireTranscodeStream(
+      cacheKey,
+      params.startSeconds,
+    )
     if (requestSignal !== undefined) {
-      requestSignal.addEventListener("abort", () => { kill() }, { once: true })
+      requestSignal.addEventListener(
+        "abort",
+        () => {
+          kill()
+        },
+        { once: true },
+      )
     }
     return new Response(stream, {
       headers: buildHeadersForCodec(params.codec),
       status: 200,
     })
-  }
-  catch (error) {
+  } catch (error) {
     return new Response(
       JSON.stringify({ error: messageFromError(error) }),
       {
@@ -524,21 +610,23 @@ const handleTranscodeRequest = async ({
 // handlers (and a separately-registered `.on("HEAD", ...)` does NOT
 // take precedence), so we detect HEAD via `context.req.method` and
 // short-circuit inside handleTranscodeRequest before any encoding.
-transcodeRoutes.on(["GET", "HEAD"], "/transcode/audio", async (context) => (
-  handleTranscodeRequest({
-    isHeadRequest: context.req.method === "HEAD",
-    rawAudioStream: context.req.query("audioStream"),
-    rawBitrate: context.req.query("bitrate"),
-    rawCodec: context.req.query("codec"),
-    rawPath: context.req.query("path"),
-    rawStart: context.req.query("start"),
-    requestSignal: (
-      context.req.raw && "signal" in context.req.raw
-      ? context.req.raw.signal
-      : undefined
-    ),
-  })
-))
+transcodeRoutes.on(
+  ["GET", "HEAD"],
+  "/transcode/audio",
+  async (context) =>
+    handleTranscodeRequest({
+      isHeadRequest: context.req.method === "HEAD",
+      rawAudioStream: context.req.query("audioStream"),
+      rawBitrate: context.req.query("bitrate"),
+      rawCodec: context.req.query("codec"),
+      rawPath: context.req.query("path"),
+      rawStart: context.req.query("start"),
+      requestSignal:
+        context.req.raw && "signal" in context.req.raw
+          ? context.req.raw.signal
+          : undefined,
+    }),
+)
 
 // Also exported for tests that want to drive a deterministic gate
 // without waiting on the env-var-driven default.
@@ -549,4 +637,5 @@ export const __defaultsForTests = {
 
 // Re-export helper for tests that want to exercise the default-bitrate
 // path without round-tripping through a request.
-export const __defaultBitrateForCodec = defaultBitrateForCodec
+export const __defaultBitrateForCodec =
+  defaultBitrateForCodec

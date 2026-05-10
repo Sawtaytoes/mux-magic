@@ -12,9 +12,12 @@ import {
 } from "rxjs"
 
 import { getActiveJobId } from "../api/logCapture.js"
-import { aclSafeCopyFile, type CopyOptions } from "../tools/aclSafeCopyFile.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
+import {
+  aclSafeCopyFile,
+  type CopyOptions,
+} from "../tools/aclSafeCopyFile.js"
 import { getFiles } from "../tools/getFiles.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { logInfo } from "../tools/logMessage.js"
 import { makeDirectory } from "../tools/makeDirectory.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
@@ -33,38 +36,50 @@ export const copyFiles = ({
 }: {
   destinationPath: string
   sourcePath: string
-}): Observable<string> => (
+}): Observable<string> =>
   new Observable<string>((subscriber) => {
     const abortController = new AbortController()
 
-    const innerSubscription = (
-      getFiles({ sourcePath })
+    const innerSubscription = getFiles({ sourcePath })
       .pipe(
         // Materialize the file list so we know totalFiles + can stat for
         // totalBytes upfront. The cost is N stats and holding N small
         // FileInfo structs in memory; both are cheap relative to the
         // bytes we're about to move.
         toArray(),
-        concatMap((files) => (
+        concatMap((files) =>
           defer(async () => {
             const jobId = getActiveJobId()
-            const sizes = (
+            const sizes =
               jobId !== undefined
-              ? await Promise.all(files.map((file) => stat(file.fullPath).then((stats) => stats.size)))
-              : []
+                ? await Promise.all(
+                    files.map((file) =>
+                      stat(file.fullPath).then(
+                        (stats) => stats.size,
+                      ),
+                    ),
+                  )
+                : []
+            const totalBytes = sizes.reduce(
+              (sum, size) => sum + size,
+              0,
             )
-            const totalBytes = sizes.reduce((sum, size) => sum + size, 0)
-            const emitter = (
+            const emitter =
               jobId !== undefined
-              ? createProgressEmitter(jobId, { totalFiles: files.length, totalBytes })
-              : null
-            )
+                ? createProgressEmitter(jobId, {
+                    totalFiles: files.length,
+                    totalBytes,
+                  })
+                : null
             return { files, sizes, emitter }
-          })
-          .pipe(
-            concatMap(({ files, sizes, emitter }) => (
-              from(files.map((file, index) => ({ file, size: sizes[index] })))
-              .pipe(
+          }).pipe(
+            concatMap(({ files, sizes, emitter }) =>
+              from(
+                files.map((file, index) => ({
+                  file,
+                  size: sizes[index],
+                })),
+              ).pipe(
                 // Per-file copies go through the global Task scheduler — at
                 // MAX_THREADS=N, up to N copies run concurrently. Each gets
                 // its own FileTracker so the UI shows one row per active
@@ -73,14 +88,18 @@ export const copyFiles = ({
                 runTasks(({ file, size }) => {
                   const targetPath = join(
                     destinationPath,
-                    file.filename.concat(extname(file.fullPath)),
+                    file.filename.concat(
+                      extname(file.fullPath),
+                    ),
                   )
 
-                  const tracker = (
+                  const tracker =
                     emitter !== null
-                    ? emitter.startFile(file.fullPath, size)
-                    : null
-                  )
+                      ? emitter.startFile(
+                          file.fullPath,
+                          size,
+                        )
+                      : null
 
                   // aclSafeCopyFile.onProgress fires per chunk with
                   // ABSOLUTE bytesWritten across the lifetime of one file
@@ -90,42 +109,49 @@ export const copyFiles = ({
 
                   const copyOptions: CopyOptions = {
                     signal: abortController.signal,
-                    ...(
-                      tracker !== null
+                    ...(tracker !== null
                       ? {
                           onProgress: (event) => {
-                            const delta = event.bytesWritten - lastBytesWritten
-                            lastBytesWritten = event.bytesWritten
+                            const delta =
+                              event.bytesWritten -
+                              lastBytesWritten
+                            lastBytesWritten =
+                              event.bytesWritten
                             tracker.reportBytes(delta)
                           },
                         }
-                      : {}
-                    ),
+                      : {}),
                   }
 
-                  return makeDirectory(destinationPath)
-                  .pipe(
-                    concatMap(() => aclSafeCopyFile(
-                      file.fullPath,
-                      targetPath,
-                      copyOptions,
-                    )),
+                  return makeDirectory(
+                    destinationPath,
+                  ).pipe(
+                    concatMap(() =>
+                      aclSafeCopyFile(
+                        file.fullPath,
+                        targetPath,
+                        copyOptions,
+                      ),
+                    ),
                     tap(() => {
-                      logInfo("COPIED", file.fullPath, targetPath)
+                      logInfo(
+                        "COPIED",
+                        file.fullPath,
+                        targetPath,
+                      )
                     }),
                     map(() => targetPath),
                     finalize(() => tracker?.finish(size)),
                   )
                 }),
                 finalize(() => emitter?.finalize()),
-              )
-            )),
-          )
-        )),
+              ),
+            ),
+          ),
+        ),
         logAndRethrow(copyFiles),
       )
       .subscribe(subscriber)
-    )
 
     return () => {
       // Order: abort first so an in-flight pipeline rejects via
@@ -137,4 +163,3 @@ export const copyFiles = ({
       innerSubscription.unsubscribe()
     }
   })
-)

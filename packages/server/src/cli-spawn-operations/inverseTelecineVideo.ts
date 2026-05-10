@@ -1,18 +1,9 @@
-import {
-  mkdir,
-} from "node:fs/promises"
-import {
-  dirname,
-} from "node:path"
-import {
-  concatMap,
-  from,
-  map,
-  of,
-} from "rxjs";
+import { mkdir } from "node:fs/promises"
+import { dirname } from "node:path"
+import { concatMap, from, map, of } from "rxjs"
 
-import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js";
-import { runFfmpeg } from "./runFfmpeg.js";
+import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js"
+import { runFfmpeg } from "./runFfmpeg.js"
 
 export const inverseTelecinedPath = "INVERSE-TELECINED"
 
@@ -43,7 +34,7 @@ export const videoFilterPulldown = {
 export type Pulldown = keyof typeof videoFilterPulldown
 
 export const videoEncoderType = {
-  "cpu": "libx265",
+  cpu: "libx265",
   "gpu-nvidia": "hevc_nvenc",
 } as const
 
@@ -57,36 +48,19 @@ export const inverseTelecineVideo = ({
   filePath: string
   pulldown: Pulldown
   videoEncoder: VideoEncoder
-}) => (
+}) =>
   of(
     addFolderNameBeforeFilename({
       filePath,
       folderName: inverseTelecinedPath,
-    })
-  )
-  .pipe(
-    concatMap((
-      outputFilePath,
-    ) => (
+    }),
+  ).pipe(
+    concatMap((outputFilePath) =>
       from(
-        mkdir(
-          (
-            dirname(
-              outputFilePath
-            )
-          ),
-          { recursive: true },
-        )
-      )
-      .pipe(
-        map(() => (
-          outputFilePath
-        )),
-      )
-    )),
-    concatMap((
-      outputFilePath,
-    ) => (
+        mkdir(dirname(outputFilePath), { recursive: true }),
+      ).pipe(map(() => outputFilePath)),
+    ),
+    concatMap((outputFilePath) =>
       runFfmpeg({
         args: [
           "-c",
@@ -96,17 +70,11 @@ export const inverseTelecineVideo = ({
           "0",
 
           "-c:v",
-          (
-            videoEncoderType
-            [videoEncoder]
-          ),
+          videoEncoderType[videoEncoder],
 
           // This filter is what does the inverse telecine based on your pulldown.
           "-vf",
-          (
-            videoFilterPulldown
-            [pulldown]
-          ),
+          videoFilterPulldown[pulldown],
 
           // Change the rate to 24fps.
           "-r",
@@ -137,16 +105,8 @@ export const inverseTelecineVideo = ({
 
           `-y`,
         ],
-        inputFilePaths: [
-          filePath
-        ],
+        inputFilePaths: [filePath],
         outputFilePath,
-      })
-      .pipe(
-        map(() => (
-          outputFilePath
-        )),
-      )
-    )),
+      }).pipe(map(() => outputFilePath)),
+    ),
   )
-)

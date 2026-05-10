@@ -11,18 +11,18 @@
 //
 // Loaded as a plain <script src="/reload-on-restart.js"> from each
 // page that should pick up server restarts (jobs, builder).
-(function () {
-  'use strict'
-
-  if (typeof window.createTolerantEventSource !== 'function') {
+;(() => {
+  if (
+    typeof window.createTolerantEventSource !== "function"
+  ) {
     return
   }
 
   var firstBootId = null
 
-  window.createTolerantEventSource('/server-id/stream', {
-    onMessage: function (data) {
-      if (!data || typeof data.bootId !== 'string') return
+  window.createTolerantEventSource("/server-id/stream", {
+    onMessage: (data) => {
+      if (!data || typeof data.bootId !== "string") return
       if (firstBootId === null) {
         firstBootId = data.bootId
         return

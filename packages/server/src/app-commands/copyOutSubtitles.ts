@@ -5,17 +5,20 @@
 
 import { logWarning } from "../tools/logMessage.js"
 import {
+  type ExtractSubtitlesProps,
   extractSubtitles,
   extractSubtitlesDefaultProps,
-  type ExtractSubtitlesProps,
 } from "./extractSubtitles.js"
 
 export type CopyOutSubtitlesProps = ExtractSubtitlesProps
 
-export const copyOutSubtitlesDefaultProps = extractSubtitlesDefaultProps
+export const copyOutSubtitlesDefaultProps =
+  extractSubtitlesDefaultProps
 
 /** @deprecated Use `extractSubtitles` instead. */
-export const copyOutSubtitles = (props: CopyOutSubtitlesProps) => {
+export const copyOutSubtitles = (
+  props: CopyOutSubtitlesProps,
+) => {
   logWarning(
     "copyOutSubtitles",
     "DEPRECATED: 'copyOutSubtitles' was renamed to 'extractSubtitles'. Update your sequences / CLI calls; the old name will be removed in a future release.",

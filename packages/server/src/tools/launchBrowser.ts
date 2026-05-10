@@ -1,17 +1,23 @@
 import { platform } from "node:os"
 
-import { chromium, type Browser, type Page } from "playwright"
+import {
+  type Browser,
+  chromium,
+  type Page,
+} from "playwright"
 
-export const launchBrowser = (): Promise<Browser> => (
+export const launchBrowser = (): Promise<Browser> =>
   chromium.launch({
     // --no-sandbox: required when running as root in a Docker container.
     // --disable-dev-shm-usage: Docker's default /dev/shm is 64MB which
     //   isn't enough for Chromium and causes opaque "Target closed" errors.
     //   Both flags are no-ops on macOS hosts and irrelevant on Windows.
-    args: platform() === "win32" ? [] : ["--no-sandbox", "--disable-dev-shm-usage"],
+    args:
+      platform() === "win32"
+        ? []
+        : ["--no-sandbox", "--disable-dev-shm-usage"],
     headless: true,
   })
-)
 
 // DVDCompare and similar ad-supported pages keep network activity going long
 // after the DOM is interactive — third-party ad tags hold the `load` event
@@ -21,9 +27,8 @@ export const launchBrowser = (): Promise<Browser> => (
 export const gotoPage = (
   page: Page,
   url: string,
-): Promise<unknown> => (
+): Promise<unknown> =>
   page.goto(url, { waitUntil: "domcontentloaded" })
-)
 
 // Run an action that triggers a navigation (typically a form-submit click)
 // and resolve once the resulting navigation reaches `domcontentloaded`.
@@ -38,8 +43,9 @@ export const performAndWaitForNavigation = async (
   triggerAction: () => Promise<unknown>,
 ): Promise<void> => {
   await Promise.all([
-    page.waitForNavigation({ waitUntil: "domcontentloaded" }),
+    page.waitForNavigation({
+      waitUntil: "domcontentloaded",
+    }),
     triggerAction(),
   ])
 }
-

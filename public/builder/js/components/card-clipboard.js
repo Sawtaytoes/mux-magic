@@ -1,15 +1,20 @@
-import { getPaths, getSteps, getStepCounter, setStepCounter } from '../state.js'
-import { esc } from '../util/esc.js'
 import {
-  groupToYaml,
-  isGroup,
-  stepToYaml,
-} from './yaml-modal.js'
+  getPaths,
+  getStepCounter,
+  getSteps,
+  setStepCounter,
+} from "../state.js"
+import { esc } from "../util/esc.js"
 import {
   isGroupItem,
   loadGroupItem,
   loadStepItem,
-} from './load-modal.js'
+} from "./load-modal.js"
+import {
+  groupToYaml,
+  isGroup,
+  stepToYaml,
+} from "./yaml-modal.js"
 
 // Per-card YAML clipboard helpers. The whole-sequence Copy lives in
 // yaml-modal.js (`copyYaml`); this module is the single-card analogue,
@@ -34,7 +39,7 @@ function collectPathIdsUsed(item) {
   const stepsToWalk = isGroup(item) ? item.steps : [item]
   return stepsToWalk.reduce((pathIds, step) => {
     Object.values(step.links ?? {}).forEach((linkValue) => {
-      if (typeof linkValue === 'string') {
+      if (typeof linkValue === "string") {
         pathIds.add(linkValue)
       }
     })
@@ -52,10 +57,15 @@ export function cardToYamlStr(item) {
   const usedPathIds = collectPathIdsUsed(item)
   const pathsObj = Object.fromEntries(
     getPaths()
-    .filter((pathVar) => usedPathIds.has(pathVar.id))
-    .map((pathVar) => [pathVar.id, { label: pathVar.label, value: pathVar.value }])
+      .filter((pathVar) => usedPathIds.has(pathVar.id))
+      .map((pathVar) => [
+        pathVar.id,
+        { label: pathVar.label, value: pathVar.value },
+      ]),
   )
-  const itemYaml = isGroup(item) ? groupToYaml(item) : stepToYaml(item)
+  const itemYaml = isGroup(item)
+    ? groupToYaml(item)
+    : stepToYaml(item)
   return window.jsyaml.dump(
     { paths: pathsObj, steps: [itemYaml] },
     { lineWidth: -1, flowLevel: 3, indent: 2 },
@@ -68,9 +78,15 @@ function flashCopySuccess(buttonElement) {
   if (!buttonElement) {
     return
   }
-  buttonElement.classList.add('!text-emerald-400', '!border-emerald-500')
+  buttonElement.classList.add(
+    "!text-emerald-400",
+    "!border-emerald-500",
+  )
   setTimeout(() => {
-    buttonElement.classList.remove('!text-emerald-400', '!border-emerald-500')
+    buttonElement.classList.remove(
+      "!text-emerald-400",
+      "!border-emerald-500",
+    )
   }, 2000)
 }
 
@@ -80,7 +96,10 @@ function findStepItem(stepId) {
       return found
     }
     if (isGroup(item)) {
-      return item.steps.find((step) => step.id === stepId) ?? null
+      return (
+        item.steps.find((step) => step.id === stepId) ??
+        null
+      )
     }
     if (item.id === stepId) {
       return item
@@ -90,7 +109,11 @@ function findStepItem(stepId) {
 }
 
 function findGroupItem(groupId) {
-  return getSteps().find((item) => isGroup(item) && item.id === groupId) ?? null
+  return (
+    getSteps().find(
+      (item) => isGroup(item) && item.id === groupId,
+    ) ?? null
+  )
 }
 
 export function copyStepYaml(stepId, buttonElement) {
@@ -123,19 +146,35 @@ export function copyGroupYaml(groupId, buttonElement) {
 // bare item dict (single step OR `kind: group`) so users who hand-copy
 // a step from a YAML doc still get a useful paste.
 function extractItemsAndPaths(parsed) {
-  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.steps !== undefined) {
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    !Array.isArray(parsed) &&
+    parsed.steps !== undefined
+  ) {
     return {
-      items: Array.isArray(parsed.steps) ? parsed.steps : [],
-      paths: parsed.paths && typeof parsed.paths === 'object' ? parsed.paths : null,
+      items: Array.isArray(parsed.steps)
+        ? parsed.steps
+        : [],
+      paths:
+        parsed.paths && typeof parsed.paths === "object"
+          ? parsed.paths
+          : null,
     }
   }
-  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    !Array.isArray(parsed)
+  ) {
     return { items: [parsed], paths: null }
   }
   if (Array.isArray(parsed)) {
     return { items: parsed, paths: null }
   }
-  throw new Error('Expected a YAML object or sequence describing a step or group')
+  throw new Error(
+    "Expected a YAML object or sequence describing a step or group",
+  )
 }
 
 // Allocate a new step ID that doesn't collide with anything already
@@ -148,7 +187,7 @@ function allocateStepId() {
 }
 
 function allocateGroupId() {
-  return 'group_' + bridge().randomHex()
+  return `group_${bridge().randomHex()}`
 }
 
 // Walks every pasted step and rewrites object-form step-output links
@@ -158,14 +197,23 @@ function allocateGroupId() {
 // run/resolve time, not at load time.
 function remapInternalLinks(pastedSteps, oldToNewStepId) {
   pastedSteps.forEach((step) => {
-    Object.entries(step.links ?? {}).forEach(([field, source]) => {
-      if (source && typeof source === 'object' && typeof source.linkedTo === 'string') {
-        const newId = oldToNewStepId.get(source.linkedTo)
-        if (newId) {
-          step.links[field] = { linkedTo: newId, output: source.output }
+    Object.entries(step.links ?? {}).forEach(
+      ([field, source]) => {
+        if (
+          source &&
+          typeof source === "object" &&
+          typeof source.linkedTo === "string"
+        ) {
+          const newId = oldToNewStepId.get(source.linkedTo)
+          if (newId) {
+            step.links[field] = {
+              linkedTo: newId,
+              output: source.output,
+            }
+          }
         }
-      }
-    })
+      },
+    )
   })
 }
 
@@ -183,7 +231,10 @@ function hydratePastedItem(rawItem, COMMANDS) {
     })
     group.id = allocateGroupId()
     remapInternalLinks(group.steps, oldToNewStepId)
-    return { item: group, firstStepId: group.steps[0]?.id ?? null }
+    return {
+      item: group,
+      firstStepId: group.steps[0]?.id ?? null,
+    }
   }
   const step = loadStepItem(rawItem, COMMANDS)
   const oldId = step.id
@@ -202,16 +253,20 @@ function mergePastedPaths(pastedPaths) {
     return
   }
   const paths = getPaths()
-  Object.entries(pastedPaths).forEach(([pathId, pathVar]) => {
-    if (paths.find((existing) => existing.id === pathId)) {
-      return
-    }
-    paths.push({
-      id: pathId,
-      label: pathVar?.label || pathId,
-      value: pathVar?.value || '',
-    })
-  })
+  Object.entries(pastedPaths).forEach(
+    ([pathId, pathVar]) => {
+      if (
+        paths.find((existing) => existing.id === pathId)
+      ) {
+        return
+      }
+      paths.push({
+        id: pathId,
+        label: pathVar?.label || pathId,
+        value: pathVar?.value || "",
+      })
+    },
+  )
 }
 
 // Paste handler invoked by the per-divider button. Reads the clipboard,
@@ -230,23 +285,40 @@ async function readClipboardText(showError) {
     // dismisses the prompt or has previously denied, the call rejects
     // with NotAllowedError. Spell out the recovery path so the user
     // doesn't have to guess what to do next.
-    if (error?.name === 'NotAllowedError') {
+    if (error?.name === "NotAllowedError") {
       showError(
-        'Browser blocked clipboard access. Click the clipboard icon in the address bar (or open Site settings) and allow clipboard read for this page, then click Paste again.',
+        "Browser blocked clipboard access. Click the clipboard icon in the address bar (or open Site settings) and allow clipboard read for this page, then click Paste again.",
         { durationMs: 12000 },
       )
       return null
     }
-    showError('Could not read clipboard: ' + (error?.message || 'unknown error'), { durationMs: 8000 })
+    showError(
+      `Could not read clipboard: ${error?.message || "unknown error"}`,
+      { durationMs: 8000 },
+    )
     return null
   }
 }
 
-export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInParent = null } = {}, anchorElement = null) {
-  const showError = (message, options) => showClipboardToast(message, { severity: 'error', ...options })
-  if (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function') {
+export async function pasteCardAt(
+  {
+    itemIndex,
+    parentGroupId = null,
+    indexInParent = null,
+  } = {},
+  _anchorElement = null,
+) {
+  const showError = (message, options) =>
+    showClipboardToast(message, {
+      severity: "error",
+      ...options,
+    })
+  if (
+    !navigator.clipboard ||
+    typeof navigator.clipboard.readText !== "function"
+  ) {
     showError(
-      'Your browser does not expose clipboard read here. Try a Chromium- or Firefox-based browser on a secure (https / localhost) page.',
+      "Your browser does not expose clipboard read here. Try a Chromium- or Firefox-based browser on a secure (https / localhost) page.",
       { durationMs: 12000 },
     )
     return
@@ -255,15 +327,17 @@ export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInPare
   if (text === null) {
     return
   }
-  if (!text || !text.trim()) {
-    showError('Clipboard is empty.')
+  if (!text?.trim()) {
+    showError("Clipboard is empty.")
     return
   }
   const parsed = (() => {
     try {
       return window.jsyaml.load(text)
     } catch (error) {
-      showError('Could not parse clipboard YAML: ' + error.message)
+      showError(
+        `Could not parse clipboard YAML: ${error.message}`,
+      )
       return undefined
     }
   })()
@@ -282,11 +356,13 @@ export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInPare
     return
   }
   if (!normalized.items.length) {
-    showError('No steps in clipboard YAML.')
+    showError("No steps in clipboard YAML.")
     return
   }
   if (parentGroupId && normalized.items.some(isGroupItem)) {
-    showError('Groups cannot be nested — paste a group at the top level instead.')
+    showError(
+      "Groups cannot be nested — paste a group at the top level instead.",
+    )
     return
   }
 
@@ -298,7 +374,9 @@ export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInPare
   const COMMANDS = bridge().COMMANDS
   const hydrated = (() => {
     try {
-      return normalized.items.map((rawItem) => hydratePastedItem(rawItem, COMMANDS))
+      return normalized.items.map((rawItem) =>
+        hydratePastedItem(rawItem, COMMANDS),
+      )
     } catch (error) {
       showError(error.message)
       return null
@@ -312,14 +390,22 @@ export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInPare
   if (parentGroupId) {
     const group = findGroupItem(parentGroupId)
     if (!group) {
-      showError('Target group no longer exists.')
+      showError("Target group no longer exists.")
       return
     }
     const insertAt = indexInParent ?? group.steps.length
-    group.steps.splice(insertAt, 0, ...hydrated.map((entry) => entry.item))
+    group.steps.splice(
+      insertAt,
+      0,
+      ...hydrated.map((entry) => entry.item),
+    )
   } else {
     const insertAt = itemIndex ?? steps.length
-    steps.splice(insertAt, 0, ...hydrated.map((entry) => entry.item))
+    steps.splice(
+      insertAt,
+      0,
+      ...hydrated.map((entry) => entry.item),
+    )
   }
 
   bridge().renderAllAnimated(() => {
@@ -339,42 +425,52 @@ export async function pasteCardAt({ itemIndex, parentGroupId = null, indexInPare
 //
 // Single shared element (#clipboard-toast) keyed off document.body so
 // rapid retries stack onto the same banner instead of piling up DOM.
-function showClipboardToast(message, { severity = 'error', durationMs = 6000 } = {}) {
+function showClipboardToast(
+  message,
+  { severity = "error", durationMs = 6000 } = {},
+) {
   // Test environments (Vitest + happy-dom / jsdom) sometimes mount
   // without a body — bail and log so test runs stay quiet but
   // assertions can still spy on console.
-  if (typeof document === 'undefined' || !document.body) {
-    console.error('[card-clipboard] toast (' + severity + '): ' + message)
+  if (typeof document === "undefined" || !document.body) {
+    console.error(
+      `[card-clipboard] toast (${severity}): ${message}`,
+    )
     return
   }
-  const toast = document.getElementById('clipboard-toast') ?? (() => {
-    const created = document.createElement('div')
-    created.id = 'clipboard-toast'
-    created.setAttribute('role', 'status')
-    created.setAttribute('aria-live', 'polite')
-    created.style.position = 'fixed'
-    created.style.top = '0.75rem'
-    created.style.left = '50%'
-    created.style.transform = 'translateX(-50%)'
-    created.style.zIndex = '100'
-    created.style.maxWidth = 'min(90vw, 36rem)'
-    document.body.appendChild(created)
-    return created
-  })()
-  const colorClass = severity === 'error'
-    ? 'bg-red-950/95 border-red-700 text-red-200'
-    : 'bg-amber-950/95 border-amber-700 text-amber-200'
+  const toast =
+    document.getElementById("clipboard-toast") ??
+    (() => {
+      const created = document.createElement("div")
+      created.id = "clipboard-toast"
+      created.setAttribute("role", "status")
+      created.setAttribute("aria-live", "polite")
+      created.style.position = "fixed"
+      created.style.top = "0.75rem"
+      created.style.left = "50%"
+      created.style.transform = "translateX(-50%)"
+      created.style.zIndex = "100"
+      created.style.maxWidth = "min(90vw, 36rem)"
+      document.body.appendChild(created)
+      return created
+    })()
+  const colorClass =
+    severity === "error"
+      ? "bg-red-950/95 border-red-700 text-red-200"
+      : "bg-amber-950/95 border-amber-700 text-amber-200"
   toast.className = `${colorClass} border rounded-lg px-4 py-2.5 text-sm shadow-lg flex items-start gap-3`
   toast.innerHTML = `
     <span class="flex-1 leading-relaxed">${esc(message)}</span>
     <button type="button" data-toast-close
       class="text-current opacity-70 hover:opacity-100 leading-none text-base shrink-0">✕</button>
   `
-  toast.style.display = 'flex'
-  const closeButton = toast.querySelector('[data-toast-close]')
+  toast.style.display = "flex"
+  const closeButton = toast.querySelector(
+    "[data-toast-close]",
+  )
   if (closeButton) {
-    closeButton.addEventListener('click', () => {
-      toast.style.display = 'none'
+    closeButton.addEventListener("click", () => {
+      toast.style.display = "none"
     })
   }
   // Stash the timer ID on the element so a second toast clears the
@@ -385,7 +481,7 @@ function showClipboardToast(message, { severity = 'error', durationMs = 6000 } =
   }
   if (durationMs > 0) {
     toast._dismissTimer = setTimeout(() => {
-      toast.style.display = 'none'
+      toast.style.display = "none"
     }, durationMs)
   }
 }

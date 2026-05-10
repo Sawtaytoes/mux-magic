@@ -11,102 +11,127 @@
 //   dsl-rules-builder/render.js          — all HTML rendering + renderRulesField
 
 export {
-  RULE_TYPES,
-  WHEN_CLAUSE_NAMES,
+  compactWhenClause,
+  isRefBody,
+  normalizeWhenClause,
+} from "./dsl-rules-builder/clause-utils.js"
+export {
   APPLY_IF_CLAUSE_NAMES,
   COMPARATOR_VERBS,
-  COMPUTE_FROM_OPS_WITH_OPERAND,
-  COMPUTE_FROM_OPS_BARE,
   COMPUTE_FROM_OPS_ALL,
+  COMPUTE_FROM_OPS_BARE,
+  COMPUTE_FROM_OPS_WITH_OPERAND,
   DEFAULT_RULES_PREVIEW,
-} from './dsl-rules-builder/constants.js'
-
-export { normalizeWhenClause, compactWhenClause, isRefBody } from './dsl-rules-builder/clause-utils.js'
-export { makeEmptyRule } from './dsl-rules-builder/state.js'
-
-import {
-  addPredicate,
-  renamePredicate,
-  removePredicate,
-  addPredicateEntry,
-  setPredicateEntryKey,
-  setPredicateEntryValue,
-  removePredicateEntry,
-  addRule,
-  removeRule,
-  moveRule,
-  changeRuleType,
-  setScriptInfoField,
-  setScaleResolutionDimension,
-  setScaleResolutionFlag,
-  setHasDefaultRules,
-} from './dsl-rules-builder/rule-crud.js'
+  RULE_TYPES,
+  WHEN_CLAUSE_NAMES,
+} from "./dsl-rules-builder/constants.js"
+export { makeEmptyRule } from "./dsl-rules-builder/state.js"
 
 import {
-  addStyleField,
-  renameStyleField,
-  setStyleFieldLiteralValue,
-  setStyleFieldComputedToggle,
-  removeStyleField,
-  setIgnoredStyleNamesRegex,
-} from './dsl-rules-builder/style-mutations.js'
-
-import {
-  setComputeFromField,
   addComputeFromOp,
-  setComputeFromOpVerb,
-  setComputeFromOpOperand,
-  removeComputeFromOp,
   moveComputeFromOp,
-} from './dsl-rules-builder/compute-mutations.js'
-
+  removeComputeFromOp,
+  setComputeFromField,
+  setComputeFromOpOperand,
+  setComputeFromOpVerb,
+} from "./dsl-rules-builder/compute-mutations.js"
 import {
+  addApplyIfClause,
+  addApplyIfEntry,
   addWhenClause,
-  removeWhenClause,
-  setWhenClauseRef,
   addWhenEntry,
+  removeApplyIfClause,
+  removeApplyIfEntry,
+  removeWhenClause,
+  removeWhenEntry,
+  setApplyIfEntryComparator,
+  setApplyIfEntryKey,
+  setApplyIfEntryOperand,
+  setWhenClauseRef,
   setWhenEntryKey,
   setWhenEntryValue,
-  removeWhenEntry,
-  addApplyIfClause,
-  removeApplyIfClause,
-  addApplyIfEntry,
-  setApplyIfEntryKey,
-  setApplyIfEntryComparator,
-  setApplyIfEntryOperand,
-  removeApplyIfEntry,
-} from './dsl-rules-builder/condition-mutations.js'
-
-export {
-  addPredicate, renamePredicate, removePredicate,
-  addPredicateEntry, setPredicateEntryKey, setPredicateEntryValue, removePredicateEntry,
-  addRule, removeRule, moveRule, changeRuleType,
-  setScriptInfoField, setScaleResolutionDimension, setScaleResolutionFlag,
+} from "./dsl-rules-builder/condition-mutations.js"
+import {
+  addPredicate,
+  addPredicateEntry,
+  addRule,
+  changeRuleType,
+  moveRule,
+  removePredicate,
+  removePredicateEntry,
+  removeRule,
+  renamePredicate,
   setHasDefaultRules,
-}
+  setPredicateEntryKey,
+  setPredicateEntryValue,
+  setScaleResolutionDimension,
+  setScaleResolutionFlag,
+  setScriptInfoField,
+} from "./dsl-rules-builder/rule-crud.js"
+import {
+  addStyleField,
+  removeStyleField,
+  renameStyleField,
+  setIgnoredStyleNamesRegex,
+  setStyleFieldComputedToggle,
+  setStyleFieldLiteralValue,
+} from "./dsl-rules-builder/style-mutations.js"
 
 export {
-  addStyleField, renameStyleField, setStyleFieldLiteralValue,
-  setStyleFieldComputedToggle, removeStyleField, setIgnoredStyleNamesRegex,
+  addApplyIfClause,
+  addApplyIfEntry,
+  addComputeFromOp,
+  addPredicate,
+  addPredicateEntry,
+  addRule,
+  addStyleField,
+  addWhenClause,
+  addWhenEntry,
+  changeRuleType,
+  moveComputeFromOp,
+  moveRule,
+  removeApplyIfClause,
+  removeApplyIfEntry,
+  removeComputeFromOp,
+  removePredicate,
+  removePredicateEntry,
+  removeRule,
+  removeStyleField,
+  removeWhenClause,
+  removeWhenEntry,
+  renamePredicate,
+  renameStyleField,
+  setApplyIfEntryComparator,
+  setApplyIfEntryKey,
+  setApplyIfEntryOperand,
+  setComputeFromField,
+  setComputeFromOpOperand,
+  setComputeFromOpVerb,
+  setHasDefaultRules,
+  setIgnoredStyleNamesRegex,
+  setPredicateEntryKey,
+  setPredicateEntryValue,
+  setScaleResolutionDimension,
+  setScaleResolutionFlag,
+  setScriptInfoField,
+  setStyleFieldComputedToggle,
+  setStyleFieldLiteralValue,
+  setWhenClauseRef,
+  setWhenEntryKey,
+  setWhenEntryValue,
 }
 
-export {
-  setComputeFromField, addComputeFromOp, setComputeFromOpVerb,
-  setComputeFromOpOperand, removeComputeFromOp, moveComputeFromOp,
-}
+import {
+  onDetailsToggle,
+  renderRulesField,
+} from "./dsl-rules-builder/render.js"
 
-export {
-  addWhenClause, removeWhenClause, setWhenClauseRef,
-  addWhenEntry, setWhenEntryKey, setWhenEntryValue, removeWhenEntry,
-  addApplyIfClause, removeApplyIfClause, addApplyIfEntry,
-  setApplyIfEntryKey, setApplyIfEntryComparator, setApplyIfEntryOperand, removeApplyIfEntry,
-}
-
-import { renderRulesField, onDetailsToggle } from './dsl-rules-builder/render.js'
-export { renderRulesField, onDetailsToggle }
+export { onDetailsToggle, renderRulesField }
 
 export function registerDslRulesGlobals() {
-  if (typeof window === 'undefined') { return }
+  if (typeof window === "undefined") {
+    return
+  }
   window.dslRules = {
     onDetailsToggle,
     addPredicate,

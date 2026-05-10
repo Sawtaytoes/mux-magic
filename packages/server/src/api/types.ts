@@ -1,4 +1,10 @@
-export type JobStatus = "pending" | "running" | "completed" | "failed" | "cancelled" | "skipped"
+export type JobStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | "skipped"
 
 export type Job = {
   commandName: string
@@ -53,7 +59,7 @@ export type PromptEvent = {
   // the Builder can render a ▶ Play button on each row. Independent of
   // `filePath`: `filePath` is for "preview the file the prompt is
   // about", `filePaths` is for "preview the file each option is".
-  filePaths?: Array<{ index: number, path: string }>
+  filePaths?: Array<{ index: number; path: string }>
 }
 
 // Job-progress payload pushed onto the per-job SSE subject by

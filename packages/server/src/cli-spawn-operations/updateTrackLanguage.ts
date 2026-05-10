@@ -1,4 +1,4 @@
-import { type Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
+import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { runMkvPropEdit } from "./runMkvPropEdit.js"
 
 export const updateTrackLanguage = ({
@@ -9,7 +9,7 @@ export const updateTrackLanguage = ({
   filePath: string
   languageCode: Iso6392LanguageCode
   trackId: number
-}) => (
+}) =>
   runMkvPropEdit({
     args: [
       "--edit",
@@ -20,4 +20,3 @@ export const updateTrackLanguage = ({
     ],
     filePath,
   })
-)

@@ -1,64 +1,32 @@
-import {
-  concat,
-  concatMap,
-  EMPTY,
-  filter,
-  iif,
-} from "rxjs"
-
-import { logPipelineError } from "./logPipelineError.js"
+import { concat, concatMap, EMPTY, filter, iif } from "rxjs"
 import { getFiles } from "./getFiles.js"
 import { getFolder } from "./getFolder.js"
+import { logPipelineError } from "./logPipelineError.js"
 
 export const getFilesAtDepth = ({
   depth,
   sourcePath,
 }: {
-  depth: number,
+  depth: number
   sourcePath: string
-}): (
-  ReturnType<
-    typeof getFiles
-  >
-) => (
+}): ReturnType<typeof getFiles> =>
   concat(
-    (
-      getFiles({
+    getFiles({
+      sourcePath,
+    }),
+    iif(
+      () => depth > 0,
+      getFolder({
         sourcePath,
-      })
-    ),
-    (
-      iif(
-        () => (
-          depth
-          > 0
+      }).pipe(
+        concatMap((folderInfo) =>
+          getFilesAtDepth({
+            depth: depth - 1,
+            sourcePath: folderInfo.fullPath,
+          }),
         ),
-        (
-          getFolder({
-            sourcePath,
-          })
-          .pipe(
-            concatMap((
-              folderInfo,
-            ) => (
-              getFilesAtDepth({
-                depth: (depth - 1),
-                sourcePath: (
-                  folderInfo
-                  .fullPath
-                ),
-              })
-            )),
-            filter(Boolean),
-          )
-        ),
-        EMPTY,
-      )
+        filter(Boolean),
+      ),
+      EMPTY,
     ),
-  )
-  .pipe(
-    logPipelineError(
-      getFilesAtDepth
-    ),
-  )
-)
+  ).pipe(logPipelineError(getFilesAtDepth))

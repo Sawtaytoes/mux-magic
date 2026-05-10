@@ -1,19 +1,12 @@
-import {
-  dirname,
-  join,
-} from "node:path"
-import {
-  concatMap,
-  endWith,
-  filter,
-  of,
-} from "rxjs";
+import { dirname, join } from "node:path"
+import { concatMap, endWith, filter, of } from "rxjs"
 
-import { getIsVideoFile } from "../tools/filterIsVideoFile.js";
+import { getIsVideoFile } from "../tools/filterIsVideoFile.js"
 import { REPLACED_ATTACHMENTS_FOLDER_NAME } from "../tools/outputFolderNames.js"
-import { runMkvMerge } from "./runMkvMerge.js";
+import { runMkvMerge } from "./runMkvMerge.js"
 
-export const replacedAttachmentsFolderName = REPLACED_ATTACHMENTS_FOLDER_NAME
+export const replacedAttachmentsFolderName =
+  REPLACED_ATTACHMENTS_FOLDER_NAME
 
 type ReplaceAttachmentsMkvMergeRequiredProps = {
   destinationFilePath: string
@@ -24,7 +17,9 @@ type ReplaceAttachmentsMkvMergeOptionalProps = {
   outputFolderName?: string
 }
 
-export type ReplaceAttachmentsMkvMergeProps = ReplaceAttachmentsMkvMergeRequiredProps & ReplaceAttachmentsMkvMergeOptionalProps
+export type ReplaceAttachmentsMkvMergeProps =
+  ReplaceAttachmentsMkvMergeRequiredProps &
+    ReplaceAttachmentsMkvMergeOptionalProps
 
 export const replaceAttachmentsMkvMergeDefaultProps = {
   outputFolderName: REPLACED_ATTACHMENTS_FOLDER_NAME,
@@ -34,21 +29,12 @@ export const replaceAttachmentsMkvMerge = ({
   destinationFilePath,
   outputFolderName = replaceAttachmentsMkvMergeDefaultProps.outputFolderName,
   sourceFilePath,
-}: ReplaceAttachmentsMkvMergeProps) => (
-  of(
-    getIsVideoFile(
-      sourceFilePath,
-    )
-  )
-  .pipe(
-    filter(
-      Boolean
-    ),
+}: ReplaceAttachmentsMkvMergeProps) =>
+  of(getIsVideoFile(sourceFilePath)).pipe(
+    filter(Boolean),
     // This would normally go to the next step in the pipeline, but there are sometimes no "und" language tracks, so we need to utilize this `endWith` to continue in the event the `filter` stopped us.
-    endWith(
-      null
-    ),
-    concatMap(() => (
+    endWith(null),
+    concatMap(() =>
       runMkvMerge({
         args: [
           "--no-audio",
@@ -63,27 +49,13 @@ export const replaceAttachmentsMkvMerge = ({
 
           destinationFilePath,
         ],
-        outputFilePath: (
-          destinationFilePath
-          .replace(
-            (
-              dirname(
-                destinationFilePath
-              )
-            ),
-            (
-              join(
-                (
-                  dirname(
-                    destinationFilePath
-                  )
-                ),
-                outputFolderName,
-              )
-            ),
-          )
-        )
-      })
-    )),
+        outputFilePath: destinationFilePath.replace(
+          dirname(destinationFilePath),
+          join(
+            dirname(destinationFilePath),
+            outputFolderName,
+          ),
+        ),
+      }),
+    ),
   )
-)

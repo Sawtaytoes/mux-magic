@@ -1,5 +1,5 @@
-import { getSteps } from '../state.js'
-import { isGroup } from './yaml-modal.js'
+import { getSteps } from "../state.js"
+import { isGroup } from "./yaml-modal.js"
 
 // SortableJS wiring for the sequence builder. The library is loaded as
 // a vendor script in index.html; we assume `window.Sortable` exists.
@@ -18,9 +18,9 @@ import { isGroup } from './yaml-modal.js'
 const bridge = () => window.mediaTools
 
 const SORTABLE_OPTIONS_BASE = {
-  group: { name: 'sequence', pull: true, put: true },
-  handle: '[data-drag-handle]',
-  draggable: '[data-sortable-item]',
+  group: { name: "sequence", pull: true, put: true },
+  handle: "[data-drag-handle]",
+  draggable: "[data-sortable-item]",
   // animation: 0 — items snap to their new position instead of
   // tweening for 150ms. The tweening was the source of the
   // "drag-down-then-up-fast" duplicate-step / ghost-overlap bug:
@@ -34,14 +34,16 @@ const SORTABLE_OPTIONS_BASE = {
   // drags until the current one settles — what Sortable was
   // doing). animation: 0 = no tween to interrupt = no race.
   animation: 0,
-  ghostClass: 'drag-ghost',
-  chosenClass: 'drag-chosen',
+  ghostClass: "drag-ghost",
+  chosenClass: "drag-chosen",
   fallbackOnBody: true,
   forceFallback: false,
 }
 
 function destroyExistingInstances() {
-  const containers = document.querySelectorAll('#steps-el, [data-group-body]')
+  const containers = document.querySelectorAll(
+    "#steps-el, [data-group-body]",
+  )
   containers.forEach((container) => {
     const instance = window.Sortable?.get?.(container)
     if (instance) {
@@ -55,8 +57,11 @@ function destroyExistingInstances() {
 // onMove for every hover step; returning false during a group-into-
 // group hover keeps the placeholder out of the inner container.
 function onMove(event) {
-  const draggedIsGroup = event.dragged?.dataset?.group !== undefined
-  const targetIsGroupBody = event.to?.matches?.('[data-group-body]')
+  const draggedIsGroup =
+    event.dragged?.dataset?.group !== undefined
+  const targetIsGroupBody = event.to?.matches?.(
+    "[data-group-body]",
+  )
   if (draggedIsGroup && targetIsGroupBody) {
     return false
   }
@@ -68,14 +73,16 @@ function onMove(event) {
 // container is what makes the visual drop translate into in-memory
 // state.
 function getStepsArrayFor(containerElement) {
-  if (containerElement?.id === 'steps-el') {
-    return { kind: 'top', steps: getSteps() }
+  if (containerElement?.id === "steps-el") {
+    return { kind: "top", steps: getSteps() }
   }
   const groupId = containerElement?.dataset?.groupBody
   if (groupId) {
-    const group = getSteps().find((item) => isGroup(item) && item.id === groupId)
+    const group = getSteps().find(
+      (item) => isGroup(item) && item.id === groupId,
+    )
     if (group) {
-      return { kind: 'group', steps: group.steps, group }
+      return { kind: "group", steps: group.steps, group }
     }
   }
   return null
@@ -131,7 +138,10 @@ function onEnd(event) {
   }
   // Same container, no move? Bail before mutating anything. Still
   // clear the in-flight flag so the next drag isn't blocked.
-  if (sourceArray === targetArray && oldIndex === newIndex) {
+  if (
+    sourceArray === targetArray &&
+    oldIndex === newIndex
+  ) {
     dragState.isProcessing = false
     return
   }
@@ -150,9 +160,14 @@ function onEnd(event) {
   // Source-group cleanup: dragging the last step out of a group leaves
   // the group empty, which the schema rejects. Match removeStep's
   // existing behavior and drop the now-empty group.
-  if (sourceContainer.kind === 'group' && sourceArray.length === 0) {
+  if (
+    sourceContainer.kind === "group" &&
+    sourceArray.length === 0
+  ) {
     const topSteps = getSteps()
-    const groupIndex = topSteps.indexOf(sourceContainer.group)
+    const groupIndex = topSteps.indexOf(
+      sourceContainer.group,
+    )
     if (groupIndex >= 0) {
       topSteps.splice(groupIndex, 1)
     }
@@ -166,11 +181,13 @@ function onEnd(event) {
 // rebuilt. Idempotent: each call destroys any prior Sortable instances
 // before re-attaching, so calling it on every render is safe.
 export function attachSortables() {
-  if (typeof window.Sortable !== 'function') {
+  if (typeof window.Sortable !== "function") {
     return
   }
   destroyExistingInstances()
-  const containers = document.querySelectorAll('#steps-el, [data-group-body]')
+  const containers = document.querySelectorAll(
+    "#steps-el, [data-group-body]",
+  )
   containers.forEach((container) => {
     new window.Sortable(container, {
       ...SORTABLE_OPTIONS_BASE,

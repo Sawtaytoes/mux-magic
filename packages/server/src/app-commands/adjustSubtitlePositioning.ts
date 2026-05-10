@@ -1,30 +1,15 @@
 import { readFile, writeFile } from "node:fs/promises"
-import {
-  concatMap,
-  defer,
-  map,
-  tap,
-  toArray,
-} from "rxjs"
-
-import { logAndRethrow } from "../tools/logAndRethrow.js"
+import { concatMap, defer, map, tap, toArray } from "rxjs"
 import { filterIsSubtitlesFile } from "../tools/filterIsSubtitlesFile.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const adjustPositionString = (
   positionString: string,
   adjustmentAmount: number,
-) => (
-  (
-    Number(
-      positionString
-    )
-    + adjustmentAmount
-  )
-  .toFixed(3)
-)
+) => (Number(positionString) + adjustmentAmount).toFixed(3)
 
 export const adjustSubtitlePositions = ({
   adjustmentAmountX = 0,
@@ -38,112 +23,68 @@ export const adjustSubtitlePositions = ({
   isRecursive: boolean
   recursiveDepth: number
   sourcePath: string
-}) => (
+}) =>
   getFilesAtDepth({
-    depth: (
-      isRecursive
-      ? (
-        recursiveDepth
-        || 2
-      )
-      : 0
-    ),
+    depth: isRecursive ? recursiveDepth || 2 : 0,
     sourcePath,
-  })
-  .pipe(
+  }).pipe(
     filterIsSubtitlesFile(),
-    withFileProgress((fileInfo) => (
-      defer(() => (
-        readFile(
-          (
-            fileInfo
-            .fullPath
-          ),
-          "utf-8",
-        )
-      ))
-      .pipe(
-        map((
+    withFileProgress((fileInfo) =>
+      defer(() =>
+        readFile(fileInfo.fullPath, "utf-8"),
+      ).pipe(
+        map((fileContents) =>
           fileContents
-        ) => (
-          fileContents
-          .toString()
-          .split("\n")
-          .map((
-            lineString
-          ) => {
-            const matches = (
-              lineString
-              .match(
-                /^(?<beginningString>.*\\pos\()(?<positionX>[\d.]+?),(?<positionY>[\d.]+?)(?<endingString>\).*)$/
+            .toString()
+            .split("\n")
+            .map((lineString) => {
+              const matches = lineString.match(
+                /^(?<beginningString>.*\\pos\()(?<positionX>[\d.]+?),(?<positionY>[\d.]+?)(?<endingString>\).*)$/,
               )
-            )
 
-            return (
-              (
-                matches?.groups?.beginningString
-                && matches?.groups?.endingString
-                && matches?.groups?.positionX
-                && matches?.groups?.positionY
-              )
-              ? (
-                matches.groups.beginningString
-                .concat(
-                  (
+              return matches?.groups?.beginningString &&
+                matches?.groups?.endingString &&
+                matches?.groups?.positionX &&
+                matches?.groups?.positionY
+                ? matches.groups.beginningString.concat(
                     adjustPositionString(
                       matches.groups.positionX,
                       adjustmentAmountX,
-                    )
-                  ),
-                  ",",
-                  (
+                    ),
+                    ",",
                     adjustPositionString(
                       matches.groups.positionY,
                       adjustmentAmountY,
-                    )
-                  ),
-                  matches.groups.endingString,
-                )
-              )
-              : lineString
-            )
-          })
-          .join("\n")
-        )),
-        concatMap((
-          updatedFileContents,
-        ) => (
+                    ),
+                    matches.groups.endingString,
+                  )
+                : lineString
+            })
+            .join("\n"),
+        ),
+        concatMap((updatedFileContents) =>
           writeFile(
-            (
-              fileInfo
-              .fullPath
-            ),
+            fileInfo.fullPath,
             updatedFileContents,
             "utf-8",
-          )
-        )),
+          ),
+        ),
         tap(() => {
           logInfo(
             "UPDATED SUBTITLE POSITIONS",
-            (
-              fileInfo
-              .fullPath
-            ),
+            fileInfo.fullPath,
           )
         }),
-      )
-    )),
-    toArray(),
-    logAndRethrow(
-      adjustSubtitlePositions
+      ),
     ),
+    toArray(),
+    logAndRethrow(adjustSubtitlePositions),
   )
-)
 
 adjustSubtitlePositions({
   adjustmentAmountX: 240,
   isRecursive: true,
   recursiveDepth: 2,
-  sourcePath: "G:\\Downloads\\~ANIME\\GaoGaiGar - King of Braves\\work\\EXTRACTED-SUBTITLES",
-})
-.subscribe()
+  sourcePath:
+    "G:\\Downloads\\~ANIME\\GaoGaiGar - King of Braves\\work\\EXTRACTED-SUBTITLES",
+}).subscribe()

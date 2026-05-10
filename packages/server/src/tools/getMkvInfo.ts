@@ -1,16 +1,11 @@
-import {
-  spawn,
-} from "node:child_process";
-import {
-  map,
-  Observable,
-} from "rxjs"
+import { spawn } from "node:child_process"
+import { map, Observable } from "rxjs"
 
 import { treeKillOnUnsubscribe } from "../cli-spawn-operations/treeKillChild.js"
-import { mkvMergePath } from "./appPaths.js";
+import { mkvMergePath } from "./appPaths.js"
+import { createTtyAffordances } from "./createTtyAffordances.js"
+import type { Iso6392LanguageCode } from "./iso6392LanguageCodes.js"
 import { logAndSwallow } from "./logAndSwallow.js"
-import { createTtyAffordances } from "./createTtyAffordances.js";
-import { Iso6392LanguageCode } from "./iso6392LanguageCodes.js";
 
 export type Chapter = {
   num_entries: number
@@ -58,11 +53,10 @@ export type TrackProperties = {
   uid: number
 }
 
-export type MkvTookNixTrackType = (
+export type MkvTookNixTrackType =
   | "audio"
   | "subtitles"
   | "video"
-)
 
 export type Track = {
   codec: string
@@ -86,16 +80,8 @@ export type MkvInfo = {
 
 export const getMkvInfo = (
   filePath: string,
-): (
-  Observable<
-    MkvInfo
-  >
-) => (
-  new Observable<
-    string
-  >((
-    observer,
-  ) => {
+): Observable<MkvInfo> =>
+  new Observable<string>((observer) => {
     const commandArgs = [
       "--identification-format",
       "json",
@@ -104,23 +90,9 @@ export const getMkvInfo = (
       `${filePath}`,
     ]
 
-    console
-    .info(
-      (
-        [mkvMergePath]
-        .concat(
-          commandArgs
-        )
-      ),
-      "\n",
-    )
+    console.info([mkvMergePath].concat(commandArgs), "\n")
 
-    const childProcess = (
-      spawn(
-        mkvMergePath,
-        commandArgs,
-      )
-    )
+    const childProcess = spawn(mkvMergePath, commandArgs)
 
     const tty = createTtyAffordances(childProcess)
 
@@ -132,88 +104,55 @@ export const getMkvInfo = (
     // fine — same shape of bug we already fixed in runMkvExtract.
     const stderrChunks: string[] = []
 
-    childProcess
-    .stdout
-    .on(
-      'data',
-      (
-        chunk: Uint8Array,
-      ) => {
-        chunks
-        .push(
-          chunk
+    childProcess.stdout.on("data", (chunk: Uint8Array) => {
+      chunks.push(chunk)
+    })
+
+    childProcess.stderr.on("data", (chunk) => {
+      const text = chunk.toString()
+      stderrChunks.push(text)
+      console.info(text)
+    })
+
+    childProcess.on("close", (code) => {
+      if (code === null && tty.useTtyAffordances) {
+        setTimeout(() => {
+          process.exit()
+        }, 500)
+      }
+    })
+
+    childProcess.on("exit", (code) => {
+      tty.detach()
+
+      if (code === 0) {
+        const bufferOutput =
+          Buffer.concat(chunks).toString("utf8")
+
+        observer.next(
+          bufferOutput.replace(
+            /("codec_private_data"\s*:\s*)"[^"]*"/g,
+            '$1""',
+          ),
         )
-      },
-    )
-
-    childProcess
-    .stderr
-    .on(
-      'data',
-      (
-        chunk,
-      ) => {
-        const text = chunk.toString()
-        stderrChunks.push(text)
-        console.info(text)
-      },
-    )
-
-    childProcess
-    .on(
-      'close',
-      (
-        code,
-      ) => {
-        if (code === null && tty.useTtyAffordances) {
-          setTimeout(() => {
-            process.exit()
-          }, 500)
-        }
-      },
-    )
-
-    childProcess
-    .on(
-      'exit',
-      (
-        code,
-      ) => {
-        tty.detach()
-
-        if (code === 0) {
-          const bufferOutput = (
-            Buffer
-            .concat(
-              chunks
-            )
-            .toString(
-              "utf8"
-            )
-          )
-
-          observer.next(
-            bufferOutput
-            .replace(
-              /("codec_private_data"\s*:\s*)"[^"]*"/g,
-              '$1""',
-            )
-          )
-          observer.complete()
-          return
-        }
-        // code === null is the user-cancel path the 'close' handler
-        // resolves. Anything else with captured stderr is a real failure
-        // — surface it so the caller doesn't see an empty-tracks result
-        // and silently skip the file.
-        if (code !== null) {
-          observer.error(new Error(
-            `mkvmerge exited with code ${code}`
-            + (stderrChunks.length ? `: ${stderrChunks.join('').trim()}` : '')
-          ))
-        }
-      },
-    )
+        observer.complete()
+        return
+      }
+      // code === null is the user-cancel path the 'close' handler
+      // resolves. Anything else with captured stderr is a real failure
+      // — surface it so the caller doesn't see an empty-tracks result
+      // and silently skip the file.
+      if (code !== null) {
+        observer.error(
+          new Error(
+            `mkvmerge exited with code ${code}` +
+              (stderrChunks.length
+                ? `: ${stderrChunks.join("").trim()}`
+                : ""),
+          ),
+        )
+      }
+    })
 
     // Kill the mkvmerge subtree on unsubscribe. Without this, a sequence
     // cancel or parallel-sibling fail-fast leaves identify-mode mkvmerge
@@ -221,20 +160,10 @@ export const getMkvInfo = (
     // attachments can stall it). Same teardown the streaming wrappers
     // (runMkvMerge, runMkvExtract, runMkvPropEdit, runFfmpeg) already use.
     return treeKillOnUnsubscribe(childProcess)
-  })
-  .pipe(
-    map((
-      mkvInfoJsonString,
-    ) => (
-      JSON
-      .parse(
-        mkvInfoJsonString
-      ) as (
-        MkvInfo
-      )
-    )),
-    logAndSwallow(
-      getMkvInfo
+  }).pipe(
+    map(
+      (mkvInfoJsonString) =>
+        JSON.parse(mkvInfoJsonString) as MkvInfo,
     ),
+    logAndSwallow(getMkvInfo),
   )
-)

@@ -6,13 +6,15 @@ import {
   tap,
   toArray,
 } from "rxjs"
-
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { getAudioOffset } from "../cli-spawn-operations/getAudioOffset.js"
-import { type Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
+import {
+  replaceTracksMkvMerge,
+  replaceTracksMkvMergeDefaultProps,
+} from "../cli-spawn-operations/replaceTracksMkvMerge.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
+import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { logInfo } from "../tools/logMessage.js"
-import { replaceTracksMkvMerge, replaceTracksMkvMergeDefaultProps } from "../cli-spawn-operations/replaceTracksMkvMerge.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ReplaceTracksRequiredProps = {
@@ -31,10 +33,12 @@ type ReplaceTracksOptionalProps = {
   outputFolderName?: string
 }
 
-export type ReplaceTracksProps = ReplaceTracksRequiredProps & ReplaceTracksOptionalProps
+export type ReplaceTracksProps =
+  ReplaceTracksRequiredProps & ReplaceTracksOptionalProps
 
 export const replaceTracksDefaultProps = {
-  outputFolderName: replaceTracksMkvMergeDefaultProps.outputFolderName,
+  outputFolderName:
+    replaceTracksMkvMergeDefaultProps.outputFolderName,
 } satisfies ReplaceTracksOptionalProps
 
 export const replaceTracks = ({
@@ -48,129 +52,71 @@ export const replaceTracks = ({
   sourceFilesPath,
   subtitlesLanguages,
   videoLanguages,
-}: ReplaceTracksProps) => (
+}: ReplaceTracksProps) =>
   getFilesAtDepth({
     depth: 0,
-    sourcePath: (
-      sourceFilesPath
-    ),
-  })
-  .pipe(
+    sourcePath: sourceFilesPath,
+  }).pipe(
     toArray(),
-    concatMap((
-      sourceFileInfos,
-    ) => (
+    concatMap((sourceFileInfos) =>
       getFilesAtDepth({
         depth: 0,
-        sourcePath: (
-          destinationFilesPath
-        ),
-      })
-      .pipe(
-        map((
-          destinationFileInfo,
-        ) => ({
-          destinationFilePath: (
-            destinationFileInfo
-            .fullPath
-          ),
-          sourceFilePath: (
-            (
-              sourceFileInfos
-              .find((
-                sourceFileInfo,
-              ) => (
-                (
-                  sourceFileInfo
-                  .filename
-                )
-                === (
-                  destinationFileInfo
-                  .filename
-                )
-              ))
-              ?.fullPath
-            )
-            || ""
-          ),
+        sourcePath: destinationFilesPath,
+      }).pipe(
+        map((destinationFileInfo) => ({
+          destinationFilePath: destinationFileInfo.fullPath,
+          sourceFilePath:
+            sourceFileInfos.find(
+              (sourceFileInfo) =>
+                sourceFileInfo.filename ===
+                destinationFileInfo.filename,
+            )?.fullPath || "",
         })),
-        filter(({
-          sourceFilePath,
-        }) => (
-          Boolean(
-            sourceFilePath
-          )
-        )),
-        withFileProgress((
-          {
-            destinationFilePath,
-            sourceFilePath,
-          },
-          index,
-        ) => (
+        filter(({ sourceFilePath }) =>
+          Boolean(sourceFilePath),
+        ),
+        withFileProgress(
           (
-            hasChapterSyncOffset
-            ? (
-              getAudioOffset({
-                destinationFilePath,
-                sourceFilePath,
-              })
-            )
-            : (
-              of(
-                globalOffsetInMilliseconds
-              )
-            )
-          )
-          .pipe(
-            tap((
-              offsetInMilliseconds,
-            ) => {
-              logInfo(
-                "OFFSET IN MILLISECONDS",
-                offsetInMilliseconds,
-              )
-            }),
-            concatMap((
-              offsetInMilliseconds,
-            ) => (
-              replaceTracksMkvMerge({
-                audioLanguages,
-                destinationFilePath,
-                hasChapters,
-                offsetInMilliseconds: (
-                  (
-                    offsets
-                    [index]
-                  )
-                  ?? (
-                    offsetInMilliseconds
-                  )
-                ),
-                outputFolderName,
-                sourceFilePath,
-                subtitlesLanguages,
-                videoLanguages,
-              })
-            )),
-            tap((
-              outputFilePath,
-            ) => {
-              logInfo(
-                "REPLACED TRACKS IN FILE",
-                outputFilePath,
-              )
-            }),
-            filter(
-              Boolean
+            { destinationFilePath, sourceFilePath },
+            index,
+          ) =>
+            (hasChapterSyncOffset
+              ? getAudioOffset({
+                  destinationFilePath,
+                  sourceFilePath,
+                })
+              : of(globalOffsetInMilliseconds)
+            ).pipe(
+              tap((offsetInMilliseconds) => {
+                logInfo(
+                  "OFFSET IN MILLISECONDS",
+                  offsetInMilliseconds,
+                )
+              }),
+              concatMap((offsetInMilliseconds) =>
+                replaceTracksMkvMerge({
+                  audioLanguages,
+                  destinationFilePath,
+                  hasChapters,
+                  offsetInMilliseconds:
+                    offsets[index] ?? offsetInMilliseconds,
+                  outputFolderName,
+                  sourceFilePath,
+                  subtitlesLanguages,
+                  videoLanguages,
+                }),
+              ),
+              tap((outputFilePath) => {
+                logInfo(
+                  "REPLACED TRACKS IN FILE",
+                  outputFilePath,
+                )
+              }),
+              filter(Boolean),
             ),
-          )
-        )),
+        ),
         toArray(),
-      )
-    )),
-    logAndRethrow(
-      replaceTracks
+      ),
     ),
+    logAndRethrow(replaceTracks),
   )
-)

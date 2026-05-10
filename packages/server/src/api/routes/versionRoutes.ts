@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
-import { OpenAPIHono, createRoute } from "@hono/zod-openapi"
+import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import { z } from "zod"
 
 // Mirrors `serverIdRoutes.ts` — a tiny identity surface alongside
@@ -25,7 +25,11 @@ const versionFileSchema = z.object({
   buildTime: z.string().nullable(),
   packageVersion: z.string().nullable(),
   nodeVersion: z.string(),
-  isContainerized: z.boolean().describe("True when running inside a Docker container (detected via /.dockerenv). Used by the UI to hide host-only affordances like 'Open in player' that depend on the OS shell-open mechanism, which doesn't work from within a container."),
+  isContainerized: z
+    .boolean()
+    .describe(
+      "True when running inside a Docker container (detected via /.dockerenv). Used by the UI to hide host-only affordances like 'Open in player' that depend on the OS shell-open mechanism, which doesn't work from within a container.",
+    ),
 })
 
 type VersionPayload = z.infer<typeof versionFileSchema>
@@ -45,7 +49,9 @@ const versionFilePath = join(
   "version.json",
 )
 
-const readPackageVersion = async (): Promise<string | null> => {
+const readPackageVersion = async (): Promise<
+  string | null
+> => {
   try {
     const pkg = JSON.parse(
       await readFile(
@@ -54,13 +60,10 @@ const readPackageVersion = async (): Promise<string | null> => {
       ),
     ) as { version?: unknown }
 
-    return (
-      typeof pkg.version === "string"
+    return typeof pkg.version === "string"
       ? pkg.version
       : null
-    )
-  }
-  catch {
+  } catch {
     return null
   }
 }
@@ -70,35 +73,39 @@ const readPackageVersion = async (): Promise<string | null> => {
 // runtime and we don't want every /version hit to stat the root.
 const isContainerized = existsSync("/.dockerenv")
 
-const buildDevFallback = async (): Promise<VersionPayload> => ({
-  gitSha: "dev",
-  gitShaShort: "dev",
-  buildTime: null,
-  packageVersion: await readPackageVersion(),
-  nodeVersion: process.version,
-  isContainerized,
-})
+const buildDevFallback =
+  async (): Promise<VersionPayload> => ({
+    gitSha: "dev",
+    gitShaShort: "dev",
+    buildTime: null,
+    packageVersion: await readPackageVersion(),
+    nodeVersion: process.version,
+    isContainerized,
+  })
 
-const readVersionPayload = async (): Promise<VersionPayload> => {
-  try {
-    const raw = await readFile(versionFilePath, "utf8")
-    // Stamp `isContainerized` onto the parsed payload — older
-    // version.json files written before the schema bump won't have
-    // it, but the live runtime check is the source of truth anyway.
-    const data = JSON.parse(raw) as Record<string, unknown>
-    data.isContainerized = isContainerized
-    const parsed = versionFileSchema.safeParse(data)
+const readVersionPayload =
+  async (): Promise<VersionPayload> => {
+    try {
+      const raw = await readFile(versionFilePath, "utf8")
+      // Stamp `isContainerized` onto the parsed payload — older
+      // version.json files written before the schema bump won't have
+      // it, but the live runtime check is the source of truth anyway.
+      const data = JSON.parse(raw) as Record<
+        string,
+        unknown
+      >
+      data.isContainerized = isContainerized
+      const parsed = versionFileSchema.safeParse(data)
 
-    if (!parsed.success) {
+      if (!parsed.success) {
+        return await buildDevFallback()
+      }
+
+      return parsed.data
+    } catch {
       return await buildDevFallback()
     }
-
-    return parsed.data
   }
-  catch {
-    return await buildDevFallback()
-  }
-}
 
 export const versionRoutes = new OpenAPIHono()
 
@@ -106,8 +113,10 @@ versionRoutes.openapi(
   createRoute({
     method: "get",
     path: "/version",
-    summary: "Build identity (git sha, build time, package + node version)",
-    description: "Returns the build identity stamped into `public/api/version.json` by `scripts/build-version.cjs`. Mirrors media-tools' existing `/server-id/stream` precedent — boot identity has its sibling here in build identity. Falls back to `{ gitSha: \"dev\" }` when the prebuild hook didn't run, so dev environments still answer.",
+    summary:
+      "Build identity (git sha, build time, package + node version)",
+    description:
+      "Returns the build identity stamped into `public/api/version.json` by `scripts/build-version.cjs`. Mirrors media-tools' existing `/server-id/stream` precedent — boot identity has its sibling here in build identity. Falls back to `{ gitSha: \"dev\" }` when the prebuild hook didn't run, so dev environments still answer.",
     tags: ["Server"],
     responses: {
       200: {

@@ -7,17 +7,13 @@
   },
   "files": {
     "includes": [
-      "packages/web/**",
-      "packages/shared/**",
-      "biome.json",
-      "eslint.config.js",
-      "tsconfig.json",
-      "tsconfig.base.json",
-      "!**/node_modules",
-      "!**/dist",
-      "!**/build",
+      "./**",
+      "!.claude/worktrees",
       "!.yarn",
-      "!packages/web/src/api/schema.generated.ts"
+      "!**/*.generated.ts",
+      "!**/build",
+      "!**/dist",
+      "!**/node_modules"
     ]
   },
   "formatter": {

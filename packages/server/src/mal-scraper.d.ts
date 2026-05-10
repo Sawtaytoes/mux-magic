@@ -1,10 +1,10 @@
 declare module "mal-scraper" {
   interface AnimeDataModel {
-    japaneseTitle: string,
+    japaneseTitle: string
   }
 
   interface SearchResultsDataModel {
-    id: number,
-    url: string,
+    id: number
+    url: string
   }
 }

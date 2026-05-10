@@ -1,6 +1,6 @@
-import { esc } from '../util/esc.js'
-import { getPaths, getSteps } from '../state.js'
-import { refreshPathVarOptions } from '../util/path-var-options.js'
+import { getPaths, getSteps } from "../state.js"
+import { esc } from "../util/esc.js"
+import { refreshPathVarOptions } from "../util/path-var-options.js"
 
 // Helpers that still live in the inline <script> in index.html.
 // Accessed lazily through window.mediaTools so the bridge can be set
@@ -13,12 +13,11 @@ const bridge = () => window.mediaTools
 // opens — users can navigate up to a drive root from there.
 async function fetchDefaultPath() {
   try {
-    const response = await fetch('/files/default-path')
+    const response = await fetch("/files/default-path")
     const data = await response.json()
-    return data.path || '/'
-  }
-  catch {
-    return '/'
+    return data.path || "/"
+  } catch {
+    return "/"
   }
 }
 
@@ -36,7 +35,7 @@ export function renderPathVarCard(pathVar, isFirst) {
     ? `<button data-action="remove-path" data-pv-id="${pathVar.id}"
         title="Remove path variable" aria-label="Remove path variable"
         class="text-xs text-slate-500 hover:text-red-400 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700">✕</button>`
-    : ''
+    : ""
   // Replaces the static folder emoji with a clickable trigger that opens
   // the file-explorer modal. With a value set, opens read-only at that
   // path (browsing a folder you've already named). With NO value set,
@@ -44,8 +43,8 @@ export function renderPathVarCard(pathVar, isFirst) {
   // navigate to find a folder and click "Use this folder" to populate
   // this variable's value.
   const browseButton = `<button data-action="browse-path-var" data-pv-id="${pathVar.id}"
-        title="${pathVar.value ? 'Browse files in this folder' : 'Browse to pick a folder for this path variable'}"
-        aria-label="${pathVar.value ? 'Browse files in this folder' : 'Pick a folder for this path variable'}"
+        title="${pathVar.value ? "Browse files in this folder" : "Browse to pick a folder for this path variable"}"
+        aria-label="${pathVar.value ? "Browse files in this folder" : "Pick a folder for this path variable"}"
         class="text-xs text-slate-500 hover:text-slate-300 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700 shrink-0">📁</button>`
   return `<div data-path-var="${pathVar.id}" class="col-span-full bg-slate-800/40 rounded-xl border border-dashed border-slate-600 px-4 py-3">
     <div class="flex items-center gap-2 mb-2">
@@ -64,7 +63,9 @@ export function renderPathVarCard(pathVar, isFirst) {
 // ─── Mutations ────────────────────────────────────────────────────────────────
 
 export function setPathValue(pvId, value) {
-  const pathVar = getPaths().find((path) => path.id === pvId)
+  const pathVar = getPaths().find(
+    (path) => path.id === pvId,
+  )
   if (!pathVar) {
     return
   }
@@ -76,7 +77,9 @@ export function setPathValue(pvId, value) {
 }
 
 export function setPathLabel(pvId, label) {
-  const pathVar = getPaths().find((path) => path.id === pvId)
+  const pathVar = getPaths().find(
+    (path) => path.id === pvId,
+  )
   if (!pathVar) {
     return
   }
@@ -88,7 +91,9 @@ export function setPathLabel(pvId, label) {
 
 export function removePath(pvId) {
   const paths = getPaths()
-  const removeIndex = paths.findIndex((path) => path.id === pvId)
+  const removeIndex = paths.findIndex(
+    (path) => path.id === pvId,
+  )
   if (removeIndex <= 0) {
     // can't remove Base Path (index 0)
     return
@@ -96,11 +101,13 @@ export function removePath(pvId) {
   paths.splice(removeIndex, 1)
   // Drop any step links pointing at the removed path id.
   getSteps().forEach((step) => {
-    Object.entries(step.links).forEach(([linkKey, linkValue]) => {
-      if (linkValue === pvId) {
-        delete step.links[linkKey]
-      }
-    })
+    Object.entries(step.links).forEach(
+      ([linkKey, linkValue]) => {
+        if (linkValue === pvId) {
+          delete step.links[linkKey]
+        }
+      },
+    )
   })
   bridge().renderAll()
 }
@@ -108,21 +115,27 @@ export function removePath(pvId) {
 export function addPath() {
   const paths = getPaths()
   const newPath = {
-    id: 'path_' + bridge().randomHex(),
-    label: 'Path ' + paths.length,
-    value: '',
+    id: `path_${bridge().randomHex()}`,
+    label: `Path ${paths.length}`,
+    value: "",
   }
   paths.push(newPath)
   bridge().renderAll()
   // Defer one frame so layout is current before scroll.
-  requestAnimationFrame(() => bridge().scrollPathVarIntoView(newPath.id))
+  requestAnimationFrame(() =>
+    bridge().scrollPathVarIntoView(newPath.id),
+  )
 }
 
 // Path-var value input also drives the path-picker autocomplete (a
 // shared helper that lives in the inline script for now).
 function onPathVarInput(inputElement, pathVarId, value) {
   setPathValue(pathVarId, value)
-  bridge().schedulePathLookup(inputElement, { mode: 'pathVar', pathVarId }, value)
+  bridge().schedulePathLookup(
+    inputElement,
+    { mode: "pathVar", pathVarId },
+    value,
+  )
 }
 
 // ─── Listeners ────────────────────────────────────────────────────────────────
@@ -132,26 +145,34 @@ function onPathVarInput(inputElement, pathVarId, value) {
 // and routes to the right handler. Survives every renderAll because
 // the listeners are bound to the parent, not the per-card markup.
 export function attachPathVarListeners(container) {
-  container.addEventListener('input', (event) => {
+  container.addEventListener("input", (event) => {
     const target = event.target
     if (!target?.dataset?.action) {
       return
     }
-    if (target.dataset.action === 'set-path-label') {
+    if (target.dataset.action === "set-path-label") {
       setPathLabel(target.dataset.pvId, target.value)
-    } else if (target.dataset.action === 'set-path-value') {
-      onPathVarInput(target, target.dataset.pvId, target.value)
+    } else if (target.dataset.action === "set-path-value") {
+      onPathVarInput(
+        target,
+        target.dataset.pvId,
+        target.value,
+      )
     }
   })
-  container.addEventListener('click', async (event) => {
-    const button = event.target.closest?.('[data-action]')
+  container.addEventListener("click", async (event) => {
+    const button = event.target.closest?.("[data-action]")
     if (!button) {
       return
     }
-    if (button.dataset.action === 'remove-path') {
+    if (button.dataset.action === "remove-path") {
       removePath(button.dataset.pvId)
-    } else if (button.dataset.action === 'browse-path-var') {
-      const pathVar = getPaths().find((path) => path.id === button.dataset.pvId)
+    } else if (
+      button.dataset.action === "browse-path-var"
+    ) {
+      const pathVar = getPaths().find(
+        (path) => path.id === button.dataset.pvId,
+      )
       if (!pathVar) {
         return
       }
@@ -175,8 +196,8 @@ export function attachPathVarListeners(container) {
       }
     }
   })
-  container.addEventListener('keydown', (event) => {
-    if (event.target?.dataset?.keydown === 'path-picker') {
+  container.addEventListener("keydown", (event) => {
+    if (event.target?.dataset?.keydown === "path-picker") {
       bridge().pathPickerKeydown(event)
     }
   })

@@ -10,8 +10,12 @@ import type { CommandConfig } from "./routes/commandRoutes.js"
 // Minimal CommandConfig stub: only outputFolderName matters for the folder
 // output computation, the other fields are placeholders the resolver never
 // reads.
-const makeConfig = (overrides: Partial<CommandConfig> = {}): CommandConfig => ({
-  getObservable: () => { throw new Error("not used in resolver tests") },
+const makeConfig = (
+  overrides: Partial<CommandConfig> = {},
+): CommandConfig => ({
+  getObservable: () => {
+    throw new Error("not used in resolver tests")
+  },
   schema: { _zod: true } as any,
   summary: "stub",
   tags: [],
@@ -26,18 +30,29 @@ const PATHS: Record<string, SequencePath> = {
 describe(resolveSequenceParams.name, () => {
   test("passes literal values through unchanged", () => {
     const { resolved, errors } = resolveSequenceParams({
-      rawParams: { audioLanguages: ["jpn"], isRecursive: false, count: 4 },
+      rawParams: {
+        audioLanguages: ["jpn"],
+        isRecursive: false,
+        count: 4,
+      },
       pathsById: PATHS,
       stepsById: {},
       commandConfigsByName: {},
     })
-    expect(resolved).toEqual({ audioLanguages: ["jpn"], isRecursive: false, count: 4 })
+    expect(resolved).toEqual({
+      audioLanguages: ["jpn"],
+      isRecursive: false,
+      count: 4,
+    })
     expect(errors).toEqual([])
   })
 
   test("resolves @pathId references against the paths table", () => {
     const { resolved, errors } = resolveSequenceParams({
-      rawParams: { sourcePath: "@workDir", destinationPath: "@scratch" },
+      rawParams: {
+        sourcePath: "@workDir",
+        destinationPath: "@scratch",
+      },
       pathsById: PATHS,
       stepsById: {},
       commandConfigsByName: {},
@@ -70,7 +85,9 @@ describe(resolveSequenceParams.name, () => {
       },
     }
     const commandConfigsByName = {
-      keepLanguages: makeConfig({ outputFolderName: "KEEP-LANG" }),
+      keepLanguages: makeConfig({
+        outputFolderName: "KEEP-LANG",
+      }),
     }
     const { resolved, errors } = resolveSequenceParams({
       rawParams: {
@@ -80,7 +97,9 @@ describe(resolveSequenceParams.name, () => {
       stepsById,
       commandConfigsByName,
     })
-    expect(resolved.sourcePath).toBe("D:\\Anime\\Show/KEEP-LANG")
+    expect(resolved.sourcePath).toBe(
+      "D:\\Anime\\Show/KEEP-LANG",
+    )
     expect(errors).toEqual([])
   })
 
@@ -99,7 +118,12 @@ describe(resolveSequenceParams.name, () => {
       copyFiles: makeConfig({}),
     }
     const { resolved } = resolveSequenceParams({
-      rawParams: { sourcePath: { linkedTo: "stepCopy", output: "folder" } },
+      rawParams: {
+        sourcePath: {
+          linkedTo: "stepCopy",
+          output: "folder",
+        },
+      },
       pathsById: {},
       stepsById,
       commandConfigsByName,
@@ -116,7 +140,9 @@ describe(resolveSequenceParams.name, () => {
       },
     }
     const commandConfigsByName = {
-      keepLanguages: makeConfig({ outputFolderName: "OUT" }),
+      keepLanguages: makeConfig({
+        outputFolderName: "OUT",
+      }),
     }
     const { resolved } = resolveSequenceParams({
       rawParams: { sourcePath: { linkedTo: "step1" } },
@@ -132,17 +158,33 @@ describe(resolveSequenceParams.name, () => {
       compRules: {
         command: "modifySubtitleMetadata",
         resolvedParams: { sourcePath: "D:\\Work" },
-        outputs: { rules: [{ type: "setScriptInfo", key: "ScriptType", value: "v4.00+" }] },
+        outputs: {
+          rules: [
+            {
+              type: "setScriptInfo",
+              key: "ScriptType",
+              value: "v4.00+",
+            },
+          ],
+        },
       },
     }
     const { resolved, errors } = resolveSequenceParams({
-      rawParams: { rules: { linkedTo: "compRules", output: "rules" } },
+      rawParams: {
+        rules: { linkedTo: "compRules", output: "rules" },
+      },
       pathsById: {},
       stepsById,
-      commandConfigsByName: { modifySubtitleMetadata: makeConfig() },
+      commandConfigsByName: {
+        modifySubtitleMetadata: makeConfig(),
+      },
     })
     expect(resolved.rules).toEqual([
-      { type: "setScriptInfo", key: "ScriptType", value: "v4.00+" },
+      {
+        type: "setScriptInfo",
+        key: "ScriptType",
+        value: "v4.00+",
+      },
     ])
     expect(errors).toEqual([])
   })
@@ -156,10 +198,14 @@ describe(resolveSequenceParams.name, () => {
       },
     }
     const { resolved, errors } = resolveSequenceParams({
-      rawParams: { rules: { linkedTo: "compRules", output: "missing" } },
+      rawParams: {
+        rules: { linkedTo: "compRules", output: "missing" },
+      },
       pathsById: {},
       stepsById,
-      commandConfigsByName: { modifySubtitleMetadata: makeConfig() },
+      commandConfigsByName: {
+        modifySubtitleMetadata: makeConfig(),
+      },
     })
     expect(resolved).toEqual({})
     expect(errors).toHaveLength(1)
@@ -168,7 +214,12 @@ describe(resolveSequenceParams.name, () => {
 
   test("collects an error when a step reference targets a step that hasn't run yet", () => {
     const { resolved, errors } = resolveSequenceParams({
-      rawParams: { sourcePath: { linkedTo: "step99", output: "folder" } },
+      rawParams: {
+        sourcePath: {
+          linkedTo: "step99",
+          output: "folder",
+        },
+      },
       pathsById: {},
       stepsById: {},
       commandConfigsByName: {},
@@ -182,16 +233,22 @@ describe(resolveSequenceParams.name, () => {
     const stepsById: Record<string, StepRuntimeRecord> = {
       flat: {
         command: "flattenOutput",
-        resolvedParams: { sourcePath: "D:\\Work\\SUBTITLED" },
+        resolvedParams: {
+          sourcePath: "D:\\Work\\SUBTITLED",
+        },
         outputs: null,
       },
     }
     const { resolved } = resolveSequenceParams({
-      rawParams: { sourcePath: { linkedTo: "flat", output: "folder" } },
+      rawParams: {
+        sourcePath: { linkedTo: "flat", output: "folder" },
+      },
       pathsById: {},
       stepsById,
       commandConfigsByName: {
-        flattenOutput: makeConfig({ outputComputation: "parentOfSource" }),
+        flattenOutput: makeConfig({
+          outputComputation: "parentOfSource",
+        }),
       },
     })
     expect(resolved.sourcePath).toBe("D:\\Work")
@@ -201,16 +258,22 @@ describe(resolveSequenceParams.name, () => {
     const stepsById: Record<string, StepRuntimeRecord> = {
       flat: {
         command: "flattenOutput",
-        resolvedParams: { sourcePath: "D:\\Work\\SUBTITLED\\" },
+        resolvedParams: {
+          sourcePath: "D:\\Work\\SUBTITLED\\",
+        },
         outputs: null,
       },
     }
     const { resolved } = resolveSequenceParams({
-      rawParams: { sourcePath: { linkedTo: "flat", output: "folder" } },
+      rawParams: {
+        sourcePath: { linkedTo: "flat", output: "folder" },
+      },
       pathsById: {},
       stepsById,
       commandConfigsByName: {
-        flattenOutput: makeConfig({ outputComputation: "parentOfSource" }),
+        flattenOutput: makeConfig({
+          outputComputation: "parentOfSource",
+        }),
       },
     })
     expect(resolved.sourcePath).toBe("D:\\Work")
@@ -225,10 +288,16 @@ describe(resolveSequenceParams.name, () => {
       },
     }
     const { resolved } = resolveSequenceParams({
-      rawParams: { sourcePath: { linkedTo: "step1", output: "folder" } },
+      rawParams: {
+        sourcePath: { linkedTo: "step1", output: "folder" },
+      },
       pathsById: {},
       stepsById,
-      commandConfigsByName: { keepLanguages: makeConfig({ outputFolderName: "OUT" }) },
+      commandConfigsByName: {
+        keepLanguages: makeConfig({
+          outputFolderName: "OUT",
+        }),
+      },
     })
     expect(resolved.sourcePath).toBe("D:\\Show/OUT")
   })

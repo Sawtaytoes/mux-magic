@@ -16,15 +16,21 @@ import { versionRoutes } from "./routes/versionRoutes.js"
 
 export const app = new OpenAPIHono()
 
-app.use("/*", serveStatic({
-  root: "./public",
-  onFound: (_path, ctx) => {
-    // Prevent browsers from caching static assets so JS/HTML changes are
-    // always reflected immediately without a hard refresh.
-    ctx.header("Cache-Control", "no-cache, no-store, must-revalidate")
-    ctx.header("Pragma", "no-cache")
-  },
-}))
+app.use(
+  "/*",
+  serveStatic({
+    root: "./public",
+    onFound: (_path, ctx) => {
+      // Prevent browsers from caching static assets so JS/HTML changes are
+      // always reflected immediately without a hard refresh.
+      ctx.header(
+        "Cache-Control",
+        "no-cache, no-store, must-revalidate",
+      )
+      ctx.header("Pragma", "no-cache")
+    },
+  }),
+)
 
 app.route("/", featuresRoutes)
 app.route("/", jobRoutes)

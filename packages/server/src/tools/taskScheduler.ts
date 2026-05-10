@@ -39,7 +39,7 @@ let inbox: Subject<Observable<unknown>> | null = null
 const ensureInbox = (): Subject<Observable<unknown>> => {
   if (inbox === null) {
     throw new Error(
-      "Task scheduler not initialized. Call initTaskScheduler() at process startup."
+      "Task scheduler not initialized. Call initTaskScheduler() at process startup.",
     )
   }
 
@@ -55,31 +55,23 @@ export const initTaskScheduler = (
   newConcurrency: number,
 ): void => {
   if (
-    concurrency !== null
-    && concurrency === newConcurrency
+    concurrency !== null &&
+    concurrency === newConcurrency
   ) {
     return
   }
 
   if (concurrency !== null) {
     throw new Error(
-      `Task scheduler already initialized at concurrency=${concurrency}; refusing to re-init at ${newConcurrency}`
+      `Task scheduler already initialized at concurrency=${concurrency}; refusing to re-init at ${newConcurrency}`,
     )
   }
 
   concurrency = newConcurrency
 
-  const newInbox = (
-    new Subject<Observable<unknown>>()
-  )
+  const newInbox = new Subject<Observable<unknown>>()
 
-  newInbox
-  .pipe(
-    mergeAll(
-      newConcurrency
-    ),
-  )
-  .subscribe()
+  newInbox.pipe(mergeAll(newConcurrency)).subscribe()
 
   inbox = newInbox
 }
@@ -90,7 +82,7 @@ export const initTaskScheduler = (
 // errors, the caller sees the error.
 export const runTask = <T>(
   work$: Observable<T>,
-): Observable<T> => (
+): Observable<T> =>
   new Observable<T>((subscriber) => {
     const queue = ensureInbox()
 
@@ -103,88 +95,60 @@ export const runTask = <T>(
     // Slot stays held for as long as this Observable is "alive" — it
     // completes when work$ ends naturally OR when the caller unsubscribes
     // (handled below).
-    const bridge$ = (
-      new Observable<never>((bridgeSub) => {
-        if (isCancelled) {
-          bridgeSub
-          .complete()
+    const bridge$ = new Observable<never>((bridgeSub) => {
+      if (isCancelled) {
+        bridgeSub.complete()
 
-          return
-        }
+        return
+      }
 
-        bridgeSubscriber = bridgeSub
+      bridgeSubscriber = bridgeSub
 
-        innerSubscription = (
-          work$
-          .subscribe({
-            next: (value) => {
-              subscriber
-              .next(
-                value
-              )
-            },
-            error: (error) => {
-              subscriber
-              .error(
-                error
-              )
+      innerSubscription = work$.subscribe({
+        next: (value) => {
+          subscriber.next(value)
+        },
+        error: (error) => {
+          subscriber.error(error)
 
-              bridgeSub
-              .complete()
-            },
-            complete: () => {
-              subscriber
-              .complete()
+          bridgeSub.complete()
+        },
+        complete: () => {
+          subscriber.complete()
 
-              bridgeSub
-              .complete()
-            },
-          })
-        )
-
-        return () => {
-          innerSubscription
-          ?.unsubscribe()
-        }
+          bridgeSub.complete()
+        },
       })
-    )
 
-    queue
-    .next(
-      bridge$
-    )
+      return () => {
+        innerSubscription?.unsubscribe()
+      }
+    })
+
+    queue.next(bridge$)
 
     return () => {
       isCancelled = true
 
-      innerSubscription
-      ?.unsubscribe()
+      innerSubscription?.unsubscribe()
 
       // If the bridge has already been picked up by the outer mergeAll,
       // explicitly complete it so mergeAll frees the slot. If still
       // queued, bridgeSubscriber is null and the isCancelled flag
       // short-circuits when its slot eventually opens.
-      bridgeSubscriber
-      ?.complete()
+      bridgeSubscriber?.complete()
     }
   })
-)
 
 // Pipeable form. Each upstream emission becomes a Task. Equivalent to
 // `mergeMap(value => runTask(project(value, index)))` with unbounded
 // outer concurrency — the scheduler is the actual cap.
 export const runTasks = <T, R>(
   project: (value: T, index: number) => Observable<R>,
-): OperatorFunction<T, R> => (
-  mergeMap((value: T, index: number) => (
-    runTask(
-      project(
-        value,
-        index,
-      )
-    )
-  ))
-)
+): OperatorFunction<T, R> =>
+  mergeMap((value: T, index: number) =>
+    runTask(project(value, index)),
+  )
 
 // Pipeable form preserving input order on output. Each upstream value
 // is projected via mergeMap (parallel by default), but emissions are
@@ -208,51 +172,44 @@ export const runTasks = <T, R>(
 // lag — fine for the per-file summary use case (one or a few small
 // values per element); revisit if a future caller streams large
 // payloads.
-export const mergeMapOrdered = <T, R>(
-  project: (value: T, index: number) => Observable<R>,
-): OperatorFunction<T, R> => (source) => (
-  new Observable<R>((subscriber) => {
-    let nextEmitIndex = 0
-    const buffered = new Map<number, R[]>()
-    const completed = new Set<number>()
-    let isUpstreamComplete = false
-    let inflightCount = 0
+export const mergeMapOrdered =
+  <T, R>(
+    project: (value: T, index: number) => Observable<R>,
+  ): OperatorFunction<T, R> =>
+  (source) =>
+    new Observable<R>((subscriber) => {
+      let nextEmitIndex = 0
+      const buffered = new Map<number, R[]>()
+      const completed = new Set<number>()
+      let isUpstreamComplete = false
+      let inflightCount = 0
 
-    // Releases buffered results downstream in input-index order. Walks
-    // forward from `nextEmitIndex` while the next slot is marked
-    // completed; stops at the first gap. Called on every inner
-    // completion AND on upstream complete.
-    const tryFlush = (): void => {
-      while (completed.has(nextEmitIndex)) {
-        const items = buffered.get(nextEmitIndex) ?? []
-        items.forEach((item) => {
-          subscriber.next(item)
-        })
-        buffered.delete(nextEmitIndex)
-        completed.delete(nextEmitIndex)
-        nextEmitIndex += 1
+      // Releases buffered results downstream in input-index order. Walks
+      // forward from `nextEmitIndex` while the next slot is marked
+      // completed; stops at the first gap. Called on every inner
+      // completion AND on upstream complete.
+      const tryFlush = (): void => {
+        while (completed.has(nextEmitIndex)) {
+          const items = buffered.get(nextEmitIndex) ?? []
+          items.forEach((item) => {
+            subscriber.next(item)
+          })
+          buffered.delete(nextEmitIndex)
+          completed.delete(nextEmitIndex)
+          nextEmitIndex += 1
+        }
+
+        if (isUpstreamComplete && inflightCount === 0) {
+          subscriber.complete()
+        }
       }
 
-      if (
-        isUpstreamComplete
-        && inflightCount === 0
-      ) {
-        subscriber.complete()
-      }
-    }
+      const upstreamSubscription = source
+        .pipe(
+          mergeMap((value: T, index: number) => {
+            inflightCount += 1
 
-    const upstreamSubscription = (
-      source
-      .pipe(
-        mergeMap((value: T, index: number) => {
-          inflightCount += 1
-
-          return (
-            project(
-              value,
-              index,
-            )
-            .pipe(
+            return project(value, index).pipe(
               tap((result) => {
                 const arr = buffered.get(index) ?? []
                 arr.push(result)
@@ -268,25 +225,22 @@ export const mergeMapOrdered = <T, R>(
               // out of order.
               ignoreElements(),
             )
-          )
-        }),
-      )
-      .subscribe({
-        error: (error) => {
-          subscriber.error(error)
-        },
-        complete: () => {
-          isUpstreamComplete = true
-          tryFlush()
-        },
-      })
-    )
+          }),
+        )
+        .subscribe({
+          error: (error) => {
+            subscriber.error(error)
+          },
+          complete: () => {
+            isUpstreamComplete = true
+            tryFlush()
+          },
+        })
 
-    return () => {
-      upstreamSubscription.unsubscribe()
-    }
-  })
-)
+      return () => {
+        upstreamSubscription.unsubscribe()
+      }
+    })
 
 // Pipeable form: each upstream value runs as a Task in parallel
 // (capped by the scheduler), with emissions released in input-index
@@ -301,24 +255,17 @@ export const mergeMapOrdered = <T, R>(
 // wrapping for the deepest per-IO layer.
 export const runTasksOrdered = <T, R>(
   project: (value: T, index: number) => Observable<R>,
-): OperatorFunction<T, R> => (
-  mergeMapOrdered((value: T, index: number) => (
-    runTask(
-      project(
-        value,
-        index,
-      )
-    )
-  ))
-)
+): OperatorFunction<T, R> =>
+  mergeMapOrdered((value: T, index: number) =>
+    runTask(project(value, index)),
+  )
 
 // Test-only — reset singleton between vitest runs so tests can re-init at
 // a different concurrency.
 export const __resetTaskSchedulerForTests = (): void => {
   concurrency = null
 
-  inbox
-  ?.complete()
+  inbox?.complete()
 
   inbox = null
 }

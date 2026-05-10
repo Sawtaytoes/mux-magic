@@ -1,4 +1,10 @@
-import { describe, test, expect, beforeEach, afterEach } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "vitest"
 
 // Browser-mode tests for the per-field hover tooltip component.
 // Wires up the minimal DOM the component touches, populates
@@ -8,9 +14,17 @@ import { describe, test, expect, beforeEach, afterEach } from "vitest"
 
 declare global {
   interface Window {
-    commandDescriptions?: Record<string, { summary: string; fields: Record<string, string> }>
-    getCommandFieldDescription?: (input: { commandName: string; fieldName: string }) => string
-    getCommandSummary?: (input: { commandName: string }) => string
+    commandDescriptions?: Record<
+      string,
+      { summary: string; fields: Record<string, string> }
+    >
+    getCommandFieldDescription?: (input: {
+      commandName: string
+      fieldName: string
+    }) => string
+    getCommandSummary?: (input: {
+      commandName: string
+    }) => string
   }
 }
 
@@ -21,17 +35,22 @@ const installCommandDescriptions = () => {
     flattenOutput: {
       summary: "Flatten a chained step's output",
       fields: {
-        sourcePath: "Output folder produced by a previous step.",
-        deleteSourceFolder: "If true, delete sourcePath after copying.",
+        sourcePath:
+          "Output folder produced by a previous step.",
+        deleteSourceFolder:
+          "If true, delete sourcePath after copying.",
       },
     },
   }
-  window.getCommandFieldDescription = ({ commandName, fieldName }) => (
-    window.commandDescriptions?.[commandName]?.fields?.[fieldName] ?? ""
-  )
-  window.getCommandSummary = ({ commandName }) => (
+  window.getCommandFieldDescription = ({
+    commandName,
+    fieldName,
+  }) =>
+    window.commandDescriptions?.[commandName]?.fields?.[
+      fieldName
+    ] ?? ""
+  window.getCommandSummary = ({ commandName }) =>
     window.commandDescriptions?.[commandName]?.summary ?? ""
-  )
 }
 
 const mountTooltipDom = () => {
@@ -45,11 +64,14 @@ const mountTooltipDom = () => {
   return root
 }
 
-const wait = (milliseconds: number) => (
-  new Promise((resolve) => window.setTimeout(resolve, milliseconds))
-)
+const wait = (milliseconds: number) =>
+  new Promise((resolve) =>
+    window.setTimeout(resolve, milliseconds),
+  )
 
-const testState: { mountedRoot: HTMLElement | null } = { mountedRoot: null }
+const testState: { mountedRoot: HTMLElement | null } = {
+  mountedRoot: null,
+}
 
 beforeEach(() => {
   installCommandDescriptions()
@@ -65,48 +87,87 @@ afterEach(() => {
 
 describe("field-tooltip", () => {
   test("shows the schema description after hover delay", async () => {
-    const { attachFieldTooltipListeners } = await import("./field-tooltip.js")
+    const { attachFieldTooltipListeners } = await import(
+      "./field-tooltip.js"
+    )
     attachFieldTooltipListeners()
 
-    const anchorElement = document.getElementById("anchor-source")
-    const tooltipElement = document.getElementById("field-tooltip-popover")
+    const anchorElement =
+      document.getElementById("anchor-source")
+    const tooltipElement = document.getElementById(
+      "field-tooltip-popover",
+    )
 
     expect(anchorElement).not.toBeNull()
     expect(tooltipElement).not.toBeNull()
-    expect(tooltipElement!.classList.contains("hidden")).toBe(true)
+    expect(
+      tooltipElement?.classList.contains("hidden"),
+    ).toBe(true)
 
-    anchorElement!.dispatchEvent(new PointerEvent("pointerover", { bubbles: true }))
+    anchorElement?.dispatchEvent(
+      new PointerEvent("pointerover", { bubbles: true }),
+    )
     await wait(TOOLTIP_DELAY_MS + 50)
 
-    expect(tooltipElement!.classList.contains("hidden")).toBe(false)
-    expect(tooltipElement!.textContent).toBe("Output folder produced by a previous step.")
+    expect(
+      tooltipElement?.classList.contains("hidden"),
+    ).toBe(false)
+    expect(tooltipElement?.textContent).toBe(
+      "Output folder produced by a previous step.",
+    )
   })
 
   test("hides on pointerout", async () => {
-    const { attachFieldTooltipListeners } = await import("./field-tooltip.js")
+    const { attachFieldTooltipListeners } = await import(
+      "./field-tooltip.js"
+    )
     attachFieldTooltipListeners()
 
-    const anchorElement = document.getElementById("anchor-source")
-    const tooltipElement = document.getElementById("field-tooltip-popover")
+    const anchorElement =
+      document.getElementById("anchor-source")
+    const tooltipElement = document.getElementById(
+      "field-tooltip-popover",
+    )
 
-    anchorElement!.dispatchEvent(new PointerEvent("pointerover", { bubbles: true }))
+    anchorElement?.dispatchEvent(
+      new PointerEvent("pointerover", { bubbles: true }),
+    )
     await wait(TOOLTIP_DELAY_MS + 50)
-    expect(tooltipElement!.classList.contains("hidden")).toBe(false)
+    expect(
+      tooltipElement?.classList.contains("hidden"),
+    ).toBe(false)
 
-    anchorElement!.dispatchEvent(new PointerEvent("pointerout", { bubbles: true, relatedTarget: document.body }))
-    expect(tooltipElement!.classList.contains("hidden")).toBe(true)
+    anchorElement?.dispatchEvent(
+      new PointerEvent("pointerout", {
+        bubbles: true,
+        relatedTarget: document.body,
+      }),
+    )
+    expect(
+      tooltipElement?.classList.contains("hidden"),
+    ).toBe(true)
   })
 
   test("stays hidden when description is missing", async () => {
-    const { attachFieldTooltipListeners } = await import("./field-tooltip.js")
+    const { attachFieldTooltipListeners } = await import(
+      "./field-tooltip.js"
+    )
     attachFieldTooltipListeners()
 
-    const anchorElement = document.getElementById("anchor-missing")
-    const tooltipElement = document.getElementById("field-tooltip-popover")
+    const anchorElement = document.getElementById(
+      "anchor-missing",
+    )
+    const tooltipElement = document.getElementById(
+      "field-tooltip-popover",
+    )
 
-    anchorElement!.dispatchEvent(new PointerEvent("pointerover", { bubbles: true }))
+    anchorElement?.dispatchEvent(
+      new PointerEvent("pointerover", { bubbles: true }),
+    )
     await wait(TOOLTIP_DELAY_MS + 50)
 
-    expect(tooltipElement!.classList.contains("hidden")).toBe(true)
+    expect(
+      tooltipElement?.classList.contains("hidden"),
+    ).toBe(true)
   })
 })

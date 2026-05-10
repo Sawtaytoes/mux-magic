@@ -1,5 +1,8 @@
 {
-  "license": { "name": "GNU Affero General Public License v3.0", "url": "https://example/LICENSE" },
+  "license": {
+    "name": "GNU Affero General Public License v3.0",
+    "url": "https://example/LICENSE"
+  },
   "repository": "https://github.com/manami-project/anime-offline-database",
   "lastUpdate": "2026-04-02",
   "data": [
@@ -38,9 +41,7 @@
       "synonyms": [],
       "type": "OVA",
       "episodes": 1,
-      "sources": [
-        "https://myanimelist.net/anime/99999"
-      ]
+      "sources": ["https://myanimelist.net/anime/99999"]
     },
     {
       "title": "Empty Sources Anime",

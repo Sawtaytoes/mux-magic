@@ -1,4 +1,7 @@
-import { createReadStream, createWriteStream } from "node:fs"
+import {
+  createReadStream,
+  createWriteStream,
+} from "node:fs"
 import { stat, unlink } from "node:fs/promises"
 import { Transform } from "node:stream"
 import { pipeline } from "node:stream/promises"
@@ -87,17 +90,11 @@ export const aclSafeCopyFile = async (
 ): Promise<void> => {
   const signal = options?.signal
 
-  if (
-    !options?.onProgress
-  ) {
+  if (!options?.onProgress) {
     try {
       await pipeline(
-        createReadStream(
-          source,
-        ),
-        createWriteStream(
-          destination,
-        ),
+        createReadStream(source),
+        createWriteStream(destination),
         signal === undefined ? {} : { signal },
       )
       return
@@ -107,47 +104,29 @@ export const aclSafeCopyFile = async (
     }
   }
 
-  const onProgress = (
-    options
-    .onProgress
-  )
+  const onProgress = options.onProgress
 
-  const { size: totalBytes } = (
-    await (
-      stat(
-        source,
-      )
-    )
-  )
+  const { size: totalBytes } = await stat(source)
 
   let bytesWritten = 0
-  const progressTransform = (
-    new Transform({
-      transform(chunk, _encoding, callback) {
-        bytesWritten += chunk.length
-        onProgress({
-          source,
-          destination,
-          bytesWritten,
-          totalBytes,
-        })
-        callback(
-          null,
-          chunk,
-        )
-      },
-    })
-  )
+  const progressTransform = new Transform({
+    transform(chunk, _encoding, callback) {
+      bytesWritten += chunk.length
+      onProgress({
+        source,
+        destination,
+        bytesWritten,
+        totalBytes,
+      })
+      callback(null, chunk)
+    },
+  })
 
   try {
     await pipeline(
-      createReadStream(
-        source,
-      ),
+      createReadStream(source),
       progressTransform,
-      createWriteStream(
-        destination,
-      ),
+      createWriteStream(destination),
       signal === undefined ? {} : { signal },
     )
   } catch (error) {

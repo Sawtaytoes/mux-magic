@@ -3,7 +3,14 @@ import { normalize as normalizePath } from "node:path"
 
 import { vol } from "memfs"
 import { of, throwError } from "rxjs"
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 // Mock getMediaInfo BEFORE importing the route module so the route's
 // `import { getMediaInfo }` resolves to our mock. Hoisted by vitest, so
@@ -19,13 +26,12 @@ import { fileRoutes } from "./fileRoutes.js"
 // through memfs (globally mocked in vitest.setup.ts) so each test can
 // seed a virtual tree with `vol.fromJSON` and assert on what survives.
 
-const post = (path: string, body: unknown) => (
+const post = (path: string, body: unknown) =>
   fileRoutes.request(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   })
-)
 
 const get = (path: string) => fileRoutes.request(path)
 
@@ -46,19 +52,27 @@ describe("POST /files/rename", () => {
       oldPath: "/work/old-name.mkv",
       newPath: "/work/new-name.mkv",
     })
-    const body = await response.json() as { ok: boolean; newPath: string | null; error: string | null }
+    const body = (await response.json()) as {
+      ok: boolean
+      newPath: string | null
+      error: string | null
+    }
 
     expect(response.status).toBe(200)
     expect(body.ok).toBe(true)
     // validateReadablePath returns the normalized path, so on Windows the
     // forward-slash input comes back as `\work\new-name.mkv`. Normalize
     // the expected value the same way to keep the assertion portable.
-    expect(body.newPath).toBe(normalizePath("/work/new-name.mkv"))
+    expect(body.newPath).toBe(
+      normalizePath("/work/new-name.mkv"),
+    )
     expect(body.error).toBeNull()
 
     const newStats = await stat("/work/new-name.mkv")
     expect(newStats.isFile()).toBe(true)
-    await expect(stat("/work/old-name.mkv")).rejects.toThrow()
+    await expect(
+      stat("/work/old-name.mkv"),
+    ).rejects.toThrow()
   })
 
   test("rejects relative oldPath with a path-safety error and leaves the filesystem untouched", async () => {
@@ -66,7 +80,10 @@ describe("POST /files/rename", () => {
       oldPath: "old-name.mkv",
       newPath: "/work/new-name.mkv",
     })
-    const body = await response.json() as { ok: boolean; error: string | null }
+    const body = (await response.json()) as {
+      ok: boolean
+      error: string | null
+    }
 
     expect(response.status).toBe(200)
     expect(body.ok).toBe(false)
@@ -80,7 +97,10 @@ describe("POST /files/rename", () => {
       oldPath: "/work/old-name.mkv",
       newPath: "new-name.mkv",
     })
-    const body = await response.json() as { ok: boolean; error: string | null }
+    const body = (await response.json()) as {
+      ok: boolean
+      error: string | null
+    }
 
     expect(body.ok).toBe(false)
     expect(body.error).toMatch(/absolute/i)
@@ -91,7 +111,10 @@ describe("POST /files/rename", () => {
       oldPath: "/work/old-name.mkv",
       newPath: "",
     })
-    const body = await response.json() as { ok: boolean; error: string | null }
+    const body = (await response.json()) as {
+      ok: boolean
+      error: string | null
+    }
 
     expect(body.ok).toBe(false)
     expect(body.error).toMatch(/required|empty|absolute/i)
@@ -102,7 +125,10 @@ describe("POST /files/rename", () => {
       oldPath: "/work/old-name.mkv",
       newPath: "/work/sibling.mkv",
     })
-    const body = await response.json() as { ok: boolean; error: string | null }
+    const body = (await response.json()) as {
+      ok: boolean
+      error: string | null
+    }
 
     expect(body.ok).toBe(false)
     expect(body.error).toMatch(/already exists/i)
@@ -116,28 +142,40 @@ describe("POST /files/rename", () => {
       oldPath: "/work/missing.mkv",
       newPath: "/work/whatever.mkv",
     })
-    const body = await response.json() as { ok: boolean; error: string | null }
+    const body = (await response.json()) as {
+      ok: boolean
+      error: string | null
+    }
 
     expect(body.ok).toBe(false)
     expect(body.error).toBeTruthy()
   })
 
   test("rejects a missing oldPath / newPath via Zod validation (400)", async () => {
-    const response = await post("/files/rename", { oldPath: "/work/old.mkv" })
+    const response = await post("/files/rename", {
+      oldPath: "/work/old.mkv",
+    })
 
     expect(response.status).toBe(400)
   })
 
   test("?fake=1 short-circuits with ok:true and never touches disk", async () => {
-    const response = await fileRoutes.request("/files/rename?fake=1", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        oldPath: "/nonexistent/source.mkv",
-        newPath: "/nonexistent/dest.mkv",
-      }),
-    })
-    const body = await response.json() as { ok: boolean; newPath: string | null; error: string | null }
+    const response = await fileRoutes.request(
+      "/files/rename?fake=1",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          oldPath: "/nonexistent/source.mkv",
+          newPath: "/nonexistent/dest.mkv",
+        }),
+      },
+    )
+    const body = (await response.json()) as {
+      ok: boolean
+      newPath: string | null
+      error: string | null
+    }
 
     expect(response.status).toBe(200)
     expect(body.ok).toBe(true)
@@ -149,15 +187,22 @@ describe("POST /files/rename", () => {
   })
 
   test("?fake=failure short-circuits with ok:false so the UI can exercise its error path", async () => {
-    const response = await fileRoutes.request("/files/rename?fake=failure", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        oldPath: "/nonexistent/source.mkv",
-        newPath: "/nonexistent/dest.mkv",
-      }),
-    })
-    const body = await response.json() as { ok: boolean; newPath: string | null; error: string | null }
+    const response = await fileRoutes.request(
+      "/files/rename?fake=failure",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          oldPath: "/nonexistent/source.mkv",
+          newPath: "/nonexistent/dest.mkv",
+        }),
+      },
+    )
+    const body = (await response.json()) as {
+      ok: boolean
+      newPath: string | null
+      error: string | null
+    }
 
     expect(response.status).toBe(200)
     expect(body.ok).toBe(false)
@@ -179,21 +224,39 @@ describe("DELETE /files", () => {
   })
 
   test("?fake=1 short-circuits with per-path results and never touches disk", async () => {
-    const response = await fileRoutes.request("/files?fake=1", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        paths: ["/work/file1.mkv", "/work/file2.mkv"],
-      }),
-    })
-    const body = await response.json() as {
-      results: Array<{ path: string; ok: boolean; mode: "trash" | "permanent"; error: string | null }>
+    const response = await fileRoutes.request(
+      "/files?fake=1",
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paths: ["/work/file1.mkv", "/work/file2.mkv"],
+        }),
+      },
+    )
+    const body = (await response.json()) as {
+      results: Array<{
+        path: string
+        ok: boolean
+        mode: "trash" | "permanent"
+        error: string | null
+      }>
     }
 
     expect(response.status).toBe(200)
     expect(body.results).toEqual([
-      { path: "/work/file1.mkv", ok: true, mode: "trash", error: null },
-      { path: "/work/file2.mkv", ok: true, mode: "trash", error: null },
+      {
+        path: "/work/file1.mkv",
+        ok: true,
+        mode: "trash",
+        error: null,
+      },
+      {
+        path: "/work/file2.mkv",
+        ok: true,
+        mode: "trash",
+        error: null,
+      },
     ])
     // Real files must still be present — fake path didn't delete.
     const stillThere1 = await stat("/work/file1.mkv")
@@ -205,14 +268,20 @@ describe("DELETE /files", () => {
 
 describe("POST /files/open-external", () => {
   test("?fake=1 short-circuits with ok:true", async () => {
-    const response = await fileRoutes.request("/files/open-external?fake=1", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        path: "/nonexistent/file.mkv",
-      }),
-    })
-    const body = await response.json() as { ok: boolean; error: string | null }
+    const response = await fileRoutes.request(
+      "/files/open-external?fake=1",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          path: "/nonexistent/file.mkv",
+        }),
+      },
+    )
+    const body = (await response.json()) as {
+      ok: boolean
+      error: string | null
+    }
 
     expect(response.status).toBe(200)
     expect(body.ok).toBe(true)
@@ -226,20 +295,31 @@ describe("GET /files/audio-codec", () => {
   })
 
   test("returns the first audio track's Format", async () => {
-    vi.mocked(getMediaInfo).mockReturnValue(of({
-      creatingLibrary: { name: "MediaInfo", url: "", version: "23.0" },
-      media: {
-        "@ref": "/media/movie.mkv",
-        track: [
-          { "@type": "General" } as never,
-          { "@type": "Video" } as never,
-          { "@type": "Audio", Format: "DTS" } as never,
-        ],
-      },
-    }))
+    vi.mocked(getMediaInfo).mockReturnValue(
+      of({
+        creatingLibrary: {
+          name: "MediaInfo",
+          url: "",
+          version: "23.0",
+        },
+        media: {
+          "@ref": "/media/movie.mkv",
+          track: [
+            { "@type": "General" } as never,
+            { "@type": "Video" } as never,
+            { "@type": "Audio", Format: "DTS" } as never,
+          ],
+        },
+      }),
+    )
 
-    const response = await get("/files/audio-codec?path=/media/movie.mkv")
-    const body = await response.json() as { audioFormat: string | null; error: string | null }
+    const response = await get(
+      "/files/audio-codec?path=/media/movie.mkv",
+    )
+    const body = (await response.json()) as {
+      audioFormat: string | null
+      error: string | null
+    }
 
     expect(response.status).toBe(200)
     expect(body.audioFormat).toBe("DTS")
@@ -247,19 +327,30 @@ describe("GET /files/audio-codec", () => {
   })
 
   test("returns audioFormat=null when the file has no audio track", async () => {
-    vi.mocked(getMediaInfo).mockReturnValue(of({
-      creatingLibrary: { name: "MediaInfo", url: "", version: "23.0" },
-      media: {
-        "@ref": "/media/silent.mkv",
-        track: [
-          { "@type": "General" } as never,
-          { "@type": "Video" } as never,
-        ],
-      },
-    }))
+    vi.mocked(getMediaInfo).mockReturnValue(
+      of({
+        creatingLibrary: {
+          name: "MediaInfo",
+          url: "",
+          version: "23.0",
+        },
+        media: {
+          "@ref": "/media/silent.mkv",
+          track: [
+            { "@type": "General" } as never,
+            { "@type": "Video" } as never,
+          ],
+        },
+      }),
+    )
 
-    const response = await get("/files/audio-codec?path=/media/silent.mkv")
-    const body = await response.json() as { audioFormat: string | null; error: string | null }
+    const response = await get(
+      "/files/audio-codec?path=/media/silent.mkv",
+    )
+    const body = (await response.json()) as {
+      audioFormat: string | null
+      error: string | null
+    }
 
     expect(response.status).toBe(200)
     expect(body.audioFormat).toBeNull()
@@ -267,8 +358,13 @@ describe("GET /files/audio-codec", () => {
   })
 
   test("rejects relative paths with a path-safety error in the body", async () => {
-    const response = await get("/files/audio-codec?path=movie.mkv")
-    const body = await response.json() as { audioFormat: string | null; error: string | null }
+    const response = await get(
+      "/files/audio-codec?path=movie.mkv",
+    )
+    const body = (await response.json()) as {
+      audioFormat: string | null
+      error: string | null
+    }
 
     // Routes use the 200-with-error envelope, not 4xx, so the modal can
     // render the error inline rather than going to a generic error path.
@@ -282,8 +378,13 @@ describe("GET /files/audio-codec", () => {
       throwError(() => new Error("mediainfo crashed")),
     )
 
-    const response = await get("/files/audio-codec?path=/media/broken.mkv")
-    const body = await response.json() as { audioFormat: string | null; error: string | null }
+    const response = await get(
+      "/files/audio-codec?path=/media/broken.mkv",
+    )
+    const body = (await response.json()) as {
+      audioFormat: string | null
+      error: string | null
+    }
 
     expect(response.status).toBe(200)
     expect(body.audioFormat).toBeNull()

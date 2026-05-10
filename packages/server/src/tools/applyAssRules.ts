@@ -1,20 +1,20 @@
-import {
-  type AssFile,
-  type AssFormatEntry,
-  type AssModificationRule,
-  type AssScriptInfoSection,
-  type ApplyIfPredicate,
-  type ApplyIfStyleClause,
-  type ComputeFromOp,
-  type ComputeFromValue,
-  type NamedPredicates,
-  type PredicateBody,
-  type ScaleResolutionRule,
-  type SetScriptInfoRule,
-  type SetStyleFieldsRule,
-  type StyleFieldValue,
-  type WhenPredicate,
-  type WhenPredicateClause,
+import type {
+  ApplyIfPredicate,
+  ApplyIfStyleClause,
+  AssFile,
+  AssFormatEntry,
+  AssModificationRule,
+  AssScriptInfoSection,
+  ComputeFromOp,
+  ComputeFromValue,
+  NamedPredicates,
+  PredicateBody,
+  ScaleResolutionRule,
+  SetScriptInfoRule,
+  SetStyleFieldsRule,
+  StyleFieldValue,
+  WhenPredicate,
+  WhenPredicateClause,
 } from "./assTypes.js"
 
 // ---------------------------------------------------------------------------
@@ -32,9 +32,10 @@ export type FileBatchMetadata = {
 // Predicate-body resolution + evaluation
 // ---------------------------------------------------------------------------
 
-const isRefBody = (body: PredicateBody): body is { $ref: string } => (
+const isRefBody = (
+  body: PredicateBody,
+): body is { $ref: string } =>
   typeof (body as { $ref?: unknown }).$ref === "string"
-)
 
 const resolvePredicateBody = ({
   body,
@@ -46,7 +47,9 @@ const resolvePredicateBody = ({
   if (isRefBody(body)) {
     const referenced = predicates[body.$ref]
     if (!referenced) {
-      throw new Error(`Unknown predicate $ref: '${body.$ref}'.`)
+      throw new Error(
+        `Unknown predicate $ref: '${body.$ref}'.`,
+      )
     }
     return referenced
   }
@@ -67,7 +70,10 @@ const splitClause = ({
   clause,
 }: {
   clause: WhenPredicateClause
-}): { matches?: PredicateBody; excludes?: PredicateBody } => {
+}): {
+  matches?: PredicateBody
+  excludes?: PredicateBody
+} => {
   if (isShorthandClause(clause)) {
     return { matches: clause }
   }
@@ -80,9 +86,10 @@ const matchesAllPairs = ({
 }: {
   pairs: Record<string, string>
   source: Record<string, string>
-}): boolean => (
-  Object.entries(pairs).every(([key, value]) => source[key] === value)
-)
+}): boolean =>
+  Object.entries(pairs).every(
+    ([key, value]) => source[key] === value,
+  )
 
 const evaluatePerSourceClause = ({
   clause,
@@ -95,18 +102,25 @@ const evaluatePerSourceClause = ({
 }): boolean => {
   const { matches, excludes } = splitClause({ clause })
 
-  const matchesPasses = (
-    matches
-    ? matchesAllPairs({ pairs: resolvePredicateBody({ body: matches, predicates }), source })
+  const matchesPasses = matches
+    ? matchesAllPairs({
+        pairs: resolvePredicateBody({
+          body: matches,
+          predicates,
+        }),
+        source,
+      })
     : true
-  )
   if (!matchesPasses) {
     return false
   }
 
   if (excludes) {
     const excludesMatched = matchesAllPairs({
-      pairs: resolvePredicateBody({ body: excludes, predicates }),
+      pairs: resolvePredicateBody({
+        body: excludes,
+        predicates,
+      }),
       source,
     })
     if (excludesMatched) {
@@ -123,9 +137,8 @@ const collectAllStyles = ({
   batchMetadata,
 }: {
   batchMetadata: FileBatchMetadata[]
-}): Record<string, string>[] => (
+}): Record<string, string>[] =>
   batchMetadata.flatMap(({ styles }) => styles)
-)
 
 const evaluateAggregateClause = ({
   aggregator,
@@ -134,21 +147,20 @@ const evaluateAggregateClause = ({
   predicates,
   scope,
 }: {
-  aggregator: 'any' | 'all' | 'none' | 'notAll'
+  aggregator: "any" | "all" | "none" | "notAll"
   batchMetadata: FileBatchMetadata[]
   clause: WhenPredicateClause
   predicates: NamedPredicates
-  scope: 'scriptInfo' | 'style'
+  scope: "scriptInfo" | "style"
 }): boolean => {
-  const sources = (
+  const sources =
     scope === "scriptInfo"
-    ? batchMetadata.map(({ scriptInfo }) => scriptInfo)
-    : collectAllStyles({ batchMetadata })
-  )
+      ? batchMetadata.map(({ scriptInfo }) => scriptInfo)
+      : collectAllStyles({ batchMetadata })
 
-  const perSourceResults = sources.map((source) => (
-    evaluatePerSourceClause({ clause, predicates, source })
-  ))
+  const perSourceResults = sources.map((source) =>
+    evaluatePerSourceClause({ clause, predicates, source }),
+  )
 
   if (aggregator === "any") {
     return perSourceResults.some((isMatch) => isMatch)
@@ -174,24 +186,58 @@ export const evaluateWhenPredicate = ({
   predicates: NamedPredicates
 }): boolean => {
   const checks: Array<{
-    aggregator: 'any' | 'all' | 'none' | 'notAll'
+    aggregator: "any" | "all" | "none" | "notAll"
     clause: WhenPredicateClause | undefined
-    scope: 'scriptInfo' | 'style'
+    scope: "scriptInfo" | "style"
   }> = [
-    { aggregator: "any", clause: predicate.anyScriptInfo, scope: "scriptInfo" },
-    { aggregator: "all", clause: predicate.allScriptInfo, scope: "scriptInfo" },
-    { aggregator: "none", clause: predicate.noneScriptInfo, scope: "scriptInfo" },
-    { aggregator: "notAll", clause: predicate.notAllScriptInfo, scope: "scriptInfo" },
-    { aggregator: "any", clause: predicate.anyStyle, scope: "style" },
-    { aggregator: "all", clause: predicate.allStyle, scope: "style" },
-    { aggregator: "none", clause: predicate.noneStyle, scope: "style" },
+    {
+      aggregator: "any",
+      clause: predicate.anyScriptInfo,
+      scope: "scriptInfo",
+    },
+    {
+      aggregator: "all",
+      clause: predicate.allScriptInfo,
+      scope: "scriptInfo",
+    },
+    {
+      aggregator: "none",
+      clause: predicate.noneScriptInfo,
+      scope: "scriptInfo",
+    },
+    {
+      aggregator: "notAll",
+      clause: predicate.notAllScriptInfo,
+      scope: "scriptInfo",
+    },
+    {
+      aggregator: "any",
+      clause: predicate.anyStyle,
+      scope: "style",
+    },
+    {
+      aggregator: "all",
+      clause: predicate.allStyle,
+      scope: "style",
+    },
+    {
+      aggregator: "none",
+      clause: predicate.noneStyle,
+      scope: "style",
+    },
   ]
 
   return checks.every(({ aggregator, clause, scope }) => {
     if (!clause) {
       return true
     }
-    return evaluateAggregateClause({ aggregator, batchMetadata, clause, predicates, scope })
+    return evaluateAggregateClause({
+      aggregator,
+      batchMetadata,
+      clause,
+      predicates,
+      scope,
+    })
   })
 }
 
@@ -206,7 +252,7 @@ export const filterRulesByWhen = ({
   batchMetadata: FileBatchMetadata[]
   predicates: NamedPredicates
   rules: AssModificationRule[]
-}): AssModificationRule[] => (
+}): AssModificationRule[] =>
   rules.filter((rule) => {
     if (!rule.when) {
       return true
@@ -217,7 +263,6 @@ export const filterRulesByWhen = ({
       predicates,
     })
   })
-)
 
 // ---------------------------------------------------------------------------
 // computeFrom — math ops over a numeric accumulator
@@ -225,9 +270,8 @@ export const filterRulesByWhen = ({
 
 const isNumericOperation = (
   operation: ComputeFromOp,
-): operation is Exclude<ComputeFromOp, string> => (
+): operation is Exclude<ComputeFromOp, string> =>
   typeof operation !== "string"
-)
 
 const applyComputeFromOps = ({
   initialValue,
@@ -235,7 +279,7 @@ const applyComputeFromOps = ({
 }: {
   initialValue: number
   operations: ComputeFromOp[]
-}): number => (
+}): number =>
   operations.reduce((accumulator, operation) => {
     if (!isNumericOperation(operation)) {
       if (operation === "round") {
@@ -272,13 +316,11 @@ const applyComputeFromOps = ({
     }
     return accumulator
   }, initialValue)
-)
 
 const isComputeFromValue = (
   fieldValue: StyleFieldValue,
-): fieldValue is ComputeFromValue => (
+): fieldValue is ComputeFromValue =>
   typeof fieldValue !== "string"
-)
 
 const resolveStyleFieldValue = ({
   fieldValue,
@@ -294,13 +336,15 @@ const resolveStyleFieldValue = ({
   }
 
   const { property, scope, ops } = fieldValue.computeFrom
-  const sourceValue = (
+  const sourceValue =
     scope === "scriptInfo"
-    ? fileMetadata.scriptInfo[property]
-    : styleRow[property]
-  )
+      ? fileMetadata.scriptInfo[property]
+      : styleRow[property]
   const initialValue = Number(sourceValue ?? "0") || 0
-  const finalValue = applyComputeFromOps({ initialValue, operations: ops })
+  const finalValue = applyComputeFromOps({
+    initialValue,
+    operations: ops,
+  })
   return String(finalValue)
 }
 
@@ -312,7 +356,15 @@ const styleMatchesEntry = ({
   fieldValue,
   styleValue,
 }: {
-  fieldValue: string | { eq?: number; lt?: number; gt?: number; lte?: number; gte?: number }
+  fieldValue:
+    | string
+    | {
+        eq?: number
+        lt?: number
+        gt?: number
+        lte?: number
+        gte?: number
+      }
   styleValue: string | undefined
 }): boolean => {
   if (typeof fieldValue === "string") {
@@ -324,19 +376,34 @@ const styleMatchesEntry = ({
     return false
   }
 
-  if (fieldValue.eq !== undefined && numericStyleValue !== fieldValue.eq) {
+  if (
+    fieldValue.eq !== undefined &&
+    numericStyleValue !== fieldValue.eq
+  ) {
     return false
   }
-  if (fieldValue.lt !== undefined && !(numericStyleValue < fieldValue.lt)) {
+  if (
+    fieldValue.lt !== undefined &&
+    !(numericStyleValue < fieldValue.lt)
+  ) {
     return false
   }
-  if (fieldValue.gt !== undefined && !(numericStyleValue > fieldValue.gt)) {
+  if (
+    fieldValue.gt !== undefined &&
+    !(numericStyleValue > fieldValue.gt)
+  ) {
     return false
   }
-  if (fieldValue.lte !== undefined && !(numericStyleValue <= fieldValue.lte)) {
+  if (
+    fieldValue.lte !== undefined &&
+    !(numericStyleValue <= fieldValue.lte)
+  ) {
     return false
   }
-  if (fieldValue.gte !== undefined && !(numericStyleValue >= fieldValue.gte)) {
+  if (
+    fieldValue.gte !== undefined &&
+    !(numericStyleValue >= fieldValue.gte)
+  ) {
     return false
   }
   return true
@@ -348,11 +415,13 @@ const styleRowMatchesClause = ({
 }: {
   clause: ApplyIfStyleClause
   styleRow: Record<string, string>
-}): boolean => (
-  Object.entries(clause).every(([fieldName, fieldValue]) => (
-    styleMatchesEntry({ fieldValue, styleValue: styleRow[fieldName] })
-  ))
-)
+}): boolean =>
+  Object.entries(clause).every(([fieldName, fieldValue]) =>
+    styleMatchesEntry({
+      fieldValue,
+      styleValue: styleRow[fieldName],
+    }),
+  )
 
 export const evaluateApplyIfPredicate = ({
   applyIf,
@@ -364,27 +433,37 @@ export const evaluateApplyIfPredicate = ({
   const { styles } = fileMetadata
 
   if (applyIf.anyStyleMatches) {
-    const isPassing = styles.some((styleRow) => (
-      styleRowMatchesClause({ clause: applyIf.anyStyleMatches!, styleRow })
-    ))
+    const isPassing = styles.some((styleRow) =>
+      styleRowMatchesClause({
+        clause: applyIf.anyStyleMatches!,
+        styleRow,
+      }),
+    )
     if (!isPassing) {
       return false
     }
   }
 
   if (applyIf.allStyleMatches) {
-    const isPassing = styles.every((styleRow) => (
-      styleRowMatchesClause({ clause: applyIf.allStyleMatches!, styleRow })
-    ))
+    const isPassing = styles.every((styleRow) =>
+      styleRowMatchesClause({
+        clause: applyIf.allStyleMatches!,
+        styleRow,
+      }),
+    )
     if (!isPassing) {
       return false
     }
   }
 
   if (applyIf.noneStyleMatches) {
-    const isPassing = styles.every((styleRow) => (
-      !styleRowMatchesClause({ clause: applyIf.noneStyleMatches!, styleRow })
-    ))
+    const isPassing = styles.every(
+      (styleRow) =>
+        !styleRowMatchesClause({
+          clause: applyIf.noneStyleMatches!,
+          styleRow,
+        }),
+    )
     if (!isPassing) {
       return false
     }
@@ -399,11 +478,11 @@ export const evaluateApplyIfPredicate = ({
 
 const getScriptInfoSection = (
   assFile: AssFile,
-): AssScriptInfoSection | undefined => (
+): AssScriptInfoSection | undefined =>
   assFile.sections.find(
-    (section): section is AssScriptInfoSection => section.sectionType === "scriptInfo",
+    (section): section is AssScriptInfoSection =>
+      section.sectionType === "scriptInfo",
   )
-)
 
 const getScriptInfoValue = ({
   assFile,
@@ -417,9 +496,13 @@ const getScriptInfoValue = ({
     return undefined
   }
   const entry = section.entries.find(
-    (candidate) => candidate.type === "property" && candidate.key === key,
+    (candidate) =>
+      candidate.type === "property" &&
+      candidate.key === key,
   )
-  return entry?.type === "property" ? entry.value : undefined
+  return entry?.type === "property"
+    ? entry.value
+    : undefined
 }
 
 const applySetScriptInfo = ({
@@ -436,21 +519,25 @@ const applySetScriptInfo = ({
     }
 
     const existingIndex = section.entries.findIndex(
-      (entry) => entry.type === "property" && entry.key === rule.key,
+      (entry) =>
+        entry.type === "property" && entry.key === rule.key,
     )
 
     if (existingIndex !== -1) {
       const entries = [...section.entries]
-      entries[existingIndex] = { type: "property", key: rule.key, value: rule.value }
+      entries[existingIndex] = {
+        type: "property",
+        key: rule.key,
+        value: rule.value,
+      }
       return { ...section, entries }
     }
 
     const lastPropertyIndex = section.entries.reduce(
-      (lastIndex, entry, currentIndex) => (
+      (lastIndex, entry, currentIndex) =>
         entry.type === "property"
-        ? currentIndex
-        : lastIndex
-      ),
+          ? currentIndex
+          : lastIndex,
       -1,
     )
     const entries = [...section.entries]
@@ -470,60 +557,96 @@ const applyScaleResolution = ({
   assFile: AssFile
   rule: ScaleResolutionRule
 }): AssFile => {
-  const currentWidth = getScriptInfoValue({ assFile, key: "PlayResX" })
-  const currentHeight = getScriptInfoValue({ assFile, key: "PlayResY" })
+  const currentWidth = getScriptInfoValue({
+    assFile,
+    key: "PlayResX",
+  })
+  const currentHeight = getScriptInfoValue({
+    assFile,
+    key: "PlayResY",
+  })
 
   if (
-    rule.from
-    && (
-      currentWidth !== String(rule.from.width)
-      || currentHeight !== String(rule.from.height)
-    )
+    rule.from &&
+    (currentWidth !== String(rule.from.width) ||
+      currentHeight !== String(rule.from.height))
   ) {
     return assFile
   }
 
   const baseRules: SetScriptInfoRule[] = [
-    { type: "setScriptInfo", key: "PlayResX", value: String(rule.to.width) },
-    { type: "setScriptInfo", key: "PlayResY", value: String(rule.to.height) },
+    {
+      type: "setScriptInfo",
+      key: "PlayResX",
+      value: String(rule.to.width),
+    },
+    {
+      type: "setScriptInfo",
+      key: "PlayResY",
+      value: String(rule.to.height),
+    },
   ]
 
-  const layoutRules: SetScriptInfoRule[] = (
+  const layoutRules: SetScriptInfoRule[] =
     rule.isLayoutResSynced !== false
-    ? (() => {
-      const hasLayoutResX = getScriptInfoValue({ assFile, key: "LayoutResX" }) !== undefined
-      const hasLayoutResY = getScriptInfoValue({ assFile, key: "LayoutResY" }) !== undefined
-      const layoutXRule: SetScriptInfoRule[] = (
-        hasLayoutResX || rule.hasLayoutRes
-        ? [{ type: "setScriptInfo", key: "LayoutResX", value: String(rule.to.width) }]
-        : []
-      )
-      const layoutYRule: SetScriptInfoRule[] = (
-        hasLayoutResY || rule.hasLayoutRes
-        ? [{ type: "setScriptInfo", key: "LayoutResY", value: String(rule.to.height) }]
-        : []
-      )
-      return [...layoutXRule, ...layoutYRule]
-    })()
-    : []
-  )
+      ? (() => {
+          const hasLayoutResX =
+            getScriptInfoValue({
+              assFile,
+              key: "LayoutResX",
+            }) !== undefined
+          const hasLayoutResY =
+            getScriptInfoValue({
+              assFile,
+              key: "LayoutResY",
+            }) !== undefined
+          const layoutXRule: SetScriptInfoRule[] =
+            hasLayoutResX || rule.hasLayoutRes
+              ? [
+                  {
+                    type: "setScriptInfo",
+                    key: "LayoutResX",
+                    value: String(rule.to.width),
+                  },
+                ]
+              : []
+          const layoutYRule: SetScriptInfoRule[] =
+            hasLayoutResY || rule.hasLayoutRes
+              ? [
+                  {
+                    type: "setScriptInfo",
+                    key: "LayoutResY",
+                    value: String(rule.to.height),
+                  },
+                ]
+              : []
+          return [...layoutXRule, ...layoutYRule]
+        })()
+      : []
 
-  const scaledBorderRules: SetScriptInfoRule[] = (
+  const scaledBorderRules: SetScriptInfoRule[] =
     rule.hasScaledBorderAndShadow !== false
-    ? [{
-      type: "setScriptInfo",
-      key: "ScaledBorderAndShadow",
-      value: "yes",
-    }]
-    : []
-  )
+      ? [
+          {
+            type: "setScriptInfo",
+            key: "ScaledBorderAndShadow",
+            value: "yes",
+          },
+        ]
+      : []
 
-  const subRules = [...baseRules, ...layoutRules, ...scaledBorderRules]
+  const subRules = [
+    ...baseRules,
+    ...layoutRules,
+    ...scaledBorderRules,
+  ]
 
   return subRules.reduce(
-    (currentFile, setScriptInfoRule) => (
-      applySetScriptInfo({ assFile: currentFile, rule: setScriptInfoRule })
-    ),
+    (currentFile, setScriptInfoRule) =>
+      applySetScriptInfo({
+        assFile: currentFile,
+        rule: setScriptInfoRule,
+      }),
     assFile,
   )
 }
@@ -537,15 +660,20 @@ const applySetStyleFields = ({
   fileMetadata: FileBatchMetadata
   rule: SetStyleFieldsRule
 }): AssFile => {
-  if (rule.applyIf && !evaluateApplyIfPredicate({ applyIf: rule.applyIf, fileMetadata })) {
+  if (
+    rule.applyIf &&
+    !evaluateApplyIfPredicate({
+      applyIf: rule.applyIf,
+      fileMetadata,
+    })
+  ) {
     return assFile
   }
 
-  const ignoredStyleNamesRegex = (
+  const ignoredStyleNamesRegex =
     rule.ignoredStyleNamesRegexString
-    ? new RegExp(rule.ignoredStyleNamesRegexString, "i")
-    : null
-  )
+      ? new RegExp(rule.ignoredStyleNamesRegexString, "i")
+      : null
 
   return {
     ...assFile,
@@ -568,18 +696,21 @@ const applySetStyleFields = ({
             return entry
           }
 
-          const styleName = entry.fields["Name"] ?? ""
-          if (ignoredStyleNamesRegex && ignoredStyleNamesRegex.test(styleName)) {
+          const styleName = entry.fields.Name ?? ""
+          if (ignoredStyleNamesRegex?.test(styleName)) {
             return entry
           }
 
-          const computedFields = Object.entries(rule.fields).reduce(
+          const computedFields = Object.entries(
+            rule.fields,
+          ).reduce(
             (accumulator, [fieldName, fieldValue]) => {
-              accumulator[fieldName] = resolveStyleFieldValue({
-                fieldValue,
-                fileMetadata,
-                styleRow: entry.fields,
-              })
+              accumulator[fieldName] =
+                resolveStyleFieldValue({
+                  fieldValue,
+                  fileMetadata,
+                  styleRow: entry.fields,
+                })
               return accumulator
             },
             {} as Record<string, string>,
@@ -616,19 +747,28 @@ export const applyAssRules = ({
   fileMetadata?: FileBatchMetadata
   rules: AssModificationRule[]
 }): AssFile => {
-  const resolvedMetadata = (
-    fileMetadata
-    ?? buildFileMetadata({ assFile, filePath: "" })
-  )
+  const resolvedMetadata =
+    fileMetadata ??
+    buildFileMetadata({ assFile, filePath: "" })
   return rules.reduce((currentFile, rule) => {
     if (rule.type === "setScriptInfo") {
-      return applySetScriptInfo({ assFile: currentFile, rule })
+      return applySetScriptInfo({
+        assFile: currentFile,
+        rule,
+      })
     }
     if (rule.type === "scaleResolution") {
-      return applyScaleResolution({ assFile: currentFile, rule })
+      return applyScaleResolution({
+        assFile: currentFile,
+        rule,
+      })
     }
     if (rule.type === "setStyleFields") {
-      return applySetStyleFields({ assFile: currentFile, fileMetadata: resolvedMetadata, rule })
+      return applySetStyleFields({
+        assFile: currentFile,
+        fileMetadata: resolvedMetadata,
+        rule,
+      })
     }
     return currentFile
   }, assFile)
@@ -649,29 +789,32 @@ export const buildFileMetadata = ({
   const scriptInfoSection = assFile.sections.find(
     (section) => section.sectionType === "scriptInfo",
   )
-  const scriptInfo: Record<string, string> = (
+  const scriptInfo: Record<string, string> =
     scriptInfoSection?.sectionType === "scriptInfo"
-    ? Object.fromEntries(
-      scriptInfoSection.entries
-      .filter((entry) => entry.type === "property")
-      .map((entry) => entry.type === "property" ? [entry.key, entry.value] : ["", ""])
-    )
-    : {}
-  )
+      ? Object.fromEntries(
+          scriptInfoSection.entries
+            .filter((entry) => entry.type === "property")
+            .map((entry) =>
+              entry.type === "property"
+                ? [entry.key, entry.value]
+                : ["", ""],
+            ),
+        )
+      : {}
 
   const stylesSection = assFile.sections.find(
-    (section) => (
-      section.sectionType === "formatted"
-      && section.entries.some((entry) => entry.entryType === "Style")
-    ),
+    (section) =>
+      section.sectionType === "formatted" &&
+      section.entries.some(
+        (entry) => entry.entryType === "Style",
+      ),
   )
-  const styles: Record<string, string>[] = (
+  const styles: Record<string, string>[] =
     stylesSection?.sectionType === "formatted"
-    ? stylesSection.entries
-      .filter((entry) => entry.entryType === "Style")
-      .map((entry) => entry.fields)
-    : []
-  )
+      ? stylesSection.entries
+          .filter((entry) => entry.entryType === "Style")
+          .map((entry) => entry.fields)
+      : []
 
   return { filePath, scriptInfo, styles }
 }

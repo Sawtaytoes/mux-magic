@@ -1,7 +1,5 @@
+import { basename } from "node:path"
 import malScraper from "mal-scraper"
-import {
-  basename,
-} from "node:path"
 import {
   concatMap,
   EMPTY,
@@ -15,16 +13,15 @@ import {
   toArray,
   zip,
 } from "rxjs"
-
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { cleanupFilename } from "../tools/cleanupFilename.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getUserSearchInput } from "../tools/getUserSearchInput.js"
-import { naturalSort } from "../tools/naturalSort.js"
 import { getFiles } from "../tools/getFiles.js"
+import { getUserSearchInput } from "../tools/getUserSearchInput.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { logInfo } from "../tools/logMessage.js"
-import { searchMal } from "../tools/searchMal.js"
+import { naturalSort } from "../tools/naturalSort.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
+import { searchMal } from "../tools/searchMal.js"
 
 export const nameAnimeEpisodes = ({
   malId,
@@ -32,269 +29,148 @@ export const nameAnimeEpisodes = ({
   seasonNumber,
   sourcePath,
 }: {
-  malId?: number,
-  searchTerm?: string,
-  seasonNumber: number,
-  sourcePath: string,
-}) => (
+  malId?: number
+  searchTerm?: string
+  seasonNumber: number
+  sourcePath: string
+}) =>
   getFiles({
     sourcePath,
-  })
-  .pipe(
+  }).pipe(
     toArray(),
-    map((
-      fileInfos,
-    ) => (
-      (
-        malId != null
-          ? of({
+    map((fileInfos) =>
+      (malId != null
+        ? of({
             id: String(malId),
             name: "",
             url: `https://myanimelist.net/anime/${malId}`,
           })
-          : (
-            searchMal(
-              searchTerm
-              || basename(sourcePath)
-            )
-            .pipe(
-              switchMap((results) => {
-                if (results.length === 0) {
-                  throw new Error(`No MAL results for: ${searchTerm || basename(sourcePath)}`)
-                }
-
-                return (
-                  getUserSearchInput({
-                    message: `MAL results for "${searchTerm || basename(sourcePath)}":`,
-                    options: [
-                      ...results
-                      .map((result, index) => ({
-                        index,
-                        label: `${result.name}${result.airDate ? ` (${result.airDate})` : ""}${result.mediaType ? ` [${result.mediaType}]` : ""}`,
-                      })),
-                      {
-                        index: -1,
-                        label: "Cancel / skip",
-                      },
-                    ],
-                  })
-                  .pipe(
-                    map((selectedIndex) => {
-                      if (selectedIndex === -1) throw new Error("No selection made.")
-
-                      return results.at(selectedIndex)!
-                    }),
-                    map((result) => ({
-                      id: String(result.malId),
-                      name: result.name,
-                      url: `https://myanimelist.net/anime/${result.malId}`,
-                    })),
-                  )
+        : searchMal(
+            searchTerm || basename(sourcePath),
+          ).pipe(
+            switchMap((results) => {
+              if (results.length === 0) {
+                throw new Error(
+                  `No MAL results for: ${searchTerm || basename(sourcePath)}`,
                 )
-              }),
-              filter(Boolean),
-            )
-          )
-      )
-      .pipe(
-        concatMap(({
-          id,
-          name,
-          url,
-        }) => (
-          zip(
-            (
-              malScraper
-              .getInfoFromURL(
-                url
+              }
+
+              return getUserSearchInput({
+                message: `MAL results for "${searchTerm || basename(sourcePath)}":`,
+                options: [
+                  ...results.map((result, index) => ({
+                    index,
+                    label: `${result.name}${result.airDate ? ` (${result.airDate})` : ""}${result.mediaType ? ` [${result.mediaType}]` : ""}`,
+                  })),
+                  {
+                    index: -1,
+                    label: "Cancel / skip",
+                  },
+                ],
+              }).pipe(
+                map((selectedIndex) => {
+                  if (selectedIndex === -1)
+                    throw new Error("No selection made.")
+
+                  return results.at(selectedIndex)!
+                }),
+                map((result) => ({
+                  id: String(result.malId),
+                  name: result.name,
+                  url: `https://myanimelist.net/anime/${result.malId}`,
+                })),
               )
-            ),
-            (
-              malScraper
-              .getEpisodesList({
-                id: (
-                  Number(
-                    id
-                  )
-                ),
-                name,
-              })
-            ),
-          )
-        )),
-      )
-      .pipe(
-        map(([
-          series,
-          seriesEpisodes,
-        ]) => ({
-          seriesEpisodes,
-          seriesName: (
-            (
-              series
-              .englishTitle
-            )
-            || (
-              series
-              .title
-            )
-            || (
-              series
-              .synonyms
-              .at(0)
-            )
-            || (
-              series
-              .japaneseTitle
-            )
-            || ""
-          ),
-        })),
-        concatMap(({
-          seriesName,
-          seriesEpisodes,
-        }) => (
-          from(
-            naturalSort(
-              fileInfos
-            )
-            .by({
-              asc: (
-                fileInfo,
-              ) => (
-                fileInfo
-                .filename
-              ),
-            })
-          )
-          .pipe(
-            filterIsVideoFile(),
-            map((
-              fileInfo,
-              index,
-            ) => ({
-              episode: (
-                seriesEpisodes
-                .at(
-                  index
-                )
-              ),
-              fileInfo,
-            })),
-            map(({
-              episode,
-              fileInfo,
-            }) => ({
-              episodeNumber: (
-                (
-                  episode
-                  ?.epNumber
-                )
-                ? (
-                  String(
-                    episode
-                    ?.epNumber
-                  )
-                )
-                : ""
-              ),
-              fileInfo,
-              seasonNumber: (
-                String(
-                  seasonNumber
-                )
-                || "1"
-              ),
-              title: (
-                (
-                  episode
-                  ?.title
-                )
-                || (
-                  episode
-                  ?.japaneseTitle
-                )
-                || ""
-              ),
-            })),
-            mergeMap((
-              item,
-            ) => {
-              if (
-                item
-                .title
-              ) {
-                return (
-                  of(
-                    item
-                  )
-                )
-              }
-              else {
-                logInfo(
-                  "NO EPISODE NAME",
-                  (
-                    item
-                    .fileInfo
-                    .filename
-                  ),
-                )
-
-                return EMPTY
-              }
             }),
-            map(({
-              episodeNumber,
-              fileInfo,
-              seasonNumber,
-              title,
-            }) => ({
-              fileInfo,
-              renamedFilename: (
-                cleanupFilename(
-                  seriesName
-                  .concat(
-                    " - ",
-                    "s",
-                    (
-                      seasonNumber
-                      .padStart(
-                        2,
-                        '0',
-                      )
-                    ),
-                    "e",
-                    (
-                      episodeNumber
-                      .padStart(
-                        2,
-                        '0',
-                      )
-                    ),
-                    " - ",
-                    title,
-                  )
-                )
-              )
-            })),
+            filter(Boolean),
           )
-        )),
       )
-    )),
+        .pipe(
+          concatMap(({ id, name, url }) =>
+            zip(
+              malScraper.getInfoFromURL(url),
+              malScraper.getEpisodesList({
+                id: Number(id),
+                name,
+              }),
+            ),
+          ),
+        )
+        .pipe(
+          map(([series, seriesEpisodes]) => ({
+            seriesEpisodes,
+            seriesName:
+              series.englishTitle ||
+              series.title ||
+              series.synonyms.at(0) ||
+              series.japaneseTitle ||
+              "",
+          })),
+          concatMap(({ seriesName, seriesEpisodes }) =>
+            from(
+              naturalSort(fileInfos).by({
+                asc: (fileInfo) => fileInfo.filename,
+              }),
+            ).pipe(
+              filterIsVideoFile(),
+              map((fileInfo, index) => ({
+                episode: seriesEpisodes.at(index),
+                fileInfo,
+              })),
+              map(({ episode, fileInfo }) => ({
+                episodeNumber: episode?.epNumber
+                  ? String(episode?.epNumber)
+                  : "",
+                fileInfo,
+                seasonNumber: String(seasonNumber) || "1",
+                title:
+                  episode?.title ||
+                  episode?.japaneseTitle ||
+                  "",
+              })),
+              mergeMap((item) => {
+                if (item.title) {
+                  return of(item)
+                } else {
+                  logInfo(
+                    "NO EPISODE NAME",
+                    item.fileInfo.filename,
+                  )
+
+                  return EMPTY
+                }
+              }),
+              map(
+                ({
+                  episodeNumber,
+                  fileInfo,
+                  seasonNumber,
+                  title,
+                }) => ({
+                  fileInfo,
+                  renamedFilename: cleanupFilename(
+                    seriesName.concat(
+                      " - ",
+                      "s",
+                      seasonNumber.padStart(2, "0"),
+                      "e",
+                      episodeNumber.padStart(2, "0"),
+                      " - ",
+                      title,
+                    ),
+                  ),
+                }),
+              ),
+            ),
+          ),
+        ),
+    ),
     toArray(),
     mergeAll(),
     mergeAll(),
-    withFileProgress(({
-      fileInfo,
-      renamedFilename,
-    }) => (
-      fileInfo
-      .renameFile(
-        renamedFilename
-      )
-    ), { concurrency: Infinity }),
-    logAndRethrow(
-      nameAnimeEpisodes
-    )
+    withFileProgress(
+      ({ fileInfo, renamedFilename }) =>
+        fileInfo.renameFile(renamedFilename),
+      { concurrency: Infinity },
+    ),
+    logAndRethrow(nameAnimeEpisodes),
   )
-)

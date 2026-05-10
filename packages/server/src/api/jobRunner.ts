@@ -1,5 +1,4 @@
-import { EMPTY, type Observable } from "rxjs"
-import { catchError } from "rxjs"
+import { catchError, EMPTY, type Observable } from "rxjs"
 
 import {
   completeSubject,
@@ -25,7 +24,9 @@ export const runJob = (
     // named-outputs object once the observable completes successfully.
     // The result is stored on the job's `outputs` field and surfaced in
     // the SSE done event so downstream sequence steps can reference it.
-    extractOutputs?: (results: unknown[]) => Record<string, unknown>,
+    extractOutputs?: (
+      results: unknown[],
+    ) => Record<string, unknown>
   } = {},
 ): Promise<Job | undefined> => {
   createSubject(jobId)
@@ -39,14 +40,14 @@ export const runJob = (
     // Run the observable inside the job's async context so all console.*
     // calls from the pipeline are routed to this job's log stream.
     withJobContext(jobId, () => {
-      const subscription = (
-        observable
+      const subscription = observable
         .pipe(
           catchError((err) => {
             // Don't clobber a "cancelled" status — cancelJob already wrote
             // the terminal state and the upstream error here is just
             // fallout from unsubscribe tearing the chain down.
-            if (getJob(jobId)?.status === "cancelled") return EMPTY
+            if (getJob(jobId)?.status === "cancelled")
+              return EMPTY
 
             updateJob(jobId, {
               completedAt: new Date(),
@@ -63,14 +64,13 @@ export const runJob = (
 
             if (!job) return
 
-            console.log(`[emission/${job.commandName}]`, JSON.stringify(value))
+            console.log(
+              `[emission/${job.commandName}]`,
+              JSON.stringify(value),
+            )
 
             updateJob(jobId, {
-              results: (
-                job
-                .results
-                .concat(value)
-              ),
+              results: job.results.concat(value),
             })
           },
           complete: () => {
@@ -84,11 +84,10 @@ export const runJob = (
             }
 
             if (job?.status !== "failed") {
-              const outputs = (
+              const outputs =
                 options.extractOutputs && job
-                ? options.extractOutputs(job.results)
-                : null
-              )
+                  ? options.extractOutputs(job.results)
+                  : null
 
               updateJob(jobId, {
                 completedAt: new Date(),
@@ -120,7 +119,6 @@ export const runJob = (
             unregisterJobSubscription(jobId)
           },
         })
-      )
 
       // Resolve the promise once the subscription is disposed for ANY
       // reason — natural complete/error from the subscriber callbacks

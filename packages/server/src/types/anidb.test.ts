@@ -18,7 +18,9 @@ describe("episodeTypesForCategory", () => {
     ["parodies", [5]],
     ["others", [6]],
   ] as const)("%s maps to AniDB type=%j", (category, expected) => {
-    expect(episodeTypesForCategory(category)).toEqual(expected)
+    expect(episodeTypesForCategory(category)).toEqual(
+      expected,
+    )
   })
 })
 
@@ -74,10 +76,25 @@ describe("epnoOrderingValue", () => {
       [5, "P1"],
     ]
     const sorted = epnos
-      .map(([type, epno]) => ({ epno, ordering: epnoOrderingValue(type as 2 | 3 | 4 | 5, epno) }))
-      .sort((itemA, itemB) => itemA.ordering - itemB.ordering)
+      .map(([type, epno]) => ({
+        epno,
+        ordering: epnoOrderingValue(
+          type as 2 | 3 | 4 | 5,
+          epno,
+        ),
+      }))
+      .sort(
+        (itemA, itemB) => itemA.ordering - itemB.ordering,
+      )
       .map((entry) => entry.epno)
-    expect(sorted).toEqual(["S1", "S20", "T1", "C1", "C2", "P1"])
+    expect(sorted).toEqual([
+      "S1",
+      "S20",
+      "T1",
+      "C1",
+      "C2",
+      "P1",
+    ])
   })
 
   test("others (type=6, O-prefix) sort numerically within their range", () => {
@@ -86,8 +103,13 @@ describe("epnoOrderingValue", () => {
     // O1 < O2 < ... < O13 — Number-stripping handles multi-digit.
     const epnos = ["O3", "O1", "O13", "O2", "O10"]
     const sorted = epnos
-      .map((epno) => ({ epno, ordering: epnoOrderingValue(6, epno) }))
-      .sort((itemA, itemB) => itemA.ordering - itemB.ordering)
+      .map((epno) => ({
+        epno,
+        ordering: epnoOrderingValue(6, epno),
+      }))
+      .sort(
+        (itemA, itemB) => itemA.ordering - itemB.ordering,
+      )
       .map((entry) => entry.epno)
     expect(sorted).toEqual(["O1", "O2", "O3", "O10", "O13"])
   })

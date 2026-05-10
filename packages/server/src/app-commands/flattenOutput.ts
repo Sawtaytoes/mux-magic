@@ -13,9 +13,12 @@ import {
 } from "rxjs"
 
 import { getActiveJobId } from "../api/logCapture.js"
-import { aclSafeCopyFile, type CopyOptions } from "../tools/aclSafeCopyFile.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
+import {
+  aclSafeCopyFile,
+  type CopyOptions,
+} from "../tools/aclSafeCopyFile.js"
 import { getFiles } from "../tools/getFiles.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { logInfo } from "../tools/logMessage.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { runTasks } from "../tools/taskScheduler.js"
@@ -40,52 +43,69 @@ export const flattenOutput = ({
   deleteSourceFolder = false,
   sourcePath,
 }: {
-  deleteSourceFolder?: boolean,
-  sourcePath: string,
+  deleteSourceFolder?: boolean
+  sourcePath: string
 }): Observable<string> => {
   const targetParentPath = dirname(sourcePath)
 
   return new Observable<string>((subscriber) => {
     const abortController = new AbortController()
 
-    const innerSubscription = (
-      getFiles({ sourcePath })
+    const innerSubscription = getFiles({ sourcePath })
       .pipe(
         // Materialize the file list so we can stat upfront for the
         // emitter's totalBytes, AND know totalFiles. Skipped if there's
         // no active job context (CLI mode) — the per-file copy still
         // runs, just without progress emission.
         toArray(),
-        concatMap((files) => (
+        concatMap((files) =>
           defer(async () => {
             const jobId = getActiveJobId()
-            const sizes = (
+            const sizes =
               jobId !== undefined
-              ? await Promise.all(files.map((file) => stat(file.fullPath).then((stats) => stats.size)))
-              : []
+                ? await Promise.all(
+                    files.map((file) =>
+                      stat(file.fullPath).then(
+                        (stats) => stats.size,
+                      ),
+                    ),
+                  )
+                : []
+            const totalBytes = sizes.reduce(
+              (sum, size) => sum + size,
+              0,
             )
-            const totalBytes = sizes.reduce((sum, size) => sum + size, 0)
-            const emitter = (
+            const emitter =
               jobId !== undefined
-              ? createProgressEmitter(jobId, { totalFiles: files.length, totalBytes })
-              : null
-            )
+                ? createProgressEmitter(jobId, {
+                    totalFiles: files.length,
+                    totalBytes,
+                  })
+                : null
             return { files, sizes, emitter }
-          })
-          .pipe(
-            concatMap(({ files, sizes, emitter }) => (
-              from(files.map((file, index) => ({ file, size: sizes[index] })))
-              .pipe(
+          }).pipe(
+            concatMap(({ files, sizes, emitter }) =>
+              from(
+                files.map((file, index) => ({
+                  file,
+                  size: sizes[index],
+                })),
+              ).pipe(
                 // Per-file copies go through the global Task scheduler —
                 // see copyFiles.ts for the full rationale.
                 runTasks(({ file, size }) => {
-                  const targetPath = join(targetParentPath, basename(file.fullPath))
-
-                  const tracker = (
-                    emitter !== null
-                    ? emitter.startFile(file.fullPath, size)
-                    : null
+                  const targetPath = join(
+                    targetParentPath,
+                    basename(file.fullPath),
                   )
+
+                  const tracker =
+                    emitter !== null
+                      ? emitter.startFile(
+                          file.fullPath,
+                          size,
+                        )
+                      : null
 
                   // aclSafeCopyFile.onProgress fires per chunk with
                   // ABSOLUTE bytesWritten across the lifetime of one
@@ -95,48 +115,53 @@ export const flattenOutput = ({
 
                   const copyOptions: CopyOptions = {
                     signal: abortController.signal,
-                    ...(
-                      tracker !== null
+                    ...(tracker !== null
                       ? {
                           onProgress: (event) => {
-                            const delta = event.bytesWritten - lastBytesWritten
-                            lastBytesWritten = event.bytesWritten
+                            const delta =
+                              event.bytesWritten -
+                              lastBytesWritten
+                            lastBytesWritten =
+                              event.bytesWritten
                             tracker.reportBytes(delta)
                           },
                         }
-                      : {}
-                    ),
+                      : {}),
                   }
 
-                  return defer(() => aclSafeCopyFile(
-                    file.fullPath,
-                    targetPath,
-                    copyOptions,
-                  ))
-                  .pipe(
+                  return defer(() =>
+                    aclSafeCopyFile(
+                      file.fullPath,
+                      targetPath,
+                      copyOptions,
+                    ),
+                  ).pipe(
                     tap(() => {
-                      logInfo("COPIED BACK", file.fullPath, targetPath)
+                      logInfo(
+                        "COPIED BACK",
+                        file.fullPath,
+                        targetPath,
+                      )
                     }),
                     map(() => targetPath),
                     finalize(() => tracker?.finish(size)),
                   )
                 }),
                 finalize(() => emitter?.finalize()),
-              )
-            )),
-          )
-        )),
+              ),
+            ),
+          ),
+        ),
         toArray(),
         concatMap(() => {
           if (deleteSourceFolder) {
-            return (
-              defer(() => rm(sourcePath, { recursive: true }))
-              .pipe(
-                tap(() => {
-                  logInfo("REMOVED OUTPUT FOLDER", sourcePath)
-                }),
-                map(() => sourcePath),
-              )
+            return defer(() =>
+              rm(sourcePath, { recursive: true }),
+            ).pipe(
+              tap(() => {
+                logInfo("REMOVED OUTPUT FOLDER", sourcePath)
+              }),
+              map(() => sourcePath),
             )
           }
           return of(sourcePath)
@@ -144,7 +169,6 @@ export const flattenOutput = ({
         logAndRethrow(flattenOutput),
       )
       .subscribe(subscriber)
-    )
 
     return () => {
       abortController.abort()

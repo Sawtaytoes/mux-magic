@@ -1,10 +1,17 @@
 import { XMLParser } from "fast-xml-parser"
 import { from, map, type Observable } from "rxjs"
 
-import type { AnidbAnime, AnidbEpisodeType, AnidbTitleType } from "../types/anidb.js"
-import { logAndSwallow } from "./logAndSwallow.js"
-import { findAnimeByQuery, loadAnimeIndex } from "./animeOfflineDatabase.js"
+import type {
+  AnidbAnime,
+  AnidbEpisodeType,
+  AnidbTitleType,
+} from "../types/anidb.js"
 import { getAnimeXml } from "./anidbApi.js"
+import {
+  findAnimeByQuery,
+  loadAnimeIndex,
+} from "./animeOfflineDatabase.js"
+import { logAndSwallow } from "./logAndSwallow.js"
 
 // AniDB HTTP API client identifiers — public, not secrets. Tied to the
 // software registered at https://anidb.net/software/3767 (display name
@@ -14,10 +21,10 @@ const CLIENT = "mediatools"
 const CLIENT_VER = "1"
 
 export type AnidbResult = {
-  aid: number,
-  episodes?: number,
-  name: string,
-  type?: string,
+  aid: number
+  episodes?: number
+  name: string
+  type?: string
 }
 
 // Search is backed by the manami-project anime-offline-database (see
@@ -26,21 +33,18 @@ export type AnidbResult = {
 // we route name → aid through the community-maintained JSON dataset.
 export const searchAnidb = (
   searchTerm: string,
-): Observable<AnidbResult[]> => (
-  from(loadAnimeIndex())
-  .pipe(
-    map((index) => (
-      findAnimeByQuery(index, searchTerm)
-      .map((entry) => ({
+): Observable<AnidbResult[]> =>
+  from(loadAnimeIndex()).pipe(
+    map((index) =>
+      findAnimeByQuery(index, searchTerm).map((entry) => ({
         aid: entry.aid,
         episodes: entry.episodes,
         name: entry.name,
         type: entry.type,
-      }))
-    )),
+      })),
+    ),
     logAndSwallow(searchAnidb),
   )
-)
 
 const xmlParser = new XMLParser({
   attributeNamePrefix: "",
@@ -48,49 +52,63 @@ const xmlParser = new XMLParser({
   textNodeName: "value",
 })
 
-const toArray = <T>(val: T | T[] | undefined): T[] => (
+const toArray = <T>(val: T | T[] | undefined): T[] =>
   val == null ? [] : Array.isArray(val) ? val : [val]
-)
 
 // Picks the most user-recognizable display name for an anime from
 // AniDB's titles list. Preference: official English → main (typically
 // romaji) → first official in any language → first available.
-export const pickAnidbSeriesName = (titles: AnidbAnime["titles"]): string => (
-  titles.find((title) => title.type === "official" && title.lang === "en")?.value
-  ?? titles.find((title) => title.type === "main")?.value
-  ?? titles.find((title) => title.type === "official")?.value
-  ?? titles[0]?.value
-  ?? ""
-)
+export const pickAnidbSeriesName = (
+  titles: AnidbAnime["titles"],
+): string =>
+  titles.find(
+    (title) =>
+      title.type === "official" && title.lang === "en",
+  )?.value ??
+  titles.find((title) => title.type === "main")?.value ??
+  titles.find((title) => title.type === "official")
+    ?.value ??
+  titles[0]?.value ??
+  ""
 
-export const parseAnidbAnimeXml = (xml: string): AnidbAnime | null => {
-  const root = (xmlParser.parse(xml) as { anime?: any }).anime
+export const parseAnidbAnimeXml = (
+  xml: string,
+): AnidbAnime | null => {
+  const root = (xmlParser.parse(xml) as { anime?: any })
+    .anime
   if (!root) return null
 
-  const titles = (
-    toArray<any>(root.titles?.title)
-    .map((titleNode) => ({
+  const titles = toArray<any>(root.titles?.title).map(
+    (titleNode) => ({
       lang: String(titleNode["xml:lang"] ?? ""),
-      type: String(titleNode.type ?? "synonym") as AnidbTitleType,
-      value: typeof titleNode === "string" ? titleNode : String(titleNode.value ?? ""),
-    }))
+      type: String(
+        titleNode.type ?? "synonym",
+      ) as AnidbTitleType,
+      value:
+        typeof titleNode === "string"
+          ? titleNode
+          : String(titleNode.value ?? ""),
+    }),
   )
 
-  const episodes = (
-    toArray<any>(root.episodes?.episode)
-    .map((ep) => ({
+  const episodes = toArray<any>(root.episodes?.episode).map(
+    (ep) => ({
       airdate: ep.airdate ? String(ep.airdate) : undefined,
-      epno: typeof ep.epno === "string" ? ep.epno : String(ep.epno?.value ?? ""),
-      length: ep.length != null ? Number(ep.length) : undefined,
-      titles: (
-        toArray<any>(ep.title)
-        .map((titleNode) => ({
-          lang: String(titleNode["xml:lang"] ?? ""),
-          value: typeof titleNode === "string" ? titleNode : String(titleNode.value ?? ""),
-        }))
-      ),
+      epno:
+        typeof ep.epno === "string"
+          ? ep.epno
+          : String(ep.epno?.value ?? ""),
+      length:
+        ep.length != null ? Number(ep.length) : undefined,
+      titles: toArray<any>(ep.title).map((titleNode) => ({
+        lang: String(titleNode["xml:lang"] ?? ""),
+        value:
+          typeof titleNode === "string"
+            ? titleNode
+            : String(titleNode.value ?? ""),
+      })),
       type: Number(ep.epno?.type ?? 1) as AnidbEpisodeType,
-    }))
+    }),
   )
 
   return { aid: Number(root.id), episodes, titles }
@@ -98,10 +116,13 @@ export const parseAnidbAnimeXml = (xml: string): AnidbAnime | null => {
 
 export const lookupAnidbById = (
   aid: number,
-): Observable<AnidbAnime | null> => (
-  from(getAnimeXml(aid, { client: CLIENT, clientver: CLIENT_VER }))
-  .pipe(
+): Observable<AnidbAnime | null> =>
+  from(
+    getAnimeXml(aid, {
+      client: CLIENT,
+      clientver: CLIENT_VER,
+    }),
+  ).pipe(
     map(parseAnidbAnimeXml),
     logAndSwallow(lookupAnidbById),
   )
-)

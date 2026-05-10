@@ -206,6 +206,5 @@ export const iso6392LanguageCodes = [
   "zul",
 ] as const
 
-export type Iso6392LanguageCode = (
-  typeof iso6392LanguageCodes[number]
-)
+export type Iso6392LanguageCode =
+  (typeof iso6392LanguageCodes)[number]

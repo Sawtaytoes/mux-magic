@@ -4,7 +4,10 @@ import { emitJobEvent } from "../../api/jobStore.js"
 import { getActiveJobId } from "../../api/logCapture.js"
 import { logInfo } from "../../tools/logMessage.js"
 
-export type RenameItem = { source: string; destination: string }
+export type RenameItem = {
+  source: string
+  destination: string
+}
 
 // Emits all `items` as results over `totalMs`, ticking every ~tickMs with
 // a progress event. Designed for rename-class commands where real-world
@@ -13,7 +16,7 @@ export type RenameItem = { source: string; destination: string }
 export const fastBatchRenameScenario = (
   items: RenameItem[],
   options: { label?: string; totalMs?: number } = {},
-): Observable<unknown> => (
+): Observable<unknown> =>
   new Observable<unknown>((subscriber) => {
     const label = options.label ?? "fake/rename"
     const totalMs = options.totalMs ?? 250
@@ -28,7 +31,8 @@ export const fastBatchRenameScenario = (
       tick++
       const ratio = tick / TICKS
       const filesDone = Math.round(ratio * items.length)
-      const current = items[Math.min(filesDone, items.length - 1)]
+      const current =
+        items[Math.min(filesDone, items.length - 1)]
 
       if (jobId) {
         emitJobEvent(jobId, {
@@ -36,7 +40,9 @@ export const fastBatchRenameScenario = (
           ratio,
           filesDone,
           filesTotal: items.length,
-          currentFiles: current ? [{ path: current.source, ratio: 1.0 }] : [],
+          currentFiles: current
+            ? [{ path: current.source, ratio: 1.0 }]
+            : [],
         })
       }
 
@@ -50,4 +56,3 @@ export const fastBatchRenameScenario = (
 
     return () => clearInterval(timer)
   })
-)

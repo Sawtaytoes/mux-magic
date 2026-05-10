@@ -11,22 +11,24 @@ import {
   tap,
   toArray,
 } from "rxjs"
-
-import {
-  type AssModificationRule,
-  type NamedPredicates,
-} from "../tools/assTypes.js"
 import {
   applyAssRules,
   buildFileMetadata,
-  filterRulesByWhen,
   type FileBatchMetadata,
+  filterRulesByWhen,
 } from "../tools/applyAssRules.js"
+import {
+  parseAssFile,
+  serializeAssFile,
+} from "../tools/assFileTools.js"
+import type {
+  AssModificationRule,
+  NamedPredicates,
+} from "../tools/assTypes.js"
 import { buildDefaultSubtitleModificationRules } from "../tools/buildDefaultSubtitleModificationRules.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { logInfo } from "../tools/logMessage.js"
-import { parseAssFile, serializeAssFile } from "../tools/assFileTools.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ModifySubtitleMetadataRequiredProps = {
@@ -41,10 +43,9 @@ type ModifySubtitleMetadataOptionalProps = {
   recursiveDepth?: number
 }
 
-export type ModifySubtitleMetadataProps = (
-  ModifySubtitleMetadataRequiredProps
-  & ModifySubtitleMetadataOptionalProps
-)
+export type ModifySubtitleMetadataProps =
+  ModifySubtitleMetadataRequiredProps &
+    ModifySubtitleMetadataOptionalProps
 
 // Read + parse all .ass files in the source directory once. The resulting
 // snapshots feed both `when:` predicate evaluation across the batch and
@@ -59,32 +60,35 @@ const readAndParseAssFiles = ({
   isRecursive: boolean
   recursiveDepth?: number
   sourcePath: string
-}) => (
+}) =>
   getFilesAtDepth({
-    depth: (
-      isRecursive
-      ? (recursiveDepth || 2)
-      : 0
-    ),
+    depth: isRecursive ? recursiveDepth || 2 : 0,
     sourcePath,
-  })
-  .pipe(
-    filter((fileInfo) => (
-      extname(fileInfo.fullPath).toLowerCase() === ".ass"
-    )),
-    concatMap((fileInfo) => (
-      defer(() => readFile(fileInfo.fullPath, "utf-8"))
-      .pipe(
+  }).pipe(
+    filter(
+      (fileInfo) =>
+        extname(fileInfo.fullPath).toLowerCase() === ".ass",
+    ),
+    concatMap((fileInfo) =>
+      defer(() =>
+        readFile(fileInfo.fullPath, "utf-8"),
+      ).pipe(
         map((content) => {
           const assFile = parseAssFile(content)
-          const fileMetadata = buildFileMetadata({ assFile, filePath: fileInfo.fullPath })
-          return { assFile, fileMetadata, filePath: fileInfo.fullPath }
+          const fileMetadata = buildFileMetadata({
+            assFile,
+            filePath: fileInfo.fullPath,
+          })
+          return {
+            assFile,
+            fileMetadata,
+            filePath: fileInfo.fullPath,
+          }
         }),
-      )
-    )),
+      ),
+    ),
     toArray(),
   )
-)
 
 export const modifySubtitleMetadata = ({
   hasDefaultRules,
@@ -102,68 +106,84 @@ export const modifySubtitleMetadata = ({
   // modifySubtitleMetadata step. When neither user-supplied rules nor
   // hasDefaultRules are present there's nothing to do.
   if (!isDefaultRulesEnabled && userRules.length === 0) {
-    logInfo("MODIFY SUBTITLE METADATA", "No rules provided — skipping (no-op).")
+    logInfo(
+      "MODIFY SUBTITLE METADATA",
+      "No rules provided — skipping (no-op).",
+    )
     return EMPTY
   }
 
-  return (
-    readAndParseAssFiles({ isRecursive, recursiveDepth, sourcePath })
-    .pipe(
-      switchMap((parsedFiles) => {
-        if (parsedFiles.length === 0) {
-          logInfo("MODIFY SUBTITLE METADATA", "No .ass files found — nothing to do.")
-          return EMPTY
-        }
-
-        const batchMetadata: FileBatchMetadata[] = parsedFiles.map(({ fileMetadata }) => fileMetadata)
-
-        const defaultRules: AssModificationRule[] = (
-          isDefaultRulesEnabled
-          ? buildDefaultSubtitleModificationRules(batchMetadata)
-          : []
+  return readAndParseAssFiles({
+    isRecursive,
+    recursiveDepth,
+    sourcePath,
+  }).pipe(
+    switchMap((parsedFiles) => {
+      if (parsedFiles.length === 0) {
+        logInfo(
+          "MODIFY SUBTITLE METADATA",
+          "No .ass files found — nothing to do.",
         )
+        return EMPTY
+      }
 
-        // Defaults run first so user rules can override them.
-        const combinedRules = [...defaultRules, ...userRules]
+      const batchMetadata: FileBatchMetadata[] =
+        parsedFiles.map(({ fileMetadata }) => fileMetadata)
 
-        const activeRules = filterRulesByWhen({
-          batchMetadata,
-          predicates: namedPredicates,
-          rules: combinedRules,
-        })
+      const defaultRules: AssModificationRule[] =
+        isDefaultRulesEnabled
+          ? buildDefaultSubtitleModificationRules(
+              batchMetadata,
+            )
+          : []
 
-        if (activeRules.length === 0) {
-          logInfo(
-            "MODIFY SUBTITLE METADATA",
-            "All rules filtered out by `when:` predicates — no files written.",
-          )
-          return EMPTY
-        }
+      // Defaults run first so user rules can override them.
+      const combinedRules = [...defaultRules, ...userRules]
 
-        return from(parsedFiles)
-        .pipe(
-          withFileProgress(({ assFile, fileMetadata, filePath }) => (
+      const activeRules = filterRulesByWhen({
+        batchMetadata,
+        predicates: namedPredicates,
+        rules: combinedRules,
+      })
+
+      if (activeRules.length === 0) {
+        logInfo(
+          "MODIFY SUBTITLE METADATA",
+          "All rules filtered out by `when:` predicates — no files written.",
+        )
+        return EMPTY
+      }
+
+      return from(parsedFiles).pipe(
+        withFileProgress(
+          ({ assFile, fileMetadata, filePath }) =>
             defer(() => {
               const updatedAssFile = applyAssRules({
                 assFile,
                 fileMetadata,
                 rules: activeRules,
               })
-              const updatedContent = serializeAssFile(updatedAssFile)
-              return writeFile(filePath, updatedContent, "utf-8")
-            })
-            .pipe(
+              const updatedContent =
+                serializeAssFile(updatedAssFile)
+              return writeFile(
+                filePath,
+                updatedContent,
+                "utf-8",
+              )
+            }).pipe(
               tap(() => {
-                logInfo("MODIFIED SUBTITLE METADATA", filePath)
+                logInfo(
+                  "MODIFIED SUBTITLE METADATA",
+                  filePath,
+                )
               }),
               // Per-file record so the API job's `results` is a useful list
               // of modified files instead of an array of nulls.
               map(() => ({ filePath })),
-            )
-          )),
-        )
-      }),
-      logAndRethrow(modifySubtitleMetadata),
-    )
+            ),
+        ),
+      )
+    }),
+    logAndRethrow(modifySubtitleMetadata),
   )
 }

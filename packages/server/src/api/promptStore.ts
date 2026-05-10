@@ -1,12 +1,14 @@
-const pendingPrompts = new Map<string, (index: number) => void>()
+const pendingPrompts = new Map<
+  string,
+  (index: number) => void
+>()
 
 export const registerPrompt = (
   promptId: string,
-): Promise<number> => (
+): Promise<number> =>
   new Promise<number>((resolve) => {
     pendingPrompts.set(promptId, resolve)
   })
-)
 
 export const resolvePrompt = (
   promptId: string,

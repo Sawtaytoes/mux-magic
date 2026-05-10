@@ -15,26 +15,21 @@ const jobContext = new AsyncLocalStorage<string>()
 export const withJobContext = <T>(
   jobId: string,
   fn: () => T,
-): T => (
-  jobContext.run(jobId, fn)
-)
+): T => jobContext.run(jobId, fn)
 
-export const getActiveJobId = (): string | undefined => (
+export const getActiveJobId = (): string | undefined =>
   jobContext.getStore()
-)
 
 // ---------------------------------------------------------------------------
 // ANSI strip
 // ---------------------------------------------------------------------------
 
-export const stripAnsi = (
-  str: string,
-): string => (
-  str.replace(
+export const stripAnsi = (ansiString: string): string =>
+  ansiString.replace(
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: I believe this hex character is required for identifying ANSI strings.
     /\x1B\[(?:[0-9]{1,3}(?:;[0-9]{1,2}(?:;[0-9]{1,3})?)?)?[mGKHFJsu]/g,
     "",
   )
-)
 
 // ---------------------------------------------------------------------------
 // Console patch — call installLogCapture() once at server startup.
@@ -56,27 +51,22 @@ const ts = (): string => {
   return `[${hh}:${mm}:${ss}.${ms}]`
 }
 
-const capture = (
-  args: unknown[],
-): void => {
+const capture = (args: unknown[]): void => {
   const jobId = jobContext.getStore()
 
   if (!jobId) {
     return
   }
 
-  const line = (
-    stripAnsi(
-      args
-      .map((arg) => (
-        (arg instanceof Error)
-        ? (arg.stack ?? arg.message)
-        : String(arg)
-      ))
-      .join(" ")
-    )
-    .trim()
-  )
+  const line = stripAnsi(
+    args
+      .map((arg) =>
+        arg instanceof Error
+          ? (arg.stack ?? arg.message)
+          : String(arg),
+      )
+      .join(" "),
+  ).trim()
 
   if (!line) {
     return
@@ -86,10 +76,13 @@ const capture = (
 }
 
 export const installLogCapture = (): void => {
-  for (const method of ["log", "info", "warn", "error"] as const) {
-    console[method] = (
-      ...args: unknown[]
-    ) => {
+  for (const method of [
+    "log",
+    "info",
+    "warn",
+    "error",
+  ] as const) {
+    console[method] = (...args: unknown[]) => {
       const jobId = jobContext.getStore()
       if (jobId) {
         capture(args)
@@ -101,7 +94,12 @@ export const installLogCapture = (): void => {
 }
 
 export const uninstallLogCapture = (): void => {
-  for (const method of ["log", "info", "warn", "error"] as const) {
+  for (const method of [
+    "log",
+    "info",
+    "warn",
+    "error",
+  ] as const) {
     console[method] = originalConsole[method]
   }
 }

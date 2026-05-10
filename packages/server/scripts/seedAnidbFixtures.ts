@@ -21,13 +21,19 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { firstValueFrom } from "rxjs"
-
-import { getAnidbCacheDir } from "../src/tools/getAnidbCacheDir.js"
 import { loadAnimeIndex } from "../src/tools/animeOfflineDatabase.js"
+import { getAnidbCacheDir } from "../src/tools/getAnidbCacheDir.js"
 import { lookupAnidbById } from "../src/tools/searchAnidb.js"
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
-const FIXTURES_DIR = join(scriptDir, "..", "src", "tools", "__fixtures__", "anidb")
+const FIXTURES_DIR = join(
+  scriptDir,
+  "..",
+  "src",
+  "tools",
+  "__fixtures__",
+  "anidb",
+)
 const CACHE_DIR = getAnidbCacheDir()
 
 // Aids chosen to cover both shape variants in the parser:
@@ -36,17 +42,25 @@ const CACHE_DIR = getAnidbCacheDir()
 const AIDS = [7206, 11370]
 
 const main = async () => {
-  console.log("> loadAnimeIndex() (downloads manami dataset if stale)")
+  console.log(
+    "> loadAnimeIndex() (downloads manami dataset if stale)",
+  )
   const index = await loadAnimeIndex()
-  console.log(`  ${index.length} anime entries with AniDB ids`)
+  console.log(
+    `  ${index.length} anime entries with AniDB ids`,
+  )
 
   for (const aid of AIDS) {
     console.log(`> lookupAnidbById(${aid})`)
     const anime = await firstValueFrom(lookupAnidbById(aid))
-    console.log(`  episodes=${anime?.episodes.length} titles=${anime?.titles.length}`)
+    console.log(
+      `  episodes=${anime?.episodes.length} titles=${anime?.titles.length}`,
+    )
   }
 
-  await mkdir(join(FIXTURES_DIR, "anime"), { recursive: true })
+  await mkdir(join(FIXTURES_DIR, "anime"), {
+    recursive: true,
+  })
 
   for (const aid of AIDS) {
     const src = join(CACHE_DIR, "anime", `${aid}.xml`)

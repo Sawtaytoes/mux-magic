@@ -1,18 +1,10 @@
-import path, {
-  dirname,
-  join,
-} from "node:path"
-import {
-  concatMap,
-  endWith,
-} from "rxjs";
+import { dirname, join } from "node:path"
+import { concatMap, endWith } from "rxjs"
 
-import { type Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
+import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { SUBTITLED_FOLDER_NAME } from "../tools/outputFolderNames.js"
-import { runMkvMerge } from "./runMkvMerge.js";
-import {
-  defineLanguageForUndefinedTracks,
-} from "./defineLanguageForUndefinedTracks.js";
+import { defineLanguageForUndefinedTracks } from "./defineLanguageForUndefinedTracks.js"
+import { runMkvMerge } from "./runMkvMerge.js"
 
 export const subtitledFolderName = SUBTITLED_FOLDER_NAME
 
@@ -29,7 +21,9 @@ type MergeSubtitlesMkvMergeOptionalProps = {
   outputFolderName?: string
 }
 
-export type MergeSubtitlesMkvMergeProps = MergeSubtitlesMkvMergeRequiredProps & MergeSubtitlesMkvMergeOptionalProps
+export type MergeSubtitlesMkvMergeProps =
+  MergeSubtitlesMkvMergeRequiredProps &
+    MergeSubtitlesMkvMergeOptionalProps
 
 export const mergeSubtitlesMkvMergeDefaultProps = {
   outputFolderName: SUBTITLED_FOLDER_NAME,
@@ -43,7 +37,7 @@ export const mergeSubtitlesMkvMerge = ({
   outputFolderName = mergeSubtitlesMkvMergeDefaultProps.outputFolderName,
   subtitlesFilesPaths,
   subtitlesLanguage,
-}: MergeSubtitlesMkvMergeProps) => (
+}: MergeSubtitlesMkvMergeProps) =>
   runMkvMerge({
     args: [
       "--no-subtitles",
@@ -56,93 +50,43 @@ export const mergeSubtitlesMkvMerge = ({
       "--no-buttons",
       "--no-global-tags",
 
-      ...(
-        offsetInMilliseconds
-        ? [
-          "--sync",
-          `-1:${offsetInMilliseconds}`,
-        ]
-        : []
-      ),
+      ...(offsetInMilliseconds
+        ? ["--sync", `-1:${offsetInMilliseconds}`]
+        : []),
 
       ...subtitlesFilesPaths,
 
-      ...(
-        chaptersFilePath
-        ? [
-          "--chapters",
-          chaptersFilePath,
-        ]
-        : []
-      ),
+      ...(chaptersFilePath
+        ? ["--chapters", chaptersFilePath]
+        : []),
 
-      ...(
-        (
-          attachmentFilePaths
-          || []
-        )
-        .flatMap((
-          attachmentFilePath,
-        ) => ([
+      ...(attachmentFilePaths || []).flatMap(
+        (attachmentFilePath) => [
           "--attach-file",
           attachmentFilePath,
-        ]))
+        ],
       ),
     ],
-    outputFilePath: (
-      destinationFilePath
-      .replace(
-        (
-          dirname(
-            destinationFilePath
-          )
-        ),
-        (
-          join(
-            (
-              dirname(
-                destinationFilePath
-              )
-            ),
-            outputFolderName,
-          )
-        ),
-      )
-    )
-  })
-  .pipe(
-    concatMap(() => (
+    outputFilePath: destinationFilePath.replace(
+      dirname(destinationFilePath),
+      join(dirname(destinationFilePath), outputFolderName),
+    ),
+  }).pipe(
+    concatMap(() =>
       defineLanguageForUndefinedTracks({
-        filePath: (
-          destinationFilePath
-          .replace(
-            (
-              dirname(
-                destinationFilePath
-              )
-            ),
-            (
-              join(
-                (
-                  dirname(
-                    destinationFilePath
-                  )
-                ),
-                outputFolderName,
-              )
-            ),
-          )
+        filePath: destinationFilePath.replace(
+          dirname(destinationFilePath),
+          join(
+            dirname(destinationFilePath),
+            outputFolderName,
+          ),
         ),
         subtitleLanguage: subtitlesLanguage,
         trackType: "subtitles",
-      })
-      .pipe(
+      }).pipe(
         // TODO: Remove this. It's causing 2 logs instead of 1.
         // This would normally go to the next step in the pipeline, but there are sometimes no "und" language tracks, so we need to utilize this `endWith` to continue in the event the `filter` stopped us.
-        endWith(
-          null
-        ),
-      )
-    )),
+        endWith(null),
+      ),
+    ),
   )
-)

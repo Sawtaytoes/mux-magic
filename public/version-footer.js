@@ -3,9 +3,7 @@
 // `gitSha: "dev"` when the prebuild hook didn't run, so this never
 // throws in dev). Format mirrors the boot-banner one-liner so the same
 // string appears in three places: footer, console, and `curl /version`.
-(function () {
-  "use strict"
-
+;(() => {
   const formatBuildTime = (iso) => {
     if (!iso) return "dev"
 
@@ -15,21 +13,26 @@
       const d = new Date(iso)
       const pad = (n) => String(n).padStart(2, "0")
       return (
-        d.getUTCFullYear()
-        + "-" + pad(d.getUTCMonth() + 1)
-        + "-" + pad(d.getUTCDate())
-        + " " + pad(d.getUTCHours())
-        + ":" + pad(d.getUTCMinutes())
-        + " UTC"
+        d.getUTCFullYear() +
+        "-" +
+        pad(d.getUTCMonth() + 1) +
+        "-" +
+        pad(d.getUTCDate()) +
+        " " +
+        pad(d.getUTCHours()) +
+        ":" +
+        pad(d.getUTCMinutes()) +
+        " UTC"
       )
-    }
-    catch {
+    } catch {
       return iso
     }
   }
 
   const ensureFooter = () => {
-    const existing = document.getElementById("build-version-footer")
+    const existing = document.getElementById(
+      "build-version-footer",
+    )
     if (existing) return existing
 
     const el = document.createElement("div")
@@ -50,21 +53,24 @@
     ].join(";")
     el.textContent = "loading…"
 
-    const mount = () => document.body && document.body.appendChild(el)
+    const mount = () => document.body?.appendChild(el)
 
     if (document.body) mount()
-    else document.addEventListener("DOMContentLoaded", mount)
+    else
+      document.addEventListener("DOMContentLoaded", mount)
 
     return el
   }
 
   const render = (data) => {
     const el = ensureFooter()
-    el.textContent = (
-      "git: " + (data.gitShaShort || data.gitSha || "unknown")
-      + " · built " + formatBuildTime(data.buildTime)
-      + " · node " + (data.nodeVersion || "unknown")
-    )
+    el.textContent =
+      "git: " +
+      (data.gitShaShort || data.gitSha || "unknown") +
+      " · built " +
+      formatBuildTime(data.buildTime) +
+      " · node " +
+      (data.nodeVersion || "unknown")
   }
 
   const renderError = () => {
@@ -74,7 +80,8 @@
 
   fetch("/version", { cache: "no-store" })
     .then((response) => {
-      if (!response.ok) throw new Error("HTTP " + response.status)
+      if (!response.ok)
+        throw new Error(`HTTP ${response.status}`)
       return response.json()
     })
     .then(render)

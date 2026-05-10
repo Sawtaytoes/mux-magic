@@ -12,13 +12,16 @@ const TICK_MS = 800
 
 export const inProgressScenario = (
   body: unknown,
-  options: { tickMs?: number, label?: string } = {},
-): Observable<unknown> => (
-  new Observable<unknown>((subscriber) => {
+  options: { tickMs?: number; label?: string } = {},
+): Observable<unknown> =>
+  new Observable<unknown>((_subscriber) => {
     const tickMs = options.tickMs ?? TICK_MS
     const label = options.label ?? "fake-in-progress"
 
-    logInfo(label, "Starting fake long-running job (cancel to terminate).")
+    logInfo(
+      label,
+      "Starting fake long-running job (cancel to terminate).",
+    )
     logInfo(label, `Body: ${JSON.stringify(body)}`)
 
     const jobId = getActiveJobId()
@@ -35,7 +38,10 @@ export const inProgressScenario = (
           type: "progress",
           ratio,
           currentFiles: [
-            { path: `/fake/path/to/in-flight-${tick}.mkv`, ratio },
+            {
+              path: `/fake/path/to/in-flight-${tick}.mkv`,
+              ratio,
+            },
           ],
         })
       }
@@ -47,4 +53,3 @@ export const inProgressScenario = (
       clearInterval(timer)
     }
   })
-)

@@ -1,10 +1,7 @@
-import {
-  dirname,
-  join,
-} from "node:path"
+import { dirname, join } from "node:path"
 
 import { SPLITS_FOLDER_NAME } from "../tools/outputFolderNames.js"
-import { runMkvMerge } from "./runMkvMerge.js";
+import { runMkvMerge } from "./runMkvMerge.js"
 
 export const splitsFolderName = SPLITS_FOLDER_NAME
 
@@ -17,7 +14,9 @@ type SplitChaptersMkvMergeOptionalProps = {
   outputFolderName?: string
 }
 
-export type SplitChaptersMkvMergeProps = SplitChaptersMkvMergeRequiredProps & SplitChaptersMkvMergeOptionalProps
+export type SplitChaptersMkvMergeProps =
+  SplitChaptersMkvMergeRequiredProps &
+    SplitChaptersMkvMergeOptionalProps
 
 export const splitChaptersMkvMergeDefaultProps = {
   outputFolderName: SPLITS_FOLDER_NAME,
@@ -27,7 +26,7 @@ export const splitChaptersMkvMerge = ({
   chapterSplits,
   filePath,
   outputFolderName = splitChaptersMkvMergeDefaultProps.outputFolderName,
-}: SplitChaptersMkvMergeProps) => (
+}: SplitChaptersMkvMergeProps) =>
   runMkvMerge({
     args: [
       "--split",
@@ -35,25 +34,8 @@ export const splitChaptersMkvMerge = ({
 
       filePath,
     ],
-    outputFilePath: (
-      filePath
-      .replace(
-        (
-          dirname(
-            filePath
-          )
-        ),
-        (
-          join(
-            (
-              dirname(
-                filePath
-              )
-            ),
-            outputFolderName,
-          )
-        ),
-      )
-    )
+    outputFilePath: filePath.replace(
+      dirname(filePath),
+      join(dirname(filePath), outputFolderName),
+    ),
   })
-)

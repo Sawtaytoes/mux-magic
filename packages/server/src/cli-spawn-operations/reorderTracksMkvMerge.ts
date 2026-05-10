@@ -1,22 +1,12 @@
-import {
-  mkdir,
-} from "node:fs/promises";
-import {
-  dirname,
-} from "node:path"
-import {
-  concatMap,
-  from,
-  map,
-  of,
-} from "rxjs";
-
-import { runMkvMerge } from "./runMkvMerge.js";
-import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js";
-
+import { mkdir } from "node:fs/promises"
+import { dirname } from "node:path"
+import { concatMap, from, map, of } from "rxjs"
+import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js"
 import { REORDERED_TRACKS_FOLDER_NAME } from "../tools/outputFolderNames.js"
+import { runMkvMerge } from "./runMkvMerge.js"
 
-export const reorderTracksFolderName = REORDERED_TRACKS_FOLDER_NAME
+export const reorderTracksFolderName =
+  REORDERED_TRACKS_FOLDER_NAME
 
 export const reorderTracksMkvMerge = ({
   audioTrackIndexes,
@@ -28,88 +18,42 @@ export const reorderTracksMkvMerge = ({
   filePath: string
   subtitlesTrackIndexes: number[]
   videoTrackIndexes: number[]
-}) => (
+}) =>
   of(
     addFolderNameBeforeFilename({
       filePath,
       folderName: reorderTracksFolderName,
-    })
-  )
-  .pipe(
-    concatMap((
-      outputFilePath,
-    ) => (
+    }),
+  ).pipe(
+    concatMap((outputFilePath) =>
       from(
-        mkdir(
-          (
-            dirname(
-              outputFilePath
-            )
-          ),
-          { recursive: true },
-        )
-      )
-      .pipe(
-        map(() => (
-          outputFilePath
-        )),
-      )
-    )),
-    concatMap((
-      outputFilePath,
-    ) => (
+        mkdir(dirname(outputFilePath), { recursive: true }),
+      ).pipe(map(() => outputFilePath)),
+    ),
+    concatMap((outputFilePath) =>
       runMkvMerge({
         args: [
           filePath,
 
           "--track-order",
-          (
-            videoTrackIndexes
-            .map((
-              videoTrackIndex,
-            ) => (
-              "0:"
-              .concat(
-                String(
-                  videoTrackIndex
-                )
-              )
-            ))
-            .concat(
-              audioTrackIndexes
-              .map((
-                audioTrackIndex,
-              ) => (
-                "0:"
-                .concat(
-                  String(
-                    audioTrackIndex
-                  )
-                )
-              ))
+          videoTrackIndexes
+            .map((videoTrackIndex) =>
+              "0:".concat(String(videoTrackIndex)),
             )
             .concat(
-              (
-                subtitlesTrackIndexes
-                .map((
-                  subtitlesTrackIndex,
-                ) => (
-                  "0:"
-                  .concat(
-                    String(
-                      subtitlesTrackIndex
-                    )
-                  )
-                ))
+              audioTrackIndexes.map((audioTrackIndex) =>
+                "0:".concat(String(audioTrackIndex)),
               ),
             )
-            .join(
-              ","
+            .concat(
+              subtitlesTrackIndexes.map(
+                (subtitlesTrackIndex) =>
+                  "0:".concat(String(subtitlesTrackIndex)),
+              ),
             )
-          ),
+            .join(","),
         ],
         outputFilePath,
-      })
-    )),
+      }),
+    ),
   )
-)

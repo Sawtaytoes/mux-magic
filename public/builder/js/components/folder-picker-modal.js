@@ -11,7 +11,7 @@
 //   folderPicker.selectAll()
 //   folderPicker.confirm()
 
-const MODAL_ID = 'folder-picker-modal'
+const MODAL_ID = "folder-picker-modal"
 
 const state = {
   stepId: null,
@@ -29,9 +29,10 @@ function ensureModalMounted() {
     return getModal()
   }
 
-  const modal = document.createElement('div')
+  const modal = document.createElement("div")
   modal.id = MODAL_ID
-  modal.className = 'hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/70'
+  modal.className =
+    "hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/70"
   modal.innerHTML = `
     <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col max-h-[80vh]">
       <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700 shrink-0">
@@ -57,7 +58,7 @@ function ensureModalMounted() {
     </div>
   `
 
-  modal.addEventListener('click', (event) => {
+  modal.addEventListener("click", (event) => {
     if (event.target === modal) {
       close()
     }
@@ -68,13 +69,14 @@ function ensureModalMounted() {
 }
 
 function renderBody() {
-  const body = document.getElementById('folder-picker-body')
+  const body = document.getElementById("folder-picker-body")
   if (!body) {
     return
   }
 
   if (state.isLoading) {
-    body.innerHTML = '<p class="text-xs text-slate-500 italic">Loading folders…</p>'
+    body.innerHTML =
+      '<p class="text-xs text-slate-500 italic">Loading folders…</p>'
     return
   }
 
@@ -84,28 +86,33 @@ function renderBody() {
   }
 
   if (!state.entries.length) {
-    body.innerHTML = '<p class="text-xs text-slate-500 italic">No subdirectories found at this path.</p>'
+    body.innerHTML =
+      '<p class="text-xs text-slate-500 italic">No subdirectories found at this path.</p>'
     return
   }
 
-  body.innerHTML = state.entries.map((name) => {
-    const isSelected = state.selected.has(name)
-    const safeAttr = name.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
-    const checkBox = isSelected
-      ? `<span class="w-3.5 h-3.5 shrink-0 rounded flex items-center justify-center bg-blue-500 border border-blue-400 text-white text-[10px] leading-none">✓</span>`
-      : `<span class="w-3.5 h-3.5 shrink-0 rounded border border-slate-500 bg-slate-700"></span>`
-    return `
+  body.innerHTML = state.entries
+    .map((name) => {
+      const isSelected = state.selected.has(name)
+      const safeAttr = name
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+      const checkBox = isSelected
+        ? `<span class="w-3.5 h-3.5 shrink-0 rounded flex items-center justify-center bg-blue-500 border border-blue-400 text-white text-[10px] leading-none">✓</span>`
+        : `<span class="w-3.5 h-3.5 shrink-0 rounded border border-slate-500 bg-slate-700"></span>`
+      return `
       <button data-folder-name="${safeAttr}" onclick="folderPicker.toggleFolderFromEl(this)"
         class="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-xs transition-colors ${
           isSelected
-          ? 'bg-blue-600/30 border border-blue-500/50 text-blue-200'
-          : 'hover:bg-slate-800 border border-transparent text-slate-300'
+            ? "bg-blue-600/30 border border-blue-500/50 text-blue-200"
+            : "hover:bg-slate-800 border border-transparent text-slate-300"
         }">
         ${checkBox}
         <span class="font-mono truncate">📁 ${safeAttr}</span>
       </button>
     `
-  }).join('')
+    })
+    .join("")
 }
 
 async function loadFolders(sourcePath) {
@@ -115,11 +122,14 @@ async function loadFolders(sourcePath) {
   renderBody()
 
   try {
-    const response = await fetch('/queries/listDirectoryEntries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: sourcePath }),
-    })
+    const response = await fetch(
+      "/queries/listDirectoryEntries",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: sourcePath }),
+      },
+    )
 
     if (!response.ok) {
       throw new Error(`Server error ${response.status}`)
@@ -150,11 +160,15 @@ function open({ stepId, fieldName, sourceValue }) {
   state.fieldName = fieldName
 
   const step = window.mediaTools?.findStepById?.(stepId)
-  const currentFolders = Array.isArray(step?.params?.[fieldName]) ? step.params[fieldName] : []
+  const currentFolders = Array.isArray(
+    step?.params?.[fieldName],
+  )
+    ? step.params[fieldName]
+    : []
   state.selected = new Set(currentFolders)
 
   const modal = getModal()
-  modal.classList.remove('hidden')
+  modal.classList.remove("hidden")
 
   if (sourceValue) {
     loadFolders(sourceValue)
@@ -163,16 +177,17 @@ function open({ stepId, fieldName, sourceValue }) {
     state.error = null
     state.entries = []
     renderBody()
-    document.getElementById('folder-picker-body').innerHTML = (
+    document.getElementById(
+      "folder-picker-body",
+    ).innerHTML =
       '<p class="text-xs text-slate-500 italic">Set a Source Path first to browse folders.</p>'
-    )
   }
 }
 
 function close() {
   const modal = getModal()
   if (modal) {
-    modal.classList.add('hidden')
+    modal.classList.add("hidden")
   }
   state.stepId = null
   state.fieldName = null
@@ -189,7 +204,9 @@ function toggleFolder(name) {
 }
 
 function toggleFolderFromEl(el) {
-  const name = el.closest('[data-folder-name]')?.getAttribute('data-folder-name')
+  const name = el
+    .closest("[data-folder-name]")
+    ?.getAttribute("data-folder-name")
   if (name !== null && name !== undefined) {
     toggleFolder(name)
   }
@@ -205,23 +222,36 @@ function confirm() {
     close()
     return
   }
-  const folders = [...state.selected].sort((a, b) => a.localeCompare(b))
-  window.setParamAndRender(state.stepId, state.fieldName, folders.length ? folders : undefined)
+  const folders = [...state.selected].sort((a, b) =>
+    a.localeCompare(b),
+  )
+  window.setParamAndRender(
+    state.stepId,
+    state.fieldName,
+    folders.length ? folders : undefined,
+  )
   close()
 }
 
 // Read step/field/sourcePath from data attributes so Windows backslashes in
 // paths are never embedded as JS string literals in onclick attributes.
 function openFromEl(el) {
-  const stepId = el.getAttribute('data-step-id') ?? ''
-  const fieldName = el.getAttribute('data-field-name') ?? ''
-  const sourceField = el.getAttribute('data-source-field') ?? ''
+  const stepId = el.getAttribute("data-step-id") ?? ""
+  const fieldName = el.getAttribute("data-field-name") ?? ""
+  const sourceField =
+    el.getAttribute("data-source-field") ?? ""
   // Resolve source path live from step state so stale data-source-value
   // attributes (which only update on renderAll) don't produce wrong results.
   const step = window.mediaTools?.findStepById?.(stepId)
-  const sourceValue = sourceField && step
-    ? (window.mediaTools?.getLinkedValue?.(step, sourceField) ?? step.params?.[sourceField] ?? '')
-    : ''
+  const sourceValue =
+    sourceField && step
+      ? (window.mediaTools?.getLinkedValue?.(
+          step,
+          sourceField,
+        ) ??
+        step.params?.[sourceField] ??
+        "")
+      : ""
   open({ stepId, fieldName, sourceValue })
 }
 
@@ -230,14 +260,29 @@ function removeFolder(stepId, fieldName, folderName) {
   if (!step) {
     return
   }
-  const current = Array.isArray(step.params[fieldName]) ? step.params[fieldName] : []
+  const current = Array.isArray(step.params[fieldName])
+    ? step.params[fieldName]
+    : []
   const updated = current.filter((f) => f !== folderName)
-  window.setParamAndRender(stepId, fieldName, updated.length ? updated : undefined)
+  window.setParamAndRender(
+    stepId,
+    fieldName,
+    updated.length ? updated : undefined,
+  )
 }
 
 export function registerFolderPickerGlobals() {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return
   }
-  window.folderPicker = { open, openFromEl, close, toggleFolder, toggleFolderFromEl, selectAll, confirm, removeFolder }
+  window.folderPicker = {
+    open,
+    openFromEl,
+    close,
+    toggleFolder,
+    toggleFolderFromEl,
+    selectAll,
+    confirm,
+    removeFolder,
+  }
 }

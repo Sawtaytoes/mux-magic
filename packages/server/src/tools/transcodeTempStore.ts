@@ -1,13 +1,6 @@
 import { createHash } from "node:crypto"
-import {
-  mkdirSync,
-  rmSync,
-  statSync,
-} from "node:fs"
-import {
-  rm,
-  stat,
-} from "node:fs/promises"
+import { mkdirSync, rmSync, statSync } from "node:fs"
+import { rm, stat } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -66,9 +59,8 @@ const parseMaxBytes = (): number => {
   return parsed
 }
 
-const cacheDirectoryPath = (): string => (
+const cacheDirectoryPath = (): string =>
   join(tmpdir(), "media-tools-transcode-cache")
-)
 
 let isCacheDirectoryEnsured = false
 const ensureCacheDirectory = (): string => {
@@ -80,81 +72,74 @@ const ensureCacheDirectory = (): string => {
   return directoryPath
 }
 
-const extensionForCodec = (_codec: TranscodeCodec): string => ".mp4"
+const extensionForCodec = (
+  _codec: TranscodeCodec,
+): string => ".mp4"
 
-export const mimeTypeForCodec = (_codec: TranscodeCodec): string => "video/mp4"
+export const mimeTypeForCodec = (
+  _codec: TranscodeCodec,
+): string => "video/mp4"
 
-const hashKey = (key: TranscodeCacheKey): string => (
+const hashKey = (key: TranscodeCacheKey): string =>
   createHash("sha256")
-  .update(key.absPath)
-  .update("|")
-  .update(key.codec)
-  .update("|")
-  .update(key.bitrate)
-  .update("|")
-  .update(String(key.audioStream))
-  .digest("hex")
-)
+    .update(key.absPath)
+    .update("|")
+    .update(key.codec)
+    .update("|")
+    .update(key.bitrate)
+    .update("|")
+    .update(String(key.audioStream))
+    .digest("hex")
 
 const buildTempPath = (key: TranscodeCacheKey): string => {
   const directoryPath = ensureCacheDirectory()
   const hashed = hashKey(key)
-  return join(directoryPath, `${hashed}${extensionForCodec(key.codec)}`)
+  return join(
+    directoryPath,
+    `${hashed}${extensionForCodec(key.codec)}`,
+  )
 }
 
 const entries = new Map<string, CacheEntry>()
 let maxTotalBytes: number = parseMaxBytes()
 
 const evictIfOverCap = async (): Promise<void> => {
-  const currentTotal = (
-    Array
-    .from(entries.values())
-    .reduce(
-      (total, entry) => (
-        entry.isReady
-        ? total + entry.sizeBytes
-        : total
-      ),
-      0,
-    )
+  const currentTotal = Array.from(entries.values()).reduce(
+    (total, entry) =>
+      entry.isReady ? total + entry.sizeBytes : total,
+    0,
   )
   if (currentTotal <= maxTotalBytes) {
     return
   }
   // Sort idle (refCount === 0) ready entries by lastAccess ascending so
   // the oldest go first.
-  const evictionCandidates = (
-    Array
-    .from(entries.values())
-    .filter((entry) => (
-      entry.isReady
-      && entry.refCount === 0
-    ))
-    .sort((left, right) => left.lastAccess - right.lastAccess)
-  )
+  const evictionCandidates = Array.from(entries.values())
+    .filter(
+      (entry) => entry.isReady && entry.refCount === 0,
+    )
+    .sort(
+      (left, right) => left.lastAccess - right.lastAccess,
+    )
   let runningTotal = currentTotal
   // Use a plain index walk via reduce so we stay within the AGENTS.md
   // "no for loops" rule. Each iteration deletes one entry until we're
   // under cap or out of candidates.
-  await evictionCandidates
-  .reduce<Promise<void>>(
-    (previous, entry) => (
-      previous
-      .then(async () => {
+  await evictionCandidates.reduce<Promise<void>>(
+    (previous, entry) =>
+      previous.then(async () => {
         if (runningTotal <= maxTotalBytes) {
           return
         }
         try {
           await rm(entry.tempPath, { force: true })
-        }
-        catch {
+        } catch {
           // best-effort eviction; if the file is already gone we can
           // still drop the in-memory bookkeeping.
         }
         entries.delete(entry.hashedKey)
         runningTotal -= entry.sizeBytes
-      })
-    ),
+      }),
     Promise.resolve(),
   )
 }
@@ -165,7 +150,9 @@ export const transcodeTempStore = {
   // for the same key share the same in-flight or completed file. The
   // returned `isFresh` flag is `true` when this caller is the first to
   // acquire — i.e. responsible for spawning the ffmpeg encode.
-  acquire: (key: TranscodeCacheKey): {
+  acquire: (
+    key: TranscodeCacheKey,
+  ): {
     isFresh: boolean
     tempPath: string
   } => {
@@ -193,7 +180,9 @@ export const transcodeTempStore = {
   // so subsequent acquire() calls treat it as a cache hit and the LRU
   // evictor can include it in size accounting. Falls back to stat()'ing
   // the file when the caller doesn't already know the size.
-  markReady: async (key: TranscodeCacheKey): Promise<void> => {
+  markReady: async (
+    key: TranscodeCacheKey,
+  ): Promise<void> => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {
@@ -203,8 +192,7 @@ export const transcodeTempStore = {
     try {
       const stats = await stat(entry.tempPath)
       sizeBytes = stats.size
-    }
-    catch {
+    } catch {
       // If the file vanished between encode-completion and markReady,
       // drop the bookkeeping entirely so a retry can re-encode cleanly.
       entries.delete(hashed)
@@ -220,7 +208,9 @@ export const transcodeTempStore = {
   // ready) and the refcount drops to zero, the on-disk file is unlinked
   // immediately because nobody will ever serve a half-written file —
   // a fresh acquire() will redo the encode.
-  release: async (key: TranscodeCacheKey): Promise<void> => {
+  release: async (
+    key: TranscodeCacheKey,
+  ): Promise<void> => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {
@@ -231,8 +221,7 @@ export const transcodeTempStore = {
     if (!entry.isReady && entry.refCount === 0) {
       try {
         await rm(entry.tempPath, { force: true })
-      }
-      catch {
+      } catch {
         // file may not have been created yet — fine.
       }
       entries.delete(hashed)
@@ -246,7 +235,9 @@ export const transcodeTempStore = {
   // Removes an entry's on-disk file and bookkeeping unconditionally.
   // Intended for the encoder's failure path so a partial cache file
   // doesn't get served by a retry.
-  invalidate: async (key: TranscodeCacheKey): Promise<void> => {
+  invalidate: async (
+    key: TranscodeCacheKey,
+  ): Promise<void> => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {
@@ -255,8 +246,7 @@ export const transcodeTempStore = {
     entries.delete(hashed)
     try {
       await rm(entry.tempPath, { force: true })
-    }
-    catch {
+    } catch {
       // already gone — fine.
     }
   },
@@ -271,9 +261,10 @@ export const transcodeTempStore = {
 
   // Test helper: peek at the current entries. Returns a fresh array so
   // callers can't mutate the underlying Map.
-  __snapshotForTests: (): CacheEntry[] => (
-    Array.from(entries.values()).map((entry) => ({ ...entry }))
-  ),
+  __snapshotForTests: (): CacheEntry[] =>
+    Array.from(entries.values()).map((entry) => ({
+      ...entry,
+    })),
 
   // Best-effort cleanup of the on-disk cache directory. Wired into a
   // process.on('exit') / beforeExit listener by the route module so a
@@ -285,15 +276,16 @@ export const transcodeTempStore = {
       if (!stats.isDirectory()) {
         return
       }
-    }
-    catch {
+    } catch {
       return
     }
     // Synchronous + best-effort — process is exiting, can't await.
     try {
-      rmSync(directoryPath, { force: true, recursive: true })
-    }
-    catch {
+      rmSync(directoryPath, {
+        force: true,
+        recursive: true,
+      })
+    } catch {
       // nothing to do during shutdown.
     }
   },

@@ -1,5 +1,9 @@
 import { readdir, stat } from "node:fs/promises"
-import { extname, join, sep as nativePathSeparator } from "node:path"
+import {
+  extname,
+  join,
+  sep as nativePathSeparator,
+} from "node:path"
 
 import { lastValueFrom } from "rxjs"
 
@@ -60,9 +64,8 @@ const VIDEO_EXTENSIONS = new Set([
   ".wmv",
 ])
 
-const isVideoExtension = (name: string): boolean => (
+const isVideoExtension = (name: string): boolean =>
   VIDEO_EXTENSIONS.has(extname(name).toLowerCase())
-)
 
 // Concurrent map with a fixed worker count. AsyncPool-style — keeps a
 // constant N inflight, settles via a per-item Promise resolver.
@@ -89,15 +92,26 @@ const mapWithConcurrency = async <T, U>(
   return results
 }
 
-const computeDuration = async (filePath: string): Promise<string | null> => {
+const computeDuration = async (
+  filePath: string,
+): Promise<string | null> => {
   try {
-    const mediaInfo = await lastValueFrom(getMediaInfo(filePath))
+    const mediaInfo = await lastValueFrom(
+      getMediaInfo(filePath),
+    )
     if (!mediaInfo) return null
-    const seconds = await lastValueFrom(getFileDuration({ mediaInfo }))
-    if (typeof seconds !== "number" || !Number.isFinite(seconds)) return null
-    return convertDurationToDvdCompareTimecode(Math.round(seconds))
-  }
-  catch {
+    const seconds = await lastValueFrom(
+      getFileDuration({ mediaInfo }),
+    )
+    if (
+      typeof seconds !== "number" ||
+      !Number.isFinite(seconds)
+    )
+      return null
+    return convertDurationToDvdCompareTimecode(
+      Math.round(seconds),
+    )
+  } catch {
     return null
   }
 }
@@ -125,7 +139,9 @@ export const listFilesWithMetadata = async (
 ): Promise<ListFilesWithMetadataResult> => {
   const validatedPath = validateReadablePath(path)
 
-  const dirEntries = await readdir(validatedPath, { withFileTypes: true })
+  const dirEntries = await readdir(validatedPath, {
+    withFileTypes: true,
+  })
 
   const entries: FileExplorerEntry[] = await Promise.all(
     dirEntries.map(async (dirEntry) => {
@@ -140,8 +156,7 @@ export const listFilesWithMetadata = async (
           mtime: stats.mtime.toISOString(),
           duration: null,
         }
-      }
-      catch {
+      } catch {
         // Stat failed (broken symlink, permissions, etc.). Keep the
         // entry visible so the user knows it exists; mark mtime null
         // and size 0 so the renderer can show a placeholder.
@@ -164,7 +179,11 @@ export const listFilesWithMetadata = async (
     if (entryA.isDirectory !== entryB.isDirectory) {
       return entryA.isDirectory ? -1 : 1
     }
-    return entryA.name.localeCompare(entryB.name, undefined, { sensitivity: "base" })
+    return entryA.name.localeCompare(
+      entryB.name,
+      undefined,
+      { sensitivity: "base" },
+    )
   })
 
   if (options.includeDuration) {
@@ -173,11 +192,15 @@ export const listFilesWithMetadata = async (
     // mediainfo spawns capped at 8.
     const videoIndexes = entries
       .map((entry, index) => ({ entry, index }))
-      .filter(({ entry }) => entry.isFile && isVideoExtension(entry.name))
+      .filter(
+        ({ entry }) =>
+          entry.isFile && isVideoExtension(entry.name),
+      )
     const durations = await mapWithConcurrency(
       videoIndexes,
       8,
-      ({ entry }) => computeDuration(join(validatedPath, entry.name)),
+      ({ entry }) =>
+        computeDuration(join(validatedPath, entry.name)),
     )
     videoIndexes.forEach(({ index }, durationIndex) => {
       entries[index].duration = durations[durationIndex]

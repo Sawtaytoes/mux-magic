@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto"
 
-import { OpenAPIHono, createRoute } from "@hono/zod-openapi"
+import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import { streamSSE } from "hono/streaming"
 
 import { startSseKeepalive } from "../sseKeepalive.js"
@@ -18,12 +18,15 @@ serverIdRoutes.openapi(
   createRoute({
     method: "get",
     path: "/server-id/stream",
-    summary: "Stream the server's per-process boot id (SSE)",
-    description: "Emits a single { bootId } event on connect, then keepalives. The bootId is regenerated on every server restart, so clients can compare the first id they see against the id received after an auto-reconnect — a mismatch means the server restarted and the page should reload.",
+    summary:
+      "Stream the server's per-process boot id (SSE)",
+    description:
+      "Emits a single { bootId } event on connect, then keepalives. The bootId is regenerated on every server restart, so clients can compare the first id they see against the id received after an auto-reconnect — a mismatch means the server restarted and the page should reload.",
     tags: ["Server"],
     responses: {
       200: {
-        description: "Server-Sent Events stream emitting one { bootId } event on connect.",
+        description:
+          "Server-Sent Events stream emitting one { bootId } event on connect.",
         content: {
           "text/event-stream": {
             schema: { type: "string" },
@@ -36,7 +39,9 @@ serverIdRoutes.openapi(
     streamSSE(context, async (stream) => {
       const stopKeepalive = startSseKeepalive(stream)
 
-      await stream.writeSSE({ data: JSON.stringify({ bootId }) })
+      await stream.writeSSE({
+        data: JSON.stringify({ bootId }),
+      })
 
       await new Promise<void>((resolve) => {
         stream.onAbort(() => {

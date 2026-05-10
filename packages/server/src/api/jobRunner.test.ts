@@ -1,17 +1,17 @@
-import { EMPTY, of, Subject, throwError } from "rxjs"
+import { of, Subject, throwError } from "rxjs"
 import { afterEach, describe, expect, test } from "vitest"
-
+import { logAndRethrow } from "../tools/logAndRethrow.js"
+import { runJob } from "./jobRunner.js"
 import {
   cancelJob,
   createJob,
   getJob,
   resetStore,
 } from "./jobStore.js"
-import { runJob } from "./jobRunner.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 
 // runJob is async in effect (RxJS subscriptions resolve on the microtask queue).
-const flushMicrotasks = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+const flushMicrotasks = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 afterEach(() => {
   resetStore()
@@ -50,13 +50,19 @@ describe(runJob.name, () => {
 
     await flushMicrotasks()
 
-    expect(getJob(job.id)?.results).toEqual(["first", "second"])
+    expect(getJob(job.id)?.results).toEqual([
+      "first",
+      "second",
+    ])
   })
 
   test("transitions job to failed when observable errors", async () => {
     const job = createJob({ commandName: "hasBetterAudio" })
 
-    runJob(job.id, throwError(() => new Error("boom")))
+    runJob(
+      job.id,
+      throwError(() => new Error("boom")),
+    )
 
     await flushMicrotasks()
 
@@ -70,7 +76,10 @@ describe(runJob.name, () => {
 
     // throwError → catchError marks the job "failed" and returns EMPTY
     // → complete fires. Verify complete does not reset status to "completed".
-    runJob(job.id, throwError(() => new Error("inner")))
+    runJob(
+      job.id,
+      throwError(() => new Error("inner")),
+    )
 
     await flushMicrotasks()
 
@@ -107,14 +116,17 @@ describe(runJob.name, () => {
 
     runJob(
       job.id,
-      throwError(() => new Error("operator-level boom"))
-      .pipe(logAndRethrow("testCommand")),
+      throwError(
+        () => new Error("operator-level boom"),
+      ).pipe(logAndRethrow("testCommand")),
     )
 
     await flushMicrotasks()
 
     expect(getJob(job.id)?.status).toBe("failed")
-    expect(getJob(job.id)?.error).toContain("operator-level boom")
+    expect(getJob(job.id)?.error).toContain(
+      "operator-level boom",
+    )
   })
 
   test("preserves cancelled status when the upstream observable later errors", async () => {
@@ -135,7 +147,9 @@ describe(runJob.name, () => {
   })
 
   test("populates job.outputs when extractOutputs is provided and the job completes", async () => {
-    const job = createJob({ commandName: "modifySubtitleMetadata" })
+    const job = createJob({
+      commandName: "modifySubtitleMetadata",
+    })
 
     // runJob's `next` handler does job.results.concat(value), which flattens
     // arrays by one level. So an observable that emits one rules-array ends
@@ -144,8 +158,16 @@ describe(runJob.name, () => {
     runJob(
       job.id,
       of(
-        { type: "setScriptInfo", key: "Title", value: "Example" },
-        { type: "setScriptInfo", key: "ScriptType", value: "v4.00+" },
+        {
+          type: "setScriptInfo",
+          key: "Title",
+          value: "Example",
+        },
+        {
+          type: "setScriptInfo",
+          key: "ScriptType",
+          value: "v4.00+",
+        },
       ),
       {
         extractOutputs: (results) => ({ rules: results }),
@@ -158,8 +180,16 @@ describe(runJob.name, () => {
     expect(completedJob?.status).toBe("completed")
     expect(completedJob?.outputs).toEqual({
       rules: [
-        { type: "setScriptInfo", key: "Title", value: "Example" },
-        { type: "setScriptInfo", key: "ScriptType", value: "v4.00+" },
+        {
+          type: "setScriptInfo",
+          key: "Title",
+          value: "Example",
+        },
+        {
+          type: "setScriptInfo",
+          key: "ScriptType",
+          value: "v4.00+",
+        },
       ],
     })
   })
@@ -176,7 +206,9 @@ describe(runJob.name, () => {
   })
 
   test("does not run extractOutputs when the job ends in failure", async () => {
-    const job = createJob({ commandName: "modifySubtitleMetadata" })
+    const job = createJob({
+      commandName: "modifySubtitleMetadata",
+    })
 
     let extractCalled = false
     runJob(
@@ -209,7 +241,10 @@ describe(runJob.name, () => {
   test("returned promise resolves on error with status=failed", async () => {
     const job = createJob({ commandName: "hasBetterAudio" })
 
-    const final = await runJob(job.id, throwError(() => new Error("kaboom")))
+    const final = await runJob(
+      job.id,
+      throwError(() => new Error("kaboom")),
+    )
 
     expect(final?.status).toBe("failed")
     expect(final?.error).toContain("kaboom")

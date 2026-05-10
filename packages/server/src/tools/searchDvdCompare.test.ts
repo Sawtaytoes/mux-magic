@@ -1,5 +1,12 @@
 import { firstValueFrom } from "rxjs"
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 import {
   displayDvdCompareVariant,
@@ -12,8 +19,9 @@ import {
 
 describe(parseDvdCompareTitleText.name, () => {
   test("parses bare title with year as DVD variant", () => {
-    expect(parseDvdCompareTitleText("Soldier (1998)", 123))
-    .toEqual({
+    expect(
+      parseDvdCompareTitleText("Soldier (1998)", 123),
+    ).toEqual({
       id: 123,
       baseTitle: "Soldier",
       variant: "DVD",
@@ -22,8 +30,12 @@ describe(parseDvdCompareTitleText.name, () => {
   })
 
   test("extracts Blu-ray variant from parenthetical token", () => {
-    expect(parseDvdCompareTitleText("Soldier (Blu-ray) (1998)", 124))
-    .toEqual({
+    expect(
+      parseDvdCompareTitleText(
+        "Soldier (Blu-ray) (1998)",
+        124,
+      ),
+    ).toEqual({
       id: 124,
       baseTitle: "Soldier",
       variant: "Blu-ray",
@@ -32,8 +44,12 @@ describe(parseDvdCompareTitleText.name, () => {
   })
 
   test("extracts Blu-ray 4K variant from parenthetical token", () => {
-    expect(parseDvdCompareTitleText("Soldier (Blu-ray 4K) (1998)", 125))
-    .toEqual({
+    expect(
+      parseDvdCompareTitleText(
+        "Soldier (Blu-ray 4K) (1998)",
+        125,
+      ),
+    ).toEqual({
       id: 125,
       baseTitle: "Soldier",
       variant: "Blu-ray 4K",
@@ -42,8 +58,9 @@ describe(parseDvdCompareTitleText.name, () => {
   })
 
   test("falls back to raw text and DVD when no year in parentheses", () => {
-    expect(parseDvdCompareTitleText("Some Random String", 200))
-    .toEqual({
+    expect(
+      parseDvdCompareTitleText("Some Random String", 200),
+    ).toEqual({
       id: 200,
       baseTitle: "Some Random String",
       variant: "DVD",
@@ -52,8 +69,12 @@ describe(parseDvdCompareTitleText.name, () => {
   })
 
   test("preserves multi-word titles before the variant token", () => {
-    expect(parseDvdCompareTitleText("The Lord of the Rings (Blu-ray) (2001)", 300))
-    .toEqual({
+    expect(
+      parseDvdCompareTitleText(
+        "The Lord of the Rings (Blu-ray) (2001)",
+        300,
+      ),
+    ).toEqual({
       id: 300,
       baseTitle: "The Lord of the Rings",
       variant: "Blu-ray",
@@ -64,20 +85,21 @@ describe(parseDvdCompareTitleText.name, () => {
 
 describe(parseDvdCompareSearchHtml.name, () => {
   test("returns an empty array for empty HTML", () => {
-    expect(parseDvdCompareSearchHtml(""))
-    .toEqual([])
+    expect(parseDvdCompareSearchHtml("")).toEqual([])
   })
 
   test("returns an empty array when no film links are present", () => {
-    expect(parseDvdCompareSearchHtml('<html><body><a href="/about.php">About</a></body></html>'))
-    .toEqual([])
+    expect(
+      parseDvdCompareSearchHtml(
+        '<html><body><a href="/about.php">About</a></body></html>',
+      ),
+    ).toEqual([])
   })
 
   test("extracts a single film link", () => {
     const html = `<a href="film.php?fid=12345">Soldier (1998)</a>`
 
-    expect(parseDvdCompareSearchHtml(html))
-    .toEqual([
+    expect(parseDvdCompareSearchHtml(html)).toEqual([
       {
         id: 12345,
         baseTitle: "Soldier",
@@ -94,19 +116,32 @@ describe(parseDvdCompareSearchHtml.name, () => {
       <a href="film.php?fid=1003">Soldier (Blu-ray 4K) (1998)</a>
     `
 
-    expect(parseDvdCompareSearchHtml(html))
-    .toEqual([
-      { id: 1001, baseTitle: "Soldier", variant: "DVD", year: "1998" },
-      { id: 1002, baseTitle: "Soldier", variant: "Blu-ray", year: "1998" },
-      { id: 1003, baseTitle: "Soldier", variant: "Blu-ray 4K", year: "1998" },
+    expect(parseDvdCompareSearchHtml(html)).toEqual([
+      {
+        id: 1001,
+        baseTitle: "Soldier",
+        variant: "DVD",
+        year: "1998",
+      },
+      {
+        id: 1002,
+        baseTitle: "Soldier",
+        variant: "Blu-ray",
+        year: "1998",
+      },
+      {
+        id: 1003,
+        baseTitle: "Soldier",
+        variant: "Blu-ray 4K",
+        year: "1998",
+      },
     ])
   })
 
   test("decodes common HTML entities in titles", () => {
     const html = `<a href="film.php?fid=42">Tom &amp; Jerry (Blu-ray) (1992)</a>`
 
-    expect(parseDvdCompareSearchHtml(html))
-    .toEqual([
+    expect(parseDvdCompareSearchHtml(html)).toEqual([
       {
         id: 42,
         baseTitle: "Tom & Jerry",
@@ -124,19 +159,32 @@ describe(parseDvdCompareSearchHtml.name, () => {
       <a href="film.php?fid=8">Movie B (2021)</a>
     `
 
-    expect(parseDvdCompareSearchHtml(html))
-    .toEqual([
-      { id: 7, baseTitle: "Movie A", variant: "DVD", year: "2020" },
-      { id: 8, baseTitle: "Movie B", variant: "DVD", year: "2021" },
+    expect(parseDvdCompareSearchHtml(html)).toEqual([
+      {
+        id: 7,
+        baseTitle: "Movie A",
+        variant: "DVD",
+        year: "2020",
+      },
+      {
+        id: 8,
+        baseTitle: "Movie B",
+        variant: "DVD",
+        year: "2021",
+      },
     ])
   })
 
   test("handles single-quoted href attributes", () => {
     const html = `<a href='film.php?fid=99'>Quoted (2010)</a>`
 
-    expect(parseDvdCompareSearchHtml(html))
-    .toEqual([
-      { id: 99, baseTitle: "Quoted", variant: "DVD", year: "2010" },
+    expect(parseDvdCompareSearchHtml(html)).toEqual([
+      {
+        id: 99,
+        baseTitle: "Quoted",
+        variant: "DVD",
+        year: "2010",
+      },
     ])
   })
 
@@ -146,17 +194,20 @@ describe(parseDvdCompareSearchHtml.name, () => {
       <a href="film.php?fid=5">Real (2005)</a>
     `
 
-    expect(parseDvdCompareSearchHtml(html))
-    .toEqual([
-      { id: 5, baseTitle: "Real", variant: "DVD", year: "2005" },
+    expect(parseDvdCompareSearchHtml(html)).toEqual([
+      {
+        id: 5,
+        baseTitle: "Real",
+        variant: "DVD",
+        year: "2005",
+      },
     ])
   })
 })
 
 describe(parseDvdCompareReleasesHtml.name, () => {
   test("returns an empty array for empty HTML", () => {
-    expect(parseDvdCompareReleasesHtml(""))
-    .toEqual([])
+    expect(parseDvdCompareReleasesHtml("")).toEqual([])
   })
 
   test("parses each <input> + sibling <a> as a separate release", () => {
@@ -168,11 +219,22 @@ describe(parseDvdCompareReleasesHtml.name, () => {
         <input type="submit" name="submit" value="Apply Filter">
     </p>`
 
-    expect(parseDvdCompareReleasesHtml(html))
-    .toEqual([
-      { hash: "1", label: "Blu-ray ALL America - Arrow Films - Limited Edition [2026]" },
-      { hash: "2", label: "Blu-ray ALL Canada - Arrow Films - Limited Edition [2026]" },
-      { hash: "3", label: "Blu-ray ALL United Kingdom - Arrow Films - Limited Edition [2026]" },
+    expect(parseDvdCompareReleasesHtml(html)).toEqual([
+      {
+        hash: "1",
+        label:
+          "Blu-ray ALL America - Arrow Films - Limited Edition [2026]",
+      },
+      {
+        hash: "2",
+        label:
+          "Blu-ray ALL Canada - Arrow Films - Limited Edition [2026]",
+      },
+      {
+        hash: "3",
+        label:
+          "Blu-ray ALL United Kingdom - Arrow Films - Limited Edition [2026]",
+      },
     ])
   })
 
@@ -183,8 +245,7 @@ describe(parseDvdCompareReleasesHtml.name, () => {
       <input type="submit" name="submit" value="Apply Filter">
     `
 
-    expect(parseDvdCompareReleasesHtml(html))
-    .toEqual([
+    expect(parseDvdCompareReleasesHtml(html)).toEqual([
       { hash: "1", label: "Only Real Release" },
     ])
   })
@@ -192,8 +253,7 @@ describe(parseDvdCompareReleasesHtml.name, () => {
   test("decodes HTML entities and collapses whitespace inside labels", () => {
     const html = `<input type="checkbox" name="7"> <a href="#7">Tom &amp; Jerry  Special  Edition</a>`
 
-    expect(parseDvdCompareReleasesHtml(html))
-    .toEqual([
+    expect(parseDvdCompareReleasesHtml(html)).toEqual([
       { hash: "7", label: "Tom & Jerry Special Edition" },
     ])
   })
@@ -201,8 +261,7 @@ describe(parseDvdCompareReleasesHtml.name, () => {
   test("matches checkboxes with reversed attribute order (name before type)", () => {
     const html = `<input name="9" type="checkbox" checked=""> <a href="#9">Reversed Attribute Order</a>`
 
-    expect(parseDvdCompareReleasesHtml(html))
-    .toEqual([
+    expect(parseDvdCompareReleasesHtml(html)).toEqual([
       { hash: "9", label: "Reversed Attribute Order" },
     ])
   })
@@ -221,40 +280,64 @@ describe(parseDvdCompareReleasesHtml.name, () => {
         <input type=submit name=submit value="Apply Filter">
       </form>`
 
-    expect(parseDvdCompareReleasesHtml(html))
-    .toEqual([
-      { hash: "1", label: "Blu-ray ALL America - Arrow Films - Limited Edition [2026]" },
-      { hash: "2", label: "Blu-ray ALL Canada - Arrow Films - Limited Edition [2026]" },
-      { hash: "3", label: "Blu-ray ALL United Kingdom - Arrow Films - Limited Edition [2026]" },
+    expect(parseDvdCompareReleasesHtml(html)).toEqual([
+      {
+        hash: "1",
+        label:
+          "Blu-ray ALL America - Arrow Films - Limited Edition [2026]",
+      },
+      {
+        hash: "2",
+        label:
+          "Blu-ray ALL Canada - Arrow Films - Limited Edition [2026]",
+      },
+      {
+        hash: "3",
+        label:
+          "Blu-ray ALL United Kingdom - Arrow Films - Limited Edition [2026]",
+      },
     ])
   })
 })
 
 describe(displayDvdCompareVariant.name, () => {
   test("relabels Blu-ray 4K as UHD Blu-ray", () => {
-    expect(displayDvdCompareVariant("Blu-ray 4K")).toBe("UHD Blu-ray")
+    expect(displayDvdCompareVariant("Blu-ray 4K")).toBe(
+      "UHD Blu-ray",
+    )
   })
 
   test("leaves DVD and Blu-ray untouched", () => {
     expect(displayDvdCompareVariant("DVD")).toBe("DVD")
-    expect(displayDvdCompareVariant("Blu-ray")).toBe("Blu-ray")
+    expect(displayDvdCompareVariant("Blu-ray")).toBe(
+      "Blu-ray",
+    )
   })
 })
 
 describe(parseDvdCompareFilmTitle.name, () => {
   test("returns null when no <title> tag present", () => {
-    expect(parseDvdCompareFilmTitle("<html></html>", 100))
-    .toBeNull()
+    expect(
+      parseDvdCompareFilmTitle("<html></html>", 100),
+    ).toBeNull()
   })
 
   test("returns null when title has no recognizable year", () => {
-    expect(parseDvdCompareFilmTitle("<title>Some Random Page</title>", 100))
-    .toBeNull()
+    expect(
+      parseDvdCompareFilmTitle(
+        "<title>Some Random Page</title>",
+        100,
+      ),
+    ).toBeNull()
   })
 
   test("strips a leading 'DVD Compare:' prefix and parses base+year (DVD)", () => {
-    expect(parseDvdCompareFilmTitle("<title>DVD Compare: Soldier (1998)</title>", 12345))
-    .toEqual({
+    expect(
+      parseDvdCompareFilmTitle(
+        "<title>DVD Compare: Soldier (1998)</title>",
+        12345,
+      ),
+    ).toEqual({
       id: 12345,
       baseTitle: "Soldier",
       variant: "DVD",
@@ -266,20 +349,27 @@ describe(parseDvdCompareFilmTitle.name, () => {
     // The current DVDCompare template renders the page <title> with the
     // "Rewind @ www.dvdcompare.net - " brand prefix instead of the older
     // "DVD Compare:" form. Both must parse cleanly.
-    expect(parseDvdCompareFilmTitle(
-      "<title>Rewind @ www.dvdcompare.net - Dragon Lord AKA Long xiao ye AKA Dragon Strike AKA Young Master in Love (Blu-ray 4K) (1982)</title>",
-      74250,
-    )).toEqual({
+    expect(
+      parseDvdCompareFilmTitle(
+        "<title>Rewind @ www.dvdcompare.net - Dragon Lord AKA Long xiao ye AKA Dragon Strike AKA Young Master in Love (Blu-ray 4K) (1982)</title>",
+        74250,
+      ),
+    ).toEqual({
       id: 74250,
-      baseTitle: "Dragon Lord AKA Long xiao ye AKA Dragon Strike AKA Young Master in Love",
+      baseTitle:
+        "Dragon Lord AKA Long xiao ye AKA Dragon Strike AKA Young Master in Love",
       variant: "Blu-ray 4K",
       year: "1982",
     })
   })
 
   test("extracts Blu-ray variant from the title", () => {
-    expect(parseDvdCompareFilmTitle("<title>DVDCompare - Soldier (Blu-ray) (1998)</title>", 12346))
-    .toEqual({
+    expect(
+      parseDvdCompareFilmTitle(
+        "<title>DVDCompare - Soldier (Blu-ray) (1998)</title>",
+        12346,
+      ),
+    ).toEqual({
       id: 12346,
       baseTitle: "Soldier",
       variant: "Blu-ray",
@@ -288,8 +378,12 @@ describe(parseDvdCompareFilmTitle.name, () => {
   })
 
   test("extracts Blu-ray 4K variant from the title", () => {
-    expect(parseDvdCompareFilmTitle("<title>DVD Compare: Soldier (Blu-ray 4K) (1998)</title>", 12347))
-    .toEqual({
+    expect(
+      parseDvdCompareFilmTitle(
+        "<title>DVD Compare: Soldier (Blu-ray 4K) (1998)</title>",
+        12347,
+      ),
+    ).toEqual({
       id: 12347,
       baseTitle: "Soldier",
       variant: "Blu-ray 4K",
@@ -298,8 +392,12 @@ describe(parseDvdCompareFilmTitle.name, () => {
   })
 
   test("decodes HTML entities and collapses whitespace inside the title", () => {
-    expect(parseDvdCompareFilmTitle("<title>DVD Compare:   Tom &amp; Jerry  (Blu-ray)  (1992)</title>", 99))
-    .toEqual({
+    expect(
+      parseDvdCompareFilmTitle(
+        "<title>DVD Compare:   Tom &amp; Jerry  (Blu-ray)  (1992)</title>",
+        99,
+      ),
+    ).toEqual({
       id: 99,
       baseTitle: "Tom & Jerry",
       variant: "Blu-ray",
@@ -340,44 +438,71 @@ describe(findDvdCompareResults.name, () => {
   })
 
   // Helpers to build a fake Response with a given URL (simulating a redirect).
-  const makeSearchPageResponse = (html: string, finalUrl: string) => ({
+  const makeSearchPageResponse = (
+    html: string,
+    finalUrl: string,
+  ) => ({
     url: finalUrl,
     text: async () => html,
   })
 
   test("returns isDirectListing:false with all candidates when the search lands on a multi-result page", async () => {
-    globalThis.fetch = vi.fn(async () => (
+    globalThis.fetch = vi.fn(async () =>
       makeSearchPageResponse(
         MULTI_RESULT_SEARCH_HTML,
         "https://www.dvdcompare.net/comparisons/search.php",
-      )
-    )) as unknown as typeof globalThis.fetch
+      ),
+    ) as unknown as typeof globalThis.fetch
 
-    const outcome = await firstValueFrom(findDvdCompareResults("Soldier"))
+    const outcome = await firstValueFrom(
+      findDvdCompareResults("Soldier"),
+    )
 
     expect(outcome.isDirectListing).toBe(false)
     expect(outcome.results).toEqual([
-      { id: 1001, baseTitle: "Soldier", variant: "DVD", year: "1998" },
-      { id: 1002, baseTitle: "Soldier", variant: "Blu-ray", year: "1998" },
-      { id: 1003, baseTitle: "Soldier", variant: "Blu-ray 4K", year: "1998" },
+      {
+        id: 1001,
+        baseTitle: "Soldier",
+        variant: "DVD",
+        year: "1998",
+      },
+      {
+        id: 1002,
+        baseTitle: "Soldier",
+        variant: "Blu-ray",
+        year: "1998",
+      },
+      {
+        id: 1003,
+        baseTitle: "Soldier",
+        variant: "Blu-ray 4K",
+        year: "1998",
+      },
     ])
   })
 
   test("returns isDirectListing:true with the film's parsed details when the search redirects to a film page (e.g. 'solider')", async () => {
     // DVDCompare silently corrects 'solider' → 'Soldier' and redirects
     // straight to the film page; response.url points at film.php.
-    globalThis.fetch = vi.fn(async () => (
+    globalThis.fetch = vi.fn(async () =>
       makeSearchPageResponse(
         SOLDIER_FILM_PAGE_HTML,
         "https://www.dvdcompare.net/comparisons/film.php?fid=12345",
-      )
-    )) as unknown as typeof globalThis.fetch
+      ),
+    ) as unknown as typeof globalThis.fetch
 
-    const outcome = await firstValueFrom(findDvdCompareResults("solider"))
+    const outcome = await firstValueFrom(
+      findDvdCompareResults("solider"),
+    )
 
     expect(outcome.isDirectListing).toBe(true)
     expect(outcome.results).toEqual([
-      { id: 12345, baseTitle: "Soldier", variant: "DVD", year: "1998" },
+      {
+        id: 12345,
+        baseTitle: "Soldier",
+        variant: "DVD",
+        year: "1998",
+      },
     ])
   })
 
@@ -386,48 +511,59 @@ describe(findDvdCompareResults.name, () => {
     // parseDvdCompareFilmTitle returns null. We fall back to a minimal stub
     // so the caller still has the fid and can proceed.
     const unparsableHtml = `<html><head><title>Rewind @ www.dvdcompare.net - Some Untitled Page</title></head><body></body></html>`
-    globalThis.fetch = vi.fn(async () => (
+    globalThis.fetch = vi.fn(async () =>
       makeSearchPageResponse(
         unparsableHtml,
         "https://www.dvdcompare.net/comparisons/film.php?fid=99999",
-      )
-    )) as unknown as typeof globalThis.fetch
+      ),
+    ) as unknown as typeof globalThis.fetch
 
-    const outcome = await firstValueFrom(findDvdCompareResults("anything"))
+    const outcome = await firstValueFrom(
+      findDvdCompareResults("anything"),
+    )
 
     expect(outcome.isDirectListing).toBe(true)
     expect(outcome.results).toHaveLength(1)
-    expect(outcome.results[0]).toMatchObject({ id: 99999, variant: "DVD" })
+    expect(outcome.results[0]).toMatchObject({
+      id: 99999,
+      variant: "DVD",
+    })
   })
 
   test("returns isDirectListing:false with an empty results array when the search page has no film links", async () => {
     const emptyHtml = `<html><head><title>DVD Compare Search Results</title></head><body><p>No results found.</p></body></html>`
-    globalThis.fetch = vi.fn(async () => (
+    globalThis.fetch = vi.fn(async () =>
       makeSearchPageResponse(
         emptyHtml,
         "https://www.dvdcompare.net/comparisons/search.php",
-      )
-    )) as unknown as typeof globalThis.fetch
+      ),
+    ) as unknown as typeof globalThis.fetch
 
-    const outcome = await firstValueFrom(findDvdCompareResults("xyzzy-nonexistent"))
+    const outcome = await firstValueFrom(
+      findDvdCompareResults("xyzzy-nonexistent"),
+    )
 
     expect(outcome.isDirectListing).toBe(false)
     expect(outcome.results).toEqual([])
   })
 
   test("sends the search term as the 'param' form field to search.php", async () => {
-    const fetchSpy = vi.fn(async () => (
+    const fetchSpy = vi.fn(async () =>
       makeSearchPageResponse(
         MULTI_RESULT_SEARCH_HTML,
         "https://www.dvdcompare.net/comparisons/search.php",
-      )
-    ))
-    globalThis.fetch = fetchSpy as unknown as typeof globalThis.fetch
+      ),
+    )
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
 
     await firstValueFrom(findDvdCompareResults("Soldier"))
 
-    const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit]
-    expect(url).toBe("https://www.dvdcompare.net/comparisons/search.php")
+    const [url, init] = fetchSpy.mock
+      .calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe(
+      "https://www.dvdcompare.net/comparisons/search.php",
+    )
     expect(init.method).toBe("POST")
     expect(init.body).toContain("param=Soldier")
     expect(init.body).toContain("searchtype=text")

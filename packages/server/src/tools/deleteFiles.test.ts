@@ -1,7 +1,17 @@
 import { vol } from "memfs"
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
-import { deleteFiles, getDeleteMode } from "./deleteFiles.js"
+import {
+  deleteFiles,
+  getDeleteMode,
+} from "./deleteFiles.js"
 
 // Mock the `trash` package so trash-mode tests don't shell out to
 // Shell.Application / gio trash. The mock records calls so tests can
@@ -12,7 +22,11 @@ vi.mock("trash", () => ({
   default: vi.fn((paths: string[]) => {
     trashCalls.push([...paths])
     paths.forEach((path) => {
-      try { vol.unlinkSync(path) } catch { /* already gone */ }
+      try {
+        vol.unlinkSync(path)
+      } catch {
+        /* already gone */
+      }
     })
     return Promise.resolve()
   }),
@@ -20,9 +34,12 @@ vi.mock("trash", () => ({
 
 describe(getDeleteMode.name, () => {
   let original: string | undefined
-  beforeEach(() => { original = process.env.DELETE_TO_TRASH })
+  beforeEach(() => {
+    original = process.env.DELETE_TO_TRASH
+  })
   afterEach(() => {
-    if (original === undefined) delete process.env.DELETE_TO_TRASH
+    if (original === undefined)
+      delete process.env.DELETE_TO_TRASH
     else process.env.DELETE_TO_TRASH = original
   })
 
@@ -71,7 +88,12 @@ describe(deleteFiles.name, () => {
     // Windows it consults a cached PowerShell call, which won't include
     // the memfs G: drive (it's a fake), so the call falls through to
     // trash mode either way.
-    expect(results.every((res) => res.mode === "trash" || res.mode === "permanent")).toBe(true)
+    expect(
+      results.every(
+        (res) =>
+          res.mode === "trash" || res.mode === "permanent",
+      ),
+    ).toBe(true)
   })
 
   test("permanent mode uses fs.unlink and removes the file from disk", async () => {
@@ -82,14 +104,16 @@ describe(deleteFiles.name, () => {
     expect(results[0].ok).toBe(true)
     expect(results[0].mode).toBe("permanent")
     expect(trashCalls).toHaveLength(0)
-    expect(() => vol.statSync("/disc-rips/SOLDIER/a.mkv")).toThrow()
+    expect(() =>
+      vol.statSync("/disc-rips/SOLDIER/a.mkv"),
+    ).toThrow()
   })
 
   test("rejects relative paths without aborting the batch", async () => {
     process.env.DELETE_TO_TRASH = "false"
     const { results } = await deleteFiles([
-      "/disc-rips/SOLDIER/a.mkv",   // valid
-      "relative/path.mkv",           // relative — rejected
+      "/disc-rips/SOLDIER/a.mkv", // valid
+      "relative/path.mkv", // relative — rejected
     ])
     expect(results[0].ok).toBe(true)
     expect(results[1].ok).toBe(false)

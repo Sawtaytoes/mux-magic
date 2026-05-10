@@ -1,38 +1,31 @@
-import ffmpegStaticPath from "ffmpeg-static"
 import { platform } from "node:os"
+import ffmpegStaticPath from "ffmpeg-static"
 
-const isWindows = platform() === 'win32'
+const isWindows = platform() === "win32"
 
 /** @see https://github.com/bbc/audio-offset-finder */
 // export const audioOffsetFinderPath = ".venv/bin/audio-offset-finder" .// This local version doesn't run for whatever reason.
 export const audioOffsetFinderPath = "audio-offset-finder"
 
-export const ffmpegPath: string = (ffmpegStaticPath as unknown as string | null) ?? "ffmpeg"
+export const ffmpegPath: string =
+  (ffmpegStaticPath as unknown as string | null) ?? "ffmpeg"
 
 // MediaInfo_CLI_25.03_Windows_x64
-export const mediaInfoPath = (
-  isWindows
+export const mediaInfoPath = isWindows
   ? "assets/mediainfo/MediaInfo.exe"
   : "mediainfo"
-)
 
 // mkvtoolnix-64-bit-91.0
-export const mkvExtractPath = (
-  isWindows
+export const mkvExtractPath = isWindows
   ? "assets/mkvtoolnix/mkvextract.exe"
   : "mkvextract"
-)
 
 // mkvtoolnix-64-bit-91.0
-export const mkvMergePath = (
-  isWindows
+export const mkvMergePath = isWindows
   ? "assets/mkvtoolnix/mkvmerge.exe"
   : "mkvmerge"
-)
 
 // mkvtoolnix-64-bit-91.0
-export const mkvPropEditPath = (
-  isWindows
+export const mkvPropEditPath = isWindows
   ? "assets/mkvtoolnix/mkvpropedit.exe"
   : "mkvpropedit"
-)

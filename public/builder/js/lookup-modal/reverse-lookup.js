@@ -1,45 +1,58 @@
-import { COMMANDS } from '../commands.js'
-import { steps, findStepById } from '../sequence-state.js'
-import { renderAll } from '../render-all.js'
-import { refreshLinkedInputs, scheduleUpdateUrl } from '../sequence-editor.js'
-import { LOOKUP_LINKS } from '../step-renderer.js'
-import { updateYaml } from '../components/yaml-modal.js'
-import { parseDvdCompareDisplayName } from '../util/dvd-compare.js'
+import { COMMANDS } from "../commands.js"
+import { updateYaml } from "../components/yaml-modal.js"
+import { renderAll } from "../render-all.js"
+import { scheduleUpdateUrl } from "../sequence-editor.js"
+import { findStepById, steps } from "../sequence-state.js"
+import { LOOKUP_LINKS } from "../step-renderer.js"
+import { parseDvdCompareDisplayName } from "../util/dvd-compare.js"
 
 const reverseLookupTimers = new Map()
 const reverseLookupTokens = new Map()
 
 function setCompanionDisplay(stepId, fieldName, text) {
-  const el = document.querySelector(`[data-step="${stepId}"][data-companion="${fieldName}"]`)
+  const el = document.querySelector(
+    `[data-step="${stepId}"][data-companion="${fieldName}"]`,
+  )
   if (!el) return
   el.textContent = text
   el.title = text
-  if (text) el.classList.remove('hidden')
-  else el.classList.add('hidden')
+  if (text) el.classList.remove("hidden")
+  else el.classList.add("hidden")
 }
 
-export async function resolveTmdbForStep(stepId, baseTitle, year) {
-  const step = steps.find((candidate) => candidate.id === stepId)
+export async function resolveTmdbForStep(
+  stepId,
+  baseTitle,
+  year,
+) {
+  const step = steps.find(
+    (candidate) => candidate.id === stepId,
+  )
   if (!step || !baseTitle) return
   step.params.tmdbResolutionPending = true
   try {
-    const response = await fetch('/queries/searchMovieDb', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ searchTerm: baseTitle, year: year || undefined }),
+    const response = await fetch("/queries/searchMovieDb", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        searchTerm: baseTitle,
+        year: year || undefined,
+      }),
     })
     if (!response.ok) return
     const data = await response.json()
     const top = (data.results || [])[0]
-    if (top && top.movieDbId) {
+    if (top?.movieDbId) {
       step.params.tmdbId = top.movieDbId
-      step.params.tmdbName = top.year ? `${top.title} (${top.year})` : top.title
+      step.params.tmdbName = top.year
+        ? `${top.title} (${top.year})`
+        : top.title
     } else {
       delete step.params.tmdbId
       delete step.params.tmdbName
     }
   } catch (err) {
-    console.error('resolveTmdbForStep failed', err)
+    console.error("resolveTmdbForStep failed", err)
   } finally {
     delete step.params.tmdbResolutionPending
     step.params.tmdbResolutionAttempted = true
@@ -63,7 +76,7 @@ export function kickReverseLookups() {
       return
     }
     commandDefinition.fields.forEach((field) => {
-      if (field.type !== 'numberWithLookup') {
+      if (field.type !== "numberWithLookup") {
         return
       }
       if (!field.companionNameField) {
@@ -77,14 +90,19 @@ export function kickReverseLookups() {
       const token = String(numericId)
       const key = `${step.id}-${field.name}`
       reverseLookupTokens.set(key, token)
-      runReverseLookup(step.id, field.name, numericId, token)
+      runReverseLookup(
+        step.id,
+        field.name,
+        numericId,
+        token,
+      )
     })
   })
 }
 
 export function kickTmdbResolutions() {
   steps.forEach((step) => {
-    if (step.command !== 'nameSpecialFeatures') {
+    if (step.command !== "nameSpecialFeatures") {
       return
     }
     if (step.params.tmdbId) {
@@ -96,34 +114,53 @@ export function kickTmdbResolutions() {
     if (step.params.tmdbResolutionAttempted) {
       return
     }
-    const parsed = parseDvdCompareDisplayName(step.params.dvdCompareName)
+    const parsed = parseDvdCompareDisplayName(
+      step.params.dvdCompareName,
+    )
     if (!parsed?.baseTitle) {
       return
     }
-    resolveTmdbForStep(step.id, parsed.baseTitle, parsed.year)
+    resolveTmdbForStep(
+      step.id,
+      parsed.baseTitle,
+      parsed.year,
+    )
   })
 }
 
-export function updateLookupLinks(stepId, fieldName, rawValue) {
-  const step = steps.find((candidate) => candidate.id === stepId)
+export function updateLookupLinks(
+  stepId,
+  fieldName,
+  rawValue,
+) {
+  const step = steps.find(
+    (candidate) => candidate.id === stepId,
+  )
   if (!step) return
   const cmd = COMMANDS[step.command]
-  const field = cmd?.fields.find((candidate) => candidate.name === fieldName)
-  if (!field || field.type !== 'numberWithLookup') return
+  const field = cmd?.fields.find(
+    (candidate) => candidate.name === fieldName,
+  )
+  if (!field || field.type !== "numberWithLookup") return
   const lookupConfig = LOOKUP_LINKS[field.lookupType]
   if (!lookupConfig) return
 
-  const numericValue = (rawValue !== undefined && rawValue !== '') ? Number(rawValue) : null
-  const hasValidId = numericValue !== null && Number.isFinite(numericValue) && numericValue > 0
-  const isNameSpecialFeaturesCard = (
-    step.command === 'nameSpecialFeatures'
-    && field.lookupType === 'dvdcompare'
-  )
+  const numericValue =
+    rawValue !== undefined && rawValue !== ""
+      ? Number(rawValue)
+      : null
+  const hasValidId =
+    numericValue !== null &&
+    Number.isFinite(numericValue) &&
+    numericValue > 0
+  const isNameSpecialFeaturesCard =
+    step.command === "nameSpecialFeatures" &&
+    field.lookupType === "dvdcompare"
 
   const companion = document.querySelector(
     `[data-step="${stepId}"][data-companion="${fieldName}"]`,
   )
-  if (companion && companion.tagName === 'A') {
+  if (companion && companion.tagName === "A") {
     let companionHref
     if (isNameSpecialFeaturesCard) {
       // Movie name on the left → DVDCompare release URL when an ID
@@ -132,18 +169,27 @@ export function updateLookupLinks(stepId, fieldName, rawValue) {
       // primary click to open DVDCompare since that's the source of
       // truth for this command.)
       companionHref = hasValidId
-        ? lookupConfig.buildUrl(numericValue, { ...step.params, [fieldName]: numericValue })
+        ? lookupConfig.buildUrl(numericValue, {
+            ...step.params,
+            [fieldName]: numericValue,
+          })
         : lookupConfig.homeUrl
     } else if (hasValidId) {
-      const tempParams = { ...step.params, [fieldName]: numericValue }
-      companionHref = lookupConfig.buildUrl(numericValue, tempParams)
+      const tempParams = {
+        ...step.params,
+        [fieldName]: numericValue,
+      }
+      companionHref = lookupConfig.buildUrl(
+        numericValue,
+        tempParams,
+      )
     } else {
       companionHref = lookupConfig.homeUrl
     }
-    companion.setAttribute('href', companionHref)
+    companion.setAttribute("href", companionHref)
   }
 
-  if (field.lookupType === 'dvdcompare') {
+  if (field.lookupType === "dvdcompare") {
     const rightLink = document.querySelector(
       `[data-step="${stepId}"][data-right-link="${fieldName}"]`,
     )
@@ -155,19 +201,26 @@ export function updateLookupLinks(stepId, fieldName, rawValue) {
         if (step.params.tmdbId) {
           href = `https://www.themoviedb.org/movie/${encodeURIComponent(step.params.tmdbId)}`
         } else {
-          href = 'https://www.themoviedb.org/'
+          href = "https://www.themoviedb.org/"
         }
       } else {
         href = hasValidId
-          ? lookupConfig.buildUrl(numericValue, { ...step.params, [fieldName]: numericValue })
+          ? lookupConfig.buildUrl(numericValue, {
+              ...step.params,
+              [fieldName]: numericValue,
+            })
           : lookupConfig.homeUrl
       }
-      rightLink.setAttribute('href', href)
+      rightLink.setAttribute("href", href)
     }
   }
 }
 
-export function scheduleReverseLookup(stepId, fieldName, rawValue) {
+export function scheduleReverseLookup(
+  stepId,
+  fieldName,
+  rawValue,
+) {
   const key = `${stepId}-${fieldName}`
   if (reverseLookupTimers.has(key)) {
     clearTimeout(reverseLookupTimers.get(key))
@@ -178,63 +231,102 @@ export function scheduleReverseLookup(stepId, fieldName, rawValue) {
   const step = findStepById(stepId)
   if (!step) return
   const cmd = COMMANDS[step.command]
-  const field = cmd?.fields.find(f => f.name === fieldName)
+  const field = cmd?.fields.find(
+    (f) => f.name === fieldName,
+  )
   if (!field?.companionNameField) return
   delete step.params[field.companionNameField]
-  setCompanionDisplay(stepId, fieldName, '')
+  setCompanionDisplay(stepId, fieldName, "")
   updateYaml()
 
-  if (fieldName === 'dvdCompareId') {
-    const hashField = cmd?.fields.find(f => f.name === 'dvdCompareReleaseHash')
+  if (fieldName === "dvdCompareId") {
+    const hashField = cmd?.fields.find(
+      (f) => f.name === "dvdCompareReleaseHash",
+    )
     if (hashField?.companionNameField) {
       delete step.params[hashField.companionNameField]
-      setCompanionDisplay(stepId, 'dvdCompareReleaseHash', '')
+      setCompanionDisplay(
+        stepId,
+        "dvdCompareReleaseHash",
+        "",
+      )
     }
     clearTmdbResolution(step)
   }
 
   if (!rawValue) return
   const numericValue = Number(rawValue)
-  if (!Number.isFinite(numericValue) || numericValue <= 0) return
+  if (!Number.isFinite(numericValue) || numericValue <= 0)
+    return
 
   const timeoutId = setTimeout(() => {
     reverseLookupTimers.delete(key)
-    runReverseLookup(stepId, fieldName, numericValue, rawValue)
+    runReverseLookup(
+      stepId,
+      fieldName,
+      numericValue,
+      rawValue,
+    )
   }, 600)
   reverseLookupTimers.set(key, timeoutId)
 }
 
-async function runReverseLookup(stepId, fieldName, id, requestToken) {
+async function runReverseLookup(
+  stepId,
+  fieldName,
+  id,
+  requestToken,
+) {
   const key = `${stepId}-${fieldName}`
   const step = findStepById(stepId)
   if (!step) return
   const cmd = COMMANDS[step.command]
-  const field = cmd?.fields.find(f => f.name === fieldName)
+  const field = cmd?.fields.find(
+    (f) => f.name === fieldName,
+  )
   if (!field?.companionNameField) return
 
   const request = (() => {
-    if (field.lookupType === 'mal') {
-      return { endpoint: '/queries/lookupMal', body: { malId: id } }
+    if (field.lookupType === "mal") {
+      return {
+        endpoint: "/queries/lookupMal",
+        body: { malId: id },
+      }
     }
-    if (field.lookupType === 'anidb') {
-      return { endpoint: '/queries/lookupAnidb', body: { anidbId: id } }
+    if (field.lookupType === "anidb") {
+      return {
+        endpoint: "/queries/lookupAnidb",
+        body: { anidbId: id },
+      }
     }
-    if (field.lookupType === 'tvdb') {
-      return { endpoint: '/queries/lookupTvdb', body: { tvdbId: id } }
+    if (field.lookupType === "tvdb") {
+      return {
+        endpoint: "/queries/lookupTvdb",
+        body: { tvdbId: id },
+      }
     }
-    if (field.lookupType === 'tmdb') {
-      return { endpoint: '/queries/lookupMovieDb', body: { movieDbId: id } }
+    if (field.lookupType === "tmdb") {
+      return {
+        endpoint: "/queries/lookupMovieDb",
+        body: { movieDbId: id },
+      }
     }
-    if (field.lookupType === 'dvdcompare') {
-      return { endpoint: '/queries/lookupDvdCompare', body: { dvdCompareId: id } }
+    if (field.lookupType === "dvdcompare") {
+      return {
+        endpoint: "/queries/lookupDvdCompare",
+        body: { dvdCompareId: id },
+      }
     }
-    if (fieldName === 'dvdCompareReleaseHash') {
+    if (fieldName === "dvdCompareReleaseHash") {
       if (!step.params.dvdCompareId) {
         return null
       }
       return {
-        endpoint: '/queries/lookupDvdCompareRelease',
-        body: { dvdCompareId: step.params.dvdCompareId, hash: String(id) },
+        endpoint: "/queries/lookupDvdCompareRelease",
+        body: {
+          dvdCompareId: step.params.dvdCompareId,
+          hash: String(id),
+        },
       }
     }
     return null
@@ -245,8 +337,8 @@ async function runReverseLookup(stepId, fieldName, id, requestToken) {
 
   try {
     const response = await fetch(request.endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request.body),
     })
     if (!response.ok) {
@@ -256,35 +348,53 @@ async function runReverseLookup(stepId, fieldName, id, requestToken) {
     const name = data.name ?? data.label
     if (!name) return
 
-    if (reverseLookupTokens.get(key) !== requestToken) return
+    if (reverseLookupTokens.get(key) !== requestToken)
+      return
 
     step.params[field.companionNameField] = name
-    if (fieldName === 'dvdCompareId' && step.command === 'nameSpecialFeatures') {
+    if (
+      fieldName === "dvdCompareId" &&
+      step.command === "nameSpecialFeatures"
+    ) {
       step.params.tmdbResolutionPending = true
-      setCompanionDisplay(stepId, fieldName, '')
+      setCompanionDisplay(stepId, fieldName, "")
     } else {
       setCompanionDisplay(stepId, fieldName, name)
     }
     updateYaml()
     scheduleUpdateUrl()
 
-    if (fieldName === 'dvdCompareId') {
-      const hashField = cmd?.fields.find(f => f.name === 'dvdCompareReleaseHash')
+    if (fieldName === "dvdCompareId") {
+      const hashField = cmd?.fields.find(
+        (f) => f.name === "dvdCompareReleaseHash",
+      )
       if (hashField) {
-        const hashValue = step.params.dvdCompareReleaseHash ?? hashField.default ?? 1
+        const hashValue =
+          step.params.dvdCompareReleaseHash ??
+          hashField.default ??
+          1
         const hashKey = `${stepId}-dvdCompareReleaseHash`
         const hashToken = String(hashValue)
         reverseLookupTokens.set(hashKey, hashToken)
-        runReverseLookup(stepId, 'dvdCompareReleaseHash', Number(hashValue), hashToken)
+        runReverseLookup(
+          stepId,
+          "dvdCompareReleaseHash",
+          Number(hashValue),
+          hashToken,
+        )
       }
-      if (step.command === 'nameSpecialFeatures') {
+      if (step.command === "nameSpecialFeatures") {
         const parsed = parseDvdCompareDisplayName(name)
         if (parsed?.baseTitle) {
-          resolveTmdbForStep(stepId, parsed.baseTitle, parsed.year)
+          resolveTmdbForStep(
+            stepId,
+            parsed.baseTitle,
+            parsed.year,
+          )
         }
       }
     }
   } catch (err) {
-    console.error('Reverse lookup failed', err)
+    console.error("Reverse lookup failed", err)
   }
 }

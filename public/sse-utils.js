@@ -1,8 +1,6 @@
 // Shared SSE client helpers. Loaded as a plain <script src="/sse-utils.js">
 // so any page served from public/ can use it without bundling.
-(function (global) {
-  'use strict'
-
+;((global) => {
   // EventSource has a built-in auto-reconnect (3s default delay) when the
   // connection drops. The catch is that `onerror` fires every time it
   // enters that reconnecting window — so showing a "Connection lost"
@@ -27,7 +25,8 @@
     var onMessage = opts.onMessage
     var onConnected = opts.onConnected
     var onPossiblyDisconnected = opts.onPossiblyDisconnected
-    var graceMs = typeof opts.graceMs === 'number' ? opts.graceMs : 5000
+    var graceMs =
+      typeof opts.graceMs === "number" ? opts.graceMs : 5000
 
     var es = new EventSource(url)
     var lostTimer = null
@@ -40,20 +39,24 @@
       }
     }
 
-    es.onopen = function () {
+    es.onopen = () => {
       clearLostTimer()
       if (onConnected) onConnected()
     }
 
     if (onMessage) {
-      es.onmessage = function (event) {
+      es.onmessage = (event) => {
         var data
-        try { data = JSON.parse(event.data) } catch (_) { return }
+        try {
+          data = JSON.parse(event.data)
+        } catch (_) {
+          return
+        }
         onMessage(data, event)
       }
     }
 
-    es.onerror = function () {
+    es.onerror = () => {
       if (closedByCaller) return
 
       // CLOSED means the browser has given up reconnecting — usually a
@@ -61,31 +64,36 @@
       // the source. No grace period: signal final disconnect immediately.
       if (es.readyState === EventSource.CLOSED) {
         clearLostTimer()
-        if (onPossiblyDisconnected) onPossiblyDisconnected({ final: true })
+        if (onPossiblyDisconnected)
+          onPossiblyDisconnected({ final: true })
         return
       }
 
       // CONNECTING — auto-reconnect is in progress. Defer the alert so
       // typical 3s reconnects don't flash any UI at all.
       if (lostTimer) return
-      lostTimer = setTimeout(function () {
+      lostTimer = setTimeout(() => {
         lostTimer = null
-        if (onPossiblyDisconnected) onPossiblyDisconnected({ final: false })
+        if (onPossiblyDisconnected)
+          onPossiblyDisconnected({ final: false })
       }, graceMs)
     }
 
     return {
-      close: function () {
+      close: () => {
         closedByCaller = true
         clearLostTimer()
         es.close()
       },
       // Exposed mainly for tests / introspection. Callers should use the
       // onConnected / onPossiblyDisconnected callbacks for state UX.
-      get readyState() { return es.readyState },
+      get readyState() {
+        return es.readyState
+      },
       raw: es,
     }
   }
 
-  global.createTolerantEventSource = createTolerantEventSource
+  global.createTolerantEventSource =
+    createTolerantEventSource
 })(window)

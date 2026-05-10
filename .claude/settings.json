@@ -76,10 +76,7 @@
       "PowerShell(npm *)",
       "PowerShell(npx *)"
     ],
-    "ask": [
-      "Bash(yarn dlx *)",
-      "PowerShell(yarn dlx *)"
-    ]
+    "ask": ["Bash(yarn dlx *)", "PowerShell(yarn dlx *)"]
   },
   "hooks": {
     "WorktreeCreate": [

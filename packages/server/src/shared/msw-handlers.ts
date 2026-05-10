@@ -17,7 +17,7 @@
 //
 // Import surface kept ergonomic: the next phase can drop fixtures and
 // http handlers in here without retouching the harness file.
-import { http, HttpResponse, passthrough } from "msw"
+import { HttpResponse, http, passthrough } from "msw"
 
 export const handlers = [
   // Intentionally empty — Phase 2 ships the harness; Phase 3 (or first
@@ -26,8 +26,4 @@ export const handlers = [
 
 // Re-exports so test files can import these helpers from a single
 // place when they start adding bespoke handlers in tests.
-export {
-  http,
-  HttpResponse,
-  passthrough,
-}
+export { HttpResponse, http, passthrough }

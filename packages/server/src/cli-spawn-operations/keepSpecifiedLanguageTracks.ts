@@ -1,12 +1,9 @@
-import {
-  Observable,
-} from "rxjs"
-
+import { dirname, join } from "node:path"
+import type { Observable } from "rxjs"
+import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { logAndSwallow } from "../tools/logAndSwallow.js"
-import { type Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { LANGUAGE_TRIMMED_FOLDER_NAME } from "../tools/outputFolderNames.js"
-import { runMkvMerge } from "./runMkvMerge.js";
-import { dirname, join } from "node:path";
+import { runMkvMerge } from "./runMkvMerge.js"
 
 type KeepSpecifiedLanguageTracksRequiredProps = {
   audioLanguages: Iso6392LanguageCode[]
@@ -18,7 +15,9 @@ type KeepSpecifiedLanguageTracksOptionalProps = {
   outputFolderName?: string
 }
 
-export type KeepSpecifiedLanguageTracksProps = KeepSpecifiedLanguageTracksRequiredProps & KeepSpecifiedLanguageTracksOptionalProps
+export type KeepSpecifiedLanguageTracksProps =
+  KeepSpecifiedLanguageTracksRequiredProps &
+    KeepSpecifiedLanguageTracksOptionalProps
 
 export const keepSpecifiedLanguageTracksDefaultProps = {
   outputFolderName: LANGUAGE_TRIMMED_FOLDER_NAME,
@@ -29,81 +28,30 @@ export const keepSpecifiedLanguageTracks = ({
   filePath,
   outputFolderName = keepSpecifiedLanguageTracksDefaultProps.outputFolderName,
   subtitlesLanguages,
-}: KeepSpecifiedLanguageTracksProps): (
-  Observable<
-    string
-  >
-) => {
-  const hasAudioLanguages = (
-    (
-      audioLanguages
-      .length
-    )
-    > 0
-  )
+}: KeepSpecifiedLanguageTracksProps): Observable<string> => {
+  const hasAudioLanguages = audioLanguages.length > 0
 
-  const hasSubtitlesLanguages = (
-    (
-      subtitlesLanguages
-      .length
-    )
-    > 0
-  )
+  const hasSubtitlesLanguages =
+    subtitlesLanguages.length > 0
 
-  return (
-    runMkvMerge({
-      args: [
-        ...(
-          hasAudioLanguages
-          ? [
-            "--audio-tracks",
-            (
-              audioLanguages
-              .join(",")
-            ),
-          ]
-          : []
-        ),
+  return runMkvMerge({
+    args: [
+      ...(hasAudioLanguages
+        ? ["--audio-tracks", audioLanguages.join(",")]
+        : []),
 
-        ...(
-          hasSubtitlesLanguages
-          ? [
+      ...(hasSubtitlesLanguages
+        ? [
             "--subtitle-tracks",
-            (
-              subtitlesLanguages
-              .join(",")
-            ),
+            subtitlesLanguages.join(","),
           ]
-          : []
-        ),
+        : []),
 
-        filePath,
-      ],
-      outputFilePath: (
-        filePath
-        .replace(
-          (
-            dirname(
-              filePath
-            )
-          ),
-          (
-            join(
-              (
-                dirname(
-                  filePath
-                )
-              ),
-              outputFolderName,
-            )
-          ),
-        )
-      )
-    })
-    .pipe(
-      logAndSwallow(
-        keepSpecifiedLanguageTracks
-      ),
-    )
-  )
+      filePath,
+    ],
+    outputFilePath: filePath.replace(
+      dirname(filePath),
+      join(dirname(filePath), outputFolderName),
+    ),
+  }).pipe(logAndSwallow(keepSpecifiedLanguageTracks))
 }

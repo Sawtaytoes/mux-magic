@@ -12,9 +12,12 @@ import {
 } from "rxjs"
 
 import { getActiveJobId } from "../api/logCapture.js"
-import { aclSafeCopyFile, type CopyOptions } from "../tools/aclSafeCopyFile.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
+import {
+  aclSafeCopyFile,
+  type CopyOptions,
+} from "../tools/aclSafeCopyFile.js"
 import { getFiles } from "../tools/getFiles.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { logInfo } from "../tools/logMessage.js"
 import { makeDirectory } from "../tools/makeDirectory.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
@@ -40,51 +43,67 @@ export const moveFiles = ({
 }: {
   destinationPath: string
   sourcePath: string
-}): Observable<MoveRecord> => (
+}): Observable<MoveRecord> =>
   new Observable<MoveRecord>((subscriber) => {
     const abortController = new AbortController()
 
-    const innerSubscription = (
-      getFiles({ sourcePath })
+    const innerSubscription = getFiles({ sourcePath })
       .pipe(
         // Materialize the file list so we can stat upfront for the
         // emitter's totalBytes, AND know totalFiles. Skipped if there's
         // no active job context (CLI mode) — the per-file copy still
         // runs, just without progress emission.
         toArray(),
-        concatMap((files) => (
+        concatMap((files) =>
           defer(async () => {
             const jobId = getActiveJobId()
-            const sizes = (
+            const sizes =
               jobId !== undefined
-              ? await Promise.all(files.map((file) => stat(file.fullPath).then((stats) => stats.size)))
-              : []
+                ? await Promise.all(
+                    files.map((file) =>
+                      stat(file.fullPath).then(
+                        (stats) => stats.size,
+                      ),
+                    ),
+                  )
+                : []
+            const totalBytes = sizes.reduce(
+              (sum, size) => sum + size,
+              0,
             )
-            const totalBytes = sizes.reduce((sum, size) => sum + size, 0)
-            const emitter = (
+            const emitter =
               jobId !== undefined
-              ? createProgressEmitter(jobId, { totalFiles: files.length, totalBytes })
-              : null
-            )
+                ? createProgressEmitter(jobId, {
+                    totalFiles: files.length,
+                    totalBytes,
+                  })
+                : null
             return { files, sizes, emitter }
-          })
-          .pipe(
-            concatMap(({ files, sizes, emitter }) => (
-              from(files.map((file, index) => ({ file, size: sizes[index] })))
-              .pipe(
+          }).pipe(
+            concatMap(({ files, sizes, emitter }) =>
+              from(
+                files.map((file, index) => ({
+                  file,
+                  size: sizes[index],
+                })),
+              ).pipe(
                 // Per-file copies go through the global Task scheduler — see
                 // copyFiles.ts for the full rationale.
                 runTasks(({ file, size }) => {
                   const destinationFilePath = join(
                     destinationPath,
-                    file.filename.concat(extname(file.fullPath)),
+                    file.filename.concat(
+                      extname(file.fullPath),
+                    ),
                   )
 
-                  const tracker = (
+                  const tracker =
                     emitter !== null
-                    ? emitter.startFile(file.fullPath, size)
-                    : null
-                  )
+                      ? emitter.startFile(
+                          file.fullPath,
+                          size,
+                        )
+                      : null
 
                   // aclSafeCopyFile.onProgress fires per chunk with
                   // ABSOLUTE bytesWritten across the lifetime of one
@@ -94,28 +113,36 @@ export const moveFiles = ({
 
                   const copyOptions: CopyOptions = {
                     signal: abortController.signal,
-                    ...(
-                      tracker !== null
+                    ...(tracker !== null
                       ? {
                           onProgress: (event) => {
-                            const delta = event.bytesWritten - lastBytesWritten
-                            lastBytesWritten = event.bytesWritten
+                            const delta =
+                              event.bytesWritten -
+                              lastBytesWritten
+                            lastBytesWritten =
+                              event.bytesWritten
                             tracker.reportBytes(delta)
                           },
                         }
-                      : {}
-                    ),
+                      : {}),
                   }
 
-                  return makeDirectory(destinationPath)
-                  .pipe(
-                    concatMap(() => aclSafeCopyFile(
-                      file.fullPath,
-                      destinationFilePath,
-                      copyOptions,
-                    )),
+                  return makeDirectory(
+                    destinationPath,
+                  ).pipe(
+                    concatMap(() =>
+                      aclSafeCopyFile(
+                        file.fullPath,
+                        destinationFilePath,
+                        copyOptions,
+                      ),
+                    ),
                     tap(() => {
-                      logInfo("COPIED", file.fullPath, destinationFilePath)
+                      logInfo(
+                        "COPIED",
+                        file.fullPath,
+                        destinationFilePath,
+                      )
                     }),
                     map(() => ({
                       source: file.fullPath,
@@ -125,27 +152,27 @@ export const moveFiles = ({
                   )
                 }),
                 finalize(() => emitter?.finalize()),
-              )
-            )),
-          )
-        )),
+              ),
+            ),
+          ),
+        ),
         // Buffer the per-file move records so the source-dir removal only
         // runs after every copy finished. Re-emit them downstream once rm
         // resolves so callers (and the API job runner) see the full set.
         toArray(),
-        concatMap((moves) => (
-          defer(() => rm(sourcePath, { recursive: true }))
-          .pipe(
+        concatMap((moves) =>
+          defer(() =>
+            rm(sourcePath, { recursive: true }),
+          ).pipe(
             tap(() => {
               logInfo("DELETED", sourcePath)
             }),
             concatMap(() => from(moves)),
-          )
-        )),
+          ),
+        ),
         logAndRethrow(moveFiles),
       )
       .subscribe(subscriber)
-    )
 
     return () => {
       // Order: abort first so an in-flight pipeline rejects via
@@ -156,4 +183,3 @@ export const moveFiles = ({
       innerSubscription.unsubscribe()
     }
   })
-)

@@ -31,30 +31,33 @@ export type MovieDbRawDetail = {
 }
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3"
-const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185"
+const TMDB_IMAGE_BASE_URL =
+  "https://image.tmdb.org/t/p/w185"
 
-const yearOf = (releaseDate: string | undefined): string => (
+const yearOf = (releaseDate: string | undefined): string =>
   // TMDB returns release_date as yyyy-mm-dd or "" — slice the year off and
   // bail to "" when missing so the rename pipeline can decide what to do
   // with a year-less film.
   typeof releaseDate === "string" && releaseDate.length >= 4
     ? releaseDate.slice(0, 4)
     : ""
-)
 
 export const mapTmdbSearchResults = (
   rawResults: MovieDbRawSearchResult[] | null | undefined,
-): MovieDbResult[] => (
+): MovieDbResult[] =>
   (rawResults ?? [])
-  .map((entry) => ({
-    imageUrl: entry.poster_path ? `${TMDB_IMAGE_BASE_URL}${entry.poster_path}` : undefined,
-    movieDbId: Number(entry.id ?? 0),
-    overview: entry.overview,
-    title: entry.title ?? "",
-    year: yearOf(entry.release_date),
-  }))
-  .filter((result) => result.movieDbId > 0 && result.title)
-)
+    .map((entry) => ({
+      imageUrl: entry.poster_path
+        ? `${TMDB_IMAGE_BASE_URL}${entry.poster_path}`
+        : undefined,
+      movieDbId: Number(entry.id ?? 0),
+      overview: entry.overview,
+      title: entry.title ?? "",
+      year: yearOf(entry.release_date),
+    }))
+    .filter(
+      (result) => result.movieDbId > 0 && result.title,
+    )
 
 const requireTmdbApiKey = (): string => {
   const apiKey = process.env.TMDB_API_KEY
@@ -84,28 +87,34 @@ const tmdbFetch = async (
     TMDB_FETCH_TIMEOUT_MS,
   )
   try {
-    const response = await fetch(`${TMDB_BASE_URL}${pathAndQuery}`, {
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${requireTmdbApiKey()}`,
+    const response = await fetch(
+      `${TMDB_BASE_URL}${pathAndQuery}`,
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${requireTmdbApiKey()}`,
+        },
+        signal: abortController.signal,
       },
-      signal: abortController.signal,
-    })
+    )
     if (!response.ok) {
       const body = await response.text().catch(() => "")
-      throw new Error(`TMDB ${response.status} ${response.statusText}: ${body}`)
+      throw new Error(
+        `TMDB ${response.status} ${response.statusText}: ${body}`,
+      )
     }
     return await response.json()
-  }
-  catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.name === "AbortError"
+    ) {
       throw new Error(
         `TMDB request timed out after ${TMDB_FETCH_TIMEOUT_MS}ms: ${pathAndQuery}`,
       )
     }
     throw error
-  }
-  finally {
+  } finally {
     clearTimeout(timeoutHandle)
   }
 }
@@ -119,27 +128,30 @@ export const searchMovieDb = (
   // for "Soldier" without a year returns the top-popularity film, which
   // may not be the user's intended era — adding year=1998 lifts the
   // 1998 entry to the top.
-  const yearParam = year ? `&year=${encodeURIComponent(year)}` : ""
-  return (
-    from(
-      tmdbFetch(
-        `/search/movie?query=${encodeURIComponent(searchTerm)}&include_adult=false&language=en-US&page=1${yearParam}`,
+  const yearParam = year
+    ? `&year=${encodeURIComponent(year)}`
+    : ""
+  return from(
+    tmdbFetch(
+      `/search/movie?query=${encodeURIComponent(searchTerm)}&include_adult=false&language=en-US&page=1${yearParam}`,
+    ),
+  ).pipe(
+    map((body) =>
+      mapTmdbSearchResults(
+        (body as { results?: MovieDbRawSearchResult[] })
+          .results,
       ),
-    )
-    .pipe(
-      map((body) => mapTmdbSearchResults((body as { results?: MovieDbRawSearchResult[] }).results)),
-      logAndSwallow(searchMovieDb),
-    )
+    ),
+    logAndSwallow(searchMovieDb),
   )
 }
 
 export const lookupMovieDbById = (
   movieDbId: number,
-): Observable<{ name: string } | null> => (
+): Observable<{ name: string } | null> =>
   from(
     tmdbFetch(`/movie/${movieDbId}?language=en-US`),
-  )
-  .pipe(
+  ).pipe(
     map((body) => {
       const detail = body as MovieDbRawDetail
       const title = detail.title ?? ""
@@ -153,4 +165,3 @@ export const lookupMovieDbById = (
     }),
     logAndSwallow(lookupMovieDbById),
   )
-)

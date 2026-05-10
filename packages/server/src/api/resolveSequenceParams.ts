@@ -35,11 +35,14 @@ export type ResolveResult = {
   errors: string[]
 }
 
-const MAIN_SOURCE_FIELD_NAMES = ["sourcePath", "sourceFilesPath", "mediaFilesPath"] as const
+const MAIN_SOURCE_FIELD_NAMES = [
+  "sourcePath",
+  "sourceFilesPath",
+  "mediaFilesPath",
+] as const
 
-const stripTrailingSlash = (path: string): string => (
+const stripTrailingSlash = (path: string): string =>
   path.replace(/[\\/]$/u, "")
-)
 
 // Mirrors the builder's stepOutput() (see public/api/builder/index.html).
 // Given a previously-executed step, derives the path string a downstream
@@ -49,47 +52,59 @@ const computeStepFolderOutput = (
   config: CommandConfig,
 ): string => {
   const mainSourceField = MAIN_SOURCE_FIELD_NAMES.find(
-    (name) => typeof step.resolvedParams[name] === "string" && step.resolvedParams[name] !== "",
+    (name) =>
+      typeof step.resolvedParams[name] === "string" &&
+      step.resolvedParams[name] !== "",
   )
-  const sourcePath = (
-    mainSourceField
-    ? stripTrailingSlash(String(step.resolvedParams[mainSourceField]))
+  const sourcePath = mainSourceField
+    ? stripTrailingSlash(
+        String(step.resolvedParams[mainSourceField]),
+      )
     : ""
-  )
 
   // 'parentOfSource': the command writes into dirname(sourcePath), so
   // downstream chains should anchor on the parent. Used by flattenOutput.
   if (config.outputComputation === "parentOfSource") {
-    return sourcePath ? sourcePath.replace(/[\\/][^\\/]*$/u, "") : ""
+    return sourcePath
+      ? sourcePath.replace(/[\\/][^\\/]*$/u, "")
+      : ""
   }
 
   if (config.outputFolderName) {
-    return (
-      sourcePath
+    return sourcePath
       ? `${sourcePath}/${config.outputFolderName}`
       : config.outputFolderName
-    )
   }
 
-  const destinationPath = step.resolvedParams.destinationPath
-  if (typeof destinationPath === "string" && destinationPath !== "") {
+  const destinationPath =
+    step.resolvedParams.destinationPath
+  if (
+    typeof destinationPath === "string" &&
+    destinationPath !== ""
+  ) {
     return destinationPath
   }
 
-  const destinationFilesPath = step.resolvedParams.destinationFilesPath
-  if (typeof destinationFilesPath === "string" && destinationFilesPath !== "") {
+  const destinationFilesPath =
+    step.resolvedParams.destinationFilesPath
+  if (
+    typeof destinationFilesPath === "string" &&
+    destinationFilesPath !== ""
+  ) {
     return destinationFilesPath
   }
 
   return sourcePath
 }
 
-const isLinkedToObject = (value: unknown): value is { linkedTo: string, output?: string } => (
-  typeof value === "object"
-  && value !== null
-  && !Array.isArray(value)
-  && typeof (value as Record<string, unknown>).linkedTo === "string"
-)
+const isLinkedToObject = (
+  value: unknown,
+): value is { linkedTo: string; output?: string } =>
+  typeof value === "object" &&
+  value !== null &&
+  !Array.isArray(value) &&
+  typeof (value as Record<string, unknown>).linkedTo ===
+    "string"
 
 export const resolveSequenceParams = ({
   rawParams,
@@ -100,18 +115,25 @@ export const resolveSequenceParams = ({
   rawParams: Record<string, unknown>
   pathsById: Record<string, SequencePath>
   stepsById: Record<string, StepRuntimeRecord>
-  commandConfigsByName: Partial<Record<string, CommandConfig>>
+  commandConfigsByName: Partial<
+    Record<string, CommandConfig>
+  >
 }): ResolveResult => {
   const errors: string[] = []
   const resolved: Record<string, unknown> = {}
 
   Object.entries(rawParams).forEach(([key, value]) => {
     // Path-variable reference: '@pathId'.
-    if (typeof value === "string" && value.startsWith("@")) {
+    if (
+      typeof value === "string" &&
+      value.startsWith("@")
+    ) {
       const pathId = value.slice(1)
       const path = pathsById[pathId]
       if (!path) {
-        errors.push(`Unknown path variable "${pathId}" referenced by param "${key}".`)
+        errors.push(
+          `Unknown path variable "${pathId}" referenced by param "${key}".`,
+        )
         return
       }
       resolved[key] = path.value
@@ -122,22 +144,32 @@ export const resolveSequenceParams = ({
     if (isLinkedToObject(value)) {
       const sourceStep = stepsById[value.linkedTo]
       if (!sourceStep) {
-        errors.push(`Param "${key}" links to step "${value.linkedTo}" which has not run yet (or doesn't exist).`)
+        errors.push(
+          `Param "${key}" links to step "${value.linkedTo}" which has not run yet (or doesn't exist).`,
+        )
         return
       }
       const outputName = value.output ?? "folder"
       if (outputName === "folder") {
-        const config = commandConfigsByName[sourceStep.command]
+        const config =
+          commandConfigsByName[sourceStep.command]
         if (!config) {
-          errors.push(`Param "${key}" links to step "${value.linkedTo}" but its command "${sourceStep.command}" is unknown.`)
+          errors.push(
+            `Param "${key}" links to step "${value.linkedTo}" but its command "${sourceStep.command}" is unknown.`,
+          )
           return
         }
-        resolved[key] = computeStepFolderOutput(sourceStep, config)
+        resolved[key] = computeStepFolderOutput(
+          sourceStep,
+          config,
+        )
         return
       }
       const named = sourceStep.outputs?.[outputName]
       if (named === undefined) {
-        errors.push(`Param "${key}" links to step "${value.linkedTo}" output "${outputName}" but no such output was produced.`)
+        errors.push(
+          `Param "${key}" links to step "${value.linkedTo}" output "${outputName}" but no such output was produced.`,
+        )
         return
       }
       resolved[key] = named

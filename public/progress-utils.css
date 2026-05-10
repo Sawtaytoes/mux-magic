@@ -33,8 +33,12 @@
 }
 
 @keyframes indeterminate-slide {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(330%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(330%);
+  }
 }
 
 .progress-label {

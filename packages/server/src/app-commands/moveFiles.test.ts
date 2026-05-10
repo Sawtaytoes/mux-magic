@@ -19,13 +19,22 @@ describe(moveFiles.name, () => {
       moveFiles({
         sourcePath: "/work/OUT",
         destinationPath: "/work",
-      })
-      .pipe(toArray()),
+      }).pipe(toArray()),
     )
 
-    expect(results.sort((itemA, itemB) => itemA.source.localeCompare(itemB.source))).toEqual([
-      { source: join("/work/OUT", "episode-01.mkv"), destination: join("/work", "episode-01.mkv") },
-      { source: join("/work/OUT", "episode-02.mkv"), destination: join("/work", "episode-02.mkv") },
+    expect(
+      results.sort((itemA, itemB) =>
+        itemA.source.localeCompare(itemB.source),
+      ),
+    ).toEqual([
+      {
+        source: join("/work/OUT", "episode-01.mkv"),
+        destination: join("/work", "episode-01.mkv"),
+      },
+      {
+        source: join("/work/OUT", "episode-02.mkv"),
+        destination: join("/work", "episode-02.mkv"),
+      },
     ])
   })
 
@@ -34,12 +43,15 @@ describe(moveFiles.name, () => {
       moveFiles({
         sourcePath: "/work/OUT",
         destinationPath: "/work",
-      })
-      .pipe(toArray()),
+      }).pipe(toArray()),
     )
 
     await expect(stat("/work/OUT")).rejects.toThrow()
-    await expect(stat("/work/episode-01.mkv")).resolves.toBeDefined()
-    await expect(stat("/work/episode-02.mkv")).resolves.toBeDefined()
+    await expect(
+      stat("/work/episode-01.mkv"),
+    ).resolves.toBeDefined()
+    await expect(
+      stat("/work/episode-02.mkv"),
+    ).resolves.toBeDefined()
   })
 })

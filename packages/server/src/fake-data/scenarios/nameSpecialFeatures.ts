@@ -1,4 +1,10 @@
-import { concat, ignoreElements, Observable, of, timer } from "rxjs"
+import {
+  concat,
+  ignoreElements,
+  Observable,
+  of,
+  timer,
+} from "rxjs"
 
 import { emitJobEvent } from "../../api/jobStore.js"
 import { getActiveJobId } from "../../api/logCapture.js"
@@ -6,18 +12,16 @@ import { logInfo } from "../../tools/logMessage.js"
 
 // Completes after `ms` without emitting any values — used as a sequenced
 // delay inside concat so each phase has realistic pacing.
-const pause = (ms: number): Observable<never> => (
+const pause = (ms: number): Observable<never> =>
   timer(ms).pipe(ignoreElements()) as Observable<never>
-)
 
 // Runs a side-effectful function synchronously then immediately completes
 // without emitting. Used for log lines + progress ticks inside concat.
-const effect = (fn: () => void): Observable<never> => (
+const effect = (fn: () => void): Observable<never> =>
   new Observable<never>((sub) => {
     fn()
     sub.complete()
   })
-)
 
 export const nameSpecialFeaturesScenario = (
   body: unknown,
@@ -39,7 +43,10 @@ export const nameSpecialFeaturesScenario = (
       filesDone,
       filesTotal,
       currentFiles: [
-        { path: `/fake/disc/MOVIE_t0${filesDone + 1}.mkv`, ratio },
+        {
+          path: `/fake/disc/MOVIE_t0${filesDone + 1}.mkv`,
+          ratio,
+        },
       ],
     })
   }
@@ -52,9 +59,18 @@ export const nameSpecialFeaturesScenario = (
     }),
     pause(600),
     effect(() => {
-      logInfo(label, "Scraped extras text: 1420 chars, 42 non-empty lines")
-      logInfo(label, "Parsed 10 extras (8 with timecodes), 2 cuts, 2 untimed suggestions")
-      logInfo(label, "Reading file metadata… (padding=0, offset=0)")
+      logInfo(
+        label,
+        "Scraped extras text: 1420 chars, 42 non-empty lines",
+      )
+      logInfo(
+        label,
+        "Parsed 10 extras (8 with timecodes), 2 cuts, 2 untimed suggestions",
+      )
+      logInfo(
+        label,
+        "Reading file metadata… (padding=0, offset=0)",
+      )
       emitProgress(0.2)
     }),
     pause(400),
@@ -78,22 +94,37 @@ export const nameSpecialFeaturesScenario = (
 
     // Phase 3 — successful renames
     effect(() => {
-      logInfo(label, "Renaming MOVIE_t02.mkv → Inception (2010) -trailer")
+      logInfo(
+        label,
+        "Renaming MOVIE_t02.mkv → Inception (2010) -trailer",
+      )
       emitProgress(0.55)
     }),
-    of<unknown>({ oldName: "MOVIE_t02.mkv", newName: "Inception (2010) -trailer" }),
+    of<unknown>({
+      oldName: "MOVIE_t02.mkv",
+      newName: "Inception (2010) -trailer",
+    }),
     pause(220),
     effect(() => {
-      logInfo(label, "Renaming MOVIE_t03.mkv → Inception (2010) -deleted")
+      logInfo(
+        label,
+        "Renaming MOVIE_t03.mkv → Inception (2010) -deleted",
+      )
       emitProgress(0.7)
     }),
-    of<unknown>({ oldName: "MOVIE_t03.mkv", newName: "Inception (2010) -deleted" }),
+    of<unknown>({
+      oldName: "MOVIE_t03.mkv",
+      newName: "Inception (2010) -deleted",
+    }),
     pause(400),
 
     // Phase 4 — two files remain unmatched; auto-skip after a short pause
     // so the sequence doesn't block waiting for user input.
     effect(() => {
-      logInfo(label, "Unnamed files with DVDCompare candidate associations:")
+      logInfo(
+        label,
+        "Unnamed files with DVDCompare candidate associations:",
+      )
       logInfo(label, "  • MOVIE_t04.mkv")
       logInfo(label, "      - Image Gallery (250 images)")
       logInfo(label, "      - Director's Commentary")
@@ -106,11 +137,17 @@ export const nameSpecialFeaturesScenario = (
 
     // Phase 5 — final summary
     effect(() => {
-      logInfo(label, "Summary: 2 renamed, 1 collision, 2 unmatched")
+      logInfo(
+        label,
+        "Summary: 2 renamed, 1 collision, 2 unmatched",
+      )
       emitProgress(1.0)
     }),
     of<unknown>({
-      unrenamedFilenames: ["MOVIE_t04.mkv", "MOVIE_t05.mkv"],
+      unrenamedFilenames: [
+        "MOVIE_t04.mkv",
+        "MOVIE_t05.mkv",
+      ],
       possibleNames: [
         { name: "Image Gallery (250 images)" },
         { name: "Director's Commentary" },

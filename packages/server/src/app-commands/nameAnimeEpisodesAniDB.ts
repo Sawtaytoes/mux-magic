@@ -1,7 +1,7 @@
 import { basename } from "node:path"
 import {
-  EMPTY,
   concatMap,
+  EMPTY,
   filter,
   from,
   map,
@@ -11,26 +11,33 @@ import {
   switchMap,
   toArray,
 } from "rxjs"
-
-import type { AnidbAnime, AnidbEpisode, AnidbEpisodeCategory } from "../types/anidb.js"
+import { cleanupFilename } from "../tools/cleanupFilename.js"
+import { detectMovieFormatVariants } from "../tools/detectMovieFormatVariants.js"
+import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
+import { getFiles } from "../tools/getFiles.js"
+import { getUserSearchInput } from "../tools/getUserSearchInput.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
+import { logInfo } from "../tools/logMessage.js"
+import { matchSpecialsToFiles } from "../tools/matchSpecialsToFiles.js"
+import { naturalSort } from "../tools/naturalSort.js"
+import { withFileProgress } from "../tools/progressEmitter.js"
+import { readMediaDurationMinutes } from "../tools/readMediaDurationMinutes.js"
+import {
+  lookupAnidbById,
+  pickAnidbSeriesName,
+  searchAnidb,
+} from "../tools/searchAnidb.js"
+import type {
+  AnidbAnime,
+  AnidbEpisode,
+  AnidbEpisodeCategory,
+} from "../types/anidb.js"
 import {
   effectiveDurationDeltaMinutes,
   episodeTypesForCategory,
   epnoOrderingValue,
   isPickerCategory,
 } from "../types/anidb.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { cleanupFilename } from "../tools/cleanupFilename.js"
-import { detectMovieFormatVariants } from "../tools/detectMovieFormatVariants.js"
-import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFiles } from "../tools/getFiles.js"
-import { getUserSearchInput } from "../tools/getUserSearchInput.js"
-import { logInfo } from "../tools/logMessage.js"
-import { lookupAnidbById, pickAnidbSeriesName, searchAnidb } from "../tools/searchAnidb.js"
-import { matchSpecialsToFiles } from "../tools/matchSpecialsToFiles.js"
-import { naturalSort } from "../tools/naturalSort.js"
-import { readMediaDurationMinutes } from "../tools/readMediaDurationMinutes.js"
-import { withFileProgress } from "../tools/progressEmitter.js"
 
 // Slack added on top of AniDB's rounding window for the index-paired
 // duration sanity-check warning. AniDB's `length` is rounded UP (1m
@@ -43,12 +50,11 @@ const DURATION_MISMATCH_SLACK_MINUTES = 2
 // Episode title preference: English → x-jat (romaji) → first available.
 const pickEpisodeTitle = (
   titles: AnidbAnime["episodes"][number]["titles"],
-): string => (
-  titles.find((title) => title.lang === "en")?.value
-  ?? titles.find((title) => title.lang === "x-jat")?.value
-  ?? titles[0]?.value
-  ?? ""
-)
+): string =>
+  titles.find((title) => title.lang === "en")?.value ??
+  titles.find((title) => title.lang === "x-jat")?.value ??
+  titles[0]?.value ??
+  ""
 
 // AniDB returns episodes unsorted (often newest first in the XML).
 // Filter by category and sort using a synthesized numeric ordering
@@ -60,11 +66,17 @@ const filterAndSortByCategory = (
   episodes: AnidbAnime["episodes"],
   category: AnidbEpisodeCategory,
 ): AnidbAnime["episodes"] => {
-  const allowedTypes = new Set<number>(episodeTypesForCategory(category))
+  const allowedTypes = new Set<number>(
+    episodeTypesForCategory(category),
+  )
   return episodes
     .filter((ep) => allowedTypes.has(ep.type))
     .slice()
-    .sort((itemA, itemB) => epnoOrderingValue(itemA.type, itemA.epno) - epnoOrderingValue(itemB.type, itemB.epno))
+    .sort(
+      (itemA, itemB) =>
+        epnoOrderingValue(itemA.type, itemA.epno) -
+        epnoOrderingValue(itemB.type, itemB.epno),
+    )
 }
 
 // Output filename builder. Branches by category:
@@ -94,14 +106,18 @@ const formatOutputFilename = ({
   sequentialIndex: number
   seriesName: string
 }): string => {
-  const padTwo = (value: number | string): string => String(value).padStart(2, "0")
+  const padTwo = (value: number | string): string =>
+    String(value).padStart(2, "0")
   if (category === "regular") {
     return cleanupFilename(
       seriesName.concat(
         " - ",
-        "s", padTwo(seasonNumber),
-        "e", padTwo(episode.epno),
-        " - ", episodeTitle,
+        "s",
+        padTwo(seasonNumber),
+        "e",
+        padTwo(episode.epno),
+        " - ",
+        episodeTitle,
       ),
     )
   }
@@ -110,8 +126,10 @@ const formatOutputFilename = ({
       seriesName.concat(
         " - ",
         "s00",
-        "e", padTwo(sequentialIndex),
-        " - ", episodeTitle,
+        "e",
+        padTwo(sequentialIndex),
+        " - ",
+        episodeTitle,
       ),
     )
   }
@@ -119,9 +137,12 @@ const formatOutputFilename = ({
   return cleanupFilename(
     seriesName.concat(
       " - ",
-      "s", padTwo(seasonNumber),
-      "e", padTwo(sequentialIndex),
-      " - ", episodeTitle,
+      "s",
+      padTwo(seasonNumber),
+      "e",
+      padTwo(sequentialIndex),
+      " - ",
+      episodeTitle,
     ),
   )
 }
@@ -145,7 +166,10 @@ const warnIfDurationMismatch = ({
   if (fileMinutes == null || episode.length == null) {
     return
   }
-  const effectiveDelta = effectiveDurationDeltaMinutes(fileMinutes, episode.length)
+  const effectiveDelta = effectiveDurationDeltaMinutes(
+    fileMinutes,
+    episode.length,
+  )
   if (effectiveDelta <= DURATION_MISMATCH_SLACK_MINUTES) {
     return
   }
@@ -182,17 +206,24 @@ const resolveMovieFormatVariant = (
   return getUserSearchInput({
     message: `AniDB lists both a "Complete" form and "Part N" forms for these ${category} episodes. Which describes your files?`,
     options: [
-      { index: 0, label: `Complete (${variants.complete.length} entr${variants.complete.length === 1 ? "y" : "ies"}: ${completePreview})` },
-      { index: 1, label: `Parts (${variants.parts.length} entries: ${partsPreview})` },
+      {
+        index: 0,
+        label: `Complete (${variants.complete.length} entr${variants.complete.length === 1 ? "y" : "ies"}: ${completePreview})`,
+      },
+      {
+        index: 1,
+        label: `Parts (${variants.parts.length} entries: ${partsPreview})`,
+      },
       { index: -1, label: "Cancel renaming (Esc)" },
     ],
-  })
-  .pipe(
+  }).pipe(
     map((selectedIndex) => {
       if (selectedIndex === -1) {
         throw new Error("Renaming cancelled by user.")
       }
-      return selectedIndex === 0 ? variants.complete : variants.parts
+      return selectedIndex === 0
+        ? variants.complete
+        : variants.parts
     }),
   )
 }
@@ -204,61 +235,74 @@ export const nameAnimeEpisodesAniDB = ({
   seasonNumber,
   sourcePath,
 }: {
-  anidbId?: number,
-  episodeType?: AnidbEpisodeCategory,
-  searchTerm?: string,
-  seasonNumber: number,
-  sourcePath: string,
-}) => (
-  getFiles({ sourcePath })
-  .pipe(
+  anidbId?: number
+  episodeType?: AnidbEpisodeCategory
+  searchTerm?: string
+  seasonNumber: number
+  sourcePath: string
+}) =>
+  getFiles({ sourcePath }).pipe(
     toArray(),
-    map((fileInfos) => (
-      (
-        anidbId != null
-          ? of(anidbId)
-          : (
-            searchAnidb(searchTerm || basename(sourcePath))
-            .pipe(
-              switchMap((results) => {
-                if (results.length === 0) {
-                  throw new Error(`No AniDB results for: ${searchTerm || basename(sourcePath)}`)
-                }
-
-                return getUserSearchInput({
-                  message: `AniDB results for "${searchTerm || basename(sourcePath)}":`,
-                  options: [
-                    ...results.map((result, index) => ({
-                      index,
-                      label: `${result.name} (aid ${result.aid})`,
-                    })),
-                    { index: -1, label: "Cancel / skip" },
-                  ],
-                })
-                .pipe(
-                  map((selectedIndex) => {
-                    if (selectedIndex === -1) throw new Error("No selection made.")
-                    return results.at(selectedIndex)!.aid
-                  }),
+    map((fileInfos) =>
+      (anidbId != null
+        ? of(anidbId)
+        : searchAnidb(
+            searchTerm || basename(sourcePath),
+          ).pipe(
+            switchMap((results) => {
+              if (results.length === 0) {
+                throw new Error(
+                  `No AniDB results for: ${searchTerm || basename(sourcePath)}`,
                 )
-              }),
-              filter(Boolean),
-            )
+              }
+
+              return getUserSearchInput({
+                message: `AniDB results for "${searchTerm || basename(sourcePath)}":`,
+                options: [
+                  ...results.map((result, index) => ({
+                    index,
+                    label: `${result.name} (aid ${result.aid})`,
+                  })),
+                  { index: -1, label: "Cancel / skip" },
+                ],
+              }).pipe(
+                map((selectedIndex) => {
+                  if (selectedIndex === -1)
+                    throw new Error("No selection made.")
+                  return results.at(selectedIndex)?.aid
+                }),
+              )
+            }),
+            filter(Boolean),
           )
-      )
-      .pipe(
+      ).pipe(
         concatMap((aid) => lookupAnidbById(aid)),
         concatMap((anime) => {
-          if (!anime) throw new Error("AniDB returned no anime payload.")
-          const filtered = filterAndSortByCategory(anime.episodes, episodeType)
-          const seriesName = pickAnidbSeriesName(anime.titles)
-          return resolveMovieFormatVariant(filtered, episodeType).pipe(
+          if (!anime)
+            throw new Error(
+              "AniDB returned no anime payload.",
+            )
+          const filtered = filterAndSortByCategory(
+            anime.episodes,
+            episodeType,
+          )
+          const seriesName = pickAnidbSeriesName(
+            anime.titles,
+          )
+          return resolveMovieFormatVariant(
+            filtered,
+            episodeType,
+          ).pipe(
             map((episodes) => ({ episodes, seriesName })),
           )
         }),
         concatMap(({ episodes, seriesName }) => {
-          const sortedFileInfos = naturalSort(fileInfos).by({ asc: (fileInfo) => fileInfo.filename })
-          const videoFileInfos$ = from(sortedFileInfos).pipe(filterIsVideoFile())
+          const sortedFileInfos = naturalSort(fileInfos).by(
+            { asc: (fileInfo) => fileInfo.filename },
+          )
+          const videoFileInfos$ = from(
+            sortedFileInfos,
+          ).pipe(filterIsVideoFile())
 
           if (isPickerCategory(episodeType)) {
             // Picker categories use a per-file interactive picker
@@ -267,35 +311,53 @@ export const nameAnimeEpisodesAniDB = ({
             // claim/skip/cancel each one in turn.
             return videoFileInfos$.pipe(
               toArray(),
-              concatMap((videoFileInfos) => (
-                matchSpecialsToFiles({ fileInfos: videoFileInfos, specials: episodes })
-                .pipe(
+              concatMap((videoFileInfos) =>
+                matchSpecialsToFiles({
+                  fileInfos: videoFileInfos,
+                  specials: episodes,
+                }).pipe(
                   toArray(),
-                  concatMap((matches) => from(matches.map((match, index) => ({
-                    fileInfo: match.fileInfo,
-                    episode: match.episode,
-                    sequentialIndex: index + 1,
-                  })))),
-                )
-              )),
-              mergeMap(({ fileInfo, episode, sequentialIndex }) => {
-                const title = pickEpisodeTitle(episode.titles)
-                if (!title) {
-                  logInfo("NO EPISODE TITLE", fileInfo.filename, `(epno=${episode.epno})`)
-                  return EMPTY
-                }
-                return of({
+                  concatMap((matches) =>
+                    from(
+                      matches.map((match, index) => ({
+                        fileInfo: match.fileInfo,
+                        episode: match.episode,
+                        sequentialIndex: index + 1,
+                      })),
+                    ),
+                  ),
+                ),
+              ),
+              mergeMap(
+                ({
                   fileInfo,
-                  renamedFilename: formatOutputFilename({
-                    category: episodeType,
-                    episode,
-                    episodeTitle: title,
-                    seasonNumber,
-                    sequentialIndex,
-                    seriesName,
-                  }),
-                })
-              }),
+                  episode,
+                  sequentialIndex,
+                }) => {
+                  const title = pickEpisodeTitle(
+                    episode.titles,
+                  )
+                  if (!title) {
+                    logInfo(
+                      "NO EPISODE TITLE",
+                      fileInfo.filename,
+                      `(epno=${episode.epno})`,
+                    )
+                    return EMPTY
+                  }
+                  return of({
+                    fileInfo,
+                    renamedFilename: formatOutputFilename({
+                      category: episodeType,
+                      episode,
+                      episodeTitle: title,
+                      seasonNumber,
+                      sequentialIndex,
+                      seriesName,
+                    }),
+                  })
+                },
+              ),
             )
           }
 
@@ -311,41 +373,63 @@ export const nameAnimeEpisodesAniDB = ({
               fileInfo,
               sequentialIndex: index + 1,
             })),
-            concatMap(({ episode, fileInfo, sequentialIndex }) => {
-              if (!episode) {
-                logInfo("NO EPISODE FOR FILE", fileInfo.filename)
-                return EMPTY
-              }
-              const title = pickEpisodeTitle(episode.titles)
-              if (!title) {
-                logInfo("NO EPISODE TITLE", fileInfo.filename, `(epno=${episode.epno})`)
-                return EMPTY
-              }
-              return readMediaDurationMinutes(fileInfo.fullPath).pipe(
-                map((fileMinutes) => {
-                  warnIfDurationMismatch({ episode, fileMinutes, fileName: fileInfo.filename })
-                  return {
-                    fileInfo,
-                    renamedFilename: formatOutputFilename({
-                      category: episodeType,
+            concatMap(
+              ({ episode, fileInfo, sequentialIndex }) => {
+                if (!episode) {
+                  logInfo(
+                    "NO EPISODE FOR FILE",
+                    fileInfo.filename,
+                  )
+                  return EMPTY
+                }
+                const title = pickEpisodeTitle(
+                  episode.titles,
+                )
+                if (!title) {
+                  logInfo(
+                    "NO EPISODE TITLE",
+                    fileInfo.filename,
+                    `(epno=${episode.epno})`,
+                  )
+                  return EMPTY
+                }
+                return readMediaDurationMinutes(
+                  fileInfo.fullPath,
+                ).pipe(
+                  map((fileMinutes) => {
+                    warnIfDurationMismatch({
                       episode,
-                      episodeTitle: title,
-                      seasonNumber,
-                      sequentialIndex,
-                      seriesName,
-                    }),
-                  }
-                }),
-              )
-            }),
+                      fileMinutes,
+                      fileName: fileInfo.filename,
+                    })
+                    return {
+                      fileInfo,
+                      renamedFilename: formatOutputFilename(
+                        {
+                          category: episodeType,
+                          episode,
+                          episodeTitle: title,
+                          seasonNumber,
+                          sequentialIndex,
+                          seriesName,
+                        },
+                      ),
+                    }
+                  }),
+                )
+              },
+            ),
           )
         }),
-      )
-    )),
+      ),
+    ),
     toArray(),
     mergeAll(),
     mergeAll(),
-    withFileProgress(({ fileInfo, renamedFilename }) => fileInfo.renameFile(renamedFilename), { concurrency: Infinity }),
+    withFileProgress(
+      ({ fileInfo, renamedFilename }) =>
+        fileInfo.renameFile(renamedFilename),
+      { concurrency: Infinity },
+    ),
     logAndRethrow(nameAnimeEpisodesAniDB),
   )
-)

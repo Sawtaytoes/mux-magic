@@ -9,9 +9,9 @@ import { deleteFilesByExtension } from "./deleteFilesByExtension.js"
 describe(deleteFilesByExtension.name, () => {
   beforeEach(() => {
     vol.fromJSON({
-      "/anime-subtitles/movie.srt": "",
-      "/anime-subtitles/movie.ass": "",
       "/anime-subtitles/episode.SRT": "",
+      "/anime-subtitles/movie.ass": "",
+      "/anime-subtitles/movie.srt": "",
       "/anime-subtitles/notes.txt": "",
       "/anime-subtitles/subtitles/extra.srt": "",
     })
@@ -25,23 +25,30 @@ describe(deleteFilesByExtension.name, () => {
           extensions: [".srt"],
           isRecursive: true,
           recursiveDepth: 2,
-        })
-        .pipe(
-          toArray(),
-        )
-      )
+        }).pipe(toArray()),
+      ),
+    ).resolves.toEqual(
+      expect.arrayContaining([
+        join("/anime-subtitles", "episode.SRT"),
+        join("/anime-subtitles", "movie.srt"),
+        join("/anime-subtitles", "subtitles", "extra.srt"),
+      ]),
     )
-    .resolves
-    .toEqual([
-      join("/anime-subtitles", "movie.srt"),
-      join("/anime-subtitles", "episode.SRT"),
-      join("/anime-subtitles", "subtitles", "extra.srt"),
-    ])
 
-    await expect(stat("/anime-subtitles/movie.srt")).rejects.toThrow()
-    await expect(stat("/anime-subtitles/episode.SRT")).rejects.toThrow()
-    await expect(stat("/anime-subtitles/subtitles/extra.srt")).rejects.toThrow()
-    await expect(stat("/anime-subtitles/movie.ass")).resolves.toBeDefined()
-    await expect(stat("/anime-subtitles/notes.txt")).resolves.toBeDefined()
+    await expect(
+      stat("/anime-subtitles/episode.SRT"),
+    ).rejects.toThrow()
+    await expect(
+      stat("/anime-subtitles/movie.ass"),
+    ).resolves.toBeDefined()
+    await expect(
+      stat("/anime-subtitles/movie.srt"),
+    ).rejects.toThrow()
+    await expect(
+      stat("/anime-subtitles/notes.txt"),
+    ).resolves.toBeDefined()
+    await expect(
+      stat("/anime-subtitles/subtitles/extra.srt"),
+    ).rejects.toThrow()
   })
 })

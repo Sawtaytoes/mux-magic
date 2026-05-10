@@ -1,12 +1,10 @@
-import { type Iso6391LanguageCode } from "./iso6391LanguageCodes.js"
-import { type Iso6392LanguageCode } from "./iso6392LanguageCodes.js"
+import type { Iso6391LanguageCode } from "./iso6391LanguageCodes.js"
+import type { Iso6392LanguageCode } from "./iso6392LanguageCodes.js"
 
-const iso6391ToIso6392: (
-  Record<
-    Iso6391LanguageCode,
-    Iso6392LanguageCode
-  >
-) = {
+const iso6391ToIso6392: Record<
+  Iso6391LanguageCode,
+  Iso6392LanguageCode
+> = {
   aa: "aar",
   ab: "abk",
   ae: "ave",
@@ -194,8 +192,5 @@ const iso6391ToIso6392: (
 } as const
 
 export const convertIso6391ToIso6392 = (
-  iso6391LanguageCode: Iso6391LanguageCode
-) => (
-  iso6391ToIso6392
-  [iso6391LanguageCode]
-)
+  iso6391LanguageCode: Iso6391LanguageCode,
+) => iso6391ToIso6392[iso6391LanguageCode]

@@ -13,7 +13,13 @@ import { fileURLToPath } from "node:url"
 // degrade to a "git=dev" line rather than crashing the boot.
 
 const moduleDir = dirname(fileURLToPath(import.meta.url))
-const versionPath = join(moduleDir, "..", "public", "api", "version.json")
+const versionPath = join(
+  moduleDir,
+  "..",
+  "public",
+  "api",
+  "version.json",
+)
 
 try {
   const raw = readFileSync(versionPath, "utf8")
@@ -30,8 +36,7 @@ try {
   console.log(
     `media-tools git=${sha} built=${built} node=${node}`,
   )
-}
-catch {
+} catch {
   console.log(
     `media-tools git=dev built=unknown node=${process.version}`,
   )

@@ -1,18 +1,11 @@
-import {
-  concatMap,
-  filter,
-  map,
-  reduce,
-  tap,
-} from "rxjs"
-
-import { logAndRethrow } from "../tools/logAndRethrow.js"
+import { concatMap, filter, map, reduce, tap } from "rxjs"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import {
-  getMediaInfo,
-  type AudioTrack,
-} from "../tools/getMediaInfo.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
+import {
+  type AudioTrack,
+  getMediaInfo,
+} from "../tools/getMediaInfo.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
@@ -24,112 +17,43 @@ export const hasBetterAudio = ({
   isRecursive: boolean
   recursiveDepth: number
   sourcePath: string
-}) => (
+}) =>
   getFilesAtDepth({
-    depth: (
-      isRecursive
-      ? (
-        recursiveDepth
-        || 1
-      )
-      : 0
-    ),
+    depth: isRecursive ? recursiveDepth || 1 : 0,
     sourcePath,
-  })
-  .pipe(
+  }).pipe(
     filterIsVideoFile(),
-    withFileProgress((fileInfo) => (
-      getMediaInfo(
-        fileInfo
-        .fullPath
-      )
-      .pipe(
+    withFileProgress((fileInfo) =>
+      getMediaInfo(fileInfo.fullPath).pipe(
+        filter(Boolean),
+        map(({ media }) => media),
+        filter(Boolean),
+        concatMap(({ track }) => track),
         filter(
-          Boolean
+          (track): track is AudioTrack =>
+            track["@type"] === "Audio",
         ),
-        map(({
-          media,
-        }) => (
-          media
-        )),
-        filter(
-          Boolean
-        ),
-        concatMap(({
-          track,
-        }) => (
-          track
-        )),
-        filter((
-          track,
-        ): track is AudioTrack => (
-          (
-            track
-            ["@type"]
-          )
-          === "Audio"
-        )),
-        map((
-          track,
-        ) => {
-          const audioFormat = (
-            (
-              track
-              .Format_Commercial_IfAny
-            )
-            || (
-              track
-              .Format_Commercial
-            )
-            || (
-              track
-              .Format
-            )
-          )
+        map((track) => {
+          const audioFormat =
+            track.Format_Commercial_IfAny ||
+            track.Format_Commercial ||
+            track.Format
 
-          const channelLayout = (
-            (
-              track
-              .ChannelLayout_Original
-            )
-            || (
-              track
-              .ChannelLayout
-            )
-          )
+          const channelLayout =
+            track.ChannelLayout_Original ||
+            track.ChannelLayout
 
-          const formatAdditionalFeatures = (
-            track
-            .Format_AdditionalFeatures
-          )
+          const formatAdditionalFeatures =
+            track.Format_AdditionalFeatures
 
-          const numberOfChannels = (
-            Number(
-              (
-                track
-                .Channels_Original
-              )
-              || (
-                track
-                .Channels
-              )
-              || 2
-            )
+          const numberOfChannels = Number(
+            track.Channels_Original || track.Channels || 2,
           )
 
           if (
-            (
-              audioFormat
-              ?.includes('Atmos')
-            )
-            || (
-              formatAdditionalFeatures
-              === 'XLL X'
-            )
-            || (
-              formatAdditionalFeatures
-              === 'XLL X IMAX'
-            )
+            audioFormat?.includes("Atmos") ||
+            formatAdditionalFeatures === "XLL X" ||
+            formatAdditionalFeatures === "XLL X IMAX"
           ) {
             return {
               channelCount: 16,
@@ -166,87 +90,42 @@ export const hasBetterAudio = ({
           //   }
           // }
 
-          if (
-            channelLayout
-          ) {
+          if (channelLayout) {
             return {
-              channelCount: (
-                channelLayout
-                .split(' ')
-                .length
-              ),
+              channelCount: channelLayout.split(" ").length,
               track,
             }
           }
 
           return {
-            channelCount: (
-              numberOfChannels
-            ),
+            channelCount: numberOfChannels,
             track,
           }
         }),
         reduce(
-          (
-            selectedValue,
-            value,
-            index,
-          ) => (
-            (
-              (
-                selectedValue
-                .channelCount
-              )
-              >= (
-                value
-                .channelCount
-              )
-            )
-            ? selectedValue
-            : {
-              ...value,
-              index,
-            }
-          ),
+          (selectedValue, value, index) =>
+            selectedValue.channelCount >= value.channelCount
+              ? selectedValue
+              : {
+                  ...value,
+                  index,
+                },
           {
             channelCount: 0,
             index: -1,
-            track: {}
+            track: {},
           } as {
             channelCount: number
-            index: number,
+            index: number
             track: AudioTrack
-          }
+          },
         ),
-        filter(({
-          channelCount
-        }) => (
-          channelCount
-          > 0
-        )),
-        filter(({
-          index,
-        }) => (
-          index
-          > 0
-        )),
-        tap(({
-          channelCount,
-          track,
-        }) => {
-          logInfo(
-            (
-              fileInfo
-              .fullPath
-            ),
-            channelCount,
-            track,
-          )
+        filter(({ channelCount }) => channelCount > 0),
+        filter(({ index }) => index > 0),
+        tap(({ channelCount, track }) => {
+          logInfo(fileInfo.fullPath, channelCount, track)
         }),
-      )
-    )),
-    logAndRethrow(
-      hasBetterAudio
+      ),
     ),
+    logAndRethrow(hasBetterAudio),
   )
-)

@@ -2,7 +2,13 @@ import { stat } from "node:fs/promises"
 import { join } from "node:path"
 import { vol } from "memfs"
 import { firstValueFrom, of, toArray } from "rxjs"
-import { beforeEach, describe, expect, test, vi } from "vitest"
+import {
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 import { captureConsoleMessage } from "../tools/captureConsoleMessage.js"
 import { remuxToMkv } from "./remuxToMkv.js"
@@ -16,14 +22,21 @@ vi.mock("../cli-spawn-operations/remuxMkvMerge.js", () => ({
 }))
 
 // Re-import after the mock is set up so the test sees the mocked symbol.
-const { remuxMkvMerge } = await import("../cli-spawn-operations/remuxMkvMerge.js")
+const { remuxMkvMerge } = await import(
+  "../cli-spawn-operations/remuxMkvMerge.js"
+)
 
 const setSuccessfulRemux = () => {
-  vi.mocked(remuxMkvMerge).mockImplementation(({ inputFilePath }) => {
-    const outputFilePath = inputFilePath.replace(/\.[^.]+$/u, ".mkv")
-    vol.writeFileSync(outputFilePath, "")
-    return of({ inputFilePath, outputFilePath })
-  })
+  vi.mocked(remuxMkvMerge).mockImplementation(
+    ({ inputFilePath }) => {
+      const outputFilePath = inputFilePath.replace(
+        /\.[^.]+$/u,
+        ".mkv",
+      )
+      vol.writeFileSync(outputFilePath, "")
+      return of({ inputFilePath, outputFilePath })
+    },
+  )
 }
 
 describe(remuxToMkv.name, () => {
@@ -44,8 +57,7 @@ describe(remuxToMkv.name, () => {
         isRecursive: false,
         isSourceDeletedOnSuccess: false,
         sourcePath: "/ts",
-      })
-      .pipe(toArray()),
+      }).pipe(toArray()),
     )
     expect(results.sort()).toEqual([
       join("/ts", "episode-01.mkv"),
@@ -60,11 +72,14 @@ describe(remuxToMkv.name, () => {
         isRecursive: false,
         isSourceDeletedOnSuccess: false,
         sourcePath: "/ts",
-      })
-      .pipe(toArray()),
+      }).pipe(toArray()),
     )
-    await expect(stat("/ts/episode-01.ts")).resolves.toBeDefined()
-    await expect(stat("/ts/episode-02.ts")).resolves.toBeDefined()
+    await expect(
+      stat("/ts/episode-01.ts"),
+    ).resolves.toBeDefined()
+    await expect(
+      stat("/ts/episode-02.ts"),
+    ).resolves.toBeDefined()
   })
 
   test("deletes the source after each per-file success when isSourceDeletedOnSuccess is true", async () => {
@@ -74,13 +89,20 @@ describe(remuxToMkv.name, () => {
         isRecursive: false,
         isSourceDeletedOnSuccess: true,
         sourcePath: "/ts",
-      })
-      .pipe(toArray()),
+      }).pipe(toArray()),
     )
-    await expect(stat("/ts/episode-01.ts")).rejects.toThrow()
-    await expect(stat("/ts/episode-02.ts")).rejects.toThrow()
-    await expect(stat("/ts/episode-01.mkv")).resolves.toBeDefined()
-    await expect(stat("/ts/episode-02.mkv")).resolves.toBeDefined()
+    await expect(
+      stat("/ts/episode-01.ts"),
+    ).rejects.toThrow()
+    await expect(
+      stat("/ts/episode-02.ts"),
+    ).rejects.toThrow()
+    await expect(
+      stat("/ts/episode-01.mkv"),
+    ).resolves.toBeDefined()
+    await expect(
+      stat("/ts/episode-02.mkv"),
+    ).resolves.toBeDefined()
   })
 
   test("ignores files whose extension is outside the requested set", async () => {
@@ -90,12 +112,15 @@ describe(remuxToMkv.name, () => {
         isRecursive: false,
         isSourceDeletedOnSuccess: true,
         sourcePath: "/ts",
-      })
-      .pipe(toArray()),
+      }).pipe(toArray()),
     )
     // .txt sibling is left untouched.
-    await expect(stat("/ts/readme.txt")).resolves.toBeDefined()
-    expect(vi.mocked(remuxMkvMerge)).toHaveBeenCalledTimes(2)
+    await expect(
+      stat("/ts/readme.txt"),
+    ).resolves.toBeDefined()
+    expect(vi.mocked(remuxMkvMerge)).toHaveBeenCalledTimes(
+      2,
+    )
   })
 
   test("normalizes extensions case-insensitively and tolerates leading dots", async () => {
@@ -111,18 +136,17 @@ describe(remuxToMkv.name, () => {
         isRecursive: false,
         isSourceDeletedOnSuccess: false,
         sourcePath: "/ts",
-      })
-      .pipe(toArray()),
+      }).pipe(toArray()),
     )
     expect(results).toHaveLength(2)
   })
 
-  test("refuses to clobber a same-named .mkv that already exists; the rest of the directory still processes", async () => (
+  test("refuses to clobber a same-named .mkv that already exists; the rest of the directory still processes", async () =>
     captureConsoleMessage("error", async () => {
       vol.reset()
       vol.fromJSON({
         "/ts/episode-01.ts": "stream-1",
-        "/ts/episode-01.mkv": "pre-existing",   // collision target
+        "/ts/episode-01.mkv": "pre-existing", // collision target
         "/ts/episode-02.ts": "stream-2",
       })
 
@@ -132,16 +156,20 @@ describe(remuxToMkv.name, () => {
           isRecursive: false,
           isSourceDeletedOnSuccess: true,
           sourcePath: "/ts",
-        })
-        .pipe(toArray()),
+        }).pipe(toArray()),
       )
 
       // Only episode-02 should have been remuxed; episode-01 was skipped
       // because of the collision and its .ts must survive.
-      expect(results).toEqual([join("/ts", "episode-02.mkv")])
-      await expect(stat("/ts/episode-01.ts")).resolves.toBeDefined()
+      expect(results).toEqual([
+        join("/ts", "episode-02.mkv"),
+      ])
+      await expect(
+        stat("/ts/episode-01.ts"),
+      ).resolves.toBeDefined()
       // Pre-existing .mkv content stays put — we never touched it.
-      expect(vol.readFileSync("/ts/episode-01.mkv", "utf8")).toBe("pre-existing")
-    })
-  ))
+      expect(
+        vol.readFileSync("/ts/episode-01.mkv", "utf8"),
+      ).toBe("pre-existing")
+    }))
 })

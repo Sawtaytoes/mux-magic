@@ -1,18 +1,13 @@
-import {
-  concatMap,
-  of,
-  toArray,
-} from "rxjs"
-
-import { logAndRethrow } from "../tools/logAndRethrow.js"
+import { concatMap, of, toArray } from "rxjs"
 import { convertVariableToConstantBitrate } from "../cli-spawn-operations/convertVariableToConstantBitrate.js"
-import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
 import {
   inverseTelecineVideo,
   type Pulldown,
   type VideoEncoder,
 } from "../cli-spawn-operations/inverseTelecineVideo.js"
+import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 /**
@@ -28,54 +23,32 @@ export const inverseTelecineDiscRips = ({
   isConstantBitrate: boolean
   isRecursive: boolean
   sourcePath: string
-  pulldown: Pulldown,
-  videoEncoder: VideoEncoder,
-}) => (
+  pulldown: Pulldown
+  videoEncoder: VideoEncoder
+}) =>
   getFilesAtDepth({
-    depth: (
-      isRecursive
-      ? 1
-      : 0
-    ),
+    depth: isRecursive ? 1 : 0,
     sourcePath,
-  })
-  .pipe(
+  }).pipe(
     filterIsVideoFile(),
-    withFileProgress((fileInfo) => (
-      (
-        isConstantBitrate
-        ? (
-          of(
-            fileInfo
-            .fullPath
-          )
-        )
-        : (
-          // DVDs have variable framerate, so you first need to set it to Constant in the video track before performing an inverse telecine.
+    withFileProgress((fileInfo) =>
+      (isConstantBitrate
+        ? of(fileInfo.fullPath)
+        : // DVDs have variable framerate, so you first need to set it to Constant in the video track before performing an inverse telecine.
           convertVariableToConstantBitrate({
-            filePath: (
-              fileInfo
-              .fullPath
-            ),
+            filePath: fileInfo.fullPath,
             framesPerSecond: "24000/1001",
           })
-        )
-      )
-      .pipe(
-        concatMap((
-          filePath,
-        ) => (
+      ).pipe(
+        concatMap((filePath) =>
           inverseTelecineVideo({
             filePath,
             pulldown,
             videoEncoder,
-          })
-        )),
-      )
-    )),
-    toArray(),
-    logAndRethrow(
-      inverseTelecineDiscRips
+          }),
+        ),
+      ),
     ),
+    toArray(),
+    logAndRethrow(inverseTelecineDiscRips),
   )
-)

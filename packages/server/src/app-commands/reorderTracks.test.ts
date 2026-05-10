@@ -12,7 +12,7 @@ describe(reorderTracks.name, () => {
     })
   })
 
-  test("returns EMPTY when every track-index array is empty (no-op fast path)", async () => (
+  test("returns EMPTY when every track-index array is empty (no-op fast path)", async () =>
     captureConsoleMessage("info", async () => {
       const emissions = await firstValueFrom(
         reorderTracks({
@@ -21,14 +21,12 @@ describe(reorderTracks.name, () => {
           sourcePath: "/work",
           subtitlesTrackIndexes: [],
           videoTrackIndexes: [],
-        })
-        .pipe(toArray()),
+        }).pipe(toArray()),
       )
       expect(emissions).toEqual([])
-    })
-  ))
+    }))
 
-  test("returns EMPTY when track-index arrays are nullish (defensive)", async () => (
+  test("returns EMPTY when track-index arrays are nullish (defensive)", async () =>
     captureConsoleMessage("info", async () => {
       const emissions = await firstValueFrom(
         reorderTracks({
@@ -41,10 +39,8 @@ describe(reorderTracks.name, () => {
           subtitlesTrackIndexes: undefined,
           // @ts-expect-error
           videoTrackIndexes: undefined,
-        })
-        .pipe(toArray()),
+        }).pipe(toArray()),
       )
       expect(emissions).toEqual([])
-    })
-  ))
+    }))
 })

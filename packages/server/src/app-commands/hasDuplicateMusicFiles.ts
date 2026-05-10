@@ -1,8 +1,4 @@
-import {
-  basename,
-  dirname,
-  join,
-} from "node:path"
+import { basename, dirname, join } from "node:path"
 import {
   groupBy,
   map,
@@ -11,10 +7,9 @@ import {
   take,
   tap,
 } from "rxjs"
-
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { filterIsAudioFile } from "../tools/filterIsAudioFile.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
 
 export const hasDuplicateMusicFiles = ({
   isRecursive,
@@ -24,97 +19,38 @@ export const hasDuplicateMusicFiles = ({
   isRecursive: boolean
   recursiveDepth: number
   sourcePath: string
-}) => (
+}) =>
   getFilesAtDepth({
-    depth: (
-      isRecursive
-      ? (
-        recursiveDepth
-        || 1
-      )
-      : 0
-    ),
+    depth: isRecursive ? recursiveDepth || 1 : 0,
     sourcePath,
-  })
-  .pipe(
+  }).pipe(
     filterIsAudioFile(),
-    map((
-      fileInfo,
-    ) => (
-      fileInfo
-      .fullPath
-    )),
-    groupBy((
-      filePath,
-    ) => (
+    map((fileInfo) => fileInfo.fullPath),
+    groupBy((filePath) =>
       join(
-        (
-          dirname(
-            filePath
-          )
-        ),
-        (
-          basename(
-            filePath
-          )
-          .replace(
-            /(.+)( \(\d\))/,
-            "$1"
-          )
-          .replace(
-            /(.+)( - Copy)/,
-            "$1"
-          )
-          .replace(
-            /^(.+)\..+$/,
-            "$1"
-          )
-        ),
-      )
-    )),
-    mergeMap((
-      groupObservable,
-    ) => (
-      groupObservable
-      .pipe(
+        dirname(filePath),
+        basename(filePath)
+          .replace(/(.+)( \(\d\))/, "$1")
+          .replace(/(.+)( - Copy)/, "$1")
+          .replace(/^(.+)\..+$/, "$1"),
+      ),
+    ),
+    mergeMap((groupObservable) =>
+      groupObservable.pipe(
         skip(1),
         take(2),
-        map(() => (
-          groupObservable
-          .key
-        )),
-      )
-    )),
-    map((
-      filePath,
-    ) => (
-      dirname(
-        filePath
-      )
-    )),
-    groupBy((
-      directoryWithDuplicates,
-    ) => (
-      directoryWithDuplicates
-    )),
-    mergeMap((
-      groupObservable,
-    ) => (
-      groupObservable
-      .pipe(
-        take(1),
-      )
-    )),
-    tap((
-      directoryWithDuplicates
-    ) => {
-      console
-      .info(
-        directoryWithDuplicates,
-      )
-    }),
-    logAndRethrow(
-      hasDuplicateMusicFiles
+        map(() => groupObservable.key),
+      ),
     ),
+    map((filePath) => dirname(filePath)),
+    groupBy(
+      (directoryWithDuplicates) => directoryWithDuplicates,
+    ),
+    mergeMap((groupObservable) =>
+      groupObservable.pipe(take(1)),
+    ),
+    tap((directoryWithDuplicates) => {
+      console.info(directoryWithDuplicates)
+    }),
+    logAndRethrow(hasDuplicateMusicFiles),
   )
-)

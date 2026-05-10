@@ -1,4 +1,4 @@
-import { getPaths } from '../state.js'
+import { getPaths } from "../state.js"
 
 // Shared text formatter for path-variable <option> labels. The path
 // value is the headline (so it matches what the linked Source Path
@@ -6,8 +6,12 @@ import { getPaths } from '../state.js'
 // annotation only when it adds information. The same formula renders
 // the path-link <select> in step cards.
 export function pathVarOptionText(pathVar) {
-  const display = pathVar.value || pathVar.label || '(unset)'
-  const annotation = pathVar.value && pathVar.label ? ` (${pathVar.label})` : ''
+  const display =
+    pathVar.value || pathVar.label || "(unset)"
+  const annotation =
+    pathVar.value && pathVar.label
+      ? ` (${pathVar.label})`
+      : ""
   return `${display}${annotation}`
 }
 
@@ -17,23 +21,36 @@ export function pathVarOptionText(pathVar) {
 // the user is typing into. (The legacy <select data-path-link> branch is
 // retained for any caller still rendering the old form.)
 export function refreshPathVarOptions() {
-  const pathVarById = Object.fromEntries(getPaths().map((pathVar) => [pathVar.id, pathVar]))
-  document.querySelectorAll('select[data-path-link]').forEach((select) => {
-    select.querySelectorAll('option[data-pv-id]').forEach((option) => {
-      const pathVar = pathVarById[option.dataset.pvId]
-      if (pathVar) {
-        option.textContent = pathVarOptionText(pathVar)
+  const pathVarById = Object.fromEntries(
+    getPaths().map((pathVar) => [pathVar.id, pathVar]),
+  )
+  document
+    .querySelectorAll("select[data-path-link]")
+    .forEach((select) => {
+      select
+        .querySelectorAll("option[data-pv-id]")
+        .forEach((option) => {
+          const pathVar = pathVarById[option.dataset.pvId]
+          if (pathVar) {
+            option.textContent = pathVarOptionText(pathVar)
+          }
+        })
+    })
+  document
+    .querySelectorAll(
+      "[data-link-picker-trigger][data-pv-id]",
+    )
+    .forEach((trigger) => {
+      const pathVar = pathVarById[trigger.dataset.pvId]
+      if (!pathVar) {
+        return
+      }
+      const labelElement = trigger.querySelector(
+        "[data-link-trigger-label]",
+      )
+      if (labelElement) {
+        labelElement.textContent =
+          pathVar.label || pathVar.value || "path variable"
       }
     })
-  })
-  document.querySelectorAll('[data-link-picker-trigger][data-pv-id]').forEach((trigger) => {
-    const pathVar = pathVarById[trigger.dataset.pvId]
-    if (!pathVar) {
-      return
-    }
-    const labelElement = trigger.querySelector('[data-link-trigger-label]')
-    if (labelElement) {
-      labelElement.textContent = pathVar.label || pathVar.value || 'path variable'
-    }
-  })
 }

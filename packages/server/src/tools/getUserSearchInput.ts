@@ -1,10 +1,12 @@
-import readline from "node:readline"
 import { randomUUID } from "node:crypto"
+import readline from "node:readline"
 import { Observable } from "rxjs"
-
-import { getActiveJobId } from "../api/logCapture.js"
 import { emitJobEvent } from "../api/jobStore.js"
-import { cancelPrompt, registerPrompt } from "../api/promptStore.js"
+import { getActiveJobId } from "../api/logCapture.js"
+import {
+  cancelPrompt,
+  registerPrompt,
+} from "../api/promptStore.js"
 import type { PromptOption } from "../api/types.js"
 
 export const getUserSearchInput = (params: {
@@ -21,8 +23,8 @@ export const getUserSearchInput = (params: {
   // represents so the UI can render a ▶ Play button per row. Independent
   // of `filePath` — `filePath` is for "preview the file being picked
   // FOR", while `filePaths` is for "preview the file each option IS".
-  filePaths?: Array<{ index: number, path: string }>
-}) => (
+  filePaths?: Array<{ index: number; path: string }>
+}) =>
   new Observable<number>((observer) => {
     const jobId = getActiveJobId()
 
@@ -61,7 +63,9 @@ export const getUserSearchInput = (params: {
     process.stdout.write(`${params.message}\n`)
 
     params.options.forEach((option) => {
-      process.stdout.write(`${option.index} | ${option.label}\n`)
+      process.stdout.write(
+        `${option.index} | ${option.label}\n`,
+      )
     })
 
     const readlineInterface = readline.createInterface({
@@ -76,4 +80,3 @@ export const getUserSearchInput = (params: {
       observer.complete()
     })
   })
-)

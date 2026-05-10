@@ -1,5 +1,12 @@
 import { of } from "rxjs"
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 import {
   createSubject,
@@ -7,13 +14,21 @@ import {
 } from "../api/jobStore.js"
 import { withJobContext } from "../api/logCapture.js"
 import type { ProgressEvent } from "../api/types.js"
-import { createProgressEmitter, withFileProgress } from "./progressEmitter.js"
+import {
+  createProgressEmitter,
+  withFileProgress,
+} from "./progressEmitter.js"
 
-const captureProgress = (jobId: string): ProgressEvent[] => {
+const captureProgress = (
+  jobId: string,
+): ProgressEvent[] => {
   const subject = createSubject(jobId)
   const captured: ProgressEvent[] = []
   subject.subscribe((event) => {
-    if (typeof event !== "string" && event.type === "progress") {
+    if (
+      typeof event !== "string" &&
+      event.type === "progress"
+    ) {
       captured.push(event)
     }
   })
@@ -32,7 +47,9 @@ afterEach(() => {
 describe(createProgressEmitter.name, () => {
   test("does not emit anything if finalize lands inside the first 1s window", () => {
     const captured = captureProgress("job-fast")
-    const emitter = createProgressEmitter("job-fast", { totalFiles: 3 })
+    const emitter = createProgressEmitter("job-fast", {
+      totalFiles: 3,
+    })
 
     emitter.incrementFilesDone()
     emitter.incrementFilesDone()
@@ -48,7 +65,9 @@ describe(createProgressEmitter.name, () => {
 
   test("emits exactly once after the first 1s window when ticks happened during the window", () => {
     const captured = captureProgress("job-slow")
-    const emitter = createProgressEmitter("job-slow", { totalFiles: 4 })
+    const emitter = createProgressEmitter("job-slow", {
+      totalFiles: 4,
+    })
 
     emitter.incrementFilesDone()
     vi.advanceTimersByTime(300)
@@ -73,13 +92,13 @@ describe(createProgressEmitter.name, () => {
 
   test("throttles bursts to 1Hz once the first emission has fired", () => {
     const captured = captureProgress("job-burst")
-    const emitter = createProgressEmitter("job-burst", { totalFiles: 100 })
+    const emitter = createProgressEmitter("job-burst", {
+      totalFiles: 100,
+    })
 
     // Tick continuously across 3 seconds. Without throttling we'd see
     // hundreds of events; we expect at most 3 (one per second window).
-    Array
-    .from({ length: 60 })
-    .forEach(() => {
+    Array.from({ length: 60 }).forEach(() => {
       emitter.incrementFilesDone()
       vi.advanceTimersByTime(50)
     })
@@ -94,8 +113,12 @@ describe(createProgressEmitter.name, () => {
 
     // Each emission's filesDone monotonically increases — no duplicates
     // or stale data leaking through the throttle.
-    const filesDoneSequence = captured.map((event) => event.filesDone)
-    const sorted = [...filesDoneSequence].sort((aValue, bValue) => (aValue ?? 0) - (bValue ?? 0))
+    const filesDoneSequence = captured.map(
+      (event) => event.filesDone,
+    )
+    const sorted = [...filesDoneSequence].sort(
+      (aValue, bValue) => (aValue ?? 0) - (bValue ?? 0),
+    )
     expect(filesDoneSequence).toEqual(sorted)
   })
 
@@ -143,14 +166,16 @@ describe(createProgressEmitter.name, () => {
 
   test("multiple in-flight trackers each contribute a row to currentFiles", () => {
     const captured = captureProgress("job-parallel")
-    const emitter = createProgressEmitter("job-parallel", { totalFiles: 3 })
+    const emitter = createProgressEmitter("job-parallel", {
+      totalFiles: 3,
+    })
 
     const trackerA = emitter.startFile("/a.mkv")
     const trackerB = emitter.startFile("/b.mkv")
     const trackerC = emitter.startFile("/c.mkv")
 
     trackerA.setRatio(0.25)
-    trackerB.setRatio(0.50)
+    trackerB.setRatio(0.5)
     trackerC.setRatio(0.75)
 
     vi.advanceTimersByTime(1000)
@@ -158,7 +183,7 @@ describe(createProgressEmitter.name, () => {
     expect(captured).toHaveLength(1)
     expect(captured[0].currentFiles).toEqual([
       { path: "/a.mkv", ratio: 0.25 },
-      { path: "/b.mkv", ratio: 0.50 },
+      { path: "/b.mkv", ratio: 0.5 },
       { path: "/c.mkv", ratio: 0.75 },
     ])
   })
@@ -170,7 +195,9 @@ describe(createProgressEmitter.name, () => {
     // that call via rxFinalize so per-pair counting and per-file ffmpeg tracking
     // never double-count.
     const captured = captureProgress("job-finish")
-    const emitter = createProgressEmitter("job-finish", { totalFiles: 2 })
+    const emitter = createProgressEmitter("job-finish", {
+      totalFiles: 2,
+    })
 
     const trackerA = emitter.startFile("/a.mkv")
     const trackerB = emitter.startFile("/b.mkv")
@@ -196,7 +223,10 @@ describe(createProgressEmitter.name, () => {
 
   test("tracker.finish is idempotent — second call after teardown is a no-op", () => {
     const captured = captureProgress("job-idempotent")
-    const emitter = createProgressEmitter("job-idempotent", { totalFiles: 1 })
+    const emitter = createProgressEmitter(
+      "job-idempotent",
+      { totalFiles: 1 },
+    )
 
     const tracker = emitter.startFile("/once.mkv", 100)
     tracker.finish(100)
@@ -211,7 +241,9 @@ describe(createProgressEmitter.name, () => {
 
   test("setRatio overrides byte/file derived ratio — used by spawn ops with a tool-supplied percentage", () => {
     const captured = captureProgress("job-spawn")
-    const emitter = createProgressEmitter("job-spawn", { totalFiles: 10 })
+    const emitter = createProgressEmitter("job-spawn", {
+      totalFiles: 10,
+    })
 
     emitter.incrementFilesDone() // would push ratio=0.1 from file-counter math
     emitter.setRatio(0.42) // overrides
@@ -224,7 +256,9 @@ describe(createProgressEmitter.name, () => {
 
   test("ratio is null when no totalFiles or totalBytes was supplied and setRatio was not called", () => {
     const captured = captureProgress("job-indeterminate")
-    const emitter = createProgressEmitter("job-indeterminate")
+    const emitter = createProgressEmitter(
+      "job-indeterminate",
+    )
 
     emitter.incrementFilesDone()
     vi.advanceTimersByTime(1000)
@@ -244,11 +278,15 @@ describe(createProgressEmitter.name, () => {
 
   test("subsequent calls with the same jobId return the same singleton — totals merge additively", () => {
     const captured = captureProgress("job-singleton")
-    const first = createProgressEmitter("job-singleton", { totalFiles: 2 })
+    const first = createProgressEmitter("job-singleton", {
+      totalFiles: 2,
+    })
 
     // A nested caller (e.g. a spawn op inside an iterator) declares
     // additional totals — they should fold into the same singleton.
-    const second = createProgressEmitter("job-singleton", { totalFiles: 3 })
+    const second = createProgressEmitter("job-singleton", {
+      totalFiles: 3,
+    })
 
     // Both handles drive the same shared state.
     first.incrementFilesDone()
@@ -273,9 +311,15 @@ describe(withFileProgress.name, () => {
     const dataFlow: string[] = []
 
     withJobContext("job-iter", () => {
-      of("a.mkv", "b.mkv", "c.mkv").pipe(
-        withFileProgress((file) => of(`processed-${file}`)),
-      ).subscribe((value) => { dataFlow.push(value) })
+      of("a.mkv", "b.mkv", "c.mkv")
+        .pipe(
+          withFileProgress((file) =>
+            of(`processed-${file}`),
+          ),
+        )
+        .subscribe((value) => {
+          dataFlow.push(value)
+        })
     })
 
     vi.advanceTimersByTime(5_000)
@@ -294,11 +338,11 @@ describe(withFileProgress.name, () => {
     // because there's no subject to publish to.
     const captured: string[] = []
 
-    of("a", "b").pipe(
-      withFileProgress((file) => of(`done-${file}`)),
-    ).subscribe((value) => {
-      captured.push(value)
-    })
+    of("a", "b")
+      .pipe(withFileProgress((file) => of(`done-${file}`)))
+      .subscribe((value) => {
+        captured.push(value)
+      })
 
     vi.advanceTimersByTime(5_000)
 
@@ -306,13 +350,18 @@ describe(withFileProgress.name, () => {
   })
 
   test("passes a sequential 0-based index as the second argument to perFile", () => {
-    const captured: Array<{ file: string, index: number }> = []
+    const captured: Array<{ file: string; index: number }> =
+      []
 
-    of("a.mkv", "b.mkv", "c.mkv").pipe(
-      withFileProgress((file, index) => of({ file, index })),
-    ).subscribe((value) => {
-      captured.push(value)
-    })
+    of("a.mkv", "b.mkv", "c.mkv")
+      .pipe(
+        withFileProgress((file, index) =>
+          of({ file, index }),
+        ),
+      )
+      .subscribe((value) => {
+        captured.push(value)
+      })
 
     vi.advanceTimersByTime(5_000)
 

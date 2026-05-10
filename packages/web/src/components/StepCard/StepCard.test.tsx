@@ -59,7 +59,6 @@ const renderCard = (
   return store
 }
 
-
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()

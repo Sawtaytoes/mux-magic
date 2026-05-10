@@ -1,4 +1,10 @@
-import { afterEach, describe, expect, test, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 import { withJobContext } from "../api/logCapture.js"
 import { commandNames } from "../api/routes/commandRoutes.js"
@@ -20,7 +26,9 @@ describe("getFakeCommandConfigs", () => {
 
     commandNames.forEach((name) => {
       expect(configs[name]).toBeDefined()
-      expect(typeof configs[name].getObservable).toBe("function")
+      expect(typeof configs[name].getObservable).toBe(
+        "function",
+      )
     })
   })
 
@@ -45,14 +53,19 @@ describe("getEffectiveCommandConfigs", () => {
     expect(real).not.toBe(fake)
     // Real config's getObservable should not be the same reference as fake's,
     // even for commands the fake table covers.
-    expect(real.makeDirectory.getObservable).not.toBe(fake.makeDirectory.getObservable)
+    expect(real.makeDirectory.getObservable).not.toBe(
+      fake.makeDirectory.getObservable,
+    )
   })
 })
 
 describe("successScenario", () => {
   test("emits one final value and completes (with timer-driven steps)", async () => {
     vi.useFakeTimers()
-    const obs = successScenario({ foo: "bar" }, { totalMs: 200, label: "test/success" })
+    const obs = successScenario(
+      { foo: "bar" },
+      { totalMs: 200, label: "test/success" },
+    )
 
     const completeSpy = vi.fn()
     const nextSpy = vi.fn()
@@ -71,20 +84,28 @@ describe("successScenario", () => {
     })
 
     expect(nextSpy).toHaveBeenCalledTimes(1)
-    expect(nextSpy.mock.calls[0][0]).toMatchObject({ ok: true })
+    expect(nextSpy.mock.calls[0][0]).toMatchObject({
+      ok: true,
+    })
     expect(completeSpy).toHaveBeenCalledTimes(1)
     vi.useRealTimers()
   })
 
   test("teardown clears the timer when subscriber unsubscribes early", async () => {
     vi.useFakeTimers()
-    const obs = successScenario({}, { totalMs: 1000, label: "test/cancel" })
+    const obs = successScenario(
+      {},
+      { totalMs: 1000, label: "test/cancel" },
+    )
 
     const nextSpy = vi.fn()
     const completeSpy = vi.fn()
 
     await withJobContext("fake-job-2", async () => {
-      const sub = obs.subscribe({ next: nextSpy, complete: completeSpy })
+      const sub = obs.subscribe({
+        next: nextSpy,
+        complete: completeSpy,
+      })
       await vi.advanceTimersByTimeAsync(50) // before any step fires
       sub.unsubscribe()
       // Advance past the natural completion window — nothing more should fire.
@@ -99,7 +120,14 @@ describe("successScenario", () => {
 describe("failureScenario", () => {
   test("errors out with the configured message after the threshold", async () => {
     vi.useFakeTimers()
-    const obs = failureScenario({}, { totalMs: 200, errorMessage: "boom!", label: "test/fail" })
+    const obs = failureScenario(
+      {},
+      {
+        totalMs: 200,
+        errorMessage: "boom!",
+        label: "test/fail",
+      },
+    )
 
     const errorSpy = vi.fn()
     const completeSpy = vi.fn()
@@ -114,7 +142,9 @@ describe("failureScenario", () => {
     })
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
-    expect(String(errorSpy.mock.calls[0][0])).toContain("boom!")
+    expect(String(errorSpy.mock.calls[0][0])).toContain(
+      "boom!",
+    )
     expect(completeSpy).not.toHaveBeenCalled()
     vi.useRealTimers()
   })
@@ -123,13 +153,19 @@ describe("failureScenario", () => {
 describe("inProgressScenario", () => {
   test("never completes on its own — only via teardown", async () => {
     vi.useFakeTimers()
-    const obs = inProgressScenario({}, { tickMs: 100, label: "test/inprogress" })
+    const obs = inProgressScenario(
+      {},
+      { tickMs: 100, label: "test/inprogress" },
+    )
 
     const completeSpy = vi.fn()
     const errorSpy = vi.fn()
 
     await withJobContext("fake-job-4", async () => {
-      const sub = obs.subscribe({ complete: completeSpy, error: errorSpy })
+      const sub = obs.subscribe({
+        complete: completeSpy,
+        error: errorSpy,
+      })
       await vi.advanceTimersByTimeAsync(1000)
       sub.unsubscribe()
     })

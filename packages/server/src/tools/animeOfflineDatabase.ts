@@ -1,4 +1,10 @@
-import { mkdir, readFile, stat, utimes, writeFile } from "node:fs/promises"
+import {
+  mkdir,
+  readFile,
+  stat,
+  utimes,
+  writeFile,
+} from "node:fs/promises"
 import { join } from "node:path"
 
 import { getAnidbCacheDir } from "./getAnidbCacheDir.js"
@@ -14,55 +20,78 @@ import { logError, logInfo } from "./logMessage.js"
 // extract the version slug from the redirect to do a cheap freshness
 // check before downloading the full ~61 MB payload.
 
-const LATEST_URL = "https://github.com/manami-project/anime-offline-database/releases/latest/download/anime-offline-database-minified.json"
+const LATEST_URL =
+  "https://github.com/manami-project/anime-offline-database/releases/latest/download/anime-offline-database-minified.json"
 
 const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
-const ANIDB_AID_PATTERN = /^https?:\/\/anidb\.net\/anime\/(\d+)\/?$/i
+const ANIDB_AID_PATTERN =
+  /^https?:\/\/anidb\.net\/anime\/(\d+)\/?$/i
 
-const cacheDir = (): string => join(getAnidbCacheDir(), "manami")
-const dataPath = (): string => join(cacheDir(), "anime-offline-database.json")
-const versionPath = (): string => join(cacheDir(), "version")
+const cacheDir = (): string =>
+  join(getAnidbCacheDir(), "manami")
+const dataPath = (): string =>
+  join(cacheDir(), "anime-offline-database.json")
+const versionPath = (): string =>
+  join(cacheDir(), "version")
 
 // Subset of the manami entry shape — only the fields we read.
 type ManamiEntry = {
-  episodes?: number,
-  sources?: string[],
-  synonyms?: string[],
-  title: string,
-  type?: string,
+  episodes?: number
+  sources?: string[]
+  synonyms?: string[]
+  title: string
+  type?: string
 }
 
 export type AnimeIndexEntry = {
-  aid: number,
-  episodes?: number,
+  aid: number
+  episodes?: number
   // Lowercased title + synonyms joined with "\n", precomputed so search
   // is a single .includes() call per entry.
-  matchHaystack: string,
-  name: string,
-  type?: string,
+  matchHaystack: string
+  name: string
+  type?: string
 }
 
-const isFresh = async (path: string, maxAgeMs: number): Promise<boolean> => {
+const isFresh = async (
+  path: string,
+  maxAgeMs: number,
+): Promise<boolean> => {
   try {
     const stats = await stat(path)
     return Date.now() - stats.mtimeMs < maxAgeMs
+  } catch {
+    return false
   }
-  catch { return false }
 }
 
 const resolveLatestVersion = async (): Promise<string> => {
-  const res = await fetch(LATEST_URL, { method: "HEAD", redirect: "manual" })
+  const res = await fetch(LATEST_URL, {
+    method: "HEAD",
+    redirect: "manual",
+  })
   const location = res.headers.get("location")
-  if (!location) throw new Error("manami: HEAD response had no Location header")
-  const match = location.match(/\/releases\/download\/([^/]+)\//)
-  if (!match) throw new Error(`manami: unexpected redirect URL ${location}`)
+  if (!location)
+    throw new Error(
+      "manami: HEAD response had no Location header",
+    )
+  const match = location.match(
+    /\/releases\/download\/([^/]+)\//,
+  )
+  if (!match)
+    throw new Error(
+      `manami: unexpected redirect URL ${location}`,
+    )
   return match[1]
 }
 
 const downloadDataset = async (): Promise<void> => {
   const res = await fetch(LATEST_URL)
-  if (!res.ok) throw new Error(`manami: download failed (${res.status})`)
+  if (!res.ok)
+    throw new Error(
+      `manami: download failed (${res.status})`,
+    )
   const buf = Buffer.from(await res.arrayBuffer())
   await writeFile(dataPath(), buf)
 }
@@ -79,19 +108,30 @@ const refreshIfStale = async (): Promise<void> => {
       await mkdir(cacheDir(), { recursive: true })
 
       let storedVersion = ""
-      try { storedVersion = (await readFile(versionPath(), "utf8")).trim() }
-      catch { /* missing version file is fine */ }
+      try {
+        storedVersion = (
+          await readFile(versionPath(), "utf8")
+        ).trim()
+      } catch {
+        /* missing version file is fine */
+      }
 
       let latestVersion: string
       try {
         latestVersion = await resolveLatestVersion()
-      }
-      catch (err) {
-        logError("manami HEAD check failed; using cached dataset", String(err))
+      } catch (err) {
+        logError(
+          "manami HEAD check failed; using cached dataset",
+          String(err),
+        )
         if (storedVersion) {
           // Bump mtime so we don't keep retrying every call.
           const now = new Date()
-          try { await utimes(dataPath(), now, now) } catch { /* ignore */ }
+          try {
+            await utimes(dataPath(), now, now)
+          } catch {
+            /* ignore */
+          }
           return
         }
         throw err
@@ -99,16 +139,25 @@ const refreshIfStale = async (): Promise<void> => {
 
       if (latestVersion === storedVersion) {
         const now = new Date()
-        try { await utimes(dataPath(), now, now) } catch { /* ignore */ }
+        try {
+          await utimes(dataPath(), now, now)
+        } catch {
+          /* ignore */
+        }
         return
       }
 
-      logInfo("manami", `downloading dataset version ${latestVersion}…`)
+      logInfo(
+        "manami",
+        `downloading dataset version ${latestVersion}…`,
+      )
       await downloadDataset()
       await writeFile(versionPath(), latestVersion)
-      logInfo("manami", `downloaded dataset version ${latestVersion}`)
-    }
-    finally {
+      logInfo(
+        "manami",
+        `downloaded dataset version ${latestVersion}`,
+      )
+    } finally {
       refreshPromise = null
     }
   })()
@@ -116,8 +165,12 @@ const refreshIfStale = async (): Promise<void> => {
   return refreshPromise
 }
 
-export const parseAnimeIndex = (rawJson: string): AnimeIndexEntry[] => {
-  const parsed = JSON.parse(rawJson) as { data?: ManamiEntry[] }
+export const parseAnimeIndex = (
+  rawJson: string,
+): AnimeIndexEntry[] => {
+  const parsed = JSON.parse(rawJson) as {
+    data?: ManamiEntry[]
+  }
   const data = parsed.data ?? []
 
   const index: AnimeIndexEntry[] = []
@@ -132,11 +185,12 @@ export const parseAnimeIndex = (rawJson: string): AnimeIndexEntry[] => {
     }
     if (!aid) continue
 
-    const haystack = (
-      [entry.title, ...(entry.synonyms ?? [])]
+    const haystack = [
+      entry.title,
+      ...(entry.synonyms ?? []),
+    ]
       .join("\n")
       .toLowerCase()
-    )
 
     index.push({
       aid,
@@ -170,13 +224,20 @@ export const findAnimeByQuery = (
 let cachedIndex: AnimeIndexEntry[] | null = null
 let cachedAtMtime = 0
 
-export const loadAnimeIndex = async (): Promise<AnimeIndexEntry[]> => {
+export const loadAnimeIndex = async (): Promise<
+  AnimeIndexEntry[]
+> => {
   await refreshIfStale()
 
   // Long-running processes (the API server) can outlive multiple weekly
   // refreshes. Re-stat the file and reload only if mtime moved.
   const stats = await stat(dataPath()).catch(() => null)
-  if (cachedIndex && stats && stats.mtimeMs === cachedAtMtime) return cachedIndex
+  if (
+    cachedIndex &&
+    stats &&
+    stats.mtimeMs === cachedAtMtime
+  )
+    return cachedIndex
 
   const raw = await readFile(dataPath(), "utf8")
   cachedIndex = parseAnimeIndex(raw)

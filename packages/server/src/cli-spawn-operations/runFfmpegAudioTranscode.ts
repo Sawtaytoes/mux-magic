@@ -51,11 +51,8 @@ export const buildFfmpegArgs = (
   cacheKey: TranscodeCacheKey,
   startSeconds = 0,
 ): string[] => {
-  const seekSection: string[] = (
-    startSeconds > 0
-    ? ["-ss", String(startSeconds)]
-    : []
-  )
+  const seekSection: string[] =
+    startSeconds > 0 ? ["-ss", String(startSeconds)] : []
   const sharedHead = [
     "-hide_banner",
     "-loglevel",
@@ -71,25 +68,24 @@ export const buildFfmpegArgs = (
     "-map",
     `0:a:${cacheKey.audioStream}`,
   ]
-  const codecSection = (
+  const codecSection =
     cacheKey.codec === "opus"
-    ? [
-      "-ac",
-      "2",
-      "-c:a",
-      "libopus",
-      "-b:a",
-      cacheKey.bitrate,
-    ]
-    : [
-      "-ac",
-      "2",
-      "-c:a",
-      "aac",
-      "-b:a",
-      cacheKey.bitrate,
-    ]
-  )
+      ? [
+          "-ac",
+          "2",
+          "-c:a",
+          "libopus",
+          "-b:a",
+          cacheKey.bitrate,
+        ]
+      : [
+          "-ac",
+          "2",
+          "-c:a",
+          "aac",
+          "-b:a",
+          cacheKey.bitrate,
+        ]
   const containerSection = [
     "-movflags",
     "frag_keyframe+empty_moov+default_base_moof",
@@ -104,7 +100,7 @@ export const runFfmpegAudioTranscode = ({
   cacheKey,
   ffmpegPath = defaultFfmpegPath,
   tempPath,
-}: RunFfmpegAudioTranscodeOptions): Observable<"ready"> => (
+}: RunFfmpegAudioTranscodeOptions): Observable<"ready"> =>
   new Observable<"ready">((observer) => {
     const commandArgs = buildFfmpegArgs(cacheKey)
 
@@ -115,14 +111,10 @@ export const runFfmpegAudioTranscode = ({
     // and the bare "ffmpeg" command requires PATH to resolve). Input
     // is still passed positionally as an absolute, traversal-checked
     // path; output is pipe:1; cwd is os.tmpdir().
-    const childProcess = spawn(
-      ffmpegPath,
-      commandArgs,
-      {
-        cwd: tmpdir(),
-        env: process.env,
-      },
-    )
+    const childProcess = spawn(ffmpegPath, commandArgs, {
+      cwd: tmpdir(),
+      env: process.env,
+    })
 
     const writeStream = createWriteStream(tempPath)
 
@@ -146,10 +138,10 @@ export const runFfmpegAudioTranscode = ({
       }
       hasSettled = true
       transcodeTempStore
-      .invalidate(cacheKey)
-      .finally(() => {
-        observer.error(new Error(reason))
-      })
+        .invalidate(cacheKey)
+        .finally(() => {
+          observer.error(new Error(reason))
+        })
     }
 
     const settleAsSuccess = (): void => {
@@ -158,27 +150,32 @@ export const runFfmpegAudioTranscode = ({
       }
       hasSettled = true
       transcodeTempStore
-      .markReady(cacheKey)
-      .then(() => {
-        observer.next("ready")
-        observer.complete()
-      })
-      .catch((markError: unknown) => {
-        const message = (
-          markError instanceof Error
-          ? markError.message
-          : String(markError)
-        )
-        observer.error(new Error(`markReady failed: ${message}`))
-      })
+        .markReady(cacheKey)
+        .then(() => {
+          observer.next("ready")
+          observer.complete()
+        })
+        .catch((markError: unknown) => {
+          const message =
+            markError instanceof Error
+              ? markError.message
+              : String(markError)
+          observer.error(
+            new Error(`markReady failed: ${message}`),
+          )
+        })
     }
 
     writeStream.on("error", (writeError) => {
-      settleAsFailure(`Write stream failed: ${writeError.message}`)
+      settleAsFailure(
+        `Write stream failed: ${writeError.message}`,
+      )
     })
 
     childProcess.on("error", (spawnError) => {
-      settleAsFailure(`ffmpeg spawn failed: ${spawnError.message}`)
+      settleAsFailure(
+        `ffmpeg spawn failed: ${spawnError.message}`,
+      )
     })
 
     childProcess.on("exit", (code, signal) => {
@@ -187,7 +184,9 @@ export const runFfmpegAudioTranscode = ({
       // exits, and a premature markReady would record a short file size.
       writeStream.end(() => {
         if (signal !== null) {
-          settleAsFailure(`ffmpeg killed by signal ${signal}`)
+          settleAsFailure(
+            `ffmpeg killed by signal ${signal}`,
+          )
           return
         }
         if (code === 0) {
@@ -200,4 +199,3 @@ export const runFfmpegAudioTranscode = ({
 
     return treeKillOnUnsubscribe(childProcess)
   })
-)

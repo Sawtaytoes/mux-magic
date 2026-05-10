@@ -2,7 +2,10 @@ import { Observable } from "rxjs"
 
 import { emitJobEvent } from "../../api/jobStore.js"
 import { getActiveJobId } from "../../api/logCapture.js"
-import { logError, logInfo } from "../../tools/logMessage.js"
+import {
+  logError,
+  logInfo,
+} from "../../tools/logMessage.js"
 
 // Total runtime before the scripted error fires. Short on purpose — the
 // failure scenario is mostly there so the UI's red-state styling and the
@@ -17,13 +20,22 @@ const STEPS_BEFORE_FAIL = 3
 //   - the Jobs UI's failed-state styling and `error` field
 export const failureScenario = (
   body: unknown,
-  options: { totalMs?: number, label?: string, errorMessage?: string } = {},
-): Observable<unknown> => (
+  options: {
+    totalMs?: number
+    label?: string
+    errorMessage?: string
+  } = {},
+): Observable<unknown> =>
   new Observable<unknown>((subscriber) => {
     const totalMs = options.totalMs ?? DEFAULT_TOTAL_MS
     const label = options.label ?? "fake-failure"
-    const message = options.errorMessage ?? "Fake failure: pretending the underlying tool exited non-zero."
-    const stepInterval = Math.max(50, Math.floor(totalMs / (STEPS_BEFORE_FAIL + 1)))
+    const message =
+      options.errorMessage ??
+      "Fake failure: pretending the underlying tool exited non-zero."
+    const stepInterval = Math.max(
+      50,
+      Math.floor(totalMs / (STEPS_BEFORE_FAIL + 1)),
+    )
 
     logInfo(label, "Starting fake failing run.")
     logInfo(label, `Body: ${JSON.stringify(body)}`)
@@ -46,7 +58,10 @@ export const failureScenario = (
             ],
           })
         }
-        logInfo(label, `Step ${stepIndex}/${STEPS_BEFORE_FAIL + 1} processed.`)
+        logInfo(
+          label,
+          `Step ${stepIndex}/${STEPS_BEFORE_FAIL + 1} processed.`,
+        )
         return
       }
 
@@ -60,4 +75,3 @@ export const failureScenario = (
       clearInterval(timer)
     }
   })
-)

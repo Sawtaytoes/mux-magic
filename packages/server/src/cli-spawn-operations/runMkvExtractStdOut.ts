@@ -1,51 +1,23 @@
-import {
-  spawn,
-} from "node:child_process";
-import {
-  Observable,
-} from "rxjs"
+import { spawn } from "node:child_process"
+import { Observable } from "rxjs"
 
-import { mkvExtractPath } from "../tools/appPaths.js";
+import { mkvExtractPath } from "../tools/appPaths.js"
+import { createTtyAffordances } from "../tools/createTtyAffordances.js"
 import { logAndSwallow } from "../tools/logAndSwallow.js"
-import { createTtyAffordances } from "../tools/createTtyAffordances.js";
-import { logWarning } from "../tools/logMessage.js";
+import { logWarning } from "../tools/logMessage.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
 export const runMkvExtractStdOut = ({
   args,
 }: {
   args: string[]
-}): (
-  Observable<
-    string
-  >
-) => (
-  new Observable<
-    string
-  >((
-    observer,
-  ) => {
-    const commandArgs = (
-      args
-    )
+}): Observable<string> =>
+  new Observable<string>((observer) => {
+    const commandArgs = args
 
-    console
-    .info(
-      (
-        [mkvExtractPath]
-        .concat(
-          commandArgs
-        )
-      ),
-      "\n",
-    )
+    console.info([mkvExtractPath].concat(commandArgs), "\n")
 
-    const childProcess = (
-      spawn(
-        mkvExtractPath,
-        commandArgs,
-      )
-    )
+    const childProcess = spawn(mkvExtractPath, commandArgs)
 
     const tty = createTtyAffordances(childProcess)
 
@@ -55,78 +27,49 @@ export const runMkvExtractStdOut = ({
     // surface only on a real non-zero exit.
     const stderrChunks: string[] = []
 
-    childProcess
-    .stdout
-    .on(
-      'data',
-      (
-        data
-      ) => {
-        observer
-        .next(
-          data
-          .toString()
+    childProcess.stdout.on("data", (data) => {
+      observer.next(data.toString())
+    })
+
+    childProcess.stderr.on("data", (chunk) => {
+      const text = chunk.toString()
+      stderrChunks.push(text)
+      console.info(text)
+    })
+
+    childProcess.on("close", (code) => {
+      if (code === null) {
+        logWarning(
+          "mkvextract",
+          "Process canceled by user.",
         )
-      },
-    )
 
-    childProcess
-    .stderr
-    .on(
-      'data',
-      (
-        chunk,
-      ) => {
-        const text = chunk.toString()
-        stderrChunks.push(text)
-        console.info(text)
-      },
-    )
-
-    childProcess
-    .on(
-      'close',
-      (
-        code,
-      ) => {
-        if (code === null) {
-          logWarning("mkvextract", "Process canceled by user.")
-
-          if (tty.useTtyAffordances) {
-            setTimeout(() => {
-              process.exit()
-            }, 500)
-          }
+        if (tty.useTtyAffordances) {
+          setTimeout(() => {
+            process.exit()
+          }, 500)
         }
-      },
-    )
+      }
+    })
 
-    childProcess
-    .on(
-      'exit',
-      (
-        code,
-      ) => {
-        tty.detach()
+    childProcess.on("exit", (code) => {
+      tty.detach()
 
-        if (code === 0 || code === null) {
-          // code === null is the user-cancel path the 'close' handler resolves;
-          // we still want the observable to finish cleanly here.
-          observer.complete()
-          return
-        }
-        observer.error(new Error(
-          `mkvextract exited with code ${code}`
-          + (stderrChunks.length ? `: ${stderrChunks.join('').trim()}` : '')
-        ))
-      },
-    )
+      if (code === 0 || code === null) {
+        // code === null is the user-cancel path the 'close' handler resolves;
+        // we still want the observable to finish cleanly here.
+        observer.complete()
+        return
+      }
+      observer.error(
+        new Error(
+          `mkvextract exited with code ${code}` +
+            (stderrChunks.length
+              ? `: ${stderrChunks.join("").trim()}`
+              : ""),
+        ),
+      )
+    })
 
     return treeKillOnUnsubscribe(childProcess)
-  })
-  .pipe(
-    logAndSwallow(
-      runMkvExtractStdOut
-    ),
-  )
-)
+  }).pipe(logAndSwallow(runMkvExtractStdOut))

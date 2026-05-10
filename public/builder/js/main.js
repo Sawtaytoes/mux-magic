@@ -7,172 +7,193 @@
 // so mutating endpoints can't accidentally hit the real filesystem. The wrapper
 // is a superset — when dry-run is OFF, behavior is identical to today.
 const originalFetch = globalThis.fetch
-const isDryRunForFetch = () => localStorage.getItem('isDryRun') === '1'
-const isDryRunFailureForFetch = () => localStorage.getItem('dryRunScenario') === 'failure'
-const dryRunQueryString = () => (
-  isDryRunForFetch() ? `?fake=${isDryRunFailureForFetch() ? 'failure' : '1'}` : ''
-)
+const isDryRunForFetch = () =>
+  localStorage.getItem("isDryRun") === "1"
+const isDryRunFailureForFetch = () =>
+  localStorage.getItem("dryRunScenario") === "failure"
+const dryRunQueryString = () =>
+  isDryRunForFetch()
+    ? `?fake=${isDryRunFailureForFetch() ? "failure" : "1"}`
+    : ""
 globalThis.fetch = function (resource, init) {
   if (
-    typeof resource === 'string'
-    && !resource.startsWith('http')
-    && !resource.includes('?')
-    && isDryRunForFetch()
+    typeof resource === "string" &&
+    !resource.startsWith("http") &&
+    !resource.includes("?") &&
+    isDryRunForFetch()
   ) {
     resource = resource + dryRunQueryString()
   }
   return originalFetch.call(this, resource, init)
 }
 
+import { COMMANDS } from "./commands.js"
 import {
-  renderPathVarCard,
-  attachPathVarListeners,
-  addPath,
-  setPathLabel,
-  setPathValue,
-  removePath,
-} from './components/path-var-card.js'
-import {
-  toYamlStr,
-  updateYaml,
-  openYamlModal,
-  closeYamlModal,
-  copyYaml,
-} from './components/yaml-modal.js'
-import {
-  togglePageMenu,
-  attachPageHeaderListeners,
-} from './components/page-header.js'
-import {
-  copyStepYaml,
   copyGroupYaml,
+  copyStepYaml,
   pasteCardAt,
-} from './components/card-clipboard.js'
-import { attachSortables } from './components/drag-and-drop.js'
-import { attachFieldTooltipListeners } from './components/field-tooltip.js'
+} from "./components/card-clipboard.js"
 import {
-  openCommandHelpModal,
   closeCommandHelpModal,
-} from './components/command-help-modal.js'
-import { attachModalEscapeListener } from './util/modal-keys.js'
+  openCommandHelpModal,
+} from "./components/command-help-modal.js"
+import { attachSortables } from "./components/drag-and-drop.js"
+import { registerDslRulesGlobals } from "./components/dsl-rules-builder.js"
+import { attachFieldTooltipListeners } from "./components/field-tooltip.js"
 import {
-  openFileExplorer,
-  refreshFileExplorer,
   closeFileExplorerModal,
+  closeVideoModal,
   confirmFileExplorerDelete,
   confirmFileExplorerPick,
+  openFileExplorer,
   openVideoModal,
-  closeVideoModal,
-} from './components/file-explorer-modal.js'
-import { pathVarOptionText, refreshPathVarOptions } from './util/path-var-options.js'
-import { openStepDrawer, closeStepDrawer, getOpenStepId } from './step-drawer.js'
-import { isDrawerMode } from './step-renderer.js'
-
+  refreshFileExplorer,
+} from "./components/file-explorer-modal.js"
+import { registerFolderPickerGlobals } from "./components/folder-picker-modal.js"
+import { loadYamlFromText } from "./components/load-modal.js"
+import {
+  attachPageHeaderListeners,
+  togglePageMenu,
+} from "./components/page-header.js"
+import {
+  addPath,
+  attachPathVarListeners,
+  removePath,
+  renderPathVarCard,
+  setPathLabel,
+  setPathValue,
+} from "./components/path-var-card.js"
+import {
+  closeYamlModal,
+  copyYaml,
+  openYamlModal,
+  toYamlStr,
+  updateYaml,
+} from "./components/yaml-modal.js"
+import {
+  closeLookupModal,
+  kickReverseLookups,
+  kickTmdbResolutions,
+  lookupGoBack,
+  lookupSelectGroup,
+  lookupSelectRelease,
+  lookupSelectReleaseByIndex,
+  lookupSelectSimpleByIndex,
+  lookupSelectVariant,
+  openLookup,
+  runLookupSearch,
+  scheduleReverseLookup,
+  setLookupFormatFilter,
+  setLookupSearchTerm,
+  updateLookupLinks,
+} from "./lookup-modal.js"
 // New modules from the W2b split
-import { renderAll } from './render-all.js'
+import { renderAll } from "./render-all.js"
 import {
-  steps as _steps, paths as _paths,
-  setSteps, setPaths, setStepCounter,
-  getPaths, getSteps, getStepCounter,
-  initPaths, randomHex, makeStep, getLinkedValue, findStepById,
-} from './sequence-state.js'
-import { registerDslRulesGlobals } from './components/dsl-rules-builder.js'
-import { registerFolderPickerGlobals } from './components/folder-picker-modal.js'
-import { COMMANDS } from './commands.js'
+  attachCopyButtonListener,
+  cancelApiRun,
+  closeApiRunModal,
+  copyApiRunLogs,
+  runGroup,
+  runOrStopStep,
+  runSequence,
+  runViaApi,
+  syncDryRunUI,
+  toggleDryRun,
+} from "./run-sequence.js"
 import {
-  updateUrl,
-  scheduleUpdateUrl,
-  restoreFromUrl,
-  undo,
-  redo,
-  startNewSequence,
-  addPicked,
-  insertAt,
   addGroupBlock,
-  insertGroupAt,
+  addPicked,
   addStepToGroup,
-  removeStep,
-  removeGroup,
-  moveStep,
-  moveGroup,
+  attachSequenceKeyboardShortcuts,
+  browsePathField,
+  buildParams,
+  changeCommand,
   clearStaleStepLinksAfterMove,
-  toggleStepCollapsed,
-  toggleGroupCollapsed,
-  setGroupChildrenCollapsed,
+  flushScheduledUpdateUrl,
+  initFieldMin,
+  insertAt,
+  insertGroupAt,
+  moveGroup,
+  moveStep,
+  promotePathToPathVar,
+  redo,
+  refreshLinkedInputs,
+  removeGroup,
+  removeStep,
+  renderAllAnimated,
+  restoreFromUrl,
+  scheduleUpdateUrl,
+  scrollPathVarIntoView,
+  scrollStepIntoView,
   setAllCollapsed,
+  setGroupChildrenCollapsed,
   setGroupLabel,
-  stepAliasFocus,
-  stepAliasKeydown,
-  stepAliasBlur,
-  toggleStepActions,
+  setLink,
   setParam,
   setParamAndRender,
   setParamJson,
-  promotePathToPathVar,
-  initFieldMin,
-  flushScheduledUpdateUrl,
-  browsePathField,
-  setLink,
-  refreshLinkedInputs,
-  changeCommand,
-  buildParams,
-  scrollStepIntoView,
-  scrollPathVarIntoView,
-  renderAllAnimated,
-  attachSequenceKeyboardShortcuts,
-} from './sequence-editor.js'
-import { loadYamlFromText } from './components/load-modal.js'
+  startNewSequence,
+  stepAliasBlur,
+  stepAliasFocus,
+  stepAliasKeydown,
+  toggleGroupCollapsed,
+  toggleStepActions,
+  toggleStepCollapsed,
+  undo,
+  updateUrl,
+} from "./sequence-editor.js"
 import {
-  runOrStopStep,
-  runSequence,
-  runGroup,
-  runViaApi,
-  closeApiRunModal,
-  cancelApiRun,
-  copyApiRunLogs,
-  attachCopyButtonListener,
-  toggleDryRun,
-  syncDryRunUI,
-} from './run-sequence.js'
+  findStepById,
+  getLinkedValue,
+  getPaths,
+  getStepCounter,
+  getSteps,
+  initPaths,
+  makeStep,
+  randomHex,
+  setPaths,
+  setStepCounter,
+  setSteps,
+} from "./sequence-state.js"
 import {
-  openLookup,
-  closeLookupModal,
-  lookupGoBack,
-  runLookupSearch,
-  lookupSelectSimpleByIndex,
-  lookupSelectGroup,
-  lookupSelectVariant,
-  lookupSelectRelease,
-  lookupSelectReleaseByIndex,
-  scheduleReverseLookup,
-  updateLookupLinks,
-  kickReverseLookups,
-  kickTmdbResolutions,
-  setLookupFormatFilter,
-  setLookupSearchTerm,
-} from './lookup-modal.js'
+  closeStepDrawer,
+  getOpenStepId,
+  openStepDrawer,
+} from "./step-drawer.js"
+import { attachModalEscapeListener } from "./util/modal-keys.js"
+import {
+  pathVarOptionText,
+  refreshPathVarOptions,
+} from "./util/path-var-options.js"
 
 window.mediaTools = window.mediaTools || {}
 
 // ─── window.mediaTools bridge ─────────────────────────────────────────────────
 // State accessors — expose live getter/setter properties so components
 // that read window.mediaTools.paths / .steps always get the current arrays.
-Object.defineProperty(window.mediaTools, 'paths', {
+Object.defineProperty(window.mediaTools, "paths", {
   get: () => getPaths(),
-  set: (v) => { setPaths(v) },
+  set: (v) => {
+    setPaths(v)
+  },
   configurable: true,
 })
-Object.defineProperty(window.mediaTools, 'steps', {
+Object.defineProperty(window.mediaTools, "steps", {
   get: () => getSteps(),
-  set: (v) => { setSteps(v) },
+  set: (v) => {
+    setSteps(v)
+  },
   configurable: true,
 })
-Object.defineProperty(window.mediaTools, 'stepCounter', {
+Object.defineProperty(window.mediaTools, "stepCounter", {
   get: () => getStepCounter(),
-  set: (v) => { setStepCounter(v) },
+  set: (v) => {
+    setStepCounter(v)
+  },
   configurable: true,
 })
-Object.defineProperty(window.mediaTools, 'COMMANDS', {
+Object.defineProperty(window.mediaTools, "COMMANDS", {
   get: () => COMMANDS,
   configurable: true,
 })
@@ -329,7 +350,8 @@ window.lookupSelectSimpleByIndex = lookupSelectSimpleByIndex
 window.lookupSelectGroup = lookupSelectGroup
 window.lookupSelectVariant = lookupSelectVariant
 window.lookupSelectRelease = lookupSelectRelease
-window.lookupSelectReleaseByIndex = lookupSelectReleaseByIndex
+window.lookupSelectReleaseByIndex =
+  lookupSelectReleaseByIndex
 window.scheduleReverseLookup = scheduleReverseLookup
 window.updateLookupLinks = updateLookupLinks
 window.setLookupFormatFilter = setLookupFormatFilter
@@ -365,13 +387,13 @@ window.openCommandHelpModal = openCommandHelpModal
 window.closeCommandHelpModal = closeCommandHelpModal
 
 // Delegate path-var-card events on the steps list.
-const stepsEl = document.getElementById('steps-el')
+const stepsEl = document.getElementById("steps-el")
 if (stepsEl) attachPathVarListeners(stepsEl)
 
 // Flush pending URL/path-var updates and blur any focused input when the user
 // refreshes or closes the tab. This ensures number field values (which save
 // on `onchange`/blur) and debounced path-var edits are not lost.
-window.addEventListener('beforeunload', () => {
+window.addEventListener("beforeunload", () => {
   const active = document.activeElement
   if (active && active !== document.body) {
     active.blur()

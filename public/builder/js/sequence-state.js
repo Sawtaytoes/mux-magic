@@ -10,7 +10,7 @@
 // extracted-module callers already depend on, keeping the bridge alive
 // during the migration while moving the canonical storage here.
 
-import { COMMANDS } from './commands.js'
+import { COMMANDS } from "./commands.js"
 
 // ─── Core state ───────────────────────────────────────────────────────────────
 
@@ -49,68 +49,98 @@ export function randomHex() {
 }
 
 export function isGroup(item) {
-  return !!(item && typeof item === 'object' && item.kind === 'group')
+  return !!(
+    item &&
+    typeof item === "object" &&
+    item.kind === "group"
+  )
 }
 
 // Returns every underlying step in document order with its provenance.
 export function flattenSteps() {
-  return steps.reduce((accumulator, item, itemIndex) => {
-    if (isGroup(item)) {
-      item.steps.forEach((step, indexInParent) => {
+  return steps.reduce(
+    (accumulator, item, itemIndex) => {
+      if (isGroup(item)) {
+        item.steps.forEach((step, indexInParent) => {
+          accumulator.result.push({
+            step,
+            parentGroup: item,
+            indexInParent,
+            flatIndex: accumulator.flatIndex,
+            itemIndex,
+          })
+          accumulator.flatIndex += 1
+        })
+      } else {
         accumulator.result.push({
-          step,
-          parentGroup: item,
-          indexInParent,
+          step: item,
+          parentGroup: null,
+          indexInParent: itemIndex,
           flatIndex: accumulator.flatIndex,
           itemIndex,
         })
         accumulator.flatIndex += 1
-      })
-    } else {
-      accumulator.result.push({
-        step: item,
-        parentGroup: null,
-        indexInParent: itemIndex,
-        flatIndex: accumulator.flatIndex,
-        itemIndex,
-      })
-      accumulator.flatIndex += 1
-    }
-    return accumulator
-  }, { result: [], flatIndex: 0 }).result
+      }
+      return accumulator
+    },
+    { result: [], flatIndex: 0 },
+  ).result
 }
 
 export function findStepById(id) {
-  const entry = flattenSteps().find((entry) => entry.step.id === id)
+  const entry = flattenSteps().find(
+    (entry) => entry.step.id === id,
+  )
   return entry ? entry.step : null
 }
 
 export function findStepLocation(id) {
-  return flattenSteps().find((entry) => entry.step.id === id) ?? null
+  return (
+    flattenSteps().find((entry) => entry.step.id === id) ??
+    null
+  )
 }
 
 export function makeStep(command = null) {
   if (!command) {
-    return { id: generateStepId(), alias: '', command: null, params: {}, links: {}, status: null, error: null, isCollapsed: false }
+    return {
+      id: generateStepId(),
+      alias: "",
+      command: null,
+      params: {},
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
   }
   const commandDefinition = COMMANDS[command]
   const params = Object.fromEntries(
     commandDefinition.fields
-    .filter((field) => field.default !== undefined)
-    .map((field) => [field.name, field.default])
+      .filter((field) => field.default !== undefined)
+      .map((field) => [field.name, field.default]),
   )
-  return { id: generateStepId(), alias: '', command, params, links: {}, status: null, error: null, isCollapsed: false }
+  return {
+    id: generateStepId(),
+    alias: "",
+    command,
+    params,
+    links: {},
+    status: null,
+    error: null,
+    isCollapsed: false,
+  }
 }
 
 function generateGroupId() {
-  return 'group_' + randomHex()
+  return `group_${randomHex()}`
 }
 
 export function makeGroup({ isParallel = false } = {}) {
   return {
-    kind: 'group',
+    kind: "group",
     id: generateGroupId(),
-    label: '',
+    label: "",
     isParallel,
     isCollapsed: false,
     steps: [makeStep(null)],
@@ -119,7 +149,9 @@ export function makeGroup({ isParallel = false } = {}) {
 
 export function initPaths() {
   if (!paths.length) {
-    paths = [{ id: 'basePath', label: 'basePath', value: '' }]
+    paths = [
+      { id: "basePath", label: "basePath", value: "" },
+    ]
   }
 }
 
@@ -130,13 +162,21 @@ export function mainSrcField(commandName) {
   if (!commandDefinition) {
     return null
   }
-  const preferredFieldName = ['sourcePath', 'sourceFilesPath', 'mediaFilesPath'].find((name) => (
-    commandDefinition.fields.some((field) => field.name === name)
-  ))
+  const preferredFieldName = [
+    "sourcePath",
+    "sourceFilesPath",
+    "mediaFilesPath",
+  ].find((name) =>
+    commandDefinition.fields.some(
+      (field) => field.name === name,
+    ),
+  )
   if (preferredFieldName) {
     return preferredFieldName
   }
-  const pathField = commandDefinition.fields.find((field) => field.type === 'path')
+  const pathField = commandDefinition.fields.find(
+    (field) => field.type === "path",
+  )
   return pathField ? pathField.name : null
 }
 
@@ -145,16 +185,20 @@ export function getLinkedValue(step, fieldName) {
   if (!link) {
     return null
   }
-  if (typeof link === 'string') {
+  if (typeof link === "string") {
     const pathVar = paths.find((path) => path.id === link)
     return pathVar?.value || null
   }
-  if (link && typeof link === 'object' && typeof link.linkedTo === 'string') {
+  if (
+    link &&
+    typeof link === "object" &&
+    typeof link.linkedTo === "string"
+  ) {
     const sourceStep = findStepById(link.linkedTo)
     if (!sourceStep) {
       return null
     }
-    if (link.output === 'folder' || !link.output) {
+    if (link.output === "folder" || !link.output) {
       return stepOutput(sourceStep)
     }
     return sourceStep.outputs?.[link.output] ?? null
@@ -164,36 +208,49 @@ export function getLinkedValue(step, fieldName) {
 
 export function stepOutput(step) {
   if (!step.command) {
-    return ''
+    return ""
   }
   const commandDefinition = COMMANDS[step.command]
   if (!commandDefinition) {
-    return ''
+    return ""
   }
   const mainSourceField = mainSrcField(step.command)
   const rawSource = mainSourceField
-    ? (getLinkedValue(step, mainSourceField) ?? step.params[mainSourceField] ?? '')
-    : ''
-  const source = rawSource.replace(/[\\/]$/, '')
+    ? (getLinkedValue(step, mainSourceField) ??
+      step.params[mainSourceField] ??
+      "")
+    : ""
+  const source = rawSource.replace(/[\\/]$/, "")
 
-  if (commandDefinition.outputComputation === 'parentOfSource') {
-    return source ? source.replace(/[\\/][^\\/]*$/, '') : ''
+  if (
+    commandDefinition.outputComputation === "parentOfSource"
+  ) {
+    return source ? source.replace(/[\\/][^\\/]*$/, "") : ""
   }
   if (commandDefinition.outputFolderName) {
-    const separator = source.includes('\\') ? '\\' : '/'
+    const separator = source.includes("\\") ? "\\" : "/"
     return source
-      ? source + separator + commandDefinition.outputFolderName
+      ? source +
+          separator +
+          commandDefinition.outputFolderName
       : commandDefinition.outputFolderName
   }
-  const hasField = (name) => commandDefinition.fields.some((field) => field.name === name)
-  if (hasField('destinationPath')) {
-    const destination = getLinkedValue(step, 'destinationPath') ?? step.params.destinationPath
+  const hasField = (name) =>
+    commandDefinition.fields.some(
+      (field) => field.name === name,
+    )
+  if (hasField("destinationPath")) {
+    const destination =
+      getLinkedValue(step, "destinationPath") ??
+      step.params.destinationPath
     if (destination) {
       return destination
     }
   }
-  if (hasField('destinationFilesPath')) {
-    const destination = getLinkedValue(step, 'destinationFilesPath') ?? step.params.destinationFilesPath
+  if (hasField("destinationFilesPath")) {
+    const destination =
+      getLinkedValue(step, "destinationFilesPath") ??
+      step.params.destinationFilesPath
     if (destination) {
       return destination
     }
@@ -242,8 +299,8 @@ export function refreshUndoRedoButtons() {
   // Notify React atoms when they're available (React SPA path).
   window.mediaTools?.syncUndoRedo?.(canUndo, canRedo)
   // Legacy DOM path — no-ops when buttons don't exist.
-  const undoBtn = document.getElementById('undo-btn')
-  const redoBtn = document.getElementById('redo-btn')
+  const undoBtn = document.getElementById("undo-btn")
+  const redoBtn = document.getElementById("redo-btn")
   if (undoBtn) undoBtn.disabled = !canUndo
   if (redoBtn) redoBtn.disabled = !canRedo
 }

@@ -1,7 +1,7 @@
-import { steps, isGroup } from '../sequence-state.js'
-import { esc } from '../util/html-escape.js'
-import { commandLabel } from '../util/command-label.js'
-import { renderStatusBadge } from './status-badge.js'
+import { isGroup, steps } from "../sequence-state.js"
+import { commandLabel } from "../util/command-label.js"
+import { esc } from "../util/html-escape.js"
+import { renderStatusBadge } from "./status-badge.js"
 
 /** @typedef {import('../step-renderer.js').Step} Step */
 /** @typedef {import('../step-renderer.js').StepContext} StepContext */
@@ -10,14 +10,25 @@ import { renderStatusBadge } from './status-badge.js'
  * @param {{ step: Step, index: number, context?: StepContext }} props
  * @returns {string}
  */
-export function renderStepCompactCard({ step, index, context = {} }) {
-  const statusBadge = step.status ? renderStatusBadge({ status: step.status }) : ''
+export function renderStepCompactCard({
+  step,
+  index,
+  context = {},
+}) {
+  const statusBadge = step.status
+    ? renderStatusBadge({ status: step.status })
+    : ""
   const siblings = context.parentGroupId
-    ? (steps.find((item) => isGroup(item) && item.id === context.parentGroupId)?.steps ?? [])
+    ? (steps.find(
+        (item) =>
+          isGroup(item) &&
+          item.id === context.parentGroupId,
+      )?.steps ?? [])
     : steps
   const localIndex = siblings.indexOf(step)
   const isFirst = localIndex <= 0
-  const isLast = localIndex < 0 || localIndex >= siblings.length - 1
+  const isLast =
+    localIndex < 0 || localIndex >= siblings.length - 1
 
   const operationLabel = step.command
     ? esc(commandLabel(step.command))
@@ -25,7 +36,7 @@ export function renderStepCompactCard({ step, index, context = {} }) {
 
   const aliasText = step.alias
     ? esc(step.alias)
-    : `<span class="text-slate-500 italic">${esc(step.command ? commandLabel(step.command) : 'unnamed')}</span>`
+    : `<span class="text-slate-500 italic">${esc(step.command ? commandLabel(step.command) : "unnamed")}</span>`
 
   return `
 <div id="step-${step.id}" data-sortable-item data-step-card="${step.id}" style="view-transition-name: step-${step.id}"
@@ -43,16 +54,16 @@ export function renderStepCompactCard({ step, index, context = {} }) {
     </button>
     ${statusBadge}
     <div class="flex items-center gap-1 shrink-0">
-      <button onclick="runOrStopStep('${step.id}')" ${step.command ? '' : 'disabled'}
-        title="${step.status === 'running' && step.jobId ? 'Cancel this step' : 'Run this step only'}"
+      <button onclick="runOrStopStep('${step.id}')" ${step.command ? "" : "disabled"}
+        title="${step.status === "running" && step.jobId ? "Cancel this step" : "Run this step only"}"
         data-step-run-stop="${step.id}"
-        class="step-run-stop ${step.status === 'running' && step.jobId ? 'is-running' : ''}">
+        class="step-run-stop ${step.status === "running" && step.jobId ? "is-running" : ""}">
         <span class="step-run-stop-icon step-run-stop-play">▶</span>
         <span class="step-run-stop-icon step-run-stop-stop">⏹</span>
       </button>
-      <button onclick="moveStep('${step.id}',-1)" ${isFirst ? 'disabled' : ''}
+      <button onclick="moveStep('${step.id}',-1)" ${isFirst ? "disabled" : ""}
         class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↑</button>
-      <button onclick="moveStep('${step.id}',1)" ${isLast ? 'disabled' : ''}
+      <button onclick="moveStep('${step.id}',1)" ${isLast ? "disabled" : ""}
         class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs">↓</button>
       <button onclick="removeStep('${step.id}')"
         class="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs">✕</button>

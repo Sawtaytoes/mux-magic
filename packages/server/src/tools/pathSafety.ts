@@ -23,20 +23,30 @@ export class PathSafetyError extends Error {
 
 // Returns the path normalized and validated. Throws PathSafetyError on
 // anything that's not an absolute, traversal-free path.
-export const validateReadablePath = (path: string): string => {
+export const validateReadablePath = (
+  path: string,
+): string => {
   if (typeof path !== "string" || path.length === 0) {
     throw new PathSafetyError("Path is required")
   }
   if (!isAbsolute(path)) {
-    throw new PathSafetyError(`Path must be absolute: ${path}`)
+    throw new PathSafetyError(
+      `Path must be absolute: ${path}`,
+    )
   }
   const normalized = normalize(path)
   // After normalize, a leading `..` (or one mid-path that survives) means
   // the input had traversal that bubbled past the root. Belt-and-braces
   // check — Node's normalize already collapses most cases, but a
   // pathological `\\..\\` on Windows can still slip through.
-  if (normalized.split(sep).some((segment) => segment === "..")) {
-    throw new PathSafetyError(`Path traversal not allowed: ${path}`)
+  if (
+    normalized
+      .split(sep)
+      .some((segment) => segment === "..")
+  ) {
+    throw new PathSafetyError(
+      `Path traversal not allowed: ${path}`,
+    )
   }
   return normalized
 }
@@ -57,15 +67,14 @@ export const validateMediaPath = (path: string): string => {
   // normalized path must either equal it or live inside it. The trailing
   // separator on the prefix prevents "/media-other/..." from sneaking past
   // a startsWith check.
-  const rootWithSeparator = (
+  const rootWithSeparator =
     MEDIA_ROOT.endsWith(sep) || MEDIA_ROOT.endsWith("/")
-  )
-  ? MEDIA_ROOT
-  : `${MEDIA_ROOT}/`
+      ? MEDIA_ROOT
+      : `${MEDIA_ROOT}/`
   if (
-    normalized !== MEDIA_ROOT
-    && !normalized.startsWith(rootWithSeparator)
-    && !normalized.startsWith(`${MEDIA_ROOT}${sep}`)
+    normalized !== MEDIA_ROOT &&
+    !normalized.startsWith(rootWithSeparator) &&
+    !normalized.startsWith(`${MEDIA_ROOT}${sep}`)
   ) {
     throw new PathSafetyError(
       `Path is outside the allowed media root (${MEDIA_ROOT}): ${path}`,

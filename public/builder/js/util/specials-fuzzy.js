@@ -40,10 +40,15 @@ export const LOW_CONFIDENCE_THRESHOLD = 0.6
 // Parse a timecode string (e.g. "1:30:45" or "12:34" or "45") into total
 // seconds. Returns NaN for unparseable input so callers can branch.
 export const parseTimecodeToSeconds = (timecode) => {
-  if (typeof timecode !== 'string' || timecode.length === 0) {
+  if (
+    typeof timecode !== "string" ||
+    timecode.length === 0
+  ) {
     return NaN
   }
-  const segments = timecode.split(':').map((segment) => Number(segment))
+  const segments = timecode
+    .split(":")
+    .map((segment) => Number(segment))
   if (segments.some((segment) => Number.isNaN(segment))) {
     return NaN
   }
@@ -54,34 +59,41 @@ export const parseTimecodeToSeconds = (timecode) => {
     return segments[0] * 60 + segments[1]
   }
   if (segments.length === 3) {
-    return segments[0] * 3600 + segments[1] * 60 + segments[2]
+    return (
+      segments[0] * 3600 + segments[1] * 60 + segments[2]
+    )
   }
   return NaN
 }
 
 // Strip the extension off a filename and lowercase it for comparison.
 const normalizeStem = (filename) => {
-  const dotIndex = filename.lastIndexOf('.')
-  const stem = dotIndex > 0 ? filename.slice(0, dotIndex) : filename
+  const dotIndex = filename.lastIndexOf(".")
+  const stem =
+    dotIndex > 0 ? filename.slice(0, dotIndex) : filename
   return stem.toLowerCase()
 }
 
 // Convert a string into a Set of word tokens (lowercase, alphanumeric
 // chunks). Used for shared-word overlap scoring.
-const tokenizeWords = (text) => (
+const tokenizeWords = (text) =>
   new Set(
     String(text)
-    .toLowerCase()
-    .split(/[\W_]+/u)
-    .filter(Boolean)
+      .toLowerCase()
+      .split(/[\W_]+/u)
+      .filter(Boolean),
   )
-)
 
 // Score one candidate's filename overlap with a file stem. Range 0..1.
 // Returns 1.0 when every word of the candidate appears in the stem;
 // scales down by candidate-word count.
-export const scoreFilenameOverlap = ({ candidateName, filename }) => {
-  const candidateWords = Array.from(tokenizeWords(candidateName))
+export const scoreFilenameOverlap = ({
+  candidateName,
+  filename,
+}) => {
+  const candidateWords = Array.from(
+    tokenizeWords(candidateName),
+  )
   if (candidateWords.length === 0) {
     return 0
   }
@@ -89,7 +101,9 @@ export const scoreFilenameOverlap = ({ candidateName, filename }) => {
   if (stemWords.size === 0) {
     return 0
   }
-  const matchingWords = candidateWords.filter((word) => stemWords.has(word))
+  const matchingWords = candidateWords.filter((word) =>
+    stemWords.has(word),
+  )
   return matchingWords.length / candidateWords.length
 }
 
@@ -97,30 +111,50 @@ export const scoreFilenameOverlap = ({ candidateName, filename }) => {
 // timecode. Range 0..1. NaN inputs (or missing timecode) yield NaN so
 // callers can branch (it's not 0 — 0 would imply "we know they're far
 // apart", but NaN means "we don't know").
-export const scoreDurationProximity = ({ candidateTimecode, fileTimecode }) => {
-  const candidateSeconds = parseTimecodeToSeconds(candidateTimecode)
+export const scoreDurationProximity = ({
+  candidateTimecode,
+  fileTimecode,
+}) => {
+  const candidateSeconds = parseTimecodeToSeconds(
+    candidateTimecode,
+  )
   const fileSeconds = parseTimecodeToSeconds(fileTimecode)
-  if (Number.isNaN(candidateSeconds) || Number.isNaN(fileSeconds)) {
+  if (
+    Number.isNaN(candidateSeconds) ||
+    Number.isNaN(fileSeconds)
+  ) {
     return NaN
   }
-  const deltaSeconds = Math.abs(candidateSeconds - fileSeconds)
-  if (deltaSeconds >= DURATION_PROXIMITY_TOLERANCE_SECONDS) {
+  const deltaSeconds = Math.abs(
+    candidateSeconds - fileSeconds,
+  )
+  if (
+    deltaSeconds >= DURATION_PROXIMITY_TOLERANCE_SECONDS
+  ) {
     return 0
   }
-  return 1 - (deltaSeconds / DURATION_PROXIMITY_TOLERANCE_SECONDS)
+  return (
+    1 - deltaSeconds / DURATION_PROXIMITY_TOLERANCE_SECONDS
+  )
 }
 
 // Combine a duration score and a filename score into one 0..1 confidence.
 // Either input may be NaN to signal "unavailable"; the combiner falls
 // back to whichever signal is present.
-export const combineScores = ({ durationScore, filenameScore }) => {
+export const combineScores = ({
+  durationScore,
+  filenameScore,
+}) => {
   const hasDuration = !Number.isNaN(durationScore)
   const hasFilename = !Number.isNaN(filenameScore)
   if (!hasDuration && !hasFilename) {
     return 0
   }
   if (hasDuration && hasFilename) {
-    return DURATION_WEIGHT * durationScore + (1 - DURATION_WEIGHT) * filenameScore
+    return (
+      DURATION_WEIGHT * durationScore +
+      (1 - DURATION_WEIGHT) * filenameScore
+    )
   }
   if (hasDuration) {
     return durationScore
@@ -146,7 +180,10 @@ export const rankCandidatesForFile = ({
       candidateTimecode: candidate.timecode,
       fileTimecode,
     })
-    const confidence = combineScores({ durationScore, filenameScore })
+    const confidence = combineScores({
+      durationScore,
+      filenameScore,
+    })
     return {
       candidate,
       confidence,
@@ -154,9 +191,10 @@ export const rankCandidatesForFile = ({
       filenameScore,
     }
   })
-  return scored.sort((firstEntry, secondEntry) => (
-    secondEntry.confidence - firstEntry.confidence
-  ))
+  return scored.sort(
+    (firstEntry, secondEntry) =>
+      secondEntry.confidence - firstEntry.confidence,
+  )
 }
 
 // Top-level helper used by the modal. Takes the unrenamed filenames
@@ -169,7 +207,10 @@ export const rankCandidatesForFile = ({
 // /files/list endpoint. Pass `[{ filename }]` (no timecode) when no
 // runtime data is available — the helper will fall back to filename
 // fuzz alone, matching the design doc's degraded-mode contract.
-export const rankSuggestions = ({ possibleNames, unrenamedFiles }) => (
+export const rankSuggestions = ({
+  possibleNames,
+  unrenamedFiles,
+}) =>
   unrenamedFiles.map(({ filename, timecode }) => ({
     filename,
     fileTimecode: timecode,
@@ -179,4 +220,3 @@ export const rankSuggestions = ({ possibleNames, unrenamedFiles }) => (
       possibleNames,
     }),
   }))
-)

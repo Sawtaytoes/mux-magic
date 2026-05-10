@@ -1,4 +1,4 @@
-import { OpenAPIHono, createRoute } from "@hono/zod-openapi"
+import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import { streamSSE } from "hono/streaming"
 
 import { getJob, getSubject } from "../jobStore.js"
@@ -27,7 +27,8 @@ logsRoutes.openapi(
     ],
     responses: {
       200: {
-        description: "Server-Sent Events stream of job logs",
+        description:
+          "Server-Sent Events stream of job logs",
         content: {
           "text/event-stream": {
             schema: {
@@ -50,18 +51,16 @@ logsRoutes.openapi(
   (context) => {
     const job = getJob(context.req.param("id"))
 
-    if (!job) return context.json({ error: "Job not found" }, 404)
+    if (!job)
+      return context.json({ error: "Job not found" }, 404)
 
     return streamSSE(context, async (stream) => {
       const stopKeepalive = startSseKeepalive(stream)
 
-      const send = (
-        payload: object,
-      ) => (
+      const send = (payload: object) =>
         stream.writeSSE({
           data: JSON.stringify(payload),
         })
-      )
 
       // Each log line is tagged with its index in job.logs as the SSE
       // `id`. The client uses lastEventId to skip lines it has already
@@ -69,20 +68,31 @@ logsRoutes.openapi(
       // re-open doesn't accumulate duplicates client-side. Non-line
       // events (progress, prompt, done) intentionally have no id;
       // they're not append-only so dedup doesn't apply.
-      for (let logIndex = 0; logIndex < job.logs.length; logIndex += 1) {
+      for (
+        let logIndex = 0;
+        logIndex < job.logs.length;
+        logIndex += 1
+      ) {
         await stream.writeSSE({
-          data: JSON.stringify({ line: job.logs[logIndex] }),
+          data: JSON.stringify({
+            line: job.logs[logIndex],
+          }),
           id: String(logIndex),
         })
       }
 
       if (
-        job.status === "completed"
-        || job.status === "failed"
-        || job.status === "cancelled"
-        || job.status === "skipped"
+        job.status === "completed" ||
+        job.status === "failed" ||
+        job.status === "cancelled" ||
+        job.status === "skipped"
       ) {
-        await send({ done: true, status: job.status, results: job.results, outputs: job.outputs })
+        await send({
+          done: true,
+          status: job.status,
+          results: job.results,
+          outputs: job.outputs,
+        })
         stopKeepalive()
         return
       }
@@ -91,7 +101,12 @@ logsRoutes.openapi(
 
       if (!subject) {
         const finishedJob = getJob(job.id)
-        await send({ done: true, status: finishedJob?.status ?? job.status, results: finishedJob?.results ?? job.results, outputs: finishedJob?.outputs ?? null })
+        await send({
+          done: true,
+          status: finishedJob?.status ?? job.status,
+          results: finishedJob?.results ?? job.results,
+          outputs: finishedJob?.outputs ?? null,
+        })
         stopKeepalive()
         return
       }
@@ -106,12 +121,20 @@ logsRoutes.openapi(
         const sub = subject.subscribe({
           complete: async () => {
             const completedJob = getJob(job.id)
-            await send({ done: true, status: completedJob?.status ?? job.status, results: completedJob?.results ?? job.results, outputs: completedJob?.outputs ?? null })
+            await send({
+              done: true,
+              status: completedJob?.status ?? job.status,
+              results: completedJob?.results ?? job.results,
+              outputs: completedJob?.outputs ?? null,
+            })
             resolve()
           },
           error: async () => {
             const failedJob = getJob(job.id)
-            await send({ done: true, status: failedJob?.status ?? job.status })
+            await send({
+              done: true,
+              status: failedJob?.status ?? job.status,
+            })
             resolve()
           },
           next: (event) => {
@@ -123,7 +146,9 @@ logsRoutes.openapi(
                 id: String(liveLineIndex),
               })
             } else {
-              stream.writeSSE({ data: JSON.stringify(event) })
+              stream.writeSSE({
+                data: JSON.stringify(event),
+              })
             }
           },
         })

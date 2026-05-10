@@ -1,10 +1,26 @@
 import { readFile } from "node:fs/promises"
 import { vol } from "memfs"
-import { afterEach, beforeAll, afterAll, describe, expect, test } from "vitest"
-
-import { cancelJob, getAllJobs, getChildJobs, getJob, getSubject, resetStore } from "../jobStore.js"
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  test,
+} from "vitest"
 import type { JobEvent } from "../jobStore.js"
-import { installLogCapture, uninstallLogCapture } from "../logCapture.js"
+import {
+  cancelJob,
+  getAllJobs,
+  getChildJobs,
+  getJob,
+  getSubject,
+  resetStore,
+} from "../jobStore.js"
+import {
+  installLogCapture,
+  uninstallLogCapture,
+} from "../logCapture.js"
 import { sequenceRoutes } from "./sequenceRoutes.js"
 
 // Hono in-process testing: sequenceRoutes is just a Hono sub-app, so
@@ -15,28 +31,35 @@ import { sequenceRoutes } from "./sequenceRoutes.js"
 // it produces an outputFolderName, the second step can link to it via
 // { linkedTo, output: 'folder' }, and we can stat the result.
 
-const post = (path: string, body: unknown) => (
+const post = (path: string, body: unknown) =>
   sequenceRoutes.request(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   })
-)
 
-const flushAfter = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+const flushAfter = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 // Poll a predicate until it returns truthy or the budget expires. Used
 // by cancellation tests to catch a step exactly while it's `running` —
 // memfs is fast enough that a fixed `await flushAfter(20)` can race past
 // the running window straight to `completed`.
-const waitFor = async <T>(get: () => T | undefined, timeoutMs = 500): Promise<T> => {
+const waitFor = async <T>(
+  get: () => T | undefined,
+  timeoutMs = 500,
+): Promise<T> => {
   const startedAt = Date.now()
   while (Date.now() - startedAt < timeoutMs) {
     const value = get()
     if (value !== undefined && value !== null) return value
-    await new Promise<void>((resolve) => setImmediate(resolve))
+    await new Promise<void>((resolve) =>
+      setImmediate(resolve),
+    )
   }
-  throw new Error(`waitFor: predicate did not resolve within ${timeoutMs}ms`)
+  throw new Error(
+    `waitFor: predicate did not resolve within ${timeoutMs}ms`,
+  )
 }
 
 // Install log capture once for the whole file so the SEQUENCE log lines
@@ -59,11 +82,19 @@ describe("POST /sequences/run", () => {
   test("returns 202 with a jobId + logsUrl for a valid pre-parsed body", async () => {
     const response = await post("/sequences/run", {
       paths: { workDir: { value: "/work" } },
-      steps: [{ command: "makeDirectory", params: { filePath: "@workDir" } }],
+      steps: [
+        {
+          command: "makeDirectory",
+          params: { filePath: "@workDir" },
+        },
+      ],
     })
 
     expect(response.status).toBe(202)
-    const body = await response.json() as { jobId: string, logsUrl: string }
+    const body = (await response.json()) as {
+      jobId: string
+      logsUrl: string
+    }
     expect(typeof body.jobId).toBe("string")
     expect(body.logsUrl).toBe(`/jobs/${body.jobId}/logs`)
   })
@@ -101,11 +132,21 @@ describe("POST /sequences/run", () => {
     const response = await post("/sequences/run", {
       paths: { root: { value: "/seq-root" } },
       steps: [
-        { id: "first", command: "makeDirectory", params: { filePath: "@root" } },
-        { id: "second", command: "makeDirectory", params: { filePath: "@root" } },
+        {
+          id: "first",
+          command: "makeDirectory",
+          params: { filePath: "@root" },
+        },
+        {
+          id: "second",
+          command: "makeDirectory",
+          params: { filePath: "@root" },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
     // The runner spins synchronously into rxjs subscribe callbacks; one tick
     // is enough for both makeDirectory observables to complete since memfs
@@ -124,9 +165,16 @@ describe("POST /sequences/run", () => {
 
   test("fails the umbrella job and surfaces the error when a step references an unknown path variable", async () => {
     const response = await post("/sequences/run", {
-      steps: [{ command: "makeDirectory", params: { filePath: "@missing" } }],
+      steps: [
+        {
+          command: "makeDirectory",
+          params: { filePath: "@missing" },
+        },
+      ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
     await flushAfter(20)
 
@@ -153,11 +201,21 @@ describe("POST /sequences/run", () => {
 
     const response = await post("/sequences/run", {
       steps: [
-        { id: "refuse", command: "deleteFolder", params: { folderPath: "/work", confirm: false } },
-        { id: "should-not-run", command: "makeDirectory", params: { filePath: "/never-created" } },
+        {
+          id: "refuse",
+          command: "deleteFolder",
+          params: { folderPath: "/work", confirm: false },
+        },
+        {
+          id: "should-not-run",
+          command: "makeDirectory",
+          params: { filePath: "/never-created" },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
     await flushAfter(50)
 
@@ -179,7 +237,8 @@ describe("POST /sequences/run", () => {
     // a seeded .ass file through the sequence runner and asserts the
     // ScriptType bump from v4.00 → v4.00+ actually lands in the file.
     vol.fromJSON({
-      "/seq/episode-01.ass": "[Script Info]\nScriptType: v4.00\nTitle: Test\n",
+      "/seq/episode-01.ass":
+        "[Script Info]\nScriptType: v4.00\nTitle: Test\n",
     })
 
     const response = await post("/sequences/run", {
@@ -196,7 +255,9 @@ describe("POST /sequences/run", () => {
         },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
     await flushAfter(100)
 
@@ -204,7 +265,10 @@ describe("POST /sequences/run", () => {
     expect(job?.status).toBe("completed")
     expect(job?.error).toBeNull()
 
-    const after = await readFile("/seq/episode-01.ass", "utf8")
+    const after = await readFile(
+      "/seq/episode-01.ass",
+      "utf8",
+    )
     expect(after).toContain("ScriptType: v4.00+")
   })
 
@@ -212,11 +276,20 @@ describe("POST /sequences/run", () => {
     const response = await post("/sequences/run", {
       paths: { root: { value: "/seq-children" } },
       steps: [
-        { id: "alpha", command: "makeDirectory", params: { filePath: "@root" } },
-        { command: "makeDirectory", params: { filePath: "@root" } },
+        {
+          id: "alpha",
+          command: "makeDirectory",
+          params: { filePath: "@root" },
+        },
+        {
+          command: "makeDirectory",
+          params: { filePath: "@root" },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
     await flushAfter(50)
 
@@ -228,8 +301,16 @@ describe("POST /sequences/run", () => {
     // had an explicit id ("alpha") and didn't consume a slot, so the
     // second (unnamed) step is the first auto-assigned id.
     expect(children[1].stepId).toBe("step1")
-    expect(children.every((child) => child.parentJobId === jobId)).toBe(true)
-    expect(children.every((child) => child.status === "completed")).toBe(true)
+    expect(
+      children.every(
+        (child) => child.parentJobId === jobId,
+      ),
+    ).toBe(true)
+    expect(
+      children.every(
+        (child) => child.status === "completed",
+      ),
+    ).toBe(true)
   })
 
   test("marks downstream child jobs as skipped when an earlier step fails", async () => {
@@ -237,18 +318,38 @@ describe("POST /sequences/run", () => {
 
     const response = await post("/sequences/run", {
       steps: [
-        { id: "ok", command: "makeDirectory", params: { filePath: "/ok" } },
-        { id: "boom", command: "deleteFolder", params: { folderPath: "/work", confirm: false } },
-        { id: "downstream1", command: "makeDirectory", params: { filePath: "/down1" } },
-        { id: "downstream2", command: "makeDirectory", params: { filePath: "/down2" } },
+        {
+          id: "ok",
+          command: "makeDirectory",
+          params: { filePath: "/ok" },
+        },
+        {
+          id: "boom",
+          command: "deleteFolder",
+          params: { folderPath: "/work", confirm: false },
+        },
+        {
+          id: "downstream1",
+          command: "makeDirectory",
+          params: { filePath: "/down1" },
+        },
+        {
+          id: "downstream2",
+          command: "makeDirectory",
+          params: { filePath: "/down2" },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
     await flushAfter(80)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
+    const byStepId = Object.fromEntries(
+      children.map((child) => [child.stepId, child]),
+    )
 
     expect(byStepId.ok.status).toBe("completed")
     expect(byStepId.boom.status).toBe("failed")
@@ -264,16 +365,28 @@ describe("POST /sequences/run", () => {
   test("marks the offending step's child as failed when its params reference a missing path", async () => {
     const response = await post("/sequences/run", {
       steps: [
-        { id: "broken", command: "makeDirectory", params: { filePath: "@missing" } },
-        { id: "after", command: "makeDirectory", params: { filePath: "/never" } },
+        {
+          id: "broken",
+          command: "makeDirectory",
+          params: { filePath: "@missing" },
+        },
+        {
+          id: "after",
+          command: "makeDirectory",
+          params: { filePath: "/never" },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
     await flushAfter(20)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
+    const byStepId = Object.fromEntries(
+      children.map((child) => [child.stepId, child]),
+    )
     expect(byStepId.broken.status).toBe("failed")
     expect(byStepId.broken.error).toMatch(/missing/i)
     expect(byStepId.after.status).toBe("skipped")
@@ -282,9 +395,17 @@ describe("POST /sequences/run", () => {
   test("umbrella sequence job has parentJobId=null so it stays at the top of the Jobs UI list", async () => {
     const response = await post("/sequences/run", {
       paths: { root: { value: "/top-level-check" } },
-      steps: [{ id: "only", command: "makeDirectory", params: { filePath: "@root" } }],
+      steps: [
+        {
+          id: "only",
+          command: "makeDirectory",
+          params: { filePath: "@root" },
+        },
+      ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
     await flushAfter(20)
 
@@ -303,7 +424,10 @@ describe("POST /sequences/run", () => {
     const response = await post("/sequences/run", {
       steps: [
         { command: "doesNotExist", params: {} },
-        { command: "makeDirectory", params: { filePath: "/should-not-run" } },
+        {
+          command: "makeDirectory",
+          params: { filePath: "/should-not-run" },
+        },
       ],
     })
     expect(response.status).toBe(400)
@@ -329,21 +453,39 @@ describe("POST /sequences/run — groups", () => {
     const response = await post("/sequences/run", {
       paths: { root: { value: "/grp-mixed" } },
       steps: [
-        { id: "before", command: "makeDirectory", params: { filePath: "@root" } },
+        {
+          id: "before",
+          command: "makeDirectory",
+          params: { filePath: "@root" },
+        },
         {
           kind: "group",
           id: "innerSerial",
           label: "Two serial steps",
           steps: [
-            { id: "g1", command: "makeDirectory", params: { filePath: "@root" } },
-            { id: "g2", command: "makeDirectory", params: { filePath: "@root" } },
+            {
+              id: "g1",
+              command: "makeDirectory",
+              params: { filePath: "@root" },
+            },
+            {
+              id: "g2",
+              command: "makeDirectory",
+              params: { filePath: "@root" },
+            },
           ],
         },
-        { id: "after", command: "makeDirectory", params: { filePath: "@root" } },
+        {
+          id: "after",
+          command: "makeDirectory",
+          params: { filePath: "@root" },
+        },
       ],
     })
     expect(response.status).toBe(202)
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
     await flushAfter(80)
 
     const umbrella = getJob(jobId)
@@ -352,16 +494,27 @@ describe("POST /sequences/run — groups", () => {
     // One child job per actual step — the group itself doesn't get a
     // child job; its identity lives only in the source YAML.
     const children = getChildJobs(jobId)
-    expect(children.map((child) => child.stepId)).toEqual(["before", "g1", "g2", "after"])
-    expect(children.every((child) => child.parentJobId === jobId)).toBe(true)
-    expect(children.every((child) => child.status === "completed")).toBe(true)
+    expect(children.map((child) => child.stepId)).toEqual([
+      "before",
+      "g1",
+      "g2",
+      "after",
+    ])
+    expect(
+      children.every(
+        (child) => child.parentJobId === jobId,
+      ),
+    ).toBe(true)
+    expect(
+      children.every(
+        (child) => child.status === "completed",
+      ),
+    ).toBe(true)
   })
 
   test("rejects a group with no inner steps via the schema (400)", async () => {
     const response = await post("/sequences/run", {
-      steps: [
-        { kind: "group", steps: [] },
-      ],
+      steps: [{ kind: "group", steps: [] }],
     })
     expect(response.status).toBe(400)
   })
@@ -387,8 +540,12 @@ describe("POST /sequences/run — groups", () => {
       ].join("\n"),
     })
     expect(response.status).toBe(400)
-    const body = await response.json() as { error: string }
-    expect(body.error.toLowerCase()).toContain("duplicate step id")
+    const body = (await response.json()) as {
+      error: string
+    }
+    expect(body.error.toLowerCase()).toContain(
+      "duplicate step id",
+    )
   })
 
   test("rejects linkedTo between siblings of the same parallel group", async () => {
@@ -412,8 +569,12 @@ describe("POST /sequences/run — groups", () => {
       ].join("\n"),
     })
     expect(response.status).toBe(400)
-    const body = await response.json() as { error: string }
-    expect(body.error.toLowerCase()).toContain("parallel group")
+    const body = (await response.json()) as {
+      error: string
+    }
+    expect(body.error.toLowerCase()).toContain(
+      "parallel group",
+    )
   })
 
   test("serial group: inner steps run in document order and group failure cascades to outer remainder", async () => {
@@ -425,19 +586,42 @@ describe("POST /sequences/run — groups", () => {
           kind: "group",
           id: "boomGroup",
           steps: [
-            { id: "innerOk", command: "makeDirectory", params: { filePath: "/inner-ok" } },
-            { id: "innerBoom", command: "deleteFolder", params: { folderPath: "/work", confirm: false } },
-            { id: "innerSkip", command: "makeDirectory", params: { filePath: "/inner-skip" } },
+            {
+              id: "innerOk",
+              command: "makeDirectory",
+              params: { filePath: "/inner-ok" },
+            },
+            {
+              id: "innerBoom",
+              command: "deleteFolder",
+              params: {
+                folderPath: "/work",
+                confirm: false,
+              },
+            },
+            {
+              id: "innerSkip",
+              command: "makeDirectory",
+              params: { filePath: "/inner-skip" },
+            },
           ],
         },
-        { id: "afterGroup", command: "makeDirectory", params: { filePath: "/after-group" } },
+        {
+          id: "afterGroup",
+          command: "makeDirectory",
+          params: { filePath: "/after-group" },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
     await flushAfter(80)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
+    const byStepId = Object.fromEntries(
+      children.map((child) => [child.stepId, child]),
+    )
 
     expect(byStepId.innerOk.status).toBe("completed")
     expect(byStepId.innerBoom.status).toBe("failed")
@@ -471,8 +655,22 @@ describe("POST /sequences/run — groups", () => {
           id: "paraSources",
           isParallel: true,
           steps: [
-            { id: "copyA", command: "copyFiles", params: { sourcePath: "/src-a", destinationPath: "/dst-a" } },
-            { id: "copyB", command: "copyFiles", params: { sourcePath: "/src-b", destinationPath: "/dst-b" } },
+            {
+              id: "copyA",
+              command: "copyFiles",
+              params: {
+                sourcePath: "/src-a",
+                destinationPath: "/dst-a",
+              },
+            },
+            {
+              id: "copyB",
+              command: "copyFiles",
+              params: {
+                sourcePath: "/src-b",
+                destinationPath: "/dst-b",
+              },
+            },
           ],
         },
         {
@@ -480,12 +678,17 @@ describe("POST /sequences/run — groups", () => {
           command: "copyFiles",
           params: {
             sourcePath: "/src-after",
-            destinationPath: { linkedTo: "copyA", output: "folder" },
+            destinationPath: {
+              linkedTo: "copyA",
+              output: "folder",
+            },
           },
         },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
     await flushAfter(150)
 
     const job = getJob(jobId)
@@ -493,7 +696,9 @@ describe("POST /sequences/run — groups", () => {
     expect(job?.error).toBeNull()
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
+    const byStepId = Object.fromEntries(
+      children.map((child) => [child.stepId, child]),
+    )
     expect(byStepId.copyA.status).toBe("completed")
     expect(byStepId.copyB.status).toBe("completed")
     expect(byStepId.consume.status).toBe("completed")
@@ -504,7 +709,9 @@ describe("POST /sequences/run — groups", () => {
     // resolved through to the inner step's destination.
     expect(vol.existsSync("/dst-a/alpha.txt")).toBe(true)
     expect(vol.existsSync("/dst-b/beta.txt")).toBe(true)
-    expect(vol.existsSync("/dst-a/follow-up.txt")).toBe(true)
+    expect(vol.existsSync("/dst-a/follow-up.txt")).toBe(
+      true,
+    )
   })
 
   test("parallel group fail: outer remainder is skipped, sibling success still recorded", async () => {
@@ -517,18 +724,37 @@ describe("POST /sequences/run — groups", () => {
           id: "paraBoom",
           isParallel: true,
           steps: [
-            { id: "innerSuccess", command: "makeDirectory", params: { filePath: "/inner-success" } },
-            { id: "innerBoom", command: "deleteFolder", params: { folderPath: "/work", confirm: false } },
+            {
+              id: "innerSuccess",
+              command: "makeDirectory",
+              params: { filePath: "/inner-success" },
+            },
+            {
+              id: "innerBoom",
+              command: "deleteFolder",
+              params: {
+                folderPath: "/work",
+                confirm: false,
+              },
+            },
           ],
         },
-        { id: "afterGroup", command: "makeDirectory", params: { filePath: "/after-group" } },
+        {
+          id: "afterGroup",
+          command: "makeDirectory",
+          params: { filePath: "/after-group" },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
     await flushAfter(80)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
+    const byStepId = Object.fromEntries(
+      children.map((child) => [child.stepId, child]),
+    )
 
     expect(byStepId.innerSuccess.status).toBe("completed")
     expect(byStepId.innerBoom.status).toBe("failed")
@@ -546,9 +772,12 @@ describe("POST /sequences/run — groups", () => {
     // `cancelled` (NOT `completed`). The proof point: at least one
     // source file did not make it into the destination, because the
     // copy was interrupted mid-iteration.
-    const seedFiles: Record<string, string> = { "/work/keep": "" }
+    const seedFiles: Record<string, string> = {
+      "/work/keep": "",
+    }
     for (let index = 0; index < 64; index += 1) {
-      seedFiles[`/slow-src/file${index}.txt`] = "padding-".repeat(500) + index
+      seedFiles[`/slow-src/file${index}.txt`] =
+        "padding-".repeat(500) + index
     }
     vol.fromJSON(seedFiles)
 
@@ -559,18 +788,40 @@ describe("POST /sequences/run — groups", () => {
           id: "paraCancel",
           isParallel: true,
           steps: [
-            { id: "slow", command: "copyFiles", params: { sourcePath: "/slow-src", destinationPath: "/slow-dst" } },
-            { id: "boom", command: "deleteFolder", params: { folderPath: "/work", confirm: false } },
+            {
+              id: "slow",
+              command: "copyFiles",
+              params: {
+                sourcePath: "/slow-src",
+                destinationPath: "/slow-dst",
+              },
+            },
+            {
+              id: "boom",
+              command: "deleteFolder",
+              params: {
+                folderPath: "/work",
+                confirm: false,
+              },
+            },
           ],
         },
-        { id: "after", command: "makeDirectory", params: { filePath: "/after" } },
+        {
+          id: "after",
+          command: "makeDirectory",
+          params: { filePath: "/after" },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
     await flushAfter(200)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
+    const byStepId = Object.fromEntries(
+      children.map((child) => [child.stepId, child]),
+    )
 
     expect(byStepId.boom.status).toBe("failed")
     expect(byStepId.slow.status).toBe("cancelled")
@@ -593,30 +844,54 @@ describe("POST /sequences/run — groups", () => {
     // the overlap assertion would fail.
     const seedFiles: Record<string, string> = {}
     for (let idx = 0; idx < 8; idx += 1) {
-      seedFiles[`/par-src-a/file${idx}.txt`] = "alpha-".repeat(100) + idx
-      seedFiles[`/par-src-b/file${idx}.txt`] = "beta-".repeat(100) + idx
+      seedFiles[`/par-src-a/file${idx}.txt`] =
+        "alpha-".repeat(100) + idx
+      seedFiles[`/par-src-b/file${idx}.txt`] =
+        "beta-".repeat(100) + idx
     }
     vol.fromJSON(seedFiles)
 
     const response = await post("/sequences/run", {
-      steps: [{
-        kind: "group",
-        id: "para",
-        isParallel: true,
-        steps: [
-          { id: "concA", command: "copyFiles", params: { sourcePath: "/par-src-a", destinationPath: "/par-dst-a" } },
-          { id: "concB", command: "copyFiles", params: { sourcePath: "/par-src-b", destinationPath: "/par-dst-b" } },
-        ],
-      }],
+      steps: [
+        {
+          kind: "group",
+          id: "para",
+          isParallel: true,
+          steps: [
+            {
+              id: "concA",
+              command: "copyFiles",
+              params: {
+                sourcePath: "/par-src-a",
+                destinationPath: "/par-dst-a",
+              },
+            },
+            {
+              id: "concB",
+              command: "copyFiles",
+              params: {
+                sourcePath: "/par-src-b",
+                destinationPath: "/par-dst-b",
+              },
+            },
+          ],
+        },
+      ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
     await flushAfter(150)
 
     expect(getJob(jobId)?.status).toBe("completed")
 
     const children = getChildJobs(jobId)
-    const childA = children.find((child) => child.stepId === "concA")
-    const childB = children.find((child) => child.stepId === "concB")
+    const childA = children.find(
+      (child) => child.stepId === "concA",
+    )
+    const childB = children.find(
+      (child) => child.stepId === "concB",
+    )
     expect(childA?.status).toBe("completed")
     expect(childB?.status).toBe("completed")
     const aStart = childA?.startedAt?.getTime()
@@ -643,37 +918,63 @@ describe("POST /sequences/run — groups", () => {
     // umbrella in `running` and the rest in `pending` forever.
     const seedFiles: Record<string, string> = {}
     for (let index = 0; index < 256; index += 1) {
-      seedFiles[`/cancel-src/file${index}.txt`] = "padding-".repeat(2000) + index
+      seedFiles[`/cancel-src/file${index}.txt`] =
+        "padding-".repeat(2000) + index
     }
     vol.fromJSON(seedFiles)
 
     const response = await post("/sequences/run", {
       steps: [
-        { id: "first", command: "copyFiles", params: { sourcePath: "/cancel-src", destinationPath: "/cancel-dst" } },
-        { id: "second", command: "makeDirectory", params: { filePath: "/should-not-run" } },
-        { id: "third", command: "makeDirectory", params: { filePath: "/also-should-not-run" } },
+        {
+          id: "first",
+          command: "copyFiles",
+          params: {
+            sourcePath: "/cancel-src",
+            destinationPath: "/cancel-dst",
+          },
+        },
+        {
+          id: "second",
+          command: "makeDirectory",
+          params: { filePath: "/should-not-run" },
+        },
+        {
+          id: "third",
+          command: "makeDirectory",
+          params: { filePath: "/also-should-not-run" },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
     // Catch the first child exactly while it's running and cancel it
     // immediately — memfs is fast enough that a fixed wait can race
     // past the running window.
-    const firstChild = await waitFor(() => (
-      getChildJobs(jobId).find((child) => child.stepId === "first" && child.status === "running")
-    ))
+    const firstChild = await waitFor(() =>
+      getChildJobs(jobId).find(
+        (child) =>
+          child.stepId === "first" &&
+          child.status === "running",
+      ),
+    )
     cancelJob(firstChild.id)
     await flushAfter(100)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
+    const byStepId = Object.fromEntries(
+      children.map((child) => [child.stepId, child]),
+    )
 
     expect(byStepId.first.status).toBe("cancelled")
     expect(byStepId.second.status).toBe("skipped")
     expect(byStepId.third.status).toBe("skipped")
     expect(getJob(jobId)?.status).toBe("cancelled")
     expect(vol.existsSync("/should-not-run")).toBe(false)
-    expect(vol.existsSync("/also-should-not-run")).toBe(false)
+    expect(vol.existsSync("/also-should-not-run")).toBe(
+      false,
+    )
   })
 
   test("cancelling one parallel sibling cancels the others and finalizes the umbrella", async () => {
@@ -683,8 +984,10 @@ describe("POST /sequences/run — groups", () => {
     // step is skipped, and the umbrella is cancelled.
     const seedFiles: Record<string, string> = {}
     for (let index = 0; index < 256; index += 1) {
-      seedFiles[`/par-cancel-a/file${index}.txt`] = "alpha-".repeat(2000) + index
-      seedFiles[`/par-cancel-b/file${index}.txt`] = "beta-".repeat(2000) + index
+      seedFiles[`/par-cancel-a/file${index}.txt`] =
+        "alpha-".repeat(2000) + index
+      seedFiles[`/par-cancel-b/file${index}.txt`] =
+        "beta-".repeat(2000) + index
     }
     vol.fromJSON(seedFiles)
 
@@ -695,29 +998,57 @@ describe("POST /sequences/run — groups", () => {
           id: "paraCancelGroup",
           isParallel: true,
           steps: [
-            { id: "innerA", command: "copyFiles", params: { sourcePath: "/par-cancel-a", destinationPath: "/par-cancel-a-dst" } },
-            { id: "innerB", command: "copyFiles", params: { sourcePath: "/par-cancel-b", destinationPath: "/par-cancel-b-dst" } },
+            {
+              id: "innerA",
+              command: "copyFiles",
+              params: {
+                sourcePath: "/par-cancel-a",
+                destinationPath: "/par-cancel-a-dst",
+              },
+            },
+            {
+              id: "innerB",
+              command: "copyFiles",
+              params: {
+                sourcePath: "/par-cancel-b",
+                destinationPath: "/par-cancel-b-dst",
+              },
+            },
           ],
         },
-        { id: "afterGroup", command: "makeDirectory", params: { filePath: "/after-cancel-group" } },
+        {
+          id: "afterGroup",
+          command: "makeDirectory",
+          params: { filePath: "/after-cancel-group" },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
-    const innerA = await waitFor(() => (
-      getChildJobs(jobId).find((child) => child.stepId === "innerA" && child.status === "running")
-    ))
+    const innerA = await waitFor(() =>
+      getChildJobs(jobId).find(
+        (child) =>
+          child.stepId === "innerA" &&
+          child.status === "running",
+      ),
+    )
     cancelJob(innerA.id)
     await flushAfter(200)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
+    const byStepId = Object.fromEntries(
+      children.map((child) => [child.stepId, child]),
+    )
 
     expect(byStepId.innerA.status).toBe("cancelled")
     expect(byStepId.innerB.status).toBe("cancelled")
     expect(byStepId.afterGroup.status).toBe("skipped")
     expect(getJob(jobId)?.status).toBe("cancelled")
-    expect(vol.existsSync("/after-cancel-group")).toBe(false)
+    expect(vol.existsSync("/after-cancel-group")).toBe(
+      false,
+    )
   })
 
   test("emits step-started and step-finished on the umbrella subject", async () => {
@@ -737,36 +1068,63 @@ describe("POST /sequences/run — groups", () => {
     // catch step1-finished, step2-started, step2-finished.
     const seedFiles: Record<string, string> = {}
     for (let index = 0; index < 64; index += 1) {
-      seedFiles[`/step-event-src/file${index}.txt`] = "padding-".repeat(500) + index
+      seedFiles[`/step-event-src/file${index}.txt`] =
+        "padding-".repeat(500) + index
     }
     vol.fromJSON(seedFiles)
 
     const response = await post("/sequences/run", {
       steps: [
-        { id: "first", command: "copyFiles", params: { sourcePath: "/step-event-src", destinationPath: "/step-event-dst" } },
-        { id: "second", command: "makeDirectory", params: { filePath: "/step-event-after" } },
+        {
+          id: "first",
+          command: "copyFiles",
+          params: {
+            sourcePath: "/step-event-src",
+            destinationPath: "/step-event-dst",
+          },
+        },
+        {
+          id: "second",
+          command: "makeDirectory",
+          params: { filePath: "/step-event-after" },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
     const subject = getSubject(jobId)
     expect(subject).toBeDefined()
     const events: JobEvent[] = []
-    subject!.subscribe((event) => {
+    subject?.subscribe((event) => {
       if (typeof event !== "string") events.push(event)
     })
 
     await flushAfter(200)
 
-    const isStepEvent = (event: JobEvent | undefined, type: string, stepId: string): boolean => (
-      event !== undefined && event.type === type && (event as { stepId: string | null }).stepId === stepId
+    const isStepEvent = (
+      event: JobEvent | undefined,
+      type: string,
+      stepId: string,
+    ): boolean =>
+      event !== undefined &&
+      event.type === type &&
+      (event as { stepId: string | null }).stepId === stepId
+    const stepEvents = events.filter(
+      (event) =>
+        event.type === "step-started" ||
+        event.type === "step-finished",
     )
-    const stepEvents = events.filter((event) => (
-      event.type === "step-started" || event.type === "step-finished"
-    ))
-    const firstFinished = stepEvents.find((event) => isStepEvent(event, "step-finished", "first"))
-    const secondStarted = stepEvents.find((event) => isStepEvent(event, "step-started", "second"))
-    const secondFinished = stepEvents.find((event) => isStepEvent(event, "step-finished", "second"))
+    const firstFinished = stepEvents.find((event) =>
+      isStepEvent(event, "step-finished", "first"),
+    )
+    const secondStarted = stepEvents.find((event) =>
+      isStepEvent(event, "step-started", "second"),
+    )
+    const secondFinished = stepEvents.find((event) =>
+      isStepEvent(event, "step-finished", "second"),
+    )
 
     expect(firstFinished).toBeDefined()
     expect(secondStarted).toBeDefined()
@@ -775,20 +1133,39 @@ describe("POST /sequences/run — groups", () => {
     // Each event must carry the corresponding child job id so the modal
     // can open /jobs/<childJobId>/logs without parsing log text.
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child.id]))
+    const byStepId = Object.fromEntries(
+      children.map((child) => [child.stepId, child.id]),
+    )
 
-    type StepEventLike = { type: string, childJobId: string, stepId: string | null, status: string }
-    expect((firstFinished as StepEventLike).childJobId).toBe(byStepId.first)
-    expect((secondStarted as StepEventLike).childJobId).toBe(byStepId.second)
-    expect((secondFinished as StepEventLike).childJobId).toBe(byStepId.second)
+    type StepEventLike = {
+      type: string
+      childJobId: string
+      stepId: string | null
+      status: string
+    }
+    expect(
+      (firstFinished as StepEventLike).childJobId,
+    ).toBe(byStepId.first)
+    expect(
+      (secondStarted as StepEventLike).childJobId,
+    ).toBe(byStepId.second)
+    expect(
+      (secondFinished as StepEventLike).childJobId,
+    ).toBe(byStepId.second)
 
     // step-finished's `status` mirrors the child's terminal status — the
     // modal uses this to know when to tear down the open per-child SSE.
-    expect((firstFinished as StepEventLike).status).toBe("completed")
-    expect((secondFinished as StepEventLike).status).toBe("completed")
+    expect((firstFinished as StepEventLike).status).toBe(
+      "completed",
+    )
+    expect((secondFinished as StepEventLike).status).toBe(
+      "completed",
+    )
     // step-started always carries `running` since the child has just
     // transitioned past the runner's pre-subscribe validation.
-    expect((secondStarted as StepEventLike).status).toBe("running")
+    expect((secondStarted as StepEventLike).status).toBe(
+      "running",
+    )
   })
 
   test("step-finished status reflects a failed child", async () => {
@@ -797,32 +1174,56 @@ describe("POST /sequences/run — groups", () => {
     // then fails synchronously (deleteFolder with confirm:false against
     // a non-empty path) and we assert its step-finished carries
     // status: "failed".
-    const seedFiles: Record<string, string> = { "/step-fail-work/keep": "" }
+    const seedFiles: Record<string, string> = {
+      "/step-fail-work/keep": "",
+    }
     for (let index = 0; index < 64; index += 1) {
-      seedFiles[`/step-fail-src/file${index}.txt`] = "padding-".repeat(500) + index
+      seedFiles[`/step-fail-src/file${index}.txt`] =
+        "padding-".repeat(500) + index
     }
     vol.fromJSON(seedFiles)
 
     const response = await post("/sequences/run", {
       steps: [
-        { id: "slow", command: "copyFiles", params: { sourcePath: "/step-fail-src", destinationPath: "/step-fail-dst" } },
-        { id: "boom", command: "deleteFolder", params: { folderPath: "/step-fail-work", confirm: false } },
+        {
+          id: "slow",
+          command: "copyFiles",
+          params: {
+            sourcePath: "/step-fail-src",
+            destinationPath: "/step-fail-dst",
+          },
+        },
+        {
+          id: "boom",
+          command: "deleteFolder",
+          params: {
+            folderPath: "/step-fail-work",
+            confirm: false,
+          },
+        },
       ],
     })
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
 
     const events: JobEvent[] = []
-    getSubject(jobId)!.subscribe((event) => {
+    getSubject(jobId)?.subscribe((event) => {
       if (typeof event !== "string") events.push(event)
     })
 
     await flushAfter(200)
 
-    const boomFinished = events.find((event) => (
-      event.type === "step-finished" && (event as { stepId: string | null }).stepId === "boom"
-    ))
+    const boomFinished = events.find(
+      (event) =>
+        event.type === "step-finished" &&
+        (event as { stepId: string | null }).stepId ===
+          "boom",
+    )
     expect(boomFinished).toBeDefined()
-    expect((boomFinished as { status: string }).status).toBe("failed")
+    expect(
+      (boomFinished as { status: string }).status,
+    ).toBe("failed")
   })
 
   test("isCollapsed on a step parses without affecting runtime", async () => {
@@ -832,11 +1233,18 @@ describe("POST /sequences/run — groups", () => {
     vol.fromJSON({})
     const response = await post("/sequences/run", {
       steps: [
-        { id: "collapsed", command: "makeDirectory", params: { filePath: "/collapsed-runs" }, isCollapsed: true },
+        {
+          id: "collapsed",
+          command: "makeDirectory",
+          params: { filePath: "/collapsed-runs" },
+          isCollapsed: true,
+        },
       ],
     })
     expect(response.status).toBe(202)
-    const { jobId } = await response.json() as { jobId: string }
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
     await flushAfter(40)
     expect(getJob(jobId)?.status).toBe("completed")
     expect(vol.existsSync("/collapsed-runs")).toBe(true)

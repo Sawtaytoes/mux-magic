@@ -22,11 +22,20 @@
 "use strict"
 
 const { execSync } = require("node:child_process")
-const { mkdirSync, writeFileSync, readFileSync } = require("node:fs")
+const {
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+} = require("node:fs")
 const { dirname, join } = require("node:path")
 
 const repoRoot = join(__dirname, "..")
-const outPath = join(repoRoot, "public", "api", "version.json")
+const outPath = join(
+  repoRoot,
+  "public",
+  "api",
+  "version.json",
+)
 
 const tryGit = (args) => {
   try {
@@ -34,36 +43,28 @@ const tryGit = (args) => {
       cwd: repoRoot,
       stdio: ["ignore", "pipe", "ignore"],
     })
-    .toString()
-    .trim()
-  }
-  catch {
+      .toString()
+      .trim()
+  } catch {
     return ""
   }
 }
 
-const gitShaLong = (
-  process.env.GIT_SHA
-  || tryGit("rev-parse HEAD")
-  || "unknown"
-)
+const gitShaLong =
+  process.env.GIT_SHA ||
+  tryGit("rev-parse HEAD") ||
+  "unknown"
 
-const gitShaShort = (
+const gitShaShort =
   gitShaLong === "unknown"
-  ? "unknown"
-  : gitShaLong.slice(0, 7)
-)
+    ? "unknown"
+    : gitShaLong.slice(0, 7)
 
-const buildTime = (
-  process.env.BUILD_TIME
-  || new Date().toISOString()
-)
+const buildTime =
+  process.env.BUILD_TIME || new Date().toISOString()
 
 const packageJson = JSON.parse(
-  readFileSync(
-    join(repoRoot, "package.json"),
-    "utf8",
-  ),
+  readFileSync(join(repoRoot, "package.json"), "utf8"),
 )
 
 const payload = {
@@ -77,7 +78,7 @@ const payload = {
 mkdirSync(dirname(outPath), { recursive: true })
 writeFileSync(
   outPath,
-  JSON.stringify(payload, null, 2) + "\n",
+  `${JSON.stringify(payload, null, 2)}\n`,
   "utf8",
 )
 

@@ -12,23 +12,18 @@ import { runMkvMerge } from "./runMkvMerge.js"
 export const remuxMkvMerge = ({
   inputFilePath,
 }: {
-  inputFilePath: string,
+  inputFilePath: string
 }): Observable<{
-  inputFilePath: string,
-  outputFilePath: string,
+  inputFilePath: string
+  outputFilePath: string
 }> => {
   const outputFilePath = join(
     dirname(inputFilePath),
     `${basename(inputFilePath, extname(inputFilePath))}.mkv`,
   )
 
-  return (
-    runMkvMerge({
-      args: [inputFilePath],
-      outputFilePath,
-    })
-    .pipe(
-      map(() => ({ inputFilePath, outputFilePath })),
-    )
-  )
+  return runMkvMerge({
+    args: [inputFilePath],
+    outputFilePath,
+  }).pipe(map(() => ({ inputFilePath, outputFilePath })))
 }

@@ -32,8 +32,8 @@ export const postContentInnerHtmlUnusedPrefix = `
 <br>
 `
 
-export const postContentInnerHtml = postContentInnerHtmlUnusedPrefix
-.concat(`
+export const postContentInnerHtml =
+  postContentInnerHtmlUnusedPrefix.concat(`
 <span style="font-size:150%;line-height:116%"><strong class="text-strong"><span style="text-decoration:underline"><span style="color:#FF0000">Reference 4K titles and/or spectacular upgrades from the most recent BD:</span></span></strong></span><br>
 2001 (WB)<br>
 8 1/2 (Criterion)<br>

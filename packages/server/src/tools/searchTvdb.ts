@@ -2,8 +2,8 @@ import {
   from,
   map,
   mergeMap,
-  of,
   type Observable,
+  of,
 } from "rxjs"
 
 import { logAndSwallow } from "./logAndSwallow.js"
@@ -36,51 +36,47 @@ export type TvdbRawResult = {
 // canonical name is non-Latin (e.g. Pokemon's "ポケットモンスター") still
 // surface in the lookup modal as "Pokémon". Falls back to whichever
 // translated name TVDB pre-selected, then the canonical name.
-const pickEnglishName = (entry: TvdbRawResult): string => (
-  entry.translations?.eng
-  ?? entry.name_translated
-  ?? entry.name
-  ?? ""
-)
+const pickEnglishName = (entry: TvdbRawResult): string =>
+  entry.translations?.eng ??
+  entry.name_translated ??
+  entry.name ??
+  ""
 
 export const mapTvdbSearchResults = (
   rawData: TvdbRawResult[] | null | undefined,
-): TvdbResult[] => (
+): TvdbResult[] =>
   (rawData ?? [])
-  .map((entry) => ({
-    imageUrl: entry.image_url,
-    name: pickEnglishName(entry),
-    status: entry.status,
-    tvdbId: Number(entry.tvdb_id),
-    year: entry.year,
-  }))
-  .filter((result) => result.tvdbId > 0 && result.name)
-)
+    .map((entry) => ({
+      imageUrl: entry.image_url,
+      name: pickEnglishName(entry),
+      status: entry.status,
+      tvdbId: Number(entry.tvdb_id),
+      year: entry.year,
+    }))
+    .filter((result) => result.tvdbId > 0 && result.name)
 
 export const searchTvdb = (
   searchTerm: string,
-): Observable<TvdbResult[]> => (
-  from(getTvdbFetchClient())
-  .pipe(
-    mergeMap((tvdbFetchClient) => (
+): Observable<TvdbResult[]> =>
+  from(getTvdbFetchClient()).pipe(
+    mergeMap((tvdbFetchClient) =>
       from(
-        tvdbFetchClient
-        .GET(
-          "/search",
-          {
-            params: {
-              query: {
-                query: searchTerm,
-                type: "series",
-              },
+        tvdbFetchClient.GET("/search", {
+          params: {
+            query: {
+              query: searchTerm,
+              type: "series",
             },
           },
-        )
-      )
-    )),
-    map(({ data }) => mapTvdbSearchResults(data?.data as TvdbRawResult[] | undefined)),
+        }),
+      ),
+    ),
+    map(({ data }) =>
+      mapTvdbSearchResults(
+        data?.data as TvdbRawResult[] | undefined,
+      ),
+    ),
   )
-)
 
 // Returns the English series title when TVDB has one on file, falling
 // back to the canonical /series/{id} name otherwise. The two-step lookup
@@ -89,49 +85,39 @@ export const searchTvdb = (
 // surface for a given series.
 export const lookupTvdbById = (
   tvdbId: number,
-): Observable<{ name: string } | null> => (
-  from(getTvdbFetchClient())
-  .pipe(
-    mergeMap((tvdbFetchClient) => (
+): Observable<{ name: string } | null> =>
+  from(getTvdbFetchClient()).pipe(
+    mergeMap((tvdbFetchClient) =>
       from(
-        tvdbFetchClient
-        .GET(
+        tvdbFetchClient.GET(
           "/series/{id}/translations/{language}",
           {
             params: {
               path: { id: tvdbId, language: "eng" },
             },
           },
-        )
-      )
-      .pipe(
+        ),
+      ).pipe(
         mergeMap(({ data: translationData }) => {
-          const englishName = translationData?.data?.name ?? ""
+          const englishName =
+            translationData?.data?.name ?? ""
           if (englishName) {
             return of({ name: englishName })
           }
-          return (
-            from(
-              tvdbFetchClient
-              .GET(
-                "/series/{id}",
-                {
-                  params: {
-                    path: { id: tvdbId },
-                  },
-                },
-              )
-            )
-            .pipe(
-              map(({ data }) => {
-                const name = data?.data?.name ?? ""
-                return name ? { name } : null
-              }),
-            )
+          return from(
+            tvdbFetchClient.GET("/series/{id}", {
+              params: {
+                path: { id: tvdbId },
+              },
+            }),
+          ).pipe(
+            map(({ data }) => {
+              const name = data?.data?.name ?? ""
+              return name ? { name } : null
+            }),
           )
         }),
-      )
-    )),
+      ),
+    ),
     logAndSwallow(lookupTvdbById),
   )
-)

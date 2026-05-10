@@ -1,15 +1,17 @@
 export type AssScriptInfoComment = {
-  type: 'comment'
+  type: "comment"
   text: string
 }
 
 export type AssScriptInfoProperty = {
-  type: 'property'
+  type: "property"
   key: string
   value: string
 }
 
-export type AssScriptInfoEntry = AssScriptInfoComment | AssScriptInfoProperty
+export type AssScriptInfoEntry =
+  | AssScriptInfoComment
+  | AssScriptInfoProperty
 
 export type AssFormatEntry = {
   entryType: string
@@ -18,24 +20,27 @@ export type AssFormatEntry = {
 
 export type AssScriptInfoSection = {
   sectionName: string
-  sectionType: 'scriptInfo'
+  sectionType: "scriptInfo"
   entries: AssScriptInfoEntry[]
 }
 
 export type AssFormattedSection = {
   sectionName: string
-  sectionType: 'formatted'
+  sectionType: "formatted"
   format: string[]
   entries: AssFormatEntry[]
 }
 
 export type AssRawSection = {
   sectionName: string
-  sectionType: 'raw'
+  sectionType: "raw"
   lines: string[]
 }
 
-export type AssSection = AssScriptInfoSection | AssFormattedSection | AssRawSection
+export type AssSection =
+  | AssScriptInfoSection
+  | AssFormattedSection
+  | AssRawSection
 
 export type AssFile = {
   sections: AssSection[]
@@ -45,15 +50,22 @@ export type AssFile = {
 // predicate defined in the request's top-level `predicates:` map.
 export type PredicateBodyLiteral = Record<string, string>
 export type PredicateBodyRef = { $ref: string }
-export type PredicateBody = PredicateBodyLiteral | PredicateBodyRef
+export type PredicateBody =
+  | PredicateBodyLiteral
+  | PredicateBodyRef
 
 // A single `when:` clause. Bare key→value pairs are sugar for `matches:`.
 export type WhenPredicateClauseExplicit = {
   matches?: PredicateBody
   excludes?: PredicateBody
 }
-export type WhenPredicateClauseShorthand = Record<string, string>
-export type WhenPredicateClause = WhenPredicateClauseExplicit | WhenPredicateClauseShorthand
+export type WhenPredicateClauseShorthand = Record<
+  string,
+  string
+>
+export type WhenPredicateClause =
+  | WhenPredicateClauseExplicit
+  | WhenPredicateClauseShorthand
 
 export type WhenPredicate = {
   anyScriptInfo?: WhenPredicateClause
@@ -65,10 +77,20 @@ export type WhenPredicate = {
   noneStyle?: WhenPredicateClause
 }
 
-export type ComparatorOperator = 'lt' | 'gt' | 'eq' | 'lte' | 'gte'
-export type ComparatorMatch = { [key in ComparatorOperator]?: number }
+export type ComparatorOperator =
+  | "lt"
+  | "gt"
+  | "eq"
+  | "lte"
+  | "gte"
+export type ComparatorMatch = {
+  [key in ComparatorOperator]?: number
+}
 export type ApplyIfFieldMatch = string | ComparatorMatch
-export type ApplyIfStyleClause = Record<string, ApplyIfFieldMatch>
+export type ApplyIfStyleClause = Record<
+  string,
+  ApplyIfFieldMatch
+>
 
 export type ApplyIfPredicate = {
   anyStyleMatches?: ApplyIfStyleClause
@@ -85,13 +107,19 @@ export type ComputeFromNumericOp =
   | { divide: number }
   | { min: number }
   | { max: number }
-export type ComputeFromBareOp = 'round' | 'floor' | 'ceil' | 'abs'
-export type ComputeFromOp = ComputeFromNumericOp | ComputeFromBareOp
+export type ComputeFromBareOp =
+  | "round"
+  | "floor"
+  | "ceil"
+  | "abs"
+export type ComputeFromOp =
+  | ComputeFromNumericOp
+  | ComputeFromBareOp
 
 export type ComputeFromValue = {
   computeFrom: {
     property: string
-    scope: 'scriptInfo' | 'style'
+    scope: "scriptInfo" | "style"
     ops: ComputeFromOp[]
   }
 }
@@ -99,14 +127,14 @@ export type ComputeFromValue = {
 export type StyleFieldValue = string | ComputeFromValue
 
 export type SetScriptInfoRule = {
-  type: 'setScriptInfo'
+  type: "setScriptInfo"
   key: string
   value: string
   when?: WhenPredicate
 }
 
 export type ScaleResolutionRule = {
-  type: 'scaleResolution'
+  type: "scaleResolution"
   from?: { width: number; height: number }
   to: { width: number; height: number }
   hasLayoutRes?: boolean
@@ -116,13 +144,19 @@ export type ScaleResolutionRule = {
 }
 
 export type SetStyleFieldsRule = {
-  type: 'setStyleFields'
+  type: "setStyleFields"
   ignoredStyleNamesRegexString?: string
   fields: Record<string, StyleFieldValue>
   applyIf?: ApplyIfPredicate
   when?: WhenPredicate
 }
 
-export type AssModificationRule = SetScriptInfoRule | ScaleResolutionRule | SetStyleFieldsRule
+export type AssModificationRule =
+  | SetScriptInfoRule
+  | ScaleResolutionRule
+  | SetStyleFieldsRule
 
-export type NamedPredicates = Record<string, PredicateBodyLiteral>
+export type NamedPredicates = Record<
+  string,
+  PredicateBodyLiteral
+>

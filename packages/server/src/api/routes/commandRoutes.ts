@@ -1,16 +1,25 @@
-import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi"
-import { type Context } from "hono"
-import { type Observable } from "rxjs"
-
-import { getFakeScenario, getEffectiveCommandConfigs, isFakeRequest } from "../../fake-data/index.js"
-import { makeDirectory } from "../../tools/makeDirectory.js"
+import {
+  createRoute,
+  OpenAPIHono,
+  z,
+} from "@hono/zod-openapi"
+import type { Context } from "hono"
+import type { Observable } from "rxjs"
 import { changeTrackLanguages } from "../../app-commands/changeTrackLanguages.js"
 import { copyFiles } from "../../app-commands/copyFiles.js"
-import { flattenOutput } from "../../app-commands/flattenOutput.js"
 import { copyOutSubtitles } from "../../app-commands/copyOutSubtitles.js"
-import { extractSubtitles, extractSubtitlesDefaultProps } from "../../app-commands/extractSubtitles.js"
+import { deleteFilesByExtension } from "../../app-commands/deleteFilesByExtension.js"
+import { deleteFolder } from "../../app-commands/deleteFolder.js"
+import {
+  extractSubtitles,
+  extractSubtitlesDefaultProps,
+} from "../../app-commands/extractSubtitles.js"
 import { fixIncorrectDefaultTracks } from "../../app-commands/fixIncorrectDefaultTracks.js"
-import { getAudioOffsets, getAudioOffsetsDefaultProps } from "../../app-commands/getAudioOffsets.js"
+import { flattenOutput } from "../../app-commands/flattenOutput.js"
+import {
+  getAudioOffsets,
+  getAudioOffsetsDefaultProps,
+} from "../../app-commands/getAudioOffsets.js"
 import { hasBetterAudio } from "../../app-commands/hasBetterAudio.js"
 import { hasBetterVersion } from "../../app-commands/hasBetterVersion.js"
 import { hasDuplicateMusicFiles } from "../../app-commands/hasDuplicateMusicFiles.js"
@@ -19,11 +28,15 @@ import { hasManyAudioTracks } from "../../app-commands/hasManyAudioTracks.js"
 import { hasSurroundSound } from "../../app-commands/hasSurroundSound.js"
 import { hasWrongDefaultTrack } from "../../app-commands/hasWrongDefaultTrack.js"
 import { isMissingSubtitles } from "../../app-commands/isMissingSubtitles.js"
-import { deleteFilesByExtension } from "../../app-commands/deleteFilesByExtension.js"
-import { deleteFolder } from "../../app-commands/deleteFolder.js"
+import {
+  keepLanguages,
+  keepLanguagesDefaultProps,
+} from "../../app-commands/keepLanguages.js"
+import {
+  mergeTracks,
+  mergeTracksDefaultProps,
+} from "../../app-commands/mergeTracks.js"
 import { modifySubtitleMetadata } from "../../app-commands/modifySubtitleMetadata.js"
-import { keepLanguages, keepLanguagesDefaultProps } from "../../app-commands/keepLanguages.js"
-import { mergeTracks, mergeTracksDefaultProps } from "../../app-commands/mergeTracks.js"
 import { moveFiles } from "../../app-commands/moveFiles.js"
 import { nameAnimeEpisodes } from "../../app-commands/nameAnimeEpisodes.js"
 import { nameAnimeEpisodesAniDB } from "../../app-commands/nameAnimeEpisodesAniDB.js"
@@ -32,15 +45,36 @@ import { nameTvShowEpisodes } from "../../app-commands/nameTvShowEpisodes.js"
 import { remuxToMkv } from "../../app-commands/remuxToMkv.js"
 import { renameDemos } from "../../app-commands/renameDemos.js"
 import { renameMovieClipDownloads } from "../../app-commands/renameMovieClipDownloads.js"
-import { reorderTracks, reorderTracksDefaultProps } from "../../app-commands/reorderTracks.js"
-import { replaceAttachments, replaceAttachmentsDefaultProps } from "../../app-commands/replaceAttachments.js"
-import { replaceFlacWithPcmAudio, replaceFlacWithPcmAudioDefaultProps } from "../../app-commands/replaceFlacWithPcmAudio.js"
-import { replaceTracks, replaceTracksDefaultProps } from "../../app-commands/replaceTracks.js"
+import {
+  reorderTracks,
+  reorderTracksDefaultProps,
+} from "../../app-commands/reorderTracks.js"
+import {
+  replaceAttachments,
+  replaceAttachmentsDefaultProps,
+} from "../../app-commands/replaceAttachments.js"
+import {
+  replaceFlacWithPcmAudio,
+  replaceFlacWithPcmAudioDefaultProps,
+} from "../../app-commands/replaceFlacWithPcmAudio.js"
+import {
+  replaceTracks,
+  replaceTracksDefaultProps,
+} from "../../app-commands/replaceTracks.js"
 import { setDisplayWidth } from "../../app-commands/setDisplayWidth.js"
-import { splitChapters, splitChaptersDefaultProps } from "../../app-commands/splitChapters.js"
+import {
+  splitChapters,
+  splitChaptersDefaultProps,
+} from "../../app-commands/splitChapters.js"
 import { storeAspectRatioData } from "../../app-commands/storeAspectRatioData.js"
-import { createJob } from "../jobStore.js"
+import {
+  getEffectiveCommandConfigs,
+  getFakeScenario,
+  isFakeRequest,
+} from "../../fake-data/index.js"
+import { makeDirectory } from "../../tools/makeDirectory.js"
 import { runJob } from "../jobRunner.js"
+import { createJob } from "../jobStore.js"
 import * as schemas from "../schemas.js"
 
 const startCommandJob = ({
@@ -51,12 +85,14 @@ const startCommandJob = ({
   outputFolderName = null,
   params,
 }: {
-  command: string,
-  commandObservable: Observable<unknown>,
-  context: Context,
-  extractOutputs?: (results: unknown[]) => Record<string, unknown>,
-  outputFolderName?: string | null,
-  params: unknown,
+  command: string
+  commandObservable: Observable<unknown>
+  context: Context
+  extractOutputs?: (
+    results: unknown[],
+  ) => Record<string, unknown>
+  outputFolderName?: string | null
+  params: unknown
 }) => {
   const job = createJob({
     commandName: command,
@@ -115,7 +151,7 @@ export const commandNames = [
   "storeAspectRatioData",
 ] as const
 
-export type CommandName = typeof commandNames[number]
+export type CommandName = (typeof commandNames)[number]
 
 export type CommandConfig = {
   // Optional projector that maps the collected emission stream into a
@@ -123,7 +159,9 @@ export type CommandConfig = {
   // for downstream sequence steps to consume via the linkedTo/output
   // mechanism. Distinct from `outputFolderName` — that is static metadata
   // declared up-front; this is computed at runtime.
-  extractOutputs?: (results: unknown[]) => Record<string, unknown>
+  extractOutputs?: (
+    results: unknown[],
+  ) => Record<string, unknown>
   getObservable: (body: any) => Observable<unknown>
   outputFolderName?: string
   // Override for the synthesized "folder" output when a downstream step
@@ -131,7 +169,7 @@ export type CommandConfig = {
   // resolver falls back to <sourcePath>/<outputFolderName> (or the source
   // itself). 'parentOfSource' covers the flattenOutput case where files
   // are written into dirname(sourcePath).
-  outputComputation?: 'parentOfSource'
+  outputComputation?: "parentOfSource"
   // When true, surfaces as `deprecated: true` on the OpenAPI operation
   // — Scalar UI renders the route with a strikethrough + badge so users
   // can see it's on the way out alongside the runtime [name] DEPRECATED
@@ -142,235 +180,462 @@ export type CommandConfig = {
   tags: string[]
 }
 
-export const commandConfigs: Record<CommandName, CommandConfig> = {
+export const commandConfigs: Record<
+  CommandName,
+  CommandConfig
+> = {
   makeDirectory: {
     getObservable: (body) => makeDirectory(body.filePath),
     schema: schemas.makeDirectoryRequestSchema,
-    summary: "Create a directory (or the parent directory of a file path)",
+    summary:
+      "Create a directory (or the parent directory of a file path)",
     tags: ["File Operations"],
   },
   changeTrackLanguages: {
-    getObservable: (body) => changeTrackLanguages({ audioLanguage: body.audioLanguage, isRecursive: body.isRecursive, sourcePath: body.sourcePath, subtitlesLanguage: body.subtitlesLanguage, videoLanguage: body.videoLanguage }),
+    getObservable: (body) =>
+      changeTrackLanguages({
+        audioLanguage: body.audioLanguage,
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+        subtitlesLanguage: body.subtitlesLanguage,
+        videoLanguage: body.videoLanguage,
+      }),
     schema: schemas.changeTrackLanguagesRequestSchema,
     summary: "Change language tags for media tracks",
     tags: ["Track Operations"],
   },
   copyFiles: {
-    getObservable: (body) => copyFiles({ destinationPath: body.destinationPath, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      copyFiles({
+        destinationPath: body.destinationPath,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.copyFilesRequestSchema,
     summary: "Copy files from source to destination",
     tags: ["File Operations"],
   },
   flattenOutput: {
-    getObservable: (body) => flattenOutput({ deleteSourceFolder: body.deleteSourceFolder, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      flattenOutput({
+        deleteSourceFolder: body.deleteSourceFolder,
+        sourcePath: body.sourcePath,
+      }),
     // Files land in dirname(sourcePath); downstream linkedTo:folder
     // references should resolve to the parent, not the source itself.
     outputComputation: "parentOfSource",
     schema: schemas.flattenOutputRequestSchema,
-    summary: "Flatten a chained step's output: copies the folder's contents up one level (deletes source only if requested)",
+    summary:
+      "Flatten a chained step's output: copies the folder's contents up one level (deletes source only if requested)",
     tags: ["File Operations"],
   },
   copyOutSubtitles: {
     // Deprecated alias for extractSubtitles — getObservable points to the
     // shim app-command which logs a deprecation warning then delegates.
     deprecated: true,
-    getObservable: (body) => copyOutSubtitles({ isRecursive: body.isRecursive, sourcePath: body.sourcePath, subtitlesLanguage: body.subtitlesLanguage }),
-    outputFolderName: extractSubtitlesDefaultProps.outputFolderName,
+    getObservable: (body) =>
+      copyOutSubtitles({
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+        subtitlesLanguage: body.subtitlesLanguage,
+      }),
+    outputFolderName:
+      extractSubtitlesDefaultProps.outputFolderName,
     schema: schemas.copyOutSubtitlesRequestSchema,
-    summary: "[DEPRECATED — use extractSubtitles] Extract subtitle tracks into separate files alongside each video file.",
+    summary:
+      "[DEPRECATED — use extractSubtitles] Extract subtitle tracks into separate files alongside each video file.",
     tags: ["Subtitle Operations"],
   },
   extractSubtitles: {
-    getObservable: (body) => extractSubtitles({ isRecursive: body.isRecursive, sourcePath: body.sourcePath, subtitlesLanguage: body.subtitlesLanguage }),
-    outputFolderName: extractSubtitlesDefaultProps.outputFolderName,
+    getObservable: (body) =>
+      extractSubtitles({
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+        subtitlesLanguage: body.subtitlesLanguage,
+      }),
+    outputFolderName:
+      extractSubtitlesDefaultProps.outputFolderName,
     schema: schemas.extractSubtitlesRequestSchema,
-    summary: "Extract subtitle tracks into separate files alongside each video file.",
+    summary:
+      "Extract subtitle tracks into separate files alongside each video file.",
     tags: ["Subtitle Operations"],
   },
   fixIncorrectDefaultTracks: {
-    getObservable: (body) => fixIncorrectDefaultTracks({ isRecursive: body.isRecursive, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      fixIncorrectDefaultTracks({
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.fixIncorrectDefaultTracksRequestSchema,
     summary: "Fix incorrect default track designations",
     tags: ["Track Operations"],
   },
   getAudioOffsets: {
-    getObservable: (body) => getAudioOffsets({ destinationFilesPath: body.destinationFilesPath, sourceFilesPath: body.sourceFilesPath }),
-    outputFolderName: getAudioOffsetsDefaultProps.outputFolderName,
+    getObservable: (body) =>
+      getAudioOffsets({
+        destinationFilesPath: body.destinationFilesPath,
+        sourceFilesPath: body.sourceFilesPath,
+      }),
+    outputFolderName:
+      getAudioOffsetsDefaultProps.outputFolderName,
     schema: schemas.getAudioOffsetsRequestSchema,
-    summary: "Calculate audio synchronization offsets between files",
+    summary:
+      "Calculate audio synchronization offsets between files",
     tags: ["Audio Operations"],
   },
   hasBetterAudio: {
-    getObservable: (body) => hasBetterAudio({ isRecursive: body.isRecursive, recursiveDepth: body.recursiveDepth, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      hasBetterAudio({
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.hasBetterAudioRequestSchema,
-    summary: "Analyze and compare audio quality across files",
+    summary:
+      "Analyze and compare audio quality across files",
     tags: ["Analysis"],
   },
   hasBetterVersion: {
-    getObservable: (body) => hasBetterVersion({ isRecursive: body.isRecursive, recursiveDepth: body.recursiveDepth, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      hasBetterVersion({
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.hasBetterVersionRequestSchema,
     summary: "Check if better version of media exists",
     tags: ["Analysis"],
   },
   hasDuplicateMusicFiles: {
-    getObservable: (body) => hasDuplicateMusicFiles({ isRecursive: body.isRecursive, recursiveDepth: body.recursiveDepth, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      hasDuplicateMusicFiles({
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.hasDuplicateMusicFilesRequestSchema,
     summary: "Identify duplicate music files",
     tags: ["Analysis"],
   },
   hasImaxEnhancedAudio: {
-    getObservable: (body) => hasImaxEnhancedAudio({ isRecursive: body.isRecursive, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      hasImaxEnhancedAudio({
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.hasImaxEnhancedAudioRequestSchema,
     summary: "Check for IMAX enhanced audio tracks",
     tags: ["Analysis"],
   },
   hasManyAudioTracks: {
-    getObservable: (body) => hasManyAudioTracks({ isRecursive: body.isRecursive, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      hasManyAudioTracks({
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.hasManyAudioTracksRequestSchema,
     summary: "Identify files with many audio tracks",
     tags: ["Analysis"],
   },
   hasSurroundSound: {
-    getObservable: (body) => hasSurroundSound({ isRecursive: body.isRecursive, recursiveDepth: body.recursiveDepth, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      hasSurroundSound({
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.hasSurroundSoundRequestSchema,
     summary: "Check for surround sound audio tracks",
     tags: ["Analysis"],
   },
   hasWrongDefaultTrack: {
-    getObservable: (body) => hasWrongDefaultTrack({ isRecursive: body.isRecursive, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      hasWrongDefaultTrack({
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.hasWrongDefaultTrackRequestSchema,
-    summary: "Find files with incorrect default track selection",
+    summary:
+      "Find files with incorrect default track selection",
     tags: ["Analysis"],
   },
   isMissingSubtitles: {
-    getObservable: (body) => isMissingSubtitles({ isRecursive: body.isRecursive, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      isMissingSubtitles({
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.isMissingSubtitlesRequestSchema,
     summary: "Identify media files missing subtitle tracks",
     tags: ["Subtitle Operations"],
   },
   deleteFilesByExtension: {
-    getObservable: (body) => deleteFilesByExtension({ extensions: body.extensions, isRecursive: body.isRecursive, recursiveDepth: body.recursiveDepth, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      deleteFilesByExtension({
+        extensions: body.extensions,
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.deleteFilesByExtensionRequestSchema,
-    summary: "Delete files that match one or more extensions",
+    summary:
+      "Delete files that match one or more extensions",
     tags: ["File Operations"],
   },
   deleteFolder: {
-    getObservable: (body) => deleteFolder({ confirm: body.confirm, folderPath: body.folderPath }),
+    getObservable: (body) =>
+      deleteFolder({
+        confirm: body.confirm,
+        folderPath: body.folderPath,
+      }),
     schema: schemas.deleteFolderRequestSchema,
-    summary: "Recursively delete a folder (DESTRUCTIVE — requires confirm: true)",
+    summary:
+      "Recursively delete a folder (DESTRUCTIVE — requires confirm: true)",
     tags: ["File Operations"],
   },
   modifySubtitleMetadata: {
-    getObservable: (body) => modifySubtitleMetadata({ hasDefaultRules: body.hasDefaultRules, isRecursive: body.isRecursive, predicates: body.predicates, recursiveDepth: body.recursiveDepth, rules: body.rules, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      modifySubtitleMetadata({
+        hasDefaultRules: body.hasDefaultRules,
+        isRecursive: body.isRecursive,
+        predicates: body.predicates,
+        recursiveDepth: body.recursiveDepth,
+        rules: body.rules,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.modifySubtitleMetadataRequestSchema,
-    summary: "Apply DSL-driven modifications to ASS subtitle metadata. Set hasDefaultRules:true to prepend the in-tree default-rules heuristic.",
+    summary:
+      "Apply DSL-driven modifications to ASS subtitle metadata. Set hasDefaultRules:true to prepend the in-tree default-rules heuristic.",
     tags: ["Subtitle Operations"],
   },
   keepLanguages: {
-    getObservable: (body) => keepLanguages({ audioLanguages: body.audioLanguages, hasFirstAudioLanguage: body.useFirstAudioLanguage, hasFirstSubtitlesLanguage: body.useFirstSubtitlesLanguage, isRecursive: body.isRecursive, sourcePath: body.sourcePath, subtitlesLanguages: body.subtitlesLanguages }),
-    outputFolderName: keepLanguagesDefaultProps.outputFolderName,
+    getObservable: (body) =>
+      keepLanguages({
+        audioLanguages: body.audioLanguages,
+        hasFirstAudioLanguage: body.useFirstAudioLanguage,
+        hasFirstSubtitlesLanguage:
+          body.useFirstSubtitlesLanguage,
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+        subtitlesLanguages: body.subtitlesLanguages,
+      }),
+    outputFolderName:
+      keepLanguagesDefaultProps.outputFolderName,
     schema: schemas.keepLanguagesRequestSchema,
     summary: "Filter media tracks by language",
     tags: ["Track Operations"],
   },
   mergeTracks: {
-    getObservable: (body) => mergeTracks({ globalOffsetInMilliseconds: body.globalOffset, hasChapterSyncOffset: body.hasChapterSyncOffset, hasChapters: body.includeChapters, mediaFilesPath: body.mediaFilesPath, offsetsInMilliseconds: body.offsets, subtitlesPath: body.subtitlesPath }),
-    outputFolderName: mergeTracksDefaultProps.outputFolderName,
+    getObservable: (body) =>
+      mergeTracks({
+        globalOffsetInMilliseconds: body.globalOffset,
+        hasChapterSyncOffset: body.hasChapterSyncOffset,
+        hasChapters: body.includeChapters,
+        mediaFilesPath: body.mediaFilesPath,
+        offsetsInMilliseconds: body.offsets,
+        subtitlesPath: body.subtitlesPath,
+      }),
+    outputFolderName:
+      mergeTracksDefaultProps.outputFolderName,
     schema: schemas.mergeTracksRequestSchema,
     summary: "Merge subtitle tracks into media files",
     tags: ["Track Operations"],
   },
   moveFiles: {
-    getObservable: (body) => moveFiles({ destinationPath: body.destinationPath, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      moveFiles({
+        destinationPath: body.destinationPath,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.moveFilesRequestSchema,
     summary: "Move files from source to destination",
     tags: ["File Operations"],
   },
   nameAnimeEpisodes: {
-    getObservable: (body) => nameAnimeEpisodes({ malId: body.malId, searchTerm: body.searchTerm, seasonNumber: body.seasonNumber, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      nameAnimeEpisodes({
+        malId: body.malId,
+        searchTerm: body.searchTerm,
+        seasonNumber: body.seasonNumber,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.nameAnimeEpisodesRequestSchema,
-    summary: "Rename anime episode files using MyAnimeList metadata",
+    summary:
+      "Rename anime episode files using MyAnimeList metadata",
     tags: ["Naming Operations"],
   },
   nameAnimeEpisodesAniDB: {
-    getObservable: (body) => nameAnimeEpisodesAniDB({ anidbId: body.anidbId, episodeType: body.episodeType, searchTerm: body.searchTerm, seasonNumber: body.seasonNumber, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      nameAnimeEpisodesAniDB({
+        anidbId: body.anidbId,
+        episodeType: body.episodeType,
+        searchTerm: body.searchTerm,
+        seasonNumber: body.seasonNumber,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.nameAnimeEpisodesAniDBRequestSchema,
-    summary: "Rename anime episode files using AniDB metadata (regular, specials with length-matched picker, or type=6 alternates)",
+    summary:
+      "Rename anime episode files using AniDB metadata (regular, specials with length-matched picker, or type=6 alternates)",
     tags: ["Naming Operations"],
   },
   nameSpecialFeatures: {
-    getObservable: (body) => nameSpecialFeatures({ autoNameDuplicates: body.autoNameDuplicates, dvdCompareId: body.dvdCompareId, dvdCompareReleaseHash: body.dvdCompareReleaseHash, fixedOffset: body.fixedOffset, moveToEditionFolders: body.moveToEditionFolders, nonInteractive: body.nonInteractive, searchTerm: body.searchTerm, sourcePath: body.sourcePath, timecodePaddingAmount: body.timecodePadding, url: body.url }),
+    getObservable: (body) =>
+      nameSpecialFeatures({
+        autoNameDuplicates: body.autoNameDuplicates,
+        dvdCompareId: body.dvdCompareId,
+        dvdCompareReleaseHash: body.dvdCompareReleaseHash,
+        fixedOffset: body.fixedOffset,
+        moveToEditionFolders: body.moveToEditionFolders,
+        nonInteractive: body.nonInteractive,
+        searchTerm: body.searchTerm,
+        sourcePath: body.sourcePath,
+        timecodePaddingAmount: body.timecodePadding,
+        url: body.url,
+      }),
     schema: schemas.nameSpecialFeaturesRequestSchema,
-    summary: "Rename special features (and the main movie file) based on DVDCompare timecodes; movie title is canonicalized via TMDB",
+    summary:
+      "Rename special features (and the main movie file) based on DVDCompare timecodes; movie title is canonicalized via TMDB",
     tags: ["Naming Operations"],
   },
   nameTvShowEpisodes: {
-    getObservable: (body) => nameTvShowEpisodes({ searchTerm: body.searchTerm, seasonNumber: body.seasonNumber, sourcePath: body.sourcePath, tvdbId: body.tvdbId }),
+    getObservable: (body) =>
+      nameTvShowEpisodes({
+        searchTerm: body.searchTerm,
+        seasonNumber: body.seasonNumber,
+        sourcePath: body.sourcePath,
+        tvdbId: body.tvdbId,
+      }),
     schema: schemas.nameTvShowEpisodesRequestSchema,
-    summary: "Rename TV show episode files based on metadata",
+    summary:
+      "Rename TV show episode files based on metadata",
     tags: ["Naming Operations"],
   },
   remuxToMkv: {
-    getObservable: (body) => remuxToMkv({ extensions: body.extensions, isRecursive: body.isRecursive, isSourceDeletedOnSuccess: body.isSourceDeletedOnSuccess, recursiveDepth: body.recursiveDepth, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      remuxToMkv({
+        extensions: body.extensions,
+        isRecursive: body.isRecursive,
+        isSourceDeletedOnSuccess:
+          body.isSourceDeletedOnSuccess,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.remuxToMkvRequestSchema,
-    summary: "Pass-through container remux of every matching file into an .mkv sibling using mkvmerge",
+    summary:
+      "Pass-through container remux of every matching file into an .mkv sibling using mkvmerge",
     tags: ["File Operations"],
   },
   renameDemos: {
-    getObservable: (body) => renameDemos({ isRecursive: body.isRecursive, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      renameDemos({
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.renameDemosRequestSchema,
     summary: "Rename demo files based on content analysis",
     tags: ["Naming Operations"],
   },
   renameMovieClipDownloads: {
-    getObservable: (body) => renameMovieClipDownloads({ sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      renameMovieClipDownloads({
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.renameMovieClipDownloadsRequestSchema,
     summary: "Rename downloaded movie clip files",
     tags: ["Naming Operations"],
   },
   reorderTracks: {
-    getObservable: (body) => reorderTracks({ audioTrackIndexes: body.audioTrackIndexes, isRecursive: body.isRecursive, sourcePath: body.sourcePath, subtitlesTrackIndexes: body.subtitlesTrackIndexes, videoTrackIndexes: body.videoTrackIndexes }),
-    outputFolderName: reorderTracksDefaultProps.outputFolderName,
+    getObservable: (body) =>
+      reorderTracks({
+        audioTrackIndexes: body.audioTrackIndexes,
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+        subtitlesTrackIndexes: body.subtitlesTrackIndexes,
+        videoTrackIndexes: body.videoTrackIndexes,
+      }),
+    outputFolderName:
+      reorderTracksDefaultProps.outputFolderName,
     schema: schemas.reorderTracksRequestSchema,
     summary: "Reorder media tracks",
     tags: ["Track Operations"],
   },
   replaceAttachments: {
-    getObservable: (body) => replaceAttachments({ destinationFilesPath: body.destinationFilesPath, sourceFilesPath: body.sourceFilesPath }),
-    outputFolderName: replaceAttachmentsDefaultProps.outputFolderName,
+    getObservable: (body) =>
+      replaceAttachments({
+        destinationFilesPath: body.destinationFilesPath,
+        sourceFilesPath: body.sourceFilesPath,
+      }),
+    outputFolderName:
+      replaceAttachmentsDefaultProps.outputFolderName,
     schema: schemas.replaceAttachmentsRequestSchema,
     summary: "Replace attachments in media files",
     tags: ["File Operations"],
   },
   replaceFlacWithPcmAudio: {
-    getObservable: (body) => replaceFlacWithPcmAudio({ isRecursive: body.isRecursive, sourcePath: body.sourcePath }),
-    outputFolderName: replaceFlacWithPcmAudioDefaultProps.outputFolderName,
+    getObservable: (body) =>
+      replaceFlacWithPcmAudio({
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+      }),
+    outputFolderName:
+      replaceFlacWithPcmAudioDefaultProps.outputFolderName,
     schema: schemas.replaceFlacWithPcmAudioRequestSchema,
     summary: "Replace FLAC audio with PCM audio",
     tags: ["Audio Operations"],
   },
   replaceTracks: {
-    getObservable: (body) => replaceTracks({ audioLanguages: body.audioLanguages, destinationFilesPath: body.destinationFilesPath, globalOffsetInMilliseconds: body.globalOffset, hasChapterSyncOffset: body.hasChapterSyncOffset, hasChapters: body.includeChapters, offsets: body.offsets, sourceFilesPath: body.sourceFilesPath, subtitlesLanguages: body.subtitlesLanguages, videoLanguages: body.videoLanguages }),
-    outputFolderName: replaceTracksDefaultProps.outputFolderName,
+    getObservable: (body) =>
+      replaceTracks({
+        audioLanguages: body.audioLanguages,
+        destinationFilesPath: body.destinationFilesPath,
+        globalOffsetInMilliseconds: body.globalOffset,
+        hasChapterSyncOffset: body.hasChapterSyncOffset,
+        hasChapters: body.includeChapters,
+        offsets: body.offsets,
+        sourceFilesPath: body.sourceFilesPath,
+        subtitlesLanguages: body.subtitlesLanguages,
+        videoLanguages: body.videoLanguages,
+      }),
+    outputFolderName:
+      replaceTracksDefaultProps.outputFolderName,
     schema: schemas.replaceTracksRequestSchema,
     summary: "Replace media tracks in destination files",
     tags: ["Track Operations"],
   },
   setDisplayWidth: {
-    getObservable: (body) => setDisplayWidth({ displayWidth: body.displayWidth, isRecursive: body.isRecursive, recursiveDepth: body.recursiveDepth, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      setDisplayWidth({
+        displayWidth: body.displayWidth,
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.setDisplayWidthRequestSchema,
     summary: "Set display width for video tracks",
     tags: ["Video Operations"],
   },
   splitChapters: {
-    getObservable: (body) => splitChapters({ chapterSplitsList: body.chapterSplits, sourcePath: body.sourcePath }),
-    outputFolderName: splitChaptersDefaultProps.outputFolderName,
+    getObservable: (body) =>
+      splitChapters({
+        chapterSplitsList: body.chapterSplits,
+        sourcePath: body.sourcePath,
+      }),
+    outputFolderName:
+      splitChaptersDefaultProps.outputFolderName,
     schema: schemas.splitChaptersRequestSchema,
     summary: "Split media files by chapter markers",
     tags: ["File Operations"],
   },
   storeAspectRatioData: {
-    getObservable: (body) => storeAspectRatioData({ folderNames: body.folders, isRecursive: body.isRecursive, mode: body.force ? "overwrite" : "append", outputPath: body.outputPath, recursiveDepth: body.recursiveDepth, rootPath: body.rootPath, sourcePath: body.sourcePath }),
+    getObservable: (body) =>
+      storeAspectRatioData({
+        folderNames: body.folders,
+        isRecursive: body.isRecursive,
+        mode: body.force ? "overwrite" : "append",
+        outputPath: body.outputPath,
+        recursiveDepth: body.recursiveDepth,
+        rootPath: body.rootPath,
+        sourcePath: body.sourcePath,
+      }),
     schema: schemas.storeAspectRatioDataRequestSchema,
     summary: "Analyze and store aspect ratio metadata",
     tags: ["Metadata Operations"],
@@ -410,13 +675,16 @@ commandRoutes.openapi(
         description: "List of available command names",
         content: {
           "application/json": {
-            schema: z.object({ commandNames: z.array(z.enum(commandNames)) }),
+            schema: z.object({
+              commandNames: z.array(z.enum(commandNames)),
+            }),
           },
         },
       },
     },
   }),
-  (context) => context.json({ commandNames: [...commandNames] }, 200),
+  (context) =>
+    context.json({ commandNames: [...commandNames] }, 200),
 )
 
 commandNames.forEach((commandName) => {
@@ -425,7 +693,13 @@ commandNames.forEach((commandName) => {
   // from the real config. The runtime parts (`getObservable`,
   // `extractOutputs`) are looked up per-request so a `?fake=1` query
   // can swap them out without touching the OpenAPI surface.
-  const { deprecated, outputFolderName, schema, summary, tags } = commandConfigs[commandName]
+  const {
+    deprecated,
+    outputFolderName,
+    schema,
+    summary,
+    tags,
+  } = commandConfigs[commandName]
 
   commandRoutes.openapi(
     createRoute({
@@ -448,8 +722,8 @@ commandNames.forEach((commandName) => {
             "application/json": {
               schema: schemas.createJobResponseSchema(
                 outputFolderName === null
-                ? undefined
-                : z.literal(outputFolderName)
+                  ? undefined
+                  : z.literal(outputFolderName),
               ),
             },
           },
@@ -459,10 +733,14 @@ commandNames.forEach((commandName) => {
     async (context) => {
       const body = context.req.valid("json")
       const useFake = isFakeRequest(context)
-      const effectiveConfig = getEffectiveCommandConfigs(useFake, getFakeScenario(context))[commandName]
+      const effectiveConfig = getEffectiveCommandConfigs(
+        useFake,
+        getFakeScenario(context),
+      )[commandName]
       return startCommandJob({
         command: commandName,
-        commandObservable: effectiveConfig.getObservable(body),
+        commandObservable:
+          effectiveConfig.getObservable(body),
         context,
         extractOutputs: effectiveConfig.extractOutputs,
         outputFolderName,

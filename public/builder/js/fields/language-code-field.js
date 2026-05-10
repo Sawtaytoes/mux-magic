@@ -1,13 +1,16 @@
-import { esc } from '../util/html-escape.js'
-import { renderFieldLabel } from './field-label.js'
+import { esc } from "../util/html-escape.js"
+import { renderFieldLabel } from "./field-label.js"
 
 /**
  * @param {{ step: object, field: object }} props
  * @returns {string}
  */
 export function renderLanguageCodeField({ step, field }) {
-  const label = renderFieldLabel({ command: step.command, field })
-  const str = step.params[field.name] ?? ''
+  const label = renderFieldLabel({
+    command: step.command,
+    field,
+  })
+  const str = step.params[field.name] ?? ""
   return `<div>${label}<input type="text" value="${esc(str)}" placeholder="eng"
     oninput="setParam('${step.id}','${field.name}',this.value||undefined)"
     maxlength="3"

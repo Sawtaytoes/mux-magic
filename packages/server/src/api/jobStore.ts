@@ -5,19 +5,30 @@ import {
   __resetAllProgressEmittersForTests,
   disposeProgressEmitter,
 } from "../tools/progressEmitter.js"
-import type { Job, ProgressEvent, PromptEvent, StepEvent } from "./types.js"
+import type {
+  Job,
+  ProgressEvent,
+  PromptEvent,
+  StepEvent,
+} from "./types.js"
 
 // Union of every non-string payload the per-job SSE subject can carry.
 // String log lines ride the same channel for free (Subject is widened
 // to `string | JobEvent` below).
-export type JobEvent = PromptEvent | ProgressEvent | StepEvent
+export type JobEvent =
+  | PromptEvent
+  | ProgressEvent
+  | StepEvent
 
 // ---------------------------------------------------------------------------
 // Module-level state — only mutated through the exported functions below.
 // ---------------------------------------------------------------------------
 
 const jobs = new Map<string, Job>()
-const subjects = new Map<string, Subject<string | JobEvent>>()
+const subjects = new Map<
+  string,
+  Subject<string | JobEvent>
+>()
 // Live RxJS Subscriptions keyed by jobId. Populated by jobRunner /
 // sequenceRunner when a job starts running, removed on natural completion
 // or by cancelJob below. Not exposed — Subscription objects aren't
@@ -38,11 +49,11 @@ export const createJob = ({
   parentJobId = null,
   stepId = null,
 }: {
-  commandName: string,
-  params?: unknown,
-  outputFolderName?: string | null,
-  parentJobId?: string | null,
-  stepId?: string | null,
+  commandName: string
+  params?: unknown
+  outputFolderName?: string | null
+  parentJobId?: string | null
+  stepId?: string | null
 }): Job => {
   const job: Job = {
     commandName,
@@ -68,30 +79,23 @@ export const createJob = ({
   return job
 }
 
-export const getJob = (
-  id: string,
-): Job | undefined => (
+export const getJob = (id: string): Job | undefined =>
   jobs.get(id)
-)
 
-export const getAllJobs = (): Job[] => (
-  Array.from(
-    jobs.values()
+export const getAllJobs = (): Job[] =>
+  Array.from(jobs.values())
+
+export const getChildJobs = (parentJobId: string): Job[] =>
+  Array.from(jobs.values()).filter(
+    (job) => job.parentJobId === parentJobId,
   )
-)
-
-export const getChildJobs = (
-  parentJobId: string,
-): Job[] => (
-  Array
-  .from(jobs.values())
-  .filter((job) => job.parentJobId === parentJobId)
-)
 
 // Returns a new Job object (spread-based update, no direct property mutation).
 export const updateJob = (
   id: string,
-  changes: Partial<Omit<Job, "command" | "id" | "logs" | "params">>,
+  changes: Partial<
+    Omit<Job, "command" | "id" | "logs" | "params">
+  >,
 ): Job | undefined => {
   const existing = jobs.get(id)
 
@@ -139,9 +143,8 @@ export const createSubject = (
 
 export const getSubject = (
   id: string,
-): Subject<string | JobEvent> | undefined => (
+): Subject<string | JobEvent> | undefined =>
   subjects.get(id)
-)
 
 export const emitJobEvent = (
   id: string,
@@ -150,9 +153,7 @@ export const emitJobEvent = (
   subjects.get(id)?.next(event)
 }
 
-export const completeSubject = (
-  id: string,
-): void => {
+export const completeSubject = (id: string): void => {
   subjects.get(id)?.complete()
   subjects.delete(id)
   disposeProgressEmitter(id)
@@ -190,9 +191,7 @@ export const unregisterJobSubscription = (
 //
 // Same status-before-unsubscribe ordering as `cancelJob` for the same
 // reason — the runner's promise teardown captures the post-flip snapshot.
-export const cancelOrSkipJob = (
-  id: string,
-): void => {
+export const cancelOrSkipJob = (id: string): void => {
   const job = jobs.get(id)
   if (!job) return
 
@@ -229,9 +228,7 @@ export const cancelOrSkipJob = (
 // — distinct status so the UI can show "this step never ran because the
 // parent was interrupted" vs "this step was actively running and got
 // killed".
-export const cancelJob = (
-  id: string,
-): boolean => {
+export const cancelJob = (id: string): boolean => {
   const job = jobs.get(id)
   if (!job) return false
   if (job.status !== "running") return false
@@ -255,10 +252,11 @@ export const cancelJob = (
 
   completeSubject(id)
 
-  Array
-  .from(jobs.values())
-  .filter((child) => child.parentJobId === id)
-  .forEach((child) => cancelOrSkipJob(child.id))
+  Array.from(jobs.values())
+    .filter((child) => child.parentJobId === id)
+    .forEach((child) => {
+      cancelOrSkipJob(child.id)
+    })
 
   return true
 }

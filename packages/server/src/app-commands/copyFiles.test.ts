@@ -22,24 +22,22 @@ describe(copyFiles.name, () => {
     // file is ever created.
     const seedFiles: Record<string, string> = {}
     for (let index = 0; index < 8; index += 1) {
-      seedFiles[`/cancel-src/file${index}.txt`] = (
+      seedFiles[`/cancel-src/file${index}.txt`] =
         "byte-".repeat(2000) + index
-      )
     }
     vol.fromJSON(seedFiles)
 
-    const subscription = (
-      copyFiles({
-        destinationPath: "/cancel-dst",
-        sourcePath: "/cancel-src",
-      })
-      .subscribe()
-    )
+    const subscription = copyFiles({
+      destinationPath: "/cancel-dst",
+      sourcePath: "/cancel-src",
+    }).subscribe()
     subscription.unsubscribe()
 
     // Allow any in-flight async work + the unlink-on-abort cleanup
     // to run before we assert.
-    await new Promise<void>((resolve) => setTimeout(resolve, 50))
+    await new Promise<void>((resolve) =>
+      setTimeout(resolve, 50),
+    )
 
     // No destination files should be present — either nothing started
     // (the more common timing under memfs), or anything that did start
@@ -47,7 +45,7 @@ describe(copyFiles.name, () => {
     // contract: cancel must not leave half-written files behind.
     for (let index = 0; index < 8; index += 1) {
       expect(
-        vol.existsSync(`/cancel-dst/file${index}.txt`)
+        vol.existsSync(`/cancel-dst/file${index}.txt`),
       ).toBe(false)
     }
   })
@@ -61,16 +59,15 @@ describe(copyFiles.name, () => {
       "/sync-src/b.txt": "beta",
     })
 
-    const subscription = (
-      copyFiles({
-        destinationPath: "/sync-dst",
-        sourcePath: "/sync-src",
-      })
-      .subscribe()
-    )
+    const subscription = copyFiles({
+      destinationPath: "/sync-dst",
+      sourcePath: "/sync-src",
+    }).subscribe()
     subscription.unsubscribe()
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50))
+    await new Promise<void>((resolve) =>
+      setTimeout(resolve, 50),
+    )
 
     const aExists = vol.existsSync("/sync-dst/a.txt")
     const bExists = vol.existsSync("/sync-dst/b.txt")

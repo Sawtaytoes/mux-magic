@@ -5,5 +5,7 @@
  */
 export function isFieldVisible(visibleWhen, params) {
   if (!visibleWhen) return true
-  return params?.[visibleWhen.fieldName] === visibleWhen.value
+  return (
+    params?.[visibleWhen.fieldName] === visibleWhen.value
+  )
 }

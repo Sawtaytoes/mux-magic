@@ -14,13 +14,13 @@ import treeKill from "tree-kill"
 // Wrapped in try/catch because by the time the Observable is unsubscribed
 // the child may already have exited naturally — tree-kill on a dead pid
 // throws ESRCH which isn't actionable here.
-export const treeKillOnUnsubscribe = (
-  childProcess: ChildProcess,
-): (() => void) => () => {
-  if (childProcess.pid === undefined) return
-  try {
-    treeKill(childProcess.pid, "SIGTERM")
-  } catch {
-    // already exited / pid recycled — nothing to do
+export const treeKillOnUnsubscribe =
+  (childProcess: ChildProcess): (() => void) =>
+  () => {
+    if (childProcess.pid === undefined) return
+    try {
+      treeKill(childProcess.pid, "SIGTERM")
+    } catch {
+      // already exited / pid recycled — nothing to do
+    }
   }
-}

@@ -2,12 +2,15 @@ import {
   concatMap,
   EMPTY,
   from,
-  Observable,
+  type Observable,
   of,
 } from "rxjs"
 
 import type { AnidbEpisode } from "../types/anidb.js"
-import { effectiveDurationDeltaMinutes, letterPrefixForType } from "../types/anidb.js"
+import {
+  effectiveDurationDeltaMinutes,
+  letterPrefixForType,
+} from "../types/anidb.js"
 import type { FileInfo } from "./getFiles.js"
 import { getUserSearchInput } from "./getUserSearchInput.js"
 import { readMediaDurationMinutes } from "./readMediaDurationMinutes.js"
@@ -45,13 +48,20 @@ const formatCandidateLabel = (
   const prefix = letterPrefixForType(episode.type)
   const numericPart = episode.epno.replace(/[^0-9]/g, "")
   const labelEpno = `${prefix}${numericPart}`.padEnd(4, " ")
-  const titleColumn = episodeTitle.padEnd(28, " ").slice(0, 28)
+  const titleColumn = episodeTitle
+    .padEnd(28, " ")
+    .slice(0, 28)
   if (episode.length == null || fileMinutes == null) {
-    const lengthColumn = episode.length != null ? `${episode.length}m` : "—"
+    const lengthColumn =
+      episode.length != null ? `${episode.length}m` : "—"
     return `${labelEpno}  ${titleColumn} (${lengthColumn})`
   }
-  const effectiveDelta = effectiveDurationDeltaMinutes(fileMinutes, episode.length)
-  const matchIndicator = effectiveDelta === 0 ? "✓" : `Δ ${effectiveDelta}m`
+  const effectiveDelta = effectiveDurationDeltaMinutes(
+    fileMinutes,
+    episode.length,
+  )
+  const matchIndicator =
+    effectiveDelta === 0 ? "✓" : `Δ ${effectiveDelta}m`
   return `${labelEpno}  ${titleColumn} (${episode.length}m, ${matchIndicator})`
 }
 
@@ -60,12 +70,11 @@ const formatCandidateLabel = (
 // than imported to keep the helper self-contained.
 const pickEpisodeTitle = (
   titles: AnidbEpisode["titles"],
-): string => (
-  titles.find((title) => title.lang === "en")?.value
-  ?? titles.find((title) => title.lang === "x-jat")?.value
-  ?? titles[0]?.value
-  ?? ""
-)
+): string =>
+  titles.find((title) => title.lang === "en")?.value ??
+  titles.find((title) => title.lang === "x-jat")?.value ??
+  titles[0]?.value ??
+  ""
 
 // Rank still-available episodes for one file by *effective* delta —
 // distance outside AniDB's rounding window for that episode's length
@@ -82,15 +91,19 @@ const rankCandidatesForFile = (
     return availableEpisodes.slice(0, MAX_PICKER_OPTIONS)
   }
   return availableEpisodes
-  .map((episode) => ({
-    delta: episode.length != null
-      ? effectiveDurationDeltaMinutes(fileMinutes, episode.length)
-      : Number.POSITIVE_INFINITY,
-    episode,
-  }))
-  .sort((itemA, itemB) => itemA.delta - itemB.delta)
-  .slice(0, MAX_PICKER_OPTIONS)
-  .map((entry) => entry.episode)
+    .map((episode) => ({
+      delta:
+        episode.length != null
+          ? effectiveDurationDeltaMinutes(
+              fileMinutes,
+              episode.length,
+            )
+          : Number.POSITIVE_INFINITY,
+      episode,
+    }))
+    .sort((itemA, itemB) => itemA.delta - itemB.delta)
+    .slice(0, MAX_PICKER_OPTIONS)
+    .map((entry) => entry.episode)
 }
 
 // Drives the per-file picker. Walks files sequentially (concatMap),
@@ -122,32 +135,51 @@ export const matchSpecialsToFiles = ({
   // post-cancel files never read mediainfo or hit the prompt UI.
   let isCancelled = false
 
-  return from(fileInfos)
-  .pipe(
+  return from(fileInfos).pipe(
     concatMap((fileInfo) => {
       if (isCancelled || availableEpisodes.length === 0) {
         return EMPTY
       }
-      return readMediaDurationMinutes(fileInfo.fullPath)
-      .pipe(
+      return readMediaDurationMinutes(
+        fileInfo.fullPath,
+      ).pipe(
         concatMap((fileMinutes) => {
-          if (isCancelled || availableEpisodes.length === 0) {
+          if (
+            isCancelled ||
+            availableEpisodes.length === 0
+          ) {
             return EMPTY
           }
-          const candidates = rankCandidatesForFile(fileMinutes, availableEpisodes)
-          const fileMinutesLabel = fileMinutes != null ? `${fileMinutes}m` : "unknown duration"
+          const candidates = rankCandidatesForFile(
+            fileMinutes,
+            availableEpisodes,
+          )
+          const fileMinutesLabel =
+            fileMinutes != null
+              ? `${fileMinutes}m`
+              : "unknown duration"
           return getUserSearchInput({
             message: `Match for "${fileInfo.filename}" (${fileMinutesLabel}):`,
             options: [
               ...candidates.map((episode, index) => ({
                 index,
-                label: formatCandidateLabel(episode, pickEpisodeTitle(episode.titles), fileMinutes),
+                label: formatCandidateLabel(
+                  episode,
+                  pickEpisodeTitle(episode.titles),
+                  fileMinutes,
+                ),
               })),
-              { index: PICKER_INDEX_SKIP, label: "Skip this file (Space)" },
-              { index: PICKER_INDEX_CANCEL, label: "Cancel renaming — keep matches so far (Esc)" },
+              {
+                index: PICKER_INDEX_SKIP,
+                label: "Skip this file (Space)",
+              },
+              {
+                index: PICKER_INDEX_CANCEL,
+                label:
+                  "Cancel renaming — keep matches so far (Esc)",
+              },
             ],
-          })
-          .pipe(
+          }).pipe(
             concatMap((selectedIndex) => {
               if (selectedIndex === PICKER_INDEX_CANCEL) {
                 isCancelled = true
@@ -160,7 +192,8 @@ export const matchSpecialsToFiles = ({
               if (!chosen) {
                 return EMPTY
               }
-              const claimedAt = availableEpisodes.indexOf(chosen)
+              const claimedAt =
+                availableEpisodes.indexOf(chosen)
               if (claimedAt >= 0) {
                 availableEpisodes.splice(claimedAt, 1)
               }

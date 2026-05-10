@@ -23,15 +23,17 @@ export function togglePageMenu(menuId) {
   if (!target) {
     return
   }
-  const wasOpen = target.classList.contains('open')
+  const wasOpen = target.classList.contains("open")
   closeAllPageMenus()
   if (!wasOpen) {
-    target.classList.add('open')
+    target.classList.add("open")
   }
 }
 
 function closeAllPageMenus() {
-  document.querySelectorAll('.page-menu.open').forEach((menu) => menu.classList.remove('open'))
+  document
+    .querySelectorAll(".page-menu.open")
+    .forEach((menu) => menu.classList.remove("open"))
 }
 
 // ─── Listeners ───────────────────────────────────────────────────────────────
@@ -48,38 +50,49 @@ function closeAllPageMenus() {
 //      the bridge — yaml-modal owns closeYamlModal, api-run-modal
 //      (still inline) exposes closeApiRunModal via the outbound bridge.
 export function attachPageHeaderListeners() {
-  const header = document.getElementById('page-header')
+  const header = document.getElementById("page-header")
   if (header) {
-    header.addEventListener('click', (event) => {
-      const button = event.target.closest?.('[data-action]')
+    header.addEventListener("click", (event) => {
+      const button = event.target.closest?.("[data-action]")
       if (!button || !header.contains(button)) {
         return
       }
-      if (button.dataset.action === 'add-path') {
+      if (button.dataset.action === "add-path") {
         bridge().addPath()
       }
     })
   }
 
-  document.addEventListener('click', (event) => {
-    const openMenus = document.querySelectorAll('.page-menu.open')
+  document.addEventListener("click", (event) => {
+    const openMenus = document.querySelectorAll(
+      ".page-menu.open",
+    )
     if (!openMenus.length) {
       return
     }
-    const navToggle = document.getElementById('page-nav-toggle')
-    const controlsToggle = document.getElementById('page-controls-toggle')
-    if (navToggle?.contains(event.target) || controlsToggle?.contains(event.target)) {
+    const navToggle = document.getElementById(
+      "page-nav-toggle",
+    )
+    const controlsToggle = document.getElementById(
+      "page-controls-toggle",
+    )
+    if (
+      navToggle?.contains(event.target) ||
+      controlsToggle?.contains(event.target)
+    ) {
       return
     }
-    const isClickInsideAnyMenu = Array.from(openMenus).some((menu) => menu.contains(event.target))
+    const isClickInsideAnyMenu = Array.from(openMenus).some(
+      (menu) => menu.contains(event.target),
+    )
     if (isClickInsideAnyMenu) {
       return
     }
     closeAllPageMenus()
   })
 
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') {
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") {
       return
     }
     bridge().closeYamlModal()

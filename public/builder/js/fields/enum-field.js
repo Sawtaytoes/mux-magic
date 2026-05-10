@@ -1,14 +1,20 @@
-import { esc } from '../util/html-escape.js'
-import { renderFieldLabel } from './field-label.js'
+import { esc } from "../util/html-escape.js"
+import { renderFieldLabel } from "./field-label.js"
 
 /**
  * @param {{ step: object, field: object }} props
  * @returns {string}
  */
 export function renderEnumField({ step, field }) {
-  const label = renderFieldLabel({ command: step.command, field })
-  const selected = step.params[field.name] ?? field.default ?? ''
-  const selectedOption = (field.options ?? []).find((option) => option.value === selected)
+  const label = renderFieldLabel({
+    command: step.command,
+    field,
+  })
+  const selected =
+    step.params[field.name] ?? field.default ?? ""
+  const selectedOption = (field.options ?? []).find(
+    (option) => option.value === selected,
+  )
   const triggerLabel = selectedOption?.label ?? selected
   return `<div>${label}<button type="button"
     onclick="enumPicker.open({stepId: '${step.id}', fieldName: '${esc(field.name)}'}, this)"

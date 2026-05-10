@@ -25,9 +25,12 @@ export type MovieFormatVariants = {
 // matches "part", "Part", "PART".
 const PARTS_TITLE_PATTERN = /\bpart\s*\d+\b/i
 
-const titleMatchesParts = (episode: AnidbEpisode): boolean => (
-  episode.titles.some((title) => PARTS_TITLE_PATTERN.test(title.value))
-)
+const titleMatchesParts = (
+  episode: AnidbEpisode,
+): boolean =>
+  episode.titles.some((title) =>
+    PARTS_TITLE_PATTERN.test(title.value),
+  )
 
 export const detectMovieFormatVariants = (
   episodes: AnidbEpisode[],

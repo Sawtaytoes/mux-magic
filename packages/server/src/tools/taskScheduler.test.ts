@@ -1,5 +1,11 @@
 import { defer, EMPTY, Observable, of, Subject } from "rxjs"
-import { afterEach, beforeEach, describe, expect, test } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "vitest"
 
 import {
   __resetTaskSchedulerForTests,
@@ -29,8 +35,7 @@ describe(runTask.name, () => {
     const collected: number[] = []
 
     await new Promise<void>((resolve, reject) => {
-      runTask(of(1, 2, 3))
-      .subscribe({
+      runTask(of(1, 2, 3)).subscribe({
         next: (value) => collected.push(value),
         error: reject,
         complete: () => resolve(),
@@ -47,23 +52,24 @@ describe(runTask.name, () => {
     let peakRunningCount = 0
     const completers: (() => void)[] = []
 
-    const makeWork = () => (
+    const makeWork = () =>
       new Observable<void>((subscriber) => {
         runningCount += 1
-        peakRunningCount = Math.max(peakRunningCount, runningCount)
+        peakRunningCount = Math.max(
+          peakRunningCount,
+          runningCount,
+        )
 
         completers.push(() => {
           runningCount -= 1
           subscriber.complete()
         })
       })
-    )
 
     let completedCount = 0
 
     Array.from({ length: 4 }).forEach(() => {
-      runTask(makeWork())
-      .subscribe({
+      runTask(makeWork()).subscribe({
         complete: () => {
           completedCount += 1
         },
@@ -77,19 +83,19 @@ describe(runTask.name, () => {
     // As each running Task completes, the next queued Task picks up its
     // slot synchronously — runningCount stays at 2 until the queue
     // empties, and completers.length stays at 2 until the last two run.
-    completers.shift()!()
+    completers.shift()?.()
     expect(runningCount).toBe(2)
     expect(completers.length).toBe(2)
 
-    completers.shift()!()
+    completers.shift()?.()
     expect(runningCount).toBe(2)
     expect(completers.length).toBe(2)
 
-    completers.shift()!()
+    completers.shift()?.()
     expect(runningCount).toBe(1)
     expect(completers.length).toBe(1)
 
-    completers.shift()!()
+    completers.shift()?.()
     expect(runningCount).toBe(0)
     expect(completers.length).toBe(0)
 
@@ -105,35 +111,28 @@ describe(runTask.name, () => {
     let thirdStarted = false
     let firstCompleter: (() => void) | null = null
 
-    const firstSubscription = (
-      runTask(
-        new Observable<void>((subscriber) => {
-          firstStarted = true
-          firstCompleter = () => subscriber.complete()
-        })
-      )
-      .subscribe()
-    )
+    const firstSubscription = runTask(
+      new Observable<void>((subscriber) => {
+        firstStarted = true
+        firstCompleter = () => subscriber.complete()
+      }),
+    ).subscribe()
 
     // Second is queued behind the first.
-    const secondSubscription = (
-      runTask(
-        defer(() => {
-          secondStarted = true
-          return of(undefined)
-        })
-      )
-      .subscribe()
-    )
+    const secondSubscription = runTask(
+      defer(() => {
+        secondStarted = true
+        return of(undefined)
+      }),
+    ).subscribe()
 
     // Third is queued behind the second.
     runTask(
       defer(() => {
         thirdStarted = true
         return of(undefined)
-      })
-    )
-    .subscribe()
+      }),
+    ).subscribe()
 
     expect(firstStarted).toBe(true)
     expect(secondStarted).toBe(false)
@@ -144,7 +143,7 @@ describe(runTask.name, () => {
 
     // First completes → slot frees. Second was cancelled, so the third
     // should run instead — and the second's defer must NOT fire.
-    firstCompleter!()
+    firstCompleter?.()
 
     expect(secondStarted).toBe(false)
     expect(thirdStarted).toBe(true)
@@ -159,25 +158,21 @@ describe(runTask.name, () => {
     let firstUnsubscribeCount = 0
     let secondStarted = false
 
-    const firstSubscription = (
-      runTask(
-        new Observable<void>(() => {
-          firstSubscribeCount += 1
-          return () => {
-            firstUnsubscribeCount += 1
-          }
-        })
-      )
-      .subscribe()
-    )
+    const firstSubscription = runTask(
+      new Observable<void>(() => {
+        firstSubscribeCount += 1
+        return () => {
+          firstUnsubscribeCount += 1
+        }
+      }),
+    ).subscribe()
 
     runTask(
       defer(() => {
         secondStarted = true
         return of(undefined)
-      })
-    )
-    .subscribe()
+      }),
+    ).subscribe()
 
     expect(firstSubscribeCount).toBe(1)
     expect(secondStarted).toBe(false)
@@ -198,9 +193,8 @@ describe(runTask.name, () => {
       runTask(
         new Observable<never>((subscriber) => {
           subscriber.error(error)
-        })
-      )
-      .subscribe({
+        }),
+      ).subscribe({
         next: () => resolve("unexpected next"),
         error: (caughtError) => resolve(caughtError),
         complete: () => resolve("unexpected complete"),
@@ -211,11 +205,12 @@ describe(runTask.name, () => {
 
     // Slot must release on error too — verify by running another Task.
     let nextStarted = false
-    runTask(defer(() => {
-      nextStarted = true
-      return of(undefined)
-    }))
-    .subscribe()
+    runTask(
+      defer(() => {
+        nextStarted = true
+        return of(undefined)
+      }),
+    ).subscribe()
 
     expect(nextStarted).toBe(true)
   })
@@ -225,19 +220,19 @@ describe(runTasks.name, () => {
   test("schedules each upstream emission as a Task and forwards values", async () => {
     initTaskScheduler(Infinity)
 
-    const collected = await new Promise<number[]>((resolve, reject) => {
-      const results: number[] = []
+    const collected = await new Promise<number[]>(
+      (resolve, reject) => {
+        const results: number[] = []
 
-      of(1, 2, 3)
-      .pipe(
-        runTasks((value) => of(value * 10)),
-      )
-      .subscribe({
-        next: (value) => results.push(value),
-        error: reject,
-        complete: () => resolve(results),
-      })
-    })
+        of(1, 2, 3)
+          .pipe(runTasks((value) => of(value * 10)))
+          .subscribe({
+            next: (value) => results.push(value),
+            error: reject,
+            complete: () => resolve(results),
+          })
+      },
+    )
 
     expect(collected.sort()).toEqual([10, 20, 30])
   })
@@ -250,24 +245,21 @@ describe(runTasksOrdered.name, () => {
     const collected: string[] = []
     const completers = new Map<number, () => void>()
 
-    const work = (value: string, index: number) => (
+    const work = (value: string, index: number) =>
       new Observable<string>((subscriber) => {
         completers.set(index, () => {
           subscriber.next(`done-${value}`)
           subscriber.complete()
         })
       })
-    )
 
     of("a", "b", "c", "d")
-    .pipe(
-      runTasksOrdered(work),
-    )
-    .subscribe({
-      next: (value) => {
-        collected.push(value)
-      },
-    })
+      .pipe(runTasksOrdered(work))
+      .subscribe({
+        next: (value) => {
+          collected.push(value)
+        },
+      })
 
     // All four Tasks are running (Infinity concurrency).
     expect(completers.size).toBe(4)
@@ -275,15 +267,20 @@ describe(runTasksOrdered.name, () => {
     expect(collected).toEqual([])
 
     // Complete in reverse order: d, c, b, a.
-    completers.get(3)!()
+    completers.get(3)?.()
     expect(collected).toEqual([])
-    completers.get(2)!()
+    completers.get(2)?.()
     expect(collected).toEqual([])
-    completers.get(1)!()
+    completers.get(1)?.()
     expect(collected).toEqual([])
     // Now the head-of-queue completes — all four flush at once in input order.
-    completers.get(0)!()
-    expect(collected).toEqual(["done-a", "done-b", "done-c", "done-d"])
+    completers.get(0)?.()
+    expect(collected).toEqual([
+      "done-a",
+      "done-b",
+      "done-c",
+      "done-d",
+    ])
   })
 
   test("releases each result as soon as the head-of-queue completes", () => {
@@ -292,36 +289,37 @@ describe(runTasksOrdered.name, () => {
     const collected: string[] = []
     const completers = new Map<number, () => void>()
 
-    const work = (value: string, index: number) => (
+    const work = (value: string, index: number) =>
       new Observable<string>((subscriber) => {
         completers.set(index, () => {
           subscriber.next(`done-${value}`)
           subscriber.complete()
         })
       })
-    )
 
     of("a", "b", "c")
-    .pipe(
-      runTasksOrdered(work),
-    )
-    .subscribe({
-      next: (value) => {
-        collected.push(value)
-      },
-    })
+      .pipe(runTasksOrdered(work))
+      .subscribe({
+        next: (value) => {
+          collected.push(value)
+        },
+      })
 
     // Complete head first → emits immediately.
-    completers.get(0)!()
+    completers.get(0)?.()
     expect(collected).toEqual(["done-a"])
 
     // Skip 1, complete 2 → must wait for 1.
-    completers.get(2)!()
+    completers.get(2)?.()
     expect(collected).toEqual(["done-a"])
 
     // Complete 1 → both 1 and 2 flush.
-    completers.get(1)!()
-    expect(collected).toEqual(["done-a", "done-b", "done-c"])
+    completers.get(1)?.()
+    expect(collected).toEqual([
+      "done-a",
+      "done-b",
+      "done-c",
+    ])
   })
 
   test("preserves multi-emission order within a Task and across Tasks", () => {
@@ -330,14 +328,16 @@ describe(runTasksOrdered.name, () => {
     const collected: string[] = []
 
     of("a", "b")
-    .pipe(
-      runTasksOrdered((value) => of(`${value}-1`, `${value}-2`)),
-    )
-    .subscribe({
-      next: (collected_value) => {
-        collected.push(collected_value)
-      },
-    })
+      .pipe(
+        runTasksOrdered((value) =>
+          of(`${value}-1`, `${value}-2`),
+        ),
+      )
+      .subscribe({
+        next: (collected_value) => {
+          collected.push(collected_value)
+        },
+      })
 
     expect(collected).toEqual(["a-1", "a-2", "b-1", "b-2"])
   })
@@ -350,19 +350,19 @@ describe(runTasksOrdered.name, () => {
 
     const upstream = new Subject<number>()
     upstream
-    .pipe(
-      runTasksOrdered((value) => of(value * 10)),
-    )
-    .subscribe({
-      error: (error) => {
-        caughtError = error
-        errored.next()
-      },
-    })
+      .pipe(runTasksOrdered((value) => of(value * 10)))
+      .subscribe({
+        error: (error) => {
+          caughtError = error
+          errored.next()
+        },
+      })
 
     upstream.error(new Error("upstream boom"))
 
-    expect((caughtError as Error).message).toBe("upstream boom")
+    expect((caughtError as Error).message).toBe(
+      "upstream boom",
+    )
   })
 
   test("propagates errors from a Task", () => {
@@ -371,22 +371,24 @@ describe(runTasksOrdered.name, () => {
     let caughtError: unknown = null
 
     of(1, 2, 3)
-    .pipe(
-      runTasksOrdered((value) => (
-        value === 2
-        ? new Observable<number>((subscriber) => {
-            subscriber.error(new Error("task-2 failed"))
-          })
-        : of(value)
-      )),
-    )
-    .subscribe({
-      error: (error) => {
-        caughtError = error
-      },
-    })
+      .pipe(
+        runTasksOrdered((value) =>
+          value === 2
+            ? new Observable<number>((subscriber) => {
+                subscriber.error(new Error("task-2 failed"))
+              })
+            : of(value),
+        ),
+      )
+      .subscribe({
+        error: (error) => {
+          caughtError = error
+        },
+      })
 
-    expect((caughtError as Error).message).toBe("task-2 failed")
+    expect((caughtError as Error).message).toBe(
+      "task-2 failed",
+    )
   })
 
   test("completes immediately on empty upstream", () => {
@@ -394,11 +396,9 @@ describe(runTasksOrdered.name, () => {
 
     let isComplete = false
 
-    EMPTY
-    .pipe(
+    EMPTY.pipe(
       runTasksOrdered((value: number) => of(value)),
-    )
-    .subscribe({
+    ).subscribe({
       complete: () => {
         isComplete = true
       },
@@ -413,20 +413,19 @@ describe(runTasksOrdered.name, () => {
     let workSubscribeCount = 0
     let workUnsubscribeCount = 0
 
-    const subscription = (
-      of(1, 2, 3)
+    const subscription = of(1, 2, 3)
       .pipe(
-        runTasksOrdered(() => (
-          new Observable(() => {
-            workSubscribeCount += 1
-            return () => {
-              workUnsubscribeCount += 1
-            }
-          })
-        )),
+        runTasksOrdered(
+          () =>
+            new Observable(() => {
+              workSubscribeCount += 1
+              return () => {
+                workUnsubscribeCount += 1
+              }
+            }),
+        ),
       )
       .subscribe()
-    )
 
     expect(workSubscribeCount).toBe(3)
 
@@ -445,33 +444,34 @@ describe(mergeMapOrdered.name, () => {
     const collected: string[] = []
     const completers = new Map<number, () => void>()
 
-    const work = (value: string, index: number) => (
+    const work = (value: string, index: number) =>
       new Observable<string>((subscriber) => {
         completers.set(index, () => {
           subscriber.next(`done-${value}`)
           subscriber.complete()
         })
       })
-    )
 
     of("a", "b", "c")
-    .pipe(
-      mergeMapOrdered(work),
-    )
-    .subscribe({
-      next: (value) => {
-        collected.push(value)
-      },
-    })
+      .pipe(mergeMapOrdered(work))
+      .subscribe({
+        next: (value) => {
+          collected.push(value)
+        },
+      })
 
     expect(completers.size).toBe(3)
 
-    completers.get(2)!()
-    completers.get(1)!()
+    completers.get(2)?.()
+    completers.get(1)?.()
     expect(collected).toEqual([])
 
-    completers.get(0)!()
-    expect(collected).toEqual(["done-a", "done-b", "done-c"])
+    completers.get(0)?.()
+    expect(collected).toEqual([
+      "done-a",
+      "done-b",
+      "done-c",
+    ])
   })
 })
 
@@ -479,7 +479,9 @@ describe(initTaskScheduler.name, () => {
   test("throws when re-initialized with a different concurrency", () => {
     initTaskScheduler(2)
 
-    expect(() => initTaskScheduler(4)).toThrow(/already initialized/)
+    expect(() => initTaskScheduler(4)).toThrow(
+      /already initialized/,
+    )
   })
 
   test("is idempotent when called with the same concurrency", () => {
@@ -491,14 +493,15 @@ describe(initTaskScheduler.name, () => {
   test("surfaces an error when runTask is called before initialization", () => {
     let caughtError: unknown = null
 
-    runTask(of(1))
-    .subscribe({
+    runTask(of(1)).subscribe({
       error: (error) => {
         caughtError = error
       },
     })
 
     expect(caughtError).toBeInstanceOf(Error)
-    expect((caughtError as Error).message).toMatch(/not initialized/)
+    expect((caughtError as Error).message).toMatch(
+      /not initialized/,
+    )
   })
 })

@@ -1,8 +1,4 @@
-import {
-  concatMap,
-  map,
-  of,
-} from "rxjs"
+import { concatMap, map, of } from "rxjs"
 
 import { getOutputPath } from "../tools/getOutputPath.js"
 import { runMkvMerge } from "./runMkvMerge.js"
@@ -15,53 +11,40 @@ export const mergeMediaFiles = ({
 }: {
   filePaths: string[]
   originalFilePath: string
-}) => (
+}) =>
   of(
     getOutputPath({
       filePath: originalFilePath,
       folderName: mergedMediaFilesFolderName,
-    })
-  )
-  .pipe(
-    concatMap((
-      outputFilePath,
-    ) => (
+    }),
+  ).pipe(
+    concatMap((outputFilePath) =>
       runMkvMerge({
         args: [
-          ...(
-            filePaths
+          ...filePaths
             .join("/+/")
             .split("/")
-            .flatMap((
-              filePath,
-            ) => (
+            .flatMap((filePath) =>
               filePath === "+"
-              ? filePath
-              : [
-                // "--no-attachments",
-                // "--no-audio",
-                // "--no-buttons",
-                // "--no-chapters",
-                // "--no-global-tags",
-                // "--no-subtitles",
-                // "--no-track-tags",
-                // "--no-video",
+                ? filePath
+                : [
+                    // "--no-attachments",
+                    // "--no-audio",
+                    // "--no-buttons",
+                    // "--no-chapters",
+                    // "--no-global-tags",
+                    // "--no-subtitles",
+                    // "--no-track-tags",
+                    // "--no-video",
 
-                // "--audio-tracks",
-                // "1",
+                    // "--audio-tracks",
+                    // "1",
 
-                filePath,
-              ]
-            ))
-          ),
+                    filePath,
+                  ],
+            ),
         ],
         outputFilePath,
-      })
-      .pipe(
-        map(() => (
-          outputFilePath
-        )),
-      )
-    )),
+      }).pipe(map(() => outputFilePath)),
+    ),
   )
-)

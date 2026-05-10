@@ -23,6 +23,7 @@
 // No-op (and zero CDN cost) when neither `?mock=1` nor
 // localStorage.useMocks is set.
 import { enableMocksIfRequested } from "/mocks/browser.js"
+
 await enableMocksIfRequested()
 </script>
 <script type="module" src="/builder/js/main.js"></script>
@@ -201,6 +202,7 @@ await enableMocksIfRequested()
      Remove with the Vite script below once the Hono proxy is live. -->
 <script type="module">
   import RefreshRuntime from "http://localhost:5173/@react-refresh"
+
   RefreshRuntime.injectIntoGlobalHook(window)
   window.$RefreshReg$ = () => {}
   window.$RefreshSig$ = () => () => {}

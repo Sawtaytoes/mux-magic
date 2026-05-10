@@ -25,8 +25,7 @@ describe(keepLanguages.name, () => {
         isRecursive: false,
         sourcePath: "/work",
         subtitlesLanguages: ["eng"],
-      })
-      .pipe(toArray()),
+      }).pipe(toArray()),
     )
 
     const folderStats = await stat("/work/LANGUAGE-TRIMMED")

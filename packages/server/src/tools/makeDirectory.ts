@@ -1,17 +1,5 @@
-import {
-  mkdir,
-} from "node:fs/promises"
-import {
-  defer,
-} from "rxjs"
+import { mkdir } from "node:fs/promises"
+import { defer } from "rxjs"
 
-export const makeDirectory = (
-  directoryPath: string,
-) => (
-  defer(() => (
-    mkdir(
-      directoryPath,
-      { recursive: true },
-    )
-  ))
-)
+export const makeDirectory = (directoryPath: string) =>
+  defer(() => mkdir(directoryPath, { recursive: true }))

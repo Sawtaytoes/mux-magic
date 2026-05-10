@@ -1,68 +1,60 @@
-﻿import type { Argv, CommandBuilder, CommandModule } from "yargs"
+﻿import type {
+  Argv,
+  CommandBuilder,
+  CommandModule,
+} from "yargs"
 
 import { nameTvShowEpisodes } from "../app-commands/nameTvShowEpisodes.js"
 import { subscribeCli } from "../tools/subscribeCli.js"
 
-type InferArgvOptions<T> = T extends Argv<infer U> ? U : never
+type InferArgvOptions<T> =
+  T extends Argv<infer U> ? U : never
 
-const builder = (yargs: Argv) => (
+const builder = (yargs: Argv) =>
   yargs
-  .example(
-    "$0 nameTvShowEpisodes \"~/shows\" \"beast wars\"",
-    "Names all video files in '~/shows' based on the episode names on TVDB.",
-  )
-  .option(
-    "seasonNumber",
-    {
+    .example(
+      '$0 nameTvShowEpisodes "~/shows" "beast wars"',
+      "Names all video files in '~/shows' based on the episode names on TVDB.",
+    )
+    .option("seasonNumber", {
       alias: "s",
       demandOption: true,
-      describe: "The season number to lookup when renaming.",
+      describe:
+        "The season number to lookup when renaming.",
       nargs: 1,
       number: true,
       type: "number",
-    },
-  )
-  .positional(
-    "sourcePath",
-    {
+    })
+    .positional("sourcePath", {
       demandOption: true,
-      describe: "Directory where all episodes for that season are located.",
+      describe:
+        "Directory where all episodes for that season are located.",
       type: "string",
-    },
-  )
-  .positional(
-    "searchTerm",
-    {
+    })
+    .positional("searchTerm", {
       demandOption: true,
-      describe: "Name of the TV show for searching TVDB.com.",
+      describe:
+        "Name of the TV show for searching TVDB.com.",
       type: "string",
-    },
-  )
-)
+    })
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const nameTvShowEpisodesCommand: CommandModule<{}, Args> = {
+export const nameTvShowEpisodesCommand: CommandModule<
+  {},
+  Args
+> = {
   command: "nameTvShowEpisodes <sourcePath> <searchTerm>",
-  describe: "Name all TV show episodes in a directory according to episode names on TVDB.",
+  describe:
+    "Name all TV show episodes in a directory according to episode names on TVDB.",
 
   builder: builder as CommandBuilder<{}, Args>,
 
   handler: (argv) => {
     nameTvShowEpisodes({
-      searchTerm: (
-        argv
-        .searchTerm
-      ),
-      seasonNumber: (
-        argv
-        .seasonNumber
-      ),
-      sourcePath: (
-        argv
-        .sourcePath
-      ),
-    })
-    .subscribe(subscribeCli())
+      searchTerm: argv.searchTerm,
+      seasonNumber: argv.seasonNumber,
+      sourcePath: argv.sourcePath,
+    }).subscribe(subscribeCli())
   },
 }

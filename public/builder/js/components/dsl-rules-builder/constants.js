@@ -1,33 +1,48 @@
-export const RULE_TYPES = ['setScriptInfo', 'scaleResolution', 'setStyleFields']
+export const RULE_TYPES = [
+  "setScriptInfo",
+  "scaleResolution",
+  "setStyleFields",
+]
 
 export const WHEN_CLAUSE_NAMES = [
-  'anyScriptInfo',
-  'allScriptInfo',
-  'noneScriptInfo',
-  'notAllScriptInfo',
-  'anyStyle',
-  'allStyle',
-  'noneStyle',
+  "anyScriptInfo",
+  "allScriptInfo",
+  "noneScriptInfo",
+  "notAllScriptInfo",
+  "anyStyle",
+  "allStyle",
+  "noneStyle",
 ]
 
 export const APPLY_IF_CLAUSE_NAMES = [
-  'anyStyleMatches',
-  'allStyleMatches',
-  'noneStyleMatches',
+  "anyStyleMatches",
+  "allStyleMatches",
+  "noneStyleMatches",
 ]
 
-export const COMPARATOR_VERBS = ['eq', 'lt', 'gt', 'lte', 'gte']
+export const COMPARATOR_VERBS = [
+  "eq",
+  "lt",
+  "gt",
+  "lte",
+  "gte",
+]
 
 export const COMPUTE_FROM_OPS_WITH_OPERAND = [
-  'add',
-  'subtract',
-  'multiply',
-  'divide',
-  'min',
-  'max',
+  "add",
+  "subtract",
+  "multiply",
+  "divide",
+  "min",
+  "max",
 ]
 
-export const COMPUTE_FROM_OPS_BARE = ['round', 'floor', 'ceil', 'abs']
+export const COMPUTE_FROM_OPS_BARE = [
+  "round",
+  "floor",
+  "ceil",
+  "abs",
+]
 
 export const COMPUTE_FROM_OPS_ALL = [
   ...COMPUTE_FROM_OPS_WITH_OPERAND,
@@ -39,69 +54,71 @@ export const COMPUTE_FROM_OPS_ALL = [
 // Update this list whenever buildDefaultSubtitleModificationRules.ts changes shape.
 export const DEFAULT_RULES_PREVIEW = [
   {
-    type: 'setScriptInfo',
-    key: 'ScriptType',
-    value: 'v4.00+',
+    type: "setScriptInfo",
+    key: "ScriptType",
+    value: "v4.00+",
   },
   {
-    type: 'setScriptInfo',
-    key: 'YCbCr Matrix',
-    value: 'TV.709',
+    type: "setScriptInfo",
+    key: "YCbCr Matrix",
+    value: "TV.709",
     when: {
       anyScriptInfo: {
-        matches: { 'YCbCr Matrix': 'TV.601' },
+        matches: { "YCbCr Matrix": "TV.601" },
         excludes: {
-          'YCbCr Matrix': 'TV.601',
-          PlayResX: '640',
-          PlayResY: '480',
+          "YCbCr Matrix": "TV.601",
+          PlayResX: "640",
+          PlayResY: "480",
         },
       },
     },
   },
   {
-    type: 'setStyleFields',
+    type: "setStyleFields",
     fields: {
       MarginV: {
         computeFrom: {
-          property: 'PlayResY',
-          scope: 'scriptInfo',
+          property: "PlayResY",
+          scope: "scriptInfo",
           ops: [
             { divide: 1080 },
             { multiply: 90 },
-            'round',
+            "round",
           ],
         },
       },
     },
-    ignoredStyleNamesRegexString: 'signs?|op|ed|opening|ending',
+    ignoredStyleNamesRegexString:
+      "signs?|op|ed|opening|ending",
   },
   {
-    type: 'setStyleFields',
+    type: "setStyleFields",
     fields: {
       MarginL: {
         computeFrom: {
-          property: 'PlayResX',
-          scope: 'scriptInfo',
+          property: "PlayResX",
+          scope: "scriptInfo",
           ops: [
             { divide: 1920 },
             { multiply: 200 },
-            'round',
+            "round",
           ],
         },
       },
       MarginR: {
         computeFrom: {
-          property: 'PlayResX',
-          scope: 'scriptInfo',
+          property: "PlayResX",
+          scope: "scriptInfo",
           ops: [
             { divide: 1920 },
             { multiply: 200 },
-            'round',
+            "round",
           ],
         },
       },
     },
-    ignoredStyleNamesRegexString: 'signs?|op|ed|opening|ending',
+    ignoredStyleNamesRegexString:
+      "signs?|op|ed|opening|ending",
     applyIf: {
       anyStyleMatches: {
         MarginL: { lt: 50 },

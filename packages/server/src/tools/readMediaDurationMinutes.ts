@@ -9,13 +9,14 @@ import { getMediaInfo } from "./getMediaInfo.js"
 // for the regular-episode sanity warning).
 export const readMediaDurationMinutes = (
   filePath: string,
-): Observable<number | null> => (
-  getMediaInfo(filePath)
-  .pipe(
+): Observable<number | null> =>
+  getMediaInfo(filePath).pipe(
     map((mediaInfo) => {
       const tracks = mediaInfo.media?.track ?? []
-      const generalTrack = tracks.find((track) => track["@type"] === "General")
-      if (!generalTrack || !generalTrack.Duration) {
+      const generalTrack = tracks.find(
+        (track) => track["@type"] === "General",
+      )
+      if (!generalTrack?.Duration) {
         return null
       }
       const seconds = Number(generalTrack.Duration)
@@ -25,4 +26,3 @@ export const readMediaDurationMinutes = (
       return Math.round(seconds / 60)
     }),
   )
-)

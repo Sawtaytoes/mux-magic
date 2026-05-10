@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 import * as jobStore from "./jobStore.js"
 import {
@@ -56,7 +63,9 @@ describe(installLogCapture.name, () => {
   })
 
   test("still calls the original console method", () => {
-    const spy = vi.spyOn(originalConsole, "log").mockImplementation(() => {})
+    const spy = vi
+      .spyOn(originalConsole, "log")
+      .mockImplementation(() => {})
 
     console.log("hello")
 
@@ -71,7 +80,10 @@ describe(installLogCapture.name, () => {
       console.log("log line")
     })
 
-    expect(appendSpy).toHaveBeenCalledWith(job.id, expect.stringContaining("log line"))
+    expect(appendSpy).toHaveBeenCalledWith(
+      job.id,
+      expect.stringContaining("log line"),
+    )
   })
 
   test("strips ANSI codes before appending", () => {
@@ -82,7 +94,10 @@ describe(installLogCapture.name, () => {
       console.log("\x1B[32mcolored\x1B[0m")
     })
 
-    expect(appendSpy).toHaveBeenCalledWith(job.id, expect.stringContaining("colored"))
+    expect(appendSpy).toHaveBeenCalledWith(
+      job.id,
+      expect.stringContaining("colored"),
+    )
   })
 
   test("does not call appendJobLog outside a job context", () => {
@@ -101,6 +116,9 @@ describe(installLogCapture.name, () => {
       console.error("an error")
     })
 
-    expect(appendSpy).toHaveBeenCalledWith(job.id, expect.stringContaining("an error"))
+    expect(appendSpy).toHaveBeenCalledWith(
+      job.id,
+      expect.stringContaining("an error"),
+    )
   })
 })

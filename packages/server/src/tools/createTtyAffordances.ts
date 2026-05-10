@@ -19,7 +19,8 @@ export const createTtyAffordances = (
   detach: () => void
 } => {
   const inApiContext = Boolean(getActiveJobId())
-  const useTtyAffordances = !inApiContext && Boolean(process.stdin.isTTY)
+  const useTtyAffordances =
+    !inApiContext && Boolean(process.stdin.isTTY)
 
   if (!useTtyAffordances) {
     return { useTtyAffordances: false, detach: () => {} }

@@ -16,7 +16,7 @@
  * port-sniffing logic used in playwright.config.ts.
  */
 
-import { readFileSync, mkdirSync } from "node:fs"
+import { mkdirSync, readFileSync } from "node:fs"
 import { chromium, type Page } from "playwright"
 
 // ---------------------------------------------------------------------------
@@ -42,7 +42,6 @@ const baseURL = `http://localhost:${port}`
 async function settle(page: Page, ms = 800) {
   await page.waitForTimeout(ms)
 }
-
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -61,11 +60,15 @@ async function settle(page: Page, ms = 800) {
     // -----------------------------------------------------------------------
     {
       const page = await context.newPage()
-      await page.goto(`${baseURL}/?mock=1`, { waitUntil: "networkidle" })
+      await page.goto(`${baseURL}/?mock=1`, {
+        waitUntil: "networkidle",
+      })
 
       // Wait for at least one job card to appear (the mock SSE stream pushes
       // jobs to the client immediately after the service worker activates).
-      await page.waitForSelector(".job", { timeout: 10_000 })
+      await page.waitForSelector(".job", {
+        timeout: 10_000,
+      })
       await settle(page)
 
       await page.screenshot({
@@ -81,7 +84,9 @@ async function settle(page: Page, ms = 800) {
     // -----------------------------------------------------------------------
     {
       const page = await context.newPage()
-      await page.goto(`${baseURL}/builder/?mock=1`, { waitUntil: "networkidle" })
+      await page.goto(`${baseURL}/builder/?mock=1`, {
+        waitUntil: "networkidle",
+      })
 
       // Wait for the page heading to confirm the app has mounted.
       await page.waitForSelector("h1", { timeout: 10_000 })
@@ -105,7 +110,10 @@ async function settle(page: Page, ms = 800) {
       // screenshot regardless of picker ordering changes.
       const seq = {
         paths: {
-          source: { label: "Source folder", value: "D:\\Media\\Anime\\Show" },
+          source: {
+            label: "Source folder",
+            value: "D:\\Media\\Anime\\Show",
+          },
         },
         steps: [
           {
@@ -121,19 +129,26 @@ async function settle(page: Page, ms = 800) {
             id: "step2",
             command: "extractSubtitles",
             params: {
-              sourcePath: { linkedTo: "step1", output: "folder" },
+              sourcePath: {
+                linkedTo: "step1",
+                output: "folder",
+              },
             },
           },
         ],
       }
-      const b64 = Buffer.from(JSON.stringify(seq)).toString("base64")
+      const b64 = Buffer.from(JSON.stringify(seq)).toString(
+        "base64",
+      )
       const url = `${baseURL}/builder/?mock=1&seq=${encodeURIComponent(b64)}`
 
       const page = await context.newPage()
       await page.goto(url, { waitUntil: "networkidle" })
 
       // Wait for step cards to appear.
-      await page.waitForSelector('[id^="step-"]', { timeout: 10_000 })
+      await page.waitForSelector('[id^="step-"]', {
+        timeout: 10_000,
+      })
       await settle(page, 600)
 
       await page.screenshot({
@@ -150,7 +165,10 @@ async function settle(page: Page, ms = 800) {
     {
       const seq = {
         paths: {
-          source: { label: "Source folder", value: "D:\\Media\\Anime\\Show" },
+          source: {
+            label: "Source folder",
+            value: "D:\\Media\\Anime\\Show",
+          },
         },
         steps: [
           {
@@ -166,23 +184,34 @@ async function settle(page: Page, ms = 800) {
             id: "step2",
             command: "extractSubtitles",
             params: {
-              sourcePath: { linkedTo: "step1", output: "folder" },
+              sourcePath: {
+                linkedTo: "step1",
+                output: "folder",
+              },
             },
           },
         ],
       }
-      const b64 = Buffer.from(JSON.stringify(seq)).toString("base64")
+      const b64 = Buffer.from(JSON.stringify(seq)).toString(
+        "base64",
+      )
       const url = `${baseURL}/builder/?mock=1&seq=${encodeURIComponent(b64)}`
 
       const page = await context.newPage()
       await page.goto(url, { waitUntil: "networkidle" })
 
-      await page.waitForSelector('[id^="step-"]', { timeout: 10_000 })
+      await page.waitForSelector('[id^="step-"]', {
+        timeout: 10_000,
+      })
       await settle(page, 400)
 
       // Open the YAML modal.
-      await page.getByRole("button", { name: "View YAML" }).click()
-      await page.waitForSelector("#yaml-modal", { timeout: 5_000 })
+      await page
+        .getByRole("button", { name: "View YAML" })
+        .click()
+      await page.waitForSelector("#yaml-modal", {
+        timeout: 5_000,
+      })
       await settle(page, 300)
 
       await page.screenshot({

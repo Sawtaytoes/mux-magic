@@ -31,12 +31,10 @@ export const openInExternalApp = (path: string): void => {
     // has to go through cmd. The empty "" is the title arg `start`
     // requires when the next arg is a quoted path.
     args = ["/C", "start", "", validatedPath]
-  }
-  else if (os === "darwin") {
+  } else if (os === "darwin") {
     command = "open"
     args = [validatedPath]
-  }
-  else {
+  } else {
     // Linux + everything else. xdg-open is the freedesktop standard;
     // missing on minimal containers but typical desktop installs ship
     // it. The error path is a no-op since we detach + unref.

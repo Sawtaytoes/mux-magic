@@ -1,32 +1,19 @@
-import {
-  execFile as execFileCallback,
-} from "node:child_process"
-import {
-  promisify,
-} from "node:util"
-import {
-  defer,
-  map,
-  Observable,
-} from "rxjs"
+import { execFile as execFileCallback } from "node:child_process"
+import { promisify } from "node:util"
+import { defer, map, Observable } from "rxjs"
 
-import { mediaInfoPath } from "./appPaths.js";
+import { mediaInfoPath } from "./appPaths.js"
+import type { Iso6391LanguageCode } from "./iso6391LanguageCodes.js"
 import { logAndSwallow } from "./logAndSwallow.js"
-import { type Iso6391LanguageCode } from "./iso6391LanguageCodes.js";
 
-const execFile = (
-  promisify(
-    execFileCallback
-  )
-)
+const execFile = promisify(execFileCallback)
 
-export type MediaInfoTrackType = (
+export type MediaInfoTrackType =
   | "Audio"
   | "General"
   | "Menu"
   | "Text"
   | "Video"
-)
 
 export type AudioExtra = {
   acmod?: string
@@ -54,7 +41,7 @@ export type AudioExtra = {
 }
 
 export type AudioTrack = {
-  "@type": "Audio",
+  "@type": "Audio"
   "@typeorder"?: string
   BitDepth?: string
   BitRate_Maximum?: string
@@ -132,12 +119,7 @@ export type GeneralTrack = {
 
 export type MenuTrack = {
   "@type": "Menu"
-  extra: (
-    Record<
-      string,
-      string
-    >
-  )
+  extra: Record<string, string>
 }
 
 export type TextTrack = {
@@ -239,23 +221,18 @@ export type CreatingLibrary = {
 
 export type Media = {
   "@ref": string
-  track: (
-    Array<
-      | AudioTrack
-      | GeneralTrack
-      | MenuTrack
-      | TextTrack
-      | VideoTrack
-    >
-  )
+  track: Array<
+    | AudioTrack
+    | GeneralTrack
+    | MenuTrack
+    | TextTrack
+    | VideoTrack
+  >
 }
 
 export type MediaInfo = {
   creatingLibrary: CreatingLibrary
-  media: (
-    | Media
-    | null
-  )
+  media: Media | null
 }
 
 // Wraps the mediainfo execFile in an AbortController-aware Observable so
@@ -266,49 +243,31 @@ export type MediaInfo = {
 // rejects with an AbortError that catchError-as-EMPTY will swallow.
 export const getMediaInfo = (
   filePath: string,
-): (
-  Observable<
-    MediaInfo
-  >
-) => (
+): Observable<MediaInfo> =>
   new Observable<MediaInfo>((subscriber) => {
     const abortController = new AbortController()
 
-    const innerSubscription = (
-      defer(() => execFile(
-        mediaInfoPath,
-        [
-          "--Output=JSON",
-          filePath,
-        ],
-        { signal: abortController.signal },
-      ))
+    const innerSubscription = defer(() =>
+      execFile(mediaInfoPath, ["--Output=JSON", filePath], {
+        signal: abortController.signal,
+      }),
+    )
       .pipe(
         // execFile rejects with a non-null `code` on real failures, so we
         // don't need to throw on stderr presence — mediainfo is happy to
         // print warnings/info to stderr on healthy files. Throwing here was
         // the same shape of bug we fixed in runMkvExtract / getMkvInfo.
         map(({ stdout }) => stdout),
-        map((
-          mediaInfoJsonString,
-        ) => (
-          JSON
-          .parse(
-            mediaInfoJsonString
-          ) as (
-            MediaInfo
-          )
-        )),
-        logAndSwallow(
-          getMediaInfo
+        map(
+          (mediaInfoJsonString) =>
+            JSON.parse(mediaInfoJsonString) as MediaInfo,
         ),
+        logAndSwallow(getMediaInfo),
       )
       .subscribe(subscriber)
-    )
 
     return () => {
       abortController.abort()
       innerSubscription.unsubscribe()
     }
   })
-)

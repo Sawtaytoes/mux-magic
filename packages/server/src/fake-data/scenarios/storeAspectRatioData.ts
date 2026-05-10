@@ -1,16 +1,23 @@
-import { concat, ignoreElements, Observable, of, timer } from "rxjs"
+import {
+  concat,
+  ignoreElements,
+  Observable,
+  of,
+  timer,
+} from "rxjs"
 
 import { emitJobEvent } from "../../api/jobStore.js"
 import { getActiveJobId } from "../../api/logCapture.js"
 import { logInfo } from "../../tools/logMessage.js"
 
-const pause = (ms: number): Observable<never> => (
+const pause = (ms: number): Observable<never> =>
   timer(ms).pipe(ignoreElements()) as Observable<never>
-)
 
-const effect = (fn: () => void): Observable<never> => (
-  new Observable<never>((sub) => { fn(); sub.complete() })
-)
+const effect = (fn: () => void): Observable<never> =>
+  new Observable<never>((sub) => {
+    fn()
+    sub.complete()
+  })
 
 // 8 files, 4 processed concurrently (matching a typical server concurrency
 // setting), each taking slightly different durations to feel realistic.
@@ -31,7 +38,10 @@ export const storeAspectRatioDataScenario = (
 ): Observable<unknown> => {
   const label = options.label ?? "fake/storeAspectRatioData"
 
-  const emitProgress = (ratio: number, active: Array<{ path: string; r: number }>) => {
+  const emitProgress = (
+    ratio: number,
+    active: Array<{ path: string; r: number }>,
+  ) => {
     const jobId = getActiveJobId()
     if (!jobId) return
     emitJobEvent(jobId, {
@@ -39,15 +49,24 @@ export const storeAspectRatioDataScenario = (
       ratio,
       filesDone: Math.round(ratio * FILES.length),
       filesTotal: FILES.length,
-      currentFiles: active.map(({ path, r }) => ({ path, ratio: r })),
+      currentFiles: active.map(({ path, r }) => ({
+        path,
+        ratio: r,
+      })),
     })
   }
 
   return concat(
     effect(() => {
-      logInfo(label, `Starting fake storeAspectRatioData run.`)
+      logInfo(
+        label,
+        `Starting fake storeAspectRatioData run.`,
+      )
       logInfo(label, `Body: ${JSON.stringify(body)}`)
-      logInfo(label, `Scanning ${FILES.length} media files (concurrency: 4)…`)
+      logInfo(
+        label,
+        `Scanning ${FILES.length} media files (concurrency: 4)…`,
+      )
       emitProgress(0, [])
     }),
 
@@ -120,7 +139,10 @@ export const storeAspectRatioDataScenario = (
     effect(() => {
       logInfo(label, `  ✓ ${FILES[4]}: 1.78:1`)
       logInfo(label, `  ✓ ${FILES[6]}: 1.78:1`)
-      logInfo(label, `Done. Stored aspect ratios for ${FILES.length} files.`)
+      logInfo(
+        label,
+        `Done. Stored aspect ratios for ${FILES.length} files.`,
+      )
       emitProgress(1.0, [])
     }),
     of<unknown>({ ok: true, filesProcessed: 4 }),

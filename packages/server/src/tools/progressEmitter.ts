@@ -1,10 +1,10 @@
 import {
   concatMap,
-  finalize as rxFinalize,
   from,
   mergeMap,
   type Observable,
   type OperatorFunction,
+  finalize as rxFinalize,
   toArray,
 } from "rxjs"
 
@@ -62,7 +62,10 @@ export type ProgressEmitter = {
   // the caller is parallelizing per-file work. Adds the file to
   // `currentFiles` snapshots so the UI can show one row per in-flight
   // operation.
-  startFile: (path: string, fileSizeBytes?: number) => FileTracker
+  startFile: (
+    path: string,
+    fileSizeBytes?: number,
+  ) => FileTracker
   // Rollup-only counter bump. Increments filesDone (and folds bytes
   // into the cumulative tally if supplied) WITHOUT adding anything to
   // `currentFiles`. Used by generic iterators where the per-file unit
@@ -99,37 +102,30 @@ type EmitterState = {
 // the snapshot of "currently active files" is unified across the job.
 const states = new Map<string, EmitterState>()
 
-const computeRatio = (state: EmitterState): number | null => {
+const computeRatio = (
+  state: EmitterState,
+): number | null => {
   if (state.explicitRatio !== undefined) {
     return state.explicitRatio
   }
 
   if (
-    state.totalBytes !== undefined
-    && state.totalBytes > 0
+    state.totalBytes !== undefined &&
+    state.totalBytes > 0
   ) {
-    const bytesInFlight = (
-      Array
-      .from(
-        state
-        .activeFiles
-        .values()
-      )
-      .reduce(
-        (sum, file) => sum + file.bytesWritten,
-        0,
-      )
-    )
+    const bytesInFlight = Array.from(
+      state.activeFiles.values(),
+    ).reduce((sum, file) => sum + file.bytesWritten, 0)
 
     return (
-      (state.cumulativeBytes + bytesInFlight)
-      / state.totalBytes
+      (state.cumulativeBytes + bytesInFlight) /
+      state.totalBytes
     )
   }
 
   if (
-    state.totalFiles !== undefined
-    && state.totalFiles > 0
+    state.totalFiles !== undefined &&
+    state.totalFiles > 0
   ) {
     return state.filesDone / state.totalFiles
   }
@@ -137,14 +133,16 @@ const computeRatio = (state: EmitterState): number | null => {
   return null
 }
 
-const computeFileRatio = (file: FileState): number | null => {
+const computeFileRatio = (
+  file: FileState,
+): number | null => {
   if (file.explicitRatio !== undefined) {
     return file.explicitRatio
   }
 
   if (
-    file.totalBytes !== undefined
-    && file.totalBytes > 0
+    file.totalBytes !== undefined &&
+    file.totalBytes > 0
   ) {
     return file.bytesWritten / file.totalBytes
   }
@@ -159,18 +157,11 @@ type CurrentFilesEntry = {
 
 const computeCurrentFiles = (
   state: EmitterState,
-): CurrentFilesEntry[] => (
-  Array
-  .from(
-    state
-    .activeFiles
-    .values()
-  )
-  .map((file) => ({
+): CurrentFilesEntry[] =>
+  Array.from(state.activeFiles.values()).map((file) => ({
     path: file.path,
     ratio: computeFileRatio(file),
   }))
-)
 
 // Compose the payload from accumulated state. Single source of truth so
 // the throttle layer can capture a snapshot at any tick.
@@ -197,13 +188,10 @@ const flush = (state: EmitterState): void => {
     return
   }
 
-  emitJobEvent(
-    state.jobId,
-    {
-      type: "progress",
-      ...state.pendingPayload,
-    },
-  )
+  emitJobEvent(state.jobId, {
+    type: "progress",
+    ...state.pendingPayload,
+  })
 
   state.lastEmitAt = Date.now()
   state.pendingPayload = null
@@ -217,13 +205,10 @@ const scheduleEmit = (
     return
   }
 
-  state.pendingTimer = setTimeout(
-    () => {
-      state.pendingTimer = null
-      flush(state)
-    },
-    delayMs,
-  )
+  state.pendingTimer = setTimeout(() => {
+    state.pendingTimer = null
+    flush(state)
+  }, delayMs)
 }
 
 // Capture the current accumulated state and route it through the
@@ -249,10 +234,7 @@ const tick = (state: EmitterState): void => {
     return
   }
 
-  scheduleEmit(
-    state,
-    THROTTLE_INTERVAL_MS - sinceLastEmit,
-  )
+  scheduleEmit(state, THROTTLE_INTERVAL_MS - sinceLastEmit)
 }
 
 // Returns the singleton emitter handle for the given jobId. The first
@@ -265,39 +247,32 @@ export const createProgressEmitter = (
   options: ProgressEmitterOptions = {},
 ): ProgressEmitter => {
   const existingState = states.get(jobId)
-  const state: EmitterState = (
-    existingState
-    ?? {
-      jobId,
-      totalFiles: undefined,
-      totalBytes: undefined,
-      filesDone: 0,
-      cumulativeBytes: 0,
-      explicitRatio: undefined,
-      activeFiles: new Map(),
-      nextTrackerId: 0,
-      lastEmitAt: null,
-      pendingTimer: null,
-      pendingPayload: null,
-    }
-  )
+  const state: EmitterState = existingState ?? {
+    jobId,
+    totalFiles: undefined,
+    totalBytes: undefined,
+    filesDone: 0,
+    cumulativeBytes: 0,
+    explicitRatio: undefined,
+    activeFiles: new Map(),
+    nextTrackerId: 0,
+    lastEmitAt: null,
+    pendingTimer: null,
+    pendingPayload: null,
+  }
 
   if (existingState === undefined) {
     states.set(jobId, state)
   }
 
   if (options.totalFiles !== undefined) {
-    state.totalFiles = (
-      (state.totalFiles ?? 0)
-      + options.totalFiles
-    )
+    state.totalFiles =
+      (state.totalFiles ?? 0) + options.totalFiles
   }
 
   if (options.totalBytes !== undefined) {
-    state.totalBytes = (
-      (state.totalBytes ?? 0)
-      + options.totalBytes
-    )
+    state.totalBytes =
+      (state.totalBytes ?? 0) + options.totalBytes
   }
 
   return {
@@ -332,11 +307,10 @@ export const createProgressEmitter = (
             return
           }
 
-          state.cumulativeBytes += (
-            fileSizeBytesOverride
-            ?? fileState.totalBytes
-            ?? fileState.bytesWritten
-          )
+          state.cumulativeBytes +=
+            fileSizeBytesOverride ??
+            fileState.totalBytes ??
+            fileState.bytesWritten
           // filesDone is NOT incremented here — only emitter.incrementFilesDone()
           // does that. tracker.finish() only manages the currentFiles display.
           // Callers inside withFileProgress get their filesDone count from the
@@ -385,14 +359,15 @@ export const disposeProgressEmitter = (
   states.delete(jobId)
 }
 
-export const __resetAllProgressEmittersForTests = (): void => {
-  states.forEach((state) => {
-    if (state.pendingTimer !== null) {
-      clearTimeout(state.pendingTimer)
-    }
-  })
-  states.clear()
-}
+export const __resetAllProgressEmittersForTests =
+  (): void => {
+    states.forEach((state) => {
+      if (state.pendingTimer !== null) {
+        clearTimeout(state.pendingTimer)
+      }
+    })
+    states.clear()
+  }
 
 type WithFileProgressOptions = {
   // Upper bound on per-file fan-out from this operator. The actual
@@ -419,42 +394,46 @@ type WithFileProgressOptions = {
 // Returns a no-op-style operator if there's no active job context —
 // e.g. when an app-command runs outside the API server (CLI direct
 // invocation), in which case the emitter has no subject to publish to.
-export const withFileProgress = <T, U>(
-  perFile: (fileInfo: T, index: number) => Observable<U>,
-  options: WithFileProgressOptions = {},
-): OperatorFunction<T, U> => (source) => (
-  source
-  .pipe(
-    toArray(),
-    concatMap((files) => {
-      const concurrency = options.concurrency ?? Infinity
-      const indexedFiles = files.map((file, index) => ({ file, index }))
-      const jobId = getActiveJobId()
-      if (jobId === undefined) {
+export const withFileProgress =
+  <T, U>(
+    perFile: (fileInfo: T, index: number) => Observable<U>,
+    options: WithFileProgressOptions = {},
+  ): OperatorFunction<T, U> =>
+  (source) =>
+    source.pipe(
+      toArray(),
+      concatMap((files) => {
+        const concurrency = options.concurrency ?? Infinity
+        const indexedFiles = files.map((file, index) => ({
+          file,
+          index,
+        }))
+        const jobId = getActiveJobId()
+        if (jobId === undefined) {
+          return from(indexedFiles).pipe(
+            mergeMap(
+              ({ file, index }) =>
+                runTask(perFile(file, index)),
+              concurrency,
+            ),
+          )
+        }
+        const emitter = createProgressEmitter(jobId, {
+          totalFiles: files.length,
+        })
         return from(indexedFiles).pipe(
           mergeMap(
-            ({ file, index }) => runTask(perFile(file, index)),
+            ({ file, index }) =>
+              runTask(
+                perFile(file, index).pipe(
+                  rxFinalize(() =>
+                    emitter.incrementFilesDone(),
+                  ),
+                ),
+              ),
             concurrency,
           ),
+          rxFinalize(() => emitter.finalize()),
         )
-      }
-      const emitter = createProgressEmitter(jobId, {
-        totalFiles: files.length,
-      })
-      return from(indexedFiles).pipe(
-        mergeMap(
-          ({ file, index }) => (
-            runTask(
-              perFile(file, index)
-              .pipe(
-                rxFinalize(() => emitter.incrementFilesDone()),
-              )
-            )
-          ),
-          concurrency,
-        ),
-        rxFinalize(() => emitter.finalize()),
-      )
-    }),
-  )
-)
+      }),
+    )

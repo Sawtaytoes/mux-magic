@@ -10,13 +10,15 @@
 // Does NOT close on backdrop click while the user interacts with a form
 // input or a picker popover (checked via document.activeElement).
 
-import { COMMANDS } from './commands.js'
-import { flattenSteps } from './sequence-state.js'
-import { renderFields, esc } from './step-renderer.js'
+import { COMMANDS } from "./commands.js"
+import { flattenSteps } from "./sequence-state.js"
+import { esc, renderFields } from "./step-renderer.js"
 
 // commandLabel is injected by /command-labels.js as a global script.
 const commandLabel = (name) =>
-  typeof window.commandLabel === 'function' ? window.commandLabel(name) : name
+  typeof window.commandLabel === "function"
+    ? window.commandLabel(name)
+    : name
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -33,32 +35,32 @@ function ensureDrawerDOM() {
   }
 
   // Backdrop
-  _backdropEl = document.createElement('div')
-  _backdropEl.id = 'step-drawer-backdrop'
-  _backdropEl.className = 'step-drawer-backdrop'
-  _backdropEl.setAttribute('aria-hidden', 'true')
+  _backdropEl = document.createElement("div")
+  _backdropEl.id = "step-drawer-backdrop"
+  _backdropEl.className = "step-drawer-backdrop"
+  _backdropEl.setAttribute("aria-hidden", "true")
 
   // Track pointer-down on backdrop separately so we can ignore drags that
   // start outside and land on the backdrop (e.g. resizing a textarea).
-  _backdropEl.addEventListener('pointerdown', () => {
+  _backdropEl.addEventListener("pointerdown", () => {
     _pointerDownOnBackdrop = true
   })
-  _backdropEl.addEventListener('pointerup', () => {
+  _backdropEl.addEventListener("pointerup", () => {
     if (_pointerDownOnBackdrop) {
       _pointerDownOnBackdrop = false
       _maybeCloseOnBackdropClick()
     }
   })
-  _backdropEl.addEventListener('pointercancel', () => {
+  _backdropEl.addEventListener("pointercancel", () => {
     _pointerDownOnBackdrop = false
   })
 
   // Drawer panel
-  _drawerEl = document.createElement('div')
-  _drawerEl.id = 'step-drawer'
-  _drawerEl.className = 'step-drawer'
-  _drawerEl.setAttribute('role', 'complementary')
-  _drawerEl.setAttribute('aria-label', 'Step details')
+  _drawerEl = document.createElement("div")
+  _drawerEl.id = "step-drawer"
+  _drawerEl.className = "step-drawer"
+  _drawerEl.setAttribute("role", "complementary")
+  _drawerEl.setAttribute("aria-label", "Step details")
 
   document.body.appendChild(_backdropEl)
   document.body.appendChild(_drawerEl)
@@ -67,12 +69,13 @@ function ensureDrawerDOM() {
 function _maybeCloseOnBackdropClick() {
   // Don't close if focus is inside a form input or picker popover.
   const activeElement = document.activeElement
-  const isFocusInsideInteractive = activeElement && (
-    activeElement.tagName === 'INPUT' ||
-    activeElement.tagName === 'TEXTAREA' ||
-    activeElement.tagName === 'SELECT' ||
-    (activeElement.closest?.('.hidden') === null && activeElement.closest?.('[id$="-popover"]'))
-  )
+  const isFocusInsideInteractive =
+    activeElement &&
+    (activeElement.tagName === "INPUT" ||
+      activeElement.tagName === "TEXTAREA" ||
+      activeElement.tagName === "SELECT" ||
+      (activeElement.closest?.(".hidden") === null &&
+        activeElement.closest?.('[id$="-popover"]')))
   if (isFocusInsideInteractive) {
     return
   }
@@ -82,11 +85,11 @@ function _maybeCloseOnBackdropClick() {
 // ─── Escape key handler ───────────────────────────────────────────────────────
 
 function _onKeydown(event) {
-  if (event.key === 'Escape' && _openStepId !== null) {
+  if (event.key === "Escape" && _openStepId !== null) {
     // Only close if no picker/modal is open above us (they have higher z-index
     // and handle Escape themselves; we check for open modals as a safety net).
     const openModal = document.querySelector(
-      '.fixed.z-50:not(.hidden), .fixed.z-\\[60\\]:not(.hidden)'
+      ".fixed.z-50:not(.hidden), .fixed.z-\\[60\\]:not(.hidden)",
     )
     if (!openModal) {
       closeStepDrawer()
@@ -103,7 +106,9 @@ export function openStepDrawer(stepId) {
 
   // Find step in flat list
   const allFlatSteps = flattenSteps()
-  const entry = allFlatSteps.find((flatEntry) => flatEntry.step.id === stepId)
+  const entry = allFlatSteps.find(
+    (flatEntry) => flatEntry.step.id === stepId,
+  )
   if (!entry) {
     closeStepDrawer()
     return
@@ -111,16 +116,19 @@ export function openStepDrawer(stepId) {
 
   const { step, flatIndex } = entry
 
-  _drawerEl.innerHTML = _renderDrawerContent(step, flatIndex)
-  _drawerEl.classList.add('open')
-  _backdropEl.classList.add('open')
+  _drawerEl.innerHTML = _renderDrawerContent(
+    step,
+    flatIndex,
+  )
+  _drawerEl.classList.add("open")
+  _backdropEl.classList.add("open")
 
   // Focus the close button for keyboard users
-  _drawerEl.querySelector('.step-drawer-close')?.focus()
+  _drawerEl.querySelector(".step-drawer-close")?.focus()
 
   // Attach Escape once
-  document.removeEventListener('keydown', _onKeydown)
-  document.addEventListener('keydown', _onKeydown)
+  document.removeEventListener("keydown", _onKeydown)
+  document.addEventListener("keydown", _onKeydown)
 }
 
 export function closeStepDrawer() {
@@ -128,9 +136,9 @@ export function closeStepDrawer() {
     return
   }
   _openStepId = null
-  _drawerEl.classList.remove('open')
-  _backdropEl.classList.remove('open')
-  document.removeEventListener('keydown', _onKeydown)
+  _drawerEl.classList.remove("open")
+  _backdropEl.classList.remove("open")
+  document.removeEventListener("keydown", _onKeydown)
 }
 
 export function getOpenStepId() {
@@ -140,19 +148,23 @@ export function getOpenStepId() {
 // ─── Drawer content renderer ──────────────────────────────────────────────────
 
 function _renderDrawerContent(step, flatIndex) {
-  const commandDefinition = step.command ? COMMANDS[step.command] : null
-  const operationLabel = step.command ? commandLabel(step.command) : '— none —'
-  const alias = step.alias || step.command || 'Unnamed Step'
+  const commandDefinition = step.command
+    ? COMMANDS[step.command]
+    : null
+  const operationLabel = step.command
+    ? commandLabel(step.command)
+    : "— none —"
+  const alias = step.alias || step.command || "Unnamed Step"
 
   const summaryHtml = commandDefinition
     ? `<p class="text-xs text-slate-400 mb-2">${esc(commandDefinition.summary)}</p>
-       ${commandDefinition.note ? `<p class="text-xs text-amber-300 bg-amber-950/40 border border-amber-800/50 rounded px-2 py-1 mb-2">${esc(commandDefinition.note)}</p>` : ''}
-       ${commandDefinition.outputFolderName ? `<p class="text-xs text-amber-500/80 mb-2">→ outputs to <code class="text-amber-400 bg-slate-900 px-1 rounded">${esc(commandDefinition.outputFolderName)}/</code> subfolder</p>` : ''}`
-    : ''
+       ${commandDefinition.note ? `<p class="text-xs text-amber-300 bg-amber-950/40 border border-amber-800/50 rounded px-2 py-1 mb-2">${esc(commandDefinition.note)}</p>` : ""}
+       ${commandDefinition.outputFolderName ? `<p class="text-xs text-amber-500/80 mb-2">→ outputs to <code class="text-amber-400 bg-slate-900 px-1 rounded">${esc(commandDefinition.outputFolderName)}/</code> subfolder</p>` : ""}`
+    : ""
 
   const errorHtml = step.error
     ? `<p class="text-xs text-red-400 bg-red-950/40 rounded px-2 py-1 mb-2 font-mono">${esc(step.error)}</p>`
-    : ''
+    : ""
 
   const fieldsHtml = commandDefinition
     ? `<div class="space-y-2">${renderFields({ step, stepIndex: flatIndex })}</div>`
@@ -175,7 +187,7 @@ function _renderDrawerContent(step, flatIndex) {
   <div class="shrink-0 px-4 py-2 border-b border-slate-700/50">
     <label class="block text-xs text-slate-500 mb-1">Alias</label>
     <input type="text" value="${esc(step.alias)}"
-      placeholder="${esc(step.command || 'Click to name this step')}"
+      placeholder="${esc(step.command || "Click to name this step")}"
       data-step-alias="${step.id}"
       onfocus="stepAliasFocus(this)"
       onkeydown="stepAliasKeydown(event,'${step.id}')"
@@ -202,10 +214,10 @@ function _renderDrawerContent(step, flatIndex) {
 
   <!-- Footer actions -->
   <div class="shrink-0 flex items-center gap-2 px-4 py-2 border-t border-slate-700 bg-slate-900/60">
-    <button onclick="runOrStopStep('${step.id}')" ${step.command ? '' : 'disabled'}
-      title="${step.status === 'running' && step.jobId ? 'Cancel this step' : 'Run this step only'}"
+    <button onclick="runOrStopStep('${step.id}')" ${step.command ? "" : "disabled"}
+      title="${step.status === "running" && step.jobId ? "Cancel this step" : "Run this step only"}"
       data-step-run-stop="${step.id}"
-      class="step-run-stop ${step.status === 'running' && step.jobId ? 'is-running' : ''}">
+      class="step-run-stop ${step.status === "running" && step.jobId ? "is-running" : ""}">
       <span class="step-run-stop-icon step-run-stop-play">▶</span>
       <span class="step-run-stop-icon step-run-stop-stop">⏹</span>
     </button>

@@ -1,7 +1,7 @@
-import { runFfmpeg } from "./runFfmpeg.js";
-import { getOutputPath } from "../tools/getOutputPath.js";
-import { makeDirectory } from "../tools/makeDirectory.js";
-import { concatMap, map, of } from "rxjs";
+import { concatMap, map, of } from "rxjs"
+import { getOutputPath } from "../tools/getOutputPath.js"
+import { makeDirectory } from "../tools/makeDirectory.js"
+import { runFfmpeg } from "./runFfmpeg.js"
 
 export const segmentSplitsFolderName = "SEGMENT-SPLITS"
 
@@ -15,26 +15,22 @@ export const splitSegmentFfmpeg = ({
   filePath: string
   segmentId: string
   startTimecode: string
-}) => (
+}) =>
   of(
     getOutputPath({
       fileExtension: `-${segmentId}.mkv`,
       filePath,
       folderName: segmentSplitsFolderName,
-    })
-  )
-  .pipe(
-    concatMap((
-      outputFilePath,
-    ) => (
+    }),
+  ).pipe(
+    concatMap((outputFilePath) =>
       makeDirectory(
         getOutputPath({
           filePath,
           folderName: segmentSplitsFolderName,
-        })
-      )
-      .pipe(
-        concatMap(() => (
+        }),
+      ).pipe(
+        concatMap(() =>
           runFfmpeg({
             args: [
               "-map",
@@ -49,16 +45,11 @@ export const splitSegmentFfmpeg = ({
               "-to",
               endTimecode,
             ],
-            inputFilePaths: [
-              filePath,
-            ],
+            inputFilePaths: [filePath],
             outputFilePath,
-          })
-        )),
-        map(() => (
-          outputFilePath
-        )),
-      )
-    )),
+          }),
+        ),
+        map(() => outputFilePath),
+      ),
+    ),
   )
-)

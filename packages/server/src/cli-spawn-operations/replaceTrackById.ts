@@ -1,13 +1,9 @@
-import {
-  concatMap,
-  map,
-  of,
-} from "rxjs"
+import { concatMap, map, of } from "rxjs"
 
-import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js";
-import { runMkvMerge } from "./runMkvMerge.js";
-import { Iso6391LanguageCode } from "../tools/iso6391LanguageCodes.js";
-import { convertIso6391ToIso6392 } from "../tools/convertIso6391ToIso6392.js";
+import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js"
+import { convertIso6391ToIso6392 } from "../tools/convertIso6391ToIso6392.js"
+import type { Iso6391LanguageCode } from "../tools/iso6391LanguageCodes.js"
+import { runMkvMerge } from "./runMkvMerge.js"
 
 export const replacedTrackPath = "TRACK-REPLACED"
 
@@ -21,17 +17,14 @@ export const replaceTrackById = ({
   sourceFilePath: string
   trackId: string
   trackReplacementFilePath: string
-}) => (
+}) =>
   of(
     addFolderNameBeforeFilename({
       filePath: sourceFilePath,
       folderName: replacedTrackPath,
-    })
-  )
-  .pipe(
-    concatMap((
-      outputFilePath,
-    ) => (
+    }),
+  ).pipe(
+    concatMap((outputFilePath) =>
       runMkvMerge({
         args: [
           sourceFilePath,
@@ -42,18 +35,12 @@ export const replaceTrackById = ({
 
           "--language",
           `${trackId}:${convertIso6391ToIso6392(
-            languageCode
+            languageCode,
           )}`,
 
           trackReplacementFilePath,
         ],
         outputFilePath,
-      })
-      .pipe(
-        map(() => (
-          outputFilePath
-        )),
-      )
-    )),
+      }).pipe(map(() => outputFilePath)),
+    ),
   )
-)

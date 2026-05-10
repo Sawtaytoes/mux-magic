@@ -23,12 +23,15 @@ const STEPS = 8
 // real commands behave (see jobRunner / sequenceRunner cancel paths).
 export const successScenario = (
   body: unknown,
-  options: { totalMs?: number, label?: string } = {},
-): Observable<unknown> => (
+  options: { totalMs?: number; label?: string } = {},
+): Observable<unknown> =>
   new Observable<unknown>((subscriber) => {
     const totalMs = options.totalMs ?? DEFAULT_TOTAL_MS
     const label = options.label ?? "fake-success"
-    const stepInterval = Math.max(50, Math.floor(totalMs / STEPS))
+    const stepInterval = Math.max(
+      50,
+      Math.floor(totalMs / STEPS),
+    )
 
     logInfo(label, "Starting fake successful run.")
     logInfo(label, `Body: ${JSON.stringify(body)}`)
@@ -51,7 +54,10 @@ export const successScenario = (
         })
       }
 
-      logInfo(label, `Step ${stepIndex}/${STEPS} processed.`)
+      logInfo(
+        label,
+        `Step ${stepIndex}/${STEPS} processed.`,
+      )
 
       if (stepIndex >= STEPS) {
         clearInterval(timer)
@@ -65,4 +71,3 @@ export const successScenario = (
       clearInterval(timer)
     }
   })
-)

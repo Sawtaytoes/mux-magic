@@ -1,14 +1,10 @@
+import { concatMap, filter, map, tap, toArray } from "rxjs"
 import {
-  concatMap,
-  filter,
-  map,
-  tap,
-  toArray,
-} from "rxjs"
-
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { getAudioOffset, getAudioOffsetDefaultProps } from "../cli-spawn-operations/getAudioOffset.js"
+  getAudioOffset,
+  getAudioOffsetDefaultProps,
+} from "../cli-spawn-operations/getAudioOffset.js"
 import { getFiles } from "../tools/getFiles.js"
+import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
@@ -21,103 +17,70 @@ type GetAudioOffsetsOptionalProps = {
   outputFolderName?: string
 }
 
-export type GetAudioOffsetsProps = GetAudioOffsetsRequiredProps & GetAudioOffsetsOptionalProps
+export type GetAudioOffsetsProps =
+  GetAudioOffsetsRequiredProps &
+    GetAudioOffsetsOptionalProps
 
 export const getAudioOffsetsDefaultProps = {
-  outputFolderName: getAudioOffsetDefaultProps.outputFolderName,
+  outputFolderName:
+    getAudioOffsetDefaultProps.outputFolderName,
 } satisfies GetAudioOffsetsOptionalProps
 
 export const getAudioOffsets = ({
   destinationFilesPath,
   outputFolderName = getAudioOffsetsDefaultProps.outputFolderName,
   sourceFilesPath,
-}: GetAudioOffsetsProps) => (
+}: GetAudioOffsetsProps) =>
   getFiles({
-    sourcePath: (
-      sourceFilesPath
-    ),
-  })
-  .pipe(
+    sourcePath: sourceFilesPath,
+  }).pipe(
     toArray(),
-    concatMap((
-      sourceFileInfos,
-    ) => (
+    concatMap((sourceFileInfos) =>
       getFiles({
-        sourcePath: (
-          destinationFilesPath
-        ),
-      })
-      .pipe(
-        map((
-          destinationFileInfo,
-        ) => ({
-          destinationFilePath: (
-            destinationFileInfo
-            .fullPath
-          ),
-          sourceFilePath: (
-            (
-              sourceFileInfos
-              .find((
-                sourceFileInfo,
-              ) => (
-                (
-                  sourceFileInfo
-                  .filename
-                )
-                === (
-                  destinationFileInfo
-                  .filename
-                )
-              ))
-              ?.fullPath
-            )
-            || ""
-          ),
+        sourcePath: destinationFilesPath,
+      }).pipe(
+        map((destinationFileInfo) => ({
+          destinationFilePath: destinationFileInfo.fullPath,
+          sourceFilePath:
+            sourceFileInfos.find(
+              (sourceFileInfo) =>
+                sourceFileInfo.filename ===
+                destinationFileInfo.filename,
+            )?.fullPath || "",
         })),
-        filter(({
-          sourceFilePath,
-        }) => (
-          Boolean(
-            sourceFilePath
-          )
-        )),
-        withFileProgress(({
-          destinationFilePath,
-          sourceFilePath,
-        }) => (
-          getAudioOffset({
-            destinationFilePath,
-            outputFolderName,
-            sourceFilePath,
-          })
-          .pipe(
-            map((
-              offsetInMilliseconds,
-            ) => ({
+        filter(({ sourceFilePath }) =>
+          Boolean(sourceFilePath),
+        ),
+        withFileProgress(
+          ({ destinationFilePath, sourceFilePath }) =>
+            getAudioOffset({
               destinationFilePath,
-              offsetInMilliseconds,
+              outputFolderName,
               sourceFilePath,
-            })),
-          )
-        )),
-        tap(({
-          destinationFilePath,
-          offsetInMilliseconds,
-          sourceFilePath,
-        }) => {
-          logInfo(
-            "OFFSET IN MILLISECONDS",
+            }).pipe(
+              map((offsetInMilliseconds) => ({
+                destinationFilePath,
+                offsetInMilliseconds,
+                sourceFilePath,
+              })),
+            ),
+        ),
+        tap(
+          ({
+            destinationFilePath,
             offsetInMilliseconds,
             sourceFilePath,
-            destinationFilePath,
-          )
-        }),
+          }) => {
+            logInfo(
+              "OFFSET IN MILLISECONDS",
+              offsetInMilliseconds,
+              sourceFilePath,
+              destinationFilePath,
+            )
+          },
+        ),
         toArray(),
-      )
-    )),
-    logAndRethrow(
-      getAudioOffsets
+      ),
     ),
+    logAndRethrow(getAudioOffsets),
   )
-)

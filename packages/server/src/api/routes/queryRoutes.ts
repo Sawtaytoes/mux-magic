@@ -1,8 +1,8 @@
 import { sep as pathSeparator } from "node:path"
 
-import { OpenAPIHono, createRoute } from "@hono/zod-openapi"
+import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import { lastValueFrom } from "rxjs"
-
+import { getSubtitleMetadata } from "../../app-commands/getSubtitleMetadata.js"
 import {
   fakeGetSubtitleMetadata,
   fakeLabelLookup,
@@ -16,18 +16,30 @@ import {
   fakeSearchTvdb,
   isFakeRequest,
 } from "../../fake-data/index.js"
-import { getSubtitleMetadata } from "../../app-commands/getSubtitleMetadata.js"
+import { listDirectoryEntries } from "../../tools/listDirectoryEntries.js"
+import {
+  lookupAnidbById,
+  pickAnidbSeriesName,
+  searchAnidb,
+} from "../../tools/searchAnidb.js"
 import {
   findDvdCompareResults,
   listDvdCompareReleases,
   lookupDvdCompareFilm,
   lookupDvdCompareRelease,
 } from "../../tools/searchDvdCompare.js"
-import { listDirectoryEntries } from "../../tools/listDirectoryEntries.js"
-import { lookupAnidbById, pickAnidbSeriesName, searchAnidb } from "../../tools/searchAnidb.js"
-import { lookupMalById, searchMal } from "../../tools/searchMal.js"
-import { lookupMovieDbById, searchMovieDb } from "../../tools/searchMovieDb.js"
-import { lookupTvdbById, searchTvdb } from "../../tools/searchTvdb.js"
+import {
+  lookupMalById,
+  searchMal,
+} from "../../tools/searchMal.js"
+import {
+  lookupMovieDbById,
+  searchMovieDb,
+} from "../../tools/searchMovieDb.js"
+import {
+  lookupTvdbById,
+  searchTvdb,
+} from "../../tools/searchTvdb.js"
 import * as schemas from "../schemas.js"
 
 export const queryRoutes = new OpenAPIHono()
@@ -36,7 +48,10 @@ export const queryRoutes = new OpenAPIHono()
 // nested cause (e.g. Node's TypeError(fetch failed) wraps ConnectTimeoutError).
 const messageFromError = (error: unknown): string => {
   if (error instanceof Error) {
-    if (error.cause instanceof Error && error.cause.message) {
+    if (
+      error.cause instanceof Error &&
+      error.cause.message
+    ) {
       return error.cause.message
     }
     return error.message || String(error)
@@ -48,22 +63,29 @@ queryRoutes.openapi(
   createRoute({
     method: "post",
     path: "/queries/getSubtitleMetadata",
-    summary: "Read .ass subtitle file metadata without making any changes",
-    description: "Parses every .ass file in the given directory and returns their [Script Info] properties and [V4+ Styles] entries as JSON. Use this to inspect files before deciding which DSL rules to send to POST /commands/modifySubtitleMetadata.",
+    summary:
+      "Read .ass subtitle file metadata without making any changes",
+    description:
+      "Parses every .ass file in the given directory and returns their [Script Info] properties and [V4+ Styles] entries as JSON. Use this to inspect files before deciding which DSL rules to send to POST /commands/modifySubtitleMetadata.",
     tags: ["Subtitle Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.getSubtitleMetadataRequestSchema },
+          "application/json": {
+            schema:
+              schemas.getSubtitleMetadataRequestSchema,
+          },
         },
       },
     },
     responses: {
       200: {
-        description: "Script Info and style metadata for each .ass file found",
+        description:
+          "Script Info and style metadata for each .ass file found",
         content: {
           "application/json": {
-            schema: schemas.getSubtitleMetadataResponseSchema,
+            schema:
+              schemas.getSubtitleMetadataResponseSchema,
           },
         },
       },
@@ -79,7 +101,7 @@ queryRoutes.openapi(
         isRecursive: body.isRecursive,
         recursiveDepth: body.recursiveDepth,
         sourcePath: body.sourcePath,
-      })
+      }),
     )
     return context.json({ subtitlesMetadata }, 200)
   },
@@ -90,12 +112,15 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/searchMal",
     summary: "Search MyAnimeList for an anime title",
-    description: "Returns up to 10 anime matching the search term. Use this from the builder UI to populate the malId field.",
+    description:
+      "Returns up to 10 anime matching the search term. Use this from the builder UI to populate the malId field.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.searchTermRequestSchema },
+          "application/json": {
+            schema: schemas.searchTermRequestSchema,
+          },
         },
       },
     },
@@ -103,7 +128,9 @@ queryRoutes.openapi(
       200: {
         description: "MAL search results",
         content: {
-          "application/json": { schema: schemas.searchMalResponseSchema },
+          "application/json": {
+            schema: schemas.searchMalResponseSchema,
+          },
         },
       },
     },
@@ -114,12 +141,17 @@ queryRoutes.openapi(
     }
     const body = context.req.valid("json")
     try {
-      const results = await lastValueFrom(searchMal(body.searchTerm))
+      const results = await lastValueFrom(
+        searchMal(body.searchTerm),
+      )
       return context.json({ results, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
       console.error("[searchMal]", message)
-      return context.json({ results: [], error: message }, 200)
+      return context.json(
+        { results: [], error: message },
+        200,
+      )
     }
   },
 )
@@ -129,12 +161,15 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/searchAnidb",
     summary: "Search AniDB for an anime title",
-    description: "Returns up to 50 anime matching the search term. Backed by the manami-project anime-offline-database (cached locally, refreshed weekly) — anidb.net itself sits behind Cloudflare and the HTTP API has no name-search endpoint.",
+    description:
+      "Returns up to 50 anime matching the search term. Backed by the manami-project anime-offline-database (cached locally, refreshed weekly) — anidb.net itself sits behind Cloudflare and the HTTP API has no name-search endpoint.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.searchTermRequestSchema },
+          "application/json": {
+            schema: schemas.searchTermRequestSchema,
+          },
         },
       },
     },
@@ -142,7 +177,9 @@ queryRoutes.openapi(
       200: {
         description: "AniDB search results",
         content: {
-          "application/json": { schema: schemas.searchAnidbResponseSchema },
+          "application/json": {
+            schema: schemas.searchAnidbResponseSchema,
+          },
         },
       },
     },
@@ -153,12 +190,17 @@ queryRoutes.openapi(
     }
     const body = context.req.valid("json")
     try {
-      const results = await lastValueFrom(searchAnidb(body.searchTerm))
+      const results = await lastValueFrom(
+        searchAnidb(body.searchTerm),
+      )
       return context.json({ results, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
       console.error("[searchAnidb]", message)
-      return context.json({ results: [], error: message }, 200)
+      return context.json(
+        { results: [], error: message },
+        200,
+      )
     }
   },
 )
@@ -168,12 +210,15 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/lookupAnidb",
     summary: "Reverse-lookup an AniDB anime by aid",
-    description: "Used by the builder when the user manually edits the AniDB ID — returns the display name resolved from the AniDB HTTP API.",
+    description:
+      "Used by the builder when the user manually edits the AniDB ID — returns the display name resolved from the AniDB HTTP API.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.lookupAnidbRequestSchema },
+          "application/json": {
+            schema: schemas.lookupAnidbRequestSchema,
+          },
         },
       },
     },
@@ -181,7 +226,9 @@ queryRoutes.openapi(
       200: {
         description: "Series name (or null if not found)",
         content: {
-          "application/json": { schema: schemas.nameLookupResponseSchema },
+          "application/json": {
+            schema: schemas.nameLookupResponseSchema,
+          },
         },
       },
     },
@@ -192,8 +239,12 @@ queryRoutes.openapi(
     }
     const body = context.req.valid("json")
     try {
-      const anime = await lastValueFrom(lookupAnidbById(body.anidbId))
-      const name = anime ? pickAnidbSeriesName(anime.titles) : ""
+      const anime = await lastValueFrom(
+        lookupAnidbById(body.anidbId),
+      )
+      const name = anime
+        ? pickAnidbSeriesName(anime.titles)
+        : ""
       return context.json({ name: name || null }, 200)
     } catch (err) {
       const message = messageFromError(err)
@@ -208,12 +259,15 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/searchTvdb",
     summary: "Search TheTVDB for a series",
-    description: "Returns series matching the search term. Use this from the builder UI to populate the tvdbId field.",
+    description:
+      "Returns series matching the search term. Use this from the builder UI to populate the tvdbId field.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.searchTermRequestSchema },
+          "application/json": {
+            schema: schemas.searchTermRequestSchema,
+          },
         },
       },
     },
@@ -221,7 +275,9 @@ queryRoutes.openapi(
       200: {
         description: "TVDB search results",
         content: {
-          "application/json": { schema: schemas.searchTvdbResponseSchema },
+          "application/json": {
+            schema: schemas.searchTvdbResponseSchema,
+          },
         },
       },
     },
@@ -232,12 +288,17 @@ queryRoutes.openapi(
     }
     const body = context.req.valid("json")
     try {
-      const results = await lastValueFrom(searchTvdb(body.searchTerm))
+      const results = await lastValueFrom(
+        searchTvdb(body.searchTerm),
+      )
       return context.json({ results, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
       console.error("[searchTvdb]", message)
-      return context.json({ results: [], error: message }, 200)
+      return context.json(
+        { results: [], error: message },
+        200,
+      )
     }
   },
 )
@@ -247,12 +308,15 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/searchMovieDb",
     summary: "Search The Movie Database (TMDB) for a film",
-    description: "Returns up to 20 movies matching the search term. Optional `year` narrows results so the builder can resolve the right film when title is shared across eras (e.g. 'Soldier' 1998 vs 1982). Used by the builder to populate the movieDbId field for nameMovies and to confirm the canonical match for nameSpecialFeatures. Requires TMDB_API_KEY in the environment.",
+    description:
+      "Returns up to 20 movies matching the search term. Optional `year` narrows results so the builder can resolve the right film when title is shared across eras (e.g. 'Soldier' 1998 vs 1982). Used by the builder to populate the movieDbId field for nameMovies and to confirm the canonical match for nameSpecialFeatures. Requires TMDB_API_KEY in the environment.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.searchMovieDbRequestSchema },
+          "application/json": {
+            schema: schemas.searchMovieDbRequestSchema,
+          },
         },
       },
     },
@@ -260,7 +324,9 @@ queryRoutes.openapi(
       200: {
         description: "TMDB search results",
         content: {
-          "application/json": { schema: schemas.searchMovieDbResponseSchema },
+          "application/json": {
+            schema: schemas.searchMovieDbResponseSchema,
+          },
         },
       },
     },
@@ -271,12 +337,17 @@ queryRoutes.openapi(
     }
     const body = context.req.valid("json")
     try {
-      const results = await lastValueFrom(searchMovieDb(body.searchTerm, body.year))
+      const results = await lastValueFrom(
+        searchMovieDb(body.searchTerm, body.year),
+      )
       return context.json({ results, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
       console.error("[searchMovieDb]", message)
-      return context.json({ results: [], error: message }, 200)
+      return context.json(
+        { results: [], error: message },
+        200,
+      )
     }
   },
 )
@@ -286,12 +357,15 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/searchDvdCompare",
     summary: "Search DVDCompare.net for a film",
-    description: "Returns film entries (DVD/Blu-ray/4K variants) matching the search term. Each result includes the variant so the builder UI can group by base title.",
+    description:
+      "Returns film entries (DVD/Blu-ray/4K variants) matching the search term. Each result includes the variant so the builder UI can group by base title.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.searchTermRequestSchema },
+          "application/json": {
+            schema: schemas.searchTermRequestSchema,
+          },
         },
       },
     },
@@ -299,7 +373,9 @@ queryRoutes.openapi(
       200: {
         description: "DVDCompare search results",
         content: {
-          "application/json": { schema: schemas.searchDvdCompareResponseSchema },
+          "application/json": {
+            schema: schemas.searchDvdCompareResponseSchema,
+          },
         },
       },
     },
@@ -310,16 +386,28 @@ queryRoutes.openapi(
     }
     const body = context.req.valid("json")
     try {
-      const outcome = await lastValueFrom(findDvdCompareResults(body.searchTerm))
-      return context.json({
-        isDirectListing: outcome.isDirectListing,
-        results: outcome.results,
-        error: null,
-      }, 200)
+      const outcome = await lastValueFrom(
+        findDvdCompareResults(body.searchTerm),
+      )
+      return context.json(
+        {
+          isDirectListing: outcome.isDirectListing,
+          results: outcome.results,
+          error: null,
+        },
+        200,
+      )
     } catch (err) {
       const message = messageFromError(err)
       console.error("[searchDvdCompare]", message)
-      return context.json({ isDirectListing: false, results: [], error: message }, 200)
+      return context.json(
+        {
+          isDirectListing: false,
+          results: [],
+          error: message,
+        },
+        200,
+      )
     }
   },
 )
@@ -329,12 +417,16 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/listDvdCompareReleases",
     summary: "List release packages for a DVDCompare film",
-    description: "Scrapes the film page to enumerate the release packages (e.g., 'Blu-ray ALL America - Arrow Films - Limited Edition'). Each release has a hash that becomes the URL fragment.",
+    description:
+      "Scrapes the film page to enumerate the release packages (e.g., 'Blu-ray ALL America - Arrow Films - Limited Edition'). Each release has a hash that becomes the URL fragment.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.listDvdCompareReleasesRequestSchema },
+          "application/json": {
+            schema:
+              schemas.listDvdCompareReleasesRequestSchema,
+          },
         },
       },
     },
@@ -342,7 +434,10 @@ queryRoutes.openapi(
       200: {
         description: "Release packages for the film",
         content: {
-          "application/json": { schema: schemas.listDvdCompareReleasesResponseSchema },
+          "application/json": {
+            schema:
+              schemas.listDvdCompareReleasesResponseSchema,
+          },
         },
       },
     },
@@ -353,12 +448,17 @@ queryRoutes.openapi(
     }
     const body = context.req.valid("json")
     try {
-      const result = await lastValueFrom(listDvdCompareReleases(body.dvdCompareId))
+      const result = await lastValueFrom(
+        listDvdCompareReleases(body.dvdCompareId),
+      )
       return context.json({ ...result, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
       console.error("[listDvdCompareReleases]", message)
-      return context.json({ releases: [], error: message }, 200)
+      return context.json(
+        { releases: [], error: message },
+        200,
+      )
     }
   },
 )
@@ -368,12 +468,15 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/lookupMal",
     summary: "Reverse-lookup a MAL series by ID",
-    description: "Used by the builder when the user manually edits the MAL ID — returns the display name.",
+    description:
+      "Used by the builder when the user manually edits the MAL ID — returns the display name.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.lookupMalRequestSchema },
+          "application/json": {
+            schema: schemas.lookupMalRequestSchema,
+          },
         },
       },
     },
@@ -381,7 +484,9 @@ queryRoutes.openapi(
       200: {
         description: "Series name (or null if not found)",
         content: {
-          "application/json": { schema: schemas.nameLookupResponseSchema },
+          "application/json": {
+            schema: schemas.nameLookupResponseSchema,
+          },
         },
       },
     },
@@ -391,7 +496,9 @@ queryRoutes.openapi(
       return context.json(fakeNameLookup(), 200)
     }
     const body = context.req.valid("json")
-    const result = await lastValueFrom(lookupMalById(body.malId))
+    const result = await lastValueFrom(
+      lookupMalById(body.malId),
+    )
     return context.json({ name: result?.name ?? null }, 200)
   },
 )
@@ -401,12 +508,15 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/lookupTvdb",
     summary: "Reverse-lookup a TVDB series by ID",
-    description: "Used by the builder when the user manually edits the TVDB ID — returns the series name.",
+    description:
+      "Used by the builder when the user manually edits the TVDB ID — returns the series name.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.lookupTvdbRequestSchema },
+          "application/json": {
+            schema: schemas.lookupTvdbRequestSchema,
+          },
         },
       },
     },
@@ -414,7 +524,9 @@ queryRoutes.openapi(
       200: {
         description: "Series name (or null if not found)",
         content: {
-          "application/json": { schema: schemas.nameLookupResponseSchema },
+          "application/json": {
+            schema: schemas.nameLookupResponseSchema,
+          },
         },
       },
     },
@@ -424,7 +536,9 @@ queryRoutes.openapi(
       return context.json(fakeNameLookup(), 200)
     }
     const body = context.req.valid("json")
-    const result = await lastValueFrom(lookupTvdbById(body.tvdbId))
+    const result = await lastValueFrom(
+      lookupTvdbById(body.tvdbId),
+    )
     return context.json({ name: result?.name ?? null }, 200)
   },
 )
@@ -434,20 +548,26 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/lookupMovieDb",
     summary: "Reverse-lookup a TMDB film by ID",
-    description: "Used by the builder when the user manually edits the TMDB ID — returns the formatted display name 'Title (Year)'.",
+    description:
+      "Used by the builder when the user manually edits the TMDB ID — returns the formatted display name 'Title (Year)'.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.lookupMovieDbRequestSchema },
+          "application/json": {
+            schema: schemas.lookupMovieDbRequestSchema,
+          },
         },
       },
     },
     responses: {
       200: {
-        description: "Movie display name (or null if not found)",
+        description:
+          "Movie display name (or null if not found)",
         content: {
-          "application/json": { schema: schemas.nameLookupResponseSchema },
+          "application/json": {
+            schema: schemas.nameLookupResponseSchema,
+          },
         },
       },
     },
@@ -457,7 +577,9 @@ queryRoutes.openapi(
       return context.json(fakeNameLookup(), 200)
     }
     const body = context.req.valid("json")
-    const result = await lastValueFrom(lookupMovieDbById(body.movieDbId))
+    const result = await lastValueFrom(
+      lookupMovieDbById(body.movieDbId),
+    )
     return context.json({ name: result?.name ?? null }, 200)
   },
 )
@@ -467,20 +589,26 @@ queryRoutes.openapi(
     method: "post",
     path: "/queries/lookupDvdCompare",
     summary: "Reverse-lookup a DVDCompare film by ID",
-    description: "Used by the builder when the user manually edits the DVDCompare film ID — returns the formatted display name (with variant + year).",
+    description:
+      "Used by the builder when the user manually edits the DVDCompare film ID — returns the formatted display name (with variant + year).",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.lookupDvdCompareRequestSchema },
+          "application/json": {
+            schema: schemas.lookupDvdCompareRequestSchema,
+          },
         },
       },
     },
     responses: {
       200: {
-        description: "Film display name (or null if not found)",
+        description:
+          "Film display name (or null if not found)",
         content: {
-          "application/json": { schema: schemas.nameLookupResponseSchema },
+          "application/json": {
+            schema: schemas.nameLookupResponseSchema,
+          },
         },
       },
     },
@@ -490,7 +618,9 @@ queryRoutes.openapi(
       return context.json(fakeNameLookup(), 200)
     }
     const body = context.req.valid("json")
-    const result = await lastValueFrom(lookupDvdCompareFilm(body.dvdCompareId))
+    const result = await lastValueFrom(
+      lookupDvdCompareFilm(body.dvdCompareId),
+    )
     return context.json({ name: result?.name ?? null }, 200)
   },
 )
@@ -499,13 +629,18 @@ queryRoutes.openapi(
   createRoute({
     method: "post",
     path: "/queries/lookupDvdCompareRelease",
-    summary: "Reverse-lookup a DVDCompare release package by film ID + hash",
-    description: "Used by the builder when the user manually edits the release hash — returns the release package label.",
+    summary:
+      "Reverse-lookup a DVDCompare release package by film ID + hash",
+    description:
+      "Used by the builder when the user manually edits the release hash — returns the release package label.",
     tags: ["Naming Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.lookupDvdCompareReleaseRequestSchema },
+          "application/json": {
+            schema:
+              schemas.lookupDvdCompareReleaseRequestSchema,
+          },
         },
       },
     },
@@ -513,7 +648,9 @@ queryRoutes.openapi(
       200: {
         description: "Release label (or null if not found)",
         content: {
-          "application/json": { schema: schemas.labelLookupResponseSchema },
+          "application/json": {
+            schema: schemas.labelLookupResponseSchema,
+          },
         },
       },
     },
@@ -523,8 +660,13 @@ queryRoutes.openapi(
       return context.json(fakeLabelLookup(), 200)
     }
     const body = context.req.valid("json")
-    const result = await lastValueFrom(lookupDvdCompareRelease(body.dvdCompareId, body.hash))
-    return context.json({ label: result?.label ?? null }, 200)
+    const result = await lastValueFrom(
+      lookupDvdCompareRelease(body.dvdCompareId, body.hash),
+    )
+    return context.json(
+      { label: result?.label ?? null },
+      200,
+    )
   },
 )
 
@@ -532,21 +674,30 @@ queryRoutes.openapi(
   createRoute({
     method: "post",
     path: "/queries/listDirectoryEntries",
-    summary: "List entries in a directory (typeahead for path fields)",
-    description: "Returns the directory entries at `path`. If `path` is a file, lists its parent directory instead. Used by the builder UI to autocomplete path inputs as the user types.",
+    summary:
+      "List entries in a directory (typeahead for path fields)",
+    description:
+      "Returns the directory entries at `path`. If `path` is a file, lists its parent directory instead. Used by the builder UI to autocomplete path inputs as the user types.",
     tags: ["File Operations"],
     request: {
       body: {
         content: {
-          "application/json": { schema: schemas.listDirectoryEntriesRequestSchema },
+          "application/json": {
+            schema:
+              schemas.listDirectoryEntriesRequestSchema,
+          },
         },
       },
     },
     responses: {
       200: {
-        description: "Directory entries (or an error message if the listing failed)",
+        description:
+          "Directory entries (or an error message if the listing failed)",
         content: {
-          "application/json": { schema: schemas.listDirectoryEntriesResponseSchema },
+          "application/json": {
+            schema:
+              schemas.listDirectoryEntriesResponseSchema,
+          },
         },
       },
     },
@@ -557,14 +708,23 @@ queryRoutes.openapi(
     }
     const body = context.req.valid("json")
     try {
-      const result = await lastValueFrom(listDirectoryEntries(body.path))
+      const result = await lastValueFrom(
+        listDirectoryEntries(body.path),
+      )
       return context.json({ ...result, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
       console.error("[listDirectoryEntries]", message)
       // Fall back to the OS native separator even on error so the client
       // can still build sensible paths if it retries.
-      return context.json({ entries: [], separator: pathSeparator, error: message }, 200)
+      return context.json(
+        {
+          entries: [],
+          separator: pathSeparator,
+          error: message,
+        },
+        200,
+      )
     }
   },
 )
