@@ -60,7 +60,12 @@ Workers that ship code containing any of the above will get the PR sent back. Ca
 
 ### Package manager
 
-Use `yarn` and `yarn dlx`, not `yarn` and `yarn dlx`. The repo's lockfile is `yarn.lock`; mixing the two desynchronizes installs. Examples: `yarn vitest run` (not `yarn dlx vitest run`), `yarn dlx <pkg>` (not `yarn dlx <pkg>`).
+**Always use `yarn`, never `npm` or `npx`.** The repo's lockfile is `yarn.lock`; running `npm install` or `npx` desynchronizes it.
+
+- Install/add a package: `yarn add <pkg>` or `yarn add -D <pkg>`
+- Install in a specific workspace: `yarn workspace <workspace-name> add <pkg>`
+- Run scripts: `yarn <script>` (e.g. `yarn test`, `yarn build`)
+- One-off executables: `yarn dlx <pkg>` — not `npx <pkg>`
 
 ### Observable-first
 Every command module returns an `Observable`. Errors are handled via `catchNamedError`
