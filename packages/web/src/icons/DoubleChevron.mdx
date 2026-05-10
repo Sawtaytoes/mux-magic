@@ -1,0 +1,31 @@
+{/* DoubleChevron.mdx */}
+
+import { Meta, Canvas, Controls } from "@storybook/addon-docs/blocks";
+import * as DoubleChevronStories from "./DoubleChevron.stories";
+
+<Meta of={DoubleChevronStories} />
+
+# DoubleChevron
+
+A stacked-chevron icon used inside `GroupCard` for the "collapse all inner steps" / "expand all inner steps" buttons. Two `polyline`s — one above the other — both pointing down when expanded, both pointing right (via a `-rotate-90` class) when collapsed.
+
+Distinct from `CollapseChevron`, which is the single-chevron used per-step. The double form signals "applies to multiple children".
+
+## Props
+
+<Controls />
+
+## Behaviour
+
+- **`isCollapsed: false`** → chevrons point down (default SVG orientation).
+- **`isCollapsed: true`** → adds `-rotate-90`, flipping the icon to point right.
+- **Color** → inherits `currentColor`. Stroke width 2.5 keeps the lines visible at the 3.5×3.5 size used in `GroupCard`.
+- **Transition** → `transition-transform` smooths the rotate when state flips.
+
+## Expanded (chevrons point down)
+
+<Canvas of={DoubleChevronStories.Expanded} />
+
+## Collapsed (chevrons point right)
+
+<Canvas of={DoubleChevronStories.Collapsed} />

@@ -1,0 +1,40 @@
+{/* BooleanField.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as BooleanFieldStories from "./BooleanField.stories";
+
+<Meta of={BooleanFieldStories} />
+
+# BooleanField
+
+A checkbox renderer for `type: "boolean"` step fields. Used by `RenderFields` when the step's command schema declares a boolean parameter (e.g., `isRecursive`).
+
+The checkbox is **uncontrolled** — `defaultChecked` is computed once from `step.params[field.name] ?? field.default ?? false`, and changes flow out through `window.setParamAndRender`. This keeps React from owning the input value when the legacy state machine is also writing into it.
+
+## Behaviour
+
+- **Initial state** → `step.params[field.name]` first, then `field.default`, then `false`.
+- **Change** → calls `window.setParamAndRender(stepId, fieldName, checked)`. The "AndRender" suffix means it triggers a legacy re-render after persisting (other field types use `setParam` without the implicit re-render).
+- **Tooltip key** → `data-tooltip-key="<command>:<fieldName>"`. The `FieldTooltip` component watches for hover on elements with this attribute and pulls the description from `window.getCommandFieldDescription`.
+- **Label** → `field.label ?? field.name` (falls back to the raw param name if no human label).
+
+## Props
+
+| Prop | Type | Notes |
+|------|------|-------|
+| `step` | `Step` | Source of `params[field.name]` for initial state, plus `command` for the tooltip key |
+| `field` | `CommandField` | `{ name, label?, default? }` — `type` is implicit (boolean) |
+
+## Window globals consumed
+
+| Global | Role |
+|--------|------|
+| `window.setParamAndRender` | Persists the new value AND triggers the legacy renderer; collapses what would otherwise be two separate calls |
+
+## Unchecked
+
+<Canvas of={BooleanFieldStories.Unchecked} />
+
+## Checked
+
+<Canvas of={BooleanFieldStories.Checked} />
