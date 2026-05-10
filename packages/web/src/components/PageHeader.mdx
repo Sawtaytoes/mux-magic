@@ -1,0 +1,57 @@
+{/* PageHeader.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as PageHeaderStories from "./PageHeader.stories";
+
+<Meta of={PageHeaderStories} />
+
+# PageHeader
+
+The top bar of the builder page. Hosts navigation (New Sequence, Jobs link), undo/redo, collapse-all / expand-all, dry-run + failure-mode toggles, the run buttons, and YAML import/export icons.
+
+Most actions still call into legacy JS via a `callBridge(method, ...args)` helper that gracefully no-ops if `window.mediaTools[method]` isn't a function. This lets the React layer ship before the bridge layer is fully ported.
+
+## Behaviour
+
+- **Responsive menus** → Two collapsible panels (`page-menu-nav` and `page-menu-controls`) that show/hide based on `openMenu`. Toggle buttons (`#page-nav-toggle`, `#page-controls-toggle`) flip the state; clicks outside the panels close them via a document `mousedown` listener.
+- **Esc** → bridges to `closeYamlModal` and `closeApiRunModal` (legacy modals not yet ported), and closes any open responsive panel.
+- **Dry-run badge** → Renders only when `dryRunAtom` is true. Clicking it (or the toggle in the controls menu) flips the atom AND writes to `localStorage["isDryRun"]` so the legacy code reads the right state on next page load.
+- **Failure-mode toggle** → Only rendered when dry-run is on. Persists to `localStorage["dryRunScenario"]`.
+- **Undo/redo enable state** → A `MutationObserver` watches the `disabled` attribute on the legacy undo/redo `<button>` nodes (which the legacy `syncUndoRedoButtons()` mutates directly). React mirrors that into `canUndo`/`canRedo` so it never has to know the underlying state machine.
+- **Run buttons** → `▶ Run Sequence` calls `window.mediaTools.runSequence`. `▶ Run via API` calls `runViaApi`. Both are disabled while `runningAtom` is true.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `dryRunAtom` | Drives the badge + toggle. Mirrored to `localStorage["isDryRun"]` |
+| `failureModeAtom` | "Simulate Failures" toggle. Mirrored to `localStorage["dryRunScenario"]` |
+| `runningAtom` | Disables run buttons while a sequence is in flight |
+
+## Window globals consumed (via `callBridge`)
+
+| Method | Role |
+|--------|------|
+| `closeYamlModal`, `closeApiRunModal` | Legacy modal close on Esc |
+| `startNewSequence` | "New Sequence" |
+| `undo`, `redo` | Toolbar buttons |
+| `setAllCollapsed(bool)` | Collapse-all / expand-all |
+| `runSequence`, `runViaApi` | Run buttons |
+| `addPath` | "Add Path" button |
+| `openLoadModal`, `openYamlModal`, `copyYaml` | YAML icon row |
+
+## Default
+
+<Canvas of={PageHeaderStories.Default} />
+
+## Dry-run active
+
+<Canvas of={PageHeaderStories.DryRunActive} />
+
+## Dry-run with simulated failures
+
+<Canvas of={PageHeaderStories.DryRunWithFailures} />
+
+## Run in flight (buttons disabled)
+
+<Canvas of={PageHeaderStories.RunInFlight} />
