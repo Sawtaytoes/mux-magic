@@ -251,7 +251,11 @@ describe("evaluateApplyIfPredicate (G3)", () => {
     ])
     const result = evaluateApplyIfPredicate({
       applyIf: { anyStyleMatches: { MarginL: { lt: 50 } } },
-      fileMetadata: batchMetadata[0]!,
+      fileMetadata:
+        batchMetadata.at(0) ??
+        (() => {
+          throw new Error("no metadata")
+        })(),
     })
     expect(result).toBe(true)
   })
@@ -262,7 +266,11 @@ describe("evaluateApplyIfPredicate (G3)", () => {
       applyIf: {
         anyStyleMatches: { MarginL: { gt: 1000 } },
       },
-      fileMetadata: batchMetadata[0]!,
+      fileMetadata:
+        batchMetadata.at(0) ??
+        (() => {
+          throw new Error("no metadata")
+        })(),
     })
     expect(result).toBe(false)
   })
@@ -273,7 +281,11 @@ describe("evaluateApplyIfPredicate (G3)", () => {
     ])
     const result = evaluateApplyIfPredicate({
       applyIf: { anyStyleMatches: { MarginV: { eq: 15 } } },
-      fileMetadata: batchMetadata[0]!,
+      fileMetadata:
+        batchMetadata.at(0) ??
+        (() => {
+          throw new Error("no metadata")
+        })(),
     })
     expect(result).toBe(true)
   })
@@ -282,7 +294,11 @@ describe("evaluateApplyIfPredicate (G3)", () => {
     const batchMetadata = buildBatchMetadata([SAMPLE_HD])
     const result = evaluateApplyIfPredicate({
       applyIf: { anyStyleMatches: { Name: "Signs" } },
-      fileMetadata: batchMetadata[0]!,
+      fileMetadata:
+        batchMetadata.at(0) ??
+        (() => {
+          throw new Error("no metadata")
+        })(),
     })
     expect(result).toBe(true)
   })
@@ -293,7 +309,11 @@ describe("evaluateApplyIfPredicate (G3)", () => {
       applyIf: {
         noneStyleMatches: { Name: "DoesNotExist" },
       },
-      fileMetadata: batchMetadata[0]!,
+      fileMetadata:
+        batchMetadata.at(0) ??
+        (() => {
+          throw new Error("no metadata")
+        })(),
     })
     expect(result).toBe(true)
   })

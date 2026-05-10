@@ -74,10 +74,12 @@ export const pickAnidbSeriesName = (
 export const parseAnidbAnimeXml = (
   xml: string,
 ): AnidbAnime | null => {
+  // biome-ignore lint/suspicious/noExplicitAny: fast-xml-parser returns untyped nodes; runtime field accesses below validate the shape
   const root = (xmlParser.parse(xml) as { anime?: any })
     .anime
   if (!root) return null
 
+  // biome-ignore lint/suspicious/noExplicitAny: XML title nodes are untyped; shape is validated by String()/typeof checks below
   const titles = toArray<any>(root.titles?.title).map(
     (titleNode) => ({
       lang: String(titleNode["xml:lang"] ?? ""),
@@ -91,6 +93,7 @@ export const parseAnidbAnimeXml = (
     }),
   )
 
+  // biome-ignore lint/suspicious/noExplicitAny: XML episode nodes are untyped; shape is validated by String()/Number()/typeof checks below
   const episodes = toArray<any>(root.episodes?.episode).map(
     (ep) => ({
       airdate: ep.airdate ? String(ep.airdate) : undefined,
@@ -100,6 +103,7 @@ export const parseAnidbAnimeXml = (
           : String(ep.epno?.value ?? ""),
       length:
         ep.length != null ? Number(ep.length) : undefined,
+      // biome-ignore lint/suspicious/noExplicitAny: XML title nodes within episodes are untyped
       titles: toArray<any>(ep.title).map((titleNode) => ({
         lang: String(titleNode["xml:lang"] ?? ""),
         value:

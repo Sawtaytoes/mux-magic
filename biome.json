@@ -13,7 +13,8 @@
       "!**/*.generated.ts",
       "!**/build",
       "!**/dist",
-      "!**/node_modules"
+      "!**/node_modules",
+      "!packages/web/public"
     ]
   },
   "formatter": {

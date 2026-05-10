@@ -69,7 +69,8 @@ const sanitizeFilenameSegment = (name: string): string =>
     .replace(/\?/gu, "")
     .replace(/"/gu, "'")
     .replace(/[\\/|*<>]/gu, "")
-    .replace(/[\x00-\x1f]/gu, "")
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: strips ASCII control chars from filenames
+    .replace(/[\u0000-\u001f]/gu, "")
     .trim()
 
 export const buildMovieBaseName = (
@@ -164,7 +165,11 @@ const resolveUrl = ({
         // DVDCompare redirected straight to the film page — no picker
         // needed. Auto-select the lone result and build the URL directly.
         if (isDirectListing) {
-          const result = results[0]!
+          const result = results[0]
+          if (result == null)
+            throw new Error(
+              "DVDCompare returned no results.",
+            )
           console.log(
             `DVDCompare search landed on a film page directly (fid=${result.id}). ` +
               "Auto-selecting listing ID; use dvdCompareReleaseHash to choose a release.",
@@ -1004,9 +1009,9 @@ export const nameSpecialFeatures = ({
                     console.log(`  • ${filename}`)
                     candidates
                       .slice(0, 3)
-                      .forEach((candidate) =>
-                        console.log(`      - ${candidate}`),
-                      )
+                      .forEach((candidate) => {
+                        console.log(`      - ${candidate}`)
+                      })
                   },
                 )
               }

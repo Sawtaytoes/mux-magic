@@ -194,7 +194,7 @@ export const getAspectRatioData = ({
       ),
       map((output) => output.match(ffmpegCropdetectRegex)),
       filter(Boolean),
-      map((match) => match.groups!),
+      map((match) => match.groups ?? {}),
       map(({ measurementType, measurementValue }) => ({
         [measurementType]: Number(measurementValue),
       })),
@@ -209,10 +209,7 @@ export const getAspectRatioData = ({
               w: number
             },
             measurement,
-          ) => ({
-            ...measurements,
-            ...measurement,
-          }),
+          ) => Object.assign(measurements, measurement),
           {} as {
             h: number
             w: number
@@ -260,21 +257,29 @@ export const getAspectRatioData = ({
       map((cropData) => {
         const cropDataValues = Object.values(cropData)
 
+        const topByHeight = cropDataValues
+          .sort(
+            (itemA, itemB) => itemB.height - itemA.height,
+          )
+          .at(0)
+        if (topByHeight == null) {
+          throw new Error("empty crop data")
+        }
         const maxHeightCrop = {
-          ...cropDataValues
-            .sort(
-              (itemA, itemB) => itemB.height - itemA.height,
-            )
-            .at(0)!,
+          ...topByHeight,
           anamorphicCorrectionMultiplier,
         }
 
+        const topByCount = cropDataValues
+          .sort(
+            (itemA, itemB) => itemB.count - itemA.count,
+          )
+          .at(0)
+        if (topByCount == null) {
+          throw new Error("empty crop data")
+        }
         const medianCrop = {
-          ...cropDataValues
-            .sort(
-              (itemA, itemB) => itemB.count - itemA.count,
-            )
-            .at(0)!,
+          ...topByCount,
           anamorphicCorrectionMultiplier,
         }
 

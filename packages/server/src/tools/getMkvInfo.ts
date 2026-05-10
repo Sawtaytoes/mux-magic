@@ -66,16 +66,16 @@ export type Track = {
 }
 
 export type MkvInfo = {
-  attachments: any[]
+  attachments: unknown[]
   chapters: Chapter[]
   container: Container
-  errors: any[]
+  errors: unknown[]
   file_name: string
-  global_tags: any[]
+  global_tags: unknown[]
   identification_format_version: number
-  track_tags: any[]
+  track_tags: unknown[]
   tracks: Track[]
-  warnings: any[]
+  warnings: unknown[]
 }
 
 export const getMkvInfo = (

@@ -72,7 +72,11 @@ describe(parseAnimeIndex.name, () => {
     const index = parseAnimeIndex(json)
     const fateZero = index.find(
       (entry) => entry.aid === 8160,
-    )!
+    )
+    if (fateZero == null)
+      throw new Error(
+        "Fate/Zero entry not found in fixture",
+      )
 
     expect(fateZero.matchHaystack).toContain("fate/zero")
     expect(fateZero.matchHaystack).toContain("fate zero")

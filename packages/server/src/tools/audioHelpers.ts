@@ -68,7 +68,7 @@ export const replaceAudioFormatByChannelCount = ({
   formatAdditionalFeatures,
   formatCommercial,
   formatSettingsMode,
-  sampingRate,
+  sampingRate: _sampingRate,
 }: {
   channelLayout: string
   channels: string

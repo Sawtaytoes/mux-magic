@@ -17,7 +17,7 @@ export const messageTemplate = {
   comparison: (firstItem: string, secondItem: string) =>
     [firstItem].concat("\n", secondItem),
   descriptiveComparison: (
-    description: any,
+    description: unknown,
     firstItem: string,
     secondItem: string,
   ) =>
@@ -29,7 +29,7 @@ export const messageTemplate = {
       secondItem,
     ),
   noItems: () => [],
-  singleItem: (item: any) => [item],
+  singleItem: (item: unknown) => [item],
 } as const
 
 const numericalMessageTemplateFallback = {

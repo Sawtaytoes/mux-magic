@@ -433,9 +433,10 @@ export const evaluateApplyIfPredicate = ({
   const { styles } = fileMetadata
 
   if (applyIf.anyStyleMatches) {
+    const { anyStyleMatches } = applyIf
     const isPassing = styles.some((styleRow) =>
       styleRowMatchesClause({
-        clause: applyIf.anyStyleMatches!,
+        clause: anyStyleMatches,
         styleRow,
       }),
     )
@@ -445,9 +446,10 @@ export const evaluateApplyIfPredicate = ({
   }
 
   if (applyIf.allStyleMatches) {
+    const { allStyleMatches } = applyIf
     const isPassing = styles.every((styleRow) =>
       styleRowMatchesClause({
-        clause: applyIf.allStyleMatches!,
+        clause: allStyleMatches,
         styleRow,
       }),
     )
@@ -457,10 +459,11 @@ export const evaluateApplyIfPredicate = ({
   }
 
   if (applyIf.noneStyleMatches) {
+    const { noneStyleMatches } = applyIf
     const isPassing = styles.every(
       (styleRow) =>
         !styleRowMatchesClause({
-          clause: applyIf.noneStyleMatches!,
+          clause: noneStyleMatches,
           styleRow,
         }),
     )

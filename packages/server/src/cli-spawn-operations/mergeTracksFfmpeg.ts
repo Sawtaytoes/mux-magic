@@ -6,9 +6,9 @@ import { runFfmpeg } from "./runFfmpeg.js"
 export const mergedPath = "MERGED"
 
 export const mergeTracksFfmpeg = ({
-  attachmentFilePaths,
+  attachmentFilePaths: _attachmentFilePaths,
   destinationFilePath,
-  fileSizeInKilobytes,
+  fileSizeInKilobytes: _fileSizeInKilobytes,
   inputFilePaths,
   // offsetInMilliseconds,
 }: {

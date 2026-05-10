@@ -143,8 +143,10 @@ describe(runTask.name, () => {
 
     // First completes → slot frees. Second was cancelled, so the third
     // should run instead — and the second's defer must NOT fire.
-    const completer = firstCompleter
-    if (completer) completer()
+    // TypeScript 6 CFA narrows firstCompleter to null (sees only initial
+    // value; can't prove Observable callback ran synchronously). The cast
+    // bypasses that — the callback always runs sync on subscribe().
+    ;(firstCompleter as (() => void) | null)?.()
 
     expect(secondStarted).toBe(false)
     expect(thirdStarted).toBe(true)

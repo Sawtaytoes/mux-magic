@@ -42,10 +42,10 @@ export const getTrackLanguages = (filePath: string) =>
         [track["@type"]]: [
           ...trackLanguages[track["@type"]],
           ...(trackLanguages[track["@type"]].includes(
-            track.Language!,
+            track.Language ?? "",
           )
             ? []
-            : [track.Language!]),
+            : [track.Language ?? ""]),
         ],
       }),
       {

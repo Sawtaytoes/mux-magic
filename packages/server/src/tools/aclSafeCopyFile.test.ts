@@ -88,7 +88,9 @@ describe(aclSafeCopyFile.name, () => {
 
     expect(progressEvents.length).toBeGreaterThan(0)
 
-    const finalEvent = progressEvents.at(-1)!
+    const finalEvent = progressEvents.at(-1)
+    if (finalEvent == null)
+      throw new Error("no progress events")
 
     expect(finalEvent.source).toBe("/cache/source.mkv")
     expect(finalEvent.destination).toBe("/anime/target.mkv")

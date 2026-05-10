@@ -12,11 +12,11 @@ import { logError } from "./logMessage.js"
 // helpers). For OUTER terminal pipes that need the error to reach the
 // runner, use `logAndRethrow` instead.
 export const logAndSwallow = <PipelineValue>(
-  func: Function | string,
+  func: { name: string } | string,
 ): OperatorFunction<PipelineValue, PipelineValue> =>
   catchError((error) => {
     logError(
-      typeof func === "function" ? func.name : func,
+      typeof func === "string" ? func : func.name,
       Buffer.isBuffer(error)
         ? error.toString("utf8")
         : error,

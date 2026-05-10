@@ -74,6 +74,7 @@ export const parseDvdCompareSearchHtml = (
   const results: DvdCompareResult[] = []
   let match: RegExpExecArray | null
 
+  // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic regex exec loop
   while ((match = linkPattern.exec(html)) !== null) {
     const id = Number(match[1])
     if (id <= 0) continue
@@ -166,6 +167,7 @@ export const parseDvdCompareReleasesHtml = (
   const releases: DvdCompareRelease[] = []
   let match: RegExpExecArray | null
 
+  // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic regex exec loop
   while ((match = pattern.exec(html)) !== null) {
     const hash = match[1]
     const label = stripTagsAndCollapse(match[2])

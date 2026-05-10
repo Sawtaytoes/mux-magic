@@ -12,11 +12,11 @@ import { logError } from "./logMessage.js"
 // that should skip a broken item and continue the batch, use
 // `logAndSwallow` instead.
 export const logAndRethrow = <PipelineValue>(
-  func: Function | string,
+  func: { name: string } | string,
 ): OperatorFunction<PipelineValue, PipelineValue> =>
   catchError((error) => {
     logError(
-      typeof func === "function" ? func.name : func,
+      typeof func === "string" ? func : func.name,
       Buffer.isBuffer(error)
         ? error.toString("utf8")
         : error,

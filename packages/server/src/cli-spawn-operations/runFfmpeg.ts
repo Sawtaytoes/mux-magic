@@ -87,18 +87,14 @@ export const runFfmpeg = ({
           // stdin listeners, spam the dev-watcher's stdout, and could crash
           // the server. Guard them here.
           const jobId = getActiveJobId()
-          const inApiContext = jobId !== undefined
+          const totalDurationMs = duration * 1000
+          const emitter =
+            jobId !== undefined
+              ? createProgressEmitter(jobId)
+              : null
+          const inApiContext = emitter !== null
           const useTtyAffordances =
             !inApiContext && Boolean(process.stdin.isTTY)
-
-          // Per-file progress emitter for the active job. The ratio is
-          // computed against the input's longest duration (already
-          // resolved upstream by getFileDuration), giving the UI a real
-          // 0..1 number rather than just elapsed milliseconds.
-          const totalDurationMs = duration * 1000
-          const emitter = inApiContext
-            ? createProgressEmitter(jobId!)
-            : null
           const tracker =
             emitter !== null
               ? emitter.startFile(outputFilePath)
@@ -296,7 +292,9 @@ export const runFfmpeg = ({
             process.stdin.setRawMode(true)
             process.stdin.resume()
             process.stdin.setEncoding("utf8")
-            process.stdin.on("data", stdinDataHandler!)
+            if (stdinDataHandler) {
+              process.stdin.on("data", stdinDataHandler)
+            }
           }
 
           // Wrap the tree-kill teardown so an unsubscribe (e.g. cancelJob)
