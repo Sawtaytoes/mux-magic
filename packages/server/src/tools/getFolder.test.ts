@@ -17,7 +17,7 @@ describe(filterFolderAtPath.name, () => {
   test("emits if path is a directory", async () => {
     const inputValue = "G:\\Movies\\Super Mario Bros (1993)"
 
-    expect(
+    await expect(
       getOperatorValue(
         filterFolderAtPath((
           filePath
@@ -36,7 +36,7 @@ describe(filterFolderAtPath.name, () => {
   test("throws an error if path is a file", async () => {
     const inputValue = "G:\\Movies\\Super Mario Bros (1993)\\Super Mario Bros (1993).mkv"
 
-    expect(
+    await expect(
       getOperatorValue(
         filterFolderAtPath((
           filePath
@@ -55,10 +55,10 @@ describe(filterFolderAtPath.name, () => {
 
 describe(getFolder.name, () => {
   test("errors if source path can't be found", async () => {
-    captureLogMessage(
+    await captureLogMessage(
       "error",
       async () => {
-        expect(
+        await expect(
           firstValueFrom(
             getFolder({
               sourcePath: "non-existent-path",

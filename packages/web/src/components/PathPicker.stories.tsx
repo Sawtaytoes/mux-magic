@@ -1,7 +1,25 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import { HttpResponse, http } from "msw"
 import { pathPickerStateAtom } from "../state/pickerAtoms"
 import { PathPicker } from "./PathPicker"
+
+const listDirHandler = http.post("/queries/listDirectoryEntries", async ({ request }) => {
+  const body = (await request.json()) as { path?: string }
+  if (typeof body.path === "string" && body.path.startsWith("/nonexistent")) {
+    return HttpResponse.json({ error: "Directory not found: " + body.path })
+  }
+  return HttpResponse.json({
+    separator: "/",
+    entries: [
+      { name: "Documents", isDirectory: true },
+      { name: "Downloads", isDirectory: true },
+      { name: "Music", isDirectory: true },
+      { name: "Pictures", isDirectory: true },
+      { name: "Videos", isDirectory: true },
+    ],
+  })
+})
 
 const TRIGGER_RECT = {
   left: 200,
@@ -122,6 +140,7 @@ const meta: Meta<typeof PathPicker> = {
   parameters: {
     layout: "fullscreen",
     backgrounds: { default: "dark" },
+    msw: { handlers: [listDirHandler] },
   },
 }
 

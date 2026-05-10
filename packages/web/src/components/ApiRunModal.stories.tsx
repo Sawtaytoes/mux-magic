@@ -1,7 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import { HttpResponse, http } from "msw"
 import { apiRunModalAtom } from "../state/uiAtoms"
 import { ApiRunModal } from "./ApiRunModal"
+
+const logStreamHandler = http.get("/jobs/:jobId/logs", () => {
+  const stream = new ReadableStream({ start() {} })
+  return new HttpResponse(stream, {
+    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+  })
+})
 
 const makeStore = (
   jobId: string | null,
@@ -22,6 +30,9 @@ const makeStore = (
 const meta: Meta<typeof ApiRunModal> = {
   title: "Wave E/ApiRunModal",
   component: ApiRunModal,
+  parameters: {
+    msw: { handlers: [logStreamHandler] },
+  },
   decorators: [
     (Story, context) => {
       const store = context.parameters["store"] as ReturnType<typeof createStore>

@@ -1,5 +1,4 @@
 import { describe, test, expect, beforeEach, vi } from "vitest"
-import { getByRole } from "@testing-library/dom"
 
 // path-var-card.js reads window.mediaTools at call time (not import
 // time), so we can populate the bridge in beforeEach and re-import the
@@ -171,7 +170,7 @@ describe("attachPathVarListeners (event delegation)", () => {
     )
     document.body.appendChild(root)
     attachPathVarListeners(root)
-    const removeBtn = getByRole(root, "button", { name: /remove path variable/i })
+    const removeBtn = root.querySelector<HTMLButtonElement>('[data-action="remove-path"]')!
     removeBtn.click()
     expect(mediaTools.paths.map((p) => p.id)).toEqual(["basePath"])
     expect(mediaTools.renderAll).toHaveBeenCalledOnce()

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest"
+import { of } from "rxjs"
 
 // Validation-layer tests for /transcode/audio. The streaming encode
 // flow lives behind RxJS + ffmpeg and is exercised manually rather than
@@ -7,12 +8,17 @@ import { afterEach, describe, expect, test, vi } from "vitest"
 //
 // Mock buildFfmpegArgs and the temp store so that even if a validation
 // slip lets a request through, the test never spawns ffmpeg.
+// Mock getMediaInfo so HEAD tests don't attempt to spawn MediaInfo.exe.
 vi.mock("../../cli-spawn-operations/runFfmpegAudioTranscode.js", () => ({
   buildFfmpegArgs: vi.fn(() => []),
 }))
 
 vi.mock("../../tools/transcodeTempStore.js", () => ({
   mimeTypeForCodec: (_codec: string) => "video/mp4",
+}))
+
+vi.mock("../../tools/getMediaInfo.js", () => ({
+  getMediaInfo: vi.fn(() => of({ media: { track: [] } })),
 }))
 
 import { transcodeRoutes } from "./transcodeRoutes.js"
