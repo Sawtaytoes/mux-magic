@@ -85,7 +85,7 @@ export const getChildJobs = (
 ): Job[] => (
   Array
   .from(jobs.values())
-  .filter((j) => j.parentJobId === parentJobId)
+  .filter((job) => job.parentJobId === parentJobId)
 )
 
 // Returns a new Job object (spread-based update, no direct property mutation).

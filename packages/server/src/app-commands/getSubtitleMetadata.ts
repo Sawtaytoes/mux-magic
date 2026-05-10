@@ -62,27 +62,27 @@ export const getSubtitleMetadata = ({
           const assFile = parseAssFile(content)
 
           const scriptInfoSection = assFile.sections.find(
-            (s) => s.sectionType === "scriptInfo",
+            (section) => section.sectionType === "scriptInfo",
           )
           const scriptInfo: Record<string, string> = (
             scriptInfoSection?.sectionType === "scriptInfo"
             ? Object.fromEntries(
               scriptInfoSection.entries
-              .filter((e): e is AssScriptInfoProperty => e.type === "property")
-              .map((e) => [e.key, e.value])
+              .filter((entry): entry is AssScriptInfoProperty => entry.type === "property")
+              .map((entry) => [entry.key, entry.value])
             )
             : {}
           )
 
           const stylesSection = assFile.sections.find(
-            (s) => s.sectionType === "formatted"
-              && s.entries.some((e) => e.entryType === "Style"),
+            (section) => section.sectionType === "formatted"
+              && section.entries.some((entry) => entry.entryType === "Style"),
           )
           const styles: Record<string, string>[] = (
             stylesSection?.sectionType === "formatted"
             ? stylesSection.entries
-              .filter((e) => e.entryType === "Style")
-              .map((e) => e.fields)
+              .filter((entry) => entry.entryType === "Style")
+              .map((entry) => entry.fields)
             : []
           )
 

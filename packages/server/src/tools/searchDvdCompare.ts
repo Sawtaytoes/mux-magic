@@ -292,7 +292,7 @@ export const lookupDvdCompareRelease = (
     )
     const html = await response.text()
     const releases = parseDvdCompareReleasesHtml(html)
-    const matched = releases.find((r) => r.hash === String(hash))
+    const matched = releases.find((release) => release.hash === String(hash))
     return matched ? { label: matched.label } : null
   })())
   .pipe(

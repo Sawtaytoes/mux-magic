@@ -125,7 +125,7 @@ describe("removePath", () => {
     ]
     const { removePath } = await import("./path-var-card.js")
     removePath("wd")
-    expect(mediaTools.paths.map((p) => p.id)).toEqual(["basePath"])
+    expect(mediaTools.paths.map((pathItem) => pathItem.id)).toEqual(["basePath"])
     expect(mediaTools.steps[0].links.sourcePath).toBeUndefined()
     expect(mediaTools.steps[0].links.other).toBe("basePath")
     expect(mediaTools.renderAll).toHaveBeenCalledOnce()
@@ -172,7 +172,7 @@ describe("attachPathVarListeners (event delegation)", () => {
     attachPathVarListeners(root)
     const removeBtn = root.querySelector<HTMLButtonElement>('[data-action="remove-path"]')!
     removeBtn.click()
-    expect(mediaTools.paths.map((p) => p.id)).toEqual(["basePath"])
+    expect(mediaTools.paths.map((pathItem) => pathItem.id)).toEqual(["basePath"])
     expect(mediaTools.renderAll).toHaveBeenCalledOnce()
     root.remove()
   })

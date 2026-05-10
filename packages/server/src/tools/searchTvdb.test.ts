@@ -120,7 +120,7 @@ describe(mapTvdbSearchResults.name, () => {
       baseRaw({ tvdb_id: "1", name: "First" }),
       baseRaw({ tvdb_id: "2", name: "Second" }),
     ])
-    .map((r) => r.tvdbId))
+    .map((result) => result.tvdbId))
     .toEqual([3, 1, 2])
   })
 })

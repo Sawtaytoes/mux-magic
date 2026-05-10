@@ -68,10 +68,10 @@ const capture = (
   const line = (
     stripAnsi(
       args
-      .map((a) => (
-        (a instanceof Error)
-        ? (a.stack ?? a.message)
-        : String(a)
+      .map((arg) => (
+        (arg instanceof Error)
+        ? (arg.stack ?? arg.message)
+        : String(arg)
       ))
       .join(" ")
     )

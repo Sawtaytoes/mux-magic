@@ -53,10 +53,10 @@ const matchPath = (
   const up = pathname.split("/")
   if (pp.length !== up.length) return null
   const params: Record<string, string> = {}
-  for (let i = 0; i < pp.length; i++) {
-    if (pp[i].startsWith(":")) {
-      params[pp[i].slice(1)] = up[i]
-    } else if (pp[i] !== up[i]) {
+  for (let idx = 0; idx < pp.length; idx++) {
+    if (pp[idx].startsWith(":")) {
+      params[pp[idx].slice(1)] = up[idx]
+    } else if (pp[idx] !== up[idx]) {
       return null
     }
   }

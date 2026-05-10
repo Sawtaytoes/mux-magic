@@ -22,7 +22,7 @@ describe(moveFiles.name, () => {
       .pipe(toArray()),
     )
 
-    expect(results.sort((a, b) => a.source.localeCompare(b.source))).toEqual([
+    expect(results.sort((itemA, itemB) => itemA.source.localeCompare(itemB.source))).toEqual([
       { source: "G:\\Work\\OUT\\episode-01.mkv", destination: "G:\\Work\\episode-01.mkv" },
       { source: "G:\\Work\\OUT\\episode-02.mkv", destination: "G:\\Work\\episode-02.mkv" },
     ])

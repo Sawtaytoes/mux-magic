@@ -23,7 +23,7 @@ const post = (path: string, body: unknown) => (
   })
 )
 
-const flushAfter = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+const flushAfter = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 // Poll a predicate until it returns truthy or the budget expires. Used
 // by cancellation tests to catch a step exactly while it's `running` —
@@ -34,7 +34,7 @@ const waitFor = async <T>(get: () => T | undefined, timeoutMs = 500): Promise<T>
   while (Date.now() - startedAt < timeoutMs) {
     const value = get()
     if (value !== undefined && value !== null) return value
-    await new Promise<void>((r) => setImmediate(r))
+    await new Promise<void>((resolve) => setImmediate(resolve))
   }
   throw new Error(`waitFor: predicate did not resolve within ${timeoutMs}ms`)
 }
@@ -228,8 +228,8 @@ describe("POST /sequences/run", () => {
     // had an explicit id ("alpha") and didn't consume a slot, so the
     // second (unnamed) step is the first auto-assigned id.
     expect(children[1].stepId).toBe("step1")
-    expect(children.every((c) => c.parentJobId === jobId)).toBe(true)
-    expect(children.every((c) => c.status === "completed")).toBe(true)
+    expect(children.every((child) => child.parentJobId === jobId)).toBe(true)
+    expect(children.every((child) => child.status === "completed")).toBe(true)
   })
 
   test("marks downstream child jobs as skipped when an earlier step fails", async () => {
@@ -248,7 +248,7 @@ describe("POST /sequences/run", () => {
     await flushAfter(80)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
 
     expect(byStepId.ok.status).toBe("completed")
     expect(byStepId.boom.status).toBe("failed")
@@ -273,7 +273,7 @@ describe("POST /sequences/run", () => {
     await flushAfter(20)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
     expect(byStepId.broken.status).toBe("failed")
     expect(byStepId.broken.error).toMatch(/missing/i)
     expect(byStepId.after.status).toBe("skipped")
@@ -352,9 +352,9 @@ describe("POST /sequences/run — groups", () => {
     // One child job per actual step — the group itself doesn't get a
     // child job; its identity lives only in the source YAML.
     const children = getChildJobs(jobId)
-    expect(children.map((c) => c.stepId)).toEqual(["before", "g1", "g2", "after"])
-    expect(children.every((c) => c.parentJobId === jobId)).toBe(true)
-    expect(children.every((c) => c.status === "completed")).toBe(true)
+    expect(children.map((child) => child.stepId)).toEqual(["before", "g1", "g2", "after"])
+    expect(children.every((child) => child.parentJobId === jobId)).toBe(true)
+    expect(children.every((child) => child.status === "completed")).toBe(true)
   })
 
   test("rejects a group with no inner steps via the schema (400)", async () => {
@@ -437,7 +437,7 @@ describe("POST /sequences/run — groups", () => {
     await flushAfter(80)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
 
     expect(byStepId.innerOk.status).toBe("completed")
     expect(byStepId.innerBoom.status).toBe("failed")
@@ -493,7 +493,7 @@ describe("POST /sequences/run — groups", () => {
     expect(job?.error).toBeNull()
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
     expect(byStepId.copyA.status).toBe("completed")
     expect(byStepId.copyB.status).toBe("completed")
     expect(byStepId.consume.status).toBe("completed")
@@ -528,7 +528,7 @@ describe("POST /sequences/run — groups", () => {
     await flushAfter(80)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
 
     expect(byStepId.innerSuccess.status).toBe("completed")
     expect(byStepId.innerBoom.status).toBe("failed")
@@ -570,7 +570,7 @@ describe("POST /sequences/run — groups", () => {
     await flushAfter(200)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
 
     expect(byStepId.boom.status).toBe("failed")
     expect(byStepId.slow.status).toBe("cancelled")
@@ -592,9 +592,9 @@ describe("POST /sequences/run — groups", () => {
     // execution would force child2.startedAt > child1.completedAt and
     // the overlap assertion would fail.
     const seedFiles: Record<string, string> = {}
-    for (let i = 0; i < 8; i += 1) {
-      seedFiles[`/par-src-a/file${i}.txt`] = "alpha-".repeat(100) + i
-      seedFiles[`/par-src-b/file${i}.txt`] = "beta-".repeat(100) + i
+    for (let idx = 0; idx < 8; idx += 1) {
+      seedFiles[`/par-src-a/file${idx}.txt`] = "alpha-".repeat(100) + idx
+      seedFiles[`/par-src-b/file${idx}.txt`] = "beta-".repeat(100) + idx
     }
     vol.fromJSON(seedFiles)
 
@@ -615,14 +615,14 @@ describe("POST /sequences/run — groups", () => {
     expect(getJob(jobId)?.status).toBe("completed")
 
     const children = getChildJobs(jobId)
-    const a = children.find((c) => c.stepId === "concA")
-    const b = children.find((c) => c.stepId === "concB")
-    expect(a?.status).toBe("completed")
-    expect(b?.status).toBe("completed")
-    const aStart = a?.startedAt?.getTime()
-    const aEnd = a?.completedAt?.getTime()
-    const bStart = b?.startedAt?.getTime()
-    const bEnd = b?.completedAt?.getTime()
+    const childA = children.find((child) => child.stepId === "concA")
+    const childB = children.find((child) => child.stepId === "concB")
+    expect(childA?.status).toBe("completed")
+    expect(childB?.status).toBe("completed")
+    const aStart = childA?.startedAt?.getTime()
+    const aEnd = childA?.completedAt?.getTime()
+    const bStart = childB?.startedAt?.getTime()
+    const bEnd = childB?.completedAt?.getTime()
     expect(typeof aStart).toBe("number")
     expect(typeof aEnd).toBe("number")
     expect(typeof bStart).toBe("number")
@@ -666,7 +666,7 @@ describe("POST /sequences/run — groups", () => {
     await flushAfter(100)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
 
     expect(byStepId.first.status).toBe("cancelled")
     expect(byStepId.second.status).toBe("skipped")
@@ -711,7 +711,7 @@ describe("POST /sequences/run — groups", () => {
     await flushAfter(200)
 
     const children = getChildJobs(jobId)
-    const byStepId = Object.fromEntries(children.map((c) => [c.stepId, c]))
+    const byStepId = Object.fromEntries(children.map((child) => [child.stepId, child]))
 
     expect(byStepId.innerA.status).toBe("cancelled")
     expect(byStepId.innerB.status).toBe("cancelled")

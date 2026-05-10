@@ -75,7 +75,7 @@ describe("epnoOrderingValue", () => {
     ]
     const sorted = epnos
       .map(([type, epno]) => ({ epno, ordering: epnoOrderingValue(type as 2 | 3 | 4 | 5, epno) }))
-      .sort((a, b) => a.ordering - b.ordering)
+      .sort((itemA, itemB) => itemA.ordering - itemB.ordering)
       .map((entry) => entry.epno)
     expect(sorted).toEqual(["S1", "S20", "T1", "C1", "C2", "P1"])
   })
@@ -87,7 +87,7 @@ describe("epnoOrderingValue", () => {
     const epnos = ["O3", "O1", "O13", "O2", "O10"]
     const sorted = epnos
       .map((epno) => ({ epno, ordering: epnoOrderingValue(6, epno) }))
-      .sort((a, b) => a.ordering - b.ordering)
+      .sort((itemA, itemB) => itemA.ordering - itemB.ordering)
       .map((entry) => entry.epno)
     expect(sorted).toEqual(["O1", "O2", "O3", "O10", "O13"])
   })

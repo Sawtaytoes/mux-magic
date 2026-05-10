@@ -39,15 +39,15 @@ const finalizeSection = (
     return { sectionName, sectionType: "scriptInfo", entries }
   }
 
-  const formatLineRaw = sectionLines.find((l) =>
-    l.trimStart().startsWith("Format:")
+  const formatLineRaw = sectionLines.find((line) =>
+    line.trimStart().startsWith("Format:")
   )
 
   if (formatLineRaw) {
     const formatValues = formatLineRaw.slice(
       formatLineRaw.indexOf(":") + 1
     ).trim()
-    const format = formatValues.split(",").map((f) => f.trim())
+    const format = formatValues.split(",").map((field) => field.trim())
 
     const entries: AssFormatEntry[] = []
     for (const line of sectionLines) {
@@ -62,8 +62,8 @@ const finalizeSection = (
       const values = splitCsvIntoFields(rest, format.length)
 
       const fields: Record<string, string> = {}
-      format.forEach((fieldName, i) => {
-        fields[fieldName] = values[i] ?? ""
+      format.forEach((fieldName, idx) => {
+        fields[fieldName] = values[idx] ?? ""
       })
 
       entries.push({ entryType, fields })
@@ -74,7 +74,7 @@ const finalizeSection = (
   return {
     sectionName,
     sectionType: "raw",
-    lines: sectionLines.filter((l) => l.trim()),
+    lines: sectionLines.filter((line) => line.trim()),
   }
 }
 
@@ -120,7 +120,7 @@ export const serializeAssFile = (assFile: AssFile): string => {
     if (section.sectionType === "formatted") {
       const formatLine = `Format: ${section.format.join(", ")}`
       const entryLines = section.entries.map((entry) => {
-        const values = section.format.map((f) => entry.fields[f] ?? "")
+        const values = section.format.map((field) => entry.fields[field] ?? "")
         return `${entry.entryType}: ${values.join(",")}`
       })
       return [header, formatLine, ...entryLines].join("\n")

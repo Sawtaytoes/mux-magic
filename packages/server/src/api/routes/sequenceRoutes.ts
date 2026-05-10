@@ -159,7 +159,7 @@ const validateSequenceItems = (
       if (item.isParallel === true) {
         const siblingIds = new Set(
           item.steps
-            .map((s) => s.id)
+            .map((step) => step.id)
             .filter((id): id is string => typeof id === "string" && id.length > 0),
         )
         item.steps.forEach((step, stepIndex) => {

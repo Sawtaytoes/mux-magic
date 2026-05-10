@@ -44,8 +44,8 @@ const DURATION_MISMATCH_SLACK_MINUTES = 2
 const pickEpisodeTitle = (
   titles: AnidbAnime["episodes"][number]["titles"],
 ): string => (
-  titles.find((t) => t.lang === "en")?.value
-  ?? titles.find((t) => t.lang === "x-jat")?.value
+  titles.find((title) => title.lang === "en")?.value
+  ?? titles.find((title) => title.lang === "x-jat")?.value
   ?? titles[0]?.value
   ?? ""
 )

@@ -40,10 +40,10 @@ describe(createJob.name, () => {
   })
 
   test("assigns a unique id", () => {
-    const a = createJob({ commandName: "hasBetterAudio" })
-    const b = createJob({ commandName: "hasBetterAudio" })
+    const jobA = createJob({ commandName: "hasBetterAudio" })
+    const jobB = createJob({ commandName: "hasBetterAudio" })
 
-    expect(a.id).not.toBe(b.id)
+    expect(jobA.id).not.toBe(jobB.id)
   })
 
   test("stores job so getJob can retrieve it", () => {
@@ -65,12 +65,12 @@ describe(getAllJobs.name, () => {
   })
 
   test("returns all created jobs", () => {
-    const a = createJob({ commandName: "hasBetterAudio" })
-    const b = createJob({ commandName: "reorderTracks" })
+    const jobA = createJob({ commandName: "hasBetterAudio" })
+    const jobB = createJob({ commandName: "reorderTracks" })
 
     expect(getAllJobs()).toHaveLength(2)
-    expect(getAllJobs().map((jobs) => jobs.id)).toContain(a.id)
-    expect(getAllJobs().map((jobs) => jobs.id)).toContain(b.id)
+    expect(getAllJobs().map((jobs) => jobs.id)).toContain(jobA.id)
+    expect(getAllJobs().map((jobs) => jobs.id)).toContain(jobB.id)
   })
 })
 

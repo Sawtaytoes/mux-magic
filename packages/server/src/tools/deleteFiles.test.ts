@@ -11,8 +11,8 @@ const trashCalls: string[][] = []
 vi.mock("trash", () => ({
   default: vi.fn((paths: string[]) => {
     trashCalls.push([...paths])
-    paths.forEach((p) => {
-      try { vol.unlinkSync(p) } catch { /* already gone */ }
+    paths.forEach((path) => {
+      try { vol.unlinkSync(path) } catch { /* already gone */ }
     })
     return Promise.resolve()
   }),
@@ -66,12 +66,12 @@ describe(deleteFiles.name, () => {
       "G:\\Disc-Rips\\SOLDIER\\a.mkv",
       "G:\\Disc-Rips\\SOLDIER\\b.mkv",
     ])
-    expect(results.every((r) => r.ok)).toBe(true)
+    expect(results.every((res) => res.ok)).toBe(true)
     // network-drive detection is no-op on non-Windows runners; on
     // Windows it consults a cached PowerShell call, which won't include
     // the memfs G: drive (it's a fake), so the call falls through to
     // trash mode either way.
-    expect(results.every((r) => r.mode === "trash" || r.mode === "permanent")).toBe(true)
+    expect(results.every((res) => res.mode === "trash" || res.mode === "permanent")).toBe(true)
   })
 
   test("permanent mode uses fs.unlink and removes the file from disk", async () => {

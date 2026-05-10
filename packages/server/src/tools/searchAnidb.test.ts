@@ -32,15 +32,15 @@ describe(parseAnimeIndex.name, () => {
     const index = parseAnimeIndex(json)
 
     // The fixture has 5 raw entries; only 3 have anidb.net sources.
-    expect(index.every((e) => e.aid > 0)).toBe(true)
-    expect(index.find((e) => e.name === "No AniDB Source Anime")).toBeUndefined()
-    expect(index.find((e) => e.name === "Empty Sources Anime")).toBeUndefined()
+    expect(index.every((entry) => entry.aid > 0)).toBe(true)
+    expect(index.find((entry) => entry.name === "No AniDB Source Anime")).toBeUndefined()
+    expect(index.find((entry) => entry.name === "Empty Sources Anime")).toBeUndefined()
   })
 
   test("builds a lowercased haystack from title + synonyms for substring matching", () => {
     const json = loadFixture("manami/manami-sample.json")
     const index = parseAnimeIndex(json)
-    const fateZero = index.find((e) => e.aid === 8160)!
+    const fateZero = index.find((entry) => entry.aid === 8160)!
 
     expect(fateZero.matchHaystack).toContain("fate/zero")
     expect(fateZero.matchHaystack).toContain("fate zero")
@@ -96,10 +96,10 @@ describe(parseAnidbAnimeXml.name, () => {
     expect(result!.titles.length).toBeGreaterThan(0)
     expect(result!.episodes.length).toBeGreaterThan(0)
 
-    for (const t of result!.titles) {
-      expect(t.lang.length).toBeGreaterThan(0)
-      expect(t.value.length).toBeGreaterThan(0)
-      expect(["main", "synonym", "short", "official"]).toContain(t.type)
+    for (const titleItem of result!.titles) {
+      expect(titleItem.lang.length).toBeGreaterThan(0)
+      expect(titleItem.value.length).toBeGreaterThan(0)
+      expect(["main", "synonym", "short", "official"]).toContain(titleItem.type)
     }
 
     for (const ep of result!.episodes) {
@@ -133,7 +133,7 @@ describe(parseAnidbAnimeXml.name, () => {
     const result = parseAnidbAnimeXml(xml)
     const someEpisode = result!.episodes[0]
     expect(someEpisode.titles.length).toBeGreaterThan(0)
-    expect(someEpisode.titles.every((t) => t.lang.length > 0)).toBe(true)
+    expect(someEpisode.titles.every((titleItem) => titleItem.lang.length > 0)).toBe(true)
   })
 
   test("handles episodes with missing optional fields", () => {

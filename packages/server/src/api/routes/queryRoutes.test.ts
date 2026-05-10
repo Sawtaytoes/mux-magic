@@ -57,7 +57,7 @@ describe("POST /queries/listDirectoryEntries", () => {
     const response = await post("/queries/listDirectoryEntries", { path: "/work/notes.txt" })
     const body = await response.json() as { entries: Array<{ name: string }> }
 
-    expect(body.entries.map((e) => e.name).sort()).toEqual(
+    expect(body.entries.map((entry) => entry.name).sort()).toEqual(
       ["Movies", "TV", "notes.txt"].sort(),
     )
   })

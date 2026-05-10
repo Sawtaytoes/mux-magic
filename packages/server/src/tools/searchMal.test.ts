@@ -83,7 +83,7 @@ describe(mapMalSearchResults.name, () => {
       baseRaw({ id: "1", name: "First" }),
       baseRaw({ id: "2", name: "Second" }),
     ])
-    .map((r) => r.malId))
+    .map((result) => result.malId))
     .toEqual([3, 1, 2])
   })
 })

@@ -314,8 +314,8 @@ const fetchStreamInfo = async (
 ): Promise<{ durationSeconds: number | null, videoCodecTag: string | null }> => {
   const mediaInfo = await firstValueFrom(getMediaInfo(absPath))
   const tracks = mediaInfo.media?.track ?? []
-  const general = tracks.find((t) => t["@type"] === "General")
-  const video = tracks.find((t) => t["@type"] === "Video")
+  const general = tracks.find((track) => track["@type"] === "General")
+  const video = tracks.find((track) => track["@type"] === "Video")
 
   let durationSeconds: number | null = null
   if (

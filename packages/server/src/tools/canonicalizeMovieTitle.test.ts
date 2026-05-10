@@ -11,7 +11,7 @@ const { searchMovieDb } = await import("./searchMovieDb.js")
 
 const mockSearchResults = (results: Array<{ movieDbId: number; title: string; year: string }>) => {
   vi.mocked(searchMovieDb).mockReturnValue(
-    of(results.map((r) => ({ ...r, imageUrl: undefined, overview: undefined }))),
+    of(results.map((result) => ({ ...result, imageUrl: undefined, overview: undefined }))),
   )
 }
 

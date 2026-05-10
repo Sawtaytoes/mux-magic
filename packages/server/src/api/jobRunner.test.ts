@@ -11,7 +11,7 @@ import { runJob } from "./jobRunner.js"
 import { logAndRethrow } from "../tools/logAndRethrow.js"
 
 // runJob is async in effect (RxJS subscriptions resolve on the microtask queue).
-const flushMicrotasks = () => new Promise<void>((r) => setTimeout(r, 0))
+const flushMicrotasks = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 afterEach(() => {
   resetStore()

@@ -165,8 +165,8 @@ export const runSequenceJob = (
   // Used by both the outer item loop (after a serial failure) and by
   // parallel-group failure handling (to skip later outer items).
   const markRemainingSkippedFromFlatIndex = (fromFlatIndex: number): void => {
-    for (let i = fromFlatIndex; i < childJobIds.length; i += 1) {
-      markChildSkippedIfPending(childJobIds[i])
+    for (let idx = fromFlatIndex; idx < childJobIds.length; idx += 1) {
+      markChildSkippedIfPending(childJobIds[idx])
     }
   }
 

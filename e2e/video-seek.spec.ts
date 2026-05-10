@@ -86,14 +86,14 @@ test.describe("MSE video seek", () => {
     // Wait until the video element has buffered enough to play.
     await page.waitForFunction(
       () => {
-        const v = document.getElementById("video-modal-player") as HTMLVideoElement | null
-        return (v?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA
+        const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement | null
+        return (videoEl?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA
       },
       { timeout: 20_000 },
     )
 
     const mseErrors = consoleErrors.filter(
-      (e) => e.includes("InvalidStateError") || e.includes("[MSE]"),
+      (error) => error.includes("InvalidStateError") || error.includes("[MSE]"),
     )
     expect(mseErrors, "MSE errors during initial playback").toEqual([])
   })
@@ -111,8 +111,8 @@ test.describe("MSE video seek", () => {
     // Wait for initial buffering before seeking.
     await page.waitForFunction(
       () => {
-        const v = document.getElementById("video-modal-player") as HTMLVideoElement | null
-        return (v?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA
+        const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement | null
+        return (videoEl?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA
       },
       { timeout: 20_000 },
     )
@@ -122,21 +122,21 @@ test.describe("MSE video seek", () => {
     // appendBuffer) but updating is already false. Without sb.abort() this
     // throws InvalidStateError on the timestampOffset assignment.
     await page.evaluate(() => {
-      const v = document.getElementById("video-modal-player") as HTMLVideoElement
-      v.currentTime = 5
+      const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement
+      videoEl.currentTime = 5
     })
 
     // The player must exit seeking state (spinner clears) within 15 s.
     await page.waitForFunction(
       () => {
-        const v = document.getElementById("video-modal-player") as HTMLVideoElement | null
-        return v != null && !v.seeking
+        const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement | null
+        return videoEl != null && !videoEl.seeking
       },
       { timeout: 15_000 },
     )
 
     const mseErrors = consoleErrors.filter(
-      (e) => e.includes("InvalidStateError") || e.includes("[MSE]"),
+      (error) => error.includes("InvalidStateError") || error.includes("[MSE]"),
     )
     expect(mseErrors, "MSE errors after seek").toEqual([])
   })
@@ -152,8 +152,8 @@ test.describe("MSE video seek", () => {
 
     await page.waitForFunction(
       () => {
-        const v = document.getElementById("video-modal-player") as HTMLVideoElement | null
-        return (v?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA
+        const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement | null
+        return (videoEl?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA
       },
       { timeout: 20_000 },
     )
@@ -161,23 +161,23 @@ test.describe("MSE video seek", () => {
     // Fire three seeks in quick succession to exercise the activeVersion
     // staleness protection and timestampOffset ordering.
     await page.evaluate(() => {
-      const v = document.getElementById("video-modal-player") as HTMLVideoElement
-      v.currentTime = 10
-      setTimeout(() => { v.currentTime = 20 }, 100)
-      setTimeout(() => { v.currentTime = 5 }, 200)
+      const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement
+      videoEl.currentTime = 10
+      setTimeout(() => { videoEl.currentTime = 20 }, 100)
+      setTimeout(() => { videoEl.currentTime = 5 }, 200)
     })
 
     // Wait for the last seek (to 5 s) to settle.
     await page.waitForFunction(
       () => {
-        const v = document.getElementById("video-modal-player") as HTMLVideoElement | null
-        return v != null && !v.seeking
+        const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement | null
+        return videoEl != null && !videoEl.seeking
       },
       { timeout: 20_000 },
     )
 
     const mseErrors = consoleErrors.filter(
-      (e) => e.includes("InvalidStateError") || e.includes("[MSE]"),
+      (error) => error.includes("InvalidStateError") || error.includes("[MSE]"),
     )
     expect(mseErrors, "MSE errors after rapid seeks").toEqual([])
   })

@@ -329,6 +329,6 @@ describe("toYamlStr: groups", () => {
     expect(reGroup.kind).toBe("group")
     expect(reGroup.id).toBe("para")
     expect(reGroup.isParallel).toBe(true)
-    expect(reGroup.steps.map((s) => s.id)).toEqual(["subs", "info"])
+    expect(reGroup.steps.map((step) => step.id)).toEqual(["subs", "info"])
   })
 })

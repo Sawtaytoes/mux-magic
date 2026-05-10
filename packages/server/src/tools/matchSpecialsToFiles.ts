@@ -88,7 +88,7 @@ const rankCandidatesForFile = (
       : Number.POSITIVE_INFINITY,
     episode,
   }))
-  .sort((a, b) => a.delta - b.delta)
+  .sort((itemA, itemB) => itemA.delta - itemB.delta)
   .slice(0, MAX_PICKER_OPTIONS)
   .map((entry) => entry.episode)
 }

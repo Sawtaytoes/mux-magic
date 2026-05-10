@@ -48,17 +48,17 @@ const xmlParser = new XMLParser({
   textNodeName: "value",
 })
 
-const toArray = <T>(v: T | T[] | undefined): T[] => (
-  v == null ? [] : Array.isArray(v) ? v : [v]
+const toArray = <T>(val: T | T[] | undefined): T[] => (
+  val == null ? [] : Array.isArray(val) ? val : [val]
 )
 
 // Picks the most user-recognizable display name for an anime from
 // AniDB's titles list. Preference: official English → main (typically
 // romaji) → first official in any language → first available.
 export const pickAnidbSeriesName = (titles: AnidbAnime["titles"]): string => (
-  titles.find((t) => t.type === "official" && t.lang === "en")?.value
-  ?? titles.find((t) => t.type === "main")?.value
-  ?? titles.find((t) => t.type === "official")?.value
+  titles.find((title) => title.type === "official" && title.lang === "en")?.value
+  ?? titles.find((title) => title.type === "main")?.value
+  ?? titles.find((title) => title.type === "official")?.value
   ?? titles[0]?.value
   ?? ""
 )
@@ -69,10 +69,10 @@ export const parseAnidbAnimeXml = (xml: string): AnidbAnime | null => {
 
   const titles = (
     toArray<any>(root.titles?.title)
-    .map((t) => ({
-      lang: String(t["xml:lang"] ?? ""),
-      type: String(t.type ?? "synonym") as AnidbTitleType,
-      value: typeof t === "string" ? t : String(t.value ?? ""),
+    .map((titleNode) => ({
+      lang: String(titleNode["xml:lang"] ?? ""),
+      type: String(titleNode.type ?? "synonym") as AnidbTitleType,
+      value: typeof titleNode === "string" ? titleNode : String(titleNode.value ?? ""),
     }))
   )
 
@@ -84,9 +84,9 @@ export const parseAnidbAnimeXml = (xml: string): AnidbAnime | null => {
       length: ep.length != null ? Number(ep.length) : undefined,
       titles: (
         toArray<any>(ep.title)
-        .map((t) => ({
-          lang: String(t["xml:lang"] ?? ""),
-          value: typeof t === "string" ? t : String(t.value ?? ""),
+        .map((titleNode) => ({
+          lang: String(titleNode["xml:lang"] ?? ""),
+          value: typeof titleNode === "string" ? titleNode : String(titleNode.value ?? ""),
         }))
       ),
       type: Number(ep.epno?.type ?? 1) as AnidbEpisodeType,

@@ -15,7 +15,7 @@ describe(listFilesWithMetadata.name, () => {
   test("returns every direct child entry with size + mtime + null duration by default", async () => {
     const result = await listFilesWithMetadata("G:\\Disc-Rips\\SOLDIER - 4K")
     expect(result.entries).toHaveLength(3)
-    const byName = Object.fromEntries(result.entries.map((e) => [e.name, e]))
+    const byName = Object.fromEntries(result.entries.map((entry) => [entry.name, entry]))
     expect(byName["SOLDIER_t01.mkv"].size).toBe("movie-content".length)
     expect(byName["SOLDIER_t01.mkv"].isFile).toBe(true)
     expect(byName["SOLDIER_t01.mkv"].duration).toBeNull()
@@ -31,7 +31,7 @@ describe(listFilesWithMetadata.name, () => {
       "G:\\Work\\Bdir\\inner2": "y",
     })
     const result = await listFilesWithMetadata("G:\\Work")
-    expect(result.entries.map((e) => e.name)).toEqual([
+    expect(result.entries.map((entry) => entry.name)).toEqual([
       // Directories first, alphabetically (case-insensitive)
       "Bdir",
       "subdir",

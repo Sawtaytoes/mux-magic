@@ -39,7 +39,7 @@ describe(copyFiles.name, () => {
 
     // Allow any in-flight async work + the unlink-on-abort cleanup
     // to run before we assert.
-    await new Promise<void>((r) => setTimeout(r, 50))
+    await new Promise<void>((resolve) => setTimeout(resolve, 50))
 
     // No destination files should be present — either nothing started
     // (the more common timing under memfs), or anything that did start
@@ -70,7 +70,7 @@ describe(copyFiles.name, () => {
     )
     subscription.unsubscribe()
 
-    await new Promise<void>((r) => setTimeout(r, 50))
+    await new Promise<void>((resolve) => setTimeout(resolve, 50))
 
     const aExists = vol.existsSync("/sync-dst/a.txt")
     const bExists = vol.existsSync("/sync-dst/b.txt")

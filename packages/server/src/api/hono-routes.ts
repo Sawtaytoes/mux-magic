@@ -18,11 +18,11 @@ export const app = new OpenAPIHono()
 
 app.use("/*", serveStatic({
   root: "./public",
-  onFound: (_path, c) => {
+  onFound: (_path, ctx) => {
     // Prevent browsers from caching static assets so JS/HTML changes are
     // always reflected immediately without a hard refresh.
-    c.header("Cache-Control", "no-cache, no-store, must-revalidate")
-    c.header("Pragma", "no-cache")
+    ctx.header("Cache-Control", "no-cache, no-store, must-revalidate")
+    ctx.header("Pragma", "no-cache")
   },
 }))
 

@@ -50,7 +50,7 @@ describe(buildDefaultSubtitleModificationRules.name, () => {
     const rules = buildDefaultSubtitleModificationRules([
       sample({ scriptInfo: { "PlayResX": "1920", "PlayResY": "1080" } }),
     ])
-    const styleRule = rules.find((r) => r.type === "setStyleFields")
+    const styleRule = rules.find((rule) => rule.type === "setStyleFields")
     expect(styleRule).toMatchObject({
       type: "setStyleFields",
       // 1080/1080*90 = 90.
@@ -64,7 +64,7 @@ describe(buildDefaultSubtitleModificationRules.name, () => {
       // 720/1080*90 = 60.
       sample({ scriptInfo: { "PlayResX": "1280", "PlayResY": "720" } }),
     ])
-    const styleRule = rules.find((r) => r.type === "setStyleFields")
+    const styleRule = rules.find((rule) => rule.type === "setStyleFields")
     expect(styleRule).toMatchObject({
       type: "setStyleFields",
       fields: { MarginV: "60" },
@@ -80,7 +80,7 @@ describe(buildDefaultSubtitleModificationRules.name, () => {
         ],
       }),
     ])
-    const styleRule = rules.find((r) => r.type === "setStyleFields")
+    const styleRule = rules.find((rule) => rule.type === "setStyleFields")
     expect(styleRule).toMatchObject({
       type: "setStyleFields",
       fields: {
@@ -103,14 +103,14 @@ describe(buildDefaultSubtitleModificationRules.name, () => {
         ],
       }),
     ])
-    const styleRule = rules.find((r) => r.type === "setStyleFields")
+    const styleRule = rules.find((rule) => rule.type === "setStyleFields")
     expect(styleRule?.fields).not.toHaveProperty("MarginL")
     expect(styleRule?.fields).not.toHaveProperty("MarginR")
   })
 
   test("treats missing PlayResX/Y as 1920x1080 defaults", () => {
     const rules = buildDefaultSubtitleModificationRules([sample({ scriptInfo: {} })])
-    const styleRule = rules.find((r) => r.type === "setStyleFields")
+    const styleRule = rules.find((rule) => rule.type === "setStyleFields")
     expect(styleRule).toMatchObject({
       type: "setStyleFields",
       fields: { MarginV: "90" },
