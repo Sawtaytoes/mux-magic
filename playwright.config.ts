@@ -54,7 +54,7 @@ export default defineConfig({
     },
     {
       command: "yarn prod:web-server",
-      url: "http://localhost:5173/",
+      url: "http://localhost:4173/",
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
       stderr: "pipe",
