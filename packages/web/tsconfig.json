@@ -7,5 +7,10 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "@testing-library/jest-dom"]
   },
-  "exclude": ["dist", "node_modules", "public"]
+  "exclude": [
+    "dist",
+    "node_modules",
+    "public",
+    "storybook-static"
+  ]
 }

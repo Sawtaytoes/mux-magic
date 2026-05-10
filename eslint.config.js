@@ -34,6 +34,7 @@ export default defineConfig(
       "**/build/**",
       "**/dist/**",
       "**/node_modules/**",
+      "**/storybook-static/**",
       "packages/server/src/schema.generated/**",
       "packages/web/src/api/schema.generated.ts",
       "public/**",
