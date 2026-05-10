@@ -3,8 +3,8 @@ import {
   useCallback,
   useEffect,
   useRef,
-  useState,
 } from "react"
+
 import { useLogStream } from "../hooks/useLogStream"
 import { buildBuilderUrl } from "../jobs/buildBuilderUrl"
 import { commandLabel } from "../jobs/commandLabels"
@@ -14,67 +14,10 @@ import { logsByJobIdAtom } from "../state/logsByJobIdAtom"
 import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
 import { stepsOpenByJobIdAtom } from "../state/stepsOpenByJobIdAtom"
 import type { Job } from "../types"
+import { CancelJobButton } from "./CancelJobButton"
+import { CopyTextButton } from "./CopyTextButton"
 import { ProgressBar } from "./ProgressBar"
 import { StatusBadge } from "./StatusBadge"
-
-// ─── CopyButton ───────────────────────────────────────────────────────────────
-
-const CopyButton = ({
-  getText,
-}: {
-  getText: () => string
-}) => {
-  const [copied, setCopied] = useState(false)
-
-  const handleClick = (event: React.MouseEvent) => {
-    event.stopPropagation()
-    event.preventDefault()
-    navigator.clipboard
-      .writeText(getText())
-      .then(() => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      })
-      .catch(() => {})
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="ml-2 text-xs text-slate-500 hover:text-slate-300 shrink-0"
-    >
-      {copied ? "✓ Copied" : "📋 Copy"}
-    </button>
-  )
-}
-
-// ─── CancelButton ─────────────────────────────────────────────────────────────
-
-const CancelButton = ({ jobId }: { jobId: string }) => {
-  const [disabled, setDisabled] = useState(false)
-
-  const handleClick = async () => {
-    setDisabled(true)
-    try {
-      await fetch(`/jobs/${jobId}`, { method: "DELETE" })
-    } catch {
-      setDisabled(false)
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={disabled}
-      title={`Cancel this job (DELETE /jobs/${jobId})`}
-      className="text-xs px-2 py-0.5 rounded bg-red-900/40 text-red-400 hover:bg-red-900/70 disabled:opacity-40"
-    >
-      ⏹ Cancel
-    </button>
-  )
-}
 
 // ─── LogsDisclosure ───────────────────────────────────────────────────────────
 
@@ -111,7 +54,7 @@ const LogsDisclosure = ({
     <details onToggle={handleToggle}>
       <summary className="cursor-pointer text-xs text-slate-400 hover:text-slate-200 py-1 flex items-center gap-1">
         Logs
-        <CopyButton
+        <CopyTextButton
           getText={() =>
             lines.map(({ line }) => line).join("\n")
           }
@@ -216,7 +159,7 @@ const StepRow = ({
         <div className="flex items-center gap-2 shrink-0">
           <StatusBadge status={child.status} />
           {child.status === "running" && (
-            <CancelButton jobId={child.id} />
+            <CancelJobButton jobId={child.id} />
           )}
         </div>
       </div>
@@ -381,7 +324,7 @@ export const JobCard = ({ job }: JobCardProps) => {
         <details>
           <summary className="cursor-pointer text-xs text-slate-400 hover:text-slate-200 py-1 flex items-center gap-1">
             Params
-            <CopyButton
+            <CopyTextButton
               getText={() =>
                 JSON.stringify(job.params, null, 2)
               }
@@ -445,7 +388,7 @@ export const JobCard = ({ job }: JobCardProps) => {
           ✎ Open in Sequence Builder
         </a>
         {job.status === "running" && (
-          <CancelButton jobId={job.id} />
+          <CancelJobButton jobId={job.id} />
         )}
       </div>
     </article>
