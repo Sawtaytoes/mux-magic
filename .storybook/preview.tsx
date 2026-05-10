@@ -15,6 +15,9 @@ const preview: Preview = {
     ),
   ],
   parameters: {
+    actions: {
+      expandLevel: 0,
+    },
     backgrounds: {
       default: "dark",
       // values: [
