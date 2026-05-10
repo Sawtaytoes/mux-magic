@@ -7,7 +7,7 @@ import { openApiDocs } from "../openApiDocConfig.js"
 export const addDocRoutes = async (
   honoRoutes: OpenAPIHono,
 ) => {
-  honoRoutes.get("/docs", Scalar({ url: "/openapi.json" }))
+  honoRoutes.get("/", Scalar({ url: "/openapi.json" }))
 
   honoRoutes.doc("/openapi.json", openApiDocs)
 

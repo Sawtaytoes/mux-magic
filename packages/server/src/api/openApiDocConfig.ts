@@ -1,4 +1,4 @@
-import { PORT } from "../tools/port.js"
+import { API_PORT } from "../tools/envVars.js"
 
 export const openApiDocs = {
   openapi: "3.1.0",
@@ -11,11 +11,11 @@ export const openApiDocs = {
   servers: [
     process.env.REMOTE_SERVER_DOMAIN
       ? {
-          url: `${process.env.REMOTE_SERVER_DOMAIN}:${PORT}`,
+          url: `${process.env.REMOTE_SERVER_DOMAIN}:${API_PORT}`,
           description: "Remote API server",
         }
       : {
-          url: `http://localhost:${PORT}`,
+          url: `http://localhost:${API_PORT}`,
           description: "Local API server",
         },
   ],

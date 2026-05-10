@@ -11,14 +11,11 @@ const generateInternalApiSchemas = async () => {
     schema as Parameters<typeof openapiTS>[0],
   )
 
-  await mkdir("../../packages/web/src/api", {
+  await mkdir("dist", {
     recursive: true,
   })
 
-  await writeFile(
-    "../../packages/web/src/api/internalSchemas.generated.ts",
-    astToString(ast),
-  )
+  await writeFile("dist/apiSchema.ts", astToString(ast))
 
   console.log("Updated internal API schemas.")
 }

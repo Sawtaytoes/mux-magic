@@ -1836,6 +1836,7 @@ __metadata:
     rxjs: "npm:^7.8.2"
     trash: "npm:^10.1.1"
     tree-kill: "npm:^1.2.2"
+    tsx: "npm:^4.21.0"
     typescript: "npm:^6.0.3"
     vitest: "npm:^4.1.5"
     yargs: "npm:^18.0.0"

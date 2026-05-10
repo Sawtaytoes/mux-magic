@@ -8,6 +8,7 @@ ENV LC_ALL=en_US.UTF-8
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV WEB_PORT=4173
 
 RUN log() { echo "[$(date +"%Y-%m-%d %H:%M:%S")] $1"; };
 
@@ -54,5 +55,6 @@ RUN \
 RUN yarn install-playwright-browser --with-deps chromium
 
 EXPOSE $PORT
+EXPOSE $WEB_PORT
 
-CMD ["yarn", "prod:api-server"]
+CMD ["yarn", "prod:servers"]

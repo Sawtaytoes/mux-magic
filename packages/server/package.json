@@ -6,11 +6,11 @@
   "description": "Hono API server + CLI for batch media file operations.",
   "scripts": {
     "build:command-descriptions": "tsx scripts/build-command-descriptions.ts",
-    "cli": "tsx --env-file-if-exists ./.env src/cli.ts",
+    "cli": "tsx --env-file-if-exists ../../.env src/cli.ts",
     "dev:server": "tsx watch --env-file-if-exists=../../.env src/server.ts",
-    "generate:external-api-schemas": "tsx --env-file-if-exists ./.env src/generateExternalApiSchemas.ts",
-    "generate:internal-api-schemas:watch": "tsx watch --env-file-if-exists ./.env src/generateInternalApiSchemas.ts",
-    "generate:internal-api-schemas": "tsx --env-file-if-exists ./.env src/generateInternalApiSchemas.ts",
+    "generate:external-api-schemas": "tsx --env-file-if-exists ../../.env src/generateExternalApiSchemas.ts",
+    "generate:internal-api-schemas:watch": "tsx watch --env-file-if-exists ../../.env src/generateInternalApiSchemas.ts",
+    "generate:internal-api-schemas": "tsx --env-file-if-exists ../../.env src/generateInternalApiSchemas.ts",
     "generate:screenshots": "tsx scripts/screenshots.ts",
     "generate:seed-anidb-fixtures": "tsx scripts/seedAnidbFixtures.ts",
     "prod:server": "tsx --env-file-if-exists=../../.env src/server.ts",
@@ -47,6 +47,7 @@
     "js-yaml": "^4.1.1",
     "msw": "^2.14.5",
     "openapi-typescript": "^7.13.0",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5"
   }
