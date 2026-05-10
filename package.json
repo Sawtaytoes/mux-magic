@@ -57,10 +57,5 @@
   },
   "resolutions": {
     "mal-scraper@^2.13.2": "patch:mal-scraper@npm%3A2.13.2#./.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch"
-  },
-  "msw": {
-    "workerDirectory": [
-      "public"
-    ]
   }
 }
