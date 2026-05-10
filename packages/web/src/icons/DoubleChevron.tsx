@@ -5,8 +5,8 @@ interface DoubleChevronProps {
 export const DoubleChevron = ({
   isCollapsed,
 }: DoubleChevronProps) => (
-  // biome-ignore lint/a11y/noSvgWithoutTitle: suppressed during react-migration
   <svg
+    aria-hidden="true"
     viewBox="0 0 20 20"
     fill="none"
     stroke="currentColor"

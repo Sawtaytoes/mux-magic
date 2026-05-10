@@ -120,8 +120,8 @@ export const LoadModal = () => {
           <span className="text-xs font-medium text-slate-400">
             Load YAML
           </span>
-          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
+            type="button"
             onClick={close}
             className="text-xs text-slate-400 hover:text-slate-200"
           >

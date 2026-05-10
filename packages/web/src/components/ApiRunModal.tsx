@@ -291,8 +291,8 @@ export const ApiRunModal = () => {
             {status}
           </span>
           {status === "running" && (
-            // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
             <button
+              type="button"
               id="api-run-cancel-btn"
               onClick={() => void cancel()}
               className="text-xs bg-red-700 hover:bg-red-600 text-white px-2 py-0.5 rounded font-medium"
@@ -300,8 +300,8 @@ export const ApiRunModal = () => {
               Cancel
             </button>
           )}
-          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
+            type="button"
             onClick={() => void close()}
             className="text-slate-400 hover:text-white text-base leading-none ml-1"
             title="Close"
@@ -344,8 +344,8 @@ export const ApiRunModal = () => {
 
         {/* Footer */}
         <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-700 shrink-0">
-          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
+            type="button"
             id="api-run-copy-btn"
             onClick={() => void copyLogs()}
             className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded border border-slate-600"

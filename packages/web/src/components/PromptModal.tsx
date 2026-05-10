@@ -151,8 +151,8 @@ export const PromptModal = () => {
 
         {promptData.filePath && (
           <div id="prompt-preview" className="flex gap-2">
-            {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
             <button
+              type="button"
               className="text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-medium leading-none"
               onClick={() => {
                 if (
@@ -192,16 +192,16 @@ export const PromptModal = () => {
                   key={option.index}
                   className="flex items-stretch gap-2 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors"
                 >
-                  {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
                   <button
+                    type="button"
                     className="flex-1 text-left text-sm px-4 py-2.5 rounded-l-lg text-slate-200 hover:bg-blue-700"
                     onClick={() => void pick(option.index)}
                   >
                     {keyHint}
                     {option.label}
                   </button>
-                  {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
                   <button
+                    type="button"
                     className="shrink-0 text-xs px-3 rounded-r-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium"
                     title="Preview this file before picking"
                     onClick={(event) => {
@@ -222,8 +222,8 @@ export const PromptModal = () => {
             }
 
             return (
-              // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
               <button
+                type="button"
                 key={option.index}
                 className={`text-left text-sm px-4 py-2.5 rounded-lg border transition-colors ${
                   isSkip

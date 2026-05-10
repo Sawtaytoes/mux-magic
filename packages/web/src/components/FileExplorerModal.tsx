@@ -343,8 +343,8 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
               Transcoding audio…
             </span>
           )}
-          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
+            type="button"
             id="video-modal-copy-path"
             onClick={() => void handleCopyPath()}
             className="text-xs text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded border border-slate-700 hover:border-slate-600"
@@ -352,8 +352,8 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
             {copyLabel}
           </button>
           {!isContainerized && (
-            // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
             <button
+              type="button"
               id="video-modal-open-external"
               onClick={() => void handleOpenExternal()}
               className="text-xs text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded border border-slate-700 hover:border-slate-600"
@@ -361,8 +361,8 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
               {openLabel}
             </button>
           )}
-          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
+            type="button"
             onClick={onClose}
             className="text-slate-400 hover:text-white text-base leading-none ml-1"
             title="Close"
@@ -370,14 +370,19 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
             ✕
           </button>
         </div>
-        {/** biome-ignore lint/a11y/useMediaCaption: suppressed during react-migration */}
         <video
           id="video-modal-player"
           ref={playerRef}
           controls
           autoPlay
           className="w-full bg-black max-h-[75dvh]"
-        />
+        >
+          <track
+            kind="captions"
+            srcLang="en"
+            label="Captions"
+          />
+        </video>
       </div>
     </div>
   )
@@ -703,8 +708,8 @@ export const FileExplorerModal = () => {
                     key={seg.target}
                     className="flex items-center gap-1 shrink-0"
                   >
-                    {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
                     <button
+                      type="button"
                       className="text-blue-300 hover:text-blue-200 underline-offset-2 hover:underline truncate"
                       title={`Navigate to ${seg.target}`}
                       onClick={() => navigateTo(seg.target)}
@@ -742,8 +747,8 @@ export const FileExplorerModal = () => {
             )}
 
             {isPicker && (
-              // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
               <button
+                type="button"
                 id="file-explorer-pick-btn"
                 onClick={handleConfirmPick}
                 className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded font-medium"
@@ -752,8 +757,8 @@ export const FileExplorerModal = () => {
               </button>
             )}
 
-            {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
             <button
+              type="button"
               onClick={close}
               className="text-slate-400 hover:text-white text-base leading-none ml-1"
               title="Close"
@@ -887,8 +892,8 @@ export const FileExplorerModal = () => {
                             </td>
                             <td className="py-1 px-2 break-all">
                               {entry.isDirectory ? (
-                                // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
                                 <button
+                                  type="button"
                                   className="fe-name fe-dir text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
                                   title="Open this folder"
                                   onClick={() =>
@@ -904,8 +909,8 @@ export const FileExplorerModal = () => {
                                   {icon} {entry.name}
                                 </button>
                               ) : isVideo ? (
-                                // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
                                 <button
+                                  type="button"
                                   className="fe-name fe-file text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
                                   title="Play in browser"
                                   onClick={() =>
@@ -939,8 +944,8 @@ export const FileExplorerModal = () => {
                             </td>
                             <td className="py-1 px-2 text-center">
                               {entry.isFile ? (
-                                // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
                                 <button
+                                  type="button"
                                   className="fe-copy text-slate-400 hover:text-slate-200"
                                   title="Copy absolute path"
                                   onClick={() =>
@@ -978,8 +983,8 @@ export const FileExplorerModal = () => {
               >
                 {selected.size} selected
               </span>
-              {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
               <button
+                type="button"
                 id="file-explorer-delete-btn"
                 disabled={selected.size === 0}
                 onClick={() => void confirmDelete()}

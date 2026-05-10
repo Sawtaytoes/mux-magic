@@ -227,8 +227,8 @@ const SearchStage = ({
           placeholder="Search…"
           className="flex-1 bg-slate-700 border border-slate-600 text-slate-100 text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
-        {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
         <button
+          type="button"
           onClick={() => void runSearch()}
           disabled={
             state.loading || !state.searchTerm.trim()
@@ -244,8 +244,8 @@ const SearchStage = ({
           <span>Format:</span>
           {["Blu-ray 4K", "Blu-ray", "DVD", "all"].map(
             (format) => (
-              // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
               <button
+                type="button"
                 key={format}
                 onClick={() =>
                   onUpdate({ formatFilter: format })
@@ -368,8 +368,8 @@ const SearchStage = ({
               }
 
               return (
-                // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
                 <button
+                  type="button"
                   // biome-ignore lint/suspicious/noArrayIndexKey: suppressed during react-migration
                   key={index}
                   onClick={handleSelect}
@@ -438,8 +438,8 @@ const VariantStage = ({
         Select a variant for "{group.baseTitle}":
       </p>
       {group.variants.map((variant, index) => (
-        // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
         <button
+          type="button"
           key={variant.id}
           onClick={() =>
             selectVariant(variant.id, variant.variant)
@@ -500,8 +500,8 @@ const ReleaseStage = ({
         Select a release:
       </p>
       {releases.map((release, index) => (
-        // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
         <button
+          type="button"
           key={String(release.hash)}
           onClick={() => {
             applyDvdCompareSelection(
@@ -599,8 +599,8 @@ export const LookupModal = () => {
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700 shrink-0">
           {canGoBack && (
-            // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
             <button
+              type="button"
               id="lookup-back-btn"
               onClick={goBack}
               className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded border border-slate-700 hover:border-slate-500 mr-1"
@@ -614,8 +614,8 @@ export const LookupModal = () => {
           >
             {title}
           </h2>
-          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
+            type="button"
             onClick={close}
             className="text-slate-400 hover:text-white text-base leading-none"
             title="Close"

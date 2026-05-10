@@ -107,8 +107,8 @@ export const PageHeader = () => {
     >
       <div className="page-header-inner flex items-center px-4 py-3 gap-3">
         {/* Responsive nav toggle */}
-        {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
         <button
+          type="button"
           id="page-nav-toggle"
           title="Menu"
           aria-label="Open menu"
@@ -117,8 +117,8 @@ export const PageHeader = () => {
             setOpenMenu((prev) => toggleMenu(prev, "nav"))
           }
         >
-          {/** biome-ignore lint/a11y/noSvgWithoutTitle: suppressed during react-migration */}
           <svg
+            aria-hidden="true"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="none"
@@ -146,8 +146,8 @@ export const PageHeader = () => {
 
         {/* Dry-run badge */}
         {dryRun && (
-          // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
           <button
+            type="button"
             id="dry-run-badge"
             onClick={toggleDryRun}
             className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/35 active:scale-95 text-amber-400 border border-amber-500/40 self-center transition-all"
@@ -163,8 +163,8 @@ export const PageHeader = () => {
           className={`page-menu page-menu-nav${openMenu === "nav" ? " open" : ""}`}
         >
           <div className="page-menu-group">
-            {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
             <button
+              type="button"
               onClick={() => {
                 callBridge("startNewSequence")
                 setOpenMenu(null)
@@ -191,8 +191,8 @@ export const PageHeader = () => {
           id="header-pinned"
           className="ml-auto flex items-center gap-1"
         >
-          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
+            type="button"
             id="undo-btn"
             onClick={() => callBridge("undo")}
             title="Undo (Ctrl+Z)"
@@ -201,8 +201,8 @@ export const PageHeader = () => {
           >
             ↶
           </button>
-          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
+            type="button"
             id="redo-btn"
             onClick={() => callBridge("redo")}
             title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
@@ -212,16 +212,16 @@ export const PageHeader = () => {
             ↷
           </button>
           <span className="w-px h-4 bg-slate-700 mx-0.5" />
-          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
+            type="button"
             onClick={() =>
               callBridge("setAllCollapsed", true)
             }
             title="Collapse every step + group"
             className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
           >
-            {/** biome-ignore lint/a11y/noSvgWithoutTitle: suppressed during react-migration */}
             <svg
+              aria-hidden="true"
               viewBox="0 0 20 20"
               fill="none"
               stroke="currentColor"
@@ -234,16 +234,16 @@ export const PageHeader = () => {
               <polyline points="5,11 10,16 15,11" />
             </svg>
           </button>
-          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
+            type="button"
             onClick={() =>
               callBridge("setAllCollapsed", false)
             }
             title="Expand every step + group"
             className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
           >
-            {/** biome-ignore lint/a11y/noSvgWithoutTitle: suppressed during react-migration */}
             <svg
+              aria-hidden="true"
               viewBox="0 0 20 20"
               fill="none"
               stroke="currentColor"
@@ -267,8 +267,8 @@ export const PageHeader = () => {
         >
           {/* Dry run + run actions */}
           <div className="page-menu-group">
-            {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
             <button
+              type="button"
               id="dry-run-btn"
               onClick={toggleDryRun}
               className="flex items-center justify-between gap-2 text-xs text-slate-300 cursor-pointer select-none"
@@ -297,8 +297,8 @@ export const PageHeader = () => {
             </button>
 
             {dryRun && (
-              // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
               <button
+                type="button"
                 id="failure-mode-btn"
                 onClick={toggleFailureMode}
                 className="flex items-center justify-between gap-2 text-xs text-red-300 cursor-pointer select-none"
@@ -329,8 +329,8 @@ export const PageHeader = () => {
               </button>
             )}
 
-            {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
             <button
+              type="button"
               id="run-btn"
               onClick={() => callBridge("runSequence")}
               disabled={running}
@@ -339,8 +339,8 @@ export const PageHeader = () => {
             >
               ▶ Run Sequence
             </button>
-            {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
             <button
+              type="button"
               id="run-api-btn"
               onClick={() => callBridge("runViaApi")}
               disabled={running}
@@ -354,8 +354,8 @@ export const PageHeader = () => {
           <span className="page-menu-sep w-px h-6 bg-slate-700 mx-1" />
 
           <div className="page-menu-group">
-            {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
             <button
+              type="button"
               data-action="add-path"
               onClick={() => callBridge("addPath")}
               title="Add a path variable"
@@ -370,15 +370,15 @@ export const PageHeader = () => {
           <div className="page-menu-group">
             <div className="page-menu-row">
               {/* Load YAML */}
-              {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
               <button
+                type="button"
                 id="load-btn"
                 onClick={() => callBridge("openLoadModal")}
                 title="Load YAML"
                 className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors"
               >
-                {/** biome-ignore lint/a11y/noSvgWithoutTitle: suppressed during react-migration */}
                 <svg
+                  aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="none"
@@ -393,15 +393,15 @@ export const PageHeader = () => {
                 </svg>
               </button>
               {/* Copy YAML */}
-              {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
               <button
+                type="button"
                 id="copy-btn"
                 onClick={() => callBridge("copyYaml")}
                 title="Copy YAML"
                 className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors"
               >
-                {/** biome-ignore lint/a11y/noSvgWithoutTitle: suppressed during react-migration */}
                 <svg
+                  aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="none"
@@ -423,14 +423,14 @@ export const PageHeader = () => {
                 </svg>
               </button>
               {/* View YAML */}
-              {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
               <button
+                type="button"
                 onClick={() => callBridge("openYamlModal")}
                 title="View YAML"
                 className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors"
               >
-                {/** biome-ignore lint/a11y/noSvgWithoutTitle: suppressed during react-migration */}
                 <svg
+                  aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="none"
@@ -450,8 +450,8 @@ export const PageHeader = () => {
         </div>
 
         {/* Responsive controls toggle */}
-        {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
         <button
+          type="button"
           id="page-controls-toggle"
           onClick={() =>
             setOpenMenu((prev) =>
