@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import { action } from "storybook/actions"
 import { pathsAtom } from "../state/pathsAtom"
 import { stepsAtom } from "../state/stepsAtom"
 import { YamlModal } from "./YamlModal"
@@ -35,7 +36,7 @@ const meta: Meta<typeof YamlModal> = {
   },
   args: {
     isOpen: true,
-    onClose: () => {},
+    onClose: action("onClose"),
   },
 }
 

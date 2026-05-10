@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import { action } from "storybook/actions"
 import { commandHelpCommandNameAtom } from "../state/uiAtoms"
 import { CommandHelpModal } from "./CommandHelpModal"
 
@@ -43,7 +44,7 @@ const meta: Meta<typeof CommandHelpModal> = {
   },
   args: {
     isOpen: true,
-    onClose: () => {},
+    onClose: action("onClose"),
   },
 }
 
