@@ -45,10 +45,10 @@ export default defineConfig({
   // localhost:5173 — both servers must be up for the UI to render fully.
   webServer: [
     {
-      command: "yarn start-server",
+      command: "yarn prod:api-server",
       url: `${baseURL}/builder/`,
       reuseExistingServer: !process.env.CI,
-      stdout: "ignore",
+      stdout: "pipe",
       stderr: "pipe",
       timeout: 30 * 1000,
     },
@@ -56,7 +56,7 @@ export default defineConfig({
       command: "yarn workspace @media-tools/web dev",
       url: "http://localhost:5173/",
       reuseExistingServer: !process.env.CI,
-      stdout: "ignore",
+      stdout: "pipe",
       stderr: "pipe",
       timeout: 30 * 1000,
     },
