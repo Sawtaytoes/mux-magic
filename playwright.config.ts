@@ -42,16 +42,18 @@ export default defineConfig({
   // so re-running locally is fast (no cold-start penalty).
   webServer: [
     {
+      name: "API",
       command: "yarn prod:api-server",
-      url: `${baseURL}/builder/`,
+      url: `${baseURL}/`,
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
       stderr: "pipe",
       timeout: 30 * 1000,
     },
     {
+      name: "Web",
       command: "yarn prod:web-server",
-      url: `${webBaseURL}/`,
+      url: `${webBaseURL}/builder/`,
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
       stderr: "pipe",

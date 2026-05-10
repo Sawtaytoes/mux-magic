@@ -1,7 +1,6 @@
 {
   "name": "@media-tools/shared",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Shared utilities used by @media-tools/server and the media-sync sibling repo.",
   "main": "./dist/index.js",

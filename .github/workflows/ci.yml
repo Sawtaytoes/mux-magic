@@ -68,7 +68,11 @@ jobs:
       - run: corepack enable && yarn install --immutable
       - uses: changesets/action@v1
         with:
-          publish: yarn changeset publish
+          # Only attempt to publish when NPM_TOKEN is configured. Without
+          # this guard, every push to react-migration fails on ENEEDAUTH
+          # because changesets/action falls through to publishing any
+          # workspace whose current version isn't on npm yet.
+          publish: ${{ secrets.NPM_TOKEN && 'yarn changeset publish' || '' }}
           title: "chore: version packages"
           commit: "chore: version packages"
         env:
