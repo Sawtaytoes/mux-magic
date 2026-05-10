@@ -16,6 +16,7 @@
     "format": "biome check --write",
     "lint": "biome check && eslint .",
     "generate-schemas": "tsx --env-file ./.env packages/server/src/generateSchemas.ts",
+    "generate-schemas-ci": "tsx --env-file ./.env packages/server/src/generateSchemasCi.ts",
     "install-playwright-browser": "yarn dlx playwright install chromium",
     "screenshots": "tsx scripts/screenshots.ts",
     "media": "tsx --env-file ./.env packages/server/src/cli.ts",
