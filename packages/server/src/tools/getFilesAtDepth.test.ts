@@ -1,3 +1,4 @@
+import { join } from "node:path"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
@@ -71,12 +72,12 @@ describe(getFilesAtDepth.name, () => {
     .toEqual([
       {
         filename: "Star Wars (1977)",
-        fullPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
+        fullPath: join("/movies/Star Wars (1977)", "Star Wars (1977).mkv"),
         renameFile: expect.any(Function),
       },
       {
         filename: "Star Wars (1977) {edition-4K77}",
-        fullPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
+        fullPath: join("/movies/Star Wars (1977)", "Star Wars (1977) {edition-4K77}.mkv"),
         renameFile: expect.any(Function),
       },
     ] satisfies (
@@ -100,17 +101,17 @@ describe(getFilesAtDepth.name, () => {
     .toEqual([
       {
         filename: "Star Wars (1977)",
-        fullPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
+        fullPath: join("/movies/Star Wars (1977)", "Star Wars (1977).mkv"),
         renameFile: expect.any(Function),
       },
       {
         filename: "Star Wars (1977) {edition-4K77}",
-        fullPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
+        fullPath: join("/movies/Star Wars (1977)", "Star Wars (1977) {edition-4K77}.mkv"),
         renameFile: expect.any(Function),
       },
       {
         filename: "Super Mario Bros (1993)",
-        fullPath: "/movies/Super Mario Bros (1993)/Super Mario Bros (1993).mkv",
+        fullPath: join("/movies/Super Mario Bros (1993)", "Super Mario Bros (1993).mkv"),
         renameFile: expect.any(Function),
       },
     ] satisfies (
@@ -134,22 +135,22 @@ describe(getFilesAtDepth.name, () => {
     .toEqual([
       {
         filename: "[Dolby] 747 (Audio) {FHD SDR & Dolby Atmos TrueHD}",
-        fullPath: "/demos/Dolby/[Dolby] 747 (Audio) {FHD SDR & Dolby Atmos TrueHD}.mkv",
+        fullPath: join("/demos/Dolby", "[Dolby] 747 (Audio) {FHD SDR & Dolby Atmos TrueHD}.mkv"),
         renameFile: expect.any(Function),
       },
       {
         filename: "Star Wars (1977)",
-        fullPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
+        fullPath: join("/movies/Star Wars (1977)", "Star Wars (1977).mkv"),
         renameFile: expect.any(Function),
       },
       {
         filename: "Star Wars (1977) {edition-4K77}",
-        fullPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
+        fullPath: join("/movies/Star Wars (1977)", "Star Wars (1977) {edition-4K77}.mkv"),
         renameFile: expect.any(Function),
       },
       {
         filename: "Super Mario Bros (1993)",
-        fullPath: "/movies/Super Mario Bros (1993)/Super Mario Bros (1993).mkv",
+        fullPath: join("/movies/Super Mario Bros (1993)", "Super Mario Bros (1993).mkv"),
         renameFile: expect.any(Function),
       },
     ] satisfies (

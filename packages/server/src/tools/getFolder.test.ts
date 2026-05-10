@@ -1,3 +1,4 @@
+import { join } from "node:path"
 import { vol } from "memfs"
 import { EmptyError, firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
@@ -95,12 +96,12 @@ describe(getFolder.name, () => {
     .toEqual([
       {
         folderName: "Star Wars (1977)",
-        fullPath: "/movies/Star Wars (1977)",
+        fullPath: join("/movies", "Star Wars (1977)"),
         renameFolder: expect.any(Function),
       },
       {
         folderName: "Super Mario Bros (1993)",
-        fullPath: "/movies/Super Mario Bros (1993)",
+        fullPath: join("/movies", "Super Mario Bros (1993)"),
         renameFolder: expect.any(Function),
       },
     ] satisfies (

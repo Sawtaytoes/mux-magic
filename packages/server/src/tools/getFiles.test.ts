@@ -1,3 +1,4 @@
+import { join } from "node:path"
 import { vol } from "memfs"
 import { EmptyError, firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
@@ -95,12 +96,12 @@ describe(getFiles.name, () => {
     .toEqual([
       {
         filename: "Star Wars (1977)",
-        fullPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
+        fullPath: join("/movies/Star Wars (1977)", "Star Wars (1977).mkv"),
         renameFile: expect.any(Function),
       },
       {
         filename: "Star Wars (1977) {edition-4K77}",
-        fullPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
+        fullPath: join("/movies/Star Wars (1977)", "Star Wars (1977) {edition-4K77}.mkv"),
         renameFile: expect.any(Function),
       },
     ] satisfies (

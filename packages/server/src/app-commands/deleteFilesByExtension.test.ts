@@ -1,4 +1,5 @@
 import { stat } from "node:fs/promises"
+import { join } from "node:path"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
@@ -32,9 +33,9 @@ describe(deleteFilesByExtension.name, () => {
     )
     .resolves
     .toEqual([
-      "/anime-subtitles/movie.srt",
-      "/anime-subtitles/episode.SRT",
-      "/anime-subtitles/subtitles/extra.srt",
+      join("/anime-subtitles", "movie.srt"),
+      join("/anime-subtitles", "episode.SRT"),
+      join("/anime-subtitles", "subtitles", "extra.srt"),
     ])
 
     await expect(stat("/anime-subtitles/movie.srt")).rejects.toThrow()

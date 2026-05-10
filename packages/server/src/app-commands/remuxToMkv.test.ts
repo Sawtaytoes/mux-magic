@@ -1,4 +1,5 @@
 import { stat } from "node:fs/promises"
+import { join } from "node:path"
 import { vol } from "memfs"
 import { firstValueFrom, of, toArray } from "rxjs"
 import { beforeEach, describe, expect, test, vi } from "vitest"
@@ -47,8 +48,8 @@ describe(remuxToMkv.name, () => {
       .pipe(toArray()),
     )
     expect(results.sort()).toEqual([
-      "/ts/episode-01.mkv",
-      "/ts/episode-02.mkv",
+      join("/ts", "episode-01.mkv"),
+      join("/ts", "episode-02.mkv"),
     ])
   })
 
@@ -137,7 +138,7 @@ describe(remuxToMkv.name, () => {
 
       // Only episode-02 should have been remuxed; episode-01 was skipped
       // because of the collision and its .ts must survive.
-      expect(results).toEqual(["/ts/episode-02.mkv"])
+      expect(results).toEqual([join("/ts", "episode-02.mkv")])
       await expect(stat("/ts/episode-01.ts")).resolves.toBeDefined()
       // Pre-existing .mkv content stays put — we never touched it.
       expect(vol.readFileSync("/ts/episode-01.mkv", "utf8")).toBe("pre-existing")

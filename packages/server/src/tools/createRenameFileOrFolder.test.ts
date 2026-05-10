@@ -1,3 +1,4 @@
+import { join } from "node:path"
 import { vol } from "memfs"
 import { EmptyError, firstValueFrom } from "rxjs"
 import { beforeEach, describe, expect, test, vi } from "vitest"
@@ -250,8 +251,8 @@ describe(createRenameFileOrFolderObservable.name, () => {
             )
             .resolves
             .toEqual({
-              newPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
-              oldPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
+              newPath: join("/movies/Star Wars (1977)", "Star Wars (1977) {edition-4K77}.mkv"),
+              oldPath: join("/movies/Star Wars (1977)", "Star Wars (1977).mkv"),
             })
           )
 
@@ -284,12 +285,12 @@ describe(createRenameFileOrFolderObservable.name, () => {
             ) => (
               text
               .includes(
-                "/movies/Star Wars (1977)/Star Wars (1977).mkv"
+                join("/movies/Star Wars (1977)", "Star Wars (1977).mkv")
               )
             ))
           )
           .toContain(
-            "/movies/Star Wars (1977)/Star Wars (1977).mkv"
+            join("/movies/Star Wars (1977)", "Star Wars (1977).mkv")
           )
 
           expect(
@@ -299,12 +300,12 @@ describe(createRenameFileOrFolderObservable.name, () => {
             ) => (
               text
               .includes(
-                "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv"
+                join("/movies/Star Wars (1977)", "Star Wars (1977) {edition-4K77}.mkv")
               )
             ))
           )
           .toContain(
-            "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv"
+            join("/movies/Star Wars (1977)", "Star Wars (1977) {edition-4K77}.mkv")
           )
         }
       )

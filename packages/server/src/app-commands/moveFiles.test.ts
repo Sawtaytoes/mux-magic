@@ -1,4 +1,5 @@
 import { stat } from "node:fs/promises"
+import { join } from "node:path"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
@@ -23,8 +24,8 @@ describe(moveFiles.name, () => {
     )
 
     expect(results.sort((itemA, itemB) => itemA.source.localeCompare(itemB.source))).toEqual([
-      { source: "/work/OUT/episode-01.mkv", destination: "/work/episode-01.mkv" },
-      { source: "/work/OUT/episode-02.mkv", destination: "/work/episode-02.mkv" },
+      { source: join("/work/OUT", "episode-01.mkv"), destination: join("/work", "episode-01.mkv") },
+      { source: join("/work/OUT", "episode-02.mkv"), destination: join("/work", "episode-02.mkv") },
     ])
   })
 

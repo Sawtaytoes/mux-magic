@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises"
+import { join } from "node:path"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
@@ -86,8 +87,8 @@ describe(modifySubtitleMetadata.name, () => {
       // One record per .ass file in the directory (episode-01 from the
       // outer beforeEach + episode-02 from above), not nulls.
       expect(emissions).toEqual(expect.arrayContaining([
-        { filePath: "/work/episode-01.ass" },
-        { filePath: "/work/episode-02.ass" },
+        { filePath: join("/work", "episode-01.ass") },
+        { filePath: join("/work", "episode-02.ass") },
       ]))
       expect(emissions).toHaveLength(2)
     })
