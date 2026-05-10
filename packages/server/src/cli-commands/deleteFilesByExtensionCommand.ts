@@ -47,14 +47,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const deleteFilesByExtensionCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "deleteFilesByExtension <sourcePath>",
   describe:
     "Delete files by extension from the provided directory.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     deleteFilesByExtension({

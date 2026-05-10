@@ -66,7 +66,7 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const nameAnimeEpisodesAniDBCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command:
@@ -74,7 +74,10 @@ export const nameAnimeEpisodesAniDBCommand: CommandModule<
   describe:
     "Name all anime episodes in a directory using AniDB metadata.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     nameAnimeEpisodesAniDB({

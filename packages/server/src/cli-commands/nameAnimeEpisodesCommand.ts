@@ -42,14 +42,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const nameAnimeEpisodesCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "nameAnimeEpisodes <sourcePath> <searchTerm>",
   describe:
     "Name all anime episodes in a directory according to episode names on MyAnimeList.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     nameAnimeEpisodes({

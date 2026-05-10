@@ -68,14 +68,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const changeTrackLanguagesCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "changeTrackLanguages <sourcePath>",
   describe:
     "Change the language of all video, audio, or subtitles tracks. This is useful when your media files had the wrong language set. For example, if the English subtitles track was listed as Japanese because it translates the Japanese audio.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     changeTrackLanguages({

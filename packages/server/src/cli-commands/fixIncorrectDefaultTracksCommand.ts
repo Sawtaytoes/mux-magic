@@ -35,14 +35,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const fixIncorrectDefaultTracksCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "fixIncorrectDefaultTracks <sourcePath>",
   describe:
     "Modifies each file such that the first track of each type is set as the default.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     fixIncorrectDefaultTracks({

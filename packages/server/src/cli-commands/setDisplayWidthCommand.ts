@@ -50,14 +50,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const setDisplayWidthCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "setDisplayWidth <sourcePath>",
   describe:
     "Sets the display width (DAR) of a video file. Helpful when a DVD was incorrectly set to 4:3 rather than 16:9.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     setDisplayWidth({

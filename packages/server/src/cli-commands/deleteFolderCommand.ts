@@ -31,18 +31,23 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const deleteFolderCommand: CommandModule<{}, Args> =
-  {
-    command: "deleteFolder <folderPath>",
-    describe:
-      "Recursively delete a folder and all its contents. Useful for cleaning up scratch directories like ~TEMP/AUDIO-OFFSETS after running getAudioOffsets. Requires --confirm.",
+export const deleteFolderCommand: CommandModule<
+  Record<string, unknown>,
+  Args
+> = {
+  command: "deleteFolder <folderPath>",
+  describe:
+    "Recursively delete a folder and all its contents. Useful for cleaning up scratch directories like ~TEMP/AUDIO-OFFSETS after running getAudioOffsets. Requires --confirm.",
 
-    builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
-    handler: (argv) => {
-      deleteFolder({
-        confirm: argv.confirm,
-        folderPath: argv.folderPath,
-      }).subscribe(subscribeCli())
-    },
-  }
+  handler: (argv) => {
+    deleteFolder({
+      confirm: argv.confirm,
+      folderPath: argv.folderPath,
+    }).subscribe(subscribeCli())
+  },
+}

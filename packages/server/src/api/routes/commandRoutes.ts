@@ -162,6 +162,7 @@ export type CommandConfig = {
   extractOutputs?: (
     results: unknown[],
   ) => Record<string, unknown>
+  // biome-ignore lint/suspicious/noExplicitAny: body type is enforced at runtime by each command's Zod schema
   getObservable: (body: any) => Observable<unknown>
   outputFolderName?: string
   // Override for the synthesized "folder" output when a downstream step

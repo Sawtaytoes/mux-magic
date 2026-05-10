@@ -39,14 +39,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const hasImaxEnhancedAudioCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "hasImaxEnhancedAudio <sourcePath>",
   describe:
     "Lists any files with an IMAX Enhanced audio track. Useful for checking movies and demos.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     hasImaxEnhancedAudio({

@@ -55,7 +55,7 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const mergeOrderedChaptersCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command:
@@ -63,7 +63,10 @@ export const mergeOrderedChaptersCommand: CommandModule<
   describe:
     'Merges media files with ordered chapters and separate intro and outro files. Intro and outro files need to be named "merge-intro.mkv" and "merge-outro.mkv" respectively. NOTE: All FLAC audio tracks have to be converted to PCM first as MKVToolNix can\'t merge FLAC audio tracks.',
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     mergeOrderedChapters({

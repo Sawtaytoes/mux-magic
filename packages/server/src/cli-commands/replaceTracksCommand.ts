@@ -105,31 +105,34 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const replaceTracksCommand: CommandModule<{}, Args> =
-  {
-    command:
-      "replaceTracks <sourceFilesPath> <destinationFilesPath> [offsets...]",
-    describe:
-      "Copy tracks from one media file and replace them in another making sure to only keep the chosen languages.",
+export const replaceTracksCommand: CommandModule<
+  Record<string, unknown>,
+  Args
+> = {
+  command:
+    "replaceTracks <sourceFilesPath> <destinationFilesPath> [offsets...]",
+  describe:
+    "Copy tracks from one media file and replace them in another making sure to only keep the chosen languages.",
 
-    builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
-    handler: (argv) => {
-      replaceTracks({
-        audioLanguages:
-          argv.audioLanguages as Iso6392LanguageCode[],
-        destinationFilesPath: argv.destinationFilesPath,
-        globalOffsetInMilliseconds: argv.globalOffset,
-        hasChapterSyncOffset: argv.hasChapterSyncOffset,
-        hasChapters: argv.includeChapters,
-        offsets: argv.offsets.map((offset) =>
-          Number(offset),
-        ),
-        sourceFilesPath: argv.sourceFilesPath,
-        subtitlesLanguages:
-          argv.subtitlesLanguages as Iso6392LanguageCode[],
-        videoLanguages:
-          argv.videoLanguages as Iso6392LanguageCode[],
-      }).subscribe(subscribeCli())
-    },
-  }
+  handler: (argv) => {
+    replaceTracks({
+      audioLanguages:
+        argv.audioLanguages as Iso6392LanguageCode[],
+      destinationFilesPath: argv.destinationFilesPath,
+      globalOffsetInMilliseconds: argv.globalOffset,
+      hasChapterSyncOffset: argv.hasChapterSyncOffset,
+      hasChapters: argv.includeChapters,
+      offsets: argv.offsets.map((offset) => Number(offset)),
+      sourceFilesPath: argv.sourceFilesPath,
+      subtitlesLanguages:
+        argv.subtitlesLanguages as Iso6392LanguageCode[],
+      videoLanguages:
+        argv.videoLanguages as Iso6392LanguageCode[],
+    }).subscribe(subscribeCli())
+  },
+}

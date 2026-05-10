@@ -75,14 +75,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const inverseTelecineDiscRipsCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "inverseTelecineDiscRips <sourcePath>",
   describe:
     "Performs an inverse telecine (IVTC) operation on all files. It will re-encode the video track (and only the video track), so try to do this operation only once as it's a lossy operation. This expects these files to be SDR, 8-bit color, and native 24fps converted to 60i for a Blu-ray or DVD release.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     inverseTelecineDiscRips({

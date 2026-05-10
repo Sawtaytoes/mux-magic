@@ -63,13 +63,19 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const mergeTracksCommand: CommandModule<{}, Args> = {
+export const mergeTracksCommand: CommandModule<
+  Record<string, unknown>,
+  Args
+> = {
   command:
     "mergeTracks <subtitlesPath> <mediaFilesPath> [offsets...]",
   describe:
     "Merge subtitles files with media files and only keep specified languages.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     mergeTracks({

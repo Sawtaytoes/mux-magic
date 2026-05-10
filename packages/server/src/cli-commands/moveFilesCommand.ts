@@ -31,12 +31,18 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const moveFilesCommand: CommandModule<{}, Args> = {
+export const moveFilesCommand: CommandModule<
+  Record<string, unknown>,
+  Args
+> = {
   command: "moveFiles <sourcePath> <destinationPath>",
   describe:
     "Copy all files from one directory to another, then delete the source directory. Equivalent to copyFiles followed by deleting the source. Useful when you want to clean up the output subdirectory after copying results back.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     moveFiles({

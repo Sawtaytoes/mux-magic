@@ -74,14 +74,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const nameSpecialFeaturesCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "nameSpecialFeatures <sourcePath> <url>",
   describe:
     "Name all special features in a directory according to a DVDCompare.net URL.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     const cliObserver = subscribeCli()
@@ -118,9 +121,9 @@ export const nameSpecialFeaturesCommand: CommandModule<
                 console.log(`  • ${filename}`)
                 candidates
                   .slice(0, 3)
-                  .forEach((candidate) =>
-                    console.log(`      - ${candidate}`),
-                  )
+                  .forEach((candidate) => {
+                    console.log(`      - ${candidate}`)
+                  })
               },
             )
           }

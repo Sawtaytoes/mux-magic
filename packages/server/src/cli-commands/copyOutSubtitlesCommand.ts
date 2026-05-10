@@ -53,14 +53,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const copyOutSubtitlesCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "copyOutSubtitles <sourcePath>",
   describe:
     "[DEPRECATED — use 'extractSubtitles'] Extract subtitle tracks into separate files alongside each video file.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     copyOutSubtitles({

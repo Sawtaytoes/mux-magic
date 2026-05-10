@@ -40,14 +40,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const getSubtitleMetadataCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "getSubtitleMetadata <sourcePath>",
   describe:
     "Reads .ass subtitle files and prints their Script Info and style metadata as JSON.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     getSubtitleMetadata({

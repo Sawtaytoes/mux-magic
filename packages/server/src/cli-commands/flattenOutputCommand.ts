@@ -36,18 +36,23 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const flattenOutputCommand: CommandModule<{}, Args> =
-  {
-    command: "flattenOutput <sourcePath>",
-    describe:
-      "Flatten a chained operation's output: copy files from sourcePath up one level (overwriting originals). Prevents folder nesting from accumulating across chained steps that each have an outputFolderName. The source folder is preserved by default; pass --deleteSourceFolder to also remove it.",
+export const flattenOutputCommand: CommandModule<
+  Record<string, unknown>,
+  Args
+> = {
+  command: "flattenOutput <sourcePath>",
+  describe:
+    "Flatten a chained operation's output: copy files from sourcePath up one level (overwriting originals). Prevents folder nesting from accumulating across chained steps that each have an outputFolderName. The source folder is preserved by default; pass --deleteSourceFolder to also remove it.",
 
-    builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
-    handler: (argv) => {
-      flattenOutput({
-        deleteSourceFolder: argv.deleteSourceFolder,
-        sourcePath: argv.sourcePath,
-      }).subscribe(subscribeCli())
-    },
-  }
+  handler: (argv) => {
+    flattenOutput({
+      deleteSourceFolder: argv.deleteSourceFolder,
+      sourcePath: argv.sourcePath,
+    }).subscribe(subscribeCli())
+  },
+}

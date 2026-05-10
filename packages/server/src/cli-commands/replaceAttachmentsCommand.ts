@@ -32,7 +32,7 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const replaceAttachmentsCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command:
@@ -40,7 +40,10 @@ export const replaceAttachmentsCommand: CommandModule<
   describe:
     "Copy tracks from one media file and replace them in another making sure to only keep the chosen languages.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     replaceAttachments({

@@ -26,14 +26,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const renameMovieClipDownloadsCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "renameMovieClipDownloads <sourcePath>",
   describe:
     "Rename TomSawyer's movie rips from the AVSForums to follow the demo format.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     renameMovieClipDownloads({

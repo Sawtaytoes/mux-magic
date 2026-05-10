@@ -156,11 +156,13 @@ describe(parseAnidbAnimeXml.name, () => {
     const result = parseAnidbAnimeXml(xml)
 
     expect(result).not.toBeNull()
-    expect(result?.aid).toBe(7206)
-    expect(result?.titles.length).toBeGreaterThan(0)
-    expect(result?.episodes.length).toBeGreaterThan(0)
+    if (result == null) return
 
-    for (const titleItem of result?.titles) {
+    expect(result.aid).toBe(7206)
+    expect(result.titles.length).toBeGreaterThan(0)
+    expect(result.episodes.length).toBeGreaterThan(0)
+
+    for (const titleItem of result.titles) {
       expect(titleItem.lang.length).toBeGreaterThan(0)
       expect(titleItem.value.length).toBeGreaterThan(0)
       expect([
@@ -171,7 +173,7 @@ describe(parseAnidbAnimeXml.name, () => {
       ]).toContain(titleItem.type)
     }
 
-    for (const ep of result?.episodes) {
+    for (const ep of result.episodes) {
       expect(typeof ep.epno).toBe("string")
       expect(ep.epno.length).toBeGreaterThan(0)
       expect([1, 2, 3, 4, 5, 6]).toContain(ep.type)
@@ -187,12 +189,14 @@ describe(parseAnidbAnimeXml.name, () => {
     const result = parseAnidbAnimeXml(xml)
 
     expect(result).not.toBeNull()
-    expect(result?.aid).toBe(11370)
+    if (result == null) return
 
-    const regulars = result?.episodes.filter(
+    expect(result.aid).toBe(11370)
+
+    const regulars = result.episodes.filter(
       (ep) => ep.type === 1,
     )
-    const others = result?.episodes.filter(
+    const others = result.episodes.filter(
       (ep) => ep.type === 6,
     )
 
@@ -207,7 +211,9 @@ describe(parseAnidbAnimeXml.name, () => {
   test("preserves multi-language episode titles", () => {
     const xml = loadFixture("anidb/anime/7206.xml")
     const result = parseAnidbAnimeXml(xml)
-    const someEpisode = result?.episodes[0]
+    if (result == null) return
+    const someEpisode = result.episodes[0]
+    if (someEpisode == null) return
     expect(someEpisode.titles.length).toBeGreaterThan(0)
     expect(
       someEpisode.titles.every(

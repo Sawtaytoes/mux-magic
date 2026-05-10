@@ -44,14 +44,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const hasBetterVersionCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "hasBetterVersion <sourcePath>",
   describe:
     "Output a list of Ultra HD Blu-ray releases where a better version is available along with a reason. This information comes from a thread on criterionforum.org.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     hasBetterVersion({

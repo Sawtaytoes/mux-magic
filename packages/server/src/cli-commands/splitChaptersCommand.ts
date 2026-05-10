@@ -31,19 +31,23 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const splitChaptersCommand: CommandModule<{}, Args> =
-  {
-    command:
-      "splitChapters <sourcePath> <chapterSplits...>",
-    describe:
-      "Breaks apart large video files based on chapter markers. The split occurs at the beginning of the given chapters. This is useful for anime discs which typically rip 4-6 episodes into a single large file.",
+export const splitChaptersCommand: CommandModule<
+  Record<string, unknown>,
+  Args
+> = {
+  command: "splitChapters <sourcePath> <chapterSplits...>",
+  describe:
+    "Breaks apart large video files based on chapter markers. The split occurs at the beginning of the given chapters. This is useful for anime discs which typically rip 4-6 episodes into a single large file.",
 
-    builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
-    handler: (argv) => {
-      splitChapters({
-        chapterSplitsList: argv.chapterSplits,
-        sourcePath: argv.sourcePath,
-      }).subscribe(subscribeCli())
-    },
-  }
+  handler: (argv) => {
+    splitChapters({
+      chapterSplitsList: argv.chapterSplits,
+      sourcePath: argv.sourcePath,
+    }).subscribe(subscribeCli())
+  },
+}

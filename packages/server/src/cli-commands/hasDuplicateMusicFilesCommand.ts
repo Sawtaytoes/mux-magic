@@ -48,14 +48,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const hasDuplicateMusicFilesCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "hasDuplicateMusicFiles <sourcePath>",
   describe:
     "Output a list of directories containing music files with duplicates. This is helpful when there are, for instance, both FLAC and MP3 files with the same name in the same directory. It can also find two sets of FLAC files as well. Also checks for `(2)` and ` - Copy` duplicates.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     hasDuplicateMusicFiles({

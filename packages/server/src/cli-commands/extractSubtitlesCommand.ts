@@ -48,14 +48,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const extractSubtitlesCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "extractSubtitles <sourcePath>",
   describe:
     "Extract subtitle tracks into separate files alongside each video file.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     extractSubtitles({

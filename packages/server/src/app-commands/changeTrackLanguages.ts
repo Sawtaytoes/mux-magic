@@ -1,4 +1,4 @@
-import { concatMap, filter, from, map } from "rxjs"
+import { concatMap, EMPTY, filter, from, map } from "rxjs"
 import { updateTrackLanguage } from "../cli-spawn-operations/updateTrackLanguage.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
 import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
@@ -46,7 +46,8 @@ export const changeTrackLanguages = ({
             ),
             concatMap((track) => {
               const languageCode =
-                trackTypeLanguageCode[track.type]!
+                trackTypeLanguageCode[track.type]
+              if (languageCode == null) return EMPTY
               const trackId = track.properties.number
 
               return updateTrackLanguage({

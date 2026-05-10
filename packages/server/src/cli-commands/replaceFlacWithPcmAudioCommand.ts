@@ -39,14 +39,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const replaceFlacWithPcmAudioCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "replaceFlacWithPcmAudio <sourcePath>",
   describe:
     "Converts any FLAC audio tracks in media files to PCM tracks at the same bit depth. This is especially useful when you might have acquired a copy of media that came with FLAC audio and want PCM audio for compatibility with your home theater system.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     replaceFlacWithPcmAudio({

@@ -258,6 +258,8 @@ jobRoutes.openapi(
     }
 
     // cancelJob mutated the job in place; re-read for the response.
-    return context.json(getJob(id)!, 202)
+    const cancelledJob = getJob(id)
+    if (!cancelledJob) return context.body(null, 500)
+    return context.json(cancelledJob, 202)
   },
 )

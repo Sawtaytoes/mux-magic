@@ -906,8 +906,8 @@ describe("POST /sequences/run — groups", () => {
     // Lifetimes overlap: each step started before the other completed.
     // This is the proof of concurrent execution — serial would have
     // bStart > aEnd (or vice versa), violating one of these.
-    expect(bStart!).toBeLessThan(aEnd!)
-    expect(aStart!).toBeLessThan(bEnd!)
+    expect(bStart ?? 0).toBeLessThan(aEnd ?? 0)
+    expect(aStart ?? 0).toBeLessThan(bEnd ?? 0)
   })
 
   test("cancelling a single child step cancels the umbrella and skips remaining steps", async () => {

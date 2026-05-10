@@ -93,14 +93,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const storeAspectRatioDataCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "storeAspectRatioData <sourcePath> [folders...]",
   describe:
     "Output a JSON file in the source path containing crop data for all listed media files. Crop data includes the aspect ratio of each media file. Files are typically all 16:9, but may have black bars. This identifies those internal resolutions separate from the media file itself.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     storeAspectRatioData({

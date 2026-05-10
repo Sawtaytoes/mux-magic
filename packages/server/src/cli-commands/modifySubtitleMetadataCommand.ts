@@ -49,14 +49,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const modifySubtitleMetadataCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "modifySubtitleMetadata <sourcePath>",
   describe:
     "Applies DSL-driven metadata modifications to ASS subtitle files.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     const rulesJson = readFileSync(argv.rules, "utf-8")

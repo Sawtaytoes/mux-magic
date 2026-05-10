@@ -30,12 +30,18 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const copyFilesCommand: CommandModule<{}, Args> = {
+export const copyFilesCommand: CommandModule<
+  Record<string, unknown>,
+  Args
+> = {
   command: "copyFiles <sourcePath> <destinationPath>",
   describe:
     "Copy all files from one directory to another. Does not recurse into subdirectories. Useful for copying modified files back after commands like keepLanguages or reorderTracks create a subdirectory (e.g. LANGUAGE-TRIMMED) with the results.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     copyFiles({

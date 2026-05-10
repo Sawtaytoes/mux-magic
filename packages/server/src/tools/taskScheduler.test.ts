@@ -143,7 +143,8 @@ describe(runTask.name, () => {
 
     // First completes → slot frees. Second was cancelled, so the third
     // should run instead — and the second's defer must NOT fire.
-    firstCompleter?.()
+    const completer = firstCompleter
+    if (completer) completer()
 
     expect(secondStarted).toBe(false)
     expect(thirdStarted).toBe(true)

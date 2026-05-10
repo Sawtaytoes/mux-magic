@@ -53,12 +53,18 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const remuxToMkvCommand: CommandModule<{}, Args> = {
+export const remuxToMkvCommand: CommandModule<
+  Record<string, unknown>,
+  Args
+> = {
   command: "remuxToMkv <sourcePath>",
   describe:
     "Pass-through remux of every matching file into an .mkv sibling using mkvmerge.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     remuxToMkv({

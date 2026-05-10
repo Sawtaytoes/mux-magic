@@ -35,14 +35,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const hasManyAudioTracksCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "hasManyAudioTracks <sourcePath>",
   describe:
     "Lists any files that have more than one audio track. Useful for determining which demo files may have unused audio tracks.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     hasManyAudioTracks({

@@ -80,25 +80,30 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const keepLanguagesCommand: CommandModule<{}, Args> =
-  {
-    command: "keepLanguages <sourcePath>",
-    describe:
-      "Keeps only the specified audio and subtitle languages.",
+export const keepLanguagesCommand: CommandModule<
+  Record<string, unknown>,
+  Args
+> = {
+  command: "keepLanguages <sourcePath>",
+  describe:
+    "Keeps only the specified audio and subtitle languages.",
 
-    builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
-    handler: (argv) => {
-      keepLanguages({
-        audioLanguages:
-          argv.audioLanguages as Iso6392LanguageCode[],
-        hasFirstAudioLanguage: argv.useFirstAudioLanguage,
-        hasFirstSubtitlesLanguage:
-          argv.useFirstSubtitlesLanguage,
-        isRecursive: argv.isRecursive,
-        sourcePath: argv.sourcePath,
-        subtitlesLanguages:
-          argv.subtitlesLanguages as Iso6392LanguageCode[],
-      }).subscribe(subscribeCli())
-    },
-  }
+  handler: (argv) => {
+    keepLanguages({
+      audioLanguages:
+        argv.audioLanguages as Iso6392LanguageCode[],
+      hasFirstAudioLanguage: argv.useFirstAudioLanguage,
+      hasFirstSubtitlesLanguage:
+        argv.useFirstSubtitlesLanguage,
+      isRecursive: argv.isRecursive,
+      sourcePath: argv.sourcePath,
+      subtitlesLanguages:
+        argv.subtitlesLanguages as Iso6392LanguageCode[],
+    }).subscribe(subscribeCli())
+  },
+}

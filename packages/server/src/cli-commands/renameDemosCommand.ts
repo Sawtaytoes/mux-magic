@@ -33,12 +33,18 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const renameDemosCommand: CommandModule<{}, Args> = {
+export const renameDemosCommand: CommandModule<
+  Record<string, unknown>,
+  Args
+> = {
   command: "renameDemos <sourcePath>",
   describe:
     "Rename demo files (such as Dolby's Amaze) to a format which accurately states all capabilities for easier searching and sorting in media apps (like Plex).",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     renameDemos({

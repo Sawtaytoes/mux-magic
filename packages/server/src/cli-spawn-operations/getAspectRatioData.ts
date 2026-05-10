@@ -232,10 +232,10 @@ export const getAspectRatioData = ({
 
             return {
               ...cropData,
-              [identifier]: (cropData[identifier] = {
+              [identifier]: {
                 ...cropData[identifier],
                 count: count + 1,
-              }),
+              },
             }
           } else {
             return {

@@ -32,7 +32,7 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const getAudioOffsetsCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command:
@@ -40,7 +40,10 @@ export const getAudioOffsetsCommand: CommandModule<
   describe:
     "Get the audio offset of media files in two directories where files share the same name.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     getAudioOffsets({

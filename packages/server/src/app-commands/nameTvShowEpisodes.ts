@@ -79,7 +79,13 @@ export const nameTvShowEpisodes = ({
                           "No selection made.",
                         )
 
-                      return results.at(selectedIndex)!
+                      const result =
+                        results.at(selectedIndex)
+                      if (result == null)
+                        throw new Error(
+                          "Invalid selection index.",
+                        )
+                      return result
                     }),
                   )
                 }),
@@ -136,17 +142,23 @@ export const nameTvShowEpisodes = ({
             map(({ episode, fileInfo }) => ({
               fileInfo,
               renamedFilename: cleanupFilename(
-                (episode?.seriesName).concat(
+                [
+                  episode?.seriesName ?? "",
                   " (",
-                  episode?.airedYear,
-                  ") - ",
-                  "s",
-                  episode?.seasonNumber.padStart(2, "0"),
+                  episode?.airedYear ?? "",
+                  ") - s",
+                  (episode?.seasonNumber ?? "").padStart(
+                    2,
+                    "0",
+                  ),
                   "e",
-                  episode?.episodeNumber.padStart(2, "0"),
+                  (episode?.episodeNumber ?? "").padStart(
+                    2,
+                    "0",
+                  ),
                   " - ",
                   episode?.episodeName || getRandomString(),
-                ),
+                ].join(""),
               ),
             })),
           ),

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest"
+import { z } from "zod"
 
 import {
   resolveSequenceParams,
@@ -16,7 +17,7 @@ const makeConfig = (
   getObservable: () => {
     throw new Error("not used in resolver tests")
   },
-  schema: { _zod: true } as any,
+  schema: z.unknown(),
   summary: "stub",
   tags: [],
   ...overrides,

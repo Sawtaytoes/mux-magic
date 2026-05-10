@@ -39,14 +39,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const isMissingSubtitlesCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "isMissingSubtitles <sourcePath>",
   describe:
     "Lists all folders and files where subtitles are missing. This is useful when you have a lot of media in a different language and may need to add subtitles.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     isMissingSubtitles({

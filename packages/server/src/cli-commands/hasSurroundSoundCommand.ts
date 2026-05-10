@@ -48,14 +48,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const hasSurroundSoundCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "hasSurroundSound <sourcePath>",
   describe:
     "Output a list of files channel counts higher than 2.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     hasSurroundSound({

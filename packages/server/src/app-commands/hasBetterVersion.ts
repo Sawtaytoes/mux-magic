@@ -85,10 +85,10 @@ export const hasBetterVersion = ({
                       "\n",
                       reasons
                         ?.map((reason) => `    - ${reason}`)
-                        .join("\n")!,
+                        .join("\n") ?? "",
                     ),
                 )
-                .find(Boolean)!,
+                .find(Boolean) ?? "",
             ),
         )
         .join("\n\n"),

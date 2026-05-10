@@ -58,28 +58,32 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const reorderTracksCommand: CommandModule<{}, Args> =
-  {
-    command: "reorderTracks <sourcePath>",
-    describe:
-      "Swap the order of tracks. This is especially helpful when watching media files in a different language, and the translated subtitles track is the second one.",
+export const reorderTracksCommand: CommandModule<
+  Record<string, unknown>,
+  Args
+> = {
+  command: "reorderTracks <sourcePath>",
+  describe:
+    "Swap the order of tracks. This is especially helpful when watching media files in a different language, and the translated subtitles track is the second one.",
 
-    builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
-    handler: (argv) => {
-      reorderTracks({
-        audioTrackIndexes: argv.audioTrackIndexes.map(
-          (value) => Number(value),
-        ),
-        isRecursive: argv.isRecursive,
-        sourcePath: argv.sourcePath,
-        subtitlesTrackIndexes:
-          argv.subtitlesTrackIndexes.map((value) =>
-            Number(value),
-          ),
-        videoTrackIndexes: argv.videoTrackIndexes.map(
-          (value) => Number(value),
-        ),
-      }).subscribe(subscribeCli())
-    },
-  }
+  handler: (argv) => {
+    reorderTracks({
+      audioTrackIndexes: argv.audioTrackIndexes.map(
+        (value) => Number(value),
+      ),
+      isRecursive: argv.isRecursive,
+      sourcePath: argv.sourcePath,
+      subtitlesTrackIndexes: argv.subtitlesTrackIndexes.map(
+        (value) => Number(value),
+      ),
+      videoTrackIndexes: argv.videoTrackIndexes.map(
+        (value) => Number(value),
+      ),
+    }).subscribe(subscribeCli())
+  },
+}

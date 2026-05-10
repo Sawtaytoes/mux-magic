@@ -48,14 +48,17 @@ const builder = (yargs: Argv) =>
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
 export const hasBetterAudioCommand: CommandModule<
-  {},
+  Record<string, unknown>,
   Args
 > = {
   command: "hasBetterAudio <sourcePath>",
   describe:
     "Output a list of files that have a higher channel count audio track not listed as the first one.",
 
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<
+    Record<string, unknown>,
+    Args
+  >,
 
   handler: (argv) => {
     hasBetterAudio({

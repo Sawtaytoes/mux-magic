@@ -72,7 +72,12 @@ export const nameAnimeEpisodes = ({
                   if (selectedIndex === -1)
                     throw new Error("No selection made.")
 
-                  return results.at(selectedIndex)!
+                  const result = results.at(selectedIndex)
+                  if (result == null)
+                    throw new Error(
+                      "Invalid selection index.",
+                    )
+                  return result
                 }),
                 map((result) => ({
                   id: String(result.malId),

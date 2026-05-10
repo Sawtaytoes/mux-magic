@@ -81,10 +81,10 @@ const builder = (yargs: Argv) => (
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const someCommandCommand: CommandModule<{}, Args> = {
+export const someCommandCommand: CommandModule<Record<string, unknown>, Args> = {
   command: "someCommand <sourcePath>",
   describe: "...",
-  builder: builder as CommandBuilder<{}, Args>,
+  builder: builder as CommandBuilder<Record<string, unknown>, Args>,
   handler: (argv) => {
     someCommand({ isRecursive: argv.isRecursive, sourcePath: argv.sourcePath })
     .subscribe(() => { console.timeEnd("Command Runtime") })
