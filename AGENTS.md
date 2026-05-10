@@ -36,6 +36,11 @@ Quick checklist:
 
 Frameworks: vitest (unit + app-command), Hono in-process testing, Playwright (e2e).
 
+### Forbidden test styles
+
+- **No snapshot tests.** Never use `toMatchSnapshot`, `toMatchInlineSnapshot`. Spell expected values out inline: `expect(x).toBe("literal string")` or `expect(x).toEqual({ explicit: "object" })`. Reason: snapshot diffs hide intent and get rubber-stamped during auto-update.
+- **No screenshot / visual regression tests.** Never use Playwright `toHaveScreenshot`, Percy, Chromatic, or Storybook screenshot addons. There is no VRT platform in this repo. Visual verification is manual via Storybook and the dev server.
+
 ## Architecture & Design Patterns
 
 👉 **Full reference:** [docs/agents/architecture.md](docs/agents/architecture.md)
