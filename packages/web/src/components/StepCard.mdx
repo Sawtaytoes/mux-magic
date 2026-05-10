@@ -1,0 +1,63 @@
+{/* StepCard.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as StepCardStories from "./StepCard.stories";
+
+<Meta of={StepCardStories} />
+
+# StepCard
+
+The atomic builder unit. Each card represents a single command invocation with its alias, command picker trigger, status badge, and rendered field inputs. Cards live in the top-level builder list or nested inside a `GroupCard`'s sequential/parallel container.
+
+The header is always visible (drag handle, collapse chevron, alias input, command trigger, status, command-help button, hamburger menu). The body — command summary, note, output-folder hint, error, and `<RenderFields />` — is hidden when `step.isCollapsed` is true.
+
+## Behaviour
+
+- **Alias** → uncontrolled input. Commits to `updateStepAliasAtom` on blur or Enter; Escape blurs without committing differently (still triggers blur handler).
+- **Command trigger** → opens `window.commandPicker.open({ stepId }, triggerEl)`. The picker writes back via `window.changeCommand`.
+- **Help button** → only renders if `step.command` is set. Sets `commandHelpCommandNameAtom` then opens `commandHelpModalOpenAtom`.
+- **Hamburger** → toggles a row of action buttons (Run/Stop, ↑, ↓, Copy YAML, ✕). Only rendered when expanded.
+- **Run/Stop** → calls legacy `window.runOrStopStep(stepId)`. The button visually flips between ▶ and ⏹ based on `step.status === "running" && step.jobId`.
+- **Move** → `↑`/`↓` invoke `moveStepAtom` with `direction: -1` / `+1` and `parentGroupId` so the action knows whether to reorder within a group or at the top level. Disabled at list bounds (`isFirst` / `isLast`).
+- **Body** → reads command metadata from `window.mediaTools.COMMANDS[step.command]` for `summary`, `note`, and `outputFolderName`. The note renders amber-highlighted; the output folder hint renders as `→ outputs to <name>/ subfolder`.
+- **No command** → body shows `"No command selected — choose one from the dropdown above."` italic text instead of `<RenderFields />`.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `toggleStepCollapsedAtom` | Flips `step.isCollapsed` |
+| `updateStepAliasAtom` | Persists alias edits on blur/Enter |
+| `moveStepAtom` | Reorders the step within its parent (top level or group) |
+| `removeStepAtom` | Removes the step entirely |
+| `commandHelpCommandNameAtom` + `commandHelpModalOpenAtom` | Drives the command-help modal that opens via the ⓘ button |
+
+## Window globals consumed
+
+| Global | Role |
+|--------|------|
+| `window.commandLabel` | Human-readable command label |
+| `window.commandPicker.open` | Opens the picker anchored to the trigger button |
+| `window.runOrStopStep` | Step-level run/cancel (used by the Run/Stop action) |
+| `window.copyStepYaml` | Copy-to-clipboard the step's YAML representation |
+| `window.mediaTools.COMMANDS` | Lookup for command summary/note/outputFolderName |
+
+## With command
+
+<Canvas of={StepCardStories.WithCommand} />
+
+## No command
+
+<Canvas of={StepCardStories.NoCommand} />
+
+## With status
+
+<Canvas of={StepCardStories.WithStatus} />
+
+## With error
+
+<Canvas of={StepCardStories.WithError} />
+
+## Collapsed
+
+<Canvas of={StepCardStories.Collapsed} />

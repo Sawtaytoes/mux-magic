@@ -1,0 +1,44 @@
+{/* PathVarCard.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as PathVarCardStories from "./PathVarCard.stories";
+
+<Meta of={PathVarCardStories} />
+
+# PathVarCard
+
+A top-of-builder card declaring a named path variable (e.g., **Base Path** → `/mnt/media`). Other steps reference the variable via `LinkPicker`, so renaming the value in one place updates every downstream link.
+
+Spans the full grid (`col-span-full`) and renders with a dashed border to distinguish it visually from regular `StepCard`s. The first path variable is undeletable (no ✕ button) — the builder enforces at least one path var as the project root.
+
+## Behaviour
+
+- **Label** → uncontrolled input. Commits on every change via the `pathsAtom` updater. Shown as a small accent above the value field.
+- **Value** → uncontrolled input, `font-mono`. Commits on blur (not on every keystroke — fewer atom writes for what's typically a long path).
+- **Browse 📁 button** → two paths:
+  - If `pathVar.value` is set → opens `FileExplorerModal` rooted at that path with no `pickerOnSelect` (read-only browse).
+  - If empty → fetches `/files/default-path` for a sensible starting directory, then opens the explorer with a `pickerOnSelect` callback that writes the chosen path back into the path var.
+- **Remove ✕** → only renders when `!isFirst`. The first path variable cannot be removed.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `pathsAtom` | Source of truth for the list of path variables; this card writes label/value/removal back through it |
+| `fileExplorerAtom` | Controls the `FileExplorerModal` — set with `{ path, pickerOnSelect }` to open it |
+
+## Server endpoint
+
+`GET /files/default-path` → `{ path }`. Returns a platform-appropriate default directory for the empty-value Browse flow. Failures fall back to `"/"`.
+
+## Base path (first, undeletable)
+
+<Canvas of={PathVarCardStories.BasePath} />
+
+## Secondary path (deletable)
+
+<Canvas of={PathVarCardStories.SecondaryPath} />
+
+## Empty value
+
+<Canvas of={PathVarCardStories.EmptyValue} />
