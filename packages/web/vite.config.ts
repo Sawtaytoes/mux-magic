@@ -14,6 +14,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    open: true,
     port: 5173,
     strictPort: true,
   },

@@ -39,7 +39,7 @@
     "prod:servers": "concurrently -k --names \"API,WEB\" \"yarn prod:api-server\" \"yarn prod:web-server\"",
     "start": "concurrently --raw --kill-others \"yarn generate:internal-api-schemas:watch\" \"yarn dev:api-server\" \"yarn dev:web-server\" \"yarn dev:storybook\"",
     "test": "vitest",
-    "typecheck": "concurrently -k --names \"ROOT,PACKAGES\" \"tsc --noEmit\" \"yarn workspaces foreach -Ap run typecheck\""
+    "typecheck": "tsc --noEmit && yarn workspaces foreach -Ap run typecheck"
   },
   "type": "module",
   "dependencies": {
