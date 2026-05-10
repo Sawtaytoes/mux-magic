@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import { fn } from "@storybook/test"
+import { action } from "storybook/actions"
 import { InsertDivider } from "./InsertDivider"
 
 const meta: Meta<typeof InsertDivider> = {
@@ -10,10 +10,10 @@ const meta: Meta<typeof InsertDivider> = {
     backgrounds: { default: "dark" },
   },
   args: {
-    onInsertStep: fn(),
-    onInsertSequentialGroup: fn(),
-    onInsertParallelGroup: fn(),
-    onPaste: fn(),
+    onInsertStep: action("onInsertStep"),
+    onInsertSequentialGroup: action("onInsertSequentialGroup"),
+    onInsertParallelGroup: action("onInsertParallelGroup"),
+    onPaste: action("onPaste"),
   },
 }
 
