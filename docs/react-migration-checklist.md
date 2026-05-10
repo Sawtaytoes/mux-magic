@@ -58,6 +58,67 @@ See `docs/react-migration-plan.md` § "Post-Migration: Rename to MuxMagic" for t
 
 - **Unify CSS colors to variables** — `builderStyles.css` has bare hardcoded colors (`#34d399`, `#6ee7b7`, `#fbbf24`, `rgb(15 23 42)`, `rgb(51 65 85)`, etc.). Extract to CSS custom properties (`:root { --color-emerald: #34d399; ... }`) so changing a color in one place affects all uses. Tailwind v4 generates a CSS variable for each utility color; reuse those definitions. Do this as a standalone refactor PR after PR #2 is merged.
 
+---
+
+## React Migration Recovery — Phase 0 Audit (W0b, 2026-05-10)
+
+### Worker Status (Recovery Plan — parallel with W0a, W0c)
+
+| Worker | Phase | Status | Date | Notes |
+|---|---|---|---|---|
+| Pre-W0 | — AGENTS.md no-snapshot/no-VRT | ✅ Done | 2026-05-10 | Commit 3f8bf84 |
+| W0a | 0 — Stale cleanup + checklist scaffold | ⬜ Not Started | — | No commits detected yet |
+| W0b | 0 — Audit existing state | ✅ Done | 2026-05-10 | claude-sonnet-4-6, low effort |
+| W0c | 0 — Parity reference capture | ⬜ Not Started | — | |
+| W1 | 1 — Wave B-0 RenderFields | ⬜ Not Started | — | Blocks W2A–W2D |
+| W2A | 2 — Bundle A (BooleanField, NumberField, StringField) | ⬜ Not Started | — | |
+| W2B | 2 — Bundle B (EnumField, LanguageCodeField, LanguageCodesField) | ⬜ Not Started | — | |
+| W2C | 2 — Bundle C (StringArrayField, NumberArrayField, JsonField) | ⬜ Not Started | — | |
+| W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | ⬜ Not Started | — | DslRulesBuilder may escalate |
+| W3 | 3 — Final Cleanup | ⬜ Not Started | — | Blocks on W2A+W2B+W2C+W2D |
+| W4 | 4 — Verification & Master Merge | ⬜ Not Started | — | Parallel with W5 |
+| W5 | 5 — E2E tests (worktree) | ⬜ Not Started | — | Parallel with W4 |
+
+### Phase 0 Audit Findings (W0b)
+
+**W0b steps completed:**
+- [x] Step 1: Dev environment runs cleanly
+- [x] Step 2: Inspect partial component dirs — findings below
+- [x] Step 3: Findings committed to checklist
+
+**Dev environment:**
+- `yarn install` completed with only peer-dependency warnings (no errors): TypeScript 6 vs ^5 peer req from openapi-typescript; `@babel/core` and `rolldown` not provided by web workspace — these are pre-existing warnings, not new failures.
+- `yarn dev` started cleanly at port 5173 in 461 ms; no compile errors.
+- `GET http://localhost:5173/` → 200; SPA shell served correctly (no legacy `<script>` tags in root HTML).
+- `GET http://localhost:5173/builder` → 200; same SPA shell (React Router handles the route).
+- Playwright browser tool was not available (permission not granted); browser console errors not directly observable. No TypeScript/Vite build errors were emitted to stdout.
+
+**Component directory classifications:**
+
+- `EnumField/` — **partial**: `EnumField.tsx` has a real React implementation (renders a trigger button that calls `window.enumPicker?.open(…)`). No test file, no stories file. NOT imported by `RenderFields.tsx` — the dispatcher is still the Wave B placeholder.
+- `LanguageCodeField/` — **partial**: `LanguageCodeField.tsx` has a real React implementation (text input, calls `window.setParam?.(…)` on input). No test file, no stories file. NOT imported by `RenderFields.tsx`.
+- `PathField/` — **absent**: directory does not exist on disk. W2D must create it from scratch.
+- `NumberField/` — **partial**: `NumberField.tsx` has a real React implementation (number input, companionNameField support, calls `window.setParam?.(…)` and `window.scheduleReverseLookup?.(…)`). `NumberField.test.tsx` exists with 4 explicit inline-assertion tests. No stories file. NOT imported by `RenderFields.tsx`.
+
+**Drift detected vs old checklist:**
+
+- `RenderFields.tsx` is still the Wave B placeholder (`// Wave B placeholder — replace with full field rendering when Wave B lands.`). Old checklist marks Wave B-0 as `[ ] Not started` — accurate.
+- `EnumField/`, `LanguageCodeField/`, `NumberField/` exist with partial real implementations, but Wave B is listed as Not Started. These were created in a prior undocumented pass but never wired into the dispatcher.
+- `FieldLabel/` is fully implemented (`FieldLabel.tsx`, `FieldLabel.test.tsx`, `FieldLabel.stories.tsx`, `FieldLabel.mdx`) — a pre-condition W1 is supposed to create already exists. W1's Step 4 can be skipped or verified rather than rebuilt.
+- `PathField/` is completely missing (no directory) despite being listed in Wave B scope; W2D must create from scratch.
+- Wave E is marked Done on branch `worktree-wave-e` but those commits are not visible in `origin/react-migration` log. Possible rebase/merge issue — verify before W3.
+
+**Pre-push gate result (W0b, run 2026-05-10):**
+- `yarn test run` — ✅ 111 files passed, 28 skipped, 847 tests
+- `yarn typecheck` — ✅ clean
+- `yarn lint` — ✅ clean (474 files, no fixes applied)
+
+### Progress Log
+
+| Worker | Date | Action |
+|---|---|---|
+| W0b | 2026-05-10 | docs(checklist): record W0b audit findings — partial component dir classification |
+
 ## Open Questions
 
 (none)
