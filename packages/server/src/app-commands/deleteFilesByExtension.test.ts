@@ -18,22 +18,21 @@ describe(deleteFilesByExtension.name, () => {
   })
 
   test("deletes all files matching the requested extensions", async () => {
-    await expect(
-      firstValueFrom(
-        deleteFilesByExtension({
-          sourcePath: "/anime-subtitles",
-          extensions: [".srt"],
-          isRecursive: true,
-          recursiveDepth: 2,
-        }).pipe(toArray()),
-      ),
-    ).resolves.toEqual(
-      expect.arrayContaining([
-        join("/anime-subtitles", "episode.SRT"),
-        join("/anime-subtitles", "movie.srt"),
-        join("/anime-subtitles", "subtitles", "extra.srt"),
-      ]),
+    const expected = [
+      join("/anime-subtitles", "episode.SRT"),
+      join("/anime-subtitles", "movie.srt"),
+      join("/anime-subtitles", "subtitles", "extra.srt"),
+    ]
+    const actual = await firstValueFrom(
+      deleteFilesByExtension({
+        sourcePath: "/anime-subtitles",
+        extensions: [".srt"],
+        isRecursive: true,
+        recursiveDepth: 2,
+      }).pipe(toArray()),
     )
+    expect(actual).toEqual(expect.arrayContaining(expected))
+    expect(actual).toHaveLength(expected.length)
 
     await expect(
       stat("/anime-subtitles/episode.SRT"),

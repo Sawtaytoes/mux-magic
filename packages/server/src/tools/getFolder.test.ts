@@ -64,13 +64,7 @@ describe(getFolder.name, () => {
         "",
     })
 
-    await expect(
-      firstValueFrom(
-        getFolder({
-          sourcePath: "/movies",
-        }).pipe(toArray()),
-      ),
-    ).resolves.toEqual([
+    const expected: FolderInfo[] = [
       {
         folderName: "Star Wars (1977)",
         fullPath: join("/movies", "Star Wars (1977)"),
@@ -84,6 +78,13 @@ describe(getFolder.name, () => {
         ),
         renameFolder: expect.any(Function),
       },
-    ] satisfies FolderInfo[])
+    ]
+    const actual = await firstValueFrom(
+      getFolder({
+        sourcePath: "/movies",
+      }).pipe(toArray()),
+    )
+    expect(actual).toEqual(expect.arrayContaining(expected))
+    expect(actual).toHaveLength(expected.length)
   })
 })

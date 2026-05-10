@@ -189,7 +189,9 @@ export const CommandPicker = () => {
 
   const selectItem = (item: CommandItem) => {
     const anchor = pickerState?.anchor
-    flushSync(() => { close() })
+    flushSync(() => {
+      close()
+    })
     if (anchor) {
       changeCommand(anchor.stepId, item.name)
     }

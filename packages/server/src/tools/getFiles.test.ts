@@ -64,31 +64,30 @@ describe(getFiles.name, () => {
         "",
     })
 
-    await expect(
-      firstValueFrom(
-        getFiles({
-          sourcePath: "/movies/Star Wars (1977)",
-        }).pipe(toArray()),
-      ),
-    ).resolves.toEqual(
-      expect.arrayContaining([
-        {
-          filename: "Star Wars (1977) {edition-4K77}",
-          fullPath: join(
-            "/movies/Star Wars (1977)",
-            "Star Wars (1977) {edition-4K77}.mkv",
-          ),
-          renameFile: expect.any(Function),
-        },
-        {
-          filename: "Star Wars (1977)",
-          fullPath: join(
-            "/movies/Star Wars (1977)",
-            "Star Wars (1977).mkv",
-          ),
-          renameFile: expect.any(Function),
-        },
-      ] satisfies FileInfo[]),
+    const expected: FileInfo[] = [
+      {
+        filename: "Star Wars (1977) {edition-4K77}",
+        fullPath: join(
+          "/movies/Star Wars (1977)",
+          "Star Wars (1977) {edition-4K77}.mkv",
+        ),
+        renameFile: expect.any(Function),
+      },
+      {
+        filename: "Star Wars (1977)",
+        fullPath: join(
+          "/movies/Star Wars (1977)",
+          "Star Wars (1977).mkv",
+        ),
+        renameFile: expect.any(Function),
+      },
+    ]
+    const actual = await firstValueFrom(
+      getFiles({
+        sourcePath: "/movies/Star Wars (1977)",
+      }).pipe(toArray()),
     )
+    expect(actual).toEqual(expect.arrayContaining(expected))
+    expect(actual).toHaveLength(expected.length)
   })
 })

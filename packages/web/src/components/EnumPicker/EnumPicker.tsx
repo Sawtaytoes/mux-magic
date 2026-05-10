@@ -187,7 +187,9 @@ export const EnumPicker = () => {
 
   const selectItem = (item: EnumOption) => {
     const anchor = pickerState?.anchor
-    flushSync(() => { close() })
+    flushSync(() => {
+      close()
+    })
     if (anchor) {
       setParam(anchor.stepId, anchor.fieldName, item.value)
     }

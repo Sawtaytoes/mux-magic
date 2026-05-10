@@ -48,15 +48,17 @@ describe("POST /queries/listDirectoryEntries", () => {
       error: string | null
     }
 
+    const expected = [
+      { name: "Movies", isDirectory: true },
+      { name: "TV", isDirectory: true },
+      { name: "notes.txt", isDirectory: false },
+    ]
     expect(response.status).toBe(200)
     expect(body.error).toBeNull()
     expect(body.entries).toEqual(
-      expect.arrayContaining([
-        { name: "Movies", isDirectory: true },
-        { name: "TV", isDirectory: true },
-        { name: "notes.txt", isDirectory: false },
-      ]),
+      expect.arrayContaining(expected),
     )
+    expect(body.entries).toHaveLength(expected.length)
   })
 
   test("includes the OS-native separator so the client can join paths correctly", async () => {

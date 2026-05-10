@@ -26,7 +26,7 @@ const formatterSrc = realFs.readFileSync(
 ) as string
 
 // Execute the IIFE in the globalThis scope so BandwidthFormat gets attached.
-// eslint-disable-next-line no-new-func
+ 
 new Function("globalThis", formatterSrc)(globalThis)
 
 type BandwidthFormatGlobal = {

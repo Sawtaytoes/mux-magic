@@ -271,9 +271,7 @@ export const getAspectRatioData = ({
         }
 
         const topByCount = cropDataValues
-          .sort(
-            (itemA, itemB) => itemB.count - itemA.count,
-          )
+          .sort((itemA, itemB) => itemB.count - itemA.count)
           .at(0)
         if (topByCount == null) {
           throw new Error("empty crop data")
