@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import { useState } from "react"
 import { loadModalOpenAtom } from "../state/uiAtoms"
 import type { Commands } from "../types"
 import { LoadModal } from "./LoadModal"
@@ -14,24 +15,33 @@ const mockCommands: Commands = {
   },
 }
 
-// Each story gets its own isolated Jotai store so they don't share state.
-const withStore = (initialOpen: boolean) => {
-  const store = createStore()
-  store.set(loadModalOpenAtom, initialOpen)
-
-  // Wire minimal mediaTools so the paste handler doesn't throw.
+const wireMediaTools = () => {
   if (typeof window !== "undefined") {
     window.mediaTools = window.mediaTools ?? {}
     window.mediaTools.COMMANDS = mockCommands
     window.mediaTools.renderAll = () => {}
     window.mediaTools.updateUrl = () => {}
   }
+}
 
-  return (Story: React.ComponentType) => (
-    <Provider store={store}>
-      <Story />
-    </Provider>
-  )
+// Store is created inside useState so each mount gets a fresh atom — navigating
+// away and back resets the modal to its initial state instead of staying closed.
+const withStore = (initialOpen: boolean) => {
+  return (Story: React.ComponentType) => {
+    const [store] = useState(() => {
+      const s = createStore()
+      s.set(loadModalOpenAtom, initialOpen)
+      return s
+    })
+
+    wireMediaTools()
+
+    return (
+      <Provider store={store}>
+        <Story />
+      </Provider>
+    )
+  }
 }
 
 const meta: Meta<typeof LoadModal> = {
@@ -64,21 +74,7 @@ export const Closed: Story = {
 
 export const WithError: Story = {
   decorators: [
-    (Story) => {
-      const store = createStore()
-      store.set(loadModalOpenAtom, true)
-      if (typeof window !== "undefined") {
-        window.mediaTools = window.mediaTools ?? {}
-        window.mediaTools.COMMANDS = mockCommands
-        window.mediaTools.renderAll = () => {}
-        window.mediaTools.updateUrl = () => {}
-      }
-      return (
-        <Provider store={store}>
-          <Story />
-        </Provider>
-      )
-    },
+    withStore(true),
   ],
   play: async ({ canvasElement }) => {
     // Simulate an invalid YAML paste to surface the error state.

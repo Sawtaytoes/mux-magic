@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import { useState } from "react"
 import { action } from "storybook/actions"
 import { pathsAtom } from "../state/pathsAtom"
 import { stepsAtom } from "../state/stepsAtom"
@@ -17,14 +18,19 @@ const step = {
 }
 
 const withStore = (steps: unknown[], paths: unknown[]) => {
-  const store = createStore()
-  store.set(stepsAtom, steps as never)
-  store.set(pathsAtom, paths as never)
-  return (Story: React.ComponentType) => (
-    <Provider store={store}>
-      <Story />
-    </Provider>
-  )
+  return (Story: React.ComponentType) => {
+    const [store] = useState(() => {
+      const s = createStore()
+      s.set(stepsAtom, steps as never)
+      s.set(pathsAtom, paths as never)
+      return s
+    })
+    return (
+      <Provider store={store}>
+        <Story />
+      </Provider>
+    )
+  }
 }
 
 const meta: Meta<typeof YamlModal> = {
