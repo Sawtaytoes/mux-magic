@@ -1,83 +1,15 @@
-import { useAtomValue, useSetAtom } from "jotai"
-import {
-  useCallback,
-  useEffect,
-  useRef,
-} from "react"
+import { useAtomValue } from "jotai"
 
-import { useLogStream } from "../hooks/useLogStream"
 import { buildBuilderUrl } from "../jobs/buildBuilderUrl"
 import { commandLabel } from "../jobs/commandLabels"
 import { formatEta } from "../jobs/formatBandwidth"
 import { jobsAtom } from "../state/jobsAtom"
-import { logsByJobIdAtom } from "../state/logsByJobIdAtom"
 import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
-import { stepsOpenByJobIdAtom } from "../state/stepsOpenByJobIdAtom"
 import type { Job } from "../types"
-import { CancelJobButton } from "./CancelJobButton"
-import { CopyTextButton } from "./CopyTextButton"
+import { JobLogsDisclosure } from "./JobLogsDisclosure"
+import { JobStepsDisclosure } from "./JobStepsDisclosure"
 import { ProgressBar } from "./ProgressBar"
 import { StatusBadge } from "./StatusBadge"
-
-// ─── LogsDisclosure ───────────────────────────────────────────────────────────
-
-const LogsDisclosure = ({
-  jobId,
-  jobStatus,
-}: {
-  jobId: string
-  jobStatus: string
-}) => {
-  const logsByJobId = useAtomValue(logsByJobIdAtom)
-  const lines = logsByJobId.get(jobId) ?? []
-  const paneRef = useRef<HTMLDivElement>(null)
-  const { connect } = useLogStream(jobId)
-
-  // Running jobs connect immediately so new lines appear without opening the disclosure.
-  useEffect(() => {
-    if (jobStatus === "running") connect()
-  }, [jobStatus, connect])
-
-  // Auto-scroll to bottom when new lines arrive.
-  useEffect(() => {
-    const pane = paneRef.current
-    if (pane) pane.scrollTop = pane.scrollHeight
-  }, [])
-
-  const handleToggle = (
-    event: React.SyntheticEvent<HTMLDetailsElement>,
-  ) => {
-    if (event.currentTarget.open) connect()
-  }
-
-  return (
-    <details onToggle={handleToggle}>
-      <summary className="cursor-pointer text-xs text-slate-400 hover:text-slate-200 py-1 flex items-center gap-1">
-        Logs
-        <CopyTextButton
-          getText={() =>
-            lines.map(({ line }) => line).join("\n")
-          }
-        />
-      </summary>
-      <div
-        ref={paneRef}
-        className="mt-1 max-h-40 overflow-y-auto bg-slate-950 rounded p-2 font-mono text-xs text-slate-300 space-y-0.5"
-        data-log-id={jobId}
-      >
-        {lines.length === 0 ? (
-          <div className="text-slate-500">
-            Waiting for log lines…
-          </div>
-        ) : (
-          lines.map(({ key, line }) => (
-            <div key={key}>{line}</div>
-          ))
-        )}
-      </div>
-    </details>
-  )
-}
 
 // ─── ETA for sequence jobs ────────────────────────────────────────────────────
 
@@ -126,118 +58,6 @@ const useAggregateEta = (job: Job): string => {
         ownSnap.bytesPerSecond,
       )
     : ""
-}
-
-// ─── StepRow ─────────────────────────────────────────────────────────────────
-
-const StepRow = ({
-  child,
-  index,
-}: {
-  child: Job
-  index: number
-}) => {
-  const progressByJobId = useAtomValue(progressByJobIdAtom)
-  const snap = progressByJobId.get(child.id)
-
-  return (
-    <div className="border-l-2 border-slate-700 pl-3 py-1 space-y-1">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-xs text-slate-500 shrink-0">
-            {index + 1}.
-          </span>
-          <strong className="text-sm truncate">
-            {commandLabel(child.commandName)}
-          </strong>
-          {child.stepId && (
-            <span className="text-xs text-slate-500 truncate">
-              {child.stepId}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <StatusBadge status={child.status} />
-          {child.status === "running" && (
-            <CancelJobButton jobId={child.id} />
-          )}
-        </div>
-      </div>
-      {child.error && (
-        <p className="text-xs text-red-400 break-words">
-          {child.error}
-        </p>
-      )}
-      {child.status === "running" && snap && (
-        <ProgressBar snapshot={snap} />
-      )}
-      {child.status !== "skipped" &&
-        child.status !== "pending" && (
-          <LogsDisclosure
-            jobId={child.id}
-            jobStatus={child.status}
-          />
-        )}
-    </div>
-  )
-}
-
-// ─── StepsDisclosure ─────────────────────────────────────────────────────────
-
-const StepsDisclosure = ({
-  jobId,
-  jobs,
-  jobStatus,
-}: {
-  jobId: string
-  jobs: Job[]
-  jobStatus: string
-}) => {
-  const stepsOpenByJobId = useAtomValue(
-    stepsOpenByJobIdAtom,
-  )
-  const setStepsOpen = useSetAtom(stepsOpenByJobIdAtom)
-
-  const defaultOpen =
-    jobStatus === "running" || jobStatus === "pending"
-  const isOpen = stepsOpenByJobId.get(jobId) ?? defaultOpen
-
-  const detailsRef = useRef<HTMLDetailsElement>(null)
-  const skipNextToggleRef = useRef(isOpen)
-
-  useEffect(() => {
-    if (detailsRef.current) detailsRef.current.open = isOpen
-  }, [isOpen])
-
-  const handleToggle = useCallback(
-    (event: React.SyntheticEvent<HTMLDetailsElement>) => {
-      if (skipNextToggleRef.current) {
-        skipNextToggleRef.current = false
-        return
-      }
-      setStepsOpen((prev) =>
-        new Map(prev).set(jobId, event.currentTarget.open),
-      )
-    },
-    [jobId, setStepsOpen],
-  )
-
-  return (
-    <details ref={detailsRef} onToggle={handleToggle}>
-      <summary className="cursor-pointer text-xs font-medium text-slate-400 hover:text-slate-200 py-1">
-        Steps ({jobs.length})
-      </summary>
-      <div className="mt-1 space-y-2">
-        {jobs.map((child, index) => (
-          <StepRow
-            key={child.id}
-            child={child}
-            index={index}
-          />
-        ))}
-      </div>
-    </details>
-  )
 }
 
 // ─── JobCard ─────────────────────────────────────────────────────────────────
@@ -363,14 +183,14 @@ export const JobCard = ({ job }: JobCardProps) => {
       )}
 
       {/* Logs */}
-      <LogsDisclosure
+      <JobLogsDisclosure
         jobId={job.id}
         jobStatus={job.status}
       />
 
       {/* Steps (children) */}
       {children.length > 0 && (
-        <StepsDisclosure
+        <JobStepsDisclosure
           jobId={job.id}
           jobs={children}
           jobStatus={job.status}
