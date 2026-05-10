@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs"
 import { defineConfig, devices } from "@playwright/test"
 
 // E2E tests against the builder UI. The api-server boots an HTTP server
@@ -6,21 +5,21 @@ import { defineConfig, devices } from "@playwright/test"
 // /api/builder/index.html from public/, and exposes /commands/* +
 // /queries/*. Playwright drives it through Chromium.
 //
-// We sniff PORT out of .env at config-load time so this file tracks the
-// user's local port choice without anyone having to keep two configs in
-// sync. Defaults to 3000 if .env is absent or has no PORT line.
+// Ports come from process.env (shell / CI workflow) first, falling back
+// to .env if present, then to the same defaults as
+// packages/server/src/tools/envVars.ts. Node's loadEnvFile won't
+// overwrite a process.env value that's already set, so shell wins.
 //
 // To run interactively: `yarn e2e:ui`. CI / one-shot: `yarn e2e`.
-const port = (() => {
-  try {
-    const env = readFileSync(".env", "utf8")
-    const match = /^PORT\s*=\s*(\d+)\s*$/m.exec(env)
-    if (match) return Number(match[1])
-  } catch {}
-  return 3000
-})()
+try {
+  process.loadEnvFile()
+} catch {}
+
+const port = Number(process.env.PORT ?? 3000)
+const webPort = Number(process.env.WEB_PORT ?? 4173)
 
 const baseURL = `http://localhost:${port}`
+const webBaseURL = `http://localhost:${webPort}`
 
 export default defineConfig({
   testDir: "./e2e",
@@ -41,8 +40,6 @@ export default defineConfig({
   ],
   // Boots both servers before tests run; reuses existing servers in dev
   // so re-running locally is fast (no cold-start penalty).
-  // The legacy HTML loads the React bundle from the Vite dev server at
-  // localhost:5173 — both servers must be up for the UI to render fully.
   webServer: [
     {
       command: "yarn prod:api-server",
@@ -54,7 +51,7 @@ export default defineConfig({
     },
     {
       command: "yarn prod:web-server",
-      url: "http://localhost:4173/",
+      url: `${webBaseURL}/`,
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
       stderr: "pipe",
