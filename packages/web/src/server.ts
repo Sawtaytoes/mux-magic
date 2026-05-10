@@ -3,7 +3,6 @@ import { serveStatic } from "@hono/node-server/serve-static"
 import { WEB_PORT } from "@media-tools/server/src/tools/envVars.js"
 import { logInfo } from "@media-tools/server/src/tools/logMessage"
 import { Hono } from "hono"
-import path from "path"
 
 export const app = new Hono()
 
