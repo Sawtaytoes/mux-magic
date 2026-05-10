@@ -1,0 +1,50 @@
+{/* PathPicker.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as PathPickerStories from "./PathPicker.stories";
+
+<Meta of={PathPickerStories} />
+
+# PathPicker
+
+A filesystem directory autocomplete that attaches to any path input (step field or top-level path variable). Fetches directory entries from `POST /queries/listDirectoryEntries` and renders only directories — files are filtered out, since path vars and step paths always reference folders.
+
+Unlike the other pickers, all transient state (entries, query, active index, separator, cache, request token, debounce timer) lives **inside** `pathPickerStateAtom` rather than React state. The bridge layer drives debouncing and cache keys; this component is mostly an effect runner over that atom.
+
+## Behaviour
+
+- **Fetch** → keyed on `(parentPath, requestToken)`. Re-fetches when either changes; cancellation via the effect cleanup prevents stale writes if a newer request lands first.
+- **Cache hit** → if `cachedParentPath === parentPath` and `entries !== null`, the effect short-circuits without re-fetching.
+- **Selection** → builds a new value `<base><sep><entry.name><sep>` and writes it back through `window.setParam` (step mode) or `window.mediaTools.setPathValue` (path-var mode). Then re-anchors the picker to the input's new `getBoundingClientRect` and bumps `requestToken` to fetch the now-deeper folder.
+- **Position** → 380 × 280 popover. Flips above on `spaceBelow < 160`. Clamps to viewport with 8px margin.
+- **Filtering** → `name.toLowerCase().startsWith(query.toLowerCase())` (prefix match, not substring), then sorted alphabetically.
+- **Outside click** → closes; clicks inside `#path-picker-popover` *or* the original input are ignored.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `pathPickerStateAtom` | The single source of truth: input ref, target descriptor, parent path, query, entries, matches, error, separator, request token, debounce timer |
+
+## Window globals consumed
+
+| Global | Role |
+|--------|------|
+| `window.setParam` | Persists step path values when `target.mode === "step"` |
+| `window.mediaTools.setPathValue` | Persists path-var values when `target.mode === "pathVar"` |
+
+## Server endpoint
+
+`POST /queries/listDirectoryEntries` with `{ path }` → `{ entries?, error?, separator? }`. The server reports the platform separator (`/` or `\`) so the picker can rebuild paths in the correct dialect.
+
+## With entries
+
+<Canvas of={PathPickerStories.WithEntries} />
+
+## Loading
+
+<Canvas of={PathPickerStories.Loading} />
+
+## Error
+
+<Canvas of={PathPickerStories.Error} />

@@ -1,0 +1,45 @@
+{/* LinkPicker.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as LinkPickerStories from "./LinkPicker.stories";
+
+<Meta of={LinkPickerStories} />
+
+# LinkPicker
+
+A portal-rendered picker for path-link fields. Lets the user point a step's input at either a named **path variable** (declared at the top of the builder) or the **output folder of an earlier step**. Any step *after* the current one is excluded — links can only flow forward.
+
+Reads `stepsAtom` and `pathsAtom` directly so the option list stays in sync as the builder mutates. Selection writes through `window.setLink(stepId, fieldName, value)` and refreshes the trigger label via `window.refreshLinkPickerTrigger`.
+
+## Behaviour
+
+- **Open** → `linkPickerStateAtom` is set with `{ anchor: { stepId, fieldName }, triggerRect }`. The option list is built fresh each open: all path vars first, then earlier steps' output folders (skipping steps with `command === null`).
+- **Position** → 360 × 400 popover, **right-aligned** to the trigger (matches the existing chip layout). Flips above when there's < 200px below.
+- **Initial highlight** → derived from `step.links[fieldName]`. If it's a string, matches against path vars; if it's `{ linkedTo }`, matches against step outputs.
+- **Search** → matches `label` or `detail` (case-insensitive).
+- **Outside click** → closes (capture-phase listener); clicks inside `#link-picker-react` are ignored.
+- **Detail rendering** → path values use `dangerouslySetInnerHTML` to inject zero-width-space breaks before separators so long paths wrap cleanly.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `linkPickerStateAtom` | Visibility + anchor (`{ stepId, fieldName }`) |
+| `stepsAtom` | Source of the flat step order; constrains which steps can be linked from |
+| `pathsAtom` | Source of named path variables shown at the top of the option list |
+
+## Window globals consumed
+
+| Global | Role |
+|--------|------|
+| `window.commandLabel` | Used for "Step N: <label>" entries; falls back to raw command name |
+| `window.setLink` | Persists the selected link into step state |
+| `window.refreshLinkPickerTrigger` | Updates the trigger button's display value after selection |
+
+## Open
+
+<Canvas of={LinkPickerStories.Open} />
+
+## Closed
+
+<Canvas of={LinkPickerStories.Closed} />

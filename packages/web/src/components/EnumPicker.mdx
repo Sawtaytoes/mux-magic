@@ -1,0 +1,43 @@
+{/* EnumPicker.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as EnumPickerStories from "./EnumPicker.stories";
+
+<Meta of={EnumPickerStories} />
+
+# EnumPicker
+
+A portal-rendered option list for enum-typed step fields (e.g., `episodeType` → regular / specials / credits / …). Pulls available options from the field's schema in `window.mediaTools.COMMANDS[stepCommand].fields[fieldName].options`.
+
+Selecting an option calls `window.setParam(stepId, fieldName, value)` and triggers `window.mediaTools.renderAll()` to re-render the legacy DOM. Renders nothing when `enumPickerStateAtom` is `null`.
+
+## Behaviour
+
+- **Open** → `enumPickerStateAtom` is set with `{ anchor: { stepId, fieldName }, triggerRect }`. Initial highlight uses the step's current param value, or the field's `default` if unset.
+- **Position** → 300 × 400 popover, left-aligned to the trigger. Flips above when there's < 200px below and more space up. Clamped to viewport with an 8px margin.
+- **Search** → matches `label` or `value` (case-insensitive).
+- **Keyboard** → `↑/↓` wrap, `Enter` selects, `Esc` closes.
+- **Outside click** → closes (capture-phase listener); clicks inside `#enum-picker-react` are ignored.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `enumPickerStateAtom` | `null` ⇒ closed. `{ anchor: { stepId, fieldName }, triggerRect }` ⇒ open over that field |
+
+## Window globals consumed
+
+| Global | Role |
+|--------|------|
+| `window.mediaTools.COMMANDS` | Source of `fields[fieldName].options` and `default` |
+| `window.mediaTools.findStepById` | Provides `command` + `params` for initial highlight |
+| `window.mediaTools.renderAll` | Called after selection so the legacy renderer reflects the new value |
+| `window.setParam` | Persists the selected value into step state |
+
+## Open
+
+<Canvas of={EnumPickerStories.Open} />
+
+## Closed
+
+<Canvas of={EnumPickerStories.Closed} />
