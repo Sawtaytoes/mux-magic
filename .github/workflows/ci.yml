@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24 }
       - run: corepack enable && yarn install --immutable
-      - run: yarn generate-schemas-ci
+      - run: yarn generate-internal-api-schemas
       - run: yarn typecheck
 
   unit-tests:
@@ -35,7 +35,7 @@ jobs:
         with: { node-version: 24 }
       - run: corepack enable && yarn install --immutable
       - run: yarn workspace @media-tools/web dlx playwright install chromium --with-deps
-      - run: yarn generate-schemas-ci
+      - run: yarn generate-internal-api-schemas
       - run: yarn test
 
   e2e:
@@ -46,7 +46,7 @@ jobs:
         with: { node-version: 24 }
       - run: corepack enable && yarn install --immutable
       - run: yarn playwright install chromium --with-deps
-      - run: yarn generate-schemas-ci
+      - run: yarn generate-internal-api-schemas
       - run: yarn build:web
       - run: yarn e2e
 
