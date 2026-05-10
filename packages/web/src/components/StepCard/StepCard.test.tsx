@@ -13,6 +13,7 @@ import {
   test,
   vi,
 } from "vitest"
+import { commandPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
 import { StepCard } from "./StepCard"
@@ -64,7 +65,6 @@ beforeEach(() => {
     updateUrl: vi.fn(),
   }
   window.commandLabel = (name: string) => name
-  window.commandPicker = { open: vi.fn(), close: vi.fn() }
 })
 
 afterEach(() => {
@@ -120,7 +120,7 @@ describe("StepCard", () => {
 
   test("opens command picker on trigger click", async () => {
     const user = userEvent.setup()
-    renderCard(makeStep())
+    const store = renderCard(makeStep())
 
     await user.click(
       screen.getByRole("button", {
@@ -128,7 +128,10 @@ describe("StepCard", () => {
       }),
     )
 
-    expect(window.commandPicker?.open).toHaveBeenCalled()
+    expect(store.get(commandPickerStateAtom)).not.toBeNull()
+    expect(
+      store.get(commandPickerStateAtom)?.anchor.stepId,
+    ).toBe("step_1")
   })
 
   test("shows error message when step has an error", () => {

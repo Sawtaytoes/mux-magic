@@ -80,8 +80,6 @@ const renderPicker = (open = false) => {
   )
 
   window.commandLabel = (name: string) => name
-  window.setLink = vi.fn()
-  window.refreshLinkPickerTrigger = vi.fn()
 
   return store
 }
@@ -156,28 +154,16 @@ describe("LinkPicker items", () => {
 })
 
 describe("LinkPicker selection", () => {
-  test("clicking a path var calls setLink with the correct value", async () => {
+  test("clicking a path var sets the link on the step", async () => {
     const user = userEvent.setup()
-    renderPicker(true)
+    const store = renderPicker(true)
 
     await user.click(screen.getByText("Base Path"))
 
-    expect(window.setLink).toHaveBeenCalledWith(
-      "step-3",
-      "sourcePath",
-      "path:basePath",
+    const step3 = (store.get(stepsAtom) as Step[]).find(
+      (step) => step.id === "step-3",
     )
-  })
-
-  test("calls refreshLinkPickerTrigger after selection", async () => {
-    const user = userEvent.setup()
-    renderPicker(true)
-
-    await user.click(screen.getByText("Base Path"))
-
-    expect(
-      window.refreshLinkPickerTrigger,
-    ).toHaveBeenCalledWith("step-3", "sourcePath")
+    expect(step3?.links.sourcePath).toBe("path:basePath")
   })
 
   test("closes after selection", async () => {

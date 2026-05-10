@@ -10,12 +10,12 @@ import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import {
   afterEach,
-  beforeEach,
   describe,
   expect,
   test,
   vi,
 } from "vitest"
+import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import { loadModalOpenAtom } from "../../state/uiAtoms"
@@ -51,6 +51,7 @@ steps:
 const renderModal = (initialOpen = false) => {
   const store = createStore()
   store.set(loadModalOpenAtom, initialOpen)
+  store.set(commandsAtom, mockCommands)
 
   render(
     <Provider store={store}>
@@ -60,16 +61,6 @@ const renderModal = (initialOpen = false) => {
 
   return store
 }
-
-beforeEach(() => {
-  window.mediaTools = {
-    COMMANDS: mockCommands,
-    renderAll: vi.fn(),
-    updateUrl: vi.fn(),
-    kickReverseLookups: vi.fn(),
-    kickTmdbResolutions: vi.fn(),
-  }
-})
 
 afterEach(() => {
   cleanup()
@@ -171,8 +162,6 @@ describe("LoadModal paste handling", () => {
     expect(steps[0]).toMatchObject({
       command: "testCommand",
     })
-    expect(window.mediaTools.renderAll).toHaveBeenCalled()
-    expect(window.mediaTools.updateUrl).toHaveBeenCalled()
   })
 
   test("canonical YAML with paths section loads paths correctly", async () => {

@@ -14,6 +14,8 @@ import {
   vi,
 } from "vitest"
 import { enumPickerStateAtom } from "../../state/pickerAtoms"
+import { stepsAtom } from "../../state/stepsAtom"
+import type { Step } from "../../types"
 import { EnumPicker } from "./EnumPicker"
 
 const TRIGGER_RECT = {
@@ -55,6 +57,20 @@ const renderPicker = (
   currentValue?: string,
 ) => {
   const store = createStore()
+  store.set(stepsAtom, [
+    {
+      id: "step-1",
+      alias: "",
+      command: "setEpisodeType",
+      params: currentValue
+        ? { episodeType: currentValue }
+        : {},
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    },
+  ])
   if (open) {
     store.set(enumPickerStateAtom, {
       anchor: {
@@ -79,7 +95,6 @@ const renderPicker = (
     }),
     renderAll: vi.fn(),
   }
-  window.setParam = vi.fn()
   return store
 }
 
@@ -162,17 +177,15 @@ describe("EnumPicker items", () => {
 describe("EnumPicker selection", () => {
   test("clicking an option calls setParam", async () => {
     const user = userEvent.setup()
-    renderPicker(true)
+    const store = renderPicker(true)
 
     await user.click(
       screen.getByText("Specials (S, type=2)"),
     )
 
-    expect(window.setParam).toHaveBeenCalledWith(
-      "step-1",
-      "episodeType",
-      "specials",
-    )
+    expect(
+      (store.get(stepsAtom)[0] as Step).params.episodeType,
+    ).toBe("specials")
   })
 
   test("closes after selection", async () => {
@@ -197,7 +210,7 @@ describe("EnumPicker keyboard", () => {
 
   test("Enter selects the active item", async () => {
     const user = userEvent.setup()
-    renderPicker(true)
+    const store = renderPicker(true)
 
     await user.type(
       screen.getByPlaceholderText(/search options/i),
@@ -205,10 +218,8 @@ describe("EnumPicker keyboard", () => {
     )
     await user.keyboard("{Enter}")
 
-    expect(window.setParam).toHaveBeenCalledWith(
-      "step-1",
-      "episodeType",
-      "credits",
-    )
+    expect(
+      (store.get(stepsAtom)[0] as Step).params.episodeType,
+    ).toBe("credits")
   })
 })

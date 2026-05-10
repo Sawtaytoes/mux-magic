@@ -14,6 +14,8 @@ import {
   vi,
 } from "vitest"
 import { commandPickerStateAtom } from "../../state/pickerAtoms"
+import { stepsAtom } from "../../state/stepsAtom"
+import type { Step } from "../../types"
 import { CommandPicker } from "./CommandPicker"
 
 const TRIGGER_RECT = {
@@ -45,6 +47,18 @@ const mockCommands = {
 
 const renderPicker = (open = false) => {
   const store = createStore()
+  store.set(stepsAtom, [
+    {
+      id: "step-1",
+      alias: "",
+      command: "",
+      params: {},
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    },
+  ])
   if (open) {
     store.set(commandPickerStateAtom, {
       anchor: { stepId: "step-1" },
@@ -65,7 +79,6 @@ beforeEach(() => {
     findStepById: () => ({ command: "copyFiles" }),
   }
   window.commandLabel = (name: string) => name
-  window.changeCommand = vi.fn()
   // jsdom doesn't implement innerWidth/innerHeight by default
   Object.defineProperty(window, "innerWidth", {
     value: 1200,
@@ -156,7 +169,7 @@ describe("CommandPicker keyboard navigation", () => {
 
   test("Enter selects the active item", async () => {
     const user = userEvent.setup()
-    renderPicker(true)
+    const store = renderPicker(true)
 
     // Filter to a single result then press Enter
     await user.type(
@@ -165,8 +178,7 @@ describe("CommandPicker keyboard navigation", () => {
     )
     await user.keyboard("{Enter}")
 
-    expect(window.changeCommand).toHaveBeenCalledWith(
-      "step-1",
+    expect((store.get(stepsAtom)[0] as Step).command).toBe(
       "copyFiles",
     )
   })
@@ -175,14 +187,13 @@ describe("CommandPicker keyboard navigation", () => {
 describe("CommandPicker item selection", () => {
   test("clicking an item calls changeCommand with the correct args", async () => {
     const user = userEvent.setup()
-    renderPicker(true)
+    const store = renderPicker(true)
 
     await user.click(
       screen.getAllByText("makeDirectory")[0],
     )
 
-    expect(window.changeCommand).toHaveBeenCalledWith(
-      "step-1",
+    expect((store.get(stepsAtom)[0] as Step).command).toBe(
       "makeDirectory",
     )
   })
