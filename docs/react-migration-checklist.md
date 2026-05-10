@@ -60,16 +60,21 @@ See `docs/react-migration-plan.md` § "Post-Migration: Rename to MuxMagic" for t
 
 ---
 
-## React Migration Recovery — Phase 0 Audit (W0b, 2026-05-10)
+## React Migration Recovery — Phase 0
 
-### Worker Status (Recovery Plan — parallel with W0a, W0c)
+**Worker handout (canonical plan):** [react-migration-recovery-handout.md](react-migration-recovery-handout.md)
+
+Future workers spawned in separate Claude sessions: read the handout above, find your Worker ID, and execute your section. This checklist tracks who has finished what.
+
+### Worker Status
 
 | Worker | Phase | Status | Date | Notes |
 |---|---|---|---|---|
-| Pre-W0 | — AGENTS.md no-snapshot/no-VRT | ✅ Done | 2026-05-10 | Commit 3f8bf84 |
-| W0a | 0 — Stale cleanup + checklist scaffold | ⬜ Not Started | — | No commits detected yet |
-| W0b | 0 — Audit existing state | ✅ Done | 2026-05-10 | claude-sonnet-4-6, low effort |
-| W0c | 0 — Parity reference capture | ⬜ Not Started | — | |
+| Pre-W0 | — AGENTS.md no-snapshot/no-VRT | ✅ Done | 2026-05-10 | Commit 3f8bf84 (orchestrator) |
+| (infra) | — Exclude storybook-static from lint+typecheck | ✅ Done | 2026-05-10 | Commit 1e7cf03 (orchestrator) — unblocks pre-push gate |
+| W0a | 0 — Stale cleanup + plan copy | ✅ Done | 2026-05-10 | Orchestrator took over after subagent permission failure. 7 worktree dirs deleted, 2 stale branches deleted (both already-merged work), plan copied from ~/.claude/plans → docs/react-migration-recovery-handout.md |
+| W0b | 0 — Audit existing state | ✅ Done | 2026-05-10 | claude-sonnet-4-6, low effort, subagent run successful — commit b882c23 |
+| W0c | 0 — Parity reference capture | ⬜ Not Started | — | **NEXT STEP** — user to spawn in separate Claude session. Read handout § WORKER W0c. Time-critical: legacy JS must still work during capture. |
 | W1 | 1 — Wave B-0 RenderFields | ⬜ Not Started | — | Blocks W2A–W2D |
 | W2A | 2 — Bundle A (BooleanField, NumberField, StringField) | ⬜ Not Started | — | |
 | W2B | 2 — Bundle B (EnumField, LanguageCodeField, LanguageCodesField) | ⬜ Not Started | — | |
