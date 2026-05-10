@@ -2,6 +2,7 @@ import { useAtomValue } from "jotai"
 
 import { GroupCard } from "../../components/GroupCard/GroupCard"
 import { StepCard } from "../../components/StepCard/StepCard"
+import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Group, SequenceItem, Step } from "../../types"
 import { InsertDivider } from "../components/InsertDivider"
@@ -11,28 +12,14 @@ const isGroup = (item: SequenceItem): item is Group =>
 
 export const BuilderSequenceList = () => {
   const steps = useAtomValue(stepsAtom)
+  const actions = useBuilderActions()
 
   let flatIndex = 0
-
-  const insertStep = (
-    index: number,
-    parentGroupId?: string | null,
-  ) => {
-    window.mediaTools?.insertStep?.(index, parentGroupId)
-  }
-
-  const insertSequentialGroup = (index: number) => {
-    window.mediaTools?.insertGroup?.(index, false)
-  }
-
-  const insertParallelGroup = (index: number) => {
-    window.mediaTools?.insertGroup?.(index, true)
-  }
 
   const handlePaste =
     (index: number) =>
     (event: React.MouseEvent<HTMLButtonElement>) => {
-      window.mediaTools?.pasteCardAt?.({ itemIndex: index })
+      window.pasteCardAt?.({ itemIndex: index })
       event.stopPropagation()
     }
 
@@ -43,12 +30,12 @@ export const BuilderSequenceList = () => {
       <InsertDivider
         key={`divider-before-${item.id}`}
         index={itemIndex}
-        onInsertStep={() => insertStep(itemIndex)}
+        onInsertStep={() => actions.insertStep(itemIndex)}
         onInsertSequentialGroup={() =>
-          insertSequentialGroup(itemIndex)
+          actions.insertGroup(itemIndex, false)
         }
         onInsertParallelGroup={() =>
-          insertParallelGroup(itemIndex)
+          actions.insertGroup(itemIndex, true)
         }
         onPaste={handlePaste(itemIndex)}
       />,
@@ -86,12 +73,12 @@ export const BuilderSequenceList = () => {
     <InsertDivider
       key="divider-end"
       index={steps.length}
-      onInsertStep={() => insertStep(steps.length)}
+      onInsertStep={() => actions.insertStep(steps.length)}
       onInsertSequentialGroup={() =>
-        insertSequentialGroup(steps.length)
+        actions.insertGroup(steps.length, false)
       }
       onInsertParallelGroup={() =>
-        insertParallelGroup(steps.length)
+        actions.insertGroup(steps.length, true)
       }
       onPaste={handlePaste(steps.length)}
     />,
@@ -103,12 +90,12 @@ export const BuilderSequenceList = () => {
         <p className="text-sm">No steps yet.</p>
         <InsertDivider
           index={0}
-          onInsertStep={() => insertStep(0)}
+          onInsertStep={() => actions.insertStep(0)}
           onInsertSequentialGroup={() =>
-            insertSequentialGroup(0)
+            actions.insertGroup(0, false)
           }
           onInsertParallelGroup={() =>
-            insertParallelGroup(0)
+            actions.insertGroup(0, true)
           }
           onPaste={handlePaste(0)}
         />

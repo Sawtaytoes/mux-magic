@@ -1,5 +1,5 @@
+import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type {
-  LookupGroup,
   LookupRelease,
   LookupState,
 } from "../types"
@@ -42,37 +42,6 @@ const fetchReleases = async (
   }
 }
 
-const applyDvdCompareSelection = (
-  state: LookupState,
-  hash: string | number,
-  label: string,
-) => {
-  const bridge = window.mediaTools as
-    | Record<string, unknown>
-    | undefined
-  if (
-    typeof bridge?.applyDvdCompareSelection === "function"
-  ) {
-    ;(
-      bridge.applyDvdCompareSelection as (
-        stepId: string,
-        group: LookupGroup | null,
-        selectedFid: string | null,
-        selectedVariant: string | null,
-        hash: string | number,
-        label: string,
-      ) => void
-    )(
-      state.stepId,
-      state.selectedGroup,
-      state.selectedFid,
-      state.selectedVariant,
-      hash,
-      label,
-    )
-  }
-}
-
 interface LookupVariantStageProps {
   state: LookupState
   onUpdate: (patch: Partial<LookupState>) => void
@@ -84,6 +53,7 @@ export const LookupVariantStage = ({
   onUpdate,
   onClose,
 }: LookupVariantStageProps) => {
+  const { setParam } = useBuilderActions()
   const group = state.selectedGroup
   if (!group) return null
 
@@ -101,11 +71,7 @@ export const LookupVariantStage = ({
     fetchReleases(variantId).then(
       ({ releases, debug, error }) => {
         if (releases.length === 1) {
-          applyDvdCompareSelection(
-            state,
-            releases[0].hash,
-            releases[0].label,
-          )
+          setParam(state.stepId, state.fieldName, { hash: releases[0].hash, label: releases[0].label })
           onClose()
         } else {
           onUpdate({

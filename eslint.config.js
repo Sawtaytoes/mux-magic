@@ -41,6 +41,8 @@ export default tseslint.config(
     extends: [tseslint.configs.base],
     languageOptions: {
       parserOptions: {
+        // tsconfigRootDir: './', // Adjust path as needed
+        // project: './tsconfig.json',
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -48,7 +50,7 @@ export default tseslint.config(
       // Plugins referenced in eslint-disable comments (react-hooks, etc.)
       // are not yet installed — suppress "unused directive" noise until
       // the follow-up PR adds them.
-      reportUnusedDisableDirectives: "off",
+      reportUnusedDisableDirectives: true,
     },
     rules: {
       // AGENTS.md rule #3: spell every variable name out — no single letters.

@@ -1,35 +1,5 @@
-import type { LookupGroup, LookupState } from "../../types"
-
-const applyDvdCompareSelection = (
-  state: LookupState,
-  hash: string | number,
-  label: string,
-) => {
-  const bridge = window.mediaTools as
-    | Record<string, unknown>
-    | undefined
-  if (
-    typeof bridge?.applyDvdCompareSelection === "function"
-  ) {
-    ;(
-      bridge.applyDvdCompareSelection as (
-        stepId: string,
-        group: LookupGroup | null,
-        selectedFid: string | null,
-        selectedVariant: string | null,
-        hash: string | number,
-        label: string,
-      ) => void
-    )(
-      state.stepId,
-      state.selectedGroup,
-      state.selectedFid,
-      state.selectedVariant,
-      hash,
-      label,
-    )
-  }
-}
+import { useBuilderActions } from "../../hooks/useBuilderActions"
+import type { LookupState } from "../../types"
 
 interface LookupReleaseStageProps {
   state: LookupState
@@ -40,6 +10,7 @@ export const LookupReleaseStage = ({
   state,
   onClose,
 }: LookupReleaseStageProps) => {
+  const { setParam } = useBuilderActions()
   if (state.loading) {
     return (
       <p className="text-slate-500 text-sm text-center py-4">
@@ -76,11 +47,7 @@ export const LookupReleaseStage = ({
           type="button"
           key={String(release.hash)}
           onClick={() => {
-            applyDvdCompareSelection(
-              state,
-              release.hash,
-              release.label,
-            )
+            setParam(state.stepId, state.fieldName, { hash: release.hash, label: release.label })
             onClose()
           }}
           className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"

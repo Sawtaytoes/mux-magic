@@ -6,6 +6,5 @@
     "moduleResolution": "NodeNext",
     "noEmit": true
   },
-  "exclude": [".claude/worktrees"],
   "include": ["packages/server/src"]
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 
+import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type {
   LookupGroup,
   LookupSearchResult,
@@ -85,25 +86,6 @@ const fetchReleases = async (
   }
 }
 
-const applySimpleSelection = (
-  state: LookupState,
-  id: number | string,
-  displayName: string,
-) => {
-  const bridge = window.mediaTools as
-    | Record<string, unknown>
-    | undefined
-  if (typeof bridge?.applyLookupSelection === "function") {
-    ;(
-      bridge.applyLookupSelection as (
-        stepId: string,
-        fieldName: string,
-        id: number | string,
-        displayName: string,
-      ) => void
-    )(state.stepId, state.fieldName, id, displayName)
-  }
-}
 
 interface LookupSearchStageProps {
   state: LookupState
@@ -116,6 +98,7 @@ export const LookupSearchStage = ({
   onUpdate,
   onClose,
 }: LookupSearchStageProps) => {
+  const { setParam } = useBuilderActions()
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -316,11 +299,7 @@ export const LookupSearchStage = ({
                       : (typedResult.title ?? "")
                   }
                   if (id !== undefined) {
-                    applySimpleSelection(
-                      state,
-                      id,
-                      displayName,
-                    )
+                    setParam(state.stepId, state.fieldName, { id, name: displayName })
                     onClose()
                   }
                 }

@@ -1,12 +1,16 @@
-import { useAtom } from "jotai"
+import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
+import { useBuilderActions } from "../../hooks/useBuilderActions"
+import { commandLabel } from "../../jobs/commandLabels"
+import { commandsAtom } from "../../state/commandsAtom"
 import {
   type CommandPickerAnchor,
   commandPickerStateAtom,
   type TriggerRect,
 } from "../../state/pickerAtoms"
-import type { Commands } from "../../types"
+import { stepsAtom } from "../../state/stepsAtom"
+import type { Commands, Group, SequenceItem, Step } from "../../types"
 
 const TAG_ORDER = [
   "File Operations",
@@ -24,42 +28,49 @@ const PICKER_MAX_HEIGHT = 400
 
 type CommandItem = { name: string; tag: string }
 
-const getCommands = (): Commands =>
-  (window.mediaTools?.COMMANDS as Commands) ?? {}
+const isGroup = (item: SequenceItem): item is Group =>
+  (item as Group).kind === "group"
 
-const getCommandLabel = (name: string): string =>
-  typeof window.commandLabel === "function"
-    ? window.commandLabel(name)
-    : name
+const findStepById = (
+  steps: SequenceItem[],
+  stepId: string,
+): Step | undefined => {
+  for (const item of steps) {
+    if (!isGroup(item)) {
+      if (item.id === stepId) return item as Step
+    } else {
+      const found = (item as Group).steps.find(
+        (step) => step.id === stepId,
+      )
+      if (found) return found
+    }
+  }
+  return undefined
+}
 
-const buildItems = (): CommandItem[] =>
+const buildItems = (commands: Commands): CommandItem[] =>
   TAG_ORDER.flatMap((tag) =>
-    Object.entries(getCommands())
+    Object.entries(commands)
       .filter(([, command]) => command.tag === tag)
       .map(([name]) => ({ name, tag }))
       .sort((itemA, itemB) =>
-        getCommandLabel(itemA.name).localeCompare(
-          getCommandLabel(itemB.name),
+        commandLabel(itemA.name).localeCompare(
+          commandLabel(itemB.name),
         ),
       ),
   )
 
 const matchesQuery = (item: CommandItem, query: string) =>
   item.name.toLowerCase().includes(query) ||
-  getCommandLabel(item.name)
-    .toLowerCase()
-    .includes(query) ||
+  commandLabel(item.name).toLowerCase().includes(query) ||
   item.tag.toLowerCase().includes(query)
 
 const findInitialIndex = (
   items: CommandItem[],
   anchor: CommandPickerAnchor,
+  steps: SequenceItem[],
 ): number => {
-  const step = (
-    window.mediaTools?.findStepById as
-      | ((id: string) => { command?: string } | undefined)
-      | undefined
-  )?.(anchor.stepId)
+  const step = findStepById(steps, anchor.stepId)
   const currentCommand = step?.command
   const idx = items.findIndex(
     (item) => item.name === currentCommand,
@@ -131,11 +142,14 @@ export const CommandPicker = () => {
   const [pickerState, setPickerState] = useAtom(
     commandPickerStateAtom,
   )
+  const commands = useAtomValue(commandsAtom)
+  const allSteps = useAtomValue(stepsAtom)
+  const { changeCommand } = useBuilderActions()
   const [query, setQuery] = useState("")
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const allItems = pickerState ? buildItems() : []
+  const allItems = pickerState ? buildItems(commands) : []
   const queryLower = query.trim().toLowerCase()
   const filtered = queryLower
     ? allItems.filter((item) =>
@@ -149,16 +163,18 @@ export const CommandPicker = () => {
     if (!pickerState) {
       return
     }
-    const items = buildItems()
+    const items = buildItems(commands)
     setQuery("")
     setActiveIndex(
-      findInitialIndex(items, pickerState.anchor),
+      findInitialIndex(items, pickerState.anchor, allSteps),
     )
     setTimeout(() => inputRef.current?.focus(), 0)
   }, [
     pickerState?.anchor.stepId,
     pickerState?.anchor,
     pickerState,
+    commands,
+    allSteps,
   ])
 
   useEffect(() => {
@@ -194,11 +210,7 @@ export const CommandPicker = () => {
     const anchor = pickerState?.anchor
     close()
     if (anchor) {
-      ;(
-        window.changeCommand as
-          | ((stepId: string, name: string) => void)
-          | undefined
-      )?.(anchor.stepId, item.name)
+      changeCommand(anchor.stepId, item.name)
     }
   }
 
@@ -286,7 +298,7 @@ export const CommandPicker = () => {
               >
                 <span className="flex-1 min-w-0 flex flex-col">
                   <span className="text-xs truncate">
-                    {getCommandLabel(item.name)}
+                    {commandLabel(item.name)}
                   </span>
                   <span
                     className={`font-mono text-[10px] truncate ${

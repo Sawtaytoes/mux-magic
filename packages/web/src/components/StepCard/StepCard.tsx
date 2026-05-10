@@ -1,7 +1,10 @@
-import { useSetAtom } from "jotai"
+import { useAtomValue, useSetAtom } from "jotai"
 import { useRef, useState } from "react"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
+import { commandLabel } from "../../jobs/commandLabels"
+import { commandsAtom } from "../../state/commandsAtom"
+import { commandPickerStateAtom } from "../../state/pickerAtoms"
 import {
   moveStepAtom,
   removeStepAtom,
@@ -12,6 +15,7 @@ import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
 } from "../../state/uiAtoms"
+
 import type { Step } from "../../types"
 import { RenderFields } from "../RenderFields/RenderFields"
 import { StatusBadge } from "../StatusBadge/StatusBadge"
@@ -45,19 +49,30 @@ export const StepCard = ({
   const setCommandHelpOpen = useSetAtom(
     commandHelpModalOpenAtom,
   )
+  const setCommandPickerState = useSetAtom(
+    commandPickerStateAtom,
+  )
+  const commands = useAtomValue(commandsAtom)
 
   const triggerRef = useRef<HTMLButtonElement>(null)
 
-  const commandLabel =
-    window.commandLabel?.(step.command) ?? step.command
+  const label = commandLabel(step.command) || step.command
 
   const openCommandPicker = () => {
-    if (triggerRef.current) {
-      window.commandPicker?.open(
-        { stepId: step.id },
-        triggerRef.current,
-      )
+    if (!triggerRef.current) return
+    const raw = triggerRef.current.getBoundingClientRect()
+    const triggerRect = {
+      left: raw.left,
+      top: raw.top,
+      right: raw.right,
+      bottom: raw.bottom,
+      width: raw.width,
+      height: raw.height,
     }
+    setCommandPickerState((current) => {
+      if (current?.anchor.stepId === step.id) return null
+      return { anchor: { stepId: step.id }, triggerRect }
+    })
   }
 
   const openCommandHelp = () => {
@@ -82,15 +97,15 @@ export const StepCard = ({
     }
   }
 
-  const triggerLabel = commandLabel ? (
-    <span>{commandLabel}</span>
+  const triggerLabel = label ? (
+    <span>{label}</span>
   ) : (
     <span className="text-slate-400 italic">
       — pick a command —
     </span>
   )
 
-  const cmd = window.mediaTools?.COMMANDS?.[step.command] as
+  const cmd = commands[step.command] as
     | {
         summary?: string
         note?: string
@@ -134,7 +149,7 @@ export const StepCard = ({
           type="text"
           defaultValue={step.alias}
           placeholder={
-            commandLabel || "Click to name this step"
+            label || "Click to name this step"
           }
           data-step-alias={step.id}
           onBlur={handleAliasBlur}

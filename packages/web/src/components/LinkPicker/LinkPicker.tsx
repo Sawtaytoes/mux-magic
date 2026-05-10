@@ -1,6 +1,8 @@
 import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
+import { useBuilderActions } from "../../hooks/useBuilderActions"
+import { commandLabel } from "../../jobs/commandLabels"
 import { pathsAtom } from "../../state/pathsAtom"
 import {
   type LinkPickerAnchor,
@@ -44,9 +46,7 @@ const flattenSteps = (
 }
 
 const getCommandLabel = (name: string): string =>
-  typeof window.commandLabel === "function"
-    ? window.commandLabel(name)
-    : name
+  commandLabel(name)
 
 const makePathBreakable = (text: string) =>
   text.replace(/([/\\])/g, "​$1")
@@ -210,6 +210,7 @@ export const LinkPicker = () => {
   )
   const allSteps = useAtomValue(stepsAtom)
   const paths = useAtomValue(pathsAtom)
+  const { setLink } = useBuilderActions()
   const [query, setQuery] = useState("")
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -275,20 +276,7 @@ export const LinkPicker = () => {
     const anchor = pickerState?.anchor
     close()
     if (anchor) {
-      ;(
-        window.setLink as
-          | ((
-              stepId: string,
-              fieldName: string,
-              value: string,
-            ) => void)
-          | undefined
-      )?.(anchor.stepId, anchor.fieldName, item.value)
-      ;(
-        window.refreshLinkPickerTrigger as
-          | ((stepId: string, fieldName: string) => void)
-          | undefined
-      )?.(anchor.stepId, anchor.fieldName)
+      setLink(anchor.stepId, anchor.fieldName, item.value)
     }
   }
 
