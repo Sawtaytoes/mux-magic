@@ -19,7 +19,9 @@ interface MediaToolsWindow {
   closeLoadModal: () => void
   openYamlModal: () => void
   closeYamlModal: () => void
-  openCommandHelpModal: (args: { commandName: string }) => void
+  openCommandHelpModal: (args: {
+    commandName: string
+  }) => void
   closeCommandHelpModal: () => void
   openApiRunModal: (args: {
     jobId: string | null
@@ -43,7 +45,10 @@ interface MediaToolsWindow {
   ) => void
   closePromptModal: () => void
   syncUndoRedo: (canUndo: boolean, canRedo: boolean) => void
-  onStepStarted: (stepId: unknown, childJobId: unknown) => void
+  onStepStarted: (
+    stepId: unknown,
+    childJobId: unknown,
+  ) => void
   onStepFinished: (stepId: unknown, data: unknown) => void
   onStepProgress: (stepId: unknown, data: unknown) => void
   onStepLog: (stepId: unknown, line: string) => void

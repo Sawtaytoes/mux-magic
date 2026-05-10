@@ -28,6 +28,7 @@ test-results/
 # Vitest browser-mode failure screenshots
 **/__screenshots__/
 **/.vitest-attachments/
+.vitest-attachments/
 
 # Claude Code per-machine permission overrides
 .claude/settings.local.json

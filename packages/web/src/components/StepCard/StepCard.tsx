@@ -148,9 +148,7 @@ export const StepCard = ({
         <input
           type="text"
           defaultValue={step.alias}
-          placeholder={
-            label || "Click to name this step"
-          }
+          placeholder={label || "Click to name this step"}
           data-step-alias={step.id}
           onBlur={handleAliasBlur}
           onKeyDown={handleAliasKeydown}

@@ -3,7 +3,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query"
 import {
-  createStore,
+  type createStore,
   getDefaultStore,
   Provider as JotaiProvider,
 } from "jotai"

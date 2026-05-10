@@ -1,6 +1,7 @@
 import { useStore } from "jotai"
 import { useCallback } from "react"
 import { toYamlStr } from "../jobs/yamlSerializer"
+import { commandsAtom } from "../state/commandsAtom"
 import {
   canRedoAtom,
   canUndoAtom,
@@ -17,8 +18,10 @@ import {
   setLinkAtom,
   setParamAtom,
 } from "../state/sequenceAtoms"
-import { commandsAtom } from "../state/commandsAtom"
-import { stepCounterAtom, stepsAtom } from "../state/stepsAtom"
+import {
+  stepCounterAtom,
+  stepsAtom,
+} from "../state/stepsAtom"
 import {
   apiRunModalAtom,
   runningAtom,
@@ -81,7 +84,10 @@ export const useBuilderActions = () => {
     store.set(undoStackAtom, undoStack.slice(0, -1))
     store.set(redoStackAtom, (prev) => [...prev, current])
     await applySnapshot(store, snapshot)
-    store.set(canUndoAtom, store.get(undoStackAtom).length > 0)
+    store.set(
+      canUndoAtom,
+      store.get(undoStackAtom).length > 0,
+    )
     store.set(canRedoAtom, true)
   }, [store])
 
@@ -96,7 +102,10 @@ export const useBuilderActions = () => {
     store.set(redoStackAtom, redoStack.slice(0, -1))
     store.set(undoStackAtom, (prev) => [...prev, current])
     await applySnapshot(store, snapshot)
-    store.set(canRedoAtom, store.get(redoStackAtom).length > 0)
+    store.set(
+      canRedoAtom,
+      store.get(redoStackAtom).length > 0,
+    )
     store.set(canUndoAtom, true)
   }, [store])
 
@@ -203,7 +212,11 @@ export const useBuilderActions = () => {
       }
       store.set(apiRunModalAtom, (prev) =>
         prev
-          ? { ...prev, jobId: data.jobId, status: "running" }
+          ? {
+              ...prev,
+              jobId: data.jobId,
+              status: "running",
+            }
           : prev,
       )
     } catch {

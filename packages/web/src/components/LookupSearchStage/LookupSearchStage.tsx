@@ -87,7 +87,6 @@ const fetchReleases = async (
   }
 }
 
-
 interface LookupSearchStageProps {
   state: LookupState
   onUpdate: (patch: Partial<LookupState>) => void
@@ -300,7 +299,11 @@ export const LookupSearchStage = ({
                       : (typedResult.title ?? "")
                   }
                   if (id !== undefined) {
-                    setParam(state.stepId, state.fieldName, { id, name: displayName })
+                    setParam(
+                      state.stepId,
+                      state.fieldName,
+                      { id, name: displayName },
+                    )
                     onClose()
                   }
                 }

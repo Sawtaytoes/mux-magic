@@ -47,7 +47,10 @@ export const LookupReleaseStage = ({
           type="button"
           key={String(release.hash)}
           onClick={() => {
-            setParam(state.stepId, state.fieldName, { hash: release.hash, label: release.label })
+            setParam(state.stepId, state.fieldName, {
+              hash: release.hash,
+              label: release.label,
+            })
             onClose()
           }}
           className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"

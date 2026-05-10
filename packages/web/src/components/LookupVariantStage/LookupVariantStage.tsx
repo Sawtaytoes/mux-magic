@@ -71,7 +71,10 @@ export const LookupVariantStage = ({
     fetchReleases(variantId).then(
       ({ releases, debug, error }) => {
         if (releases.length === 1) {
-          setParam(state.stepId, state.fieldName, { hash: releases[0].hash, label: releases[0].label })
+          setParam(state.stepId, state.fieldName, {
+            hash: releases[0].hash,
+            label: releases[0].label,
+          })
           onClose()
         } else {
           onUpdate({
