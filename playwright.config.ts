@@ -53,7 +53,7 @@ export default defineConfig({
       timeout: 30 * 1000,
     },
     {
-      command: "yarn workspace @media-tools/web dev",
+      command: "yarn prod:web-server",
       url: "http://localhost:5173/",
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
