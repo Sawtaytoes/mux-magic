@@ -32,7 +32,10 @@ const SequenceList = () => {
   // Flat index used by StepCard to show the step number across groups.
   let flatIndex = 0
 
-  const insertStep = (index: number, parentGroupId?: string | null) => {
+  const insertStep = (
+    index: number,
+    parentGroupId?: string | null,
+  ) => {
     window.mediaTools?.insertStep?.(index, parentGroupId)
   }
 
@@ -44,10 +47,12 @@ const SequenceList = () => {
     window.mediaTools?.insertGroup?.(index, true)
   }
 
-  const handlePaste = (index: number) => (event: React.MouseEvent<HTMLButtonElement>) => {
-    window.mediaTools?.pasteCardAt?.({ itemIndex: index })
-    event.stopPropagation()
-  }
+  const handlePaste =
+    (index: number) =>
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      window.mediaTools?.pasteCardAt?.({ itemIndex: index })
+      event.stopPropagation()
+    }
 
   const items: React.ReactNode[] = []
 
@@ -57,8 +62,12 @@ const SequenceList = () => {
         key={`divider-before-${item.id}`}
         index={itemIndex}
         onInsertStep={() => insertStep(itemIndex)}
-        onInsertSequentialGroup={() => insertSequentialGroup(itemIndex)}
-        onInsertParallelGroup={() => insertParallelGroup(itemIndex)}
+        onInsertSequentialGroup={() =>
+          insertSequentialGroup(itemIndex)
+        }
+        onInsertParallelGroup={() =>
+          insertParallelGroup(itemIndex)
+        }
         onPaste={handlePaste(itemIndex)}
       />,
     )
@@ -97,8 +106,12 @@ const SequenceList = () => {
       key="divider-end"
       index={steps.length}
       onInsertStep={() => insertStep(steps.length)}
-      onInsertSequentialGroup={() => insertSequentialGroup(steps.length)}
-      onInsertParallelGroup={() => insertParallelGroup(steps.length)}
+      onInsertSequentialGroup={() =>
+        insertSequentialGroup(steps.length)
+      }
+      onInsertParallelGroup={() =>
+        insertParallelGroup(steps.length)
+      }
       onPaste={handlePaste(steps.length)}
     />,
   )
@@ -110,8 +123,12 @@ const SequenceList = () => {
         <InsertDivider
           index={0}
           onInsertStep={() => insertStep(0)}
-          onInsertSequentialGroup={() => insertSequentialGroup(0)}
-          onInsertParallelGroup={() => insertParallelGroup(0)}
+          onInsertSequentialGroup={() =>
+            insertSequentialGroup(0)
+          }
+          onInsertParallelGroup={() =>
+            insertParallelGroup(0)
+          }
           onPaste={handlePaste(0)}
         />
       </div>
@@ -129,11 +146,11 @@ const PathVarList = () => {
 
   return (
     <div className="flex flex-col gap-2 mb-4">
-      {paths.map((pathVar, i) => (
+      {paths.map((pathVar, idx) => (
         <PathVarCard
           key={pathVar.id}
           pathVar={pathVar}
-          isFirst={i === 0}
+          isFirst={idx === 0}
         />
       ))}
       {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
@@ -160,7 +177,10 @@ const useBuilderKeyboard = () => {
       )
         return
 
-      if (event.key === "z" && (event.ctrlKey || event.metaKey)) {
+      if (
+        event.key === "z" &&
+        (event.ctrlKey || event.metaKey)
+      ) {
         event.preventDefault()
         if (event.shiftKey) {
           window.mediaTools?.redo?.()
@@ -176,9 +196,11 @@ const useBuilderKeyboard = () => {
       }
     }
 
-    const handler = (e: KeyboardEvent) => shortcutsRef.current?.(e)
+    const handler = (event: KeyboardEvent) =>
+      shortcutsRef.current?.(event)
     document.addEventListener("keydown", handler)
-    return () => document.removeEventListener("keydown", handler)
+    return () =>
+      document.removeEventListener("keydown", handler)
   }, [])
 }
 

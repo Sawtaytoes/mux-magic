@@ -73,9 +73,7 @@ export const Closed: Story = {
 }
 
 export const WithError: Story = {
-  decorators: [
-    withStore(true),
-  ],
+  decorators: [withStore(true)],
   play: async ({ canvasElement }) => {
     // Simulate an invalid YAML paste to surface the error state.
     const event = new ClipboardEvent("paste", {

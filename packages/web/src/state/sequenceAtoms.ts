@@ -1,5 +1,10 @@
 import { atom } from "jotai"
-import type { Group, SequenceItem, Step, StepLink } from "../types"
+import type {
+  Group,
+  SequenceItem,
+  Step,
+  StepLink,
+} from "../types"
 import { pathsAtom } from "./pathsAtom"
 import { stepCounterAtom, stepsAtom } from "./stepsAtom"
 
@@ -287,7 +292,11 @@ export const setParamAtom = atom(
   (
     _get,
     set,
-    args: { stepId: string; fieldName: string; value: unknown },
+    args: {
+      stepId: string
+      fieldName: string
+      value: unknown
+    },
   ) => {
     const patch = (step: Step): Step => {
       if (step.id !== args.stepId) return step
@@ -383,7 +392,10 @@ export const insertStepAtom = atom(
     set(stepsAtom, (items) => {
       if (args.parentGroupId) {
         return items.map((item) => {
-          if (!isGroup(item) || item.id !== args.parentGroupId)
+          if (
+            !isGroup(item) ||
+            item.id !== args.parentGroupId
+          )
             return item
           const steps = [...item.steps]
           steps.splice(args.index, 0, newStep)

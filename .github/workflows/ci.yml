@@ -6,6 +6,10 @@ on:
   push:
     branches: [react-migration]
 
+env:
+  PORT: 3000
+  REMOTE_SERVER_DOMAIN: http://localhost
+
 jobs:
   lint:
     runs-on: ubuntu-latest

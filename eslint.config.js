@@ -53,7 +53,9 @@ export default tseslint.config(
         "error",
         {
           min: 2,
-          exceptions: ["_"],
+          // "$" is the conventional cheerio selector variable (loaded via
+          // dynamic import in processUhdDiscForumPost.cherrio.ts).
+          exceptions: ["_", "$"],
           // Property names often mirror external APIs (DOMRect.x, etc.)
           // — only enforce length on variables and parameters.
           properties: "never",

@@ -1,7 +1,12 @@
 import { getDefaultStore } from "jotai"
 import { toYamlStr } from "../components/yamlSerializer"
 import { commandLabel } from "../jobs/commandLabels"
-import type { Commands, Group, SequenceItem, Step } from "../types"
+import type {
+  Commands,
+  Group,
+  SequenceItem,
+  Step,
+} from "../types"
 import {
   canRedoAtom,
   canUndoAtom,
@@ -34,7 +39,9 @@ const findStep = (
     if (!isGroup(item)) {
       if ((item as Step).id === stepId) return item as Step
     } else {
-      const found = item.steps.find((s) => s.id === stepId)
+      const found = item.steps.find(
+        (step) => step.id === stepId,
+      )
       if (found) return found
     }
   }
@@ -43,32 +50,38 @@ const findStep = (
 
 // ─── Commands loading ─────────────────────────────────────────────────────────
 
-export const loadBuilderCommands = async (): Promise<void> => {
-  try {
-    // URL-based dynamic import of the static public asset at /builder/js/commands.js.
-    // new Function bypasses TypeScript's static module resolver (public/ is
-    // outside the TS project) while keeping runtime behaviour identical.
-    // biome-ignore lint/security/noGlobalEval: intentional dynamic URL import of public asset
-    const mod = await new Function(
-      "u",
-      "return import(u)",
-    )("/builder/js/commands.js") as { COMMANDS: Commands }
-    window.mediaTools.COMMANDS = mod.COMMANDS
-  } catch {
-    // Server not running or commands.js not available (e.g. in tests).
+export const loadBuilderCommands =
+  async (): Promise<void> => {
+    try {
+      // URL-based dynamic import of the static public asset at /builder/js/commands.js.
+      // new Function bypasses TypeScript's static module resolver (public/ is
+      // outside the TS project) while keeping runtime behaviour identical.
+      const mod = (await new Function(
+        "u",
+        "return import(u)",
+      )("/builder/js/commands.js")) as {
+        COMMANDS: Commands
+      }
+      window.mediaTools.COMMANDS = mod.COMMANDS
+    } catch {
+      // Server not running or commands.js not available (e.g. in tests).
+    }
   }
-}
 
 // ─── History helpers ──────────────────────────────────────────────────────────
 
-const syncButtons = (store: ReturnType<typeof getDefaultStore>) => {
+const syncButtons = (
+  store: ReturnType<typeof getDefaultStore>,
+) => {
   const canUndo = store.get(undoStackAtom).length > 0
   const canRedo = store.get(redoStackAtom).length > 0
   store.set(canUndoAtom, canUndo)
   store.set(canRedoAtom, canRedo)
 }
 
-const pushHistory = (store: ReturnType<typeof getDefaultStore>) => {
+const pushHistory = (
+  store: ReturnType<typeof getDefaultStore>,
+) => {
   const steps = store.get(stepsAtom)
   const paths = store.get(pathsAtom)
   const snapshot = toYamlStr(steps, paths)
@@ -88,7 +101,8 @@ const applySnapshot = async (
     "../components/loadYaml"
   )
   const commands =
-    (window.mediaTools?.COMMANDS as Commands | undefined) ?? {}
+    (window.mediaTools?.COMMANDS as Commands | undefined) ??
+    {}
   const currentPaths = store.get(pathsAtom)
   const currentCounter = store.get(stepCounterAtom)
   try {
@@ -126,7 +140,10 @@ export const initBuilderBridge = () => {
 
   // ── Param / link mutations (called by field components and pickers) ─────────
 
-  window.changeCommand = (stepId: string, commandName: string) => {
+  window.changeCommand = (
+    stepId: string,
+    commandName: string,
+  ) => {
     pushHistory(store)
     store.set(changeCommandAtom, { stepId, commandName })
   }
@@ -163,7 +180,9 @@ export const initBuilderBridge = () => {
     syncButtons(store)
   }
 
-  window.mediaTools.setAllCollapsed = (collapsed: boolean) => {
+  window.mediaTools.setAllCollapsed = (
+    collapsed: boolean,
+  ) => {
     store.set(setAllCollapsedAtom, collapsed)
   }
 
@@ -191,7 +210,9 @@ export const initBuilderBridge = () => {
     const snapshot = undoStack[undoStack.length - 1]
     store.set(undoStackAtom, undoStack.slice(0, -1))
     store.set(redoStackAtom, (prev) => [...prev, current])
-    applySnapshot(store, snapshot).then(() => syncButtons(store))
+    applySnapshot(store, snapshot).then(() =>
+      syncButtons(store),
+    )
   }
 
   window.mediaTools.redo = () => {
@@ -204,7 +225,9 @@ export const initBuilderBridge = () => {
     const snapshot = redoStack[redoStack.length - 1]
     store.set(redoStackAtom, redoStack.slice(0, -1))
     store.set(undoStackAtom, (prev) => [...prev, current])
-    applySnapshot(store, snapshot).then(() => syncButtons(store))
+    applySnapshot(store, snapshot).then(() =>
+      syncButtons(store),
+    )
   }
 
   // ── Run sequence ────────────────────────────────────────────────────────────
@@ -237,9 +260,17 @@ export const initBuilderBridge = () => {
         store.set(runningAtom, false)
         return
       }
-      const data = (await response.json()) as { jobId: string }
+      const data = (await response.json()) as {
+        jobId: string
+      }
       store.set(apiRunModalAtom, (prev) =>
-        prev ? { ...prev, jobId: data.jobId, status: "running" } : prev,
+        prev
+          ? {
+              ...prev,
+              jobId: data.jobId,
+              status: "running",
+            }
+          : prev,
       )
     } catch {
       store.set(apiRunModalAtom, (prev) =>

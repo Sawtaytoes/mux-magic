@@ -27,7 +27,8 @@ const meta: Meta<typeof ApiRunModal> = {
   component: ApiRunModal,
   decorators: [
     (Story, context) => {
-      const initialState = context.parameters.initialState as ApiRunState
+      const initialState = context.parameters
+        .initialState as ApiRunState
       const [store] = useState(() => {
         const newStore = createStore()
         newStore.set(apiRunModalAtom, initialState)
@@ -46,7 +47,9 @@ export default meta
 type Story = StoryObj<typeof ApiRunModal>
 
 export const Running: Story = {
-  parameters: { initialState: makeState("job-42", "running") },
+  parameters: {
+    initialState: makeState("job-42", "running"),
+  },
 }
 
 export const Completed: Story = {

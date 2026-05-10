@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
 import { useState } from "react"
-import { type PromptData, promptModalAtom } from "../state/uiAtoms"
+import {
+  type PromptData,
+  promptModalAtom,
+} from "../state/uiAtoms"
 import { PromptModal } from "./PromptModal"
 
 const meta: Meta<typeof PromptModal> = {
@@ -9,7 +12,8 @@ const meta: Meta<typeof PromptModal> = {
   component: PromptModal,
   decorators: [
     (Story, context) => {
-      const initialState = context.parameters.initialState as PromptData
+      const initialState = context.parameters
+        .initialState as PromptData
       const [store] = useState(() => {
         const newStore = createStore()
         newStore.set(promptModalAtom, initialState)
