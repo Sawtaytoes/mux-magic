@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
+import { isGroup } from "../../jobs/sequenceUtils"
 import { pathsAtom } from "../../state/pathsAtom"
 import {
   type LinkPickerAnchor,
@@ -11,7 +12,6 @@ import {
 } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type {
-  Group,
   PathVar,
   SequenceItem,
   Step,
@@ -20,11 +20,6 @@ import type {
 
 const PICKER_WIDTH = 360
 const PICKER_MAX_HEIGHT = 400
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const isGroup = (item: SequenceItem): item is Group =>
-  (item as Group).kind === "group"
 
 type FlatEntry = { step: Step; flatIndex: number }
 

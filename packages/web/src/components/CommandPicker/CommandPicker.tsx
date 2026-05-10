@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
+import { findStepById } from "../../jobs/sequenceUtils"
 import { commandsAtom } from "../../state/commandsAtom"
 import {
   type CommandPickerAnchor,
@@ -12,9 +13,7 @@ import {
 import { stepsAtom } from "../../state/stepsAtom"
 import type {
   Commands,
-  Group,
   SequenceItem,
-  Step,
 } from "../../types"
 
 const TAG_ORDER = [
@@ -32,26 +31,6 @@ const PICKER_WIDTH = 340
 const PICKER_MAX_HEIGHT = 400
 
 type CommandItem = { name: string; tag: string }
-
-const isGroup = (item: SequenceItem): item is Group =>
-  (item as Group).kind === "group"
-
-const findStepById = (
-  steps: SequenceItem[],
-  stepId: string,
-): Step | undefined => {
-  for (const item of steps) {
-    if (!isGroup(item)) {
-      if (item.id === stepId) return item as Step
-    } else {
-      const found = (item as Group).steps.find(
-        (step) => step.id === stepId,
-      )
-      if (found) return found
-    }
-  }
-  return undefined
-}
 
 const buildItems = (commands: Commands): CommandItem[] =>
   TAG_ORDER.flatMap((tag) =>

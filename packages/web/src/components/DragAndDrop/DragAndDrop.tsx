@@ -1,5 +1,6 @@
 import { useAtom } from "jotai"
 import { useEffect, useRef } from "react"
+import { isGroup } from "../jobs/sequenceUtils"
 import { stepsAtom } from "../state/stepsAtom"
 import type { Group, SequenceItem, Step } from "../types"
 
@@ -17,9 +18,6 @@ declare global {
     }
   }
 }
-
-const isGroup = (item: SequenceItem): item is Group =>
-  "kind" in item && item.kind === "group"
 
 export const useDragAndDrop = (
   containerRef: React.RefObject<HTMLElement | null>,

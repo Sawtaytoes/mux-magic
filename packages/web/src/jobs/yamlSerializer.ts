@@ -1,18 +1,13 @@
 import { dump } from "js-yaml"
+
 import type {
   Group,
   PathVar,
   SequenceItem,
   Step,
 } from "../types"
+import { isGroup } from "./sequenceUtils"
 
-const isGroup = (item: SequenceItem): item is Group =>
-  !!(
-    item &&
-    typeof item === "object" &&
-    "kind" in item &&
-    item.kind === "group"
-  )
 
 // During the transition, buildParams lives in legacy sequence-editor.js.
 // We call it through the bridge; fall back to step.params if not yet wired.

@@ -1,8 +1,8 @@
 import {
   formatBandwidth,
   formatEta,
-} from "../jobs/formatBandwidth"
-import type { ProgressSnapshot } from "../types"
+} from "../../jobs/formatBandwidth"
+import type { ProgressSnapshot } from "../../types"
 
 export const ProgressLabel = ({
   snapshot,

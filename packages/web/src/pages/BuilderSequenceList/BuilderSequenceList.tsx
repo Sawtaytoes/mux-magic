@@ -3,12 +3,10 @@ import { useAtomValue } from "jotai"
 import { GroupCard } from "../../components/GroupCard/GroupCard"
 import { InsertDivider } from "../../components/InsertDivider/InsertDivider"
 import { StepCard } from "../../components/StepCard/StepCard"
+import { isGroup } from "../../jobs/sequenceUtils"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { Group, SequenceItem, Step } from "../../types"
-
-const isGroup = (item: SequenceItem): item is Group =>
-  "kind" in item && item.kind === "group"
+import type { Step } from "../../types"
 
 export const BuilderSequenceList = () => {
   const steps = useAtomValue(stepsAtom)

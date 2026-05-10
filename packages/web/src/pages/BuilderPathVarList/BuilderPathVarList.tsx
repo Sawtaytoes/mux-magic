@@ -1,8 +1,8 @@
 import { useAtomValue, useSetAtom } from "jotai"
 
-import { PathVarCard } from "../components/PathVarCard/PathVarCard"
-import { pathsAtom } from "../state/pathsAtom"
-import { addPathAtom } from "../state/sequenceAtoms"
+import { PathVarCard } from "../../components/PathVarCard/PathVarCard"
+import { pathsAtom } from "../../state/pathsAtom"
+import { addPathAtom } from "../../state/sequenceAtoms"
 
 export const BuilderPathVarList = () => {
   const paths = useAtomValue(pathsAtom)

@@ -1,4 +1,5 @@
 import { atom } from "jotai"
+import { isGroup } from "../jobs/sequenceUtils"
 import type {
   Group,
   SequenceItem,
@@ -7,9 +8,6 @@ import type {
 } from "../types"
 import { pathsAtom } from "./pathsAtom"
 import { stepCounterAtom, stepsAtom } from "./stepsAtom"
-
-const isGroup = (item: SequenceItem): item is Group =>
-  "kind" in item && item.kind === "group"
 
 // ─── Step mutations ───────────────────────────────────────────────────────────
 

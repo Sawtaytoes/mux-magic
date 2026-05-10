@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react"
 
 import { useLogStream } from "../../hooks/useLogStream"
 import { logsByJobIdAtom } from "../../state/logsByJobIdAtom"
-import { CopyTextButton } from "./CopyTextButton"
+import { CopyTextButton } from "../CopyTextButton/CopyTextButton"
 
 export const JobLogsDisclosure = ({
   jobId,

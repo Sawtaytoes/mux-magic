@@ -1,5 +1,5 @@
 import { useAtom } from "jotai"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { fileExplorerAtom } from "../../state/uiAtoms"
 import type {
@@ -7,7 +7,7 @@ import type {
   SortColumn,
   SortDirection,
 } from "../../types"
-import { FileVideoPlayer } from "../FileVideoPlayer"
+import { FileVideoPlayer } from "../FileVideoPlayer/FileVideoPlayer"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

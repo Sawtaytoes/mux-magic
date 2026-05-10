@@ -1,7 +1,7 @@
 import type { ProgressSnapshot } from "../../types"
 
-import { ProgressFileRow } from "../ProgressFileRow"
-import { ProgressLabel } from "../ProgressLabel"
+import { ProgressFileRow } from "../ProgressFileRow/ProgressFileRow"
+import { ProgressLabel } from "../ProgressLabel/ProgressLabel"
 
 interface ProgressBarProps {
   snapshot: ProgressSnapshot

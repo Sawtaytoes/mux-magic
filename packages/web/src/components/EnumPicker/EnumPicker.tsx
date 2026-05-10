@@ -2,6 +2,7 @@ import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
+import { findStepById } from "../../jobs/sequenceUtils"
 import { commandsAtom } from "../../state/commandsAtom"
 import {
   type EnumPickerAnchor,
@@ -12,33 +13,11 @@ import { stepsAtom } from "../../state/stepsAtom"
 import type {
   Commands,
   EnumOption,
-  Group,
   SequenceItem,
-  Step,
 } from "../../types"
 
 const PICKER_WIDTH = 300
 const PICKER_MAX_HEIGHT = 400
-
-const isGroup = (item: SequenceItem): item is Group =>
-  (item as Group).kind === "group"
-
-const findStepById = (
-  steps: SequenceItem[],
-  stepId: string,
-): Step | undefined => {
-  for (const item of steps) {
-    if (!isGroup(item)) {
-      if (item.id === stepId) return item as Step
-    } else {
-      const found = (item as Group).steps.find(
-        (step) => step.id === stepId,
-      )
-      if (found) return found
-    }
-  }
-  return undefined
-}
 
 const buildItems = (
   anchor: EnumPickerAnchor,
