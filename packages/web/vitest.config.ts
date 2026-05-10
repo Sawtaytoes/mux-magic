@@ -55,6 +55,23 @@ export default defineConfig({
           setupFiles: ["./vitest.setup.ts"],
         },
       },
+      {
+        extends: true,
+        // Vite's default publicDir is ./public, which would treat our
+        // builder source as static-served-at-root. Disable so the test
+        // runner imports the .js modules from their real paths.
+        publicDir: false,
+        test: {
+          name: "browser",
+          include: ["public/**/*.test.{js,ts}"],
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: "chromium" }],
+          },
+        },
+      },
     ],
   },
 })
