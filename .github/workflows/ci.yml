@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [react-migration, master]
+  push:
+    branches: [react-migration]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - run: yarn biome check
+      - run: yarn eslint .
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - run: bash scripts/generate-schemas-ci.sh
+      - run: yarn typecheck
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - run: yarn workspace @media-tools/web dlx playwright install chromium --with-deps
+      - run: bash scripts/generate-schemas-ci.sh
+      - run: yarn test
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - run: yarn playwright install chromium --with-deps
+      - run: bash scripts/generate-schemas-ci.sh
+      - run: yarn build:web
+      - run: yarn e2e
+
+  version:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/react-migration'
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, unit-tests]
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - uses: changesets/action@v1
+        with:
+          publish: yarn changeset publish
+          title: "chore: version packages"
+          commit: "chore: version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
