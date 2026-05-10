@@ -10,7 +10,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import { stepsAtom } from "../../state/stepsAtom"
@@ -73,19 +73,19 @@ afterEach(() => {
 })
 
 describe("StepCard", () => {
-  it("renders the step index", () => {
+  test("renders the step index", () => {
     renderCard(makeStep())
     expect(screen.getByText("1")).toBeInTheDocument()
   })
 
-  it("shows 'pick a command' when no command set", () => {
+  test("shows 'pick a command' when no command set", () => {
     renderCard(makeStep())
     expect(
       screen.getByText(/pick a command/i),
     ).toBeInTheDocument()
   })
 
-  it("toggles collapsed state on chevron click", async () => {
+  test("toggles collapsed state on chevron click", async () => {
     const user = userEvent.setup()
     const store = renderCard(
       makeStep({ isCollapsed: false }),
@@ -97,17 +97,17 @@ describe("StepCard", () => {
     expect((steps[0] as Step).isCollapsed).toBe(true)
   })
 
-  it("shows status badge when step has status", () => {
+  test("shows status badge when step has status", () => {
     renderCard(makeStep({ status: "running" }))
     expect(screen.getByText("running")).toBeInTheDocument()
   })
 
-  it("does not show status badge when status is null", () => {
+  test("does not show status badge when status is null", () => {
     renderCard(makeStep({ status: null }))
     expect(screen.queryByText("running")).toBeNull()
   })
 
-  it("removes step from atom when remove button clicked", async () => {
+  test("removes step from atom when remove button clicked", async () => {
     const user = userEvent.setup()
     const store = renderCard(makeStep())
 
@@ -118,7 +118,7 @@ describe("StepCard", () => {
     expect(store.get(stepsAtom)).toHaveLength(0)
   })
 
-  it("opens command picker on trigger click", async () => {
+  test("opens command picker on trigger click", async () => {
     const user = userEvent.setup()
     renderCard(makeStep())
 
@@ -131,7 +131,7 @@ describe("StepCard", () => {
     expect(window.commandPicker?.open).toHaveBeenCalled()
   })
 
-  it("shows error message when step has an error", () => {
+  test("shows error message when step has an error", () => {
     renderCard(
       makeStep({
         command: "testCmd",
@@ -143,7 +143,7 @@ describe("StepCard", () => {
     ).toBeInTheDocument()
   })
 
-  it("collapses body when isCollapsed is true", () => {
+  test("collapses body when isCollapsed is true", () => {
     renderCard(
       makeStep({ command: "testCmd", isCollapsed: true }),
     )

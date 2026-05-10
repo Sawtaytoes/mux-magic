@@ -11,7 +11,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import { pathPickerStateAtom } from "../../state/pickerAtoms"
@@ -117,7 +117,7 @@ afterEach(() => {
 })
 
 describe("PathPicker visibility", () => {
-  it("renders nothing when atom is null", () => {
+  test("renders nothing when atom is null", () => {
     const store = createStore()
     render(
       <Provider store={store}>
@@ -127,14 +127,14 @@ describe("PathPicker visibility", () => {
     expect(screen.queryByTestId("path-picker")).toBeNull()
   })
 
-  it("renders picker when atom has state", () => {
+  test("renders picker when atom has state", () => {
     renderPicker()
     expect(
       screen.getByTestId("path-picker"),
     ).toBeInTheDocument()
   })
 
-  it("shows loading state before fetch completes", () => {
+  test("shows loading state before fetch completes", () => {
     const pendingFetch = vi
       .fn()
       .mockReturnValue(new Promise(() => {}))
@@ -144,7 +144,7 @@ describe("PathPicker visibility", () => {
 })
 
 describe("PathPicker directory listing", () => {
-  it("shows directories after fetch", async () => {
+  test("shows directories after fetch", async () => {
     renderPicker()
 
     await waitFor(() => {
@@ -160,7 +160,7 @@ describe("PathPicker directory listing", () => {
     })
   })
 
-  it("does not show non-directory entries", async () => {
+  test("does not show non-directory entries", async () => {
     renderPicker()
 
     await waitFor(() => {
@@ -170,7 +170,7 @@ describe("PathPicker directory listing", () => {
 })
 
 describe("PathPicker fetch error", () => {
-  it("shows error message when fetch fails", async () => {
+  test("shows error message when fetch fails", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockRejectedValue(new Error("Network error")),
@@ -212,7 +212,7 @@ describe("PathPicker fetch error", () => {
 })
 
 describe("PathPicker selection", () => {
-  it("clicking a directory calls setParam with new path", async () => {
+  test("clicking a directory calls setParam with new path", async () => {
     renderPicker()
 
     await waitFor(() => screen.getByText("Documents"))

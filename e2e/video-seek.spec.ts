@@ -75,7 +75,7 @@ test.describe("MSE video seek", () => {
 
   test("initial playback starts without MSE errors", async ({ page }) => {
     await page.evaluate(() => {
-      (window as Window & { openVideoModal: (p: string) => void }).openVideoModal(
+      (window as unknown as Window & { openVideoModal: (p: string) => void }).openVideoModal(
         "/test/fake-movie.mkv",
       )
     })
@@ -100,8 +100,8 @@ test.describe("MSE video seek", () => {
 
   test("seek does not throw InvalidStateError", async ({ page }) => {
     await page.evaluate(() => {
-      (window as Window & { openVideoModal: (p: string) => void }).openVideoModal(
-        "/test/fake-movie.mkv",
+      (window as unknown as Window & { openVideoModal: (p: string) => void }).openVideoModal(
+      "/test/fake-movie.mkv",
       )
     })
 
@@ -111,8 +111,8 @@ test.describe("MSE video seek", () => {
     // Wait for initial buffering before seeking.
     await page.waitForFunction(
       () => {
-        const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement | null
-        return (videoEl?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA
+        const videoElement = document.getElementById("video-modal-player") as HTMLVideoElement | null
+        return (videoElement?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA
       },
       { timeout: 20_000 },
     )
@@ -122,15 +122,15 @@ test.describe("MSE video seek", () => {
     // appendBuffer) but updating is already false. Without sb.abort() this
     // throws InvalidStateError on the timestampOffset assignment.
     await page.evaluate(() => {
-      const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement
-      videoEl.currentTime = 5
+      const videoElement = document.getElementById("video-modal-player") as HTMLVideoElement
+      videoElement.currentTime = 5
     })
 
     // The player must exit seeking state (spinner clears) within 15 s.
     await page.waitForFunction(
       () => {
-        const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement | null
-        return videoEl != null && !videoEl.seeking
+        const videoElement = document.getElementById("video-modal-player") as HTMLVideoElement | null
+        return videoElement != null && !videoElement.seeking
       },
       { timeout: 15_000 },
     )
@@ -143,7 +143,7 @@ test.describe("MSE video seek", () => {
 
   test("rapid seeks resolve without errors", async ({ page }) => {
     await page.evaluate(() => {
-      (window as Window & { openVideoModal: (p: string) => void }).openVideoModal(
+      (window as unknown  as Window & { openVideoModal: (p: string) => void }).openVideoModal(
         "/test/fake-movie.mkv",
       )
     })
@@ -152,8 +152,8 @@ test.describe("MSE video seek", () => {
 
     await page.waitForFunction(
       () => {
-        const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement | null
-        return (videoEl?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA
+        const videoElement = document.getElementById("video-modal-player") as HTMLVideoElement | null
+        return (videoElement?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA
       },
       { timeout: 20_000 },
     )
@@ -161,17 +161,17 @@ test.describe("MSE video seek", () => {
     // Fire three seeks in quick succession to exercise the activeVersion
     // staleness protection and timestampOffset ordering.
     await page.evaluate(() => {
-      const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement
-      videoEl.currentTime = 10
-      setTimeout(() => { videoEl.currentTime = 20 }, 100)
-      setTimeout(() => { videoEl.currentTime = 5 }, 200)
+      const videoElement = document.getElementById("video-modal-player") as HTMLVideoElement
+      videoElement.currentTime = 10
+      setTimeout(() => { videoElement.currentTime = 20 }, 100)
+      setTimeout(() => { videoElement.currentTime = 5 }, 200)
     })
 
     // Wait for the last seek (to 5 s) to settle.
     await page.waitForFunction(
       () => {
-        const videoEl = document.getElementById("video-modal-player") as HTMLVideoElement | null
-        return videoEl != null && !videoEl.seeking
+        const videoElement = document.getElementById("video-modal-player") as HTMLVideoElement | null
+        return videoElement != null && !videoElement.seeking
       },
       { timeout: 20_000 },
     )

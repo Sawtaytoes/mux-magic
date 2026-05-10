@@ -10,7 +10,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import { enumPickerStateAtom } from "../../state/pickerAtoms"
@@ -100,12 +100,12 @@ afterEach(() => {
 })
 
 describe("EnumPicker visibility", () => {
-  it("renders nothing when atom is null", () => {
+  test("renders nothing when atom is null", () => {
     renderPicker(false)
     expect(screen.queryByTestId("enum-picker")).toBeNull()
   })
 
-  it("renders picker when atom has state", () => {
+  test("renders picker when atom has state", () => {
     renderPicker(true)
     expect(
       screen.getByTestId("enum-picker"),
@@ -114,7 +114,7 @@ describe("EnumPicker visibility", () => {
 })
 
 describe("EnumPicker items", () => {
-  it("shows all options initially", () => {
+  test("shows all options initially", () => {
     renderPicker(true)
     expect(
       screen.getByText("Regular (type=1)"),
@@ -127,7 +127,7 @@ describe("EnumPicker items", () => {
     ).toBeInTheDocument()
   })
 
-  it("filters options by query", async () => {
+  test("filters options by query", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
@@ -144,7 +144,7 @@ describe("EnumPicker items", () => {
     ).toBeNull()
   })
 
-  it("shows empty state when nothing matches", async () => {
+  test("shows empty state when nothing matches", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
@@ -160,7 +160,7 @@ describe("EnumPicker items", () => {
 })
 
 describe("EnumPicker selection", () => {
-  it("clicking an option calls setParam", async () => {
+  test("clicking an option calls setParam", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
@@ -175,7 +175,7 @@ describe("EnumPicker selection", () => {
     )
   })
 
-  it("closes after selection", async () => {
+  test("closes after selection", async () => {
     const user = userEvent.setup()
     const store = renderPicker(true)
 
@@ -186,7 +186,7 @@ describe("EnumPicker selection", () => {
 })
 
 describe("EnumPicker keyboard", () => {
-  it("Escape closes the picker", async () => {
+  test("Escape closes the picker", async () => {
     const user = userEvent.setup()
     const store = renderPicker(true)
 
@@ -195,7 +195,7 @@ describe("EnumPicker keyboard", () => {
     expect(store.get(enumPickerStateAtom)).toBeNull()
   })
 
-  it("Enter selects the active item", async () => {
+  test("Enter selects the active item", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 

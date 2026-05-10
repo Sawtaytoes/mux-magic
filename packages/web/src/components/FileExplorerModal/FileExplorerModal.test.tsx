@@ -5,7 +5,13 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 afterEach(() => {
   cleanup()
@@ -25,13 +31,13 @@ const renderWithStore = (
   )
 
 describe("FileExplorerModal", () => {
-  it("renders nothing when fileExplorerAtom is null", () => {
+  test("renders nothing when fileExplorerAtom is null", () => {
     const store = createStore()
     renderWithStore(store)
     expect(screen.queryByText(/Loading/i)).toBeNull()
   })
 
-  it("shows loading state when opened", async () => {
+  test("shows loading state when opened", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
       .mockImplementation((url) => {
@@ -65,7 +71,7 @@ describe("FileExplorerModal", () => {
     fetchSpy.mockRestore()
   })
 
-  it("renders entries returned by the server", async () => {
+  test("renders entries returned by the server", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
       .mockImplementation((url) => {
@@ -109,7 +115,7 @@ describe("FileExplorerModal", () => {
     fetchSpy.mockRestore()
   })
 
-  it("closes when ✕ is clicked", async () => {
+  test("closes when ✕ is clicked", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
       .mockImplementation((url) => {
@@ -143,7 +149,7 @@ describe("FileExplorerModal", () => {
     fetchSpy.mockRestore()
   })
 
-  it("shows PICKER badge and Use this folder button in picker mode", async () => {
+  test("shows PICKER badge and Use this folder button in picker mode", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(

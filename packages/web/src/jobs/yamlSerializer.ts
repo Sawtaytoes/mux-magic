@@ -8,7 +8,6 @@ import type {
 } from "../types"
 import { isGroup } from "./sequenceUtils"
 
-
 // During the transition, buildParams lives in legacy sequence-editor.js.
 // We call it through the bridge; fall back to step.params if not yet wired.
 const buildParamsForStep = (

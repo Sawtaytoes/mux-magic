@@ -5,7 +5,7 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, test } from "vitest"
 
 afterEach(() => {
   cleanup()
@@ -42,13 +42,13 @@ const baseState = {
 }
 
 describe("LookupModal", () => {
-  it("renders nothing when lookupModalAtom is null", () => {
+  test("renders nothing when lookupModalAtom is null", () => {
     const store = createStore()
     renderWithStore(store)
     expect(screen.queryByText(/Look up/i)).toBeNull()
   })
 
-  it("renders the MAL lookup title when open", () => {
+  test("renders the MAL lookup title when open", () => {
     const store = createStore()
     store.set(lookupModalAtom, baseState)
     renderWithStore(store)
@@ -57,7 +57,7 @@ describe("LookupModal", () => {
     ).toBeInTheDocument()
   })
 
-  it("renders the search input", () => {
+  test("renders the search input", () => {
     const store = createStore()
     store.set(lookupModalAtom, baseState)
     renderWithStore(store)
@@ -66,7 +66,7 @@ describe("LookupModal", () => {
     ).toBeInTheDocument()
   })
 
-  it("updates searchTerm as user types", async () => {
+  test("updates searchTerm as user types", async () => {
     const store = createStore()
     store.set(lookupModalAtom, baseState)
     renderWithStore(store)
@@ -79,7 +79,7 @@ describe("LookupModal", () => {
     )
   })
 
-  it("closes the modal when ✕ is clicked", async () => {
+  test("closes the modal when ✕ is clicked", async () => {
     const store = createStore()
     store.set(lookupModalAtom, baseState)
     renderWithStore(store)
@@ -87,7 +87,7 @@ describe("LookupModal", () => {
     expect(store.get(lookupModalAtom)).toBeNull()
   })
 
-  it("shows Back button only in variant and release stages", () => {
+  test("shows Back button only in variant and release stages", () => {
     const store = createStore()
     store.set(lookupModalAtom, {
       ...baseState,
@@ -99,7 +99,7 @@ describe("LookupModal", () => {
     ).toBeInTheDocument()
   })
 
-  it("shows DVDCompare format filter buttons for dvdcompare lookup type", () => {
+  test("shows DVDCompare format filter buttons for dvdcompare lookup type", () => {
     const store = createStore()
     store.set(lookupModalAtom, {
       ...baseState,

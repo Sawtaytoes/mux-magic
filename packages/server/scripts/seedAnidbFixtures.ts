@@ -1,7 +1,7 @@
 // One-off script to seed test fixtures and warm caches from real AniDB
 // responses.
 //
-// Run with:   yarn tsx scripts/seedAnidbFixtures.ts
+// Run with:   yarn seed-anidb-fixtures  (from repo root)
 //
 // What it does:
 //   1. Triggers loadAnimeIndex() once  → downloads the manami dataset to
@@ -17,15 +17,17 @@
 // Re-run when AniDB changes a response shape, or to refresh a stale cache.
 
 import { copyFile, mkdir } from "node:fs/promises"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import { firstValueFrom } from "rxjs"
 
-import { getAnidbCacheDir } from "../packages/server/src/tools/getAnidbCacheDir.js"
-import { loadAnimeIndex } from "../packages/server/src/tools/animeOfflineDatabase.js"
-import { lookupAnidbById } from "../packages/server/src/tools/searchAnidb.js"
+import { getAnidbCacheDir } from "../src/tools/getAnidbCacheDir.js"
+import { loadAnimeIndex } from "../src/tools/animeOfflineDatabase.js"
+import { lookupAnidbById } from "../src/tools/searchAnidb.js"
 
-const FIXTURES_DIR = join("packages", "server", "src", "tools", "__fixtures__", "anidb")
+const scriptDir = dirname(fileURLToPath(import.meta.url))
+const FIXTURES_DIR = join(scriptDir, "..", "src", "tools", "__fixtures__", "anidb")
 const CACHE_DIR = getAnidbCacheDir()
 
 // Aids chosen to cover both shape variants in the parser:

@@ -11,10 +11,7 @@ import {
   type TriggerRect,
 } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
-import type {
-  Commands,
-  SequenceItem,
-} from "../../types"
+import type { Commands, SequenceItem } from "../../types"
 
 const TAG_ORDER = [
   "File Operations",

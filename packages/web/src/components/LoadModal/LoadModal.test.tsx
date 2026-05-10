@@ -13,7 +13,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import { pathsAtom } from "../../state/pathsAtom"
@@ -79,12 +79,12 @@ afterEach(() => {
 // ─── Visibility ───────────────────────────────────────────────────────────────
 
 describe("LoadModal visibility", () => {
-  it("renders nothing when the atom is false", () => {
+  test("renders nothing when the atom is false", () => {
     renderModal(false)
     expect(screen.queryByText("Load YAML")).toBeNull()
   })
 
-  it("renders the modal when the atom is true", () => {
+  test("renders the modal when the atom is true", () => {
     renderModal(true)
     expect(
       screen.getByText("Load YAML"),
@@ -95,7 +95,7 @@ describe("LoadModal visibility", () => {
 // ─── Close interactions ───────────────────────────────────────────────────────
 
 describe("LoadModal close interactions", () => {
-  it("close button hides the modal", async () => {
+  test("close button hides the modal", async () => {
     const user = userEvent.setup()
     renderModal(true)
 
@@ -106,7 +106,7 @@ describe("LoadModal close interactions", () => {
     expect(screen.queryByText("Load YAML")).toBeNull()
   })
 
-  it("clicking the backdrop hides the modal", async () => {
+  test("clicking the backdrop hides the modal", async () => {
     renderModal(true)
 
     fireEvent.click(
@@ -118,7 +118,7 @@ describe("LoadModal close interactions", () => {
     )
   })
 
-  it("clicking inside the panel does not close the modal", async () => {
+  test("clicking inside the panel does not close the modal", async () => {
     const user = userEvent.setup()
     renderModal(true)
 
@@ -132,7 +132,7 @@ describe("LoadModal close interactions", () => {
     ).toBeInTheDocument()
   })
 
-  it("Esc key hides the modal", async () => {
+  test("Esc key hides the modal", async () => {
     const user = userEvent.setup()
     renderModal(true)
 
@@ -158,7 +158,7 @@ const dispatchPaste = (text: string) => {
 // ─── Paste handling ───────────────────────────────────────────────────────────
 
 describe("LoadModal paste handling", () => {
-  it("valid YAML paste loads steps and closes modal", async () => {
+  test("valid YAML paste loads steps and closes modal", async () => {
     const store = renderModal(true)
 
     dispatchPaste(minimalYaml)
@@ -175,7 +175,7 @@ describe("LoadModal paste handling", () => {
     expect(window.mediaTools.updateUrl).toHaveBeenCalled()
   })
 
-  it("canonical YAML with paths section loads paths correctly", async () => {
+  test("canonical YAML with paths section loads paths correctly", async () => {
     const store = renderModal(true)
 
     dispatchPaste(canonicalYaml)
@@ -188,7 +188,7 @@ describe("LoadModal paste handling", () => {
     })
   })
 
-  it("empty paste is ignored; modal stays open", () => {
+  test("empty paste is ignored; modal stays open", () => {
     renderModal(true)
 
     dispatchPaste("   ")
@@ -198,7 +198,7 @@ describe("LoadModal paste handling", () => {
     ).toBeInTheDocument()
   })
 
-  it("invalid YAML shows an error message and keeps modal open", async () => {
+  test("invalid YAML shows an error message and keeps modal open", async () => {
     renderModal(true)
 
     dispatchPaste("not: valid: yaml: {{{{")
@@ -211,7 +211,7 @@ describe("LoadModal paste handling", () => {
     ).toBeInTheDocument()
   })
 
-  it("unknown command in YAML shows an error message", async () => {
+  test("unknown command in YAML shows an error message", async () => {
     renderModal(true)
 
     dispatchPaste("- command: unknownCommand\n  params: {}")
@@ -224,7 +224,7 @@ describe("LoadModal paste handling", () => {
     ).toBeInTheDocument()
   })
 
-  it("paste after modal closes is ignored", async () => {
+  test("paste after modal closes is ignored", async () => {
     const store = renderModal(true)
 
     // Close the modal; act() flushes the re-render AND the useEffect cleanup

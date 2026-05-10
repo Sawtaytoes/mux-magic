@@ -7,7 +7,13 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 afterEach(() => {
   cleanup()
@@ -27,13 +33,13 @@ const renderWithStore = (
   )
 
 describe("PromptModal", () => {
-  it("renders nothing when promptModalAtom is null", () => {
+  test("renders nothing when promptModalAtom is null", () => {
     const store = createStore()
     renderWithStore(store)
     expect(screen.queryByText(/pick/i)).toBeNull()
   })
 
-  it("renders the prompt message and options when atom is set", () => {
+  test("renders the prompt message and options when atom is set", () => {
     const store = createStore()
     store.set(promptModalAtom, {
       jobId: "job-1",
@@ -54,7 +60,7 @@ describe("PromptModal", () => {
     ).toBeInTheDocument()
   })
 
-  it("closes the modal when backdrop is clicked", async () => {
+  test("closes the modal when backdrop is clicked", async () => {
     const store = createStore()
     store.set(promptModalAtom, {
       jobId: "job-1",
@@ -71,7 +77,7 @@ describe("PromptModal", () => {
     )
   })
 
-  it("submits and closes when an option is clicked", async () => {
+  test("submits and closes when an option is clicked", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(

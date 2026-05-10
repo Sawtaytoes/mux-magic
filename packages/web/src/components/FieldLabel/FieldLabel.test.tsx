@@ -3,7 +3,7 @@ import {
   render,
   screen,
 } from "@testing-library/react"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, test } from "vitest"
 import { FieldLabel } from "./FieldLabel"
 
 afterEach(() => {
@@ -11,7 +11,7 @@ afterEach(() => {
 })
 
 describe("FieldLabel", () => {
-  it("renders the field label text", () => {
+  test("renders the field label text", () => {
     render(
       <FieldLabel
         command="ffmpeg"
@@ -21,7 +21,7 @@ describe("FieldLabel", () => {
     expect(screen.getByText("Filename")).toBeInTheDocument()
   })
 
-  it("falls back to field name when label is absent", () => {
+  test("falls back to field name when label is absent", () => {
     render(
       <FieldLabel
         command="ffmpeg"
@@ -31,7 +31,7 @@ describe("FieldLabel", () => {
     expect(screen.getByText("filename")).toBeInTheDocument()
   })
 
-  it("shows a required asterisk when required is true", () => {
+  test("shows a required asterisk when required is true", () => {
     render(
       <FieldLabel
         command="ffmpeg"
@@ -45,7 +45,7 @@ describe("FieldLabel", () => {
     expect(screen.getByText("*")).toBeInTheDocument()
   })
 
-  it("omits the required asterisk when required is false", () => {
+  test("omits the required asterisk when required is false", () => {
     render(
       <FieldLabel
         command="ffmpeg"
@@ -59,7 +59,7 @@ describe("FieldLabel", () => {
     expect(screen.queryByText("*")).toBeNull()
   })
 
-  it("sets the tooltip data attribute", () => {
+  test("sets the tooltip data attribute", () => {
     const { container } = render(
       <FieldLabel
         command="ffmpeg"

@@ -4,7 +4,13 @@ import {
   screen,
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import { InsertDivider } from "./InsertDivider"
 
 const makeProps = () => ({
@@ -21,7 +27,7 @@ afterEach(() => {
 })
 
 describe("InsertDivider", () => {
-  it("renders all four action buttons", () => {
+  test("renders all four action buttons", () => {
     render(<InsertDivider {...makeProps()} />)
     expect(
       screen.getByTitle(/insert a step here/i),
@@ -39,7 +45,7 @@ describe("InsertDivider", () => {
     ).toBeInTheDocument()
   })
 
-  it("calls onInsertStep when Step button is clicked", async () => {
+  test("calls onInsertStep when Step button is clicked", async () => {
     const props = makeProps()
     const user = userEvent.setup()
     render(<InsertDivider {...props} />)
@@ -51,7 +57,7 @@ describe("InsertDivider", () => {
     expect(props.onInsertStep).toHaveBeenCalledOnce()
   })
 
-  it("calls onInsertSequentialGroup when Group button is clicked", async () => {
+  test("calls onInsertSequentialGroup when Group button is clicked", async () => {
     const props = makeProps()
     const user = userEvent.setup()
     render(<InsertDivider {...props} />)
@@ -65,7 +71,7 @@ describe("InsertDivider", () => {
     ).toHaveBeenCalledOnce()
   })
 
-  it("calls onInsertParallelGroup when Parallel button is clicked", async () => {
+  test("calls onInsertParallelGroup when Parallel button is clicked", async () => {
     const props = makeProps()
     const user = userEvent.setup()
     render(<InsertDivider {...props} />)
@@ -79,7 +85,7 @@ describe("InsertDivider", () => {
     ).toHaveBeenCalledOnce()
   })
 
-  it("calls onPaste when Paste button is clicked", async () => {
+  test("calls onPaste when Paste button is clicked", async () => {
     const props = makeProps()
     const user = userEvent.setup()
     render(<InsertDivider {...props} />)
@@ -93,7 +99,7 @@ describe("InsertDivider", () => {
     expect(props.onPaste).toHaveBeenCalledOnce()
   })
 
-  it("does not cross-fire callbacks", async () => {
+  test("does not cross-fire callbacks", async () => {
     const props = makeProps()
     const user = userEvent.setup()
     render(<InsertDivider {...props} />)

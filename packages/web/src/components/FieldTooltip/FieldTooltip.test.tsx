@@ -4,7 +4,13 @@ import {
   screen,
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import { FieldTooltip } from "./FieldTooltip"
 
 afterEach(() => {
@@ -13,7 +19,7 @@ afterEach(() => {
 })
 
 describe("FieldTooltip", () => {
-  it("renders children", () => {
+  test("renders children", () => {
     render(
       <FieldTooltip description="A helpful tip">
         Label text
@@ -24,7 +30,7 @@ describe("FieldTooltip", () => {
     ).toBeInTheDocument()
   })
 
-  it("tooltip is hidden initially", () => {
+  test("tooltip is hidden initially", () => {
     render(
       <FieldTooltip description="A helpful tip">
         Label
@@ -33,7 +39,7 @@ describe("FieldTooltip", () => {
     expect(screen.queryByRole("tooltip")).toBeNull()
   })
 
-  it("shows tooltip on click when there is a description", async () => {
+  test("shows tooltip on click when there is a description", async () => {
     const user = userEvent.setup()
     render(
       <FieldTooltip description="A helpful tip">
@@ -49,7 +55,7 @@ describe("FieldTooltip", () => {
     )
   })
 
-  it("hides tooltip on second click", async () => {
+  test("hides tooltip on second click", async () => {
     const user = userEvent.setup()
     render(
       <FieldTooltip description="A helpful tip">
@@ -64,7 +70,7 @@ describe("FieldTooltip", () => {
     expect(screen.queryByRole("tooltip")).toBeNull()
   })
 
-  it("does not show tooltip when description is empty", async () => {
+  test("does not show tooltip when description is empty", async () => {
     const user = userEvent.setup()
     render(
       <FieldTooltip description="">Label</FieldTooltip>,

@@ -10,7 +10,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import { pathsAtom } from "../../state/pathsAtom"
@@ -103,12 +103,12 @@ afterEach(() => {
 })
 
 describe("LinkPicker visibility", () => {
-  it("renders nothing when atom is null", () => {
+  test("renders nothing when atom is null", () => {
     renderPicker(false)
     expect(screen.queryByTestId("link-picker")).toBeNull()
   })
 
-  it("renders picker when atom has state", () => {
+  test("renders picker when atom has state", () => {
     renderPicker(true)
     expect(
       screen.getByTestId("link-picker"),
@@ -117,7 +117,7 @@ describe("LinkPicker visibility", () => {
 })
 
 describe("LinkPicker items", () => {
-  it("shows path variables", () => {
+  test("shows path variables", () => {
     renderPicker(true)
     expect(
       screen.getByText("Base Path"),
@@ -127,7 +127,7 @@ describe("LinkPicker items", () => {
     ).toBeInTheDocument()
   })
 
-  it("shows preceding steps (not the current or later steps)", () => {
+  test("shows preceding steps (not the current or later steps)", () => {
     renderPicker(true)
     // step-3 is the anchor — only step-1 and step-2 should appear
     expect(
@@ -139,7 +139,7 @@ describe("LinkPicker items", () => {
     expect(screen.queryByText(/addSubtitles/)).toBeNull()
   })
 
-  it("filters items by query", async () => {
+  test("filters items by query", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
@@ -156,7 +156,7 @@ describe("LinkPicker items", () => {
 })
 
 describe("LinkPicker selection", () => {
-  it("clicking a path var calls setLink with the correct value", async () => {
+  test("clicking a path var calls setLink with the correct value", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
@@ -169,7 +169,7 @@ describe("LinkPicker selection", () => {
     )
   })
 
-  it("calls refreshLinkPickerTrigger after selection", async () => {
+  test("calls refreshLinkPickerTrigger after selection", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
@@ -180,7 +180,7 @@ describe("LinkPicker selection", () => {
     ).toHaveBeenCalledWith("step-3", "sourcePath")
   })
 
-  it("closes after selection", async () => {
+  test("closes after selection", async () => {
     const user = userEvent.setup()
     const store = renderPicker(true)
 
@@ -191,7 +191,7 @@ describe("LinkPicker selection", () => {
 })
 
 describe("LinkPicker keyboard", () => {
-  it("Escape closes the picker", async () => {
+  test("Escape closes the picker", async () => {
     const user = userEvent.setup()
     const store = renderPicker(true)
 

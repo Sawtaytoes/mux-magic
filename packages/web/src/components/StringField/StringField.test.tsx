@@ -8,7 +8,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import type { CommandField, Step } from "../../types"
@@ -41,21 +41,21 @@ beforeEach(() => {
 })
 
 describe("StringField", () => {
-  it("renders a text input", () => {
+  test("renders a text input", () => {
     render(
       <StringField step={mockStep} field={mockField} />,
     )
     expect(screen.getByRole("textbox")).toBeInTheDocument()
   })
 
-  it("renders the field label", () => {
+  test("renders the field label", () => {
     render(
       <StringField step={mockStep} field={mockField} />,
     )
     expect(screen.getByText("Filename")).toBeInTheDocument()
   })
 
-  it("shows the current param value", () => {
+  test("shows the current param value", () => {
     render(
       <StringField step={mockStep} field={mockField} />,
     )
@@ -65,7 +65,7 @@ describe("StringField", () => {
     expect(input.value).toBe("output.mp4")
   })
 
-  it("shows the placeholder when provided", () => {
+  test("shows the placeholder when provided", () => {
     const step = { ...mockStep, params: {} }
     render(<StringField step={step} field={mockField} />)
     expect(

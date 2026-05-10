@@ -10,7 +10,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import { jobsAtom } from "../../state/jobsAtom"
@@ -74,14 +74,14 @@ const renderCard = (job: Job, extraJobs: Job[] = []) => {
 // ─── Rendering ────────────────────────────────────────────────────────────────
 
 describe("JobCard rendering", () => {
-  it("shows the human-readable command label", () => {
+  test("shows the human-readable command label", () => {
     renderCard(pendingJob)
     expect(
       screen.getByText("Copy Files"),
     ).toBeInTheDocument()
   })
 
-  it("falls back to the raw command name for unknown commands", () => {
+  test("falls back to the raw command name for unknown commands", () => {
     renderCard({
       id: "x",
       commandName: "unknownThing",
@@ -92,38 +92,38 @@ describe("JobCard rendering", () => {
     ).toBeInTheDocument()
   })
 
-  it("shows the job ID", () => {
+  test("shows the job ID", () => {
     renderCard(pendingJob)
     expect(
       screen.getByText(/ID: job-1/),
     ).toBeInTheDocument()
   })
 
-  it("shows status badge", () => {
+  test("shows status badge", () => {
     renderCard(runningJob)
     expect(screen.getByText("running")).toBeInTheDocument()
   })
 
-  it("shows started-at when present", () => {
+  test("shows started-at when present", () => {
     renderCard(runningJob)
     expect(screen.getByText(/Started:/)).toBeInTheDocument()
   })
 
-  it("shows completed-at for completed jobs", () => {
+  test("shows completed-at for completed jobs", () => {
     renderCard(completedJob)
     expect(
       screen.getByText(/Completed:/),
     ).toBeInTheDocument()
   })
 
-  it("shows error message for failed jobs", () => {
+  test("shows error message for failed jobs", () => {
     renderCard(failedJob)
     expect(
       screen.getByText("File not found"),
     ).toBeInTheDocument()
   })
 
-  it("shows results count when results are present", () => {
+  test("shows results count when results are present", () => {
     renderCard(completedJob)
     expect(
       screen.getByText(/Results \(1\)/),
@@ -134,7 +134,7 @@ describe("JobCard rendering", () => {
 // ─── Progress bar ─────────────────────────────────────────────────────────────
 
 describe("JobCard progress bar", () => {
-  it("shows progress bar for running jobs that have a snapshot", () => {
+  test("shows progress bar for running jobs that have a snapshot", () => {
     const store = createStore()
     store.set(
       jobsAtom,
@@ -156,12 +156,12 @@ describe("JobCard progress bar", () => {
     ).toBeInTheDocument()
   })
 
-  it("hides progress bar for running jobs with no snapshot yet", () => {
+  test("hides progress bar for running jobs with no snapshot yet", () => {
     renderCard(runningJob)
     expect(screen.queryByTestId("progress-bar")).toBeNull()
   })
 
-  it("hides progress bar for completed jobs", () => {
+  test("hides progress bar for completed jobs", () => {
     renderCard(completedJob)
     expect(screen.queryByTestId("progress-bar")).toBeNull()
   })
@@ -170,7 +170,7 @@ describe("JobCard progress bar", () => {
 // ─── Params ───────────────────────────────────────────────────────────────────
 
 describe("JobCard params", () => {
-  it("shows params disclosure when job has params", () => {
+  test("shows params disclosure when job has params", () => {
     renderCard({
       ...pendingJob,
       params: { sourcePath: "/movies/Inception.mkv" },
@@ -178,7 +178,7 @@ describe("JobCard params", () => {
     expect(screen.getByText("Params")).toBeInTheDocument()
   })
 
-  it("hides params disclosure when job has no params", () => {
+  test("hides params disclosure when job has no params", () => {
     renderCard(pendingJob)
     expect(screen.queryByText("Params")).toBeNull()
   })
@@ -194,21 +194,21 @@ describe("JobCard cancel button", () => {
     )
   })
 
-  it("shows cancel button only for running jobs", () => {
+  test("shows cancel button only for running jobs", () => {
     renderCard(runningJob)
     expect(
       screen.getAllByRole("button", { name: /cancel/i }),
     ).not.toHaveLength(0)
   })
 
-  it("does not show cancel button for completed jobs", () => {
+  test("does not show cancel button for completed jobs", () => {
     renderCard(completedJob)
     expect(
       screen.queryByRole("button", { name: /cancel/i }),
     ).toBeNull()
   })
 
-  it("calls DELETE /jobs/:id on cancel click", async () => {
+  test("calls DELETE /jobs/:id on cancel click", async () => {
     const user = userEvent.setup()
     renderCard(runningJob)
 
@@ -242,14 +242,14 @@ describe("JobCard steps disclosure", () => {
     parentJobId: "parent",
   }
 
-  it("shows steps section when children are present", () => {
+  test("shows steps section when children are present", () => {
     renderCard(parentJob, [childJob])
     expect(
       screen.getByText(/Steps \(1\)/),
     ).toBeInTheDocument()
   })
 
-  it("hides steps section when job has no children", () => {
+  test("hides steps section when job has no children", () => {
     renderCard(runningJob)
     expect(screen.queryByText(/Steps/)).toBeNull()
   })

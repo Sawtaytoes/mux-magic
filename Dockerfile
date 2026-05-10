@@ -55,8 +55,4 @@ RUN yarn install-playwright-browser --with-deps chromium
 
 EXPOSE $PORT
 
-# yarn start-server resolves to:
-#   tsx --env-file ./.env packages/server/src/server.ts
-# (root package.json), so the monorepo restructure is invisible to the
-# container — the CMD line stays the same as the pre-migration image.
 CMD ["yarn", "start-server"]

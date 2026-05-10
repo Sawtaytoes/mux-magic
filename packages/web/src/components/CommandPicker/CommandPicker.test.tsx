@@ -10,7 +10,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import { commandPickerStateAtom } from "../../state/pickerAtoms"
@@ -83,14 +83,14 @@ afterEach(() => {
 })
 
 describe("CommandPicker visibility", () => {
-  it("renders nothing when atom is null", () => {
+  test("renders nothing when atom is null", () => {
     renderPicker(false)
     expect(
       screen.queryByTestId("command-picker"),
     ).toBeNull()
   })
 
-  it("renders picker when atom has state", () => {
+  test("renders picker when atom has state", () => {
     renderPicker(true)
     expect(
       screen.getByTestId("command-picker"),
@@ -99,7 +99,7 @@ describe("CommandPicker visibility", () => {
 })
 
 describe("CommandPicker filtering", () => {
-  it("shows all commands initially", () => {
+  test("shows all commands initially", () => {
     renderPicker(true)
     expect(
       screen.getAllByText("makeDirectory").length,
@@ -112,7 +112,7 @@ describe("CommandPicker filtering", () => {
     ).toBeGreaterThan(0)
   })
 
-  it("filters commands by query", async () => {
+  test("filters commands by query", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
@@ -129,7 +129,7 @@ describe("CommandPicker filtering", () => {
     ).toHaveLength(0)
   })
 
-  it("shows empty state when no commands match", async () => {
+  test("shows empty state when no commands match", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
@@ -145,7 +145,7 @@ describe("CommandPicker filtering", () => {
 })
 
 describe("CommandPicker keyboard navigation", () => {
-  it("Escape closes the picker", async () => {
+  test("Escape closes the picker", async () => {
     const user = userEvent.setup()
     const store = renderPicker(true)
 
@@ -154,7 +154,7 @@ describe("CommandPicker keyboard navigation", () => {
     expect(store.get(commandPickerStateAtom)).toBeNull()
   })
 
-  it("Enter selects the active item", async () => {
+  test("Enter selects the active item", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
@@ -173,7 +173,7 @@ describe("CommandPicker keyboard navigation", () => {
 })
 
 describe("CommandPicker item selection", () => {
-  it("clicking an item calls changeCommand with the correct args", async () => {
+  test("clicking an item calls changeCommand with the correct args", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
@@ -187,7 +187,7 @@ describe("CommandPicker item selection", () => {
     )
   })
 
-  it("closes the picker after selection", async () => {
+  test("closes the picker after selection", async () => {
     const user = userEvent.setup()
     const store = renderPicker(true)
 

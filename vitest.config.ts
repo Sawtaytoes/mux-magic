@@ -1,54 +1,13 @@
-import path from "node:path"
-import { fileURLToPath } from "node:url"
-import { defineConfig } from "vitest/config"
 import { playwright } from "@vitest/browser-playwright"
-import { storybookTest } from "@storybook/addon-vitest/vitest-plugin"
+import { defineConfig } from "vitest/config"
 
-const dirname =
-  typeof __dirname !== "undefined"
-    ? __dirname
-    : path.dirname(fileURLToPath(import.meta.url))
-
-// Multi-project setup (vitest v4 dropped defineWorkspace; the workspace
-// file moves inline here under test.projects):
-//
-//   - "node":      existing server-side / pure-logic tests under src/.
-//                  Inherits the memfs setup so any fs-touching code keeps
-//                  a clean in-memory volume.
-//
-//   - "browser":   ES module component tests under public/builder/js/.
-//                  Runs in a real Chromium via @vitest/browser + Playwright
-//                  provider — gives us actual DOM/event semantics with no
-//                  jsdom in the dep tree. Skips the node-only memfs setup.
-//
-//   - "storybook": story-as-test runs driven by @storybook/addon-vitest.
-//                  The plugin renames this project to `storybook:<configDir>`
-//                  when invoked from the Storybook UI's "Run Tests" button
-//                  (VITEST_STORYBOOK=1), which is what the addon filters on.
 export default defineConfig({
   test: {
     // e2e/ holds Playwright Test specs; they have their own runner (`yarn e2e`)
     // and break under vitest because @playwright/test's describe/test globals
     // aren't compatible.
-    exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
+    exclude: [".claude/worktrees/**", "**/node_modules/**", "**/dist/**", "e2e/**"],
     projects: [
-      {
-        extends: true,
-        test: {
-          name: "node",
-          include: ["packages/server/src/**/*.test.ts"],
-          // vitest.setup.ts owns memfs / scheduler reset; the
-          // msw-server file owns the MSW server lifecycle (listen
-          // once, reset between tests, close at teardown). Both run
-          // for every Node-project test file. The MSW harness is a
-          // no-op until handlers land, but loading it now means
-          // future tests don't need a per-file boilerplate import.
-          setupFiles: [
-            "./packages/server/vitest.setup.ts",
-            "./packages/server/src/__tests__/setup/msw-server.ts",
-          ],
-        },
-      },
       {
         extends: true,
         // Vite's default publicDir is ./public, which would treat our
@@ -57,7 +16,7 @@ export default defineConfig({
         publicDir: false,
         test: {
           name: "browser",
-          include: ["public/**/*.test.{js,ts}"],
+          include: ["**/*.test.{js,ts}"],
           browser: {
             enabled: true,
             provider: playwright(),
@@ -68,22 +27,9 @@ export default defineConfig({
       },
       // React component tests for packages/web — uses the web package's own
       // vitest.config.ts which applies the React Compiler babel plugin.
+      "packages/server/vitest.config.ts",
+      "packages/shared/vitest.config.ts",
       "packages/web/vitest.config.ts",
-      {
-        extends: true,
-        plugins: [
-          storybookTest({ configDir: path.join(dirname, ".storybook") }),
-        ],
-        test: {
-          name: "storybook",
-          browser: {
-            enabled: true,
-            provider: playwright(),
-            headless: true,
-            instances: [{ browser: "chromium" }],
-          },
-        },
-      },
     ],
   },
 })

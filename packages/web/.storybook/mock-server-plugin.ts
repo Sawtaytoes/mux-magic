@@ -6,8 +6,12 @@
 //
 // To add a new mock route, add an entry to `routes` below. Routes are
 // matched top-to-bottom; the first match wins.
+
+import type {
+  IncomingMessage,
+  ServerResponse,
+} from "node:http"
 import type { Plugin } from "vite"
-import type { IncomingMessage, ServerResponse } from "node:http"
 
 type RouteHandler = (
   req: IncomingMessage,
@@ -15,9 +19,15 @@ type RouteHandler = (
   params: Record<string, string>,
 ) => void | Promise<void>
 
-const sendJson = (res: ServerResponse, data: unknown, status = 200): void => {
+const sendJson = (
+  res: ServerResponse,
+  data: unknown,
+  status = 200,
+): void => {
   const body = JSON.stringify(data)
-  res.writeHead(status, { "Content-Type": "application/json" })
+  res.writeHead(status, {
+    "Content-Type": "application/json",
+  })
   res.end(body)
 }
 
@@ -38,7 +48,9 @@ const readBody = (req: IncomingMessage): Promise<string> =>
   new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
     req.on("data", (chunk: Buffer) => chunks.push(chunk))
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
+    req.on("end", () =>
+      resolve(Buffer.concat(chunks).toString("utf8")),
+    )
     req.on("error", reject)
   })
 
@@ -94,9 +106,30 @@ const routes: Route[] = [
       sendJson(res, {
         separator: "/",
         entries: [
-          { name: "Sample Folder", isDirectory: true, isFile: false, size: 0, mtime: null, duration: null },
-          { name: "sample.mp4", isDirectory: false, isFile: true, size: 524_288_000, mtime: "2025-01-15T10:30:00Z", duration: "1:23:45" },
-          { name: "document.txt", isDirectory: false, isFile: true, size: 2048, mtime: "2025-01-10T14:20:00Z", duration: null },
+          {
+            name: "Sample Folder",
+            isDirectory: true,
+            isFile: false,
+            size: 0,
+            mtime: null,
+            duration: null,
+          },
+          {
+            name: "sample.mp4",
+            isDirectory: false,
+            isFile: true,
+            size: 524_288_000,
+            mtime: "2025-01-15T10:30:00Z",
+            duration: "1:23:45",
+          },
+          {
+            name: "document.txt",
+            isDirectory: false,
+            isFile: true,
+            size: 2048,
+            mtime: "2025-01-10T14:20:00Z",
+            duration: null,
+          },
         ],
       })
     },
@@ -117,8 +150,13 @@ const routes: Route[] = [
     handler: async (req, res) => {
       const raw = await readBody(req)
       const body = JSON.parse(raw) as { path?: string }
-      if (typeof body.path === "string" && body.path.startsWith("/nonexistent")) {
-        sendJson(res, { error: `Directory not found: ${body.path}` })
+      if (
+        typeof body.path === "string" &&
+        body.path.startsWith("/nonexistent")
+      ) {
+        sendJson(res, {
+          error: `Directory not found: ${body.path}`,
+        })
         return
       }
       sendJson(res, {
@@ -149,9 +187,14 @@ export const mockServerPlugin = (): Plugin => ({
         try {
           await route.handler(req, res, params)
         } catch (err) {
-          console.error("[mock-server-plugin] handler error:", err)
+          console.error(
+            "[mock-server-plugin] handler error:",
+            err,
+          )
           if (!res.headersSent) {
-            res.writeHead(500, { "Content-Type": "application/json" })
+            res.writeHead(500, {
+              "Content-Type": "application/json",
+            })
             res.end(JSON.stringify({ error: String(err) }))
           }
         }

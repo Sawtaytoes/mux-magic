@@ -5,7 +5,7 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, test } from "vitest"
 
 afterEach(() => {
   cleanup()
@@ -28,7 +28,7 @@ const renderWithStore = (
   )
 
 describe("PageHeader", () => {
-  it("renders the title link", () => {
+  test("renders the title link", () => {
     const store = createStore()
     renderWithStore(store)
     expect(
@@ -38,7 +38,7 @@ describe("PageHeader", () => {
     ).toBeInTheDocument()
   })
 
-  it("toggles dry-run mode when the Dry Run button is clicked", async () => {
+  test("toggles dry-run mode when the Dry Run button is clicked", async () => {
     const store = createStore()
     renderWithStore(store)
     expect(store.get(dryRunAtom)).toBe(false)
@@ -48,7 +48,7 @@ describe("PageHeader", () => {
     expect(store.get(dryRunAtom)).toBe(true)
   })
 
-  it("shows the DRY RUN badge only when dry run is active", async () => {
+  test("shows the DRY RUN badge only when dry run is active", async () => {
     const store = createStore()
     renderWithStore(store)
     expect(screen.queryByTitle(/dry run ON/i)).toBeNull()
@@ -58,7 +58,7 @@ describe("PageHeader", () => {
     ).toBeInTheDocument()
   })
 
-  it("shows Simulate Failures toggle only when dry run is active", async () => {
+  test("shows Simulate Failures toggle only when dry run is active", async () => {
     const store = createStore()
     store.set(dryRunAtom, true)
     renderWithStore(store)
@@ -69,7 +69,7 @@ describe("PageHeader", () => {
     ).toBeInTheDocument()
   })
 
-  it("hides Simulate Failures toggle when dry run is off", () => {
+  test("hides Simulate Failures toggle when dry run is off", () => {
     const store = createStore()
     renderWithStore(store)
     expect(
@@ -79,7 +79,7 @@ describe("PageHeader", () => {
     ).toBeNull()
   })
 
-  it("toggles failure mode atom", async () => {
+  test("toggles failure mode atom", async () => {
     const store = createStore()
     store.set(dryRunAtom, true)
     renderWithStore(store)
@@ -91,7 +91,7 @@ describe("PageHeader", () => {
     expect(store.get(failureModeAtom)).toBe(true)
   })
 
-  it("disables Run Sequence and Run via API buttons while running", () => {
+  test("disables Run Sequence and Run via API buttons while running", () => {
     const store = createStore()
     store.set(runningAtom, true)
     renderWithStore(store)

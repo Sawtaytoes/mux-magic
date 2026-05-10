@@ -8,7 +8,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import type { CommandField, Step } from "../../types"
@@ -40,14 +40,14 @@ beforeEach(() => {
 })
 
 describe("BooleanField", () => {
-  it("renders a checkbox", () => {
+  test("renders a checkbox", () => {
     render(
       <BooleanField step={mockStep} field={mockField} />,
     )
     expect(screen.getByRole("checkbox")).toBeInTheDocument()
   })
 
-  it("renders the field label", () => {
+  test("renders the field label", () => {
     render(
       <BooleanField step={mockStep} field={mockField} />,
     )
@@ -56,20 +56,20 @@ describe("BooleanField", () => {
     ).toBeInTheDocument()
   })
 
-  it("reflects a true param as checked", () => {
+  test("reflects a true param as checked", () => {
     render(
       <BooleanField step={mockStep} field={mockField} />,
     )
     expect(screen.getByRole("checkbox")).toBeChecked()
   })
 
-  it("reflects a false param as unchecked", () => {
+  test("reflects a false param as unchecked", () => {
     const step = { ...mockStep, params: { enabled: false } }
     render(<BooleanField step={step} field={mockField} />)
     expect(screen.getByRole("checkbox")).not.toBeChecked()
   })
 
-  it("sets the tooltip data attribute", () => {
+  test("sets the tooltip data attribute", () => {
     const { container } = render(
       <BooleanField step={mockStep} field={mockField} />,
     )

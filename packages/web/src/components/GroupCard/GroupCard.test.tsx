@@ -10,7 +10,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import { stepsAtom } from "../../state/stepsAtom"
@@ -75,40 +75,40 @@ afterEach(() => {
 })
 
 describe("GroupCard", () => {
-  it("renders the group label", () => {
+  test("renders the group label", () => {
     renderCard(makeGroup({ label: "My Group" }))
     expect(
       screen.getByDisplayValue("My Group"),
     ).toBeInTheDocument()
   })
 
-  it("shows sequential badge for non-parallel group", () => {
+  test("shows sequential badge for non-parallel group", () => {
     renderCard(makeGroup({ isParallel: false }))
     expect(
       screen.getByText("sequential"),
     ).toBeInTheDocument()
   })
 
-  it("shows parallel badge for parallel group", () => {
+  test("shows parallel badge for parallel group", () => {
     renderCard(makeGroup({ isParallel: true }))
     expect(screen.getByText("parallel")).toBeInTheDocument()
   })
 
-  it("renders inner step cards", () => {
+  test("renders inner step cards", () => {
     renderCard(makeGroup())
     // Both steps render index labels: 1 and 2
     const ones = screen.getAllByText("1")
     expect(ones.length).toBeGreaterThanOrEqual(1)
   })
 
-  it("hides inner steps when collapsed", () => {
+  test("hides inner steps when collapsed", () => {
     const group = makeGroup({ isCollapsed: true })
     renderCard(group)
     // Inner step index "1" should not be visible
     expect(screen.queryAllByText("1")).toHaveLength(0)
   })
 
-  it("toggles collapsed state on chevron click", async () => {
+  test("toggles collapsed state on chevron click", async () => {
     const user = userEvent.setup()
     const store = renderCard(
       makeGroup({ isCollapsed: false }),
@@ -120,7 +120,7 @@ describe("GroupCard", () => {
     expect((items[0] as Group).isCollapsed).toBe(true)
   })
 
-  it("removes group from atom when remove button clicked", async () => {
+  test("removes group from atom when remove button clicked", async () => {
     const user = userEvent.setup()
     const store = renderCard(makeGroup())
 
@@ -131,7 +131,7 @@ describe("GroupCard", () => {
     expect(store.get(stepsAtom)).toHaveLength(0)
   })
 
-  it("adds a step to the group when '+ Step' is clicked", async () => {
+  test("adds a step to the group when '+ Step' is clicked", async () => {
     const user = userEvent.setup()
     const store = renderCard(makeGroup())
 

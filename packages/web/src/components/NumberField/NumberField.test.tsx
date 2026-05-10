@@ -8,7 +8,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import type { CommandField, Step } from "../../types"
@@ -42,7 +42,7 @@ beforeEach(() => {
 })
 
 describe("NumberField", () => {
-  it("renders a number input", () => {
+  test("renders a number input", () => {
     render(
       <NumberField step={mockStep} field={mockField} />,
     )
@@ -51,14 +51,14 @@ describe("NumberField", () => {
     ).toBeInTheDocument()
   })
 
-  it("renders the field label", () => {
+  test("renders the field label", () => {
     render(
       <NumberField step={mockStep} field={mockField} />,
     )
     expect(screen.getByText("Width")).toBeInTheDocument()
   })
 
-  it("shows the current param value", () => {
+  test("shows the current param value", () => {
     render(
       <NumberField step={mockStep} field={mockField} />,
     )
@@ -68,7 +68,7 @@ describe("NumberField", () => {
     expect(input.value).toBe("1920")
   })
 
-  it("does not render companion text when missing", () => {
+  test("does not render companion text when missing", () => {
     render(
       <NumberField step={mockStep} field={mockField} />,
     )

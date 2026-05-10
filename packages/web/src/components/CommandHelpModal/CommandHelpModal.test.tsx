@@ -5,7 +5,13 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
@@ -52,7 +58,7 @@ afterEach(() => {
 })
 
 describe("CommandHelpModal", () => {
-  it("renders nothing when closed (isOpen=false)", () => {
+  test("renders nothing when closed (isOpen=false)", () => {
     const store = makeStore("ffmpeg", false)
     const { container } = render(
       <Provider store={store}>
@@ -62,7 +68,7 @@ describe("CommandHelpModal", () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it("renders nothing when commandName atom is null", () => {
+  test("renders nothing when commandName atom is null", () => {
     const store = makeStore(null, true)
     const { container } = render(
       <Provider store={store}>
@@ -72,7 +78,7 @@ describe("CommandHelpModal", () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it("renders the modal title with command name", () => {
+  test("renders the modal title with command name", () => {
     wrapWithBridge()
     const store = makeStore("ffmpeg")
     render(
@@ -83,7 +89,7 @@ describe("CommandHelpModal", () => {
     expect(screen.getByText(/Help:/)).toBeInTheDocument()
   })
 
-  it("renders the command summary", () => {
+  test("renders the command summary", () => {
     wrapWithBridge()
     const store = makeStore("ffmpeg")
     render(
@@ -96,7 +102,7 @@ describe("CommandHelpModal", () => {
     ).toBeInTheDocument()
   })
 
-  it("renders all field entries", () => {
+  test("renders all field entries", () => {
     wrapWithBridge()
     const store = makeStore("ffmpeg")
     render(
@@ -112,7 +118,7 @@ describe("CommandHelpModal", () => {
     ).toBeInTheDocument()
   })
 
-  it("shows required badge for required fields", () => {
+  test("shows required badge for required fields", () => {
     wrapWithBridge()
     const store = makeStore("ffmpeg")
     render(
@@ -123,7 +129,7 @@ describe("CommandHelpModal", () => {
     expect(screen.getByText("required")).toBeInTheDocument()
   })
 
-  it("close button sets isOpen atom to false", async () => {
+  test("close button sets isOpen atom to false", async () => {
     wrapWithBridge()
     const user = userEvent.setup()
     const store = makeStore("ffmpeg")
@@ -139,7 +145,7 @@ describe("CommandHelpModal", () => {
     expect(screen.queryByText(/Help:/)).toBeNull()
   })
 
-  it("backdrop click sets isOpen atom to false", async () => {
+  test("backdrop click sets isOpen atom to false", async () => {
     wrapWithBridge()
     const user = userEvent.setup()
     const store = makeStore("ffmpeg")

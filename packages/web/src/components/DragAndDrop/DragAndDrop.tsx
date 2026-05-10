@@ -1,8 +1,8 @@
 import { useAtom } from "jotai"
 import { useEffect, useRef } from "react"
-import { isGroup } from "../jobs/sequenceUtils"
-import { stepsAtom } from "../state/stepsAtom"
-import type { Group, SequenceItem, Step } from "../types"
+import { isGroup } from "../../jobs/sequenceUtils"
+import { stepsAtom } from "../../state/stepsAtom"
+import type { Group, SequenceItem, Step } from "../../types"
 
 // SortableJS is loaded as a vendor script in index.html.
 declare global {

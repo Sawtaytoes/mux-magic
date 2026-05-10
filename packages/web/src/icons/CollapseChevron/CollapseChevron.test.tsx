@@ -1,5 +1,5 @@
 import { cleanup, render } from "@testing-library/react"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, test } from "vitest"
 import { CollapseChevron } from "./CollapseChevron"
 
 afterEach(() => {
@@ -7,14 +7,14 @@ afterEach(() => {
 })
 
 describe("CollapseChevron", () => {
-  it("renders an svg element", () => {
+  test("renders an svg element", () => {
     const { container } = render(
       <CollapseChevron isCollapsed={false} />,
     )
     expect(container.querySelector("svg")).not.toBeNull()
   })
 
-  it("does not apply rotate class when expanded", () => {
+  test("does not apply rotate class when expanded", () => {
     const { container } = render(
       <CollapseChevron isCollapsed={false} />,
     )
@@ -24,7 +24,7 @@ describe("CollapseChevron", () => {
     )
   })
 
-  it("applies -rotate-90 class when collapsed", () => {
+  test("applies -rotate-90 class when collapsed", () => {
     const { container } = render(
       <CollapseChevron isCollapsed={true} />,
     )

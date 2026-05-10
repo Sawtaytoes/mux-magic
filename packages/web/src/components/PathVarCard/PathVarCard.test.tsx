@@ -11,7 +11,7 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  test,
   vi,
 } from "vitest"
 import { pathsAtom } from "../../state/pathsAtom"
@@ -48,35 +48,35 @@ afterEach(() => {
 })
 
 describe("PathVarCard", () => {
-  it("renders the label input with current value", () => {
+  test("renders the label input with current value", () => {
     renderCard(makePath({ label: "Base Path" }))
     expect(
       screen.getByDisplayValue("Base Path"),
     ).toBeInTheDocument()
   })
 
-  it("renders the value input with current path", () => {
+  test("renders the value input with current path", () => {
     renderCard(makePath({ value: "/mnt/media" }))
     expect(
       screen.getByDisplayValue("/mnt/media"),
     ).toBeInTheDocument()
   })
 
-  it("does not show remove button for first path var", () => {
+  test("does not show remove button for first path var", () => {
     renderCard(makePath(), true)
     expect(
       screen.queryByTitle(/remove path variable/i),
     ).toBeNull()
   })
 
-  it("shows remove button for non-first path var", () => {
+  test("shows remove button for non-first path var", () => {
     renderCard(makePath({ id: "extraPath" }), false)
     expect(
       screen.getByTitle(/remove path variable/i),
     ).toBeInTheDocument()
   })
 
-  it("updates label in atom on change", () => {
+  test("updates label in atom on change", () => {
     const store = renderCard(
       makePath({ label: "Base Path" }),
     )
@@ -89,7 +89,7 @@ describe("PathVarCard", () => {
     expect(store.get(pathsAtom)[0].label).toBe("Media Path")
   })
 
-  it("removes path from atom when remove button clicked", async () => {
+  test("removes path from atom when remove button clicked", async () => {
     const user = userEvent.setup()
     const store = renderCard(
       makePath({ id: "extraPath" }),

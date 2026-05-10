@@ -1,5 +1,5 @@
-import type { CommandField, Step } from "../types"
-import { FieldLabel } from "./FieldLabel/FieldLabel"
+import type { CommandField, Step } from "../../types"
+import { FieldLabel } from "../FieldLabel/FieldLabel"
 
 type LanguageCodeFieldProps = {
   step: Step

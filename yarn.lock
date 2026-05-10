@@ -1826,6 +1826,7 @@ __metadata:
     cli-progress: "npm:^3.12.0"
     fast-xml-parser: "npm:^5.7.3"
     hono: "npm:^4.12.18"
+    js-yaml: "npm:^4.1.1"
     jsdom: "npm:^29.1.1"
     mal-scraper: "patch:mal-scraper@npm%3A2.13.2#~/.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch"
     memfs: "npm:^4.57.2"
@@ -1836,6 +1837,7 @@ __metadata:
     trash: "npm:^10.1.1"
     tree-kill: "npm:^1.2.2"
     typescript: "npm:^6.0.3"
+    vitest: "npm:^4.1.5"
     yargs: "npm:^18.0.0"
     zod: "npm:^4.4.3"
   languageName: unknown
@@ -1847,6 +1849,7 @@ __metadata:
   dependencies:
     fast-sort: "npm:^3.4.1"
     typescript: "npm:^6.0.3"
+    vitest: "npm:^4.1.5"
   languageName: unknown
   linkType: soft
 
@@ -4683,7 +4686,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^4.1.2":
+"chalk@npm:4.1.2, chalk@npm:^4.1.2":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
   dependencies:
@@ -4944,6 +4947,23 @@ __metadata:
     readable-stream: "npm:^3.0.2"
     typedarray: "npm:^0.0.6"
   checksum: 10c0/29565dd9198fe1d8cf57f6cc71527dbc6ad67e12e4ac9401feb389c53042b2dceedf47034cbe702dfc4fd8df3ae7e6bfeeebe732cc4fa2674e484c13f04c219a
+  languageName: node
+  linkType: hard
+
+"concurrently@npm:^9.2.1":
+  version: 9.2.1
+  resolution: "concurrently@npm:9.2.1"
+  dependencies:
+    chalk: "npm:4.1.2"
+    rxjs: "npm:7.8.2"
+    shell-quote: "npm:1.8.3"
+    supports-color: "npm:8.1.1"
+    tree-kill: "npm:1.2.2"
+    yargs: "npm:17.7.2"
+  bin:
+    conc: dist/bin/concurrently.js
+    concurrently: dist/bin/concurrently.js
+  checksum: 10c0/da37f239f82eb7ac24f5ddb56259861e5f1d6da2ade7602b6ea7ad3101b13b5ccec02a77b7001402d1028ff2fdc38eed55644b32853ad5abf30e057002a963aa
   languageName: node
   linkType: hard
 
@@ -7682,11 +7702,11 @@ __metadata:
     "@vitest/browser-playwright": "npm:^4.1.5"
     "@vitest/ui": "npm:^4.1.5"
     "@yarnpkg/sdks": "npm:^3.2.3"
+    concurrently: "npm:^9.2.1"
     cpx2: "npm:^8.0.2"
     esbuild: "npm:^0.28.0"
     eslint: "npm:^10.3.0"
     fast-sort: "npm:^3.4.1"
-    js-yaml: "npm:^4.1.1"
     playwright: "npm:^1.59.1"
     rimraf: "npm:^6.1.3"
     tsx: "npm:^4.21.0"
@@ -9462,7 +9482,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rxjs@npm:^7.8.2":
+"rxjs@npm:7.8.2, rxjs@npm:^7.8.2":
   version: 7.8.2
   resolution: "rxjs@npm:7.8.2"
   dependencies:
@@ -9549,7 +9569,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"shell-quote@npm:^1.8.0":
+"shell-quote@npm:1.8.3, shell-quote@npm:^1.8.0":
   version: 1.8.3
   resolution: "shell-quote@npm:1.8.3"
   checksum: 10c0/bee87c34e1e986cfb4c30846b8e6327d18874f10b535699866f368ade11ea4ee45433d97bf5eada22c4320c27df79c3a6a7eb1bf3ecfc47f2c997d9e5e2672fd
@@ -9837,6 +9857,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"supports-color@npm:8.1.1":
+  version: 8.1.1
+  resolution: "supports-color@npm:8.1.1"
+  dependencies:
+    has-flag: "npm:^4.0.0"
+  checksum: 10c0/ea1d3c275dd604c974670f63943ed9bd83623edc102430c05adb8efc56ba492746b6e95386e7831b872ec3807fd89dd8eb43f735195f37b5ec343e4234cc7e89
+  languageName: node
+  linkType: hard
+
 "supports-color@npm:^10.2.2":
   version: 10.2.2
   resolution: "supports-color@npm:10.2.2"
@@ -10084,7 +10113,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tree-kill@npm:^1.2.2":
+"tree-kill@npm:1.2.2, tree-kill@npm:^1.2.2":
   version: 1.2.2
   resolution: "tree-kill@npm:1.2.2"
   bin:
@@ -10956,7 +10985,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yargs@npm:^17.7.2":
+"yargs@npm:17.7.2, yargs@npm:^17.7.2":
   version: 17.7.2
   resolution: "yargs@npm:17.7.2"
   dependencies:

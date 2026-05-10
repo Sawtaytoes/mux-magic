@@ -17,7 +17,7 @@
  */
 
 import { readFileSync, mkdirSync } from "node:fs"
-import { chromium } from "playwright"
+import { chromium, type Page } from "playwright"
 
 // ---------------------------------------------------------------------------
 // Config
@@ -39,7 +39,7 @@ const baseURL = `http://localhost:${port}`
 // ---------------------------------------------------------------------------
 
 /** Wait for network to be mostly idle after navigation / interaction. */
-async function settle(page: Awaited<ReturnType<typeof chromium.launch>>["contexts"][0]["pages"][0], ms = 800) {
+async function settle(page: Page, ms = 800) {
   await page.waitForTimeout(ms)
 }
 

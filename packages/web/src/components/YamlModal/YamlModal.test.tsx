@@ -5,7 +5,13 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import { yamlModalOpenAtom } from "../../state/uiAtoms"
@@ -40,7 +46,7 @@ afterEach(() => {
 })
 
 describe("YamlModal", () => {
-  it("renders nothing when closed", () => {
+  test("renders nothing when closed", () => {
     const { container } = (() => {
       const store = createStore()
       return render(
@@ -52,12 +58,12 @@ describe("YamlModal", () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it("renders the modal when open", () => {
+  test("renders the modal when open", () => {
     renderModal(true)
     expect(screen.getByText("YAML")).toBeInTheDocument()
   })
 
-  it("shows no-steps placeholder when sequence is empty", () => {
+  test("shows no-steps placeholder when sequence is empty", () => {
     const store = createStore()
     store.set(yamlModalOpenAtom, true)
     store.set(stepsAtom, [])
@@ -72,7 +78,7 @@ describe("YamlModal", () => {
     ).toBeInTheDocument()
   })
 
-  it("shows serialized YAML for a non-empty sequence", () => {
+  test("shows serialized YAML for a non-empty sequence", () => {
     const store = createStore()
     store.set(yamlModalOpenAtom, true)
     store.set(stepsAtom, [makeStep()])
@@ -91,7 +97,7 @@ describe("YamlModal", () => {
     expect(screen.getByText(/command:/)).toBeInTheDocument()
   })
 
-  it("close button sets atom to false", async () => {
+  test("close button sets atom to false", async () => {
     const user = userEvent.setup()
     const store = renderModal(true)
 
@@ -103,7 +109,7 @@ describe("YamlModal", () => {
     expect(screen.queryByText("YAML")).toBeNull()
   })
 
-  it("backdrop click sets atom to false", async () => {
+  test("backdrop click sets atom to false", async () => {
     const user = userEvent.setup()
     const store = renderModal(true)
 
@@ -114,7 +120,7 @@ describe("YamlModal", () => {
     expect(store.get(yamlModalOpenAtom)).toBe(false)
   })
 
-  it("clicking inner content does not close the modal", async () => {
+  test("clicking inner content does not close the modal", async () => {
     const user = userEvent.setup()
     const store = renderModal(true)
 
@@ -123,7 +129,7 @@ describe("YamlModal", () => {
     expect(store.get(yamlModalOpenAtom)).toBe(true)
   })
 
-  it("copies YAML to clipboard when Copy is clicked", async () => {
+  test("copies YAML to clipboard when Copy is clicked", async () => {
     const user = userEvent.setup()
     const store = createStore()
     store.set(yamlModalOpenAtom, true)

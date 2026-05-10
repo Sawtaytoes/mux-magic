@@ -23,17 +23,20 @@
 // See docs/react-migration-plan.md "ESLint (Minimal: Two Plugins Only)" for
 // the target shape once the plugins land.
 
+import { defineConfig } from "eslint/config"
 import tseslint from "typescript-eslint"
 
-export default tseslint.config(
+export default defineConfig(
   {
     ignores: [
-      "**/node_modules/**",
-      "**/dist/**",
-      "**/build/**",
+      ".claude/worktrees/**",
       ".yarn/**",
-      "packages/web/src/api/schema.generated.ts",
+      "**/build/**",
+      "**/dist/**",
+      "**/node_modules/**",
       "packages/server/src/schema.generated/**",
+      "packages/web/src/api/schema.generated.ts",
+      "public/**",
     ],
   },
   {

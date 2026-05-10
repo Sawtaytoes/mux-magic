@@ -5,7 +5,13 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 afterEach(() => {
   cleanup()
@@ -28,13 +34,13 @@ const renderWithStore = (
   )
 
 describe("ApiRunModal", () => {
-  it("renders nothing when apiRunModalAtom is null", () => {
+  test("renders nothing when apiRunModalAtom is null", () => {
     const store = createStore()
     renderWithStore(store)
     expect(screen.queryByText("Run Sequence")).toBeNull()
   })
 
-  it("renders the modal when a job is set", () => {
+  test("renders the modal when a job is set", () => {
     const store = createStore()
     store.set(apiRunModalAtom, {
       jobId: "job-99",
@@ -53,7 +59,7 @@ describe("ApiRunModal", () => {
     expect(screen.getByText("running")).toBeInTheDocument()
   })
 
-  it("shows Cancel button when status is running", () => {
+  test("shows Cancel button when status is running", () => {
     const store = createStore()
     store.set(apiRunModalAtom, {
       jobId: "job-1",
@@ -68,7 +74,7 @@ describe("ApiRunModal", () => {
     ).toBeInTheDocument()
   })
 
-  it("hides Cancel button when status is completed", () => {
+  test("hides Cancel button when status is completed", () => {
     const store = createStore()
     store.set(apiRunModalAtom, {
       jobId: "job-1",
@@ -83,7 +89,7 @@ describe("ApiRunModal", () => {
     ).toBeNull()
   })
 
-  it("closes the modal when the ✕ button is clicked", async () => {
+  test("closes the modal when the ✕ button is clicked", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(
@@ -103,7 +109,7 @@ describe("ApiRunModal", () => {
     fetchSpy.mockRestore()
   })
 
-  it("clears runningAtom when closed", async () => {
+  test("clears runningAtom when closed", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(

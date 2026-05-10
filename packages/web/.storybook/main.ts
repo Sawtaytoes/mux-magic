@@ -1,15 +1,17 @@
-import babel from "@rolldown/plugin-babel";
-import tailwindcss from "@tailwindcss/vite";
-import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import type { StorybookConfig } from "@storybook/react-vite";
-import { mergeConfig } from "vite";
-import remarkGfm from "remark-gfm";
-import { mockServerPlugin } from "./mock-server-plugin.ts";
+import babel from "@rolldown/plugin-babel"
+import type { StorybookConfig } from "@storybook/react-vite"
+import tailwindcss from "@tailwindcss/vite"
+import react, {
+  reactCompilerPreset,
+} from "@vitejs/plugin-react"
+import remarkGfm from "remark-gfm"
+import { mergeConfig } from "vite"
+import { mockServerPlugin } from "./mock-server-plugin.ts"
 
 const config: StorybookConfig = {
   stories: [
-    "../packages/web/src/**/*.stories.{ts,tsx}",
-    "../packages/web/src/**/*.mdx",
+    "../src/**/*.stories.{ts,tsx}",
+    "../src/**/*.mdx",
   ],
   addons: [
     "@storybook/addon-docs",
@@ -27,12 +29,14 @@ const config: StorybookConfig = {
     mergeConfig(storybookViteConfig, {
       plugins: [
         react(),
-        babel({ presets: [reactCompilerPreset({ target: "19" })] }),
+        babel({
+          presets: [reactCompilerPreset({ target: "19" })],
+        }),
         tailwindcss(),
         mockServerPlugin(),
       ],
     }),
-};
+}
 
 // `options.mdxPluginOptions` is read by @storybook/addon-docs' MDX vite plugin
 // via presets.apply("options"). StorybookConfig doesn't type this key, so we
@@ -46,4 +50,4 @@ export default {
       },
     },
   },
-};
+}

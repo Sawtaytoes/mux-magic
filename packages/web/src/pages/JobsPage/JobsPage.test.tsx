@@ -4,7 +4,13 @@ import {
   screen,
 } from "@testing-library/react"
 import { createStore, Provider } from "jotai"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import { jobsAtom } from "../../state/jobsAtom"
 import { jobsConnectionAtom } from "../../state/jobsConnectionAtom"
 import type { Job } from "../../types"
@@ -38,21 +44,21 @@ const renderPage = (jobs: Job[] = [], connected = true) => {
 }
 
 describe("JobsPage", () => {
-  it("renders page heading", () => {
+  test("renders page heading", () => {
     renderPage()
     expect(
       screen.getByRole("heading", { name: /jobs/i }),
     ).toBeInTheDocument()
   })
 
-  it("shows empty state when no jobs exist", () => {
+  test("shows empty state when no jobs exist", () => {
     renderPage()
     expect(
       screen.getByText(/No jobs yet/),
     ).toBeInTheDocument()
   })
 
-  it("renders a card for each top-level job", () => {
+  test("renders a card for each top-level job", () => {
     renderPage([
       {
         id: "j1",
@@ -70,7 +76,7 @@ describe("JobsPage", () => {
     )
   })
 
-  it("does not render child jobs as top-level cards", () => {
+  test("does not render child jobs as top-level cards", () => {
     renderPage([
       {
         id: "parent",
@@ -89,14 +95,14 @@ describe("JobsPage", () => {
     )
   })
 
-  it("shows the StatusBar", () => {
+  test("shows the StatusBar", () => {
     renderPage()
     expect(
       screen.getByTestId("status-bar"),
     ).toBeInTheDocument()
   })
 
-  it("shows Connected status when connected", () => {
+  test("shows Connected status when connected", () => {
     renderPage([], true)
     expect(
       screen.getByText("Connected"),
