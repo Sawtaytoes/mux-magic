@@ -30,6 +30,7 @@
       "Bash(nslookup *)",
       "Bash(ping *)",
       "Bash(pwd *)",
+      "Bash(python3 -c * 2>/dev/null)",
       "Bash(python3 -c *)",
       "Bash(rsync *)",
       "Bash(ss *)",
@@ -66,11 +67,12 @@
       "PowerShell(yarn *)",
       "Read(**)",
       "Skill(update-config:*)",
-      "Skill(update-config)",
-      "Read(//c/Users/satur/.claude/**)"
+      "Skill(update-config)"
     ],
     "deny": [
-      "Bash(Get-ChildItem *)"
+      "Bash(Get-ChildItem *)",
+      "Bash(npx *)",
+      "PowerShell(npx *)"
     ],
     "ask": [
       "Bash(yarn dlx *)",
