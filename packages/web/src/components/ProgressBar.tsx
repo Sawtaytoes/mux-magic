@@ -77,15 +77,15 @@ const ProgressFileRow = ({
 export const ProgressBar = ({
   snapshot,
 }: ProgressBarProps) => {
-  const isIndeterminate = typeof snapshot.ratio !== "number"
-  const pct = !isIndeterminate
-    ? `${
-        // biome-ignore lint/style/noNonNullAssertion: suppressed during react-migration
-        (
-          Math.max(0, Math.min(1, snapshot.ratio!)) * 100
-        ).toFixed(1)
-      }%`
-    : null
+  const ratio =
+    typeof snapshot.ratio === "number"
+      ? snapshot.ratio
+      : null
+  const isIndeterminate = ratio === null
+  const pct =
+    ratio !== null
+      ? `${(Math.max(0, Math.min(1, ratio)) * 100).toFixed(1)}%`
+      : null
 
   return (
     <div className="space-y-1" data-testid="progress-bar">
