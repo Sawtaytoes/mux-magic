@@ -148,7 +148,6 @@ export const Loading: Story = {
   decorators: [withLoadingState()],
 }
 
-// biome-ignore lint/suspicious/noShadowRestrictedNames: suppressed during react-migration
-export const Error: Story = {
+export const WithError: Story = {
   decorators: [withErrorState()],
 }

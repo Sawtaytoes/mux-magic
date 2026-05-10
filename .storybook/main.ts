@@ -1,8 +1,9 @@
+import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
-import remarkGfm from "remark-gfm";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import type { StorybookConfig } from "@storybook/react-vite";
 import { mergeConfig } from "vite";
+import remarkGfm from "remark-gfm";
 import { mockServerPlugin } from "./mock-server-plugin.ts";
 
 const config: StorybookConfig = {
@@ -25,11 +26,8 @@ const config: StorybookConfig = {
   viteFinal: async (storybookViteConfig) =>
     mergeConfig(storybookViteConfig, {
       plugins: [
-        react({
-          babel: {
-            plugins: [["babel-plugin-react-compiler", { target: "19" }]],
-          },
-        }),
+        react(),
+        babel({ presets: [reactCompilerPreset({ target: "19" })] }),
         tailwindcss(),
         mockServerPlugin(),
       ],

@@ -124,8 +124,7 @@ const LogsDisclosure = ({
           </div>
         ) : (
           lines.map((line, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: suppressed during react-migration
-            <div key={index}>{line}</div>
+            <div key={`log-${index}-${line.slice(0, 20)}`}>{line}</div>
           ))
         )}
       </div>
