@@ -79,6 +79,22 @@ Workers that ship code containing any of the above will get the PR sent back. Ca
 
   Same rule for `else`, `for`, `while`. The brace cost is one line; the safety against silent edit mistakes (adding a second statement that quietly falls outside the conditional) is worth it.
 
+- **Prefer positive conditions over negative ones.** Structure logic to check for the positive case first, avoiding the `!` operator when possible. A positive condition reads more naturally than a negation.
+
+  ```ts
+  // WRONG — double negative
+  const pct = !isIndeterminate
+    ? `${(Math.max(0, Math.min(1, ratio as number)) * 100).toFixed(1)}%`
+    : null
+
+  // RIGHT — positive condition
+  const pct = isIndeterminate
+    ? null
+    : `${(Math.max(0, Math.min(1, ratio as number)) * 100).toFixed(1)}%`
+  ```
+
+  This applies to ternaries, `if`/`else` statements, and conditionals generally. When the condition is naturally negative (`!isFound`, `!hasData`), still structure your logic so the positive case (where you do something) comes first.
+
 ## Function Style (Arrow Functions, Implicit Returns)
 
 All functions in this codebase are `const` + arrow functions. The `function` keyword is reserved for the rare case where a `this` binding is genuinely required — that case hasn't come up in this repo yet, and almost certainly won't come up in React code either (hooks, event handlers, and utilities all close over the outer scope, and JSX components do not need their own `this`).
