@@ -74,7 +74,7 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | (infra) | — Exclude storybook-static from lint+typecheck | ✅ Done | 2026-05-10 | Commit 1e7cf03 (orchestrator) — unblocks pre-push gate |
 | W0a | 0 — Stale cleanup + plan copy | ✅ Done | 2026-05-10 | Orchestrator took over after subagent permission failure. 7 worktree dirs deleted, 2 stale branches deleted (both already-merged work), plan copied from ~/.claude/plans → docs/react-migration-recovery-handout.md |
 | W0b | 0 — Audit existing state | ✅ Done | 2026-05-10 | claude-sonnet-4-6, low effort, subagent run successful — commit b882c23 |
-| W0c | 0 — Parity reference capture | 🔄 In Progress | 2026-05-10 | claude-sonnet-4-6, medium effort — script approach using buildParams directly |
+| W0c | 0 — Parity reference capture | ✅ Done | 2026-05-10 | claude-sonnet-4-6 — 36 fixture pairs captured via Node script (buildParams inline); commit 51da90d |
 | W1 | 1 — Wave B-0 RenderFields | ⬜ Not Started | — | Blocks W2A–W2D |
 | W2A | 2 — Bundle A (BooleanField, NumberField, StringField) | ⬜ Not Started | — | |
 | W2B | 2 — Bundle B (EnumField, LanguageCodeField, LanguageCodesField) | ⬜ Not Started | — | |
@@ -118,11 +118,22 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 - `yarn typecheck` — ✅ clean
 - `yarn lint` — ✅ clean (474 files, no fixes applied)
 
+### W0c — Parity Reference Capture
+
+- [x] Step 1: Node script approach used — buildParams is pure, no dev server needed
+- [x] Step 2: YAML + input.json captured for all 36 commands in commands.js
+- [x] Step 3: Fixture count recorded below
+
+**Fixtures captured (W0c):** `36` command fixtures in `packages/web/tests/fixtures/parity/`
+Capture script: `packages/web/scripts/capture-parity-fixtures.ts`
+W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../src/commands/commands.ts` after W1 lands.
+
 ### Progress Log
 
 | Worker | Date | Action |
-|---|---|---|
+| --- | --- | --- |
 | W0b | 2026-05-10 | docs(checklist): record W0b audit findings — partial component dir classification |
+| W0c | 2026-05-10 | test: capture parity reference YAML for all commands (Phase 0 baseline) |
 
 ## Open Questions
 
