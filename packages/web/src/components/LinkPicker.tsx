@@ -2,20 +2,33 @@ import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { pathsAtom } from "../state/pathsAtom"
-import { type LinkPickerAnchor, linkPickerStateAtom, type TriggerRect } from "../state/pickerAtoms"
+import {
+  type LinkPickerAnchor,
+  linkPickerStateAtom,
+  type TriggerRect,
+} from "../state/pickerAtoms"
 import { stepsAtom } from "../state/stepsAtom"
-import type { Group, PathVar, SequenceItem, Step, StepLink } from "../types"
+import type {
+  Group,
+  PathVar,
+  SequenceItem,
+  Step,
+  StepLink,
+} from "../types"
 
 const PICKER_WIDTH = 360
 const PICKER_MAX_HEIGHT = 400
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const isGroup = (item: SequenceItem): item is Group => (item as Group).kind === "group"
+const isGroup = (item: SequenceItem): item is Group =>
+  (item as Group).kind === "group"
 
 type FlatEntry = { step: Step; flatIndex: number }
 
-const flattenSteps = (items: SequenceItem[]): FlatEntry[] => {
+const flattenSteps = (
+  items: SequenceItem[],
+): FlatEntry[] => {
   const result: FlatEntry[] = []
   let counter = 0
   for (const item of items) {
@@ -31,9 +44,12 @@ const flattenSteps = (items: SequenceItem[]): FlatEntry[] => {
 }
 
 const getCommandLabel = (name: string): string =>
-  typeof window.commandLabel === "function" ? window.commandLabel(name) : name
+  typeof window.commandLabel === "function"
+    ? window.commandLabel(name)
+    : name
 
-const makePathBreakable = (text: string) => text.replace(/([/\\])/g, "​$1")
+const makePathBreakable = (text: string) =>
+  text.replace(/([/\\])/g, "​$1")
 
 // ─── Link item types ──────────────────────────────────────────────────────────
 
@@ -61,7 +77,9 @@ const buildItems = (
   paths: PathVar[],
 ): LinkItem[] => {
   const flatOrder = flattenSteps(allSteps)
-  const currentIndex = flatOrder.findIndex((entry) => entry.step.id === anchor.stepId)
+  const currentIndex = flatOrder.findIndex(
+    (entry) => entry.step.id === anchor.stepId,
+  )
   if (currentIndex < 0) {
     return []
   }
@@ -101,18 +119,26 @@ const findInitialIndex = (
   allSteps: SequenceItem[],
 ): number => {
   const flatOrder = flattenSteps(allSteps)
-  const entry = flatOrder.find((flatEntry) => flatEntry.step.id === anchor.stepId)
+  const entry = flatOrder.find(
+    (flatEntry) => flatEntry.step.id === anchor.stepId,
+  )
   if (!entry) {
     return 0
   }
-  const link: StepLink | undefined = entry.step.links?.[anchor.fieldName]
+  const link: StepLink | undefined =
+    entry.step.links?.[anchor.fieldName]
   if (typeof link === "string") {
-    const idx = items.findIndex((item) => item.kind === "path" && item.pathVarId === link)
+    const idx = items.findIndex(
+      (item) =>
+        item.kind === "path" && item.pathVarId === link,
+    )
     return idx >= 0 ? idx : 0
   }
   if (link && typeof link === "object" && link.linkedTo) {
     const idx = items.findIndex(
-      (item) => item.kind === "step" && item.sourceStepId === link.linkedTo,
+      (item) =>
+        item.kind === "step" &&
+        item.sourceStepId === link.linkedTo,
     )
     return idx >= 0 ? idx : 0
   }
@@ -120,60 +146,108 @@ const findInitialIndex = (
 }
 
 const matchesQuery = (item: LinkItem, query: string) =>
-  item.label.toLowerCase().includes(query) || item.detail.toLowerCase().includes(query)
+  item.label.toLowerCase().includes(query) ||
+  item.detail.toLowerCase().includes(query)
 
-const computePosition = (rect: TriggerRect, width: number, maxHeight: number) => {
+const computePosition = (
+  rect: TriggerRect,
+  width: number,
+  maxHeight: number,
+) => {
   const margin = 8
   // Link picker aligns to the right edge of its trigger
   const initialLeft = rect.right - width
   const clampedLeft = (() => {
     if (initialLeft + width > window.innerWidth - margin) {
-      return Math.max(margin, window.innerWidth - width - margin)
+      return Math.max(
+        margin,
+        window.innerWidth - width - margin,
+      )
     }
     if (initialLeft < margin) {
       return margin
     }
     return initialLeft
   })()
-  const spaceBelow = window.innerHeight - rect.bottom - margin
+  const spaceBelow =
+    window.innerHeight - rect.bottom - margin
   const spaceAbove = rect.top - margin
-  const flipAbove = spaceBelow < 200 && spaceAbove > spaceBelow
+  const flipAbove =
+    spaceBelow < 200 && spaceAbove > spaceBelow
   const { top, height } = (() => {
     if (flipAbove) {
-      const flippedHeight = Math.min(maxHeight, Math.max(0, spaceAbove))
-      return { top: rect.top - flippedHeight - 4, height: flippedHeight }
+      const flippedHeight = Math.min(
+        maxHeight,
+        Math.max(0, spaceAbove),
+      )
+      return {
+        top: rect.top - flippedHeight - 4,
+        height: flippedHeight,
+      }
     }
-    const droppedHeight = Math.min(maxHeight, Math.max(0, spaceBelow))
+    const droppedHeight = Math.min(
+      maxHeight,
+      Math.max(0, spaceBelow),
+    )
     return { top: rect.bottom + 4, height: droppedHeight }
   })()
-  const clampedTop = Math.max(margin, Math.min(top, window.innerHeight - height - margin))
-  return { top: clampedTop, left: clampedLeft, maxHeight: height }
+  const clampedTop = Math.max(
+    margin,
+    Math.min(top, window.innerHeight - height - margin),
+  )
+  return {
+    top: clampedTop,
+    left: clampedLeft,
+    maxHeight: height,
+  }
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const LinkPicker = () => {
-  const [pickerState, setPickerState] = useAtom(linkPickerStateAtom)
+  const [pickerState, setPickerState] = useAtom(
+    linkPickerStateAtom,
+  )
   const allSteps = useAtomValue(stepsAtom)
   const paths = useAtomValue(pathsAtom)
   const [query, setQuery] = useState("")
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const allItems = pickerState ? buildItems(pickerState.anchor, allSteps, paths) : []
+  const allItems = pickerState
+    ? buildItems(pickerState.anchor, allSteps, paths)
+    : []
   const queryLower = query.trim().toLowerCase()
-  const filtered = queryLower ? allItems.filter((item) => matchesQuery(item, queryLower)) : allItems
-  const safeActiveIndex = activeIndex >= filtered.length ? 0 : activeIndex
+  const filtered = queryLower
+    ? allItems.filter((item) =>
+        matchesQuery(item, queryLower),
+      )
+    : allItems
+  const safeActiveIndex =
+    activeIndex >= filtered.length ? 0 : activeIndex
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: suppressed during react-migration
   useEffect(() => {
     if (!pickerState) {
       return
     }
-    const items = buildItems(pickerState.anchor, allSteps, paths)
+    const items = buildItems(
+      pickerState.anchor,
+      allSteps,
+      paths,
+    )
     setQuery("")
-    setActiveIndex(findInitialIndex(items, pickerState.anchor, allSteps))
+    setActiveIndex(
+      findInitialIndex(items, pickerState.anchor, allSteps),
+    )
     setTimeout(() => inputRef.current?.focus(), 0)
-  }, [pickerState?.anchor.stepId, pickerState?.anchor.fieldName])
+  }, [
+    pickerState?.anchor.stepId,
+    pickerState?.anchor.fieldName,
+    allSteps,
+    paths,
+    pickerState,
+  ])
 
   useEffect(() => {
     if (!pickerState) {
@@ -181,14 +255,25 @@ export const LinkPicker = () => {
     }
     const handleMouseDown = (event: MouseEvent) => {
       const target = event.target as Node
-      const popover = document.getElementById("link-picker-react")
+      const popover = document.getElementById(
+        "link-picker-react",
+      )
       if (popover?.contains(target)) {
         return
       }
       setPickerState(null)
     }
-    document.addEventListener("mousedown", handleMouseDown, true)
-    return () => document.removeEventListener("mousedown", handleMouseDown, true)
+    document.addEventListener(
+      "mousedown",
+      handleMouseDown,
+      true,
+    )
+    return () =>
+      document.removeEventListener(
+        "mousedown",
+        handleMouseDown,
+        true,
+      )
   }, [pickerState, setPickerState])
 
   const close = () => setPickerState(null)
@@ -198,10 +283,18 @@ export const LinkPicker = () => {
     close()
     if (anchor) {
       ;(
-        window.setLink as ((stepId: string, fieldName: string, value: string) => void) | undefined
+        window.setLink as
+          | ((
+              stepId: string,
+              fieldName: string,
+              value: string,
+            ) => void)
+          | undefined
       )?.(anchor.stepId, anchor.fieldName, item.value)
       ;(
-        window.refreshLinkPickerTrigger as ((stepId: string, fieldName: string) => void) | undefined
+        window.refreshLinkPickerTrigger as
+          | ((stepId: string, fieldName: string) => void)
+          | undefined
       )?.(anchor.stepId, anchor.fieldName)
     }
   }
@@ -220,7 +313,10 @@ export const LinkPicker = () => {
       setActiveIndex((prev) => (prev + 1) % filtered.length)
     } else if (event.key === "ArrowUp") {
       event.preventDefault()
-      setActiveIndex((prev) => (prev - 1 + filtered.length) % filtered.length)
+      setActiveIndex(
+        (prev) =>
+          (prev - 1 + filtered.length) % filtered.length,
+      )
     } else if (event.key === "Enter") {
       event.preventDefault()
       if (filtered[safeActiveIndex]) {
@@ -263,7 +359,9 @@ export const LinkPicker = () => {
       />
       <div className="overflow-y-auto py-1 flex-1">
         {filtered.length === 0 ? (
-          <p className="text-xs text-slate-500 text-center py-4">No matches.</p>
+          <p className="text-xs text-slate-500 text-center py-4">
+            No matches.
+          </p>
         ) : (
           filtered.map((item, index) => {
             const isActive = index === safeActiveIndex
@@ -276,15 +374,22 @@ export const LinkPicker = () => {
                 role="option"
                 aria-selected={isActive}
                 className={`w-full text-left px-3 py-1.5 ${isActive ? "bg-blue-700" : "hover:bg-slate-800"}`}
-                onMouseDown={(event) => event.preventDefault()}
+                onMouseDown={(event) =>
+                  event.preventDefault()
+                }
                 onClick={() => selectItem(item)}
               >
-                <div className={labelClass}>{item.label}</div>
+                <div className={labelClass}>
+                  {item.label}
+                </div>
                 {item.detail && (
                   <div
                     className={detailClass}
+                    // biome-ignore lint/security/noDangerouslySetInnerHtml: suppressed during react-migration
                     dangerouslySetInnerHTML={{
-                      __html: makePathBreakable(item.detail),
+                      __html: makePathBreakable(
+                        item.detail,
+                      ),
                     }}
                   />
                 )}

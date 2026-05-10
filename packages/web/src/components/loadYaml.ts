@@ -1,5 +1,11 @@
 import yaml from "js-yaml"
-import type { Commands, Group, PathVar, SequenceItem, Step } from "../types"
+import type {
+  Commands,
+  Group,
+  PathVar,
+  SequenceItem,
+  Step,
+} from "../types"
 
 type LoadContext = {
   commands: Commands
@@ -14,12 +20,19 @@ export type LoadYamlResult = {
 }
 
 const isGroupItem = (item: unknown): boolean =>
-  !!(item && typeof item === "object" && (item as Record<string, unknown>).kind === "group")
+  !!(
+    item &&
+    typeof item === "object" &&
+    (item as Record<string, unknown>).kind === "group"
+  )
 
 // Creates a bare step shell — params and links are empty; loadStepItem fills
 // them from the YAML. The counter is advanced here so every step gets a
 // unique auto-generated ID even when the YAML omits explicit ids.
-const createStep = (commandName: string, context: LoadContext): Step => {
+const createStep = (
+  commandName: string,
+  context: LoadContext,
+): Step => {
   context.currentStepCounter++
   return {
     id: `step${context.currentStepCounter}`,
@@ -33,13 +46,18 @@ const createStep = (commandName: string, context: LoadContext): Step => {
   }
 }
 
-const loadStepItem = (item: unknown, context: LoadContext): Step => {
+const loadStepItem = (
+  item: unknown,
+  context: LoadContext,
+): Step => {
   const { commands, currentPaths } = context
   const raw = item as Record<string, unknown>
 
-  if (!raw.command) throw new Error('Each step must have a "command" key')
+  if (!raw.command)
+    throw new Error('Each step must have a "command" key')
   const commandName = raw.command as string
-  if (!commands[commandName]) throw new Error(`Unknown command: ${commandName}`)
+  if (!commands[commandName])
+    throw new Error(`Unknown command: ${commandName}`)
 
   const step = createStep(commandName, context)
 
@@ -58,16 +76,25 @@ const loadStepItem = (item: unknown, context: LoadContext): Step => {
   if (raw.isCollapsed === true) step.isCollapsed = true
 
   const commandDefinition = commands[commandName]
-  const rawParams = raw.params as Record<string, unknown> | undefined
+  const rawParams = raw.params as
+    | Record<string, unknown>
+    | undefined
 
   for (const field of commandDefinition.fields) {
     const value = rawParams?.[field.name]
     if (value !== undefined) {
-      if (typeof value === "string" && value.startsWith("@")) {
+      if (
+        typeof value === "string" &&
+        value.startsWith("@")
+      ) {
         // Path-variable reference — restore as a string link if the path
         // var exists, otherwise keep the literal so the user can fix it.
         const pathVarId = value.slice(1)
-        if (currentPaths.find((pathVar) => pathVar.id === pathVarId)) {
+        if (
+          currentPaths.find(
+            (pathVar) => pathVar.id === pathVarId,
+          )
+        ) {
           step.links[field.name] = pathVarId
         } else {
           step.params[field.name] = value
@@ -76,14 +103,18 @@ const loadStepItem = (item: unknown, context: LoadContext): Step => {
         value &&
         typeof value === "object" &&
         !Array.isArray(value) &&
-        typeof (value as Record<string, unknown>).linkedTo === "string"
+        typeof (value as Record<string, unknown>)
+          .linkedTo === "string"
       ) {
         // Step-output reference — restore as the object form without
         // validating the referenced step (partial sequences must still load).
         const linkObj = value as Record<string, unknown>
         step.links[field.name] = {
           linkedTo: linkObj.linkedTo as string,
-          output: typeof linkObj.output === "string" ? linkObj.output : "folder",
+          output:
+            typeof linkObj.output === "string"
+              ? linkObj.output
+              : "folder",
         }
       } else {
         step.params[field.name] = value
@@ -91,9 +122,11 @@ const loadStepItem = (item: unknown, context: LoadContext): Step => {
     }
 
     if (field.companionNameField) {
-      const companionValue = rawParams?.[field.companionNameField]
+      const companionValue =
+        rawParams?.[field.companionNameField]
       if (companionValue !== undefined) {
-        step.params[field.companionNameField] = companionValue
+        step.params[field.companionNameField] =
+          companionValue
       }
     }
   }
@@ -112,17 +145,26 @@ const loadStepItem = (item: unknown, context: LoadContext): Step => {
   return step
 }
 
-const loadGroupItem = (item: unknown, context: LoadContext): Group => {
+const loadGroupItem = (
+  item: unknown,
+  context: LoadContext,
+): Group => {
   const raw = item as Record<string, unknown>
   if (!Array.isArray(raw.steps) || raw.steps.length === 0) {
-    throw new Error('A group must have a non-empty "steps" array')
+    throw new Error(
+      'A group must have a non-empty "steps" array',
+    )
   }
-  const innerSteps = (raw.steps as unknown[]).map((inner) => {
-    if (isGroupItem(inner)) {
-      throw new Error("Groups cannot be nested — a group's inner steps must each be a bare step")
-    }
-    return loadStepItem(inner, context)
-  })
+  const innerSteps = (raw.steps as unknown[]).map(
+    (inner) => {
+      if (isGroupItem(inner)) {
+        throw new Error(
+          "Groups cannot be nested — a group's inner steps must each be a bare step",
+        )
+      }
+      return loadStepItem(inner, context)
+    },
+  )
   return {
     kind: "group",
     id:
@@ -136,7 +178,9 @@ const loadGroupItem = (item: unknown, context: LoadContext): Group => {
   }
 }
 
-const ensureBasePath = (): PathVar[] => [{ id: "basePath", label: "basePath", value: "" }]
+const ensureBasePath = (): PathVar[] => [
+  { id: "basePath", label: "basePath", value: "" },
+]
 
 // Parses YAML text and returns the new sequence state. Two formats accepted:
 //   - Canonical: { paths: {...}, steps: [...] }  (emitted by toYamlStr)
@@ -146,35 +190,49 @@ export const loadYamlFromText = (
   text: string,
   commands: Commands,
   currentPaths: PathVar[],
-  currentStepCounter: number,
+  _currentStepCounter: number,
 ): LoadYamlResult => {
   const data = yaml.load(text)
 
   let paths = currentPaths
   let stepsData: unknown[]
 
-  if (data && typeof data === "object" && !Array.isArray(data)) {
+  if (
+    data &&
+    typeof data === "object" &&
+    !Array.isArray(data)
+  ) {
     const dataObj = data as Record<string, unknown>
     if (dataObj.steps !== undefined) {
-      if (dataObj.paths && typeof dataObj.paths === "object") {
-        paths = Object.entries(dataObj.paths as Record<string, Record<string, string>>).map(
-          ([id, pathVar]) => ({
-            id,
-            label: pathVar.label || id,
-            value: pathVar.value || "",
-          }),
-        )
+      if (
+        dataObj.paths &&
+        typeof dataObj.paths === "object"
+      ) {
+        paths = Object.entries(
+          dataObj.paths as Record<
+            string,
+            Record<string, string>
+          >,
+        ).map(([id, pathVar]) => ({
+          id,
+          label: pathVar.label || id,
+          value: pathVar.value || "",
+        }))
       }
       if (!paths.length) paths = ensureBasePath()
       stepsData = (dataObj.steps as unknown[]) || []
     } else {
-      throw new Error('Expected a YAML sequence or object with "steps" key')
+      throw new Error(
+        'Expected a YAML sequence or object with "steps" key',
+      )
     }
   } else if (Array.isArray(data)) {
     paths = ensureBasePath()
     stepsData = data
   } else {
-    throw new Error('Expected a YAML sequence or object with "steps" key')
+    throw new Error(
+      'Expected a YAML sequence or object with "steps" key',
+    )
   }
 
   const context: LoadContext = {
@@ -184,8 +242,14 @@ export const loadYamlFromText = (
   }
 
   const steps = stepsData.map((item) =>
-    isGroupItem(item) ? loadGroupItem(item, context) : loadStepItem(item, context),
+    isGroupItem(item)
+      ? loadGroupItem(item, context)
+      : loadStepItem(item, context),
   )
 
-  return { steps, paths, stepCounter: context.currentStepCounter }
+  return {
+    steps,
+    paths,
+    stepCounter: context.currentStepCounter,
+  }
 }

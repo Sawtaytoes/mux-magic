@@ -4,7 +4,7 @@
 // We read it via the real (un-mocked) `node:fs` module using vi.importActual,
 // then execute it in the current globalThis scope and verify the side-effect.
 
-import { describe, expect, test, beforeAll, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 

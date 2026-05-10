@@ -44,7 +44,18 @@ export default meta
 type Story = StoryObj<typeof YamlModal>
 
 export const WithSteps: Story = {
-  decorators: [withStore([step], [{ id: "basePath", label: "basePath", value: "/media/movies" }])],
+  decorators: [
+    withStore(
+      [step],
+      [
+        {
+          id: "basePath",
+          label: "basePath",
+          value: "/media/movies",
+        },
+      ],
+    ),
+  ],
 }
 
 export const EmptySequence: Story = {

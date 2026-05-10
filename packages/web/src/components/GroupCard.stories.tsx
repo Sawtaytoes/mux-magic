@@ -21,7 +21,10 @@ const serialGroup: Group = {
   label: "Encode batch",
   isParallel: false,
   isCollapsed: false,
-  steps: [makeStep("step_1", "encodeVideo"), makeStep("step_2", "moveFile")],
+  steps: [
+    makeStep("step_1", "encodeVideo"),
+    makeStep("step_2", "moveFile"),
+  ],
 }
 
 const parallelGroup: Group = {
@@ -30,7 +33,10 @@ const parallelGroup: Group = {
   label: "Parallel downloads",
   isParallel: true,
   isCollapsed: false,
-  steps: [makeStep("step_3", "downloadEpisodes"), makeStep("step_4", "downloadEpisodes")],
+  steps: [
+    makeStep("step_3", "downloadEpisodes"),
+    makeStep("step_4", "downloadEpisodes"),
+  ],
 }
 
 const withStore = (group: Group) => {
@@ -40,7 +46,10 @@ const withStore = (group: Group) => {
     window.mediaTools = window.mediaTools ?? {}
     window.mediaTools.COMMANDS = {}
     window.commandLabel = (name: string) => name
-    window.commandPicker = { open: () => {}, close: () => {} }
+    window.commandPicker = {
+      open: () => {},
+      close: () => {},
+    }
   }
   return (Story: React.ComponentType) => (
     <Provider store={store}>
@@ -84,7 +93,9 @@ export const Parallel: Story = {
 }
 
 export const Collapsed: Story = {
-  decorators: [withStore({ ...serialGroup, isCollapsed: true })],
+  decorators: [
+    withStore({ ...serialGroup, isCollapsed: true }),
+  ],
   args: {
     group: { ...serialGroup, isCollapsed: true },
     itemIndex: 0,

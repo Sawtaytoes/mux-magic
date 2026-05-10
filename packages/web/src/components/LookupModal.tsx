@@ -32,7 +32,10 @@ const SEARCH_ENDPOINTS: Record<LookupType, string> = {
 const fetchSearch = async (
   lookupType: LookupType,
   searchTerm: string,
-): Promise<{ results: LookupSearchResult[]; error: string | null }> => {
+): Promise<{
+  results: LookupSearchResult[]
+  error: string | null
+}> => {
   try {
     const resp = await fetch(SEARCH_ENDPOINTS[lookupType], {
       method: "POST",
@@ -43,11 +46,17 @@ const fetchSearch = async (
       results?: LookupSearchResult[]
       error?: string
     }
-    return { results: data.results ?? [], error: data.error ?? null }
+    return {
+      results: data.results ?? [],
+      error: data.error ?? null,
+    }
   } catch (error) {
     return {
       results: [],
-      error: error instanceof Error ? error.message : String(error),
+      error:
+        error instanceof Error
+          ? error.message
+          : String(error),
     }
   }
 }
@@ -60,11 +69,14 @@ const fetchReleases = async (
   error: string | null
 }> => {
   try {
-    const resp = await fetch("/queries/listDvdCompareReleases", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dvdCompareId }),
-    })
+    const resp = await fetch(
+      "/queries/listDvdCompareReleases",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dvdCompareId }),
+      },
+    )
     const data = (await resp.json()) as {
       releases?: LookupRelease[]
       debug?: unknown
@@ -79,15 +91,24 @@ const fetchReleases = async (
     return {
       releases: [],
       debug: null,
-      error: error instanceof Error ? error.message : String(error),
+      error:
+        error instanceof Error
+          ? error.message
+          : String(error),
     }
   }
 }
 
 // ─── Bridge: write selection back to the legacy step editor ──────────────────
 
-const applySimpleSelection = (state: LookupState, id: number | string, displayName: string) => {
-  const bridge = window.mediaTools as Record<string, unknown> | undefined
+const applySimpleSelection = (
+  state: LookupState,
+  id: number | string,
+  displayName: string,
+) => {
+  const bridge = window.mediaTools as
+    | Record<string, unknown>
+    | undefined
   if (typeof bridge?.applyLookupSelection === "function") {
     ;(
       bridge.applyLookupSelection as (
@@ -100,9 +121,17 @@ const applySimpleSelection = (state: LookupState, id: number | string, displayNa
   }
 }
 
-const applyDvdCompareSelection = (state: LookupState, hash: string | number, label: string) => {
-  const bridge = window.mediaTools as Record<string, unknown> | undefined
-  if (typeof bridge?.applyDvdCompareSelection === "function") {
+const applyDvdCompareSelection = (
+  state: LookupState,
+  hash: string | number,
+  label: string,
+) => {
+  const bridge = window.mediaTools as
+    | Record<string, unknown>
+    | undefined
+  if (
+    typeof bridge?.applyDvdCompareSelection === "function"
+  ) {
     ;(
       bridge.applyDvdCompareSelection as (
         stepId: string,
@@ -112,7 +141,14 @@ const applyDvdCompareSelection = (state: LookupState, hash: string | number, lab
         hash: string | number,
         label: string,
       ) => void
-    )(state.stepId, state.selectedGroup, state.selectedFid, state.selectedVariant, hash, label)
+    )(
+      state.stepId,
+      state.selectedGroup,
+      state.selectedFid,
+      state.selectedVariant,
+      hash,
+      label,
+    )
   }
 }
 
@@ -137,8 +173,15 @@ const SearchStage = ({
     const term = state.searchTerm.trim()
     if (!term) return
     onUpdate({ loading: true, searchError: null })
-    const { results, error } = await fetchSearch(state.lookupType, term)
-    onUpdate({ loading: false, results, searchError: error })
+    const { results, error } = await fetchSearch(
+      state.lookupType,
+      term,
+    )
+    onUpdate({
+      loading: false,
+      results,
+      searchError: error,
+    })
   }
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -148,15 +191,25 @@ const SearchStage = ({
   const filteredResults =
     state.results === null
       ? null
-      : state.lookupType === "dvdcompare" && state.formatFilter !== "all"
-        ? (state.results as Array<{ groups?: LookupGroup[] }>)
+      : state.lookupType === "dvdcompare" &&
+          state.formatFilter !== "all"
+        ? (
+            state.results as Array<{
+              groups?: LookupGroup[]
+            }>
+          )
             .map((group) => ({
               ...group,
               groups: (group.groups ?? []).filter((grp) =>
-                grp.variants?.some((variant) => variant.variant === state.formatFilter),
+                grp.variants?.some(
+                  (variant) =>
+                    variant.variant === state.formatFilter,
+                ),
               ),
             }))
-            .filter((group) => (group.groups?.length ?? 0) > 0)
+            .filter(
+              (group) => (group.groups?.length ?? 0) > 0,
+            )
         : state.results
 
   return (
@@ -167,14 +220,19 @@ const SearchStage = ({
           id="lookup-search-input"
           type="text"
           value={state.searchTerm}
-          onChange={(event) => onUpdate({ searchTerm: event.target.value })}
+          onChange={(event) =>
+            onUpdate({ searchTerm: event.target.value })
+          }
           onKeyDown={handleKeyDown}
           placeholder="Search…"
           className="flex-1 bg-slate-700 border border-slate-600 text-slate-100 text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
+        {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
         <button
           onClick={() => void runSearch()}
-          disabled={state.loading || !state.searchTerm.trim()}
+          disabled={
+            state.loading || !state.searchTerm.trim()
+          }
           className="text-xs bg-blue-700 hover:bg-blue-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
         >
           {state.loading ? "Searching…" : "Search"}
@@ -184,108 +242,140 @@ const SearchStage = ({
       {state.lookupType === "dvdcompare" && (
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <span>Format:</span>
-          {["Blu-ray 4K", "Blu-ray", "DVD", "all"].map((format) => (
-            <button
-              key={format}
-              onClick={() => onUpdate({ formatFilter: format })}
-              className={`px-2 py-0.5 rounded border ${
-                state.formatFilter === format
-                  ? "border-blue-500 text-blue-300 bg-blue-900/30"
-                  : "border-slate-600 text-slate-400 hover:border-slate-500"
-              }`}
-            >
-              {format}
-            </button>
-          ))}
+          {["Blu-ray 4K", "Blu-ray", "DVD", "all"].map(
+            (format) => (
+              // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
+              <button
+                key={format}
+                onClick={() =>
+                  onUpdate({ formatFilter: format })
+                }
+                className={`px-2 py-0.5 rounded border ${
+                  state.formatFilter === format
+                    ? "border-blue-500 text-blue-300 bg-blue-900/30"
+                    : "border-slate-600 text-slate-400 hover:border-slate-500"
+                }`}
+              >
+                {format}
+              </button>
+            ),
+          )}
         </div>
       )}
 
-      {state.searchError && <p className="text-rose-400 text-xs">{state.searchError}</p>}
-
-      {filteredResults !== null && filteredResults.length === 0 && (
-        <p className="text-slate-500 text-sm text-center py-4">No results.</p>
+      {state.searchError && (
+        <p className="text-rose-400 text-xs">
+          {state.searchError}
+        </p>
       )}
 
-      {filteredResults !== null && filteredResults.length > 0 && (
-        <div className="flex flex-col gap-1 max-h-80 overflow-y-auto">
-          {filteredResults.map((result, index) => {
-            const r = result as LookupSearchResult & {
-              baseTitle?: string
-              year?: string
-              variants?: { id: string; variant: string }[]
-            }
-            const label =
-              state.lookupType === "tmdb"
-                ? r.year
-                  ? `${r.title} (${r.year})`
-                  : (r.title ?? "—")
-                : (r.name ?? r.baseTitle ?? "—")
-            const keyHint =
-              index < 9 ? (
-                <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2 shrink-0">
-                  {index + 1}
-                </span>
-              ) : null
+      {filteredResults !== null &&
+        filteredResults.length === 0 && (
+          <p className="text-slate-500 text-sm text-center py-4">
+            No results.
+          </p>
+        )}
 
-            const handleSelect = () => {
-              if (state.lookupType === "dvdcompare") {
-                const group = result as unknown as LookupGroup
-                if (!group.variants || group.variants.length === 0) return
-                if (group.variants.length === 1) {
-                  onUpdate({
-                    selectedGroup: group,
-                    selectedFid: group.variants[0].id,
-                    selectedVariant: group.variants[0].variant,
-                    stage: "release",
-                    loading: true,
-                  })
-                  fetchReleases(group.variants[0].id).then(({ releases, debug, error }) => {
+      {filteredResults !== null &&
+        filteredResults.length > 0 && (
+          <div className="flex flex-col gap-1 max-h-80 overflow-y-auto">
+            {filteredResults.map((result, index) => {
+              const r = result as LookupSearchResult & {
+                baseTitle?: string
+                year?: string
+                variants?: { id: string; variant: string }[]
+              }
+              const label =
+                state.lookupType === "tmdb"
+                  ? r.year
+                    ? `${r.title} (${r.year})`
+                    : (r.title ?? "—")
+                  : (r.name ?? r.baseTitle ?? "—")
+              const keyHint =
+                index < 9 ? (
+                  <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2 shrink-0">
+                    {index + 1}
+                  </span>
+                ) : null
+
+              const handleSelect = () => {
+                if (state.lookupType === "dvdcompare") {
+                  const group =
+                    result as unknown as LookupGroup
+                  if (
+                    !group.variants ||
+                    group.variants.length === 0
+                  )
+                    return
+                  if (group.variants.length === 1) {
                     onUpdate({
-                      releases,
-                      releasesDebug: debug,
-                      releasesError: error,
-                      loading: false,
+                      selectedGroup: group,
+                      selectedFid: group.variants[0].id,
+                      selectedVariant:
+                        group.variants[0].variant,
+                      stage: "release",
+                      loading: true,
                     })
-                  })
+                    fetchReleases(
+                      group.variants[0].id,
+                    ).then(({ releases, debug, error }) => {
+                      onUpdate({
+                        releases,
+                        releasesDebug: debug,
+                        releasesError: error,
+                        loading: false,
+                      })
+                    })
+                  } else {
+                    onUpdate({
+                      selectedGroup: group,
+                      stage: "variant",
+                    })
+                  }
                 } else {
-                  onUpdate({ selectedGroup: group, stage: "variant" })
-                }
-              } else {
-                let id: number | string | undefined
-                let displayName = ""
-                if (state.lookupType === "mal") {
-                  id = r.malId
-                  displayName = r.name ?? ""
-                } else if (state.lookupType === "anidb") {
-                  id = r.aid
-                  displayName = r.name ?? ""
-                } else if (state.lookupType === "tvdb") {
-                  id = r.tvdbId
-                  displayName = r.name ?? ""
-                } else if (state.lookupType === "tmdb") {
-                  id = r.movieDbId
-                  displayName = r.year ? `${r.title} (${r.year})` : (r.title ?? "")
-                }
-                if (id !== undefined) {
-                  applySimpleSelection(state, id, displayName)
-                  onClose()
+                  let id: number | string | undefined
+                  let displayName = ""
+                  if (state.lookupType === "mal") {
+                    id = r.malId
+                    displayName = r.name ?? ""
+                  } else if (state.lookupType === "anidb") {
+                    id = r.aid
+                    displayName = r.name ?? ""
+                  } else if (state.lookupType === "tvdb") {
+                    id = r.tvdbId
+                    displayName = r.name ?? ""
+                  } else if (state.lookupType === "tmdb") {
+                    id = r.movieDbId
+                    displayName = r.year
+                      ? `${r.title} (${r.year})`
+                      : (r.title ?? "")
+                  }
+                  if (id !== undefined) {
+                    applySimpleSelection(
+                      state,
+                      id,
+                      displayName,
+                    )
+                    onClose()
+                  }
                 }
               }
-            }
 
-            return (
-              <button
-                key={index}
-                onClick={handleSelect}
-                className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"
-              >
-                {keyHint}
-                {label}
-              </button>
-            )
-          })}
-        </div>
-      )}
+              return (
+                // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
+                <button
+                  // biome-ignore lint/suspicious/noArrayIndexKey: suppressed during react-migration
+                  key={index}
+                  onClick={handleSelect}
+                  className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"
+                >
+                  {keyHint}
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+        )}
     </div>
   )
 }
@@ -304,7 +394,10 @@ const VariantStage = ({
   const group = state.selectedGroup
   if (!group) return null
 
-  const selectVariant = (variantId: string, variant: string) => {
+  const selectVariant = (
+    variantId: string,
+    variant: string,
+  ) => {
     onUpdate({
       selectedFid: variantId,
       selectedVariant: variant,
@@ -312,31 +405,44 @@ const VariantStage = ({
       releases: null,
       loading: true,
     })
-    fetchReleases(variantId).then(({ releases, debug, error }) => {
-      if (releases.length === 1) {
-        applyDvdCompareSelection(state, releases[0].hash, releases[0].label)
-        onClose()
-      } else {
-        onUpdate({
-          releases,
-          releasesDebug: debug,
-          releasesError: error,
-          loading: false,
-        })
-      }
-    })
+    fetchReleases(variantId).then(
+      ({ releases, debug, error }) => {
+        if (releases.length === 1) {
+          applyDvdCompareSelection(
+            state,
+            releases[0].hash,
+            releases[0].label,
+          )
+          onClose()
+        } else {
+          onUpdate({
+            releases,
+            releasesDebug: debug,
+            releasesError: error,
+            loading: false,
+          })
+        }
+      },
+    )
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-slate-400 text-xs">Select a variant for "{group.baseTitle}":</p>
+      <p className="text-slate-400 text-xs">
+        Select a variant for "{group.baseTitle}":
+      </p>
       {group.variants.map((variant, index) => (
+        // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
         <button
           key={variant.id}
-          onClick={() => selectVariant(variant.id, variant.variant)}
+          onClick={() =>
+            selectVariant(variant.id, variant.variant)
+          }
           className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"
         >
-          <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2">{index + 1}</span>
+          <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2">
+            {index + 1}
+          </span>
           {variant.variant}
         </button>
       ))}
@@ -348,6 +454,7 @@ const VariantStage = ({
 
 const ReleaseStage = ({
   state,
+  // biome-ignore lint/correctness/noUnusedFunctionParameters: suppressed during react-migration
   onUpdate,
   onClose,
 }: {
@@ -356,32 +463,53 @@ const ReleaseStage = ({
   onClose: () => void
 }) => {
   if (state.loading) {
-    return <p className="text-slate-500 text-sm text-center py-4">Loading releases…</p>
+    return (
+      <p className="text-slate-500 text-sm text-center py-4">
+        Loading releases…
+      </p>
+    )
   }
 
   if (state.releasesError) {
-    return <p className="text-rose-400 text-xs">{state.releasesError}</p>
+    return (
+      <p className="text-rose-400 text-xs">
+        {state.releasesError}
+      </p>
+    )
   }
 
   const releases = state.releases ?? []
 
   if (releases.length === 0) {
-    return <p className="text-slate-500 text-sm text-center py-4">No releases found.</p>
+    return (
+      <p className="text-slate-500 text-sm text-center py-4">
+        No releases found.
+      </p>
+    )
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-slate-400 text-xs">Select a release:</p>
+      <p className="text-slate-400 text-xs">
+        Select a release:
+      </p>
       {releases.map((release, index) => (
+        // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
         <button
           key={String(release.hash)}
           onClick={() => {
-            applyDvdCompareSelection(state, release.hash, release.label)
+            applyDvdCompareSelection(
+              state,
+              release.hash,
+              release.label,
+            )
             onClose()
           }}
           className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"
         >
-          <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2">{index + 1}</span>
+          <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2">
+            {index + 1}
+          </span>
           {release.label}
         </button>
       ))}
@@ -397,7 +525,9 @@ export const LookupModal = () => {
   stateRef.current = state
 
   const update = (patch: Partial<LookupState>) => {
-    setState((prev) => (prev ? { ...prev, ...patch } : prev))
+    setState((prev) =>
+      prev ? { ...prev, ...patch } : prev,
+    )
   }
 
   const close = () => setState(null)
@@ -411,28 +541,35 @@ export const LookupModal = () => {
         setState(null)
         return
       }
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement
+      )
         return
       const digit = parseInt(event.key, 10)
-      if (isNaN(digit)) return
+      if (Number.isNaN(digit)) return
       event.preventDefault()
       const index = digit - 1
       // Dispatch a click on the nth visible option button inside the modal.
       const modal = document.getElementById("lookup-modal")
       if (!modal) return
-      const buttons = Array.from(modal.querySelectorAll<HTMLButtonElement>("button")).filter(
-        (btn) => btn.dataset["optionIndex"] !== undefined,
+      const buttons = Array.from(
+        modal.querySelectorAll<HTMLButtonElement>("button"),
+      ).filter(
+        (btn) => btn.dataset.optionIndex !== undefined,
       )
       buttons[index]?.click()
     }
     document.addEventListener("keydown", handleKeyDown)
-    return () => document.removeEventListener("keydown", handleKeyDown)
+    return () =>
+      document.removeEventListener("keydown", handleKeyDown)
   }, [setState])
 
   if (!state) return null
 
   const title = LOOKUP_TITLES[state.lookupType] ?? "Lookup"
-  const canGoBack = state.stage === "variant" || state.stage === "release"
+  const canGoBack =
+    state.stage === "variant" || state.stage === "release"
 
   const goBack = () => {
     if (state.stage === "release") {
@@ -443,6 +580,8 @@ export const LookupModal = () => {
   }
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: suppressed during react-migration
+    // biome-ignore lint/a11y/useKeyWithClickEvents: suppressed during react-migration
     <div
       id="lookup-modal"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -454,6 +593,7 @@ export const LookupModal = () => {
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700 shrink-0">
           {canGoBack && (
+            // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
             <button
               id="lookup-back-btn"
               onClick={goBack}
@@ -462,9 +602,13 @@ export const LookupModal = () => {
               ← Back
             </button>
           )}
-          <h2 id="lookup-title" className="text-sm font-semibold text-slate-100 flex-1">
+          <h2
+            id="lookup-title"
+            className="text-sm font-semibold text-slate-100 flex-1"
+          >
             {title}
           </h2>
+          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
             onClick={close}
             className="text-slate-400 hover:text-white text-base leading-none"
@@ -475,15 +619,30 @@ export const LookupModal = () => {
         </div>
 
         {/* Body */}
-        <div id="lookup-body" className="flex-1 overflow-y-auto p-4 min-h-0">
+        <div
+          id="lookup-body"
+          className="flex-1 overflow-y-auto p-4 min-h-0"
+        >
           {state.stage === "search" && (
-            <SearchStage state={state} onUpdate={update} onClose={close} />
+            <SearchStage
+              state={state}
+              onUpdate={update}
+              onClose={close}
+            />
           )}
           {state.stage === "variant" && (
-            <VariantStage state={state} onUpdate={update} onClose={close} />
+            <VariantStage
+              state={state}
+              onUpdate={update}
+              onClose={close}
+            />
           )}
           {state.stage === "release" && (
-            <ReleaseStage state={state} onUpdate={update} onClose={close} />
+            <ReleaseStage
+              state={state}
+              onUpdate={update}
+              onClose={close}
+            />
           )}
         </div>
       </div>

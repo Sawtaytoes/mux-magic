@@ -1,7 +1,18 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 import { pathsAtom } from "../state/pathsAtom"
 import { linkPickerStateAtom } from "../state/pickerAtoms"
 import { stepsAtom } from "../state/stepsAtom"
@@ -28,7 +39,11 @@ const makeStep = (id: string, command: string): Step => ({
   isCollapsed: false,
 })
 
-const makePath = (id: string, label: string, value: string): PathVar => ({
+const makePath = (
+  id: string,
+  label: string,
+  value: string,
+): PathVar => ({
   id,
   label,
   value,
@@ -44,7 +59,11 @@ const renderPicker = (open = false) => {
   ])
   store.set(pathsAtom, [
     makePath("basePath", "Base Path", "/home/user/videos"),
-    makePath("outputPath", "Output Path", "/home/user/output"),
+    makePath(
+      "outputPath",
+      "Output Path",
+      "/home/user/output",
+    ),
   ])
 
   if (open) {
@@ -68,8 +87,14 @@ const renderPicker = (open = false) => {
 }
 
 beforeEach(() => {
-  Object.defineProperty(window, "innerWidth", { value: 1200, configurable: true })
-  Object.defineProperty(window, "innerHeight", { value: 800, configurable: true })
+  Object.defineProperty(window, "innerWidth", {
+    value: 1200,
+    configurable: true,
+  })
+  Object.defineProperty(window, "innerHeight", {
+    value: 800,
+    configurable: true,
+  })
 })
 
 afterEach(() => {
@@ -85,22 +110,32 @@ describe("LinkPicker visibility", () => {
 
   it("renders picker when atom has state", () => {
     renderPicker(true)
-    expect(screen.getByTestId("link-picker")).toBeInTheDocument()
+    expect(
+      screen.getByTestId("link-picker"),
+    ).toBeInTheDocument()
   })
 })
 
 describe("LinkPicker items", () => {
   it("shows path variables", () => {
     renderPicker(true)
-    expect(screen.getByText("Base Path")).toBeInTheDocument()
-    expect(screen.getByText("Output Path")).toBeInTheDocument()
+    expect(
+      screen.getByText("Base Path"),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Output Path"),
+    ).toBeInTheDocument()
   })
 
   it("shows preceding steps (not the current or later steps)", () => {
     renderPicker(true)
     // step-3 is the anchor — only step-1 and step-2 should appear
-    expect(screen.getByText(/Step 1: copyFiles/)).toBeInTheDocument()
-    expect(screen.getByText(/Step 2: moveFiles/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Step 1: copyFiles/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Step 2: moveFiles/),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/addSubtitles/)).toBeNull()
   })
 
@@ -108,9 +143,14 @@ describe("LinkPicker items", () => {
     const user = userEvent.setup()
     renderPicker(true)
 
-    await user.type(screen.getByPlaceholderText(/search locations/i), "base")
+    await user.type(
+      screen.getByPlaceholderText(/search locations/i),
+      "base",
+    )
 
-    expect(screen.getByText("Base Path")).toBeInTheDocument()
+    expect(
+      screen.getByText("Base Path"),
+    ).toBeInTheDocument()
     expect(screen.queryByText("Output Path")).toBeNull()
   })
 })
@@ -122,7 +162,11 @@ describe("LinkPicker selection", () => {
 
     await user.click(screen.getByText("Base Path"))
 
-    expect(window.setLink).toHaveBeenCalledWith("step-3", "sourcePath", "path:basePath")
+    expect(window.setLink).toHaveBeenCalledWith(
+      "step-3",
+      "sourcePath",
+      "path:basePath",
+    )
   })
 
   it("calls refreshLinkPickerTrigger after selection", async () => {
@@ -131,7 +175,9 @@ describe("LinkPicker selection", () => {
 
     await user.click(screen.getByText("Base Path"))
 
-    expect(window.refreshLinkPickerTrigger).toHaveBeenCalledWith("step-3", "sourcePath")
+    expect(
+      window.refreshLinkPickerTrigger,
+    ).toHaveBeenCalledWith("step-3", "sourcePath")
   })
 
   it("closes after selection", async () => {

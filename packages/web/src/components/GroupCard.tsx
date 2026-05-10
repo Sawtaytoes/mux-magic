@@ -28,9 +28,13 @@ export const GroupCard = ({
   isFirst,
   isLast,
 }: GroupCardProps) => {
-  const toggleCollapsed = useSetAtom(toggleGroupCollapsedAtom)
+  const toggleCollapsed = useSetAtom(
+    toggleGroupCollapsedAtom,
+  )
   const updateLabel = useSetAtom(updateGroupLabelAtom)
-  const setChildrenCollapsed = useSetAtom(setGroupChildrenCollapsedAtom)
+  const setChildrenCollapsed = useSetAtom(
+    setGroupChildrenCollapsedAtom,
+  )
   const addStep = useSetAtom(addStepToGroupAtom)
   const moveGroup = useSetAtom(moveGroupAtom)
   const removeGroup = useSetAtom(removeGroupAtom)
@@ -68,23 +72,39 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() => toggleCollapsed(group.id)}
-          title={group.isCollapsed ? "Expand group" : "Collapse group"}
+          title={
+            group.isCollapsed
+              ? "Expand group"
+              : "Collapse group"
+          }
           className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700"
         >
-          <CollapseChevron isCollapsed={group.isCollapsed} />
+          <CollapseChevron
+            isCollapsed={group.isCollapsed}
+          />
         </button>
         <input
           type="text"
           defaultValue={group.label}
           placeholder={`${group.isParallel ? "Parallel group" : "Group"} (${stepCount} step${stepCount === 1 ? "" : "s"})`}
           data-group-label={group.id}
-          onChange={(event) => updateLabel({ groupId: group.id, label: event.currentTarget.value })}
+          onChange={(event) =>
+            updateLabel({
+              groupId: group.id,
+              label: event.currentTarget.value,
+            })
+          }
           className="flex-1 min-w-0 bg-transparent text-sm font-medium text-slate-200 px-1.5 py-0.5 rounded border-0 focus:outline-none focus:bg-slate-900/40 placeholder:text-slate-300 placeholder:font-medium"
         />
         {parallelBadge}
         <button
           type="button"
-          onClick={() => setChildrenCollapsed({ groupId: group.id, collapsed: true })}
+          onClick={() =>
+            setChildrenCollapsed({
+              groupId: group.id,
+              collapsed: true,
+            })
+          }
           title="Collapse all inner steps"
           className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700"
         >
@@ -92,7 +112,12 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() => setChildrenCollapsed({ groupId: group.id, collapsed: false })}
+          onClick={() =>
+            setChildrenCollapsed({
+              groupId: group.id,
+              collapsed: false,
+            })
+          }
           title="Expand all inner steps"
           className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700"
         >
@@ -108,7 +133,11 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() => window.pasteCardAt?.({ parentGroupId: group.id })}
+          onClick={() =>
+            window.pasteCardAt?.({
+              parentGroupId: group.id,
+            })
+          }
           title="Paste a copied step into this group"
           className="text-[10px] text-slate-400 hover:text-emerald-400 px-2 py-0.5 rounded border border-slate-700 hover:border-emerald-500/40"
         >
@@ -116,7 +145,9 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() => moveGroup({ groupId: group.id, direction: -1 })}
+          onClick={() =>
+            moveGroup({ groupId: group.id, direction: -1 })
+          }
           title="Move group up"
           disabled={isFirst}
           className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
@@ -125,7 +156,9 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() => moveGroup({ groupId: group.id, direction: 1 })}
+          onClick={() =>
+            moveGroup({ groupId: group.id, direction: 1 })
+          }
           title="Move group down"
           disabled={isLast}
           className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
@@ -158,7 +191,10 @@ export const GroupCard = ({
         </button>
       </div>
       {!group.isCollapsed && (
-        <div className={`${containerClasses} p-3`} data-group-body={group.id}>
+        <div
+          className={`${containerClasses} p-3`}
+          data-group-body={group.id}
+        >
           {group.steps.map((step, idx) => (
             <StepCard
               key={step.id}

@@ -39,15 +39,29 @@ export const BasePath: Story = {
 
 export const SecondaryPath: Story = {
   decorators: [
-    withStore([basePath, { id: "outputPath", label: "Output Path", value: "/mnt/output" }]),
+    withStore([
+      basePath,
+      {
+        id: "outputPath",
+        label: "Output Path",
+        value: "/mnt/output",
+      },
+    ]),
   ],
   args: {
-    pathVar: { id: "outputPath", label: "Output Path", value: "/mnt/output" },
+    pathVar: {
+      id: "outputPath",
+      label: "Output Path",
+      value: "/mnt/output",
+    },
     isFirst: false,
   },
 }
 
 export const EmptyValue: Story = {
   decorators: [withStore([{ ...basePath, value: "" }])],
-  args: { pathVar: { ...basePath, value: "" }, isFirst: false },
+  args: {
+    pathVar: { ...basePath, value: "" },
+    isFirst: false,
+  },
 }

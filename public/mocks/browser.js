@@ -92,7 +92,7 @@ export const enableMocksIfRequested = () => {
       onUnhandledRequest: "bypass",
     }))
     .then(() => {
-      // eslint-disable-next-line no-console
+       
       console.info("[mocks] enabled")
       return true
     })

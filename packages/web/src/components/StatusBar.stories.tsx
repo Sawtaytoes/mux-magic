@@ -17,7 +17,10 @@ const withStatus = (status: ConnectionStatus) => {
 const meta: Meta<typeof StatusBar> = {
   title: "Components/StatusBar",
   component: StatusBar,
-  parameters: { layout: "padded", backgrounds: { default: "dark" } },
+  parameters: {
+    layout: "padded",
+    backgrounds: { default: "dark" },
+  },
 }
 
 export default meta

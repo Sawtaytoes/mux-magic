@@ -33,7 +33,8 @@ export const useTolerantEventSource = <T>({
     if (!enabled) return
 
     const es = new EventSource(url)
-    let lostTimer: ReturnType<typeof setTimeout> | null = null
+    let lostTimer: ReturnType<typeof setTimeout> | null =
+      null
 
     const clearLostTimer = () => {
       if (lostTimer !== null) {

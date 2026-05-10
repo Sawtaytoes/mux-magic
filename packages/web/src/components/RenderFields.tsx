@@ -7,8 +7,13 @@ interface RenderFieldsProps {
   stepIndex: number
 }
 
-export const RenderFields = ({ step, stepIndex: _stepIndex }: RenderFieldsProps) => (
+export const RenderFields = ({
+  step,
+  stepIndex: _stepIndex,
+}: RenderFieldsProps) => (
   <div className="text-xs text-slate-500 italic py-1">
-    {step.command ? `[fields for ${step.command} — Wave B pending]` : null}
+    {step.command
+      ? `[fields for ${step.command} — Wave B pending]`
+      : null}
   </div>
 )

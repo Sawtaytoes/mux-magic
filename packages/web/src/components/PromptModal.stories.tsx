@@ -7,7 +7,8 @@ const store = createStore()
 store.set(promptModalAtom, {
   jobId: "job-demo",
   promptId: "prompt-demo",
-  message: "Multiple files matched — which one should be used for the artwork extraction?",
+  message:
+    "Multiple files matched — which one should be used for the artwork extraction?",
   options: [
     { index: 1, label: "Movie.2023.BluRay.mkv" },
     { index: 2, label: "Movie.2023.WEB-DL.mkv" },
@@ -16,7 +17,7 @@ store.set(promptModalAtom, {
 })
 
 const meta: Meta<typeof PromptModal> = {
-  title: "Wave E/PromptModal",
+  title: "Components/PromptModal",
   component: PromptModal,
   decorators: [
     (Story) => (

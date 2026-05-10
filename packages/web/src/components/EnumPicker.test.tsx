@@ -1,7 +1,18 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 import { enumPickerStateAtom } from "../state/pickerAtoms"
 import { EnumPicker } from "./EnumPicker"
 
@@ -17,7 +28,10 @@ const TRIGGER_RECT = {
 const EPISODE_TYPE_OPTIONS = [
   { value: "regular", label: "Regular (type=1)" },
   { value: "specials", label: "Specials (S, type=2)" },
-  { value: "credits", label: "Credits / OP / ED (C, type=3)" },
+  {
+    value: "credits",
+    label: "Credits / OP / ED (C, type=3)",
+  },
 ]
 
 const mockCommands = {
@@ -36,11 +50,17 @@ const mockCommands = {
   },
 }
 
-const renderPicker = (open = false, currentValue?: string) => {
+const renderPicker = (
+  open = false,
+  currentValue?: string,
+) => {
   const store = createStore()
   if (open) {
     store.set(enumPickerStateAtom, {
-      anchor: { stepId: "step-1", fieldName: "episodeType" },
+      anchor: {
+        stepId: "step-1",
+        fieldName: "episodeType",
+      },
       triggerRect: TRIGGER_RECT,
     })
   }
@@ -53,7 +73,9 @@ const renderPicker = (open = false, currentValue?: string) => {
     COMMANDS: mockCommands,
     findStepById: () => ({
       command: "setEpisodeType",
-      params: currentValue ? { episodeType: currentValue } : {},
+      params: currentValue
+        ? { episodeType: currentValue }
+        : {},
     }),
     renderAll: vi.fn(),
   }
@@ -62,8 +84,14 @@ const renderPicker = (open = false, currentValue?: string) => {
 }
 
 beforeEach(() => {
-  Object.defineProperty(window, "innerWidth", { value: 1200, configurable: true })
-  Object.defineProperty(window, "innerHeight", { value: 800, configurable: true })
+  Object.defineProperty(window, "innerWidth", {
+    value: 1200,
+    configurable: true,
+  })
+  Object.defineProperty(window, "innerHeight", {
+    value: 800,
+    configurable: true,
+  })
 })
 
 afterEach(() => {
@@ -79,35 +107,55 @@ describe("EnumPicker visibility", () => {
 
   it("renders picker when atom has state", () => {
     renderPicker(true)
-    expect(screen.getByTestId("enum-picker")).toBeInTheDocument()
+    expect(
+      screen.getByTestId("enum-picker"),
+    ).toBeInTheDocument()
   })
 })
 
 describe("EnumPicker items", () => {
   it("shows all options initially", () => {
     renderPicker(true)
-    expect(screen.getByText("Regular (type=1)")).toBeInTheDocument()
-    expect(screen.getByText("Specials (S, type=2)")).toBeInTheDocument()
-    expect(screen.getByText("Credits / OP / ED (C, type=3)")).toBeInTheDocument()
+    expect(
+      screen.getByText("Regular (type=1)"),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Specials (S, type=2)"),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Credits / OP / ED (C, type=3)"),
+    ).toBeInTheDocument()
   })
 
   it("filters options by query", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
-    await user.type(screen.getByPlaceholderText(/search options/i), "special")
+    await user.type(
+      screen.getByPlaceholderText(/search options/i),
+      "special",
+    )
 
-    expect(screen.getByText("Specials (S, type=2)")).toBeInTheDocument()
-    expect(screen.queryByText("Regular (type=1)")).toBeNull()
+    expect(
+      screen.getByText("Specials (S, type=2)"),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText("Regular (type=1)"),
+    ).toBeNull()
   })
 
   it("shows empty state when nothing matches", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
-    await user.type(screen.getByPlaceholderText(/search options/i), "zzznomatch")
+    await user.type(
+      screen.getByPlaceholderText(/search options/i),
+      "zzznomatch",
+    )
 
-    expect(screen.getByText(/no options match/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/no options match/i),
+    ).toBeInTheDocument()
   })
 })
 
@@ -116,9 +164,15 @@ describe("EnumPicker selection", () => {
     const user = userEvent.setup()
     renderPicker(true)
 
-    await user.click(screen.getByText("Specials (S, type=2)"))
+    await user.click(
+      screen.getByText("Specials (S, type=2)"),
+    )
 
-    expect(window.setParam).toHaveBeenCalledWith("step-1", "episodeType", "specials")
+    expect(window.setParam).toHaveBeenCalledWith(
+      "step-1",
+      "episodeType",
+      "specials",
+    )
   })
 
   it("closes after selection", async () => {
@@ -145,9 +199,16 @@ describe("EnumPicker keyboard", () => {
     const user = userEvent.setup()
     renderPicker(true)
 
-    await user.type(screen.getByPlaceholderText(/search options/i), "credits")
+    await user.type(
+      screen.getByPlaceholderText(/search options/i),
+      "credits",
+    )
     await user.keyboard("{Enter}")
 
-    expect(window.setParam).toHaveBeenCalledWith("step-1", "episodeType", "credits")
+    expect(window.setParam).toHaveBeenCalledWith(
+      "step-1",
+      "episodeType",
+      "credits",
+    )
   })
 })

@@ -11,7 +11,9 @@ const meta: Meta<typeof InsertDivider> = {
   },
   args: {
     onInsertStep: action("onInsertStep"),
-    onInsertSequentialGroup: action("onInsertSequentialGroup"),
+    onInsertSequentialGroup: action(
+      "onInsertSequentialGroup",
+    ),
     onInsertParallelGroup: action("onInsertParallelGroup"),
     onPaste: action("onPaste"),
   },

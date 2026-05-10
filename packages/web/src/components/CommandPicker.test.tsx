@@ -1,7 +1,18 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 import { commandPickerStateAtom } from "../state/pickerAtoms"
 import { CommandPicker } from "./CommandPicker"
 
@@ -56,8 +67,14 @@ beforeEach(() => {
   window.commandLabel = (name: string) => name
   window.changeCommand = vi.fn()
   // jsdom doesn't implement innerWidth/innerHeight by default
-  Object.defineProperty(window, "innerWidth", { value: 1200, configurable: true })
-  Object.defineProperty(window, "innerHeight", { value: 800, configurable: true })
+  Object.defineProperty(window, "innerWidth", {
+    value: 1200,
+    configurable: true,
+  })
+  Object.defineProperty(window, "innerHeight", {
+    value: 800,
+    configurable: true,
+  })
 })
 
 afterEach(() => {
@@ -68,40 +85,62 @@ afterEach(() => {
 describe("CommandPicker visibility", () => {
   it("renders nothing when atom is null", () => {
     renderPicker(false)
-    expect(screen.queryByTestId("command-picker")).toBeNull()
+    expect(
+      screen.queryByTestId("command-picker"),
+    ).toBeNull()
   })
 
   it("renders picker when atom has state", () => {
     renderPicker(true)
-    expect(screen.getByTestId("command-picker")).toBeInTheDocument()
+    expect(
+      screen.getByTestId("command-picker"),
+    ).toBeInTheDocument()
   })
 })
 
 describe("CommandPicker filtering", () => {
   it("shows all commands initially", () => {
     renderPicker(true)
-    expect(screen.getAllByText("makeDirectory").length).toBeGreaterThan(0)
-    expect(screen.getAllByText("copyFiles").length).toBeGreaterThan(0)
-    expect(screen.getAllByText("addSubtitles").length).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText("makeDirectory").length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText("copyFiles").length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText("addSubtitles").length,
+    ).toBeGreaterThan(0)
   })
 
   it("filters commands by query", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
-    await user.type(screen.getByPlaceholderText(/search commands/i), "copy")
+    await user.type(
+      screen.getByPlaceholderText(/search commands/i),
+      "copy",
+    )
 
-    expect(screen.getAllByText("copyFiles").length).toBeGreaterThan(0)
-    expect(screen.queryAllByText("makeDirectory")).toHaveLength(0)
+    expect(
+      screen.getAllByText("copyFiles").length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.queryAllByText("makeDirectory"),
+    ).toHaveLength(0)
   })
 
   it("shows empty state when no commands match", async () => {
     const user = userEvent.setup()
     renderPicker(true)
 
-    await user.type(screen.getByPlaceholderText(/search commands/i), "zzznomatch")
+    await user.type(
+      screen.getByPlaceholderText(/search commands/i),
+      "zzznomatch",
+    )
 
-    expect(screen.getByText(/no commands match/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/no commands match/i),
+    ).toBeInTheDocument()
   })
 })
 
@@ -120,10 +159,16 @@ describe("CommandPicker keyboard navigation", () => {
     renderPicker(true)
 
     // Filter to a single result then press Enter
-    await user.type(screen.getByPlaceholderText(/search commands/i), "copy")
+    await user.type(
+      screen.getByPlaceholderText(/search commands/i),
+      "copy",
+    )
     await user.keyboard("{Enter}")
 
-    expect(window.changeCommand).toHaveBeenCalledWith("step-1", "copyFiles")
+    expect(window.changeCommand).toHaveBeenCalledWith(
+      "step-1",
+      "copyFiles",
+    )
   })
 })
 
@@ -132,16 +177,23 @@ describe("CommandPicker item selection", () => {
     const user = userEvent.setup()
     renderPicker(true)
 
-    await user.click(screen.getAllByText("makeDirectory")[0])
+    await user.click(
+      screen.getAllByText("makeDirectory")[0],
+    )
 
-    expect(window.changeCommand).toHaveBeenCalledWith("step-1", "makeDirectory")
+    expect(window.changeCommand).toHaveBeenCalledWith(
+      "step-1",
+      "makeDirectory",
+    )
   })
 
   it("closes the picker after selection", async () => {
     const user = userEvent.setup()
     const store = renderPicker(true)
 
-    await user.click(screen.getAllByText("makeDirectory")[0])
+    await user.click(
+      screen.getAllByText("makeDirectory")[0],
+    )
 
     expect(store.get(commandPickerStateAtom)).toBeNull()
   })

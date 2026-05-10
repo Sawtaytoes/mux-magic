@@ -1,19 +1,38 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { commandHelpCommandNameAtom, commandHelpModalOpenAtom } from "../state/uiAtoms"
+import {
+  commandHelpCommandNameAtom,
+  commandHelpModalOpenAtom,
+} from "../state/uiAtoms"
 import { CommandHelpModal } from "./CommandHelpModal"
 
 const mockCommand = {
   summary: "Encodes video with ffmpeg.",
   fields: [
-    { name: "input", label: "Input file", type: "path", required: true },
-    { name: "preset", label: "Encoding preset", type: "string" },
+    {
+      name: "input",
+      label: "Input file",
+      type: "path",
+      required: true,
+    },
+    {
+      name: "preset",
+      label: "Encoding preset",
+      type: "string",
+    },
   ],
 }
 
-const makeStore = (commandName: string | null, isOpen = commandName !== null) => {
+const makeStore = (
+  commandName: string | null,
+  isOpen = commandName !== null,
+) => {
   const store = createStore()
   store.set(commandHelpCommandNameAtom, commandName)
   store.set(commandHelpModalOpenAtom, isOpen)
@@ -22,7 +41,9 @@ const makeStore = (commandName: string | null, isOpen = commandName !== null) =>
 
 const wrapWithBridge = () => {
   window.mediaTools = window.mediaTools ?? {}
-  window.mediaTools.COMMANDS = { ffmpeg: mockCommand } as never
+  window.mediaTools.COMMANDS = {
+    ffmpeg: mockCommand,
+  } as never
 }
 
 afterEach(() => {
@@ -70,7 +91,9 @@ describe("CommandHelpModal", () => {
         <CommandHelpModal />
       </Provider>,
     )
-    expect(screen.getByText("Encodes video with ffmpeg.")).toBeInTheDocument()
+    expect(
+      screen.getByText("Encodes video with ffmpeg."),
+    ).toBeInTheDocument()
   })
 
   it("renders all field entries", () => {
@@ -81,8 +104,12 @@ describe("CommandHelpModal", () => {
         <CommandHelpModal />
       </Provider>,
     )
-    expect(screen.getByText("Input file")).toBeInTheDocument()
-    expect(screen.getByText("Encoding preset")).toBeInTheDocument()
+    expect(
+      screen.getByText("Input file"),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("Encoding preset"),
+    ).toBeInTheDocument()
   })
 
   it("shows required badge for required fields", () => {
@@ -105,7 +132,9 @@ describe("CommandHelpModal", () => {
         <CommandHelpModal />
       </Provider>,
     )
-    await user.click(screen.getByRole("button", { name: /✕ close/i }))
+    await user.click(
+      screen.getByRole("button", { name: /✕ close/i }),
+    )
     expect(store.get(commandHelpModalOpenAtom)).toBe(false)
     expect(screen.queryByText(/Help:/)).toBeNull()
   })
@@ -119,7 +148,9 @@ describe("CommandHelpModal", () => {
         <CommandHelpModal />
       </Provider>,
     )
-    const backdrop = container.querySelector(".fixed.inset-0") as HTMLElement
+    const backdrop = container.querySelector(
+      ".fixed.inset-0",
+    ) as HTMLElement
     await user.click(backdrop)
     expect(store.get(commandHelpModalOpenAtom)).toBe(false)
   })

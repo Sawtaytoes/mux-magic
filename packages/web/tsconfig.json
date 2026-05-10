@@ -8,6 +8,15 @@
     "noEmit": true,
     "types": ["vite/client", "@testing-library/jest-dom"]
   },
-  "include": ["src", "vite.config.ts", "vitest.config.ts", "vitest.setup.ts"],
-  "exclude": ["src/**/*.stories.tsx", "src/**/*.stories.ts", "src/**/*.mdx"]
+  "include": [
+    "src",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "vitest.setup.ts"
+  ],
+  "exclude": [
+    "src/**/*.stories.tsx",
+    "src/**/*.stories.ts",
+    "src/**/*.mdx"
+  ]
 }

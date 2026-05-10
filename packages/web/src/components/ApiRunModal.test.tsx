@@ -1,4 +1,8 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -8,10 +12,15 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-import { apiRunModalAtom, runningAtom } from "../state/uiAtoms"
+import {
+  apiRunModalAtom,
+  runningAtom,
+} from "../state/uiAtoms"
 import { ApiRunModal } from "./ApiRunModal"
 
-const renderWithStore = (store: ReturnType<typeof createStore>) =>
+const renderWithStore = (
+  store: ReturnType<typeof createStore>,
+) =>
   render(
     <Provider store={store}>
       <ApiRunModal />
@@ -35,8 +44,12 @@ describe("ApiRunModal", () => {
       childStepId: null,
     })
     renderWithStore(store)
-    expect(screen.getByText("Run Sequence")).toBeInTheDocument()
-    expect(screen.getByText("job job-99")).toBeInTheDocument()
+    expect(
+      screen.getByText("Run Sequence"),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("job job-99"),
+    ).toBeInTheDocument()
     expect(screen.getByText("running")).toBeInTheDocument()
   })
 
@@ -50,7 +63,9 @@ describe("ApiRunModal", () => {
       childStepId: null,
     })
     renderWithStore(store)
-    expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /cancel/i }),
+    ).toBeInTheDocument()
   })
 
   it("hides Cancel button when status is completed", () => {
@@ -63,13 +78,17 @@ describe("ApiRunModal", () => {
       childStepId: null,
     })
     renderWithStore(store)
-    expect(screen.queryByRole("button", { name: /cancel/i })).toBeNull()
+    expect(
+      screen.queryByRole("button", { name: /cancel/i }),
+    ).toBeNull()
   })
 
   it("closes the modal when the ✕ button is clicked", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue(new Response("{}", { status: 200 }))
+      .mockResolvedValue(
+        new Response("{}", { status: 200 }),
+      )
     const store = createStore()
     store.set(apiRunModalAtom, {
       jobId: "job-2",
@@ -87,7 +106,9 @@ describe("ApiRunModal", () => {
   it("clears runningAtom when closed", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue(new Response("{}", { status: 200 }))
+      .mockResolvedValue(
+        new Response("{}", { status: 200 }),
+      )
     const store = createStore()
     store.set(runningAtom, true)
     store.set(apiRunModalAtom, {

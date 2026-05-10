@@ -3,7 +3,11 @@ import { useEffect, useRef } from "react"
 import { promptModalAtom } from "../state/uiAtoms"
 import type { PromptOption } from "../types"
 
-const submitPromptChoice = async (jobId: string, promptId: string, selectedIndex: number) => {
+const submitPromptChoice = async (
+  jobId: string,
+  promptId: string,
+  selectedIndex: number,
+) => {
   try {
     await fetch(`/jobs/${jobId}/input`, {
       method: "POST",
@@ -15,7 +19,9 @@ const submitPromptChoice = async (jobId: string, promptId: string, selectedIndex
   }
 }
 
-const sortOptions = (options: PromptOption[]): PromptOption[] =>
+const sortOptions = (
+  options: PromptOption[],
+): PromptOption[] =>
   [...options].sort((optionA, optionB) => {
     const isSkipA = optionA.index < 0
     const isSkipB = optionB.index < 0
@@ -28,7 +34,8 @@ const sortOptions = (options: PromptOption[]): PromptOption[] =>
   })
 
 export const PromptModal = () => {
-  const [promptData, setPromptData] = useAtom(promptModalAtom)
+  const [promptData, setPromptData] =
+    useAtom(promptModalAtom)
   const promptDataRef = useRef(promptData)
   promptDataRef.current = promptData
 
@@ -37,7 +44,11 @@ export const PromptModal = () => {
   const pick = async (selectedIndex: number) => {
     if (!promptData) return
     close()
-    await submitPromptChoice(promptData.jobId, promptData.promptId, selectedIndex)
+    await submitPromptChoice(
+      promptData.jobId,
+      promptData.promptId,
+      selectedIndex,
+    )
   }
 
   // Keyboard shortcuts: digits select options; Space/Escape skip or cancel.
@@ -47,52 +58,82 @@ export const PromptModal = () => {
       if (!current) return
 
       const num = parseInt(event.key, 10)
-      if (!isNaN(num)) {
-        const match = current.options.find((option) => option.index === num)
+      if (!Number.isNaN(num)) {
+        const match = current.options.find(
+          (option) => option.index === num,
+        )
         if (match) {
-          void submitPromptChoice(current.jobId, current.promptId, match.index)
+          void submitPromptChoice(
+            current.jobId,
+            current.promptId,
+            match.index,
+          )
           setPromptData(null)
         }
         return
       }
       if (event.key === " " || event.key === "Spacebar") {
-        const skipOption = current.options.find((option) => option.index === -1)
+        const skipOption = current.options.find(
+          (option) => option.index === -1,
+        )
         if (skipOption) {
           event.preventDefault()
-          void submitPromptChoice(current.jobId, current.promptId, -1)
+          void submitPromptChoice(
+            current.jobId,
+            current.promptId,
+            -1,
+          )
           setPromptData(null)
         }
         return
       }
       if (event.key === "Escape" || event.key === "-") {
-        const cancelOption = current.options.find((option) => option.index === -2)
+        const cancelOption = current.options.find(
+          (option) => option.index === -2,
+        )
         if (cancelOption) {
           event.preventDefault()
-          void submitPromptChoice(current.jobId, current.promptId, -2)
+          void submitPromptChoice(
+            current.jobId,
+            current.promptId,
+            -2,
+          )
           setPromptData(null)
           return
         }
-        const skipOption = current.options.find((option) => option.index === -1)
+        const skipOption = current.options.find(
+          (option) => option.index === -1,
+        )
         if (skipOption) {
           event.preventDefault()
-          void submitPromptChoice(current.jobId, current.promptId, -1)
+          void submitPromptChoice(
+            current.jobId,
+            current.promptId,
+            -1,
+          )
           setPromptData(null)
         }
       }
     }
 
     document.addEventListener("keydown", handleKeyDown)
-    return () => document.removeEventListener("keydown", handleKeyDown)
+    return () =>
+      document.removeEventListener("keydown", handleKeyDown)
   }, [setPromptData])
 
   if (!promptData) return null
 
   const sortedOptions = sortOptions(promptData.options)
   const filePathsByIndex = new Map(
-    (promptData.filePaths ?? []).map((entry) => [entry.index, entry.path]),
+    (promptData.filePaths ?? []).map((entry) => [
+      entry.index,
+      entry.path,
+    ]),
   )
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: suppressed during react-migration
+    // biome-ignore lint/a11y/useKeyWithClickEvents: suppressed during react-migration
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       data-testid="prompt-modal-backdrop"
@@ -101,17 +142,27 @@ export const PromptModal = () => {
       }}
     >
       <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 p-5 flex flex-col gap-4">
-        <p id="prompt-message" className="text-slate-100 text-sm leading-relaxed">
+        <p
+          id="prompt-message"
+          className="text-slate-100 text-sm leading-relaxed"
+        >
           {promptData.message}
         </p>
 
         {promptData.filePath && (
           <div id="prompt-preview" className="flex gap-2">
+            {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
             <button
               className="text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-medium leading-none"
               onClick={() => {
-                if (typeof window.openVideoModal === "function") {
-                  window.openVideoModal(promptData.filePath!)
+                if (
+                  typeof window.openVideoModal ===
+                  "function"
+                ) {
+                  window.openVideoModal(
+                    // biome-ignore lint/style/noNonNullAssertion: suppressed during react-migration
+                    promptData.filePath!,
+                  )
                 }
               }}
             >
@@ -120,10 +171,14 @@ export const PromptModal = () => {
           </div>
         )}
 
-        <div id="prompt-options" className="flex flex-col gap-2">
+        <div
+          id="prompt-options"
+          className="flex flex-col gap-2"
+        >
           {sortedOptions.map((option) => {
             const isSkip = option.index === -1
-            const rowFilePath = filePathsByIndex.get(option.index) ?? null
+            const rowFilePath =
+              filePathsByIndex.get(option.index) ?? null
             const keyHint =
               option.index >= 0 && option.index <= 9 ? (
                 <span className="text-xs font-mono bg-slate-700 px-1.5 py-0.5 rounded mr-2">
@@ -137,6 +192,7 @@ export const PromptModal = () => {
                   key={option.index}
                   className="flex items-stretch gap-2 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors"
                 >
+                  {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
                   <button
                     className="flex-1 text-left text-sm px-4 py-2.5 rounded-l-lg text-slate-200 hover:bg-blue-700"
                     onClick={() => void pick(option.index)}
@@ -144,13 +200,17 @@ export const PromptModal = () => {
                     {keyHint}
                     {option.label}
                   </button>
+                  {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
                   <button
                     className="shrink-0 text-xs px-3 rounded-r-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium"
                     title="Preview this file before picking"
                     onClick={(event) => {
                       event.preventDefault()
                       event.stopPropagation()
-                      if (typeof window.openVideoModal === "function") {
+                      if (
+                        typeof window.openVideoModal ===
+                        "function"
+                      ) {
                         window.openVideoModal(rowFilePath)
                       }
                     }}
@@ -162,6 +222,7 @@ export const PromptModal = () => {
             }
 
             return (
+              // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
               <button
                 key={option.index}
                 className={`text-left text-sm px-4 py-2.5 rounded-lg border transition-colors ${

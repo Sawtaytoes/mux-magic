@@ -5,7 +5,12 @@ import { ApiRunModal } from "./ApiRunModal"
 
 const makeStore = (
   jobId: string | null,
-  status: "pending" | "running" | "completed" | "failed" | "cancelled",
+  status:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled",
   logs: string[] = [],
 ) => {
   const store = createStore()
@@ -24,7 +29,9 @@ const meta: Meta<typeof ApiRunModal> = {
   component: ApiRunModal,
   decorators: [
     (Story, context) => {
-      const store = context.parameters["store"] as ReturnType<typeof createStore>
+      const store = context.parameters.store as ReturnType<
+        typeof createStore
+      >
       return (
         <Provider store={store}>
           <Story />

@@ -36,7 +36,9 @@ dvdStore.set(lookupModalAtom, {
   formatFilter: "Blu-ray 4K",
   results: [
     { name: "Neon Genesis Evangelion (1995)" } as never,
-    { name: "Evangelion: 1.11 You Are (Not) Alone" } as never,
+    {
+      name: "Evangelion: 1.11 You Are (Not) Alone",
+    } as never,
   ],
 })
 
@@ -59,11 +61,13 @@ variantStore.set(lookupModalAtom, {
 })
 
 const meta: Meta<typeof LookupModal> = {
-  title: "Wave E/LookupModal",
+  title: "Components/LookupModal",
   component: LookupModal,
   decorators: [
     (Story, context) => {
-      const store = context.parameters["store"] as ReturnType<typeof createStore>
+      const store = context.parameters.store as ReturnType<
+        typeof createStore
+      >
       return (
         <Provider store={store}>
           <Story />
@@ -76,8 +80,12 @@ export default meta
 
 type Story = StoryObj<typeof LookupModal>
 
-export const MalSearch: Story = { parameters: { store: malStore } }
-export const DvdCompareWithResults: Story = { parameters: { store: dvdStore } }
+export const MalSearch: Story = {
+  parameters: { store: malStore },
+}
+export const DvdCompareWithResults: Story = {
+  parameters: { store: dvdStore },
+}
 export const DvdCompareVariantPicker: Story = {
   parameters: { store: variantStore },
 }

@@ -1,7 +1,18 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 import { stepsAtom } from "../state/stepsAtom"
 import type { Group, Step } from "../types"
 import { GroupCard } from "./GroupCard"
@@ -17,7 +28,9 @@ const makeStep = (id: string): Step => ({
   isCollapsed: false,
 })
 
-const makeGroup = (overrides: Partial<Group> = {}): Group => ({
+const makeGroup = (
+  overrides: Partial<Group> = {},
+): Group => ({
   kind: "group",
   id: "group_1",
   label: "My Group",
@@ -27,7 +40,13 @@ const makeGroup = (overrides: Partial<Group> = {}): Group => ({
   ...overrides,
 })
 
-const renderCard = (group: Group, props: Partial<{ isFirst: boolean; isLast: boolean }> = {}) => {
+const renderCard = (
+  group: Group,
+  props: Partial<{
+    isFirst: boolean
+    isLast: boolean
+  }> = {},
+) => {
   const store = createStore()
   store.set(stepsAtom, [group])
   render(
@@ -58,12 +77,16 @@ afterEach(() => {
 describe("GroupCard", () => {
   it("renders the group label", () => {
     renderCard(makeGroup({ label: "My Group" }))
-    expect(screen.getByDisplayValue("My Group")).toBeInTheDocument()
+    expect(
+      screen.getByDisplayValue("My Group"),
+    ).toBeInTheDocument()
   })
 
   it("shows sequential badge for non-parallel group", () => {
     renderCard(makeGroup({ isParallel: false }))
-    expect(screen.getByText("sequential")).toBeInTheDocument()
+    expect(
+      screen.getByText("sequential"),
+    ).toBeInTheDocument()
   })
 
   it("shows parallel badge for parallel group", () => {
@@ -87,7 +110,9 @@ describe("GroupCard", () => {
 
   it("toggles collapsed state on chevron click", async () => {
     const user = userEvent.setup()
-    const store = renderCard(makeGroup({ isCollapsed: false }))
+    const store = renderCard(
+      makeGroup({ isCollapsed: false }),
+    )
 
     await user.click(screen.getByTitle(/collapse group/i))
 
@@ -99,7 +124,9 @@ describe("GroupCard", () => {
     const user = userEvent.setup()
     const store = renderCard(makeGroup())
 
-    await user.click(screen.getByTitle(/remove this group/i))
+    await user.click(
+      screen.getByTitle(/remove this group/i),
+    )
 
     expect(store.get(stepsAtom)).toHaveLength(0)
   })
@@ -108,7 +135,9 @@ describe("GroupCard", () => {
     const user = userEvent.setup()
     const store = renderCard(makeGroup())
 
-    await user.click(screen.getByTitle(/add a step inside this group/i))
+    await user.click(
+      screen.getByTitle(/add a step inside this group/i),
+    )
 
     const items = store.get(stepsAtom)
     expect((items[0] as Group).steps).toHaveLength(3)

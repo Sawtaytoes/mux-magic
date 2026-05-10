@@ -18,7 +18,10 @@ const withStore = (
   progress?: Map<string, ProgressSnapshot>,
 ) => {
   const store = createStore()
-  store.set(jobsAtom, new Map(jobs.map((job) => [job.id, job])))
+  store.set(
+    jobsAtom,
+    new Map(jobs.map((job) => [job.id, job])),
+  )
   store.set(jobsConnectionAtom, status)
   if (progress) store.set(progressByJobIdAtom, progress)
 
@@ -61,15 +64,21 @@ export const WithJobs: Story = {
           id: "j1",
           commandName: "remuxToMkv",
           status: "running",
-          startedAt: new Date(Date.now() - 45_000).toISOString(),
+          startedAt: new Date(
+            Date.now() - 45_000,
+          ).toISOString(),
           params: { sourcePath: "/media/Dune.mkv" },
         },
         {
           id: "j2",
           commandName: "extractSubtitles",
           status: "completed",
-          startedAt: new Date(Date.now() - 120_000).toISOString(),
-          completedAt: new Date(Date.now() - 30_000).toISOString(),
+          startedAt: new Date(
+            Date.now() - 120_000,
+          ).toISOString(),
+          completedAt: new Date(
+            Date.now() - 30_000,
+          ).toISOString(),
         },
         {
           id: "j3",

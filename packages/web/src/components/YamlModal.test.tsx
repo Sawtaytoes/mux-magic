@@ -1,4 +1,8 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -63,14 +67,22 @@ describe("YamlModal", () => {
         <YamlModal />
       </Provider>,
     )
-    expect(screen.getByText(/# No steps yet/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/# No steps yet/),
+    ).toBeInTheDocument()
   })
 
   it("shows serialized YAML for a non-empty sequence", () => {
     const store = createStore()
     store.set(yamlModalOpenAtom, true)
     store.set(stepsAtom, [makeStep()])
-    store.set(pathsAtom, [{ id: "basePath", label: "basePath", value: "/media" }])
+    store.set(pathsAtom, [
+      {
+        id: "basePath",
+        label: "basePath",
+        value: "/media",
+      },
+    ])
     render(
       <Provider store={store}>
         <YamlModal />
@@ -83,7 +95,9 @@ describe("YamlModal", () => {
     const user = userEvent.setup()
     const store = renderModal(true)
 
-    await user.click(screen.getByRole("button", { name: /✕ close/i }))
+    await user.click(
+      screen.getByRole("button", { name: /✕ close/i }),
+    )
 
     expect(store.get(yamlModalOpenAtom)).toBe(false)
     expect(screen.queryByText("YAML")).toBeNull()
@@ -93,7 +107,9 @@ describe("YamlModal", () => {
     const user = userEvent.setup()
     const store = renderModal(true)
 
-    await user.click(screen.getByTestId("yaml-modal-backdrop"))
+    await user.click(
+      screen.getByTestId("yaml-modal-backdrop"),
+    )
 
     expect(store.get(yamlModalOpenAtom)).toBe(false)
   })
@@ -113,13 +129,18 @@ describe("YamlModal", () => {
     store.set(yamlModalOpenAtom, true)
     store.set(stepsAtom, [makeStep()])
     store.set(pathsAtom, [])
-    vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined)
+    vi.spyOn(
+      navigator.clipboard,
+      "writeText",
+    ).mockResolvedValue(undefined)
     render(
       <Provider store={store}>
         <YamlModal />
       </Provider>,
     )
-    await user.click(screen.getByRole("button", { name: /copy/i }))
+    await user.click(
+      screen.getByRole("button", { name: /copy/i }),
+    )
     expect(navigator.clipboard.writeText).toHaveBeenCalled()
   })
 })

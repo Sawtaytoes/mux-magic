@@ -55,7 +55,8 @@ export const Closed: Story = {
   parameters: {
     docs: {
       description: {
-        story: "When loadModalOpenAtom is false the component renders nothing.",
+        story:
+          "When loadModalOpenAtom is false the component renders nothing.",
       },
     },
   },

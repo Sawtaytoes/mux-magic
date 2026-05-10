@@ -4,7 +4,10 @@ import { ProgressBar } from "./ProgressBar"
 const meta: Meta<typeof ProgressBar> = {
   title: "Components/ProgressBar",
   component: ProgressBar,
-  parameters: { layout: "padded", backgrounds: { default: "dark" } },
+  parameters: {
+    layout: "padded",
+    backgrounds: { default: "dark" },
+  },
 }
 
 export default meta
@@ -41,5 +44,7 @@ export const WithPerFileRows: Story = {
 }
 
 export const Complete: Story = {
-  args: { snapshot: { ratio: 1, filesDone: 10, filesTotal: 10 } },
+  args: {
+    snapshot: { ratio: 1, filesDone: 10, filesTotal: 10 },
+  },
 }

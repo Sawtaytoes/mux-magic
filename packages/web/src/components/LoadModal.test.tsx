@@ -1,7 +1,21 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 import { pathsAtom } from "../state/pathsAtom"
 import { stepsAtom } from "../state/stepsAtom"
 import { loadModalOpenAtom } from "../state/uiAtoms"
@@ -72,7 +86,9 @@ describe("LoadModal visibility", () => {
 
   it("renders the modal when the atom is true", () => {
     renderModal(true)
-    expect(screen.getByText("Load YAML")).toBeInTheDocument()
+    expect(
+      screen.getByText("Load YAML"),
+    ).toBeInTheDocument()
   })
 })
 
@@ -83,7 +99,9 @@ describe("LoadModal close interactions", () => {
     const user = userEvent.setup()
     renderModal(true)
 
-    await user.click(screen.getByRole("button", { name: /close/i }))
+    await user.click(
+      screen.getByRole("button", { name: /close/i }),
+    )
 
     expect(screen.queryByText("Load YAML")).toBeNull()
   })
@@ -91,9 +109,13 @@ describe("LoadModal close interactions", () => {
   it("clicking the backdrop hides the modal", async () => {
     renderModal(true)
 
-    fireEvent.click(screen.getByTestId("load-modal-backdrop"))
+    fireEvent.click(
+      screen.getByTestId("load-modal-backdrop"),
+    )
 
-    await waitFor(() => expect(screen.queryByText("Load YAML")).toBeNull())
+    await waitFor(() =>
+      expect(screen.queryByText("Load YAML")).toBeNull(),
+    )
   })
 
   it("clicking inside the panel does not close the modal", async () => {
@@ -101,9 +123,13 @@ describe("LoadModal close interactions", () => {
     renderModal(true)
 
     // Click the instructional text — this is inside the panel, not the backdrop
-    await user.click(screen.getByText(/paste your saved sequence/i))
+    await user.click(
+      screen.getByText(/paste your saved sequence/i),
+    )
 
-    expect(screen.getByText("Load YAML")).toBeInTheDocument()
+    expect(
+      screen.getByText("Load YAML"),
+    ).toBeInTheDocument()
   })
 
   it("Esc key hides the modal", async () => {
@@ -119,7 +145,10 @@ describe("LoadModal close interactions", () => {
 // ClipboardEvent constructor in real browsers requires a DataTransfer object for
 // clipboardData. We bypass that by dispatching a plain Event with a fake property.
 const dispatchPaste = (text: string) => {
-  const event = new Event("paste", { bubbles: true, cancelable: true })
+  const event = new Event("paste", {
+    bubbles: true,
+    cancelable: true,
+  })
   Object.defineProperty(event, "clipboardData", {
     value: { getData: (_type: string) => text },
   })
@@ -134,10 +163,14 @@ describe("LoadModal paste handling", () => {
 
     dispatchPaste(minimalYaml)
 
-    await waitFor(() => expect(screen.queryByText("Load YAML")).toBeNull())
+    await waitFor(() =>
+      expect(screen.queryByText("Load YAML")).toBeNull(),
+    )
     const steps = store.get(stepsAtom)
     expect(steps).toHaveLength(1)
-    expect(steps[0]).toMatchObject({ command: "testCommand" })
+    expect(steps[0]).toMatchObject({
+      command: "testCommand",
+    })
     expect(window.mediaTools.renderAll).toHaveBeenCalled()
     expect(window.mediaTools.updateUrl).toHaveBeenCalled()
   })
@@ -149,7 +182,10 @@ describe("LoadModal paste handling", () => {
 
     const paths = store.get(pathsAtom)
     expect(paths).toHaveLength(1)
-    expect(paths[0]).toMatchObject({ id: "basePath", value: "/home/user" })
+    expect(paths[0]).toMatchObject({
+      id: "basePath",
+      value: "/home/user",
+    })
   })
 
   it("empty paste is ignored; modal stays open", () => {
@@ -157,7 +193,9 @@ describe("LoadModal paste handling", () => {
 
     dispatchPaste("   ")
 
-    expect(screen.getByText("Load YAML")).toBeInTheDocument()
+    expect(
+      screen.getByText("Load YAML"),
+    ).toBeInTheDocument()
   })
 
   it("invalid YAML shows an error message and keeps modal open", async () => {
@@ -165,8 +203,12 @@ describe("LoadModal paste handling", () => {
 
     dispatchPaste("not: valid: yaml: {{{{")
 
-    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument())
-    expect(screen.getByText("Load YAML")).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toBeInTheDocument(),
+    )
+    expect(
+      screen.getByText("Load YAML"),
+    ).toBeInTheDocument()
   })
 
   it("unknown command in YAML shows an error message", async () => {
@@ -174,8 +216,12 @@ describe("LoadModal paste handling", () => {
 
     dispatchPaste("- command: unknownCommand\n  params: {}")
 
-    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument())
-    expect(screen.getByText(/unknown command/i)).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toBeInTheDocument(),
+    )
+    expect(
+      screen.getByText(/unknown command/i),
+    ).toBeInTheDocument()
   })
 
   it("paste after modal closes is ignored", async () => {

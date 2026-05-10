@@ -8,7 +8,10 @@ import {
   toggleStepCollapsedAtom,
   updateStepAliasAtom,
 } from "../state/sequenceAtoms"
-import { commandHelpCommandNameAtom, commandHelpModalOpenAtom } from "../state/uiAtoms"
+import {
+  commandHelpCommandNameAtom,
+  commandHelpModalOpenAtom,
+} from "../state/uiAtoms"
 import type { Step } from "../types"
 import { RenderFields } from "./RenderFields"
 import { StatusBadge } from "./StatusBadge"
@@ -21,23 +24,39 @@ interface StepCardProps {
   parentGroupId?: string | null
 }
 
-export const StepCard = ({ step, index, isFirst, isLast, parentGroupId = null }: StepCardProps) => {
+export const StepCard = ({
+  step,
+  index,
+  isFirst,
+  isLast,
+  parentGroupId = null,
+}: StepCardProps) => {
   const [actionsOpen, setActionsOpen] = useState(false)
 
-  const toggleCollapsed = useSetAtom(toggleStepCollapsedAtom)
+  const toggleCollapsed = useSetAtom(
+    toggleStepCollapsedAtom,
+  )
   const updateAlias = useSetAtom(updateStepAliasAtom)
   const moveStep = useSetAtom(moveStepAtom)
   const removeStep = useSetAtom(removeStepAtom)
-  const setCommandHelpName = useSetAtom(commandHelpCommandNameAtom)
-  const setCommandHelpOpen = useSetAtom(commandHelpModalOpenAtom)
+  const setCommandHelpName = useSetAtom(
+    commandHelpCommandNameAtom,
+  )
+  const setCommandHelpOpen = useSetAtom(
+    commandHelpModalOpenAtom,
+  )
 
   const triggerRef = useRef<HTMLButtonElement>(null)
 
-  const commandLabel = window.commandLabel?.(step.command) ?? step.command
+  const commandLabel =
+    window.commandLabel?.(step.command) ?? step.command
 
   const openCommandPicker = () => {
     if (triggerRef.current) {
-      window.commandPicker?.open({ stepId: step.id }, triggerRef.current)
+      window.commandPicker?.open(
+        { stepId: step.id },
+        triggerRef.current,
+      )
     }
   }
 
@@ -46,26 +65,37 @@ export const StepCard = ({ step, index, isFirst, isLast, parentGroupId = null }:
     setCommandHelpOpen(true)
   }
 
-  const handleAliasBlur = (event: React.FocusEvent<HTMLInputElement>) => {
-    updateAlias({ stepId: step.id, alias: event.currentTarget.value })
+  const handleAliasBlur = (
+    event: React.FocusEvent<HTMLInputElement>,
+  ) => {
+    updateAlias({
+      stepId: step.id,
+      alias: event.currentTarget.value,
+    })
   }
 
-  const handleAliasKeydown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleAliasKeydown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
     if (event.key === "Enter" || event.key === "Escape") {
       event.currentTarget.blur()
     }
   }
 
   const triggerLabel = commandLabel ? (
-    <>
-      <span>{commandLabel}</span>
-    </>
+    <span>{commandLabel}</span>
   ) : (
-    <span className="text-slate-400 italic">— pick a command —</span>
+    <span className="text-slate-400 italic">
+      — pick a command —
+    </span>
   )
 
   const cmd = window.mediaTools?.COMMANDS?.[step.command] as
-    | { summary?: string; note?: string; outputFolderName?: string | null }
+    | {
+        summary?: string
+        note?: string
+        outputFolderName?: string | null
+      }
     | undefined
 
   return (
@@ -88,7 +118,11 @@ export const StepCard = ({ step, index, isFirst, isLast, parentGroupId = null }:
         <button
           type="button"
           onClick={() => toggleCollapsed(step.id)}
-          title={step.isCollapsed ? "Expand step" : "Collapse step"}
+          title={
+            step.isCollapsed
+              ? "Expand step"
+              : "Collapse step"
+          }
           className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 shrink-0"
         >
           <CollapseChevron isCollapsed={step.isCollapsed} />
@@ -99,7 +133,9 @@ export const StepCard = ({ step, index, isFirst, isLast, parentGroupId = null }:
         <input
           type="text"
           defaultValue={step.alias}
-          placeholder={commandLabel || "Click to name this step"}
+          placeholder={
+            commandLabel || "Click to name this step"
+          }
           data-step-alias={step.id}
           onBlur={handleAliasBlur}
           onKeyDown={handleAliasKeydown}
@@ -112,10 +148,14 @@ export const StepCard = ({ step, index, isFirst, isLast, parentGroupId = null }:
           data-cmd-picker-trigger
           className="flex-1 min-w-0 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer"
         >
-          <span className="flex-1 min-w-0 truncate flex items-center">{triggerLabel}</span>
+          <span className="flex-1 min-w-0 truncate flex items-center">
+            {triggerLabel}
+          </span>
           <span className="text-slate-400 shrink-0">▾</span>
         </button>
-        {step.status && <StatusBadge status={step.status} />}
+        {step.status && (
+          <StatusBadge status={step.status} />
+        )}
         {step.command && (
           <button
             type="button"
@@ -138,20 +178,34 @@ export const StepCard = ({ step, index, isFirst, isLast, parentGroupId = null }:
           <div className="step-actions flex items-center gap-1">
             <button
               type="button"
-              onClick={() => window.runOrStopStep?.(step.id)}
+              onClick={() =>
+                window.runOrStopStep?.(step.id)
+              }
               disabled={!step.command}
               title={
-                step.status === "running" && step.jobId ? "Cancel this step" : "Run this step only"
+                step.status === "running" && step.jobId
+                  ? "Cancel this step"
+                  : "Run this step only"
               }
               data-step-run-stop={step.id}
               className={`step-run-stop ${step.status === "running" && step.jobId ? "is-running" : ""}`}
             >
-              <span className="step-run-stop-icon step-run-stop-play">▶</span>
-              <span className="step-run-stop-icon step-run-stop-stop">⏹</span>
+              <span className="step-run-stop-icon step-run-stop-play">
+                ▶
+              </span>
+              <span className="step-run-stop-icon step-run-stop-stop">
+                ⏹
+              </span>
             </button>
             <button
               type="button"
-              onClick={() => moveStep({ stepId: step.id, direction: -1, parentGroupId })}
+              onClick={() =>
+                moveStep({
+                  stepId: step.id,
+                  direction: -1,
+                  parentGroupId,
+                })
+              }
               disabled={isFirst}
               className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
             >
@@ -159,7 +213,13 @@ export const StepCard = ({ step, index, isFirst, isLast, parentGroupId = null }:
             </button>
             <button
               type="button"
-              onClick={() => moveStep({ stepId: step.id, direction: 1, parentGroupId })}
+              onClick={() =>
+                moveStep({
+                  stepId: step.id,
+                  direction: 1,
+                  parentGroupId,
+                })
+              }
               disabled={isLast}
               className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
             >
@@ -168,7 +228,9 @@ export const StepCard = ({ step, index, isFirst, isLast, parentGroupId = null }:
             {step.command && (
               <button
                 type="button"
-                onClick={() => window.copyStepYaml?.(step.id)}
+                onClick={() =>
+                  window.copyStepYaml?.(step.id)
+                }
                 title="Copy this step's YAML"
                 className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent"
               >
@@ -190,7 +252,11 @@ export const StepCard = ({ step, index, isFirst, isLast, parentGroupId = null }:
         <div className="px-3 py-2">
           {cmd ? (
             <>
-              {cmd.summary && <p className="text-xs text-slate-500 mb-2">{cmd.summary}</p>}
+              {cmd.summary && (
+                <p className="text-xs text-slate-500 mb-2">
+                  {cmd.summary}
+                </p>
+              )}
               {cmd.note && (
                 <p className="text-xs text-amber-300 bg-amber-950/40 border border-amber-800/50 rounded px-2 py-1 mb-2">
                   {cmd.note}
@@ -211,12 +277,16 @@ export const StepCard = ({ step, index, isFirst, isLast, parentGroupId = null }:
                 </p>
               )}
               <div className="space-y-2">
-                <RenderFields step={step} stepIndex={index} />
+                <RenderFields
+                  step={step}
+                  stepIndex={index}
+                />
               </div>
             </>
           ) : (
             <p className="text-xs text-slate-500 italic">
-              No command selected — choose one from the dropdown above.
+              No command selected — choose one from the
+              dropdown above.
             </p>
           )}
         </div>

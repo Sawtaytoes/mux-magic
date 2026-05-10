@@ -1,4 +1,8 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, it } from "vitest"
@@ -10,7 +14,9 @@ afterEach(() => {
 import { lookupModalAtom } from "../state/uiAtoms"
 import { LookupModal } from "./LookupModal"
 
-const renderWithStore = (store: ReturnType<typeof createStore>) =>
+const renderWithStore = (
+  store: ReturnType<typeof createStore>,
+) =>
   render(
     <Provider store={store}>
       <LookupModal />
@@ -46,22 +52,31 @@ describe("LookupModal", () => {
     const store = createStore()
     store.set(lookupModalAtom, baseState)
     renderWithStore(store)
-    expect(screen.getByText("Look up MAL ID")).toBeInTheDocument()
+    expect(
+      screen.getByText("Look up MAL ID"),
+    ).toBeInTheDocument()
   })
 
   it("renders the search input", () => {
     const store = createStore()
     store.set(lookupModalAtom, baseState)
     renderWithStore(store)
-    expect(screen.getByPlaceholderText("Search…")).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText("Search…"),
+    ).toBeInTheDocument()
   })
 
   it("updates searchTerm as user types", async () => {
     const store = createStore()
     store.set(lookupModalAtom, baseState)
     renderWithStore(store)
-    await userEvent.type(screen.getByPlaceholderText("Search…"), "Evangelion")
-    expect(store.get(lookupModalAtom)?.searchTerm).toBe("Evangelion")
+    await userEvent.type(
+      screen.getByPlaceholderText("Search…"),
+      "Evangelion",
+    )
+    expect(store.get(lookupModalAtom)?.searchTerm).toBe(
+      "Evangelion",
+    )
   })
 
   it("closes the modal when ✕ is clicked", async () => {
@@ -74,9 +89,14 @@ describe("LookupModal", () => {
 
   it("shows Back button only in variant and release stages", () => {
     const store = createStore()
-    store.set(lookupModalAtom, { ...baseState, stage: "variant" as const })
+    store.set(lookupModalAtom, {
+      ...baseState,
+      stage: "variant" as const,
+    })
     renderWithStore(store)
-    expect(screen.getByRole("button", { name: /← Back/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /← Back/i }),
+    ).toBeInTheDocument()
   })
 
   it("shows DVDCompare format filter buttons for dvdcompare lookup type", () => {
@@ -86,6 +106,8 @@ describe("LookupModal", () => {
       lookupType: "dvdcompare" as const,
     })
     renderWithStore(store)
-    expect(screen.getByRole("button", { name: "Blu-ray 4K" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Blu-ray 4K" }),
+    ).toBeInTheDocument()
   })
 })

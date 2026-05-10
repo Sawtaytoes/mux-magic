@@ -13,13 +13,21 @@ interface FieldTooltipProps {
   children: React.ReactNode
 }
 
-export const FieldTooltip = ({ description, children }: FieldTooltipProps) => {
-  const [position, setPosition] = useState<TooltipPosition | null>(null)
+export const FieldTooltip = ({
+  description,
+  children,
+}: FieldTooltipProps) => {
+  const [position, setPosition] =
+    useState<TooltipPosition | null>(null)
   const anchorRef = useRef<HTMLSpanElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null)
 
-  const computePosition = (anchorRect: DOMRect): TooltipPosition => {
+  const computePosition = (
+    anchorRect: DOMRect,
+  ): TooltipPosition => {
     const GAP = 6
     const MARGIN = 8
     const tooltipEl = tooltipRef.current
@@ -28,15 +36,23 @@ export const FieldTooltip = ({ description, children }: FieldTooltipProps) => {
     const tooltipWidth = tooltipEl?.offsetWidth ?? 200
 
     const preferredTop = anchorRect.bottom + GAP
-    const overflowsBottom = preferredTop + tooltipHeight > window.innerHeight - MARGIN
+    const overflowsBottom =
+      preferredTop + tooltipHeight >
+      window.innerHeight - MARGIN
     const top = overflowsBottom
-      ? Math.max(MARGIN, anchorRect.top - tooltipHeight - GAP)
+      ? Math.max(
+          MARGIN,
+          anchorRect.top - tooltipHeight - GAP,
+        )
       : preferredTop
 
     const preferredLeft = anchorRect.left
     const left = Math.max(
       MARGIN,
-      Math.min(preferredLeft, window.innerWidth - tooltipWidth - MARGIN),
+      Math.min(
+        preferredLeft,
+        window.innerWidth - tooltipWidth - MARGIN,
+      ),
     )
 
     return { top, left }
@@ -58,7 +74,10 @@ export const FieldTooltip = ({ description, children }: FieldTooltipProps) => {
 
   const handlePointerEnter = () => {
     if (!description) return
-    timerRef.current = setTimeout(showTooltip, HOVER_DELAY_MS)
+    timerRef.current = setTimeout(
+      showTooltip,
+      HOVER_DELAY_MS,
+    )
   }
 
   const handlePointerLeave = () => {
@@ -70,13 +89,16 @@ export const FieldTooltip = ({ description, children }: FieldTooltipProps) => {
     if (position !== null) {
       hideTooltip()
     } else {
-      if (timerRef.current !== null) clearTimeout(timerRef.current)
+      if (timerRef.current !== null)
+        clearTimeout(timerRef.current)
       showTooltip()
     }
   }
 
   return (
     <>
+      {/** biome-ignore lint/a11y/noStaticElementInteractions: suppressed during react-migration */}
+      {/** biome-ignore lint/a11y/useKeyWithClickEvents: suppressed during react-migration */}
       <span
         ref={anchorRef}
         onPointerEnter={handlePointerEnter}
@@ -91,7 +113,10 @@ export const FieldTooltip = ({ description, children }: FieldTooltipProps) => {
             ref={tooltipRef}
             role="tooltip"
             className="fixed z-50 max-w-xs px-2.5 py-1.5 text-xs text-slate-200 bg-slate-800 border border-slate-600 rounded shadow-lg leading-relaxed pointer-events-none"
-            style={{ top: position.top, left: position.left }}
+            style={{
+              top: position.top,
+              left: position.left,
+            }}
           >
             {description}
           </div>,

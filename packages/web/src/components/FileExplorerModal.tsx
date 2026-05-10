@@ -1,7 +1,17 @@
 import { useAtom } from "jotai"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import { fileExplorerAtom } from "../state/uiAtoms"
-import type { FileEntry, SortColumn, SortDirection } from "../types"
+import type {
+  FileEntry,
+  SortColumn,
+  SortDirection,
+} from "../types"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -33,13 +43,18 @@ const BROWSER_UNSUPPORTED_AUDIO = new Set([
 
 const isVideoFile = (name: string): boolean => {
   const dot = name.lastIndexOf(".")
-  return dot >= 0 && VIDEO_EXTENSIONS.has(name.slice(dot).toLowerCase())
+  return (
+    dot >= 0 &&
+    VIDEO_EXTENSIONS.has(name.slice(dot).toLowerCase())
+  )
 }
 
 const formatSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes < 1024 * 1024)
+    return `${(bytes / 1024).toFixed(0)} KB`
+  if (bytes < 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
@@ -54,7 +69,9 @@ const formatMtime = (iso: string | null): string => {
   return `${yyyy}-${mm}-${dd} ${hh}:${mi}`
 }
 
-const durationToSeconds = (timecode: string | null): number | null => {
+const durationToSeconds = (
+  timecode: string | null,
+): number | null => {
   if (!timecode) return null
   const parts = timecode.split(":").map(Number)
   if (parts.some(Number.isNaN)) return null
@@ -63,15 +80,25 @@ const durationToSeconds = (timecode: string | null): number | null => {
   return parts[0] * 3600 + parts[1] * 60 + parts[2]
 }
 
-const joinPath = (dir: string, child: string, separator: string): string => {
-  const trimmed = dir.endsWith(separator) ? dir.slice(0, -1) : dir
+const joinPath = (
+  dir: string,
+  child: string,
+  separator: string,
+): string => {
+  const trimmed = dir.endsWith(separator)
+    ? dir.slice(0, -1)
+    : dir
   return `${trimmed}${separator}${child}`
 }
 
-const buildBreadcrumb = (path: string, sep: string): Array<{ label: string; target: string }> => {
+const buildBreadcrumb = (
+  path: string,
+  sep: string,
+): Array<{ label: string; target: string }> => {
   if (!path) return []
   const parts = path.split(sep)
-  const segments: Array<{ label: string; target: string }> = []
+  const segments: Array<{ label: string; target: string }> =
+    []
   let cumulative = ""
   parts.forEach((part, idx) => {
     if (idx === 0) {
@@ -86,7 +113,10 @@ const buildBreadcrumb = (path: string, sep: string): Array<{ label: string; targ
     }
     if (part === "") return
     cumulative += (idx === 1 ? "" : sep) + part
-    const target = cumulative.replace(new RegExp(sep === "\\" ? "\\\\$" : sep + "$"), "")
+    const target = cumulative.replace(
+      new RegExp(sep === "\\" ? "\\\\$" : `${sep}$`),
+      "",
+    )
     segments.push({ label: part, target })
   })
   return segments
@@ -116,12 +146,17 @@ const buildComparator =
       if (secB === null) return -1
       return (secA - secB) * dir
     }
-    if (column === "size") return (entryA.size - entryB.size) * dir
+    if (column === "size")
+      return (entryA.size - entryB.size) * dir
     if (column === "mtime") {
       if (!entryA.mtime && !entryB.mtime) return 0
       if (!entryA.mtime) return 1
       if (!entryB.mtime) return -1
-      return (Date.parse(entryA.mtime) - Date.parse(entryB.mtime)) * dir
+      return (
+        (Date.parse(entryA.mtime) -
+          Date.parse(entryB.mtime)) *
+        dir
+      )
     }
     return 0
   }
@@ -137,9 +172,12 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
   const playerRef = useRef<HTMLVideoElement>(null)
   const mseCleanupRef = useRef<(() => void) | null>(null)
   const [statusVisible, setStatusVisible] = useState(false)
-  const [isContainerized, setIsContainerized] = useState(false)
+  const [isContainerized, setIsContainerized] =
+    useState(false)
   const [copyLabel, setCopyLabel] = useState("📋 Copy path")
-  const [openLabel, setOpenLabel] = useState("⬡ Open in player")
+  const [openLabel, setOpenLabel] = useState(
+    "⬡ Open in player",
+  )
 
   const clearMse = useCallback(() => {
     mseCleanupRef.current?.()
@@ -157,7 +195,7 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
         player.load()
       }
     }
-  }, [clearMse, path])
+  }, [clearMse])
 
   // Kick containerized flag once.
   useEffect(() => {
@@ -179,16 +217,24 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
 
     const setupPlayback = async () => {
       // Check audio format to decide stream vs transcode.
-      const audioFormatUrl = new URL("/files/audio-codec", window.location.origin)
+      const audioFormatUrl = new URL(
+        "/files/audio-codec",
+        window.location.origin,
+      )
       audioFormatUrl.searchParams.set("path", path)
       let audioFormat: string | null = null
       try {
-        const resp = await fetch(audioFormatUrl.toString(), {
-          cache: "no-store",
-          signal: AbortSignal.timeout(30_000),
-        })
+        const resp = await fetch(
+          audioFormatUrl.toString(),
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(30_000),
+          },
+        )
         if (resp.ok) {
-          const data = (await resp.json()) as { audioFormat?: string }
+          const data = (await resp.json()) as {
+            audioFormat?: string
+          }
           audioFormat = data.audioFormat ?? null
         }
       } catch {
@@ -198,24 +244,36 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
       const needsTranscode =
         typeof audioFormat === "string" &&
         audioFormat.length > 0 &&
-        BROWSER_UNSUPPORTED_AUDIO.has(audioFormat.toLowerCase())
+        BROWSER_UNSUPPORTED_AUDIO.has(
+          audioFormat.toLowerCase(),
+        )
 
       let playbackUrl: string
       if (needsTranscode) {
-        const transcodeUrl = new URL("/transcode/audio", window.location.origin)
+        const transcodeUrl = new URL(
+          "/transcode/audio",
+          window.location.origin,
+        )
         transcodeUrl.searchParams.set("path", path)
         transcodeUrl.searchParams.set("codec", "opus")
         playbackUrl = transcodeUrl.toString()
       } else {
-        const streamUrl = new URL("/files/stream", window.location.origin)
+        const streamUrl = new URL(
+          "/files/stream",
+          window.location.origin,
+        )
         streamUrl.searchParams.set("path", path)
         playbackUrl = streamUrl.toString()
       }
 
       setStatusVisible(needsTranscode)
-      player.addEventListener("canplay", () => setStatusVisible(false), {
-        once: true,
-      })
+      player.addEventListener(
+        "canplay",
+        () => setStatusVisible(false),
+        {
+          once: true,
+        },
+      )
       player.src = playbackUrl
       player.play().catch(() => {})
     }
@@ -244,7 +302,10 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path }),
       })
-      const data = (await resp.json()) as { ok: boolean; error?: string }
+      const data = (await resp.json()) as {
+        ok: boolean
+        error?: string
+      }
       setOpenLabel(data.ok ? "✓ Launched" : "✗ Failed")
     } catch {
       setOpenLabel("✗ Failed")
@@ -255,6 +316,8 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
   if (!path) return null
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: suppressed during react-migration
+    // biome-ignore lint/a11y/useKeyWithClickEvents: suppressed during react-migration
     <div
       id="video-modal"
       className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/80"
@@ -280,6 +343,7 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
               Transcoding audio…
             </span>
           )}
+          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
             id="video-modal-copy-path"
             onClick={() => void handleCopyPath()}
@@ -288,6 +352,7 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
             {copyLabel}
           </button>
           {!isContainerized && (
+            // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
             <button
               id="video-modal-open-external"
               onClick={() => void handleOpenExternal()}
@@ -296,6 +361,7 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
               {openLabel}
             </button>
           )}
+          {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-white text-base leading-none ml-1"
@@ -304,6 +370,7 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
             ✕
           </button>
         </div>
+        {/** biome-ignore lint/a11y/useMediaCaption: suppressed during react-migration */}
         <video
           id="video-modal-player"
           ref={playerRef}
@@ -319,19 +386,31 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
 // ─── FileExplorerModal ────────────────────────────────────────────────────────
 
 export const FileExplorerModal = () => {
-  const [explorerState, setExplorerState] = useAtom(fileExplorerAtom)
+  const [explorerState, setExplorerState] = useAtom(
+    fileExplorerAtom,
+  )
 
   const [entries, setEntries] = useState<FileEntry[]>([])
   const [currentPath, setCurrentPath] = useState("")
   const [separator, setSeparator] = useState("/")
-  const [deleteMode, setDeleteMode] = useState<"trash" | "permanent">("trash")
-  const [deleteModeReason, setDeleteModeReason] = useState<string | null>(null)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [sortColumn, setSortColumn] = useState<SortColumn>("default")
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+  const [deleteMode, setDeleteMode] = useState<
+    "trash" | "permanent"
+  >("trash")
+  const [deleteModeReason, setDeleteModeReason] = useState<
+    string | null
+  >(null)
+  const [selected, setSelected] = useState<Set<string>>(
+    new Set(),
+  )
+  const [sortColumn, setSortColumn] =
+    useState<SortColumn>("default")
+  const [sortDirection, setSortDirection] =
+    useState<SortDirection>("asc")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [videoPath, setVideoPath] = useState<string | null>(null)
+  const [videoPath, setVideoPath] = useState<string | null>(
+    null,
+  )
 
   // Open/navigate logic: when explorerState changes, reset and load new path.
   useEffect(() => {
@@ -339,30 +418,41 @@ export const FileExplorerModal = () => {
     setCurrentPath(explorerState.path)
     setSelected(new Set())
     setError(null)
-  }, [explorerState?.path]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [explorerState?.path, explorerState]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadDeleteMode = useCallback(async (path: string) => {
-    try {
-      const url = new URL("/files/delete-mode", window.location.origin)
-      if (path) url.searchParams.set("path", path)
-      const resp = await fetch(url)
-      const data = (await resp.json()) as {
-        mode: "trash" | "permanent"
-        reason?: string
+  const loadDeleteMode = useCallback(
+    async (path: string) => {
+      try {
+        const url = new URL(
+          "/files/delete-mode",
+          window.location.origin,
+        )
+        if (path) url.searchParams.set("path", path)
+        const resp = await fetch(url)
+        const data = (await resp.json()) as {
+          mode: "trash" | "permanent"
+          reason?: string
+        }
+        setDeleteMode(data.mode)
+        setDeleteModeReason(data.reason ?? null)
+      } catch {
+        setDeleteMode("permanent")
+        setDeleteModeReason(
+          "Could not determine delete mode",
+        )
       }
-      setDeleteMode(data.mode)
-      setDeleteModeReason(data.reason ?? null)
-    } catch {
-      setDeleteMode("permanent")
-      setDeleteModeReason("Could not determine delete mode")
-    }
-  }, [])
+    },
+    [],
+  )
 
   const loadListing = useCallback(async (path: string) => {
     setLoading(true)
     setError(null)
     try {
-      const url = new URL("/files/list", window.location.origin)
+      const url = new URL(
+        "/files/list",
+        window.location.origin,
+      )
       url.searchParams.set("path", path)
       url.searchParams.set("includeDuration", "1")
       const resp = await fetch(url)
@@ -387,8 +477,16 @@ export const FileExplorerModal = () => {
   // Load data when currentPath is set/changes.
   useEffect(() => {
     if (!currentPath || !explorerState) return
-    void Promise.all([loadDeleteMode(currentPath), loadListing(currentPath)])
-  }, [currentPath, explorerState, loadDeleteMode, loadListing])
+    void Promise.all([
+      loadDeleteMode(currentPath),
+      loadListing(currentPath),
+    ])
+  }, [
+    currentPath,
+    explorerState,
+    loadDeleteMode,
+    loadListing,
+  ])
 
   const navigateTo = useCallback(
     (newPath: string) => {
@@ -401,13 +499,18 @@ export const FileExplorerModal = () => {
   )
 
   const sortedEntries = useMemo(
-    () => [...entries].sort(buildComparator(sortColumn, sortDirection)),
+    () =>
+      [...entries].sort(
+        buildComparator(sortColumn, sortDirection),
+      ),
     [entries, sortColumn, sortDirection],
   )
 
   const toggleSort = (column: SortColumn) => {
     if (sortColumn === column) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
+      setSortDirection((prev) =>
+        prev === "asc" ? "desc" : "asc",
+      )
     } else {
       setSortColumn(column)
       setSortDirection("asc")
@@ -416,10 +519,17 @@ export const FileExplorerModal = () => {
 
   const sortIndicator = (column: SortColumn) => {
     if (sortColumn !== column) return null
-    return <span className="ml-1 text-slate-300">{sortDirection === "asc" ? "▲" : "▼"}</span>
+    return (
+      <span className="ml-1 text-slate-300">
+        {sortDirection === "asc" ? "▲" : "▼"}
+      </span>
+    )
   }
 
-  const toggleSelected = (name: string, checked: boolean) => {
+  const toggleSelected = (
+    name: string,
+    checked: boolean,
+  ) => {
     setSelected((prev) => {
       const next = new Set(prev)
       if (checked) next.add(name)
@@ -430,7 +540,13 @@ export const FileExplorerModal = () => {
 
   const selectAll = (checked: boolean) => {
     if (checked) {
-      setSelected(new Set(entries.filter((entry) => entry.isFile).map((entry) => entry.name)))
+      setSelected(
+        new Set(
+          entries
+            .filter((entry) => entry.isFile)
+            .map((entry) => entry.name),
+        ),
+      )
     } else {
       setSelected(new Set())
     }
@@ -447,12 +563,17 @@ export const FileExplorerModal = () => {
 
   const confirmDelete = async () => {
     if (selected.size === 0) return
-    const verb = deleteMode === "trash" ? "Move" : "Permanently delete"
-    const target = deleteMode === "trash" ? " to Recycle Bin" : ""
+    const verb =
+      deleteMode === "trash" ? "Move" : "Permanently delete"
+    const target =
+      deleteMode === "trash" ? " to Recycle Bin" : ""
     const filesText = `${selected.size} file${selected.size === 1 ? "" : "s"}`
-    if (!window.confirm(`${verb} ${filesText}${target}?`)) return
+    if (!window.confirm(`${verb} ${filesText}${target}?`))
+      return
 
-    const paths = Array.from(selected).map((name) => joinPath(currentPath, name, separator))
+    const paths = Array.from(selected).map((name) =>
+      joinPath(currentPath, name, separator),
+    )
     try {
       const resp = await fetch("/files", {
         method: "DELETE",
@@ -460,11 +581,21 @@ export const FileExplorerModal = () => {
         body: JSON.stringify({ paths }),
       })
       const data = (await resp.json()) as {
-        results: Array<{ ok: boolean; path: string; error?: string }>
+        results: Array<{
+          ok: boolean
+          path: string
+          error?: string
+        }>
       }
-      const failed = data.results.filter((result) => !result.ok)
+      const failed = data.results.filter(
+        (result) => !result.ok,
+      )
       if (failed.length > 0) {
-        const summary = failed.map((result) => `• ${result.path}: ${result.error}`).join("\n")
+        const summary = failed
+          .map(
+            (result) => `• ${result.path}: ${result.error}`,
+          )
+          .join("\n")
         window.alert(
           `Deleted ${data.results.length - failed.length} of ${data.results.length}.\n\nFailed:\n${summary}`,
         )
@@ -509,16 +640,31 @@ export const FileExplorerModal = () => {
         close()
       }
     }
-    document.addEventListener("keydown", handleKeyDown, { capture: true })
-    return () => document.removeEventListener("keydown", handleKeyDown, { capture: true })
-  }, [videoPath, explorerState]) // eslint-disable-line react-hooks/exhaustive-deps
+    document.addEventListener("keydown", handleKeyDown, {
+      capture: true,
+    })
+    return () =>
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown,
+        { capture: true },
+      )
+    // biome-ignore lint/correctness/useExhaustiveDependencies: suppressed during react-migration
+  }, [videoPath, explorerState, close]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!explorerState) return null
 
-  const isPicker = typeof explorerState.pickerOnSelect === "function"
-  const breadcrumbSegments = buildBreadcrumb(currentPath, separator)
+  const isPicker =
+    typeof explorerState.pickerOnSelect === "function"
+  const breadcrumbSegments = buildBreadcrumb(
+    currentPath,
+    separator,
+  )
 
-  const deleteModeLabel = deleteMode === "trash" ? "Delete → Recycle Bin" : "Delete → Permanent"
+  const deleteModeLabel =
+    deleteMode === "trash"
+      ? "Delete → Recycle Bin"
+      : "Delete → Permanent"
   const deleteModeClass =
     deleteMode === "trash"
       ? "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-emerald-900/50 text-emerald-300 border border-emerald-700/50"
@@ -526,6 +672,8 @@ export const FileExplorerModal = () => {
 
   return (
     <>
+      {/** biome-ignore lint/a11y/noStaticElementInteractions: suppressed during react-migration */}
+      {/** biome-ignore lint/a11y/useKeyWithClickEvents: suppressed during react-migration */}
       <div
         id="file-explorer-modal"
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -542,13 +690,21 @@ export const FileExplorerModal = () => {
               className="flex items-center gap-1 text-xs font-mono flex-1 min-w-0 overflow-hidden"
             >
               {breadcrumbSegments.map((seg, idx) => {
-                const isLast = idx === breadcrumbSegments.length - 1
+                const isLast =
+                  idx === breadcrumbSegments.length - 1
                 return isLast ? (
-                  <span key={seg.target} className="text-slate-200 truncate">
+                  <span
+                    key={seg.target}
+                    className="text-slate-200 truncate"
+                  >
                     {seg.label}
                   </span>
                 ) : (
-                  <span key={seg.target} className="flex items-center gap-1 shrink-0">
+                  <span
+                    key={seg.target}
+                    className="flex items-center gap-1 shrink-0"
+                  >
+                    {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
                     <button
                       className="text-blue-300 hover:text-blue-200 underline-offset-2 hover:underline truncate"
                       title={`Navigate to ${seg.target}`}
@@ -556,7 +712,9 @@ export const FileExplorerModal = () => {
                     >
                       {seg.label}
                     </button>
-                    <span className="text-slate-500">{separator}</span>
+                    <span className="text-slate-500">
+                      {separator}
+                    </span>
                   </span>
                 )
               })}
@@ -567,7 +725,8 @@ export const FileExplorerModal = () => {
               className={deleteModeClass}
               title={
                 deleteMode === "permanent"
-                  ? (deleteModeReason ?? "Deletes are permanent — no recovery")
+                  ? (deleteModeReason ??
+                    "Deletes are permanent — no recovery")
                   : "Deletes go to the OS Recycle Bin"
               }
             >
@@ -584,6 +743,7 @@ export const FileExplorerModal = () => {
             )}
 
             {isPicker && (
+              // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
               <button
                 id="file-explorer-pick-btn"
                 onClick={handleConfirmPick}
@@ -593,6 +753,7 @@ export const FileExplorerModal = () => {
               </button>
             )}
 
+            {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
             <button
               onClick={close}
               className="text-slate-400 hover:text-white text-base leading-none ml-1"
@@ -603,130 +764,207 @@ export const FileExplorerModal = () => {
           </div>
 
           {/* Body */}
-          <div id="file-explorer-body" className="flex-1 overflow-y-auto min-h-0">
-            {loading && <p className="text-slate-500 text-sm py-4 text-center">Loading…</p>}
-            {!loading && error && <p className="text-rose-400 text-sm py-4 px-3">{error}</p>}
-            {!loading && !error && sortedEntries.length === 0 && (
-              <p className="text-slate-500 text-sm py-4 text-center">Folder is empty.</p>
+          <div
+            id="file-explorer-body"
+            className="flex-1 overflow-y-auto min-h-0"
+          >
+            {loading && (
+              <p className="text-slate-500 text-sm py-4 text-center">
+                Loading…
+              </p>
             )}
-            {!loading && !error && sortedEntries.length > 0 && (
-              <div className="px-3 py-2">
-                <table className="w-full text-sm">
-                  <thead className="text-[10px] uppercase tracking-wider text-slate-300 sticky top-0 bg-slate-800 z-10 shadow-sm">
-                    <tr>
-                      <th className="py-2 px-2 text-left w-6">
-                        <input
-                          type="checkbox"
-                          title="Select all files"
-                          onChange={(event) => selectAll(event.target.checked)}
-                          checked={
-                            selected.size > 0 &&
-                            entries
-                              .filter((entry) => entry.isFile)
-                              .every((entry) => selected.has(entry.name))
-                          }
-                        />
-                      </th>
-                      {(
-                        [
-                          { col: "name" as const, label: "Name", align: "text-left" },
-                          { col: "duration" as const, label: "Duration", align: "text-right" },
-                          { col: "size" as const, label: "Size", align: "text-right" },
-                          { col: "mtime" as const, label: "Modified", align: "text-left" },
-                        ] as const
-                      ).map(({ col, label, align }) => (
-                        <th
-                          key={col}
-                          className={`py-2 px-2 ${align} cursor-pointer hover:text-white select-none`}
-                          onClick={() => toggleSort(col)}
-                          title={`Sort by ${label.toLowerCase()}`}
-                        >
-                          {label}
-                          {sortIndicator(col)}
+            {!loading && error && (
+              <p className="text-rose-400 text-sm py-4 px-3">
+                {error}
+              </p>
+            )}
+            {!loading &&
+              !error &&
+              sortedEntries.length === 0 && (
+                <p className="text-slate-500 text-sm py-4 text-center">
+                  Folder is empty.
+                </p>
+              )}
+            {!loading &&
+              !error &&
+              sortedEntries.length > 0 && (
+                <div className="px-3 py-2">
+                  <table className="w-full text-sm">
+                    <thead className="text-[10px] uppercase tracking-wider text-slate-300 sticky top-0 bg-slate-800 z-10 shadow-sm">
+                      <tr>
+                        <th className="py-2 px-2 text-left w-6">
+                          <input
+                            type="checkbox"
+                            title="Select all files"
+                            onChange={(event) =>
+                              selectAll(
+                                event.target.checked,
+                              )
+                            }
+                            checked={
+                              selected.size > 0 &&
+                              entries
+                                .filter(
+                                  (entry) => entry.isFile,
+                                )
+                                .every((entry) =>
+                                  selected.has(entry.name),
+                                )
+                            }
+                          />
                         </th>
-                      ))}
-                      <th className="py-2 px-2 w-8" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedEntries.map((entry) => {
-                      const isVideo = entry.isFile && isVideoFile(entry.name)
-                      const icon = entry.isDirectory ? "📁" : isVideo ? "🎬" : "📄"
+                        {(
+                          [
+                            {
+                              col: "name" as const,
+                              label: "Name",
+                              align: "text-left",
+                            },
+                            {
+                              col: "duration" as const,
+                              label: "Duration",
+                              align: "text-right",
+                            },
+                            {
+                              col: "size" as const,
+                              label: "Size",
+                              align: "text-right",
+                            },
+                            {
+                              col: "mtime" as const,
+                              label: "Modified",
+                              align: "text-left",
+                            },
+                          ] as const
+                        ).map(({ col, label, align }) => (
+                          <th
+                            key={col}
+                            className={`py-2 px-2 ${align} cursor-pointer hover:text-white select-none`}
+                            onClick={() => toggleSort(col)}
+                            title={`Sort by ${label.toLowerCase()}`}
+                          >
+                            {label}
+                            {sortIndicator(col)}
+                          </th>
+                        ))}
+                        <th className="py-2 px-2 w-8" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedEntries.map((entry) => {
+                        const isVideo =
+                          entry.isFile &&
+                          isVideoFile(entry.name)
+                        const icon = entry.isDirectory
+                          ? "📁"
+                          : isVideo
+                            ? "🎬"
+                            : "📄"
 
-                      return (
-                        <tr
-                          key={entry.name}
-                          className="border-b border-slate-800 hover:bg-slate-800/30"
-                        >
-                          <td className="py-1 px-2">
-                            <input
-                              type="checkbox"
-                              disabled={entry.isDirectory}
-                              title={
-                                entry.isDirectory
-                                  ? "Directories not deletable from this UI"
-                                  : undefined
-                              }
-                              checked={selected.has(entry.name)}
-                              onChange={(event) => toggleSelected(entry.name, event.target.checked)}
-                            />
-                          </td>
-                          <td className="py-1 px-2 break-all">
-                            {entry.isDirectory ? (
-                              <button
-                                className="fe-name fe-dir text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
-                                title="Open this folder"
-                                onClick={() =>
-                                  navigateTo(joinPath(currentPath, entry.name, separator))
+                        return (
+                          <tr
+                            key={entry.name}
+                            className="border-b border-slate-800 hover:bg-slate-800/30"
+                          >
+                            <td className="py-1 px-2">
+                              <input
+                                type="checkbox"
+                                disabled={entry.isDirectory}
+                                title={
+                                  entry.isDirectory
+                                    ? "Directories not deletable from this UI"
+                                    : undefined
                                 }
-                              >
-                                {icon} {entry.name}
-                              </button>
-                            ) : isVideo ? (
-                              <button
-                                className="fe-name fe-file text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
-                                title="Play in browser"
-                                onClick={() =>
-                                  setVideoPath(joinPath(currentPath, entry.name, separator))
+                                checked={selected.has(
+                                  entry.name,
+                                )}
+                                onChange={(event) =>
+                                  toggleSelected(
+                                    entry.name,
+                                    event.target.checked,
+                                  )
                                 }
-                              >
-                                {icon} {entry.name}
-                              </button>
-                            ) : (
-                              <span className="text-slate-400">
-                                {icon} {entry.name}
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-1 px-2 text-right text-slate-300 font-mono text-xs whitespace-nowrap">
-                            {entry.duration ?? "—"}
-                          </td>
-                          <td className="py-1 px-2 text-right text-slate-400 font-mono text-xs whitespace-nowrap">
-                            {entry.isDirectory ? "—" : formatSize(entry.size)}
-                          </td>
-                          <td className="py-1 px-2 text-slate-400 font-mono text-xs whitespace-nowrap">
-                            {formatMtime(entry.mtime)}
-                          </td>
-                          <td className="py-1 px-2 text-center">
-                            {entry.isFile ? (
-                              <button
-                                className="fe-copy text-slate-400 hover:text-slate-200"
-                                title="Copy absolute path"
-                                onClick={() => void copyPath(entry.name)}
-                              >
-                                📋
-                              </button>
-                            ) : (
-                              <span className="text-slate-700">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                              />
+                            </td>
+                            <td className="py-1 px-2 break-all">
+                              {entry.isDirectory ? (
+                                // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
+                                <button
+                                  className="fe-name fe-dir text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
+                                  title="Open this folder"
+                                  onClick={() =>
+                                    navigateTo(
+                                      joinPath(
+                                        currentPath,
+                                        entry.name,
+                                        separator,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  {icon} {entry.name}
+                                </button>
+                              ) : isVideo ? (
+                                // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
+                                <button
+                                  className="fe-name fe-file text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
+                                  title="Play in browser"
+                                  onClick={() =>
+                                    setVideoPath(
+                                      joinPath(
+                                        currentPath,
+                                        entry.name,
+                                        separator,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  {icon} {entry.name}
+                                </button>
+                              ) : (
+                                <span className="text-slate-400">
+                                  {icon} {entry.name}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-1 px-2 text-right text-slate-300 font-mono text-xs whitespace-nowrap">
+                              {entry.duration ?? "—"}
+                            </td>
+                            <td className="py-1 px-2 text-right text-slate-400 font-mono text-xs whitespace-nowrap">
+                              {entry.isDirectory
+                                ? "—"
+                                : formatSize(entry.size)}
+                            </td>
+                            <td className="py-1 px-2 text-slate-400 font-mono text-xs whitespace-nowrap">
+                              {formatMtime(entry.mtime)}
+                            </td>
+                            <td className="py-1 px-2 text-center">
+                              {entry.isFile ? (
+                                // biome-ignore lint/a11y/useButtonType: suppressed during react-migration
+                                <button
+                                  className="fe-copy text-slate-400 hover:text-slate-200"
+                                  title="Copy absolute path"
+                                  onClick={() =>
+                                    void copyPath(
+                                      entry.name,
+                                    )
+                                  }
+                                >
+                                  📋
+                                </button>
+                              ) : (
+                                <span className="text-slate-700">
+                                  —
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
           </div>
 
           {/* Footer — hidden in picker mode */}
@@ -735,9 +973,13 @@ export const FileExplorerModal = () => {
               id="file-explorer-footer"
               className="flex items-center gap-3 px-4 py-2 border-t border-slate-700 shrink-0"
             >
-              <span id="file-explorer-selection-count" className="text-xs text-slate-400">
+              <span
+                id="file-explorer-selection-count"
+                className="text-xs text-slate-400"
+              >
                 {selected.size} selected
               </span>
+              {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
               <button
                 id="file-explorer-delete-btn"
                 disabled={selected.size === 0}
@@ -752,7 +994,10 @@ export const FileExplorerModal = () => {
       </div>
 
       {/* Video sub-modal */}
-      <VideoModal path={videoPath} onClose={() => setVideoPath(null)} />
+      <VideoModal
+        path={videoPath}
+        onClose={() => setVideoPath(null)}
+      />
     </>
   )
 }

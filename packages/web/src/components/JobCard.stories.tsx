@@ -7,11 +7,22 @@ import { JobCard } from "./JobCard"
 
 const withStore = (
   jobs: Job[],
-  progress?: Map<string, { ratio?: number; bytesPerSecond?: number; bytesRemaining?: number }>,
+  progress?: Map<
+    string,
+    {
+      ratio?: number
+      bytesPerSecond?: number
+      bytesRemaining?: number
+    }
+  >,
 ) => {
   const store = createStore()
-  store.set(jobsAtom, new Map(jobs.map((job) => [job.id, job])))
-  if (progress) store.set(progressByJobIdAtom, progress as never)
+  store.set(
+    jobsAtom,
+    new Map(jobs.map((job) => [job.id, job])),
+  )
+  if (progress)
+    store.set(progressByJobIdAtom, progress as never)
   return (Story: React.ComponentType) => (
     <Provider store={store}>
       <div className="max-w-2xl p-4 space-y-4 bg-slate-950 min-h-screen">
@@ -37,7 +48,10 @@ const pendingJob: Job = {
   id: "job-pending",
   commandName: "copyFiles",
   status: "pending",
-  params: { sourcePath: "/media/movies/Inception.mkv", destPath: "/backup/" },
+  params: {
+    sourcePath: "/media/movies/Inception.mkv",
+    destPath: "/backup/",
+  },
 }
 
 const runningJob: Job = {
@@ -62,7 +76,8 @@ const failedJob: Job = {
   id: "job-failed",
   commandName: "moveFiles",
   status: "failed",
-  error: "ENOENT: no such file or directory, rename '/media/old.mkv'",
+  error:
+    "ENOENT: no such file or directory, rename '/media/old.mkv'",
 }
 
 const sequenceJob: Job = {

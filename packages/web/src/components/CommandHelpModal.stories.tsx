@@ -6,13 +6,27 @@ import { CommandHelpModal } from "./CommandHelpModal"
 
 const mockCommands = {
   ffmpeg: {
-    summary: "Encode video using ffmpeg with full control over codec and quality settings.",
+    summary:
+      "Encode video using ffmpeg with full control over codec and quality settings.",
     note: "Requires ffmpeg to be installed and on PATH.",
     outputFolderName: "encoded",
     fields: [
-      { name: "input", label: "Input file", type: "path", required: true },
-      { name: "preset", label: "Encoding preset", type: "string" },
-      { name: "crf", label: "CRF quality (0–51)", type: "number" },
+      {
+        name: "input",
+        label: "Input file",
+        type: "path",
+        required: true,
+      },
+      {
+        name: "preset",
+        label: "Encoding preset",
+        type: "string",
+      },
+      {
+        name: "crf",
+        label: "CRF quality (0–51)",
+        type: "number",
+      },
     ],
   },
   noFields: {

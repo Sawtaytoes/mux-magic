@@ -27,7 +27,10 @@ export type CommandDefinition = {
   outputFolderName?: string | null
   outputComputation?: string
   outputs?: ReadonlyArray<{ name: string; label?: string }>
-  groups?: ReadonlyArray<{ fields: ReadonlyArray<string>; layout: string }>
+  groups?: ReadonlyArray<{
+    fields: ReadonlyArray<string>
+    layout: string
+  }>
 }
 
 export type Commands = Record<string, CommandDefinition>
@@ -72,7 +75,12 @@ export type SequenceItem = Step | Group
 
 // ─── Wave E: Lookup Modal ─────────────────────────────────────────────────────
 
-export type LookupType = "mal" | "anidb" | "tvdb" | "tmdb" | "dvdcompare"
+export type LookupType =
+  | "mal"
+  | "anidb"
+  | "tvdb"
+  | "tmdb"
+  | "dvdcompare"
 export type LookupStage = "search" | "variant" | "release"
 
 export type LookupSearchResult = {
@@ -121,7 +129,12 @@ export type LookupState = {
 
 // ─── Wave E: Run Sequence / ApiRunModal ───────────────────────────────────────
 
-export type RunStatus = "pending" | "running" | "completed" | "failed" | "cancelled"
+export type RunStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled"
 
 export type ApiRunState = {
   jobId: string | null
@@ -163,7 +176,12 @@ export type FileEntry = {
   mtime: string | null
 }
 
-export type SortColumn = "default" | "name" | "duration" | "size" | "mtime"
+export type SortColumn =
+  | "default"
+  | "name"
+  | "duration"
+  | "size"
+  | "mtime"
 export type SortDirection = "asc" | "desc"
 
 export type FileExplorerState = {
@@ -182,7 +200,13 @@ export type ProgressSnapshot = {
   currentFiles?: Array<{ path: string; ratio?: number }>
 }
 
-export type JobStatus = "pending" | "running" | "completed" | "failed" | "cancelled" | "skipped"
+export type JobStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | "skipped"
 
 export type Job = {
   id: string

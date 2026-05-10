@@ -8,30 +8,48 @@ interface PathVarCardProps {
   isFirst: boolean
 }
 
-export const PathVarCard = ({ pathVar, isFirst }: PathVarCardProps) => {
+export const PathVarCard = ({
+  pathVar,
+  isFirst,
+}: PathVarCardProps) => {
   const setPaths = useSetAtom(pathsAtom)
   const setFileExplorer = useSetAtom(fileExplorerAtom)
 
   const setLabel = (label: string) => {
-    setPaths((paths) => paths.map((path) => (path.id === pathVar.id ? { ...path, label } : path)))
+    setPaths((paths) =>
+      paths.map((path) =>
+        path.id === pathVar.id ? { ...path, label } : path,
+      ),
+    )
   }
 
   const setValue = (value: string) => {
-    setPaths((paths) => paths.map((path) => (path.id === pathVar.id ? { ...path, value } : path)))
+    setPaths((paths) =>
+      paths.map((path) =>
+        path.id === pathVar.id ? { ...path, value } : path,
+      ),
+    )
   }
 
   const removePath = () => {
-    setPaths((paths) => paths.filter((path) => path.id !== pathVar.id))
+    setPaths((paths) =>
+      paths.filter((path) => path.id !== pathVar.id),
+    )
   }
 
   const handleBrowse = async () => {
     if (pathVar.value) {
-      setFileExplorer({ path: pathVar.value, pickerOnSelect: null })
+      setFileExplorer({
+        path: pathVar.value,
+        pickerOnSelect: null,
+      })
     } else {
       let startPath = "/"
       try {
         const response = await fetch("/files/default-path")
-        const data = (await response.json()) as { path?: string }
+        const data = (await response.json()) as {
+          path?: string
+        }
         startPath = data.path ?? "/"
       } catch {
         // fall back to "/"
@@ -60,7 +78,9 @@ export const PathVarCard = ({ pathVar, isFirst }: PathVarCardProps) => {
               : "Browse to pick a folder for this path variable"
           }
           aria-label={
-            pathVar.value ? "Browse files in this folder" : "Pick a folder for this path variable"
+            pathVar.value
+              ? "Browse files in this folder"
+              : "Pick a folder for this path variable"
           }
           className="text-xs text-slate-500 hover:text-slate-300 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700 shrink-0"
         >
@@ -71,10 +91,14 @@ export const PathVarCard = ({ pathVar, isFirst }: PathVarCardProps) => {
           defaultValue={pathVar.label}
           data-action="set-path-label"
           data-pv-id={pathVar.id}
-          onChange={(event) => setLabel(event.currentTarget.value)}
+          onChange={(event) =>
+            setLabel(event.currentTarget.value)
+          }
           className="text-xs font-medium text-slate-300 bg-transparent border-b border-slate-600 focus:outline-none focus:border-blue-500 flex-1 min-w-0"
         />
-        <span className="text-xs text-slate-600 font-mono shrink-0">path variable</span>
+        <span className="text-xs text-slate-600 font-mono shrink-0">
+          path variable
+        </span>
         {!isFirst && (
           <button
             type="button"
@@ -93,7 +117,9 @@ export const PathVarCard = ({ pathVar, isFirst }: PathVarCardProps) => {
         placeholder="/mnt/media or D:\Media"
         data-action="set-path-value"
         data-pv-id={pathVar.id}
-        onBlur={(event) => setValue(event.currentTarget.value)}
+        onBlur={(event) =>
+          setValue(event.currentTarget.value)
+        }
         className="w-full bg-slate-900 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
       />
     </div>

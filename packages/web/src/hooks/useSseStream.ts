@@ -19,7 +19,10 @@ export const useSseStream = (): void => {
     onMessage: (job) => {
       setJobs((prev) => new Map(prev).set(job.id, job))
 
-      if (job.status !== "running" && job.status !== "pending") {
+      if (
+        job.status !== "running" &&
+        job.status !== "pending"
+      ) {
         setProgress((prev) => {
           const next = new Map(prev)
           next.delete(job.id)

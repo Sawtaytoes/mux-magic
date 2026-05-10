@@ -10,7 +10,9 @@ const statusClassMap: Record<string, string> = {
   cancelled: "bg-slate-700 text-slate-300",
 }
 
-export const StatusBadge = ({ status }: StatusBadgeProps) => {
+export const StatusBadge = ({
+  status,
+}: StatusBadgeProps) => {
   const statusClass = statusClassMap[status] ?? ""
   return (
     <span

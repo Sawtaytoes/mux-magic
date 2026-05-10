@@ -25,7 +25,11 @@ const withLoadedEntries = () => {
   if (input) {
     store.set(pathPickerStateAtom, {
       inputElement: input,
-      target: { mode: "step", stepId: "step-1", fieldName: "sourcePath" },
+      target: {
+        mode: "step",
+        stepId: "step-1",
+        fieldName: "sourcePath",
+      },
       parentPath: "/home/user",
       query: "",
       triggerRect: TRIGGER_RECT,
@@ -68,7 +72,11 @@ const withLoadingState = () => {
   if (input) {
     store.set(pathPickerStateAtom, {
       inputElement: input,
-      target: { mode: "step", stepId: "step-1", fieldName: "sourcePath" },
+      target: {
+        mode: "step",
+        stepId: "step-1",
+        fieldName: "sourcePath",
+      },
       parentPath: "/home/user",
       query: "",
       triggerRect: TRIGGER_RECT,
@@ -95,7 +103,11 @@ const withErrorState = () => {
   if (input) {
     store.set(pathPickerStateAtom, {
       inputElement: input,
-      target: { mode: "step", stepId: "step-1", fieldName: "sourcePath" },
+      target: {
+        mode: "step",
+        stepId: "step-1",
+        fieldName: "sourcePath",
+      },
       parentPath: "/nonexistent",
       query: "",
       triggerRect: TRIGGER_RECT,
@@ -136,6 +148,7 @@ export const Loading: Story = {
   decorators: [withLoadingState()],
 }
 
+// biome-ignore lint/suspicious/noShadowRestrictedNames: suppressed during react-migration
 export const Error: Story = {
   decorators: [withErrorState()],
 }

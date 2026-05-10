@@ -90,8 +90,12 @@ export const installLogCapture = (): void => {
     console[method] = (
       ...args: unknown[]
     ) => {
-      originalConsole[method](...args)
-      capture(args)
+      const jobId = jobContext.getStore()
+      if (jobId) {
+        capture(args)
+      } else {
+        originalConsole[method](...args)
+      }
     }
   }
 }

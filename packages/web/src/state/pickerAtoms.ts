@@ -19,29 +19,38 @@ export type CommandPickerState = {
   triggerRect: TriggerRect
 }
 
-export const commandPickerStateAtom = atom<CommandPickerState | null>(null)
+export const commandPickerStateAtom =
+  atom<CommandPickerState | null>(null)
 
 // ─── Enum picker ──────────────────────────────────────────────────────────────
 
-export type EnumPickerAnchor = { stepId: string; fieldName: string }
+export type EnumPickerAnchor = {
+  stepId: string
+  fieldName: string
+}
 
 export type EnumPickerState = {
   anchor: EnumPickerAnchor
   triggerRect: TriggerRect
 }
 
-export const enumPickerStateAtom = atom<EnumPickerState | null>(null)
+export const enumPickerStateAtom =
+  atom<EnumPickerState | null>(null)
 
 // ─── Link picker ──────────────────────────────────────────────────────────────
 
-export type LinkPickerAnchor = { stepId: string; fieldName: string }
+export type LinkPickerAnchor = {
+  stepId: string
+  fieldName: string
+}
 
 export type LinkPickerState = {
   anchor: LinkPickerAnchor
   triggerRect: TriggerRect
 }
 
-export const linkPickerStateAtom = atom<LinkPickerState | null>(null)
+export const linkPickerStateAtom =
+  atom<LinkPickerState | null>(null)
 
 // ─── Path picker ──────────────────────────────────────────────────────────────
 
@@ -65,4 +74,5 @@ export type PathPickerState = {
   debounceTimerId: ReturnType<typeof setTimeout> | null
 }
 
-export const pathPickerStateAtom = atom<PathPickerState | null>(null)
+export const pathPickerStateAtom =
+  atom<PathPickerState | null>(null)

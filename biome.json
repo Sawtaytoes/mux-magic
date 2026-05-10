@@ -13,10 +13,10 @@
       "eslint.config.js",
       "tsconfig.json",
       "tsconfig.base.json",
-      "!**/node_modules/**",
-      "!**/dist/**",
-      "!**/build/**",
-      "!.yarn/**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!.yarn",
       "!packages/web/src/api/schema.generated.ts"
     ]
   },
@@ -25,12 +25,12 @@
     "indentStyle": "space",
     "indentWidth": 2,
     "lineEnding": "lf",
-    "lineWidth": 100
+    "lineWidth": 60
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": false
+      "recommended": true
     }
   },
   "javascript": {

@@ -3,7 +3,9 @@ interface InsertDividerProps {
   onInsertStep: () => void
   onInsertSequentialGroup: () => void
   onInsertParallelGroup: () => void
-  onPaste: (event: React.MouseEvent<HTMLButtonElement>) => void
+  onPaste: (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => void
 }
 
 export const InsertDivider = ({
@@ -16,6 +18,7 @@ export const InsertDivider = ({
   <div className="col-span-full flex items-center group -my-0.5">
     <div className="flex-1 h-px bg-slate-700/50 group-hover:bg-slate-600 transition-colors" />
     <div className="flex items-center gap-1 mx-1">
+      {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
       <button
         onClick={onInsertStep}
         title="Insert a step here"
@@ -23,6 +26,7 @@ export const InsertDivider = ({
       >
         ➕ Step
       </button>
+      {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
       <button
         onClick={onInsertSequentialGroup}
         title="Insert a sequential group here"
@@ -30,6 +34,7 @@ export const InsertDivider = ({
       >
         ➕ Group
       </button>
+      {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
       <button
         onClick={onInsertParallelGroup}
         title="Insert a parallel group here"
@@ -37,6 +42,7 @@ export const InsertDivider = ({
       >
         ➕ Parallel
       </button>
+      {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
       <button
         onClick={onPaste}
         title="Paste a copied step or group here"

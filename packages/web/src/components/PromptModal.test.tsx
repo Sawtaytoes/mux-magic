@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -11,7 +17,9 @@ afterEach(() => {
 import { promptModalAtom } from "../state/uiAtoms"
 import { PromptModal } from "./PromptModal"
 
-const renderWithStore = (store: ReturnType<typeof createStore>) =>
+const renderWithStore = (
+  store: ReturnType<typeof createStore>,
+) =>
   render(
     <Provider store={store}>
       <PromptModal />
@@ -38,8 +46,12 @@ describe("PromptModal", () => {
       ],
     })
     renderWithStore(store)
-    expect(screen.getByRole("button", { name: /File A/ })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Skip/ })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /File A/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /Skip/ }),
+    ).toBeInTheDocument()
   })
 
   it("closes the modal when backdrop is clicked", async () => {
@@ -51,14 +63,20 @@ describe("PromptModal", () => {
       options: [{ index: 1, label: "Option A" }],
     })
     renderWithStore(store)
-    fireEvent.click(screen.getByTestId("prompt-modal-backdrop"))
-    await waitFor(() => expect(store.get(promptModalAtom)).toBeNull())
+    fireEvent.click(
+      screen.getByTestId("prompt-modal-backdrop"),
+    )
+    await waitFor(() =>
+      expect(store.get(promptModalAtom)).toBeNull(),
+    )
   })
 
   it("submits and closes when an option is clicked", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue(new Response("{}", { status: 200 }))
+      .mockResolvedValue(
+        new Response("{}", { status: 200 }),
+      )
     const store = createStore()
     store.set(promptModalAtom, {
       jobId: "job-42",
@@ -67,7 +85,9 @@ describe("PromptModal", () => {
       options: [{ index: 1, label: "Option A" }],
     })
     renderWithStore(store)
-    await userEvent.click(screen.getByRole("button", { name: /Option A/ }))
+    await userEvent.click(
+      screen.getByRole("button", { name: /Option A/ }),
+    )
     expect(store.get(promptModalAtom)).toBeNull()
     expect(fetchSpy).toHaveBeenCalledWith(
       "/jobs/job-42/input",

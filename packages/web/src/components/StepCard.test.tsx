@@ -1,7 +1,18 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 import { stepsAtom } from "../state/stepsAtom"
 import type { Step } from "../types"
 import { StepCard } from "./StepCard"
@@ -18,7 +29,13 @@ const makeStep = (overrides: Partial<Step> = {}): Step => ({
   ...overrides,
 })
 
-const renderCard = (step: Step, props: Partial<{ isFirst: boolean; isLast: boolean }> = {}) => {
+const renderCard = (
+  step: Step,
+  props: Partial<{
+    isFirst: boolean
+    isLast: boolean
+  }> = {},
+) => {
   const store = createStore()
   store.set(stepsAtom, [step])
   render(
@@ -36,7 +53,13 @@ const renderCard = (step: Step, props: Partial<{ isFirst: boolean; isLast: boole
 
 beforeEach(() => {
   window.mediaTools = {
-    COMMANDS: { testCmd: { summary: "Test command", fields: [], outputFolderName: null } },
+    COMMANDS: {
+      testCmd: {
+        summary: "Test command",
+        fields: [],
+        outputFolderName: null,
+      },
+    },
     renderAll: vi.fn(),
     updateUrl: vi.fn(),
   }
@@ -57,12 +80,16 @@ describe("StepCard", () => {
 
   it("shows 'pick a command' when no command set", () => {
     renderCard(makeStep())
-    expect(screen.getByText(/pick a command/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/pick a command/i),
+    ).toBeInTheDocument()
   })
 
   it("toggles collapsed state on chevron click", async () => {
     const user = userEvent.setup()
-    const store = renderCard(makeStep({ isCollapsed: false }))
+    const store = renderCard(
+      makeStep({ isCollapsed: false }),
+    )
 
     await user.click(screen.getByTitle(/collapse step/i))
 
@@ -95,18 +122,31 @@ describe("StepCard", () => {
     const user = userEvent.setup()
     renderCard(makeStep())
 
-    await user.click(screen.getByRole("button", { name: /pick a command/i }))
+    await user.click(
+      screen.getByRole("button", {
+        name: /pick a command/i,
+      }),
+    )
 
     expect(window.commandPicker?.open).toHaveBeenCalled()
   })
 
   it("shows error message when step has an error", () => {
-    renderCard(makeStep({ command: "testCmd", error: "Something went wrong" }))
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument()
+    renderCard(
+      makeStep({
+        command: "testCmd",
+        error: "Something went wrong",
+      }),
+    )
+    expect(
+      screen.getByText("Something went wrong"),
+    ).toBeInTheDocument()
   })
 
   it("collapses body when isCollapsed is true", () => {
-    renderCard(makeStep({ command: "testCmd", isCollapsed: true }))
+    renderCard(
+      makeStep({ command: "testCmd", isCollapsed: true }),
+    )
     expect(screen.queryByText(/Wave B pending/)).toBeNull()
   })
 })

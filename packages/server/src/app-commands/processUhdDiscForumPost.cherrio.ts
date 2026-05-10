@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio"
+import type { Element } from "domhandler"
 
 export type UhdDiscForumPostItem = {
   movieName: string
@@ -21,7 +22,7 @@ export type UhdDiscForumPostGroup = {
  * Avoids returning strings from children which may also match a regex.
  */
 export const getTextContentWithoutChildren = (
-  element: cheerio.Cheerio<cheerio.Element>,
+  element: cheerio.Cheerio<Element>,
 ) => (
   element
     .contents()
@@ -33,7 +34,7 @@ export const getTextContentWithoutChildren = (
 
 export const getReasonFromMovieTextDomSnippet = (
   $: cheerio.CheerioAPI,
-  $body: cheerio.Cheerio<cheerio.Element>,
+  $body: cheerio.Cheerio<Element>,
 ) => {
   const textContentWithoutChildren = getTextContentWithoutChildren($body)
 
@@ -54,7 +55,7 @@ export const getReasonFromMovieTextDomSnippet = (
 
 export const getReasonsFromDomSnippet = (
   $: cheerio.CheerioAPI,
-  $body: cheerio.Cheerio<cheerio.Element>,
+  $body: cheerio.Cheerio<Element>,
 ) => (
   $("span", $body)
     .map((_, el) => getTextContentWithoutChildren($(el)))
@@ -84,7 +85,7 @@ export const getReasonsFromDomSnippet = (
 
 export const getSectionTitleFromDomSnippet = (
   $: cheerio.CheerioAPI,
-  $body: cheerio.Cheerio<cheerio.Element>,
+  $body: cheerio.Cheerio<Element>,
 ) => (
   (
     $body.find(`[style="font-size:150%;line-height:116%"]`).text() || ""
@@ -95,7 +96,7 @@ export const getSectionTitleFromDomSnippet = (
 
 export const getMovieDataFromDomSnippet = (
   $: cheerio.CheerioAPI,
-  $body: cheerio.Cheerio<cheerio.Element>,
+  $body: cheerio.Cheerio<Element>,
 ) => {
   const fakeElement = $("<div></div>")
   const textContent = (
@@ -127,7 +128,7 @@ export const getMovieDataFromDomSnippet = (
 
 export const parseDomSnippetTextContent = (
   $: cheerio.CheerioAPI,
-  $body: cheerio.Cheerio<cheerio.Element>,
+  $body: cheerio.Cheerio<Element>,
 ) => ({
   ...getMovieDataFromDomSnippet($, $body),
   reasons: getReasonsFromDomSnippet($, $body),
@@ -143,7 +144,7 @@ export const processUhdDiscForumPost = (
     .filter(Boolean)
     .map(htmlSection => {
       const $ = cheerio.load(htmlSection)
-      const $body = $("body").length ? $("body") : $.root()
+      const $body = ($("body").length ? $("body") : $.root()) as cheerio.Cheerio<Element>
       return parseDomSnippetTextContent($, $body)
     })
     .filter(({ sectionTitle, movieName }) => sectionTitle || movieName)

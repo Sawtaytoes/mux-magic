@@ -6,7 +6,10 @@ import { fileExplorerAtom } from "../state/uiAtoms"
 import { FileExplorerModal } from "./FileExplorerModal"
 
 const store = createStore()
-store.set(fileExplorerAtom, { path: "/movies", pickerOnSelect: null })
+store.set(fileExplorerAtom, {
+  path: "/movies",
+  pickerOnSelect: null,
+})
 
 const pickerStore = createStore()
 pickerStore.set(fileExplorerAtom, {
@@ -21,7 +24,8 @@ const meta: Meta<typeof FileExplorerModal> = {
   component: FileExplorerModal,
   decorators: [
     (Story, context) => {
-      const decoratorStore = context.parameters["store"] as ReturnType<typeof createStore>
+      const decoratorStore = context.parameters
+        .store as ReturnType<typeof createStore>
       return (
         <Provider store={decoratorStore ?? store}>
           <Story />

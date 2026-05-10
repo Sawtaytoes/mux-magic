@@ -24,10 +24,13 @@ const PICKER_MAX_HEIGHT = 400
 
 type CommandItem = { name: string; tag: string }
 
-const getCommands = (): Commands => (window.mediaTools?.COMMANDS as Commands) ?? {}
+const getCommands = (): Commands =>
+  (window.mediaTools?.COMMANDS as Commands) ?? {}
 
 const getCommandLabel = (name: string): string =>
-  typeof window.commandLabel === "function" ? window.commandLabel(name) : name
+  typeof window.commandLabel === "function"
+    ? window.commandLabel(name)
+    : name
 
 const buildItems = (): CommandItem[] =>
   TAG_ORDER.flatMap((tag) =>
@@ -35,27 +38,40 @@ const buildItems = (): CommandItem[] =>
       .filter(([, command]) => command.tag === tag)
       .map(([name]) => ({ name, tag }))
       .sort((itemA, itemB) =>
-        getCommandLabel(itemA.name).localeCompare(getCommandLabel(itemB.name)),
+        getCommandLabel(itemA.name).localeCompare(
+          getCommandLabel(itemB.name),
+        ),
       ),
   )
 
 const matchesQuery = (item: CommandItem, query: string) =>
   item.name.toLowerCase().includes(query) ||
-  getCommandLabel(item.name).toLowerCase().includes(query) ||
+  getCommandLabel(item.name)
+    .toLowerCase()
+    .includes(query) ||
   item.tag.toLowerCase().includes(query)
 
-const findInitialIndex = (items: CommandItem[], anchor: CommandPickerAnchor): number => {
+const findInitialIndex = (
+  items: CommandItem[],
+  anchor: CommandPickerAnchor,
+): number => {
   const step = (
     window.mediaTools?.findStepById as
       | ((id: string) => { command?: string } | undefined)
       | undefined
   )?.(anchor.stepId)
   const currentCommand = step?.command
-  const idx = items.findIndex((item) => item.name === currentCommand)
+  const idx = items.findIndex(
+    (item) => item.name === currentCommand,
+  )
   return idx >= 0 ? idx : 0
 }
 
-type PickerPosition = { top: number; left: number; maxHeight: number }
+type PickerPosition = {
+  top: number
+  left: number
+  maxHeight: number
+}
 
 const computePosition = (
   rect: TriggerRect,
@@ -64,41 +80,70 @@ const computePosition = (
   maxHeight: number,
 ): PickerPosition => {
   const margin = 8
-  const initialLeft = alignSide === "right" ? rect.right - width : rect.left
+  const initialLeft =
+    alignSide === "right" ? rect.right - width : rect.left
   const clampedLeft = (() => {
     if (initialLeft + width > window.innerWidth - margin) {
-      return Math.max(margin, window.innerWidth - width - margin)
+      return Math.max(
+        margin,
+        window.innerWidth - width - margin,
+      )
     }
     if (initialLeft < margin) {
       return margin
     }
     return initialLeft
   })()
-  const spaceBelow = window.innerHeight - rect.bottom - margin
+  const spaceBelow =
+    window.innerHeight - rect.bottom - margin
   const spaceAbove = rect.top - margin
-  const flipAbove = spaceBelow < 200 && spaceAbove > spaceBelow
+  const flipAbove =
+    spaceBelow < 200 && spaceAbove > spaceBelow
   const { top, height } = (() => {
     if (flipAbove) {
-      const flippedHeight = Math.min(maxHeight, Math.max(0, spaceAbove))
-      return { top: rect.top - flippedHeight - 4, height: flippedHeight }
+      const flippedHeight = Math.min(
+        maxHeight,
+        Math.max(0, spaceAbove),
+      )
+      return {
+        top: rect.top - flippedHeight - 4,
+        height: flippedHeight,
+      }
     }
-    const droppedHeight = Math.min(maxHeight, Math.max(0, spaceBelow))
+    const droppedHeight = Math.min(
+      maxHeight,
+      Math.max(0, spaceBelow),
+    )
     return { top: rect.bottom + 4, height: droppedHeight }
   })()
-  const clampedTop = Math.max(margin, Math.min(top, window.innerHeight - height - margin))
-  return { top: clampedTop, left: clampedLeft, maxHeight: height }
+  const clampedTop = Math.max(
+    margin,
+    Math.min(top, window.innerHeight - height - margin),
+  )
+  return {
+    top: clampedTop,
+    left: clampedLeft,
+    maxHeight: height,
+  }
 }
 
 export const CommandPicker = () => {
-  const [pickerState, setPickerState] = useAtom(commandPickerStateAtom)
+  const [pickerState, setPickerState] = useAtom(
+    commandPickerStateAtom,
+  )
   const [query, setQuery] = useState("")
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const allItems = pickerState ? buildItems() : []
   const queryLower = query.trim().toLowerCase()
-  const filtered = queryLower ? allItems.filter((item) => matchesQuery(item, queryLower)) : allItems
-  const safeActiveIndex = activeIndex >= filtered.length ? 0 : activeIndex
+  const filtered = queryLower
+    ? allItems.filter((item) =>
+        matchesQuery(item, queryLower),
+      )
+    : allItems
+  const safeActiveIndex =
+    activeIndex >= filtered.length ? 0 : activeIndex
 
   useEffect(() => {
     if (!pickerState) {
@@ -106,9 +151,15 @@ export const CommandPicker = () => {
     }
     const items = buildItems()
     setQuery("")
-    setActiveIndex(findInitialIndex(items, pickerState.anchor))
+    setActiveIndex(
+      findInitialIndex(items, pickerState.anchor),
+    )
     setTimeout(() => inputRef.current?.focus(), 0)
-  }, [pickerState?.anchor.stepId])
+  }, [
+    pickerState?.anchor.stepId,
+    pickerState.anchor,
+    pickerState,
+  ])
 
   useEffect(() => {
     if (!pickerState) {
@@ -116,14 +167,25 @@ export const CommandPicker = () => {
     }
     const handleMouseDown = (event: MouseEvent) => {
       const target = event.target as Node
-      const popover = document.getElementById("cmd-picker-react")
+      const popover = document.getElementById(
+        "cmd-picker-react",
+      )
       if (popover?.contains(target)) {
         return
       }
       setPickerState(null)
     }
-    document.addEventListener("mousedown", handleMouseDown, true)
-    return () => document.removeEventListener("mousedown", handleMouseDown, true)
+    document.addEventListener(
+      "mousedown",
+      handleMouseDown,
+      true,
+    )
+    return () =>
+      document.removeEventListener(
+        "mousedown",
+        handleMouseDown,
+        true,
+      )
   }, [pickerState, setPickerState])
 
   const close = () => setPickerState(null)
@@ -132,10 +194,11 @@ export const CommandPicker = () => {
     const anchor = pickerState?.anchor
     close()
     if (anchor) {
-      ;(window.changeCommand as ((stepId: string, name: string) => void) | undefined)?.(
-        anchor.stepId,
-        item.name,
-      )
+      ;(
+        window.changeCommand as
+          | ((stepId: string, name: string) => void)
+          | undefined
+      )?.(anchor.stepId, item.name)
     }
   }
 
@@ -153,7 +216,10 @@ export const CommandPicker = () => {
       setActiveIndex((prev) => (prev + 1) % filtered.length)
     } else if (event.key === "ArrowUp") {
       event.preventDefault()
-      setActiveIndex((prev) => (prev - 1 + filtered.length) % filtered.length)
+      setActiveIndex(
+        (prev) =>
+          (prev - 1 + filtered.length) % filtered.length,
+      )
     } else if (event.key === "Enter") {
       event.preventDefault()
       if (filtered[safeActiveIndex]) {
@@ -197,26 +263,37 @@ export const CommandPicker = () => {
       />
       <div className="overflow-y-auto py-1">
         {filtered.length === 0 ? (
-          <p className="text-xs text-slate-500 text-center py-4">No commands match.</p>
+          <p className="text-xs text-slate-500 text-center py-4">
+            No commands match.
+          </p>
         ) : (
           filtered.map((item, index) => {
             const isActive = index === safeActiveIndex
             return (
+              // biome-ignore lint/a11y/useAriaPropsSupportedByRole: suppressed during react-migration
               <button
                 key={item.name}
                 type="button"
                 aria-selected={isActive}
                 className={`w-full text-left px-3 py-1.5 flex items-start gap-2 ${
-                  isActive ? "bg-blue-700 text-white" : "text-slate-200 hover:bg-slate-800"
+                  isActive
+                    ? "bg-blue-700 text-white"
+                    : "text-slate-200 hover:bg-slate-800"
                 }`}
-                onMouseDown={(event) => event.preventDefault()}
+                onMouseDown={(event) =>
+                  event.preventDefault()
+                }
                 onClick={() => selectItem(item)}
               >
                 <span className="flex-1 min-w-0 flex flex-col">
-                  <span className="text-xs truncate">{getCommandLabel(item.name)}</span>
+                  <span className="text-xs truncate">
+                    {getCommandLabel(item.name)}
+                  </span>
                   <span
                     className={`font-mono text-[10px] truncate ${
-                      isActive ? "text-blue-200" : "text-slate-500"
+                      isActive
+                        ? "text-blue-200"
+                        : "text-slate-500"
                     }`}
                   >
                     {item.name}
@@ -224,7 +301,9 @@ export const CommandPicker = () => {
                 </span>
                 <span
                   className={`text-[10px] shrink-0 mt-0.5 ${
-                    isActive ? "text-blue-200" : "text-slate-500"
+                    isActive
+                      ? "text-blue-200"
+                      : "text-slate-500"
                   }`}
                 >
                   {item.tag}

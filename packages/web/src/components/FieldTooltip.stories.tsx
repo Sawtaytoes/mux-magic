@@ -15,8 +15,13 @@ type Story = StoryObj<typeof FieldTooltip>
 
 export const WithDescription: Story = {
   args: {
-    description: "The base path used as a root for all relative file operations in this sequence.",
-    children: <span className="text-xs text-slate-300 cursor-default">Base path</span>,
+    description:
+      "The base path used as a root for all relative file operations in this sequence.",
+    children: (
+      <span className="text-xs text-slate-300 cursor-default">
+        Base path
+      </span>
+    ),
   },
 }
 

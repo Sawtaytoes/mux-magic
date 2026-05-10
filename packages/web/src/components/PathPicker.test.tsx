@@ -1,7 +1,19 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 import { pathPickerStateAtom } from "../state/pickerAtoms"
 import { PathPicker } from "./PathPicker"
 
@@ -39,11 +51,18 @@ const mockEntries = [
   { name: "readme.txt", isDirectory: false },
 ]
 
-const renderPicker = (initialEntries = mockEntries, fetchOverride?: ReturnType<typeof vi.fn>) => {
+const renderPicker = (
+  initialEntries = mockEntries,
+  fetchOverride?: ReturnType<typeof vi.fn>,
+) => {
   const fetchMock =
     fetchOverride ??
     vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ entries: initialEntries, separator: "/" }),
+      json: () =>
+        Promise.resolve({
+          entries: initialEntries,
+          separator: "/",
+        }),
     })
   vi.stubGlobal("fetch", fetchMock)
 
@@ -51,7 +70,11 @@ const renderPicker = (initialEntries = mockEntries, fetchOverride?: ReturnType<t
   const store = createStore()
   store.set(pathPickerStateAtom, {
     inputElement: input,
-    target: { mode: "step", stepId: "step-1", fieldName: "sourcePath" },
+    target: {
+      mode: "step",
+      stepId: "step-1",
+      fieldName: "sourcePath",
+    },
     parentPath: "/home/user",
     query: "",
     triggerRect: TRIGGER_RECT,
@@ -77,8 +100,14 @@ const renderPicker = (initialEntries = mockEntries, fetchOverride?: ReturnType<t
 }
 
 beforeEach(() => {
-  Object.defineProperty(window, "innerWidth", { value: 1200, configurable: true })
-  Object.defineProperty(window, "innerHeight", { value: 800, configurable: true })
+  Object.defineProperty(window, "innerWidth", {
+    value: 1200,
+    configurable: true,
+  })
+  Object.defineProperty(window, "innerHeight", {
+    value: 800,
+    configurable: true,
+  })
 })
 
 afterEach(() => {
@@ -100,11 +129,15 @@ describe("PathPicker visibility", () => {
 
   it("renders picker when atom has state", () => {
     renderPicker()
-    expect(screen.getByTestId("path-picker")).toBeInTheDocument()
+    expect(
+      screen.getByTestId("path-picker"),
+    ).toBeInTheDocument()
   })
 
   it("shows loading state before fetch completes", () => {
-    const pendingFetch = vi.fn().mockReturnValue(new Promise(() => {}))
+    const pendingFetch = vi
+      .fn()
+      .mockReturnValue(new Promise(() => {}))
     renderPicker([], pendingFetch)
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
   })
@@ -115,9 +148,15 @@ describe("PathPicker directory listing", () => {
     renderPicker()
 
     await waitFor(() => {
-      expect(screen.getByText("Documents")).toBeInTheDocument()
-      expect(screen.getByText("Downloads")).toBeInTheDocument()
-      expect(screen.getByText("Pictures")).toBeInTheDocument()
+      expect(
+        screen.getByText("Documents"),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText("Downloads"),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText("Pictures"),
+      ).toBeInTheDocument()
     })
   })
 
@@ -132,12 +171,19 @@ describe("PathPicker directory listing", () => {
 
 describe("PathPicker fetch error", () => {
   it("shows error message when fetch fails", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")))
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("Network error")),
+    )
     const input = makeMockInput()
     const store = createStore()
     store.set(pathPickerStateAtom, {
       inputElement: input,
-      target: { mode: "step", stepId: "step-1", fieldName: "sourcePath" },
+      target: {
+        mode: "step",
+        stepId: "step-1",
+        fieldName: "sourcePath",
+      },
       parentPath: "/bad/path",
       query: "",
       triggerRect: TRIGGER_RECT,
@@ -158,7 +204,9 @@ describe("PathPicker fetch error", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText("Network error")).toBeInTheDocument()
+      expect(
+        screen.getByText("Network error"),
+      ).toBeInTheDocument()
     })
   })
 })
@@ -170,6 +218,10 @@ describe("PathPicker selection", () => {
     await waitFor(() => screen.getByText("Documents"))
     await userEvent.click(screen.getByText("Documents"))
 
-    expect(window.setParam).toHaveBeenCalledWith("step-1", "sourcePath", "/home/user/Documents/")
+    expect(window.setParam).toHaveBeenCalledWith(
+      "step-1",
+      "sourcePath",
+      "/home/user/Documents/",
+    )
   })
 })

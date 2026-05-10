@@ -7,13 +7,18 @@ import { jobsAtom } from "../state/jobsAtom"
 const JobsList = () => {
   const jobs = useAtomValue(jobsAtom)
   // Top-level jobs have no parentJobId; prepend newest (Map preserves insertion order).
-  const topLevel = [...jobs.values()].filter((job) => !job.parentJobId).reverse()
+  const topLevel = [...jobs.values()]
+    .filter((job) => !job.parentJobId)
+    .reverse()
 
   if (topLevel.length === 0) {
     return (
       <p className="text-slate-500 text-sm text-center py-12">
         No jobs yet. Run a command in the{" "}
-        <a href="/builder" className="text-blue-400 hover:text-blue-300">
+        <a
+          href="/builder"
+          className="text-blue-400 hover:text-blue-300"
+        >
           Sequence Builder
         </a>{" "}
         to get started.
@@ -38,7 +43,10 @@ export const JobsPage = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">
           Jobs{" "}
-          <a href="/builder" className="text-sm font-normal text-blue-400 hover:text-blue-300 ml-3">
+          <a
+            href="/builder"
+            className="text-sm font-normal text-blue-400 hover:text-blue-300 ml-3"
+          >
             Sequence Builder ↗
           </a>
         </h1>

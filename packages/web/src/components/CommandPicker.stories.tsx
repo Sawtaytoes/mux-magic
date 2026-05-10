@@ -13,11 +13,31 @@ const TRIGGER_RECT = {
 }
 
 const mockCommands = {
-  makeDirectory: { tag: "File Operations", summary: "Create a directory", fields: [] },
-  copyFiles: { tag: "File Operations", summary: "Copy files", fields: [] },
-  moveFiles: { tag: "File Operations", summary: "Move files", fields: [] },
-  addSubtitles: { tag: "Subtitle Operations", summary: "Add subtitles", fields: [] },
-  removeSubtitles: { tag: "Subtitle Operations", summary: "Remove subtitles", fields: [] },
+  makeDirectory: {
+    tag: "File Operations",
+    summary: "Create a directory",
+    fields: [],
+  },
+  copyFiles: {
+    tag: "File Operations",
+    summary: "Copy files",
+    fields: [],
+  },
+  moveFiles: {
+    tag: "File Operations",
+    summary: "Move files",
+    fields: [],
+  },
+  addSubtitles: {
+    tag: "Subtitle Operations",
+    summary: "Add subtitles",
+    fields: [],
+  },
+  removeSubtitles: {
+    tag: "Subtitle Operations",
+    summary: "Remove subtitles",
+    fields: [],
+  },
 }
 
 const withOpenPicker = () => {
@@ -29,7 +49,9 @@ const withOpenPicker = () => {
   if (typeof window !== "undefined") {
     window.mediaTools = window.mediaTools ?? {}
     window.mediaTools.COMMANDS = mockCommands
-    window.mediaTools.findStepById = () => ({ command: "copyFiles" })
+    window.mediaTools.findStepById = () => ({
+      command: "copyFiles",
+    })
     window.commandLabel = (name: string) => name
     window.changeCommand = () => {}
   }
@@ -70,7 +92,8 @@ export const Closed: Story = {
   parameters: {
     docs: {
       description: {
-        story: "When commandPickerStateAtom is null the component renders nothing.",
+        story:
+          "When commandPickerStateAtom is null the component renders nothing.",
       },
     },
   },

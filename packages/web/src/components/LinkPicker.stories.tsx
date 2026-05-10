@@ -34,8 +34,16 @@ const withOpenPicker = () => {
     makeStep("step-3", "addSubtitles"),
   ])
   store.set(pathsAtom, [
-    { id: "basePath", label: "Base Path", value: "/home/user/videos" },
-    { id: "outputPath", label: "Output Path", value: "/home/user/output" },
+    {
+      id: "basePath",
+      label: "Base Path",
+      value: "/home/user/videos",
+    },
+    {
+      id: "outputPath",
+      label: "Output Path",
+      value: "/home/user/output",
+    },
   ])
   store.set(linkPickerStateAtom, {
     anchor: { stepId: "step-3", fieldName: "sourcePath" },

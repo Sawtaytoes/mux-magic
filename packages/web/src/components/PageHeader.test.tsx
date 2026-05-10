@@ -1,4 +1,8 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, it } from "vitest"
@@ -7,10 +11,16 @@ afterEach(() => {
   cleanup()
 })
 
-import { dryRunAtom, failureModeAtom, runningAtom } from "../state/uiAtoms"
+import {
+  dryRunAtom,
+  failureModeAtom,
+  runningAtom,
+} from "../state/uiAtoms"
 import { PageHeader } from "./PageHeader"
 
-const renderWithStore = (store: ReturnType<typeof createStore>) =>
+const renderWithStore = (
+  store: ReturnType<typeof createStore>,
+) =>
   render(
     <Provider store={store}>
       <PageHeader />
@@ -21,14 +31,20 @@ describe("PageHeader", () => {
   it("renders the title link", () => {
     const store = createStore()
     renderWithStore(store)
-    expect(screen.getByRole("link", { name: "Sequence Builder" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", {
+        name: "Sequence Builder",
+      }),
+    ).toBeInTheDocument()
   })
 
   it("toggles dry-run mode when the Dry Run button is clicked", async () => {
     const store = createStore()
     renderWithStore(store)
     expect(store.get(dryRunAtom)).toBe(false)
-    await userEvent.click(screen.getByRole("button", { name: /dry run/i }))
+    await userEvent.click(
+      screen.getByRole("button", { name: /dry run/i }),
+    )
     expect(store.get(dryRunAtom)).toBe(true)
   })
 
@@ -37,27 +53,41 @@ describe("PageHeader", () => {
     renderWithStore(store)
     expect(screen.queryByTitle(/dry run ON/i)).toBeNull()
     store.set(dryRunAtom, true)
-    expect(await screen.findByTitle(/dry run ON/i)).toBeInTheDocument()
+    expect(
+      await screen.findByTitle(/dry run ON/i),
+    ).toBeInTheDocument()
   })
 
   it("shows Simulate Failures toggle only when dry run is active", async () => {
     const store = createStore()
     store.set(dryRunAtom, true)
     renderWithStore(store)
-    expect(screen.getByRole("button", { name: /simulate failures/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", {
+        name: /simulate failures/i,
+      }),
+    ).toBeInTheDocument()
   })
 
   it("hides Simulate Failures toggle when dry run is off", () => {
     const store = createStore()
     renderWithStore(store)
-    expect(screen.queryByRole("button", { name: /simulate failures/i })).toBeNull()
+    expect(
+      screen.queryByRole("button", {
+        name: /simulate failures/i,
+      }),
+    ).toBeNull()
   })
 
   it("toggles failure mode atom", async () => {
     const store = createStore()
     store.set(dryRunAtom, true)
     renderWithStore(store)
-    await userEvent.click(screen.getByRole("button", { name: /simulate failures/i }))
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: /simulate failures/i,
+      }),
+    )
     expect(store.get(failureModeAtom)).toBe(true)
   })
 
@@ -65,7 +95,11 @@ describe("PageHeader", () => {
     const store = createStore()
     store.set(runningAtom, true)
     renderWithStore(store)
-    expect(screen.getByRole("button", { name: /run sequence/i })).toBeDisabled()
-    expect(screen.getByRole("button", { name: /run via api/i })).toBeDisabled()
+    expect(
+      screen.getByRole("button", { name: /run sequence/i }),
+    ).toBeDisabled()
+    expect(
+      screen.getByRole("button", { name: /run via api/i }),
+    ).toBeDisabled()
   })
 })

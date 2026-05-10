@@ -2,7 +2,10 @@ interface CollapseChevronProps {
   isCollapsed: boolean
 }
 
-export const CollapseChevron = ({ isCollapsed }: CollapseChevronProps) => (
+export const CollapseChevron = ({
+  isCollapsed,
+}: CollapseChevronProps) => (
+  // biome-ignore lint/a11y/noSvgWithoutTitle: suppressed during react-migration
   <svg
     viewBox="0 0 20 20"
     fill="none"

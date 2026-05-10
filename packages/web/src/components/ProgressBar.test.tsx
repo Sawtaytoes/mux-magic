@@ -1,11 +1,16 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import { afterEach, describe, expect, it } from "vitest"
 import type { ProgressSnapshot } from "../types"
 import { ProgressBar } from "./ProgressBar"
 
 afterEach(cleanup)
 
-const renderBar = (snapshot: ProgressSnapshot) => render(<ProgressBar snapshot={snapshot} />)
+const renderBar = (snapshot: ProgressSnapshot) =>
+  render(<ProgressBar snapshot={snapshot} />)
 
 describe("ProgressBar fill", () => {
   it("renders a determinate bar at the given ratio", () => {
@@ -37,7 +42,9 @@ describe("ProgressBar fill", () => {
 describe("ProgressBar label", () => {
   it("shows files-done / files-total", () => {
     renderBar({ filesDone: 3, filesTotal: 10 })
-    expect(screen.getByText(/3\/10 files/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/3\/10 files/),
+    ).toBeInTheDocument()
   })
 
   it("shows percentage when ratio is present", () => {
@@ -56,10 +63,17 @@ describe("ProgressBar label", () => {
 describe("ProgressBar per-file rows", () => {
   it("renders one row per currentFiles entry", () => {
     renderBar({
-      currentFiles: [{ path: "/a/file1.mkv", ratio: 0.3 }, { path: "/b/file2.mkv" }],
+      currentFiles: [
+        { path: "/a/file1.mkv", ratio: 0.3 },
+        { path: "/b/file2.mkv" },
+      ],
     })
-    expect(screen.getByText("file1.mkv")).toBeInTheDocument()
-    expect(screen.getByText("file2.mkv")).toBeInTheDocument()
+    expect(
+      screen.getByText("file1.mkv"),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText("file2.mkv"),
+    ).toBeInTheDocument()
   })
 
   it("shows no file rows when currentFiles is empty", () => {

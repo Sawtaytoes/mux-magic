@@ -2,7 +2,10 @@ import { useAtomValue } from "jotai"
 import type { ConnectionStatus } from "../state/jobsConnectionAtom"
 import { jobsConnectionAtom } from "../state/jobsConnectionAtom"
 
-const statusConfig: Record<ConnectionStatus, { label: string; className: string }> = {
+const statusConfig: Record<
+  ConnectionStatus,
+  { label: string; className: string }
+> = {
   connecting: {
     label: "Connecting…",
     className: "text-slate-400",

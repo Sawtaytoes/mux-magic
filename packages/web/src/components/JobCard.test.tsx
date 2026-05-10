@@ -1,7 +1,18 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 import { jobsAtom } from "../state/jobsAtom"
 import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
 import type { Job } from "../types"
@@ -30,7 +41,9 @@ const completedJob: Job = {
   commandName: "extractSubtitles",
   status: "completed",
   startedAt: new Date("2026-01-01T10:00:00Z").toISOString(),
-  completedAt: new Date("2026-01-01T10:01:00Z").toISOString(),
+  completedAt: new Date(
+    "2026-01-01T10:01:00Z",
+  ).toISOString(),
   results: [{ file: "/out.srt" }],
 }
 
@@ -43,7 +56,10 @@ const failedJob: Job = {
 
 const renderCard = (job: Job, extraJobs: Job[] = []) => {
   const store = createStore()
-  const allJobs = new Map([[job.id, job], ...extraJobs.map((child) => [child.id, child] as const)])
+  const allJobs = new Map([
+    [job.id, job],
+    ...extraJobs.map((child) => [child.id, child] as const),
+  ])
   store.set(jobsAtom, allJobs)
 
   render(
@@ -60,17 +76,27 @@ const renderCard = (job: Job, extraJobs: Job[] = []) => {
 describe("JobCard rendering", () => {
   it("shows the human-readable command label", () => {
     renderCard(pendingJob)
-    expect(screen.getByText("Copy Files")).toBeInTheDocument()
+    expect(
+      screen.getByText("Copy Files"),
+    ).toBeInTheDocument()
   })
 
   it("falls back to the raw command name for unknown commands", () => {
-    renderCard({ id: "x", commandName: "unknownThing", status: "pending" })
-    expect(screen.getByText("unknownThing")).toBeInTheDocument()
+    renderCard({
+      id: "x",
+      commandName: "unknownThing",
+      status: "pending",
+    })
+    expect(
+      screen.getByText("unknownThing"),
+    ).toBeInTheDocument()
   })
 
   it("shows the job ID", () => {
     renderCard(pendingJob)
-    expect(screen.getByText(/ID: job-1/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/ID: job-1/),
+    ).toBeInTheDocument()
   })
 
   it("shows status badge", () => {
@@ -85,17 +111,23 @@ describe("JobCard rendering", () => {
 
   it("shows completed-at for completed jobs", () => {
     renderCard(completedJob)
-    expect(screen.getByText(/Completed:/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Completed:/),
+    ).toBeInTheDocument()
   })
 
   it("shows error message for failed jobs", () => {
     renderCard(failedJob)
-    expect(screen.getByText("File not found")).toBeInTheDocument()
+    expect(
+      screen.getByText("File not found"),
+    ).toBeInTheDocument()
   })
 
   it("shows results count when results are present", () => {
     renderCard(completedJob)
-    expect(screen.getByText(/Results \(1\)/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Results \(1\)/),
+    ).toBeInTheDocument()
   })
 })
 
@@ -104,8 +136,14 @@ describe("JobCard rendering", () => {
 describe("JobCard progress bar", () => {
   it("shows progress bar for running jobs that have a snapshot", () => {
     const store = createStore()
-    store.set(jobsAtom, new Map([[runningJob.id, runningJob]]))
-    store.set(progressByJobIdAtom, new Map([[runningJob.id, { ratio: 0.5 }]]))
+    store.set(
+      jobsAtom,
+      new Map([[runningJob.id, runningJob]]),
+    )
+    store.set(
+      progressByJobIdAtom,
+      new Map([[runningJob.id, { ratio: 0.5 }]]),
+    )
 
     render(
       <Provider store={store}>
@@ -113,7 +151,9 @@ describe("JobCard progress bar", () => {
       </Provider>,
     )
 
-    expect(screen.getByTestId("progress-bar")).toBeInTheDocument()
+    expect(
+      screen.getByTestId("progress-bar"),
+    ).toBeInTheDocument()
   })
 
   it("hides progress bar for running jobs with no snapshot yet", () => {
@@ -148,29 +188,41 @@ describe("JobCard params", () => {
 
 describe("JobCard cancel button", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }))
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true }),
+    )
   })
 
   it("shows cancel button only for running jobs", () => {
     renderCard(runningJob)
-    expect(screen.getAllByRole("button", { name: /cancel/i })).not.toHaveLength(0)
+    expect(
+      screen.getAllByRole("button", { name: /cancel/i }),
+    ).not.toHaveLength(0)
   })
 
   it("does not show cancel button for completed jobs", () => {
     renderCard(completedJob)
-    expect(screen.queryByRole("button", { name: /cancel/i })).toBeNull()
+    expect(
+      screen.queryByRole("button", { name: /cancel/i }),
+    ).toBeNull()
   })
 
   it("calls DELETE /jobs/:id on cancel click", async () => {
     const user = userEvent.setup()
     renderCard(runningJob)
 
-    const cancelButtons = screen.getAllByRole("button", { name: /cancel/i })
+    const cancelButtons = screen.getAllByRole("button", {
+      name: /cancel/i,
+    })
     await user.click(cancelButtons[0])
 
-    expect(globalThis.fetch).toHaveBeenCalledWith("/jobs/job-2", {
-      method: "DELETE",
-    })
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "/jobs/job-2",
+      {
+        method: "DELETE",
+      },
+    )
   })
 })
 
@@ -192,7 +244,9 @@ describe("JobCard steps disclosure", () => {
 
   it("shows steps section when children are present", () => {
     renderCard(parentJob, [childJob])
-    expect(screen.getByText(/Steps \(1\)/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Steps \(1\)/),
+    ).toBeInTheDocument()
   })
 
   it("hides steps section when job has no children", () => {

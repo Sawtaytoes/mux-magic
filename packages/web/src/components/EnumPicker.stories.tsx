@@ -24,10 +24,22 @@ const mockCommands = {
         default: "regular",
         options: [
           { value: "regular", label: "Regular (type=1)" },
-          { value: "specials", label: "Specials (S, type=2)" },
-          { value: "credits", label: "Credits / OP / ED (C, type=3)" },
-          { value: "trailers", label: "Trailers (T, type=4)" },
-          { value: "parodies", label: "Parodies (P, type=5)" },
+          {
+            value: "specials",
+            label: "Specials (S, type=2)",
+          },
+          {
+            value: "credits",
+            label: "Credits / OP / ED (C, type=3)",
+          },
+          {
+            value: "trailers",
+            label: "Trailers (T, type=4)",
+          },
+          {
+            value: "parodies",
+            label: "Parodies (P, type=5)",
+          },
           { value: "others", label: "Others (O, type=6)" },
         ],
       },

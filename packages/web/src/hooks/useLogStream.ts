@@ -17,7 +17,9 @@ export const useLogStream = (jobId: string) => {
   const setLogs = useSetAtom(logsByJobIdAtom)
   const setProgress = useSetAtom(progressByJobIdAtom)
   const esRef = useRef<EventSource | null>(null)
-  const lastLogIndexRef = useRef<number | undefined>(undefined)
+  const lastLogIndexRef = useRef<number | undefined>(
+    undefined,
+  )
   const unmountedRef = useRef(false)
 
   const connect = useCallback(() => {
@@ -36,10 +38,17 @@ export const useLogStream = (jobId: string) => {
 
       if ("line" in data && typeof data.line === "string") {
         const rawId = event.lastEventId
-        if (rawId !== "" && rawId !== null && rawId !== undefined) {
+        if (
+          rawId !== "" &&
+          rawId !== null &&
+          rawId !== undefined
+        ) {
           const idNum = Number(rawId)
           if (Number.isFinite(idNum)) {
-            if (lastLogIndexRef.current !== undefined && idNum <= lastLogIndexRef.current) {
+            if (
+              lastLogIndexRef.current !== undefined &&
+              idNum <= lastLogIndexRef.current
+            ) {
               return
             }
             lastLogIndexRef.current = idNum
@@ -52,11 +61,18 @@ export const useLogStream = (jobId: string) => {
           next.set(jobId, [...lines, line])
           return next
         })
-      } else if ("type" in data && data.type === "progress") {
-        const progressEvent = data as Partial<ProgressSnapshot>
+      } else if (
+        "type" in data &&
+        data.type === "progress"
+      ) {
+        const progressEvent =
+          data as Partial<ProgressSnapshot>
         setProgress((prev) => {
           const next = new Map(prev)
-          next.set(jobId, mergeProgress(prev.get(jobId), progressEvent))
+          next.set(
+            jobId,
+            mergeProgress(prev.get(jobId), progressEvent),
+          )
           return next
         })
       } else if ("done" in data && data.done) {
@@ -66,7 +82,10 @@ export const useLogStream = (jobId: string) => {
     }
 
     es.onerror = () => {
-      if (es.readyState === EventSource.CLOSED && !unmountedRef.current) {
+      if (
+        es.readyState === EventSource.CLOSED &&
+        !unmountedRef.current
+      ) {
         esRef.current = null
       }
     }

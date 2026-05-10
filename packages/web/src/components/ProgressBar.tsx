@@ -1,36 +1,68 @@
-import { formatBandwidth, formatEta } from "../jobs/formatBandwidth"
+import {
+  formatBandwidth,
+  formatEta,
+} from "../jobs/formatBandwidth"
 import type { ProgressSnapshot } from "../types"
 
 interface ProgressBarProps {
   snapshot: ProgressSnapshot
 }
 
-const ProgressLabel = ({ snapshot }: { snapshot: ProgressSnapshot }) => {
+const ProgressLabel = ({
+  snapshot,
+}: {
+  snapshot: ProgressSnapshot
+}) => {
   const parts: string[] = []
-  if (typeof snapshot.filesDone === "number" && typeof snapshot.filesTotal === "number") {
-    parts.push(`${snapshot.filesDone}/${snapshot.filesTotal} files`)
+  if (
+    typeof snapshot.filesDone === "number" &&
+    typeof snapshot.filesTotal === "number"
+  ) {
+    parts.push(
+      `${snapshot.filesDone}/${snapshot.filesTotal} files`,
+    )
   }
   if (typeof snapshot.ratio === "number") {
     parts.push(`${(snapshot.ratio * 100).toFixed(0)}%`)
   }
   const bw = formatBandwidth(snapshot.bytesPerSecond)
   if (bw) parts.push(bw)
-  const eta = formatEta(snapshot.bytesRemaining, snapshot.bytesPerSecond)
+  const eta = formatEta(
+    snapshot.bytesRemaining,
+    snapshot.bytesPerSecond,
+  )
   if (eta) parts.push(eta)
-  return <div className="text-xs text-slate-400 mt-0.5">{parts.join(" · ")}</div>
+  return (
+    <div className="text-xs text-slate-400 mt-0.5">
+      {parts.join(" · ")}
+    </div>
+  )
 }
 
-const ProgressFileRow = ({ path, ratio }: { path: string; ratio?: number }) => {
+const ProgressFileRow = ({
+  path,
+  ratio,
+}: {
+  path: string
+  ratio?: number
+}) => {
   const fileName = path.split(/[\\/]/).pop() ?? path
   const isIndeterminate = typeof ratio !== "number"
-  const pct = !isIndeterminate ? `${(Math.max(0, Math.min(1, ratio!)) * 100).toFixed(1)}%` : null
+  const pct = !isIndeterminate
+    ? `${
+        // biome-ignore lint/style/noNonNullAssertion: suppressed during react-migration
+        (Math.max(0, Math.min(1, ratio!)) * 100).toFixed(1)
+      }%`
+    : null
   return (
     <div className="flex items-center gap-2 text-xs text-slate-400">
       <div className="truncate flex-1 min-w-0" title={path}>
         {fileName}
       </div>
       <div className="shrink-0 w-8 text-right">
-        {typeof ratio === "number" ? `${(ratio * 100).toFixed(0)}%` : ""}
+        {typeof ratio === "number"
+          ? `${(ratio * 100).toFixed(0)}%`
+          : ""}
       </div>
       <div className="shrink-0 w-20 h-1 bg-slate-700 rounded-full overflow-hidden">
         <div
@@ -42,10 +74,17 @@ const ProgressFileRow = ({ path, ratio }: { path: string; ratio?: number }) => {
   )
 }
 
-export const ProgressBar = ({ snapshot }: ProgressBarProps) => {
+export const ProgressBar = ({
+  snapshot,
+}: ProgressBarProps) => {
   const isIndeterminate = typeof snapshot.ratio !== "number"
   const pct = !isIndeterminate
-    ? `${(Math.max(0, Math.min(1, snapshot.ratio!)) * 100).toFixed(1)}%`
+    ? `${
+        // biome-ignore lint/style/noNonNullAssertion: suppressed during react-migration
+        (
+          Math.max(0, Math.min(1, snapshot.ratio!)) * 100
+        ).toFixed(1)
+      }%`
     : null
 
   return (
@@ -58,13 +97,18 @@ export const ProgressBar = ({ snapshot }: ProgressBarProps) => {
         />
       </div>
       <ProgressLabel snapshot={snapshot} />
-      {snapshot.currentFiles && snapshot.currentFiles.length > 0 && (
-        <div className="space-y-0.5 pl-2 mt-1">
-          {snapshot.currentFiles.map((file) => (
-            <ProgressFileRow key={file.path} path={file.path} ratio={file.ratio} />
-          ))}
-        </div>
-      )}
+      {snapshot.currentFiles &&
+        snapshot.currentFiles.length > 0 && (
+          <div className="space-y-0.5 pl-2 mt-1">
+            {snapshot.currentFiles.map((file) => (
+              <ProgressFileRow
+                key={file.path}
+                path={file.path}
+                ratio={file.ratio}
+              />
+            ))}
+          </div>
+        )}
     </div>
   )
 }
