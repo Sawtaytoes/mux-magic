@@ -13,10 +13,7 @@
       "isRecursive": true,
       "recursiveDepth": 2,
       "rootPath": "fixture-string-rootPath",
-      "folders": [
-        "folder-a",
-        "folder-b"
-      ],
+      "folders": ["folder-a", "folder-b"],
       "force": true
     },
     "links": {
