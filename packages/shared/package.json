@@ -20,7 +20,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
   },
   "dependencies": {
     "fast-sort": "^3.4.1"

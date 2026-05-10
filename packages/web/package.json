@@ -10,6 +10,7 @@
     "dev": "vite",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006 --config-dir .storybook",
+    "test": "vitest",
     "test:a11y": "vitest run --project storybook",
     "typecheck": "tsc --noEmit"
   },
