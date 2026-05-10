@@ -178,7 +178,7 @@ describe("DELETE /files", () => {
     vol.reset()
   })
 
-  test("?fake=1 short-circuits with ok:true and never touches disk", async () => {
+  test("?fake=1 short-circuits with per-path results and never touches disk", async () => {
     const response = await fileRoutes.request("/files?fake=1", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -186,11 +186,15 @@ describe("DELETE /files", () => {
         paths: ["/work/file1.mkv", "/work/file2.mkv"],
       }),
     })
-    const body = await response.json() as { ok: boolean; deleted: string[] }
+    const body = await response.json() as {
+      results: Array<{ path: string; ok: boolean; mode: "trash" | "permanent"; error: string | null }>
+    }
 
     expect(response.status).toBe(200)
-    expect(body.ok).toBe(true)
-    expect(body.deleted).toEqual(["/work/file1.mkv", "/work/file2.mkv"])
+    expect(body.results).toEqual([
+      { path: "/work/file1.mkv", ok: true, mode: "trash", error: null },
+      { path: "/work/file2.mkv", ok: true, mode: "trash", error: null },
+    ])
     // Real files must still be present — fake path didn't delete.
     const stillThere1 = await stat("/work/file1.mkv")
     const stillThere2 = await stat("/work/file2.mkv")
