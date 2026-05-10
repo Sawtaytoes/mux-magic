@@ -280,17 +280,17 @@ const SearchStage = ({
         filteredResults.length > 0 && (
           <div className="flex flex-col gap-1 max-h-80 overflow-y-auto">
             {filteredResults.map((result, index) => {
-              const r = result as LookupSearchResult & {
+              const typedResult = result as LookupSearchResult & {
                 baseTitle?: string
                 year?: string
                 variants?: { id: string; variant: string }[]
               }
               const label =
                 state.lookupType === "tmdb"
-                  ? r.year
-                    ? `${r.title} (${r.year})`
-                    : (r.title ?? "—")
-                  : (r.name ?? r.baseTitle ?? "—")
+                  ? typedResult.year
+                    ? `${typedResult.title} (${typedResult.year})`
+                    : (typedResult.title ?? "—")
+                  : (typedResult.name ?? typedResult.baseTitle ?? "—")
               const keyHint =
                 index < 9 ? (
                   <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2 shrink-0">

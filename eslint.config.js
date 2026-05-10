@@ -7,20 +7,25 @@
 //   - eslint-plugin-testing-library — encourages getByRole over getByText in
 //     React component tests (.test.tsx files only)
 //
-// Plus one structural rule that enforces AGENTS.md "no barrel files" rule:
+// Plus structural rules that enforce AGENTS.md conventions Biome cannot cover:
 //
 //   - import-x/no-barrel-files — disallows index.ts re-exports inside the
 //     monorepo (the single allowed exception is packages/shared/src/index.ts,
 //     the npm package boundary)
 //
-// PR #1 ships the config skeleton only. The plugins are listed but not yet
-// installed as devDependencies — a follow-up PR adds them and turns the rules
-// on. Until then, ESLint runs with no rules and immediately exits 0.
+//   - id-length — enforces AGENTS.md rule #3 "spell every variable name out;
+//     no single letters or abbreviations". Biome has no equivalent rule.
+//
+// The react-compiler and testing-library plugins are listed but not yet
+// installed as devDependencies — a follow-up PR adds them and turns the
+// rules on. Until then they are no-ops.
 //
 // See docs/react-migration-plan.md "ESLint (Minimal: Two Plugins Only)" for
 // the target shape once the plugins land.
 
-export default [
+import tseslint from "typescript-eslint"
+
+export default tseslint.config(
   {
     ignores: [
       "**/node_modules/**",
@@ -31,4 +36,29 @@ export default [
       "packages/server/src/schema.generated/**",
     ],
   },
-]
+  {
+    files: ["**/*.{ts,tsx}"],
+    extends: [tseslint.configs.base],
+    linterOptions: {
+      // Plugins referenced in eslint-disable comments (react-hooks, etc.)
+      // are not yet installed — suppress "unused directive" noise until
+      // the follow-up PR adds them.
+      reportUnusedDisableDirectives: "off",
+    },
+    rules: {
+      // AGENTS.md rule #3: spell every variable name out — no single letters.
+      // Biome has no id-length equivalent, so this lives here.
+      // "_" is the conventional ignored-param placeholder and stays exempt.
+      "id-length": [
+        "error",
+        {
+          min: 2,
+          exceptions: ["_"],
+          // Property names often mirror external APIs (DOMRect.x, etc.)
+          // — only enforce length on variables and parameters.
+          properties: "never",
+        },
+      ],
+    },
+  },
+)

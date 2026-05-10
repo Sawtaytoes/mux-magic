@@ -24,7 +24,7 @@ const callBridge = (method: string, ...args: unknown[]) => {
     | Record<string, unknown>
     | undefined
   if (typeof bridge?.[method] === "function") {
-    ;(bridge[method] as (...a: unknown[]) => void)(...args)
+    ;(bridge[method] as (...params: unknown[]) => void)(...args)
   }
 }
 

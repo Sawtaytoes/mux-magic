@@ -418,7 +418,7 @@ export const FileExplorerModal = () => {
     setCurrentPath(explorerState.path)
     setSelected(new Set())
     setError(null)
-  }, [explorerState?.path, explorerState]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [explorerState?.path, explorerState])
 
   const loadDeleteMode = useCallback(
     async (path: string) => {
@@ -650,7 +650,7 @@ export const FileExplorerModal = () => {
         { capture: true },
       )
     // biome-ignore lint/correctness/useExhaustiveDependencies: suppressed during react-migration
-  }, [videoPath, explorerState, close]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [videoPath, explorerState, close])
 
   if (!explorerState) return null
 

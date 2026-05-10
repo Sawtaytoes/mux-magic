@@ -29,9 +29,9 @@ const meta: Meta<typeof ApiRunModal> = {
     (Story, context) => {
       const initialState = context.parameters.initialState as ApiRunState
       const [store] = useState(() => {
-        const s = createStore()
-        s.set(apiRunModalAtom, initialState)
-        return s
+        const newStore = createStore()
+        newStore.set(apiRunModalAtom, initialState)
+        return newStore
       })
       return (
         <Provider store={store}>

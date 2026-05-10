@@ -26,9 +26,9 @@ const meta: Meta<typeof LookupModal> = {
     (Story, context) => {
       const initialState = context.parameters.initialState as LookupState
       const [store] = useState(() => {
-        const s = createStore()
-        s.set(lookupModalAtom, initialState)
-        return s
+        const newStore = createStore()
+        newStore.set(lookupModalAtom, initialState)
+        return newStore
       })
       return (
         <Provider store={store}>

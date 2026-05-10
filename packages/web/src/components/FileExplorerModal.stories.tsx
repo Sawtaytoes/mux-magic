@@ -12,9 +12,9 @@ const meta: Meta<typeof FileExplorerModal> = {
     (Story, context) => {
       const initialState = context.parameters.initialState as FileExplorerState
       const [store] = useState(() => {
-        const s = createStore()
-        s.set(fileExplorerAtom, initialState)
-        return s
+        const newStore = createStore()
+        newStore.set(fileExplorerAtom, initialState)
+        return newStore
       })
       return (
         <Provider store={store}>

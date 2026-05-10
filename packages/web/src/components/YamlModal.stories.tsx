@@ -20,10 +20,10 @@ const step = {
 const withStore = (steps: unknown[], paths: unknown[]) => {
   return (Story: React.ComponentType) => {
     const [store] = useState(() => {
-      const s = createStore()
-      s.set(stepsAtom, steps as never)
-      s.set(pathsAtom, paths as never)
-      return s
+      const newStore = createStore()
+      newStore.set(stepsAtom, steps as never)
+      newStore.set(pathsAtom, paths as never)
+      return newStore
     })
     return (
       <Provider store={store}>

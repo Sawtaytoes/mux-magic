@@ -29,9 +29,9 @@ const wireMediaTools = () => {
 const withStore = (initialOpen: boolean) => {
   return (Story: React.ComponentType) => {
     const [store] = useState(() => {
-      const s = createStore()
-      s.set(loadModalOpenAtom, initialOpen)
-      return s
+      const newStore = createStore()
+      newStore.set(loadModalOpenAtom, initialOpen)
+      return newStore
     })
 
     wireMediaTools()

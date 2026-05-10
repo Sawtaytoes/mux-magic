@@ -64,7 +64,7 @@ export const ApiRunModal = () => {
     setChildJobId(null)
     setChildStepId(null)
     setChildProgress({})
-  }, [modalState?.jobId, modalState?.status, modalState]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [modalState?.jobId, modalState?.status, modalState])
 
   const parentUrl = modalState?.jobId
     ? `/jobs/${modalState.jobId}/logs`

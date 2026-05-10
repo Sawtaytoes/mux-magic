@@ -11,9 +11,9 @@ const meta: Meta<typeof PromptModal> = {
     (Story, context) => {
       const initialState = context.parameters.initialState as PromptData
       const [store] = useState(() => {
-        const s = createStore()
-        s.set(promptModalAtom, initialState)
-        return s
+        const newStore = createStore()
+        newStore.set(promptModalAtom, initialState)
+        return newStore
       })
       return (
         <Provider store={store}>
