@@ -226,7 +226,6 @@ export const LinkPicker = () => {
   const safeActiveIndex =
     activeIndex >= filtered.length ? 0 : activeIndex
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: suppressed during react-migration
   useEffect(() => {
     if (!pickerState) {
       return
@@ -241,12 +240,7 @@ export const LinkPicker = () => {
       findInitialIndex(items, pickerState.anchor, allSteps),
     )
     setTimeout(() => inputRef.current?.focus(), 0)
-  }, [
-    pickerState?.anchor.stepId,
-    pickerState?.anchor.fieldName,
-    allSteps,
-    paths,
-  ])
+  }, [pickerState, allSteps, paths])
 
   useEffect(() => {
     if (!pickerState) {

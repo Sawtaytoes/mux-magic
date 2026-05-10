@@ -97,13 +97,16 @@ export const FieldTooltip = ({
 
   return (
     <>
-      {/** biome-ignore lint/a11y/noStaticElementInteractions: suppressed during react-migration */}
-      {/** biome-ignore lint/a11y/useKeyWithClickEvents: suppressed during react-migration */}
       <span
+        role="none"
         ref={anchorRef}
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
         onClick={handleClick}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ")
+            handleClick()
+        }}
       >
         {children}
       </span>

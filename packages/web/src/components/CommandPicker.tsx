@@ -270,11 +270,10 @@ export const CommandPicker = () => {
           filtered.map((item, index) => {
             const isActive = index === safeActiveIndex
             return (
-              // biome-ignore lint/a11y/useAriaPropsSupportedByRole: suppressed during react-migration
               <button
                 key={item.name}
                 type="button"
-                aria-selected={isActive}
+                aria-pressed={isActive}
                 className={`w-full text-left px-3 py-1.5 flex items-start gap-2 ${
                   isActive
                     ? "bg-blue-700 text-white"

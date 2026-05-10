@@ -316,13 +316,15 @@ const VideoModal = ({ path, onClose }: VideoModalProps) => {
   if (!path) return null
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: suppressed during react-migration
-    // biome-ignore lint/a11y/useKeyWithClickEvents: suppressed during react-migration
     <div
+      role="none"
       id="video-modal"
       className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/80"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onClose()
       }}
     >
       <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col overflow-hidden">
@@ -676,13 +678,15 @@ export const FileExplorerModal = () => {
 
   return (
     <>
-      {/** biome-ignore lint/a11y/noStaticElementInteractions: suppressed during react-migration */}
-      {/** biome-ignore lint/a11y/useKeyWithClickEvents: suppressed during react-migration */}
       <div
+        role="none"
         id="file-explorer-modal"
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
         onClick={(event) => {
           if (event.target === event.currentTarget) close()
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") close()
         }}
       >
         <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col overflow-hidden max-h-[90dvh]">

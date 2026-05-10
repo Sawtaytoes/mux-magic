@@ -136,7 +136,6 @@ export const EnumPicker = () => {
   const safeActiveIndex =
     activeIndex >= filtered.length ? 0 : activeIndex
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: suppressed during react-migration
   useEffect(() => {
     if (!pickerState) {
       return
@@ -147,10 +146,7 @@ export const EnumPicker = () => {
       findInitialIndex(items, pickerState.anchor),
     )
     setTimeout(() => inputRef.current?.focus(), 0)
-  }, [
-    pickerState?.anchor.stepId,
-    pickerState?.anchor.fieldName,
-  ])
+  }, [pickerState])
 
   useEffect(() => {
     if (!pickerState) {

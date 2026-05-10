@@ -28,6 +28,7 @@ export const LanguageCodeField = ({
     <div>
       <FieldLabel command={step.command} field={field} />
       <input
+        id={`${step.command}-${field.name}`}
         type="text"
         defaultValue={value}
         placeholder="eng"

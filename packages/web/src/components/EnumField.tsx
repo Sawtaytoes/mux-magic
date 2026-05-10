@@ -31,6 +31,7 @@ export const EnumField = ({
     <div>
       <FieldLabel command={step.command} field={field} />
       <button
+        id={`${step.command}-${field.name}`}
         type="button"
         onClick={handleClick}
         data-enum-picker-trigger

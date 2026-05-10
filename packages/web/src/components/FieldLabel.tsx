@@ -9,8 +9,8 @@ export const FieldLabel = ({
   command,
   field,
 }: FieldLabelProps) => (
-  // biome-ignore lint/a11y/noLabelWithoutControl: suppressed during react-migration
   <label
+    htmlFor={`${command}-${field.name}`}
     className="block text-xs text-slate-400 mb-1 cursor-help"
     data-tooltip-key={`${command}:${field.name}`}
   >

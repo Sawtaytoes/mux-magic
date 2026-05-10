@@ -103,19 +103,21 @@ export const LoadModal = () => {
   if (!isOpen) return null
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: suppressed during react-migration
-    // biome-ignore lint/a11y/useKeyWithClickEvents: suppressed during react-migration
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      role="none"
       onClick={handleBackdropClick}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") setIsOpen(false)
+      }}
       data-testid="load-modal-backdrop"
     >
-      {/** biome-ignore lint/a11y/noStaticElementInteractions: suppressed during react-migration */}
-      {/** biome-ignore lint/a11y/useKeyWithClickEvents: suppressed during react-migration */}
       <div
         className="bg-slate-900 border border-slate-700 rounded-xl flex flex-col"
         style={{ width: "min(90vw,560px)" }}
+        role="none"
         onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
       >
         <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
           <span className="text-xs font-medium text-slate-400">

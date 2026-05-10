@@ -582,13 +582,15 @@ export const LookupModal = () => {
   }
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: suppressed during react-migration
-    // biome-ignore lint/a11y/useKeyWithClickEvents: suppressed during react-migration
     <div
       id="lookup-modal"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      role="none"
       onClick={(event) => {
         if (event.target === event.currentTarget) close()
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") close()
       }}
     >
       <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col overflow-hidden max-h-[85dvh]">

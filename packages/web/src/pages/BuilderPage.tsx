@@ -153,8 +153,8 @@ const PathVarList = () => {
           isFirst={idx === 0}
         />
       ))}
-      {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
       <button
+        type="button"
         onClick={() => addPath()}
         className="self-start text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded border border-dashed border-slate-700 hover:border-slate-500 transition-colors"
       >
