@@ -418,7 +418,7 @@ export const FileExplorerModal = () => {
     setCurrentPath(explorerState.path)
     setSelected(new Set())
     setError(null)
-  }, [explorerState?.path, explorerState])
+  }, [explorerState])
 
   const loadDeleteMode = useCallback(
     async (path: string) => {
@@ -614,10 +614,10 @@ export const FileExplorerModal = () => {
     callback(currentPath)
   }
 
-  const close = () => {
+  const close = useCallback(() => {
     setExplorerState(null)
     setVideoPath(null)
-  }
+  }, [setExplorerState])
 
   // Expose openVideoModal on window for legacy result cards that call it.
   useEffect(() => {
@@ -649,7 +649,6 @@ export const FileExplorerModal = () => {
         handleKeyDown,
         { capture: true },
       )
-    // biome-ignore lint/correctness/useExhaustiveDependencies: suppressed during react-migration
   }, [videoPath, explorerState, close])
 
   if (!explorerState) return null

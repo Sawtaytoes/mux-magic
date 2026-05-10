@@ -48,6 +48,9 @@ export const ApiRunModal = () => {
     useState<ProgressSnapshot>({})
 
   const logsEndRef = useRef<HTMLDivElement>(null)
+  const prevModalJobIdRef = useRef<
+    string | null | undefined
+  >(undefined)
 
   // Auto-scroll logs to bottom on new lines.
   useEffect(() => {
@@ -57,14 +60,19 @@ export const ApiRunModal = () => {
   }, [])
 
   // Sync status + log reset when a new job opens.
+  // prevModalJobIdRef guards against re-running (and clearing logs)
+  // when modalState updates for reasons other than a new job opening.
   useEffect(() => {
     if (!modalState) return
+    if (prevModalJobIdRef.current === modalState.jobId)
+      return
+    prevModalJobIdRef.current = modalState.jobId
     setStatus(modalState.status)
     setLogs([])
     setChildJobId(null)
     setChildStepId(null)
     setChildProgress({})
-  }, [modalState?.jobId, modalState?.status, modalState])
+  }, [modalState])
 
   const parentUrl = modalState?.jobId
     ? `/jobs/${modalState.jobId}/logs`
