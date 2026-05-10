@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
-import { createPortal } from "react-dom"
+import { createPortal, flushSync } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { findStepById } from "../../jobs/sequenceUtils"
 import { commandsAtom } from "../../state/commandsAtom"
@@ -187,7 +187,7 @@ export const EnumPicker = () => {
 
   const selectItem = (item: EnumOption) => {
     const anchor = pickerState?.anchor
-    close()
+    flushSync(() => { close() })
     if (anchor) {
       setParam(anchor.stepId, anchor.fieldName, item.value)
     }

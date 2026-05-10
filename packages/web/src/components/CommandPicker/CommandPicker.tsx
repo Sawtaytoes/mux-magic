@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
-import { createPortal } from "react-dom"
+import { createPortal, flushSync } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
 import { findStepById } from "../../jobs/sequenceUtils"
@@ -189,7 +189,7 @@ export const CommandPicker = () => {
 
   const selectItem = (item: CommandItem) => {
     const anchor = pickerState?.anchor
-    close()
+    flushSync(() => { close() })
     if (anchor) {
       changeCommand(anchor.stepId, item.name)
     }

@@ -2,6 +2,7 @@ import {
   cleanup,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
@@ -220,8 +221,11 @@ describe("EnumPicker keyboard", () => {
     )
     await user.keyboard("{Enter}")
 
-    expect(
-      (store.get(stepsAtom)[0] as Step).params.episodeType,
-    ).toBe("credits")
+    await waitFor(() => {
+      expect(
+        (store.get(stepsAtom)[0] as Step).params
+          .episodeType,
+      ).toBe("credits")
+    })
   })
 })
