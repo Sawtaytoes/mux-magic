@@ -1,0 +1,66 @@
+{/* JobCard.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as JobCardStories from "./JobCard.stories";
+
+<Meta of={JobCardStories} />
+
+# JobCard
+
+The cardinal renderer on the Jobs page. Each card represents one row in `jobsAtom` — either a leaf job (single command) or a sequence umbrella job (`commandName: "sequence"`) that owns child step jobs via `parentJobId`.
+
+When a job is `running`, the card shows a `ProgressBar` driven by `progressByJobIdAtom`. Sequence jobs aggregate their children's `bytesPerSecond` / `bytesRemaining` into a unified ETA pill in the header. Logs are shown via a `<details>` disclosure that lazily opens an SSE connection on first expand (or immediately if the job is running).
+
+## Behaviour
+
+- **Header** → command label (resolved through `commandLabel`), aggregate ETA pill (running sequences only), `StatusBadge`.
+- **Meta** → `ID:`, `Started:`, `Completed:` rows. Times use `Date#toLocaleString()`.
+- **Source path** → if `params.sourcePath` is a string, render it truncated under the meta block.
+- **Params disclosure** → only when `params` has at least one key. Pretty-printed JSON with a copy button.
+- **Logs disclosure** (`LogsDisclosure`) → renders a `<details>` block. Reads from `logsByJobIdAtom`. The `useLogStream(jobId).connect()` is called either when the disclosure opens OR immediately if `jobStatus === "running"` (so a running job streams new lines even with the disclosure closed). Pane auto-scrolls on every new line.
+- **Steps disclosure** (sequence jobs only) → enumerates children that have `parentJobId === job.id`. Each child renders as a `StepRow` with its own status badge, optional progress bar, optional cancel button, and its own `LogsDisclosure`. Open/closed state persists per job-id in `stepsOpenByJobIdAtom`; default is open for `running`/`pending`, closed otherwise.
+- **Results disclosure** → only when `job.results.length > 0`. Each result is JSON-stringified into its own `<pre>`.
+- **Footer** → "Open in Sequence Builder" link built via `buildBuilderUrl(job)` (deep-link with the job's params). Cancel button rendered when `running`.
+
+## Sub-components
+
+| Component | Role |
+|-----------|------|
+| `CopyButton` | Copy-to-clipboard with a 2s "✓ Copied" pulse |
+| `CancelButton` | `DELETE /jobs/<id>` with a self-disabling click |
+| `LogsDisclosure` | Lazy-streaming log viewer (auto-scroll, copy logs) |
+| `StepRow` | Per-child renderer used inside `StepsDisclosure` |
+| `StepsDisclosure` | Persisted-state expand/collapse for sequence children |
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `jobsAtom` | The full `Map<jobId, Job>`. JobCard reads it to find children with `parentJobId === job.id` |
+| `progressByJobIdAtom` | Per-job progress snapshots (ratio, bytesPerSecond, bytesRemaining, currentFiles) |
+| `logsByJobIdAtom` | Per-job log buffers (line-array). Mutated by `useLogStream` |
+| `stepsOpenByJobIdAtom` | Persists steps disclosure open/closed across renders so the user's choice survives status changes |
+
+## Server endpoints
+
+`DELETE /jobs/<id>` for cancel (used by both header and per-step buttons). Log streaming endpoints are wrapped by `useLogStream`.
+
+## Pending
+
+<Canvas of={JobCardStories.Pending} />
+
+## Running (with progress)
+
+<Canvas of={JobCardStories.Running} />
+
+## Completed
+
+<Canvas of={JobCardStories.Completed} />
+
+## Failed
+
+<Canvas of={JobCardStories.Failed} />
+
+## Sequence (with children)
+
+<Canvas of={JobCardStories.Sequence} />

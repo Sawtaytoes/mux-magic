@@ -1,0 +1,41 @@
+{/* ProgressBar.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as ProgressBarStories from "./ProgressBar.stories";
+
+<Meta of={ProgressBarStories} />
+
+# ProgressBar
+
+A progress visualization for any job in flight. Pure presentation — takes a `ProgressSnapshot` prop and renders a fill bar plus an inline label (`6/10 files · 62% · 5.0 MB/s · ETA 7s`). Optionally renders per-file rows when the snapshot includes a `currentFiles` array (e.g., parallel rsync transfers showing each file's progress).
+
+The label is built from whatever fields the snapshot has — missing fields are skipped. Falsy `bytesPerSecond` / `bytesRemaining` mean no bandwidth/ETA part. Missing `ratio` flips the bar into **indeterminate** mode (animated pulse, full width).
+
+## Behaviour
+
+- **Determinate** → `ratio` clamped to `[0, 1]`, formatted as a percentage on the fill bar.
+- **Indeterminate** → no `ratio` field. Bar gets `animate-pulse w-full`.
+- **Per-file rows** → only render when `snapshot.currentFiles` is a non-empty array. Each row gets its own truncated filename, percentage, and 80px-wide mini bar. Same indeterminate-pulse treatment per file.
+- **ProgressLabel** → assembles `[filesDone/filesTotal files, percent, bandwidth, eta]` into a `·`-separated line. `formatBandwidth` / `formatEta` come from `jobs/formatBandwidth.ts` and return `""` for unusable inputs (which `parts.push` then skips).
+
+## Props
+
+| Prop | Type | Notes |
+|------|------|-------|
+| `snapshot` | `ProgressSnapshot` | Optional `ratio`, `filesDone`, `filesTotal`, `bytesPerSecond`, `bytesRemaining`, `currentFiles`. Missing fields drop their slice of the label |
+
+## Determinate
+
+<Canvas of={ProgressBarStories.Determinate} />
+
+## Indeterminate
+
+<Canvas of={ProgressBarStories.Indeterminate} />
+
+## With per-file rows
+
+<Canvas of={ProgressBarStories.WithPerFileRows} />
+
+## Complete
+
+<Canvas of={ProgressBarStories.Complete} />
