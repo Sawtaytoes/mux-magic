@@ -140,7 +140,7 @@ const useAggregateEta = (job: Job): string => {
   const jobs = useAtomValue(jobsAtom)
   if (job.status !== "running") return ""
 
-  const children = [...jobs.values()].filter(
+  const children = Array.from(jobs.values()).filter(
     (child) => child.parentJobId === job.id,
   )
   const runningChildren = children.filter(
@@ -309,7 +309,7 @@ export const JobCard = ({ job }: JobCardProps) => {
   const snap = progressByJobId.get(job.id)
   const eta = useAggregateEta(job)
 
-  const children = [...jobs.values()].filter(
+  const children = Array.from(jobs.values()).filter(
     (child) => child.parentJobId === job.id,
   )
 

@@ -18,7 +18,7 @@ Quick summary of the four most-violated rules:
 3. **Spell every variable name out.** No single letters or abbreviations.
 4. **Booleans start with `is` or `has`.** `isSourceDeleted`, not `deleteSource`.
 
-Plus function destructuring (2+ args → single object param), always-braced `if`/`else`, arrow functions with implicit returns, and no barrel files.
+Plus function destructuring (2+ args → single object param), always-braced `if`/`else`, arrow functions with implicit returns, no barrel files, and use `Array.from(foo.values())` instead of `[...foo.values()]` for explicit intent.
 
 **Before opening a PR:** Search your diff for `for(`, `var`, `let` (with reassignment), single-letter names, boolean names without `is`/`has`, `return` (outside tests), and import paths ending in folders. Fix every hit.
 

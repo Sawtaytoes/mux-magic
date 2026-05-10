@@ -7,7 +7,7 @@ import { jobsAtom } from "../state/jobsAtom"
 const JobsList = () => {
   const jobs = useAtomValue(jobsAtom)
   // Top-level jobs have no parentJobId; prepend newest (Map preserves insertion order).
-  const topLevel = [...jobs.values()]
+  const topLevel = Array.from(jobs.values())
     .filter((job) => !job.parentJobId)
     .reverse()
 
