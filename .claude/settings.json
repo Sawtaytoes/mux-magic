@@ -3,6 +3,9 @@
     "allow": [
       "Bash(awk '{print $5}')",
       "Bash(cat *)",
+      "Bash(cd * && ls * 2>/dev/null | head *)",
+      "Bash(cd * && ls * 2>/dev/null)",
+      "Bash(cd *)",
       "Bash(cp *)",
       "Bash(curl *)",
       "Bash(dig *)",
