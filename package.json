@@ -75,7 +75,7 @@
     "esbuild": "^0.28.0",
     "eslint": "^9.0.0",
     "msw": "^2.14.4",
-    "openapi-typescript": "^7.13.0",
+    "openapi-typescript": "7.13.0",
     "rimraf": "^6.1.3",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
