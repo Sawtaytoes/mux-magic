@@ -95,6 +95,7 @@ export const PromptModal = () => {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      data-testid="prompt-modal-backdrop"
       onClick={(event) => {
         if (event.target === event.currentTarget) close()
       }}

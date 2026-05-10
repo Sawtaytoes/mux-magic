@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -88,12 +88,12 @@ describe("LoadModal close interactions", () => {
     expect(screen.queryByText("Load YAML")).toBeNull()
   })
 
-  it("clicking the backdrop hides the modal", () => {
+  it("clicking the backdrop hides the modal", async () => {
     renderModal(true)
 
     fireEvent.click(screen.getByTestId("load-modal-backdrop"))
 
-    expect(screen.queryByText("Load YAML")).toBeNull()
+    await waitFor(() => expect(screen.queryByText("Load YAML")).toBeNull())
   })
 
   it("clicking inside the panel does not close the modal", async () => {
@@ -116,20 +116,28 @@ describe("LoadModal close interactions", () => {
   })
 })
 
+// ClipboardEvent constructor in real browsers requires a DataTransfer object for
+// clipboardData. We bypass that by dispatching a plain Event with a fake property.
+const dispatchPaste = (text: string) => {
+  const event = new Event("paste", { bubbles: true, cancelable: true })
+  Object.defineProperty(event, "clipboardData", {
+    value: { getData: (_type: string) => text },
+  })
+  document.dispatchEvent(event)
+}
+
 // ─── Paste handling ───────────────────────────────────────────────────────────
 
 describe("LoadModal paste handling", () => {
   it("valid YAML paste loads steps and closes modal", async () => {
     const store = renderModal(true)
 
-    fireEvent.paste(document, {
-      clipboardData: { getData: () => minimalYaml },
-    })
+    dispatchPaste(minimalYaml)
 
+    await waitFor(() => expect(screen.queryByText("Load YAML")).toBeNull())
     const steps = store.get(stepsAtom)
     expect(steps).toHaveLength(1)
     expect(steps[0]).toMatchObject({ command: "testCommand" })
-    expect(screen.queryByText("Load YAML")).toBeNull()
     expect(window.mediaTools.renderAll).toHaveBeenCalled()
     expect(window.mediaTools.updateUrl).toHaveBeenCalled()
   })
@@ -137,9 +145,7 @@ describe("LoadModal paste handling", () => {
   it("canonical YAML with paths section loads paths correctly", async () => {
     const store = renderModal(true)
 
-    fireEvent.paste(document, {
-      clipboardData: { getData: () => canonicalYaml },
-    })
+    dispatchPaste(canonicalYaml)
 
     const paths = store.get(pathsAtom)
     expect(paths).toHaveLength(1)
@@ -149,47 +155,40 @@ describe("LoadModal paste handling", () => {
   it("empty paste is ignored; modal stays open", () => {
     renderModal(true)
 
-    fireEvent.paste(document, {
-      clipboardData: { getData: () => "   " },
-    })
+    dispatchPaste("   ")
 
     expect(screen.getByText("Load YAML")).toBeInTheDocument()
   })
 
-  it("invalid YAML shows an error message and keeps modal open", () => {
+  it("invalid YAML shows an error message and keeps modal open", async () => {
     renderModal(true)
 
-    fireEvent.paste(document, {
-      clipboardData: { getData: () => "not: valid: yaml: {{{{" },
-    })
+    dispatchPaste("not: valid: yaml: {{{{")
 
-    expect(screen.getByRole("alert")).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument())
     expect(screen.getByText("Load YAML")).toBeInTheDocument()
   })
 
-  it("unknown command in YAML shows an error message", () => {
+  it("unknown command in YAML shows an error message", async () => {
     renderModal(true)
 
-    fireEvent.paste(document, {
-      clipboardData: {
-        getData: () => "- command: unknownCommand\n  params: {}",
-      },
-    })
+    dispatchPaste("- command: unknownCommand\n  params: {}")
 
-    expect(screen.getByRole("alert")).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument())
     expect(screen.getByText(/unknown command/i)).toBeInTheDocument()
   })
 
-  it("paste after modal closes is ignored", () => {
+  it("paste after modal closes is ignored", async () => {
     const store = renderModal(true)
 
-    // Close the modal
-    store.set(loadModalOpenAtom, false)
-
-    // Attempt paste — listener should be detached
-    fireEvent.paste(document, {
-      clipboardData: { getData: () => minimalYaml },
+    // Close the modal; act() flushes the re-render AND the useEffect cleanup
+    // (which removes the paste listener) before we continue.
+    await act(async () => {
+      store.set(loadModalOpenAtom, false)
     })
+
+    // Listener is now detached — paste should be ignored
+    dispatchPaste(minimalYaml)
 
     expect(store.get(stepsAtom)).toHaveLength(0)
   })

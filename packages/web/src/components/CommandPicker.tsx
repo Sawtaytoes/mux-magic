@@ -205,7 +205,6 @@ export const CommandPicker = () => {
               <button
                 key={item.name}
                 type="button"
-                role="option"
                 aria-selected={isActive}
                 className={`w-full text-left px-3 py-1.5 flex items-start gap-2 ${
                   isActive ? "bg-blue-700 text-white" : "text-slate-200 hover:bg-slate-800"

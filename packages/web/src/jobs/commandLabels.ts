@@ -58,9 +58,9 @@ const commandLabels: Record<string, string> = {
   mergeOrderedChapters: "Merge Ordered Chapters",
   processUhdDiscForumPost: "Process UHD Disc Forum Post",
   sequence: "Sequence",
-};
+}
 
 export const commandLabel = (name: string | undefined): string => {
-  if (!name) return "";
-  return commandLabels[name] ?? name;
-};
+  if (!name) return ""
+  return commandLabels[name] ?? name
+}

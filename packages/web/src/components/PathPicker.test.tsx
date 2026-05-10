@@ -39,11 +39,13 @@ const mockEntries = [
   { name: "readme.txt", isDirectory: false },
 ]
 
-const renderPicker = (initialEntries = mockEntries) => {
-  const fetchMock = vi.fn().mockResolvedValue({
-    json: () => Promise.resolve({ entries: initialEntries, separator: "/" }),
-  })
-  global.fetch = fetchMock
+const renderPicker = (initialEntries = mockEntries, fetchOverride?: ReturnType<typeof vi.fn>) => {
+  const fetchMock =
+    fetchOverride ??
+    vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ entries: initialEntries, separator: "/" }),
+    })
+  vi.stubGlobal("fetch", fetchMock)
 
   const input = makeMockInput("/home/user/")
   const store = createStore()
@@ -82,6 +84,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 describe("PathPicker visibility", () => {
@@ -101,9 +104,8 @@ describe("PathPicker visibility", () => {
   })
 
   it("shows loading state before fetch completes", () => {
-    vi.fn().mockReturnValue(new Promise(() => {}))
-    global.fetch = vi.fn().mockReturnValue(new Promise(() => {}))
-    renderPicker([])
+    const pendingFetch = vi.fn().mockReturnValue(new Promise(() => {}))
+    renderPicker([], pendingFetch)
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
   })
 })
@@ -130,7 +132,7 @@ describe("PathPicker directory listing", () => {
 
 describe("PathPicker fetch error", () => {
   it("shows error message when fetch fails", async () => {
-    global.fetch = vi.fn().mockRejectedValue(new Error("Network error"))
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")))
     const input = makeMockInput()
     const store = createStore()
     store.set(pathPickerStateAtom, {

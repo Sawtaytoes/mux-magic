@@ -1,7 +1,13 @@
-import { render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
+
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
+
 import { promptModalAtom } from "../state/uiAtoms"
 import { PromptModal } from "./PromptModal"
 
@@ -45,9 +51,8 @@ describe("PromptModal", () => {
       options: [{ index: 1, label: "Option A" }],
     })
     renderWithStore(store)
-    const backdrop = screen.getByRole("button", { name: /Option A/ }).parentElement!.parentElement!
-    await userEvent.click(backdrop)
-    expect(store.get(promptModalAtom)).toBeNull()
+    fireEvent.click(screen.getByTestId("prompt-modal-backdrop"))
+    await waitFor(() => expect(store.get(promptModalAtom)).toBeNull())
   })
 
   it("submits and closes when an option is clicked", async () => {

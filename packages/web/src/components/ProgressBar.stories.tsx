@@ -1,14 +1,14 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { ProgressBar } from "./ProgressBar";
+import type { Meta, StoryObj } from "@storybook/react"
+import { ProgressBar } from "./ProgressBar"
 
 const meta: Meta<typeof ProgressBar> = {
   title: "Components/ProgressBar",
   component: ProgressBar,
   parameters: { layout: "padded", backgrounds: { default: "dark" } },
-};
+}
 
-export default meta;
-type Story = StoryObj<typeof ProgressBar>;
+export default meta
+type Story = StoryObj<typeof ProgressBar>
 
 export const Determinate: Story = {
   args: {
@@ -20,11 +20,11 @@ export const Determinate: Story = {
       bytesRemaining: 38_000_000,
     },
   },
-};
+}
 
 export const Indeterminate: Story = {
   args: { snapshot: {} },
-};
+}
 
 export const WithPerFileRows: Story = {
   args: {
@@ -38,8 +38,8 @@ export const WithPerFileRows: Story = {
       ],
     },
   },
-};
+}
 
 export const Complete: Story = {
   args: { snapshot: { ratio: 1, filesDone: 10, filesTotal: 10 } },
-};
+}

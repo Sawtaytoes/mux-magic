@@ -178,6 +178,7 @@ export const StepCard = ({ step, index, isFirst, isLast, parentGroupId = null }:
             <button
               type="button"
               onClick={() => removeStep(step.id)}
+              title="Remove this step"
               className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs"
             >
               ✕

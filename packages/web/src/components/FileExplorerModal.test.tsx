@@ -1,7 +1,13 @@
-import { render, screen } from "@testing-library/react"
+import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
+
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
+
 import { fileExplorerAtom } from "../state/uiAtoms"
 import { FileExplorerModal } from "./FileExplorerModal"
 
@@ -20,11 +26,15 @@ describe("FileExplorerModal", () => {
   })
 
   it("shows loading state when opened", async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(JSON.stringify({ entries: [], separator: "/" }), { status: 200 }),
-      )
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      const urlStr = String(url)
+      if (urlStr.includes("/files/list")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ entries: [], separator: "/" }), { status: 200 }),
+        )
+      }
+      return Promise.resolve(new Response(JSON.stringify({ mode: "browse" }), { status: 200 }))
+    })
     const store = createStore()
     store.set(fileExplorerAtom, { path: "/movies", pickerOnSelect: null })
     renderWithStore(store)
@@ -66,11 +76,15 @@ describe("FileExplorerModal", () => {
   })
 
   it("closes when ✕ is clicked", async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(JSON.stringify({ entries: [], separator: "/" }), { status: 200 }),
-      )
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      const urlStr = String(url)
+      if (urlStr.includes("/files/list")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ entries: [], separator: "/" }), { status: 200 }),
+        )
+      }
+      return Promise.resolve(new Response(JSON.stringify({ mode: "browse" }), { status: 200 }))
+    })
     const store = createStore()
     store.set(fileExplorerAtom, { path: "/movies", pickerOnSelect: null })
     renderWithStore(store)

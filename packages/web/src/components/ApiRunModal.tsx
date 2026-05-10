@@ -128,14 +128,17 @@ export const ApiRunModal = () => {
     [childStepId],
   )
 
-  useTolerantEventSource(parentUrl, {
+  useTolerantEventSource<Record<string, unknown>>({
+    url: parentUrl ?? "",
+    enabled: parentUrl !== null,
     onMessage: handleParentMessage,
     onPossiblyDisconnected: handleParentDisconnected,
   })
 
-  useTolerantEventSource(childUrl, {
+  useTolerantEventSource<Record<string, unknown>>({
+    url: childUrl ?? "",
+    enabled: childUrl !== null,
     onMessage: handleChildMessage,
-    onPossiblyDisconnected: () => {},
   })
 
   const close = useCallback(async () => {

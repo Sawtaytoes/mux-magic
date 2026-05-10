@@ -35,7 +35,11 @@ const renderCard = (step: Step, props: Partial<{ isFirst: boolean; isLast: boole
 }
 
 beforeEach(() => {
-  window.mediaTools = { COMMANDS: {}, renderAll: vi.fn(), updateUrl: vi.fn() }
+  window.mediaTools = {
+    COMMANDS: { testCmd: { summary: "Test command", fields: [], outputFolderName: null } },
+    renderAll: vi.fn(),
+    updateUrl: vi.fn(),
+  }
   window.commandLabel = (name: string) => name
   window.commandPicker = { open: vi.fn(), close: vi.fn() }
 })
@@ -82,7 +86,7 @@ describe("StepCard", () => {
 
     // open actions panel first
     await user.click(screen.getByTitle(/step actions/i))
-    await user.click(screen.getByTitle(/remove/i))
+    await user.click(screen.getByTitle(/remove this step/i))
 
     expect(store.get(stepsAtom)).toHaveLength(0)
   })

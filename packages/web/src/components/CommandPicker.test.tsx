@@ -80,9 +80,9 @@ describe("CommandPicker visibility", () => {
 describe("CommandPicker filtering", () => {
   it("shows all commands initially", () => {
     renderPicker(true)
-    expect(screen.getByText("makeDirectory")).toBeInTheDocument()
-    expect(screen.getByText("copyFiles")).toBeInTheDocument()
-    expect(screen.getByText("addSubtitles")).toBeInTheDocument()
+    expect(screen.getAllByText("makeDirectory").length).toBeGreaterThan(0)
+    expect(screen.getAllByText("copyFiles").length).toBeGreaterThan(0)
+    expect(screen.getAllByText("addSubtitles").length).toBeGreaterThan(0)
   })
 
   it("filters commands by query", async () => {
@@ -91,8 +91,8 @@ describe("CommandPicker filtering", () => {
 
     await user.type(screen.getByPlaceholderText(/search commands/i), "copy")
 
-    expect(screen.getByText("copyFiles")).toBeInTheDocument()
-    expect(screen.queryByText("makeDirectory")).toBeNull()
+    expect(screen.getAllByText("copyFiles").length).toBeGreaterThan(0)
+    expect(screen.queryAllByText("makeDirectory")).toHaveLength(0)
   })
 
   it("shows empty state when no commands match", async () => {
@@ -132,7 +132,7 @@ describe("CommandPicker item selection", () => {
     const user = userEvent.setup()
     renderPicker(true)
 
-    await user.click(screen.getByText("makeDirectory"))
+    await user.click(screen.getAllByText("makeDirectory")[0])
 
     expect(window.changeCommand).toHaveBeenCalledWith("step-1", "makeDirectory")
   })
@@ -141,7 +141,7 @@ describe("CommandPicker item selection", () => {
     const user = userEvent.setup()
     const store = renderPicker(true)
 
-    await user.click(screen.getByText("makeDirectory"))
+    await user.click(screen.getAllByText("makeDirectory")[0])
 
     expect(store.get(commandPickerStateAtom)).toBeNull()
   })

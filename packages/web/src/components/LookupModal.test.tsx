@@ -1,7 +1,12 @@
-import { render, screen } from "@testing-library/react"
+import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
+
+afterEach(() => {
+  cleanup()
+})
+
 import { lookupModalAtom } from "../state/uiAtoms"
 import { LookupModal } from "./LookupModal"
 

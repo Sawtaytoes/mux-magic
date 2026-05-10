@@ -1,7 +1,13 @@
-import { render, screen } from "@testing-library/react"
+import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
+
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
+
 import { apiRunModalAtom, runningAtom } from "../state/uiAtoms"
 import { ApiRunModal } from "./ApiRunModal"
 

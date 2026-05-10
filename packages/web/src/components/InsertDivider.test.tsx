@@ -19,16 +19,10 @@ afterEach(() => {
 describe("InsertDivider", () => {
   it("renders all four action buttons", () => {
     render(<InsertDivider {...makeProps()} />)
-    expect(screen.getByRole("button", { name: /insert a step here/i })).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /insert a sequential group here/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /insert a parallel group here/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole("button", { name: /paste a copied step or group here/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByTitle(/insert a step here/i)).toBeInTheDocument()
+    expect(screen.getByTitle(/insert a sequential group here/i)).toBeInTheDocument()
+    expect(screen.getByTitle(/insert a parallel group here/i)).toBeInTheDocument()
+    expect(screen.getByTitle(/paste a copied step or group here/i)).toBeInTheDocument()
   })
 
   it("calls onInsertStep when Step button is clicked", async () => {
@@ -36,7 +30,7 @@ describe("InsertDivider", () => {
     const user = userEvent.setup()
     render(<InsertDivider {...props} />)
 
-    await user.click(screen.getByRole("button", { name: /insert a step here/i }))
+    await user.click(screen.getByTitle(/insert a step here/i))
 
     expect(props.onInsertStep).toHaveBeenCalledOnce()
   })
@@ -46,7 +40,7 @@ describe("InsertDivider", () => {
     const user = userEvent.setup()
     render(<InsertDivider {...props} />)
 
-    await user.click(screen.getByRole("button", { name: /insert a sequential group here/i }))
+    await user.click(screen.getByTitle(/insert a sequential group here/i))
 
     expect(props.onInsertSequentialGroup).toHaveBeenCalledOnce()
   })
@@ -56,7 +50,7 @@ describe("InsertDivider", () => {
     const user = userEvent.setup()
     render(<InsertDivider {...props} />)
 
-    await user.click(screen.getByRole("button", { name: /insert a parallel group here/i }))
+    await user.click(screen.getByTitle(/insert a parallel group here/i))
 
     expect(props.onInsertParallelGroup).toHaveBeenCalledOnce()
   })
@@ -66,7 +60,7 @@ describe("InsertDivider", () => {
     const user = userEvent.setup()
     render(<InsertDivider {...props} />)
 
-    await user.click(screen.getByRole("button", { name: /paste a copied step or group here/i }))
+    await user.click(screen.getByTitle(/paste a copied step or group here/i))
 
     expect(props.onPaste).toHaveBeenCalledOnce()
   })
@@ -76,7 +70,7 @@ describe("InsertDivider", () => {
     const user = userEvent.setup()
     render(<InsertDivider {...props} />)
 
-    await user.click(screen.getByRole("button", { name: /insert a step here/i }))
+    await user.click(screen.getByTitle(/insert a step here/i))
 
     expect(props.onInsertSequentialGroup).not.toHaveBeenCalled()
     expect(props.onInsertParallelGroup).not.toHaveBeenCalled()

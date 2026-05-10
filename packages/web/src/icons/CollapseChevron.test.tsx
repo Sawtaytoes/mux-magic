@@ -15,12 +15,12 @@ describe("CollapseChevron", () => {
   it("does not apply rotate class when expanded", () => {
     const { container } = render(<CollapseChevron isCollapsed={false} />)
     const svg = container.querySelector("svg")
-    expect(svg?.className).not.toContain("-rotate-90")
+    expect(svg?.getAttribute("class")).not.toContain("-rotate-90")
   })
 
   it("applies -rotate-90 class when collapsed", () => {
     const { container } = render(<CollapseChevron isCollapsed={true} />)
     const svg = container.querySelector("svg")
-    expect(svg?.className).toContain("-rotate-90")
+    expect(svg?.getAttribute("class")).toContain("-rotate-90")
   })
 })

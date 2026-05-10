@@ -1,11 +1,11 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { createStore, Provider } from "jotai";
-import type { ConnectionStatus } from "../state/jobsConnectionAtom";
-import { jobsAtom } from "../state/jobsAtom";
-import { jobsConnectionAtom } from "../state/jobsConnectionAtom";
-import { progressByJobIdAtom } from "../state/progressByJobIdAtom";
-import type { Job, ProgressSnapshot } from "../types";
-import { JobsPage } from "./JobsPage";
+import type { Meta, StoryObj } from "@storybook/react"
+import { createStore, Provider } from "jotai"
+import { jobsAtom } from "../state/jobsAtom"
+import type { ConnectionStatus } from "../state/jobsConnectionAtom"
+import { jobsConnectionAtom } from "../state/jobsConnectionAtom"
+import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
+import type { Job, ProgressSnapshot } from "../types"
+import { JobsPage } from "./JobsPage"
 
 // JobsPage calls useSseStream which opens an EventSource.
 // In Storybook there is no real server, so the EventSource quietly fails
@@ -17,38 +17,38 @@ const withStore = (
   status: ConnectionStatus = "connected",
   progress?: Map<string, ProgressSnapshot>,
 ) => {
-  const store = createStore();
-  store.set(jobsAtom, new Map(jobs.map((job) => [job.id, job])));
-  store.set(jobsConnectionAtom, status);
-  if (progress) store.set(progressByJobIdAtom, progress);
+  const store = createStore()
+  store.set(jobsAtom, new Map(jobs.map((job) => [job.id, job])))
+  store.set(jobsConnectionAtom, status)
+  if (progress) store.set(progressByJobIdAtom, progress)
 
   return (Story: React.ComponentType) => (
     <Provider store={store}>
       <Story />
     </Provider>
-  );
-};
+  )
+}
 
 const meta: Meta<typeof JobsPage> = {
   title: "Pages/JobsPage",
   component: JobsPage,
   parameters: { layout: "fullscreen", backgrounds: { default: "dark" } },
-};
+}
 
-export default meta;
-type Story = StoryObj<typeof JobsPage>;
+export default meta
+type Story = StoryObj<typeof JobsPage>
 
 export const Empty: Story = {
   decorators: [withStore([])],
-};
+}
 
 export const Connecting: Story = {
   decorators: [withStore([], "connecting")],
-};
+}
 
 export const Unstable: Story = {
   decorators: [withStore([], "unstable")],
-};
+}
 
 export const WithJobs: Story = {
   decorators: [
@@ -88,4 +88,4 @@ export const WithJobs: Story = {
       ]),
     ),
   ],
-};
+}

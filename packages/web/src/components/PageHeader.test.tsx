@@ -1,8 +1,13 @@
-import { render, screen } from "@testing-library/react"
+import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { describe, expect, it } from "vitest"
-import { dryRunAtom, failureModeAtom } from "../state/uiAtoms"
+import { afterEach, describe, expect, it } from "vitest"
+
+afterEach(() => {
+  cleanup()
+})
+
+import { dryRunAtom, failureModeAtom, runningAtom } from "../state/uiAtoms"
 import { PageHeader } from "./PageHeader"
 
 const renderWithStore = (store: ReturnType<typeof createStore>) =>
@@ -58,7 +63,6 @@ describe("PageHeader", () => {
 
   it("disables Run Sequence and Run via API buttons while running", () => {
     const store = createStore()
-    const { runningAtom } = require("../state/uiAtoms")
     store.set(runningAtom, true)
     renderWithStore(store)
     expect(screen.getByRole("button", { name: /run sequence/i })).toBeDisabled()

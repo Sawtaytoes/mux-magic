@@ -1,33 +1,33 @@
-import { useAtomValue, useSetAtom } from "jotai";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { buildBuilderUrl } from "../jobs/buildBuilderUrl";
-import { commandLabel } from "../jobs/commandLabels";
-import { formatEta } from "../jobs/formatBandwidth";
-import { useLogStream } from "../hooks/useLogStream";
-import { jobsAtom } from "../state/jobsAtom";
-import { logsByJobIdAtom } from "../state/logsByJobIdAtom";
-import { progressByJobIdAtom } from "../state/progressByJobIdAtom";
-import { stepsOpenByJobIdAtom } from "../state/stepsOpenByJobIdAtom";
-import type { Job } from "../types";
-import { ProgressBar } from "./ProgressBar";
-import { StatusBadge } from "./StatusBadge";
+import { useAtomValue, useSetAtom } from "jotai"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useLogStream } from "../hooks/useLogStream"
+import { buildBuilderUrl } from "../jobs/buildBuilderUrl"
+import { commandLabel } from "../jobs/commandLabels"
+import { formatEta } from "../jobs/formatBandwidth"
+import { jobsAtom } from "../state/jobsAtom"
+import { logsByJobIdAtom } from "../state/logsByJobIdAtom"
+import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
+import { stepsOpenByJobIdAtom } from "../state/stepsOpenByJobIdAtom"
+import type { Job } from "../types"
+import { ProgressBar } from "./ProgressBar"
+import { StatusBadge } from "./StatusBadge"
 
 // ─── CopyButton ───────────────────────────────────────────────────────────────
 
 const CopyButton = ({ getText }: { getText: () => string }) => {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false)
 
   const handleClick = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    event.preventDefault();
+    event.stopPropagation()
+    event.preventDefault()
     navigator.clipboard
       .writeText(getText())
       .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
       })
-      .catch(() => {});
-  };
+      .catch(() => {})
+  }
 
   return (
     <button
@@ -37,22 +37,22 @@ const CopyButton = ({ getText }: { getText: () => string }) => {
     >
       {copied ? "✓ Copied" : "📋 Copy"}
     </button>
-  );
-};
+  )
+}
 
 // ─── CancelButton ─────────────────────────────────────────────────────────────
 
 const CancelButton = ({ jobId }: { jobId: string }) => {
-  const [disabled, setDisabled] = useState(false);
+  const [disabled, setDisabled] = useState(false)
 
   const handleClick = async () => {
-    setDisabled(true);
+    setDisabled(true)
     try {
-      await fetch(`/jobs/${jobId}`, { method: "DELETE" });
+      await fetch(`/jobs/${jobId}`, { method: "DELETE" })
     } catch {
-      setDisabled(false);
+      setDisabled(false)
     }
-  };
+  }
 
   return (
     <button
@@ -64,37 +64,31 @@ const CancelButton = ({ jobId }: { jobId: string }) => {
     >
       ⏹ Cancel
     </button>
-  );
-};
+  )
+}
 
 // ─── LogsDisclosure ───────────────────────────────────────────────────────────
 
-const LogsDisclosure = ({
-  jobId,
-  jobStatus,
-}: {
-  jobId: string;
-  jobStatus: string;
-}) => {
-  const logsByJobId = useAtomValue(logsByJobIdAtom);
-  const lines = logsByJobId.get(jobId) ?? [];
-  const paneRef = useRef<HTMLDivElement>(null);
-  const { connect } = useLogStream(jobId);
+const LogsDisclosure = ({ jobId, jobStatus }: { jobId: string; jobStatus: string }) => {
+  const logsByJobId = useAtomValue(logsByJobIdAtom)
+  const lines = logsByJobId.get(jobId) ?? []
+  const paneRef = useRef<HTMLDivElement>(null)
+  const { connect } = useLogStream(jobId)
 
   // Running jobs connect immediately so new lines appear without opening the disclosure.
   useEffect(() => {
-    if (jobStatus === "running") connect();
-  }, [jobStatus, connect]);
+    if (jobStatus === "running") connect()
+  }, [jobStatus, connect])
 
   // Auto-scroll to bottom when new lines arrive.
   useEffect(() => {
-    const pane = paneRef.current;
-    if (pane) pane.scrollTop = pane.scrollHeight;
-  }, [lines.length]);
+    const pane = paneRef.current
+    if (pane) pane.scrollTop = pane.scrollHeight
+  }, [lines.length])
 
   const handleToggle = (event: React.SyntheticEvent<HTMLDetailsElement>) => {
-    if (event.currentTarget.open) connect();
-  };
+    if (event.currentTarget.open) connect()
+  }
 
   return (
     <details onToggle={handleToggle}>
@@ -114,88 +108,73 @@ const LogsDisclosure = ({
         )}
       </div>
     </details>
-  );
-};
+  )
+}
 
 // ─── ETA for sequence jobs ────────────────────────────────────────────────────
 
 const useAggregateEta = (job: Job): string => {
-  const progressByJobId = useAtomValue(progressByJobIdAtom);
-  const jobs = useAtomValue(jobsAtom);
-  if (job.status !== "running") return "";
+  const progressByJobId = useAtomValue(progressByJobIdAtom)
+  const jobs = useAtomValue(jobsAtom)
+  if (job.status !== "running") return ""
 
-  const children = [...jobs.values()].filter(
-    (child) => child.parentJobId === job.id,
-  );
-  const runningChildren = children.filter((child) => child.status === "running");
+  const children = [...jobs.values()].filter((child) => child.parentJobId === job.id)
+  const runningChildren = children.filter((child) => child.status === "running")
 
-  let totalRemaining = 0;
-  let totalSpeed = 0;
-  let hasAnyData = false;
+  let totalRemaining = 0
+  let totalSpeed = 0
+  let hasAnyData = false
 
   for (const child of runningChildren) {
-    const snap = progressByJobId.get(child.id);
-    if (!snap) continue;
+    const snap = progressByJobId.get(child.id)
+    if (!snap) continue
     if (
       typeof snap.bytesRemaining === "number" &&
       snap.bytesRemaining > 0 &&
       typeof snap.bytesPerSecond === "number" &&
       snap.bytesPerSecond > 0
     ) {
-      totalRemaining += snap.bytesRemaining;
-      totalSpeed += snap.bytesPerSecond;
-      hasAnyData = true;
+      totalRemaining += snap.bytesRemaining
+      totalSpeed += snap.bytesPerSecond
+      hasAnyData = true
     }
   }
 
   if (hasAnyData) {
-    return formatEta(
-      totalRemaining,
-      totalSpeed / Math.max(runningChildren.length, 1),
-    );
+    return formatEta(totalRemaining, totalSpeed / Math.max(runningChildren.length, 1))
   }
 
-  const ownSnap = progressByJobId.get(job.id);
-  return ownSnap
-    ? formatEta(ownSnap.bytesRemaining, ownSnap.bytesPerSecond)
-    : "";
-};
+  const ownSnap = progressByJobId.get(job.id)
+  return ownSnap ? formatEta(ownSnap.bytesRemaining, ownSnap.bytesPerSecond) : ""
+}
 
 // ─── StepRow ─────────────────────────────────────────────────────────────────
 
 const StepRow = ({ child, index }: { child: Job; index: number }) => {
-  const progressByJobId = useAtomValue(progressByJobIdAtom);
-  const snap = progressByJobId.get(child.id);
+  const progressByJobId = useAtomValue(progressByJobIdAtom)
+  const snap = progressByJobId.get(child.id)
 
   return (
     <div className="border-l-2 border-slate-700 pl-3 py-1 space-y-1">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-xs text-slate-500 shrink-0">{index + 1}.</span>
-          <strong className="text-sm truncate">
-            {commandLabel(child.commandName)}
-          </strong>
-          {child.stepId && (
-            <span className="text-xs text-slate-500 truncate">
-              {child.stepId}
-            </span>
-          )}
+          <strong className="text-sm truncate">{commandLabel(child.commandName)}</strong>
+          {child.stepId && <span className="text-xs text-slate-500 truncate">{child.stepId}</span>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <StatusBadge status={child.status} />
           {child.status === "running" && <CancelButton jobId={child.id} />}
         </div>
       </div>
-      {child.error && (
-        <p className="text-xs text-red-400 break-words">{child.error}</p>
-      )}
+      {child.error && <p className="text-xs text-red-400 break-words">{child.error}</p>}
       {child.status === "running" && snap && <ProgressBar snapshot={snap} />}
       {child.status !== "skipped" && child.status !== "pending" && (
         <LogsDisclosure jobId={child.id} jobStatus={child.status} />
       )}
     </div>
-  );
-};
+  )
+}
 
 // ─── StepsDisclosure ─────────────────────────────────────────────────────────
 
@@ -204,38 +183,33 @@ const StepsDisclosure = ({
   children,
   jobStatus,
 }: {
-  jobId: string;
-  children: Job[];
-  jobStatus: string;
+  jobId: string
+  children: Job[]
+  jobStatus: string
 }) => {
-  const stepsOpenByJobId = useAtomValue(stepsOpenByJobIdAtom);
-  const setStepsOpen = useSetAtom(stepsOpenByJobIdAtom);
+  const stepsOpenByJobId = useAtomValue(stepsOpenByJobIdAtom)
+  const setStepsOpen = useSetAtom(stepsOpenByJobIdAtom)
 
-  const defaultOpen = jobStatus === "running" || jobStatus === "pending";
-  const isOpen = stepsOpenByJobId.has(jobId)
-    ? stepsOpenByJobId.get(jobId)!
-    : defaultOpen;
+  const defaultOpen = jobStatus === "running" || jobStatus === "pending"
+  const isOpen = stepsOpenByJobId.has(jobId) ? stepsOpenByJobId.get(jobId)! : defaultOpen
 
-  const detailsRef = useRef<HTMLDetailsElement>(null);
-  const skipNextToggleRef = useRef(isOpen);
+  const detailsRef = useRef<HTMLDetailsElement>(null)
+  const skipNextToggleRef = useRef(isOpen)
 
   useEffect(() => {
-    if (detailsRef.current) detailsRef.current.open = isOpen;
-  }, [isOpen]);
+    if (detailsRef.current) detailsRef.current.open = isOpen
+  }, [isOpen])
 
   const handleToggle = useCallback(
     (event: React.SyntheticEvent<HTMLDetailsElement>) => {
       if (skipNextToggleRef.current) {
-        skipNextToggleRef.current = false;
-        return;
+        skipNextToggleRef.current = false
+        return
       }
-      setStepsOpen(
-        (prev) =>
-          new Map(prev).set(jobId, event.currentTarget.open),
-      );
+      setStepsOpen((prev) => new Map(prev).set(jobId, event.currentTarget.open))
     },
     [jobId, setStepsOpen],
-  );
+  )
 
   return (
     <details ref={detailsRef} onToggle={handleToggle}>
@@ -248,31 +222,27 @@ const StepsDisclosure = ({
         ))}
       </div>
     </details>
-  );
-};
+  )
+}
 
 // ─── JobCard ─────────────────────────────────────────────────────────────────
 
 interface JobCardProps {
-  job: Job;
+  job: Job
 }
 
 export const JobCard = ({ job }: JobCardProps) => {
-  const progressByJobId = useAtomValue(progressByJobIdAtom);
-  const jobs = useAtomValue(jobsAtom);
-  const snap = progressByJobId.get(job.id);
-  const eta = useAggregateEta(job);
+  const progressByJobId = useAtomValue(progressByJobIdAtom)
+  const jobs = useAtomValue(jobsAtom)
+  const snap = progressByJobId.get(job.id)
+  const eta = useAggregateEta(job)
 
-  const children = [...jobs.values()]
-    .filter((child) => child.parentJobId === job.id);
+  const children = [...jobs.values()].filter((child) => child.parentJobId === job.id)
 
-  const sourcePath =
-    typeof job.params?.sourcePath === "string" ? job.params.sourcePath : null;
+  const sourcePath = typeof job.params?.sourcePath === "string" ? job.params.sourcePath : null
 
   const hasParams =
-    job.params !== undefined &&
-    typeof job.params === "object" &&
-    Object.keys(job.params).length > 0;
+    job.params !== undefined && typeof job.params === "object" && Object.keys(job.params).length > 0
 
   return (
     <article
@@ -287,9 +257,7 @@ export const JobCard = ({ job }: JobCardProps) => {
         </span>
         <div className="flex items-center gap-2 shrink-0">
           {eta && (
-            <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
-              {eta}
-            </span>
+            <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">{eta}</span>
           )}
           <StatusBadge status={job.status} />
         </div>
@@ -298,12 +266,8 @@ export const JobCard = ({ job }: JobCardProps) => {
       {/* Meta */}
       <div className="text-xs text-slate-500 space-y-0.5">
         <div>ID: {job.id}</div>
-        {job.startedAt && (
-          <div>Started: {new Date(job.startedAt).toLocaleString()}</div>
-        )}
-        {job.completedAt && (
-          <div>Completed: {new Date(job.completedAt).toLocaleString()}</div>
-        )}
+        {job.startedAt && <div>Started: {new Date(job.startedAt).toLocaleString()}</div>}
+        {job.completedAt && <div>Completed: {new Date(job.completedAt).toLocaleString()}</div>}
       </div>
 
       {/* Progress bar for running jobs */}
@@ -330,9 +294,7 @@ export const JobCard = ({ job }: JobCardProps) => {
       )}
 
       {/* Error */}
-      {job.error && (
-        <p className="text-sm text-red-400 break-words">{job.error}</p>
-      )}
+      {job.error && <p className="text-sm text-red-400 break-words">{job.error}</p>}
 
       {/* Results disclosure */}
       {job.results && job.results.length > 0 && (
@@ -358,11 +320,7 @@ export const JobCard = ({ job }: JobCardProps) => {
 
       {/* Steps (children) */}
       {children.length > 0 && (
-        <StepsDisclosure
-          jobId={job.id}
-          children={children}
-          jobStatus={job.status}
-        />
+        <StepsDisclosure jobId={job.id} children={children} jobStatus={job.status} />
       )}
 
       {/* Footer */}
@@ -378,5 +336,5 @@ export const JobCard = ({ job }: JobCardProps) => {
         {job.status === "running" && <CancelButton jobId={job.id} />}
       </div>
     </article>
-  );
-};
+  )
+}

@@ -14,6 +14,8 @@ export type CommandField = {
   sourceField?: string
   lookupType?: string
   placeholder?: string
+  linkable?: boolean
+  visibleWhen?: Record<string, unknown>
 }
 
 export type CommandDefinition = {
@@ -24,6 +26,8 @@ export type CommandDefinition = {
   persistedKeys?: string[]
   outputFolderName?: string | null
   outputComputation?: string
+  outputs?: ReadonlyArray<{ name: string; label?: string }>
+  groups?: ReadonlyArray<{ fields: ReadonlyArray<string>; layout: string }>
 }
 
 export type Commands = Record<string, CommandDefinition>
@@ -178,13 +182,7 @@ export type ProgressSnapshot = {
   currentFiles?: Array<{ path: string; ratio?: number }>
 }
 
-export type JobStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled"
-  | "skipped"
+export type JobStatus = "pending" | "running" | "completed" | "failed" | "cancelled" | "skipped"
 
 export type Job = {
   id: string
