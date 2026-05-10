@@ -1,11 +1,11 @@
 import { useAtomValue } from "jotai"
 
 import { GroupCard } from "../../components/GroupCard/GroupCard"
+import { InsertDivider } from "../../components/InsertDivider/InsertDivider"
 import { StepCard } from "../../components/StepCard/StepCard"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Group, SequenceItem, Step } from "../../types"
-import { InsertDivider } from "../components/InsertDivider"
 
 const isGroup = (item: SequenceItem): item is Group =>
   "kind" in item && item.kind === "group"

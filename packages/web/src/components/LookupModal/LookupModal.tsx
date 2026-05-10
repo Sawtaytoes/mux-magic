@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react"
 import { lookupModalAtom } from "../../state/uiAtoms"
 import type { LookupState, LookupType } from "../../types"
 import { LookupReleaseStage } from "../LookupReleaseStage/LookupReleaseStage"
-import { LookupSearchStage } from "../LookupSearchStage"
-import { LookupVariantStage } from "../LookupVariantStage"
+import { LookupSearchStage } from "../LookupSearchStage/LookupSearchStage"
+import { LookupVariantStage } from "../LookupVariantStage/LookupVariantStage"
 
 const LOOKUP_TITLES: Record<LookupType, string> = {
   mal: "Look up MAL ID",

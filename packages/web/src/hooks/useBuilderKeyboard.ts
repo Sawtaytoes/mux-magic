@@ -1,7 +1,12 @@
 import { useEffect, useRef } from "react"
 
+import { useBuilderActions } from "./useBuilderActions"
+
 export const useBuilderKeyboard = () => {
-  const shortcutsRef = useRef<(e: KeyboardEvent) => void>()
+  const { undo, redo } = useBuilderActions()
+  const shortcutsRef = useRef<
+    ((event: KeyboardEvent) => void) | undefined
+  >(undefined)
 
   useEffect(() => {
     shortcutsRef.current = (event: KeyboardEvent) => {
@@ -17,16 +22,16 @@ export const useBuilderKeyboard = () => {
       ) {
         event.preventDefault()
         if (event.shiftKey) {
-          window.mediaTools?.redo?.()
+          void redo()
         } else {
-          window.mediaTools?.undo?.()
+          void undo()
         }
       } else if (
         event.key === "y" &&
         (event.ctrlKey || event.metaKey)
       ) {
         event.preventDefault()
-        window.mediaTools?.redo?.()
+        void redo()
       }
     }
 
@@ -35,5 +40,5 @@ export const useBuilderKeyboard = () => {
     document.addEventListener("keydown", handler)
     return () =>
       document.removeEventListener("keydown", handler)
-  }, [])
+  }, [undo, redo])
 }

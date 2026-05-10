@@ -6,7 +6,7 @@ import type {
   LookupSearchResult,
   LookupState,
   LookupType,
-} from "../types"
+} from "../../types"
 
 const SEARCH_ENDPOINTS: Record<LookupType, string> = {
   mal: "/queries/searchMal",

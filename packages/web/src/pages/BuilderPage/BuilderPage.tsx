@@ -16,7 +16,7 @@ import { YamlModal } from "../../components/YamlModal/YamlModal"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
 import { commandsAtom } from "../../state/commandsAtom"
 import type { Commands } from "../../types"
-import { BuilderPathVarList } from "../BuilderPathVarList"
+import { BuilderPathVarList } from "../BuilderPathVarList/BuilderPathVarList"
 import { BuilderSequenceList } from "../BuilderSequenceList/BuilderSequenceList"
 
 const loadCommands = async (
