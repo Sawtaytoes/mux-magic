@@ -45,7 +45,7 @@
     "hono": "^4.12.18",
     "js-yaml": "^4.1.1",
     "jsdom": "^29.1.1",
-    "mal-scraper": "^2.13.2",
+    "mal-scraper": "patch:mal-scraper@npm%3A2.13.2#~/.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch",
     "memfs": "^4.57.2",
     "openapi-fetch": "^0.17.0",
     "playwright": "^1.59.1",
@@ -82,7 +82,7 @@
     "wait-on": "^9.0.5"
   },
   "resolutions": {
-    "mal-scraper@^2.13.1": "patch:mal-scraper@npm%3A2.13.1#./.yarn/patches/mal-scraper-npm-2.13.1-8a68a57707.patch"
+    "mal-scraper@^2.13.2": "patch:mal-scraper@npm%3A2.13.2#./.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch"
   },
   "msw": {
     "workerDirectory": [

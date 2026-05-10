@@ -7285,7 +7285,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mal-scraper@npm:^2.13.2":
+"mal-scraper@npm:2.13.2":
   version: 2.13.2
   resolution: "mal-scraper@npm:2.13.2"
   dependencies:
@@ -7293,6 +7293,17 @@ __metadata:
     cheerio: "npm:^1.0.0-rc.12"
     match-sorter: "npm:^6.3.1"
   checksum: 10c0/1202d9f42c05141321f3970352308ee5e534a028deb91ba38c6b3c58af5df408377189ab2a462de071a9416cfa032b83d6ac40a05c6178915442d7386a552f76
+  languageName: node
+  linkType: hard
+
+"mal-scraper@patch:mal-scraper@npm%3A2.13.2#~/.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch":
+  version: 2.13.2
+  resolution: "mal-scraper@patch:mal-scraper@npm%3A2.13.2#~/.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch::version=2.13.2&hash=ee9ee7"
+  dependencies:
+    axios: "npm:^1.4.0"
+    cheerio: "npm:^1.0.0-rc.12"
+    match-sorter: "npm:^6.3.1"
+  checksum: 10c0/d2bc4d0381c6e40d67cf1c5d04dcd04b483ee9433608350cf733d838b9df063a8b6698e1627e7ef98918bac721b3bf9f0dcb5bd8287903501726fb7d75bbaaa8
   languageName: node
   linkType: hard
 
@@ -7524,7 +7535,7 @@ __metadata:
     hono: "npm:^4.12.18"
     js-yaml: "npm:^4.1.1"
     jsdom: "npm:^29.1.1"
-    mal-scraper: "npm:^2.13.2"
+    mal-scraper: "patch:mal-scraper@npm%3A2.13.2#~/.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch"
     memfs: "npm:^4.57.2"
     msw: "npm:^2.14.5"
     openapi-fetch: "npm:^0.17.0"
