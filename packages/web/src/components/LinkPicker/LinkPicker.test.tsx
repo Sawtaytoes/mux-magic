@@ -79,8 +79,6 @@ const renderPicker = (open = false) => {
     </Provider>,
   )
 
-  window.commandLabel = (name: string) => name
-
   return store
 }
 
@@ -129,10 +127,10 @@ describe("LinkPicker items", () => {
     renderPicker(true)
     // step-3 is the anchor — only step-1 and step-2 should appear
     expect(
-      screen.getByText(/Step 1: copyFiles/),
+      screen.getByText(/Step 1: Copy Files/),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/Step 2: moveFiles/),
+      screen.getByText(/Step 2: Move Files/),
     ).toBeInTheDocument()
     expect(screen.queryByText(/addSubtitles/)).toBeNull()
   })

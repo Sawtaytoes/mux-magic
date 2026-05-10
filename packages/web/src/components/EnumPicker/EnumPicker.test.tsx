@@ -13,6 +13,7 @@ import {
   test,
   vi,
 } from "vitest"
+import { commandsAtom } from "../../state/commandsAtom"
 import { enumPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
@@ -57,6 +58,7 @@ const renderPicker = (
   currentValue?: string,
 ) => {
   const store = createStore()
+  store.set(commandsAtom, mockCommands)
   store.set(stepsAtom, [
     {
       id: "step-1",

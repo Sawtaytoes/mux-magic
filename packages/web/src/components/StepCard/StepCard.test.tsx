@@ -7,12 +7,12 @@ import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import {
   afterEach,
-  beforeEach,
   describe,
   expect,
   test,
   vi,
 } from "vitest"
+import { commandsAtom } from "../../state/commandsAtom"
 import { commandPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
@@ -38,6 +38,13 @@ const renderCard = (
   }> = {},
 ) => {
   const store = createStore()
+  store.set(commandsAtom, {
+    testCmd: {
+      summary: "Test command",
+      fields: [],
+      outputFolderName: null,
+    },
+  })
   store.set(stepsAtom, [step])
   render(
     <Provider store={store}>
@@ -52,20 +59,6 @@ const renderCard = (
   return store
 }
 
-beforeEach(() => {
-  window.mediaTools = {
-    COMMANDS: {
-      testCmd: {
-        summary: "Test command",
-        fields: [],
-        outputFolderName: null,
-      },
-    },
-    renderAll: vi.fn(),
-    updateUrl: vi.fn(),
-  }
-  window.commandLabel = (name: string) => name
-})
 
 afterEach(() => {
   cleanup()
