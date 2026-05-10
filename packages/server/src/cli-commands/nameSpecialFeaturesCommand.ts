@@ -133,7 +133,7 @@ export const nameSpecialFeaturesCommand: CommandModule<{}, Args> = {
             console.log("Possible candidate associations for unnamed files:")
             event.unnamedFileCandidates.forEach(({ filename, candidates }) => {
               console.log(`  • ${filename}`)
-              candidates.slice(0, 3).forEach((c) => console.log(`      - ${c}`))
+              candidates.slice(0, 3).forEach((candidate) => console.log(`      - ${candidate}`))
             })
           }
           return

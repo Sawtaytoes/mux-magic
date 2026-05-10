@@ -39,9 +39,9 @@ export const getAudioOffsetsScenario = (
       ratio,
       filesDone: Math.round(ratio * SOURCE_FILES.length),
       filesTotal: SOURCE_FILES.length,
-      currentFiles: activePaths.map((path, i) => ({
+      currentFiles: activePaths.map((path, idx) => ({
         path,
-        ratio: fileRatios[i] ?? 0,
+        ratio: fileRatios[idx] ?? 0,
       })),
     })
   }

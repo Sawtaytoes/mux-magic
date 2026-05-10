@@ -45,8 +45,8 @@ export type AnimeIndexEntry = {
 
 const isFresh = async (path: string, maxAgeMs: number): Promise<boolean> => {
   try {
-    const s = await stat(path)
-    return Date.now() - s.mtimeMs < maxAgeMs
+    const stats = await stat(path)
+    return Date.now() - stats.mtimeMs < maxAgeMs
   }
   catch { return false }
 }
@@ -124,9 +124,9 @@ export const parseAnimeIndex = (rawJson: string): AnimeIndexEntry[] => {
   for (const entry of data) {
     let aid: number | null = null
     for (const src of entry.sources ?? []) {
-      const m = src.match(ANIDB_AID_PATTERN)
-      if (m) {
-        aid = Number(m[1])
+      const match = src.match(ANIDB_AID_PATTERN)
+      if (match) {
+        aid = Number(match[1])
         break
       }
     }
@@ -175,11 +175,11 @@ export const loadAnimeIndex = async (): Promise<AnimeIndexEntry[]> => {
 
   // Long-running processes (the API server) can outlive multiple weekly
   // refreshes. Re-stat the file and reload only if mtime moved.
-  const s = await stat(dataPath()).catch(() => null)
-  if (cachedIndex && s && s.mtimeMs === cachedAtMtime) return cachedIndex
+  const stats = await stat(dataPath()).catch(() => null)
+  if (cachedIndex && stats && stats.mtimeMs === cachedAtMtime) return cachedIndex
 
   const raw = await readFile(dataPath(), "utf8")
   cachedIndex = parseAnimeIndex(raw)
-  if (s) cachedAtMtime = s.mtimeMs
+  if (stats) cachedAtMtime = stats.mtimeMs
   return cachedIndex
 }

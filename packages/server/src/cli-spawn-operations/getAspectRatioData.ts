@@ -403,11 +403,11 @@ export const getAspectRatioData = ({
         ...(
           cropDataValues
           .sort((
-            a,
-            b,
+            itemA,
+            itemB,
           ) => (
-            b.height
-            - a.height
+            itemB.height
+            - itemA.height
           ))
           .at(0)!
         ),
@@ -418,11 +418,11 @@ export const getAspectRatioData = ({
         ...(
           cropDataValues
           .sort((
-            a,
-            b,
+            itemA,
+            itemB,
           ) => (
-            b.count
-            - a.count
+            itemB.count
+            - itemA.count
           ))
           .at(0)!
         ),

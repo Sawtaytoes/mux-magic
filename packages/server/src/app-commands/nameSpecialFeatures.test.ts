@@ -215,7 +215,7 @@ describe(postProcessMatches.name, () => {
     const result = postProcessMatches(matches, [], movie)
     // The trailer is below threshold and stays unrenamed; the two
     // movie-length files get the counter prefix.
-    expect(result.map((r) => ({ filename: r.fileInfo.filename, renamed: r.renamedFilename }))).toEqual([
+    expect(result.map((rename) => ({ filename: rename.fileInfo.filename, renamed: rename.renamedFilename }))).toEqual([
       { filename: "disc-a.mkv", renamed: "(1) Dragon Lord (1982)" },
       { filename: "disc-b.mkv", renamed: "(2) Dragon Lord (1982)" },
     ])
@@ -229,7 +229,7 @@ describe(postProcessMatches.name, () => {
     const cuts: Cut[] = [{ name: "Director's Cut", timecode: undefined }]
     // Two files claiming the same edition would be wrong — fall back to
     // counter prefixes without an edition tag.
-    expect(postProcessMatches(matches, cuts, movie).map((r) => r.renamedFilename)).toEqual([
+    expect(postProcessMatches(matches, cuts, movie).map((rename) => rename.renamedFilename)).toEqual([
       "(1) Dragon Lord (1982)",
       "(2) Dragon Lord (1982)",
     ])
@@ -258,7 +258,7 @@ describe(reorderRenamesForOnDiskConflicts.name, () => {
       { fileInfo: makeFileInfo("International Trailer without Narration -trailer.mkv"), renamedFilename: "International Trailer with Narration -trailer" },
       { fileInfo: makeFileInfo("MOVIE_t05.mkv"), renamedFilename: "Featurette -featurette" },
     ]
-    expect(reorderRenamesForOnDiskConflicts(renames).map((r) => r.fileInfo.filename))
+    expect(reorderRenamesForOnDiskConflicts(renames).map((rename) => rename.fileInfo.filename))
     .toEqual([
       // Non-conflicting renames first
       "International Trailer without Narration -trailer.mkv",

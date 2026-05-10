@@ -64,7 +64,7 @@ const filterAndSortByCategory = (
   return episodes
     .filter((ep) => allowedTypes.has(ep.type))
     .slice()
-    .sort((a, b) => epnoOrderingValue(a.type, a.epno) - epnoOrderingValue(b.type, b.epno))
+    .sort((itemA, itemB) => epnoOrderingValue(itemA.type, itemA.epno) - epnoOrderingValue(itemB.type, itemB.epno))
 }
 
 // Output filename builder. Branches by category:

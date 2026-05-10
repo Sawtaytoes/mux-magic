@@ -20,7 +20,7 @@ describe("?fake=1 query-toggle on read-only routes", () => {
     expect(response.status).toBe(200)
     const body = await response.json() as { entries: Array<{ name: string }> }
     expect(body.entries.length).toBeGreaterThan(0)
-    expect(body.entries.some((e) => e.name === "Anime")).toBe(true)
+    expect(body.entries.some((entry) => entry.name === "Anime")).toBe(true)
   })
 
   test("GET /files/default-path?fake=1 returns the canned home dir", async () => {

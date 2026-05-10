@@ -24,8 +24,8 @@ const throttle = async (): Promise<void> => {
 
 const isFresh = async (path: string, maxAgeMs: number): Promise<boolean> => {
   try {
-    const s = await stat(path)
-    return Date.now() - s.mtimeMs < maxAgeMs
+    const stats = await stat(path)
+    return Date.now() - stats.mtimeMs < maxAgeMs
   }
   catch {
     return false

@@ -52,10 +52,10 @@ Dialogue: 0,0:00:28.28,0:00:31.64,Default,Yukarisu,0,0,0,,You're already torn up
 // Helper to get a Script Info property value
 const getScriptInfoValue = (content: string, key: string) => {
   const parsed = parseAssFile(content)
-  const section = parsed.sections.find((s) => s.sectionType === "scriptInfo")
+  const section = parsed.sections.find((section) => section.sectionType === "scriptInfo")
   if (section?.sectionType !== "scriptInfo") return undefined
   const entry = section.entries.find(
-    (e) => e.type === "property" && e.key === key,
+    (entry) => entry.type === "property" && entry.key === key,
   )
   return entry?.type === "property" ? entry.value : undefined
 }
@@ -63,24 +63,24 @@ const getScriptInfoValue = (content: string, key: string) => {
 describe("parseAssFile", () => {
   test("parses Script Info properties correctly", () => {
     const result = parseAssFile(SAMPLE_1)
-    const section = result.sections.find((s) => s.sectionType === "scriptInfo")
+    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
     expect(section?.sectionType).toBe("scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
 
     expect(
-      section.entries.find((e) => e.type === "property" && e.key === "PlayResX"),
+      section.entries.find((entry) => entry.type === "property" && entry.key === "PlayResX"),
     ).toEqual({ type: "property", key: "PlayResX", value: "640" })
 
     expect(
       section.entries.find(
-        (e) => e.type === "property" && e.key === "YCbCr Matrix",
+        (entry) => entry.type === "property" && entry.key === "YCbCr Matrix",
       ),
     ).toEqual({ type: "property", key: "YCbCr Matrix", value: "TV.709" })
   })
 
   test("preserves Script Info comments in order", () => {
     const result = parseAssFile(SAMPLE_2)
-    const section = result.sections.find((s) => s.sectionType === "scriptInfo")
+    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
 
     expect(section.entries[0]).toEqual({
@@ -96,7 +96,7 @@ describe("parseAssFile", () => {
   test("parses V4+ Styles format fields by name", () => {
     const result = parseAssFile(SAMPLE_1)
     const section = result.sections.find(
-      (s) => s.sectionName === "V4+ Styles",
+      (section) => section.sectionName === "V4+ Styles",
     )
     expect(section?.sectionType).toBe("formatted")
     if (section?.sectionType !== "formatted") return
@@ -114,11 +114,11 @@ describe("parseAssFile", () => {
 
   test("handles commas inside the Text field of Events entries", () => {
     const result = parseAssFile(SAMPLE_1)
-    const events = result.sections.find((s) => s.sectionName === "Events")
+    const events = result.sections.find((section) => section.sectionName === "Events")
     if (events?.sectionType !== "formatted") return
 
     const dialogueWithComma = events.entries.find(
-      (e) => e.fields["Text"]?.includes(","),
+      (entry) => entry.fields["Text"]?.includes(","),
     )
     expect(dialogueWithComma?.fields["Text"]).toBe(
       "{\\i1}I've always loved Kamen Rider,{\\i0}\\N{\\i1}ever since I was a kid.{\\i0}",
@@ -130,11 +130,11 @@ describe("parseAssFile", () => {
   test("strips UTF-8 BOM so [Script Info] section is not lost", () => {
     const withBom = "﻿" + SAMPLE_1
     const result = parseAssFile(withBom)
-    const section = result.sections.find((s) => s.sectionType === "scriptInfo")
+    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
     expect(section?.sectionType).toBe("scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
     expect(
-      section.entries.find((e) => e.type === "property" && e.key === "PlayResX"),
+      section.entries.find((entry) => entry.type === "property" && entry.key === "PlayResX"),
     ).toEqual({ type: "property", key: "PlayResX", value: "640" })
   })
 
@@ -145,16 +145,16 @@ describe("parseAssFile", () => {
 
     expect(parsed2.sections.length).toBe(parsed1.sections.length)
 
-    parsed1.sections.forEach((section, i) => {
-      expect(parsed2.sections[i].sectionName).toBe(section.sectionName)
-      expect(parsed2.sections[i].sectionType).toBe(section.sectionType)
+    parsed1.sections.forEach((section, idx) => {
+      expect(parsed2.sections[idx].sectionName).toBe(section.sectionName)
+      expect(parsed2.sections[idx].sectionType).toBe(section.sectionType)
 
-      if (section.sectionType === "scriptInfo" && parsed2.sections[i].sectionType === "scriptInfo") {
-        expect(parsed2.sections[i].entries).toEqual(section.entries)
+      if (section.sectionType === "scriptInfo" && parsed2.sections[idx].sectionType === "scriptInfo") {
+        expect(parsed2.sections[idx].entries).toEqual(section.entries)
       }
 
-      if (section.sectionType === "formatted" && parsed2.sections[i].sectionType === "formatted") {
-        expect(parsed2.sections[i].entries).toEqual(section.entries)
+      if (section.sectionType === "formatted" && parsed2.sections[idx].sectionType === "formatted") {
+        expect(parsed2.sections[idx].entries).toEqual(section.entries)
       }
     })
   })
@@ -178,10 +178,10 @@ describe("applyAssRules — setScriptInfo", () => {
       { type: "setScriptInfo", key: "ScriptType", value: "v4.00+" },
     ] })
 
-    const section = result.sections.find((s) => s.sectionType === "scriptInfo")
+    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
     const entry = section.entries.find(
-      (e) => e.type === "property" && e.key === "ScriptType",
+      (entry) => entry.type === "property" && entry.key === "ScriptType",
     )
     expect(entry).toEqual({ type: "property", key: "ScriptType", value: "v4.00+" })
   })
@@ -193,10 +193,10 @@ describe("applyAssRules — setScriptInfo", () => {
       { type: "setScriptInfo", key: "ScaledBorderAndShadow", value: "yes" },
     ] })
 
-    const section = result.sections.find((s) => s.sectionType === "scriptInfo")
+    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
     const entry = section.entries.find(
-      (e) => e.type === "property" && e.key === "ScaledBorderAndShadow",
+      (entry) => entry.type === "property" && entry.key === "ScaledBorderAndShadow",
     )
     expect(entry).toEqual({
       type: "property",
@@ -217,10 +217,10 @@ describe("applyAssRules — scaleResolution", () => {
       },
     ] })
 
-    const section = result.sections.find((s) => s.sectionType === "scriptInfo")
+    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
     const get = (key: string) =>
-      section.entries.find((e) => e.type === "property" && e.key === key)
+      section.entries.find((entry) => entry.type === "property" && entry.key === key)
 
     expect(get("PlayResX")).toEqual({ type: "property", key: "PlayResX", value: "1920" })
     expect(get("PlayResY")).toEqual({ type: "property", key: "PlayResY", value: "1080" })
@@ -236,10 +236,10 @@ describe("applyAssRules — scaleResolution", () => {
       },
     ] })
 
-    const section = result.sections.find((s) => s.sectionType === "scriptInfo")
+    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
     const get = (key: string) =>
-      section.entries.find((e) => e.type === "property" && e.key === key)
+      section.entries.find((entry) => entry.type === "property" && entry.key === key)
 
     expect(get("LayoutResX")).toEqual({ type: "property", key: "LayoutResX", value: "1920" })
     expect(get("LayoutResY")).toEqual({ type: "property", key: "LayoutResY", value: "1080" })
@@ -255,14 +255,14 @@ describe("applyAssRules — scaleResolution", () => {
       },
     ] })
 
-    const section = result.sections.find((s) => s.sectionType === "scriptInfo")
+    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
 
     const layoutX = section.entries.find(
-      (e) => e.type === "property" && e.key === "LayoutResX",
+      (entry) => entry.type === "property" && entry.key === "LayoutResX",
     )
     const layoutY = section.entries.find(
-      (e) => e.type === "property" && e.key === "LayoutResY",
+      (entry) => entry.type === "property" && entry.key === "LayoutResY",
     )
     expect(layoutX).toBeUndefined()
     expect(layoutY).toBeUndefined()
@@ -279,14 +279,14 @@ describe("applyAssRules — scaleResolution", () => {
       },
     ] })
 
-    const section = result.sections.find((s) => s.sectionType === "scriptInfo")
+    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
 
     const layoutX = section.entries.find(
-      (e) => e.type === "property" && e.key === "LayoutResX",
+      (entry) => entry.type === "property" && entry.key === "LayoutResX",
     )
     const layoutY = section.entries.find(
-      (e) => e.type === "property" && e.key === "LayoutResY",
+      (entry) => entry.type === "property" && entry.key === "LayoutResY",
     )
     expect(layoutX).toEqual({ type: "property", key: "LayoutResX", value: "1920" })
     expect(layoutY).toEqual({ type: "property", key: "LayoutResY", value: "1080" })
@@ -303,10 +303,10 @@ describe("applyAssRules — scaleResolution", () => {
       },
     ] })
 
-    const section = result.sections.find((s) => s.sectionType === "scriptInfo")
+    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
     const entry = section.entries.find(
-      (e) => e.type === "property" && e.key === "ScaledBorderAndShadow",
+      (entry) => entry.type === "property" && entry.key === "ScaledBorderAndShadow",
     )
     expect(entry).toEqual({
       type: "property",
@@ -325,10 +325,10 @@ describe("applyAssRules — scaleResolution", () => {
       },
     ] })
 
-    const section = result.sections.find((s) => s.sectionType === "scriptInfo")
+    const section = result.sections.find((section) => section.sectionType === "scriptInfo")
     if (section?.sectionType !== "scriptInfo") return
     const playResX = section.entries.find(
-      (e) => e.type === "property" && e.key === "PlayResX",
+      (entry) => entry.type === "property" && entry.key === "PlayResX",
     )
     expect(playResX).toEqual({ type: "property", key: "PlayResX", value: "640" })
   })
@@ -345,11 +345,11 @@ describe("applyAssRules — setStyleFields", () => {
       },
     ] })
 
-    const section = result.sections.find((s) => s.sectionName === "V4+ Styles")
+    const section = result.sections.find((section) => section.sectionName === "V4+ Styles")
     if (section?.sectionType !== "formatted") return
 
     const defaultStyle = section.entries.find(
-      (e) => e.entryType === "Style" && e.fields["Name"] === "Default",
+      (entry) => entry.entryType === "Style" && entry.fields["Name"] === "Default",
     )
     expect(defaultStyle?.fields["MarginL"]).toBe("200")
     expect(defaultStyle?.fields["MarginR"]).toBe("200")
@@ -366,11 +366,11 @@ describe("applyAssRules — setStyleFields", () => {
       },
     ] })
 
-    const section = result.sections.find((s) => s.sectionName === "V4+ Styles")
+    const section = result.sections.find((section) => section.sectionName === "V4+ Styles")
     if (section?.sectionType !== "formatted") return
 
     const defaultStyle = section.entries.find(
-      (e) => e.entryType === "Style" && e.fields["Name"] === "Default",
+      (entry) => entry.entryType === "Style" && entry.fields["Name"] === "Default",
     )
     expect(defaultStyle?.fields["MarginL"]).toBe("200")
     expect(defaultStyle?.fields["MarginR"]).toBe("200")
@@ -387,11 +387,11 @@ describe("applyAssRules — setStyleFields", () => {
       },
     ] })
 
-    const section = result.sections.find((s) => s.sectionName === "V4+ Styles")
+    const section = result.sections.find((section) => section.sectionName === "V4+ Styles")
     if (section?.sectionType !== "formatted") return
 
     const signsStyle = section.entries.find(
-      (e) => e.entryType === "Style" && e.fields["Name"] === "Signs",
+      (entry) => entry.entryType === "Style" && entry.fields["Name"] === "Signs",
     )
     expect(signsStyle?.fields["MarginL"]).toBe("10")
     expect(signsStyle?.fields["MarginR"]).toBe("10")
@@ -408,11 +408,11 @@ describe("applyAssRules — setStyleFields", () => {
       },
     ] })
 
-    const section = result.sections.find((s) => s.sectionName === "V4+ Styles")
+    const section = result.sections.find((section) => section.sectionName === "V4+ Styles")
     if (section?.sectionType !== "formatted") return
 
     const flashback = section.entries.find(
-      (e) => e.entryType === "Style" && e.fields["Name"] === "Flashback",
+      (entry) => entry.entryType === "Style" && entry.fields["Name"] === "Flashback",
     )
     expect(flashback?.fields["MarginV"]).toBe("90")
   })
@@ -426,7 +426,7 @@ describe("applyAssRules — setStyleFields", () => {
       },
     ] })
 
-    const section = result.sections.find((s) => s.sectionName === "V4+ Styles")
+    const section = result.sections.find((section) => section.sectionName === "V4+ Styles")
     if (section?.sectionType !== "formatted") return
 
     section.entries.forEach((entry) => {

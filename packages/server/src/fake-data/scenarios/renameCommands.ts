@@ -2,8 +2,8 @@ import { type Observable } from "rxjs"
 
 import { fastBatchRenameScenario } from "./fastBatchRename.js"
 
-const pad2 = (n: number) => String(n).padStart(2, "0")
-const pad3 = (n: number) => String(n).padStart(3, "0")
+const pad2 = (num: number) => String(num).padStart(2, "0")
+const pad3 = (num: number) => String(num).padStart(3, "0")
 
 // ─── renameDemos ─────────────────────────────────────────────────────────────
 
@@ -18,9 +18,9 @@ const DEMO_STYLES = [
   "Reference Quality Demo",
 ]
 
-const demosItems = Array.from({ length: 100 }, (_, i) => ({
-  source: `demo_clip_${pad3(i + 1)}.mkv`,
-  destination: `${DEMO_STYLES[i % DEMO_STYLES.length]} ${pad3(i + 1)}.mkv`,
+const demosItems = Array.from({ length: 100 }, (_, idx) => ({
+  source: `demo_clip_${pad3(idx + 1)}.mkv`,
+  destination: `${DEMO_STYLES[idx % DEMO_STYLES.length]} ${pad3(idx + 1)}.mkv`,
 }))
 
 export const renameDemosScenario = (
@@ -41,12 +41,12 @@ const CLIP_TITLES = [
   "The Batman", "John Wick",
 ]
 
-const movieClipItems = Array.from({ length: 100 }, (_, i) => {
-  const title = CLIP_TITLES[i % CLIP_TITLES.length]
+const movieClipItems = Array.from({ length: 100 }, (_, idx) => {
+  const title = CLIP_TITLES[idx % CLIP_TITLES.length]
   const slug = title.toLowerCase().replace(/\s+/g, ".")
   return {
-    source: `${slug}.clip.${pad3(i + 1)}.1080p.BluRay.x264.mkv`,
-    destination: `${title} - Clip ${pad3(i + 1)}.mkv`,
+    source: `${slug}.clip.${pad3(idx + 1)}.1080p.BluRay.x264.mkv`,
+    destination: `${title} - Clip ${pad3(idx + 1)}.mkv`,
   }
 })
 
@@ -74,9 +74,9 @@ const FMA_TITLES = [
   "Girl on the Battlefield", "Inside the Belly",
 ]
 
-const animeItems = FMA_TITLES.map((title, i) => ({
-  source: `[HorribleSubs] Fullmetal Alchemist Brotherhood - ${pad2(i + 1)} [1080p].mkv`,
-  destination: `Fullmetal Alchemist Brotherhood S01E${pad2(i + 1)} - ${title}.mkv`,
+const animeItems = FMA_TITLES.map((title, idx) => ({
+  source: `[HorribleSubs] Fullmetal Alchemist Brotherhood - ${pad2(idx + 1)} [1080p].mkv`,
+  destination: `Fullmetal Alchemist Brotherhood S01E${pad2(idx + 1)} - ${title}.mkv`,
 }))
 
 export const nameAnimeEpisodesScenario = (
@@ -103,9 +103,9 @@ const BEBOP_TITLES = [
   "The Real Folk Blues Part I", "The Real Folk Blues Part II",
 ]
 
-const anidbItems = BEBOP_TITLES.map((title, i) => ({
-  source: `[Commie] Cowboy Bebop - ${pad2(i + 1)} [BD][1080p FLAC].mkv`,
-  destination: `Cowboy Bebop E${pad2(i + 1)} - ${title}.mkv`,
+const anidbItems = BEBOP_TITLES.map((title, idx) => ({
+  source: `[Commie] Cowboy Bebop - ${pad2(idx + 1)} [BD][1080p FLAC].mkv`,
+  destination: `Cowboy Bebop E${pad2(idx + 1)} - ${title}.mkv`,
 }))
 
 export const nameAnimeEpisodesAniDBScenario = (
@@ -128,9 +128,9 @@ const BUFFY_TITLES = [
   "Prophecy Girl",
 ]
 
-const tvItems = BUFFY_TITLES.map((title, i) => ({
-  source: `s01e${pad2(i + 1)}.mkv`,
-  destination: `Buffy the Vampire Slayer S01E${pad2(i + 1)} - ${title}.mkv`,
+const tvItems = BUFFY_TITLES.map((title, idx) => ({
+  source: `s01e${pad2(idx + 1)}.mkv`,
+  destination: `Buffy the Vampire Slayer S01E${pad2(idx + 1)} - ${title}.mkv`,
 }))
 
 export const nameTvShowEpisodesScenario = (

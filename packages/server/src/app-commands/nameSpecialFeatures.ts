@@ -402,7 +402,7 @@ export const postProcessMatches = (
   ))
   // Sort the candidates by filename so the (1)/(2) suffixes are stable
   // across runs.
-  mainFeatureCandidates.sort((a, b) => a.fileInfo.filename.localeCompare(b.fileInfo.filename))
+  mainFeatureCandidates.sort((itemA, itemB) => itemA.fileInfo.filename.localeCompare(itemB.fileInfo.filename))
 
   if (mainFeatureCandidates.length === 0) return renames
 
@@ -701,10 +701,10 @@ export const nameSpecialFeatures = ({
         parseSpecialFeatures(scrape.extras)
         .pipe(
           tap(({ extras, cuts, possibleNames }) => {
-            const timecodedExtras = extras.filter((e) => e.timecode).length
+            const timecodedExtras = extras.filter((entry) => entry.timecode).length
             const childTimecodedExtras = extras
-              .flatMap((e) => e.children ?? [])
-              .filter((c) => c.timecode).length
+              .flatMap((entry) => entry.children ?? [])
+              .filter((child) => child.timecode).length
             console.log(
               `Parsed ${extras.length} extras `
               + `(${timecodedExtras + childTimecodedExtras} with timecodes), `
@@ -782,7 +782,7 @@ export const nameSpecialFeatures = ({
           toArray(),
           concatMap((matches: FileMatch[]) => {
             const renames = postProcessMatches(matches, cuts, movie)
-            const renamedFullPaths = new Set(renames.map((r) => r.fileInfo.fullPath))
+            const renamedFullPaths = new Set(renames.map((rename) => rename.fileInfo.fullPath))
             // Files that survived the post-processor without a rename —
             // surfaced as a final summary so the user can see at a glance
             // which entries the matcher couldn't place. Most common cause
@@ -816,7 +816,7 @@ export const nameSpecialFeatures = ({
               console.log("Unnamed files with DVDCompare candidate associations:")
               unnamedFileCandidates.forEach(({ filename, candidates }) => {
                 console.log(`  • ${filename}`)
-                candidates.slice(0, 3).forEach((c) => console.log(`      - ${c}`))
+                candidates.slice(0, 3).forEach((candidate) => console.log(`      - ${candidate}`))
               })
             }
 
