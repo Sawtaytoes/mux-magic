@@ -39,6 +39,11 @@ export default tseslint.config(
   {
     files: ["**/*.{ts,tsx}"],
     extends: [tseslint.configs.base],
+    languageOptions: {
+      parserOptions: {
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     linterOptions: {
       // Plugins referenced in eslint-disable comments (react-hooks, etc.)
       // are not yet installed — suppress "unused directive" noise until

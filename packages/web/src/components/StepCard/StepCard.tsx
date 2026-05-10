@@ -1,0 +1,296 @@
+import { useSetAtom } from "jotai"
+import { useRef, useState } from "react"
+import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
+import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
+import {
+  moveStepAtom,
+  removeStepAtom,
+  toggleStepCollapsedAtom,
+  updateStepAliasAtom,
+} from "../../state/sequenceAtoms"
+import {
+  commandHelpCommandNameAtom,
+  commandHelpModalOpenAtom,
+} from "../../state/uiAtoms"
+import type { Step } from "../../types"
+import { RenderFields } from "../RenderFields/RenderFields"
+import { StatusBadge } from "../StatusBadge/StatusBadge"
+
+interface StepCardProps {
+  step: Step
+  index: number
+  isFirst: boolean
+  isLast: boolean
+  parentGroupId?: string | null
+}
+
+export const StepCard = ({
+  step,
+  index,
+  isFirst,
+  isLast,
+  parentGroupId = null,
+}: StepCardProps) => {
+  const [actionsOpen, setActionsOpen] = useState(false)
+
+  const toggleCollapsed = useSetAtom(
+    toggleStepCollapsedAtom,
+  )
+  const updateAlias = useSetAtom(updateStepAliasAtom)
+  const moveStep = useSetAtom(moveStepAtom)
+  const removeStep = useSetAtom(removeStepAtom)
+  const setCommandHelpName = useSetAtom(
+    commandHelpCommandNameAtom,
+  )
+  const setCommandHelpOpen = useSetAtom(
+    commandHelpModalOpenAtom,
+  )
+
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
+  const commandLabel =
+    window.commandLabel?.(step.command) ?? step.command
+
+  const openCommandPicker = () => {
+    if (triggerRef.current) {
+      window.commandPicker?.open(
+        { stepId: step.id },
+        triggerRef.current,
+      )
+    }
+  }
+
+  const openCommandHelp = () => {
+    setCommandHelpName(step.command)
+    setCommandHelpOpen(true)
+  }
+
+  const handleAliasBlur = (
+    event: React.FocusEvent<HTMLInputElement>,
+  ) => {
+    updateAlias({
+      stepId: step.id,
+      alias: event.currentTarget.value,
+    })
+  }
+
+  const handleAliasKeydown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (event.key === "Enter" || event.key === "Escape") {
+      event.currentTarget.blur()
+    }
+  }
+
+  const triggerLabel = commandLabel ? (
+    <span>{commandLabel}</span>
+  ) : (
+    <span className="text-slate-400 italic">
+      — pick a command —
+    </span>
+  )
+
+  const cmd = window.mediaTools?.COMMANDS?.[step.command] as
+    | {
+        summary?: string
+        note?: string
+        outputFolderName?: string | null
+      }
+    | undefined
+
+  return (
+    <div
+      id={`step-${step.id}`}
+      data-sortable-item
+      data-step-card={step.id}
+      style={{ viewTransitionName: `step-${step.id}` }}
+      className="step-card bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
+    >
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-700 bg-slate-800/80">
+        <button
+          type="button"
+          data-drag-handle
+          title="Drag to reorder"
+          className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 shrink-0 select-none"
+        >
+          ⠿
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleCollapsed(step.id)}
+          title={
+            step.isCollapsed
+              ? "Expand step"
+              : "Collapse step"
+          }
+          className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 shrink-0"
+        >
+          <CollapseChevron isCollapsed={step.isCollapsed} />
+        </button>
+        <span className="text-xs font-mono text-slate-500 shrink-0 w-5 text-center">
+          {index + 1}
+        </span>
+        <input
+          type="text"
+          defaultValue={step.alias}
+          placeholder={
+            commandLabel || "Click to name this step"
+          }
+          data-step-alias={step.id}
+          onBlur={handleAliasBlur}
+          onKeyDown={handleAliasKeydown}
+          className="step-alias bg-transparent text-sm font-medium text-slate-200 px-1.5 py-0.5 rounded border-0 focus:outline-none focus:bg-slate-900/40 placeholder:text-slate-200 placeholder:font-medium"
+        />
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={openCommandPicker}
+          data-cmd-picker-trigger
+          className="flex-1 min-w-0 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer"
+        >
+          <span className="flex-1 min-w-0 truncate flex items-center">
+            {triggerLabel}
+          </span>
+          <span className="text-slate-400 shrink-0">▾</span>
+        </button>
+        {step.status && (
+          <StatusBadge status={step.status} />
+        )}
+        {step.command && (
+          <button
+            type="button"
+            onClick={openCommandHelp}
+            title="Show docs for this command's settings"
+            className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-blue-300 hover:bg-slate-700 text-xs"
+          >
+            ⓘ
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setActionsOpen((prev) => !prev)}
+          title="Step actions"
+          className="step-hamburger-btn w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 text-base leading-none"
+        >
+          ≡
+        </button>
+        {actionsOpen && (
+          <div className="step-actions flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() =>
+                window.runOrStopStep?.(step.id)
+              }
+              disabled={!step.command}
+              title={
+                step.status === "running" && step.jobId
+                  ? "Cancel this step"
+                  : "Run this step only"
+              }
+              data-step-run-stop={step.id}
+              className={`step-run-stop ${step.status === "running" && step.jobId ? "is-running" : ""}`}
+            >
+              <span className="step-run-stop-icon step-run-stop-play">
+                ▶
+              </span>
+              <span className="step-run-stop-icon step-run-stop-stop">
+                ⏹
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                moveStep({
+                  stepId: step.id,
+                  direction: -1,
+                  parentGroupId,
+                })
+              }
+              disabled={isFirst}
+              className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                moveStep({
+                  stepId: step.id,
+                  direction: 1,
+                  parentGroupId,
+                })
+              }
+              disabled={isLast}
+              className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
+            >
+              ↓
+            </button>
+            {step.command && (
+              <button
+                type="button"
+                onClick={() =>
+                  window.copyStepYaml?.(step.id)
+                }
+                title="Copy this step's YAML"
+                className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent"
+              >
+                <CopyIcon />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => removeStep(step.id)}
+              title="Remove this step"
+              className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+      {!step.isCollapsed && (
+        <div className="px-3 py-2">
+          {cmd ? (
+            <>
+              {cmd.summary && (
+                <p className="text-xs text-slate-500 mb-2">
+                  {cmd.summary}
+                </p>
+              )}
+              {cmd.note && (
+                <p className="text-xs text-amber-300 bg-amber-950/40 border border-amber-800/50 rounded px-2 py-1 mb-2">
+                  {cmd.note}
+                </p>
+              )}
+              {cmd.outputFolderName && (
+                <p className="text-xs text-amber-500/80 mb-2">
+                  {"→ outputs to "}
+                  <code className="text-amber-400 bg-slate-900 px-1 rounded">
+                    {cmd.outputFolderName}/
+                  </code>
+                  {" subfolder"}
+                </p>
+              )}
+              {step.error && (
+                <p className="text-xs text-red-400 bg-red-950/40 rounded px-2 py-1 mb-2 font-mono">
+                  {step.error}
+                </p>
+              )}
+              <div className="space-y-2">
+                <RenderFields
+                  step={step}
+                  stepIndex={index}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-slate-500 italic">
+              No command selected — choose one from the
+              dropdown above.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

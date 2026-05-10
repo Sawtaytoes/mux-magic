@@ -1,6 +1,6 @@
 import { getDefaultStore } from "jotai"
-import { toYamlStr } from "../components/yamlSerializer"
 import { commandLabel } from "../jobs/commandLabels"
+import { toYamlStr } from "../jobs/yamlSerializer"
 import type {
   Commands,
   Group,
@@ -98,7 +98,7 @@ const applySnapshot = async (
   // COMMANDS). For undo/redo the snapshot was produced by toYamlStr, so the
   // format is always canonical. Use the lazy-loaded COMMANDS if available.
   const { loadYamlFromText } = await import(
-    "../components/loadYaml"
+    "../jobs/loadYaml"
   )
   const commands =
     (window.mediaTools?.COMMANDS as Commands | undefined) ??
