@@ -36,11 +36,81 @@ import {
 
 // ─── Window type augmentations ────────────────────────────────────────────────
 
+interface MediaTools {
+  COMMANDS: Record<string, unknown>
+  renderAll: () => void
+  updateUrl: () => void
+  kickReverseLookups: () => void
+  kickTmdbResolutions: () => void
+  openLoadModal: () => void
+  closeLoadModal: () => void
+  openYamlModal: () => void
+  closeYamlModal: () => void
+  openCommandHelpModal: (args: {
+    commandName: string
+  }) => void
+  closeCommandHelpModal: () => void
+  openApiRunModal: (args: {
+    jobId: string | null
+    status: string
+  }) => void
+  closeApiRunModal: () => void
+  openLookup: (
+    lookupType: string,
+    stepId: string,
+    fieldName: string,
+  ) => void
+  closeLookupModal: () => void
+  openFileExplorer: (
+    path: string,
+    options?: {
+      pickerOnSelect?: (selectedPath: string) => void
+    },
+  ) => void
+  closeFileExplorerModal: () => void
+  showPromptModal: (
+    jobId: string,
+    promptData: Record<string, unknown>,
+  ) => void
+  closePromptModal: () => void
+  syncUndoRedo: (canUndo: boolean, canRedo: boolean) => void
+  pathPickerKeydown: (event: KeyboardEvent) => void
+  pathPickerSelectByIndex: (index: number) => void
+  schedulePathLookup: (
+    inputEl: HTMLElement,
+    target: PathPickerTarget,
+    value: string,
+  ) => void
+  onStepStarted: (
+    stepId: unknown,
+    childJobId: unknown,
+  ) => void
+  onStepFinished: (stepId: unknown, data: unknown) => void
+  onStepProgress: (stepId: unknown, data: unknown) => void
+  onStepLog: (stepId: unknown, line: string) => void
+  onChildStepDone: (stepId: unknown, data: unknown) => void
+  onSequenceDone: () => void
+  findStepById: (stepId: string) => unknown
+  setPathValue: (id: string, value: string) => void
+  commandLabel: (name: string) => string
+  applyLookupSelection: (...args: unknown[]) => void
+  applyDvdCompareSelection: (...args: unknown[]) => void
+  undo: () => void
+  redo: () => void
+  startNewSequence: () => void
+  runSequence: (...args: unknown[]) => void
+  runViaApi: (...args: unknown[]) => void
+  addPath: (...args: unknown[]) => void
+  insertStep: (...args: unknown[]) => void
+  insertGroup: (...args: unknown[]) => void
+  copyYaml: (...args: unknown[]) => void
+  buildParams: (...args: unknown[]) => unknown
+  setAllCollapsed: (...args: unknown[]) => void
+}
+
 declare global {
   interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // biome-ignore lint/suspicious/noExplicitAny: suppressed during react-migration
-    mediaTools: Record<string, any>
+    mediaTools: Partial<MediaTools>
     openLoadModal: () => void
     closeLoadModal: () => void
     openYamlModal: () => void

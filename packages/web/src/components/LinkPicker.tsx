@@ -376,15 +376,9 @@ export const LinkPicker = () => {
                   {item.label}
                 </div>
                 {item.detail && (
-                  <div
-                    className={detailClass}
-                    // biome-ignore lint/security/noDangerouslySetInnerHtml: suppressed during react-migration
-                    dangerouslySetInnerHTML={{
-                      __html: makePathBreakable(
-                        item.detail,
-                      ),
-                    }}
-                  />
+                  <div className={detailClass}>
+                    {makePathBreakable(item.detail)}
+                  </div>
                 )}
               </button>
             )
