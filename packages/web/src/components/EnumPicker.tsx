@@ -1,31 +1,55 @@
-import { useAtom } from "jotai"
+import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
+import { useBuilderActions } from "../hooks/useBuilderActions"
+import { commandsAtom } from "../state/commandsAtom"
 import {
   type EnumPickerAnchor,
   enumPickerStateAtom,
   type TriggerRect,
 } from "../state/pickerAtoms"
-import type { Commands, EnumOption } from "../types"
+import { stepsAtom } from "../state/stepsAtom"
+import type {
+  Commands,
+  EnumOption,
+  Group,
+  SequenceItem,
+  Step,
+} from "../types"
 
 const PICKER_WIDTH = 300
 const PICKER_MAX_HEIGHT = 400
 
-const getCommands = (): Commands =>
-  (window.mediaTools?.COMMANDS as Commands) ?? {}
+const isGroup = (item: SequenceItem): item is Group =>
+  (item as Group).kind === "group"
+
+const findStepById = (
+  steps: SequenceItem[],
+  stepId: string,
+): Step | undefined => {
+  for (const item of steps) {
+    if (!isGroup(item)) {
+      if (item.id === stepId) return item as Step
+    } else {
+      const found = (item as Group).steps.find(
+        (step) => step.id === stepId,
+      )
+      if (found) return found
+    }
+  }
+  return undefined
+}
 
 const buildItems = (
   anchor: EnumPickerAnchor,
+  commands: Commands,
+  steps: SequenceItem[],
 ): EnumOption[] => {
-  const step = (
-    window.mediaTools?.findStepById as
-      | ((id: string) => { command?: string } | undefined)
-      | undefined
-  )?.(anchor.stepId)
+  const step = findStepById(steps, anchor.stepId)
   if (!step?.command) {
     return []
   }
-  const command = getCommands()[step.command]
+  const command = commands[step.command]
   const field = command?.fields?.find(
     (candidate) => candidate.name === anchor.fieldName,
   )
@@ -35,20 +59,13 @@ const buildItems = (
 const findInitialIndex = (
   items: EnumOption[],
   anchor: EnumPickerAnchor,
+  commands: Commands,
+  steps: SequenceItem[],
 ): number => {
-  const step = (
-    window.mediaTools?.findStepById as
-      | ((id: string) =>
-          | {
-              command?: string
-              params?: Record<string, unknown>
-            }
-          | undefined)
-      | undefined
-  )?.(anchor.stepId)
+  const step = findStepById(steps, anchor.stepId)
   const currentValue = step?.params?.[anchor.fieldName]
   const command = step?.command
-    ? getCommands()[step.command]
+    ? commands[step.command]
     : undefined
   const field = command?.fields?.find(
     (candidate) => candidate.name === anchor.fieldName,
@@ -120,12 +137,15 @@ export const EnumPicker = () => {
   const [pickerState, setPickerState] = useAtom(
     enumPickerStateAtom,
   )
+  const commands = useAtomValue(commandsAtom)
+  const allSteps = useAtomValue(stepsAtom)
+  const { setParam } = useBuilderActions()
   const [query, setQuery] = useState("")
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const allItems = pickerState
-    ? buildItems(pickerState.anchor)
+    ? buildItems(pickerState.anchor, commands, allSteps)
     : []
   const queryLower = query.trim().toLowerCase()
   const filtered = queryLower
@@ -140,13 +160,22 @@ export const EnumPicker = () => {
     if (!pickerState) {
       return
     }
-    const items = buildItems(pickerState.anchor)
+    const items = buildItems(
+      pickerState.anchor,
+      commands,
+      allSteps,
+    )
     setQuery("")
     setActiveIndex(
-      findInitialIndex(items, pickerState.anchor),
+      findInitialIndex(
+        items,
+        pickerState.anchor,
+        commands,
+        allSteps,
+      ),
     )
     setTimeout(() => inputRef.current?.focus(), 0)
-  }, [pickerState])
+  }, [pickerState, commands, allSteps])
 
   useEffect(() => {
     if (!pickerState) {
@@ -181,16 +210,7 @@ export const EnumPicker = () => {
     const anchor = pickerState?.anchor
     close()
     if (anchor) {
-      ;(
-        window.setParam as
-          | ((
-              stepId: string,
-              fieldName: string,
-              value: unknown,
-            ) => void)
-          | undefined
-      )?.(anchor.stepId, anchor.fieldName, item.value)
-      window.mediaTools?.renderAll?.()
+      setParam(anchor.stepId, anchor.fieldName, item.value)
     }
   }
 

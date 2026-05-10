@@ -1,12 +1,12 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
+import { commandsAtom } from "../state/commandsAtom"
 import { pathsAtom } from "../state/pathsAtom"
 import {
   stepCounterAtom,
   stepsAtom,
 } from "../state/stepsAtom"
 import { loadModalOpenAtom } from "../state/uiAtoms"
-import type { Commands } from "../types"
 import { loadYamlFromText } from "./loadYaml"
 
 export const LoadModal = () => {
@@ -16,6 +16,7 @@ export const LoadModal = () => {
   const setStepCounter = useSetAtom(stepCounterAtom)
   const currentPaths = useAtomValue(pathsAtom)
   const currentStepCounter = useAtomValue(stepCounterAtom)
+  const commands = useAtomValue(commandsAtom)
   const [error, setError] = useState<string | null>(null)
 
   const close = () => {
@@ -44,8 +45,6 @@ export const LoadModal = () => {
       setError(null)
 
       try {
-        const commands = window.mediaTools
-          .COMMANDS as Commands
         const result = loadYamlFromText(
           text,
           commands,
@@ -55,11 +54,6 @@ export const LoadModal = () => {
         setSteps(result.steps)
         setPaths(result.paths)
         setStepCounter(result.stepCounter)
-        // Side-effects owned by legacy JS during the transitional period.
-        window.mediaTools.renderAll?.()
-        window.mediaTools.updateUrl?.()
-        window.mediaTools.kickReverseLookups?.()
-        window.mediaTools.kickTmdbResolutions?.()
         setIsOpen(false)
       } catch (err) {
         setError(
@@ -76,6 +70,7 @@ export const LoadModal = () => {
     }
   }, [
     isOpen,
+    commands,
     currentPaths,
     currentStepCounter,
     setSteps,

@@ -16,41 +16,45 @@ import { PathVarCard } from "../components/PathVarCard"
 import { PromptModal } from "../components/PromptModal"
 import { StepCard } from "../components/StepCard"
 import { YamlModal } from "../components/YamlModal"
+import { useBuilderActions } from "../hooks/useBuilderActions"
+import { commandsAtom } from "../state/commandsAtom"
 import { pathsAtom } from "../state/pathsAtom"
 import { addPathAtom } from "../state/sequenceAtoms"
 import { stepsAtom } from "../state/stepsAtom"
-import type { Group, SequenceItem, Step } from "../types"
+import type { Commands, Group, SequenceItem, Step } from "../types"
 
 const isGroup = (item: SequenceItem): item is Group =>
   "kind" in item && item.kind === "group"
+
+const loadCommands = async (
+  setCommands: (commands: Commands) => void,
+): Promise<void> => {
+  try {
+    const mod = (await new Function(
+      "url",
+      "return import(url)",
+    )("/builder/js/commands.js")) as {
+      COMMANDS: Commands
+    }
+    setCommands(mod.COMMANDS)
+  } catch {
+    // Not available without the server or in tests.
+  }
+}
 
 // ─── SequenceList ─────────────────────────────────────────────────────────────
 
 const SequenceList = () => {
   const steps = useAtomValue(stepsAtom)
+  const actions = useBuilderActions()
 
   // Flat index used by StepCard to show the step number across groups.
   let flatIndex = 0
 
-  const insertStep = (
-    index: number,
-    parentGroupId?: string | null,
-  ) => {
-    window.mediaTools?.insertStep?.(index, parentGroupId)
-  }
-
-  const insertSequentialGroup = (index: number) => {
-    window.mediaTools?.insertGroup?.(index, false)
-  }
-
-  const insertParallelGroup = (index: number) => {
-    window.mediaTools?.insertGroup?.(index, true)
-  }
-
   const handlePaste =
     (index: number) =>
     (event: React.MouseEvent<HTMLButtonElement>) => {
-      window.mediaTools?.pasteCardAt?.({ itemIndex: index })
+      window.pasteCardAt?.({ itemIndex: index })
       event.stopPropagation()
     }
 
@@ -61,12 +65,14 @@ const SequenceList = () => {
       <InsertDivider
         key={`divider-before-${item.id}`}
         index={itemIndex}
-        onInsertStep={() => insertStep(itemIndex)}
+        onInsertStep={() =>
+          actions.insertStep(itemIndex)
+        }
         onInsertSequentialGroup={() =>
-          insertSequentialGroup(itemIndex)
+          actions.insertGroup(itemIndex, false)
         }
         onInsertParallelGroup={() =>
-          insertParallelGroup(itemIndex)
+          actions.insertGroup(itemIndex, true)
         }
         onPaste={handlePaste(itemIndex)}
       />,
@@ -105,12 +111,12 @@ const SequenceList = () => {
     <InsertDivider
       key="divider-end"
       index={steps.length}
-      onInsertStep={() => insertStep(steps.length)}
+      onInsertStep={() => actions.insertStep(steps.length)}
       onInsertSequentialGroup={() =>
-        insertSequentialGroup(steps.length)
+        actions.insertGroup(steps.length, false)
       }
       onInsertParallelGroup={() =>
-        insertParallelGroup(steps.length)
+        actions.insertGroup(steps.length, true)
       }
       onPaste={handlePaste(steps.length)}
     />,
@@ -122,12 +128,12 @@ const SequenceList = () => {
         <p className="text-sm">No steps yet.</p>
         <InsertDivider
           index={0}
-          onInsertStep={() => insertStep(0)}
+          onInsertStep={() => actions.insertStep(0)}
           onInsertSequentialGroup={() =>
-            insertSequentialGroup(0)
+            actions.insertGroup(0, false)
           }
           onInsertParallelGroup={() =>
-            insertParallelGroup(0)
+            actions.insertGroup(0, true)
           }
           onPaste={handlePaste(0)}
         />
@@ -167,7 +173,8 @@ const PathVarList = () => {
 // ─── Keyboard shortcuts ───────────────────────────────────────────────────────
 
 const useBuilderKeyboard = () => {
-  const shortcutsRef = useRef<(e: KeyboardEvent) => void>()
+  const { undo, redo } = useBuilderActions()
+  const shortcutsRef = useRef<((event: KeyboardEvent) => void) | undefined>(undefined)
 
   useEffect(() => {
     shortcutsRef.current = (event: KeyboardEvent) => {
@@ -183,16 +190,16 @@ const useBuilderKeyboard = () => {
       ) {
         event.preventDefault()
         if (event.shiftKey) {
-          window.mediaTools?.redo?.()
+          void redo()
         } else {
-          window.mediaTools?.undo?.()
+          void undo()
         }
       } else if (
         event.key === "y" &&
         (event.ctrlKey || event.metaKey)
       ) {
         event.preventDefault()
-        window.mediaTools?.redo?.()
+        void redo()
       }
     }
 
@@ -201,13 +208,18 @@ const useBuilderKeyboard = () => {
     document.addEventListener("keydown", handler)
     return () =>
       document.removeEventListener("keydown", handler)
-  }, [])
+  }, [undo, redo])
 }
 
 // ─── BuilderPage ──────────────────────────────────────────────────────────────
 
 export const BuilderPage = () => {
   useBuilderKeyboard()
+
+  const setCommands = useSetAtom(commandsAtom)
+  useEffect(() => {
+    void loadCommands(setCommands)
+  }, [setCommands])
 
   return (
     <div

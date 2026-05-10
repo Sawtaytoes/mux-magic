@@ -1,5 +1,6 @@
-import { useAtom, useAtomValue } from "jotai"
+import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
+import { useBuilderActions } from "../hooks/useBuilderActions"
 import {
   canRedoAtom,
   canUndoAtom,
@@ -7,7 +8,9 @@ import {
 import {
   dryRunAtom,
   failureModeAtom,
+  loadModalOpenAtom,
   runningAtom,
+  yamlModalOpenAtom,
 } from "../state/uiAtoms"
 
 // ─── Responsive menu state ────────────────────────────────────────────────────
@@ -19,21 +22,6 @@ const toggleMenu = (
   target: OpenMenu,
 ): OpenMenu => (current === target ? null : target)
 
-// ─── Bridge call helpers ──────────────────────────────────────────────────────
-// These reach into the legacy JS via window.mediaTools during the transitional
-// period. Each one is guarded so TypeScript doesn't complain about unknown keys.
-
-const callBridge = (method: string, ...args: unknown[]) => {
-  const bridge = window.mediaTools as
-    | Record<string, unknown>
-    | undefined
-  if (typeof bridge?.[method] === "function") {
-    ;(bridge[method] as (...params: unknown[]) => void)(
-      ...args,
-    )
-  }
-}
-
 // ─── PageHeader ───────────────────────────────────────────────────────────────
 
 export const PageHeader = () => {
@@ -41,21 +29,20 @@ export const PageHeader = () => {
   const [failureMode, setFailureMode] =
     useAtom(failureModeAtom)
   const running = useAtomValue(runningAtom)
-
-  const [openMenu, setOpenMenu] = useState<OpenMenu>(null)
-  // Undo/redo enabled state comes from atoms updated by builderBridge (React
-  // SPA) or via window.mediaTools.syncUndoRedo() called by the legacy
-  // sequence-state.js refreshUndoRedoButtons(). No MutationObserver needed.
   const canUndo = useAtomValue(canUndoAtom)
   const canRedo = useAtomValue(canRedoAtom)
+  const setLoadModalOpen = useSetAtom(loadModalOpenAtom)
+  const setYamlModalOpen = useSetAtom(yamlModalOpenAtom)
+
+  const actions = useBuilderActions()
+
+  const [openMenu, setOpenMenu] = useState<OpenMenu>(null)
 
   // ─── Click-outside dismissal for responsive menus ─────────────────────────
   useEffect(() => {
     if (!openMenu) return
     const handleMouseDown = (event: MouseEvent) => {
       const target = event.target as Element | null
-      // Ignore clicks on the toggle buttons themselves (their onClick already
-      // handles open/close) and inside the open menu panel.
       if (
         target?.closest(
           "#page-nav-toggle, #page-controls-toggle, .page-menu",
@@ -72,12 +59,10 @@ export const PageHeader = () => {
       )
   }, [openMenu])
 
-  // ─── Esc key: close menus + legacy modals ────────────────────────────────
+  // ─── Esc key: close menus ────────────────────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return
-      callBridge("closeYamlModal")
-      callBridge("closeApiRunModal")
       setOpenMenu(null)
     }
     document.addEventListener("keydown", handleKeyDown)
@@ -166,7 +151,7 @@ export const PageHeader = () => {
             <button
               type="button"
               onClick={() => {
-                callBridge("startNewSequence")
+                actions.startNew()
                 setOpenMenu(null)
               }}
               title="Clear the current sequence and start fresh (Ctrl+Z to undo)"
@@ -194,7 +179,7 @@ export const PageHeader = () => {
           <button
             type="button"
             id="undo-btn"
-            onClick={() => callBridge("undo")}
+            onClick={() => void actions.undo()}
             title="Undo (Ctrl+Z)"
             disabled={!canUndo}
             className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7"
@@ -204,7 +189,7 @@ export const PageHeader = () => {
           <button
             type="button"
             id="redo-btn"
-            onClick={() => callBridge("redo")}
+            onClick={() => void actions.redo()}
             title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
             disabled={!canRedo}
             className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7"
@@ -214,9 +199,7 @@ export const PageHeader = () => {
           <span className="w-px h-4 bg-slate-700 mx-0.5" />
           <button
             type="button"
-            onClick={() =>
-              callBridge("setAllCollapsed", true)
-            }
+            onClick={() => actions.setAllCollapsed(true)}
             title="Collapse every step + group"
             className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
           >
@@ -236,9 +219,7 @@ export const PageHeader = () => {
           </button>
           <button
             type="button"
-            onClick={() =>
-              callBridge("setAllCollapsed", false)
-            }
+            onClick={() => actions.setAllCollapsed(false)}
             title="Expand every step + group"
             className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
           >
@@ -332,7 +313,7 @@ export const PageHeader = () => {
             <button
               type="button"
               id="run-btn"
-              onClick={() => callBridge("runSequence")}
+              onClick={() => void actions.runViaApi()}
               disabled={running}
               title="Run the entire sequence via the server-side sequence API (/sequences/run)"
               className="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
@@ -342,7 +323,7 @@ export const PageHeader = () => {
             <button
               type="button"
               id="run-api-btn"
-              onClick={() => callBridge("runViaApi")}
+              onClick={() => void actions.runViaApi()}
               disabled={running}
               title="POST the YAML to /sequences/run as one umbrella job (server-side orchestration)"
               className="text-xs bg-sky-700 hover:bg-sky-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
@@ -357,7 +338,7 @@ export const PageHeader = () => {
             <button
               type="button"
               data-action="add-path"
-              onClick={() => callBridge("addPath")}
+              onClick={() => actions.addPath()}
               title="Add a path variable"
               className="text-xs bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded font-medium"
             >
@@ -373,7 +354,7 @@ export const PageHeader = () => {
               <button
                 type="button"
                 id="load-btn"
-                onClick={() => callBridge("openLoadModal")}
+                onClick={() => setLoadModalOpen(true)}
                 title="Load YAML"
                 className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors"
               >
@@ -396,7 +377,7 @@ export const PageHeader = () => {
               <button
                 type="button"
                 id="copy-btn"
-                onClick={() => callBridge("copyYaml")}
+                onClick={() => void actions.copyYaml()}
                 title="Copy YAML"
                 className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors"
               >
@@ -425,7 +406,7 @@ export const PageHeader = () => {
               {/* View YAML */}
               <button
                 type="button"
-                onClick={() => callBridge("openYamlModal")}
+                onClick={() => setYamlModalOpen(true)}
                 title="View YAML"
                 className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors"
               >

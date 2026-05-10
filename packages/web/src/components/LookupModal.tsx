@@ -1,5 +1,6 @@
 import { useAtom } from "jotai"
 import { useEffect, useRef } from "react"
+import { useBuilderActions } from "../hooks/useBuilderActions"
 import { lookupModalAtom } from "../state/uiAtoms"
 import type {
   LookupGroup,
@@ -99,57 +100,33 @@ const fetchReleases = async (
   }
 }
 
-// ─── Bridge: write selection back to the legacy step editor ──────────────────
+// ─── Selection callbacks: write result back into step params ─────────────────
+
+type SetParamFn = (
+  stepId: string,
+  fieldName: string,
+  value: unknown,
+) => void
 
 const applySimpleSelection = (
   state: LookupState,
   id: number | string,
   displayName: string,
+  setParam: SetParamFn,
 ) => {
-  const bridge = window.mediaTools as
-    | Record<string, unknown>
-    | undefined
-  if (typeof bridge?.applyLookupSelection === "function") {
-    ;(
-      bridge.applyLookupSelection as (
-        stepId: string,
-        fieldName: string,
-        id: number | string,
-        displayName: string,
-      ) => void
-    )(state.stepId, state.fieldName, id, displayName)
-  }
+  setParam(state.stepId, state.fieldName, {
+    id,
+    name: displayName,
+  })
 }
 
 const applyDvdCompareSelection = (
   state: LookupState,
   hash: string | number,
   label: string,
+  setParam: SetParamFn,
 ) => {
-  const bridge = window.mediaTools as
-    | Record<string, unknown>
-    | undefined
-  if (
-    typeof bridge?.applyDvdCompareSelection === "function"
-  ) {
-    ;(
-      bridge.applyDvdCompareSelection as (
-        stepId: string,
-        group: LookupGroup | null,
-        selectedFid: string | null,
-        selectedVariant: string | null,
-        hash: string | number,
-        label: string,
-      ) => void
-    )(
-      state.stepId,
-      state.selectedGroup,
-      state.selectedFid,
-      state.selectedVariant,
-      hash,
-      label,
-    )
-  }
+  setParam(state.stepId, state.fieldName, { hash, label })
 }
 
 // ─── Search stage ─────────────────────────────────────────────────────────────
@@ -158,10 +135,12 @@ const SearchStage = ({
   state,
   onUpdate,
   onClose,
+  setParam,
 }: {
   state: LookupState
   onUpdate: (patch: Partial<LookupState>) => void
   onClose: () => void
+  setParam: SetParamFn
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -342,25 +321,26 @@ const SearchStage = ({
                   let id: number | string | undefined
                   let displayName = ""
                   if (state.lookupType === "mal") {
-                    id = r.malId
-                    displayName = r.name ?? ""
+                    id = typedResult.malId
+                    displayName = typedResult.name ?? ""
                   } else if (state.lookupType === "anidb") {
-                    id = r.aid
-                    displayName = r.name ?? ""
+                    id = typedResult.aid
+                    displayName = typedResult.name ?? ""
                   } else if (state.lookupType === "tvdb") {
-                    id = r.tvdbId
-                    displayName = r.name ?? ""
+                    id = typedResult.tvdbId
+                    displayName = typedResult.name ?? ""
                   } else if (state.lookupType === "tmdb") {
-                    id = r.movieDbId
-                    displayName = r.year
-                      ? `${r.title} (${r.year})`
-                      : (r.title ?? "")
+                    id = typedResult.movieDbId
+                    displayName = typedResult.year
+                      ? `${typedResult.title} (${typedResult.year})`
+                      : (typedResult.title ?? "")
                   }
                   if (id !== undefined) {
                     applySimpleSelection(
                       state,
                       id,
                       displayName,
+                      setParam,
                     )
                     onClose()
                   }
@@ -391,10 +371,12 @@ const VariantStage = ({
   state,
   onUpdate,
   onClose,
+  setParam,
 }: {
   state: LookupState
   onUpdate: (patch: Partial<LookupState>) => void
   onClose: () => void
+  setParam: SetParamFn
 }) => {
   const group = state.selectedGroup
   if (!group) return null
@@ -417,6 +399,7 @@ const VariantStage = ({
             state,
             releases[0].hash,
             releases[0].label,
+            setParam,
           )
           onClose()
         } else {
@@ -460,9 +443,11 @@ const VariantStage = ({
 const ReleaseStage = ({
   state,
   onClose,
+  setParam,
 }: {
   state: LookupState
   onClose: () => void
+  setParam: SetParamFn
 }) => {
   if (state.loading) {
     return (
@@ -504,6 +489,7 @@ const ReleaseStage = ({
               state,
               release.hash,
               release.label,
+              setParam,
             )
             onClose()
           }}
@@ -525,6 +511,7 @@ export const LookupModal = () => {
   const [state, setState] = useAtom(lookupModalAtom)
   const stateRef = useRef(state)
   stateRef.current = state
+  const { setParam } = useBuilderActions()
 
   const update = (patch: Partial<LookupState>) => {
     setState((prev) =>
@@ -632,6 +619,7 @@ export const LookupModal = () => {
               state={state}
               onUpdate={update}
               onClose={close}
+              setParam={setParam}
             />
           )}
           {state.stage === "variant" && (
@@ -639,10 +627,15 @@ export const LookupModal = () => {
               state={state}
               onUpdate={update}
               onClose={close}
+              setParam={setParam}
             />
           )}
           {state.stage === "release" && (
-            <ReleaseStage state={state} onClose={close} />
+            <ReleaseStage
+              state={state}
+              onClose={close}
+              setParam={setParam}
+            />
           )}
         </div>
       </div>

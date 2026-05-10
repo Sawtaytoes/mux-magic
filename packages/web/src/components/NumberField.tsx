@@ -43,7 +43,7 @@ export const NumberField = ({
         onInput={handleInput}
         className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
       />
-      {field.companionNameField && companion && (
+      {field.companionNameField && !!companion && (
         <p
           data-step={step.id}
           data-companion={field.name}

@@ -13,8 +13,12 @@ export const commandHelpCommandNameAtom = atom<
   string | null
 >(null)
 export const selectedStepIdAtom = atom<string | null>(null)
-export const dryRunAtom = atom<boolean>(false)
-export const failureModeAtom = atom<boolean>(false)
+export const dryRunAtom = atom<boolean>(
+  localStorage.getItem("isDryRun") === "1",
+)
+export const failureModeAtom = atom<boolean>(
+  localStorage.getItem("dryRunScenario") === "failure",
+)
 
 // ─── Wave E atoms ─────────────────────────────────────────────────────────────
 
