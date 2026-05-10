@@ -7,7 +7,7 @@ import "../packages/web/src/styles/builderStyles.css";
 
 // Start MSW in the Storybook iframe — handlers declared per-story via
 // the `msw` parameter. No-op when no handlers are configured.
-initMsw();
+initMsw({ quiet: true });
 
 const preview: Preview = {
   loaders: [mswLoader],

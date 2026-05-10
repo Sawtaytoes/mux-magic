@@ -71,9 +71,9 @@ export const Open: Story = {
 
 export const Closed: Story = {
   decorators: [
-    () => {
+    (Story) => {
       const store = createStore()
-      return (Story: React.ComponentType) => (
+      return (
         <Provider store={store}>
           <Story />
         </Provider>
