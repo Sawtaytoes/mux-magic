@@ -30,7 +30,7 @@ Dialogue: 0,0:00:00.00,0:00:01.00,Default,,Hello
 describe(modifySubtitleMetadata.name, () => {
   beforeEach(() => {
     vol.fromJSON({
-      "G:\\Work\\episode-01.ass": MINIMAL_ASS,
+      "/work/episode-01.ass": MINIMAL_ASS,
     })
   })
 
@@ -40,7 +40,7 @@ describe(modifySubtitleMetadata.name, () => {
         modifySubtitleMetadata({
           isRecursive: false,
           rules: [],
-          sourcePath: "G:\\Work",
+          sourcePath: "/work",
         })
         .pipe(toArray()),
       )
@@ -48,7 +48,7 @@ describe(modifySubtitleMetadata.name, () => {
 
       // The .ass file content stays exactly as seeded — no parse/serialize
       // round-trip, no formatting drift.
-      const after = await readFile("G:\\Work\\episode-01.ass", "utf8")
+      const after = await readFile("/work/episode-01.ass", "utf8")
       expect(after).toBe(MINIMAL_ASS)
     })
   ))
@@ -60,7 +60,7 @@ describe(modifySubtitleMetadata.name, () => {
           isRecursive: false,
           // @ts-expect-error — defensive: external callers might omit it.
           rules: undefined,
-          sourcePath: "G:\\Work",
+          sourcePath: "/work",
         })
         .pipe(toArray()),
       )
@@ -71,14 +71,14 @@ describe(modifySubtitleMetadata.name, () => {
   test("emits a { filePath } record per modified file so job.results is useful, not [null, null, …]", async () => (
     captureConsoleMessage("info", async () => {
       vol.fromJSON({
-        "G:\\Work\\episode-02.ass": MINIMAL_ASS,
+        "/work/episode-02.ass": MINIMAL_ASS,
       })
 
       const emissions = await firstValueFrom(
         modifySubtitleMetadata({
           isRecursive: false,
           rules: [{ type: "setScriptInfo", key: "ScriptType", value: "v4.00+" }],
-          sourcePath: "G:\\Work",
+          sourcePath: "/work",
         })
         .pipe(toArray()),
       )
@@ -86,8 +86,8 @@ describe(modifySubtitleMetadata.name, () => {
       // One record per .ass file in the directory (episode-01 from the
       // outer beforeEach + episode-02 from above), not nulls.
       expect(emissions).toEqual(expect.arrayContaining([
-        { filePath: "G:\\Work\\episode-01.ass" },
-        { filePath: "G:\\Work\\episode-02.ass" },
+        { filePath: "/work/episode-01.ass" },
+        { filePath: "/work/episode-02.ass" },
       ]))
       expect(emissions).toHaveLength(2)
     })
@@ -96,7 +96,7 @@ describe(modifySubtitleMetadata.name, () => {
   test("hasDefaultRules:true prepends the heuristic rules and bumps ScriptType end-to-end", async () => (
     captureConsoleMessage("info", async () => {
       vol.fromJSON({
-        "G:\\Work\\episode-01.ass": HD_TV601_ASS,
+        "/work/episode-01.ass": HD_TV601_ASS,
       })
 
       await firstValueFrom(
@@ -104,12 +104,12 @@ describe(modifySubtitleMetadata.name, () => {
           hasDefaultRules: true,
           isRecursive: false,
           rules: [],
-          sourcePath: "G:\\Work",
+          sourcePath: "/work",
         })
         .pipe(toArray()),
       )
 
-      const after = await readFile("G:\\Work\\episode-01.ass", "utf8")
+      const after = await readFile("/work/episode-01.ass", "utf8")
       // Heuristic always pins ScriptType (no-op here since it's already
       // v4.00+) AND fixes the YCbCr Matrix to TV.709 because the file is
       // TV.601 outside the SD-DVD 640x480 carve-out.
@@ -127,7 +127,7 @@ describe(modifySubtitleMetadata.name, () => {
   test("hasDefaultRules:true with user rules — user rules run AFTER and override defaults", async () => (
     captureConsoleMessage("info", async () => {
       vol.fromJSON({
-        "G:\\Work\\episode-01.ass": HD_TV601_ASS,
+        "/work/episode-01.ass": HD_TV601_ASS,
       })
 
       await firstValueFrom(
@@ -139,12 +139,12 @@ describe(modifySubtitleMetadata.name, () => {
             // MarginV=90 rule, so 100 wins on the Default style.
             { type: "setStyleFields", fields: { MarginV: "100" } },
           ],
-          sourcePath: "G:\\Work",
+          sourcePath: "/work",
         })
         .pipe(toArray()),
       )
 
-      const after = await readFile("G:\\Work\\episode-01.ass", "utf8")
+      const after = await readFile("/work/episode-01.ass", "utf8")
       // Default's MarginV is 100 (user override), MarginL/R stayed 200
       // (default rule). Signs' MarginV is also 100 because the user
       // rule has no ignored-names regex.
@@ -156,7 +156,7 @@ describe(modifySubtitleMetadata.name, () => {
   test("user rule with when: predicate is dropped when the aggregate batch fails the predicate", async () => (
     captureConsoleMessage("info", async () => {
       vol.fromJSON({
-        "G:\\Work\\episode-01.ass": HD_TV601_ASS,
+        "/work/episode-01.ass": HD_TV601_ASS,
       })
 
       await firstValueFrom(
@@ -172,12 +172,12 @@ describe(modifySubtitleMetadata.name, () => {
               when: { anyScriptInfo: { PlayResX: "640", PlayResY: "480" } },
             },
           ],
-          sourcePath: "G:\\Work",
+          sourcePath: "/work",
         })
         .pipe(toArray()),
       )
 
-      const after = await readFile("G:\\Work\\episode-01.ass", "utf8")
+      const after = await readFile("/work/episode-01.ass", "utf8")
       expect(after).not.toContain("Title: ShouldNotAppear")
     })
   ))
@@ -185,7 +185,7 @@ describe(modifySubtitleMetadata.name, () => {
   test("user rule with $ref to a named predicate resolves correctly through the orchestrator", async () => (
     captureConsoleMessage("info", async () => {
       vol.fromJSON({
-        "G:\\Work\\episode-01.ass": HD_TV601_ASS,
+        "/work/episode-01.ass": HD_TV601_ASS,
       })
 
       await firstValueFrom(
@@ -207,12 +207,12 @@ describe(modifySubtitleMetadata.name, () => {
               },
             },
           ],
-          sourcePath: "G:\\Work",
+          sourcePath: "/work",
         })
         .pipe(toArray()),
       )
 
-      const after = await readFile("G:\\Work\\episode-01.ass", "utf8")
+      const after = await readFile("/work/episode-01.ass", "utf8")
       expect(after).toContain("YCbCr Matrix: TV.709")
     })
   ))

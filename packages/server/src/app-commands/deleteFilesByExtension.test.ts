@@ -8,11 +8,11 @@ import { deleteFilesByExtension } from "./deleteFilesByExtension.js"
 describe(deleteFilesByExtension.name, () => {
   beforeEach(() => {
     vol.fromJSON({
-      "G:\\AnimeSubtitles\\movie.srt": "",
-      "G:\\AnimeSubtitles\\movie.ass": "",
-      "G:\\AnimeSubtitles\\episode.SRT": "",
-      "G:\\AnimeSubtitles\\notes.txt": "",
-      "G:\\AnimeSubtitles\\subtitles\\extra.srt": "",
+      "/anime-subtitles/movie.srt": "",
+      "/anime-subtitles/movie.ass": "",
+      "/anime-subtitles/episode.SRT": "",
+      "/anime-subtitles/notes.txt": "",
+      "/anime-subtitles/subtitles/extra.srt": "",
     })
   })
 
@@ -20,7 +20,7 @@ describe(deleteFilesByExtension.name, () => {
     await expect(
       firstValueFrom(
         deleteFilesByExtension({
-          sourcePath: "G:\\AnimeSubtitles",
+          sourcePath: "/anime-subtitles",
           extensions: [".srt"],
           isRecursive: true,
           recursiveDepth: 2,
@@ -32,15 +32,15 @@ describe(deleteFilesByExtension.name, () => {
     )
     .resolves
     .toEqual([
-      "G:\\AnimeSubtitles\\movie.srt",
-      "G:\\AnimeSubtitles\\episode.SRT",
-      "G:\\AnimeSubtitles\\subtitles\\extra.srt",
+      "/anime-subtitles/movie.srt",
+      "/anime-subtitles/episode.SRT",
+      "/anime-subtitles/subtitles/extra.srt",
     ])
 
-    await expect(stat("G:\\AnimeSubtitles\\movie.srt")).rejects.toThrow()
-    await expect(stat("G:\\AnimeSubtitles\\episode.SRT")).rejects.toThrow()
-    await expect(stat("G:\\AnimeSubtitles\\subtitles\\extra.srt")).rejects.toThrow()
-    await expect(stat("G:\\AnimeSubtitles\\movie.ass")).resolves.toBeDefined()
-    await expect(stat("G:\\AnimeSubtitles\\notes.txt")).resolves.toBeDefined()
+    await expect(stat("/anime-subtitles/movie.srt")).rejects.toThrow()
+    await expect(stat("/anime-subtitles/episode.SRT")).rejects.toThrow()
+    await expect(stat("/anime-subtitles/subtitles/extra.srt")).rejects.toThrow()
+    await expect(stat("/anime-subtitles/movie.ass")).resolves.toBeDefined()
+    await expect(stat("/anime-subtitles/notes.txt")).resolves.toBeDefined()
   })
 })

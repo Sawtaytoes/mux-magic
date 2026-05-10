@@ -8,7 +8,7 @@ import { keepLanguages } from "./keepLanguages.js"
 describe(keepLanguages.name, () => {
   beforeEach(() => {
     vol.fromJSON({
-      "G:\\Work\\readme.txt": "ignore me",
+      "/work/readme.txt": "ignore me",
     })
   })
 
@@ -23,13 +23,13 @@ describe(keepLanguages.name, () => {
         hasFirstAudioLanguage: false,
         hasFirstSubtitlesLanguage: false,
         isRecursive: false,
-        sourcePath: "G:\\Work",
+        sourcePath: "/work",
         subtitlesLanguages: ["eng"],
       })
       .pipe(toArray()),
     )
 
-    const folderStats = await stat("G:\\Work\\LANGUAGE-TRIMMED")
+    const folderStats = await stat("/work/LANGUAGE-TRIMMED")
     expect(folderStats.isDirectory()).toBe(true)
   })
 })

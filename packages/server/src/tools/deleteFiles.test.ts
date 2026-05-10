@@ -51,8 +51,8 @@ describe(deleteFiles.name, () => {
   beforeEach(() => {
     trashCalls.length = 0
     vol.fromJSON({
-      "G:\\Disc-Rips\\SOLDIER\\a.mkv": "a",
-      "G:\\Disc-Rips\\SOLDIER\\b.mkv": "b",
+      "/disc-rips/SOLDIER/a.mkv": "a",
+      "/disc-rips/SOLDIER/b.mkv": "b",
     })
   })
 
@@ -63,8 +63,8 @@ describe(deleteFiles.name, () => {
   test("trash mode routes through the trash package and reports per-path success", async () => {
     process.env.DELETE_TO_TRASH = "true"
     const { results } = await deleteFiles([
-      "G:\\Disc-Rips\\SOLDIER\\a.mkv",
-      "G:\\Disc-Rips\\SOLDIER\\b.mkv",
+      "/disc-rips/SOLDIER/a.mkv",
+      "/disc-rips/SOLDIER/b.mkv",
     ])
     expect(results.every((res) => res.ok)).toBe(true)
     // network-drive detection is no-op on non-Windows runners; on
@@ -77,19 +77,19 @@ describe(deleteFiles.name, () => {
   test("permanent mode uses fs.unlink and removes the file from disk", async () => {
     process.env.DELETE_TO_TRASH = "false"
     const { results } = await deleteFiles([
-      "G:\\Disc-Rips\\SOLDIER\\a.mkv",
+      "/disc-rips/SOLDIER/a.mkv",
     ])
     expect(results[0].ok).toBe(true)
     expect(results[0].mode).toBe("permanent")
     expect(trashCalls).toHaveLength(0)
-    expect(() => vol.statSync("G:\\Disc-Rips\\SOLDIER\\a.mkv")).toThrow()
+    expect(() => vol.statSync("/disc-rips/SOLDIER/a.mkv")).toThrow()
   })
 
   test("rejects relative paths without aborting the batch", async () => {
     process.env.DELETE_TO_TRASH = "false"
     const { results } = await deleteFiles([
-      "G:\\Disc-Rips\\SOLDIER\\a.mkv",   // valid
-      "relative/path.mkv",                // relative — rejected
+      "/disc-rips/SOLDIER/a.mkv",   // valid
+      "relative/path.mkv",           // relative — rejected
     ])
     expect(results[0].ok).toBe(true)
     expect(results[1].ok).toBe(false)

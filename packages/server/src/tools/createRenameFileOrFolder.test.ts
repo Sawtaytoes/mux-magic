@@ -56,8 +56,8 @@ describe(renameFileOrFolder.name, () => {
     expect(
       firstValueFrom(
         renameFileOrFolder({
-          newPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv",
-          oldPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv",
+          newPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
+          oldPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
         })
       )
     )
@@ -70,15 +70,15 @@ describe(renameFileOrFolder.name, () => {
   test("errors when the renamed file already exists", async () => {
     vol
     .fromJSON({
-      "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv": "",
-      "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv": "",
+      "/movies/Star Wars (1977)/Star Wars (1977).mkv": "",
+      "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv": "",
     })
 
     expect(
       firstValueFrom(
         renameFileOrFolder({
-          newPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv",
-          oldPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv",
+          newPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
+          oldPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
         })
       )
     )
@@ -91,14 +91,14 @@ describe(renameFileOrFolder.name, () => {
   test("renames a file", async () => {
     vol
     .fromJSON({
-      "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv": "",
+      "/movies/Star Wars (1977)/Star Wars (1977).mkv": "",
     })
 
     expect(
       firstValueFrom(
         renameFileOrFolder({
-          newPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv",
-          oldPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv",
+          newPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
+          oldPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
         })
       )
     )
@@ -112,8 +112,8 @@ describe(createRenameFileOrFolderObservable.name, () => {
     expect(
       firstValueFrom(
         createRenameFileOrFolderObservable({
-          fullPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv",
-          sourcePath: "G:\\Movies\\Star Wars (1977)",
+          fullPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
+          sourcePath: "/movies/Star Wars (1977)",
         })(
           "Star Wars (1977)",
         )
@@ -136,8 +136,8 @@ describe(createRenameFileOrFolderObservable.name, () => {
             expect(
               firstValueFrom(
                 createRenameFileOrFolderObservable({
-                  fullPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv",
-                  sourcePath: "G:\\Movies\\Star Wars (1977)",
+                  fullPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
+                  sourcePath: "/movies/Star Wars (1977)",
                 })(
                   "Star Wars (1977) {edition-4K77}",
                 )
@@ -176,8 +176,8 @@ describe(createRenameFileOrFolderObservable.name, () => {
   test("errors when the renamed file already exists", async () => {
     vol
     .fromJSON({
-      "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv": "",
-      "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv": "",
+      "/movies/Star Wars (1977)/Star Wars (1977).mkv": "",
+      "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv": "",
     })
 
     await (
@@ -190,8 +190,8 @@ describe(createRenameFileOrFolderObservable.name, () => {
             expect(
               firstValueFrom(
                 createRenameFileOrFolderObservable({
-                  fullPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv",
-                  sourcePath: "G:\\Movies\\Star Wars (1977)",
+                  fullPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
+                  sourcePath: "/movies/Star Wars (1977)",
                 })(
                   "Star Wars (1977) {edition-4K77}",
                 )
@@ -228,7 +228,7 @@ describe(createRenameFileOrFolderObservable.name, () => {
   test("renames a file", async () => {
     vol
     .fromJSON({
-      "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv": "",
+      "/movies/Star Wars (1977)/Star Wars (1977).mkv": "",
     })
 
     await (
@@ -241,8 +241,8 @@ describe(createRenameFileOrFolderObservable.name, () => {
             expect(
               firstValueFrom(
                 createRenameFileOrFolderObservable({
-                  fullPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv",
-                  sourcePath: "G:\\Movies\\Star Wars (1977)",
+                  fullPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
+                  sourcePath: "/movies/Star Wars (1977)",
                 })(
                   "Star Wars (1977) {edition-4K77}",
                 )
@@ -250,8 +250,8 @@ describe(createRenameFileOrFolderObservable.name, () => {
             )
             .resolves
             .toEqual({
-              newPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv",
-              oldPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv",
+              newPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
+              oldPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
             })
           )
 
@@ -284,12 +284,12 @@ describe(createRenameFileOrFolderObservable.name, () => {
             ) => (
               text
               .includes(
-                "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv"
+                "/movies/Star Wars (1977)/Star Wars (1977).mkv"
               )
             ))
           )
           .toContain(
-            "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv"
+            "/movies/Star Wars (1977)/Star Wars (1977).mkv"
           )
 
           expect(
@@ -299,12 +299,12 @@ describe(createRenameFileOrFolderObservable.name, () => {
             ) => (
               text
               .includes(
-                "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv"
+                "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv"
               )
             ))
           )
           .toContain(
-            "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv"
+            "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv"
           )
         }
       )

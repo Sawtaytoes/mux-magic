@@ -6,14 +6,14 @@ import { listFilesWithMetadata } from "./listFilesWithMetadata.js"
 describe(listFilesWithMetadata.name, () => {
   beforeEach(() => {
     vol.fromJSON({
-      "G:\\Disc-Rips\\SOLDIER - 4K\\SOLDIER_t01.mkv": "movie-content",
-      "G:\\Disc-Rips\\SOLDIER - 4K\\SOLDIER_t02.mkv": "trailer",
-      "G:\\Disc-Rips\\SOLDIER - 4K\\subdir\\nested.mkv": "nested",
+      "/disc-rips/SOLDIER - 4K/SOLDIER_t01.mkv": "movie-content",
+      "/disc-rips/SOLDIER - 4K/SOLDIER_t02.mkv": "trailer",
+      "/disc-rips/SOLDIER - 4K/subdir/nested.mkv": "nested",
     })
   })
 
   test("returns every direct child entry with size + mtime + null duration by default", async () => {
-    const result = await listFilesWithMetadata("G:\\Disc-Rips\\SOLDIER - 4K")
+    const result = await listFilesWithMetadata("/disc-rips/SOLDIER - 4K")
     expect(result.entries).toHaveLength(3)
     const byName = Object.fromEntries(result.entries.map((entry) => [entry.name, entry]))
     expect(byName["SOLDIER_t01.mkv"].size).toBe("movie-content".length)
@@ -25,12 +25,12 @@ describe(listFilesWithMetadata.name, () => {
 
   test("sorts directories before files, then alphabetically (case-insensitive)", async () => {
     vol.fromJSON({
-      "G:\\Work\\Zfile.mkv": "z",
-      "G:\\Work\\afile.mkv": "a",
-      "G:\\Work\\subdir\\inner": "x",
-      "G:\\Work\\Bdir\\inner2": "y",
+      "/work/Zfile.mkv": "z",
+      "/work/afile.mkv": "a",
+      "/work/subdir/inner": "x",
+      "/work/Bdir/inner2": "y",
     })
-    const result = await listFilesWithMetadata("G:\\Work")
+    const result = await listFilesWithMetadata("/work")
     expect(result.entries.map((entry) => entry.name)).toEqual([
       // Directories first, alphabetically (case-insensitive)
       "Bdir",

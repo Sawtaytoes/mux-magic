@@ -179,11 +179,11 @@ describe("POST /sequences/run", () => {
     // a seeded .ass file through the sequence runner and asserts the
     // ScriptType bump from v4.00 → v4.00+ actually lands in the file.
     vol.fromJSON({
-      "G:\\Seq\\episode-01.ass": "[Script Info]\nScriptType: v4.00\nTitle: Test\n",
+      "/seq/episode-01.ass": "[Script Info]\nScriptType: v4.00\nTitle: Test\n",
     })
 
     const response = await post("/sequences/run", {
-      paths: { workDir: { value: "G:\\Seq" } },
+      paths: { workDir: { value: "/seq" } },
       steps: [
         {
           id: "applyRules",
@@ -204,7 +204,7 @@ describe("POST /sequences/run", () => {
     expect(job?.status).toBe("completed")
     expect(job?.error).toBeNull()
 
-    const after = await readFile("G:\\Seq\\episode-01.ass", "utf8")
+    const after = await readFile("/seq/episode-01.ass", "utf8")
     expect(after).toContain("ScriptType: v4.00+")
   })
 

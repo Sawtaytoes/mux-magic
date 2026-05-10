@@ -8,7 +8,7 @@ import { reorderTracks } from "./reorderTracks.js"
 describe(reorderTracks.name, () => {
   beforeEach(() => {
     vol.fromJSON({
-      "G:\\Work\\episode-01.mkv": "stream",
+      "/work/episode-01.mkv": "stream",
     })
   })
 
@@ -18,7 +18,7 @@ describe(reorderTracks.name, () => {
         reorderTracks({
           audioTrackIndexes: [],
           isRecursive: false,
-          sourcePath: "G:\\Work",
+          sourcePath: "/work",
           subtitlesTrackIndexes: [],
           videoTrackIndexes: [],
         })
@@ -36,7 +36,7 @@ describe(reorderTracks.name, () => {
           // could ship undefined; verify the guard handles it without crashing.
           audioTrackIndexes: undefined,
           isRecursive: false,
-          sourcePath: "G:\\Work",
+          sourcePath: "/work",
           // @ts-expect-error
           subtitlesTrackIndexes: undefined,
           // @ts-expect-error

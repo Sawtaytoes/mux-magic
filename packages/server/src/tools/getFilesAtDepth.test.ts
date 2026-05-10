@@ -10,10 +10,10 @@ describe(getFilesAtDepth.name, () => {
   beforeEach(() => {
     vol
     .fromJSON({
-      "G:\\Demos\\Dolby\\[Dolby] 747 (Audio) {FHD SDR & Dolby Atmos TrueHD}.mkv": "",
-      "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv": "",
-      "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv": "",
-      "G:\\Movies\\Super Mario Bros (1993)\\Super Mario Bros (1993).mkv": "",
+      "/demos/Dolby/[Dolby] 747 (Audio) {FHD SDR & Dolby Atmos TrueHD}.mkv": "",
+      "/movies/Star Wars (1977)/Star Wars (1977).mkv": "",
+      "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv": "",
+      "/movies/Super Mario Bros (1993)/Super Mario Bros (1993).mkv": "",
     })
   })
 
@@ -42,7 +42,7 @@ describe(getFilesAtDepth.name, () => {
       firstValueFrom(
         getFilesAtDepth({
           depth: 0,
-          sourcePath: "G:\\Movies",
+          sourcePath: "/movies",
         })
         .pipe(
           toArray(),
@@ -60,7 +60,7 @@ describe(getFilesAtDepth.name, () => {
       firstValueFrom(
         getFilesAtDepth({
           depth: 0,
-          sourcePath: "G:\\Movies\\Star Wars (1977)",
+          sourcePath: "/movies/Star Wars (1977)",
         })
         .pipe(
           toArray(),
@@ -71,12 +71,12 @@ describe(getFilesAtDepth.name, () => {
     .toEqual([
       {
         filename: "Star Wars (1977)",
-        fullPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv",
+        fullPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
         renameFile: expect.any(Function),
       },
       {
         filename: "Star Wars (1977) {edition-4K77}",
-        fullPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv",
+        fullPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
         renameFile: expect.any(Function),
       },
     ] satisfies (
@@ -89,7 +89,7 @@ describe(getFilesAtDepth.name, () => {
       firstValueFrom(
         getFilesAtDepth({
           depth: 1,
-          sourcePath: "G:\\Movies",
+          sourcePath: "/movies",
         })
         .pipe(
           toArray(),
@@ -100,17 +100,17 @@ describe(getFilesAtDepth.name, () => {
     .toEqual([
       {
         filename: "Star Wars (1977)",
-        fullPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv",
+        fullPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
         renameFile: expect.any(Function),
       },
       {
         filename: "Star Wars (1977) {edition-4K77}",
-        fullPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv",
+        fullPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
         renameFile: expect.any(Function),
       },
       {
         filename: "Super Mario Bros (1993)",
-        fullPath: "G:\\Movies\\Super Mario Bros (1993)\\Super Mario Bros (1993).mkv",
+        fullPath: "/movies/Super Mario Bros (1993)/Super Mario Bros (1993).mkv",
         renameFile: expect.any(Function),
       },
     ] satisfies (
@@ -123,7 +123,7 @@ describe(getFilesAtDepth.name, () => {
       firstValueFrom(
         getFilesAtDepth({
           depth: 2,
-          sourcePath: "G:",
+          sourcePath: "/",
         })
         .pipe(
           toArray(),
@@ -134,22 +134,22 @@ describe(getFilesAtDepth.name, () => {
     .toEqual([
       {
         filename: "[Dolby] 747 (Audio) {FHD SDR & Dolby Atmos TrueHD}",
-        fullPath: "G:\\Demos\\Dolby\\[Dolby] 747 (Audio) {FHD SDR & Dolby Atmos TrueHD}.mkv",
+        fullPath: "/demos/Dolby/[Dolby] 747 (Audio) {FHD SDR & Dolby Atmos TrueHD}.mkv",
         renameFile: expect.any(Function),
       },
       {
         filename: "Star Wars (1977)",
-        fullPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv",
+        fullPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
         renameFile: expect.any(Function),
       },
       {
         filename: "Star Wars (1977) {edition-4K77}",
-        fullPath: "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv",
+        fullPath: "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv",
         renameFile: expect.any(Function),
       },
       {
         filename: "Super Mario Bros (1993)",
-        fullPath: "G:\\Movies\\Super Mario Bros (1993)\\Super Mario Bros (1993).mkv",
+        fullPath: "/movies/Super Mario Bros (1993)/Super Mario Bros (1993).mkv",
         renameFile: expect.any(Function),
       },
     ] satisfies (

@@ -7,14 +7,14 @@ describe(aclSafeCopyFile.name, () => {
   test("copies file contents to a new destination", async () => {
     vol
     .fromJSON({
-      "G:\\cache\\source.mkv": "anime episode bytes",
-      "G:\\Anime": null,
+      "/cache/source.mkv": "anime episode bytes",
+      "/anime": null,
     })
 
     await expect(
       aclSafeCopyFile(
-        "G:\\cache\\source.mkv",
-        "G:\\Anime\\target.mkv",
+        "/cache/source.mkv",
+        "/anime/target.mkv",
       )
     )
     .resolves
@@ -23,7 +23,7 @@ describe(aclSafeCopyFile.name, () => {
     expect(
       vol
       .readFileSync(
-        "G:\\Anime\\target.mkv",
+        "/anime/target.mkv",
         "utf8",
       )
     )
@@ -35,14 +35,14 @@ describe(aclSafeCopyFile.name, () => {
   test("overwrites an existing destination", async () => {
     vol
     .fromJSON({
-      "G:\\cache\\source.mkv": "fresh bytes",
-      "G:\\Anime\\target.mkv": "stale bytes",
+      "/cache/source.mkv": "fresh bytes",
+      "/anime/target.mkv": "stale bytes",
     })
 
     await expect(
       aclSafeCopyFile(
-        "G:\\cache\\source.mkv",
-        "G:\\Anime\\target.mkv",
+        "/cache/source.mkv",
+        "/anime/target.mkv",
       )
     )
     .resolves
@@ -51,7 +51,7 @@ describe(aclSafeCopyFile.name, () => {
     expect(
       vol
       .readFileSync(
-        "G:\\Anime\\target.mkv",
+        "/anime/target.mkv",
         "utf8",
       )
     )
@@ -63,8 +63,8 @@ describe(aclSafeCopyFile.name, () => {
   test("rejects when the source is missing", async () => {
     await expect(
       aclSafeCopyFile(
-        "G:\\cache\\missing.mkv",
-        "G:\\Anime\\target.mkv",
+        "/cache/missing.mkv",
+        "/anime/target.mkv",
       )
     )
     .rejects
@@ -76,21 +76,21 @@ describe(aclSafeCopyFile.name, () => {
   test("leaves the source untouched", async () => {
     vol
     .fromJSON({
-      "G:\\cache\\source.mkv": "original bytes",
-      "G:\\Anime": null,
+      "/cache/source.mkv": "original bytes",
+      "/anime": null,
     })
 
     await (
       aclSafeCopyFile(
-        "G:\\cache\\source.mkv",
-        "G:\\Anime\\target.mkv",
+        "/cache/source.mkv",
+        "/anime/target.mkv",
       )
     )
 
     expect(
       vol
       .readFileSync(
-        "G:\\cache\\source.mkv",
+        "/cache/source.mkv",
         "utf8",
       )
     )
@@ -102,16 +102,16 @@ describe(aclSafeCopyFile.name, () => {
   test("reports progress when onProgress is supplied", async () => {
     vol
     .fromJSON({
-      "G:\\cache\\source.mkv": "twelve bytes",
-      "G:\\Anime": null,
+      "/cache/source.mkv": "twelve bytes",
+      "/anime": null,
     })
 
     const progressEvents: CopyProgressEvent[] = []
 
     await (
       aclSafeCopyFile(
-        "G:\\cache\\source.mkv",
-        "G:\\Anime\\target.mkv",
+        "/cache/source.mkv",
+        "/anime/target.mkv",
         {
           onProgress: (event) => {
             progressEvents.push(event)
@@ -131,8 +131,8 @@ describe(aclSafeCopyFile.name, () => {
       .at(-1)!
     )
 
-    expect(finalEvent.source).toBe("G:\\cache\\source.mkv")
-    expect(finalEvent.destination).toBe("G:\\Anime\\target.mkv")
+    expect(finalEvent.source).toBe("/cache/source.mkv")
+    expect(finalEvent.destination).toBe("/anime/target.mkv")
     expect(finalEvent.totalBytes).toBe(12)
     expect(finalEvent.bytesWritten).toBe(12)
   })
@@ -140,16 +140,16 @@ describe(aclSafeCopyFile.name, () => {
   test("does not call onProgress when options are omitted", async () => {
     vol
     .fromJSON({
-      "G:\\cache\\source.mkv": "anything",
-      "G:\\Anime": null,
+      "/cache/source.mkv": "anything",
+      "/anime": null,
     })
 
     const onProgress = vi.fn()
 
     await (
       aclSafeCopyFile(
-        "G:\\cache\\source.mkv",
-        "G:\\Anime\\target.mkv",
+        "/cache/source.mkv",
+        "/anime/target.mkv",
       )
     )
 
@@ -159,8 +159,8 @@ describe(aclSafeCopyFile.name, () => {
   test("aborts via signal and unlinks the partial destination", async () => {
     vol
     .fromJSON({
-      "G:\\cache\\source.mkv": "x".repeat(1024 * 64),
-      "G:\\Anime": null,
+      "/cache/source.mkv": "x".repeat(1024 * 64),
+      "/anime": null,
     })
 
     const abortController = new AbortController()
@@ -168,14 +168,14 @@ describe(aclSafeCopyFile.name, () => {
 
     await expect(
       aclSafeCopyFile(
-        "G:\\cache\\source.mkv",
-        "G:\\Anime\\target.mkv",
+        "/cache/source.mkv",
+        "/anime/target.mkv",
         { signal: abortController.signal },
       )
     )
     .rejects
     .toBeDefined()
 
-    expect(vol.existsSync("G:\\Anime\\target.mkv")).toBe(false)
+    expect(vol.existsSync("/anime/target.mkv")).toBe(false)
   })
 })

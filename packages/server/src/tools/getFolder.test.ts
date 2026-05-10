@@ -10,12 +10,12 @@ describe(filterFolderAtPath.name, () => {
   beforeEach(() => {
     vol
     .fromJSON({
-      "G:\\Movies\\Super Mario Bros (1993)\\Super Mario Bros (1993).mkv": "",
+      "/movies/Super Mario Bros (1993)/Super Mario Bros (1993).mkv": "",
     })
   })
 
   test("emits if path is a directory", async () => {
-    const inputValue = "G:\\Movies\\Super Mario Bros (1993)"
+    const inputValue = "/movies/Super Mario Bros (1993)"
 
     await expect(
       getOperatorValue(
@@ -34,7 +34,7 @@ describe(filterFolderAtPath.name, () => {
   })
 
   test("throws an error if path is a file", async () => {
-    const inputValue = "G:\\Movies\\Super Mario Bros (1993)\\Super Mario Bros (1993).mkv"
+    const inputValue = "/movies/Super Mario Bros (1993)/Super Mario Bros (1993).mkv"
 
     await expect(
       getOperatorValue(
@@ -76,15 +76,15 @@ describe(getFolder.name, () => {
   test("emits folders from source path", async () => {
     vol
     .fromJSON({
-      "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv": "",
-      "G:\\Movies\\Star Wars (1977)\\Star Wars (1977) {edition-4K77}.mkv": "",
-      "G:\\Movies\\Super Mario Bros (1993)\\Super Mario Bros (1993).mkv": "",
+      "/movies/Star Wars (1977)/Star Wars (1977).mkv": "",
+      "/movies/Star Wars (1977)/Star Wars (1977) {edition-4K77}.mkv": "",
+      "/movies/Super Mario Bros (1993)/Super Mario Bros (1993).mkv": "",
     })
 
     await expect(
       firstValueFrom(
         getFolder({
-          sourcePath: "G:\\Movies",
+          sourcePath: "/movies",
         })
         .pipe(
           toArray(),
@@ -95,12 +95,12 @@ describe(getFolder.name, () => {
     .toEqual([
       {
         folderName: "Star Wars (1977)",
-        fullPath: "G:\\Movies\\Star Wars (1977)",
+        fullPath: "/movies/Star Wars (1977)",
         renameFolder: expect.any(Function),
       },
       {
         folderName: "Super Mario Bros (1993)",
-        fullPath: "G:\\Movies\\Super Mario Bros (1993)",
+        fullPath: "/movies/Super Mario Bros (1993)",
         renameFolder: expect.any(Function),
       },
     ] satisfies (

@@ -9,12 +9,12 @@ describe(makeDirectory.name, () => {
   beforeEach(() => {
     vol
     .fromJSON({
-      "G:\\Movies\\Star Wars (1977)\\Star Wars (1977).mkv": "",
+      "/movies/Star Wars (1977)/Star Wars (1977).mkv": "",
     })
   })
 
   test("creates the parent directory when caller passes dirname of a file path", async () => {
-    const filePath = "G:\\Movies\\Super Mario Bros (1993)\\Super Mario Bros (1993).mkv"
+    const filePath = "/movies/Super Mario Bros (1993)/Super Mario Bros (1993).mkv"
 
     await firstValueFrom(makeDirectory(dirname(filePath)))
 
@@ -25,7 +25,7 @@ describe(makeDirectory.name, () => {
       ) => {
         vol
         .readdir(
-          "G:\\Movies",
+          "/movies",
           (error, data) => {
             if (error) {
               reject(error)
@@ -45,7 +45,7 @@ describe(makeDirectory.name, () => {
   })
 
   test("creates the directory itself given a path with no file extension", async () => {
-    const folderPath = "G:\\Movies\\Super Mario Bros (1993)"
+    const folderPath = "/movies/Super Mario Bros (1993)"
 
     await firstValueFrom(makeDirectory(folderPath))
 
@@ -56,7 +56,7 @@ describe(makeDirectory.name, () => {
       ) => {
         vol
         .readdir(
-          "G:\\Movies",
+          "/movies",
           (error, data) => {
             if (error) {
               reject(error)
