@@ -252,7 +252,7 @@ describe(createRenameFileOrFolderObservable.name, () => {
             .resolves
             .toEqual({
               newPath: join("/movies/Star Wars (1977)", "Star Wars (1977) {edition-4K77}.mkv"),
-              oldPath: join("/movies/Star Wars (1977)", "Star Wars (1977).mkv"),
+              oldPath: "/movies/Star Wars (1977)/Star Wars (1977).mkv",
             })
           )
 
@@ -285,12 +285,12 @@ describe(createRenameFileOrFolderObservable.name, () => {
             ) => (
               text
               .includes(
-                join("/movies/Star Wars (1977)", "Star Wars (1977).mkv")
+                "/movies/Star Wars (1977)/Star Wars (1977).mkv"
               )
             ))
           )
           .toContain(
-            join("/movies/Star Wars (1977)", "Star Wars (1977).mkv")
+            "/movies/Star Wars (1977)/Star Wars (1977).mkv"
           )
 
           expect(
