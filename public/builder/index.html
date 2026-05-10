@@ -52,19 +52,9 @@ await enableMocksIfRequested()
      FileExplorerModal) are mounted into this container. -->
 <div id="wave-e-container"></div>
 
-<!-- YAML modal -->
-<div id="yaml-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70" onclick="closeYamlModal(event)">
-  <div class="bg-slate-900 border border-slate-700 rounded-xl flex flex-col" style="width:min(90vw,800px);max-height:85vh" onclick="event.stopPropagation()">
-    <div class="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
-      <span class="text-xs font-medium text-slate-400">YAML</span>
-      <div class="flex items-center gap-3">
-        <button onclick="copyYaml()" id="modal-copy-btn" class="text-xs text-blue-400 hover:text-blue-300">Copy</button>
-        <button onclick="closeYamlModal()" class="text-xs text-slate-400 hover:text-slate-200">✕ Close</button>
-      </div>
-    </div>
-    <pre id="yaml-out" class="flex-1 overflow-auto p-4 text-xs text-emerald-400 font-mono leading-relaxed whitespace-pre"></pre>
-  </div>
-</div>
+<!-- YamlModal and CommandHelpModal are now React-rendered. -->
+<div id="yaml-modal-container"></div>
+<div id="command-help-modal-container"></div>
 
 <!-- Run-via-API modal: shows live log stream of the umbrella sequence job -->
 <div id="api-run-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70" onclick="closeApiRunModal(event)">
@@ -205,6 +195,17 @@ await enableMocksIfRequested()
   </div>
 </div>
 
+<!-- DEV: React Fast Refresh preamble — required when app.tsx is loaded
+     cross-origin (Hono on :3000, Vite on :5173). Vite normally injects
+     this into pages it serves directly; we add it manually here.
+     Remove with the Vite script below once the Hono proxy is live. -->
+<script type="module">
+  import RefreshRuntime from "http://localhost:5173/@react-refresh"
+  RefreshRuntime.injectIntoGlobalHook(window)
+  window.$RefreshReg$ = () => {}
+  window.$RefreshSig$ = () => () => {}
+  window.__vite_plugin_react_preamble_installed__ = true
+</script>
 <!-- DEV: loads the Vite React bundle so React components (LoadModal, etc.)
      are active on this legacy page. Remove this script when the Hono dev
      proxy is enabled — at that point Vite serves all pages directly.

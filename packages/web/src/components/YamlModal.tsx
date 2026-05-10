@@ -36,6 +36,7 @@ export const YamlModal = () => {
 
   return (
     <div
+      id="yaml-modal"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
       onClick={handleBackdropClick}
       data-testid="yaml-modal-backdrop"
@@ -64,7 +65,7 @@ export const YamlModal = () => {
             </button>
           </div>
         </div>
-        <pre className="flex-1 overflow-auto p-4 text-xs text-emerald-400 font-mono leading-relaxed whitespace-pre">
+        <pre id="yaml-out" className="flex-1 overflow-auto p-4 text-xs text-emerald-400 font-mono leading-relaxed whitespace-pre">
           {toYamlStr(steps, paths)}
         </pre>
       </div>

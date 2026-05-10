@@ -73,8 +73,9 @@ export function toYamlStr() {
 
 export function updateYaml() {
   const modal = document.getElementById('yaml-modal')
-  if (!modal.classList.contains('hidden')) {
-    document.getElementById('yaml-out').textContent = toYamlStr()
+  if (modal && !modal.classList.contains('hidden')) {
+    const out = document.getElementById('yaml-out')
+    if (out) out.textContent = toYamlStr()
   }
 }
 

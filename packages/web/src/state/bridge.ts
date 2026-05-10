@@ -41,8 +41,19 @@ declare global {
     getCommandSummary?: (args: { commandName: string }) => string
     changeCommand?: (stepId: string, commandName: string) => void
     setParam?: (stepId: string, fieldName: string, value: unknown) => void
+    setParamAndRender?: (stepId: string, fieldName: string, value: unknown) => void
+    setParamJson?: (stepId: string, fieldName: string, valueStr: string) => void
     setLink?: (stepId: string, fieldName: string, value: string) => void
     refreshLinkPickerTrigger?: (stepId: string, fieldName: string) => void
+    // Wave B field bridge functions (legacy-implemented during transition)
+    scheduleReverseLookup?: (stepId: string, fieldName: string, value: string) => void
+    updateLookupLinks?: (stepId: string, fieldName: string, value: string) => void
+    promotePathToPathVar?: (stepId: string, fieldName: string, value: string) => void
+    browsePathField?: (stepId: string, fieldName: string, currentPath: string) => void
+    folderPicker?: {
+      openFromEl: (el: HTMLElement) => void
+      removeFolder: (stepId: string, fieldName: string, folder: string) => void
+    }
     // Path picker — called from legacy path field oninput/onfocus/onblur/onkeydown
     onPathFieldFocus?: (
       inputEl: HTMLElement,
@@ -304,6 +315,7 @@ export const initBridge = () => {
   }
 
   window.schedulePathLookup = schedulePathLookup
+  window.mediaTools.schedulePathLookup = schedulePathLookup
 
   window.onPathFieldFocus = (inputEl, stepId, fieldName, value) => {
     if (!value) {
@@ -336,6 +348,37 @@ export const initBridge = () => {
     }
     if (event.key === "Escape") {
       event.preventDefault()
+      const inputEl = state.inputElement as HTMLInputElement
+      const trimmed = (inputEl.value ?? "").replace(/[\\/]+$/, "")
+      if (trimmed !== inputEl.value) {
+        inputEl.value = trimmed
+      }
+      if (state.target.mode === "step") {
+        const { stepId, fieldName } = state.target
+        ;(window.setParam as ((s: string, f: string, v: unknown) => void) | undefined)?.(
+          stepId,
+          fieldName,
+          trimmed || undefined,
+        )
+        // Clear folderMultiSelect fields whose sourceField matches the changed field.
+        const step = window.mediaTools.findStepById?.(stepId)
+        const commandDef = step?.command ? window.mediaTools.COMMANDS?.[step.command] : undefined
+        let didClearFolders = false
+        commandDef?.fields?.forEach((field: { name: string; type: string; sourceField?: string }) => {
+          if (field.type === "folderMultiSelect" && field.sourceField === fieldName) {
+            window.setParam?.(stepId, field.name, undefined)
+            didClearFolders = true
+          }
+        })
+        if (didClearFolders) {
+          window.mediaTools.renderAll?.()
+        }
+      } else if (state.target.mode === "pathVar") {
+        ;(window.mediaTools.setPathValue as ((id: string, v: string) => void) | undefined)?.(
+          state.target.pathVarId,
+          trimmed,
+        )
+      }
       store.set(pathPickerStateAtom, null)
       return
     }
@@ -384,6 +427,9 @@ export const initBridge = () => {
     ) as HTMLButtonElement | null
     button?.click()
   }
+
+  window.mediaTools.pathPickerKeydown = window.pathPickerKeydown
+  window.mediaTools.pathPickerSelectByIndex = window.pathPickerSelectByIndex
 
   // ─── Wave E: Lookup modal ─────────────────────────────────────────────────
 

@@ -121,6 +121,7 @@ import {
   renderAllAnimated,
   attachSequenceKeyboardShortcuts,
 } from './sequence-editor.js'
+import { loadYamlFromText } from './components/load-modal.js'
 import {
   runOrStopStep,
   runSequence,
@@ -234,8 +235,19 @@ Object.assign(window.mediaTools, {
   scrollPathVarIntoView,
   renderAllAnimated,
 
+  // load-modal
+  loadYamlFromText,
+
   // run-sequence
+  runViaApi,
+  runSequence,
   closeApiRunModal,
+
+  // sequence-editor (bridge callables)
+  undo,
+  redo,
+  startNewSequence,
+  setAllCollapsed,
 
   // lookup-modal
   kickTmdbResolutions,

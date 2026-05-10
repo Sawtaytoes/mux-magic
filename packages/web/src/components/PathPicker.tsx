@@ -153,7 +153,7 @@ export const PathPicker = () => {
     }
     const handleMouseDown = (event: MouseEvent) => {
       const target = event.target as Node
-      const popover = document.getElementById("path-picker-react")
+      const popover = document.getElementById("path-picker-popover")
       if (popover?.contains(target)) {
         return
       }
@@ -210,7 +210,7 @@ export const PathPicker = () => {
 
   return createPortal(
     <div
-      id="path-picker-react"
+      id="path-picker-popover"
       className="fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col"
       style={{ top, left, width: PICKER_WIDTH, maxHeight }}
       data-testid="path-picker"
