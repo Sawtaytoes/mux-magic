@@ -74,15 +74,15 @@ export const Open: Story = {
   decorators: [withOpenPicker()],
 }
 
+const withClosedPicker = () => {
+  const store = createStore()
+  return (Story: React.ComponentType) => (
+    <Provider store={store}>
+      <Story />
+    </Provider>
+  )
+}
+
 export const Closed: Story = {
-  decorators: [
-    () => {
-      const store = createStore()
-      return (Story: React.ComponentType) => (
-        <Provider store={store}>
-          <Story />
-        </Provider>
-      )
-    },
-  ],
+  decorators: [withClosedPicker()],
 }
