@@ -237,10 +237,15 @@ export function pushUndoSnapshot(currentYaml) {
 }
 
 export function refreshUndoRedoButtons() {
+  const canUndo = undoStack.length > 0
+  const canRedo = redoStack.length > 0
+  // Notify React atoms when they're available (React SPA path).
+  window.mediaTools?.syncUndoRedo?.(canUndo, canRedo)
+  // Legacy DOM path — no-ops when buttons don't exist.
   const undoBtn = document.getElementById('undo-btn')
   const redoBtn = document.getElementById('redo-btn')
-  if (undoBtn) undoBtn.disabled = undoStack.length === 0
-  if (redoBtn) redoBtn.disabled = redoStack.length === 0
+  if (undoBtn) undoBtn.disabled = !canUndo
+  if (redoBtn) redoBtn.disabled = !canRedo
 }
 
 // applySnapshot is defined in sequence-editor.js since it calls renderAll.

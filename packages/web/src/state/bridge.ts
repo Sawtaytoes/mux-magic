@@ -6,6 +6,10 @@ import type {
   PromptData,
   SequenceItem,
 } from "../types"
+import {
+  initBuilderBridge,
+  loadBuilderCommands,
+} from "./builderBridge"
 import { canRedoAtom, canUndoAtom } from "./historyAtoms"
 import { pathsAtom } from "./pathsAtom"
 import {
@@ -169,14 +173,6 @@ declare global {
     }) => void
   }
 }
-
-// Builder-specific bridge functions and command loading — imported here so that
-// both the legacy-HTML wave context and the standalone React BuilderPage share
-// the same implementations without duplicating logic.
-import {
-  initBuilderBridge,
-  loadBuilderCommands,
-} from "./builderBridge"
 
 export const initBridge = () => {
   const store = getDefaultStore()
@@ -743,4 +739,8 @@ export const initBridge = () => {
     store.set(canUndoAtom, canUndo)
     store.set(canRedoAtom, canRedo)
   }
+
+  // ─── Builder bridge ────────────────────────────────────────────────────────
+  initBuilderBridge()
+  void loadBuilderCommands()
 }
