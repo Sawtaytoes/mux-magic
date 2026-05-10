@@ -5,11 +5,11 @@
   "type": "module",
   "description": "React 19 + Vite frontend for media-tools.",
   "scripts": {
-    "build-storybook": "storybook build --config-dir ../../.storybook",
+    "build-storybook": "storybook build --config-dir .storybook",
     "build": "vite build",
     "dev": "vite",
     "preview": "vite preview",
-    "storybook": "storybook dev -p 6006 --config-dir ../../.storybook",
+    "storybook": "storybook dev -p 6006 --config-dir .storybook",
     "test:a11y": "vitest run --project storybook",
     "typecheck": "tsc --noEmit"
   },
