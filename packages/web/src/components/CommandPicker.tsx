@@ -157,7 +157,7 @@ export const CommandPicker = () => {
     setTimeout(() => inputRef.current?.focus(), 0)
   }, [
     pickerState?.anchor.stepId,
-    pickerState.anchor,
+    pickerState?.anchor,
     pickerState,
   ])
 
