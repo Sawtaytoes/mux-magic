@@ -71,7 +71,9 @@
     ],
     "deny": [
       "Bash(Get-ChildItem *)",
+      "Bash(npm *)",
       "Bash(npx *)",
+      "PowerShell(npm *)",
       "PowerShell(npx *)"
     ],
     "ask": [
