@@ -29,6 +29,7 @@
     "start-server": "tsx --env-file ./.env packages/server/src/server.ts",
     "start": "tsx watch --env-file ./.env packages/server/src/server.ts",
     "test": "vitest",
+    "test:a11y": "vitest run --project storybook",
     "typecheck": "tsc --noEmit"
   },
   "type": "module",

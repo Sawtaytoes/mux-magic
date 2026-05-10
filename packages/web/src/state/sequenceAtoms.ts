@@ -1,5 +1,6 @@
 import { atom } from "jotai"
-import type { Group, SequenceItem, Step } from "../types"
+import type { Group, SequenceItem, Step, StepLink } from "../types"
+import { pathsAtom } from "./pathsAtom"
 import { stepCounterAtom, stepsAtom } from "./stepsAtom"
 
 const isGroup = (item: SequenceItem): item is Group =>
@@ -240,3 +241,204 @@ export const removeGroupAtom = atom(
 // (pathsAtom mutations live here for co-location with other sequence mutations)
 
 export { pathsAtom } from "./pathsAtom"
+
+// ─── Builder page atoms ───────────────────────────────────────────────────────
+// Used by builderBridge.ts and BuilderPage; not needed in the legacy HTML wave
+// context (those mutations go through the legacy sequence-editor.js directly).
+
+export const changeCommandAtom = atom(
+  null,
+  (
+    _get,
+    set,
+    args: { stepId: string; commandName: string },
+  ) => {
+    set(stepsAtom, (items) =>
+      items.map((item) => {
+        if (!isGroup(item)) {
+          if (item.id !== args.stepId) return item
+          return {
+            ...item,
+            command: args.commandName,
+            params: {},
+            links: {},
+          }
+        }
+        return {
+          ...item,
+          steps: item.steps.map((step) =>
+            step.id === args.stepId
+              ? {
+                  ...step,
+                  command: args.commandName,
+                  params: {},
+                  links: {},
+                }
+              : step,
+          ),
+        }
+      }),
+    )
+  },
+)
+
+export const setParamAtom = atom(
+  null,
+  (
+    _get,
+    set,
+    args: { stepId: string; fieldName: string; value: unknown },
+  ) => {
+    const patch = (step: Step): Step => {
+      if (step.id !== args.stepId) return step
+      const params = { ...step.params }
+      if (args.value === undefined) {
+        delete params[args.fieldName]
+      } else {
+        params[args.fieldName] = args.value
+      }
+      return { ...step, params }
+    }
+    set(stepsAtom, (items) =>
+      items.map((item) =>
+        isGroup(item)
+          ? { ...item, steps: item.steps.map(patch) }
+          : patch(item as Step),
+      ),
+    )
+  },
+)
+
+export const setLinkAtom = atom(
+  null,
+  (
+    _get,
+    set,
+    args: {
+      stepId: string
+      fieldName: string
+      value: StepLink | null
+    },
+  ) => {
+    const patch = (step: Step): Step => {
+      if (step.id !== args.stepId) return step
+      const links = { ...step.links }
+      if (args.value === null) {
+        delete links[args.fieldName]
+      } else {
+        links[args.fieldName] = args.value
+      }
+      return { ...step, links }
+    }
+    set(stepsAtom, (items) =>
+      items.map((item) =>
+        isGroup(item)
+          ? { ...item, steps: item.steps.map(patch) }
+          : patch(item as Step),
+      ),
+    )
+  },
+)
+
+export const setAllCollapsedAtom = atom(
+  null,
+  (_get, set, collapsed: boolean) => {
+    set(stepsAtom, (items) =>
+      items.map((item) => {
+        if (isGroup(item)) {
+          return {
+            ...item,
+            isCollapsed: collapsed,
+            steps: item.steps.map((step) => ({
+              ...step,
+              isCollapsed: collapsed,
+            })),
+          }
+        }
+        return { ...item, isCollapsed: collapsed }
+      }),
+    )
+  },
+)
+
+export const insertStepAtom = atom(
+  null,
+  (
+    get,
+    set,
+    args: { index: number; parentGroupId?: string | null },
+  ) => {
+    const counter = get(stepCounterAtom)
+    const newStep: Step = {
+      id: `step${counter + 1}`,
+      alias: "",
+      command: "",
+      params: {},
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    set(stepCounterAtom, counter + 1)
+    set(stepsAtom, (items) => {
+      if (args.parentGroupId) {
+        return items.map((item) => {
+          if (!isGroup(item) || item.id !== args.parentGroupId)
+            return item
+          const steps = [...item.steps]
+          steps.splice(args.index, 0, newStep)
+          return { ...item, steps }
+        })
+      }
+      const arr = [...items]
+      arr.splice(args.index, 0, newStep)
+      return arr
+    })
+  },
+)
+
+export const insertGroupAtom = atom(
+  null,
+  (
+    get,
+    set,
+    args: { index: number; isParallel: boolean },
+  ) => {
+    const counter = get(stepCounterAtom)
+    const newStep: Step = {
+      id: `step${counter + 1}`,
+      alias: "",
+      command: "",
+      params: {},
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    const newGroup: Group = {
+      kind: "group",
+      id: `group_${Math.random().toString(36).slice(2, 8)}`,
+      label: "",
+      isParallel: args.isParallel,
+      isCollapsed: false,
+      steps: [newStep],
+    }
+    set(stepCounterAtom, counter + 1)
+    set(stepsAtom, (items) => {
+      const arr = [...items]
+      arr.splice(args.index, 0, newGroup)
+      return arr
+    })
+  },
+)
+
+export const addPathAtom = atom(null, (_get, set) => {
+  set(pathsAtom, (paths) => [
+    ...paths,
+    {
+      id: `pathVar_${Math.random().toString(36).slice(2, 8)}`,
+      label: "",
+      value: "",
+    },
+  ])
+})

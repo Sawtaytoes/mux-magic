@@ -1,5 +1,9 @@
 import { useAtom, useAtomValue } from "jotai"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
+import {
+  canRedoAtom,
+  canUndoAtom,
+} from "../state/historyAtoms"
 import {
   dryRunAtom,
   failureModeAtom,
@@ -37,37 +41,11 @@ export const PageHeader = () => {
   const running = useAtomValue(runningAtom)
 
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null)
-  // Undo/redo disabled state: the legacy syncUndoRedoButtons() mutates these
-  // DOM nodes directly. MutationObserver keeps React in sync without touching
-  // the legacy module.
-  const [canUndo, setCanUndo] = useState(false)
-  const [canRedo, setCanRedo] = useState(false)
-  const undoRef = useRef<HTMLButtonElement>(null)
-  const redoRef = useRef<HTMLButtonElement>(null)
-
-  // ─── Observe legacy undo/redo DOM mutations ────────────────────────────────
-  useEffect(() => {
-    const observe = (
-      ref: React.RefObject<HTMLButtonElement | null>,
-      setEnabled: (v: boolean) => void,
-    ) => {
-      if (!ref.current) return () => {}
-      const observer = new MutationObserver(() => {
-        setEnabled(!ref.current?.disabled)
-      })
-      observer.observe(ref.current, {
-        attributes: true,
-        attributeFilter: ["disabled"],
-      })
-      return () => observer.disconnect()
-    }
-    const cleanUndo = observe(undoRef, setCanUndo)
-    const cleanRedo = observe(redoRef, setCanRedo)
-    return () => {
-      cleanUndo()
-      cleanRedo()
-    }
-  }, [])
+  // Undo/redo enabled state comes from atoms updated by builderBridge (React
+  // SPA) or via window.mediaTools.syncUndoRedo() called by the legacy
+  // sequence-state.js refreshUndoRedoButtons(). No MutationObserver needed.
+  const canUndo = useAtomValue(canUndoAtom)
+  const canRedo = useAtomValue(canRedoAtom)
 
   // ─── Click-outside dismissal for responsive menus ─────────────────────────
   useEffect(() => {
@@ -214,7 +192,6 @@ export const PageHeader = () => {
           {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
             id="undo-btn"
-            ref={undoRef}
             onClick={() => callBridge("undo")}
             title="Undo (Ctrl+Z)"
             disabled={!canUndo}
@@ -225,7 +202,6 @@ export const PageHeader = () => {
           {/** biome-ignore lint/a11y/useButtonType: suppressed during react-migration */}
           <button
             id="redo-btn"
-            ref={redoRef}
             onClick={() => callBridge("redo")}
             title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
             disabled={!canRedo}

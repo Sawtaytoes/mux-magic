@@ -6,6 +6,7 @@ import type {
   PromptData,
   SequenceItem,
 } from "../types"
+import { canRedoAtom, canUndoAtom } from "./historyAtoms"
 import { pathsAtom } from "./pathsAtom"
 import {
   commandPickerStateAtom,
@@ -168,6 +169,14 @@ declare global {
     }) => void
   }
 }
+
+// Builder-specific bridge functions and command loading — imported here so that
+// both the legacy-HTML wave context and the standalone React BuilderPage share
+// the same implementations without duplicating logic.
+import {
+  initBuilderBridge,
+  loadBuilderCommands,
+} from "./builderBridge"
 
 export const initBridge = () => {
   const store = getDefaultStore()
@@ -723,4 +732,15 @@ export const initBridge = () => {
     failureModeAtom,
     localStorage.getItem("dryRunScenario") === "failure",
   )
+
+  // ─── Undo/redo enabled flags ──────────────────────────────────────────────
+  // Called by legacy refreshUndoRedoButtons() and by builderBridge after each
+  // mutation. PageHeader reads these atoms instead of using MutationObserver.
+  window.mediaTools.syncUndoRedo = (
+    canUndo: boolean,
+    canRedo: boolean,
+  ) => {
+    store.set(canUndoAtom, canUndo)
+    store.set(canRedoAtom, canRedo)
+  }
 }
