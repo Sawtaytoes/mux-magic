@@ -63,7 +63,7 @@ export const Closed: Story = {
 
 export const WithError: Story = {
   decorators: [
-    () => {
+    (Story) => {
       const store = createStore()
       store.set(loadModalOpenAtom, true)
       if (typeof window !== "undefined") {
@@ -72,7 +72,7 @@ export const WithError: Story = {
         window.mediaTools.renderAll = () => {}
         window.mediaTools.updateUrl = () => {}
       }
-      return (Story: React.ComponentType) => (
+      return (
         <Provider store={store}>
           <Story />
         </Provider>
