@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type {
   LookupGroup,
+  LookupRelease,
   LookupSearchResult,
   LookupState,
   LookupType,
@@ -51,7 +52,7 @@ const fetchSearch = async (
 const fetchReleases = async (
   dvdCompareId: string,
 ): Promise<{
-  releases: unknown[]
+  releases: LookupRelease[]
   debug: unknown
   error: string | null
 }> => {
@@ -65,7 +66,7 @@ const fetchReleases = async (
       },
     )
     const data = (await resp.json()) as {
-      releases?: unknown[]
+      releases?: LookupRelease[]
       debug?: unknown
       error?: string
     }
