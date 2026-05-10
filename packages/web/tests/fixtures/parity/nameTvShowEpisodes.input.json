@@ -1,0 +1,21 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "nameTvShowEpisodes",
+    "params": {
+      "tvdbId": 76703,
+      "tvdbName": "One Piece",
+      "seasonNumber": 1
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

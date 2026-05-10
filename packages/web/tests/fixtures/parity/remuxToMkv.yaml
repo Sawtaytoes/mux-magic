@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: remuxToMkv
+    params: {sourcePath: '@basePath', extensions: [.ts, .m2ts], isRecursive: true, recursiveDepth: 2, isSourceDeletedOnSuccess: true}

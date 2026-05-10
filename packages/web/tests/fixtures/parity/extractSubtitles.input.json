@@ -1,0 +1,20 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "extractSubtitles",
+    "params": {
+      "isRecursive": true,
+      "subtitlesLanguage": "eng"
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

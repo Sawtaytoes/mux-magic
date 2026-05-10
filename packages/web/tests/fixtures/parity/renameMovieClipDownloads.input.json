@@ -1,0 +1,17 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "renameMovieClipDownloads",
+    "params": {},
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

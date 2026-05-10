@@ -1,0 +1,21 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "setDisplayWidth",
+    "params": {
+      "displayWidth": 1280,
+      "isRecursive": true,
+      "recursiveDepth": 2
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

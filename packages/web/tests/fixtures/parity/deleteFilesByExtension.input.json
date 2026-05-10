@@ -1,0 +1,24 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "deleteFilesByExtension",
+    "params": {
+      "extensions": [
+        ".srt",
+        ".idx"
+      ],
+      "isRecursive": true,
+      "recursiveDepth": 2
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

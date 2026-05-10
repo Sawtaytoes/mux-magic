@@ -1,0 +1,29 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "reorderTracks",
+    "params": {
+      "isRecursive": true,
+      "videoTrackIndexes": [
+        0
+      ],
+      "audioTrackIndexes": [
+        1,
+        0
+      ],
+      "subtitlesTrackIndexes": [
+        0
+      ]
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

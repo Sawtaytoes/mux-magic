@@ -1,0 +1,43 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "modifySubtitleMetadata",
+    "params": {
+      "isRecursive": true,
+      "recursiveDepth": 2,
+      "predicates": [
+        {
+          "field": "Name",
+          "op": "contains",
+          "value": "fixture-predicate"
+        }
+      ],
+      "hasDefaultRules": true,
+      "rules": [
+        {
+          "match": {
+            "field": "Name",
+            "op": "eq",
+            "value": "Default"
+          },
+          "actions": [
+            {
+              "field": "ScaleX",
+              "value": "1.0"
+            }
+          ]
+        }
+      ]
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

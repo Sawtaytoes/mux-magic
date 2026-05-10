@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: hasManyAudioTracks
+    params: {sourcePath: '@basePath', isRecursive: true}

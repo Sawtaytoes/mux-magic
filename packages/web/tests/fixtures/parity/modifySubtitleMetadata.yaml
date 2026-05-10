@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: modifySubtitleMetadata
+    params: {sourcePath: '@basePath', isRecursive: true, recursiveDepth: 2, predicates: [{field: Name, op: contains, value: fixture-predicate}], hasDefaultRules: true, rules: [{match: {field: Name, op: eq, value: Default}, actions: [{field: ScaleX, value: '1.0'}]}]}

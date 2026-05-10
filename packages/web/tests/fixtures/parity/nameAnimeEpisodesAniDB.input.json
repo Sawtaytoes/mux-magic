@@ -1,0 +1,22 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "nameAnimeEpisodesAniDB",
+    "params": {
+      "anidbId": 8160,
+      "anidbName": "Fullmetal Alchemist: Brotherhood",
+      "seasonNumber": 2,
+      "episodeType": "specials"
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

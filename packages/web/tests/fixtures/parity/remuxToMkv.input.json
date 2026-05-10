@@ -1,0 +1,25 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "remuxToMkv",
+    "params": {
+      "extensions": [
+        ".ts",
+        ".m2ts"
+      ],
+      "isRecursive": true,
+      "recursiveDepth": 2,
+      "isSourceDeletedOnSuccess": true
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

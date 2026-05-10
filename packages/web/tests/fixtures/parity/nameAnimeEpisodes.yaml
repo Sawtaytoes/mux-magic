@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: nameAnimeEpisodes
+    params: {sourcePath: '@basePath', malId: 39534, malName: Violet Evergarden, seasonNumber: 2}

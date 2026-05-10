@@ -1,0 +1,27 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "storeAspectRatioData",
+    "params": {
+      "isRecursive": true,
+      "recursiveDepth": 2,
+      "rootPath": "fixture-string-rootPath",
+      "folders": [
+        "folder-a",
+        "folder-b"
+      ],
+      "force": true
+    },
+    "links": {
+      "sourcePath": "basePath",
+      "outputPath": "basePath"
+    }
+  }
+}

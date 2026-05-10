@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: setDisplayWidth
+    params: {sourcePath: '@basePath', displayWidth: 1280, isRecursive: true, recursiveDepth: 2}

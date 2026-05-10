@@ -1,0 +1,18 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "moveFiles",
+    "params": {},
+    "links": {
+      "sourcePath": "basePath",
+      "destinationPath": "basePath"
+    }
+  }
+}
