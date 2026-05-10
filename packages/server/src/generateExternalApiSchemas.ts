@@ -3,7 +3,7 @@ import openapiTS, { astToString } from 'openapi-typescript'
 
 import { tvdbApiSchemaUrl } from './tools/tvdbApi.js'
 
-const generateSchemas = () => (
+const generateExternalApiSchemas = () => (
   openapiTS(
     new URL(tvdbApiSchemaUrl),
   )
@@ -18,7 +18,7 @@ const generateSchemas = () => (
   .then(() => {
     console
     .log(
-      "Updated schemas."
+      "Updated external API schemas."
     )
   })
   .catch((
@@ -31,4 +31,4 @@ const generateSchemas = () => (
   })
 )
 
-generateSchemas()
+generateExternalApiSchemas()
