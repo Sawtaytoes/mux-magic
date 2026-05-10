@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import remarkGfm from "remark-gfm";
 import type { StorybookConfig } from "@storybook/react-vite";
 import { mergeConfig } from "vite";
+import { mockServerPlugin } from "./mock-server-plugin.ts";
 
 const config: StorybookConfig = {
   stories: [
@@ -30,6 +31,7 @@ const config: StorybookConfig = {
           },
         }),
         tailwindcss(),
+        mockServerPlugin(),
       ],
     }),
 };

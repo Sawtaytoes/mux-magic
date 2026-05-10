@@ -1,16 +1,10 @@
 import type { Preview } from "@storybook/react";
 import { Provider as JotaiProvider } from "jotai";
-import { initialize as initMsw, mswLoader } from "msw-storybook-addon";
 import { getPreferredColorScheme, themes } from "storybook/theming";
 import "../packages/web/src/styles/tailwindStyles.css";
 import "../packages/web/src/styles/builderStyles.css";
 
-// Start MSW in the Storybook iframe — handlers declared per-story via
-// the `msw` parameter. No-op when no handlers are configured.
-initMsw({ quiet: true });
-
 const preview: Preview = {
-  loaders: [mswLoader],
   decorators: [
     (Story) => (
       // Global fallback Provider with the default store. Story-level decorators

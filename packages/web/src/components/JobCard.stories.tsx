@@ -1,17 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
-import { HttpResponse, http } from "msw"
 import { jobsAtom } from "../state/jobsAtom"
 import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
 import type { Job } from "../types"
 import { JobCard } from "./JobCard"
-
-const logStreamHandler = http.get("/jobs/:jobId/logs", () => {
-  const stream = new ReadableStream({ start() {} })
-  return new HttpResponse(stream, {
-    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
-  })
-})
 
 const withStore = (
   jobs: Job[],
@@ -35,7 +27,6 @@ const meta: Meta<typeof JobCard> = {
   parameters: {
     layout: "fullscreen",
     backgrounds: { default: "dark" },
-    msw: { handlers: [logStreamHandler] },
   },
 }
 

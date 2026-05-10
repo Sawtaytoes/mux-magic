@@ -1,29 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
-import { HttpResponse, http } from "msw"
 import { jobsAtom } from "../state/jobsAtom"
 import type { ConnectionStatus } from "../state/jobsConnectionAtom"
 import { jobsConnectionAtom } from "../state/jobsConnectionAtom"
 import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
 import type { Job, ProgressSnapshot } from "../types"
 import { JobsPage } from "./JobsPage"
-
-// Handlers for SSE endpoints — the store is pre-seeded so no events need to
-// arrive, but MSW must intercept these or it logs unhandled-request warnings.
-const sseHandlers = [
-  http.get("/jobs/stream", () => {
-    const stream = new ReadableStream({ start() {} })
-    return new HttpResponse(stream, {
-      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
-    })
-  }),
-  http.get("/jobs/:jobId/logs", () => {
-    const stream = new ReadableStream({ start() {} })
-    return new HttpResponse(stream, {
-      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
-    })
-  }),
-]
 
 // JobsPage calls useSseStream which opens an EventSource.
 // In Storybook there is no real server, so the EventSource quietly fails
@@ -53,7 +35,6 @@ const meta: Meta<typeof JobsPage> = {
   parameters: {
     layout: "fullscreen",
     backgrounds: { default: "dark" },
-    msw: { handlers: sseHandlers },
   },
 }
 
