@@ -39,14 +39,26 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  // Boots the api-server before tests run; reuses an existing server in
-  // dev so re-running locally is fast (no cold-start penalty).
-  webServer: {
-    command: "yarn start-server",
-    url: `${baseURL}/builder/`,
-    reuseExistingServer: !process.env.CI,
-    stdout: "ignore",
-    stderr: "pipe",
-    timeout: 30 * 1000,
-  },
+  // Boots both servers before tests run; reuses existing servers in dev
+  // so re-running locally is fast (no cold-start penalty).
+  // The legacy HTML loads the React bundle from the Vite dev server at
+  // localhost:5173 — both servers must be up for the UI to render fully.
+  webServer: [
+    {
+      command: "yarn start-server",
+      url: `${baseURL}/builder/`,
+      reuseExistingServer: !process.env.CI,
+      stdout: "ignore",
+      stderr: "pipe",
+      timeout: 30 * 1000,
+    },
+    {
+      command: "yarn workspace @media-tools/web dev",
+      url: "http://localhost:5173/",
+      reuseExistingServer: !process.env.CI,
+      stdout: "ignore",
+      stderr: "pipe",
+      timeout: 30 * 1000,
+    },
+  ],
 })
