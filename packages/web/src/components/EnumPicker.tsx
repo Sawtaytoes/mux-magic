@@ -150,7 +150,6 @@ export const EnumPicker = () => {
   }, [
     pickerState?.anchor.stepId,
     pickerState?.anchor.fieldName,
-    pickerState,
   ])
 
   useEffect(() => {

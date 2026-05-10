@@ -60,7 +60,7 @@ export const LoadModal = () => {
         window.mediaTools.updateUrl?.()
         window.mediaTools.kickReverseLookups?.()
         window.mediaTools.kickTmdbResolutions?.()
-        close()
+        setIsOpen(false)
       } catch (err) {
         setError(
           err instanceof Error
@@ -81,23 +81,24 @@ export const LoadModal = () => {
     setSteps,
     setPaths,
     setStepCounter,
-    // biome-ignore lint/correctness/useExhaustiveDependencies: suppressed during react-migration
-    close,
+    setIsOpen,
   ])
 
   useEffect(() => {
     if (!isOpen) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close()
+      if (event.key === "Escape") {
+        setIsOpen(false)
+        setError(null)
+      }
     }
 
     document.addEventListener("keydown", handleKeyDown)
     return () => {
       document.removeEventListener("keydown", handleKeyDown)
     }
-    // biome-ignore lint/correctness/useExhaustiveDependencies: suppressed during react-migration
-  }, [isOpen, close])
+  }, [isOpen, setIsOpen])
 
   if (!isOpen) return null
 

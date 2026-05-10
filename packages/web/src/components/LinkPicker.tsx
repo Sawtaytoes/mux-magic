@@ -246,7 +246,6 @@ export const LinkPicker = () => {
     pickerState?.anchor.fieldName,
     allSteps,
     paths,
-    pickerState,
   ])
 
   useEffect(() => {

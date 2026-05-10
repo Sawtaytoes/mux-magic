@@ -30,13 +30,12 @@ export const YamlModal = () => {
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close()
+      if (event.key === "Escape") setIsOpen(false)
     }
     document.addEventListener("keydown", handleKeyDown)
     return () =>
       document.removeEventListener("keydown", handleKeyDown)
-    // biome-ignore lint/correctness/useExhaustiveDependencies: suppressed during react-migration
-  }, [isOpen, close])
+  }, [isOpen, setIsOpen])
 
   if (!isOpen) return null
 
