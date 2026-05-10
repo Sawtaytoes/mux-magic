@@ -111,7 +111,11 @@ const LogsDisclosure = ({
     <details onToggle={handleToggle}>
       <summary className="cursor-pointer text-xs text-slate-400 hover:text-slate-200 py-1 flex items-center gap-1">
         Logs
-        <CopyButton getText={() => lines.join("\n")} />
+        <CopyButton
+          getText={() =>
+            lines.map(({ line }) => line).join("\n")
+          }
+        />
       </summary>
       <div
         ref={paneRef}
@@ -123,8 +127,8 @@ const LogsDisclosure = ({
             Waiting for log lines…
           </div>
         ) : (
-          lines.map((line, index) => (
-            <div key={`log-${index}-${line.slice(0, 20)}`}>{line}</div>
+          lines.map(({ key, line }) => (
+            <div key={key}>{line}</div>
           ))
         )}
       </div>
@@ -239,11 +243,11 @@ const StepRow = ({
 
 const StepsDisclosure = ({
   jobId,
-  children,
+  jobs,
   jobStatus,
 }: {
   jobId: string
-  children: Job[]
+  jobs: Job[]
   jobStatus: string
 }) => {
   const stepsOpenByJobId = useAtomValue(
@@ -253,10 +257,7 @@ const StepsDisclosure = ({
 
   const defaultOpen =
     jobStatus === "running" || jobStatus === "pending"
-  const isOpen = stepsOpenByJobId.has(jobId)
-    ? // biome-ignore lint/style/noNonNullAssertion: suppressed during react-migration
-      stepsOpenByJobId.get(jobId)!
-    : defaultOpen
+  const isOpen = stepsOpenByJobId.get(jobId) ?? defaultOpen
 
   const detailsRef = useRef<HTMLDetailsElement>(null)
   const skipNextToggleRef = useRef(isOpen)
@@ -281,10 +282,10 @@ const StepsDisclosure = ({
   return (
     <details ref={detailsRef} onToggle={handleToggle}>
       <summary className="cursor-pointer text-xs font-medium text-slate-400 hover:text-slate-200 py-1">
-        Steps ({children.length})
+        Steps ({jobs.length})
       </summary>
       <div className="mt-1 space-y-2">
-        {children.map((child, index) => (
+        {jobs.map((child, index) => (
           <StepRow
             key={child.id}
             child={child}
@@ -406,10 +407,9 @@ export const JobCard = ({ job }: JobCardProps) => {
             Results ({job.results.length})
           </summary>
           <div className="mt-1 space-y-1">
-            {job.results.map((result, index) => (
+            {job.results.map((result) => (
               <pre
-                // biome-ignore lint/suspicious/noArrayIndexKey: suppressed during react-migration
-                key={index}
+                key={JSON.stringify(result).slice(0, 64)}
                 className="text-xs bg-slate-950 rounded p-2 overflow-x-auto text-slate-300"
               >
                 {JSON.stringify(result, null, 2)}
@@ -429,8 +429,7 @@ export const JobCard = ({ job }: JobCardProps) => {
       {children.length > 0 && (
         <StepsDisclosure
           jobId={job.id}
-          // biome-ignore lint/correctness/noChildrenProp: suppressed during react-migration
-          children={children}
+          jobs={children}
           jobStatus={job.status}
         />
       )}

@@ -49,10 +49,7 @@ const ProgressFileRow = ({
   const fileName = path.split(/[\\/]/).pop() ?? path
   const isIndeterminate = typeof ratio !== "number"
   const pct = !isIndeterminate
-    ? `${
-        // biome-ignore lint/style/noNonNullAssertion: suppressed during react-migration
-        (Math.max(0, Math.min(1, ratio!)) * 100).toFixed(1)
-      }%`
+    ? `${(Math.max(0, Math.min(1, ratio as number)) * 100).toFixed(1)}%`
     : null
   return (
     <div className="flex items-center gap-2 text-xs text-slate-400">

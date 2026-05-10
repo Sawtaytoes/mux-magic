@@ -1,6 +1,7 @@
 import { useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef } from "react"
 import { mergeProgress } from "../jobs/mergeProgress"
+import type { LogEntry } from "../state/logsByJobIdAtom"
 import { logsByJobIdAtom } from "../state/logsByJobIdAtom"
 import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
 import type { ProgressSnapshot } from "../types"
@@ -54,11 +55,13 @@ export const useLogStream = (jobId: string) => {
             lastLogIndexRef.current = idNum
           }
         }
-        const line = data.line
+        const { line } = data
         setLogs((prev) => {
           const next = new Map(prev)
-          const lines = next.get(jobId) ?? []
-          next.set(jobId, [...lines, line])
+          const entries = next.get(jobId) ?? []
+          const key = rawId || String(entries.length)
+          const entry: LogEntry = { key, line }
+          next.set(jobId, [...entries, entry])
           return next
         })
       } else if (

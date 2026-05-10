@@ -370,8 +370,7 @@ const SearchStage = ({
               return (
                 <button
                   type="button"
-                  // biome-ignore lint/suspicious/noArrayIndexKey: suppressed during react-migration
-                  key={index}
+                  key={label}
                   onClick={handleSelect}
                   className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"
                 >
@@ -460,12 +459,9 @@ const VariantStage = ({
 
 const ReleaseStage = ({
   state,
-  // biome-ignore lint/correctness/noUnusedFunctionParameters: suppressed during react-migration
-  onUpdate,
   onClose,
 }: {
   state: LookupState
-  onUpdate: (patch: Partial<LookupState>) => void
   onClose: () => void
 }) => {
   if (state.loading) {
@@ -644,11 +640,7 @@ export const LookupModal = () => {
             />
           )}
           {state.stage === "release" && (
-            <ReleaseStage
-              state={state}
-              onUpdate={update}
-              onClose={close}
-            />
+            <ReleaseStage state={state} onClose={close} />
           )}
         </div>
       </div>

@@ -21,11 +21,6 @@ declare global {
 const isGroup = (item: SequenceItem): item is Group =>
   "kind" in item && item.kind === "group"
 
-// biome-ignore lint/correctness/noUnusedVariables: suppressed during react-migration
-interface DragAndDropProps {
-  containerRef: React.RefObject<HTMLElement | null>
-}
-
 export const useDragAndDrop = (
   containerRef: React.RefObject<HTMLElement | null>,
 ) => {
@@ -195,8 +190,9 @@ export const useDragAndDrop = (
     })
 
     return () => {
-      // biome-ignore lint/suspicious/useIterableCallbackReturn: suppressed during react-migration
-      instances.forEach((instance) => instance.destroy())
+      instances.forEach((instance) => {
+        instance.destroy()
+      })
     }
   }, [steps, containerRef, setSteps])
 }

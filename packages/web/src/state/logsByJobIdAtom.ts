@@ -1,5 +1,7 @@
 import { atom } from "jotai"
 
-export const logsByJobIdAtom = atom<Map<string, string[]>>(
-  new Map(),
-)
+export type LogEntry = { key: string; line: string }
+
+export const logsByJobIdAtom = atom<
+  Map<string, LogEntry[]>
+>(new Map())
