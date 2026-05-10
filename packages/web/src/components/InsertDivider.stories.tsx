@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import { fn } from "vitest"
+import { fn } from "@storybook/test"
 import { InsertDivider } from "./InsertDivider"
 
 const meta: Meta<typeof InsertDivider> = {

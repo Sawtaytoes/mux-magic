@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
-import { commandHelpModalCommandAtom } from "../state/uiAtoms"
+import { commandHelpCommandNameAtom } from "../state/uiAtoms"
 import { CommandHelpModal } from "./CommandHelpModal"
 
 const mockCommands = {
@@ -22,7 +22,7 @@ const mockCommands = {
 
 const withStore = (commandName: string) => {
   const store = createStore()
-  store.set(commandHelpModalCommandAtom, commandName)
+  store.set(commandHelpCommandNameAtom, commandName)
   if (typeof window !== "undefined") {
     window.mediaTools = window.mediaTools ?? {}
     window.mediaTools.COMMANDS = mockCommands as never
