@@ -7,6 +7,6 @@ export default defineConfig({
     // aren't compatible.
     exclude: ["**/node_modules/**", "**/dist/**"],
     name: "shared",
-    include: ["src/**/*.test.ts"]
+    include: ["src/**/*.test.ts"],
   },
 })

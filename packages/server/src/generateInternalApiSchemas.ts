@@ -10,12 +10,12 @@ const generateInternalApiSchemas = async () => {
   const ast = await openapiTS(schema as Parameters<typeof openapiTS>[0])
 
   await mkdir(
-    './packages/web/src/api',
+    '../../packages/web/src/api',
     { recursive: true },
   )
 
   await writeFile(
-    './packages/web/src/api/internalSchemas.generated.ts',
+    '../../packages/web/src/api/internalSchemas.generated.ts',
     astToString(ast),
   )
 
