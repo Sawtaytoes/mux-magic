@@ -11,6 +11,8 @@ You are Worker W6B in the React Migration Recovery for media-tools.
 **Your model:** Sonnet 4.6, medium effort
 **Your role:** Replace the existing SortableJS-based drag-and-drop with `@dnd-kit/core` + `@dnd-kit/sortable`. SortableJS is great vanilla JS but it mutates DOM directly, which fights React's render model — the current implementation has `animation:0` hacks and a manual ref dance because of this. `@dnd-kit` is designed for React: headless, emits events you apply via React state, built-in keyboard + screen reader a11y.
 
+> **Context from orchestrator:** this work is **explicitly optional polish**, NOT part of the React-migration parity restoration. SortableJS already works (W5B fixed it). The user has acknowledged this swap was "totally optional and can introduce regressions because sortablejs was already working." If your verification of the swap surfaces ANY meaningful regression — flaky drag behavior, broken keyboard reorder, etc. — **bail to the SortableJS implementation and report.** The benefits (better a11y, React-native model) only land if the swap is clean.
+
 W6B runs **in parallel with W6A**. File ownership is disjoint:
 - W6A: `e2e/*.spec.ts` only (no source code changes)
 - W6B: `packages/web/src/hooks/useDragAndDrop.ts`, `StepCard.tsx`, `GroupCard.tsx`, plus `package.json`/`yarn.lock` for the dep swap

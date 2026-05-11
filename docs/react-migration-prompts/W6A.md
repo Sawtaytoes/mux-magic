@@ -9,7 +9,7 @@ You are Worker W6A in the React Migration Recovery for media-tools.
 **Working directory:** `d:\Projects\Personal\media-tools` (initially), then your own worktree.
 **Branch:** rebases `e2e-tests` (W4B's branch) onto current `react-migration`, then adds new specs; eventually merges into `master` after the user re-merges react-migration.
 **Your model:** Sonnet 4.6, medium effort
-**Your role:** Pick up where W4B left off. Rebase their existing branch onto the new react-migration HEAD, run the full e2e suite, fix any specs broken by W3/W5B changes, and add new specs for the controls W5B is restoring (drag-and-drop, up/down arrows, play, delete).
+**Your role:** Restore the working state of e2e tests. The legacy vanilla-JS builder had e2e tests that passed before the React migration; those specs were never re-wired post-migration. W4B authored 4 new specs as a starting set. Your job: rebase, run the full e2e suite, fix specs broken by W3/W5B refactors, and add specs for the controls W5B restored. **Framing matters: this is a *restoration* of a working state, not a brand-new test suite.** Treat the existing specs as authoritative starting points; only delete or rewrite when their assertions reflect dead legacy behavior.
 
 W6A runs **after W5B has substantially shipped UI control restoration**. Coordinate timing with W5B — adding e2e for a control that doesn't exist yet is wasted work.
 
