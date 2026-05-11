@@ -20,9 +20,6 @@ declare global {
     // Caller in GroupCard silently no-ops until W5 ports to an atom + API call.
     runGroup?: (groupId: string) => void
     // W5 parity-trap: implementation was in deleted legacy sequence-editor.js.
-    // Caller in StepCard silently no-ops until W5 ports to setStepRunStatusAtom + API call.
-    runOrStopStep?: (stepId: string) => void
-    // W5 parity-trap: implementation was in deleted legacy sequence-editor.js.
     // Caller in StepCard silently no-ops until W5 ports to an atom + clipboard write.
     copyStepYaml?: (stepId: string) => void
   }

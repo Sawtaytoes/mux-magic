@@ -8,6 +8,7 @@ import { commandPickerStateAtom } from "../../state/pickerAtoms"
 import {
   moveStepAtom,
   removeStepAtom,
+  runOrStopStepAtom,
   toggleStepCollapsedAtom,
   updateStepAliasAtom,
 } from "../../state/sequenceAtoms"
@@ -43,6 +44,7 @@ export const StepCard = ({
   const updateAlias = useSetAtom(updateStepAliasAtom)
   const moveStep = useSetAtom(moveStepAtom)
   const removeStep = useSetAtom(removeStepAtom)
+  const runOrStopStep = useSetAtom(runOrStopStepAtom)
   const setCommandHelpName = useSetAtom(
     commandHelpCommandNameAtom,
   )
@@ -191,9 +193,7 @@ export const StepCard = ({
           <div className="step-actions flex items-center gap-1">
             <button
               type="button"
-              onClick={() =>
-                window.runOrStopStep?.(step.id)
-              }
+              onClick={() => void runOrStopStep(step.id)}
               disabled={!step.command}
               title={
                 step.status === "running" && step.jobId

@@ -179,6 +179,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W5A | 2026-05-11 | chore(checklist): W5A in progress — 4 streams: parity (4 bridge atoms + MDX + buildBuilderUrl), code-smell, a11y, BuilderPage story |
 | W5B | 2026-05-11 | chore(checklist): W5B in progress — drag-and-drop, runOrStopStep port, Storybook polish |
 | W5B | 2026-05-11 | fix(builder): restore drag-and-drop — install sortablejs npm pkg, switch DragAndDrop.tsx from window.Sortable to npm import, wire useDragAndDrop in BuilderSequenceList |
+| W5B | 2026-05-11 | feat(builder): port runOrStopStep to runOrStopStepAtom; wire StepCard; shrink types.window.d.ts |
 
 ## W4A Audit Findings (2026-05-10)
 
