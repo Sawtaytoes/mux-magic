@@ -218,6 +218,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W7F | 2026-05-11 | fix(dnd): add visual drop-target highlight ring to StepCard and GroupCard |
 | W7F | 2026-05-11 | fix(dnd): make group body a droppable fallback zone for empty groups |
 | W7F | 2026-05-11 | fix(dnd): add GroupCard DragOverlay so dragging a group shows a floating preview |
+| W7F | 2026-05-11 | test(dnd): unit tests for dragReorderAtom — 6 cases covering all move paths |
 
 ## W4A Audit Findings (2026-05-10)
 
