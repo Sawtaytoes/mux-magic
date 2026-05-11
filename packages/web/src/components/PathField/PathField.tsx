@@ -1,12 +1,15 @@
 import { useAtomValue, useSetAtom } from "jotai"
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import { getLinkedValue } from "../../commands/links"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
 import { flattenSteps } from "../../jobs/sequenceUtils"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
-import { linkPickerStateAtom } from "../../state/pickerAtoms"
+import {
+  linkPickerStateAtom,
+  pathPickerStateAtom,
+} from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import { fileExplorerAtom } from "../../state/uiAtoms"
 import type {
@@ -52,15 +55,29 @@ export const PathField = ({
   field,
   step,
 }: PathFieldProps) => {
-  const { setParam } = useBuilderActions()
+  const { addPathVar, setLink, setParam, setPathValue } =
+    useBuilderActions()
   const setFileExplorer = useSetAtom(fileExplorerAtom)
   const setLinkPickerState = useSetAtom(linkPickerStateAtom)
+  const setPathPickerState = useSetAtom(pathPickerStateAtom)
   const paths = useAtomValue(pathsAtom)
   const allSteps = useAtomValue(stepsAtom)
   const commands = useAtomValue(commandsAtom)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const linkButtonRef = useRef<HTMLButtonElement>(null)
+  const debounceTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null)
+
+  useEffect(
+    () => () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    },
+    [],
+  )
 
   const link = step.links?.[field.name]
   const isObjectLink =
@@ -139,12 +156,73 @@ export const PathField = ({
         value={displayValue}
         readOnly={isObjectLink}
         onChange={(event) => {
-          if (!isObjectLink) {
-            setParam(
-              step.id,
-              field.name,
-              event.target.value || undefined,
+          if (isObjectLink) return
+          const rawValue = event.target.value
+          const value = rawValue || undefined
+          if (typeof link === "string") {
+            setPathValue(link, value ?? "")
+          } else if (!step.params[field.name] && value) {
+            const newId = `pathVar_${Math.random().toString(36).slice(2, 8)}`
+            addPathVar(newId, value)
+            setLink(step.id, field.name, newId)
+          } else {
+            setParam(step.id, field.name, value)
+          }
+          if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current)
+          }
+          const currentInput = inputRef.current
+          if (currentInput && /^[/\\]/.test(rawValue)) {
+            const lastSep = Math.max(
+              rawValue.lastIndexOf("/"),
+              rawValue.lastIndexOf("\\"),
             )
+            const parentPath =
+              lastSep <= 0
+                ? rawValue
+                : rawValue.slice(0, lastSep) || "/"
+            const query = /[/\\]$/.test(rawValue)
+              ? ""
+              : rawValue.slice(lastSep + 1)
+            const pickerTarget =
+              typeof link === "string"
+                ? ({
+                    mode: "pathVar",
+                    pathVarId: link,
+                  } as const)
+                : ({
+                    mode: "step",
+                    stepId: step.id,
+                    fieldName: field.name,
+                  } as const)
+            debounceTimerRef.current = setTimeout(() => {
+              const rect =
+                currentInput.getBoundingClientRect()
+              setPathPickerState({
+                inputElement: currentInput,
+                target: pickerTarget,
+                parentPath,
+                query,
+                triggerRect: {
+                  left: rect.left,
+                  top: rect.top,
+                  right: rect.right,
+                  bottom: rect.bottom,
+                  width: rect.width,
+                  height: rect.height,
+                },
+                entries: null,
+                error: null,
+                activeIndex: 0,
+                matches: null,
+                separator: "/",
+                cachedParentPath: null,
+                requestToken: 0,
+                debounceTimerId: null,
+              })
+            }, 250)
+          } else {
+            setPathPickerState(null)
           }
         }}
         className={`w-full bg-slate-${isObjectLink ? "900" : "700"} text-slate-${isObjectLink ? "400" : "200"} text-xs rounded px-2 py-1.5 border border-slate-${isObjectLink ? "700" : "600"} focus:outline-none focus:border-blue-500 font-mono`}

@@ -1,5 +1,7 @@
 import { useSetAtom } from "jotai"
+import { useEffect, useRef } from "react"
 import { pathsAtom } from "../../state/pathsAtom"
+import { pathPickerStateAtom } from "../../state/pickerAtoms"
 import { fileExplorerAtom } from "../../state/uiAtoms"
 import type { PathVar } from "../../types"
 
@@ -14,6 +16,21 @@ export const PathVarCard = ({
 }: PathVarCardProps) => {
   const setPaths = useSetAtom(pathsAtom)
   const setFileExplorer = useSetAtom(fileExplorerAtom)
+  const setPathPickerState = useSetAtom(pathPickerStateAtom)
+
+  const valueInputRef = useRef<HTMLInputElement>(null)
+  const debounceTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null)
+
+  useEffect(
+    () => () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    },
+    [],
+  )
 
   const setLabel = (label: string) => {
     setPaths((paths) =>
@@ -60,6 +77,56 @@ export const PathVarCard = ({
           setValue(selectedPath)
         },
       })
+    }
+  }
+
+  const handleValueChange = (rawValue: string) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+    const currentInput = valueInputRef.current
+    if (currentInput && /^[/\\]/.test(rawValue)) {
+      const lastSep = Math.max(
+        rawValue.lastIndexOf("/"),
+        rawValue.lastIndexOf("\\"),
+      )
+      const parentPath =
+        lastSep <= 0
+          ? rawValue
+          : rawValue.slice(0, lastSep) || "/"
+      const query = /[/\\]$/.test(rawValue)
+        ? ""
+        : rawValue.slice(lastSep + 1)
+      debounceTimerRef.current = setTimeout(() => {
+        const rect = currentInput.getBoundingClientRect()
+        setPathPickerState({
+          inputElement: currentInput,
+          target: {
+            mode: "pathVar",
+            pathVarId: pathVar.id,
+          },
+          parentPath,
+          query,
+          triggerRect: {
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height,
+          },
+          entries: null,
+          error: null,
+          activeIndex: 0,
+          matches: null,
+          separator: "/",
+          cachedParentPath: null,
+          requestToken: 0,
+          debounceTimerId: null,
+        })
+      }, 250)
+    } else {
+      setPathPickerState(null)
     }
   }
 
@@ -112,11 +179,15 @@ export const PathVarCard = ({
         )}
       </div>
       <input
+        ref={valueInputRef}
         type="text"
         defaultValue={pathVar.value}
         placeholder="/mnt/media or D:\Media"
         data-action="set-path-value"
         data-pv-id={pathVar.id}
+        onChange={(event) =>
+          handleValueChange(event.currentTarget.value)
+        }
         onBlur={(event) =>
           setValue(event.currentTarget.value)
         }
