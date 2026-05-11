@@ -17,7 +17,9 @@ import { PromptModal } from "../../components/PromptModal/PromptModal"
 import { YamlModal } from "../../components/YamlModal/YamlModal"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
 import { decodeSeqParam } from "../../jobs/decodeSeqParam"
+import { encodeSeqParam } from "../../jobs/encodeSeqParam"
 import { loadYamlFromText } from "../../jobs/loadYaml"
+import { toYamlStr } from "../../jobs/yamlSerializer"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import {
@@ -78,6 +80,54 @@ export const BuilderPage = () => {
         "Failed to load sequence from ?seq= URL parameter:",
         error,
       )
+    }
+  }, [store])
+
+  // Live URL syncing: on every change to steps / paths, re-encode the
+  // current YAML into ?seq= and replace the URL. Makes the URL a live
+  // source of truth — refreshing keeps state, bookmarks are restorable,
+  // copying the URL shares the working sequence.
+  //
+  // Uses `store.sub` rather than `useAtomValue` so BuilderPage itself
+  // doesn't re-render on every atom change. The debounce keeps URL writes
+  // out of the keystroke hot path; 250ms is fast enough that bookmarking
+  // feels immediate.
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null =
+      null
+
+    const writeUrl = () => {
+      const commands = store.get(commandsAtom)
+      if (!commands || Object.keys(commands).length === 0) {
+        return
+      }
+      const steps = store.get(stepsAtom)
+      const paths = store.get(pathsAtom)
+      const hasContent =
+        steps.length > 0 ||
+        paths.some((pathVar) => pathVar.value)
+      const url = new URL(window.location.href)
+      if (hasContent) {
+        const yaml = toYamlStr(steps, paths, commands)
+        url.searchParams.set("seq", encodeSeqParam(yaml))
+      } else {
+        url.searchParams.delete("seq")
+      }
+      window.history.replaceState({}, "", url.toString())
+    }
+
+    const scheduleWrite = () => {
+      if (timeoutId !== null) clearTimeout(timeoutId)
+      timeoutId = setTimeout(writeUrl, 250)
+    }
+
+    const unsubSteps = store.sub(stepsAtom, scheduleWrite)
+    const unsubPaths = store.sub(pathsAtom, scheduleWrite)
+
+    return () => {
+      if (timeoutId !== null) clearTimeout(timeoutId)
+      unsubSteps()
+      unsubPaths()
     }
   }, [store])
 
