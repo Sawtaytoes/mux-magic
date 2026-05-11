@@ -66,6 +66,7 @@ export const useBuilderActions = () => {
     const snapshot = toYamlStr(
       store.get(stepsAtom),
       store.get(pathsAtom),
+      store.get(commandsAtom),
     )
     store.set(undoStackAtom, (prev) => [...prev, snapshot])
     store.set(redoStackAtom, [])
@@ -79,6 +80,7 @@ export const useBuilderActions = () => {
     const current = toYamlStr(
       store.get(stepsAtom),
       store.get(pathsAtom),
+      store.get(commandsAtom),
     )
     const snapshot = undoStack[undoStack.length - 1]
     store.set(undoStackAtom, undoStack.slice(0, -1))
@@ -97,6 +99,7 @@ export const useBuilderActions = () => {
     const current = toYamlStr(
       store.get(stepsAtom),
       store.get(pathsAtom),
+      store.get(commandsAtom),
     )
     const snapshot = redoStack[redoStack.length - 1]
     store.set(redoStackAtom, redoStack.slice(0, -1))
@@ -176,6 +179,7 @@ export const useBuilderActions = () => {
     const yaml = toYamlStr(
       store.get(stepsAtom),
       store.get(pathsAtom),
+      store.get(commandsAtom),
     )
     await navigator.clipboard.writeText(yaml)
   }, [store])
@@ -185,6 +189,7 @@ export const useBuilderActions = () => {
     const yaml = toYamlStr(
       store.get(stepsAtom),
       store.get(pathsAtom),
+      store.get(commandsAtom),
     )
     store.set(runningAtom, true)
     store.set(apiRunModalAtom, {

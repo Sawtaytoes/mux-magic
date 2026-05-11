@@ -1,0 +1,206 @@
+import { describe, expect, test } from "vitest"
+
+import type {
+  Commands,
+  PathVar,
+  SequenceItem,
+  Step,
+} from "../types"
+import { toYamlStr } from "./yamlSerializer"
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const makeStep = (overrides: Partial<Step> = {}): Step => ({
+  id: "step-1",
+  alias: "",
+  command: "makeDirectory",
+  params: {},
+  links: {},
+  status: null,
+  error: null,
+  isCollapsed: false,
+  ...overrides,
+})
+
+const BASE_PATH: PathVar = {
+  id: "basePath",
+  label: "Base Path",
+  value: "/fixture/media",
+}
+
+const MAKE_DIR_COMMAND: Commands = {
+  makeDirectory: {
+    fields: [
+      {
+        name: "filePath",
+        type: "path",
+        label: "Directory Path",
+        required: true,
+      },
+    ],
+  },
+}
+
+// ─── Empty / sentinel cases ───────────────────────────────────────────────────
+
+describe("toYamlStr — empty states", () => {
+  test("returns sentinel when steps is empty and no path values set", () => {
+    const paths: PathVar[] = [
+      { id: "basePath", label: "Base Path", value: "" },
+    ]
+    expect(toYamlStr([], paths, {})).toBe("# No steps yet")
+  })
+
+  test("returns sentinel when steps list is empty", () => {
+    expect(toYamlStr([], [], {})).toBe("# No steps yet")
+  })
+})
+
+// ─── Link resolution through buildParams ─────────────────────────────────────
+
+describe("toYamlStr — link resolution", () => {
+  test("string link becomes @<id> in serialized params", () => {
+    const step = makeStep({
+      command: "makeDirectory",
+      links: { filePath: "basePath" },
+    })
+    const paths: PathVar[] = [BASE_PATH]
+
+    const result = toYamlStr(
+      [step] as SequenceItem[],
+      paths,
+      MAKE_DIR_COMMAND,
+    )
+
+    expect(result).toContain("filePath: '@basePath'")
+  })
+
+  test("object link is serialized as linkedTo/output object", () => {
+    const step = makeStep({
+      command: "makeDirectory",
+      links: {
+        filePath: {
+          linkedTo: "prev-step",
+          output: "folder",
+        },
+      },
+    })
+    const paths: PathVar[] = [BASE_PATH]
+
+    const result = toYamlStr(
+      [step] as SequenceItem[],
+      paths,
+      MAKE_DIR_COMMAND,
+    )
+
+    expect(result).toContain("linkedTo: prev-step")
+    expect(result).toContain("output: folder")
+  })
+})
+
+// ─── Default-value omission via buildParams ───────────────────────────────────
+
+describe("toYamlStr — buildParams default omission", () => {
+  test("field at its default value is omitted from output", () => {
+    const commands: Commands = {
+      remuxToMkv: {
+        fields: [
+          {
+            name: "sourcePath",
+            type: "path",
+            required: true,
+          },
+          {
+            name: "isRecursive",
+            type: "boolean",
+            default: false,
+          },
+        ],
+      },
+    }
+    const step = makeStep({
+      command: "remuxToMkv",
+      params: { isRecursive: false },
+      links: { sourcePath: "basePath" },
+    })
+
+    const result = toYamlStr(
+      [step] as SequenceItem[],
+      [BASE_PATH],
+      commands,
+    )
+
+    expect(result).not.toContain("isRecursive")
+  })
+
+  test("field above its default value is included in output", () => {
+    const commands: Commands = {
+      remuxToMkv: {
+        fields: [
+          {
+            name: "sourcePath",
+            type: "path",
+            required: true,
+          },
+          {
+            name: "isRecursive",
+            type: "boolean",
+            default: false,
+          },
+        ],
+      },
+    }
+    const step = makeStep({
+      command: "remuxToMkv",
+      params: { isRecursive: true },
+      links: { sourcePath: "basePath" },
+    })
+
+    const result = toYamlStr(
+      [step] as SequenceItem[],
+      [BASE_PATH],
+      commands,
+    )
+
+    expect(result).toContain("isRecursive: true")
+  })
+})
+
+// ─── Unknown command fallback ─────────────────────────────────────────────────
+
+describe("toYamlStr — unknown command fallback", () => {
+  test("falls back to raw step.params when command not in commands map", () => {
+    const step = makeStep({
+      command: "unknownCommand",
+      params: { someField: "some-value" },
+    })
+
+    const result = toYamlStr(
+      [step] as SequenceItem[],
+      [BASE_PATH],
+      {},
+    )
+
+    expect(result).toContain("someField: some-value")
+  })
+})
+
+// ─── Paths block ──────────────────────────────────────────────────────────────
+
+describe("toYamlStr — paths block", () => {
+  test("path variable with value appears in paths block", () => {
+    const step = makeStep({
+      command: "makeDirectory",
+      links: { filePath: "basePath" },
+    })
+
+    const result = toYamlStr(
+      [step] as SequenceItem[],
+      [BASE_PATH],
+      MAKE_DIR_COMMAND,
+    )
+
+    expect(result).toContain("basePath:")
+    expect(result).toContain("value: /fixture/media")
+  })
+})

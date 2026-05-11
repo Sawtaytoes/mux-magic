@@ -1,6 +1,7 @@
 import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useState } from "react"
 import { toYamlStr } from "../../jobs/yamlSerializer"
+import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import { yamlModalOpenAtom } from "../../state/uiAtoms"
@@ -9,13 +10,14 @@ export const YamlModal = () => {
   const [isOpen, setIsOpen] = useAtom(yamlModalOpenAtom)
   const steps = useAtomValue(stepsAtom)
   const paths = useAtomValue(pathsAtom)
+  const commands = useAtomValue(commandsAtom)
   const [copyLabel, setCopyLabel] = useState("Copy")
 
   const close = () => setIsOpen(false)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(
-      toYamlStr(steps, paths),
+      toYamlStr(steps, paths, commands),
     )
     setCopyLabel("Copied!")
     setTimeout(() => setCopyLabel("Copy"), 2000)
@@ -85,7 +87,7 @@ export const YamlModal = () => {
           id="yaml-out"
           className="flex-1 overflow-auto p-4 text-xs text-emerald-400 font-mono leading-relaxed whitespace-pre"
         >
-          {toYamlStr(steps, paths)}
+          {toYamlStr(steps, paths, commands)}
         </pre>
       </div>
     </div>

@@ -1,6 +1,8 @@
 import { dump } from "js-yaml"
 
+import { buildParams } from "../commands/buildParams"
 import type {
+  Commands,
   Group,
   PathVar,
   SequenceItem,
@@ -8,27 +10,24 @@ import type {
 } from "../types"
 import { isGroup } from "./sequenceUtils"
 
-// During the transition, buildParams lives in legacy sequence-editor.js.
-// We call it through the bridge; fall back to step.params if not yet wired.
 const buildParamsForStep = (
   step: Step,
-): Record<string, unknown> =>
-  typeof window.mediaTools?.buildParams === "function"
-    ? (window.mediaTools.buildParams(step) as Record<
-        string,
-        unknown
-      >)
-    : step.params
+  commands: Commands,
+): Record<string, unknown> => {
+  const commandDefinition = commands[step.command]
+  if (!commandDefinition) return step.params
+  return buildParams(step, commandDefinition)
+}
 
-const stepToYaml = (step: Step) => ({
+const stepToYaml = (step: Step, commands: Commands) => ({
   id: step.id,
   ...(step.alias ? { alias: step.alias } : {}),
   command: step.command,
-  params: buildParamsForStep(step),
+  params: buildParamsForStep(step, commands),
   ...(step.isCollapsed ? { isCollapsed: true } : {}),
 })
 
-const groupToYaml = (group: Group) => ({
+const groupToYaml = (group: Group, commands: Commands) => ({
   kind: "group" as const,
   ...(group.id ? { id: group.id } : {}),
   ...(group.label ? { label: group.label } : {}),
@@ -36,7 +35,7 @@ const groupToYaml = (group: Group) => ({
   ...(group.isCollapsed ? { isCollapsed: true } : {}),
   steps: group.steps
     .filter((step) => step.command !== null)
-    .map(stepToYaml),
+    .map((step) => stepToYaml(step, commands)),
 })
 
 const hasContent = (item: SequenceItem): boolean =>
@@ -47,6 +46,7 @@ const hasContent = (item: SequenceItem): boolean =>
 export const toYamlStr = (
   steps: SequenceItem[],
   paths: PathVar[],
+  commands: Commands,
 ): string => {
   const filledItems = steps.filter(hasContent)
   const hasSomething =
@@ -67,8 +67,8 @@ export const toYamlStr = (
       paths: pathsObj,
       steps: filledItems.map((item) =>
         isGroup(item)
-          ? groupToYaml(item)
-          : stepToYaml(item),
+          ? groupToYaml(item, commands)
+          : stepToYaml(item, commands),
       ),
     },
     { lineWidth: -1, flowLevel: 3, indent: 2 },
