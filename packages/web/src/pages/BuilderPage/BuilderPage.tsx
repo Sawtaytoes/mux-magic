@@ -1,4 +1,6 @@
+import { useStore } from "jotai"
 import { useHydrateAtoms } from "jotai/utils"
+import { useEffect } from "react"
 
 import { COMMANDS } from "../../commands/commands"
 import { ApiRunModal } from "../../components/ApiRunModal/ApiRunModal"
@@ -14,7 +16,14 @@ import { PathPicker } from "../../components/PathPicker/PathPicker"
 import { PromptModal } from "../../components/PromptModal/PromptModal"
 import { YamlModal } from "../../components/YamlModal/YamlModal"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
+import { decodeSeqParam } from "../../jobs/decodeSeqParam"
+import { loadYamlFromText } from "../../jobs/loadYaml"
 import { commandsAtom } from "../../state/commandsAtom"
+import { pathsAtom } from "../../state/pathsAtom"
+import {
+  stepCounterAtom,
+  stepsAtom,
+} from "../../state/stepsAtom"
 import { BuilderPathVarList } from "../BuilderPathVarList/BuilderPathVarList"
 import { BuilderSequenceList } from "../BuilderSequenceList/BuilderSequenceList"
 
@@ -23,6 +32,52 @@ import { BuilderSequenceList } from "../BuilderSequenceList/BuilderSequenceList"
 export const BuilderPage = () => {
   useBuilderKeyboard()
   useHydrateAtoms([[commandsAtom, COMMANDS]])
+
+  // Hydrate atoms from ?seq= query param on mount. Restores the legacy
+  // shareable-URL flow: copy a URL with a base64-encoded YAML body and
+  // anyone who opens it gets the same sequence pre-loaded. Both legacy
+  // YAML payloads and the current React JSON payload (buildBuilderUrl)
+  // parse through loadYamlFromText cleanly because JSON is valid YAML.
+  //
+  // Reading atom values via `store.get(...)` inside the effect (rather
+  // than `useAtomValue` at the component top level) keeps the effect's
+  // dep list stable — `store` is a stable reference, so the effect runs
+  // exactly once on mount, never re-runs when atom values change.
+  const store = useStore()
+
+  useEffect(() => {
+    const params = new URLSearchParams(
+      window.location.search,
+    )
+    const decoded = decodeSeqParam(params.get("seq"))
+    if (!decoded) return
+
+    try {
+      const result = loadYamlFromText(
+        decoded,
+        store.get(commandsAtom),
+        store.get(pathsAtom),
+        store.get(stepCounterAtom),
+      )
+      store.set(stepsAtom, result.steps)
+      store.set(pathsAtom, result.paths)
+      store.set(stepCounterAtom, result.stepCounter)
+
+      // Strip ?seq from the URL so a refresh doesn't keep reloading the
+      // same payload over user edits. history.replaceState avoids adding
+      // a back-button entry.
+      const url = new URL(window.location.href)
+      url.searchParams.delete("seq")
+      window.history.replaceState({}, "", url.toString())
+    } catch (error) {
+      // Invalid YAML shouldn't crash the page — the user can paste a
+      // corrected version via LoadModal. Surface in console for debugging.
+      console.error(
+        "Failed to load sequence from ?seq= URL parameter:",
+        error,
+      )
+    }
+  }, [store])
 
   return (
     <div
