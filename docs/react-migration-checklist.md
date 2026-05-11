@@ -1,6 +1,6 @@
 # React Migration Checklist
 
-Last updated: 2026-05-09 by Claude Sonnet 4.6 (Wave F: Jobs page)
+Last updated: 2026-05-10 by Claude Sonnet 4.6 (W3: Final Cleanup)
 
 ## Phase Status
 
@@ -81,7 +81,7 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W2C | 2 — Bundle C (StringArrayField, NumberArrayField, JsonField) | ✅ Done | 2026-05-10 | Haiku 4.5; all 3 array/json fields ported with parity tests; dispatcher wired; tests pass |
 | W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | ✅ Done | 2026-05-10 | Haiku 4.5; 4 fields ported + wired to RenderFields; DslRulesBuilder escalated to Phase 2.5 (non-mechanical port); commit a98ae9b |
 | W2.5 | 2.5 — DslRulesBuilder (escalated from W2D) | ✅ Done | 2026-05-10 | claude-sonnet-4-6, high effort. Prompt: [react-migration-prompts/W2-5.md](react-migration-prompts/W2-5.md). 5 commits: types, utils, 18 component files, wire SubtitleRulesField, mutation tests + stories. 281 tests passing. |
-| W3 | 3 — Final Cleanup | 🔄 In Progress | 2026-05-10 | claude-sonnet-4-6 (high effort). Replacing 3 prod window.mediaTools files + 19 test/story cleanup + deleting legacy public/ assets. |
+| W3 | 3 — Final Cleanup | ✅ Done | 2026-05-10 | claude-sonnet-4-6 (high effort). 3 prod source files migrated to atoms; 19 test/story/MDX files cleaned; public/builder/ + public/vendor/ deleted; 10 loose legacy public assets deleted; types.window.d.ts slimmed to 7 remaining bridge globals; 1004 tests pass, typecheck clean. |
 | W4A | 4 — Verification & Master Merge | ⬜ Not Started | — | Parallel with W4B. Sonnet medium. (Was W4 before rename for parallel-pair consistency.) |
 | W4B | 4 — E2E tests (worktree off post-W3 react-migration) | ⬜ Not Started | — | Parallel with W4A. Sonnet medium. (Was W5 before rename.) Merges to master after W4A's master merge lands. |
 | W5 | 5 — Parity-trap + code-smell + a11y cleanup | ⬜ Not Started | — | Sonnet high effort. Prompt: [react-migration-prompts/W5.md](react-migration-prompts/W5.md). Runs after W4A+W4B. Three streams: parity quirks held back during port, code-smell sweep (getIsX collisions, let+subscribe → lastValueFrom, one component per file), final a11y pass. (Was W6 before rename.) |
@@ -160,6 +160,14 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W2.5 | 2026-05-10 | feat(dslrules): replace SubtitleRulesField JSON textarea with visual DslRulesBuilder |
 | W2.5 | 2026-05-10 | test(dslrules): add mutation unit tests, render tests, and Storybook stories |
 | W3 | 2026-05-10 | chore(checklist): W3 in progress |
+| W3 | 2026-05-10 | feat(atoms): add setPathValueAtom + setStepRunStatusAtom to sequenceAtoms.ts |
+| W3 | 2026-05-10 | refactor(CommandHelpModal): replace window.mediaTools?.COMMANDS with commandsAtom |
+| W3 | 2026-05-10 | refactor(PathPicker): replace window.setParam + window.mediaTools.setPathValue with atoms |
+| W3 | 2026-05-10 | refactor(ApiRunModal): replace 12 window.mediaTools calls with setStepRunStatusAtom |
+| W3 | 2026-05-10 | chore(tests+stories): remove unused window.mediaTools mocks (17 files + 7 MDX docs) |
+| W3 | 2026-05-10 | chore(legacy): delete public/builder/ and public/vendor/ (85 files, 51 709 deletions) |
+| W3 | 2026-05-10 | chore(legacy): delete 10 loose legacy assets in public/ (1 230 deletions) |
+| W3 | 2026-05-10 | chore(legacy): slim types.window.d.ts — drop mediaTools interface, keep 7 remaining bridge globals |
 
 ## DslRulesBuilder Escalation (W2D)
 
