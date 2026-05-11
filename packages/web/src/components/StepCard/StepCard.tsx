@@ -64,7 +64,10 @@ const StepCardInner = ({
   const { copyStepYaml } = useBuilderActions()
   const triggerRef = useRef<HTMLButtonElement>(null)
 
-  const sortable = useSortable({ id: step.id })
+  const sortable = useSortable({
+    id: step.id,
+    animateLayoutChanges: () => true,
+  })
   const dragStyle = isDragOverlay
     ? {}
     : {

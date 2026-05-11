@@ -48,7 +48,10 @@ export const GroupCard = ({
   const { copyGroupYaml, pasteCardAt, runGroup } =
     useBuilderActions()
 
-  const sortable = useSortable({ id: group.id })
+  const sortable = useSortable({
+    id: group.id,
+    animateLayoutChanges: () => true,
+  })
   const dragStyle = {
     transform: CSS.Transform.toString(sortable.transform),
     transition: sortable.transition ?? undefined,
