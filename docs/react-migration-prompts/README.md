@@ -7,11 +7,11 @@ Prompts are generated lazily — the next worker's prompt is written only after 
 | Worker | Prompt | Status | Spawned after |
 |---|---|---|---|
 | W0c | [W0c.md](W0c.md) | ✅ Done (commit 51da90d) | (Phase 0 task) |
-| W1 | [W1.md](W1.md) | Ready to spawn | W0c |
-| W2A | _(generated after W1 reports)_ | — | W1 |
-| W2B | _(generated after W1 reports)_ | — | W1 |
-| W2C | _(generated after W1 reports)_ | — | W1 |
-| W2D | _(generated after W1 reports)_ | — | W1 |
+| W1 | [W1.md](W1.md) | ✅ Done (8 commits, 14c920b tip) | W0c |
+| W2A | [W2A.md](W2A.md) | Ready to spawn (parallel) | W1 |
+| W2B | [W2B.md](W2B.md) | Ready to spawn (parallel) | W1 |
+| W2C | [W2C.md](W2C.md) | Ready to spawn (parallel) | W1 |
+| W2D | [W2D.md](W2D.md) | Ready to spawn (parallel) | W1 |
 | W3 | _(generated after W2A/B/C/D all report)_ | — | W2A+B+C+D |
 | W4 | _(generated after W3 reports)_ | — | W3 |
 | W5 | _(generated after W3 reports — parallel with W4)_ | — | W3 |
