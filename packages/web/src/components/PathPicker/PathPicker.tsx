@@ -1,4 +1,4 @@
-import { useAtom } from "jotai"
+import { useAtom, useSetAtom } from "jotai"
 import { useEffect } from "react"
 import { createPortal } from "react-dom"
 import {
@@ -6,6 +6,10 @@ import {
   pathPickerStateAtom,
   type TriggerRect,
 } from "../../state/pickerAtoms"
+import {
+  setParamAtom,
+  setPathValueAtom,
+} from "../../state/sequenceAtoms"
 import type { DirEntry } from "../../types"
 
 const PICKER_WIDTH = 380
@@ -109,37 +113,19 @@ const computeMatches = (
     )
 }
 
-// ─── Selection logic (pure) ───────────────────────────────────────────────────
+// ─── Value computation (pure) ─────────────────────────────────────────────────
 
-const applySelection = (
+const computeNewValue = (
   entry: DirEntry,
   state: PathPickerState,
-) => {
-  const { inputElement, target, parentPath } = state
+): string => {
+  const { parentPath } = state
   const separator = state.separator || "/"
   const base =
     parentPath.endsWith("/") || parentPath.endsWith("\\")
       ? parentPath.slice(0, -1)
       : parentPath
-  const newValue = `${base}${separator}${entry.name}${separator}`
-  ;(inputElement as HTMLInputElement).value = newValue
-  if (target.mode === "step") {
-    ;(
-      window.setParam as
-        | ((
-            stepId: string,
-            fieldName: string,
-            value: string,
-          ) => void)
-        | undefined
-    )?.(target.stepId, target.fieldName, newValue)
-  } else {
-    window.mediaTools?.setPathValue?.(
-      target.pathVarId,
-      newValue,
-    )
-  }
-  return newValue
+  return `${base}${separator}${entry.name}${separator}`
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -148,6 +134,8 @@ export const PathPicker = () => {
   const [pickerState, setPickerState] = useAtom(
     pathPickerStateAtom,
   )
+  const setParam = useSetAtom(setParamAtom)
+  const setPathValue = useSetAtom(setPathValueAtom)
 
   // Fires whenever parentPath or requestToken changes — the bridge sets a new
   // requestToken after the debounce delay, which kicks off the actual fetch.
@@ -270,30 +258,51 @@ export const PathPicker = () => {
     computeMatches(pickerState.entries, pickerState.query)
 
   const handleSelectEntry = (entry: DirEntry) => {
-    const current = pickerState
-    setPickerState((snapshot) => {
-      if (!snapshot) {
+    const snapshot = pickerState
+    const newValue = computeNewValue(entry, snapshot)
+
+    // Update DOM input immediately so the field reflects the selection.
+    ;(snapshot.inputElement as HTMLInputElement).value =
+      newValue
+
+    // Dispatch to the appropriate atom.
+    if (snapshot.target.mode === "step") {
+      setParam({
+        stepId: snapshot.target.stepId,
+        fieldName: snapshot.target.fieldName,
+        value: newValue,
+      })
+    } else {
+      setPathValue({
+        pathVarId: snapshot.target.pathVarId,
+        value: newValue,
+      })
+    }
+
+    // Compute updated picker navigation state.
+    const trailingSlash = /[\\/]$/.test(newValue)
+    const lastSepIndex = Math.max(
+      newValue.lastIndexOf("/"),
+      newValue.lastIndexOf("\\"),
+    )
+    const newParentPath =
+      lastSepIndex <= 0
+        ? newValue
+        : newValue.slice(0, lastSepIndex) || "/"
+    const newQuery = trailingSlash
+      ? ""
+      : lastSepIndex < 0
+        ? newValue
+        : newValue.slice(lastSepIndex + 1)
+
+    setPickerState((prev) => {
+      if (!prev) {
         return null
       }
-      const newValue = applySelection(entry, snapshot)
-      const trailingSlash = /[\\/]$/.test(newValue)
-      const lastSepIndex = Math.max(
-        newValue.lastIndexOf("/"),
-        newValue.lastIndexOf("\\"),
-      )
-      const newParentPath =
-        lastSepIndex <= 0
-          ? newValue
-          : newValue.slice(0, lastSepIndex) || "/"
-      const newQuery = trailingSlash
-        ? ""
-        : lastSepIndex < 0
-          ? newValue
-          : newValue.slice(lastSepIndex + 1)
       const rawRect =
-        snapshot.inputElement.getBoundingClientRect()
+        prev.inputElement.getBoundingClientRect()
       return {
-        ...snapshot,
+        ...prev,
         parentPath: newParentPath,
         query: newQuery,
         triggerRect: {
@@ -305,10 +314,11 @@ export const PathPicker = () => {
           height: rawRect.height,
         },
         activeIndex: 0,
-        requestToken: snapshot.requestToken + 1,
+        requestToken: prev.requestToken + 1,
       }
     })
-    current.inputElement.focus()
+
+    snapshot.inputElement.focus()
   }
 
   return createPortal(

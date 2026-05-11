@@ -452,3 +452,51 @@ export const addPathAtom = atom(null, (_get, set) => {
     },
   ])
 })
+
+export const setPathValueAtom = atom(
+  null,
+  (
+    _get,
+    set,
+    args: { pathVarId: string; value: string },
+  ) => {
+    set(pathsAtom, (paths) =>
+      paths.map((path) =>
+        path.id === args.pathVarId
+          ? { ...path, value: args.value }
+          : path,
+      ),
+    )
+  },
+)
+
+export const setStepRunStatusAtom = atom(
+  null,
+  (
+    _get,
+    set,
+    args: {
+      stepId: string
+      status: string | null
+      jobId?: string | null
+    },
+  ) => {
+    const patch = (step: Step): Step => {
+      if (step.id !== args.stepId) return step
+      return {
+        ...step,
+        status: args.status,
+        ...(args.jobId !== undefined
+          ? { jobId: args.jobId }
+          : {}),
+      }
+    }
+    set(stepsAtom, (items) =>
+      items.map((item) =>
+        isGroup(item)
+          ? { ...item, steps: item.steps.map(patch) }
+          : patch(item as Step),
+      ),
+    )
+  },
+)

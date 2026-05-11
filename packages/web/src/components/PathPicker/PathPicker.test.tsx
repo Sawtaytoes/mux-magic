@@ -15,6 +15,7 @@ import {
   vi,
 } from "vitest"
 import { pathPickerStateAtom } from "../../state/pickerAtoms"
+import { stepsAtom } from "../../state/stepsAtom"
 import { PathPicker } from "./PathPicker"
 
 const TRIGGER_RECT = {
@@ -29,7 +30,6 @@ const TRIGGER_RECT = {
 const makeMockInput = (value = "/home/user/") => {
   const input = document.createElement("input")
   input.value = value
-  // Give the input a non-zero getBoundingClientRect so position works
   vi.spyOn(input, "getBoundingClientRect").mockReturnValue({
     left: 100,
     top: 200,
@@ -68,6 +68,20 @@ const renderPicker = (
 
   const input = makeMockInput("/home/user/")
   const store = createStore()
+
+  store.set(stepsAtom, [
+    {
+      id: "step-1",
+      alias: "",
+      command: "copyFiles",
+      params: { sourcePath: "/home/user/" },
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    },
+  ])
+
   store.set(pathPickerStateAtom, {
     inputElement: input,
     target: {
@@ -93,8 +107,6 @@ const renderPicker = (
       <PathPicker />
     </Provider>,
   )
-
-  window.setParam = vi.fn()
 
   return { store, fetchMock, input }
 }
@@ -212,15 +224,17 @@ describe("PathPicker fetch error", () => {
 })
 
 describe("PathPicker selection", () => {
-  test("clicking a directory calls setParam with new path", async () => {
-    renderPicker()
+  test("clicking a directory updates setParamAtom with new path", async () => {
+    const { store } = renderPicker()
 
     await waitFor(() => screen.getByText("Documents"))
     await userEvent.click(screen.getByText("Documents"))
 
-    expect(window.setParam).toHaveBeenCalledWith(
-      "step-1",
-      "sourcePath",
+    const steps = store.get(stepsAtom)
+    const step = steps.find((item) => "id" in item && item.id === "step-1") as
+      | { params: Record<string, unknown> }
+      | undefined
+    expect(step?.params.sourcePath).toBe(
       "/home/user/Documents/",
     )
   })
