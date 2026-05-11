@@ -134,6 +134,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | --- | --- | --- |
 | W0b | 2026-05-10 | docs(checklist): record W0b audit findings — partial component dir classification |
 | W0c | 2026-05-10 | test: capture parity reference YAML for all commands (Phase 0 baseline) |
+| W1 | 2026-05-10 | feat(commands): port COMMANDS to TS |
 
 ## Open Questions
 

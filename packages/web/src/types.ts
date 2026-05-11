@@ -16,6 +16,8 @@ export type CommandField = {
   placeholder?: string
   linkable?: boolean
   visibleWhen?: Record<string, unknown>
+  min?: number
+  max?: number
 }
 
 export type CommandDefinition = {
