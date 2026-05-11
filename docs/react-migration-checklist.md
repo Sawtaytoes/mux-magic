@@ -259,3 +259,12 @@ Separate from the React migration recovery, but tracked here for visibility. Enf
 ## Open Questions
 
 (none)
+
+## Open Polish Items
+
+These are UX enhancements beyond parity — user-confirmed as "future optimization". Spawn after all [PARITY] workers are done and the branch is stable.
+
+| ID | Area | Description |
+|----|------|-------------|
+| POLISH-1 | `SetStyleFieldsRule` — field key input | The style field keys (`MarginV`, `MarginL`, `MarginR`, `Fontname`, `Fontsize`, `PrimaryColour`, etc.) are a closed set defined by the ASS spec. Replace the free-text key input in `StyleFieldRow` with a dropdown of known ASS `[V4+ Styles]` column names, with a free-text fallback for unknown keys. Source of truth: `packages/server/src/tools/applyAssRules.ts` (the `setStyleFields` implementation knows which keys are valid). |
+| POLISH-2 | `StepCard` — command category tag | Legacy builder showed the command's `tag` (e.g. "File Operations") next to the command name in the card header. React port renders only the command label. Low priority per user ("not a huge deal"). |

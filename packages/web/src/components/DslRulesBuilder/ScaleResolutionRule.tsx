@@ -189,7 +189,7 @@ export const ScaleResolutionRuleBody = ({
         className="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer"
       />
       <span className="text-xs text-slate-400">
-        hasScaledBorderAndShadow
+        Scale border and shadow
       </span>
     </label>
     <WhenBuilder
