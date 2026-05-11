@@ -1,5 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useRef, useState } from "react"
+import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
 import { commandLabel } from "../../jobs/commandLabels"
@@ -54,6 +55,7 @@ export const StepCard = ({
   )
   const commands = useAtomValue(commandsAtom)
 
+  const { copyStepYaml } = useBuilderActions()
   const triggerRef = useRef<HTMLButtonElement>(null)
 
   const label = commandLabel(step.command) || step.command
@@ -241,9 +243,7 @@ export const StepCard = ({
             {step.command && (
               <button
                 type="button"
-                onClick={() =>
-                  window.copyStepYaml?.(step.id)
-                }
+                onClick={() => copyStepYaml(step.id)}
                 title="Copy this step's YAML"
                 className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent"
               >

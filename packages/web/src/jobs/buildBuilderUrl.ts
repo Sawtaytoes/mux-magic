@@ -1,5 +1,9 @@
 import type { Job } from "../types"
 
+// Format decision (W5A): keep JSON rather than switching to YAML.
+// JSON is ~20% smaller than the YAML equivalent (no indentation / key repetition).
+// The ?seq= reader (BuilderPage.tsx) accepts both formats because JSON is valid YAML,
+// so old share-URLs created by the legacy vanilla builder still load correctly.
 const encodeSequenceAsUrl = (
   sequenceBody: unknown,
 ): string => {

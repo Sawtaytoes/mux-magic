@@ -1,4 +1,5 @@
 import { useSetAtom } from "jotai"
+import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
 import { DoubleChevron } from "../../icons/DoubleChevron/DoubleChevron"
@@ -38,6 +39,8 @@ export const GroupCard = ({
   const addStep = useSetAtom(addStepToGroupAtom)
   const moveGroup = useSetAtom(moveGroupAtom)
   const removeGroup = useSetAtom(removeGroupAtom)
+  const { copyGroupYaml, pasteCardAt, runGroup } =
+    useBuilderActions()
 
   const stepCount = group.steps.length
   const parallelBadge = group.isParallel ? (
@@ -134,9 +137,7 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() =>
-            window.pasteCardAt?.({
-              parentGroupId: group.id,
-            })
+            pasteCardAt({ parentGroupId: group.id })
           }
           title="Paste a copied step into this group"
           className="text-[10px] text-slate-400 hover:text-emerald-400 px-2 py-0.5 rounded border border-slate-700 hover:border-emerald-500/40"
@@ -167,7 +168,7 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() => window.copyGroupYaml?.(group.id)}
+          onClick={() => copyGroupYaml(group.id)}
           title="Copy this group's YAML"
           className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent"
         >
@@ -175,7 +176,7 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() => window.runGroup?.(group.id)}
+          onClick={() => runGroup(group.id)}
           title="Run this group via /sequences/run"
           className="text-[10px] text-emerald-500 hover:text-emerald-300 px-2 py-0.5 rounded border border-emerald-700/50 hover:border-emerald-500 hover:bg-emerald-950/30"
         >

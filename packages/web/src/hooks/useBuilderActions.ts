@@ -1,5 +1,6 @@
 import { useStore } from "jotai"
 import { useCallback } from "react"
+import { isGroup } from "../jobs/sequenceUtils"
 import { toYamlStr } from "../jobs/yamlSerializer"
 import { commandsAtom } from "../state/commandsAtom"
 import {
@@ -26,7 +27,7 @@ import {
   apiRunModalAtom,
   runningAtom,
 } from "../state/uiAtoms"
-import type { StepLink } from "../types"
+import type { Group, Step, StepLink } from "../types"
 
 const DEFAULT_BASE_PATH = {
   id: "basePath",
@@ -232,13 +233,181 @@ export const useBuilderActions = () => {
     }
   }, [store])
 
+  const copyStepYaml = useCallback(
+    async (stepId: string) => {
+      const allItems = store.get(stepsAtom)
+      const paths = store.get(pathsAtom)
+      const commands = store.get(commandsAtom)
+
+      // Walk top-level steps and group children to find the step.
+      const foundStep = allItems.reduce<Step | undefined>(
+        (found, item) => {
+          if (found) return found
+          if (!isGroup(item)) {
+            return (item as Step).id === stepId
+              ? (item as Step)
+              : undefined
+          }
+          return (item as Group).steps.find(
+            (step) => step.id === stepId,
+          )
+        },
+        undefined,
+      )
+
+      if (!foundStep) return
+      const yaml = toYamlStr([foundStep], paths, commands)
+      await navigator.clipboard.writeText(yaml)
+    },
+    [store],
+  )
+
+  const copyGroupYaml = useCallback(
+    async (groupId: string) => {
+      const allItems = store.get(stepsAtom)
+      const paths = store.get(pathsAtom)
+      const commands = store.get(commandsAtom)
+
+      const foundGroup = allItems.find(
+        (item) => isGroup(item) && item.id === groupId,
+      ) as Group | undefined
+
+      if (!foundGroup) return
+      const yaml = toYamlStr([foundGroup], paths, commands)
+      await navigator.clipboard.writeText(yaml)
+    },
+    [store],
+  )
+
+  const pasteCardAt = useCallback(
+    async (args: {
+      itemIndex?: number
+      parentGroupId?: string
+    }) => {
+      const text = await navigator.clipboard.readText()
+      if (!text) return
+
+      const { loadYamlFromText } = await import(
+        "../jobs/loadYaml"
+      )
+      const commands = store.get(commandsAtom)
+      const currentPaths = store.get(pathsAtom)
+      const currentCounter = store.get(stepCounterAtom)
+
+      try {
+        const result = loadYamlFromText(
+          text,
+          commands,
+          currentPaths,
+          currentCounter,
+        )
+        pushHistory()
+        const insertIndex =
+          args.itemIndex ?? store.get(stepsAtom).length
+
+        store.set(stepsAtom, (items) => {
+          if (args.parentGroupId) {
+            // Pasting into a group: flatten any groups in the clipboard
+            // result into their inner steps so nesting is avoided.
+            const flatSteps = result.steps.flatMap(
+              (item) =>
+                isGroup(item)
+                  ? (item as Group).steps
+                  : [item as Step],
+            )
+            return items.map((item) => {
+              if (
+                !isGroup(item) ||
+                item.id !== args.parentGroupId
+              )
+                return item
+              const steps = [...item.steps]
+              steps.splice(insertIndex, 0, ...flatSteps)
+              return { ...item, steps }
+            })
+          }
+          const updated = [...items]
+          updated.splice(insertIndex, 0, ...result.steps)
+          return updated
+        })
+        store.set(stepCounterAtom, result.stepCounter)
+      } catch {
+        // Clipboard content is not valid YAML — silently ignore.
+      }
+    },
+    [store, pushHistory],
+  )
+
+  const runGroup = useCallback(
+    async (groupId: string) => {
+      if (store.get(runningAtom)) return
+
+      const allItems = store.get(stepsAtom)
+      const paths = store.get(pathsAtom)
+      const commands = store.get(commandsAtom)
+
+      const foundGroup = allItems.find(
+        (item) => isGroup(item) && item.id === groupId,
+      ) as Group | undefined
+
+      if (!foundGroup) return
+
+      const yaml = toYamlStr([foundGroup], paths, commands)
+      store.set(runningAtom, true)
+      store.set(apiRunModalAtom, {
+        jobId: null,
+        status: "pending",
+        logs: [],
+        childJobId: null,
+        childStepId: null,
+      })
+
+      try {
+        const response = await fetch("/sequences/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/yaml" },
+          body: yaml,
+        })
+        if (!response.ok) {
+          store.set(apiRunModalAtom, (prev) =>
+            prev ? { ...prev, status: "failed" } : prev,
+          )
+          store.set(runningAtom, false)
+          return
+        }
+        const data = (await response.json()) as {
+          jobId: string
+        }
+        store.set(apiRunModalAtom, (prev) =>
+          prev
+            ? {
+                ...prev,
+                jobId: data.jobId,
+                status: "running",
+              }
+            : prev,
+        )
+      } catch {
+        store.set(apiRunModalAtom, (prev) =>
+          prev ? { ...prev, status: "failed" } : prev,
+        )
+        store.set(runningAtom, false)
+      }
+    },
+    [store],
+  )
+
   return {
     addPath,
     changeCommand,
+    copyGroupYaml,
+    copyStepYaml,
     copyYaml,
     insertGroup,
     insertStep,
+    pasteCardAt,
     redo,
+    runGroup,
     runViaApi,
     setAllCollapsed,
     setLink,
