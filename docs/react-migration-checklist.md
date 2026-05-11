@@ -75,7 +75,7 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W0a | 0 — Stale cleanup + plan copy | ✅ Done | 2026-05-10 | Orchestrator took over after subagent permission failure. 7 worktree dirs deleted, 2 stale branches deleted (both already-merged work), plan copied from ~/.claude/plans → docs/react-migration-recovery-handout.md |
 | W0b | 0 — Audit existing state | ✅ Done | 2026-05-10 | claude-sonnet-4-6, low effort, subagent run successful — commit b882c23 |
 | W0c | 0 — Parity reference capture | ✅ Done | 2026-05-10 | claude-sonnet-4-6 — 36 fixture pairs captured via Node script (buildParams inline); commit 51da90d |
-| W1 | 1 — Wave B-0 RenderFields | 🔄 In Progress | 2026-05-10 | claude-sonnet-4-6; Blocks W2A–W2D |
+| W1 | 1 — Wave B-0 RenderFields | ✅ Done | 2026-05-10 | claude-sonnet-4-6; 8 commits; COMMANDS+buildParams+links+fieldVisibility ported, RenderFields dispatcher live, BuilderPage+yamlSerializer migrated, fixtures frozen |
 | W2A | 2 — Bundle A (BooleanField, NumberField, StringField) | ⬜ Not Started | — | |
 | W2B | 2 — Bundle B (EnumField, LanguageCodeField, LanguageCodesField) | ⬜ Not Started | — | |
 | W2C | 2 — Bundle C (StringArrayField, NumberArrayField, JsonField) | ⬜ Not Started | — | |
@@ -141,6 +141,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W1 | 2026-05-10 | feat(components): real RenderFields dispatcher with TodoField placeholders |
 | W1 | 2026-05-10 | refactor(builder): hydrate commandsAtom from TS commands module |
 | W1 | 2026-05-10 | refactor(jobs): yamlSerializer uses TS buildParams; drop window.mediaTools branch |
+| W1 | 2026-05-10 | test(commands): freeze `__fixtures__`/commands.ts for Phase 2 workers |
 
 ## Open Questions
 
