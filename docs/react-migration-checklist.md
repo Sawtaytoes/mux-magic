@@ -137,6 +137,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W1 | 2026-05-10 | feat(commands): port COMMANDS to TS |
 | W1 | 2026-05-10 | feat(commands): port buildParams to TS with inline-assertion tests |
 | W1 | 2026-05-10 | feat(commands): port getLinkedValue and fieldVisibility shared helpers |
+| W1 | 2026-05-10 | chore(components): verify existing FieldLabel meets dispatcher needs (FieldLabel.tsx already complete per W0b audit — skip recreation) |
 
 ## Open Questions
 
