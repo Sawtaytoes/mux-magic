@@ -5,8 +5,7 @@
       "command": "yarn dlx",
       "args": [
         "@playwright/mcp@latest",
-        "--isolated",
-        "--storage-state={path/to/storage.json}"
+        "--isolated"
       ]
     }
   }
