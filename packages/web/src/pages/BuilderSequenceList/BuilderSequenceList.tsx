@@ -1,5 +1,6 @@
 import { useAtomValue } from "jotai"
-
+import { useRef } from "react"
+import { useDragAndDrop } from "../../components/DragAndDrop/DragAndDrop"
 import { GroupCard } from "../../components/GroupCard/GroupCard"
 import { InsertDivider } from "../../components/InsertDivider/InsertDivider"
 import { StepCard } from "../../components/StepCard/StepCard"
@@ -11,6 +12,8 @@ import type { Step } from "../../types"
 export const BuilderSequenceList = () => {
   const steps = useAtomValue(stepsAtom)
   const actions = useBuilderActions()
+  const containerRef = useRef<HTMLDivElement>(null)
+  useDragAndDrop(containerRef)
 
   const handlePaste =
     (index: number) =>
@@ -113,7 +116,11 @@ export const BuilderSequenceList = () => {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div
+      ref={containerRef}
+      id="steps-el"
+      className="flex flex-col gap-3"
+    >
       {items}
       {trailingDivider}
     </div>

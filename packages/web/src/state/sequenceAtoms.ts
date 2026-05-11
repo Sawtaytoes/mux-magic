@@ -1,13 +1,16 @@
 import { atom } from "jotai"
 import { isGroup } from "../jobs/sequenceUtils"
+import { toYamlStr } from "../jobs/yamlSerializer"
 import type {
   Group,
   SequenceItem,
   Step,
   StepLink,
 } from "../types"
+import { commandsAtom } from "./commandsAtom"
 import { pathsAtom } from "./pathsAtom"
 import { stepCounterAtom, stepsAtom } from "./stepsAtom"
+import { apiRunModalAtom, runningAtom } from "./uiAtoms"
 
 // ─── Step mutations ───────────────────────────────────────────────────────────
 
@@ -498,5 +501,96 @@ export const setStepRunStatusAtom = atom(
           : patch(item as Step),
       ),
     )
+  },
+)
+
+// ─── Per-step run / cancel ────────────────────────────────────────────────────
+// Replaces the window.runOrStopStep bridge global (W5 parity-trap port).
+
+const findStep = (
+  items: SequenceItem[],
+  stepId: string,
+): Step | undefined => {
+  let found: Step | undefined
+  items.forEach((item) => {
+    if (found) return
+    if (isGroup(item)) {
+      const inner = item.steps.find(
+        (step) => step.id === stepId,
+      )
+      if (inner) found = inner
+    } else if (item.id === stepId) {
+      found = item as Step
+    }
+  })
+  return found
+}
+
+export const runOrStopStepAtom = atom(
+  null,
+  async (get, set, stepId: string) => {
+    const items = get(stepsAtom)
+    const step = findStep(items, stepId)
+    if (!step) return
+
+    // Cancel an in-flight step run.
+    if (step.status === "running" && step.jobId) {
+      try {
+        await fetch(`/jobs/${step.jobId}`, {
+          method: "DELETE",
+        })
+      } catch {
+        // Best-effort cancel — let the UI poll for the final status.
+      }
+      return
+    }
+
+    // Guard against a concurrent global run.
+    if (get(runningAtom)) return
+
+    const paths = get(pathsAtom)
+    const commands = get(commandsAtom)
+    const yaml = toYamlStr([step], paths, commands)
+
+    set(runningAtom, true)
+    set(apiRunModalAtom, {
+      jobId: null,
+      status: "pending",
+      logs: [],
+      childJobId: null,
+      childStepId: null,
+    })
+
+    try {
+      const response = await fetch("/sequences/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/yaml" },
+        body: yaml,
+      })
+      if (!response.ok) {
+        set(apiRunModalAtom, (prev) =>
+          prev ? { ...prev, status: "failed" } : prev,
+        )
+        set(runningAtom, false)
+        return
+      }
+      const data = (await response.json()) as {
+        jobId: string
+      }
+      set(apiRunModalAtom, (prev) =>
+        prev
+          ? {
+              ...prev,
+              jobId: data.jobId,
+              status: "running",
+            }
+          : prev,
+      )
+    } catch {
+      set(apiRunModalAtom, (prev) =>
+        prev ? { ...prev, status: "failed" } : prev,
+      )
+      set(runningAtom, false)
+    }
   },
 )
