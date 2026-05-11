@@ -154,6 +154,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W2D | 2026-05-10 | feat(commands): add lookupLinks.ts (LOOKUP_LINKS constant for NumberWithLookupField) |
 | W2D | 2026-05-10 | feat(fields): port PathField + NumberWithLookupField + FolderMultiSelectField + SubtitleRulesField (all with tests + stories; wire to RenderFields dispatcher) |
 | W2D | 2026-05-10 | docs(checklist): DslRulesBuilder escalated to Phase 2.5 (non-mechanical port; see escalation section below) |
+| W2.5 | 2026-05-10 | feat(dslrules): types — discriminated unions for rule shapes (8 state decisions) |
 
 ## DslRulesBuilder Escalation (W2D)
 
