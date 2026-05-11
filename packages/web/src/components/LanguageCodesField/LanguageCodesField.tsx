@@ -46,6 +46,7 @@ export const LanguageCodesField = ({
         defaultValue={displayValue}
         placeholder={placeholder}
         onInput={handleInput}
+        aria-required={field.required ? "true" : undefined}
         className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
       />
     </div>

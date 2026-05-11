@@ -213,4 +213,65 @@ describe("JsonField", () => {
     const textarea = screen.getByRole("textbox")
     expect(textarea).toHaveAttribute("placeholder", "[]")
   })
+
+  it("has id matching command-fieldName for label association", () => {
+    const step: Step = {
+      id: "step-1",
+      alias: "",
+      command: "testCommand",
+      params: {},
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+
+    renderField(step, field)
+    const textarea = screen.getByRole("textbox")
+    expect(textarea).toHaveAttribute(
+      "id",
+      "testCommand-testJson",
+    )
+  })
+
+  it("sets aria-required when field is required", () => {
+    const requiredField: CommandField = {
+      ...field,
+      required: true,
+    }
+    const step: Step = {
+      id: "step-1",
+      alias: "",
+      command: "testCommand",
+      params: {},
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+
+    renderField(step, requiredField)
+    const textarea = screen.getByRole("textbox")
+    expect(textarea).toHaveAttribute(
+      "aria-required",
+      "true",
+    )
+  })
+
+  it("does not set aria-required when field is not required", () => {
+    const step: Step = {
+      id: "step-1",
+      alias: "",
+      command: "testCommand",
+      params: {},
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+
+    renderField(step, field)
+    const textarea = screen.getByRole("textbox")
+    expect(textarea).not.toHaveAttribute("aria-required")
+  })
 })
