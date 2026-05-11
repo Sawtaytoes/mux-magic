@@ -66,6 +66,7 @@
       "PowerShell(pwd *)",
       "PowerShell(Select-*)",
       "PowerShell(Select-String * | Select-Object *)",
+      "PowerShell(Set-Location *)",
       "PowerShell(until Select-String *)",
       "PowerShell(Where-*)",
       "PowerShell(yarn *)",
