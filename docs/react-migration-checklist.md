@@ -168,6 +168,11 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W3 | 2026-05-10 | chore(legacy): delete public/builder/ and public/vendor/ (85 files, 51 709 deletions) |
 | W3 | 2026-05-10 | chore(legacy): delete 10 loose legacy assets in public/ (1 230 deletions) |
 | W3 | 2026-05-10 | chore(legacy): slim types.window.d.ts — drop mediaTools interface, keep 7 remaining bridge globals |
+| W4B | 2026-05-10 | chore(checklist): W4B in progress |
+| W4B | 2026-05-10 | test(e2e): jobs page SSE streaming |
+| W4B | 2026-05-10 | test(e2e): builder modals open/close cycle |
+| W4B | 2026-05-10 | test(e2e): drag-and-drop step reordering |
+| W4B | 2026-05-10 | test(e2e): DslRulesBuilder rule mutations |
 
 ## DslRulesBuilder Escalation (W2D)
 
