@@ -1,3 +1,6 @@
+import { useSetAtom } from "jotai"
+import { useRef } from "react"
+import { enumPickerStateAtom } from "../../state/pickerAtoms"
 import type { CommandField, Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
 
@@ -10,6 +13,9 @@ export const EnumField = ({
   step,
   field,
 }: EnumFieldProps) => {
+  const setEnumPickerState = useSetAtom(enumPickerStateAtom)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
   const selected =
     step.params[field.name] ?? field.default ?? ""
   const selectedOption = (field.options ?? []).find(
@@ -18,19 +24,30 @@ export const EnumField = ({
   const triggerLabel =
     selectedOption?.label ?? String(selected)
 
-  const handleClick = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ) => {
-    window.enumPicker?.open(
-      { stepId: step.id, fieldName: field.name },
-      event.currentTarget,
-    )
+  const handleClick = () => {
+    if (!buttonRef.current) return
+    const rect = buttonRef.current.getBoundingClientRect()
+    setEnumPickerState({
+      anchor: {
+        stepId: step.id,
+        fieldName: field.name,
+      },
+      triggerRect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+      },
+    })
   }
 
   return (
     <div>
       <FieldLabel command={step.command} field={field} />
       <button
+        ref={buttonRef}
         id={`${step.command}-${field.name}`}
         type="button"
         onClick={handleClick}
