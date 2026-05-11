@@ -1,12 +1,12 @@
-# W5 spawn prompt — Parity-trap cleanup + code smell + a11y pass
+# W5A spawn prompt — Parity-trap cleanup + code smell + a11y pass
 
 Paste the block below into a fresh Claude Code session opened in `d:\Projects\Personal\media-tools`.
 
-> **Naming note:** this worker was originally labeled W6 in earlier docs. After the W4/W5 → W4A/W4B (parallel) rename, this cleanup worker is the new Phase 5 worker = W5. References in commit history may still mention "W6"; that's the same worker.
+> **Naming note:** this worker was originally labeled W6 in earlier docs. After the W4/W5A → W4A/W4B (parallel) rename, this cleanup worker is the new Phase 5 worker = W5A. References in commit history may still mention "W6"; that's the same worker.
 
 ---
 
-You are Worker W5 in the React Migration Recovery for media-tools.
+You are Worker W5A in the React Migration Recovery for media-tools.
 
 **Working directory:** `d:\Projects\Personal\media-tools`
 **Branch:** `master` (post-react-migration merge; you spawn after W4A+W4B are both done)
@@ -32,7 +32,7 @@ Hunt down behavior the porters preserved verbatim because parity was the goal, b
 
 - **5 unimplemented bridge-global callers** (W4A's `types.window.d.ts` audit found these — functions called via `window.foo?.()` for graceful degradation, but with NO registerer post-W3, so the UI silently degrades):
 
-  | Global | Where it's called | What W5 needs to do |
+  | Global | Where it's called | What W5A needs to do |
   |---|---|---|
   | `pasteCardAt` | StepCard / GroupCard paste-from-clipboard | Port to a Jotai action atom that reads from clipboard, parses YAML, inserts at the target index |
   | `copyGroupYaml` | GroupCard "Copy YAML" button | Atom action that serializes the group via `toYamlStr` and writes to `navigator.clipboard` |
@@ -51,7 +51,7 @@ Hunt down behavior the porters preserved verbatim because parity was the goal, b
 
 - **`packages/web/src/components/PageHeader/PageHeader.mdx:2`** — prose documentation referencing the now-dead `window.mediaTools` bridge. Scrub the prose so the MDX accurately describes the current atom-based wiring.
 
-- **`buildBuilderUrl` output format audit** — the writer at [packages/web/src/jobs/buildBuilderUrl.ts](../../packages/web/src/jobs/buildBuilderUrl.ts) currently produces base64-encoded **JSON** (`JSON.stringify` then `btoa`). The legacy vanilla builder produced base64-encoded **YAML**. The new URL reader in [BuilderPage.tsx](../../packages/web/src/pages/BuilderPage/BuilderPage.tsx) (added pre-W5 by orchestrator) accepts BOTH because JSON is valid YAML — but the question is which format the writer *should* produce going forward. Decide and document:
+- **`buildBuilderUrl` output format audit** — the writer at [packages/web/src/jobs/buildBuilderUrl.ts](../../packages/web/src/jobs/buildBuilderUrl.ts) currently produces base64-encoded **JSON** (`JSON.stringify` then `btoa`). The legacy vanilla builder produced base64-encoded **YAML**. The new URL reader in [BuilderPage.tsx](../../packages/web/src/pages/BuilderPage/BuilderPage.tsx) (added pre-W5A by orchestrator) accepts BOTH because JSON is valid YAML — but the question is which format the writer *should* produce going forward. Decide and document:
 
   | Choice | Pro | Con |
   |---|---|---|
@@ -80,7 +80,7 @@ Story decorators in `.storybook/preview.tsx` already wrap stories in `<Provider>
 
 Commit message pattern: `feat(stories): add page-level Storybook story for <Page>`.
 
-**Scope alternative:** if Stream 4 grows beyond ~6 stories or you hit unexpected MSW/SSE complexity, the user has pre-authorized splitting this into a separate W5B worker. Flag it in your checklist update and the orchestrator will generate the W5B prompt.
+**Scope alternative:** if Stream 4 grows beyond ~6 stories or you hit unexpected MSW/SSE complexity, the user has pre-authorized splitting this into a separate W5AB worker. Flag it in your checklist update and the orchestrator will generate the W5AB prompt.
 
 For each parity-trap fix:
 
@@ -247,9 +247,9 @@ Small, focused commits — one cleanup per commit. The motivation goes in the me
 
 ## Checklist updates (Universal Rule #8)
 
-- At start: mark W5 🔄 In Progress in [docs/react-migration-checklist.md](../react-migration-checklist.md).
+- At start: mark W5A 🔄 In Progress in [docs/react-migration-checklist.md](../react-migration-checklist.md).
 - Per commit: append to Progress Log.
-- At end: mark W5 ✅ Done with a summary listing all three streams and how many commits each yielded.
+- At end: mark W5A ✅ Done with a summary listing all three streams and how many commits each yielded.
 
 ## Forbidden (Universal Rule #4)
 

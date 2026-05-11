@@ -1,0 +1,119 @@
+# W5C spawn prompt — E2E completion (continues W4B)
+
+Paste the block below into a fresh Claude Code session opened in `d:\Projects\Personal\media-tools`.
+
+---
+
+You are Worker W5C in the React Migration Recovery for media-tools.
+
+**Working directory:** `d:\Projects\Personal\media-tools` (initially), then your own worktree.
+**Branch:** rebases `e2e-tests` (W4B's branch) onto current `react-migration`, then adds new specs; eventually merges into `master` after the user re-merges react-migration.
+**Your model:** Sonnet 4.6, medium effort
+**Your role:** Pick up where W4B left off. Rebase their existing branch onto the new react-migration HEAD, run the full e2e suite, fix any specs broken by W3/W5B changes, and add new specs for the controls W5B is restoring (drag-and-drop, up/down arrows, play, delete).
+
+W5C runs **after W5B has substantially shipped UI control restoration**. Coordinate timing with W5B — adding e2e for a control that doesn't exist yet is wasted work.
+
+## Required reading before doing anything
+
+1. [docs/react-migration-recovery-handout.md](../react-migration-recovery-handout.md) — Universal Rules (especially #4 no snapshot/VRT — strict on e2e).
+2. [docs/react-migration-checklist.md](../react-migration-checklist.md) — W4B's row notes which 4 specs they shipped.
+3. W4B's existing specs on the `e2e-tests` branch:
+   ```bash
+   git fetch origin e2e-tests
+   git show origin/e2e-tests --stat
+   ```
+   You'll see four `.spec.ts` files: `jobs.spec.ts`, `modals.spec.ts`, `drag-drop.spec.ts`, `dsl-rules.spec.ts`.
+4. [playwright.config.ts](../../playwright.config.ts) — orchestrator already fixed the baseURL mismatch in commit `2c853d0` (now points at the web server on port 4173, not the API server on 3000).
+
+## Worktree setup
+
+```bash
+git fetch origin
+git worktree add .claude/worktrees/w4c -b e2e-completion origin/e2e-tests
+cd .claude/worktrees/w4c
+git rebase origin/react-migration   # pick up W3/W5B/orchestrator fixes
+yarn install
+```
+
+If the rebase hits conflicts (W4B's specs vs spec-relevant changes on react-migration), resolve them — most conflicts will be in the `e2e/` directory or `playwright.config.ts` (which now reflects post-W3 architecture).
+
+## Step-by-step
+
+### Step 1 — Run the inherited suite and triage
+```bash
+yarn e2e
+```
+
+Triage each spec:
+- **Passes** — leave alone.
+- **Fails because UI changed** — update the spec to match current React selectors / accessible names. Don't lower the bar (don't switch from `getByRole` to `getByTestId` to make it pass — investigate why the role/name shifted first).
+- **Fails because UI is broken** (drag-and-drop before W5B lands) — mark with `test.skip(...)` and a TODO referencing W5B's commit. Re-enable when W5B ships the fix.
+
+Commit the rebased + triaged state: `chore(e2e): rebase W4B specs onto post-W3 react-migration`.
+
+### Step 2 — Wait for or coordinate with W5B
+
+W5C's value depends on W5B's UI restoration. Suggested order:
+- Drag-and-drop fix lands → re-enable `drag-drop.spec.ts`, verify it passes.
+- Up/down arrow buttons land → add a new spec or extend `drag-drop.spec.ts` for keyboard/button-driven reorder.
+- Play button lands → add a `step-run.spec.ts` that triggers per-step run, asserts the step status updates via SSE.
+- X delete button lands → add a `step-delete.spec.ts` or extend `modals.spec.ts` for delete-step round-trip.
+
+Each new spec is its own commit: `test(e2e): <user flow>`.
+
+### Step 3 — Run the full suite end-to-end
+
+Before declaring done:
+```bash
+yarn test run
+yarn typecheck
+yarn lint
+yarn e2e
+```
+
+All four must pass. The Universal Rule #2 gate is strict here — you're authoring e2e tests, so `yarn e2e` is *your* job to keep green.
+
+### Step 4 — Update the checklist
+
+- At start: mark W5C 🔄 In Progress.
+- Per commit: append to Progress Log.
+- At end: mark W5C ✅ Done with spec counts (existing-passing, newly-added, skipped-pending).
+
+### Step 5 — Handoff (post-user-re-merge to master)
+
+W5C does NOT merge to master itself. The user is reverting/re-merging master manually as part of their verification. Once they re-merge react-migration → master (with W5 + W5B work landed), then:
+
+```bash
+cd .claude/worktrees/w4c
+git fetch origin master
+git rebase origin/master
+yarn test run && yarn typecheck && yarn lint && yarn e2e
+git push origin e2e-completion
+```
+
+Open a PR `e2e-completion` → `master`, or merge directly per repo convention. After merge:
+
+```bash
+cd ../../..
+git worktree remove .claude/worktrees/w4c
+git branch -d e2e-completion
+```
+
+## Coordination with other workers
+
+- **W5 (cleanup):** doesn't change builder UI; your specs against the builder are stable against W5's work.
+- **W5B (UI restoration):** *changes the builder UI you're testing*. Pull `react-migration` frequently and rebase your worktree as W5B lands commits. Add new specs only after the corresponding W5B commit lands.
+- **No need to merge W4B's branch separately** — W5C absorbs and extends it.
+
+## Forbidden (Universal Rule #4)
+
+No `toHaveScreenshot`, no Percy, no Chromatic, no Storybook screenshot tests. Semantic assertions only — `getByRole`, `toHaveText`, `toHaveAttribute`, `toHaveCount`, etc.
+
+## When done
+
+Reply with:
+- Inherited specs: which passed as-is, which needed updates, which were skipped pending W5B
+- New specs added: list, with the W5B commit each depends on
+- Final `yarn e2e` pass count
+- Worktree cleanup confirmation (only if user has already re-merged master)
+- Any flaky tests (Playwright can be flaky; flag rather than retry-mask)
