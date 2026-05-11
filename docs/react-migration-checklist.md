@@ -172,6 +172,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W4A | 2026-05-10 | chore(scripts): update capture-parity-fixtures to import TS COMMANDS |
 | W4A | 2026-05-10 | docs(types): annotate types.window.d.ts bridge globals with W5 parity-trap status |
 | W4A | 2026-05-10 | chore(checklist): W4A complete — checklist audited; all rows verified against code; merged to master; W4B can rebase |
+| W4A | 2026-05-10 | Merge react-migration → master (22b48b00) + tag react-migration-complete. **W4B: master is ready — rebase e2e-tests onto master and merge when specs pass.** |
 
 ## W4A Audit Findings (2026-05-10)
 
