@@ -1,3 +1,5 @@
+import { useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useRef, useState } from "react"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
@@ -28,14 +30,16 @@ interface StepCardProps {
   isFirst: boolean
   isLast: boolean
   parentGroupId?: string | null
+  isDragOverlay?: boolean
 }
 
-export const StepCard = ({
+const StepCardInner = ({
   step,
   index,
   isFirst,
   isLast,
   parentGroupId = null,
+  isDragOverlay = false,
 }: StepCardProps) => {
   const [actionsOpen, setActionsOpen] = useState(false)
 
@@ -59,6 +63,16 @@ export const StepCard = ({
 
   const { copyStepYaml } = useBuilderActions()
   const triggerRef = useRef<HTMLButtonElement>(null)
+
+  const sortable = useSortable({ id: step.id })
+  const dragStyle = isDragOverlay
+    ? {}
+    : {
+        transform: CSS.Transform.toString(
+          sortable.transform,
+        ),
+        transition: sortable.transition ?? undefined,
+      }
 
   const label = commandLabel(step.command) || step.command
 
@@ -117,20 +131,35 @@ export const StepCard = ({
       }
     | undefined
 
+  const opacity =
+    sortable.isDragging && !isDragOverlay ? 0.3 : 1
+
   return (
     <div
+      ref={isDragOverlay ? undefined : sortable.setNodeRef}
       id={`step-${step.id}`}
-      data-sortable-item
       data-step-card={step.id}
-      style={{ viewTransitionName: `step-${step.id}` }}
+      style={{
+        viewTransitionName: `step-${step.id}`,
+        ...dragStyle,
+        opacity,
+      }}
       className="step-card bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
     >
       <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-700 bg-slate-800/80">
         <button
           type="button"
           data-drag-handle
+          aria-label="Drag to reorder"
           title="Drag to reorder"
-          className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 shrink-0 select-none"
+          className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 shrink-0 select-none cursor-grab active:cursor-grabbing"
+          ref={
+            isDragOverlay
+              ? undefined
+              : sortable.setActivatorNodeRef
+          }
+          {...(isDragOverlay ? {} : sortable.attributes)}
+          {...(isDragOverlay ? {} : sortable.listeners)}
         >
           ⠿
         </button>
@@ -307,3 +336,7 @@ export const StepCard = ({
     </div>
   )
 }
+
+export const StepCard = (props: StepCardProps) => (
+  <StepCardInner {...props} />
+)

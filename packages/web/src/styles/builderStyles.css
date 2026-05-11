@@ -28,22 +28,15 @@
   pointer-events: none;
 }
 
-/* Drag-and-drop visuals (SortableJS). The grip handle gets a grab
-   cursor; the placeholder Sortable inserts at the hover position
-   fades the original card so the user sees where it'll land; the
-   card actively being dragged gets a subtle blue ring. */
+/* Drag-and-drop handle (@dnd-kit). touch-action:none lets pointer
+   events reach the dnd-kit sensor on touch screens without the
+   browser intercepting the scroll gesture first. */
 [data-drag-handle] {
   cursor: grab;
   touch-action: none;
 }
 [data-drag-handle]:active {
   cursor: grabbing;
-}
-.drag-ghost {
-  opacity: 0.35;
-}
-.drag-chosen {
-  box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5);
 }
 
 /* View-transition timing for the move-step swap */
