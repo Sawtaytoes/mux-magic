@@ -2,27 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
 import { useState } from "react"
 import { loadModalOpenAtom } from "../../state/uiAtoms"
-import type { Commands } from "../../types"
 import { LoadModal } from "./LoadModal"
-
-// Minimal commands fixture so paste stories can exercise the full flow.
-const mockCommands: Commands = {
-  downloadEpisodes: {
-    fields: [
-      { name: "seriesPath", type: "path" },
-      { name: "seriesName", type: "string" },
-    ],
-  },
-}
-
-const wireMediaTools = () => {
-  if (typeof window !== "undefined") {
-    window.mediaTools = window.mediaTools ?? {}
-    window.mediaTools.COMMANDS = mockCommands
-    window.mediaTools.renderAll = () => {}
-    window.mediaTools.updateUrl = () => {}
-  }
-}
 
 // Store is created inside useState so each mount gets a fresh atom — navigating
 // away and back resets the modal to its initial state instead of staying closed.
@@ -33,8 +13,6 @@ const withStore = (initialOpen: boolean) => {
       newStore.set(loadModalOpenAtom, initialOpen)
       return newStore
     })
-
-    wireMediaTools()
 
     return (
       <Provider store={store}>

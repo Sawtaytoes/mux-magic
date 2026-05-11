@@ -7,9 +7,9 @@ import * as EnumPickerStories from "./EnumPicker.stories";
 
 # EnumPicker
 
-A portal-rendered option list for enum-typed step fields (e.g., `episodeType` → regular / specials / credits / …). Pulls available options from the field's schema in `window.mediaTools.COMMANDS[stepCommand].fields[fieldName].options`.
+A portal-rendered option list for enum-typed step fields (e.g., `episodeType` → regular / specials / credits / …). Pulls available options from the field's schema in `commandsAtom[stepCommand].fields[fieldName].options`.
 
-Selecting an option calls `window.setParam(stepId, fieldName, value)` and triggers `window.mediaTools.renderAll()` to re-render the legacy DOM. Renders nothing when `enumPickerStateAtom` is `null`.
+Selecting an option dispatches `setParamAtom` to persist the value. Renders nothing when `enumPickerStateAtom` is `null`.
 
 ## Behaviour
 
@@ -24,15 +24,9 @@ Selecting an option calls `window.setParam(stepId, fieldName, value)` and trigge
 | Atom | Role |
 |------|------|
 | `enumPickerStateAtom` | `null` ⇒ closed. `{ anchor: { stepId, fieldName }, triggerRect }` ⇒ open over that field |
-
-## Window globals consumed
-
-| Global | Role |
-|--------|------|
-| `window.mediaTools.COMMANDS` | Source of `fields[fieldName].options` and `default` |
-| `window.mediaTools.findStepById` | Provides `command` + `params` for initial highlight |
-| `window.mediaTools.renderAll` | Called after selection so the legacy renderer reflects the new value |
-| `window.setParam` | Persists the selected value into step state |
+| `commandsAtom` | Source of `fields[fieldName].options` and `default` for initial highlight |
+| `stepsAtom` | Provides `command` + `params` for initial highlight |
+| `setParamAtom` | Persists the selected value into step state |
 
 ## Open
 

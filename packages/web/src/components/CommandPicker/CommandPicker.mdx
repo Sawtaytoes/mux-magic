@@ -7,9 +7,9 @@ import * as CommandPickerStories from "./CommandPicker.stories";
 
 # CommandPicker
 
-A portal-rendered command palette that appears when a step's command field is clicked. Lists every command in `window.mediaTools.COMMANDS` grouped by `TAG_ORDER` (File / Audio / Track / Subtitle / Analysis / Naming / Video / Metadata Operations), with type-ahead search across name, label, and tag.
+A portal-rendered command palette that appears when a step's command field is clicked. Lists every command in `commandsAtom` grouped by `TAG_ORDER` (File / Audio / Track / Subtitle / Analysis / Naming / Video / Metadata Operations), with type-ahead search across name, label, and tag.
 
-Selection calls the legacy `window.changeCommand(stepId, name)` global so the rest of the builder stays in sync. Renders nothing when `commandPickerStateAtom` is `null`.
+Selection calls `useBuilderActions().changeCommand(stepId, name)` to update the builder. Renders nothing when `commandPickerStateAtom` is `null`.
 
 ## Behaviour
 
@@ -24,15 +24,8 @@ Selection calls the legacy `window.changeCommand(stepId, name)` global so the re
 | Atom | Role |
 |------|------|
 | `commandPickerStateAtom` | Visibility + anchor. `null` ⇒ unmounted; `{ anchor, triggerRect }` ⇒ open at that location |
-
-## Window globals consumed
-
-| Global | Role |
-|--------|------|
-| `window.mediaTools.COMMANDS` | Map of all command definitions (provides `tag` for grouping) |
-| `window.mediaTools.findStepById` | Looks up the current command for initial highlight |
-| `window.commandLabel` | Optional human-readable label; falls back to the raw command name |
-| `window.changeCommand` | Called on selection; updates the legacy step-state machine |
+| `commandsAtom` | Map of all command definitions (provides `tag` for grouping) |
+| `stepsAtom` | Provides the step's current command for initial highlight |
 
 ## Open
 

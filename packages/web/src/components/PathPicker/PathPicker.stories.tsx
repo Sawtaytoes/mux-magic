@@ -55,10 +55,6 @@ const withLoadedEntries = () => {
       debounceTimerId: null,
     })
   }
-  if (typeof window !== "undefined") {
-    window.setParam = () => {}
-    window.mediaTools = window.mediaTools ?? {}
-  }
   return (Story: React.ComponentType) => (
     <Provider store={store}>
       <Story />

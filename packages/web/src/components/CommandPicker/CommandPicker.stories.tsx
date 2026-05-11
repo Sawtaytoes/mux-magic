@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import { commandsAtom } from "../../state/commandsAtom"
 import { commandPickerStateAtom } from "../../state/pickerAtoms"
+import { stepsAtom } from "../../state/stepsAtom"
 import { CommandPicker } from "./CommandPicker"
 
 const TRIGGER_RECT = {
@@ -42,19 +44,23 @@ const mockCommands = {
 
 const withOpenPicker = () => {
   const store = createStore()
+  store.set(commandsAtom, mockCommands)
+  store.set(stepsAtom, [
+    {
+      id: "step-1",
+      alias: "",
+      command: "copyFiles",
+      params: {},
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    },
+  ])
   store.set(commandPickerStateAtom, {
     anchor: { stepId: "step-1" },
     triggerRect: TRIGGER_RECT,
   })
-  if (typeof window !== "undefined") {
-    window.mediaTools = window.mediaTools ?? {}
-    window.mediaTools.COMMANDS = mockCommands
-    window.mediaTools.findStepById = () => ({
-      command: "copyFiles",
-    })
-    window.commandLabel = (name: string) => name
-    window.changeCommand = () => {}
-  }
   return (Story: React.ComponentType) => (
     <Provider store={store}>
       <Story />

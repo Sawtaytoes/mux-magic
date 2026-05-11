@@ -15,14 +15,12 @@ Logs from the parent stream populate the modal's body. Per-step progress events 
 
 - **Open** → `apiRunModalAtom` set with `{ jobId, status }`. Status starts at `pending`/`running` and transitions through `completed` / `failed` / `cancelled` based on the SSE `done` event.
 - **Parent SSE messages**:
-  - `step-started` → captures `childJobId` + `stepId`, resets child progress, calls `window.mediaTools.onStepStarted` (legacy step card UI sync).
-  - `step-finished` → clears child state, calls `window.mediaTools.onStepFinished`.
+  - `step-started` → captures `childJobId` + `stepId`, resets child progress, calls `setStepRunStatusAtom({ stepId, status: "running", jobId: childJobId })` to sync step card UI.
+  - `step-finished` → clears child state, calls `setStepRunStatusAtom({ stepId, status: null })` to clear step card UI.
   - `{ line }` → appended to the log buffer (auto-scrolls to bottom via `scrollIntoView`).
-  - `{ done, status }` → terminal state. Sets `runningAtom` false; calls `window.mediaTools.onSequenceDone`.
+  - `{ done, status }` → terminal state. Sets `runningAtom` false.
 - **Child SSE messages**:
   - `progress` → merged into `childProgress`. The `percent` field drives the progress bar width.
-  - `{ line }` → forwarded to legacy step card via `window.mediaTools.onStepLog`.
-  - `{ done }` → forwarded via `window.mediaTools.onChildStepDone`.
 - **Disconnect detection** → `useTolerantEventSource` calls `onPossiblyDisconnected` after a long silence; the parent handler treats this as a failure.
 - **Close** → if status is still `running`, fires a best-effort `DELETE /jobs/<id>` before clearing state. Backdrop click does the same.
 - **Cancel** → same `DELETE` request without closing the modal (lets the user watch the rest of the cancellation logs).
@@ -33,6 +31,7 @@ Logs from the parent stream populate the modal's body. Per-step progress events 
 |------|------|
 | `apiRunModalAtom` | `null` ⇒ closed. `{ jobId, status }` ⇒ open and streaming |
 | `runningAtom` | Set to `false` when a terminal SSE event arrives or close-during-run cancels |
+| `setStepRunStatusAtom` | Updated with `{ stepId, status, jobId }` on `step-started`; cleared on `step-finished` |
 | `promptModalAtom` | (Currently held as a setter; reserved for future prompt routing through this modal) |
 
 ## Server endpoints
@@ -41,14 +40,6 @@ Logs from the parent stream populate the modal's body. Per-step progress events 
 |----------|---------|
 | `GET /jobs/<id>/logs` (SSE) | Parent + child log + progress streams |
 | `DELETE /jobs/<id>` | Cancel a running job |
-
-## Window globals consumed
-
-| Global | Role |
-|--------|------|
-| `window.mediaTools.onStepStarted/onStepFinished` | Legacy step card lifecycle hooks |
-| `window.mediaTools.onStepLog/onStepProgress/onChildStepDone` | Forward child SSE events to legacy step UI |
-| `window.mediaTools.onSequenceDone` | Sequence-level completion hook |
 
 ## Running
 

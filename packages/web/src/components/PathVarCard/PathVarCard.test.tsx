@@ -8,7 +8,6 @@ import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import {
   afterEach,
-  beforeEach,
   describe,
   expect,
   test,
@@ -37,10 +36,6 @@ const renderCard = (pathVar: PathVar, isFirst = true) => {
   )
   return store
 }
-
-beforeEach(() => {
-  window.mediaTools = {}
-})
 
 afterEach(() => {
   cleanup()

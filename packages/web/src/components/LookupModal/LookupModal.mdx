@@ -16,7 +16,7 @@ The simple lookup types (MAL/AniDB/TVDB/TMDB) are single-stage: search → pick 
 - **Open** → `lookupModalAtom` is set with `{ lookupType, stepId, fieldName, stage: "search", … }`. The search input gets focused on the next tick.
 - **Search** → Enter triggers `runSearch`. Posts `{ searchTerm }` to the type-specific endpoint and writes results back into the atom.
 - **DVDCompare format filter** → `formatFilter` ("Blu-ray 4K" / "Blu-ray" / "DVD" / "all") narrows the result list pre-render.
-- **Pick (simple types)** → calls `window.mediaTools.applyLookupSelection(stepId, fieldName, id, displayName)` and closes.
+- **Pick (simple types)** → calls `useBuilderActions().setParam(stepId, fieldName, id)` and closes.
 - **Pick (DVDCompare)** → if the group has 1 variant, auto-advances to the **release** stage. Otherwise transitions to **variant** stage. After variant pick, fetches releases; if there's exactly 1 it auto-selects and closes.
 - **Back button** → only rendered in `variant` or `release` stage.
 - **Keyboard** → `Esc` closes; `1-9` clicks the nth visible option button (only buttons with `data-option-index` are eligible). Inputs/textareas are exempt so typing doesn't trigger shortcuts.
@@ -38,13 +38,6 @@ The simple lookup types (MAL/AniDB/TVDB/TMDB) are single-stage: search → pick 
 | `POST /queries/searchMovieDb` | TMDB movie search |
 | `POST /queries/searchDvdCompare` | DVDCompare film search (returns groups with variants) |
 | `POST /queries/listDvdCompareReleases` | Releases for a chosen variant (`fid`) |
-
-## Window globals consumed
-
-| Global | Role |
-|--------|------|
-| `window.mediaTools.applyLookupSelection` | Writes a simple lookup result back into step state |
-| `window.mediaTools.applyDvdCompareSelection` | Writes the full DVDCompare selection (group + variant + release hash) |
 
 ## MAL search
 

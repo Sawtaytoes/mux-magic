@@ -88,16 +88,6 @@ const renderPicker = (
       <EnumPicker />
     </Provider>,
   )
-  window.mediaTools = {
-    COMMANDS: mockCommands,
-    findStepById: () => ({
-      command: "setEpisodeType",
-      params: currentValue
-        ? { episodeType: currentValue }
-        : {},
-    }),
-    renderAll: vi.fn(),
-  }
   return store
 }
 

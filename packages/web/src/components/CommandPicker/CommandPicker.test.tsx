@@ -77,11 +77,6 @@ const renderPicker = (open = false) => {
 }
 
 beforeEach(() => {
-  window.mediaTools = {
-    COMMANDS: mockCommands,
-    findStepById: () => ({ command: "copyFiles" }),
-  }
-  window.commandLabel = (name: string) => name
   // jsdom doesn't implement innerWidth/innerHeight by default
   Object.defineProperty(window, "innerWidth", {
     value: 1200,

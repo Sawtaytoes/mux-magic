@@ -7,7 +7,6 @@ import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import {
   afterEach,
-  beforeEach,
   describe,
   expect,
   test,
@@ -62,12 +61,6 @@ const renderCard = (
   )
   return store
 }
-
-beforeEach(() => {
-  window.mediaTools = { COMMANDS: {}, renderAll: vi.fn() }
-  window.commandLabel = (name: string) => name
-  window.commandPicker = { open: vi.fn(), close: vi.fn() }
-})
 
 afterEach(() => {
   cleanup()

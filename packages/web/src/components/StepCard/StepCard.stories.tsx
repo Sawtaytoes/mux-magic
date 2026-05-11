@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import { commandsAtom } from "../../state/commandsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
 import { StepCard } from "./StepCard"
@@ -18,20 +19,12 @@ const baseStep: Step = {
 const withStore = (step: Step) => {
   const store = createStore()
   store.set(stepsAtom, [step])
-  if (typeof window !== "undefined") {
-    window.mediaTools = window.mediaTools ?? {}
-    window.mediaTools.COMMANDS = {
-      encodeVideo: {
-        summary: "Encode a video file to H.264",
-        fields: [],
-      },
-    }
-    window.commandLabel = (name: string) => name
-    window.commandPicker = {
-      open: () => {},
-      close: () => {},
-    }
-  }
+  store.set(commandsAtom, {
+    encodeVideo: {
+      summary: "Encode a video file to H.264",
+      fields: [],
+    },
+  })
   return (Story: React.ComponentType) => (
     <Provider store={store}>
       <Story />

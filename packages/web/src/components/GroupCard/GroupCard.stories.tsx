@@ -42,15 +42,6 @@ const parallelGroup: Group = {
 const withStore = (group: Group) => {
   const store = createStore()
   store.set(stepsAtom, [group])
-  if (typeof window !== "undefined") {
-    window.mediaTools = window.mediaTools ?? {}
-    window.mediaTools.COMMANDS = {}
-    window.commandLabel = (name: string) => name
-    window.commandPicker = {
-      open: () => {},
-      close: () => {},
-    }
-  }
   return (Story: React.ComponentType) => (
     <Provider store={store}>
       <Story />
