@@ -83,7 +83,7 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W2.5 | 2.5 — DslRulesBuilder (escalated from W2D) | ✅ Done | 2026-05-10 | claude-sonnet-4-6, high effort. Prompt: [react-migration-prompts/W2-5.md](react-migration-prompts/W2-5.md). 5 commits: types, utils, 18 component files, wire SubtitleRulesField, mutation tests + stories. 281 tests passing. |
 | W3 | 3 — Final Cleanup | ✅ Done | 2026-05-10 | claude-sonnet-4-6 (high effort). 3 prod source files migrated to atoms; 19 test/story/MDX files cleaned; public/builder/ + public/vendor/ deleted; 10 loose legacy public assets deleted; types.window.d.ts slimmed to 7 remaining bridge globals; 1004 tests pass, typecheck clean. |
 | W4A | 4 — Verification & Master Merge | 🔄 In Progress | 2026-05-10 | Parallel with W4B. Sonnet medium. (Was W4 before rename for parallel-pair consistency.) |
-| W4B | 4 — E2E tests (worktree off post-W3 react-migration) | 🔄 In Progress | 2026-05-10 | Parallel with W4A. Sonnet medium. (Was W5 before rename.) Merges to master after W4A's master merge lands. |
+| W4B | 4 — E2E tests (worktree off post-W3 react-migration) | 🟡 Ready-to-merge | 2026-05-10 | Parallel with W4A. Sonnet medium. Waiting on W4A master merge; then rebase e2e-tests → master. 4 spec files: jobs.spec.ts, modals.spec.ts, drag-drop.spec.ts, dsl-rules.spec.ts |
 | W5 | 5 — Parity-trap + code-smell + a11y cleanup | ⬜ Not Started | — | Sonnet high effort. Prompt: [react-migration-prompts/W5.md](react-migration-prompts/W5.md). Runs after W4A+W4B. Three streams: parity quirks held back during port, code-smell sweep (getIsX collisions, let+subscribe → lastValueFrom, one component per file), final a11y pass. (Was W6 before rename.) |
 
 ### Phase 0 Audit Findings (W0b)
