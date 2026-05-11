@@ -23,10 +23,14 @@ export const WHEN_CLAUSE_NAMES = [
   "noneStyle",
 ] as const
 
-export type WhenClauseName = (typeof WHEN_CLAUSE_NAMES)[number]
+export type WhenClauseName =
+  (typeof WHEN_CLAUSE_NAMES)[number]
 
 export type RefBody = { $ref: string }
-export type WhenSlotValue = Record<string, string> | RefBody | null
+export type WhenSlotValue =
+  | Record<string, string>
+  | RefBody
+  | null
 
 export type WhenClauseCanonical = {
   matches: WhenSlotValue
@@ -37,7 +41,9 @@ export type WhenClauseValue =
   | WhenClauseCanonical
   | Record<string, string>
 
-export type WhenMap = Partial<Record<WhenClauseName, WhenClauseValue>>
+export type WhenMap = Partial<
+  Record<WhenClauseName, WhenClauseValue>
+>
 
 export const APPLY_IF_CLAUSE_NAMES = [
   "anyStyleMatches",
@@ -45,7 +51,8 @@ export const APPLY_IF_CLAUSE_NAMES = [
   "noneStyleMatches",
 ] as const
 
-export type ApplyIfClauseName = (typeof APPLY_IF_CLAUSE_NAMES)[number]
+export type ApplyIfClauseName =
+  (typeof APPLY_IF_CLAUSE_NAMES)[number]
 
 export const COMPARATOR_VERBS = [
   "eq",
@@ -55,9 +62,12 @@ export const COMPARATOR_VERBS = [
   "gte",
 ] as const
 
-export type ComparatorVerb = (typeof COMPARATOR_VERBS)[number]
+export type ComparatorVerb =
+  (typeof COMPARATOR_VERBS)[number]
 
-export type ApplyIfEntry = { [K in ComparatorVerb]?: number }
+export type ApplyIfEntry = {
+  [K in ComparatorVerb]?: number
+}
 export type ApplyIfMap = Partial<
   Record<ApplyIfClauseName, Record<string, ApplyIfEntry>>
 >
@@ -86,13 +96,16 @@ export const COMPUTE_FROM_OPS_ALL = [
   ...COMPUTE_FROM_OPS_BARE,
 ] as const
 
-export type ComputeFromBareOp = (typeof COMPUTE_FROM_OPS_BARE)[number]
+export type ComputeFromBareOp =
+  (typeof COMPUTE_FROM_OPS_BARE)[number]
 export type ComputeFromVerbWithOperand =
   (typeof COMPUTE_FROM_OPS_WITH_OPERAND)[number]
 export type ComputeFromOpWithOperand = {
   [K in ComputeFromVerbWithOperand]?: number
 }
-export type ComputeFromOp = ComputeFromBareOp | ComputeFromOpWithOperand
+export type ComputeFromOp =
+  | ComputeFromBareOp
+  | ComputeFromOpWithOperand
 
 export type ComputeFrom = {
   property: string
@@ -104,8 +117,12 @@ export type ComputeFrom = {
 // Decision 6: scaleResolution struct — keep nested (matches YAML shape) ────────
 
 export type StyleFieldLiteral = string
-export type StyleFieldComputed = { computeFrom: ComputeFrom }
-export type StyleFieldValue = StyleFieldLiteral | StyleFieldComputed
+export type StyleFieldComputed = {
+  computeFrom: ComputeFrom
+}
+export type StyleFieldValue =
+  | StyleFieldLiteral
+  | StyleFieldComputed
 
 export type StyleFieldsMap = Record<string, StyleFieldValue>
 
@@ -114,7 +131,10 @@ export type Resolution = { width: number; height: number }
 // ─── Decision 2: Predicates map ───────────────────────────────────────────────
 // Arbitrary name → key/value string map, stored as a sibling param.
 
-export type PredicatesMap = Record<string, Record<string, string>>
+export type PredicatesMap = Record<
+  string,
+  Record<string, string>
+>
 
 // ─── Rule discriminated union ─────────────────────────────────────────────────
 
@@ -159,4 +179,7 @@ export type OpenDetailsKeys = Set<string>
 //   step.params.hasDefaultRules → boolean
 // Each committed via setParam(step.id, key, value | undefined).
 // Setting undefined deletes the key (keeps YAML clean when empty).
-export type DslBuilderParamKey = "rules" | "predicates" | "hasDefaultRules"
+export type DslBuilderParamKey =
+  | "rules"
+  | "predicates"
+  | "hasDefaultRules"

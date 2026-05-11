@@ -5,15 +5,22 @@ import type {
   WhenSlotValue,
 } from "./types"
 
-export const isPlainObject = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === "object" && !Array.isArray(value)
+export const isPlainObject = (
+  value: unknown,
+): value is Record<string, unknown> =>
+  !!value &&
+  typeof value === "object" &&
+  !Array.isArray(value)
 
 export const isRefBody = (body: unknown): body is RefBody =>
-  isPlainObject(body) && typeof (body as RefBody).$ref === "string"
+  isPlainObject(body) &&
+  typeof (body as RefBody).$ref === "string"
 
 // Normalise the two shorthand forms DSL allows into {matches, excludes}.
 // Shorthand: bare key→value map is treated as `matches` only.
-export const normalizeWhenClause = (clause: unknown): WhenClauseCanonical => {
+export const normalizeWhenClause = (
+  clause: unknown,
+): WhenClauseCanonical => {
   if (!isPlainObject(clause)) {
     return { matches: {}, excludes: null }
   }
@@ -41,10 +48,12 @@ export const compactWhenClause = (
 ): WhenClauseValue | null => {
   const { matches, excludes } = canonical
   const hasMatches =
-    (isPlainObject(matches) && Object.keys(matches).length > 0) ||
+    (isPlainObject(matches) &&
+      Object.keys(matches).length > 0) ||
     isRefBody(matches)
   const hasExcludes =
-    (isPlainObject(excludes) && Object.keys(excludes).length > 0) ||
+    (isPlainObject(excludes) &&
+      Object.keys(excludes).length > 0) ||
     isRefBody(excludes)
   if (!hasMatches && !hasExcludes) {
     return null

@@ -7,10 +7,16 @@ export const generateFreshKey = ({
   usedNames: Set<string>
 }): string => {
   const buildCandidate = (suffixIndex: number) =>
-    suffixIndex === 0 ? baseName : `${baseName}${suffixIndex + 1}`
+    suffixIndex === 0
+      ? baseName
+      : `${baseName}${suffixIndex + 1}`
 
-  const found = Array.from({ length: 64 }, (_, position) => position).find(
-    (suffixIndex) => !usedNames.has(buildCandidate(suffixIndex)),
+  const found = Array.from(
+    { length: 64 },
+    (_, position) => position,
+  ).find(
+    (suffixIndex) =>
+      !usedNames.has(buildCandidate(suffixIndex)),
   )
 
   if (found === undefined) {
