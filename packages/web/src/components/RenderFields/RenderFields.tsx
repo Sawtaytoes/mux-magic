@@ -3,98 +3,8 @@ import { useAtomValue } from "jotai"
 import { isFieldVisible } from "../../commands/fieldVisibility"
 import { commandsAtom } from "../../state/commandsAtom"
 import type { CommandField, Step } from "../../types"
-import { BooleanField } from "../BooleanField/BooleanField"
-import { EnumField } from "../EnumField/EnumField"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
-import { FolderMultiSelectField } from "../FolderMultiSelectField/FolderMultiSelectField"
-import { JsonField } from "../JsonField/JsonField"
-import { LanguageCodeField } from "../LanguageCodeField/LanguageCodeField"
-import { LanguageCodesField } from "../LanguageCodesField/LanguageCodesField"
-import { NumberArrayField } from "../NumberArrayField/NumberArrayField"
-import { NumberField } from "../NumberField/NumberField"
-import { NumberWithLookupField } from "../NumberWithLookupField/NumberWithLookupField"
-import { PathField } from "../PathField/PathField"
-import { StringArrayField } from "../StringArrayField/StringArrayField"
-import { StringField } from "../StringField/StringField"
-import { SubtitleRulesField } from "../SubtitleRulesField/SubtitleRulesField"
-
-// ─── TodoField ────────────────────────────────────────────────────────────────
-// Temporary placeholder rendered until W2A–W2D replace each case in the
-// dispatcher switch below. W2A–W2D: use Edit tool on the matching case block.
-
-type TodoFieldProps = {
-  type: string
-  field: CommandField
-  step: Step
-}
-
-const TodoField = ({ type, field }: TodoFieldProps) => (
-  <div
-    className="text-xs text-amber-400 italic py-0.5"
-    data-todo-field-type={type}
-  >
-    [TodoField: {type} — {field.name}]
-  </div>
-)
-
-// ─── Field dispatcher ─────────────────────────────────────────────────────────
-
-type FieldDispatcherProps = {
-  field: CommandField
-  step: Step
-}
-
-const FieldDispatcher = ({
-  field,
-  step,
-}: FieldDispatcherProps) => {
-  if (field.type === "hidden") return null
-
-  switch (field.type) {
-    case "boolean":
-      return <BooleanField field={field} step={step} />
-    case "path":
-      return <PathField field={field} step={step} />
-    case "number":
-      return <NumberField field={field} step={step} />
-    case "enum":
-      return <EnumField field={field} step={step} />
-    case "numberWithLookup":
-      return (
-        <NumberWithLookupField field={field} step={step} />
-      )
-    case "languageCode":
-      return <LanguageCodeField field={field} step={step} />
-    case "languageCodes":
-      return (
-        <LanguageCodesField field={field} step={step} />
-      )
-    case "stringArray":
-      return <StringArrayField field={field} step={step} />
-    case "numberArray":
-      return <NumberArrayField field={field} step={step} />
-    case "json":
-      return <JsonField field={field} step={step} />
-    case "folderMultiSelect":
-      return (
-        <FolderMultiSelectField field={field} step={step} />
-      )
-    case "string":
-      return <StringField field={field} step={step} />
-    case "subtitleRules":
-      return (
-        <SubtitleRulesField field={field} step={step} />
-      )
-    default:
-      return (
-        <TodoField
-          type={`string(${field.type})`}
-          field={field}
-          step={step}
-        />
-      )
-  }
-}
+import { FieldDispatcher } from "./FieldDispatcher"
 
 // ─── RenderFields ─────────────────────────────────────────────────────────────
 
@@ -140,7 +50,7 @@ export const RenderFields = ({
 
   // Walk fields in definition order, mirroring the legacy renderFields logic.
   const fieldElements = commandDefinition.fields.flatMap(
-    (field) => {
+    (field: CommandField) => {
       if (
         field.visibleWhen &&
         !isFieldVisible(field.visibleWhen, step.params)
@@ -155,7 +65,7 @@ export const RenderFields = ({
           (groupFieldName) => {
             const groupField =
               commandDefinition.fields.find(
-                (fieldDef) =>
+                (fieldDef: CommandField) =>
                   fieldDef.name === groupFieldName,
               )
             if (!groupField) return []

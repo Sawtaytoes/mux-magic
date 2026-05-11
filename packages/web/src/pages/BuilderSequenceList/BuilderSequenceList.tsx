@@ -12,62 +12,73 @@ export const BuilderSequenceList = () => {
   const steps = useAtomValue(stepsAtom)
   const actions = useBuilderActions()
 
-  let flatIndex = 0
-
   const handlePaste =
     (index: number) =>
     (event: React.MouseEvent<HTMLButtonElement>) => {
-      window.pasteCardAt?.({ itemIndex: index })
+      actions.pasteCardAt({ itemIndex: index })
       event.stopPropagation()
     }
 
-  const items: React.ReactNode[] = []
-
-  steps.forEach((item, itemIndex) => {
-    items.push(
-      <InsertDivider
-        key={`divider-before-${item.id}`}
-        index={itemIndex}
-        onInsertStep={() => actions.insertStep(itemIndex)}
-        onInsertSequentialGroup={() =>
-          actions.insertGroup(itemIndex, false)
-        }
-        onInsertParallelGroup={() =>
-          actions.insertGroup(itemIndex, true)
-        }
-        onPaste={handlePaste(itemIndex)}
-      />,
-    )
-
-    if (isGroup(item)) {
-      const groupFlatStart = flatIndex
-      flatIndex += item.steps.length
-      items.push(
-        <GroupCard
-          key={item.id}
-          group={item}
-          itemIndex={itemIndex}
-          startingFlatIndex={groupFlatStart}
-          isFirst={itemIndex === 0}
-          isLast={itemIndex === steps.length - 1}
-        />,
+  // Build the rendered item list alongside a running flat index that numbers
+  // steps globally (groups don't get a flat index; their inner steps do).
+  const { items } = steps.reduce<{
+    items: React.ReactNode[]
+    flatIndex: number
+  }>(
+    (acc, item, itemIndex) => {
+      const divider = (
+        <InsertDivider
+          key={`divider-before-${item.id}`}
+          index={itemIndex}
+          onInsertStep={() => actions.insertStep(itemIndex)}
+          onInsertSequentialGroup={() =>
+            actions.insertGroup(itemIndex, false)
+          }
+          onInsertParallelGroup={() =>
+            actions.insertGroup(itemIndex, true)
+          }
+          onPaste={handlePaste(itemIndex)}
+        />
       )
-    } else {
+
+      if (isGroup(item)) {
+        return {
+          items: [
+            ...acc.items,
+            divider,
+            <GroupCard
+              key={item.id}
+              group={item}
+              itemIndex={itemIndex}
+              startingFlatIndex={acc.flatIndex}
+              isFirst={itemIndex === 0}
+              isLast={itemIndex === steps.length - 1}
+            />,
+          ],
+          flatIndex: acc.flatIndex + item.steps.length,
+        }
+      }
+
       const step = item as Step
-      const stepFlatIndex = flatIndex++
-      items.push(
-        <StepCard
-          key={step.id}
-          step={step}
-          index={stepFlatIndex}
-          isFirst={itemIndex === 0}
-          isLast={itemIndex === steps.length - 1}
-        />,
-      )
-    }
-  })
+      return {
+        items: [
+          ...acc.items,
+          divider,
+          <StepCard
+            key={step.id}
+            step={step}
+            index={acc.flatIndex}
+            isFirst={itemIndex === 0}
+            isLast={itemIndex === steps.length - 1}
+          />,
+        ],
+        flatIndex: acc.flatIndex + 1,
+      }
+    },
+    { items: [], flatIndex: 0 },
+  )
 
-  items.push(
+  const trailingDivider = (
     <InsertDivider
       key="divider-end"
       index={steps.length}
@@ -79,7 +90,7 @@ export const BuilderSequenceList = () => {
         actions.insertGroup(steps.length, true)
       }
       onPaste={handlePaste(steps.length)}
-    />,
+    />
   )
 
   if (steps.length === 0) {
@@ -101,5 +112,10 @@ export const BuilderSequenceList = () => {
     )
   }
 
-  return <div className="flex flex-col gap-3">{items}</div>
+  return (
+    <div className="flex flex-col gap-3">
+      {items}
+      {trailingDivider}
+    </div>
+  )
 }

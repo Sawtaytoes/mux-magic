@@ -7,16 +7,32 @@ export const isGroup = (
 export const findStepById = (
   steps: SequenceItem[],
   stepId: string,
-): Step | undefined => {
-  for (const item of steps) {
+): Step | undefined =>
+  steps.reduce<Step | undefined>((found, item) => {
+    if (found) return found
     if (isGroup(item)) {
-      const found = item.steps.find(
-        (step) => step.id === stepId,
-      )
-      if (found) return found
-    } else if (item.id === stepId) {
-      return item as Step
+      return item.steps.find((step) => step.id === stepId)
     }
-  }
-  return undefined
+    return (item as Step).id === stepId
+      ? (item as Step)
+      : undefined
+  }, undefined)
+
+export type FlatEntry = { step: Step; flatIndex: number }
+
+// Flattens top-level steps + group children into a single numbered list.
+// Groups don't occupy a flat index slot; only their inner steps do.
+export const flattenSteps = (
+  items: SequenceItem[],
+): FlatEntry[] => {
+  const entries: FlatEntry[] = []
+  items.forEach((item) => {
+    const stepsInItem = isGroup(item)
+      ? (item as Group).steps
+      : [item as Step]
+    stepsInItem.forEach((step) => {
+      entries.push({ step, flatIndex: entries.length })
+    })
+  })
+  return entries
 }

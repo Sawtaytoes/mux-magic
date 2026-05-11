@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
-import { isGroup } from "../../jobs/sequenceUtils"
+import { flattenSteps } from "../../jobs/sequenceUtils"
 import { pathsAtom } from "../../state/pathsAtom"
 import {
   type LinkPickerAnchor,
@@ -14,31 +14,11 @@ import { stepsAtom } from "../../state/stepsAtom"
 import type {
   PathVar,
   SequenceItem,
-  Step,
   StepLink,
 } from "../../types"
 
 const PICKER_WIDTH = 360
 const PICKER_MAX_HEIGHT = 400
-
-type FlatEntry = { step: Step; flatIndex: number }
-
-const flattenSteps = (
-  items: SequenceItem[],
-): FlatEntry[] => {
-  const result: FlatEntry[] = []
-  let counter = 0
-  for (const item of items) {
-    if (isGroup(item)) {
-      for (const step of item.steps) {
-        result.push({ step, flatIndex: counter++ })
-      }
-    } else {
-      result.push({ step: item, flatIndex: counter++ })
-    }
-  }
-  return result
-}
 
 const getCommandLabel = (name: string): string =>
   commandLabel(name)

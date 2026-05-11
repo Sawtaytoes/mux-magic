@@ -3,6 +3,7 @@ import { useRef } from "react"
 import { getLinkedValue } from "../../commands/links"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
+import { flattenSteps } from "../../jobs/sequenceUtils"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { linkPickerStateAtom } from "../../state/pickerAtoms"
@@ -16,25 +17,6 @@ import type {
   StepLink,
 } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
-
-type FlatEntry = { step: Step; flatIndex: number }
-
-const flattenSteps = (
-  items: SequenceItem[],
-): FlatEntry[] => {
-  const result: FlatEntry[] = []
-  let counter = 0
-  for (const item of items) {
-    if ("steps" in item) {
-      for (const step of item.steps) {
-        result.push({ step, flatIndex: counter++ })
-      }
-    } else {
-      result.push({ step: item, flatIndex: counter++ })
-    }
-  }
-  return result
-}
 
 type PathFieldProps = {
   field: CommandField

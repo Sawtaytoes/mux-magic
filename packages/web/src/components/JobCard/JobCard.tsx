@@ -27,24 +27,32 @@ const useAggregateEta = (job: Job): string => {
     (child) => child.status === "running",
   )
 
-  let totalRemaining = 0
-  let totalSpeed = 0
-  let hasAnyData = false
-
-  for (const child of runningChildren) {
-    const snap = progressByJobId.get(child.id)
-    if (!snap) continue
-    if (
-      typeof snap.bytesRemaining === "number" &&
-      snap.bytesRemaining > 0 &&
-      typeof snap.bytesPerSecond === "number" &&
-      snap.bytesPerSecond > 0
-    ) {
-      totalRemaining += snap.bytesRemaining
-      totalSpeed += snap.bytesPerSecond
-      hasAnyData = true
-    }
-  }
+  const { totalRemaining, totalSpeed, hasAnyData } =
+    runningChildren.reduce(
+      (acc, child) => {
+        const snap = progressByJobId.get(child.id)
+        if (
+          !snap ||
+          typeof snap.bytesRemaining !== "number" ||
+          snap.bytesRemaining <= 0 ||
+          typeof snap.bytesPerSecond !== "number" ||
+          snap.bytesPerSecond <= 0
+        ) {
+          return acc
+        }
+        return {
+          totalRemaining:
+            acc.totalRemaining + snap.bytesRemaining,
+          totalSpeed: acc.totalSpeed + snap.bytesPerSecond,
+          hasAnyData: true,
+        }
+      },
+      {
+        totalRemaining: 0,
+        totalSpeed: 0,
+        hasAnyData: false,
+      },
+    )
 
   if (hasAnyData) {
     return formatEta(
