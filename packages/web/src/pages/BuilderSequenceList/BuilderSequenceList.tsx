@@ -29,7 +29,9 @@ export const BuilderSequenceList = () => {
   const steps = useAtomValue(stepsAtom)
   const actions = useBuilderActions()
   const dragReorder = useSetAtom(dragReorderAtom)
-  const [activeId, setActiveId] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(
+    null,
+  )
   const [overId, setOverId] = useState<string | null>(null)
 
   const sensors = useSensors(
@@ -54,15 +56,18 @@ export const BuilderSequenceList = () => {
     if (!over || active.id === over.id) return
 
     const sourceContainerId =
-      (active.data.current?.sortable?.containerId as string) ??
-      "top-level"
+      (active.data.current?.sortable
+        ?.containerId as string) ?? "top-level"
     let targetContainerId =
-      (over.data.current?.sortable?.containerId as string) ??
-      "top-level"
+      (over.data.current?.sortable
+        ?.containerId as string) ?? "top-level"
 
     let resolvedOverId = over.id as string
     if (resolvedOverId.endsWith("-droppable")) {
-      const groupId = resolvedOverId.replace(/-droppable$/, "")
+      const groupId = resolvedOverId.replace(
+        /-droppable$/,
+        "",
+      )
       targetContainerId = groupId
       resolvedOverId = ""
     }

@@ -60,13 +60,16 @@ export const GroupCard = ({
   const dragStyle = isDragOverlay
     ? {}
     : {
-        transform: CSS.Transform.toString(sortable.transform),
+        transform: CSS.Transform.toString(
+          sortable.transform,
+        ),
         transition: sortable.transition ?? undefined,
       }
 
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: `${group.id}-droppable`,
-  })
+  const { setNodeRef: setDroppableRef, isOver } =
+    useDroppable({
+      id: `${group.id}-droppable`,
+    })
 
   const stepCount = group.steps.length
   const hasRunnableSteps = group.steps.some((step) =>
@@ -111,7 +114,11 @@ export const GroupCard = ({
           aria-label="Drag to reorder"
           title="Drag to reorder"
           className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 select-none cursor-grab active:cursor-grabbing"
-          ref={isDragOverlay ? undefined : sortable.setActivatorNodeRef}
+          ref={
+            isDragOverlay
+              ? undefined
+              : sortable.setActivatorNodeRef
+          }
           {...(isDragOverlay ? {} : sortable.attributes)}
           {...(isDragOverlay ? {} : sortable.listeners)}
         >

@@ -4,7 +4,10 @@ import type { Group, Step } from "../types"
 import { dragReorderAtom } from "./sequenceAtoms"
 import { stepsAtom } from "./stepsAtom"
 
-const makeStep = (id: string, command = "encodeVideo"): Step => ({
+const makeStep = (
+  id: string,
+  command = "encodeVideo",
+): Step => ({
   id,
   alias: "",
   command,
@@ -54,11 +57,9 @@ describe("dragReorderAtom", () => {
     })
 
     const result = store.get(stepsAtom)
-    expect(result.map((item) => (item as Step).id)).toEqual([
-      "b",
-      "c",
-      "a",
-    ])
+    expect(result.map((item) => (item as Step).id)).toEqual(
+      ["b", "c", "a"],
+    )
   })
 
   test("intra-group reorder: drag s1 to index 2", () => {
@@ -78,11 +79,9 @@ describe("dragReorderAtom", () => {
 
     const result = store.get(stepsAtom)
     const resultGroup = result[0] as Group
-    expect(resultGroup.steps.map((step) => step.id)).toEqual([
-      "s2",
-      "s3",
-      "s1",
-    ])
+    expect(
+      resultGroup.steps.map((step) => step.id),
+    ).toEqual(["s2", "s3", "s1"])
   })
 
   test("cross-container: drag top-level step into group before existing step", () => {
@@ -103,10 +102,9 @@ describe("dragReorderAtom", () => {
     expect(result).toHaveLength(1)
     const resultGroup = result[0] as Group
     expect(resultGroup.id).toBe("group1")
-    expect(resultGroup.steps.map((step) => step.id)).toEqual([
-      "stepX",
-      "s1",
-    ])
+    expect(
+      resultGroup.steps.map((step) => step.id),
+    ).toEqual(["stepX", "s1"])
   })
 
   test("cross-container: drag step OUT of group to top-level", () => {
@@ -127,7 +125,9 @@ describe("dragReorderAtom", () => {
     const result = store.get(stepsAtom)
     expect(result).toHaveLength(3)
     expect((result[0] as Group).id).toBe("group1")
-    expect((result[0] as Group).steps.map((step) => step.id)).toEqual(["s2"])
+    expect(
+      (result[0] as Group).steps.map((step) => step.id),
+    ).toEqual(["s2"])
     expect((result[1] as Step).id).toBe("s1")
     expect((result[2] as Step).id).toBe("stepY")
   })
@@ -149,10 +149,9 @@ describe("dragReorderAtom", () => {
     const result = store.get(stepsAtom)
     expect(result).toHaveLength(1)
     const resultGroup = result[0] as Group
-    expect(resultGroup.steps.map((step) => step.id)).toEqual([
-      "s1",
-      "stepX",
-    ])
+    expect(
+      resultGroup.steps.map((step) => step.id),
+    ).toEqual(["s1", "stepX"])
   })
 
   test("guard: group cannot be dragged into another group", () => {
