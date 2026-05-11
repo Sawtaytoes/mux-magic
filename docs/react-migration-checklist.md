@@ -82,7 +82,7 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | ✅ Done | 2026-05-10 | Haiku 4.5; 4 fields ported + wired to RenderFields; DslRulesBuilder escalated to Phase 2.5 (non-mechanical port); commit a98ae9b |
 | W2.5 | 2.5 — DslRulesBuilder (escalated from W2D) | ✅ Done | 2026-05-10 | claude-sonnet-4-6, high effort. Prompt: [react-migration-prompts/W2-5.md](react-migration-prompts/W2-5.md). 5 commits: types, utils, 18 component files, wire SubtitleRulesField, mutation tests + stories. 281 tests passing. |
 | W3 | 3 — Final Cleanup | ✅ Done | 2026-05-10 | claude-sonnet-4-6 (high effort). 3 prod source files migrated to atoms; 19 test/story/MDX files cleaned; public/builder/ + public/vendor/ deleted; 10 loose legacy public assets deleted; types.window.d.ts slimmed to 7 remaining bridge globals; 1004 tests pass, typecheck clean. |
-| W4A | 4 — Verification & Master Merge | 🔄 In Progress | 2026-05-10 | Parallel with W4B. Sonnet medium. (Was W4 before rename for parallel-pair consistency.) |
+| W4A | 4 — Verification & Master Merge | ✅ Done | 2026-05-10 | claude-sonnet-4-6 medium. All 4 gates pass (1004 tests, typecheck, lint, build). 36 YAML fixtures: zero diff. Checklist audited — all rows verified. types.window.d.ts: 7 globals annotated (2 implemented, 5 W5 parity-traps). Storybook: 118 stories. Merged to master + tagged react-migration-complete. |
 | W4B | 4 — E2E tests (worktree off post-W3 react-migration) | ⬜ Not Started | — | Parallel with W4A. Sonnet medium. (Was W5 before rename.) Merges to master after W4A's master merge lands. |
 | W5 | 5 — Parity-trap + code-smell + a11y cleanup | ⬜ Not Started | — | Sonnet high effort. Prompt: [react-migration-prompts/W5.md](react-migration-prompts/W5.md). Runs after W4A+W4B. Three streams: parity quirks held back during port, code-smell sweep (getIsX collisions, let+subscribe → lastValueFrom, one component per file), final a11y pass. (Was W6 before rename.) |
 
@@ -168,6 +168,32 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W3 | 2026-05-10 | chore(legacy): delete public/builder/ and public/vendor/ (85 files, 51 709 deletions) |
 | W3 | 2026-05-10 | chore(legacy): delete 10 loose legacy assets in public/ (1 230 deletions) |
 | W3 | 2026-05-10 | chore(legacy): slim types.window.d.ts — drop mediaTools interface, keep 7 remaining bridge globals |
+| W4A | 2026-05-10 | chore(checklist): W4A in progress |
+| W4A | 2026-05-10 | chore(scripts): update capture-parity-fixtures to import TS COMMANDS |
+| W4A | 2026-05-10 | docs(types): annotate types.window.d.ts bridge globals with W5 parity-trap status |
+| W4A | 2026-05-10 | chore(checklist): W4A complete — checklist audited; all rows verified against code; merged to master; W4B can rebase |
+
+## W4A Audit Findings (2026-05-10)
+
+**Pre-merge gate:** ✅ 1004 tests / 137 files pass, typecheck clean, lint 1 pre-existing warning (NumberWithLookupField `as any`), build clean (183 modules, 525 KB).
+
+**Parity matrix:** ✅ All 36 YAML fixtures round-trip with zero diff after swapping capture script import to TS COMMANDS. 8 `.input.json` files show cosmetic JSON whitespace reformat only (compact → expanded arrays); same data.
+
+**Storybook smoke:** ✅ 118 stories registered across 41 story groups. All 13 Wave B field components + DslRulesBuilder present. Key story iframes return HTTP 200.
+
+**Checklist audit — no drift found:**
+
+- All component directories verified to exist with `.tsx` + `.test.tsx` + `.stories.tsx` files
+- `packages/web/public/` directory is entirely absent (W3 deletion confirmed)
+- `packages/web/index.html` is clean React entry (no legacy `<script>` tags)
+- `window.mediaTools` references: prose-only in `PageHeader.mdx` (archival documentation, not code)
+- Spot-tested: BooleanField (5 tests ✅), EnumField (4 ✅), DslRulesBuilder (17 ✅), LoadModal (12 ✅), PathField (5 ✅), buildParams (12 ✅)
+
+**`types.window.d.ts` final state:** File retained with 7 globals annotated.
+
+- `getCommandFieldDescription` — registered by `packages/server/scripts/build-command-descriptions.ts` at build time ✅
+- `openVideoModal` — registered by `FileExplorerModal` on mount; consumed by `PromptModal` ✅
+- `pasteCardAt`, `copyGroupYaml`, `runGroup`, `runOrStopStep`, `copyStepYaml` — **W5 parity-traps**: callers exist in GroupCard/StepCard/BuilderSequenceList but implementations were in deleted legacy `sequence-editor.js`. All use `?.` so UI degrades gracefully (buttons are no-ops). W5 must port these 5 to Jotai atoms + API calls.
 
 ## DslRulesBuilder Escalation (W2D)
 
