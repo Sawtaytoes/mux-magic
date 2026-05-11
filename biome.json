@@ -10,7 +10,7 @@
       "./**",
       "!.claude/worktrees",
       "!.yarn",
-      "!*.json"
+      "!*.json",
       "!**/*.generated.ts",
       "!**/build",
       "!**/dist",
