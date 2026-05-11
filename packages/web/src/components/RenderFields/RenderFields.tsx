@@ -3,7 +3,6 @@ import { useAtomValue } from "jotai"
 import { isFieldVisible } from "../../commands/fieldVisibility"
 import { commandsAtom } from "../../state/commandsAtom"
 import type { CommandField, Step } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
 import { FieldDispatcher } from "./FieldDispatcher"
 
 // ─── RenderFields ─────────────────────────────────────────────────────────────
@@ -84,10 +83,6 @@ export const RenderFields = ({
                 key={groupField.name}
                 className="flex flex-col"
               >
-                <FieldLabel
-                  command={step.command}
-                  field={groupField}
-                />
                 <FieldDispatcher
                   field={groupField}
                   step={step}
@@ -112,10 +107,6 @@ export const RenderFields = ({
 
       return [
         <div key={field.name} className="mb-2">
-          <FieldLabel
-            command={step.command}
-            field={field}
-          />
           <FieldDispatcher field={field} step={step} />
         </div>,
       ]
