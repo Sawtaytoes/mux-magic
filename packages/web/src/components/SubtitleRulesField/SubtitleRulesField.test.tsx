@@ -52,7 +52,13 @@ describe("SubtitleRulesField", () => {
   it("renders a rule card when a rule exists", () => {
     const step = createTestStep({
       params: {
-        rules: [{ type: "setScriptInfo", key: "Title", value: "Test" }],
+        rules: [
+          {
+            type: "setScriptInfo",
+            key: "Title",
+            value: "Test",
+          },
+        ],
       },
     })
     render(
