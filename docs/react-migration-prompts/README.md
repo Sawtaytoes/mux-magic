@@ -21,7 +21,9 @@ Prompts are generated lazily — the next worker's prompt is written only after 
 | W5C | [W5C.md](W5C.md) | Ready to spawn (parallel with W5A + W5B) — runs in **worktree** `.claude/worktrees/w5c` on `feat/restore-tooltips`; data-only work (commands.ts) | W3 |
 | W6A | [W6A.md](W6A.md) | Ready (parallel with W6B) — runs in **worktree** `.claude/worktrees/w6` on `e2e-completion` (extends W4B's `e2e-tests`); e2e specs for restored UI controls | W5B |
 | W6B | [W6B.md](W6B.md) | Ready (parallel with W6A) — runs in **worktree** `.claude/worktrees/w6b` on `feat/dnd-kit-migration`. Replaces SortableJS with @dnd-kit/core + @dnd-kit/sortable (React-native DnD, better a11y). Owns the drag-drop e2e spec post-swap. | W5B |
-| W7 | [W7.md](W7.md) | Ready (parallel with W6A + W6B; file ownership disjoint) — runs in **worktree** `.claude/worktrees/w7` on `feat/storybook-reorg`. Three streams: extract Modal primitive, reorganize Storybook into Fields/Modals/Pickers/Pages/Components, add missing toggle/switch story (investigate GroupCard parallel/sequential toggle). | Phase 5 done |
+| W7A | [W7A.md](W7A.md) | Ready (parallel with W6A + W7B + W7C) — runs in **worktree** `.claude/worktrees/w7a` on `feat/storybook-reorg`. Three streams: extract Modal primitive, reorganize Storybook into Fields/Modals/Pickers/Pages/Components, add missing toggle/switch story. | Phase 5 done |
+| W7B | [W7B.md](W7B.md) | Ready (parallel with W7A + W7C) — runs in **worktree** `.claude/worktrees/w7b` on `fix/link-picker`. Fix `LinkPicker` stored format bug (stores `"path:basePath"` instead of bare `"basePath"` — breaks YAML + initial selection) + right-aligned dropdown. | Phase 5 done |
+| W7C | [W7C.md](W7C.md) | Ready (parallel with W7A + W7B) — runs in **worktree** `.claude/worktrees/w7c` on `fix/sequence-runner`. Fix Sequence Runner crash: client sends `Content-Type: application/yaml` raw text but route expects JSON-wrapped `{ yaml }`. | Phase 5 done |
 
 **Naming convention (working version, expected to evolve):**
 - **Same number + letter suffix = parallel** (W2A/B/C/D, W4A/B, W5A/B all run concurrently within their phase).
