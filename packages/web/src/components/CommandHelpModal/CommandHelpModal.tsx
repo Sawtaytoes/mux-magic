@@ -1,11 +1,12 @@
 import { useAtom, useAtomValue } from "jotai"
 import { useEffect } from "react"
 
+import { commandLabel } from "../../jobs/commandLabels"
+import { commandsAtom } from "../../state/commandsAtom"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
 } from "../../state/uiAtoms"
-import type { CommandDefinition } from "../../types"
 import { CommandFieldEntry } from "../CommandFieldEntry/CommandFieldEntry"
 
 export const CommandHelpModal = () => {
@@ -15,6 +16,7 @@ export const CommandHelpModal = () => {
   const commandName = useAtomValue(
     commandHelpCommandNameAtom,
   )
+  const commands = useAtomValue(commandsAtom)
 
   const close = () => setIsOpen(false)
 
@@ -40,25 +42,14 @@ export const CommandHelpModal = () => {
     return null
   }
 
-  const commands = (window.mediaTools?.COMMANDS ??
-    {}) as Record<string, CommandDefinition>
   const commandConfig = commands[commandName]
 
   if (!commandConfig) {
     return null
   }
 
-  const summary =
-    (typeof window.getCommandSummary === "function"
-      ? window.getCommandSummary({ commandName })
-      : "") ||
-    commandConfig.summary ||
-    ""
-
-  const commandLabelText =
-    typeof window.commandLabel === "function"
-      ? window.commandLabel(commandName)
-      : commandName
+  const summary = commandConfig.summary ?? ""
+  const commandLabelText = commandLabel(commandName)
 
   return (
     <div

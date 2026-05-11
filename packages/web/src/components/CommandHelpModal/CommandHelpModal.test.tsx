@@ -12,6 +12,7 @@ import {
   test,
   vi,
 } from "vitest"
+import { commandsAtom } from "../../state/commandsAtom"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
@@ -42,14 +43,8 @@ const makeStore = (
   const store = createStore()
   store.set(commandHelpCommandNameAtom, commandName)
   store.set(commandHelpModalOpenAtom, isOpen)
+  store.set(commandsAtom, { ffmpeg: mockCommand as never })
   return store
-}
-
-const wrapWithBridge = () => {
-  window.mediaTools = window.mediaTools ?? {}
-  window.mediaTools.COMMANDS = {
-    ffmpeg: mockCommand,
-  } as never
 }
 
 afterEach(() => {
@@ -79,7 +74,6 @@ describe("CommandHelpModal", () => {
   })
 
   test("renders the modal title with command name", () => {
-    wrapWithBridge()
     const store = makeStore("ffmpeg")
     render(
       <Provider store={store}>
@@ -90,7 +84,6 @@ describe("CommandHelpModal", () => {
   })
 
   test("renders the command summary", () => {
-    wrapWithBridge()
     const store = makeStore("ffmpeg")
     render(
       <Provider store={store}>
@@ -103,7 +96,6 @@ describe("CommandHelpModal", () => {
   })
 
   test("renders all field entries", () => {
-    wrapWithBridge()
     const store = makeStore("ffmpeg")
     render(
       <Provider store={store}>
@@ -119,7 +111,6 @@ describe("CommandHelpModal", () => {
   })
 
   test("shows required badge for required fields", () => {
-    wrapWithBridge()
     const store = makeStore("ffmpeg")
     render(
       <Provider store={store}>
@@ -130,7 +121,6 @@ describe("CommandHelpModal", () => {
   })
 
   test("close button sets isOpen atom to false", async () => {
-    wrapWithBridge()
     const user = userEvent.setup()
     const store = makeStore("ffmpeg")
     render(
@@ -146,7 +136,6 @@ describe("CommandHelpModal", () => {
   })
 
   test("backdrop click sets isOpen atom to false", async () => {
-    wrapWithBridge()
     const user = userEvent.setup()
     const store = makeStore("ffmpeg")
     const { container } = render(
