@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { Provider } from "jotai"
 import { describe, expect, it } from "vitest"
 
@@ -69,5 +70,68 @@ describe("SubtitleRulesField", () => {
     expect(
       screen.getByDisplayValue("setScriptInfo"),
     ).toBeInTheDocument()
+  })
+
+  it("renders default rules preview when hasDefaultRules is true", () => {
+    const step = createTestStep({
+      params: { rules: [], hasDefaultRules: true },
+    })
+    render(
+      <Provider>
+        <SubtitleRulesField field={field} step={step} />
+      </Provider>,
+    )
+    expect(
+      screen.getByText(/Default rules/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByText("setScriptInfo").length,
+    ).toBeGreaterThanOrEqual(1)
+    expect(
+      screen.getAllByText("read-only").length,
+    ).toBeGreaterThanOrEqual(1)
+  })
+
+  it("hides default rules preview when hasDefaultRules is false", () => {
+    const step = createTestStep({
+      params: { rules: [], hasDefaultRules: false },
+    })
+    render(
+      <Provider>
+        <SubtitleRulesField field={field} step={step} />
+      </Provider>,
+    )
+    expect(
+      screen.queryByText(/Default rules/),
+    ).not.toBeInTheDocument()
+  })
+
+  it("preview section is collapsible", async () => {
+    const step = createTestStep({
+      params: { rules: [], hasDefaultRules: true },
+    })
+    render(
+      <Provider>
+        <SubtitleRulesField field={field} step={step} />
+      </Provider>,
+    )
+    const toggleButton = screen.getByRole("button", {
+      name: /Default rules/,
+    })
+    expect(
+      screen.getAllByText("read-only").length,
+    ).toBeGreaterThanOrEqual(1)
+
+    await userEvent.click(toggleButton)
+
+    expect(
+      screen.queryByText("read-only"),
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(toggleButton)
+
+    expect(
+      screen.getAllByText("read-only").length,
+    ).toBeGreaterThanOrEqual(1)
   })
 })

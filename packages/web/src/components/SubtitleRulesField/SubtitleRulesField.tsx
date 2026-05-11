@@ -1,7 +1,45 @@
+import { useState } from "react"
+
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { CommandField, Step } from "../../types"
 import { DslRulesBuilder } from "../DslRulesBuilder/DslRulesBuilder"
+import { RuleCard } from "../DslRulesBuilder/RuleCard"
+import type { DslRule } from "../DslRulesBuilder/types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
+
+const DEFAULT_RULES_PREVIEW: DslRule[] = [
+  {
+    type: "setScriptInfo",
+    key: "ScriptType",
+    value: "v4.00+",
+  },
+  {
+    type: "setScriptInfo",
+    key: "YCbCr Matrix",
+    value: "TV.709",
+  },
+  {
+    type: "setStyleFields",
+    fields: {
+      MarginV: "90",
+      MarginL: "210",
+      MarginR: "210",
+    },
+    ignoredStyleNamesRegexString:
+      "signs?|op|ed|opening|ending",
+  },
+]
+
+const DEFAULT_RULES_PREVIEW_KEYS: string[] =
+  DEFAULT_RULES_PREVIEW.map((rule, ruleIndex) => {
+    if (rule.type === "setScriptInfo") {
+      return `setScriptInfo-${rule.key}`
+    }
+    if (rule.type === "setStyleFields") {
+      return `setStyleFields-${Object.keys(rule.fields).join("-")}`
+    }
+    return `${rule.type}-${ruleIndex}`
+  })
 
 type SubtitleRulesFieldProps = {
   field: CommandField
@@ -17,6 +55,7 @@ export const SubtitleRulesField = ({
   step,
 }: SubtitleRulesFieldProps) => {
   const { setParam } = useBuilderActions()
+  const [isPreviewOpen, setIsPreviewOpen] = useState(true)
   const hasDefaultRules = Boolean(
     step.params.hasDefaultRules ?? false,
   )
@@ -42,6 +81,49 @@ export const SubtitleRulesField = ({
           Has Default Rules
         </label>
       </div>
+      {hasDefaultRules && (
+        <div className="mt-2 mb-3 border border-amber-800/50 rounded px-3 py-2 bg-amber-950/20">
+          <button
+            type="button"
+            onClick={() => {
+              setIsPreviewOpen((prev) => !prev)
+            }}
+            className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 w-full text-left mb-1"
+          >
+            {isPreviewOpen ? "▾" : "▸"}
+            {
+              "Default rules (applied before user rules; read-only):"
+            }
+          </button>
+          {isPreviewOpen && (
+            <div className="space-y-2">
+              {DEFAULT_RULES_PREVIEW.map(
+                (rule, ruleIndex) => (
+                  <RuleCard
+                    key={
+                      DEFAULT_RULES_PREVIEW_KEYS[ruleIndex]
+                    }
+                    rules={DEFAULT_RULES_PREVIEW}
+                    ruleIndex={ruleIndex}
+                    rule={rule}
+                    predicates={{}}
+                    isReadOnly={true}
+                    isFirst={ruleIndex === 0}
+                    isLast={
+                      ruleIndex ===
+                      DEFAULT_RULES_PREVIEW.length - 1
+                    }
+                    stepId={step.id}
+                    openDetailsKeys={new Set()}
+                    onToggleDetails={() => {}}
+                    onCommitRules={() => {}}
+                  />
+                ),
+              )}
+            </div>
+          )}
+        </div>
+      )}
       <DslRulesBuilder step={step} />
     </div>
   )
