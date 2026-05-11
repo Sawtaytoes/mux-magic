@@ -298,7 +298,7 @@ describe("DslRulesBuilder render", () => {
         actions: [{ field: "ScaleX", value: "1.0" }],
       },
     ]
-    render(
+    const { container } = render(
       <Provider>
         <DslRulesBuilder
           step={createStep({
@@ -308,9 +308,15 @@ describe("DslRulesBuilder render", () => {
         />
       </Provider>,
     )
+    // Old-format rules aren't recognized by the new dispatcher; the
+    // component should still mount cleanly (regression guard for the
+    // pre-W2.5 fixture shape). `hasDefaultRules` was moved out to
+    // SubtitleRulesField; assert here that the legacy checkbox label
+    // is no longer rendered inside DslRulesBuilder.
+    expect(container.firstChild).toBeInTheDocument()
     expect(
-      screen.getByText("hasDefaultRules"),
-    ).toBeInTheDocument()
+      screen.queryByText("hasDefaultRules"),
+    ).not.toBeInTheDocument()
   })
 
   it("renders a rule card for each DSL rule", () => {

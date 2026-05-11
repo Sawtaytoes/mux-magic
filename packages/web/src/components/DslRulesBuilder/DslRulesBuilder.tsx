@@ -5,10 +5,7 @@ import type { Step } from "../../types"
 import { InsertRuleStrip } from "./InsertRuleStrip"
 import { PredicatesManager } from "./PredicatesManager"
 import { RuleCard } from "./RuleCard"
-import {
-  addRule,
-  nextHasDefaultRules,
-} from "./ruleMutations"
+import { addRule } from "./ruleMutations"
 import type {
   DslRule,
   OpenDetailsKeys,
@@ -36,8 +33,6 @@ export const DslRulesBuilder = ({
     !Array.isArray(step.params.predicates)
       ? (step.params.predicates as PredicatesMap)
       : {}
-  const isHasDefaultRules =
-    step.params.hasDefaultRules === true
 
   const ruleKeyMap = useRef(new WeakMap<DslRule, string>())
   const getRuleKey = (rule: DslRule): string => {
@@ -90,25 +85,6 @@ export const DslRulesBuilder = ({
 
   return (
     <div className="mt-1">
-      <label className="flex items-center gap-2 mb-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={isHasDefaultRules}
-          disabled={isReadOnly}
-          onChange={(event) => {
-            setParam(
-              step.id,
-              "hasDefaultRules",
-              nextHasDefaultRules(event.target.checked),
-            )
-          }}
-          className="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer"
-        />
-        <span className="text-xs text-slate-400">
-          hasDefaultRules
-        </span>
-      </label>
-
       <PredicatesManager
         predicates={predicates}
         isReadOnly={isReadOnly}

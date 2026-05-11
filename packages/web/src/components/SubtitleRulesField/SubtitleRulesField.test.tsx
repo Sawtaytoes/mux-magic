@@ -33,7 +33,7 @@ describe("SubtitleRulesField", () => {
       </Provider>,
     )
     expect(
-      screen.getByText("hasDefaultRules"),
+      screen.getByText("Has Default Rules"),
     ).toBeInTheDocument()
   })
 
