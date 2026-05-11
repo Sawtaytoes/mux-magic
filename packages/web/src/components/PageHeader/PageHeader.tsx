@@ -1,7 +1,7 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
-import { Switch } from "../../primitives/Switch/Switch"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
+import { Switch } from "../../primitives/Switch/Switch"
 import {
   canRedoAtom,
   canUndoAtom,

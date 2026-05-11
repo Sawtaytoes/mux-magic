@@ -1,12 +1,12 @@
 import { useAtom, useAtomValue } from "jotai"
 
 import { commandLabel } from "../../jobs/commandLabels"
+import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
 } from "../../state/uiAtoms"
-import { Modal } from "../../primitives/Modal/Modal"
 import { CommandFieldEntry } from "../CommandFieldEntry/CommandFieldEntry"
 
 export const CommandHelpModal = () => {
@@ -21,8 +21,9 @@ export const CommandHelpModal = () => {
   const close = () => setIsOpen(false)
 
   const isVisible = isOpen && Boolean(commandName)
-  const commandConfig =
-    commandName ? commands[commandName] : undefined
+  const commandConfig = commandName
+    ? commands[commandName]
+    : undefined
 
   return (
     <Modal

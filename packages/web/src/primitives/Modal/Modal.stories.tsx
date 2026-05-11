@@ -14,10 +14,19 @@ const meta: Meta<typeof Modal> = {
 export default meta
 type Story = StoryObj<typeof Modal>
 
-const SampleContent = ({ onClose }: { onClose: () => void }) => (
-  <div className="bg-slate-900 border border-slate-700 rounded-xl flex flex-col" style={{ width: "min(90vw,480px)" }}>
+const SampleContent = ({
+  onClose,
+}: {
+  onClose: () => void
+}) => (
+  <div
+    className="bg-slate-900 border border-slate-700 rounded-xl flex flex-col"
+    style={{ width: "min(90vw,480px)" }}
+  >
     <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
-      <span className="text-xs font-medium text-slate-400">Example Modal</span>
+      <span className="text-xs font-medium text-slate-400">
+        Example Modal
+      </span>
       <button
         type="button"
         onClick={onClose}
@@ -62,14 +71,19 @@ export const Open: Story = {
 
 export const Closed: Story = {
   render: () => (
-    <Modal isOpen={false} onClose={() => {}} ariaLabel="Closed modal">
+    <Modal
+      isOpen={false}
+      onClose={() => {}}
+      ariaLabel="Closed modal"
+    >
       <SampleContent onClose={() => {}} />
     </Modal>
   ),
   parameters: {
     docs: {
       description: {
-        story: "When isOpen is false the component renders nothing.",
+        story:
+          "When isOpen is false the component renders nothing.",
       },
     },
   },

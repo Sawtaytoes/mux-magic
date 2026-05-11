@@ -5,7 +5,13 @@ import {
   screen,
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { afterEach, describe, expect, test, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import { Modal } from "./Modal"
 
 afterEach(() => {
@@ -15,7 +21,11 @@ afterEach(() => {
 
 const renderModal = (isOpen: boolean, onClose = vi.fn()) =>
   render(
-    <Modal isOpen={isOpen} onClose={onClose} ariaLabel="Test modal">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel="Test modal"
+    >
       <div>
         <p>Modal content</p>
         <button type="button">Inner button</button>
@@ -34,7 +44,9 @@ describe("Modal visibility", () => {
 
   test("renders children when isOpen is true", () => {
     renderModal(true)
-    expect(screen.getByText("Modal content")).toBeInTheDocument()
+    expect(
+      screen.getByText("Modal content"),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole("dialog", { name: "Test modal" }),
     ).toBeInTheDocument()
@@ -78,7 +90,10 @@ describe("Modal accessibility", () => {
   test("dialog has correct aria-label", () => {
     renderModal(true)
     const dialog = screen.getByRole("dialog")
-    expect(dialog).toHaveAttribute("aria-label", "Test modal")
+    expect(dialog).toHaveAttribute(
+      "aria-label",
+      "Test modal",
+    )
     expect(dialog).toHaveAttribute("aria-modal", "true")
   })
 })

@@ -1,6 +1,7 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
 import { loadYamlFromText } from "../../jobs/loadYaml"
+import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import {
@@ -8,7 +9,6 @@ import {
   stepsAtom,
 } from "../../state/stepsAtom"
 import { loadModalOpenAtom } from "../../state/uiAtoms"
-import { Modal } from "../../primitives/Modal/Modal"
 
 export const LoadModal = () => {
   const [isOpen, setIsOpen] = useAtom(loadModalOpenAtom)
@@ -73,7 +73,11 @@ export const LoadModal = () => {
   ])
 
   return (
-    <Modal isOpen={isOpen} onClose={close} ariaLabel="Load YAML">
+    <Modal
+      isOpen={isOpen}
+      onClose={close}
+      ariaLabel="Load YAML"
+    >
       <div
         className="bg-slate-900 border border-slate-700 rounded-xl flex flex-col"
         style={{ width: "min(90vw,560px)" }}

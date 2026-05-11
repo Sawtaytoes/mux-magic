@@ -3,10 +3,15 @@ interface SwitchProps {
   activeTrackClass: string
 }
 
-export const Switch = ({ isOn, activeTrackClass }: SwitchProps) => (
+export const Switch = ({
+  isOn,
+  activeTrackClass,
+}: SwitchProps) => (
   <span
     className={`relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden border transition-colors ${
-      isOn ? activeTrackClass : "bg-slate-600 border-slate-500"
+      isOn
+        ? activeTrackClass
+        : "bg-slate-600 border-slate-500"
     }`}
     aria-hidden="true"
   >

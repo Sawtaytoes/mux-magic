@@ -100,9 +100,7 @@ describe("LoadModal close interactions", () => {
   test("clicking the backdrop hides the modal", async () => {
     renderModal(true)
 
-    fireEvent.click(
-      screen.getByTestId("modal-backdrop"),
-    )
+    fireEvent.click(screen.getByTestId("modal-backdrop"))
 
     await waitFor(() =>
       expect(screen.queryByText("Load YAML")).toBeNull(),

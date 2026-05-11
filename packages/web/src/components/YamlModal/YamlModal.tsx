@@ -1,11 +1,11 @@
 import { useAtom, useAtomValue } from "jotai"
 import { useState } from "react"
 import { toYamlStr } from "../../jobs/yamlSerializer"
+import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import { yamlModalOpenAtom } from "../../state/uiAtoms"
-import { Modal } from "../../primitives/Modal/Modal"
 
 export const YamlModal = () => {
   const [isOpen, setIsOpen] = useAtom(yamlModalOpenAtom)
