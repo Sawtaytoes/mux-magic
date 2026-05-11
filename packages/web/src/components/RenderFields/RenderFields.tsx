@@ -3,7 +3,16 @@ import { useAtomValue } from "jotai"
 import { isFieldVisible } from "../../commands/fieldVisibility"
 import { commandsAtom } from "../../state/commandsAtom"
 import type { CommandField, Step } from "../../types"
+import { BooleanField } from "../BooleanField/BooleanField"
+import { EnumField } from "../EnumField/EnumField"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { JsonField } from "../JsonField/JsonField"
+import { LanguageCodeField } from "../LanguageCodeField/LanguageCodeField"
+import { LanguageCodesField } from "../LanguageCodesField/LanguageCodesField"
+import { NumberArrayField } from "../NumberArrayField/NumberArrayField"
+import { NumberField } from "../NumberField/NumberField"
+import { StringArrayField } from "../StringArrayField/StringArrayField"
+import { StringField } from "../StringField/StringField"
 
 // ─── TodoField ────────────────────────────────────────────────────────────────
 // Temporary placeholder rendered until W2A–W2D replace each case in the
@@ -39,29 +48,15 @@ const FieldDispatcher = ({
 
   switch (field.type) {
     case "boolean":
-      return (
-        <TodoField
-          type="boolean"
-          field={field}
-          step={step}
-        />
-      )
+      return <BooleanField field={field} step={step} />
     case "path":
       return (
         <TodoField type="path" field={field} step={step} />
       )
     case "number":
-      return (
-        <TodoField
-          type="number"
-          field={field}
-          step={step}
-        />
-      )
+      return <NumberField field={field} step={step} />
     case "enum":
-      return (
-        <TodoField type="enum" field={field} step={step} />
-      )
+      return <EnumField field={field} step={step} />
     case "numberWithLookup":
       return (
         <TodoField
@@ -71,41 +66,17 @@ const FieldDispatcher = ({
         />
       )
     case "languageCode":
-      return (
-        <TodoField
-          type="languageCode"
-          field={field}
-          step={step}
-        />
-      )
+      return <LanguageCodeField field={field} step={step} />
     case "languageCodes":
       return (
-        <TodoField
-          type="languageCodes"
-          field={field}
-          step={step}
-        />
+        <LanguageCodesField field={field} step={step} />
       )
     case "stringArray":
-      return (
-        <TodoField
-          type="stringArray"
-          field={field}
-          step={step}
-        />
-      )
+      return <StringArrayField field={field} step={step} />
     case "numberArray":
-      return (
-        <TodoField
-          type="numberArray"
-          field={field}
-          step={step}
-        />
-      )
+      return <NumberArrayField field={field} step={step} />
     case "json":
-      return (
-        <TodoField type="json" field={field} step={step} />
-      )
+      return <JsonField field={field} step={step} />
     case "folderMultiSelect":
       return (
         <TodoField
@@ -114,6 +85,8 @@ const FieldDispatcher = ({
           step={step}
         />
       )
+    case "string":
+      return <StringField field={field} step={step} />
     case "subtitleRules":
       return (
         <TodoField

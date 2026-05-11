@@ -76,8 +76,8 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W0b | 0 — Audit existing state | ✅ Done | 2026-05-10 | claude-sonnet-4-6, low effort, subagent run successful — commit b882c23 |
 | W0c | 0 — Parity reference capture | ✅ Done | 2026-05-10 | claude-sonnet-4-6 — 36 fixture pairs captured via Node script (buildParams inline); commit 51da90d |
 | W1 | 1 — Wave B-0 RenderFields | ✅ Done | 2026-05-10 | claude-sonnet-4-6; 8 commits; COMMANDS+buildParams+links+fieldVisibility ported, RenderFields dispatcher live, BuilderPage+yamlSerializer migrated, fixtures frozen |
-| W2A | 2 — Bundle A (BooleanField, NumberField, StringField) | ⬜ Not Started | — | |
-| W2B | 2 — Bundle B (EnumField, LanguageCodeField, LanguageCodesField) | ⬜ Not Started | — | |
+| W2A | 2 — Bundle A (BooleanField, NumberField, StringField) | 🔄 In Progress | 2026-05-10 | Haiku 4.5; porting 3 primitives |
+| W2B | 2 — Bundle B (EnumField, LanguageCodeField, LanguageCodesField) | 🔄 In Progress | 2026-05-10 | Haiku 4.5; porting 3 enum/language fields |
 | W2C | 2 — Bundle C (StringArrayField, NumberArrayField, JsonField) | ⬜ Not Started | — | |
 | W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | ⬜ Not Started | — | DslRulesBuilder may escalate |
 | W3 | 3 — Final Cleanup | ⬜ Not Started | — | Blocks on W2A+W2B+W2C+W2D |
