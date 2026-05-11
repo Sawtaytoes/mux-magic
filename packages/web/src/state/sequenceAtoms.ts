@@ -564,8 +564,8 @@ export const runOrStopStepAtom = atom(
     try {
       const response = await fetch("/sequences/run", {
         method: "POST",
-        headers: { "Content-Type": "application/yaml" },
-        body: yaml,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yaml }),
       })
       if (!response.ok) {
         set(apiRunModalAtom, (prev) =>

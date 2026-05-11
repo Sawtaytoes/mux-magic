@@ -145,7 +145,7 @@ export const runSequenceJob = (
   //   - pre-create one child Job per actual step in `pending`,
   //   - look up the (childJobId, stepId) for any FlatStep cheaply during
   //     the run.
-  const flatSteps = flattenItems(body.steps)
+  const flatSteps = flattenItems(body.steps ?? [])
   let assignedCounter = 0
   const stepIds: string[] = flatSteps.map(({ step }) => {
     if (typeof step.id === "string" && step.id.length > 0)
