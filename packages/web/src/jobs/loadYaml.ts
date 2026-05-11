@@ -11,6 +11,7 @@ type LoadContext = {
   commands: Commands
   currentPaths: PathVar[]
   currentStepCounter: number
+  seenIds: Set<string>
 }
 
 export type LoadYamlResult = {
@@ -34,8 +35,9 @@ const createStep = (
   context: LoadContext,
 ): Step => {
   context.currentStepCounter++
+  const autoId = `step${context.currentStepCounter}`
   return {
-    id: `step${context.currentStepCounter}`,
+    id: autoId,
     alias: "",
     command: commandName,
     params: {},
@@ -61,7 +63,12 @@ const loadStepItem = (
   const step = createStep(commandName, context)
 
   if (typeof raw.id === "string" && raw.id) {
-    step.id = raw.id
+    let candidateId = raw.id
+    let suffix = 2
+    while (context.seenIds.has(candidateId)) {
+      candidateId = `${raw.id}_${suffix++}`
+    }
+    step.id = candidateId
     const match = /^step(\d+)$/.exec(raw.id)
     if (match) {
       const restoredCount = Number(match[1])
@@ -70,6 +77,7 @@ const loadStepItem = (
       }
     }
   }
+  context.seenIds.add(step.id)
 
   if (typeof raw.alias === "string") step.alias = raw.alias
   if (raw.isCollapsed === true) step.isCollapsed = true
@@ -169,10 +177,19 @@ const loadGroupItem = (
   )
   return {
     kind: "group",
-    id:
-      typeof raw.id === "string" && raw.id
-        ? raw.id
-        : `group_${Math.random().toString(36).slice(2, 8)}`,
+    id: (() => {
+      const base =
+        typeof raw.id === "string" && raw.id
+          ? raw.id
+          : `group_${Math.random().toString(36).slice(2, 8)}`
+      let candidate = base
+      let suffix = 2
+      while (context.seenIds.has(candidate)) {
+        candidate = `${base}_${suffix++}`
+      }
+      context.seenIds.add(candidate)
+      return candidate
+    })(),
     label: typeof raw.label === "string" ? raw.label : "",
     isParallel: raw.isParallel === true,
     isCollapsed: raw.isCollapsed === true,
@@ -240,7 +257,8 @@ export const loadYamlFromText = (
   const context: LoadContext = {
     commands,
     currentPaths: paths,
-    currentStepCounter: 0, // reset so IDs don't collide across reloads
+    currentStepCounter: 0,
+    seenIds: new Set<string>(),
   }
 
   const steps = stepsData.map((item) =>

@@ -72,7 +72,7 @@ describe("SubtitleRulesField", () => {
     ).toBeInTheDocument()
   })
 
-  it("renders default rules preview when hasDefaultRules is true", () => {
+  it("renders default rules preview when hasDefaultRules is true", async () => {
     const step = createTestStep({
       params: { rules: [], hasDefaultRules: true },
     })
@@ -84,6 +84,9 @@ describe("SubtitleRulesField", () => {
     expect(
       screen.getByText(/Default rules/),
     ).toBeInTheDocument()
+    await userEvent.click(
+      screen.getByRole("button", { name: /Default rules/ }),
+    )
     expect(
       screen.getAllByText("setScriptInfo").length,
     ).toBeGreaterThanOrEqual(1)
@@ -119,12 +122,6 @@ describe("SubtitleRulesField", () => {
       name: /Default rules/,
     })
     expect(
-      screen.getAllByText("read-only").length,
-    ).toBeGreaterThanOrEqual(1)
-
-    await userEvent.click(toggleButton)
-
-    expect(
       screen.queryByText("read-only"),
     ).not.toBeInTheDocument()
 
@@ -133,5 +130,11 @@ describe("SubtitleRulesField", () => {
     expect(
       screen.getAllByText("read-only").length,
     ).toBeGreaterThanOrEqual(1)
+
+    await userEvent.click(toggleButton)
+
+    expect(
+      screen.queryByText("read-only"),
+    ).not.toBeInTheDocument()
   })
 })
