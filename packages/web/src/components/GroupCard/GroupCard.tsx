@@ -58,8 +58,8 @@ export const GroupCard = ({
   }
 
   const stepCount = group.steps.length
-  const hasRunnableSteps = group.steps.some(
-    (step) => Boolean(step.command),
+  const hasRunnableSteps = group.steps.some((step) =>
+    Boolean(step.command),
   )
   const parallelBadge = group.isParallel ? (
     <span className="text-[10px] uppercase tracking-wide font-semibold text-blue-300 bg-blue-950/60 border border-blue-700/50 rounded px-1.5 py-0.5">

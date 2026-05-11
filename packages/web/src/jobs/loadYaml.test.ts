@@ -11,7 +11,9 @@ const BASE_PATHS: PathVar[] = [
 
 const FAKE_COMMANDS: Commands = {
   makeDirectory: {
-    fields: [{ name: "path", type: "path", linkable: true }],
+    fields: [
+      { name: "path", type: "path", linkable: true },
+    ],
   },
   copyFiles: {
     fields: [
@@ -40,7 +42,10 @@ steps:
 `
     const result = load(yaml)
     expect(result.steps).toHaveLength(1)
-    const step = result.steps[0] as { command: string; id: string }
+    const step = result.steps[0] as {
+      command: string
+      id: string
+    }
     expect(step.command).toBe("")
     expect(step.id).toBe("step1")
   })
@@ -116,7 +121,11 @@ steps:
 
   test("restores path-variable links from @-prefixed values", () => {
     const paths: PathVar[] = [
-      { id: "basePath", label: "basePath", value: "/media" },
+      {
+        id: "basePath",
+        label: "basePath",
+        value: "/media",
+      },
     ]
     const yaml = `
 steps:

@@ -64,7 +64,8 @@ const buildItems = (
   }
 
   const findStep = (stepId: string) =>
-    flatOrder.find((entry) => entry.step.id === stepId)?.step
+    flatOrder.find((entry) => entry.step.id === stepId)
+      ?.step
 
   const items: LinkItem[] = []
 
@@ -87,7 +88,12 @@ const buildItems = (
       kind: "step",
       value: `step:${previousStep.id}:folder`,
       label: `Step ${entry.flatIndex + 1}: ${getCommandLabel(previousStep.command)}`,
-      detail: stepOutput(previousStep, paths, commands, findStep),
+      detail: stepOutput(
+        previousStep,
+        paths,
+        commands,
+        findStep,
+      ),
       sourceStepId: previousStep.id,
     })
   })
@@ -137,7 +143,9 @@ const computePosition = (
   maxHeight: number,
 ) => {
   const margin = 8
-  const initialLeft = Math.round((rect.left + rect.right) / 2 - width / 2)
+  const initialLeft = Math.round(
+    (rect.left + rect.right) / 2 - width / 2,
+  )
   const clampedLeft = (() => {
     if (initialLeft + width > window.innerWidth - margin) {
       return Math.max(
@@ -198,7 +206,12 @@ export const LinkPicker = () => {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const allItems = pickerState
-    ? buildItems(pickerState.anchor, allSteps, paths, commands)
+    ? buildItems(
+        pickerState.anchor,
+        allSteps,
+        paths,
+        commands,
+      )
     : []
   const queryLower = query.trim().toLowerCase()
   const filtered = queryLower
@@ -260,7 +273,11 @@ export const LinkPicker = () => {
     close()
     if (!anchor) return
     if (item.kind === "path") {
-      setLink(anchor.stepId, anchor.fieldName, item.pathVarId)
+      setLink(
+        anchor.stepId,
+        anchor.fieldName,
+        item.pathVarId,
+      )
     } else {
       setLink(anchor.stepId, anchor.fieldName, {
         linkedTo: item.sourceStepId,
@@ -363,7 +380,9 @@ export const LinkPicker = () => {
         )}
       </div>
       <div className="shrink-0 px-3 py-2 border-t border-slate-700 text-[11px] text-slate-500 italic">
-        {"Don't see what you need? Close this and type a path directly into the field — it saves as a new path automatically."}
+        {
+          "Don't see what you need? Close this and type a path directly into the field — it saves as a new path automatically."
+        }
       </div>
     </div>,
     document.body,

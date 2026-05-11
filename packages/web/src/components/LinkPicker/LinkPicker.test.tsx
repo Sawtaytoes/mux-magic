@@ -233,7 +233,11 @@ describe("LinkPicker step detail", () => {
       makeStep("step-3", "addSubtitles"),
     ])
     store.set(pathsAtom, [
-      makePath("basePath", "Base Path", "/home/user/videos"),
+      makePath(
+        "basePath",
+        "Base Path",
+        "/home/user/videos",
+      ),
     ])
     store.set(commandsAtom, commands)
     store.set(linkPickerStateAtom, {
@@ -247,6 +251,8 @@ describe("LinkPicker step detail", () => {
       </Provider>,
     )
 
-    expect(screen.getByText("COPY-OUTPUT")).toBeInTheDocument()
+    expect(
+      screen.getByText("COPY-OUTPUT"),
+    ).toBeInTheDocument()
   })
 })
