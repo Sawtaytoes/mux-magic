@@ -63,12 +63,14 @@ export const BuilderPage = () => {
       store.set(pathsAtom, result.paths)
       store.set(stepCounterAtom, result.stepCounter)
 
-      // Strip ?seq from the URL so a refresh doesn't keep reloading the
-      // same payload over user edits. history.replaceState avoids adding
-      // a back-button entry.
-      const url = new URL(window.location.href)
-      url.searchParams.delete("seq")
-      window.history.replaceState({}, "", url.toString())
+      // Intentionally NOT stripping ?seq= from the URL. Earlier code did so
+      // (to prevent refresh from clobbering edits) but that caused a worse
+      // regression: refresh removed both the query string AND the loaded
+      // YAML, leaving an empty builder. The acceptable trade-off here is
+      // "refresh re-loads original URL state and discards post-load edits"
+      // — still better than "refresh loses everything." The right long-term
+      // fix is live URL syncing (encode current state into ?seq= on every
+      // atom change) which is its own scoped feature.
     } catch (error) {
       // Invalid YAML shouldn't crash the page — the user can paste a
       // corrected version via LoadModal. Surface in console for debugging.
