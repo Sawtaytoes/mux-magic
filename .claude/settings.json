@@ -49,6 +49,7 @@
       "Bash(xargs -r kill)",
       "Bash(yarn *)",
       "Bash(yarn typecheck * | tail *)",
+      "mcp__playwright__browser_*",
       "PowerShell($proc | netstat -ano *)",
       "PowerShell(cat *)",
       "PowerShell(cd *)",
@@ -81,7 +82,10 @@
       "PowerShell(npm *)",
       "PowerShell(npx *)"
     ],
-    "ask": ["Bash(yarn dlx *)", "PowerShell(yarn dlx *)"]
+    "ask": [
+      "Bash(yarn dlx *)",
+      "PowerShell(yarn dlx *)"
+    ]
   },
   "hooks": {
     "WorktreeCreate": [
