@@ -302,13 +302,15 @@
    available width while honoring a 280px minimum so two cards side-
    by-side stay legible (and three+ cards wrap before getting cramped). */
 .group-card-parallel .parallel-group > .step-card {
-  flex: 1 1 280px;
+  flex: 1 1 220px;
   min-width: 0;
 }
-/* Below ~640px the parallel-group container is too narrow for two
+/* Below ~480px the parallel-group container is too narrow for two
    cards side-by-side — collapse to a single column to avoid awkward
-   half-width cards. */
-@container group-card (max-width: 640px) {
+   half-width cards. 640px was too high: on a typical laptop the
+   builder pane is 600-700px, putting group cards right at the old
+   boundary and intermittently stacking cards vertically. */
+@container group-card (max-width: 480px) {
   .group-card-parallel .parallel-group {
     flex-direction: column;
   }
