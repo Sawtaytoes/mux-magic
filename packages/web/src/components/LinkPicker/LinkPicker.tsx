@@ -250,8 +250,14 @@ export const LinkPicker = () => {
   const selectItem = (item: LinkItem) => {
     const anchor = pickerState?.anchor
     close()
-    if (anchor) {
-      setLink(anchor.stepId, anchor.fieldName, item.value)
+    if (!anchor) return
+    if (item.kind === "path") {
+      setLink(anchor.stepId, anchor.fieldName, item.pathVarId)
+    } else {
+      setLink(anchor.stepId, anchor.fieldName, {
+        linkedTo: item.sourceStepId,
+        output: "folder",
+      })
     }
   }
 

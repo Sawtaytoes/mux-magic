@@ -161,7 +161,22 @@ describe("LinkPicker selection", () => {
     const step3 = (store.get(stepsAtom) as Step[]).find(
       (step) => step.id === "step-3",
     )
-    expect(step3?.links.sourcePath).toBe("path:basePath")
+    expect(step3?.links.sourcePath).toBe("basePath")
+  })
+
+  test("clicking a step item stores the object form, not a display string", async () => {
+    const user = userEvent.setup()
+    const store = renderPicker(true)
+
+    await user.click(screen.getByText(/Step 1: Copy Files/))
+
+    const step3 = (store.get(stepsAtom) as Step[]).find(
+      (step) => step.id === "step-3",
+    )
+    expect(step3?.links.sourcePath).toEqual({
+      linkedTo: "step-1",
+      output: "folder",
+    })
   })
 
   test("closes after selection", async () => {
