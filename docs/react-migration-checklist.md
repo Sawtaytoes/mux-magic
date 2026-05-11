@@ -82,14 +82,9 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | ✅ Done | 2026-05-10 | Haiku 4.5; 4 fields ported + wired to RenderFields; DslRulesBuilder escalated to Phase 2.5 (non-mechanical port); commit a98ae9b |
 | W2.5 | 2.5 — DslRulesBuilder (escalated from W2D) | ✅ Done | 2026-05-10 | claude-sonnet-4-6, high effort. Prompt: [react-migration-prompts/W2-5.md](react-migration-prompts/W2-5.md). 5 commits: types, utils, 18 component files, wire SubtitleRulesField, mutation tests + stories. 281 tests passing. |
 | W3 | 3 — Final Cleanup | ✅ Done | 2026-05-10 | claude-sonnet-4-6 (high effort). 3 prod source files migrated to atoms; 19 test/story/MDX files cleaned; public/builder/ + public/vendor/ deleted; 10 loose legacy public assets deleted; types.window.d.ts slimmed to 7 remaining bridge globals; 1004 tests pass, typecheck clean. |
-| W4A | 4 — Verification & Master Merge | 🟡 Audit done; master merge reverted | 2026-05-10 | claude-sonnet-4-6 medium. All 4 gates passed (1004 tests, typecheck, lint, build). 36 YAML fixtures: zero diff. Checklist audited — all rows verified. types.window.d.ts: 7 globals annotated (2 implemented, 5 W5 parity-traps). Storybook: 118 stories. **Master merge (22b48b0) + tag `react-migration-complete` were force-rewound by orchestrator at user's request — user wants to manually verify the migration end-to-end before master is updated.** W4A's audit work and capture-script update remain on react-migration; re-merge to master happens after user verification + W4B + W5. |
-| W4B | 4 — E2E tests (worktree off post-W3 react-migration) | 🟡 Specs authored; ready to rebase | 2026-05-10 | claude-sonnet-4-6 medium. 4 spec files authored (jobs, modals, drag-drop, dsl-rules). `yarn e2e` was blocked by playwright config baseURL mismatch (pointed at API server, but React SPA is on web server post-W3) — orchestrator fixed config (use.baseURL → webBaseURL) and deleted dead legacy e2e/builder.spec.ts (12 refs to pre-React DOM globals). W4B can now rebase onto react-migration HEAD and run their full gate; merge to master deferred until user finishes manual verification. |
-| W5A | 5 — Parity-trap + code-smell + a11y cleanup + page stories | ✅ Done | 2026-05-11 | Sonnet high effort. 5 commits: (1) biome.json parse fix, (2) 4 bridge globals wired as Jotai actions in useBuilderActions (pasteCardAt/copyGroupYaml/runGroup/copyStepYaml), types.window.d.ts slimmed 7→3, PageHeader.mdx rewritten, buildBuilderUrl format documented + 5 round-trip tests; (3) code-smell sweep — FieldDispatcher+TodoField extracted from RenderFields, let-mutation fixed in BuilderSequenceList+JobCard, flattenSteps deduplicated into sequenceUtils with O(1) forEach+push; (4) a11y — aria-required+id added to 7 field components, 3 JsonField a11y tests; (5) BuilderPage.stories.tsx (4 stories). Gate: 1024/1024 tests, typecheck clean, 1 pre-existing lint warning. |
-| W5B | 5 — Restore missing builder UI controls + drag-and-drop fix + version footer | ✅ Done | 2026-05-11 | claude-sonnet-4-6 high effort. Drag-and-drop: installed sortablejs npm pkg, wired useDragAndDrop in BuilderSequenceList. runOrStopStep ported to atom, StepCard wired. types.window.d.ts shrank to 2 globals (all 5 parity-traps removed). YamlModal story fixed (atom-driven). Storybook mock-server-plugin: 6 new lookup endpoints + /files/default-path. biome.json missing comma fixed. 1023 tests (was 1004). |
-| W5C | 5 — Restore command field tooltips (data restoration) | ✅ Done | 2026-05-11 | Sonnet medium. **Hypothesis B confirmed:** descriptions never lived in legacy `commands.js` — they were authored as Zod `.describe()` calls in `packages/server/src/api/schemas.ts` and emitted by `packages/server/scripts/build-command-descriptions.ts` into `public/builder/js/command-descriptions.js` (deleted in W3). Restored ~100 fields verbatim from Zod across 36 commands; hidden-type fields skipped. Wire-up fixes: `CommandField` type gained `description?: string`; `FieldLabel` replaced old `data-tooltip-key` DOM bridge with `FieldTooltip` integration. Regression guard test added. Branch: `feat/restore-tooltips`. |
-| W6A | 6 — E2E completion (continues W4B) | ⬜ Not Started | — | Sonnet medium. Prompt: [react-migration-prompts/W6A.md](react-migration-prompts/W6A.md). Runs in **worktree** `.claude/worktrees/w6` on `e2e-completion` (extends W4B's `e2e-tests`). Parallel with W6B. **Spawn after W5B substantially ships UI controls.** Rebases W4B's branch, triages broken specs, adds new specs for restored controls (up/down, X, play). Defers drag-drop spec to W6B (cleanest under the swap). (Was W6/W5C in earlier naming.) |
-| W6B | 6 — Replace SortableJS with @dnd-kit (React-native DnD) | ⬜ Not Started | — | Sonnet medium. Prompt: [react-migration-prompts/W6B.md](react-migration-prompts/W6B.md). Runs in **worktree** `.claude/worktrees/w6b` on `feat/dnd-kit-migration`. Parallel with W6A — file ownership disjoint (W6A: e2e/ only; W6B: useDragAndDrop hook + StepCard/GroupCard + deps). Replaces `sortablejs` + `@types/sortablejs` with `@dnd-kit/core` + `@dnd-kit/sortable` + `@dnd-kit/utilities`. Adds keyboard a11y (arrows + Space + Escape). Drops `useDragAndDrop` hook in favor of direct composition at consumers. Owns the drag-drop e2e spec post-swap. (Was W7 in earlier naming.) |
-| W7 | 7 — Storybook reorganization + Modal primitive + missing toggle story | ⬜ Not Started | — | Sonnet medium. Prompt: [react-migration-prompts/W7.md](react-migration-prompts/W7.md). Runs in **worktree** `.claude/worktrees/w7` on `feat/storybook-reorg`. Parallel with W6A + W6B (disjoint files). Three streams: (1) extract base Modal primitive (current modals reimplement backdrop/Esc/portal); (2) regroup Storybook stories into `Fields/`, `Modals/`, `Pickers/`, `Pages/`, `Components/` via `meta.title` edits; (3) find and add story for the missing toggle/switch element (most likely GroupCard's parallel/sequential toggle, possibly extract as primitive). |
+| W4A | 4 — Verification & Master Merge | 🔄 In Progress | 2026-05-10 | Parallel with W4B. Sonnet medium. (Was W4 before rename for parallel-pair consistency.) |
+| W4B | 4 — E2E tests (worktree off post-W3 react-migration) | 🔄 In Progress | 2026-05-10 | Parallel with W4A. Sonnet medium. (Was W5 before rename.) Merges to master after W4A's master merge lands. |
+| W5 | 5 — Parity-trap + code-smell + a11y cleanup | ⬜ Not Started | — | Sonnet high effort. Prompt: [react-migration-prompts/W5.md](react-migration-prompts/W5.md). Runs after W4A+W4B. Three streams: parity quirks held back during port, code-smell sweep (getIsX collisions, let+subscribe → lastValueFrom, one component per file), final a11y pass. (Was W6 before rename.) |
 
 ### Phase 0 Audit Findings (W0b)
 
@@ -173,50 +168,6 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W3 | 2026-05-10 | chore(legacy): delete public/builder/ and public/vendor/ (85 files, 51 709 deletions) |
 | W3 | 2026-05-10 | chore(legacy): delete 10 loose legacy assets in public/ (1 230 deletions) |
 | W3 | 2026-05-10 | chore(legacy): slim types.window.d.ts — drop mediaTools interface, keep 7 remaining bridge globals |
-| W4A | 2026-05-10 | chore(checklist): W4A in progress |
-| W4A | 2026-05-10 | chore(scripts): update capture-parity-fixtures to import TS COMMANDS |
-| W4A | 2026-05-10 | docs(types): annotate types.window.d.ts bridge globals with W5 parity-trap status |
-| W4A | 2026-05-10 | chore(checklist): W4A complete — checklist audited; all rows verified against code; merged to master; W4B can rebase |
-| W4A | 2026-05-10 | Merge react-migration → master (22b48b00) + tag react-migration-complete. **W4B: master is ready — rebase e2e-tests onto master and merge when specs pass.** |
-| W5A | 2026-05-11 | chore(checklist): W5A in progress — 4 streams: parity (4 bridge atoms + MDX + buildBuilderUrl), code-smell, a11y, BuilderPage story |
-| W5A | 2026-05-11 | fix(biome): pre-existing parse error in biome.json comma |
-| W5A | 2026-05-11 | feat(builder): wire pasteCardAt/copyGroupYaml/runGroup/copyStepYaml as Jotai actions |
-| W5A | 2026-05-11 | refactor(components): extract FieldDispatcher/TodoField, fix let mutations, deduplicate flattenSteps |
-| W5A | 2026-05-11 | feat(a11y): aria-required + id for 7 field components; JsonField a11y tests |
-| W5A | 2026-05-11 | feat(stories): BuilderPage.stories.tsx — Empty/MidEdit/FullPipeline/StepRunning |
-| W5A | 2026-05-11 | chore(checklist): W5A ✅ Done — gate: 1024/1024 tests, typecheck clean, 1 pre-existing lint warning |
-| W5B | 2026-05-11 | chore(checklist): W5B in progress — drag-and-drop, runOrStopStep port, Storybook polish |
-| W5B | 2026-05-11 | fix(builder): restore drag-and-drop — install sortablejs npm pkg, switch DragAndDrop.tsx from window.Sortable to npm import, wire useDragAndDrop in BuilderSequenceList |
-| W5B | 2026-05-11 | feat(builder): port runOrStopStep to runOrStopStepAtom; wire StepCard; shrink types.window.d.ts |
-| W5B | 2026-05-11 | fix(storybook): YamlModal story sets yamlModalOpenAtom; lookup search mocks in mock-server-plugin |
-| W5B | 2026-05-11 | fix(biome): add missing comma in biome.json include array |
-| W5C | 2026-05-11 | feat(commands): restore field descriptions from server Zod schemas + wire FieldTooltip (Hypothesis B; all 36 commands, ~100 fields; verbatim from Zod .describe() calls) |
-| W5C | 2026-05-11 | test(commands): regression guard — every non-hidden field must have a description |
-| W5C | 2026-05-11 | fix(biome): restore missing comma in files.includes array |
-| W5C | 2026-05-11 | W5C complete — branch feat/restore-tooltips pushed; awaiting orchestrator merge to react-migration |
-| (orchestrator) | 2026-05-11 | Merge feat/restore-tooltips → react-migration after W5B's merge landed |
-
-## W4A Audit Findings (2026-05-10)
-
-**Pre-merge gate:** ✅ 1004 tests / 137 files pass, typecheck clean, lint 1 pre-existing warning (NumberWithLookupField `as any`), build clean (183 modules, 525 KB).
-
-**Parity matrix:** ✅ All 36 YAML fixtures round-trip with zero diff after swapping capture script import to TS COMMANDS. 8 `.input.json` files show cosmetic JSON whitespace reformat only (compact → expanded arrays); same data.
-
-**Storybook smoke:** ✅ 118 stories registered across 41 story groups. All 13 Wave B field components + DslRulesBuilder present. Key story iframes return HTTP 200.
-
-**Checklist audit — no drift found:**
-
-- All component directories verified to exist with `.tsx` + `.test.tsx` + `.stories.tsx` files
-- `packages/web/public/` directory is entirely absent (W3 deletion confirmed)
-- `packages/web/index.html` is clean React entry (no legacy `<script>` tags)
-- `window.mediaTools` references: prose-only in `PageHeader.mdx` (archival documentation, not code)
-- Spot-tested: BooleanField (5 tests ✅), EnumField (4 ✅), DslRulesBuilder (17 ✅), LoadModal (12 ✅), PathField (5 ✅), buildParams (12 ✅)
-
-**`types.window.d.ts` final state:** File retained with 7 globals annotated.
-
-- `getCommandFieldDescription` — registered by `packages/server/scripts/build-command-descriptions.ts` at build time ✅
-- `openVideoModal` — registered by `FileExplorerModal` on mount; consumed by `PromptModal` ✅
-- `pasteCardAt`, `copyGroupYaml`, `runGroup`, `runOrStopStep`, `copyStepYaml` — **W5 parity-traps**: callers exist in GroupCard/StepCard/BuilderSequenceList but implementations were in deleted legacy `sequence-editor.js`. All use `?.` so UI degrades gracefully (buttons are no-ops). W5 must port these 5 to Jotai atoms + API calls.
 
 ## DslRulesBuilder Escalation (W2D)
 
