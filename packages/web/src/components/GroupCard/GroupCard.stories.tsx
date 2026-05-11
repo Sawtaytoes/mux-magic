@@ -95,3 +95,23 @@ export const Collapsed: Story = {
     isLast: true,
   },
 }
+
+const singleStepGroup: Group = {
+  kind: "group",
+  id: "group_3",
+  label: "",
+  isParallel: false,
+  isCollapsed: false,
+  steps: [makeStep("step_5")],
+}
+
+export const SingleStep: Story = {
+  decorators: [withStore(singleStepGroup)],
+  args: {
+    group: singleStepGroup,
+    itemIndex: 0,
+    startingFlatIndex: 0,
+    isFirst: true,
+    isLast: true,
+  },
+}

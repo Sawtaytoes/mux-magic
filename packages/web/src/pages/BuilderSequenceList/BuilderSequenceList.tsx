@@ -1,6 +1,7 @@
 import {
   DndContext,
   type DragEndEvent,
+  type DragOverEvent,
   DragOverlay,
   type DragStartEvent,
   KeyboardSensor,
@@ -31,6 +32,7 @@ export const BuilderSequenceList = () => {
   const [activeId, setActiveId] = useState<string | null>(
     null,
   )
+  const [overId, setOverId] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -43,23 +45,38 @@ export const BuilderSequenceList = () => {
     setActiveId(event.active.id as string)
   }
 
+  const handleDragOver = (event: DragOverEvent) => {
+    setOverId((event.over?.id as string) ?? null)
+  }
+
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null)
+    setOverId(null)
     const { active, over } = event
     if (!over || active.id === over.id) return
 
     const sourceContainerId =
       (active.data.current?.sortable
         ?.containerId as string) ?? "top-level"
-    const overContainerId =
+    let targetContainerId =
       (over.data.current?.sortable
         ?.containerId as string) ?? "top-level"
 
+    let resolvedOverId = over.id as string
+    if (resolvedOverId.endsWith("-droppable")) {
+      const groupId = resolvedOverId.replace(
+        /-droppable$/,
+        "",
+      )
+      targetContainerId = groupId
+      resolvedOverId = ""
+    }
+
     dragReorder({
       activeId: active.id as string,
-      overId: over.id as string,
+      overId: resolvedOverId,
       sourceContainerId,
-      targetContainerId: overContainerId,
+      targetContainerId,
     })
   }
 
@@ -106,6 +123,7 @@ export const BuilderSequenceList = () => {
               startingFlatIndex={acc.flatIndex}
               isFirst={itemIndex === 0}
               isLast={itemIndex === steps.length - 1}
+              isDropTarget={overId === item.id}
             />,
           ],
           flatIndex: acc.flatIndex + item.steps.length,
@@ -123,6 +141,7 @@ export const BuilderSequenceList = () => {
             index={acc.flatIndex}
             isFirst={itemIndex === 0}
             isLast={itemIndex === steps.length - 1}
+            isDropTarget={overId === step.id}
           />,
         ],
         flatIndex: acc.flatIndex + 1,
@@ -157,6 +176,12 @@ export const BuilderSequenceList = () => {
         .find((step) => step.id === activeId))
     : null
 
+  const activeGroup = activeId
+    ? ((steps.find(
+        (item) => isGroup(item) && item.id === activeId,
+      ) as Group | undefined) ?? null)
+    : null
+
   const activeStepFlatIndex = activeStep
     ? steps
         .filter((item) => !isGroup(item))
@@ -188,7 +213,12 @@ export const BuilderSequenceList = () => {
     <DndContext
       sensors={sensors}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={() => {
+        setActiveId(null)
+        setOverId(null)
+      }}
     >
       <SortableContext
         id="top-level"
@@ -210,6 +240,17 @@ export const BuilderSequenceList = () => {
                   ? 0
                   : activeStepFlatIndex
               }
+              isFirst={false}
+              isLast={false}
+              isDragOverlay
+            />
+          </div>
+        ) : activeGroup ? (
+          <div className="opacity-90 rotate-1 shadow-2xl">
+            <GroupCard
+              group={activeGroup}
+              itemIndex={0}
+              startingFlatIndex={0}
               isFirst={false}
               isLast={false}
               isDragOverlay
