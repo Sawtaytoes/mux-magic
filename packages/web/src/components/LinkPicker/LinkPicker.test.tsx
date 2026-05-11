@@ -13,10 +13,11 @@ import {
   test,
   vi,
 } from "vitest"
+import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { linkPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { PathVar, Step } from "../../types"
+import type { Commands, PathVar, Step } from "../../types"
 import { LinkPicker } from "./LinkPicker"
 
 const TRIGGER_RECT = {
@@ -197,5 +198,46 @@ describe("LinkPicker keyboard", () => {
     await user.keyboard("{Escape}")
 
     expect(store.get(linkPickerStateAtom)).toBeNull()
+  })
+})
+
+describe("LinkPicker step detail", () => {
+  test("step item shows computed output path as detail when commands are loaded", () => {
+    const store = createStore()
+    const commands: Commands = {
+      copyFiles: {
+        summary: "Copy files",
+        tag: "File Operations",
+        outputFolderName: "COPY-OUTPUT",
+        fields: [
+          {
+            name: "sourcePath",
+            type: "path",
+            label: "Source Path",
+            required: true,
+          },
+        ],
+      },
+    }
+    store.set(stepsAtom, [
+      makeStep("step-1", "copyFiles"),
+      makeStep("step-3", "addSubtitles"),
+    ])
+    store.set(pathsAtom, [
+      makePath("basePath", "Base Path", "/home/user/videos"),
+    ])
+    store.set(commandsAtom, commands)
+    store.set(linkPickerStateAtom, {
+      anchor: { stepId: "step-3", fieldName: "sourcePath" },
+      triggerRect: TRIGGER_RECT,
+    })
+
+    render(
+      <Provider store={store}>
+        <LinkPicker />
+      </Provider>,
+    )
+
+    expect(screen.getByText("COPY-OUTPUT")).toBeInTheDocument()
   })
 })

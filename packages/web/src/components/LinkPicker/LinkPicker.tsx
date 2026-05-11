@@ -1,9 +1,11 @@
 import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
+import { stepOutput } from "../../commands/links"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
 import { flattenSteps } from "../../jobs/sequenceUtils"
+import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import {
   type LinkPickerAnchor,
@@ -12,6 +14,7 @@ import {
 } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type {
+  Commands,
   PathVar,
   SequenceItem,
   StepLink,
@@ -50,6 +53,7 @@ const buildItems = (
   anchor: LinkPickerAnchor,
   allSteps: SequenceItem[],
   paths: PathVar[],
+  commands: Commands,
 ): LinkItem[] => {
   const flatOrder = flattenSteps(allSteps)
   const currentIndex = flatOrder.findIndex(
@@ -59,9 +63,12 @@ const buildItems = (
     return []
   }
 
+  const findStep = (stepId: string) =>
+    flatOrder.find((entry) => entry.step.id === stepId)?.step
+
   const items: LinkItem[] = []
 
-  for (const pathVar of paths) {
+  paths.forEach((pathVar) => {
     items.push({
       kind: "path",
       value: `path:${pathVar.id}`,
@@ -69,21 +76,21 @@ const buildItems = (
       detail: pathVar.value || "",
       pathVarId: pathVar.id,
     })
-  }
+  })
 
-  for (const entry of flatOrder.slice(0, currentIndex)) {
+  flatOrder.slice(0, currentIndex).forEach((entry) => {
     const previousStep = entry.step
     if (previousStep.command === null) {
-      continue
+      return
     }
     items.push({
       kind: "step",
       value: `step:${previousStep.id}:folder`,
       label: `Step ${entry.flatIndex + 1}: ${getCommandLabel(previousStep.command)}`,
-      detail: "",
+      detail: stepOutput(previousStep, paths, commands, findStep),
       sourceStepId: previousStep.id,
     })
-  }
+  })
 
   return items
 }
@@ -184,13 +191,14 @@ export const LinkPicker = () => {
   )
   const allSteps = useAtomValue(stepsAtom)
   const paths = useAtomValue(pathsAtom)
+  const commands = useAtomValue(commandsAtom)
   const { setLink } = useBuilderActions()
   const [query, setQuery] = useState("")
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const allItems = pickerState
-    ? buildItems(pickerState.anchor, allSteps, paths)
+    ? buildItems(pickerState.anchor, allSteps, paths, commands)
     : []
   const queryLower = query.trim().toLowerCase()
   const filtered = queryLower
@@ -209,13 +217,14 @@ export const LinkPicker = () => {
       pickerState.anchor,
       allSteps,
       paths,
+      commands,
     )
     setQuery("")
     setActiveIndex(
       findInitialIndex(items, pickerState.anchor, allSteps),
     )
     setTimeout(() => inputRef.current?.focus(), 0)
-  }, [pickerState, allSteps, paths])
+  }, [pickerState, allSteps, paths, commands])
 
   useEffect(() => {
     if (!pickerState) {
