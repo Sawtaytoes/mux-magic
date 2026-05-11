@@ -13,11 +13,7 @@
       "hasChapterSyncOffset": true,
       "globalOffset": 100,
       "includeChapters": true,
-      "offsets": [
-        0,
-        -200,
-        150
-      ]
+      "offsets": [0, -200, 150]
     },
     "links": {
       "mediaFilesPath": "basePath",

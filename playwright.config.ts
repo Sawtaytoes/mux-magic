@@ -1,9 +1,11 @@
 import { defineConfig, devices } from "@playwright/test"
 
-// E2E tests against the builder UI. The api-server boots an HTTP server
-// on whichever PORT the project's .env declares, serves
-// /api/builder/index.html from public/, and exposes /commands/* +
-// /queries/*. Playwright drives it through Chromium.
+// E2E tests against the React app. Post-react-migration, the React SPA is
+// served by the prod web-server at WEB_PORT (default 4173). The api-server
+// still runs at PORT (default 3000) for backend HTTP calls made from the
+// browser. Playwright navigates to the SPA, so use.baseURL points at the
+// web server; the webServer entries below still boot both because the SPA
+// hits the API at runtime.
 //
 // Ports come from process.env (shell / CI workflow) first, falling back
 // to .env if present, then to the same defaults as
@@ -18,7 +20,7 @@ try {
 const port = Number(process.env.PORT ?? 3000)
 const webPort = Number(process.env.WEB_PORT ?? 4173)
 
-const baseURL = `http://localhost:${port}`
+const apiBaseURL = `http://localhost:${port}`
 const webBaseURL = `http://localhost:${webPort}`
 
 export default defineConfig({
@@ -29,7 +31,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL,
+    baseURL: webBaseURL,
     trace: "on-first-retry",
   },
   projects: [
@@ -44,7 +46,7 @@ export default defineConfig({
     {
       name: "API",
       command: "yarn prod:api-server",
-      url: `${baseURL}/`,
+      url: `${apiBaseURL}/`,
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
       stderr: "pipe",
