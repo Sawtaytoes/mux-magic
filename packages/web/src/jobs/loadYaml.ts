@@ -53,10 +53,9 @@ const loadStepItem = (
   const { commands, currentPaths } = context
   const raw = item as Record<string, unknown>
 
-  if (!raw.command)
-    throw new Error('Each step must have a "command" key')
-  const commandName = raw.command as string
-  if (!commands[commandName])
+  const commandName =
+    typeof raw.command === "string" ? raw.command : ""
+  if (commandName && !commands[commandName])
     throw new Error(`Unknown command: ${commandName}`)
 
   const step = createStep(commandName, context)
@@ -74,6 +73,9 @@ const loadStepItem = (
 
   if (typeof raw.alias === "string") step.alias = raw.alias
   if (raw.isCollapsed === true) step.isCollapsed = true
+
+  // Blank placeholder step — no command definition to look up.
+  if (!commandName) return step
 
   const commandDefinition = commands[commandName]
   const rawParams = raw.params as
