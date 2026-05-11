@@ -6,13 +6,17 @@ import type { CommandField, Step } from "../../types"
 import { BooleanField } from "../BooleanField/BooleanField"
 import { EnumField } from "../EnumField/EnumField"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { FolderMultiSelectField } from "../FolderMultiSelectField/FolderMultiSelectField"
 import { JsonField } from "../JsonField/JsonField"
 import { LanguageCodeField } from "../LanguageCodeField/LanguageCodeField"
 import { LanguageCodesField } from "../LanguageCodesField/LanguageCodesField"
 import { NumberArrayField } from "../NumberArrayField/NumberArrayField"
 import { NumberField } from "../NumberField/NumberField"
+import { NumberWithLookupField } from "../NumberWithLookupField/NumberWithLookupField"
+import { PathField } from "../PathField/PathField"
 import { StringArrayField } from "../StringArrayField/StringArrayField"
 import { StringField } from "../StringField/StringField"
+import { SubtitleRulesField } from "../SubtitleRulesField/SubtitleRulesField"
 
 // ─── TodoField ────────────────────────────────────────────────────────────────
 // Temporary placeholder rendered until W2A–W2D replace each case in the
@@ -50,17 +54,14 @@ const FieldDispatcher = ({
     case "boolean":
       return <BooleanField field={field} step={step} />
     case "path":
-      return (
-        <TodoField type="path" field={field} step={step} />
-      )
+      return <PathField field={field} step={step} />
     case "number":
       return <NumberField field={field} step={step} />
     case "enum":
       return <EnumField field={field} step={step} />
     case "numberWithLookup":
       return (
-        <TodoField
-          type="numberWithLookup"
+        <NumberWithLookupField
           field={field}
           step={step}
         />
@@ -79,8 +80,7 @@ const FieldDispatcher = ({
       return <JsonField field={field} step={step} />
     case "folderMultiSelect":
       return (
-        <TodoField
-          type="folderMultiSelect"
+        <FolderMultiSelectField
           field={field}
           step={step}
         />
@@ -89,8 +89,7 @@ const FieldDispatcher = ({
       return <StringField field={field} step={step} />
     case "subtitleRules":
       return (
-        <TodoField
-          type="subtitleRules"
+        <SubtitleRulesField
           field={field}
           step={step}
         />
