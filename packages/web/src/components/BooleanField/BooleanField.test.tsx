@@ -3,14 +3,9 @@ import {
   render,
   screen,
 } from "@testing-library/react"
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  test,
-  vi,
-} from "vitest"
+import { createStore, Provider } from "jotai"
+import { afterEach, describe, expect, test } from "vitest"
+import { stepsAtom } from "../../state/stepsAtom"
 import type { CommandField, Step } from "../../types"
 import { BooleanField } from "./BooleanField"
 
@@ -31,52 +26,50 @@ const mockField: CommandField = {
   label: "Enable feature",
 }
 
+const renderField = (
+  step: Step = mockStep,
+  field: CommandField = mockField,
+) => {
+  const store = createStore()
+  store.set(stepsAtom, [step])
+  render(
+    <Provider store={store}>
+      <BooleanField field={field} step={step} />
+    </Provider>,
+  )
+}
+
 afterEach(() => {
   cleanup()
 })
 
-beforeEach(() => {
-  window.setParamAndRender = vi.fn()
-})
-
 describe("BooleanField", () => {
   test("renders a checkbox", () => {
-    render(
-      <BooleanField step={mockStep} field={mockField} />,
-    )
+    renderField()
     expect(screen.getByRole("checkbox")).toBeInTheDocument()
   })
 
   test("renders the field label", () => {
-    render(
-      <BooleanField step={mockStep} field={mockField} />,
-    )
+    renderField()
     expect(
       screen.getByText("Enable feature"),
     ).toBeInTheDocument()
   })
 
   test("reflects a true param as checked", () => {
-    render(
-      <BooleanField step={mockStep} field={mockField} />,
-    )
+    renderField()
     expect(screen.getByRole("checkbox")).toBeChecked()
   })
 
   test("reflects a false param as unchecked", () => {
     const step = { ...mockStep, params: { enabled: false } }
-    render(<BooleanField step={step} field={mockField} />)
+    renderField(step)
     expect(screen.getByRole("checkbox")).not.toBeChecked()
   })
 
-  test("sets the tooltip data attribute", () => {
-    const { container } = render(
-      <BooleanField step={mockStep} field={mockField} />,
-    )
-    expect(
-      container.querySelector(
-        "[data-tooltip-key='ffmpeg:enabled']",
-      ),
-    ).not.toBeNull()
+  test("uses default when param missing", () => {
+    const field = { ...mockField, default: true }
+    renderField({ ...mockStep, params: {} }, field)
+    expect(screen.getByRole("checkbox")).toBeChecked()
   })
 })

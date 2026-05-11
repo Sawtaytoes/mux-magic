@@ -142,6 +142,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W1 | 2026-05-10 | refactor(builder): hydrate commandsAtom from TS commands module |
 | W1 | 2026-05-10 | refactor(jobs): yamlSerializer uses TS buildParams; drop window.mediaTools branch |
 | W1 | 2026-05-10 | test(commands): freeze `__fixtures__`/commands.ts for Phase 2 workers |
+| W2A | 2026-05-10 | feat(fields): port BooleanField from vanilla JS to React |
 
 ## Open Questions
 
