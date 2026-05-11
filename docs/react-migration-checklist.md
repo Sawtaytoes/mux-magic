@@ -144,6 +144,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W1 | 2026-05-10 | test(commands): freeze `__fixtures__`/commands.ts for Phase 2 workers |
 | W2A | 2026-05-10 | feat(fields): port BooleanField from vanilla JS to React |
 | W2A | 2026-05-10 | feat(fields): port NumberField from vanilla JS to React (dropped scheduleReverseLookup; added stories) |
+| W2A | 2026-05-10 | feat(fields): port StringField + add string case to RenderFields dispatcher (all three W2A fields wired) |
 
 ## Open Questions
 

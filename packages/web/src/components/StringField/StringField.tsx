@@ -1,27 +1,25 @@
+import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { CommandField, Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
 
 type StringFieldProps = {
-  step: Step
   field: CommandField
+  step: Step
 }
 
 export const StringField = ({
-  step,
   field,
+  step,
 }: StringFieldProps) => {
-  const value = String(step.params[field.name] ?? "")
+  const { setParam } = useBuilderActions()
+  const value = step.params[field.name] ?? ""
 
   const handleInput = (
     event: React.FormEvent<HTMLInputElement>,
   ) => {
     const newValue = (event.target as HTMLInputElement)
       .value
-    window.setParam?.(
-      step.id,
-      field.name,
-      newValue || undefined,
-    )
+    setParam(step.id, field.name, newValue || undefined)
   }
 
   return (
@@ -30,7 +28,7 @@ export const StringField = ({
       <input
         id={`${step.command}-${field.name}`}
         type="text"
-        defaultValue={value}
+        defaultValue={String(value)}
         placeholder={field.placeholder ?? ""}
         onInput={handleInput}
         className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"

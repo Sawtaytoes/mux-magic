@@ -3,14 +3,9 @@ import {
   render,
   screen,
 } from "@testing-library/react"
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  test,
-  vi,
-} from "vitest"
+import { createStore, Provider } from "jotai"
+import { afterEach, describe, expect, test } from "vitest"
+import { stepsAtom } from "../../state/stepsAtom"
 import type { CommandField, Step } from "../../types"
 import { StringField } from "./StringField"
 
@@ -32,33 +27,36 @@ const mockField: CommandField = {
   placeholder: "e.g. output.mp4",
 }
 
+const renderField = (
+  step: Step = mockStep,
+  field: CommandField = mockField,
+) => {
+  const store = createStore()
+  store.set(stepsAtom, [step])
+  render(
+    <Provider store={store}>
+      <StringField field={field} step={step} />
+    </Provider>,
+  )
+}
+
 afterEach(() => {
   cleanup()
 })
 
-beforeEach(() => {
-  window.setParam = vi.fn()
-})
-
 describe("StringField", () => {
   test("renders a text input", () => {
-    render(
-      <StringField step={mockStep} field={mockField} />,
-    )
+    renderField()
     expect(screen.getByRole("textbox")).toBeInTheDocument()
   })
 
   test("renders the field label", () => {
-    render(
-      <StringField step={mockStep} field={mockField} />,
-    )
+    renderField()
     expect(screen.getByText("Filename")).toBeInTheDocument()
   })
 
   test("shows the current param value", () => {
-    render(
-      <StringField step={mockStep} field={mockField} />,
-    )
+    renderField()
     const input = screen.getByRole(
       "textbox",
     ) as HTMLInputElement
@@ -67,9 +65,18 @@ describe("StringField", () => {
 
   test("shows the placeholder when provided", () => {
     const step = { ...mockStep, params: {} }
-    render(<StringField step={step} field={mockField} />)
+    renderField(step)
     expect(
       screen.getByPlaceholderText("e.g. output.mp4"),
     ).toBeInTheDocument()
+  })
+
+  test("empty string defaults to empty", () => {
+    const step = { ...mockStep, params: { filename: "" } }
+    renderField(step)
+    const input = screen.getByRole(
+      "textbox",
+    ) as HTMLInputElement
+    expect(input.value).toBe("")
   })
 })
