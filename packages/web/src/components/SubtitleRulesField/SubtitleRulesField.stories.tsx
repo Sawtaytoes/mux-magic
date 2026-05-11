@@ -6,6 +6,10 @@ import { SubtitleRulesField } from "./SubtitleRulesField"
 const meta: Meta<typeof SubtitleRulesField> = {
   title: "Fields/SubtitleRulesField",
   component: SubtitleRulesField,
+  parameters: {
+    layout: "padded",
+    backgrounds: { default: "dark" },
+  },
 }
 
 export default meta
@@ -30,7 +34,7 @@ export const Empty: Story = {
   },
 }
 
-export const WithSampleRules: Story = {
+export const WithDslRules: Story = {
   args: {
     field,
     step: {
@@ -40,9 +44,13 @@ export const WithSampleRules: Story = {
       params: {
         rules: [
           {
+            type: "setScriptInfo",
+            key: "Title",
+            value: "My Show",
+          },
+          {
             type: "setStyleFields",
-            predicates: [{ matches: { name: "Sample" } }],
-            fields: { fontname: { value: "Arial" } },
+            fields: { MarginV: "60" },
           },
         ],
       },
