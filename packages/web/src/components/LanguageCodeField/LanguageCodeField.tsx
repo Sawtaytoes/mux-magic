@@ -1,3 +1,4 @@
+import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { CommandField, Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
 
@@ -10,6 +11,7 @@ export const LanguageCodeField = ({
   step,
   field,
 }: LanguageCodeFieldProps) => {
+  const { setParam } = useBuilderActions()
   const value = String(step.params[field.name] ?? "")
 
   const handleInput = (
@@ -17,11 +19,7 @@ export const LanguageCodeField = ({
   ) => {
     const newValue = (event.target as HTMLInputElement)
       .value
-    window.setParam?.(
-      step.id,
-      field.name,
-      newValue || undefined,
-    )
+    setParam(step.id, field.name, newValue || undefined)
   }
 
   return (
