@@ -13,12 +13,16 @@ The rule is enabled **globally** (every `**/*.{ts,tsx}` file). This means runnin
 
 ## Two workers, sequenced
 
-| Worker | Scope | Prompt | Start when |
+| Worker | Scope | Prompt | Status |
 |---|---|---|---|
-| WBN-A | `packages/server/**` | [WBN-A.md](WBN-A.md) | Now — server is untouched by React migration |
-| WBN-B | `packages/web/**` + `packages/shared/**` | _(generated after WBN-A reports AND react-migration merges to master)_ | After W4 (react-migration → master) |
+| WBN-A | `packages/server/**` | [WBN-A.md](WBN-A.md) | ✅ Done — 33 files renamed, +174/-156, commits 7ce722d (rule expansion) + f0f0dd5 (renames) |
+| WBN-B | `packages/web/**` + `packages/shared/**` | _(generated after react-migration merges to master)_ | ⬜ Deferred until W4 |
 
-WBN-B waits because `packages/web/**` is under active churn from W2A–W2D. Renaming web booleans during that window creates endless merge conflicts. After react-migration merges to master, the rebase-and-rename pass is safe.
+WBN-B is held until after react-migration merges to master. Running it now would create endless merge conflicts with W2/W3 churn in `packages/web/**`.
+
+### Lesson from WBN-A — saved as memory `feedback_rename_strategy.md`
+
+ESLint's `@typescript-eslint/naming-convention` fires on the **declaration**, not on references. WBN-A hit a partial-rename bug (`groupFailed` → `hasGroupFailed` renamed at the `let` declaration in `sequenceRunner.ts` but not at the downstream references), causing typecheck failures mid-rename. **Use `Edit` with `replace_all: true` scoped to one file** for local-variable renames. **Grep-then-rename per file** for exported symbols. ESLint catches the next violation after you fix one; it isn't a global rename engine. WBN-B's prompt will bake this in.
 
 ## Why the rule is global if the work is staged
 

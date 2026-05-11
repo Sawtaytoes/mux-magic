@@ -182,8 +182,8 @@ Separate from the React migration recovery, but tracked here for visibility. Enf
 
 | Worker | Scope | Status | Date | Notes |
 |---|---|---|---|---|
-| WBN-A | `packages/server/**` boolean renames | ⬜ Not Started | — | Sonnet medium. Prompt: [boolean-rename-prompts/WBN-A.md](boolean-rename-prompts/WBN-A.md). Can spawn now — server is not under react-migration churn. Branch: `feat/boolean-is-has-naming`. |
-| WBN-B | `packages/web/**` + `packages/shared/**` boolean renames | ⬜ Not Started (deferred) | — | Sonnet medium. **Wait for react-migration to merge to master before spawning** — running now would conflict with W2A–W2D and W3. Prompt deferred; will be generated after W4. |
+| WBN-A | `packages/server/**` boolean renames | ✅ Done | 2026-05-10 | Sonnet; 33 files renamed (+174/-156). Commits 7ce722d (rule expansion to cover params + properties) + f0f0dd5 (rename sweep). Lesson saved as memory `feedback_rename_strategy.md`: ESLint naming-convention fires on declarations not references — use `Edit` with `replace_all: true` scoped per file for local renames. |
+| WBN-B | `packages/web/**` + `packages/shared/**` boolean renames | ⬜ Not Started (deferred) | — | Sonnet medium. **Wait for react-migration to merge to master before spawning** — running now would conflict with W2A–W2D and W3. Prompt deferred; will be generated after W4. WBN-B's prompt bakes in WBN-A's rename-strategy lesson. |
 
 ## Open Questions
 
