@@ -111,6 +111,15 @@ describe("LinkPicker visibility", () => {
       screen.getByTestId("link-picker"),
     ).toBeInTheDocument()
   })
+
+  test("shows footer hint text", () => {
+    renderPicker(true)
+    expect(
+      screen.getByText(
+        /Don't see what you need\? Close this and type a path directly/,
+      ),
+    ).toBeInTheDocument()
+  })
 })
 
 describe("LinkPicker items", () => {

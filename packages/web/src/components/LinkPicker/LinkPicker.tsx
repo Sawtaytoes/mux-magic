@@ -362,6 +362,9 @@ export const LinkPicker = () => {
           })
         )}
       </div>
+      <div className="shrink-0 px-3 py-2 border-t border-slate-700 text-[11px] text-slate-500 italic">
+        {"Don't see what you need? Close this and type a path directly into the field — it saves as a new path automatically."}
+      </div>
     </div>,
     document.body,
   )

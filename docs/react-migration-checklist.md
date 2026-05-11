@@ -220,6 +220,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W7B | 2026-05-11 | fix(link-picker): store bare pathVarId + step object instead of display strings |
 | W7B | 2026-05-11 | fix(link-picker): center-align dropdown under trigger (was right-aligned) |
 | W7B | 2026-05-11 | fix(link-picker): show computed output path as detail for step items |
+| W7B | 2026-05-11 | fix(link-picker): restore "don't see what you need" footer hint |
 
 ## W4A Audit Findings (2026-05-10)
 
