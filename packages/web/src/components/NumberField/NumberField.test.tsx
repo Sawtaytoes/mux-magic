@@ -3,14 +3,9 @@ import {
   render,
   screen,
 } from "@testing-library/react"
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  test,
-  vi,
-} from "vitest"
+import { createStore, Provider } from "jotai"
+import { afterEach, describe, expect, test } from "vitest"
+import { stepsAtom } from "../../state/stepsAtom"
 import type { CommandField, Step } from "../../types"
 import { NumberField } from "./NumberField"
 
@@ -32,36 +27,38 @@ const mockField: CommandField = {
   placeholder: "e.g. 1920",
 }
 
+const renderField = (
+  step: Step = mockStep,
+  field: CommandField = mockField,
+) => {
+  const store = createStore()
+  store.set(stepsAtom, [step])
+  render(
+    <Provider store={store}>
+      <NumberField field={field} step={step} />
+    </Provider>,
+  )
+}
+
 afterEach(() => {
   cleanup()
 })
 
-beforeEach(() => {
-  window.setParam = vi.fn()
-  window.scheduleReverseLookup = vi.fn()
-})
-
 describe("NumberField", () => {
   test("renders a number input", () => {
-    render(
-      <NumberField step={mockStep} field={mockField} />,
-    )
+    renderField()
     expect(
       screen.getByRole("spinbutton"),
     ).toBeInTheDocument()
   })
 
   test("renders the field label", () => {
-    render(
-      <NumberField step={mockStep} field={mockField} />,
-    )
+    renderField()
     expect(screen.getByText("Width")).toBeInTheDocument()
   })
 
   test("shows the current param value", () => {
-    render(
-      <NumberField step={mockStep} field={mockField} />,
-    )
+    renderField()
     const input = screen.getByRole(
       "spinbutton",
     ) as HTMLInputElement
@@ -69,9 +66,16 @@ describe("NumberField", () => {
   })
 
   test("does not render companion text when missing", () => {
-    render(
-      <NumberField step={mockStep} field={mockField} />,
-    )
+    renderField()
     expect(screen.queryByTitle("")).toBeNull()
+  })
+
+  test("uses default when param missing", () => {
+    const field = { ...mockField, default: 1080 }
+    renderField({ ...mockStep, params: {} }, field)
+    const input = screen.getByRole(
+      "spinbutton",
+    ) as HTMLInputElement
+    expect(input.value).toBe("1080")
   })
 })

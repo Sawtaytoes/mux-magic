@@ -1,15 +1,17 @@
+import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { CommandField, Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
 
 type NumberFieldProps = {
-  step: Step
   field: CommandField
+  step: Step
 }
 
 export const NumberField = ({
-  step,
   field,
+  step,
 }: NumberFieldProps) => {
+  const { setParam } = useBuilderActions()
   const value =
     step.params[field.name] ?? field.default ?? ""
   const companion = field.companionNameField
@@ -21,14 +23,7 @@ export const NumberField = ({
   ) => {
     const raw = (event.target as HTMLInputElement).value
     const parsed = raw === "" ? undefined : Number(raw)
-    window.setParam?.(step.id, field.name, parsed)
-    if (field.companionNameField) {
-      window.scheduleReverseLookup?.(
-        step.id,
-        field.name,
-        raw,
-      )
-    }
+    setParam(step.id, field.name, parsed)
   }
 
   return (
