@@ -39,63 +39,65 @@ export const SetScriptInfoRuleBody = ({
 
   return (
     <div className="mt-2">
-      <div className="flex items-center gap-2">
-        <label
-          htmlFor={`ssr-key-${ruleIndex}`}
-          className="text-xs text-slate-400 w-10 shrink-0"
-        >
-          key
-        </label>
-        <input
-          id={`ssr-key-${ruleIndex}`}
-          type="text"
-          value={draftKey}
-          placeholder="Title"
-          readOnly={isReadOnly}
-          onChange={(event) => {
-            setDraftKey(event.target.value)
-          }}
-          onBlur={() => {
-            onCommitRules(
-              setScriptInfoField({
-                rules,
-                ruleIndex,
-                fieldName: "key",
-                value: draftKey,
-              }),
-            )
-          }}
-          className="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
-        />
-      </div>
-      <div className="flex items-center gap-2 mt-1.5">
-        <label
-          htmlFor={`ssr-value-${ruleIndex}`}
-          className="text-xs text-slate-400 w-10 shrink-0"
-        >
-          value
-        </label>
-        <input
-          id={`ssr-value-${ruleIndex}`}
-          type="text"
-          value={draftValue}
-          placeholder="My Subtitles"
-          readOnly={isReadOnly}
-          onChange={(event) => {
-            setDraftValue(event.target.value)
-          }}
-          onBlur={() => {
-            onCommitRules(
-              setScriptInfoField({
-                rules,
-                ruleIndex,
-                fieldName: "value",
-                value: draftValue,
-              }),
-            )
-          }}
-          className="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
-        />
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <label
+            htmlFor={`ssr-key-${ruleIndex}`}
+            className="block text-xs text-slate-400 mb-0.5"
+          >
+            Key
+          </label>
+          <input
+            id={`ssr-key-${ruleIndex}`}
+            type="text"
+            value={draftKey}
+            placeholder="Title"
+            readOnly={isReadOnly}
+            onChange={(event) => {
+              setDraftKey(event.target.value)
+            }}
+            onBlur={() => {
+              onCommitRules(
+                setScriptInfoField({
+                  rules,
+                  ruleIndex,
+                  fieldName: "key",
+                  value: draftKey,
+                }),
+              )
+            }}
+            className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <label
+            htmlFor={`ssr-value-${ruleIndex}`}
+            className="block text-xs text-slate-400 mb-0.5"
+          >
+            Value
+          </label>
+          <input
+            id={`ssr-value-${ruleIndex}`}
+            type="text"
+            value={draftValue}
+            placeholder="My Subtitles"
+            readOnly={isReadOnly}
+            onChange={(event) => {
+              setDraftValue(event.target.value)
+            }}
+            onBlur={() => {
+              onCommitRules(
+                setScriptInfoField({
+                  rules,
+                  ruleIndex,
+                  fieldName: "value",
+                  value: draftValue,
+                }),
+              )
+            }}
+            className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+          />
+        </div>
       </div>
       <WhenBuilder
         rules={rules}

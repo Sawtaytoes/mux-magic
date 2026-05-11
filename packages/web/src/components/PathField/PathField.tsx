@@ -149,14 +149,6 @@ export const PathField = ({
         }}
         className={`w-full bg-slate-${isObjectLink ? "900" : "700"} text-slate-${isObjectLink ? "400" : "200"} text-xs rounded px-2 py-1.5 border border-slate-${isObjectLink ? "700" : "600"} focus:outline-none focus:border-blue-500 font-mono`}
       />
-      {link &&
-        typeof link === "object" &&
-        link.linkedTo && (
-          <div className="text-xs text-slate-400 mt-1">
-            Linked → {link.linkedTo}.
-            {link.output ?? "folder"}
-          </div>
-        )}
     </div>
   )
 }

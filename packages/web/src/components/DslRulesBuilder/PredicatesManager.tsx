@@ -127,6 +127,9 @@ const PredicateCard = ({
       className="border border-slate-700/60 rounded px-2 py-1.5 mt-2 bg-slate-900/30"
     >
       <div className="flex items-center gap-2 mb-1">
+        <span className="text-xs text-slate-500 shrink-0">
+          name
+        </span>
         <input
           type="text"
           value={draftName}
@@ -157,9 +160,9 @@ const PredicateCard = ({
                 }),
               )
             }}
-            className="text-xs text-slate-500 hover:text-red-400 px-1"
+            className="text-xs text-slate-500 hover:text-red-400 px-1 shrink-0"
           >
-            ✕
+            ✕ Remove
           </button>
         )}
       </div>
