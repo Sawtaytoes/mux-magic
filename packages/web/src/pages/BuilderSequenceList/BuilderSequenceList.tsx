@@ -1,19 +1,67 @@
-import { useAtomValue } from "jotai"
-import { useRef } from "react"
-import { useDragAndDrop } from "../../components/DragAndDrop/DragAndDrop"
+import {
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { useAtomValue, useSetAtom } from "jotai"
+import { useState } from "react"
 import { GroupCard } from "../../components/GroupCard/GroupCard"
 import { InsertDivider } from "../../components/InsertDivider/InsertDivider"
 import { StepCard } from "../../components/StepCard/StepCard"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { isGroup } from "../../jobs/sequenceUtils"
+import { dragReorderAtom } from "../../state/sequenceAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { Step } from "../../types"
+import type { Group, Step } from "../../types"
 
 export const BuilderSequenceList = () => {
   const steps = useAtomValue(stepsAtom)
   const actions = useBuilderActions()
-  const containerRef = useRef<HTMLDivElement>(null)
-  useDragAndDrop(containerRef)
+  const dragReorder = useSetAtom(dragReorderAtom)
+  const [activeId, setActiveId] = useState<string | null>(
+    null,
+  )
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string)
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null)
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const sourceContainerId =
+      (active.data.current?.sortable
+        ?.containerId as string) ?? "top-level"
+    const overContainerId =
+      (over.data.current?.sortable
+        ?.containerId as string) ?? "top-level"
+
+    dragReorder({
+      activeId: active.id as string,
+      overId: over.id as string,
+      sourceContainerId,
+      targetContainerId: overContainerId,
+    })
+  }
 
   const handlePaste =
     (index: number) =>
@@ -22,8 +70,10 @@ export const BuilderSequenceList = () => {
       event.stopPropagation()
     }
 
-  // Build the rendered item list alongside a running flat index that numbers
-  // steps globally (groups don't get a flat index; their inner steps do).
+  const topLevelIds = steps.map((item) =>
+    isGroup(item) ? item.id : (item as Step).id,
+  )
+
   const { items } = steps.reduce<{
     items: React.ReactNode[]
     flatIndex: number
@@ -96,6 +146,25 @@ export const BuilderSequenceList = () => {
     />
   )
 
+  const activeStep = activeId
+    ? ((steps.find(
+        (item) =>
+          !isGroup(item) && (item as Step).id === activeId,
+      ) as Step | undefined) ??
+      steps
+        .filter(isGroup)
+        .flatMap((group) => (group as Group).steps)
+        .find((step) => step.id === activeId))
+    : null
+
+  const activeStepFlatIndex = activeStep
+    ? steps
+        .filter((item) => !isGroup(item))
+        .findIndex(
+          (item) => (item as Step).id === activeStep.id,
+        )
+    : -1
+
   if (steps.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-slate-500">
@@ -116,13 +185,38 @@ export const BuilderSequenceList = () => {
   }
 
   return (
-    <div
-      ref={containerRef}
-      id="steps-el"
-      className="flex flex-col gap-3"
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
-      {items}
-      {trailingDivider}
-    </div>
+      <SortableContext
+        id="top-level"
+        items={topLevelIds}
+        strategy={verticalListSortingStrategy}
+      >
+        <div id="steps-el" className="flex flex-col gap-3">
+          {items}
+          {trailingDivider}
+        </div>
+      </SortableContext>
+      <DragOverlay>
+        {activeStep ? (
+          <div className="opacity-90 rotate-1 shadow-2xl">
+            <StepCard
+              step={activeStep}
+              index={
+                activeStepFlatIndex < 0
+                  ? 0
+                  : activeStepFlatIndex
+              }
+              isFirst={false}
+              isLast={false}
+              isDragOverlay
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   )
 }

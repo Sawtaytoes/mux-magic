@@ -1,3 +1,9 @@
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import { useSetAtom } from "jotai"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
@@ -42,6 +48,12 @@ export const GroupCard = ({
   const { copyGroupYaml, pasteCardAt, runGroup } =
     useBuilderActions()
 
+  const sortable = useSortable({ id: group.id })
+  const dragStyle = {
+    transform: CSS.Transform.toString(sortable.transform),
+    transition: sortable.transition ?? undefined,
+  }
+
   const stepCount = group.steps.length
   const parallelBadge = group.isParallel ? (
     <span className="text-[10px] uppercase tracking-wide font-semibold text-blue-300 bg-blue-950/60 border border-blue-700/50 rounded px-1.5 py-0.5">
@@ -57,18 +69,28 @@ export const GroupCard = ({
     ? "parallel-group flex flex-row flex-wrap gap-3"
     : "serial-group flex flex-col gap-3"
 
+  const innerStepIds = group.steps.map((step) => step.id)
+
   return (
     <div
+      ref={sortable.setNodeRef}
       data-group={group.id}
-      data-sortable-item
+      style={{
+        ...dragStyle,
+        opacity: sortable.isDragging ? 0.3 : 1,
+      }}
       className={`group-card ${group.isParallel ? "group-card-parallel" : "group-card-serial"} bg-slate-900/50 rounded-xl border border-slate-700/70 overflow-hidden`}
     >
       <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-700/70 bg-slate-900/70">
         <button
           type="button"
           data-drag-handle
+          aria-label="Drag to reorder"
           title="Drag to reorder"
-          className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 select-none"
+          className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 select-none cursor-grab active:cursor-grabbing"
+          ref={sortable.setActivatorNodeRef}
+          {...sortable.attributes}
+          {...sortable.listeners}
         >
           ⠿
         </button>
@@ -192,21 +214,24 @@ export const GroupCard = ({
         </button>
       </div>
       {!group.isCollapsed && (
-        <div
-          className={`${containerClasses} p-3`}
-          data-group-body={group.id}
+        <SortableContext
+          id={group.id}
+          items={innerStepIds}
+          strategy={verticalListSortingStrategy}
         >
-          {group.steps.map((step, idx) => (
-            <StepCard
-              key={step.id}
-              step={step as Step}
-              index={startingFlatIndex + idx}
-              isFirst={idx === 0}
-              isLast={idx === group.steps.length - 1}
-              parentGroupId={group.id}
-            />
-          ))}
-        </div>
+          <div className={`${containerClasses} p-3`}>
+            {group.steps.map((step, idx) => (
+              <StepCard
+                key={step.id}
+                step={step as Step}
+                index={startingFlatIndex + idx}
+                isFirst={idx === 0}
+                isLast={idx === group.steps.length - 1}
+                parentGroupId={group.id}
+              />
+            ))}
+          </div>
+        </SortableContext>
       )}
     </div>
   )
