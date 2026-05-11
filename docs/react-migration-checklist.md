@@ -80,9 +80,11 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W2B | 2 — Bundle B (EnumField, LanguageCodeField, LanguageCodesField) | ✅ Done | 2026-05-10 | Haiku 4.5; ported all 3 fields; EnumField uses enumPickerStateAtom; tests pass |
 | W2C | 2 — Bundle C (StringArrayField, NumberArrayField, JsonField) | ✅ Done | 2026-05-10 | Haiku 4.5; all 3 array/json fields ported with parity tests; dispatcher wired; tests pass |
 | W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | ✅ Done | 2026-05-10 | Haiku 4.5; 4 fields ported + wired to RenderFields; DslRulesBuilder escalated to Phase 2.5 (non-mechanical port); commit a98ae9b |
-| W3 | 3 — Final Cleanup | ⬜ Not Started | — | Blocks on W2A+W2B+W2C+W2D |
+| W2.5 | 2.5 — DslRulesBuilder (escalated from W2D) | ⬜ Not Started | — | Sonnet **high effort**. Prompt: [react-migration-prompts/W2-5.md](react-migration-prompts/W2-5.md). Blocks W3 (must read legacy `public/builder/js/components/dsl-rules-builder/` before W3 deletes it). |
+| W3 | 3 — Final Cleanup | ⬜ Not Started | — | Blocks on W2.5 (need DslRulesBuilder in place before deleting legacy) |
 | W4 | 4 — Verification & Master Merge | ⬜ Not Started | — | Parallel with W5 |
 | W5 | 5 — E2E tests (worktree) | ⬜ Not Started | — | Parallel with W4 |
+| W6 | 6 — Parity-trap + code-smell + a11y cleanup | ⬜ Not Started | — | Sonnet high effort. Prompt: [react-migration-prompts/W6.md](react-migration-prompts/W6.md). Runs after W5. Three streams: parity quirks held back during port, code-smell sweep (getIsX collisions, let+subscribe → lastValueFrom, one component per file), final a11y pass. |
 
 ### Phase 0 Audit Findings (W0b)
 
@@ -167,6 +169,15 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 **Recommendation:** Reassign to Sonnet High effort as Phase 2.5 after W2D other fields ship.
 
 **Interim:** SubtitleRulesField ships with JSON textarea fallback. User can edit rules as JSON directly; visual builder deferred.
+
+## Related Initiative — Boolean Naming Rename
+
+Separate from the React migration recovery, but tracked here for visibility. Enforces AGENTS.md rule #4 ("booleans start with `is`/`has`") via `@typescript-eslint/naming-convention` (rule already enabled in commit `cff5a2d` on the `feat/boolean-is-has-naming` branch). Initiative docs at [boolean-rename-prompts/](boolean-rename-prompts/README.md).
+
+| Worker | Scope | Status | Date | Notes |
+|---|---|---|---|---|
+| WBN-A | `packages/server/**` boolean renames | ⬜ Not Started | — | Sonnet medium. Prompt: [boolean-rename-prompts/WBN-A.md](boolean-rename-prompts/WBN-A.md). Can spawn now — server is not under react-migration churn. Branch: `feat/boolean-is-has-naming`. |
+| WBN-B | `packages/web/**` + `packages/shared/**` boolean renames | ⬜ Not Started (deferred) | — | Sonnet medium. **Wait for react-migration to merge to master before spawning** — running now would conflict with W2A–W2D and W3. Prompt deferred; will be generated after W4. |
 
 ## Open Questions
 

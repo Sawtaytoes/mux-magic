@@ -11,8 +11,9 @@ Prompts are generated lazily — the next worker's prompt is written only after 
 | W2A | [W2A.md](W2A.md) | Ready to spawn (parallel) | W1 |
 | W2B | [W2B.md](W2B.md) | Ready to spawn (parallel) | W1 |
 | W2C | [W2C.md](W2C.md) | Ready to spawn (parallel) | W1 |
-| W2D | [W2D.md](W2D.md) | Ready to spawn (parallel) | W1 |
-| W3 | _(generated after W2A/B/C/D all report)_ | — | W2A+B+C+D |
+| W2D | [W2D.md](W2D.md) | ✅ Done (4 fields shipped; DslRulesBuilder escalated → W2.5) | W1 |
+| W2.5 | [W2-5.md](W2-5.md) | Ready to spawn (Sonnet **high effort**) — blocks W3 | W2D |
+| W3 | _(generated after W2.5 reports)_ | — | W2.5 |
 | W4 | _(generated after W3 reports)_ | — | W3 |
 | W5 | _(generated after W3 reports — parallel with W4)_ | — | W3 |
 | W6 | [W6.md](W6.md) | Ready (don't spawn until W5 reports) | W5 |
