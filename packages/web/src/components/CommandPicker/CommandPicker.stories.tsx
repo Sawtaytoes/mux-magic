@@ -69,7 +69,7 @@ const withOpenPicker = () => {
 }
 
 const meta: Meta<typeof CommandPicker> = {
-  title: "Components/CommandPicker",
+  title: "Pickers/CommandPicker",
   component: CommandPicker,
   parameters: {
     layout: "fullscreen",

@@ -1,6 +1,7 @@
 import { useAtom, useAtomValue } from "jotai"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { toYamlStr } from "../../jobs/yamlSerializer"
+import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
@@ -23,44 +24,15 @@ export const YamlModal = () => {
     setTimeout(() => setCopyLabel("Copy"), 2000)
   }
 
-  const handleBackdropClick = (
-    event: React.MouseEvent<HTMLDivElement>,
-  ) => {
-    if (event.target === event.currentTarget) close()
-  }
-
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsOpen(false)
-    }
-    document.addEventListener("keydown", handleKeyDown)
-    return () =>
-      document.removeEventListener("keydown", handleKeyDown)
-  }, [isOpen, setIsOpen])
-
-  if (!isOpen) return null
-
   return (
-    <div
-      id="yaml-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-      role="none"
-      onClick={handleBackdropClick}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") setIsOpen(false)
-      }}
-      data-testid="yaml-modal-backdrop"
-    >
+    <Modal isOpen={isOpen} onClose={close} ariaLabel="YAML">
       <div
+        id="yaml-modal"
         className="bg-slate-900 border border-slate-700 rounded-xl flex flex-col"
         style={{
           width: "min(90vw,800px)",
           maxHeight: "85vh",
         }}
-        role="none"
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
       >
         <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
           <span className="text-xs font-medium text-slate-400">
@@ -90,6 +62,6 @@ export const YamlModal = () => {
           {toYamlStr(steps, paths, commands)}
         </pre>
       </div>
-    </div>
+    </Modal>
   )
 }

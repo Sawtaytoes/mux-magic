@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
 import { commandsAtom } from "../../state/commandsAtom"
-import { commandHelpCommandNameAtom } from "../../state/uiAtoms"
+import {
+  commandHelpCommandNameAtom,
+  commandHelpModalOpenAtom,
+} from "../../state/uiAtoms"
 import { CommandHelpModal } from "./CommandHelpModal"
 
 const mockCommands = {
@@ -37,6 +40,7 @@ const mockCommands = {
 
 const withStore = (commandName: string) => {
   const store = createStore()
+  store.set(commandHelpModalOpenAtom, true)
   store.set(commandHelpCommandNameAtom, commandName)
   store.set(commandsAtom, mockCommands as never)
   return (Story: React.ComponentType) => (
@@ -47,7 +51,7 @@ const withStore = (commandName: string) => {
 }
 
 const meta: Meta<typeof CommandHelpModal> = {
-  title: "Components/CommandHelpModal",
+  title: "Modals/CommandHelpModal",
   component: CommandHelpModal,
   parameters: {
     layout: "fullscreen",

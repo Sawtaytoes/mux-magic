@@ -20,7 +20,7 @@ const empty = {
 }
 
 const meta: Meta<typeof LookupModal> = {
-  title: "Components/LookupModal",
+  title: "Modals/LookupModal",
   component: LookupModal,
   decorators: [
     (Story, context) => {

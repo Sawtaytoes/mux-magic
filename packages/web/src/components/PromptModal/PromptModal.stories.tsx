@@ -6,7 +6,7 @@ import type { PromptData } from "../../types"
 import { PromptModal } from "./PromptModal"
 
 const meta: Meta<typeof PromptModal> = {
-  title: "Components/PromptModal",
+  title: "Modals/PromptModal",
   component: PromptModal,
   decorators: [
     (Story, context) => {

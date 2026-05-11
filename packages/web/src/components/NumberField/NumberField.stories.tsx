@@ -14,7 +14,7 @@ const baseStep: Step = {
 }
 
 const meta: Meta<typeof NumberField> = {
-  title: "Components/NumberField",
+  title: "Fields/NumberField",
   component: NumberField,
   parameters: {
     layout: "centered",

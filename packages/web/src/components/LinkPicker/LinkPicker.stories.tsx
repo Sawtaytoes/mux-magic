@@ -57,7 +57,7 @@ const withOpenPicker = () => {
 }
 
 const meta: Meta<typeof LinkPicker> = {
-  title: "Components/LinkPicker",
+  title: "Pickers/LinkPicker",
   component: LinkPicker,
   parameters: {
     layout: "fullscreen",

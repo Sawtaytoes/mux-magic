@@ -42,7 +42,7 @@ const withStore = (
 }
 
 const meta: Meta<typeof YamlModal> = {
-  title: "Components/YamlModal",
+  title: "Modals/YamlModal",
   component: YamlModal,
   parameters: {
     layout: "fullscreen",

@@ -23,7 +23,7 @@ const makeState = (
 })
 
 const meta: Meta<typeof ApiRunModal> = {
-  title: "Components/ApiRunModal",
+  title: "Modals/ApiRunModal",
   component: ApiRunModal,
   decorators: [
     (Story, context) => {
