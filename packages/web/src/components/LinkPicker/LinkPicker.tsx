@@ -130,8 +130,7 @@ const computePosition = (
   maxHeight: number,
 ) => {
   const margin = 8
-  // Link picker aligns to the right edge of its trigger
-  const initialLeft = rect.right - width
+  const initialLeft = Math.round((rect.left + rect.right) / 2 - width / 2)
   const clampedLeft = (() => {
     if (initialLeft + width > window.innerWidth - margin) {
       return Math.max(

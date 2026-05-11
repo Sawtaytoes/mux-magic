@@ -218,6 +218,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W7C | 2026-05-11 | chore(checklist): W7C ✅ Done — 1058/1058 tests, typecheck clean, lint 1 pre-existing warning |
 | W7B | 2026-05-11 | chore(checklist): W7B in progress — 4 LinkPicker parity bugs |
 | W7B | 2026-05-11 | fix(link-picker): store bare pathVarId + step object instead of display strings |
+| W7B | 2026-05-11 | fix(link-picker): center-align dropdown under trigger (was right-aligned) |
 
 ## W4A Audit Findings (2026-05-10)
 
