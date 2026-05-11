@@ -13,9 +13,9 @@ Prompts are generated lazily — the next worker's prompt is written only after 
 | W2C | [W2C.md](W2C.md) | ✅ Done (3 array/json fields ported, commit 6bbc285) | W1 |
 | W2D | [W2D.md](W2D.md) | ✅ Done (4 fields shipped; DslRulesBuilder escalated → W2.5) | W1 |
 | W2.5 | [W2-5.md](W2-5.md) | ✅ Done (5 commits, DslRulesBuilder visual builder shipped, 974 tests passing) | W2D |
-| W3 | [W3.md](W3.md) | In flight (audit showed 14 production window.mediaTools calls across 3 components) | W2.5 |
-| W4A | _(generated after W3 reports)_ | — | W3 (parallel with W4B) |
-| W4B | _(generated after W3 reports — parallel with W4A)_ | — | W3 (parallel with W4A); runs in `e2e/` worktree |
+| W3 | [W3.md](W3.md) | ✅ Done (4 commits, legacy public/ deleted, tip 7b92c62) | W2.5 |
+| W4A | [W4A.md](W4A.md) | Ready to spawn (parallel with W4B) | W3 |
+| W4B | [W4B.md](W4B.md) | Ready to spawn (parallel with W4A); runs in `.claude/worktrees/w4b` worktree | W3 |
 | W5 | [W5.md](W5.md) | Ready (don't spawn until W4A+W4B both report; was W6 before rename) | W4A + W4B |
 
 **Naming note:** Phase 4 has two parallel workers (verification+merge + e2e tests), matching the W2A–W2D parallel pattern. They were originally labeled W4 and W5 in earlier docs; renamed to W4A and W4B for consistency. The cleanup worker formerly known as W6 is now W5 (the new "next phase"). Commit history may still mention W4/W5/W6 by their old labels.
