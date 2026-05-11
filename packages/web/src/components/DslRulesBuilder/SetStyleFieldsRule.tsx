@@ -81,33 +81,41 @@ export const SetStyleFieldsRuleBody = ({
           No fields yet.
         </p>
       )}
-      <div className="flex items-center gap-2 mt-2">
+      <div className="mt-2">
         <label
           htmlFor={`ssf-regex-${ruleIndex}`}
-          className="text-xs text-slate-400 shrink-0"
+          className="block text-xs text-slate-400 mb-0.5"
         >
-          ignoredStyleNamesRegex
+          Ignore Style Names
         </label>
-        <input
-          id={`ssf-regex-${ruleIndex}`}
-          type="text"
-          value={draftRegex}
-          placeholder="^Default$"
-          readOnly={isReadOnly}
-          onChange={(event) => {
-            setDraftRegex(event.target.value)
-          }}
-          onBlur={() => {
-            onCommitRules(
-              setIgnoredStyleNamesRegex({
-                rules,
-                ruleIndex,
-                value: draftRegex,
-              }),
-            )
-          }}
-          className="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
-        />
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-slate-500 font-mono shrink-0">
+            /
+          </span>
+          <input
+            id={`ssf-regex-${ruleIndex}`}
+            type="text"
+            value={draftRegex}
+            placeholder="signs?|op|ed"
+            readOnly={isReadOnly}
+            onChange={(event) => {
+              setDraftRegex(event.target.value)
+            }}
+            onBlur={() => {
+              onCommitRules(
+                setIgnoredStyleNamesRegex({
+                  rules,
+                  ruleIndex,
+                  value: draftRegex,
+                }),
+              )
+            }}
+            className="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+          />
+          <span className="text-xs text-slate-500 font-mono shrink-0">
+            /i
+          </span>
+        </div>
       </div>
       <ApplyIfBuilder
         rules={rules}
