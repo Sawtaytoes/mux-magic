@@ -76,7 +76,7 @@ const withOpenPicker = () => {
 }
 
 const meta: Meta<typeof EnumPicker> = {
-  title: "Components/EnumPicker",
+  title: "Pickers/EnumPicker",
   component: EnumPicker,
   parameters: {
     layout: "fullscreen",

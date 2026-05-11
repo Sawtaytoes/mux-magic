@@ -6,7 +6,7 @@ import type { FileExplorerState } from "../../types"
 import { FileExplorerModal } from "./FileExplorerModal"
 
 const meta: Meta<typeof FileExplorerModal> = {
-  title: "Components/FileExplorerModal",
+  title: "Modals/FileExplorerModal",
   component: FileExplorerModal,
   decorators: [
     (Story, context) => {

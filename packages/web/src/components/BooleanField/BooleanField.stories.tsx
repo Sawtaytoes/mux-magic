@@ -14,7 +14,7 @@ const baseStep: Step = {
 }
 
 const meta: Meta<typeof BooleanField> = {
-  title: "Components/BooleanField",
+  title: "Fields/BooleanField",
   component: BooleanField,
   parameters: {
     layout: "centered",

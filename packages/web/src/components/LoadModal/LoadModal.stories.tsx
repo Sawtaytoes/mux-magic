@@ -23,7 +23,7 @@ const withStore = (initialOpen: boolean) => {
 }
 
 const meta: Meta<typeof LoadModal> = {
-  title: "Components/LoadModal",
+  title: "Modals/LoadModal",
   component: LoadModal,
   parameters: {
     layout: "fullscreen",

@@ -4,6 +4,7 @@ import type { Step } from "../../types"
 import { EnumField } from "./EnumField"
 
 const meta = {
+  title: "Fields/EnumField",
   component: EnumField,
   tags: ["autodocs"],
 } satisfies Meta<typeof EnumField>

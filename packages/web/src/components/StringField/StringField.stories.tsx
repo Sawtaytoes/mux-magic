@@ -14,7 +14,7 @@ const baseStep: Step = {
 }
 
 const meta: Meta<typeof StringField> = {
-  title: "Components/StringField",
+  title: "Fields/StringField",
   component: StringField,
   parameters: {
     layout: "centered",

@@ -4,6 +4,7 @@ import type { Step } from "../../types"
 import { LanguageCodesField } from "./LanguageCodesField"
 
 const meta = {
+  title: "Fields/LanguageCodesField",
   component: LanguageCodesField,
   tags: ["autodocs"],
 } satisfies Meta<typeof LanguageCodesField>

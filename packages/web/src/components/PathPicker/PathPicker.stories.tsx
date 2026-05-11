@@ -125,7 +125,7 @@ const withErrorState = () => {
 }
 
 const meta: Meta<typeof PathPicker> = {
-  title: "Components/PathPicker",
+  title: "Pickers/PathPicker",
   component: PathPicker,
   parameters: {
     layout: "fullscreen",
