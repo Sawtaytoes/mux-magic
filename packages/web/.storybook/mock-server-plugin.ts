@@ -144,6 +144,116 @@ const routes: Route[] = [
     path: "/jobs/:jobId/logs",
     handler: (_, res) => keepSseOpen(res),
   },
+  // ── Lookup search endpoints (used by LookupModal stories) ───────────────────
+  {
+    method: "POST",
+    path: "/queries/searchDvdCompare",
+    handler: (_, res) => {
+      sendJson(res, {
+        results: [
+          {
+            baseTitle: "Neon Genesis Evangelion",
+            year: "1995",
+            variants: [
+              { id: "fid-1", variant: "Blu-ray 4K" },
+              { id: "fid-2", variant: "Blu-ray" },
+              { id: "fid-3", variant: "DVD" },
+            ],
+          },
+          {
+            baseTitle:
+              "Evangelion: 1.11 You Are (Not) Alone",
+            year: "2007",
+            variants: [{ id: "fid-4", variant: "Blu-ray" }],
+          },
+        ],
+      })
+    },
+  },
+  {
+    method: "POST",
+    path: "/queries/listDvdCompareReleases",
+    handler: (_, res) => {
+      sendJson(res, {
+        releases: [
+          {
+            id: "rel-1",
+            label: "Discotek Media (US) 2023",
+            region: "A",
+            format: "Blu-ray 4K",
+          },
+          {
+            id: "rel-2",
+            label: "Funimation (US) 2019",
+            region: "A",
+            format: "Blu-ray",
+          },
+        ],
+        debug: null,
+      })
+    },
+  },
+  {
+    method: "POST",
+    path: "/queries/searchMal",
+    handler: (_, res) => {
+      sendJson(res, {
+        results: [
+          { malId: 30, name: "Neon Genesis Evangelion" },
+          { malId: 32, name: "End of Evangelion" },
+        ],
+      })
+    },
+  },
+  {
+    method: "POST",
+    path: "/queries/searchAnidb",
+    handler: (_, res) => {
+      sendJson(res, {
+        results: [
+          { aid: 38, name: "Shinseiki Evangelion" },
+        ],
+      })
+    },
+  },
+  {
+    method: "POST",
+    path: "/queries/searchTvdb",
+    handler: (_, res) => {
+      sendJson(res, {
+        results: [
+          {
+            tvdbId: 73752,
+            name: "Neon Genesis Evangelion",
+          },
+        ],
+      })
+    },
+  },
+  {
+    method: "POST",
+    path: "/queries/searchMovieDb",
+    handler: (_, res) => {
+      sendJson(res, {
+        results: [
+          {
+            movieDbId: 18491,
+            title:
+              "Neon Genesis Evangelion: The End of Evangelion",
+            year: "1997",
+          },
+        ],
+      })
+    },
+  },
+  // ── File system endpoints ────────────────────────────────────────────────────
+  {
+    method: "GET",
+    path: "/files/default-path",
+    handler: (_, res) => {
+      sendJson(res, { path: "/media" })
+    },
+  },
   {
     method: "POST",
     path: "/queries/listDirectoryEntries",

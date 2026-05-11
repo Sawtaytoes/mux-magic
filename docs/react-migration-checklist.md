@@ -180,6 +180,8 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W5B | 2026-05-11 | chore(checklist): W5B in progress — drag-and-drop, runOrStopStep port, Storybook polish |
 | W5B | 2026-05-11 | fix(builder): restore drag-and-drop — install sortablejs npm pkg, switch DragAndDrop.tsx from window.Sortable to npm import, wire useDragAndDrop in BuilderSequenceList |
 | W5B | 2026-05-11 | feat(builder): port runOrStopStep to runOrStopStepAtom; wire StepCard; shrink types.window.d.ts |
+| W5B | 2026-05-11 | fix(storybook): YamlModal story sets yamlModalOpenAtom; lookup search mocks in mock-server-plugin |
+| W5B | 2026-05-11 | fix(biome): add missing comma in biome.json include array |
 
 ## W4A Audit Findings (2026-05-10)
 

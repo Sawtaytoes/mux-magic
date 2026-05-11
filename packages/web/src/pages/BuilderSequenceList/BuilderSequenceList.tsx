@@ -1,8 +1,7 @@
 import { useAtomValue } from "jotai"
 import { useRef } from "react"
-
-import { GroupCard } from "../../components/GroupCard/GroupCard"
 import { useDragAndDrop } from "../../components/DragAndDrop/DragAndDrop"
+import { GroupCard } from "../../components/GroupCard/GroupCard"
 import { InsertDivider } from "../../components/InsertDivider/InsertDivider"
 import { StepCard } from "../../components/StepCard/StepCard"
 import { useBuilderActions } from "../../hooks/useBuilderActions"

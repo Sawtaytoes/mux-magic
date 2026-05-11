@@ -1,6 +1,6 @@
 import { atom } from "jotai"
-import { toYamlStr } from "../jobs/yamlSerializer"
 import { isGroup } from "../jobs/sequenceUtils"
+import { toYamlStr } from "../jobs/yamlSerializer"
 import type {
   Group,
   SequenceItem,

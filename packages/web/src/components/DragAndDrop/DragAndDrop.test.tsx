@@ -15,8 +15,13 @@ import { useDragAndDrop } from "./DragAndDrop"
 vi.mock("sortablejs", () => {
   const destroyFn = vi.fn()
   const getMock = vi.fn().mockReturnValue(undefined)
-  const Constructor = vi.fn(() => ({ destroy: destroyFn })) as unknown as {
-    new (el: HTMLElement, options: object): { destroy: () => void }
+  const Constructor = vi.fn(() => ({
+    destroy: destroyFn,
+  })) as unknown as {
+    new (
+      el: HTMLElement,
+      options: object,
+    ): { destroy: () => void }
     get: typeof getMock
     mock: { instances: Array<{ destroy: () => void }> }
   }

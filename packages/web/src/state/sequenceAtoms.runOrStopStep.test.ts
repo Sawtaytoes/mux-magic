@@ -138,7 +138,9 @@ describe("runOrStopStepAtom", () => {
     test("sets apiRunModal to failed when fetch throws", async () => {
       vi.stubGlobal(
         "fetch",
-        vi.fn().mockRejectedValue(new Error("Network error")),
+        vi
+          .fn()
+          .mockRejectedValue(new Error("Network error")),
       )
       const step = makeStep()
       const store = makeStore(step)
@@ -165,7 +167,11 @@ describe("runOrStopStepAtom", () => {
         },
       ])
       store.set(pathsAtom, [
-        { id: "basePath", label: "basePath", value: "/media" },
+        {
+          id: "basePath",
+          label: "basePath",
+          value: "/media",
+        },
       ])
       store.set(commandsAtom, COMMANDS)
 
