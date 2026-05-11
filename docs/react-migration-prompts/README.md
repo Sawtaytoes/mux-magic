@@ -16,8 +16,9 @@ Prompts are generated lazily — the next worker's prompt is written only after 
 | W3 | [W3.md](W3.md) | ✅ Done (4 commits, legacy public/ deleted, tip 7b92c62) | W2.5 |
 | W4A | [W4A.md](W4A.md) | 🟡 Audit done; master merge reverted by user for manual verification | W3 |
 | W4B | [W4B.md](W4B.md) | 🟡 4 e2e specs authored; not yet merged (waiting on user verification + W5C) | W3 |
-| W5A | [W5A.md](W5A.md) | Ready to spawn (parallel with W5B) — runs in **main checkout** on `react-migration` | W3 |
-| W5B | [W5B.md](W5B.md) | Ready to spawn (parallel with W5A) — runs in **worktree** `.claude/worktrees/w5b` on `feat/restore-builder-controls` | W3 |
+| W5A | [W5A.md](W5A.md) | Ready to spawn (parallel with W5B + W5C) — runs in **main checkout** on `react-migration` | W3 |
+| W5B | [W5B.md](W5B.md) | Ready to spawn (parallel with W5A + W5C) — runs in **worktree** `.claude/worktrees/w5b` on `feat/restore-builder-controls` | W3 |
+| W5C | [W5C.md](W5C.md) | Ready to spawn (parallel with W5A + W5B) — runs in **worktree** `.claude/worktrees/w5c` on `feat/restore-tooltips`; data-only work (commands.ts) | W3 |
 | W6 | [W6.md](W6.md) | Ready to spawn after W5B substantially ships UI controls — runs in **worktree** `.claude/worktrees/w6` on `e2e-completion` (extends W4B's `e2e-tests`) | W5B |
 
 **Naming convention (working version, expected to evolve):**
@@ -30,6 +31,7 @@ Earlier in this conversation "W5" / "W6" / "W4C" referred to different workers; 
 **Worker location summary:**
 - Main checkout (`d:\Projects\Personal\media-tools` on `react-migration`): W5A
 - Worktree `.claude/worktrees/w5b` on `feat/restore-builder-controls`: W5B
+- Worktree `.claude/worktrees/w5c` on `feat/restore-tooltips`: W5C
 - Worktree `.claude/worktrees/w6` on `e2e-completion` (extends W4B's `e2e-tests`): W6
 
 Each worktree merges back to `react-migration` when done. The user handles the final `react-migration → master` re-merge after manual verification.

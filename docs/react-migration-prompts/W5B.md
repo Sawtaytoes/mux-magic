@@ -49,6 +49,24 @@ All your work happens in this worktree. When you finish, merge `feat/restore-bui
 
 4. **X (delete step) button is missing.** Wires to existing `removeStepAtom` or similar in `sequenceAtoms.ts`. If the action atom doesn't exist, add it (mirroring `insertStepAtom`).
 
+5. **Version footer shows fallback values, not real build identity.** The footer infrastructure EXISTS:
+   - Frontend renders something like `git: dev · built dev · node v24.15.0` (user-confirmed visible in dev AND Docker)
+   - Server endpoint at [packages/server/src/api/routes/versionRoutes.ts](../../packages/server/src/api/routes/versionRoutes.ts) serves `/version` which reads `public/api/version.json`
+   - Stamping script exists at [scripts/build-version.cjs](../../scripts/build-version.cjs) — wired as `prebuild` / `prestart`
+   - When the script doesn't run, the route falls back to `{ gitSha: "dev", buildTime: null, ... }` → that's what the user is seeing in BOTH dev and Docker
+
+   **The real bug:** `scripts/build-version.cjs` isn't running (or isn't writing a usable file) in the production builds. Investigate:
+   - Read `scripts/build-version.cjs` — what does it produce, and where?
+   - Read root `package.json` — is `prebuild` / `prestart` actually wired to call it? Does `yarn build:web-static` (or whatever the Docker build runs) trigger the prebuild hook?
+   - Check the Dockerfile — does it run the script as part of the image build, or is the `public/api/version.json` file expected to be baked in pre-Docker?
+   - If `tsx --env-file` is used (per `prod:api-server` in `package.json`), `prestart` should fire — verify yarn lifecycle hooks are honored in that invocation. Some yarn runners skip `pre*`/`post*` for non-`run` invocations.
+
+   Frontend side: locate the existing component that renders the footer (probably in `packages/web/src/components/PageHeader/` or a dedicated `VersionFooter`). Verify it fetches `/version` correctly. The component shouldn't need changes; the data source needs fixing.
+
+   Commit cadence:
+   - `fix(version-stamp): <root cause of why build-version.cjs doesn't run>`
+   - `test: regression guard that public/api/version.json is generated with non-fallback gitSha`
+
 ### Medium (test/story polish — could split out)
 
 5. **YamlModal doesn't show up in Storybook.** Investigate: is it `YamlPasteModal` (input) vs `YamlDisplayModal` (output)? If it's display-only, the story needs to feed it YAML via atom state in the decorator. Read the component to confirm direction, then either rename or fix the story.
