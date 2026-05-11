@@ -30,12 +30,14 @@ type ScaleResolutionRuleProps = {
 const DimensionInput = ({
   id,
   label,
+  ariaLabel,
   value,
   readOnly,
   onCommit,
 }: {
   id: string
   label: string
+  ariaLabel?: string
   value: number
   readOnly: boolean
   onCommit: (nextValue: number) => void
@@ -55,8 +57,12 @@ const DimensionInput = ({
         type="number"
         value={draft}
         readOnly={readOnly}
+        aria-label={ariaLabel}
         onChange={(event) => {
           setDraft(event.target.value)
+        }}
+        onFocus={(event) => {
+          event.target.select()
         }}
         onBlur={() => {
           const parsed = draft === "" ? 0 : Number(draft)
@@ -88,6 +94,7 @@ export const ScaleResolutionRuleBody = ({
         <DimensionInput
           id={`srr-from-width-${ruleIndex}`}
           label="width"
+          ariaLabel="From width"
           value={rule.from?.width ?? 0}
           readOnly={isReadOnly}
           onCommit={(val) => {

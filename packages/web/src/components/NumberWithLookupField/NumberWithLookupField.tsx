@@ -94,6 +94,7 @@ export const NumberWithLookupField = ({
           type="button"
           onClick={handleLookup}
           title={`Look up ${field.label ?? field.name}`}
+          aria-label={`Look up ${field.label ?? field.name}`}
           className="shrink-0 text-xs bg-slate-700 hover:bg-blue-700 text-slate-200 hover:text-white px-2.5 py-1.5 rounded border border-slate-600 hover:border-blue-500"
         >
           🔍

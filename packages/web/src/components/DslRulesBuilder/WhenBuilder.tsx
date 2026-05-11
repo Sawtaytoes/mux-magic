@@ -338,6 +338,7 @@ export const WhenBuilder = ({
   return (
     <details
       open={isOpen}
+      data-details-key={detailsKey}
       className="mt-2 border border-slate-700/60 rounded"
       onToggle={(event) => {
         onToggleDetails(

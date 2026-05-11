@@ -46,7 +46,10 @@ export const RuleCard = ({
   onToggleDetails,
   onCommitRules,
 }: RuleCardProps) => (
-  <div className="border border-slate-700 rounded px-3 py-2 bg-slate-800/60">
+  <div
+    data-rule-key={ruleIndex}
+    className="border border-slate-700 rounded px-3 py-2 bg-slate-800/60"
+  >
     <div className="flex items-center gap-2">
       <span className="text-xs text-slate-500 font-mono shrink-0">
         #{ruleIndex + 1}

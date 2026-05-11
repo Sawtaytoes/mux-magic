@@ -178,6 +178,7 @@ export const StepCard = ({
             type="button"
             onClick={openCommandHelp}
             title="Show docs for this command's settings"
+            aria-label="Show docs for this command's settings"
             className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-blue-300 hover:bg-slate-700 text-xs"
           >
             ⓘ
@@ -187,79 +188,89 @@ export const StepCard = ({
           type="button"
           onClick={() => setActionsOpen((prev) => !prev)}
           title="Step actions"
+          aria-label="Step actions"
           className="step-hamburger-btn w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 text-base leading-none"
         >
           ≡
         </button>
-        {actionsOpen && (
-          <div className="step-actions flex items-center gap-1">
+        <div
+          className={`step-actions${actionsOpen ? " open" : ""} flex items-center gap-1`}
+        >
+          <button
+            type="button"
+            onClick={() => void runOrStopStep(step.id)}
+            disabled={!step.command}
+            title={
+              step.status === "running" && step.jobId
+                ? "Cancel this step"
+                : "Run this step only"
+            }
+            aria-label={
+              step.status === "running" && step.jobId
+                ? "Cancel this step"
+                : "Run this step only"
+            }
+            data-step-run-stop={step.id}
+            className={`step-run-stop ${step.status === "running" && step.jobId ? "is-running" : ""}`}
+          >
+            <span className="step-run-stop-icon step-run-stop-play">
+              ▶
+            </span>
+            <span className="step-run-stop-icon step-run-stop-stop">
+              ⏹
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              moveStep({
+                stepId: step.id,
+                direction: -1,
+                parentGroupId,
+              })
+            }
+            disabled={isFirst}
+            aria-label="Move step up"
+            className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              moveStep({
+                stepId: step.id,
+                direction: 1,
+                parentGroupId,
+              })
+            }
+            disabled={isLast}
+            aria-label="Move step down"
+            className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
+          >
+            ↓
+          </button>
+          {step.command && (
             <button
               type="button"
-              onClick={() => void runOrStopStep(step.id)}
-              disabled={!step.command}
-              title={
-                step.status === "running" && step.jobId
-                  ? "Cancel this step"
-                  : "Run this step only"
-              }
-              data-step-run-stop={step.id}
-              className={`step-run-stop ${step.status === "running" && step.jobId ? "is-running" : ""}`}
+              onClick={() => copyStepYaml(step.id)}
+              title="Copy this step's YAML"
+              aria-label="Copy this step's YAML"
+              className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent"
             >
-              <span className="step-run-stop-icon step-run-stop-play">
-                ▶
-              </span>
-              <span className="step-run-stop-icon step-run-stop-stop">
-                ⏹
-              </span>
+              <CopyIcon />
             </button>
-            <button
-              type="button"
-              onClick={() =>
-                moveStep({
-                  stepId: step.id,
-                  direction: -1,
-                  parentGroupId,
-                })
-              }
-              disabled={isFirst}
-              className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                moveStep({
-                  stepId: step.id,
-                  direction: 1,
-                  parentGroupId,
-                })
-              }
-              disabled={isLast}
-              className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
-            >
-              ↓
-            </button>
-            {step.command && (
-              <button
-                type="button"
-                onClick={() => copyStepYaml(step.id)}
-                title="Copy this step's YAML"
-                className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent"
-              >
-                <CopyIcon />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => removeStep(step.id)}
-              title="Remove this step"
-              className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs"
-            >
-              ✕
-            </button>
-          </div>
-        )}
+          )}
+          <button
+            type="button"
+            onClick={() => removeStep(step.id)}
+            title="Remove this step"
+            aria-label="Remove this step"
+            className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs"
+          >
+            ✕
+          </button>
+        </div>
       </div>
       {!step.isCollapsed && (
         <div className="px-3 py-2">
