@@ -20,6 +20,7 @@ Prompts are generated lazily — the next worker's prompt is written only after 
 | W5B | [W5B.md](W5B.md) | Ready to spawn (parallel with W5A + W5C) — runs in **worktree** `.claude/worktrees/w5b` on `feat/restore-builder-controls` | W3 |
 | W5C | [W5C.md](W5C.md) | Ready to spawn (parallel with W5A + W5B) — runs in **worktree** `.claude/worktrees/w5c` on `feat/restore-tooltips`; data-only work (commands.ts) | W3 |
 | W6 | [W6.md](W6.md) | Ready to spawn after W5B substantially ships UI controls — runs in **worktree** `.claude/worktrees/w6` on `e2e-completion` (extends W4B's `e2e-tests`) | W5B |
+| W7 | [W7.md](W7.md) | Ready to spawn after W6 — runs in **worktree** `.claude/worktrees/w7` on `feat/dnd-kit-migration`. Replaces SortableJS with @dnd-kit/core + @dnd-kit/sortable (React-native DnD, better a11y) | W6 |
 
 **Naming convention (working version, expected to evolve):**
 - **Same number + letter suffix = parallel** (W2A/B/C/D, W4A/B, W5A/B all run concurrently within their phase).
