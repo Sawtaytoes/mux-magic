@@ -101,7 +101,7 @@ describe("LoadModal close interactions", () => {
     renderModal(true)
 
     fireEvent.click(
-      screen.getByTestId("load-modal-backdrop"),
+      screen.getByTestId("modal-backdrop"),
     )
 
     await waitFor(() =>
