@@ -30,6 +30,7 @@ export default defineConfig(
   {
     ignores: [
       ".claude/worktrees/**",
+      ".playwright-mcp/**",
       ".yarn/**",
       "**/build/**",
       "**/dist/**",

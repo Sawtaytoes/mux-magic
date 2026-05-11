@@ -26,6 +26,9 @@ installed_packages.txt
 playwright-report/
 test-results/
 
+# Playwright MCP page snapshots — ephemeral debugging output, never committed
+.playwright-mcp/
+
 # Vitest browser-mode failure screenshots
 **/__screenshots__/
 **/.vitest-attachments/
