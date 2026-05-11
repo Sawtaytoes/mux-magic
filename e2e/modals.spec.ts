@@ -28,8 +28,11 @@ async function addStepWithCommand(
   await page
     .getByPlaceholder("Search commands…")
     .fill(searchTerm)
+  // Use .first() — the picker may show the same command name in multiple
+  // result rows (e.g. search result + recent-use section).
   await page
     .getByRole("button", { name: labelPattern })
+    .first()
     .click()
 }
 
@@ -151,6 +154,8 @@ test.describe("LoadModal — builder round-trip", () => {
     page,
   }) => {
     // The load button is in the PageHeader with id="load-btn".
+    // #load-btn lives inside the responsive controls hamburger menu.
+    await openControlsMenu(page)
     await page.locator("#load-btn").click()
 
     await expect(page.getByText("Load YAML")).toBeVisible()
@@ -170,6 +175,8 @@ test.describe("LoadModal — builder round-trip", () => {
       "      filePath: /test/dir",
     ].join("\n")
 
+    // #load-btn lives inside the responsive controls hamburger menu.
+    await openControlsMenu(page)
     await page.locator("#load-btn").click()
     await expect(
       page.getByText(/Paste your saved sequence YAML/),
@@ -215,6 +222,8 @@ test.describe("LoadModal — builder round-trip", () => {
     await page.keyboard.press("Escape")
 
     // Clear the sequence by loading a fresh YAML with the same command.
+    // #load-btn lives inside the responsive controls hamburger menu.
+    await openControlsMenu(page)
     await page.locator("#load-btn").click()
     await pasteText(page, yamlText)
 
@@ -230,6 +239,8 @@ test.describe("LoadModal — builder round-trip", () => {
   test("pasting invalid YAML shows an error and keeps modal open", async ({
     page,
   }) => {
+    // #load-btn lives inside the responsive controls hamburger menu.
+    await openControlsMenu(page)
     await page.locator("#load-btn").click()
     await expect(
       page.getByText(/Paste your saved sequence YAML/),
@@ -248,6 +259,8 @@ test.describe("LoadModal — builder round-trip", () => {
   test("Escape closes LoadModal without loading", async ({
     page,
   }) => {
+    // #load-btn lives inside the responsive controls hamburger menu.
+    await openControlsMenu(page)
     await page.locator("#load-btn").click()
     await expect(
       page.getByText(/Paste your saved sequence YAML/),
@@ -279,7 +292,7 @@ test.describe("LookupModal", () => {
     await addStepWithCommand(
       page,
       "nameAnimeEpisodes",
-      /^Name Anime Episodes\s/,
+      /^Name Anime Episodes \(MAL\)/,
     )
 
     await page
@@ -304,7 +317,7 @@ test.describe("LookupModal", () => {
     await addStepWithCommand(
       page,
       "nameAnimeEpisodes",
-      /^Name Anime Episodes\s/,
+      /^Name Anime Episodes \(MAL\)/,
     )
     await page
       .getByRole("button", { name: /Look up/ })
@@ -323,7 +336,7 @@ test.describe("LookupModal", () => {
     await addStepWithCommand(
       page,
       "nameAnimeEpisodes",
-      /^Name Anime Episodes\s/,
+      /^Name Anime Episodes \(MAL\)/,
     )
     await page
       .getByRole("button", { name: /Look up/ })
@@ -423,8 +436,9 @@ test.describe("FileExplorerModal", () => {
     await sourceInput.press("Escape")
     await sourceInput.blur()
 
-    await page
+    await stepCard
       .getByRole("button", { name: /Browse folders/ })
+      .first()
       .click()
 
     await expect(
@@ -471,8 +485,9 @@ test.describe("FileExplorerModal", () => {
     await sourceInput.press("Escape")
     await sourceInput.blur()
 
-    await page
+    await stepCard
       .getByRole("button", { name: /Browse folders/ })
+      .first()
       .click()
 
     await expect(
@@ -524,8 +539,9 @@ test.describe("FileExplorerModal", () => {
     await sourceInput.press("Escape")
     await sourceInput.blur()
 
-    await page
+    await stepCard
       .getByRole("button", { name: /Browse folders/ })
+      .first()
       .click()
     await expect(
       page.locator("#file-explorer-modal"),

@@ -55,7 +55,7 @@ export default defineConfig({
     {
       name: "Web",
       command: "yarn prod:web-server",
-      url: `${webBaseURL}/builder/`,
+      url: `${webBaseURL}/`,
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
       stderr: "pipe",

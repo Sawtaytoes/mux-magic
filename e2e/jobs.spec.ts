@@ -2,10 +2,9 @@ import { expect, test } from "@playwright/test"
 
 import type { Job } from "../packages/web/src/types"
 
-// Playwright's baseURL points to the API server (port 3000).  After W3, the
-// React SPA is served by the web server (port 4173).  The web server URL is
-// derived from the WEB_PORT env var (default 4173), matching the second
-// webServer entry in playwright.config.ts.
+// playwright.config.ts sets baseURL to the web server (port 4173). Tests
+// can use relative paths (page.goto("/")) for SPA navigation. webBase is
+// kept for tests that were already using it and not changed in this pass.
 const webPort = Number(process.env.WEB_PORT ?? 4173)
 const webBase = `http://localhost:${webPort}`
 
@@ -38,8 +37,12 @@ test.describe("Jobs page — SSE stream", () => {
     await expect(
       page.getByText(/No jobs yet/),
     ).toBeVisible()
+    // Two "Sequence Builder" links exist (header nav + empty-state). Either being
+    // visible confirms the page loaded correctly.
     await expect(
-      page.getByRole("link", { name: /Sequence Builder/ }),
+      page
+        .getByRole("link", { name: /Sequence Builder/ })
+        .first(),
     ).toBeVisible()
   })
 
@@ -69,8 +72,11 @@ test.describe("Jobs page — SSE stream", () => {
     await expect(jobCard).toBeVisible()
     // Job ID is shown in the card meta section.
     await expect(jobCard).toContainText("job-running-001")
-    // StatusBadge shows the current status.
-    await expect(jobCard.getByText("running")).toBeVisible()
+    // StatusBadge shows the current status. Multiple "running" text nodes may
+    // exist inside the card (badge + progress area); use the status-badge class.
+    await expect(
+      jobCard.locator(".status-badge"),
+    ).toContainText("running")
   })
 
   test("job card status updates to 'completed' when SSE delivers completion event", async ({

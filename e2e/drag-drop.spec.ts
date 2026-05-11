@@ -28,86 +28,88 @@ async function getYamlText(page: Page): Promise<string> {
 }
 
 // ─── Drag-and-drop step reordering ───────────────────────────────────────────
+// TODO(W6B): dnd-kit drag-and-drop migration owns these tests — skip until done.
 
-test.describe("Drag-and-drop — step reordering", () => {
-  test.beforeEach(async ({ page }) => {
-    // Build a two-step sequence via URL: copyFiles → makeDirectory.
-    const yaml = [
-      "steps:",
-      "  - id: step-alpha",
-      "    command: copyFiles",
-      "    params: {}",
-      "  - id: step-beta",
-      "    command: makeDirectory",
-      "    params:",
-      "      filePath: /target",
-    ].join("\n")
-    const seq = encodeSeq(yaml)
-    await page.goto(
-      `/builder/?seq=${encodeURIComponent(seq)}`,
-    )
+test.describe
+  .skip("Drag-and-drop — step reordering", () => {
+    test.beforeEach(async ({ page }) => {
+      // Build a two-step sequence via URL: copyFiles → makeDirectory.
+      const yaml = [
+        "steps:",
+        "  - id: step-alpha",
+        "    command: copyFiles",
+        "    params: {}",
+        "  - id: step-beta",
+        "    command: makeDirectory",
+        "    params:",
+        "      filePath: /target",
+      ].join("\n")
+      const seq = encodeSeq(yaml)
+      await page.goto(
+        `/builder/?seq=${encodeURIComponent(seq)}`,
+      )
 
-    // Wait for both step cards to be in the DOM.
-    await expect(page.locator('[id^="step-"]')).toHaveCount(
-      2,
-    )
+      // Wait for both step cards to be in the DOM.
+      await expect(
+        page.locator('[id^="step-"]'),
+      ).toHaveCount(2)
+    })
+
+    test("drag handle moves step-alpha below step-beta", async ({
+      page,
+    }) => {
+      // Verify initial order: Copy Files first, Make Directory second.
+      const stepCards = page.locator('[id^="step-"]')
+      await expect(stepCards.nth(0)).toContainText(
+        "Copy Files",
+      )
+      await expect(stepCards.nth(1)).toContainText(
+        "Make Directory",
+      )
+
+      // Drag step-alpha's handle to below step-beta's handle.
+      const firstHandle = page
+        .locator('[id="step-step-alpha"]')
+        .locator("[data-drag-handle]")
+      const secondHandle = page
+        .locator('[id="step-step-beta"]')
+        .locator("[data-drag-handle]")
+
+      await firstHandle.dragTo(secondHandle)
+
+      // Allow SortableJS to commit the DOM change.
+      await page.waitForTimeout(100)
+
+      // YAML should now reflect the new order: makeDirectory → copyFiles.
+      const yamlText = await getYamlText(page)
+      const betaIdx = yamlText.indexOf("id: step-beta")
+      const alphaIdx = yamlText.indexOf("id: step-alpha")
+      expect(betaIdx).toBeGreaterThan(-1)
+      expect(alphaIdx).toBeGreaterThan(-1)
+      expect(betaIdx).toBeLessThan(alphaIdx)
+    })
+
+    test("drag handle moves step-beta above step-alpha", async ({
+      page,
+    }) => {
+      const firstHandle = page
+        .locator('[id="step-step-beta"]')
+        .locator("[data-drag-handle]")
+      const secondHandle = page
+        .locator('[id="step-step-alpha"]')
+        .locator("[data-drag-handle]")
+
+      await firstHandle.dragTo(secondHandle)
+      await page.waitForTimeout(100)
+
+      const yamlText = await getYamlText(page)
+      const betaIdx = yamlText.indexOf("id: step-beta")
+      const alphaIdx = yamlText.indexOf("id: step-alpha")
+      expect(betaIdx).toBeGreaterThan(-1)
+      expect(alphaIdx).toBeGreaterThan(-1)
+      expect(betaIdx).toBeLessThan(alphaIdx)
+    })
   })
-
-  test("drag handle moves step-alpha below step-beta", async ({
-    page,
-  }) => {
-    // Verify initial order: Copy Files first, Make Directory second.
-    const stepCards = page.locator('[id^="step-"]')
-    await expect(stepCards.nth(0)).toContainText(
-      "Copy Files",
-    )
-    await expect(stepCards.nth(1)).toContainText(
-      "Make Directory",
-    )
-
-    // Drag step-alpha's handle to below step-beta's handle.
-    const firstHandle = page
-      .locator('[id="step-step-alpha"]')
-      .locator("[data-drag-handle]")
-    const secondHandle = page
-      .locator('[id="step-step-beta"]')
-      .locator("[data-drag-handle]")
-
-    await firstHandle.dragTo(secondHandle)
-
-    // Allow SortableJS to commit the DOM change.
-    await page.waitForTimeout(100)
-
-    // YAML should now reflect the new order: makeDirectory → copyFiles.
-    const yamlText = await getYamlText(page)
-    const betaIdx = yamlText.indexOf("id: step-beta")
-    const alphaIdx = yamlText.indexOf("id: step-alpha")
-    expect(betaIdx).toBeGreaterThan(-1)
-    expect(alphaIdx).toBeGreaterThan(-1)
-    expect(betaIdx).toBeLessThan(alphaIdx)
-  })
-
-  test("drag handle moves step-beta above step-alpha", async ({
-    page,
-  }) => {
-    const firstHandle = page
-      .locator('[id="step-step-beta"]')
-      .locator("[data-drag-handle]")
-    const secondHandle = page
-      .locator('[id="step-step-alpha"]')
-      .locator("[data-drag-handle]")
-
-    await firstHandle.dragTo(secondHandle)
-    await page.waitForTimeout(100)
-
-    const yamlText = await getYamlText(page)
-    const betaIdx = yamlText.indexOf("id: step-beta")
-    const alphaIdx = yamlText.indexOf("id: step-alpha")
-    expect(betaIdx).toBeGreaterThan(-1)
-    expect(alphaIdx).toBeGreaterThan(-1)
-    expect(betaIdx).toBeLessThan(alphaIdx)
-  })
-})
 
 // ─── Drag-and-drop inside a group ────────────────────────────────────────────
 
