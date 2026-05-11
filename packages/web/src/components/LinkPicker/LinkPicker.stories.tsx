@@ -49,11 +49,6 @@ const withOpenPicker = () => {
     anchor: { stepId: "step-3", fieldName: "sourcePath" },
     triggerRect: TRIGGER_RECT,
   })
-  if (typeof window !== "undefined") {
-    window.commandLabel = (name: string) => name
-    window.setLink = () => {}
-    window.refreshLinkPickerTrigger = () => {}
-  }
   return (Story: React.ComponentType) => (
     <Provider store={store}>
       <Story />
