@@ -136,6 +136,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W0c | 2026-05-10 | test: capture parity reference YAML for all commands (Phase 0 baseline) |
 | W1 | 2026-05-10 | feat(commands): port COMMANDS to TS |
 | W1 | 2026-05-10 | feat(commands): port buildParams to TS with inline-assertion tests |
+| W1 | 2026-05-10 | feat(commands): port getLinkedValue and fieldVisibility shared helpers |
 
 ## Open Questions
 
