@@ -122,4 +122,61 @@ describe("PathField", () => {
     const updatedStep = updatedSteps[0] as Step
     expect(updatedStep.params.filePath).toBeUndefined()
   })
+
+  it("typing into unlinked PathField with no existing param creates path var and links field", () => {
+    const store = createStore()
+    store.set(pathsAtom, [])
+    store.set(stepsAtom, [
+      createTestStep({ params: {}, links: {} }),
+    ])
+
+    const step = createTestStep({ params: {}, links: {} })
+    render(
+      <Provider store={store}>
+        <PathField field={field} step={step} />
+      </Provider>,
+    )
+
+    const input = screen.getByRole("textbox")
+    fireEvent.change(input, { target: { value: "/new/path" } })
+
+    const updatedPaths = store.get(pathsAtom)
+    expect(updatedPaths).toHaveLength(1)
+    expect(updatedPaths[0].value).toBe("/new/path")
+
+    const updatedSteps = store.get(stepsAtom)
+    const updatedStep = updatedSteps[0] as Step
+    const linkedId = updatedStep.links?.filePath
+    expect(typeof linkedId).toBe("string")
+    expect(linkedId).toBe(updatedPaths[0].id)
+  })
+
+  it("typing into unlinked PathField with existing param value updates param (not addPathVar)", () => {
+    const store = createStore()
+    store.set(stepsAtom, [
+      createTestStep({ params: { filePath: "/existing" }, links: {} }),
+    ])
+
+    const step = createTestStep({
+      params: { filePath: "/existing" },
+      links: {},
+    })
+    render(
+      <Provider store={store}>
+        <PathField field={field} step={step} />
+      </Provider>,
+    )
+
+    const input = screen.getByRole("textbox")
+    fireEvent.change(input, {
+      target: { value: "/updated/path" },
+    })
+
+    const updatedSteps = store.get(stepsAtom)
+    const updatedStep = updatedSteps[0] as Step
+    expect(updatedStep.params.filePath).toBe("/updated/path")
+
+    const updatedPaths = store.get(pathsAtom)
+    expect(updatedPaths).toHaveLength(0)
+  })
 })

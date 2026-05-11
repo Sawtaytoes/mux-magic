@@ -52,7 +52,7 @@ export const PathField = ({
   field,
   step,
 }: PathFieldProps) => {
-  const { setParam, setPathValue } = useBuilderActions()
+  const { addPathVar, setLink, setParam, setPathValue } = useBuilderActions()
   const setFileExplorer = useSetAtom(fileExplorerAtom)
   const setLinkPickerState = useSetAtom(linkPickerStateAtom)
   const paths = useAtomValue(pathsAtom)
@@ -143,6 +143,10 @@ export const PathField = ({
           const value = event.target.value || undefined
           if (typeof link === "string") {
             setPathValue(link, value ?? "")
+          } else if (!step.params[field.name] && value) {
+            const newId = `pathVar_${Math.random().toString(36).slice(2, 8)}`
+            addPathVar(newId, value)
+            setLink(step.id, field.name, newId)
           } else {
             setParam(step.id, field.name, value)
           }

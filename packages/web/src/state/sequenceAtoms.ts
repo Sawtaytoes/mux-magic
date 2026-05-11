@@ -456,6 +456,20 @@ export const addPathAtom = atom(null, (_get, set) => {
   ])
 })
 
+export const addPathVarAtom = atom(
+  null,
+  (
+    _get,
+    set,
+    args: { id: string; label: string; value: string },
+  ) => {
+    set(pathsAtom, (paths) => [
+      ...paths,
+      { id: args.id, label: args.label, value: args.value },
+    ])
+  },
+)
+
 export const setPathValueAtom = atom(
   null,
   (
