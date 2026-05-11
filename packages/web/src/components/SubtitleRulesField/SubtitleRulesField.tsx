@@ -55,7 +55,7 @@ export const SubtitleRulesField = ({
   step,
 }: SubtitleRulesFieldProps) => {
   const { setParam } = useBuilderActions()
-  const [isPreviewOpen, setIsPreviewOpen] = useState(true)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const hasDefaultRules = Boolean(
     step.params.hasDefaultRules ?? false,
   )

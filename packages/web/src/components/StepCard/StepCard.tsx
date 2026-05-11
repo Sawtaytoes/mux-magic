@@ -1,8 +1,10 @@
-import { useSortable } from "@dnd-kit/sortable"
+import {
+  defaultAnimateLayoutChanges,
+  useSortable,
+} from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useRef, useState } from "react"
-import { flushSync } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
@@ -45,6 +47,7 @@ const StepCardInner = ({
   isDropTarget = false,
 }: StepCardProps) => {
   const [actionsOpen, setActionsOpen] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
 
   const toggleCollapsed = useSetAtom(
     toggleStepCollapsedAtom,
@@ -69,7 +72,7 @@ const StepCardInner = ({
 
   const sortable = useSortable({
     id: step.id,
-    animateLayoutChanges: () => true,
+    animateLayoutChanges: defaultAnimateLayoutChanges,
   })
   const dragStyle = isDragOverlay
     ? {}
@@ -77,7 +80,11 @@ const StepCardInner = ({
         transform: CSS.Transform.toString(
           sortable.transform,
         ),
-        transition: sortable.transition ?? undefined,
+        transition:
+          sortable.transition ??
+          (sortable.transform
+            ? "transform 250ms ease"
+            : undefined),
       }
 
   const label = commandLabel(step.command) || step.command
@@ -258,15 +265,11 @@ const StepCardInner = ({
           <button
             type="button"
             onClick={() =>
-              document.startViewTransition(() =>
-                flushSync(() =>
-                  moveStep({
-                    stepId: step.id,
-                    direction: -1,
-                    parentGroupId,
-                  }),
-                ),
-              )
+              moveStep({
+                stepId: step.id,
+                direction: -1,
+                parentGroupId,
+              })
             }
             disabled={isFirst}
             aria-label="Move step up"
@@ -277,15 +280,11 @@ const StepCardInner = ({
           <button
             type="button"
             onClick={() =>
-              document.startViewTransition(() =>
-                flushSync(() =>
-                  moveStep({
-                    stepId: step.id,
-                    direction: 1,
-                    parentGroupId,
-                  }),
-                ),
-              )
+              moveStep({
+                stepId: step.id,
+                direction: 1,
+                parentGroupId,
+              })
             }
             disabled={isLast}
             aria-label="Move step down"
@@ -296,12 +295,16 @@ const StepCardInner = ({
           {step.command && (
             <button
               type="button"
-              onClick={() => copyStepYaml(step.id)}
+              onClick={async () => {
+                await copyStepYaml(step.id)
+                setIsCopied(true)
+                setTimeout(() => setIsCopied(false), 1500)
+              }}
               title="Copy this step's YAML"
               aria-label="Copy this step's YAML"
-              className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent"
+              className={`w-6 h-6 flex items-center justify-center rounded text-xs border transition-colors ${isCopied ? "text-emerald-400 border-emerald-500/50 bg-slate-700" : "text-slate-500 hover:text-emerald-400 hover:bg-slate-700 border-transparent"}`}
             >
-              <CopyIcon />
+              {isCopied ? "✓" : <CopyIcon />}
             </button>
           )}
           <button

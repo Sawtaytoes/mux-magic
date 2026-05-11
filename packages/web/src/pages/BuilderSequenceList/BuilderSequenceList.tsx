@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/sortable"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useState } from "react"
+import { flushSync } from "react-dom"
 import { GroupCard } from "../../components/GroupCard/GroupCard"
 import { InsertDivider } from "../../components/InsertDivider/InsertDivider"
 import { StepCard } from "../../components/StepCard/StepCard"
@@ -100,12 +101,26 @@ export const BuilderSequenceList = () => {
         <InsertDivider
           key={`divider-before-${item.id}`}
           index={itemIndex}
-          onInsertStep={() => actions.insertStep(itemIndex)}
+          onInsertStep={() =>
+            document.startViewTransition(() =>
+              flushSync(() =>
+                actions.insertStep(itemIndex),
+              ),
+            )
+          }
           onInsertSequentialGroup={() =>
-            actions.insertGroup(itemIndex, false)
+            document.startViewTransition(() =>
+              flushSync(() =>
+                actions.insertGroup(itemIndex, false),
+              ),
+            )
           }
           onInsertParallelGroup={() =>
-            actions.insertGroup(itemIndex, true)
+            document.startViewTransition(() =>
+              flushSync(() =>
+                actions.insertGroup(itemIndex, true),
+              ),
+            )
           }
           onPaste={handlePaste(itemIndex)}
         />
@@ -157,12 +172,24 @@ export const BuilderSequenceList = () => {
     <InsertDivider
       key="divider-end"
       index={steps.length}
-      onInsertStep={() => actions.insertStep(steps.length)}
+      onInsertStep={() =>
+        document.startViewTransition(() =>
+          flushSync(() => actions.insertStep(steps.length)),
+        )
+      }
       onInsertSequentialGroup={() =>
-        actions.insertGroup(steps.length, false)
+        document.startViewTransition(() =>
+          flushSync(() =>
+            actions.insertGroup(steps.length, false),
+          ),
+        )
       }
       onInsertParallelGroup={() =>
-        actions.insertGroup(steps.length, true)
+        document.startViewTransition(() =>
+          flushSync(() =>
+            actions.insertGroup(steps.length, true),
+          ),
+        )
       }
       onPaste={handlePaste(steps.length)}
     />
@@ -199,12 +226,22 @@ export const BuilderSequenceList = () => {
         <p className="text-sm">No steps yet.</p>
         <InsertDivider
           index={0}
-          onInsertStep={() => actions.insertStep(0)}
+          onInsertStep={() =>
+            document.startViewTransition(() =>
+              flushSync(() => actions.insertStep(0)),
+            )
+          }
           onInsertSequentialGroup={() =>
-            actions.insertGroup(0, false)
+            document.startViewTransition(() =>
+              flushSync(() =>
+                actions.insertGroup(0, false),
+              ),
+            )
           }
           onInsertParallelGroup={() =>
-            actions.insertGroup(0, true)
+            document.startViewTransition(() =>
+              flushSync(() => actions.insertGroup(0, true)),
+            )
           }
           onPaste={handlePaste(0)}
         />

@@ -1,12 +1,13 @@
 import { useDndContext, useDroppable } from "@dnd-kit/core"
 import {
+  defaultAnimateLayoutChanges,
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useSetAtom } from "jotai"
-import { flushSync } from "react-dom"
+import { useState } from "react"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
@@ -53,6 +54,7 @@ export const GroupCard = ({
   const removeGroup = useSetAtom(removeGroupAtom)
   const { copyGroupYaml, pasteCardAt, runGroup } =
     useBuilderActions()
+  const [isCopied, setIsCopied] = useState(false)
 
   const { active } = useDndContext()
   const isDraggingFromWithin = group.steps.some(
@@ -61,7 +63,7 @@ export const GroupCard = ({
 
   const sortable = useSortable({
     id: group.id,
-    animateLayoutChanges: () => true,
+    animateLayoutChanges: defaultAnimateLayoutChanges,
   })
   const dragStyle = isDragOverlay
     ? {}
@@ -69,7 +71,11 @@ export const GroupCard = ({
         transform: CSS.Transform.toString(
           sortable.transform,
         ),
-        transition: sortable.transition ?? undefined,
+        transition:
+          sortable.transition ??
+          (sortable.transform
+            ? "transform 250ms ease"
+            : undefined),
       }
 
   const { setNodeRef: setDroppableRef, isOver } =
@@ -209,14 +215,7 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() =>
-            document.startViewTransition(() =>
-              flushSync(() =>
-                moveGroup({
-                  groupId: group.id,
-                  direction: -1,
-                }),
-              ),
-            )
+            moveGroup({ groupId: group.id, direction: -1 })
           }
           title="Move group up"
           disabled={isFirst}
@@ -227,14 +226,7 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() =>
-            document.startViewTransition(() =>
-              flushSync(() =>
-                moveGroup({
-                  groupId: group.id,
-                  direction: 1,
-                }),
-              ),
-            )
+            moveGroup({ groupId: group.id, direction: 1 })
           }
           title="Move group down"
           disabled={isLast}
@@ -244,11 +236,15 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() => copyGroupYaml(group.id)}
+          onClick={async () => {
+            await copyGroupYaml(group.id)
+            setIsCopied(true)
+            setTimeout(() => setIsCopied(false), 1500)
+          }}
           title="Copy this group's YAML"
-          className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent"
+          className={`w-6 h-6 flex items-center justify-center rounded text-xs border transition-colors ${isCopied ? "text-emerald-400 border-emerald-500/50 bg-slate-700" : "text-slate-500 hover:text-emerald-400 hover:bg-slate-700 border-transparent"}`}
         >
-          <CopyIcon />
+          {isCopied ? "✓" : <CopyIcon />}
         </button>
         <button
           type="button"

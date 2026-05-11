@@ -109,7 +109,11 @@ export const PathField = ({
     setFileExplorer({
       path: displayValue,
       pickerOnSelect: (selectedPath) => {
-        setParam(step.id, field.name, selectedPath)
+        if (typeof link === "string") {
+          setPathValue(link, selectedPath)
+        } else {
+          setParam(step.id, field.name, selectedPath)
+        }
       },
     })
   }
@@ -172,7 +176,10 @@ export const PathField = ({
             clearTimeout(debounceTimerRef.current)
           }
           const currentInput = inputRef.current
-          if (currentInput && /^[/\\]/.test(rawValue)) {
+          if (
+            currentInput &&
+            /^([/\\]|[A-Za-z]:[/\\])/.test(rawValue)
+          ) {
             const lastSep = Math.max(
               rawValue.lastIndexOf("/"),
               rawValue.lastIndexOf("\\"),

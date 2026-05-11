@@ -38,6 +38,7 @@ export const PageHeader = () => {
   const actions = useBuilderActions()
 
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null)
+  const [isYamlCopied, setIsYamlCopied] = useState(false)
 
   // ─── Click-outside dismissal for responsive menus ─────────────────────────
   useEffect(() => {
@@ -306,20 +307,6 @@ export const PageHeader = () => {
           <span className="page-menu-sep w-px h-6 bg-slate-700 mx-1" />
 
           <div className="page-menu-group">
-            <button
-              type="button"
-              data-action="add-path"
-              onClick={() => actions.addPath()}
-              title="Add a path variable"
-              className="text-xs bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded font-medium"
-            >
-              Add Path
-            </button>
-          </div>
-
-          <span className="page-menu-sep w-px h-6 bg-slate-700 mx-1" />
-
-          <div className="page-menu-group">
             <div className="page-menu-row">
               {/* Load YAML */}
               <button
@@ -348,31 +335,44 @@ export const PageHeader = () => {
               <button
                 type="button"
                 id="copy-btn"
-                onClick={() => void actions.copyYaml()}
+                onClick={async () => {
+                  await actions.copyYaml()
+                  setIsYamlCopied(true)
+                  setTimeout(
+                    () => setIsYamlCopied(false),
+                    1500,
+                  )
+                }}
                 title="Copy YAML"
-                className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors"
+                className={`w-7 h-7 flex items-center justify-center rounded border transition-colors ${isYamlCopied ? "text-emerald-400 bg-slate-700 border-emerald-500/50" : "text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border-slate-700 hover:border-slate-600"}`}
               >
-                <svg
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4"
-                >
-                  <path d="M15.75 17.25v3a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-9a1.5 1.5 0 0 1 1.5-1.5H8.25" />
-                  <rect
-                    x="8.25"
-                    y="2.25"
-                    width="12"
-                    height="15"
-                    rx="1.5"
-                    ry="1.5"
-                  />
-                </svg>
+                {isYamlCopied ? (
+                  <span className="text-xs font-bold">
+                    ✓
+                  </span>
+                ) : (
+                  <svg
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-4 h-4"
+                  >
+                    <path d="M15.75 17.25v3a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-9a1.5 1.5 0 0 1 1.5-1.5H8.25" />
+                    <rect
+                      x="8.25"
+                      y="2.25"
+                      width="12"
+                      height="15"
+                      rx="1.5"
+                      ry="1.5"
+                    />
+                  </svg>
+                )}
               </button>
               {/* View YAML */}
               <button
