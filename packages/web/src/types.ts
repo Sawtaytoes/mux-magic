@@ -7,6 +7,7 @@ export type CommandField = {
   name: string
   type: string
   label?: string
+  description?: string
   required?: boolean
   default?: unknown
   options?: EnumOption[]
