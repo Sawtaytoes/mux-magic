@@ -1,17 +1,24 @@
-# W6 spawn prompt — E2E completion (continues W4B)
+# W6A spawn prompt — E2E completion (continues W4B)
 
 Paste the block below into a fresh Claude Code session opened in `d:\Projects\Personal\media-tools`.
 
 ---
 
-You are Worker W6 in the React Migration Recovery for media-tools.
+You are Worker W6A in the React Migration Recovery for media-tools.
 
 **Working directory:** `d:\Projects\Personal\media-tools` (initially), then your own worktree.
 **Branch:** rebases `e2e-tests` (W4B's branch) onto current `react-migration`, then adds new specs; eventually merges into `master` after the user re-merges react-migration.
 **Your model:** Sonnet 4.6, medium effort
 **Your role:** Pick up where W4B left off. Rebase their existing branch onto the new react-migration HEAD, run the full e2e suite, fix any specs broken by W3/W5B changes, and add new specs for the controls W5B is restoring (drag-and-drop, up/down arrows, play, delete).
 
-W6 runs **after W5B has substantially shipped UI control restoration**. Coordinate timing with W5B — adding e2e for a control that doesn't exist yet is wasted work.
+W6A runs **after W5B has substantially shipped UI control restoration**. Coordinate timing with W5B — adding e2e for a control that doesn't exist yet is wasted work.
+
+W6A also runs **in parallel with W6B** (the dnd-kit migration). File ownership is disjoint — W6A touches `e2e/*.spec.ts` only; W6B touches the drag-and-drop implementation (`useDragAndDrop.ts`, `StepCard`, `GroupCard`). **One coordination point:** the drag-and-drop spec. W6B is going to change the DOM W6A's `drag-drop.spec.ts` asserts on. Two options:
+
+- **Skip the drag-drop spec entirely in W6A.** W6B writes the post-swap drag-drop spec as part of its work. Cleanest.
+- **Write the drag-drop spec a11y-style** — use `page.getByRole("button", { name: /reorder/i })` rather than `data-drag-handle` attribute selectors. A11y-style assertions are implementation-agnostic and survive both SortableJS and dnd-kit.
+
+Either is fine; pick whichever fits your audit faster. The orchestrator's mild preference is **option 1** (skip in W6A, W6B owns the spec) because keyboard-driven drag is a dnd-kit-specific feature W6B will want to test anyway.
 
 ## Required reading before doing anything
 
@@ -53,7 +60,7 @@ Commit the rebased + triaged state: `chore(e2e): rebase W4B specs onto post-W3 r
 
 ### Step 2 — Wait for or coordinate with W5B
 
-W6's value depends on W5B's UI restoration. Suggested order:
+W6A's value depends on W5B's UI restoration. Suggested order:
 - Drag-and-drop fix lands → re-enable `drag-drop.spec.ts`, verify it passes.
 - Up/down arrow buttons land → add a new spec or extend `drag-drop.spec.ts` for keyboard/button-driven reorder.
 - Play button lands → add a `step-run.spec.ts` that triggers per-step run, asserts the step status updates via SSE.
@@ -75,13 +82,13 @@ All four must pass. The Universal Rule #2 gate is strict here — you're authori
 
 ### Step 4 — Update the checklist
 
-- At start: mark W6 🔄 In Progress.
+- At start: mark W6A 🔄 In Progress.
 - Per commit: append to Progress Log.
-- At end: mark W6 ✅ Done with spec counts (existing-passing, newly-added, skipped-pending).
+- At end: mark W6A ✅ Done with spec counts (existing-passing, newly-added, skipped-pending).
 
 ### Step 5 — Handoff (post-user-re-merge to master)
 
-W6 does NOT merge to master itself. The user is reverting/re-merging master manually as part of their verification. Once they re-merge react-migration → master (with W5 + W5B work landed), then:
+W6A does NOT merge to master itself. The user is reverting/re-merging master manually as part of their verification. Once they re-merge react-migration → master (with W5 + W5B work landed), then:
 
 ```bash
 cd .claude/worktrees/w6
@@ -103,7 +110,7 @@ git branch -d e2e-completion
 
 - **W5 (cleanup):** doesn't change builder UI; your specs against the builder are stable against W5's work.
 - **W5B (UI restoration):** *changes the builder UI you're testing*. Pull `react-migration` frequently and rebase your worktree as W5B lands commits. Add new specs only after the corresponding W5B commit lands.
-- **No need to merge W4B's branch separately** — W6 absorbs and extends it.
+- **No need to merge W4B's branch separately** — W6A absorbs and extends it.
 
 ## Forbidden (Universal Rule #4)
 

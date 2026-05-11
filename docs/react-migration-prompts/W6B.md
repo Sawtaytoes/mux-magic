@@ -1,22 +1,30 @@
-# W7 spawn prompt — Replace sortablejs with @dnd-kit (React-native DnD)
+# W6B spawn prompt — Replace sortablejs with @dnd-kit (React-native DnD)
 
 Paste the block below into a fresh Claude Code session opened in `d:\Projects\Personal\media-tools`.
 
 ---
 
-You are Worker W7 in the React Migration Recovery for media-tools.
+You are Worker W6B in the React Migration Recovery for media-tools.
 
-**Working directory:** worktree at `.claude/worktrees/w7` (set up below).
+**Working directory:** worktree at `.claude/worktrees/w6b` (set up below).
 **Branch:** new `feat/dnd-kit-migration` off `react-migration`; merges back to `react-migration` when done.
 **Your model:** Sonnet 4.6, medium effort
 **Your role:** Replace the existing SortableJS-based drag-and-drop with `@dnd-kit/core` + `@dnd-kit/sortable`. SortableJS is great vanilla JS but it mutates DOM directly, which fights React's render model — the current implementation has `animation:0` hacks and a manual ref dance because of this. `@dnd-kit` is designed for React: headless, emits events you apply via React state, built-in keyboard + screen reader a11y.
 
-W7 is **sequential after W6** in the suggested order. Reason: W6 writes e2e specs against the current drag-and-drop DOM patterns. If W7 lands first, W6's specs need authoring against the dnd-kit DOM; either is fine but the orchestrator picked W6-first so e2e specs land against a known-stable implementation, then W7 adapts specs as part of its work.
+W6B runs **in parallel with W6A**. File ownership is disjoint:
+- W6A: `e2e/*.spec.ts` only (no source code changes)
+- W6B: `packages/web/src/hooks/useDragAndDrop.ts`, `StepCard.tsx`, `GroupCard.tsx`, plus `package.json`/`yarn.lock` for the dep swap
+
+**Coordination with W6A:** the only friction point is the drag-and-drop e2e spec. W6A's `drag-drop.spec.ts` currently uses SortableJS DOM patterns (`data-drag-handle`-style selectors). After your swap, those selectors change. To avoid a race:
+- W6A is asked to either skip the drag-drop spec (you write it after your swap) OR write it against a11y-style role assertions that survive the implementation swap (`page.getByRole("button", { name: /reorder/i })`).
+- Either way, **you own the final drag-drop spec** — if W6A's spec breaks after your swap, fix it in your branch.
+
+If W6A finishes first, rebase your branch onto react-migration's tip before merging. If you finish first, W6A rebases.
 
 ## Required reading
 
 1. [docs/react-migration-recovery-handout.md](../react-migration-recovery-handout.md) — Universal Rules (especially #2 pre-push gate, #4 no snapshot/VRT).
-2. [docs/react-migration-checklist.md](../react-migration-checklist.md) — current state. Phase 5 (W5A/W5B/W5C) is done. Phase 6 (W6 e2e completion) precedes you.
+2. [docs/react-migration-checklist.md](../react-migration-checklist.md) — current state. Phase 5 (W5A/W5B/W5C) is done. Phase 6 (W6A e2e completion) precedes you.
 3. [packages/web/src/hooks/useDragAndDrop.ts](../../packages/web/src/hooks/useDragAndDrop.ts) — current SortableJS wrapper.
 4. [packages/web/src/components/DragAndDrop/DragAndDrop.tsx](../../packages/web/src/components/DragAndDrop/DragAndDrop.tsx) — likely a component shim around the hook (verify on disk; W5B added/updated this).
 5. The `useDragAndDrop` consumer call sites — grep for `useDragAndDrop` to find StepCard, GroupCard, BuilderSequenceList, etc.
@@ -24,8 +32,8 @@ W7 is **sequential after W6** in the suggested order. Reason: W6 writes e2e spec
 ## Worktree setup
 
 ```bash
-git worktree add .claude/worktrees/w7 -b feat/dnd-kit-migration react-migration
-cd .claude/worktrees/w7
+git worktree add .claude/worktrees/w6b -b feat/dnd-kit-migration react-migration
+cd .claude/worktrees/w6b
 yarn install
 ```
 
@@ -67,7 +75,7 @@ Add a `<DragOverlay>` to render the floating preview of the dragged item. Withou
 Existing tests that mock SortableJS (search for `vi.mock('sortablejs')` or similar) need rewriting:
 
 - For unit/component tests: use `@dnd-kit/core`'s test utilities, or assert on the result of an `onDragEnd` callback firing.
-- For e2e (Playwright) — W6 likely uses `data-drag-handle` or similar selectors. @dnd-kit emits its own DOM attributes (`data-dnd-kit-...`); update spec selectors accordingly. Coordinate with W6's branch (if W6 hasn't merged yet) or rebase W6's specs after this lands.
+- For e2e (Playwright) — W6A likely uses `data-drag-handle` or similar selectors. @dnd-kit emits its own DOM attributes (`data-dnd-kit-...`); update spec selectors accordingly. Coordinate with W6A's branch (if W6A hasn't merged yet) or rebase W6A's specs after this lands.
 
 ### Step 5 — Verify drag UX matches
 
@@ -102,21 +110,21 @@ Suggested:
 When done:
 
 ```bash
-cd .claude/worktrees/w7
+cd .claude/worktrees/w6b
 git push origin feat/dnd-kit-migration
 ```
 
-Open a PR `feat/dnd-kit-migration` → `react-migration` (or merge directly per repo convention). If W6's e2e specs have already merged, they'll likely need a small update commit on this branch to match the dnd-kit DOM attributes.
+Open a PR `feat/dnd-kit-migration` → `react-migration` (or merge directly per repo convention). If W6A's e2e specs have already merged, they'll likely need a small update commit on this branch to match the dnd-kit DOM attributes.
 
 After merge:
 
 ```bash
 cd ../..
-git worktree remove .claude/worktrees/w7
+git worktree remove .claude/worktrees/w6b
 git branch -d feat/dnd-kit-migration
 ```
 
-Mark W7 ✅ Done in the checklist.
+Mark W6B ✅ Done in the checklist.
 
 ## Forbidden (Universal Rule #4)
 

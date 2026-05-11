@@ -19,8 +19,8 @@ Prompts are generated lazily — the next worker's prompt is written only after 
 | W5A | [W5A.md](W5A.md) | Ready to spawn (parallel with W5B + W5C) — runs in **main checkout** on `react-migration` | W3 |
 | W5B | [W5B.md](W5B.md) | Ready to spawn (parallel with W5A + W5C) — runs in **worktree** `.claude/worktrees/w5b` on `feat/restore-builder-controls` | W3 |
 | W5C | [W5C.md](W5C.md) | Ready to spawn (parallel with W5A + W5B) — runs in **worktree** `.claude/worktrees/w5c` on `feat/restore-tooltips`; data-only work (commands.ts) | W3 |
-| W6 | [W6.md](W6.md) | Ready to spawn after W5B substantially ships UI controls — runs in **worktree** `.claude/worktrees/w6` on `e2e-completion` (extends W4B's `e2e-tests`) | W5B |
-| W7 | [W7.md](W7.md) | Ready to spawn after W6 — runs in **worktree** `.claude/worktrees/w7` on `feat/dnd-kit-migration`. Replaces SortableJS with @dnd-kit/core + @dnd-kit/sortable (React-native DnD, better a11y) | W6 |
+| W6A | [W6A.md](W6A.md) | Ready (parallel with W6B) — runs in **worktree** `.claude/worktrees/w6` on `e2e-completion` (extends W4B's `e2e-tests`); e2e specs for restored UI controls | W5B |
+| W6B | [W6B.md](W6B.md) | Ready (parallel with W6A) — runs in **worktree** `.claude/worktrees/w6b` on `feat/dnd-kit-migration`. Replaces SortableJS with @dnd-kit/core + @dnd-kit/sortable (React-native DnD, better a11y). Owns the drag-drop e2e spec post-swap. | W5B |
 
 **Naming convention (working version, expected to evolve):**
 - **Same number + letter suffix = parallel** (W2A/B/C/D, W4A/B, W5A/B all run concurrently within their phase).
@@ -33,6 +33,7 @@ Earlier in this conversation "W5" / "W6" / "W4C" referred to different workers; 
 - Main checkout (`d:\Projects\Personal\media-tools` on `react-migration`): W5A
 - Worktree `.claude/worktrees/w5b` on `feat/restore-builder-controls`: W5B
 - Worktree `.claude/worktrees/w5c` on `feat/restore-tooltips`: W5C
-- Worktree `.claude/worktrees/w6` on `e2e-completion` (extends W4B's `e2e-tests`): W6
+- Worktree `.claude/worktrees/w6` on `e2e-completion` (extends W4B's `e2e-tests`): W6A
+- Worktree `.claude/worktrees/w6b` on `feat/dnd-kit-migration`: W6B
 
 Each worktree merges back to `react-migration` when done. The user handles the final `react-migration → master` re-merge after manual verification.
