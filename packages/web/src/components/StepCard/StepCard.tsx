@@ -31,6 +31,7 @@ interface StepCardProps {
   isLast: boolean
   parentGroupId?: string | null
   isDragOverlay?: boolean
+  isDropTarget?: boolean
 }
 
 const StepCardInner = ({
@@ -40,6 +41,7 @@ const StepCardInner = ({
   isLast,
   parentGroupId = null,
   isDragOverlay = false,
+  isDropTarget = false,
 }: StepCardProps) => {
   const [actionsOpen, setActionsOpen] = useState(false)
 
@@ -147,7 +149,7 @@ const StepCardInner = ({
         ...dragStyle,
         opacity,
       }}
-      className="step-card bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
+      className={`step-card bg-slate-800 rounded-xl border border-slate-700 overflow-hidden${isDropTarget && !isDragOverlay ? " ring-2 ring-blue-500/60" : ""}`}
     >
       <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-700 bg-slate-800/80">
         <button

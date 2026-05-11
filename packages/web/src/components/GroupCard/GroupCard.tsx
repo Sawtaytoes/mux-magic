@@ -1,3 +1,4 @@
+import { useDroppable } from "@dnd-kit/core"
 import {
   SortableContext,
   useSortable,
@@ -26,6 +27,8 @@ interface GroupCardProps {
   startingFlatIndex: number
   isFirst: boolean
   isLast: boolean
+  isDragOverlay?: boolean
+  isDropTarget?: boolean
 }
 
 export const GroupCard = ({
@@ -34,6 +37,8 @@ export const GroupCard = ({
   startingFlatIndex,
   isFirst,
   isLast,
+  isDragOverlay = false,
+  isDropTarget = false,
 }: GroupCardProps) => {
   const toggleCollapsed = useSetAtom(
     toggleGroupCollapsedAtom,
@@ -52,10 +57,16 @@ export const GroupCard = ({
     id: group.id,
     animateLayoutChanges: () => true,
   })
-  const dragStyle = {
-    transform: CSS.Transform.toString(sortable.transform),
-    transition: sortable.transition ?? undefined,
-  }
+  const dragStyle = isDragOverlay
+    ? {}
+    : {
+        transform: CSS.Transform.toString(sortable.transform),
+        transition: sortable.transition ?? undefined,
+      }
+
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: `${group.id}-droppable`,
+  })
 
   const stepCount = group.steps.length
   const hasRunnableSteps = group.steps.some((step) =>
@@ -77,15 +88,21 @@ export const GroupCard = ({
 
   const innerStepIds = group.steps.map((step) => step.id)
 
+  const outerOpacity = isDragOverlay
+    ? 1
+    : sortable.isDragging
+      ? 0.3
+      : 1
+
   return (
     <div
-      ref={sortable.setNodeRef}
+      ref={isDragOverlay ? undefined : sortable.setNodeRef}
       data-group={group.id}
       style={{
         ...dragStyle,
-        opacity: sortable.isDragging ? 0.3 : 1,
+        opacity: outerOpacity,
       }}
-      className={`group-card ${group.isParallel ? "group-card-parallel" : "group-card-serial"} bg-slate-900/50 rounded-xl border border-slate-700/70 overflow-hidden`}
+      className={`group-card ${group.isParallel ? "group-card-parallel" : "group-card-serial"} bg-slate-900/50 rounded-xl border border-slate-700/70 overflow-hidden${isDropTarget && !isDragOverlay ? " ring-2 ring-blue-500/60" : ""}`}
     >
       <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-700/70 bg-slate-900/70">
         <button
@@ -94,9 +111,9 @@ export const GroupCard = ({
           aria-label="Drag to reorder"
           title="Drag to reorder"
           className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 select-none cursor-grab active:cursor-grabbing"
-          ref={sortable.setActivatorNodeRef}
-          {...sortable.attributes}
-          {...sortable.listeners}
+          ref={isDragOverlay ? undefined : sortable.setActivatorNodeRef}
+          {...(isDragOverlay ? {} : sortable.attributes)}
+          {...(isDragOverlay ? {} : sortable.listeners)}
         >
           ⠿
         </button>
@@ -230,7 +247,10 @@ export const GroupCard = ({
           items={innerStepIds}
           strategy={verticalListSortingStrategy}
         >
-          <div className={`${containerClasses} p-3`}>
+          <div
+            ref={setDroppableRef}
+            className={`${containerClasses} p-3 min-h-[3rem]${isOver ? " bg-blue-900/20" : ""}`}
+          >
             {group.steps.map((step, idx) => (
               <StepCard
                 key={step.id}

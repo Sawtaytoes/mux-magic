@@ -215,6 +215,9 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | (orchestrator) | 2026-05-11 | fix(loadYaml): allow blank steps (command: '') — treat as placeholder; skip field loading; add loadYaml.test.ts (12 tests) |
 | (orchestrator) | 2026-05-11 | docs(checklist): add W7E + W7F prompt files; update checklist rows with prompt links |
 | W7F | 2026-05-11 | chore(checklist): W7F in progress — DnD drop indicator + group droppable + overlay + tests + stories |
+| W7F | 2026-05-11 | fix(dnd): add visual drop-target highlight ring to StepCard and GroupCard |
+| W7F | 2026-05-11 | fix(dnd): make group body a droppable fallback zone for empty groups |
+| W7F | 2026-05-11 | fix(dnd): add GroupCard DragOverlay so dragging a group shows a floating preview |
 
 ## W4A Audit Findings (2026-05-10)
 
