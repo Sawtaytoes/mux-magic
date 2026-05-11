@@ -231,9 +231,9 @@ describe("PathPicker selection", () => {
     await userEvent.click(screen.getByText("Documents"))
 
     const steps = store.get(stepsAtom)
-    const step = steps.find((item) => "id" in item && item.id === "step-1") as
-      | { params: Record<string, unknown> }
-      | undefined
+    const step = steps.find(
+      (item) => "id" in item && item.id === "step-1",
+    ) as { params: Record<string, unknown> } | undefined
     expect(step?.params.sourcePath).toBe(
       "/home/user/Documents/",
     )

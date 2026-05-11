@@ -6,6 +6,7 @@ import {
   useState,
 } from "react"
 import { useTolerantEventSource } from "../../hooks/useTolerantEventSource"
+import { setStepRunStatusAtom } from "../../state/sequenceAtoms"
 import {
   apiRunModalAtom,
   promptModalAtom,
@@ -35,6 +36,7 @@ export const ApiRunModal = () => {
     useAtom(apiRunModalAtom)
   const _setPromptData = useSetAtom(promptModalAtom)
   const setRunning = useSetAtom(runningAtom)
+  const setStepRunStatus = useSetAtom(setStepRunStatusAtom)
 
   const [logs, setLogs] = useState<string[]>([])
   const [status, setStatus] = useState<RunStatus>("pending")
@@ -86,33 +88,34 @@ export const ApiRunModal = () => {
   const handleParentMessage = useCallback(
     (data: Record<string, unknown>) => {
       if (data.type === "step-started") {
-        setChildJobId((data.childJobId as string) ?? null)
-        setChildStepId((data.stepId as string) ?? null)
+        const newChildJobId =
+          (data.childJobId as string) ?? null
+        const newStepId = (data.stepId as string) ?? null
+        setChildJobId(newChildJobId)
+        setChildStepId(newStepId)
         setChildProgress({})
-        // Notify legacy step card to reset its UI via bridge.
-        if (
-          typeof window.mediaTools?.onStepStarted ===
-          "function"
-        ) {
-          window.mediaTools.onStepStarted(
-            data.stepId,
-            data.childJobId,
-          )
+        if (newStepId) {
+          setStepRunStatus({
+            stepId: newStepId,
+            status: "running",
+            jobId: newChildJobId,
+          })
         }
         return
       }
       if (data.type === "step-finished") {
+        const finishedStepId =
+          (data.stepId as string) ?? null
         setChildJobId(null)
         setChildStepId(null)
         setChildProgress({})
-        if (
-          typeof window.mediaTools?.onStepFinished ===
-          "function"
-        ) {
-          window.mediaTools.onStepFinished(
-            data.stepId,
-            data,
-          )
+        if (finishedStepId) {
+          setStepRunStatus({
+            stepId: finishedStepId,
+            status:
+              (data.status as string | null) ?? "completed",
+            jobId: null,
+          })
         }
         return
       }
@@ -128,15 +131,9 @@ export const ApiRunModal = () => {
         setChildStepId(null)
         setChildProgress({})
         setRunning(false)
-        if (
-          typeof window.mediaTools?.onSequenceDone ===
-          "function"
-        ) {
-          window.mediaTools.onSequenceDone()
-        }
       }
     },
-    [setRunning],
+    [setRunning, setStepRunStatus],
   )
 
   const handleParentDisconnected = useCallback(() => {
@@ -155,42 +152,10 @@ export const ApiRunModal = () => {
         setChildProgress((prev) =>
           mergeProgress(prev, data as ProgressSnapshot),
         )
-        if (
-          childStepId &&
-          typeof window.mediaTools?.onStepProgress ===
-            "function"
-        ) {
-          window.mediaTools.onStepProgress(
-            childStepId,
-            data,
-          )
-        }
         return
-      }
-      if (data.line && childStepId) {
-        if (
-          typeof window.mediaTools?.onStepLog === "function"
-        ) {
-          window.mediaTools.onStepLog(
-            childStepId,
-            data.line as string,
-          )
-        }
-        return
-      }
-      if (data.done && childStepId) {
-        if (
-          typeof window.mediaTools?.onChildStepDone ===
-          "function"
-        ) {
-          window.mediaTools.onChildStepDone(
-            childStepId,
-            data,
-          )
-        }
       }
     },
-    [childStepId],
+    [],
   )
 
   useTolerantEventSource<Record<string, unknown>>({
@@ -338,7 +303,7 @@ export const ApiRunModal = () => {
         {/* Log output */}
         <pre
           id="api-run-logs"
-          className="flex-1 overflow-y-auto text-xs font-mono text-slate-300 px-4 py-3 whitespace-pre-wrap break-words min-h-0"
+          className="flex-1 overflow-y-auto text-xs font-mono text-slate-300 px-4 py-3 whitespace-pre-wrap wrap-break-word min-h-0"
         >
           {logs.join("\n")}
           <div ref={logsEndRef} />
