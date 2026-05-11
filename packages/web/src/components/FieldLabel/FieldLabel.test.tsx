@@ -3,6 +3,7 @@ import {
   render,
   screen,
 } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, test } from "vitest"
 import { FieldLabel } from "./FieldLabel"
 
@@ -59,18 +60,21 @@ describe("FieldLabel", () => {
     expect(screen.queryByText("*")).toBeNull()
   })
 
-  test("sets the tooltip data attribute", () => {
-    const { container } = render(
+  test("shows tooltip on click when description is provided", async () => {
+    const user = userEvent.setup()
+    render(
       <FieldLabel
         command="ffmpeg"
-        field={{ name: "filename", label: "Filename" }}
+        field={{
+          name: "filename",
+          label: "Filename",
+          description: "The output filename",
+        }}
       />,
     )
-    const label = container.querySelector(
-      "[data-tooltip-key]",
-    )
-    expect(label?.getAttribute("data-tooltip-key")).toBe(
-      "ffmpeg:filename",
+    await user.click(screen.getByText("Filename"))
+    expect(screen.getByRole("tooltip").textContent).toBe(
+      "The output filename",
     )
   })
 })
