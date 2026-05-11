@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
 import { WEB_PORT } from "@media-tools/server/src/tools/envVars.js"
@@ -21,6 +22,22 @@ app.use(
     },
   }),
 )
+
+// SPA fallback: serve index.html for routes serveStatic didn't match.
+// Scoped to extension-free paths so asset 404s (e.g. a missing .js chunk)
+// are not silently swallowed — React Router owns all non-dot paths.
+// Read per-request so a rebuild+server-restart picks up the new asset hashes.
+app.get("*", (context) => {
+  if (/\.[^/]+$/.test(context.req.path)) {
+    return context.notFound()
+  }
+  try {
+    const html = readFileSync("./dist/index.html", "utf8")
+    return context.html(html)
+  } catch {
+    return context.notFound()
+  }
+})
 
 serve(
   {

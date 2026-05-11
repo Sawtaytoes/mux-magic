@@ -122,7 +122,10 @@ const PredicateCard = ({
   const [draftName, setDraftName] = useState(predicateName)
 
   return (
-    <div className="border border-slate-700/60 rounded px-2 py-1.5 mt-2 bg-slate-900/30">
+    <div
+      data-predicate-key={predicateName}
+      className="border border-slate-700/60 rounded px-2 py-1.5 mt-2 bg-slate-900/30"
+    >
       <div className="flex items-center gap-2 mb-1">
         <input
           type="text"
@@ -225,6 +228,7 @@ export const PredicatesManager = ({
   return (
     <details
       open={isOpen}
+      data-details-key={detailsKey}
       className="mt-3 border border-slate-700/60 rounded"
       onToggle={(event) => {
         onToggleDetails(
@@ -262,7 +266,7 @@ export const PredicatesManager = ({
             }}
             className="text-xs text-slate-400 hover:text-blue-400 mt-2"
           >
-            + predicate
+            + Add predicate
           </button>
         )}
       </div>

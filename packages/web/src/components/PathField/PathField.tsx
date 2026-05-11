@@ -114,7 +114,8 @@ export const PathField = ({
         <button
           type="button"
           onClick={handleBrowse}
-          title="Browse to pick a folder for this field"
+          title="Browse folders"
+          aria-label="Browse folders"
           className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 cursor-pointer"
         >
           📁
@@ -134,6 +135,7 @@ export const PathField = ({
         ref={inputRef}
         type="text"
         id={`${step.command}-${field.name}`}
+        data-field={field.name}
         value={displayValue}
         readOnly={isObjectLink}
         onChange={(event) => {
