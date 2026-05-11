@@ -78,7 +78,7 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W1 | 1 — Wave B-0 RenderFields | ✅ Done | 2026-05-10 | claude-sonnet-4-6; 8 commits; COMMANDS+buildParams+links+fieldVisibility ported, RenderFields dispatcher live, BuilderPage+yamlSerializer migrated, fixtures frozen |
 | W2A | 2 — Bundle A (BooleanField, NumberField, StringField) | ✅ Done | 2026-05-10 | Haiku 4.5; all 3 primitives ported, dispatcher wired, tests pass |
 | W2B | 2 — Bundle B (EnumField, LanguageCodeField, LanguageCodesField) | ✅ Done | 2026-05-10 | Haiku 4.5; ported all 3 fields; EnumField uses enumPickerStateAtom; tests pass |
-| W2C | 2 — Bundle C (StringArrayField, NumberArrayField, JsonField) | ⬜ Not Started | — | |
+| W2C | 2 — Bundle C (StringArrayField, NumberArrayField, JsonField) | ✅ Done | 2026-05-10 | Haiku 4.5; all 3 array/json fields ported with parity tests; dispatcher wired; tests pass |
 | W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | 🔄 In Progress | 2026-05-10 | Haiku 4.5; PathField + NumberWithLookupField + FolderMultiSelectField + SubtitleRulesField ported; DslRulesBuilder escalated to Phase 2.5 |
 | W3 | 3 — Final Cleanup | ⬜ Not Started | — | Blocks on W2A+W2B+W2C+W2D |
 | W4 | 4 — Verification & Master Merge | ⬜ Not Started | — | Parallel with W5 |
@@ -146,6 +146,8 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W2A | 2026-05-10 | feat(fields): port NumberField from vanilla JS to React (dropped scheduleReverseLookup; added stories) |
 | W2A | 2026-05-10 | feat(fields): port StringField + add string case to RenderFields dispatcher (all three W2A fields wired) |
 | W2B | 2026-05-10 | feat(fields): port EnumField + LanguageCodeField + LanguageCodesField (all three fields + stories wired) |
+| W2C | 2026-05-10 | feat(fields): port StringArrayField, NumberArrayField, JsonField (parity with legacy behavior; JSON fallback on parse failure) |
+| W2C | 2026-05-10 | feat(fields): wire StringArrayField, NumberArrayField, JsonField to RenderFields dispatcher (all W2C fields complete) |
 | W2D | 2026-05-10 | chore(checklist): W2D in progress |
 | W2D | 2026-05-10 | feat(commands): add lookupLinks.ts (LOOKUP_LINKS constant for NumberWithLookupField) |
 | W2D | 2026-05-10 | feat(fields): port PathField + NumberWithLookupField + FolderMultiSelectField + SubtitleRulesField (all with tests + stories; wire to RenderFields dispatcher) |
