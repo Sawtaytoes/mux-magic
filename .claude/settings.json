@@ -51,6 +51,7 @@
       "Bash(yarn typecheck * | tail *)",
       "PowerShell($proc | netstat -ano *)",
       "PowerShell(cat *)",
+      "PowerShell(cd *)",
       "PowerShell(Copy-Item *)",
       "PowerShell(cp *)",
       "PowerShell(Get-*)",

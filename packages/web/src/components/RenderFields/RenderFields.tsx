@@ -61,10 +61,7 @@ const FieldDispatcher = ({
       return <EnumField field={field} step={step} />
     case "numberWithLookup":
       return (
-        <NumberWithLookupField
-          field={field}
-          step={step}
-        />
+        <NumberWithLookupField field={field} step={step} />
       )
     case "languageCode":
       return <LanguageCodeField field={field} step={step} />
@@ -80,19 +77,13 @@ const FieldDispatcher = ({
       return <JsonField field={field} step={step} />
     case "folderMultiSelect":
       return (
-        <FolderMultiSelectField
-          field={field}
-          step={step}
-        />
+        <FolderMultiSelectField field={field} step={step} />
       )
     case "string":
       return <StringField field={field} step={step} />
     case "subtitleRules":
       return (
-        <SubtitleRulesField
-          field={field}
-          step={step}
-        />
+        <SubtitleRulesField field={field} step={step} />
       )
     default:
       return (
