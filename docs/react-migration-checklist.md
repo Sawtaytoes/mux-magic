@@ -216,6 +216,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | (orchestrator) | 2026-05-11 | docs(checklist): add W7E + W7F prompt files; update checklist rows with prompt links |
 | W7A | 2026-05-11 | chore(checklist): W7A in progress — 3 streams: Modal primitive, story regroup, Switch extraction |
 | W7A | 2026-05-11 | feat(storybook): W7A done — Modal primitive + 5 modal refactors + 16 story title regroups + Switch primitive; 373/373 tests; PR #70 |
+| (orchestrator) | 2026-05-11 | Merge W7A (PR #71 rebased) → react-migration; 388/388 tests passing |
 
 ## W4A Audit Findings (2026-05-10)
 
