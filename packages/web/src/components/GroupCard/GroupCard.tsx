@@ -58,6 +58,9 @@ export const GroupCard = ({
   }
 
   const stepCount = group.steps.length
+  const hasRunnableSteps = group.steps.some(
+    (step) => Boolean(step.command),
+  )
   const parallelBadge = group.isParallel ? (
     <span className="text-[10px] uppercase tracking-wide font-semibold text-blue-300 bg-blue-950/60 border border-blue-700/50 rounded px-1.5 py-0.5">
       parallel
@@ -202,8 +205,13 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() => runGroup(group.id)}
-          title="Run this group via /sequences/run"
-          className="text-[10px] text-emerald-500 hover:text-emerald-300 px-2 py-0.5 rounded border border-emerald-700/50 hover:border-emerald-500 hover:bg-emerald-950/30"
+          disabled={!hasRunnableSteps}
+          title={
+            hasRunnableSteps
+              ? "Run this group via /sequences/run"
+              : "Add a step with a command before running"
+          }
+          className="text-[10px] text-emerald-500 hover:text-emerald-300 px-2 py-0.5 rounded border border-emerald-700/50 hover:border-emerald-500 hover:bg-emerald-950/30 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-emerald-500 disabled:hover:border-emerald-700/50 disabled:hover:bg-transparent"
         >
           ▶ Run
         </button>
