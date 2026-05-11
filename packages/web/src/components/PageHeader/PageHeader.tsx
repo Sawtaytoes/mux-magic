@@ -1,5 +1,6 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
+import { Switch } from "../../primitives/Switch/Switch"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import {
   canRedoAtom,
@@ -256,25 +257,10 @@ export const PageHeader = () => {
               title="Toggle dry-run mode — simulate commands without touching files"
             >
               <span className="leading-none">Dry Run</span>
-              <span
-                id="dry-run-track"
-                className={`relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden border transition-colors ${
-                  dryRun
-                    ? "bg-amber-500 border-amber-400"
-                    : "bg-slate-600 border-slate-500"
-                }`}
-              >
-                <span
-                  id="dry-run-thumb"
-                  className="absolute top-px left-px w-3 h-3 rounded-full bg-white shadow-sm"
-                  style={{
-                    transition: "transform 150ms ease",
-                    transform: dryRun
-                      ? "translateX(1rem)"
-                      : undefined,
-                  }}
-                />
-              </span>
+              <Switch
+                isOn={dryRun}
+                activeTrackClass="bg-amber-500 border-amber-400"
+              />
             </button>
 
             {dryRun && (
@@ -288,25 +274,10 @@ export const PageHeader = () => {
                 <span className="leading-none">
                   Simulate Failures
                 </span>
-                <span
-                  id="failure-mode-track"
-                  className={`relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden border transition-colors ${
-                    failureMode
-                      ? "bg-red-600 border-red-500"
-                      : "bg-slate-600 border-slate-500"
-                  }`}
-                >
-                  <span
-                    id="failure-mode-thumb"
-                    className="absolute top-px left-px w-3 h-3 rounded-full bg-white shadow-sm"
-                    style={{
-                      transition: "transform 150ms ease",
-                      transform: failureMode
-                        ? "translateX(1rem)"
-                        : undefined,
-                    }}
-                  />
-                </span>
+                <Switch
+                  isOn={failureMode}
+                  activeTrackClass="bg-red-600 border-red-500"
+                />
               </button>
             )}
 
