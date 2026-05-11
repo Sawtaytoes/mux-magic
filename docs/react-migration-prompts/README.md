@@ -15,3 +15,4 @@ Prompts are generated lazily — the next worker's prompt is written only after 
 | W3 | _(generated after W2A/B/C/D all report)_ | — | W2A+B+C+D |
 | W4 | _(generated after W3 reports)_ | — | W3 |
 | W5 | _(generated after W3 reports — parallel with W4)_ | — | W3 |
+| W6 | [W6.md](W6.md) | Ready (don't spawn until W5 reports) | W5 |
