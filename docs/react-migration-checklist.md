@@ -178,6 +178,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W4A | 2026-05-10 | Merge react-migration → master (22b48b00) + tag react-migration-complete. **W4B: master is ready — rebase e2e-tests onto master and merge when specs pass.** |
 | W5A | 2026-05-11 | chore(checklist): W5A in progress — 4 streams: parity (4 bridge atoms + MDX + buildBuilderUrl), code-smell, a11y, BuilderPage story |
 | W5B | 2026-05-11 | chore(checklist): W5B in progress — drag-and-drop, runOrStopStep port, Storybook polish |
+| W5B | 2026-05-11 | fix(builder): restore drag-and-drop — install sortablejs npm pkg, switch DragAndDrop.tsx from window.Sortable to npm import, wire useDragAndDrop in BuilderSequenceList |
 
 ## W4A Audit Findings (2026-05-10)
 

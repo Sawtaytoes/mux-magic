@@ -1,23 +1,9 @@
 import { useAtom } from "jotai"
 import { useEffect, useRef } from "react"
+import Sortable from "sortablejs"
 import { isGroup } from "../../jobs/sequenceUtils"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Group, SequenceItem, Step } from "../../types"
-
-// SortableJS is loaded as a vendor script in index.html.
-declare global {
-  interface Window {
-    Sortable?: {
-      new (
-        el: HTMLElement,
-        options: Record<string, unknown>,
-      ): { destroy: () => void }
-      get: (
-        el: HTMLElement,
-      ) => { destroy: () => void } | undefined
-    }
-  }
-}
 
 export const useDragAndDrop = (
   containerRef: React.RefObject<HTMLElement | null>,
@@ -26,8 +12,7 @@ export const useDragAndDrop = (
   const isProcessingRef = useRef(false)
 
   useEffect(() => {
-    const Sortable = window.Sortable
-    if (!Sortable || !containerRef.current) return
+    if (!containerRef.current) return
 
     const getStepsArrayFor = (
       el: HTMLElement,
@@ -53,12 +38,10 @@ export const useDragAndDrop = (
       return null
     }
 
-    const onMove = (event: {
-      dragged: HTMLElement
-      to: HTMLElement
-    }) => {
+    const onMove = (event: Sortable.MoveEvent) => {
       const draggedIsGroup =
-        event.dragged?.dataset?.group !== undefined
+        (event.dragged as HTMLElement)?.dataset?.group !==
+        undefined
       const targetIsGroupBody = event.to?.matches?.(
         "[data-group-body]",
       )
@@ -66,17 +49,16 @@ export const useDragAndDrop = (
       return true
     }
 
-    const onEnd = (event: {
-      from: HTMLElement
-      to: HTMLElement
-      oldDraggableIndex: number | undefined
-      newDraggableIndex: number | undefined
-    }) => {
+    const onEnd = (event: Sortable.SortableEvent) => {
       if (isProcessingRef.current) return
       isProcessingRef.current = true
 
-      const sourceInfo = getStepsArrayFor(event.from)
-      const targetInfo = getStepsArrayFor(event.to)
+      const sourceInfo = getStepsArrayFor(
+        event.from as HTMLElement,
+      )
+      const targetInfo = getStepsArrayFor(
+        event.to as HTMLElement,
+      )
       if (!sourceInfo || !targetInfo) {
         window.requestAnimationFrame(() => {
           isProcessingRef.current = false
@@ -159,7 +141,7 @@ export const useDragAndDrop = (
       })
     }
 
-    const options = {
+    const options: Sortable.Options = {
       group: { name: "sequence", pull: true, put: true },
       handle: "[data-drag-handle]",
       draggable: "[data-sortable-item]",
@@ -182,7 +164,7 @@ export const useDragAndDrop = (
     ]
 
     const instances = containers.map((container) => {
-      const existing = Sortable.get?.(container)
+      const existing = Sortable.get(container)
       existing?.destroy()
       return new Sortable(container, options)
     })
