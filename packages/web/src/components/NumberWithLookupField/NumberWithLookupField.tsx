@@ -3,7 +3,11 @@ import { useSetAtom } from "jotai"
 import { LOOKUP_LINKS } from "../../commands/lookupLinks"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { lookupModalAtom } from "../../state/uiAtoms"
-import type { CommandField, Step } from "../../types"
+import type {
+  CommandField,
+  LookupType,
+  Step,
+} from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
 
 type NumberWithLookupFieldProps = {
@@ -25,7 +29,9 @@ export const NumberWithLookupField = ({
         | string
         | undefined) ?? "")
     : ""
-  const lookupType = field.lookupType as string | undefined
+  const lookupType = field.lookupType as
+    | LookupType
+    | undefined
   const lookupConfig = lookupType
     ? LOOKUP_LINKS[lookupType]
     : null
@@ -33,7 +39,7 @@ export const NumberWithLookupField = ({
   const handleLookup = () => {
     if (!lookupType) return
     setLookupModal({
-      lookupType: lookupType as any,
+      lookupType: lookupType,
       stepId: step.id,
       fieldName: field.name,
       stage: "search",

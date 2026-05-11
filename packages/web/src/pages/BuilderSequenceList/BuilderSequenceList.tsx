@@ -123,7 +123,10 @@ export const BuilderSequenceList = () => {
               startingFlatIndex={acc.flatIndex}
               isFirst={itemIndex === 0}
               isLast={itemIndex === steps.length - 1}
-              isDropTarget={overId === item.id}
+              isDropTarget={
+                overId === item.id ||
+                overId === `${item.id}-droppable`
+              }
             />,
           ],
           flatIndex: acc.flatIndex + item.steps.length,

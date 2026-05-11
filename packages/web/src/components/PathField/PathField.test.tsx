@@ -1,6 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react"
-import { createStore } from "jotai"
-import { Provider } from "jotai"
+import {
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react"
+import { createStore, Provider } from "jotai"
 import { describe, expect, it } from "vitest"
 
 import { FIXTURE_COMMANDS_BUNDLE_D } from "../../commands/__fixtures__/commands"
@@ -96,10 +99,17 @@ describe("PathField", () => {
   it("typing into linked PathField updates path variable value, not step param", () => {
     const store = createStore()
     store.set(pathsAtom, [
-      { id: "basePath", label: "basePath", value: "/old/path" },
+      {
+        id: "basePath",
+        label: "basePath",
+        value: "/old/path",
+      },
     ])
     store.set(stepsAtom, [
-      createTestStep({ links: { filePath: "basePath" }, params: {} }),
+      createTestStep({
+        links: { filePath: "basePath" },
+        params: {},
+      }),
     ])
 
     const step = createTestStep({
@@ -113,7 +123,9 @@ describe("PathField", () => {
     )
 
     const input = screen.getByRole("textbox")
-    fireEvent.change(input, { target: { value: "/new/path" } })
+    fireEvent.change(input, {
+      target: { value: "/new/path" },
+    })
 
     const updatedPaths = store.get(pathsAtom)
     expect(updatedPaths[0].value).toBe("/new/path")
@@ -138,7 +150,9 @@ describe("PathField", () => {
     )
 
     const input = screen.getByRole("textbox")
-    fireEvent.change(input, { target: { value: "/new/path" } })
+    fireEvent.change(input, {
+      target: { value: "/new/path" },
+    })
 
     const updatedPaths = store.get(pathsAtom)
     expect(updatedPaths).toHaveLength(1)
@@ -154,7 +168,10 @@ describe("PathField", () => {
   it("typing into unlinked PathField with existing param value updates param (not addPathVar)", () => {
     const store = createStore()
     store.set(stepsAtom, [
-      createTestStep({ params: { filePath: "/existing" }, links: {} }),
+      createTestStep({
+        params: { filePath: "/existing" },
+        links: {},
+      }),
     ])
 
     const step = createTestStep({
@@ -174,7 +191,9 @@ describe("PathField", () => {
 
     const updatedSteps = store.get(stepsAtom)
     const updatedStep = updatedSteps[0] as Step
-    expect(updatedStep.params.filePath).toBe("/updated/path")
+    expect(updatedStep.params.filePath).toBe(
+      "/updated/path",
+    )
 
     const updatedPaths = store.get(pathsAtom)
     expect(updatedPaths).toHaveLength(0)

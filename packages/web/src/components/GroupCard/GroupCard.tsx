@@ -1,4 +1,4 @@
-import { useDroppable } from "@dnd-kit/core"
+import { useDndContext, useDroppable } from "@dnd-kit/core"
 import {
   SortableContext,
   useSortable,
@@ -6,6 +6,7 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useSetAtom } from "jotai"
+import { flushSync } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
@@ -53,6 +54,11 @@ export const GroupCard = ({
   const { copyGroupYaml, pasteCardAt, runGroup } =
     useBuilderActions()
 
+  const { active } = useDndContext()
+  const isDraggingFromWithin = group.steps.some(
+    (step) => step.id === active?.id,
+  )
+
   const sortable = useSortable({
     id: group.id,
     animateLayoutChanges: () => true,
@@ -69,6 +75,7 @@ export const GroupCard = ({
   const { setNodeRef: setDroppableRef, isOver } =
     useDroppable({
       id: `${group.id}-droppable`,
+      disabled: isDraggingFromWithin,
     })
 
   const stepCount = group.steps.length
@@ -86,7 +93,7 @@ export const GroupCard = ({
   )
 
   const containerClasses = group.isParallel
-    ? "parallel-group flex flex-row flex-wrap gap-3"
+    ? "parallel-group grid grid-cols-2 gap-3"
     : "serial-group flex flex-col gap-3"
 
   const innerStepIds = group.steps.map((step) => step.id)
@@ -102,6 +109,9 @@ export const GroupCard = ({
       ref={isDragOverlay ? undefined : sortable.setNodeRef}
       data-group={group.id}
       style={{
+        viewTransitionName: isDragOverlay
+          ? undefined
+          : `group-${group.id}`,
         ...dragStyle,
         opacity: outerOpacity,
       }}
@@ -199,7 +209,14 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() =>
-            moveGroup({ groupId: group.id, direction: -1 })
+            document.startViewTransition(() =>
+              flushSync(() =>
+                moveGroup({
+                  groupId: group.id,
+                  direction: -1,
+                }),
+              ),
+            )
           }
           title="Move group up"
           disabled={isFirst}
@@ -210,7 +227,14 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() =>
-            moveGroup({ groupId: group.id, direction: 1 })
+            document.startViewTransition(() =>
+              flushSync(() =>
+                moveGroup({
+                  groupId: group.id,
+                  direction: 1,
+                }),
+              ),
+            )
           }
           title="Move group down"
           disabled={isLast}
@@ -256,7 +280,7 @@ export const GroupCard = ({
         >
           <div
             ref={setDroppableRef}
-            className={`${containerClasses} p-3 min-h-[3rem]${isOver ? " bg-blue-900/20" : ""}`}
+            className={`${containerClasses} p-3 min-h-[3rem]${isOver && !isDraggingFromWithin ? " bg-blue-900/20" : ""}`}
           >
             {group.steps.map((step, idx) => (
               <StepCard

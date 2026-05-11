@@ -2,6 +2,7 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useRef, useState } from "react"
+import { flushSync } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
@@ -257,11 +258,15 @@ const StepCardInner = ({
           <button
             type="button"
             onClick={() =>
-              moveStep({
-                stepId: step.id,
-                direction: -1,
-                parentGroupId,
-              })
+              document.startViewTransition(() =>
+                flushSync(() =>
+                  moveStep({
+                    stepId: step.id,
+                    direction: -1,
+                    parentGroupId,
+                  }),
+                ),
+              )
             }
             disabled={isFirst}
             aria-label="Move step up"
@@ -272,11 +277,15 @@ const StepCardInner = ({
           <button
             type="button"
             onClick={() =>
-              moveStep({
-                stepId: step.id,
-                direction: 1,
-                parentGroupId,
-              })
+              document.startViewTransition(() =>
+                flushSync(() =>
+                  moveStep({
+                    stepId: step.id,
+                    direction: 1,
+                    parentGroupId,
+                  }),
+                ),
+              )
             }
             disabled={isLast}
             aria-label="Move step down"
