@@ -1,6 +1,6 @@
-import { useSetAtom } from "jotai"
-import { useEffect } from "react"
+import { useHydrateAtoms } from "jotai/utils"
 
+import { COMMANDS } from "../../commands/commands"
 import { ApiRunModal } from "../../components/ApiRunModal/ApiRunModal"
 import { CommandHelpModal } from "../../components/CommandHelpModal/CommandHelpModal"
 import { CommandPicker } from "../../components/CommandPicker/CommandPicker"
@@ -15,35 +15,14 @@ import { PromptModal } from "../../components/PromptModal/PromptModal"
 import { YamlModal } from "../../components/YamlModal/YamlModal"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
 import { commandsAtom } from "../../state/commandsAtom"
-import type { Commands } from "../../types"
 import { BuilderPathVarList } from "../BuilderPathVarList/BuilderPathVarList"
 import { BuilderSequenceList } from "../BuilderSequenceList/BuilderSequenceList"
-
-const loadCommands = async (
-  setCommands: (commands: Commands) => void,
-): Promise<void> => {
-  try {
-    const mod = (await new Function(
-      "url",
-      "return import(url)",
-    )("/builder/js/commands.js")) as {
-      COMMANDS: Commands
-    }
-    setCommands(mod.COMMANDS)
-  } catch {
-    // Not available without the server or in tests.
-  }
-}
 
 // ─── BuilderPage ──────────────────────────────────────────────────────────────
 
 export const BuilderPage = () => {
   useBuilderKeyboard()
-
-  const setCommands = useSetAtom(commandsAtom)
-  useEffect(() => {
-    void loadCommands(setCommands)
-  }, [setCommands])
+  useHydrateAtoms([[commandsAtom, COMMANDS]])
 
   return (
     <div

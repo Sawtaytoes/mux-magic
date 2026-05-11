@@ -139,6 +139,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W1 | 2026-05-10 | feat(commands): port getLinkedValue and fieldVisibility shared helpers |
 | W1 | 2026-05-10 | chore(components): verify existing FieldLabel meets dispatcher needs (FieldLabel.tsx already complete per W0b audit — skip recreation) |
 | W1 | 2026-05-10 | feat(components): real RenderFields dispatcher with TodoField placeholders |
+| W1 | 2026-05-10 | refactor(builder): hydrate commandsAtom from TS commands module |
 
 ## Open Questions
 
