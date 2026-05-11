@@ -76,10 +76,10 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W0b | 0 — Audit existing state | ✅ Done | 2026-05-10 | claude-sonnet-4-6, low effort, subagent run successful — commit b882c23 |
 | W0c | 0 — Parity reference capture | ✅ Done | 2026-05-10 | claude-sonnet-4-6 — 36 fixture pairs captured via Node script (buildParams inline); commit 51da90d |
 | W1 | 1 — Wave B-0 RenderFields | ✅ Done | 2026-05-10 | claude-sonnet-4-6; 8 commits; COMMANDS+buildParams+links+fieldVisibility ported, RenderFields dispatcher live, BuilderPage+yamlSerializer migrated, fixtures frozen |
-| W2A | 2 — Bundle A (BooleanField, NumberField, StringField) | 🔄 In Progress | 2026-05-10 | Haiku 4.5; porting 3 primitives |
+| W2A | 2 — Bundle A (BooleanField, NumberField, StringField) | ✅ Done | 2026-05-10 | Haiku 4.5; all 3 primitives ported, dispatcher wired, tests pass |
 | W2B | 2 — Bundle B (EnumField, LanguageCodeField, LanguageCodesField) | ✅ Done | 2026-05-10 | Haiku 4.5; ported all 3 fields; EnumField uses enumPickerStateAtom; tests pass |
 | W2C | 2 — Bundle C (StringArrayField, NumberArrayField, JsonField) | ⬜ Not Started | — | |
-| W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | ⬜ Not Started | — | DslRulesBuilder may escalate |
+| W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | 🔄 In Progress | 2026-05-10 | Haiku 4.5; PathField + NumberWithLookupField + FolderMultiSelectField + SubtitleRulesField ported; DslRulesBuilder escalated to Phase 2.5 |
 | W3 | 3 — Final Cleanup | ⬜ Not Started | — | Blocks on W2A+W2B+W2C+W2D |
 | W4 | 4 — Verification & Master Merge | ⬜ Not Started | — | Parallel with W5 |
 | W5 | 5 — E2E tests (worktree) | ⬜ Not Started | — | Parallel with W4 |
@@ -145,6 +145,26 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W2A | 2026-05-10 | feat(fields): port BooleanField from vanilla JS to React |
 | W2A | 2026-05-10 | feat(fields): port NumberField from vanilla JS to React (dropped scheduleReverseLookup; added stories) |
 | W2A | 2026-05-10 | feat(fields): port StringField + add string case to RenderFields dispatcher (all three W2A fields wired) |
+| W2B | 2026-05-10 | feat(fields): port EnumField + LanguageCodeField + LanguageCodesField (all three fields + stories wired) |
+| W2D | 2026-05-10 | chore(checklist): W2D in progress |
+| W2D | 2026-05-10 | feat(commands): add lookupLinks.ts (LOOKUP_LINKS constant for NumberWithLookupField) |
+| W2D | 2026-05-10 | feat(fields): port PathField + NumberWithLookupField + FolderMultiSelectField + SubtitleRulesField (all with tests + stories; wire to RenderFields dispatcher) |
+| W2D | 2026-05-10 | docs(checklist): DslRulesBuilder escalated to Phase 2.5 (non-mechanical port; see escalation section below) |
+
+## DslRulesBuilder Escalation (W2D)
+
+**Status:** ⚠️ **Escalated to Phase 2.5**
+
+**Reason:** Non-mechanical port. After reading all sub-files (`dsl-rules-builder/constants.js`, `state.js`, `render.js`, `rule-crud.js`), the port requires:
+- Converting module-level `Set` (`openDetailsKeys`) to Jotai atom
+- Full inversion of bridge pattern (`window.mediaTools` read/write → atom subscriptions)
+- 8 distinct state shape decisions (rules union type, predicates map, when/applyIf discriminated unions, computeFrom ops chain, fields map, scaleResolution struct, openDetailsKeys)
+- Converting string-interpolated onclick handlers to React closures throughout (~10 mutation functions)
+- Handling two commit modes (debounced URL sync vs. immediate re-render)
+
+**Recommendation:** Reassign to Sonnet High effort as Phase 2.5 after W2D other fields ship.
+
+**Interim:** SubtitleRulesField ships with JSON textarea fallback. User can edit rules as JSON directly; visual builder deferred.
 
 ## Open Questions
 
