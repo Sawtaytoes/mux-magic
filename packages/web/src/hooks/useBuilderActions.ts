@@ -203,8 +203,8 @@ export const useBuilderActions = () => {
     try {
       const response = await fetch("/sequences/run", {
         method: "POST",
-        headers: { "Content-Type": "application/yaml" },
-        body: yaml,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yaml }),
       })
       if (!response.ok) {
         store.set(apiRunModalAtom, (prev) =>
@@ -365,8 +365,8 @@ export const useBuilderActions = () => {
       try {
         const response = await fetch("/sequences/run", {
           method: "POST",
-          headers: { "Content-Type": "application/yaml" },
-          body: yaml,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ yaml }),
         })
         if (!response.ok) {
           store.set(apiRunModalAtom, (prev) =>
