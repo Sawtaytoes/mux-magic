@@ -25,18 +25,7 @@ describe("SubtitleRulesField", () => {
     FIXTURE_COMMANDS_BUNDLE_D.modifySubtitleMetadata
       .fields[1]
 
-  it("renders textarea", () => {
-    const step = createTestStep()
-    render(
-      <Provider>
-        <SubtitleRulesField field={field} step={step} />
-      </Provider>,
-    )
-    const textarea = screen.getByRole("textbox")
-    expect(textarea).toBeInTheDocument()
-  })
-
-  it("shows escalation note", () => {
+  it("renders the visual rules builder", () => {
     const step = createTestStep()
     render(
       <Provider>
@@ -44,33 +33,35 @@ describe("SubtitleRulesField", () => {
       </Provider>,
     )
     expect(
-      screen.getByText(/coming in Phase 2.5/i),
+      screen.getByText("hasDefaultRules"),
     ).toBeInTheDocument()
   })
 
-  it("initializes with empty array as JSON", () => {
+  it("shows empty state when no rules are configured", () => {
     const step = createTestStep({ params: { rules: [] } })
-    const { container } = render(
+    render(
       <Provider>
         <SubtitleRulesField field={field} step={step} />
       </Provider>,
     )
-    const textarea = container.querySelector(
-      'textarea[placeholder="Enter rules as JSON..."]',
-    ) as HTMLTextAreaElement
-    expect(textarea?.value).toBe("[]")
+    expect(
+      screen.getByText(/no rules yet/i),
+    ).toBeInTheDocument()
   })
 
-  it("shows parse error for invalid JSON", () => {
-    const step = createTestStep()
-    const { container } = render(
+  it("renders a rule card when a rule exists", () => {
+    const step = createTestStep({
+      params: {
+        rules: [{ type: "setScriptInfo", key: "Title", value: "Test" }],
+      },
+    })
+    render(
       <Provider>
         <SubtitleRulesField field={field} step={step} />
       </Provider>,
     )
-    const textarea = container.querySelector(
-      'textarea[placeholder="Enter rules as JSON..."]',
-    )
-    expect(textarea).toBeInTheDocument()
+    expect(
+      screen.getByDisplayValue("setScriptInfo"),
+    ).toBeInTheDocument()
   })
 })
