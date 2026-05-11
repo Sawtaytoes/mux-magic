@@ -109,8 +109,8 @@ export const PathField = ({
 
   return (
     <div className="mb-2">
-      <FieldLabel command={step.command} field={field} />
       <div className="flex items-center gap-2 mb-1">
+        <FieldLabel command={step.command} field={field} />
         <button
           type="button"
           onClick={handleBrowse}
