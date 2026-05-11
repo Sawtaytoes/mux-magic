@@ -79,7 +79,7 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W2A | 2 — Bundle A (BooleanField, NumberField, StringField) | ✅ Done | 2026-05-10 | Haiku 4.5; all 3 primitives ported, dispatcher wired, tests pass |
 | W2B | 2 — Bundle B (EnumField, LanguageCodeField, LanguageCodesField) | ✅ Done | 2026-05-10 | Haiku 4.5; ported all 3 fields; EnumField uses enumPickerStateAtom; tests pass |
 | W2C | 2 — Bundle C (StringArrayField, NumberArrayField, JsonField) | ✅ Done | 2026-05-10 | Haiku 4.5; all 3 array/json fields ported with parity tests; dispatcher wired; tests pass |
-| W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | 🔄 In Progress | 2026-05-10 | Haiku 4.5; PathField + NumberWithLookupField + FolderMultiSelectField + SubtitleRulesField ported; DslRulesBuilder escalated to Phase 2.5 |
+| W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | ✅ Done | 2026-05-10 | Haiku 4.5; 4 fields ported + wired to RenderFields; DslRulesBuilder escalated to Phase 2.5 (non-mechanical port); commit a98ae9b |
 | W3 | 3 — Final Cleanup | ⬜ Not Started | — | Blocks on W2A+W2B+W2C+W2D |
 | W4 | 4 — Verification & Master Merge | ⬜ Not Started | — | Parallel with W5 |
 | W5 | 5 — E2E tests (worktree) | ⬜ Not Started | — | Parallel with W4 |
