@@ -82,9 +82,9 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W2D | 2 — Bundle D (PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder) | ✅ Done | 2026-05-10 | Haiku 4.5; 4 fields ported + wired to RenderFields; DslRulesBuilder escalated to Phase 2.5 (non-mechanical port); commit a98ae9b |
 | W2.5 | 2.5 — DslRulesBuilder (escalated from W2D) | ✅ Done | 2026-05-10 | claude-sonnet-4-6, high effort. Prompt: [react-migration-prompts/W2-5.md](react-migration-prompts/W2-5.md). 5 commits: types, utils, 18 component files, wire SubtitleRulesField, mutation tests + stories. 281 tests passing. |
 | W3 | 3 — Final Cleanup | 🔄 In Progress | 2026-05-10 | claude-sonnet-4-6 (high effort). Replacing 3 prod window.mediaTools files + 19 test/story cleanup + deleting legacy public/ assets. |
-| W4 | 4 — Verification & Master Merge | ⬜ Not Started | — | Parallel with W5 |
-| W5 | 5 — E2E tests (worktree) | ⬜ Not Started | — | Parallel with W4 |
-| W6 | 6 — Parity-trap + code-smell + a11y cleanup | ⬜ Not Started | — | Sonnet high effort. Prompt: [react-migration-prompts/W6.md](react-migration-prompts/W6.md). Runs after W5. Three streams: parity quirks held back during port, code-smell sweep (getIsX collisions, let+subscribe → lastValueFrom, one component per file), final a11y pass. |
+| W4A | 4 — Verification & Master Merge | ⬜ Not Started | — | Parallel with W4B. Sonnet medium. (Was W4 before rename for parallel-pair consistency.) |
+| W4B | 4 — E2E tests (worktree off post-W3 react-migration) | ⬜ Not Started | — | Parallel with W4A. Sonnet medium. (Was W5 before rename.) Merges to master after W4A's master merge lands. |
+| W5 | 5 — Parity-trap + code-smell + a11y cleanup | ⬜ Not Started | — | Sonnet high effort. Prompt: [react-migration-prompts/W5.md](react-migration-prompts/W5.md). Runs after W4A+W4B. Three streams: parity quirks held back during port, code-smell sweep (getIsX collisions, let+subscribe → lastValueFrom, one component per file), final a11y pass. (Was W6 before rename.) |
 
 ### Phase 0 Audit Findings (W0b)
 

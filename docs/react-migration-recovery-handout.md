@@ -88,14 +88,17 @@ The checklist format is defined under [#checklist-template] below — use it ver
 | **W2B** | 2 | Bundle B: EnumField, LanguageCodeField, LanguageCodesField | Haiku | Thinking ON | W1 | `react-migration` (parallel) |
 | **W2C** | 2 | Bundle C: StringArrayField, NumberArrayField, JsonField | Haiku | Thinking ON | W1 | `react-migration` (parallel) |
 | **W2D** | 2 | Bundle D: PathField, NumberWithLookupField, FolderMultiSelectField, SubtitleRulesField, DslRulesBuilder | Haiku | Thinking ON | W1 | `react-migration` (parallel) |
-| **W3** | 3 | Final cleanup: delete bridge, delete public/builder/, replace public/index.html, collapse createRoot | Sonnet | Medium | W2A + W2B + W2C + W2D all done | `react-migration` |
-| **W4** | 4 | Parity verification + checklist audit + merge react-migration → master | Sonnet | Medium | W3 | `react-migration` → `master` (parallel with W5) |
-| **W5** | 5 | E2E tests (Playwright) — authored in `e2e/` worktree off post-W3 react-migration | Sonnet | Medium | W3 (parallel with W4) | worktree off `react-migration`, merges to `master` after W4 |
+| **W3** | 3 | Final cleanup: delete bridge, delete public/builder/, replace public/index.html, collapse createRoot | Sonnet | Medium | W2A + W2B + W2C + W2D + W2.5 all done | `react-migration` |
+| **W4A** | 4 | Parity verification + checklist audit + merge react-migration → master | Sonnet | Medium | W3 | `react-migration` → `master` (parallel with W4B) |
+| **W4B** | 4 | E2E tests (Playwright) — authored in `e2e/` worktree off post-W3 react-migration | Sonnet | Medium | W3 (parallel with W4A) | worktree off `react-migration`, merges to `master` after W4A |
+| **W5** | 5 | Parity-trap + code-smell + a11y cleanup (formerly W6) | Sonnet | High | W4A + W4B both done | `master` |
 
 **Parallel groups:**
 - **W0a, W0b, W0c** — all three start after Pre-W0, run concurrently on `react-migration`. They touch disjoint files.
 - **W2A, W2B, W2C, W2D** — all four start after W1, run concurrently on `react-migration`. They share `RenderFields.tsx` only (one `case` block each).
-- **W4 + W5** — both start after W3. W4 stays on `react-migration` for verification + master merge. W5 uses a worktree off `react-migration` and only writes files under `e2e/`. **Coordination:** W5 must NOT modify `package.json` or `yarn.lock` without coordinating with W4 (Playwright is already installed; if a new dep is needed, ping the orchestrator). After W4 merges to master, W5 rebases their worktree branch onto master and merges when done.
+- **W4A + W4B** — both start after W3. W4A stays on `react-migration` for verification + master merge. W4B uses a worktree off `react-migration` and only writes files under `e2e/`. **Coordination:** W4B must NOT modify `package.json` or `yarn.lock` without coordinating with W4A (Playwright is already installed; if a new dep is needed, ping the orchestrator). After W4A merges to master, W4B rebases their worktree branch onto master and merges when done.
+
+**Naming note:** Phase 4 was originally a single W4 (verification+merge) followed by W5 (e2e). They've been renamed W4A and W4B to match the parallel-pair pattern from Phase 2 (W2A–W2D). The cleanup worker formerly known as W6 is now W5 (next phase). Commit history may still mention W4/W5/W6 by their old labels.
 
 ---
 
@@ -108,7 +111,7 @@ You don't need to interrupt workers — they keep the checklist honest as part o
 3. **Look for ⚠️ Blocked rows** — these need your attention. Workers add a "reason" line next to the status so you can act without re-deriving context.
 4. **Read the per-worker sub-checklists** — each phase has a `[ ] step-name` list. You can see exactly how far through their steps a worker is.
 
-If you ever suspect a worker has fallen out of sync with the checklist, that's an emergency — the same failure mode that triggered this whole recovery. Stop new work, do a W4-style audit on whatever's claimed Done, and reconcile.
+If you ever suspect a worker has fallen out of sync with the checklist, that's an emergency — the same failure mode that triggered this whole recovery. Stop new work, do a W4A-style audit on whatever's claimed Done, and reconcile.
 
 ---
 
@@ -613,18 +616,20 @@ Manual smoke:
 4. `chore: remove orphaned vendor scripts`
 
 ## Handoff
-When all four commits are pushed and the pre-push gate is green: notify the orchestrator that W4 can start.
+When all four commits are pushed and the pre-push gate is green: notify the orchestrator that W4A + W4B can start.
 
 ---
 
-# WORKER W4 — Phase 4: Verification & Master Merge
+# WORKER W4A — Phase 4: Verification & Master Merge
 
-**Model:** Sonnet · **Effort:** Medium · **Branch:** `react-migration` → `master` · **Prerequisite:** W3 complete · **Parallel with:** W5
+**Model:** Sonnet · **Effort:** Medium · **Branch:** `react-migration` → `master` · **Prerequisite:** W3 complete · **Parallel with:** W4B
+
+> **Naming:** this worker was labeled W4 in earlier docs; renamed to W4A so the parallel pair W4A + W4B matches the W2A–W2D pattern.
 
 ## Your Mission
 Prove parity against W0c's reference YAML, run the full suite, then merge `react-migration` into `master`.
 
-W5 is working in a separate worktree at the same time. **Coordination:** you and W5 share only one file in practice — [docs/react-migration-checklist.md](docs/react-migration-checklist.md). Each of you edits only your own row. Use `Edit` (not `Write`); `git pull --rebase` before push. W5 won't touch any of your source files or merge to master before you do.
+W4B is working in a separate worktree at the same time. **Coordination:** you and W4B share only one file in practice — [docs/react-migration-checklist.md](docs/react-migration-checklist.md). Each of you edits only your own row. Use `Edit` (not `Write`); `git pull --rebase` before push. W4B won't touch any of your source files or merge to master before you do.
 
 ## Step-by-Step
 
@@ -659,7 +664,7 @@ Read [docs/react-migration-checklist.md](docs/react-migration-checklist.md) row-
    yarn workspace @media-tools/web test BooleanField
    ```
 3. If you find a drift (checklist says Done, code says No), **STOP**. Reopen that worker's row as ⚠️ Blocked, document the gap, and notify the user. Do not merge to master until reality matches the checklist.
-4. Once the entire table is verified accurate: mark all rows ✅ Done with completion dates. Add a final entry to "Progress Log": `W4 | <date> | checklist audited; all rows verified against code`.
+4. Once the entire table is verified accurate: mark all rows ✅ Done with completion dates. Add a final entry to "Progress Log": `W4A | <date> | checklist audited; all rows verified against code`.
 
 ### Step 5 — Merge to master
 Follow the repo's merge convention (squash or merge commit — check with the user if unclear). Tag the commit:
@@ -676,16 +681,18 @@ All of the above must pass. The parity matrix is the strictest gate — every co
 2. (merge commit to master)
 
 ## Handoff
-When master is merged and tagged: notify the user. W5 (E2E) can start whenever the user is ready.
+When master is merged and tagged: notify the user. W4B (E2E) is running in parallel and merges its worktree branch once your master merge lands.
 
 ---
 
-# WORKER W5 — Phase 5: E2E Tests (Parallel with W4)
+# WORKER W4B — Phase 4: E2E Tests (Parallel with W4A)
 
-**Model:** Sonnet · **Effort:** Medium · **Branch:** worktree off `react-migration` (post-W3 state) → merges to `master` after W4 · **Prerequisite:** W3 complete · **Parallel with:** W4
+**Model:** Sonnet · **Effort:** Medium · **Branch:** worktree off `react-migration` (post-W3 state) → merges to `master` after W4A · **Prerequisite:** W3 complete · **Parallel with:** W4A
+
+> **Naming:** this worker was labeled W5 in earlier docs; renamed to W4B so the parallel pair W4A + W4B matches the W2A–W2D pattern. The next-phase cleanup worker is now W5 (formerly W6).
 
 ## Your Mission
-Author Playwright e2e specs for the now-fully-React app, in parallel with W4's verification + master merge.
+Author Playwright e2e specs for the now-fully-React app, in parallel with W4A's verification + master merge.
 
 ## Worktree Setup
 
@@ -697,14 +704,14 @@ cd ../media-tools-e2e
 yarn install
 ```
 
-All your work happens in this worktree. The main checkout (where W4 is working) is untouched.
+All your work happens in this worktree. The main checkout (where W4A is working) is untouched.
 
-## Coordination with W4
+## Coordination with W4A
 
-- **You only write files under [e2e/](e2e/).** Do not touch [packages/web/src/](packages/web/src/) — that's W4's verification surface.
-- **Do NOT modify [package.json](package.json) or [yarn.lock](yarn.lock).** Playwright is already installed. If you need a new dependency, **STOP** and notify the orchestrator — the install + yarn.lock change must be coordinated with W4 to avoid a merge conflict on master.
-- **Checklist edits:** only your own W5 row. Use `Edit` tool, `git pull --rebase` before push.
-- **You do not merge to master.** Wait for W4 to merge react-migration → master. Then rebase your `e2e-tests` branch onto master and merge when your specs pass.
+- **You only write files under [e2e/](e2e/).** Do not touch [packages/web/src/](packages/web/src/) — that's W4A's verification surface.
+- **Do NOT modify [package.json](package.json) or [yarn.lock](yarn.lock).** Playwright is already installed. If you need a new dependency, **STOP** and notify the orchestrator — the install + yarn.lock change must be coordinated with W4A to avoid a merge conflict on master.
+- **Checklist edits:** only your own W4B row. Use `Edit` tool, `git pull --rebase` before push.
+- **You do not merge to master.** Wait for W4A to merge react-migration → master. Then rebase your `e2e-tests` branch onto master and merge when your specs pass.
 
 ## Step-by-Step
 
@@ -738,7 +745,7 @@ One commit per spec, push as you go (in your worktree, on the `e2e-tests` branch
 
 ## Handoff
 
-1. When all specs pass and W4 has merged react-migration → master:
+1. When all specs pass and W4A has merged react-migration → master:
    ```bash
    git fetch origin master
    git rebase origin/master
@@ -752,7 +759,7 @@ One commit per spec, push as you go (in your worktree, on the `e2e-tests` branch
    git worktree remove media-tools-e2e
    git branch -d e2e-tests
    ```
-4. Mark W5 ✅ Done in the checklist. Notify the user. Migration is complete.
+4. Mark W4B ✅ Done in the checklist. Then notify the orchestrator that W5 (cleanup) can spawn whenever the user is ready.
 
 ---
 
@@ -778,9 +785,10 @@ Last updated: <date> by <worker-id> (<model-name>)
 | W2B | 2 — Bundle B (enum/lang) | <model> | ⬜ Not Started | — | — | |
 | W2C | 2 — Bundle C (arrays/json) | <model> | ⬜ Not Started | — | — | |
 | W2D | 2 — Bundle D (composite) | <model> | ⬜ Not Started | — | — | DslRulesBuilder may escalate |
-| W3 | 3 — Final Cleanup | <model> | ⬜ Not Started | — | — | Blocks on W2A+W2B+W2C+W2D |
-| W4 | 4 — Verification & Master Merge | <model> | ⬜ Not Started | — | — | Parallel with W5 |
-| W5 | 5 — E2E tests (worktree) | <model> | ⬜ Not Started | — | — | Parallel with W4; merges to master after W4 |
+| W3 | 3 — Final Cleanup | <model> | ⬜ Not Started | — | — | Blocks on W2A+W2B+W2C+W2D+W2.5 |
+| W4A | 4 — Verification & Master Merge | <model> | ⬜ Not Started | — | — | Parallel with W4B |
+| W4B | 4 — E2E tests (worktree) | <model> | ⬜ Not Started | — | — | Parallel with W4A; merges to master after W4A |
+| W5 | 5 — Parity-trap + code-smell + a11y cleanup | <model> | ⬜ Not Started | — | — | Runs after W4A + W4B both done. (Was W6 before rename.) |
 
 **Status legend:** ⬜ Not Started · 🔄 In Progress · ✅ Done · ⚠️ Blocked · ❌ Failed
 
@@ -861,17 +869,22 @@ Last updated: <date> by <worker-id> (<model-name>)
 - [ ] Step 5: Remove orphaned vendor scripts
 - [ ] Step 6: Strip dev-only inline preamble
 
-### W4 — Phase 4: Verification & Master Merge
+### W4A — Phase 4: Verification & Master Merge
 - [ ] Full test suite green
 - [ ] Storybook smoke walk
 - [ ] Parity matrix — every command's YAML matches its W0 fixture byte-for-byte
 - [ ] Master merge + tag `react-migration-complete`
 
-### W5 — Phase 5: E2E (Deferred)
+### W4B — Phase 4: E2E (Parallel with W4A, worktree)
 - [ ] Builder flow specs
 - [ ] Jobs flow + SSE spec
 - [ ] Modal specs
 - [ ] Drag-and-drop spec
+
+### W5 — Phase 5: Parity-trap + code-smell + a11y cleanup (formerly W6)
+- [ ] Stream 1: parity quirks held back during port
+- [ ] Stream 2: code-smell sweep (getIsX collisions, let+subscribe → lastValueFrom, one component per file)
+- [ ] Stream 3: final a11y pass
 
 ## Progress Log
 
