@@ -60,10 +60,8 @@ type FixtureInput = {
   step: FixtureStep
 }
 
-// ─── COMMANDS import (Phase 0: legacy JS; Phase 4: swap to ../src/commands/commands.ts) ──
-const { COMMANDS } = (await import(
-  "../public/builder/js/commands.js"
-)) as { COMMANDS: Record<string, CommandDefinition> }
+// ─── COMMANDS import (TS port — updated from legacy JS in Phase 4 / W4A) ───
+import { COMMANDS } from "../src/commands/commands"
 
 // ─── buildParams (ported verbatim from sequence-editor.js ~line 723) ─────────
 // resolveLinks=false behavior: string links become "@id"; object links pass through.

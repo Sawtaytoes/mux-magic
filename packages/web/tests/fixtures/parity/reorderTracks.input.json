@@ -11,9 +11,16 @@
     "command": "reorderTracks",
     "params": {
       "isRecursive": true,
-      "videoTrackIndexes": [0],
-      "audioTrackIndexes": [1, 0],
-      "subtitlesTrackIndexes": [0]
+      "videoTrackIndexes": [
+        0
+      ],
+      "audioTrackIndexes": [
+        1,
+        0
+      ],
+      "subtitlesTrackIndexes": [
+        0
+      ]
     },
     "links": {
       "sourcePath": "basePath"

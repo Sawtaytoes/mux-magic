@@ -5,7 +5,10 @@ declare global {
       fieldName: string
     }) => string
     openVideoModal?: (absolutePath: string) => void
-    pasteCardAt?: (args: { itemIndex?: number; parentGroupId?: string }) => void
+    pasteCardAt?: (args: {
+      itemIndex?: number
+      parentGroupId?: string
+    }) => void
     copyGroupYaml?: (groupId: string) => void
     runGroup?: (groupId: string) => void
     runOrStopStep?: (stepId: string) => void
