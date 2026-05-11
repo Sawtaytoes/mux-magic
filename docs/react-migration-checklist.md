@@ -215,6 +215,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | (orchestrator) | 2026-05-11 | fix(loadYaml): allow blank steps (command: '') — treat as placeholder; skip field loading; add loadYaml.test.ts (12 tests) |
 | (orchestrator) | 2026-05-11 | docs(checklist): add W7E + W7F prompt files; update checklist rows with prompt links |
 | W7D | 2026-05-11 | chore(checklist): W7D in progress — PathField typing + PathPicker wiring |
+| W7D | 2026-05-11 | fix(path-field): typing updates linked path variable value (not step param) |
 
 ## W4A Audit Findings (2026-05-10)
 

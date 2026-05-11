@@ -18,6 +18,7 @@ import {
   setAllCollapsedAtom,
   setLinkAtom,
   setParamAtom,
+  setPathValueAtom,
 } from "../state/sequenceAtoms"
 import {
   stepCounterAtom,
@@ -161,6 +162,14 @@ export const useBuilderActions = () => {
     pushHistory()
     store.set(addPathAtom)
   }, [store, pushHistory])
+
+  const setPathValue = useCallback(
+    (pathVarId: string, value: string) => {
+      pushHistory()
+      store.set(setPathValueAtom, { pathVarId, value })
+    },
+    [store, pushHistory],
+  )
 
   const setAllCollapsed = useCallback(
     (collapsed: boolean) => {
@@ -412,6 +421,7 @@ export const useBuilderActions = () => {
     setAllCollapsed,
     setLink,
     setParam,
+    setPathValue,
     startNew,
     undo,
   }

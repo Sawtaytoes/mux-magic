@@ -52,7 +52,7 @@ export const PathField = ({
   field,
   step,
 }: PathFieldProps) => {
-  const { setParam } = useBuilderActions()
+  const { setParam, setPathValue } = useBuilderActions()
   const setFileExplorer = useSetAtom(fileExplorerAtom)
   const setLinkPickerState = useSetAtom(linkPickerStateAtom)
   const paths = useAtomValue(pathsAtom)
@@ -139,12 +139,12 @@ export const PathField = ({
         value={displayValue}
         readOnly={isObjectLink}
         onChange={(event) => {
-          if (!isObjectLink) {
-            setParam(
-              step.id,
-              field.name,
-              event.target.value || undefined,
-            )
+          if (isObjectLink) return
+          const value = event.target.value || undefined
+          if (typeof link === "string") {
+            setPathValue(link, value ?? "")
+          } else {
+            setParam(step.id, field.name, value)
           }
         }}
         className={`w-full bg-slate-${isObjectLink ? "900" : "700"} text-slate-${isObjectLink ? "400" : "200"} text-xs rounded px-2 py-1.5 border border-slate-${isObjectLink ? "700" : "600"} focus:outline-none focus:border-blue-500 font-mono`}
