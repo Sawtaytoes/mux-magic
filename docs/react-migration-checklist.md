@@ -217,6 +217,7 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W7D | 2026-05-11 | chore(checklist): W7D in progress — PathField typing + PathPicker wiring |
 | W7D | 2026-05-11 | fix(path-field): typing updates linked path variable value (not step param) |
 | W7D | 2026-05-11 | fix(path-field): typing when unlinked creates and links a new path variable |
+| W7D | 2026-05-11 | fix(path-picker): wire directory-listing dropdown to PathField + PathVarCard inputs |
 
 ## W4A Audit Findings (2026-05-10)
 
