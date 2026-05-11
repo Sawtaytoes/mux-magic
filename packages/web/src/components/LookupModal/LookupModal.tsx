@@ -59,7 +59,8 @@ export const LookupModal = () => {
       document.removeEventListener("keydown", handleKeyDown)
   }, [])
 
-  const title = LOOKUP_TITLES[state?.lookupType ?? "mal"] ?? "Lookup"
+  const title =
+    LOOKUP_TITLES[state?.lookupType ?? "mal"] ?? "Lookup"
   const canGoBack =
     state?.stage === "variant" || state?.stage === "release"
 
@@ -77,65 +78,67 @@ export const LookupModal = () => {
       onClose={close}
       ariaLabel={title}
     >
-      <div
-        id="lookup-modal"
-        className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col overflow-hidden max-h-[85dvh]"
-      >
-        {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700 shrink-0">
-          {canGoBack && (
+      {state && (
+        <div
+          id="lookup-modal"
+          className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col overflow-hidden max-h-[85dvh]"
+        >
+          {/* Header */}
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700 shrink-0">
+            {canGoBack && (
+              <button
+                type="button"
+                id="lookup-back-btn"
+                onClick={goBack}
+                className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded border border-slate-700 hover:border-slate-500 mr-1"
+              >
+                ← Back
+              </button>
+            )}
+            <h2
+              id="lookup-title"
+              className="text-sm font-semibold text-slate-100 flex-1"
+            >
+              {title}
+            </h2>
             <button
               type="button"
-              id="lookup-back-btn"
-              onClick={goBack}
-              className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded border border-slate-700 hover:border-slate-500 mr-1"
+              onClick={close}
+              className="text-slate-400 hover:text-white text-base leading-none"
+              title="Close"
             >
-              ← Back
+              ✕
             </button>
-          )}
-          <h2
-            id="lookup-title"
-            className="text-sm font-semibold text-slate-100 flex-1"
-          >
-            {title}
-          </h2>
-          <button
-            type="button"
-            onClick={close}
-            className="text-slate-400 hover:text-white text-base leading-none"
-            title="Close"
-          >
-            ✕
-          </button>
-        </div>
+          </div>
 
-        {/* Body */}
-        <div
-          id="lookup-body"
-          className="flex-1 overflow-y-auto p-4 min-h-0"
-        >
-          {state.stage === "search" && (
-            <LookupSearchStage
-              state={state}
-              onUpdate={update}
-              onClose={close}
-            />
-          )}
-          {state.stage === "variant" && (
-            <LookupVariantStage
-              state={state}
-              onUpdate={update}
-              onClose={close}
-            />
-          )}
-          {state.stage === "release" && (
-            <LookupReleaseStage
-              state={state}
-              onClose={close}
-            />
-          )}
+          {/* Body */}
+          <div
+            id="lookup-body"
+            className="flex-1 overflow-y-auto p-4 min-h-0"
+          >
+            {state.stage === "search" && (
+              <LookupSearchStage
+                state={state}
+                onUpdate={update}
+                onClose={close}
+              />
+            )}
+            {state.stage === "variant" && (
+              <LookupVariantStage
+                state={state}
+                onUpdate={update}
+                onClose={close}
+              />
+            )}
+            {state.stage === "release" && (
+              <LookupReleaseStage
+                state={state}
+                onClose={close}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </Modal>
   )
 }

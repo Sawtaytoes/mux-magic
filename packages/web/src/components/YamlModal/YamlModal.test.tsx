@@ -113,9 +113,7 @@ describe("YamlModal", () => {
     const user = userEvent.setup()
     const store = renderModal(true)
 
-    await user.click(
-      screen.getByTestId("yaml-modal-backdrop"),
-    )
+    await user.click(screen.getByTestId("modal-backdrop"))
 
     expect(store.get(yamlModalOpenAtom)).toBe(false)
   })

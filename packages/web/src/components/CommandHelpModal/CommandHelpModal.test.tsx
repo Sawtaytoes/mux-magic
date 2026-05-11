@@ -138,15 +138,12 @@ describe("CommandHelpModal", () => {
   test("backdrop click sets isOpen atom to false", async () => {
     const user = userEvent.setup()
     const store = makeStore("ffmpeg")
-    const { container } = render(
+    render(
       <Provider store={store}>
         <CommandHelpModal />
       </Provider>,
     )
-    const backdrop = container.querySelector(
-      ".fixed.inset-0",
-    ) as HTMLElement
-    await user.click(backdrop)
+    await user.click(screen.getByTestId("modal-backdrop"))
     expect(store.get(commandHelpModalOpenAtom)).toBe(false)
   })
 })
