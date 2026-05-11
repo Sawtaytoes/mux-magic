@@ -6,6 +6,7 @@ import {
   useState,
 } from "react"
 import { useTolerantEventSource } from "../../hooks/useTolerantEventSource"
+import { Modal } from "../../primitives/Modal/Modal"
 import { setStepRunStatusAtom } from "../../state/sequenceAtoms"
 import {
   apiRunModalAtom,
@@ -212,8 +213,6 @@ export const ApiRunModal = () => {
     }, 1200)
   }, [logs])
 
-  if (!modalState) return null
-
   const statusClass =
     STATUS_CLASSES[status] ?? "bg-slate-700 text-slate-300"
   const progressPercent =
@@ -225,19 +224,15 @@ export const ApiRunModal = () => {
       : null
 
   return (
-    <div
-      role="none"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-      id="api-run-modal"
-      onClick={(event) => {
-        if (event.target === event.currentTarget)
-          void close()
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") void close()
-      }}
+    <Modal
+      isOpen={Boolean(modalState)}
+      onClose={() => { void close() }}
+      ariaLabel="Run Sequence"
     >
-      <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col gap-0 overflow-hidden max-h-[85dvh]">
+      <div
+        id="api-run-modal"
+        className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col gap-0 overflow-hidden max-h-[85dvh]"
+      >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700 shrink-0">
           <span className="text-slate-300 text-sm font-medium">
@@ -321,6 +316,6 @@ export const ApiRunModal = () => {
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
