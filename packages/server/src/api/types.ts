@@ -98,3 +98,15 @@ export type StepEvent = {
   stepId: string | null
   status: JobStatus
 }
+
+import type {
+  directoryEntrySchema,
+  fileExplorerEntrySchema,
+} from "./schemas.js"
+
+export type DirEntry = ReturnType<
+  (typeof directoryEntrySchema)["parse"]
+>
+export type FileEntry = ReturnType<
+  (typeof fileExplorerEntrySchema)["parse"]
+>

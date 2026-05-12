@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
 import { WEB_PORT } from "@media-tools/server/src/tools/envVars.js"
-import { logInfo } from "@media-tools/server/src/tools/logMessage"
+import { logInfo } from "@media-tools/server/src/tools/logMessage.js"
 import { Hono } from "hono"
 
 export const app = new Hono()

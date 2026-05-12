@@ -1857,7 +1857,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@media-tools/server@workspace:packages/server":
+"@media-tools/server@workspace:*, @media-tools/server@workspace:packages/server":
   version: 0.0.0-use.local
   resolution: "@media-tools/server@workspace:packages/server"
   dependencies:
@@ -1910,6 +1910,7 @@ __metadata:
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
+    "@media-tools/server": "workspace:*"
     "@radix-ui/react-popover": "npm:^1.1.15"
     "@rolldown/plugin-babel": "npm:^0.2.3"
     "@storybook/addon-a11y": "npm:^10.3.6"

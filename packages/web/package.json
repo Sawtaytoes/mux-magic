@@ -28,6 +28,7 @@
     "react-router": "^7.15.0"
   },
   "devDependencies": {
+    "@media-tools/server": "workspace:*",
     "@rolldown/plugin-babel": "^0.2.3",
     "@storybook/addon-a11y": "^10.3.6",
     "@storybook/addon-docs": "^10.3.6",

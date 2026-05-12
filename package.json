@@ -39,7 +39,7 @@
     "prod:web-server": "yarn workspace @media-tools/web prod:server",
     "prod:servers": "concurrently -k --names \"API,WEB\" \"yarn prod:api-server\" \"yarn prod:web-server\"",
     "start:web": "wait-on tcp:3000 && yarn dev:web-server",
-    "start": "concurrently --raw --kill-others \"yarn generate:internal-api-schemas:watch\" \"yarn dev:api-server\" \"yarn start:web\" \"yarn dev:storybook\"",
+    "start": "concurrently --raw --kill-others \"yarn dev:api-server\" \"yarn start:web\" \"yarn dev:storybook\"",
     "test": "vitest",
     "typecheck": "tsc --noEmit && yarn workspaces foreach -Ap run typecheck"
   },

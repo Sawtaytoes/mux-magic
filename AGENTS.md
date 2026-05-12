@@ -40,6 +40,14 @@ Quick checklist:
 
 Frameworks: vitest (unit + app-command), Hono in-process testing, Playwright (e2e).
 
+### Pre-merge gate (run in order)
+
+1. `yarn lint` — auto-fix formatting (biome + eslint); re-stage changed files
+2. `yarn test` — unit + integration
+3. `yarn typecheck` — full monorepo type check
+4. `yarn lint` — biome + eslint from repo root
+5. `yarn e2e` — Playwright end-to-end (final gate)
+
 ### Forbidden test styles
 
 - **No snapshot tests.** Never use `toMatchSnapshot`, `toMatchInlineSnapshot`. Spell expected values out inline: `expect(x).toBe("literal string")` or `expect(x).toEqual({ explicit: "object" })`. Reason: snapshot diffs hide intent and get rubber-stamped during auto-update.

@@ -1,3 +1,12 @@
+import type {
+  DirEntry,
+  FileEntry,
+  JobStatus,
+  PromptOption,
+} from "@media-tools/server/api-types"
+
+export type { DirEntry, FileEntry, JobStatus, PromptOption }
+
 export type EnumOption = {
   value: string | number | boolean
   label: string
@@ -37,11 +46,6 @@ export type CommandDefinition = {
 }
 
 export type Commands = Record<string, CommandDefinition>
-
-export type DirEntry = {
-  name: string
-  isDirectory: boolean
-}
 
 export type StepLink =
   | string // path variable ID, e.g. "basePath"
@@ -150,11 +154,6 @@ export type ApiRunState = {
 
 // ─── Wave E: Prompt Modal ─────────────────────────────────────────────────────
 
-export type PromptOption = {
-  index: number
-  label: string
-}
-
 export type PromptFilePath = {
   index: number
   path: string
@@ -170,15 +169,6 @@ export type PromptData = {
 }
 
 // ─── Wave E: File Explorer Modal ──────────────────────────────────────────────
-
-export type FileEntry = {
-  name: string
-  isDirectory: boolean
-  isFile: boolean
-  size: number
-  duration: string | null
-  mtime: string | null
-}
 
 export type SortColumn =
   | "default"
@@ -203,14 +193,6 @@ export type ProgressSnapshot = {
   bytesRemaining?: number
   currentFiles?: Array<{ path: string; ratio?: number }>
 }
-
-export type JobStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled"
-  | "skipped"
 
 export type Job = {
   id: string

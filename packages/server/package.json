@@ -3,6 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./api-types": {
+      "types": "./src/api/types.ts",
+      "default": "./src/api/types.ts"
+    },
+    "./*": "./*"
+  },
   "description": "Hono API server + CLI for batch media file operations.",
   "scripts": {
     "build:command-descriptions": "tsx scripts/build-command-descriptions.ts",
