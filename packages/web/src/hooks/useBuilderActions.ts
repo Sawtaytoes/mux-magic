@@ -341,6 +341,26 @@ export const useBuilderActions = () => {
         return
       }
 
+      // Capture which IDs will be newly inserted (mirrors applyPaste's splice
+      // logic) so we can animate them in after the view transition finishes.
+      const newItemIds: Array<{
+        type: "step" | "group"
+        id: string
+      }> = args.parentGroupId
+        ? result.steps.flatMap((item) =>
+            isGroup(item)
+              ? (item as Group).steps.map((s) => ({
+                  type: "step" as const,
+                  id: s.id,
+                }))
+              : [{ type: "step" as const, id: (item as Step).id }],
+          )
+        : result.steps.map((item) =>
+            isGroup(item)
+              ? { type: "group" as const, id: (item as Group).id }
+              : { type: "step" as const, id: (item as Step).id },
+          )
+
       // For group paste with no explicit position, append to the group's
       // own steps (not the top-level array). For top-level paste with no
       // explicit position, append at the end of the top-level array.
@@ -387,7 +407,29 @@ export const useBuilderActions = () => {
       // only wrap the SYNC `applyPaste` (after the async clipboard
       // read resolves) — wrapping pasteCardAt as a whole would put
       // the state update outside the transition's snapshot window.
-      runWithViewTransition(applyPaste)
+      //
+      // After the transition finishes (pseudo-elements removed, real DOM
+      // visible), add .step-enter to each newly inserted element so it
+      // slides in rather than just crossfading from nothing.
+      await runWithViewTransition(applyPaste)
+
+      for (const { type, id } of newItemIds) {
+        const selector =
+          type === "group"
+            ? `[data-group="${id}"]`
+            : `[data-step-card="${id}"]`
+        const el = document.querySelector(selector)
+        if (el instanceof HTMLElement) {
+          el.classList.add("step-enter")
+          el.addEventListener(
+            "animationend",
+            () => {
+              el.classList.remove("step-enter")
+            },
+            { once: true },
+          )
+        }
+      }
     },
     [store, pushHistory],
   )

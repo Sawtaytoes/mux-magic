@@ -24,12 +24,12 @@ import { flushSync } from "react-dom"
 
 export const runWithViewTransition = (
   fn: () => void,
-): void => {
+): Promise<void> => {
   if (document.startViewTransition) {
-    document.startViewTransition(() => {
+    return document.startViewTransition(() => {
       flushSync(fn)
-    })
-    return
+    }).finished
   }
   fn()
+  return Promise.resolve()
 }
