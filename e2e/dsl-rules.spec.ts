@@ -121,16 +121,20 @@ test.describe("DslRulesBuilder — rule lifecycle", () => {
     page,
   }) => {
     const predicatesDetails = page.locator(
-      "details[data-details-key$=':predicates']",
+      "[data-details-key$=':predicates']",
     )
-    await predicatesDetails.locator("summary").click()
-    await expect(predicatesDetails).toHaveAttribute("open")
-
-    await page
-      .getByRole("button", { name: "+ Add predicate" })
+    await predicatesDetails
+      .getByRole("button", { name: /predicates/i })
       .click()
+    const addPredicateBtn = predicatesDetails.getByRole(
+      "button",
+      { name: "+ Add predicate" },
+    )
+    await expect(addPredicateBtn).toBeVisible()
 
-    await expect(predicatesDetails).toHaveAttribute("open")
+    await addPredicateBtn.click()
+
+    await expect(addPredicateBtn).toBeVisible()
     // At least one predicate entry should now exist.
     await expect(
       predicatesDetails.locator("[data-predicate-key]"),

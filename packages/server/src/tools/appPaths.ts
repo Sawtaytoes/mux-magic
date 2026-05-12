@@ -13,7 +13,9 @@ export const ffmpegPath: string =
 // MediaInfo_CLI_25.03_Windows_x64
 export const mediaInfoPath =
   process.env.MEDIAINFO_PATH ??
-  (isWindows ? "assets/mediainfo/MediaInfo.exe" : "mediainfo")
+  (isWindows
+    ? "assets/mediainfo/MediaInfo.exe"
+    : "mediainfo")
 
 // mkvtoolnix-64-bit-91.0
 export const mkvExtractPath = isWindows

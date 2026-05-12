@@ -117,14 +117,17 @@ describe("schema-driven command descriptions", () => {
 
           if (fieldsWithDescriptions.length > 0) {
             totalCommandsWithDescriptions += 1
-            totalFieldsWithDescriptions += fieldsWithDescriptions.length
+            totalFieldsWithDescriptions +=
+              fieldsWithDescriptions.length
           }
         }
       },
     )
 
     // Most commands should have at least some field descriptions
-    expect(totalCommandsWithDescriptions).toBeGreaterThan(20)
+    expect(totalCommandsWithDescriptions).toBeGreaterThan(
+      20,
+    )
     expect(totalFieldsWithDescriptions).toBeGreaterThan(100)
   })
 })
