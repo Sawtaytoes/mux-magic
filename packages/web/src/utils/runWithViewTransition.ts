@@ -26,9 +26,10 @@ export const runWithViewTransition = (
   fn: () => void,
 ): Promise<void> => {
   if (document.startViewTransition) {
-    return document.startViewTransition(() => {
+    const transition = document.startViewTransition(() => {
       flushSync(fn)
-    }).finished
+    })
+    return transition?.finished ?? Promise.resolve()
   }
   fn()
   return Promise.resolve()
