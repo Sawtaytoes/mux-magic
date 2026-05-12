@@ -25,11 +25,24 @@ const repoRoot = join(
   "../../..",
 )
 
-const outputPath = join(
+// Legacy HTML builder location (still served at /builder/ by the API).
+const legacyOutputPath = join(
   repoRoot,
   "public",
   "builder",
   "js",
+  "command-descriptions.js",
+)
+
+// React web app location — Vite's `publicDir` defaults to
+// packages/web/public/, which is copied to dist/ at build time. The
+// React index.html loads /command-descriptions.js so window.getCommandFieldDescription
+// is defined before the SPA reads it (CommandFieldEntry, FieldTooltip).
+const webOutputPath = join(
+  repoRoot,
+  "packages",
+  "web",
+  "public",
   "command-descriptions.js",
 )
 
@@ -181,8 +194,13 @@ window.getCommandSummary = function getCommandSummary({ commandName }) {
 }
 `
 
-mkdirSync(dirname(outputPath), { recursive: true })
-writeFileSync(outputPath, fileBody, "utf8")
+const writeOutput = (path: string): void => {
+  mkdirSync(dirname(path), { recursive: true })
+  writeFileSync(path, fileBody, "utf8")
+}
+
+writeOutput(legacyOutputPath)
+writeOutput(webOutputPath)
 
 const commandCount = Object.keys(commandDescriptions).length
 const fieldCount = Object.values(
@@ -194,5 +212,5 @@ const fieldCount = Object.values(
 )
 
 console.log(
-  `[build-command-descriptions] wrote ${outputPath} (${commandCount} commands, ${fieldCount} described fields)`,
+  `[build-command-descriptions] wrote ${legacyOutputPath} + ${webOutputPath} (${commandCount} commands, ${fieldCount} described fields)`,
 )
