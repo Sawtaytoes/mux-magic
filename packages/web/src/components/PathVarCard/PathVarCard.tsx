@@ -92,7 +92,14 @@ export const PathVarCard = ({
       clearTimeout(debounceTimerRef.current)
     }
     const currentInput = valueInputRef.current
-    if (currentInput && /^[/\\]/.test(rawValue)) {
+    // Open the path picker when the input looks like a path: starts with
+    // / or \ (POSIX / UNC) OR a Windows drive letter prefix like `C:\`.
+    // PathField uses the same regex — PathVarCard was missing the drive
+    // letter branch, which is why typeahead never opened on Windows.
+    if (
+      currentInput &&
+      /^([/\\]|[A-Za-z]:[/\\])/.test(rawValue)
+    ) {
       const lastSep = Math.max(
         rawValue.lastIndexOf("/"),
         rawValue.lastIndexOf("\\"),
