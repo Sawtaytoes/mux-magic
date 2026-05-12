@@ -1,3 +1,4 @@
+import { vol } from "memfs"
 import { describe, expect, test, vi } from "vitest"
 
 describe("mediaInfoPath", () => {
@@ -24,11 +25,16 @@ describe("mediaInfoPath", () => {
   test("falls back to platform default when MEDIAINFO_PATH is not set", async () => {
     vi.resetModules()
     delete process.env.MEDIAINFO_PATH
+    if (process.platform === "win32") {
+      vol.fromJSON({
+        "assets.downloaded/mediainfo/MediaInfo.exe": "",
+      })
+    }
     const { mediaInfoPath } = await import("./appPaths.js")
-    const isWindows = process.platform === "win32"
-    const expected = isWindows
-      ? "assets.downloaded/mediainfo/MediaInfo.exe"
-      : "mediainfo"
+    const expected =
+      process.platform === "win32"
+        ? "assets.downloaded/mediainfo/MediaInfo.exe"
+        : "mediainfo"
     expect(mediaInfoPath).toBe(expected)
   })
 })

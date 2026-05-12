@@ -7,7 +7,9 @@ const resolveAppPath = (
   localPath: string,
   systemName: string,
 ): string =>
-  isWindows && existsSync(localPath) ? localPath : systemName
+  isWindows && existsSync(localPath)
+    ? localPath
+    : systemName
 
 /** @see https://github.com/bbc/audio-offset-finder */
 // export const audioOffsetFinderPath = ".venv/bin/audio-offset-finder" // This local version doesn't run for whatever reason.
