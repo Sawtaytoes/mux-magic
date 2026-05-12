@@ -1,6 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
 import { getLinkedValue } from "../../commands/links"
+import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
 import { flattenSteps } from "../../jobs/sequenceUtils"
@@ -11,7 +12,6 @@ import {
   pathPickerStateAtom,
 } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
-import { fileExplorerAtom } from "../../state/uiAtoms"
 import type {
   CommandField,
   PathVariable,

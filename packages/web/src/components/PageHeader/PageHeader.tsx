@@ -1,18 +1,18 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
+import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
+import { yamlModalOpenAtom } from "../../components/YamlModal/yamlModalAtom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { Switch } from "../../primitives/Switch/Switch"
+import {
+  dryRunAtom,
+  failureModeAtom,
+} from "../../state/dryRunQuery"
 import {
   canRedoAtom,
   canUndoAtom,
 } from "../../state/historyAtoms"
-import {
-  dryRunAtom,
-  failureModeAtom,
-  loadModalOpenAtom,
-  runningAtom,
-  yamlModalOpenAtom,
-} from "../../state/uiAtoms"
+import { runningAtom } from "../../state/sequenceAtoms"
 
 // ─── Responsive menu state ────────────────────────────────────────────────────
 

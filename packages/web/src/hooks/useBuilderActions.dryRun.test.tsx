@@ -11,12 +11,12 @@ import {
 } from "vitest"
 import { COMMANDS } from "../commands/commands"
 import { commandsAtom } from "../state/commandsAtom"
-import { pathsAtom } from "../state/pathsAtom"
-import { stepsAtom } from "../state/stepsAtom"
 import {
   dryRunAtom,
   failureModeAtom,
-} from "../state/uiAtoms"
+} from "../state/dryRunQuery"
+import { pathsAtom } from "../state/pathsAtom"
+import { stepsAtom } from "../state/stepsAtom"
 import type { Group, Step } from "../types"
 import { useBuilderActions } from "./useBuilderActions"
 

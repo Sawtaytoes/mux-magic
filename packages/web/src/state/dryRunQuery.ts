@@ -1,4 +1,4 @@
-// ─── Dry-Run query-string helper ──────────────────────────────────────────────
+// ─── Dry-Run query-string helper + atoms ──────────────────────────────────────
 //
 // The server detects "fake / dry-run" mode via a `?fake=...` query param
 // on the request URL (see packages/server/src/fake-data/index.ts:
@@ -12,6 +12,19 @@
 // `buildRunFetchUrl` is the single chokepoint every command-run fetch
 // (sequences, single steps, groups) MUST pass through, so dry-run state
 // is forwarded uniformly to the server.
+
+import { atom } from "jotai"
+
+// Initial values are hydrated from localStorage so the badge survives
+// page reloads. The PageHeader toggle handler writes back to
+// localStorage on every change.
+export const dryRunAtom = atom<boolean>(
+  localStorage.getItem("isDryRun") === "1",
+)
+
+export const failureModeAtom = atom<boolean>(
+  localStorage.getItem("dryRunScenario") === "failure",
+)
 
 export type DryRunInputs = {
   isDryRun: boolean

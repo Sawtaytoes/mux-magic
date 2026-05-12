@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
-import { commandsAtom } from "../../state/commandsAtom"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
-} from "../../state/uiAtoms"
+} from "../../components/CommandHelpModal/commandHelpAtoms"
+import { commandsAtom } from "../../state/commandsAtom"
 import { CommandHelpModal } from "./CommandHelpModal"
 
 const mockCommands = {

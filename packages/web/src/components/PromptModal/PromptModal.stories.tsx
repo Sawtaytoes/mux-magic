@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
 import { useState } from "react"
+import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import type { PromptData } from "../../components/PromptModal/types"
-import { promptModalAtom } from "../../state/uiAtoms"
 import { PromptModal } from "./PromptModal"
 
 const meta: Meta<typeof PromptModal> = {

@@ -8,6 +8,12 @@ import {
   vi,
 } from "vitest"
 import { COMMANDS } from "../commands/commands"
+import { apiRunModalAtom } from "../components/ApiRunModal/apiRunModalAtom"
+import {
+  dryRunAtom,
+  failureModeAtom,
+} from "../state/dryRunQuery"
+import { runningAtom } from "../state/sequenceAtoms"
 import type { Step } from "../types"
 import { commandsAtom } from "./commandsAtom"
 import { pathsAtom } from "./pathsAtom"
@@ -16,12 +22,6 @@ import {
   setStepRunStatusAtom,
 } from "./sequenceAtoms"
 import { stepsAtom } from "./stepsAtom"
-import {
-  apiRunModalAtom,
-  dryRunAtom,
-  failureModeAtom,
-  runningAtom,
-} from "./uiAtoms"
 
 const makeStep = (overrides: Partial<Step> = {}): Step => ({
   id: "step_1",

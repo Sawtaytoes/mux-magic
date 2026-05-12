@@ -1,10 +1,15 @@
 import { useStore } from "jotai"
 import { useCallback } from "react"
 import { flushSync } from "react-dom"
+import { apiRunModalAtom } from "../components/ApiRunModal/apiRunModalAtom"
 import { isGroup } from "../jobs/sequenceUtils"
 import { toYamlStr } from "../jobs/yamlSerializer"
 import { commandsAtom } from "../state/commandsAtom"
-import { buildRunFetchUrl } from "../state/dryRunQuery"
+import {
+  buildRunFetchUrl,
+  dryRunAtom,
+  failureModeAtom,
+} from "../state/dryRunQuery"
 import {
   canRedoAtom,
   canUndoAtom,
@@ -18,6 +23,7 @@ import {
   changeCommandAtom,
   insertGroupAtom,
   insertStepAtom,
+  runningAtom,
   setAllCollapsedAtom,
   setLinkAtom,
   setParamAtom,
@@ -27,12 +33,6 @@ import {
   stepCounterAtom,
   stepsAtom,
 } from "../state/stepsAtom"
-import {
-  apiRunModalAtom,
-  dryRunAtom,
-  failureModeAtom,
-  runningAtom,
-} from "../state/uiAtoms"
 import type { Group, Step, StepLink } from "../types"
 
 const DEFAULT_BASE_PATH = {

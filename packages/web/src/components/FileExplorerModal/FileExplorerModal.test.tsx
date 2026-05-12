@@ -18,7 +18,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-import { fileExplorerAtom } from "../../state/uiAtoms"
+import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
 import { FileExplorerModal } from "./FileExplorerModal"
 
 const renderWithStore = (

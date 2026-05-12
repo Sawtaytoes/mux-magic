@@ -1,5 +1,6 @@
 import { atom } from "jotai"
 import { buildParams } from "../commands/buildParams"
+import { apiRunModalAtom } from "../components/ApiRunModal/apiRunModalAtom"
 import { isGroup } from "../jobs/sequenceUtils"
 import type {
   Group,
@@ -9,15 +10,19 @@ import type {
   StepLink,
 } from "../types"
 import { commandsAtom } from "./commandsAtom"
-import { buildRunFetchUrl } from "./dryRunQuery"
-import { pathsAtom } from "./pathsAtom"
-import { stepCounterAtom, stepsAtom } from "./stepsAtom"
 import {
-  apiRunModalAtom,
+  buildRunFetchUrl,
   dryRunAtom,
   failureModeAtom,
-  runningAtom,
-} from "./uiAtoms"
+} from "./dryRunQuery"
+import { pathsAtom } from "./pathsAtom"
+import { stepCounterAtom, stepsAtom } from "./stepsAtom"
+
+// True while ANY run (single step, group, or full sequence) is in
+// flight. Lives in this file because every code path that reads or
+// writes it (runOrStopStepAtom here; runViaApi + runGroup in
+// useBuilderActions) is also a step/group/sequence mutator.
+export const runningAtom = atom<boolean>(false)
 
 // ─── Param resolution for the /commands/:name endpoint ────────────────────────
 //

@@ -20,7 +20,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-import { promptModalAtom } from "../../state/uiAtoms"
+import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import { PromptModal } from "./PromptModal"
 
 const renderWithStore = (

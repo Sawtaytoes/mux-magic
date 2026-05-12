@@ -14,8 +14,8 @@ afterEach(() => {
 import {
   dryRunAtom,
   failureModeAtom,
-  runningAtom,
-} from "../../state/uiAtoms"
+} from "../../state/dryRunQuery"
+import { runningAtom } from "../../state/sequenceAtoms"
 import { PageHeader } from "./PageHeader"
 
 const renderWithStore = (

@@ -3,8 +3,8 @@ import { createStore, Provider } from "jotai"
 import {
   dryRunAtom,
   failureModeAtom,
-  runningAtom,
-} from "../../state/uiAtoms"
+} from "../../state/dryRunQuery"
+import { runningAtom } from "../../state/sequenceAtoms"
 import { PageHeader } from "./PageHeader"
 
 const meta: Meta<typeof PageHeader> = {

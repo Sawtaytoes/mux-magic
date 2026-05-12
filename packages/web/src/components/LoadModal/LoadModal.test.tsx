@@ -15,10 +15,10 @@ import {
   test,
   vi,
 } from "vitest"
+import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
-import { loadModalOpenAtom } from "../../state/uiAtoms"
 import type { Commands } from "../../types"
 import { LoadModal } from "./LoadModal"
 

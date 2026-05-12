@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
 import { useState } from "react"
-import { loadModalOpenAtom } from "../../state/uiAtoms"
+import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
 import { LoadModal } from "./LoadModal"
 
 // Store is created inside useState so each mount gets a fresh atom — navigating

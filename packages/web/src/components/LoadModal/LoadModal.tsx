@@ -1,5 +1,6 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
+import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
 import { loadYamlFromText } from "../../jobs/loadYaml"
 import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
@@ -8,7 +9,6 @@ import {
   stepCounterAtom,
   stepsAtom,
 } from "../../state/stepsAtom"
-import { loadModalOpenAtom } from "../../state/uiAtoms"
 
 export const LoadModal = () => {
   const [isOpen, setIsOpen] = useAtom(loadModalOpenAtom)

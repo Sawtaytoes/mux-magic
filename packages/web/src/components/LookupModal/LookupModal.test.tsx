@@ -11,7 +11,7 @@ afterEach(() => {
   cleanup()
 })
 
-import { lookupModalAtom } from "../../state/uiAtoms"
+import { lookupModalAtom } from "../../components/LookupModal/lookupModalAtom"
 import { LookupModal } from "./LookupModal"
 
 const renderWithStore = (

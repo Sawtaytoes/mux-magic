@@ -1,7 +1,6 @@
 import { useSetAtom } from "jotai"
-
+import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
-import { fileExplorerAtom } from "../../state/uiAtoms"
 import type { CommandField, Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
 

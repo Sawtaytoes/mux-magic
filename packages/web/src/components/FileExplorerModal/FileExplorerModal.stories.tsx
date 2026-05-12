@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
 import { useState } from "react"
+import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
 import type { FileExplorerState } from "../../components/FileExplorerModal/types"
-import { fileExplorerAtom } from "../../state/uiAtoms"
 import { FileExplorerModal } from "./FileExplorerModal"
 
 const meta: Meta<typeof FileExplorerModal> = {

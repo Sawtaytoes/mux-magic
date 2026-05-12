@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
 import { useState } from "react"
+import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
 import type { ApiRunState } from "../../components/ApiRunModal/types"
-import { apiRunModalAtom } from "../../state/uiAtoms"
 import { ApiRunModal } from "./ApiRunModal"
 
 const makeState = (

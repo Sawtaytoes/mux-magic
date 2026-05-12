@@ -1,12 +1,11 @@
 import { useAtom, useAtomValue } from "jotai"
-
-import { commandLabel } from "../../jobs/commandLabels"
-import { Modal } from "../../primitives/Modal/Modal"
-import { commandsAtom } from "../../state/commandsAtom"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
-} from "../../state/uiAtoms"
+} from "../../components/CommandHelpModal/commandHelpAtoms"
+import { commandLabel } from "../../jobs/commandLabels"
+import { Modal } from "../../primitives/Modal/Modal"
+import { commandsAtom } from "../../state/commandsAtom"
 import { CommandFieldEntry } from "../CommandFieldEntry/CommandFieldEntry"
 
 export const CommandHelpModal = () => {

@@ -12,9 +12,9 @@ import {
   test,
   vi,
 } from "vitest"
+import { yamlModalOpenAtom } from "../../components/YamlModal/yamlModalAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
-import { yamlModalOpenAtom } from "../../state/uiAtoms"
 import { YamlModal } from "./YamlModal"
 
 const makeStep = (override = {}) => ({

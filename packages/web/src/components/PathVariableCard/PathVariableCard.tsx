@@ -1,5 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
+import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
 import {
   cancelPathVariableDeleteAtom,
   confirmPathVariableDeleteAtom,
@@ -9,7 +10,6 @@ import {
   setPathVariableResolutionAtom,
 } from "../../state/pathsAtom"
 import { pathPickerStateAtom } from "../../state/pickerAtoms"
-import { fileExplorerAtom } from "../../state/uiAtoms"
 import type { PathVariable } from "../../types"
 
 interface PathVariableCardProps {

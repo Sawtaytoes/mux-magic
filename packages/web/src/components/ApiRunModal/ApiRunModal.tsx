@@ -5,15 +5,15 @@ import {
   useRef,
   useState,
 } from "react"
+import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
 import type { RunStatus } from "../../components/ApiRunModal/types"
+import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import { useTolerantEventSource } from "../../hooks/useTolerantEventSource"
 import { Modal } from "../../primitives/Modal/Modal"
-import { setStepRunStatusAtom } from "../../state/sequenceAtoms"
 import {
-  apiRunModalAtom,
-  promptModalAtom,
   runningAtom,
-} from "../../state/uiAtoms"
+  setStepRunStatusAtom,
+} from "../../state/sequenceAtoms"
 
 // ─── Progress bar utilities (mirrors the legacy window.ProgressUtils API) ─────
 
