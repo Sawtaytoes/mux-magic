@@ -1,4 +1,4 @@
-import { useAtom, useSetAtom } from "jotai"
+import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
   useCallback,
   useEffect,
@@ -8,19 +8,49 @@ import {
 import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
 import type { RunStatus } from "../../components/ApiRunModal/types"
 import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
+import { useLogStream } from "../../hooks/useLogStream"
 import { useTolerantEventSource } from "../../hooks/useTolerantEventSource"
 import { Modal } from "../../primitives/Modal/Modal"
+import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
 import { runningAtom } from "../../state/runAtoms"
 import { setStepRunStatusAtom } from "../../state/stepAtoms"
+import { ProgressBar } from "../ProgressBar/ProgressBar"
 
-// ─── Progress bar utilities (mirrors the legacy window.ProgressUtils API) ─────
+// ─── Per-step progress tracker ────────────────────────────────────────────────
 
-type ProgressSnapshot = Record<string, unknown>
+const ChildProgressTracker = ({
+  stepId,
+  jobId,
+}: {
+  stepId: string
+  jobId: string
+}) => {
+  const progressByJobId = useAtomValue(progressByJobIdAtom)
+  const { connect } = useLogStream(jobId)
 
-const mergeProgress = (
-  snapshot: ProgressSnapshot,
-  event: Record<string, unknown>,
-): ProgressSnapshot => ({ ...snapshot, ...event })
+  useEffect(() => {
+    connect()
+  }, [connect])
+
+  const snap = progressByJobId.get(jobId) ?? {}
+
+  return (
+    <div
+      id="api-run-progress-host"
+      className="px-4 py-2 border-b border-slate-700 bg-slate-900 shrink-0"
+    >
+      <p
+        id="api-run-progress-step-label"
+        className="text-xs text-slate-400 mb-1"
+      >
+        Step {stepId}
+      </p>
+      <ProgressBar snapshot={snap} />
+    </div>
+  )
+}
+
+// ─── Status badge colours ─────────────────────────────────────────────────────
 
 const STATUS_CLASSES: Record<RunStatus, string> = {
   pending: "bg-slate-700 text-slate-300",
@@ -39,14 +69,6 @@ export const ApiRunModal = () => {
 
   const [logs, setLogs] = useState<string[]>([])
   const [status, setStatus] = useState<RunStatus>("pending")
-  const [childJobId, setChildJobId] = useState<
-    string | null
-  >(null)
-  const [childStepId, setChildStepId] = useState<
-    string | null
-  >(null)
-  const [childProgress, setChildProgress] =
-    useState<ProgressSnapshot>({})
 
   const logsEndRef = useRef<HTMLDivElement>(null)
   const prevModalJobIdRef = useRef<
@@ -70,16 +92,10 @@ export const ApiRunModal = () => {
     prevModalJobIdRef.current = modalState.jobId
     setStatus(modalState.status)
     setLogs([])
-    setChildJobId(null)
-    setChildStepId(null)
-    setChildProgress({})
   }, [modalState])
 
   const parentUrl = modalState?.jobId
     ? `/jobs/${modalState.jobId}/logs`
-    : null
-  const childUrl = childJobId
-    ? `/jobs/${childJobId}/logs`
     : null
 
   // ─── Parent SSE (sequence-level events) ────────────────────────────────────
@@ -90,10 +106,21 @@ export const ApiRunModal = () => {
         const newChildJobId =
           (data.childJobId as string) ?? null
         const newStepId = (data.stepId as string) ?? null
-        setChildJobId(newChildJobId)
-        setChildStepId(newStepId)
-        setChildProgress({})
         if (newStepId) {
+          setModalState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  activeChildren: [
+                    ...prev.activeChildren,
+                    {
+                      stepId: newStepId,
+                      jobId: newChildJobId,
+                    },
+                  ],
+                }
+              : prev,
+          )
           setStepRunStatus({
             stepId: newStepId,
             status: "running",
@@ -105,10 +132,17 @@ export const ApiRunModal = () => {
       if (data.type === "step-finished") {
         const finishedStepId =
           (data.stepId as string) ?? null
-        setChildJobId(null)
-        setChildStepId(null)
-        setChildProgress({})
         if (finishedStepId) {
+          setModalState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  activeChildren: prev.activeChildren.filter(
+                    (child) => child.stepId !== finishedStepId,
+                  ),
+                }
+              : prev,
+          )
           setStepRunStatus({
             stepId: finishedStepId,
             status:
@@ -126,48 +160,28 @@ export const ApiRunModal = () => {
         const finalStatus =
           (data.status as RunStatus) || "completed"
         setStatus(finalStatus)
-        setChildJobId(null)
-        setChildStepId(null)
-        setChildProgress({})
+        setModalState((prev) =>
+          prev ? { ...prev, activeChildren: [] } : prev,
+        )
         setRunning(false)
       }
     },
-    [setRunning, setStepRunStatus],
+    [setRunning, setStepRunStatus, setModalState],
   )
 
   const handleParentDisconnected = useCallback(() => {
     setStatus("failed")
-    setChildJobId(null)
-    setChildStepId(null)
-    setChildProgress({})
+    setModalState((prev) =>
+      prev ? { ...prev, activeChildren: [] } : prev,
+    )
     setRunning(false)
-  }, [setRunning])
-
-  // ─── Child SSE (per-step progress events) ──────────────────────────────────
-
-  const handleChildMessage = useCallback(
-    (data: Record<string, unknown>) => {
-      if (data.type === "progress") {
-        setChildProgress((prev) =>
-          mergeProgress(prev, data as ProgressSnapshot),
-        )
-        return
-      }
-    },
-    [],
-  )
+  }, [setRunning, setModalState])
 
   useTolerantEventSource<Record<string, unknown>>({
     url: parentUrl ?? "",
     enabled: parentUrl !== null,
     onMessage: handleParentMessage,
     onPossiblyDisconnected: handleParentDisconnected,
-  })
-
-  useTolerantEventSource<Record<string, unknown>>({
-    url: childUrl ?? "",
-    enabled: childUrl !== null,
-    onMessage: handleChildMessage,
   })
 
   const close = useCallback(async () => {
@@ -213,13 +227,8 @@ export const ApiRunModal = () => {
 
   const statusClass =
     STATUS_CLASSES[status] ?? "bg-slate-700 text-slate-300"
-  const progressPercent =
-    typeof childProgress.percent === "number"
-      ? Math.min(
-          100,
-          Math.max(0, childProgress.percent as number),
-        )
-      : null
+
+  const activeChildren = modalState?.activeChildren ?? []
 
   const modalTitle =
     modalState?.source === "step"
@@ -278,27 +287,15 @@ export const ApiRunModal = () => {
             </button>
           </div>
 
-          {/* Child step progress */}
-          {childStepId && (
-            <div
-              id="api-run-progress-host"
-              className="px-4 py-2 border-b border-slate-700 bg-slate-900 shrink-0"
-            >
-              <p
-                id="api-run-progress-step-label"
-                className="text-xs text-slate-400 mb-1"
-              >
-                Step {childStepId}
-              </p>
-              {progressPercent !== null && (
-                <div className="w-full bg-slate-700 rounded-full h-1.5">
-                  <div
-                    className="bg-emerald-500 h-1.5 rounded-full transition-all"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-              )}
-            </div>
+          {/* Active child step progress bars */}
+          {activeChildren.map((child) =>
+            child.jobId ? (
+              <ChildProgressTracker
+                key={child.stepId}
+                stepId={child.stepId}
+                jobId={child.jobId}
+              />
+            ) : null,
           )}
 
           {/* Log output */}

@@ -225,8 +225,7 @@ export const useBuilderActions = () => {
       jobId: null,
       status: "pending",
       logs: [],
-      childJobId: null,
-      childStepId: null,
+      activeChildren: [],
       source: "sequence",
     })
     // Dry-run gate — see packages/web/src/state/dryRunQuery.ts.
@@ -447,8 +446,7 @@ export const useBuilderActions = () => {
         jobId: null,
         status: "pending",
         logs: [],
-        childJobId: null,
-        childStepId: null,
+        activeChildren: [],
         source: "sequence",
       })
 

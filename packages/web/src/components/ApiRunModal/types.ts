@@ -11,11 +11,15 @@ export type RunStatus =
   | "failed"
   | "cancelled"
 
+export type ActiveChild = {
+  stepId: string
+  jobId: string | null
+}
+
 export type ApiRunState = {
   jobId: string | null
   status: RunStatus
   logs: string[]
-  childJobId: string | null
-  childStepId: string | null
+  activeChildren: ActiveChild[]
   source: "step" | "sequence"
 }

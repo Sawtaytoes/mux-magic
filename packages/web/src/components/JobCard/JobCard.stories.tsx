@@ -135,7 +135,52 @@ export const Failed: Story = {
   decorators: [withStore([failedJob])],
 }
 
+export const RunningMultipleTransfers: Story = {
+  args: { job: runningJob },
+  decorators: [
+    withStore(
+      [runningJob],
+      new Map([
+        [
+          "job-running",
+          {
+            ratio: 0.55,
+            filesDone: 2,
+            filesTotal: 5,
+            bytesPerSecond: 12_000_000,
+            bytesRemaining: 45_000_000,
+            currentFiles: [
+              {
+                path: "/media/movies/Dune.mkv",
+                ratio: 0.8,
+              },
+              {
+                path: "/media/movies/Inception.mkv",
+                ratio: 0.3,
+              },
+            ],
+          },
+        ],
+      ]),
+    ),
+  ],
+}
+
 export const Sequence: Story = {
   args: { job: sequenceJob },
-  decorators: [withStore([sequenceJob, childA, childB])],
+  decorators: [
+    withStore(
+      [sequenceJob, childA, childB],
+      new Map([
+        [
+          "seq-1-b",
+          {
+            ratio: 0.35,
+            bytesPerSecond: 5_000_000,
+            bytesRemaining: 65_000_000,
+          },
+        ],
+      ]),
+    ),
+  ],
 }

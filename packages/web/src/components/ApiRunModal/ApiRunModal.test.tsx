@@ -44,8 +44,7 @@ describe("ApiRunModal", () => {
       jobId: "job-99",
       status: "running",
       logs: [],
-      childJobId: null,
-      childStepId: null,
+      activeChildren: [],
       source: "sequence",
     })
     renderWithStore(store)
@@ -64,8 +63,7 @@ describe("ApiRunModal", () => {
       jobId: "job-99",
       status: "running",
       logs: [],
-      childJobId: null,
-      childStepId: null,
+      activeChildren: [],
       source: "step",
     })
     renderWithStore(store)
@@ -79,8 +77,7 @@ describe("ApiRunModal", () => {
       jobId: "job-1",
       status: "running",
       logs: [],
-      childJobId: null,
-      childStepId: null,
+      activeChildren: [],
       source: "sequence",
     })
     renderWithStore(store)
@@ -95,8 +92,7 @@ describe("ApiRunModal", () => {
       jobId: "job-1",
       status: "completed",
       logs: [],
-      childJobId: null,
-      childStepId: null,
+      activeChildren: [],
       source: "sequence",
     })
     renderWithStore(store)
@@ -116,8 +112,7 @@ describe("ApiRunModal", () => {
       jobId: "job-2",
       status: "completed",
       logs: [],
-      childJobId: null,
-      childStepId: null,
+      activeChildren: [],
       source: "sequence",
     })
     renderWithStore(store)
@@ -138,8 +133,7 @@ describe("ApiRunModal", () => {
       jobId: "job-3",
       status: "completed",
       logs: [],
-      childJobId: null,
-      childStepId: null,
+      activeChildren: [],
       source: "sequence",
     })
     renderWithStore(store)
