@@ -5,8 +5,6 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noEmit": true,
-    "ignoreDeprecations": "6.0",
-    "baseUrl": "."
   },
   "include": ["e2e", "scripts", "*.json", "*.ts"],
   "exclude": [".claude/workspaces", "packages"]

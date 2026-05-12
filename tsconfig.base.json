@@ -10,6 +10,5 @@
     "strict": true,
     "target": "ESNext",
     "useDefineForClassFields": true,
-    "baseUrl": "."
   }
 }
