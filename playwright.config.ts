@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test"
 
 // E2E tests against the React app. Post-react-migration, the React SPA is
-// served by the prod web-server at WEB_PORT (default 4173). The api-server
+// served by the dev web-server at WEB_PORT (default 5173). The api-server
 // still runs at PORT (default 3000) for backend HTTP calls made from the
 // browser. Playwright navigates to the SPA, so use.baseURL points at the
 // web server; the webServer entries below still boot both because the SPA
