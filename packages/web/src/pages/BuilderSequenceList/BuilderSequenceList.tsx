@@ -1,4 +1,5 @@
 import {
+  type CollisionDetection,
   closestCenter,
   DndContext,
   type DragEndEvent,
@@ -26,6 +27,42 @@ import { isGroup } from "../../jobs/sequenceUtils"
 import { dragReorderAtom } from "../../state/sequenceAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Group, Step } from "../../types"
+
+// ─── Collision detection for nested sortables ────────────────────────────────
+//
+// Default `closestCenter` compares the dragged box's center against every
+// registered droppable's center. GroupCard registers itself via useSortable
+// (so it can be dragged as a unit at top-level) AND wraps its children in
+// an inner SortableContext. The group's outer rect is taller than any
+// inner step, so when a step inside the group is being dragged its box
+// center frequently sits closer to the group's center than to any
+// neighbouring step — `closestCenter` then reports the GROUP as `over`,
+// the drop is treated as cross-container, and the step exits the group.
+//
+// Fix: when the dragged item lives inside a group (active.containerId
+// equals some `<groupId>`), filter the group's OWN sortable id out of
+// the candidate droppables. The group's children, the group's body
+// droppable (`<groupId>-droppable`), and every other droppable on the
+// page stay candidates. The group itself can no longer win the contest
+// against its own children.
+const collisionDetectionStrategy: CollisionDetection = (
+  args,
+) => {
+  const activeContainerId = args.active.data.current
+    ?.sortable?.containerId as string | undefined
+  if (
+    activeContainerId &&
+    activeContainerId !== "top-level"
+  ) {
+    return closestCenter({
+      ...args,
+      droppableContainers: args.droppableContainers.filter(
+        (container) => container.id !== activeContainerId,
+      ),
+    })
+  }
+  return closestCenter(args)
+}
 
 export const BuilderSequenceList = () => {
   const steps = useAtomValue(stepsAtom)
@@ -284,7 +321,7 @@ export const BuilderSequenceList = () => {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetectionStrategy}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
