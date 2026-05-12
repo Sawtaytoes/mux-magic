@@ -179,7 +179,9 @@ describe("confirmPathVarDeleteAtom", () => {
     const steps = store.get(stepsAtom) as Step[]
     expect(steps[0].links.inputPath).toBe("altPath")
     expect(
-      store.get(pathsAtom).find((p) => p.id === "basePath"),
+      store
+        .get(pathsAtom)
+        .find((pv) => pv.id === "basePath"),
     ).toBeUndefined()
     expect(store.get(pendingPathVarDeleteAtom)).toBeNull()
   })

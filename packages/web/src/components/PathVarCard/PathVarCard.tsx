@@ -1,6 +1,13 @@
-import { useSetAtom } from "jotai"
+import { useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
-import { pathsAtom } from "../../state/pathsAtom"
+import {
+  cancelPathVarDeleteAtom,
+  confirmPathVarDeleteAtom,
+  pathsAtom,
+  pendingPathVarDeleteAtom,
+  removePathVarAtom,
+  setPathVarResolutionAtom,
+} from "../../state/pathsAtom"
 import { pathPickerStateAtom } from "../../state/pickerAtoms"
 import { fileExplorerAtom } from "../../state/uiAtoms"
 import type { PathVar } from "../../types"
@@ -14,9 +21,15 @@ export const PathVarCard = ({
   pathVar,
   isFirst,
 }: PathVarCardProps) => {
+  const allPaths = useAtomValue(pathsAtom)
   const setPaths = useSetAtom(pathsAtom)
   const setFileExplorer = useSetAtom(fileExplorerAtom)
   const setPathPickerState = useSetAtom(pathPickerStateAtom)
+  const removePath = useSetAtom(removePathVarAtom)
+  const setResolution = useSetAtom(setPathVarResolutionAtom)
+  const confirm = useSetAtom(confirmPathVarDeleteAtom)
+  const cancel = useSetAtom(cancelPathVarDeleteAtom)
+  const pending = useAtomValue(pendingPathVarDeleteAtom)
 
   const valueInputRef = useRef<HTMLInputElement>(null)
   const debounceTimerRef = useRef<ReturnType<
@@ -45,12 +58,6 @@ export const PathVarCard = ({
       paths.map((path) =>
         path.id === pathVar.id ? { ...path, value } : path,
       ),
-    )
-  }
-
-  const removePath = () => {
-    setPaths((paths) =>
-      paths.filter((path) => path.id !== pathVar.id),
     )
   }
 
@@ -130,6 +137,12 @@ export const PathVarCard = ({
     }
   }
 
+  const isPendingDelete =
+    pending !== null && pending.pathVarId === pathVar.id
+  const otherPaths = allPaths.filter(
+    (pv) => pv.id !== pathVar.id,
+  )
+
   return (
     <div
       data-path-var={pathVar.id}
@@ -169,7 +182,7 @@ export const PathVarCard = ({
         {!isFirst && (
           <button
             type="button"
-            onClick={removePath}
+            onClick={() => removePath(pathVar.id)}
             title="Remove path variable"
             aria-label="Remove path variable"
             className="text-xs text-slate-500 hover:text-red-400 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700"
@@ -193,6 +206,73 @@ export const PathVarCard = ({
         }
         className="w-full bg-slate-900 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
       />
+      {isPendingDelete && (
+        <div
+          className="mt-3 rounded-lg border border-amber-600/50 bg-amber-900/20 px-3 py-2 text-xs"
+          data-testid="pending-delete-prompt"
+        >
+          <p className="text-amber-300 font-medium mb-2">
+            This path variable is used by the following
+            fields. Choose what to do with each:
+          </p>
+          <div className="flex flex-col gap-2">
+            {pending.usages.map(({ stepId, fieldName }) => (
+              <div
+                key={`${stepId}:${fieldName}`}
+                className="flex items-center gap-2"
+              >
+                <span className="text-slate-400 font-mono shrink-0">
+                  {stepId} → {fieldName}
+                </span>
+                <select
+                  aria-label={`Resolution for ${stepId} ${fieldName}`}
+                  className="ml-auto bg-slate-800 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500"
+                  defaultValue="unlink"
+                  onChange={(event) => {
+                    const val = event.currentTarget.value
+                    setResolution({
+                      stepId,
+                      fieldName,
+                      resolution:
+                        val === "unlink"
+                          ? { kind: "unlink" }
+                          : {
+                              kind: "replace",
+                              targetId: val,
+                            },
+                    })
+                  }}
+                >
+                  <option value="unlink">
+                    Unlink (use literal value)
+                  </option>
+                  {otherPaths.map((pv) => (
+                    <option key={pv.id} value={pv.id}>
+                      Replace with: {pv.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2 mt-3">
+            <button
+              type="button"
+              onClick={() => confirm()}
+              className="text-xs bg-red-700 hover:bg-red-600 text-white rounded px-3 py-1"
+            >
+              Delete and apply
+            </button>
+            <button
+              type="button"
+              onClick={() => cancel()}
+              className="text-xs text-slate-400 hover:text-slate-200 rounded px-3 py-1 border border-slate-600 hover:border-slate-400"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
