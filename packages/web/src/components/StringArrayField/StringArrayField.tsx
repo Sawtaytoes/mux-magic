@@ -1,5 +1,6 @@
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { CommandField, Step } from "../../types"
+import { FieldLabel } from "../FieldLabel/FieldLabel"
 
 type StringArrayFieldProps = {
   field: CommandField
@@ -29,14 +30,17 @@ export const StringArrayField = ({
   }
 
   return (
-    <input
-      id={`${step.command}-${field.name}`}
-      type="text"
-      value={displayValue}
-      placeholder={field.placeholder ?? ""}
-      onChange={(event) => handleChange(event.target.value)}
-      aria-required={field.required ? "true" : undefined}
-      className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
-    />
+    <div>
+      <FieldLabel command={step.command} field={field} />
+      <input
+        id={`${step.command}-${field.name}`}
+        type="text"
+        value={displayValue}
+        placeholder={field.placeholder ?? ""}
+        onChange={(event) => handleChange(event.target.value)}
+        aria-required={field.required ? "true" : undefined}
+        className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+      />
+    </div>
   )
 }
