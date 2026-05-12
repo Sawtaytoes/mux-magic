@@ -64,15 +64,20 @@ export const runMkvExtract = ({
         const percent = Number(
           data.toString().replace(progressRegex, "$1"),
         )
-        if (!hasStarted) {
-          hasStarted = true
-
-          cliProgressBar.start(100, percent, {})
-        } else {
-          cliProgressBar.update(percent)
-        }
         if (tracker !== null)
           tracker.setRatio(percent / 100)
+        // cli-progress writes carriage-return redraws straight to
+        // process.stdout. In API/daemon context those bytes leak
+        // into the server log stream — gate the bar to TTY mode.
+        if (tty.useTtyAffordances) {
+          if (!hasStarted) {
+            hasStarted = true
+
+            cliProgressBar.start(100, percent, {})
+          } else {
+            cliProgressBar.update(percent)
+          }
+        }
       } else {
         console.info(data.toString())
       }

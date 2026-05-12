@@ -74,18 +74,23 @@ export const runMkvMerge = ({
         const percent = Number(
           data.toString().replace(progressRegex, "$1"),
         )
-        if (!hasStarted) {
-          hasStarted = true
-
-          cliProgressBar.start(100, percent, {})
-        } else {
-          cliProgressBar.update(percent)
-        }
         // Feed the same parsed percentage to the SSE-progress
         // tracker so API consumers see the same data the TTY bar
         // shows. Throttling lives inside the emitter.
         if (tracker !== null)
           tracker.setRatio(percent / 100)
+        // cli-progress writes carriage-return redraws straight to
+        // process.stdout. In API/daemon context those bytes leak
+        // into the server log stream — gate the bar to TTY mode.
+        if (tty.useTtyAffordances) {
+          if (!hasStarted) {
+            hasStarted = true
+
+            cliProgressBar.start(100, percent, {})
+          } else {
+            cliProgressBar.update(percent)
+          }
+        }
       } else {
         console.info(data.toString())
       }
@@ -115,7 +120,9 @@ export const runMkvMerge = ({
     })
 
     childProcess.on("exit", (code) => {
-      cliProgressBar.stop()
+      if (tty.useTtyAffordances) {
+        cliProgressBar.stop()
+      }
       tty.detach()
       if (tracker !== null) tracker.finish()
 
