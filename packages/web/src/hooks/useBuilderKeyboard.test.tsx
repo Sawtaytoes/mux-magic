@@ -2,7 +2,6 @@ import {
   cleanup,
   render,
   screen,
-  waitFor,
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
@@ -13,10 +12,17 @@ import {
   canUndoAtom,
   redoStackAtom,
   undoStackAtom,
+  type Snapshot,
 } from "../state/historyAtoms"
 import { useBuilderKeyboard } from "./useBuilderKeyboard"
 
 afterEach(cleanup)
+
+const emptySnapshot: Snapshot = {
+  steps: [],
+  paths: [],
+  stepCounter: 0,
+}
 
 const KeyboardHarness = () => {
   useBuilderKeyboard()
@@ -40,19 +46,17 @@ const renderWithStore = (
 describe("Ctrl+Z", () => {
   test("triggers undo", async () => {
     const store = createStore()
-    store.set(undoStackAtom, ["# snap"])
+    store.set(undoStackAtom, [emptySnapshot])
     store.set(canUndoAtom, true)
     renderWithStore(store)
     await userEvent.keyboard("{Control>}z{/Control}")
-    await waitFor(() => {
-      expect(store.get(undoStackAtom)).toHaveLength(0)
-      expect(store.get(canRedoAtom)).toBe(true)
-    })
+    expect(store.get(undoStackAtom)).toHaveLength(0)
+    expect(store.get(canRedoAtom)).toBe(true)
   })
 
   test("is blocked when an input is focused", async () => {
     const store = createStore()
-    store.set(undoStackAtom, ["# snap"])
+    store.set(undoStackAtom, [emptySnapshot])
     store.set(canUndoAtom, true)
     renderWithStore(store)
     await userEvent.click(
@@ -64,7 +68,7 @@ describe("Ctrl+Z", () => {
 
   test("is blocked when a textarea is focused", async () => {
     const store = createStore()
-    store.set(undoStackAtom, ["# snap"])
+    store.set(undoStackAtom, [emptySnapshot])
     store.set(canUndoAtom, true)
     renderWithStore(store)
     await userEvent.click(
@@ -78,29 +82,25 @@ describe("Ctrl+Z", () => {
 describe("Ctrl+Shift+Z", () => {
   test("triggers redo", async () => {
     const store = createStore()
-    store.set(redoStackAtom, ["# snap"])
+    store.set(redoStackAtom, [emptySnapshot])
     store.set(canRedoAtom, true)
     renderWithStore(store)
     await userEvent.keyboard(
       "{Control>}{Shift>}z{/Shift}{/Control}",
     )
-    await waitFor(() => {
-      expect(store.get(redoStackAtom)).toHaveLength(0)
-      expect(store.get(canUndoAtom)).toBe(true)
-    })
+    expect(store.get(redoStackAtom)).toHaveLength(0)
+    expect(store.get(canUndoAtom)).toBe(true)
   })
 })
 
 describe("Ctrl+Y", () => {
   test("triggers redo", async () => {
     const store = createStore()
-    store.set(redoStackAtom, ["# snap"])
+    store.set(redoStackAtom, [emptySnapshot])
     store.set(canRedoAtom, true)
     renderWithStore(store)
     await userEvent.keyboard("{Control>}y{/Control}")
-    await waitFor(() => {
-      expect(store.get(redoStackAtom)).toHaveLength(0)
-      expect(store.get(canUndoAtom)).toBe(true)
-    })
+    expect(store.get(redoStackAtom)).toHaveLength(0)
+    expect(store.get(canUndoAtom)).toBe(true)
   })
 })

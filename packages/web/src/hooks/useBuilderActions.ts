@@ -10,12 +10,18 @@ import {
   dryRunAtom,
   failureModeAtom,
 } from "../state/dryRunQuery"
-import { insertGroupAtom } from "../state/groupAtoms"
+import { dragReorderAtom } from "../state/dragAtoms"
+import {
+  insertGroupAtom,
+  moveGroupAtom,
+  removeGroupAtom,
+} from "../state/groupAtoms"
 import {
   canRedoAtom,
   canUndoAtom,
   redoStackAtom,
   undoStackAtom,
+  type Snapshot,
 } from "../state/historyAtoms"
 import {
   addPathAtom,
@@ -28,6 +34,8 @@ import { setAllCollapsedAtom } from "../state/sequenceAtoms"
 import {
   changeCommandAtom,
   insertStepAtom,
+  moveStepAtom,
+  removeStepAtom,
   setLinkAtom,
   setParamAtom,
 } from "../state/stepAtoms"
@@ -44,58 +52,46 @@ const DEFAULT_BASE_PATH = {
   value: "",
 }
 
-const applySnapshot = async (
+const captureSnapshot = (
   store: ReturnType<typeof useStore>,
-  snapshot: string,
+): Snapshot => ({
+  steps: store.get(stepsAtom),
+  paths: store.get(pathsAtom),
+  stepCounter: store.get(stepCounterAtom),
+})
+
+const applySnapshot = (
+  store: ReturnType<typeof useStore>,
+  snapshot: Snapshot,
 ) => {
-  const { loadYamlFromText } = await import(
-    "../jobs/loadYaml"
-  )
-  const commands = store.get(commandsAtom)
-  const currentPaths = store.get(pathsAtom)
-  const currentCounter = store.get(stepCounterAtom)
-  try {
-    const result = loadYamlFromText(
-      snapshot,
-      commands,
-      currentPaths,
-      currentCounter,
-    )
-    store.set(stepsAtom, result.steps)
-    store.set(pathsAtom, result.paths)
-    store.set(stepCounterAtom, result.stepCounter)
-  } catch {
-    // Snapshot unreadable — silently skip to avoid corrupting state.
-  }
+  store.set(stepsAtom, snapshot.steps)
+  store.set(pathsAtom, snapshot.paths)
+  store.set(stepCounterAtom, snapshot.stepCounter)
 }
 
 export const useBuilderActions = () => {
   const store = useStore()
 
   const pushHistory = useCallback(() => {
-    const snapshot = toYamlStr(
-      store.get(stepsAtom),
-      store.get(pathsAtom),
-      store.get(commandsAtom),
-    )
-    store.set(undoStackAtom, (prev) => [...prev, snapshot])
+    store.set(undoStackAtom, (prev) => [
+      ...prev,
+      captureSnapshot(store),
+    ])
     store.set(redoStackAtom, [])
     store.set(canUndoAtom, true)
     store.set(canRedoAtom, false)
   }, [store])
 
-  const undo = useCallback(async () => {
+  const undo = useCallback(() => {
     const undoStack = store.get(undoStackAtom)
     if (!undoStack.length) return
-    const current = toYamlStr(
-      store.get(stepsAtom),
-      store.get(pathsAtom),
-      store.get(commandsAtom),
-    )
     const snapshot = undoStack[undoStack.length - 1]
     store.set(undoStackAtom, undoStack.slice(0, -1))
-    store.set(redoStackAtom, (prev) => [...prev, current])
-    await applySnapshot(store, snapshot)
+    store.set(redoStackAtom, (prev) => [
+      ...prev,
+      captureSnapshot(store),
+    ])
+    runWithViewTransition(() => applySnapshot(store, snapshot))
     store.set(
       canUndoAtom,
       store.get(undoStackAtom).length > 0,
@@ -103,18 +99,16 @@ export const useBuilderActions = () => {
     store.set(canRedoAtom, true)
   }, [store])
 
-  const redo = useCallback(async () => {
+  const redo = useCallback(() => {
     const redoStack = store.get(redoStackAtom)
     if (!redoStack.length) return
-    const current = toYamlStr(
-      store.get(stepsAtom),
-      store.get(pathsAtom),
-      store.get(commandsAtom),
-    )
     const snapshot = redoStack[redoStack.length - 1]
     store.set(redoStackAtom, redoStack.slice(0, -1))
-    store.set(undoStackAtom, (prev) => [...prev, current])
-    await applySnapshot(store, snapshot)
+    store.set(undoStackAtom, (prev) => [
+      ...prev,
+      captureSnapshot(store),
+    ])
+    runWithViewTransition(() => applySnapshot(store, snapshot))
     store.set(
       canRedoAtom,
       store.get(redoStackAtom).length > 0,
@@ -162,6 +156,65 @@ export const useBuilderActions = () => {
     (index: number, isParallel: boolean) => {
       pushHistory()
       store.set(insertGroupAtom, { index, isParallel })
+    },
+    [store, pushHistory],
+  )
+
+  const moveStep = useCallback(
+    (args: {
+      stepId: string
+      direction: -1 | 1
+      parentGroupId?: string | null
+    }) => {
+      pushHistory()
+      runWithViewTransition(() =>
+        store.set(moveStepAtom, args),
+      )
+    },
+    [store, pushHistory],
+  )
+
+  const removeStep = useCallback(
+    (stepId: string) => {
+      pushHistory()
+      runWithViewTransition(() =>
+        store.set(removeStepAtom, stepId),
+      )
+    },
+    [store, pushHistory],
+  )
+
+  const moveGroup = useCallback(
+    (args: { groupId: string; direction: -1 | 1 }) => {
+      pushHistory()
+      runWithViewTransition(() =>
+        store.set(moveGroupAtom, args),
+      )
+    },
+    [store, pushHistory],
+  )
+
+  const removeGroup = useCallback(
+    (groupId: string) => {
+      pushHistory()
+      runWithViewTransition(() =>
+        store.set(removeGroupAtom, groupId),
+      )
+    },
+    [store, pushHistory],
+  )
+
+  const reorderDrag = useCallback(
+    (args: {
+      activeId: string
+      overId: string
+      sourceContainerId: string
+      targetContainerId: string
+    }) => {
+      pushHistory()
+      runWithViewTransition(() =>
+        store.set(dragReorderAtom, args),
+      )
     },
     [store, pushHistory],
   )
@@ -523,8 +576,13 @@ export const useBuilderActions = () => {
     copyYaml,
     insertGroup,
     insertStep,
+    moveGroup,
+    moveStep,
     pasteCardAt,
     redo,
+    removeGroup,
+    removeStep,
+    reorderDrag,
     runGroup,
     runViaApi,
     setAllCollapsed,

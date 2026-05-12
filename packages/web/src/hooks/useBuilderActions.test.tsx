@@ -13,8 +13,11 @@ import {
   canUndoAtom,
   redoStackAtom,
   undoStackAtom,
+  type Snapshot,
 } from "../state/historyAtoms"
 import { pathsAtom } from "../state/pathsAtom"
+import { stepsAtom } from "../state/stepsAtom"
+import type { Step } from "../types"
 import { useBuilderActions } from "./useBuilderActions"
 
 afterEach(cleanup)
@@ -40,8 +43,8 @@ const Harness = () => {
       >
         Set V3
       </button>
-      <button onClick={() => void undo()}>Undo</button>
-      <button onClick={() => void redo()}>Redo</button>
+      <button onClick={undo}>Undo</button>
+      <button onClick={redo}>Redo</button>
     </>
   )
 }
@@ -55,9 +58,12 @@ const renderWithStore = (
     </Provider>,
   )
 
-// Pre-seeding a path with a real value forces toYamlStr to
-// produce actual YAML instead of "# No steps yet", which is
-// required for applySnapshot to restore state correctly.
+const emptySnapshot: Snapshot = {
+  steps: [],
+  paths: [],
+  stepCounter: 0,
+}
+
 const seedTestPath = (
   store: ReturnType<typeof createStore>,
 ) => {
@@ -65,6 +71,17 @@ const seedTestPath = (
     { id: "test", label: "test", value: "/initial" },
   ])
 }
+
+const makeBlankStep = (id: string): Step => ({
+  id,
+  alias: "",
+  command: "",
+  params: {},
+  links: {},
+  status: null,
+  error: null,
+  isCollapsed: false,
+})
 
 describe("pushHistory", () => {
   test("adds a snapshot to the undo stack", async () => {
@@ -87,7 +104,7 @@ describe("pushHistory", () => {
 
   test("clears the redo stack and canRedo", async () => {
     const store = createStore()
-    store.set(redoStackAtom, ["# stale-snapshot"])
+    store.set(redoStackAtom, [emptySnapshot])
     store.set(canRedoAtom, true)
     renderWithStore(store)
     await userEvent.click(
@@ -111,7 +128,7 @@ describe("undo", () => {
 
   test("pops from the undo stack", async () => {
     const store = createStore()
-    store.set(undoStackAtom, ["# snap"])
+    store.set(undoStackAtom, [emptySnapshot])
     store.set(canUndoAtom, true)
     renderWithStore(store)
     await userEvent.click(
@@ -122,7 +139,7 @@ describe("undo", () => {
 
   test("pushes current state onto the redo stack", async () => {
     const store = createStore()
-    store.set(undoStackAtom, ["# snap"])
+    store.set(undoStackAtom, [emptySnapshot])
     store.set(canUndoAtom, true)
     renderWithStore(store)
     await userEvent.click(
@@ -133,41 +150,35 @@ describe("undo", () => {
 
   test("sets canRedo to true", async () => {
     const store = createStore()
-    store.set(undoStackAtom, ["# snap"])
+    store.set(undoStackAtom, [emptySnapshot])
     store.set(canUndoAtom, true)
     renderWithStore(store)
     await userEvent.click(
       screen.getByRole("button", { name: "Undo" }),
     )
-    await waitFor(() => {
-      expect(store.get(canRedoAtom)).toBe(true)
-    })
+    expect(store.get(canRedoAtom)).toBe(true)
   })
 
   test("sets canUndo to false when the stack is exhausted", async () => {
     const store = createStore()
-    store.set(undoStackAtom, ["# snap"])
+    store.set(undoStackAtom, [emptySnapshot])
     store.set(canUndoAtom, true)
     renderWithStore(store)
     await userEvent.click(
       screen.getByRole("button", { name: "Undo" }),
     )
-    await waitFor(() => {
-      expect(store.get(canUndoAtom)).toBe(false)
-    })
+    expect(store.get(canUndoAtom)).toBe(false)
   })
 
   test("keeps canUndo true when more snapshots remain", async () => {
     const store = createStore()
-    store.set(undoStackAtom, ["# snap1", "# snap2"])
+    store.set(undoStackAtom, [emptySnapshot, emptySnapshot])
     store.set(canUndoAtom, true)
     renderWithStore(store)
     await userEvent.click(
       screen.getByRole("button", { name: "Undo" }),
     )
-    await waitFor(() => {
-      expect(store.get(canUndoAtom)).toBe(true)
-    })
+    expect(store.get(canUndoAtom)).toBe(true)
   })
 
   test("restores path state from the captured snapshot", async () => {
@@ -188,6 +199,24 @@ describe("undo", () => {
       ).toBe(true)
     })
   })
+
+  test("preserves blank cards that were in state when the action was pushed", async () => {
+    const store = createStore()
+    store.set(stepsAtom, [
+      makeBlankStep("s1"),
+      makeBlankStep("s2"),
+      makeBlankStep("s3"),
+    ])
+    renderWithStore(store)
+    // addPath captures the 3 blank steps then adds a path
+    await userEvent.click(
+      screen.getByRole("button", { name: "Add Path" }),
+    )
+    await userEvent.click(
+      screen.getByRole("button", { name: "Undo" }),
+    )
+    expect(store.get(stepsAtom)).toHaveLength(3)
+  })
 })
 
 describe("redo", () => {
@@ -203,7 +232,7 @@ describe("redo", () => {
 
   test("pops from the redo stack", async () => {
     const store = createStore()
-    store.set(redoStackAtom, ["# snap"])
+    store.set(redoStackAtom, [emptySnapshot])
     store.set(canRedoAtom, true)
     renderWithStore(store)
     await userEvent.click(
@@ -214,7 +243,7 @@ describe("redo", () => {
 
   test("pushes current state onto the undo stack", async () => {
     const store = createStore()
-    store.set(redoStackAtom, ["# snap"])
+    store.set(redoStackAtom, [emptySnapshot])
     store.set(canRedoAtom, true)
     renderWithStore(store)
     await userEvent.click(
@@ -225,28 +254,24 @@ describe("redo", () => {
 
   test("sets canUndo to true", async () => {
     const store = createStore()
-    store.set(redoStackAtom, ["# snap"])
+    store.set(redoStackAtom, [emptySnapshot])
     store.set(canRedoAtom, true)
     renderWithStore(store)
     await userEvent.click(
       screen.getByRole("button", { name: "Redo" }),
     )
-    await waitFor(() => {
-      expect(store.get(canUndoAtom)).toBe(true)
-    })
+    expect(store.get(canUndoAtom)).toBe(true)
   })
 
   test("sets canRedo to false when the stack is exhausted", async () => {
     const store = createStore()
-    store.set(redoStackAtom, ["# snap"])
+    store.set(redoStackAtom, [emptySnapshot])
     store.set(canRedoAtom, true)
     renderWithStore(store)
     await userEvent.click(
       screen.getByRole("button", { name: "Redo" }),
     )
-    await waitFor(() => {
-      expect(store.get(canRedoAtom)).toBe(false)
-    })
+    expect(store.get(canRedoAtom)).toBe(false)
   })
 
   test("restores path state from the captured snapshot", async () => {
@@ -269,28 +294,26 @@ describe("redo", () => {
     await userEvent.click(
       screen.getByRole("button", { name: "Redo" }),
     )
-    await waitFor(() => {
+    await waitFor(() =>
       expect(
         store
           .get(pathsAtom)
           .some((path) => path.value === "/v1"),
-      ).toBe(true)
-    })
+      ).toBe(true),
+    )
   })
 })
 
 describe("undo/redo interaction", () => {
   test("a new action after undo clears the redo stack", async () => {
     const store = createStore()
-    store.set(undoStackAtom, ["# snap"])
+    store.set(undoStackAtom, [emptySnapshot])
     store.set(canUndoAtom, true)
     renderWithStore(store)
     await userEvent.click(
       screen.getByRole("button", { name: "Undo" }),
     )
-    await waitFor(() =>
-      expect(store.get(canRedoAtom)).toBe(true),
-    )
+    expect(store.get(canRedoAtom)).toBe(true)
     await userEvent.click(
       screen.getByRole("button", { name: "Add Path" }),
     )

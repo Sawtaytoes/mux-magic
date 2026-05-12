@@ -13,8 +13,6 @@ import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
 import { DoubleChevron } from "../../icons/DoubleChevron/DoubleChevron"
 import {
-  moveGroupAtom,
-  removeGroupAtom,
   setGroupChildrenCollapsedAtom,
   toggleGroupCollapsedAtom,
   updateGroupLabelAtom,
@@ -22,7 +20,6 @@ import {
 import { runningAtom } from "../../state/runAtoms"
 import { addStepToGroupAtom } from "../../state/stepAtoms"
 import type { Group, Step } from "../../types"
-import { runWithViewTransition } from "../../utils/runWithViewTransition"
 import { StepCard } from "../StepCard/StepCard"
 
 interface GroupCardProps {
@@ -52,10 +49,13 @@ export const GroupCard = ({
     setGroupChildrenCollapsedAtom,
   )
   const addStep = useSetAtom(addStepToGroupAtom)
-  const moveGroup = useSetAtom(moveGroupAtom)
-  const removeGroup = useSetAtom(removeGroupAtom)
-  const { copyGroupYaml, pasteCardAt, runGroup } =
-    useBuilderActions()
+  const {
+    copyGroupYaml,
+    moveGroup,
+    pasteCardAt,
+    removeGroup,
+    runGroup,
+  } = useBuilderActions()
   const isGloballyRunning = useAtomValue(runningAtom)
   const [isCopied, setIsCopied] = useState(false)
 
@@ -221,12 +221,7 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() => {
-            runWithViewTransition(() => {
-              moveGroup({
-                groupId: group.id,
-                direction: -1,
-              })
-            })
+            moveGroup({ groupId: group.id, direction: -1 })
           }}
           title="Move group up"
           disabled={isFirst}
@@ -237,12 +232,7 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() => {
-            runWithViewTransition(() => {
-              moveGroup({
-                groupId: group.id,
-                direction: 1,
-              })
-            })
+            moveGroup({ groupId: group.id, direction: 1 })
           }}
           title="Move group down"
           disabled={isLast}
@@ -283,9 +273,7 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() => {
-            runWithViewTransition(() => {
-              removeGroup(group.id)
-            })
+            removeGroup(group.id)
           }}
           title="Remove this group (its inner steps go too)"
           className="text-[10px] text-slate-500 hover:text-red-400 px-2 py-0.5 rounded border border-slate-700 hover:border-red-500/40"

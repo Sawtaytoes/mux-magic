@@ -30,14 +30,11 @@ import {
   runOrStopStepAtom,
 } from "../../state/runAtoms"
 import {
-  moveStepAtom,
-  removeStepAtom,
   setStepRunStatusAtom,
   toggleStepCollapsedAtom,
   updateStepAliasAtom,
 } from "../../state/stepAtoms"
 import type { Step } from "../../types"
-import { runWithViewTransition } from "../../utils/runWithViewTransition"
 import { ProgressBar } from "../ProgressBar/ProgressBar"
 import { RenderFields } from "../RenderFields/RenderFields"
 import { StatusBadge } from "../StatusBadge/StatusBadge"
@@ -120,8 +117,6 @@ const StepCardInner = ({
     toggleStepCollapsedAtom,
   )
   const updateAlias = useSetAtom(updateStepAliasAtom)
-  const moveStep = useSetAtom(moveStepAtom)
-  const removeStep = useSetAtom(removeStepAtom)
   const runOrStopStep = useSetAtom(runOrStopStepAtom)
   const isGloballyRunning = useAtomValue(runningAtom)
   const isThisStepRunning =
@@ -145,7 +140,8 @@ const StepCardInner = ({
   )
   const commands = useAtomValue(commandsAtom)
 
-  const { copyStepYaml } = useBuilderActions()
+  const { copyStepYaml, moveStep, removeStep } =
+    useBuilderActions()
   const triggerRef = useRef<HTMLButtonElement>(null)
 
   const sortable = useSortable({
@@ -336,12 +332,10 @@ const StepCardInner = ({
           <button
             type="button"
             onClick={() => {
-              runWithViewTransition(() => {
-                moveStep({
-                  stepId: step.id,
-                  direction: -1,
-                  parentGroupId,
-                })
+              moveStep({
+                stepId: step.id,
+                direction: -1,
+                parentGroupId,
               })
             }}
             disabled={isFirst}
@@ -353,12 +347,10 @@ const StepCardInner = ({
           <button
             type="button"
             onClick={() => {
-              runWithViewTransition(() => {
-                moveStep({
-                  stepId: step.id,
-                  direction: 1,
-                  parentGroupId,
-                })
+              moveStep({
+                stepId: step.id,
+                direction: 1,
+                parentGroupId,
               })
             }}
             disabled={isLast}
@@ -385,9 +377,7 @@ const StepCardInner = ({
           <button
             type="button"
             onClick={() => {
-              runWithViewTransition(() => {
-                removeStep(step.id)
-              })
+              removeStep(step.id)
             }}
             title="Remove this step"
             aria-label="Remove this step"

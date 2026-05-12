@@ -16,14 +16,13 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
-import { useAtomValue, useSetAtom } from "jotai"
+import { useAtomValue } from "jotai"
 import { useState } from "react"
 import { GroupCard } from "../../components/GroupCard/GroupCard"
 import { InsertDivider } from "../../components/InsertDivider/InsertDivider"
 import { StepCard } from "../../components/StepCard/StepCard"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { isGroup } from "../../jobs/sequenceUtils"
-import { dragReorderAtom } from "../../state/dragAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Group, Step } from "../../types"
 import { runWithViewTransition } from "../../utils/runWithViewTransition"
@@ -67,7 +66,6 @@ const collisionDetectionStrategy: CollisionDetection = (
 export const BuilderSequenceList = () => {
   const steps = useAtomValue(stepsAtom)
   const actions = useBuilderActions()
-  const dragReorder = useSetAtom(dragReorderAtom)
   const [activeId, setActiveId] = useState<string | null>(
     null,
   )
@@ -142,7 +140,7 @@ export const BuilderSequenceList = () => {
       resolvedOverId = ""
     }
 
-    dragReorder({
+    actions.reorderDrag({
       activeId: active.id as string,
       overId: resolvedOverId,
       sourceContainerId,
