@@ -91,6 +91,39 @@ describe("PageHeader", () => {
     expect(store.get(failureModeAtom)).toBe(true)
   })
 
+  test("DRY RUN badge has amber classes when failureMode is false", () => {
+    const store = createStore()
+    store.set(dryRunAtom, true)
+    store.set(failureModeAtom, false)
+    renderWithStore(store)
+    const badge = document.getElementById("dry-run-badge")
+    expect(badge).not.toBeNull()
+    expect(badge?.className).toContain("text-amber-400")
+    expect(badge?.className).not.toContain("text-red-400")
+  })
+
+  test("DRY RUN badge has red classes when failureMode is true", () => {
+    const store = createStore()
+    store.set(dryRunAtom, true)
+    store.set(failureModeAtom, true)
+    renderWithStore(store)
+    const badge = document.getElementById("dry-run-badge")
+    expect(badge).not.toBeNull()
+    expect(badge?.className).toContain("text-red-400")
+    expect(badge?.className).not.toContain("text-amber-400")
+  })
+
+  test("DRY RUN badge title mentions failure mode when failureMode is true", () => {
+    const store = createStore()
+    store.set(dryRunAtom, true)
+    store.set(failureModeAtom, true)
+    renderWithStore(store)
+    const badge = document.getElementById("dry-run-badge")
+    expect(badge?.getAttribute("title")).toContain(
+      "failure mode",
+    )
+  })
+
   test("disables Run Sequence and Run via API buttons while running", () => {
     const store = createStore()
     store.set(runningAtom, true)

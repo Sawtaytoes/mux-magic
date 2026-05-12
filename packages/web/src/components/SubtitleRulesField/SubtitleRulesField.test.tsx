@@ -109,6 +109,31 @@ describe("SubtitleRulesField", () => {
     ).not.toBeInTheDocument()
   })
 
+  it("toggle button renders CollapseChevron svg with -rotate-90 when collapsed", async () => {
+    const step = createTestStep({
+      params: { rules: [], hasDefaultRules: true },
+    })
+    render(
+      <Provider>
+        <SubtitleRulesField field={field} step={step} />
+      </Provider>,
+    )
+    const toggleButton = screen.getByRole("button", {
+      name: /Default rules/,
+    })
+    // Initially collapsed: svg should have -rotate-90
+    const svgCollapsed = toggleButton.querySelector("svg")
+    expect(svgCollapsed).not.toBeNull()
+    expect(svgCollapsed?.className).toContain("-rotate-90")
+
+    await userEvent.click(toggleButton)
+
+    // Now expanded: svg should NOT have -rotate-90
+    const svgExpanded = toggleButton.querySelector("svg")
+    expect(svgExpanded).not.toBeNull()
+    expect(svgExpanded?.className).not.toContain("-rotate-90")
+  })
+
   it("preview section is collapsible", async () => {
     const step = createTestStep({
       params: { rules: [], hasDefaultRules: true },
