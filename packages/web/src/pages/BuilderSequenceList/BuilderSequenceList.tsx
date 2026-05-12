@@ -18,7 +18,6 @@ import {
 } from "@dnd-kit/sortable"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useState } from "react"
-import { flushSync } from "react-dom"
 import { GroupCard } from "../../components/GroupCard/GroupCard"
 import { InsertDivider } from "../../components/InsertDivider/InsertDivider"
 import { StepCard } from "../../components/StepCard/StepCard"
@@ -27,6 +26,7 @@ import { isGroup } from "../../jobs/sequenceUtils"
 import { dragReorderAtom } from "../../state/dragAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Group, Step } from "../../types"
+import { runWithViewTransition } from "../../utils/runWithViewTransition"
 
 // ─── Collision detection for nested sortables ────────────────────────────────
 //
@@ -171,24 +171,18 @@ export const BuilderSequenceList = () => {
           key={`divider-before-${item.id}`}
           index={itemIndex}
           onInsertStep={() =>
-            document.startViewTransition(() =>
-              flushSync(() =>
-                actions.insertStep(itemIndex),
-              ),
+            runWithViewTransition(() =>
+              actions.insertStep(itemIndex),
             )
           }
           onInsertSequentialGroup={() =>
-            document.startViewTransition(() =>
-              flushSync(() =>
-                actions.insertGroup(itemIndex, false),
-              ),
+            runWithViewTransition(() =>
+              actions.insertGroup(itemIndex, false),
             )
           }
           onInsertParallelGroup={() =>
-            document.startViewTransition(() =>
-              flushSync(() =>
-                actions.insertGroup(itemIndex, true),
-              ),
+            runWithViewTransition(() =>
+              actions.insertGroup(itemIndex, true),
             )
           }
           onPaste={handlePaste(itemIndex)}
@@ -242,22 +236,18 @@ export const BuilderSequenceList = () => {
       key="divider-end"
       index={steps.length}
       onInsertStep={() =>
-        document.startViewTransition(() =>
-          flushSync(() => actions.insertStep(steps.length)),
+        runWithViewTransition(() =>
+          actions.insertStep(steps.length),
         )
       }
       onInsertSequentialGroup={() =>
-        document.startViewTransition(() =>
-          flushSync(() =>
-            actions.insertGroup(steps.length, false),
-          ),
+        runWithViewTransition(() =>
+          actions.insertGroup(steps.length, false),
         )
       }
       onInsertParallelGroup={() =>
-        document.startViewTransition(() =>
-          flushSync(() =>
-            actions.insertGroup(steps.length, true),
-          ),
+        runWithViewTransition(() =>
+          actions.insertGroup(steps.length, true),
         )
       }
       onPaste={handlePaste(steps.length)}
@@ -296,20 +286,18 @@ export const BuilderSequenceList = () => {
         <InsertDivider
           index={0}
           onInsertStep={() =>
-            document.startViewTransition(() =>
-              flushSync(() => actions.insertStep(0)),
+            runWithViewTransition(() =>
+              actions.insertStep(0),
             )
           }
           onInsertSequentialGroup={() =>
-            document.startViewTransition(() =>
-              flushSync(() =>
-                actions.insertGroup(0, false),
-              ),
+            runWithViewTransition(() =>
+              actions.insertGroup(0, false),
             )
           }
           onInsertParallelGroup={() =>
-            document.startViewTransition(() =>
-              flushSync(() => actions.insertGroup(0, true)),
+            runWithViewTransition(() =>
+              actions.insertGroup(0, true),
             )
           }
           onPaste={handlePaste(0)}

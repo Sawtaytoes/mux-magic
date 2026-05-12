@@ -210,16 +210,20 @@ export const PathVariableCard = ({
       <input
         ref={valueInputRef}
         type="text"
-        defaultValue={pathVariable.value}
+        value={pathVariable.value}
         placeholder="/mnt/media or D:\Media"
         data-action="set-path-value"
         data-pv-id={pathVariable.id}
-        onChange={(event) =>
-          handleValueChange(event.currentTarget.value)
-        }
-        onBlur={(event) =>
+        onChange={(event) => {
+          // Controlled input: commit every keystroke to pathsAtom so
+          // any field linked to this variable re-renders live. The
+          // previous defaultValue + onBlur committed once on blur,
+          // which meant external updates (e.g. typing in a linked
+          // PathField in a step card) never re-painted this input —
+          // the value only refreshed on a full page reload.
           setValue(event.currentTarget.value)
-        }
+          handleValueChange(event.currentTarget.value)
+        }}
         className="w-full bg-slate-900 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
       />
       {isPendingDelete && (

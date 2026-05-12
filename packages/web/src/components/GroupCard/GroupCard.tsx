@@ -8,7 +8,6 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { useSetAtom } from "jotai"
 import { useState } from "react"
-import { flushSync } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
@@ -22,6 +21,7 @@ import {
 } from "../../state/groupAtoms"
 import { addStepToGroupAtom } from "../../state/stepAtoms"
 import type { Group, Step } from "../../types"
+import { runWithViewTransition } from "../../utils/runWithViewTransition"
 import { StepCard } from "../StepCard/StepCard"
 
 interface GroupCardProps {
@@ -219,16 +219,12 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() => {
-            const fn = () =>
+            runWithViewTransition(() => {
               moveGroup({
                 groupId: group.id,
                 direction: -1,
               })
-            document.startViewTransition
-              ? document.startViewTransition(() =>
-                  flushSync(fn),
-                )
-              : fn()
+            })
           }}
           title="Move group up"
           disabled={isFirst}
@@ -239,13 +235,12 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() => {
-            const fn = () =>
-              moveGroup({ groupId: group.id, direction: 1 })
-            document.startViewTransition
-              ? document.startViewTransition(() =>
-                  flushSync(fn),
-                )
-              : fn()
+            runWithViewTransition(() => {
+              moveGroup({
+                groupId: group.id,
+                direction: 1,
+              })
+            })
           }}
           title="Move group down"
           disabled={isLast}
@@ -281,12 +276,9 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() => {
-            const fn = () => removeGroup(group.id)
-            document.startViewTransition
-              ? document.startViewTransition(() =>
-                  flushSync(fn),
-                )
-              : fn()
+            runWithViewTransition(() => {
+              removeGroup(group.id)
+            })
           }}
           title="Remove this group (its inner steps go too)"
           className="text-[10px] text-slate-500 hover:text-red-400 px-2 py-0.5 rounded border border-slate-700 hover:border-red-500/40"

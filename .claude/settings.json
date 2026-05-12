@@ -50,7 +50,7 @@
       "Bash(xargs -r kill)",
       "Bash(yarn *)",
       "Bash(yarn typecheck * | tail *)",
-      "mcp__playwright__browser_*",
+      "mcp__playwright__browser* *",
       "PowerShell($proc | netstat -ano *)",
       "PowerShell(cat *)",
       "PowerShell(cd *)",
@@ -74,7 +74,9 @@
       "PowerShell(yarn *)",
       "Read(**)",
       "Skill(update-config:*)",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_tabs"
     ],
     "deny": [
       "Bash(Get-ChildItem *)",

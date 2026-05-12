@@ -1,6 +1,5 @@
 import { useStore } from "jotai"
 import { useCallback } from "react"
-import { flushSync } from "react-dom"
 import { apiRunModalAtom } from "../components/ApiRunModal/apiRunModalAtom"
 import { isGroup } from "../jobs/sequenceUtils"
 import { toYamlStr } from "../jobs/yamlSerializer"
@@ -36,6 +35,7 @@ import {
   stepsAtom,
 } from "../state/stepsAtom"
 import type { Group, Step, StepLink } from "../types"
+import { runWithViewTransition } from "../utils/runWithViewTransition"
 
 const DEFAULT_BASE_PATH = {
   id: "basePath",
@@ -382,16 +382,12 @@ export const useBuilderActions = () => {
       }
 
       // Run the state update inside a View Transition so React's
-      // re-render animates. flushSync ensures the DOM mutation happens
-      // synchronously inside the transition's snapshot window.
-      // Falls back to a direct call when the API is unavailable.
-      if (document.startViewTransition) {
-        document.startViewTransition(() => {
-          flushSync(applyPaste)
-        })
-      } else {
-        applyPaste()
-      }
+      // re-render animates. The helper handles startViewTransition +
+      // flushSync + the fallback when the API is unavailable. We can
+      // only wrap the SYNC `applyPaste` (after the async clipboard
+      // read resolves) — wrapping pasteCardAt as a whole would put
+      // the state update outside the transition's snapshot window.
+      runWithViewTransition(applyPaste)
     },
     [store, pushHistory],
   )

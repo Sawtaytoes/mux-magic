@@ -5,7 +5,6 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useRef, useState } from "react"
-import { flushSync } from "react-dom"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
@@ -23,8 +22,8 @@ import {
   toggleStepCollapsedAtom,
   updateStepAliasAtom,
 } from "../../state/stepAtoms"
-
 import type { Step } from "../../types"
+import { runWithViewTransition } from "../../utils/runWithViewTransition"
 import { RenderFields } from "../RenderFields/RenderFields"
 import { StatusBadge } from "../StatusBadge/StatusBadge"
 
@@ -266,17 +265,13 @@ const StepCardInner = ({
           <button
             type="button"
             onClick={() => {
-              const fn = () =>
+              runWithViewTransition(() => {
                 moveStep({
                   stepId: step.id,
                   direction: -1,
                   parentGroupId,
                 })
-              document.startViewTransition
-                ? document.startViewTransition(() =>
-                    flushSync(fn),
-                  )
-                : fn()
+              })
             }}
             disabled={isFirst}
             aria-label="Move step up"
@@ -287,17 +282,13 @@ const StepCardInner = ({
           <button
             type="button"
             onClick={() => {
-              const fn = () =>
+              runWithViewTransition(() => {
                 moveStep({
                   stepId: step.id,
                   direction: 1,
                   parentGroupId,
                 })
-              document.startViewTransition
-                ? document.startViewTransition(() =>
-                    flushSync(fn),
-                  )
-                : fn()
+              })
             }}
             disabled={isLast}
             aria-label="Move step down"
@@ -323,12 +314,9 @@ const StepCardInner = ({
           <button
             type="button"
             onClick={() => {
-              const fn = () => removeStep(step.id)
-              document.startViewTransition
-                ? document.startViewTransition(() =>
-                    flushSync(fn),
-                  )
-                : fn()
+              runWithViewTransition(() => {
+                removeStep(step.id)
+              })
             }}
             title="Remove this step"
             aria-label="Remove this step"

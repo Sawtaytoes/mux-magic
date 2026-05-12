@@ -1,3 +1,4 @@
+import { runWithViewTransition } from "../../utils/runWithViewTransition"
 import {
   changeRuleType,
   moveRule,
@@ -92,13 +93,15 @@ export const RuleCard = ({
             type="button"
             disabled={isFirst}
             onClick={() => {
-              onCommitRules(
-                moveRule({
-                  rules,
-                  ruleIndex,
-                  direction: -1,
-                }),
-              )
+              runWithViewTransition(() => {
+                onCommitRules(
+                  moveRule({
+                    rules,
+                    ruleIndex,
+                    direction: -1,
+                  }),
+                )
+              })
             }}
             className="text-xs text-slate-400 hover:text-slate-100 disabled:opacity-30 px-1"
           >
@@ -108,13 +111,15 @@ export const RuleCard = ({
             type="button"
             disabled={isLast}
             onClick={() => {
-              onCommitRules(
-                moveRule({
-                  rules,
-                  ruleIndex,
-                  direction: 1,
-                }),
-              )
+              runWithViewTransition(() => {
+                onCommitRules(
+                  moveRule({
+                    rules,
+                    ruleIndex,
+                    direction: 1,
+                  }),
+                )
+              })
             }}
             className="text-xs text-slate-400 hover:text-slate-100 disabled:opacity-30 px-1"
           >
@@ -123,9 +128,11 @@ export const RuleCard = ({
           <button
             type="button"
             onClick={() => {
-              onCommitRules(
-                removeRule({ rules, ruleIndex }),
-              )
+              runWithViewTransition(() => {
+                onCommitRules(
+                  removeRule({ rules, ruleIndex }),
+                )
+              })
             }}
             className="text-xs text-slate-500 hover:text-red-400 px-1.5"
           >
