@@ -331,7 +331,8 @@ export const useBuilderActions = () => {
       for (const item of store.get(stepsAtom)) {
         if (isGroup(item)) {
           existingIds.add(item.id)
-          for (const step of item.steps) existingIds.add(step.id)
+          for (const step of item.steps)
+            existingIds.add(step.id)
         } else {
           existingIds.add(item.id)
         }
@@ -359,16 +360,27 @@ export const useBuilderActions = () => {
       }> = args.parentGroupId
         ? result.steps.flatMap((item) =>
             isGroup(item)
-              ? (item as Group).steps.map((s) => ({
+              ? (item as Group).steps.map((childStep) => ({
                   type: "step" as const,
-                  id: s.id,
+                  id: childStep.id,
                 }))
-              : [{ type: "step" as const, id: (item as Step).id }],
+              : [
+                  {
+                    type: "step" as const,
+                    id: (item as Step).id,
+                  },
+                ],
           )
         : result.steps.map((item) =>
             isGroup(item)
-              ? { type: "group" as const, id: (item as Group).id }
-              : { type: "step" as const, id: (item as Step).id },
+              ? {
+                  type: "group" as const,
+                  id: (item as Group).id,
+                }
+              : {
+                  type: "step" as const,
+                  id: (item as Step).id,
+                },
           )
 
       // For group paste with no explicit position, append to the group's

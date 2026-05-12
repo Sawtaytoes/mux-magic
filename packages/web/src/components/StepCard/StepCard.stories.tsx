@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import type { ProgressSnapshot } from "../../jobs/types"
 import { commandsAtom } from "../../state/commandsAtom"
+import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
 import { StepCard } from "./StepCard"
@@ -16,7 +18,10 @@ const baseStep: Step = {
   isCollapsed: false,
 }
 
-const withStore = (step: Step) => {
+const withStore = (
+  step: Step,
+  progress: Map<string, ProgressSnapshot> = new Map(),
+) => {
   const store = createStore()
   store.set(stepsAtom, [step])
   store.set(commandsAtom, {
@@ -25,6 +30,9 @@ const withStore = (step: Step) => {
       fields: [],
     },
   })
+  if (progress.size > 0) {
+    store.set(progressByJobIdAtom, progress)
+  }
   return (Story: React.ComponentType) => (
     <Provider store={store}>
       <Story />
@@ -63,6 +71,38 @@ export const NoCommand: Story = {
     index: 2,
     isFirst: false,
     isLast: false,
+  },
+}
+
+const runningStep: Step = {
+  ...baseStep,
+  status: "running",
+  jobId: "job-running-1",
+}
+
+export const Running: Story = {
+  decorators: [
+    withStore(
+      runningStep,
+      new Map([
+        [
+          "job-running-1",
+          {
+            ratio: 0.62,
+            filesDone: 3,
+            filesTotal: 5,
+            bytesPerSecond: 9_500_000,
+            bytesRemaining: 38_000_000,
+          },
+        ],
+      ]),
+    ),
+  ],
+  args: {
+    step: runningStep,
+    index: 0,
+    isFirst: true,
+    isLast: true,
   },
 }
 

@@ -4,18 +4,23 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useAtomValue, useSetAtom } from "jotai"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
 } from "../../components/CommandHelpModal/commandHelpAtoms"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
+import { useLogStream } from "../../hooks/useLogStream"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
 import { commandLabel } from "../../jobs/commandLabels"
 import { commandsAtom } from "../../state/commandsAtom"
 import { commandPickerStateAtom } from "../../state/pickerAtoms"
-import { runOrStopStepAtom } from "../../state/runAtoms"
+import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
+import {
+  runningAtom,
+  runOrStopStepAtom,
+} from "../../state/runAtoms"
 import {
   moveStepAtom,
   removeStepAtom,
@@ -24,8 +29,31 @@ import {
 } from "../../state/stepAtoms"
 import type { Step } from "../../types"
 import { runWithViewTransition } from "../../utils/runWithViewTransition"
+import { ProgressBar } from "../ProgressBar/ProgressBar"
 import { RenderFields } from "../RenderFields/RenderFields"
 import { StatusBadge } from "../StatusBadge/StatusBadge"
+
+// ─── Progress bar for a running step ─────────────────────────────────────────
+// Opens its own useLogStream connection so progress events populate
+// progressByJobIdAtom even for single-step runs (runOrStopStepAtom's
+// EventSource only handles the done event, not progress events).
+
+const StepRunProgress = ({ jobId }: { jobId: string }) => {
+  const progressByJobId = useAtomValue(progressByJobIdAtom)
+  const { connect } = useLogStream(jobId)
+
+  useEffect(() => {
+    connect()
+  }, [connect])
+
+  const snap = progressByJobId.get(jobId) ?? {}
+
+  return (
+    <div className="px-3 py-2 border-b border-slate-700 bg-slate-900/60">
+      <ProgressBar snapshot={snap} />
+    </div>
+  )
+}
 
 interface StepCardProps {
   step: Step
@@ -56,6 +84,17 @@ const StepCardInner = ({
   const moveStep = useSetAtom(moveStepAtom)
   const removeStep = useSetAtom(removeStepAtom)
   const runOrStopStep = useSetAtom(runOrStopStepAtom)
+  const isGloballyRunning = useAtomValue(runningAtom)
+  const isThisStepRunning =
+    step.status === "running" && step.jobId
+  const isRunDisabled =
+    !step.command ||
+    (isGloballyRunning && !isThisStepRunning)
+  const runStopLabel = isThisStepRunning
+    ? "Cancel this step"
+    : isGloballyRunning
+      ? "Another job is already running"
+      : "Run this step only"
   const setCommandHelpName = useSetAtom(
     commandHelpCommandNameAtom,
   )
@@ -241,19 +280,12 @@ const StepCardInner = ({
           <button
             type="button"
             onClick={() => void runOrStopStep(step.id)}
-            disabled={!step.command}
-            title={
-              step.status === "running" && step.jobId
-                ? "Cancel this step"
-                : "Run this step only"
-            }
-            aria-label={
-              step.status === "running" && step.jobId
-                ? "Cancel this step"
-                : "Run this step only"
-            }
+            disabled={isRunDisabled}
+            aria-disabled={isRunDisabled}
+            title={runStopLabel}
+            aria-label={runStopLabel}
             data-step-run-stop={step.id}
-            className={`step-run-stop ${step.status === "running" && step.jobId ? "is-running" : ""}`}
+            className={`step-run-stop ${isThisStepRunning ? "is-running" : ""}`}
           >
             <span className="step-run-stop-icon step-run-stop-play">
               ▶
@@ -326,6 +358,9 @@ const StepCardInner = ({
           </button>
         </div>
       </div>
+      {step.status === "running" && step.jobId && (
+        <StepRunProgress jobId={step.jobId} />
+      )}
       {!step.isCollapsed && (
         <div className="px-3 py-2">
           {cmd ? (
