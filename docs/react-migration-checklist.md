@@ -93,7 +93,7 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W8A | 8 — DnD B1 arrow animations, B2 intra-group drop zone, B13 stale collapse, B3 SortableJS trial | ✅ Done | 2026-05-11 | Sonnet high effort. B1: startViewTransition+flushSync on ↑/↓ in StepCard + GroupCard. B2: dragReorderAtom intra-group overId="" → move-to-last instead of no-op. B13: spread moved item for fresh object reference. B3: trial/sortablejs-revert branch pushed (43 test files expected-fail due to API mismatch; gate noted in commit). 1104/1104 tests, typecheck clean, lint clean. |
 | W8B | 8 — B4 single step run (opens "Run Step" not "Run Sequence") | 🔄 In Progress | 2026-05-11 | Brief: [docs/workers/w8b.md](workers/w8b.md). Sonnet ON medium. Parallel with W8C–W8J. |
 | W8C | 8 — B5 chevron unification + B11 Dry Run badge color | 🔄 In Progress | 2026-05-11 | Brief: [docs/workers/w8c.md](workers/w8c.md). Haiku OFF low. Parallel with W8B W8D–W8J. |
-| W8D | 8 — B6 info panel field descriptions | 🔄 In Progress | 2026-05-11 | Brief: [docs/workers/w8d.md](workers/w8d.md). Haiku OFF low. |
+| W8D | 8 — B6 info panel field descriptions | ✅ Done | 2026-05-11 | Brief: [docs/workers/w8d.md](workers/w8d.md). Haiku OFF low. Test for field descriptions + fixed predev:api-server hook to fire on yarn start. |
 | W8E | 8 — B7 pathsAtom stale state on linked PathField | 🔄 In Progress | 2026-05-11 | Brief: [docs/workers/w8e.md](workers/w8e.md). Sonnet ON medium. |
 | W8F | 8 — B8 PathField typeahead TAB/Enter keyboard broken | 🔄 In Progress | 2026-05-11 | Brief: [docs/workers/w8f.md](workers/w8f.md). Sonnet ON medium. |
 | W8G | 8 — B9 MediaInfo.exe path + B10 startup race | 🔄 In Progress | 2026-05-11 | Brief: [docs/workers/w8g.md](workers/w8g.md). Haiku OFF low. |
@@ -233,6 +233,9 @@ W4 note: swap `COMMANDS` import from `../public/builder/js/commands.js` → `../
 | W8A | 2026-05-11 | fix(dnd): B1 arrow animations (startViewTransition+flushSync on ↑/↓), B2 intra-group droppable zone → last position, B13 fresh object refs after reorder |
 | W8A | 2026-05-11 | chore(trial): restore SortableJS DnD from pre-W6B snapshot (B3) — pushed trial/sortablejs-revert; test gate fails as expected (dnd-kit API mismatch) |
 | W8A | 2026-05-11 | chore(checklist): W8A ✅ Done — 1104/1104 tests, typecheck clean, lint clean |
+| W8D | 2026-05-11 | test(w8d): failing test for command field descriptions in Info panel |
+| W8D | 2026-05-11 | fix(w8d): add predev:api-server hook to fire build:command-descriptions on yarn start |
+| W8D | 2026-05-11 | chore(checklist): W8D ✅ Done — TDD workflow complete; test validates descriptions available in schema registry; predev hook ensures descriptions.js regenerated during dev startup |
 
 ## W4A Audit Findings (2026-05-10)
 
