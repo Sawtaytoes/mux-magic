@@ -9,6 +9,10 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ESNext",
-    "useDefineForClassFields": true
+    "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "paths": {
+      "@media-tools/web/*": ["packages/web/*"]
+    }
   }
 }

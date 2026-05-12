@@ -1,11 +1,11 @@
+import type { Job } from "@media-tools/web/src/types"
+
 import { expect, test } from "@playwright/test"
 
-import type { Job } from "../packages/web/src/types"
-
-// playwright.config.ts sets baseURL to the web server (port 4173). Tests
+// playwright.config.ts sets baseURL to the web server (port 5173). Tests
 // can use relative paths (page.goto("/")) for SPA navigation. webBase is
 // kept for tests that were already using it and not changed in this pass.
-const webPort = Number(process.env.WEB_PORT ?? 4173)
+const webPort = Number(process.env.WEB_PORT ?? 5173)
 const webBase = `http://localhost:${webPort}`
 
 const makeJob = (overrides: Partial<Job> = {}): Job => ({

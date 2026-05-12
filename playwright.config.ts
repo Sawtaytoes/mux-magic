@@ -20,8 +20,8 @@ try {
 const port = Number(process.env.PORT ?? 3000)
 const webPort = Number(process.env.WEB_PORT ?? 5173)
 
-const apiBaseURL = `http://localhost:${port}`
-const webBaseURL = `http://localhost:${webPort}`
+export const apiBaseURL = `http://localhost:${port}`
+export const webBaseURL = `http://localhost:${webPort}`
 
 export default defineConfig({
   testDir: "./e2e",
