@@ -18,6 +18,7 @@
     "dev:web-server": "yarn workspace @media-tools/web dev",
     "e2e:ui": "playwright test --ui",
     "e2e": "playwright test",
+    "predev:api-server": "yarn build:command-descriptions",
     "generate:external-api-schemas": "yarn workspace @media-tools/server generate:external-api-schemas",
     "generate:internal-api-schemas:watch": "yarn workspace @media-tools/server generate:internal-api-schemas:watch",
     "generate:internal-api-schemas": "yarn workspace @media-tools/server generate:internal-api-schemas",
