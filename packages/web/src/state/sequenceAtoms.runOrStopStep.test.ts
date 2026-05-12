@@ -116,6 +116,17 @@ describe("runOrStopStepAtom", () => {
       })
     })
 
+    test("sets source:'step' on apiRunModalAtom when running a single step", async () => {
+      const step = makeStep()
+      const store = makeStore(step)
+
+      await store.set(runOrStopStepAtom, "step_1")
+
+      expect(store.get(apiRunModalAtom)).toMatchObject({
+        source: "step",
+      })
+    })
+
     test("does nothing when runningAtom is already true", async () => {
       const step = makeStep()
       const store = makeStore(step)
