@@ -135,4 +135,34 @@ describe("GroupCard", () => {
     const items = store.get(stepsAtom)
     expect((items[0] as Group).steps).toHaveLength(3)
   })
+
+  test("B1: calls startViewTransition when ↑ button is clicked", async () => {
+    const spy = vi
+      .spyOn(document, "startViewTransition")
+      .mockImplementation((fn) => {
+        fn?.()
+        return undefined as unknown as ViewTransition
+      })
+    const user = userEvent.setup()
+    renderCard(makeGroup(), { isFirst: false, isLast: true })
+
+    await user.click(screen.getByTitle(/move group up/i))
+
+    expect(spy).toHaveBeenCalledOnce()
+  })
+
+  test("B1: calls startViewTransition when ↓ button is clicked", async () => {
+    const spy = vi
+      .spyOn(document, "startViewTransition")
+      .mockImplementation((fn) => {
+        fn?.()
+        return undefined as unknown as ViewTransition
+      })
+    const user = userEvent.setup()
+    renderCard(makeGroup(), { isFirst: true, isLast: false })
+
+    await user.click(screen.getByTitle(/move group down/i))
+
+    expect(spy).toHaveBeenCalledOnce()
+  })
 })

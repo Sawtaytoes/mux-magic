@@ -144,4 +144,36 @@ describe("StepCard", () => {
     )
     expect(screen.queryByText(/Wave B pending/)).toBeNull()
   })
+
+  test("B1: calls startViewTransition when ↑ button is clicked", async () => {
+    const spy = vi
+      .spyOn(document, "startViewTransition")
+      .mockImplementation((fn) => {
+        fn?.()
+        return undefined as unknown as ViewTransition
+      })
+    const user = userEvent.setup()
+    renderCard(makeStep(), { isFirst: false, isLast: true })
+
+    await user.click(screen.getByTitle(/step actions/i))
+    await user.click(screen.getByLabelText(/move step up/i))
+
+    expect(spy).toHaveBeenCalledOnce()
+  })
+
+  test("B1: calls startViewTransition when ↓ button is clicked", async () => {
+    const spy = vi
+      .spyOn(document, "startViewTransition")
+      .mockImplementation((fn) => {
+        fn?.()
+        return undefined as unknown as ViewTransition
+      })
+    const user = userEvent.setup()
+    renderCard(makeStep(), { isFirst: true, isLast: false })
+
+    await user.click(screen.getByTitle(/step actions/i))
+    await user.click(screen.getByLabelText(/move step down/i))
+
+    expect(spy).toHaveBeenCalledOnce()
+  })
 })

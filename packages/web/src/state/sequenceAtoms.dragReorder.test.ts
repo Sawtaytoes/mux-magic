@@ -1,7 +1,7 @@
 import { createStore } from "jotai"
 import { describe, expect, test } from "vitest"
 import type { Group, Step } from "../types"
-import { dragReorderAtom } from "./sequenceAtoms"
+import { dragReorderAtom, setAllCollapsedAtom } from "./sequenceAtoms"
 import { stepsAtom } from "./stepsAtom"
 
 const makeStep = (
@@ -152,6 +152,67 @@ describe("dragReorderAtom", () => {
     expect(
       resultGroup.steps.map((step) => step.id),
     ).toEqual(["s1", "stepX"])
+  })
+
+  test("B2: intra-group drag with overId='' moves item to last position", () => {
+    const step1 = makeStep("s1")
+    const step2 = makeStep("s2")
+    const step3 = makeStep("s3")
+    const group = makeGroup("group1", [step1, step2, step3])
+    const store = createStore()
+    store.set(stepsAtom, [group])
+
+    reorder(store, {
+      activeId: "s1",
+      overId: "",
+      sourceContainerId: "group1",
+      targetContainerId: "group1",
+    })
+
+    const result = store.get(stepsAtom)
+    const resultGroup = result[0] as Group
+    expect(
+      resultGroup.steps.map((step) => step.id),
+    ).toEqual(["s2", "s3", "s1"])
+  })
+
+  test("B13: moved item gets fresh object reference after top-level reorder", () => {
+    const step1 = makeStep("s1")
+    const step2 = makeStep("s2")
+    const store = createStore()
+    store.set(stepsAtom, [step1, step2])
+
+    reorder(store, {
+      activeId: "s1",
+      overId: "s2",
+      sourceContainerId: "top-level",
+      targetContainerId: "top-level",
+    })
+
+    const result = store.get(stepsAtom)
+    const movedStep = result.find(
+      (item) => (item as Step).id === "s1",
+    ) as Step
+    expect(movedStep).not.toBe(step1)
+  })
+
+  test("B13: after reorder + setAllCollapsedAtom, dragged item collapses", () => {
+    const step1 = makeStep("s1")
+    const step2 = makeStep("s2")
+    const store = createStore()
+    store.set(stepsAtom, [step1, step2])
+
+    reorder(store, {
+      activeId: "s1",
+      overId: "s2",
+      sourceContainerId: "top-level",
+      targetContainerId: "top-level",
+    })
+    store.set(setAllCollapsedAtom, true)
+
+    const steps = store.get(stepsAtom)
+    expect((steps[0] as Step).isCollapsed).toBe(true)
+    expect((steps[1] as Step).isCollapsed).toBe(true)
   })
 
   test("guard: group cannot be dragged into another group", () => {
