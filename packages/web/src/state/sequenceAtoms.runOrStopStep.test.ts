@@ -97,16 +97,25 @@ describe("runOrStopStepAtom", () => {
       )
     })
 
-    test("POSTs to /sequences/run when step is idle", async () => {
+    test("POSTs to /commands/:name (NOT /sequences/run) when step is idle — B4 fix", async () => {
       const step = makeStep()
       const store = makeStore(step)
 
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/sequences/run",
+        "/commands/ffmpegTranscode",
         expect.objectContaining({ method: "POST" }),
       )
+      // Defensive: must NOT call /sequences/run (the old umbrella path).
+      const calls = vi
+        .mocked(fetch)
+        .mock.calls.map((call) => call[0] as string)
+      expect(
+        calls.some((url) =>
+          url.startsWith("/sequences/run"),
+        ),
+      ).toBe(false)
     })
 
     test("opens ApiRunModal with jobId from server response", async () => {
@@ -194,9 +203,41 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "inner_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/sequences/run",
+        "/commands/ffmpegTranscode",
         expect.objectContaining({ method: "POST" }),
       )
+    })
+
+    test("resolves @pathId references in step params before posting (B4)", async () => {
+      // A step that links `sourcePath` to the `basePath` path variable
+      // (value: "/media"). The server's /commands/:name endpoint takes
+      // already-resolved params, so the client must expand @basePath
+      // → "/media" before POSTing.
+      const step = makeStep({
+        command: "keepLanguages",
+        links: { sourcePath: "basePath" },
+      })
+      const store = makeStore(step)
+
+      await store.set(runOrStopStepAtom, "step_1")
+
+      const fetchCall = vi.mocked(fetch).mock.calls[0]
+      expect(fetchCall?.[0]).toBe("/commands/keepLanguages")
+      const body = JSON.parse(
+        (fetchCall?.[1] as RequestInit).body as string,
+      )
+      expect(body.sourcePath).toBe("/media")
+      // Must NOT leak the @pathId string through to the server.
+      expect(body.sourcePath).not.toMatch(/^@/)
+    })
+
+    test("does nothing when step has no command (B4: cannot run command-less step)", async () => {
+      const step = makeStep({ command: "" })
+      const store = makeStore(step)
+
+      await store.set(runOrStopStepAtom, "step_1")
+
+      expect(vi.mocked(fetch)).not.toHaveBeenCalled()
     })
   })
 
@@ -217,7 +258,7 @@ describe("runOrStopStepAtom", () => {
       )
     })
 
-    test("posts to /sequences/run with NO fake query when dryRun is off", async () => {
+    test("posts to /commands/:name with NO fake query when dryRun is off", async () => {
       const step = makeStep()
       const store = makeStore(step)
       store.set(dryRunAtom, false)
@@ -226,12 +267,12 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/sequences/run",
+        "/commands/ffmpegTranscode",
         expect.objectContaining({ method: "POST" }),
       )
     })
 
-    test("posts to /sequences/run?fake=success when dryRun is on (no failureMode)", async () => {
+    test("posts to /commands/:name?fake=success when dryRun is on (no failureMode)", async () => {
       const step = makeStep()
       const store = makeStore(step)
       store.set(dryRunAtom, true)
@@ -240,12 +281,12 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/sequences/run?fake=success",
+        "/commands/ffmpegTranscode?fake=success",
         expect.objectContaining({ method: "POST" }),
       )
     })
 
-    test("posts to /sequences/run?fake=failure when dryRun AND failureMode are both on", async () => {
+    test("posts to /commands/:name?fake=failure when dryRun AND failureMode are both on", async () => {
       const step = makeStep()
       const store = makeStore(step)
       store.set(dryRunAtom, true)
@@ -254,7 +295,7 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/sequences/run?fake=failure",
+        "/commands/ffmpegTranscode?fake=failure",
         expect.objectContaining({ method: "POST" }),
       )
     })
@@ -268,7 +309,7 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/sequences/run",
+        "/commands/ffmpegTranscode",
         expect.objectContaining({ method: "POST" }),
       )
     })

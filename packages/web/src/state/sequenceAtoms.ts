@@ -1,8 +1,9 @@
 import { atom } from "jotai"
+import { buildParams } from "../commands/buildParams"
 import { isGroup } from "../jobs/sequenceUtils"
-import { toYamlStr } from "../jobs/yamlSerializer"
 import type {
   Group,
+  PathVar,
   SequenceItem,
   Step,
   StepLink,
@@ -17,6 +18,38 @@ import {
   failureModeAtom,
   runningAtom,
 } from "./uiAtoms"
+
+// ─── Param resolution for the /commands/:name endpoint ────────────────────────
+//
+// /sequences/run resolves `@pathId` references server-side using the
+// `paths` YAML block; /commands/:name takes already-resolved params.
+// runOrStopStepAtom posts to /commands/:name (B4: produces a single
+// flat job per step instead of an umbrella+child), so the client
+// expands `@pathId` strings to their values from pathsAtom before
+// sending.
+const resolveParams = (
+  params: Record<string, unknown>,
+  paths: PathVar[],
+): Record<string, unknown> => {
+  return Object.fromEntries(
+    Object.entries(params).map(([key, value]) => {
+      if (
+        typeof value === "string" &&
+        value.startsWith("@")
+      ) {
+        const pathVarId = value.slice(1)
+        const pathVar = paths.find(
+          (candidate) => candidate.id === pathVarId,
+        )
+        // Fall back to the raw `@id` string when the path var is
+        // missing so the server's per-command validation surfaces
+        // a clear error rather than silently dropping the field.
+        return [key, pathVar?.value ?? value]
+      }
+      return [key, value]
+    }),
+  )
+}
 
 // ─── Step mutations ───────────────────────────────────────────────────────────
 
@@ -568,9 +601,22 @@ export const runOrStopStepAtom = atom(
     // Guard against a concurrent global run.
     if (get(runningAtom)) return
 
+    // Can't run a step with no command selected.
+    if (!step.command) return
+
     const paths = get(pathsAtom)
     const commands = get(commandsAtom)
-    const yaml = toYamlStr([step], paths, commands)
+    const commandDefinition = commands[step.command]
+    // Build the YAML-form params (folds step.links into @pathId
+    // strings + {linkedTo,output} objects), then resolve @pathId
+    // strings to actual values for the /commands/:name endpoint.
+    const yamlFormParams = commandDefinition
+      ? buildParams(step, commandDefinition)
+      : step.params
+    const resolvedParams = resolveParams(
+      yamlFormParams,
+      paths,
+    )
 
     set(runningAtom, true)
     set(apiRunModalAtom, {
@@ -582,20 +628,23 @@ export const runOrStopStepAtom = atom(
       source: "step",
     })
 
-    // Dry-run gate — see packages/web/src/state/dryRunQuery.ts.
-    // Without this, every "Run Step" while the DRY RUN badge is on
-    // would still execute real commands on the server. Real file
-    // deletions resulted (the P0 bug this fixes).
-    const runUrl = buildRunFetchUrl("/sequences/run", {
-      isDryRun: get(dryRunAtom),
-      isFailureMode: get(failureModeAtom),
-    })
+    // B4 fix: single-step runs hit /commands/:name (creates one flat
+    // job) instead of /sequences/run (creates umbrella + child). The
+    // dry-run gate from P0 still applies — buildRunFetchUrl appends
+    // ?fake=success / ?fake=failure when the DRY RUN badge is on.
+    const runUrl = buildRunFetchUrl(
+      `/commands/${step.command}`,
+      {
+        isDryRun: get(dryRunAtom),
+        isFailureMode: get(failureModeAtom),
+      },
+    )
 
     try {
       const response = await fetch(runUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ yaml }),
+        body: JSON.stringify(resolvedParams),
       })
       if (!response.ok) {
         set(apiRunModalAtom, (prev) =>
