@@ -6,15 +6,25 @@ import type { LogEntry } from "../state/logsByJobIdAtom"
 import { logsByJobIdAtom } from "../state/logsByJobIdAtom"
 import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
 
+export type LogStreamDonePayload = {
+  status?: string
+  results?: unknown[]
+  outputs?: Record<string, unknown> | null
+  error?: string | null
+}
+
 type LogEventData =
   | { line: string }
   | ({ type: "progress" } & Partial<ProgressSnapshot>)
-  | { done: boolean }
+  | ({ done: boolean } & LogStreamDonePayload)
 
 // Opens /jobs/:id/logs on demand and pipes lines + progress into shared atoms.
 // Deduplicates log lines using the SSE lastEventId so server replay-from-0
 // on reconnect doesn't re-append already-seen lines.
-export const useLogStream = (jobId: string) => {
+export const useLogStream = (
+  jobId: string,
+  onDone?: (payload: LogStreamDonePayload) => void,
+) => {
   const setLogs = useSetAtom(logsByJobIdAtom)
   const setProgress = useSetAtom(progressByJobIdAtom)
   const esRef = useRef<EventSource | null>(null)
@@ -22,6 +32,8 @@ export const useLogStream = (jobId: string) => {
     undefined,
   )
   const unmountedRef = useRef(false)
+  const onDoneRef = useRef(onDone)
+  onDoneRef.current = onDone
 
   const connect = useCallback(() => {
     if (esRef.current !== null) return
@@ -81,6 +93,7 @@ export const useLogStream = (jobId: string) => {
       } else if ("done" in data && data.done) {
         es.close()
         esRef.current = null
+        onDoneRef.current?.(data)
       }
     }
 

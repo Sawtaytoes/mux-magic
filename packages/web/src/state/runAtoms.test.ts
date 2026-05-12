@@ -150,46 +150,16 @@ describe("runOrStopStepAtom", () => {
       expect(updated.jobId).toBe("job_new")
     })
 
-    test("sets step status to 'completed' and clears jobId when SSE done event fires", async () => {
-      let capturedOnMessage:
-        | ((event: MessageEvent) => void)
-        | null = null
-
-      class MockEventSource {
-        static CLOSED = 2
-        readyState = 1
-        onmessage: ((event: MessageEvent) => void) | null =
-          null
-        onerror: (() => void) | null = null
-        constructor() {
-          capturedOnMessage = (event: MessageEvent) =>
-            this.onmessage?.(event)
-        }
-        close() {
-          this.readyState = MockEventSource.CLOSED
-        }
-      }
-      vi.stubGlobal("EventSource", MockEventSource)
+    test("does NOT open its own SSE connection — StepRunProgress owns the single /jobs/:id/logs subscription", async () => {
+      const eventSourceCtor = vi.fn()
+      vi.stubGlobal("EventSource", eventSourceCtor)
 
       const step = makeStep()
       const store = makeStore(step)
 
       await store.set(runOrStopStepAtom, "step_1")
 
-      // Simulate SSE done event
-      capturedOnMessage?.(
-        new MessageEvent("message", {
-          data: JSON.stringify({
-            done: true,
-            status: "completed",
-          }),
-        }),
-      )
-
-      const updated = store.get(stepsAtom)[0] as Step
-      expect(updated.status).toBe("completed")
-      expect(updated.jobId).toBeNull()
-      expect(store.get(runningAtom)).toBe(false)
+      expect(eventSourceCtor).not.toHaveBeenCalled()
     })
 
     test("does nothing when runningAtom is already true", async () => {

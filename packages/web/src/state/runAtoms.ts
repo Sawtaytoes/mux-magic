@@ -152,49 +152,10 @@ export const runOrStopStepAtom = atom(
         status: "running",
         jobId: data.jobId,
       })
-
-      // Fire-and-forget SSE listener: updates the step's status badge
-      // inline when the job finishes, without opening any modal.
-      const es = new EventSource(`/jobs/${data.jobId}/logs`)
-      es.onmessage = (event: MessageEvent) => {
-        try {
-          const msg = JSON.parse(
-            event.data as string,
-          ) as Record<string, unknown>
-          if (msg.done) {
-            const finalStatus =
-              (msg.status as string) || "completed"
-            const resultsList = msg.results as
-              | unknown[]
-              | null
-              | undefined
-            const hasResults = Array.isArray(resultsList)
-              ? resultsList.length > 0
-              : null
-            set(setStepRunStatusAtom, {
-              stepId,
-              status: finalStatus,
-              jobId: null,
-              error: (msg.error as string | null) ?? null,
-              hasResults,
-            })
-            set(runningAtom, false)
-            es.close()
-          }
-        } catch {
-          // ignore malformed JSON
-        }
-      }
-      es.onerror = () => {
-        if (es.readyState === EventSource.CLOSED) {
-          set(setStepRunStatusAtom, {
-            stepId,
-            status: "failed",
-            jobId: null,
-          })
-          set(runningAtom, false)
-        }
-      }
+      // The SSE subscription + done-event handling now lives in
+      // StepRunProgress (one EventSource per running step). Opening one
+      // here too would double the /jobs/:id/logs subscriptions and the
+      // browser would replay buffered events to both clients.
     } catch {
       set(setStepRunStatusAtom, {
         stepId,
