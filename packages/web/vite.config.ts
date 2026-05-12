@@ -46,11 +46,6 @@ export default defineConfig({
     }),
     tailwindcss(),
   ],
-  define: {
-    "import.meta.env.VITE_API_BASE": JSON.stringify(
-      process.env.REMOTE_SERVER_URL ?? "",
-    ),
-  },
   server: {
     open: true,
     port: 5173,

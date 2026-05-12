@@ -1,1 +1,1 @@
-export const apiBase: string = import.meta.env.VITE_API_BASE ?? ""
+export const apiBase: string = window.__API_BASE__ ?? ""

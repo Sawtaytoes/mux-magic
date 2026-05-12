@@ -5,6 +5,9 @@ import { WEB_PORT } from "@media-tools/server/src/tools/envVars.js"
 import { logInfo } from "@media-tools/server/src/tools/logMessage.js"
 import { Hono } from "hono"
 
+// Read once at startup — REMOTE_SERVER_URL is static for the lifetime of the process.
+const remoteServerUrl = process.env.REMOTE_SERVER_URL ?? ""
+
 export const app = new Hono()
 
 app.use(
@@ -27,12 +30,20 @@ app.use(
 // Scoped to extension-free paths so asset 404s (e.g. a missing .js chunk)
 // are not silently swallowed — React Router owns all non-dot paths.
 // Read per-request so a rebuild+server-restart picks up the new asset hashes.
+// Injects window.__API_BASE__ so the frontend can reach the API server at
+// runtime without a rebuild (set via REMOTE_SERVER_URL env var).
 app.get("*", (context) => {
   if (/\.[^/]+$/.test(context.req.path)) {
     return context.notFound()
   }
   try {
-    const html = readFileSync("./dist/index.html", "utf8")
+    const raw = readFileSync("./dist/index.html", "utf8")
+    const html = remoteServerUrl
+      ? raw.replace(
+          "</head>",
+          `<script>window.__API_BASE__=${JSON.stringify(remoteServerUrl)}</script></head>`,
+        )
+      : raw
     return context.html(html)
   } catch {
     return context.notFound()
