@@ -13,7 +13,7 @@ This is the live tracking document for all workers in the Mux-Magic huge revamp.
 
 | Status | Meaning |
 |---|---|
-| `planned` | Row exists, prompt file may or may not be written yet |
+| `planned` | Row exists, prompt file not yet written |
 | `ready` | Prompt file written; can be spawned |
 | `in-progress` | Worktree exists; work is happening |
 | `blocked` | Has a `Depends on` not yet satisfied OR ran into a question for the user |
@@ -27,7 +27,7 @@ This is the live tracking document for all workers in the Mux-Magic huge revamp.
 | `web` | `packages/web/**` only |
 | `srv` | `packages/server/**` only |
 | `cli` | `packages/cli/**` (new package created in Phase 2) |
-| `cross` | `<media-sync-renamed>` repo + cross-repo coordination |
+| `cross` | `Gallery-Downloader` repo (formerly `Media-Sync`) + cross-repo coordination |
 | `infra` | CI, vitest configs, playwright config, ESLint/Biome configs |
 
 ---
@@ -51,9 +51,9 @@ All three workers touch `eslint.config.js` and must run sequentially.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 05 | `is-has-eslint-rule` | infra | Sonnet | Medium | ON | 01 | planned |
-| 06 | `webtypes-eslint-guard` | infra | Sonnet | Medium | ON | 05 | planned |
-| 07 | `one-component-per-file` | infra | Sonnet | Medium | ON | 06 | planned |
+| 05 | [is-has-eslint-rule](05_is-has-eslint-rule.md) | infra | Sonnet | Medium | ON | 01 | ready |
+| 06 | [webtypes-eslint-guard](06_webtypes-eslint-guard.md) | infra | Sonnet | Medium | ON | 05 | ready |
+| 07 | [one-component-per-file](07_one-component-per-file.md) | infra | Sonnet | Medium | ON | 06 | ready |
 
 ---
 
@@ -63,40 +63,40 @@ All three workers touch `eslint.config.js` and must run sequentially.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 08 | `language-fields-and-tagify` | web | Sonnet | Medium | ON | 01 | planned |
-| 09 | `number-fields-redesign` | web | Sonnet | Medium | ON | 01 | planned |
-| 0a | `json-field-readonly` | web | Haiku | Low | OFF | 01 | planned |
-| 0b | `auto-paste-yaml` | web | Haiku | Low | OFF | 01 | planned |
-| 0c | `scale-resolution-aspect-lock` | web | Sonnet | Medium | ON | 01 | planned |
-| 0d | `narrow-view-menu-animate` | web | Sonnet | Medium | ON | 01 | planned |
-| 0e | `story-actions-and-reopen` | web | Haiku | Low | OFF | 01 | planned |
-| 0f | `undo-redo-scroll-to-affected` | web | Sonnet | Medium | ON | 01 | planned |
-| 10 | `apirunmodal-rename` | web | Haiku | Low | OFF | 01 | planned |
-| 11 | `limit-execution-threads-ui` | web+srv | Sonnet | Medium | ON | 01 | planned |
-| 12 | `sequence-jobs-formatting` | web | Haiku | Low | OFF | 01 | planned |
-| 13 | `merge-subtitles-offsets-label` | web | Haiku | Low | OFF | 01 | planned |
-| 14 | `dryrun-to-query-string` | web | Sonnet | Medium | ON | 01 | planned |
-| 15 | `dry-run-silent-failures` | web | Sonnet | Medium | ON | 01 | planned |
-| 16 | `user-event-migration` | web | Sonnet | High | ON | 01 | planned |
-| 17 | `run-in-background-sequence-modal` | web | Sonnet | High | ON | 10 | planned |
+| 08 | [language-fields-and-tagify](08_language-fields-and-tagify.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 09 | [number-fields-redesign](09_number-fields-redesign.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 0a | [json-field-readonly](0a_json-field-readonly.md) | web | Haiku | Low | OFF | 01 | ready |
+| 0b | [auto-paste-yaml](0b_auto-paste-yaml.md) | web | Haiku | Low | OFF | 01 | ready |
+| 0c | [scale-resolution-aspect-lock](0c_scale-resolution-aspect-lock.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 0d | [narrow-view-menu-animate](0d_narrow-view-menu-animate.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 0e | [story-actions-and-reopen](0e_story-actions-and-reopen.md) | web | Haiku | Low | OFF | 01 | ready |
+| 0f | [undo-redo-scroll-to-affected](0f_undo-redo-scroll-to-affected.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 10 | [apirunmodal-rename](10_apirunmodal-rename.md) | web | Haiku | Low | OFF | 01 | ready |
+| 11 | [limit-execution-threads-ui](11_limit-execution-threads-ui.md) | web+srv | Sonnet | Medium | ON | 01 | ready |
+| 12 | [sequence-jobs-formatting](12_sequence-jobs-formatting.md) | web | Haiku | Low | OFF | 01 | ready |
+| 13 | [merge-subtitles-offsets-label](13_merge-subtitles-offsets-label.md) | web | Haiku | Low | OFF | 01 | ready |
+| 14 | [dryrun-to-query-string](14_dryrun-to-query-string.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 15 | [dry-run-silent-failures](15_dry-run-silent-failures.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 16 | [user-event-migration](16_user-event-migration.md) | web | Sonnet | High | ON | 01 | ready |
+| 17 | [run-in-background-sequence-modal](17_run-in-background-sequence-modal.md) | web | Sonnet | High | ON | 10 | ready |
 
 ### Other track (3 workers)
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 18 | `loadenvfile-migration` | infra | Haiku | Low | OFF | 01 | planned |
-| 19 | `yaml-codec-merge` | web | Sonnet | Medium | ON | 01 | planned |
-| 1a | `reorder-tracks-skip-on-misalignment` | srv+web | Sonnet | Medium | ON | 01 | planned |
+| 18 | [loadenvfile-migration](18_loadenvfile-migration.md) | infra | Haiku | Low | OFF | 01 | ready |
+| 19 | [yaml-codec-merge](19_yaml-codec-merge.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 1a | [reorder-tracks-skip-on-misalignment](1a_reorder-tracks-skip-on-misalignment.md) | srv+web | Sonnet | Medium | ON | 01 | ready |
 
 ### Cross-repo track (5 workers)
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 1b | `media-sync-rename` | cross | Sonnet | High | ON | 01 | blocked (new name TBD) |
-| 1c | `media-sync-decouple-and-ha-endpoint` | cross | Sonnet | High | ON | 1b | planned |
-| 1d | `media-sync-consume-mux-magic-shared` | cross | Sonnet | Medium | ON | 1c, 02 | planned |
-| 1e | `mux-magic-webhook-reporter` | srv | Sonnet | Medium | ON | 01 | planned |
-| 1f | `mux-magic-anime-manga-commands` | srv+web | Sonnet | High | ON | 01 | planned |
+| 1b | [media-sync-rename-to-gallery-downloader](1b_media-sync-rename-to-gallery-downloader.md) | cross | Sonnet | High | ON | 01 | ready |
+| 1c | [gallery-downloader-decouple-and-ha-endpoint](1c_gallery-downloader-decouple-and-ha-endpoint.md) | cross | Sonnet | High | ON | 1b | ready |
+| 1d | [gallery-downloader-consume-mux-magic-shared](1d_gallery-downloader-consume-mux-magic-shared.md) | cross | Sonnet | Medium | ON | 1c, 02 + a published `@mux-magic/shared` release | ready |
+| 1e | [mux-magic-webhook-reporter](1e_mux-magic-webhook-reporter.md) | srv | Sonnet | Medium | ON | 01 | ready |
+| 1f | [mux-magic-anime-manga-commands](1f_mux-magic-anime-manga-commands.md) | srv+web | Sonnet | High | ON | 01 | ready |
 
 ---
 
@@ -159,7 +159,6 @@ All three workers touch `eslint.config.js` and must run sequentially.
 
 | Worker | Question |
 |:--:|---|
-| 1b | What's the final new name for the renamed Media-Sync? Candidates: Gallery-Downloader, Image-Downloader, Comic-Downloader, or a fancier alternative. |
 | 22 | Rename `nameSpecialFeatures` to single `nameSpecialFeaturesDvdCompare` OR split into `nameMovieCutsDvdCompare` + `nameSpecialFeaturesDvdCompare`? |
 | 27 | 1-word name for the new "awaiting user input" job state? Options: `awaiting-input`, `paused`, `held`, `interactive`. |
 | 11 | Server-side thread-cap persistence: `settings.json`, sqlite, or new server config endpoint? |
