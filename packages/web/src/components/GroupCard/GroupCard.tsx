@@ -205,9 +205,15 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() =>
-            pasteCardAt({ parentGroupId: group.id })
-          }
+          onClick={() => {
+            const fn = () =>
+              pasteCardAt({ parentGroupId: group.id })
+            document.startViewTransition
+              ? document.startViewTransition(() =>
+                  flushSync(fn),
+                )
+              : fn()
+          }}
           title="Paste a copied step into this group"
           className="text-[10px] text-slate-400 hover:text-emerald-400 px-2 py-0.5 rounded border border-slate-700 hover:border-emerald-500/40"
         >
@@ -277,7 +283,14 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() => removeGroup(group.id)}
+          onClick={() => {
+            const fn = () => removeGroup(group.id)
+            document.startViewTransition
+              ? document.startViewTransition(() =>
+                  flushSync(fn),
+                )
+              : fn()
+          }}
           title="Remove this group (its inner steps go too)"
           className="text-[10px] text-slate-500 hover:text-red-400 px-2 py-0.5 rounded border border-slate-700 hover:border-red-500/40"
         >

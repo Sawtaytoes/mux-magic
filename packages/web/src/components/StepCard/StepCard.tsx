@@ -322,7 +322,14 @@ const StepCardInner = ({
           )}
           <button
             type="button"
-            onClick={() => removeStep(step.id)}
+            onClick={() => {
+              const fn = () => removeStep(step.id)
+              document.startViewTransition
+                ? document.startViewTransition(() =>
+                    flushSync(fn),
+                  )
+                : fn()
+            }}
             title="Remove this step"
             aria-label="Remove this step"
             className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs"

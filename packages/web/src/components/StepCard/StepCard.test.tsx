@@ -100,6 +100,13 @@ describe("StepCard", () => {
   })
 
   test("removes step from atom when remove button clicked", async () => {
+    vi.spyOn(
+      document,
+      "startViewTransition",
+    ).mockImplementation((fn) => {
+      ;(fn as () => void)?.()
+      return undefined as unknown as ViewTransition
+    })
     const user = userEvent.setup()
     const store = renderCard(makeStep())
 
