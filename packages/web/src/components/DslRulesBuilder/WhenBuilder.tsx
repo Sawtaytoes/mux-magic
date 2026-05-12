@@ -372,6 +372,7 @@ export const WhenBuilder = ({
         )}
         {!isReadOnly && availableClauses.length > 0 && (
           <select
+            data-testid="condition-type-select"
             value=""
             onChange={(event) => {
               if (!event.target.value) {

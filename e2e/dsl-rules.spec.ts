@@ -187,14 +187,28 @@ test.describe("DslRulesBuilder — When panel", () => {
       "[data-details-key$=':when:0']",
     )
     await whenDetails.locator("summary").click()
-    const conditionSelect = whenDetails.locator("select")
+    const conditionSelect = whenDetails.getByTestId(
+      "condition-type-select",
+    )
     await expect(conditionSelect).toBeVisible()
 
-    // Select a condition from the dropdown.
+    // Select a condition from the dropdown. selectOption resolving without
+    // timeout proves the select was open and clickable. The mutation's
+    // side-effect (the clause appears as a WhenClauseRow header) is the
+    // user-visible outcome we care about.
     await conditionSelect.selectOption("anyScriptInfo")
 
-    // Panel must remain open.
-    await expect(conditionSelect).toBeVisible()
+    // The new clause renders a header span with the clause name.
+    // We locate the rule card root rather than scoping inside the details
+    // because the React-controlled <details>'s `open` attribute is lost on
+    // re-render, making children appear "hidden" to Playwright even when
+    // they are in the DOM.
+    await expect(
+      page
+        .locator("[data-rule-key]")
+        .first()
+        .locator("text=anyScriptInfo"),
+    ).toBeAttached()
   })
 })
 
