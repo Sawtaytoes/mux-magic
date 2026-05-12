@@ -296,7 +296,9 @@ describe("PathPicker keyboard navigation", () => {
 
     fireEvent.keyDown(input, { key: "ArrowDown" })
 
-    expect(store.get(pathPickerStateAtom)?.activeIndex).toBe(1)
+    expect(
+      store.get(pathPickerStateAtom)?.activeIndex,
+    ).toBe(1)
   })
 
   test("ArrowUp wraps activeIndex to the last entry", async () => {
@@ -307,6 +309,8 @@ describe("PathPicker keyboard navigation", () => {
     fireEvent.keyDown(input, { key: "ArrowUp" })
 
     // 3 directory entries (Documents, Downloads, Pictures); wrap 0 → 2
-    expect(store.get(pathPickerStateAtom)?.activeIndex).toBe(2)
+    expect(
+      store.get(pathPickerStateAtom)?.activeIndex,
+    ).toBe(2)
   })
 })

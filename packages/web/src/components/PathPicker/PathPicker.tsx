@@ -1,5 +1,5 @@
 import { useAtom, useSetAtom } from "jotai"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import {
   type PathPickerState,
@@ -136,6 +136,80 @@ export const PathPicker = () => {
   )
   const setParam = useSetAtom(setParamAtom)
   const setPathValue = useSetAtom(setPathValueAtom)
+
+  // Always-current ref so the keydown listener reads the latest state without
+  // needing to re-attach on every atom update.
+  const pickerStateRef = useRef(pickerState)
+  pickerStateRef.current = pickerState
+
+  useEffect(() => {
+    if (!pickerState) {
+      return
+    }
+    const { inputElement } = pickerState
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const state = pickerStateRef.current
+      if (!state) {
+        return
+      }
+      if (event.key === "Escape") {
+        event.preventDefault()
+        setPickerState(null)
+        return
+      }
+      const currentMatches =
+        state.matches ??
+        computeMatches(state.entries, state.query)
+      if (!currentMatches.length) {
+        return
+      }
+      if (event.key === "ArrowDown") {
+        event.preventDefault()
+        setPickerState((prev) =>
+          prev
+            ? {
+                ...prev,
+                activeIndex:
+                  (prev.activeIndex + 1) %
+                  currentMatches.length,
+              }
+            : null,
+        )
+        return
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault()
+        setPickerState((prev) =>
+          prev
+            ? {
+                ...prev,
+                activeIndex:
+                  (prev.activeIndex -
+                    1 +
+                    currentMatches.length) %
+                  currentMatches.length,
+              }
+            : null,
+        )
+        return
+      }
+      if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault()
+        const popover = document.getElementById(
+          "path-picker-popover",
+        )
+        const buttons = popover?.querySelectorAll("button")
+        const activeButton = buttons?.[state.activeIndex]
+        activeButton?.click()
+      }
+    }
+    inputElement.addEventListener("keydown", handleKeyDown)
+    return () =>
+      inputElement.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      )
+  }, [pickerState, setPickerState])
 
   // Fires whenever parentPath or requestToken changes — the bridge sets a new
   // requestToken after the debounce delay, which kicks off the actual fetch.
