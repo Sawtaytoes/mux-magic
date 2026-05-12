@@ -8,6 +8,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { useSetAtom } from "jotai"
 import { useState } from "react"
+import { flushSync } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
@@ -214,9 +215,18 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() =>
-            moveGroup({ groupId: group.id, direction: -1 })
-          }
+          onClick={() => {
+            const fn = () =>
+              moveGroup({
+                groupId: group.id,
+                direction: -1,
+              })
+            document.startViewTransition
+              ? document.startViewTransition(() =>
+                  flushSync(fn),
+                )
+              : fn()
+          }}
           title="Move group up"
           disabled={isFirst}
           className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
@@ -225,9 +235,15 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() =>
-            moveGroup({ groupId: group.id, direction: 1 })
-          }
+          onClick={() => {
+            const fn = () =>
+              moveGroup({ groupId: group.id, direction: 1 })
+            document.startViewTransition
+              ? document.startViewTransition(() =>
+                  flushSync(fn),
+                )
+              : fn()
+          }}
           title="Move group down"
           disabled={isLast}
           className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"

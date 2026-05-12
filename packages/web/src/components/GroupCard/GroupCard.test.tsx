@@ -139,12 +139,14 @@ describe("GroupCard", () => {
   test("B1: calls startViewTransition when ↑ button is clicked", async () => {
     const spy = vi
       .spyOn(document, "startViewTransition")
-      .mockImplementation((fn) => {
-        fn?.()
-        return undefined as unknown as ViewTransition
-      })
+      .mockReturnValue(
+        undefined as unknown as ViewTransition,
+      )
     const user = userEvent.setup()
-    renderCard(makeGroup(), { isFirst: false, isLast: true })
+    renderCard(makeGroup(), {
+      isFirst: false,
+      isLast: true,
+    })
 
     await user.click(screen.getByTitle(/move group up/i))
 
@@ -154,12 +156,14 @@ describe("GroupCard", () => {
   test("B1: calls startViewTransition when ↓ button is clicked", async () => {
     const spy = vi
       .spyOn(document, "startViewTransition")
-      .mockImplementation((fn) => {
-        fn?.()
-        return undefined as unknown as ViewTransition
-      })
+      .mockReturnValue(
+        undefined as unknown as ViewTransition,
+      )
     const user = userEvent.setup()
-    renderCard(makeGroup(), { isFirst: true, isLast: false })
+    renderCard(makeGroup(), {
+      isFirst: true,
+      isLast: false,
+    })
 
     await user.click(screen.getByTitle(/move group down/i))
 

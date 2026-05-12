@@ -656,7 +656,9 @@ export const dragReorderAtom = atom(
           const reordered = [...items]
           const [moved] = reordered.splice(oldIndex, 1)
           if (!moved) return items
-          reordered.splice(newIndex, 0, moved)
+          // Spread to produce a fresh reference so identity-sensitive
+          // subscribers (e.g. setAllCollapsedAtom) see the change (B13)
+          reordered.splice(newIndex, 0, { ...moved })
           return reordered
         }
         return items.map((item) => {
@@ -669,9 +671,14 @@ export const dragReorderAtom = atom(
           const oldIndex = groupSteps.findIndex(
             (step) => step.id === activeId,
           )
-          const newIndex = groupSteps.findIndex(
-            (step) => step.id === overId,
-          )
+          // B2: overId="" means drop landed on the group droppable zone
+          // (not any specific step) — resolve to last position
+          const newIndex =
+            overId === ""
+              ? groupSteps.length - 1
+              : groupSteps.findIndex(
+                  (step) => step.id === overId,
+                )
           if (
             oldIndex < 0 ||
             newIndex < 0 ||
@@ -680,7 +687,8 @@ export const dragReorderAtom = atom(
             return item
           const [moved] = groupSteps.splice(oldIndex, 1)
           if (!moved) return item
-          groupSteps.splice(newIndex, 0, moved)
+          // Spread for fresh reference (B13)
+          groupSteps.splice(newIndex, 0, { ...moved })
           return { ...item, steps: groupSteps }
         })
       }

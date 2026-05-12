@@ -5,6 +5,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useRef, useState } from "react"
+import { flushSync } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
@@ -264,13 +265,19 @@ const StepCardInner = ({
           </button>
           <button
             type="button"
-            onClick={() =>
-              moveStep({
-                stepId: step.id,
-                direction: -1,
-                parentGroupId,
-              })
-            }
+            onClick={() => {
+              const fn = () =>
+                moveStep({
+                  stepId: step.id,
+                  direction: -1,
+                  parentGroupId,
+                })
+              document.startViewTransition
+                ? document.startViewTransition(() =>
+                    flushSync(fn),
+                  )
+                : fn()
+            }}
             disabled={isFirst}
             aria-label="Move step up"
             className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
@@ -279,13 +286,19 @@ const StepCardInner = ({
           </button>
           <button
             type="button"
-            onClick={() =>
-              moveStep({
-                stepId: step.id,
-                direction: 1,
-                parentGroupId,
-              })
-            }
+            onClick={() => {
+              const fn = () =>
+                moveStep({
+                  stepId: step.id,
+                  direction: 1,
+                  parentGroupId,
+                })
+              document.startViewTransition
+                ? document.startViewTransition(() =>
+                    flushSync(fn),
+                  )
+                : fn()
+            }}
             disabled={isLast}
             aria-label="Move step down"
             className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
