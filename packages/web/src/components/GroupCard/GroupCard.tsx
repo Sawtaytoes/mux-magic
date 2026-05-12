@@ -206,13 +206,10 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() => {
-            const fn = () =>
-              pasteCardAt({ parentGroupId: group.id })
-            document.startViewTransition
-              ? document.startViewTransition(() =>
-                  flushSync(fn),
-                )
-              : fn()
+            // pasteCardAt is async (reads clipboard first) and now
+            // handles its own View Transition wrapping after the
+            // async read resolves — do not wrap here.
+            pasteCardAt({ parentGroupId: group.id })
           }}
           title="Paste a copied step into this group"
           className="text-[10px] text-slate-400 hover:text-emerald-400 px-2 py-0.5 rounded border border-slate-700 hover:border-emerald-500/40"

@@ -159,20 +159,42 @@ describe("GroupCard", () => {
     expect(spy).toHaveBeenCalledOnce()
   })
 
-  test("B12: calls startViewTransition when 📋 Paste button is clicked", async () => {
-    const spy = vi
-      .spyOn(document, "startViewTransition")
-      .mockReturnValue(
-        undefined as unknown as ViewTransition,
-      )
+  test("B12: 📋 Paste reads from clipboard and inserts a step into the group", async () => {
+    // Single-step YAML with no command — loadYamlFromText skips command
+    // validation when the field is empty, so we don't need to seed
+    // commandsAtom for this test.
+    const pastedYaml = [
+      "paths: {}",
+      "steps:",
+      "  - id: pasted_step",
+      "    command: ''",
+    ].join("\n")
+    vi.spyOn(
+      navigator.clipboard,
+      "readText",
+    ).mockResolvedValue(pastedYaml)
+    // pasteCardAt wraps the atom write in startViewTransition once
+    // the async clipboard read resolves. Mock the API to immediately
+    // run the callback so the test sees the synchronous state update.
+    vi.spyOn(
+      document,
+      "startViewTransition",
+    ).mockImplementation((fn) => {
+      ;(fn as () => void)?.()
+      return undefined as unknown as ViewTransition
+    })
     const user = userEvent.setup()
-    renderCard(makeGroup())
+    const store = renderCard(makeGroup())
 
     await user.click(
       screen.getByTitle(/paste a copied step/i),
     )
 
-    expect(spy).toHaveBeenCalledOnce()
+    // Wait for the async clipboard read + state update to settle.
+    await vi.waitFor(() => {
+      const items = store.get(stepsAtom)
+      expect((items[0] as Group).steps).toHaveLength(3)
+    })
   })
 
   test("B1: calls startViewTransition when ↑ button is clicked", async () => {

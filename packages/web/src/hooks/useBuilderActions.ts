@@ -1,5 +1,6 @@
 import { useStore } from "jotai"
 import { useCallback } from "react"
+import { flushSync } from "react-dom"
 import { isGroup } from "../jobs/sequenceUtils"
 import { toYamlStr } from "../jobs/yamlSerializer"
 import { commandsAtom } from "../state/commandsAtom"
@@ -317,21 +318,26 @@ export const useBuilderActions = () => {
       const currentPaths = store.get(pathsAtom)
       const currentCounter = store.get(stepCounterAtom)
 
+      let result: ReturnType<typeof loadYamlFromText>
       try {
-        const result = loadYamlFromText(
+        result = loadYamlFromText(
           text,
           commands,
           currentPaths,
           currentCounter,
         )
-        pushHistory()
-        const insertIndex =
-          args.itemIndex ?? store.get(stepsAtom).length
+      } catch {
+        // Clipboard content is not valid YAML — silently ignore.
+        return
+      }
 
+      // For group paste with no explicit position, append to the group's
+      // own steps (not the top-level array). For top-level paste with no
+      // explicit position, append at the end of the top-level array.
+      const applyPaste = () => {
+        pushHistory()
         store.set(stepsAtom, (items) => {
           if (args.parentGroupId) {
-            // Pasting into a group: flatten any groups in the clipboard
-            // result into their inner steps so nesting is avoided.
             const flatSteps = result.steps.flatMap(
               (item) =>
                 isGroup(item)
@@ -342,20 +348,39 @@ export const useBuilderActions = () => {
               if (
                 !isGroup(item) ||
                 item.id !== args.parentGroupId
-              )
+              ) {
                 return item
-              const steps = [...item.steps]
-              steps.splice(insertIndex, 0, ...flatSteps)
-              return { ...item, steps }
+              }
+              const innerSteps = [...item.steps]
+              const insertIndex =
+                args.itemIndex ?? innerSteps.length
+              innerSteps.splice(
+                insertIndex,
+                0,
+                ...flatSteps,
+              )
+              return { ...item, steps: innerSteps }
             })
           }
           const updated = [...items]
+          const insertIndex =
+            args.itemIndex ?? updated.length
           updated.splice(insertIndex, 0, ...result.steps)
           return updated
         })
         store.set(stepCounterAtom, result.stepCounter)
-      } catch {
-        // Clipboard content is not valid YAML — silently ignore.
+      }
+
+      // Run the state update inside a View Transition so React's
+      // re-render animates. flushSync ensures the DOM mutation happens
+      // synchronously inside the transition's snapshot window.
+      // Falls back to a direct call when the API is unavailable.
+      if (document.startViewTransition) {
+        document.startViewTransition(() => {
+          flushSync(applyPaste)
+        })
+      } else {
+        applyPaste()
       }
     },
     [store, pushHistory],
