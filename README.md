@@ -177,7 +177,7 @@ All environment variables are optional. Set them in `.env` or pass them to the s
 | `TRANSCODE_CACHE_MAX_BYTES` | `4294967296` (4 GB) | Maximum size of the transcode cache directory. Cache lives in `os.tmpdir()/media-tools-transcode-cache/`. |
 | `ANIDB_CACHE_FOLDER` | `./.cache/anidb` | Cache directory for AniDB metadata. **In Docker, set this to a mounted volume** so cache survives restarts (e.g., `/cache/anidb`). |
 | `TMDB_API_KEY` | — | The Movie Database API key for movie/TV metadata lookup. Get one free at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api). |
-| `REMOTE_SERVER_DOMAIN` | — | Public domain for remote-server links in API documentation. Only needed when the server is accessible from the internet. |
+| `REMOTE_SERVER_URL` | — | Public URL for remote-server links in API documentation. Only needed when the server is accessible from the internet. |
 | `MEDIA_TOOLS_FAKE_DATA` | — | Set to `true` or `1` to populate the UI with mock data (useful for development/screenshots). |
 
 #### Docker example

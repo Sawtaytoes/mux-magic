@@ -9,9 +9,9 @@ export const openApiDocs = {
       "API for media file processing and analysis",
   },
   servers: [
-    process.env.REMOTE_SERVER_DOMAIN
+    process.env.REMOTE_SERVER_URL
       ? {
-          url: `${process.env.REMOTE_SERVER_DOMAIN}:${API_PORT}`,
+          url: `${process.env.REMOTE_SERVER_URL}`,
           description: "Remote API server",
         }
       : {
