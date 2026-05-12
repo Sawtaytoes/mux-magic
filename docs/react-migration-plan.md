@@ -673,7 +673,7 @@ Or skip the hook if you prefer to format manually. The CI gate is the hard requi
 `typecheck`, `unit-tests`, and `e2e` jobs all need `schema.generated.ts` before TypeScript can compile.
 Each job starts the Hono server, generates schemas, then kills the server before running its actual task.
 
-Add a reusable shell script `scripts/generate-schemas-ci.sh`:
+Add a reusable shell script `scripts/generate:schemas-ci.sh`:
 
 ```bash
 #!/usr/bin/env bash
