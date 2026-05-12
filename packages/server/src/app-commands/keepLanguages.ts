@@ -1,6 +1,14 @@
 import { stat } from "node:fs/promises"
 import { join } from "node:path"
-import { concatMap, defer, filter, map, tap, toArray } from "rxjs"
+import {
+  concatMap,
+  defer,
+  filter,
+  map,
+  tap,
+  throwIfEmpty,
+  toArray,
+} from "rxjs"
 import {
   keepSpecifiedLanguageTracks,
   keepSpecifiedLanguageTracksDefaultProps,
@@ -50,7 +58,9 @@ export const keepLanguages = ({
   // would ENOENT otherwise — flattenOutput/copyFiles/etc. all assume
   // the folder is at least *present* (empty is fine — nothing to copy).
   defer(() => stat(sourcePath)).pipe(
-    concatMap(() => makeDirectory(join(sourcePath, outputFolderName))),
+    concatMap(() =>
+      makeDirectory(join(sourcePath, outputFolderName)),
+    ),
     concatMap(() =>
       getFilesAtDepth({
         depth: isRecursive ? 1 : 0,
@@ -58,6 +68,7 @@ export const keepLanguages = ({
       }),
     ),
     filterIsVideoFile(),
+    throwIfEmpty(() => new Error(`No video files found in "${sourcePath}"`)),
     withFileProgress((fileInfo) =>
       getTrackLanguages(fileInfo.fullPath).pipe(
         map(({ audioLanguages, ...otherProps }) => ({
