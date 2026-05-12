@@ -1,6 +1,6 @@
+import { readFileSync } from "node:fs"
 import { z } from "@hono/zod-openapi"
 import { describe, expect, test } from "vitest"
-import { commandConfigs } from "./routes/commandRoutes.js"
 import * as schemas from "./schemas.js"
 
 // Spot-checks the assumption the build-command-descriptions extractor
@@ -96,5 +96,19 @@ describe("schema-driven command descriptions", () => {
     expect(hasDefaultRulesDescription).toContain(
       "buildDefaultSubtitleModificationRules",
     )
+  })
+
+  test("generated command-descriptions.js is non-empty and contains field descriptions", () => {
+    const descriptionFilePath = new URL(
+      "../../../../public/builder/js/command-descriptions.js",
+      import.meta.url,
+    )
+    const fileContent = readFileSync(descriptionFilePath, "utf8")
+
+    expect(fileContent.length).toBeGreaterThan(0)
+    expect(fileContent).toContain("window.commandDescriptions")
+    expect(fileContent).toContain("window.getCommandFieldDescription")
+    // At least one field with a description should be present
+    expect(fileContent).toMatch(/"fields"\s*:\s*\{[^}]*"/)
   })
 })
