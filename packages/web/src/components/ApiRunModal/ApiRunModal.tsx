@@ -137,9 +137,11 @@ export const ApiRunModal = () => {
             prev
               ? {
                   ...prev,
-                  activeChildren: prev.activeChildren.filter(
-                    (child) => child.stepId !== finishedStepId,
-                  ),
+                  activeChildren:
+                    prev.activeChildren.filter(
+                      (child) =>
+                        child.stepId !== finishedStepId,
+                    ),
                 }
               : prev,
           )
@@ -288,14 +290,18 @@ export const ApiRunModal = () => {
           </div>
 
           {/* Active child step progress bars */}
-          {activeChildren.map((child) =>
-            child.jobId ? (
-              <ChildProgressTracker
-                key={child.stepId}
-                stepId={child.stepId}
-                jobId={child.jobId}
-              />
-            ) : null,
+          {activeChildren.length > 0 && (
+            <div className="overflow-y-auto max-h-48 shrink-0">
+              {activeChildren.map((child) =>
+                child.jobId ? (
+                  <ChildProgressTracker
+                    key={child.stepId}
+                    stepId={child.stepId}
+                    jobId={child.jobId}
+                  />
+                ) : null,
+              )}
+            </div>
           )}
 
           {/* Log output */}
