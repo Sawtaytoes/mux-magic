@@ -29,6 +29,7 @@ const subjects = new Map<
   string,
   Subject<string | JobEvent>
 >()
+const latestProgressByJob = new Map<string, ProgressEvent>()
 // Live RxJS Subscriptions keyed by jobId. Populated by jobRunner /
 // sequenceRunner when a job starts running, removed on natural completion
 // or by cancelJob below. Not exposed — Subscription objects aren't
@@ -151,7 +152,15 @@ export const emitJobEvent = (
   event: JobEvent,
 ): void => {
   subjects.get(id)?.next(event)
+  if (event.type === "progress") {
+    latestProgressByJob.set(id, event)
+  }
 }
+
+export const getLatestJobProgress = (
+  id: string,
+): ProgressEvent | null =>
+  latestProgressByJob.get(id) ?? null
 
 export const completeSubject = (id: string): void => {
   subjects.get(id)?.complete()
@@ -269,5 +278,6 @@ export const resetStore = (): void => {
   jobs.clear()
   subjects.clear()
   jobSubscriptions.clear()
+  latestProgressByJob.clear()
   __resetAllProgressEmittersForTests()
 }

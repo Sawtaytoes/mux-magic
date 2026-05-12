@@ -1,7 +1,11 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import { streamSSE } from "hono/streaming"
 
-import { getJob, getSubject } from "../jobStore.js"
+import {
+  getJob,
+  getLatestJobProgress,
+  getSubject,
+} from "../jobStore.js"
 import * as schemas from "../schemas.js"
 import { startSseKeepalive } from "../sseKeepalive.js"
 
@@ -88,6 +92,8 @@ logsRoutes.openapi(
         job.status === "noop" ||
         job.status === "skipped"
       ) {
+        const latestProgress = getLatestJobProgress(job.id)
+        if (latestProgress) await send(latestProgress)
         await send({
           done: true,
           status: job.status,
@@ -103,6 +109,8 @@ logsRoutes.openapi(
 
       if (!subject) {
         const finishedJob = getJob(job.id)
+        const latestProgress = getLatestJobProgress(job.id)
+        if (latestProgress) await send(latestProgress)
         await send({
           done: true,
           status: finishedJob?.status ?? job.status,

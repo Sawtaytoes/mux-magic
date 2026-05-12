@@ -33,6 +33,7 @@ export const ApiRunModal = () => {
 
   const [logs, setLogs] = useState<string[]>([])
   const [status, setStatus] = useState<RunStatus>("pending")
+  const [seqDone, setSeqDone] = useState(false)
 
   const logsEndRef = useRef<HTMLDivElement>(null)
   const prevModalJobIdRef = useRef<
@@ -56,6 +57,7 @@ export const ApiRunModal = () => {
     prevModalJobIdRef.current = modalState.jobId
     setStatus(modalState.status)
     setLogs([])
+    setSeqDone(false)
   }, [modalState])
 
   const parentUrl = modalState?.jobId
@@ -129,6 +131,7 @@ export const ApiRunModal = () => {
         setModalState((prev) =>
           prev ? { ...prev, activeChildren: [] } : prev,
         )
+        setSeqDone(true)
         setRunning(false)
       }
     },
@@ -145,7 +148,7 @@ export const ApiRunModal = () => {
 
   useTolerantEventSource<Record<string, unknown>>({
     url: parentUrl ?? "",
-    enabled: parentUrl !== null,
+    enabled: parentUrl !== null && !seqDone,
     onMessage: handleParentMessage,
     onPossiblyDisconnected: handleParentDisconnected,
   })
