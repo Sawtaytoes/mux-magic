@@ -10,25 +10,27 @@ import {
   dryRunAtom,
   failureModeAtom,
 } from "../state/dryRunQuery"
+import { insertGroupAtom } from "../state/groupAtoms"
 import {
   canRedoAtom,
   canUndoAtom,
   redoStackAtom,
   undoStackAtom,
 } from "../state/historyAtoms"
-import { pathsAtom } from "../state/pathsAtom"
 import {
   addPathAtom,
   addPathVariableAtom,
+  pathsAtom,
+  setPathValueAtom,
+} from "../state/pathsAtom"
+import { runningAtom } from "../state/runAtoms"
+import { setAllCollapsedAtom } from "../state/sequenceAtoms"
+import {
   changeCommandAtom,
-  insertGroupAtom,
   insertStepAtom,
-  runningAtom,
-  setAllCollapsedAtom,
   setLinkAtom,
   setParamAtom,
-  setPathValueAtom,
-} from "../state/sequenceAtoms"
+} from "../state/stepAtoms"
 import {
   stepCounterAtom,
   stepsAtom,

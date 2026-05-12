@@ -12,7 +12,7 @@ import {
   canRedoAtom,
   canUndoAtom,
 } from "../../state/historyAtoms"
-import { runningAtom } from "../../state/sequenceAtoms"
+import { runningAtom } from "../../state/runAtoms"
 
 // ─── Responsive menu state ────────────────────────────────────────────────────
 

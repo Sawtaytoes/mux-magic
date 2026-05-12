@@ -24,7 +24,7 @@ import { InsertDivider } from "../../components/InsertDivider/InsertDivider"
 import { StepCard } from "../../components/StepCard/StepCard"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { isGroup } from "../../jobs/sequenceUtils"
-import { dragReorderAtom } from "../../state/sequenceAtoms"
+import { dragReorderAtom } from "../../state/dragAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Group, Step } from "../../types"
 

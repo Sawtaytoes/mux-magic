@@ -10,10 +10,8 @@ import type { RunStatus } from "../../components/ApiRunModal/types"
 import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import { useTolerantEventSource } from "../../hooks/useTolerantEventSource"
 import { Modal } from "../../primitives/Modal/Modal"
-import {
-  runningAtom,
-  setStepRunStatusAtom,
-} from "../../state/sequenceAtoms"
+import { runningAtom } from "../../state/runAtoms"
+import { setStepRunStatusAtom } from "../../state/stepAtoms"
 
 // ─── Progress bar utilities (mirrors the legacy window.ProgressUtils API) ─────
 

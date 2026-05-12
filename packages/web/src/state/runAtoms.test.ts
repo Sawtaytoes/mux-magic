@@ -13,14 +13,14 @@ import {
   dryRunAtom,
   failureModeAtom,
 } from "../state/dryRunQuery"
-import { runningAtom } from "../state/sequenceAtoms"
+import {
+  runningAtom,
+  runOrStopStepAtom,
+} from "../state/runAtoms"
+import { setStepRunStatusAtom } from "../state/stepAtoms"
 import type { Step } from "../types"
 import { commandsAtom } from "./commandsAtom"
 import { pathsAtom } from "./pathsAtom"
-import {
-  runOrStopStepAtom,
-  setStepRunStatusAtom,
-} from "./sequenceAtoms"
 import { stepsAtom } from "./stepsAtom"
 
 const makeStep = (overrides: Partial<Step> = {}): Step => ({

@@ -1,7 +1,7 @@
 import { createStore } from "jotai"
 import { describe, expect, test } from "vitest"
 import { isGroup } from "../../jobs/sequenceUtils"
-import { dragReorderAtom } from "../../state/sequenceAtoms"
+import { dragReorderAtom } from "../../state/dragAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Group, SequenceItem, Step } from "../../types"
 

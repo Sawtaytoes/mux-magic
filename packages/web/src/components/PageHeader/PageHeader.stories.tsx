@@ -4,7 +4,7 @@ import {
   dryRunAtom,
   failureModeAtom,
 } from "../../state/dryRunQuery"
-import { runningAtom } from "../../state/sequenceAtoms"
+import { runningAtom } from "../../state/runAtoms"
 import { PageHeader } from "./PageHeader"
 
 const meta: Meta<typeof PageHeader> = {

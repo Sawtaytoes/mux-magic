@@ -16,13 +16,13 @@ import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
 import { commandLabel } from "../../jobs/commandLabels"
 import { commandsAtom } from "../../state/commandsAtom"
 import { commandPickerStateAtom } from "../../state/pickerAtoms"
+import { runOrStopStepAtom } from "../../state/runAtoms"
 import {
   moveStepAtom,
   removeStepAtom,
-  runOrStopStepAtom,
   toggleStepCollapsedAtom,
   updateStepAliasAtom,
-} from "../../state/sequenceAtoms"
+} from "../../state/stepAtoms"
 
 import type { Step } from "../../types"
 import { RenderFields } from "../RenderFields/RenderFields"

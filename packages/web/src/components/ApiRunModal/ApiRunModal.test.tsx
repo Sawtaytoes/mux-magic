@@ -19,7 +19,7 @@ afterEach(() => {
 })
 
 import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
-import { runningAtom } from "../../state/sequenceAtoms"
+import { runningAtom } from "../../state/runAtoms"
 import { ApiRunModal } from "./ApiRunModal"
 
 const renderWithStore = (

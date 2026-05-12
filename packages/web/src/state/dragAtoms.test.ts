@@ -1,10 +1,8 @@
 import { createStore } from "jotai"
 import { describe, expect, test } from "vitest"
+import { dragReorderAtom } from "../state/dragAtoms"
+import { setAllCollapsedAtom } from "../state/sequenceAtoms"
 import type { Group, Step } from "../types"
-import {
-  dragReorderAtom,
-  setAllCollapsedAtom,
-} from "./sequenceAtoms"
 import { stepsAtom } from "./stepsAtom"
 
 const makeStep = (

@@ -14,13 +14,13 @@ import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
 import { DoubleChevron } from "../../icons/DoubleChevron/DoubleChevron"
 import {
-  addStepToGroupAtom,
   moveGroupAtom,
   removeGroupAtom,
   setGroupChildrenCollapsedAtom,
   toggleGroupCollapsedAtom,
   updateGroupLabelAtom,
-} from "../../state/sequenceAtoms"
+} from "../../state/groupAtoms"
+import { addStepToGroupAtom } from "../../state/stepAtoms"
 import type { Group, Step } from "../../types"
 import { StepCard } from "../StepCard/StepCard"
 

@@ -12,6 +12,52 @@ import { stepsAtom } from "./stepsAtom"
 
 export const pathsAtom = atom<PathVariable[]>([])
 
+// ─── Add / set ────────────────────────────────────────────────────────────────
+
+export const addPathAtom = atom(null, (_get, set) => {
+  set(pathsAtom, (paths) => [
+    ...paths,
+    {
+      id: `pathVariable_${Math.random().toString(36).slice(2, 8)}`,
+      label: "",
+      value: "",
+    },
+  ])
+})
+
+export const addPathVariableAtom = atom(
+  null,
+  (
+    _get,
+    set,
+    args: { id: string; label: string; value: string },
+  ) => {
+    set(pathsAtom, (paths) => [
+      ...paths,
+      { id: args.id, label: args.label, value: args.value },
+    ])
+  },
+)
+
+export const setPathValueAtom = atom(
+  null,
+  (
+    _get,
+    set,
+    args: { pathVariableId: string; value: string },
+  ) => {
+    set(pathsAtom, (paths) =>
+      paths.map((path) =>
+        path.id === args.pathVariableId
+          ? { ...path, value: args.value }
+          : path,
+      ),
+    )
+  },
+)
+
+// ─── Pending-delete state ────────────────────────────────────────────────────
+
 export type PathVariableUsage = {
   stepId: string
   fieldName: string
