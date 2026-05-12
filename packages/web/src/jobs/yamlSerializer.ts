@@ -34,14 +34,14 @@ const groupToYaml = (group: Group, commands: Commands) => ({
   ...(group.isParallel ? { isParallel: true } : {}),
   ...(group.isCollapsed ? { isCollapsed: true } : {}),
   steps: group.steps
-    .filter((step) => step.command !== null)
+    .filter((step) => Boolean(step.command))
     .map((step) => stepToYaml(step, commands)),
 })
 
 const hasContent = (item: SequenceItem): boolean =>
-  isGroup(item)
-    ? item.steps.some((step) => step.command !== null)
-    : item.command !== null
+  "command" in item
+    ? Boolean(item.command)
+    : item.steps.some((step) => Boolean(step.command))
 
 export const toYamlStr = (
   steps: SequenceItem[],

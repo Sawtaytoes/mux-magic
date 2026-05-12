@@ -203,3 +203,61 @@ describe("toYamlStr — paths block", () => {
     expect(result).toContain("value: /fixture/media")
   })
 })
+
+// ─── Blank step filtering ─────────────────────────────────────────────────────
+
+describe("toYamlStr — blank step filtering", () => {
+  test("omits blank steps (command: '') from a group's YAML", () => {
+    const realStep = makeStep({ id: "real-1", command: "makeDirectory" })
+    const blankStep = makeStep({ id: "blank-1", command: "" })
+    const group: SequenceItem = {
+      kind: "group",
+      id: "group-1",
+      label: "",
+      isParallel: false,
+      isCollapsed: false,
+      steps: [realStep, blankStep],
+    }
+
+    const result = toYamlStr([group], [], MAKE_DIR_COMMAND)
+
+    expect(result).toContain("real-1")
+    expect(result).not.toContain("blank-1")
+  })
+
+  test("omits a standalone blank top-level step from the sequence", () => {
+    const blankStep = makeStep({ id: "blank-2", command: "" })
+    const realStep = makeStep({ id: "real-2", command: "makeDirectory" })
+
+    const result = toYamlStr(
+      [blankStep, realStep] as SequenceItem[],
+      [],
+      MAKE_DIR_COMMAND,
+    )
+
+    expect(result).toContain("real-2")
+    expect(result).not.toContain("blank-2")
+  })
+
+  test("returns sentinel when a group contains only blank steps", () => {
+    const group: SequenceItem = {
+      kind: "group",
+      id: "group-2",
+      label: "",
+      isParallel: false,
+      isCollapsed: false,
+      steps: [
+        makeStep({ id: "blank-3", command: "" }),
+        makeStep({ id: "blank-4", command: "" }),
+      ],
+    }
+
+    const result = toYamlStr(
+      [group],
+      [{ id: "basePath", label: "Base Path", value: "" }],
+      {},
+    )
+
+    expect(result).toBe("# No steps yet")
+  })
+})
