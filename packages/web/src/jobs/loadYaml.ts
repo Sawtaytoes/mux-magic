@@ -211,6 +211,7 @@ export const loadYamlFromText = (
   commands: Commands,
   currentPaths: PathVariable[],
   _currentStepCounter: number,
+  existingIds?: Set<string>,
 ): LoadYamlResult => {
   const data = yaml.load(text)
 
@@ -259,7 +260,7 @@ export const loadYamlFromText = (
     commands,
     currentPaths: paths,
     currentStepCounter: 0,
-    seenIds: new Set<string>(),
+    seenIds: new Set<string>(existingIds),
   }
 
   const steps = stepsData.map((item) =>

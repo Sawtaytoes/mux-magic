@@ -327,6 +327,16 @@ export const useBuilderActions = () => {
       const currentPaths = store.get(pathsAtom)
       const currentCounter = store.get(stepCounterAtom)
 
+      const existingIds = new Set<string>()
+      for (const item of store.get(stepsAtom)) {
+        if (isGroup(item)) {
+          existingIds.add(item.id)
+          for (const step of item.steps) existingIds.add(step.id)
+        } else {
+          existingIds.add(item.id)
+        }
+      }
+
       let result: ReturnType<typeof loadYamlFromText>
       try {
         result = loadYamlFromText(
@@ -334,6 +344,7 @@ export const useBuilderActions = () => {
           commands,
           currentPaths,
           currentCounter,
+          existingIds,
         )
       } catch {
         // Clipboard content is not valid YAML — silently ignore.
