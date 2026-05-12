@@ -1,10 +1,14 @@
 import { existsSync } from "node:fs"
+import { platform } from "node:os"
 import ffmpegStaticPath from "ffmpeg-static"
+
+const isWindows = platform() === "win32"
 
 const resolveAppPath = (
   localPath: string,
   systemName: string,
-): string => (existsSync(localPath) ? localPath : systemName)
+): string =>
+  isWindows && existsSync(localPath) ? localPath : systemName
 
 /** @see https://github.com/bbc/audio-offset-finder */
 // export const audioOffsetFinderPath = ".venv/bin/audio-offset-finder" // This local version doesn't run for whatever reason.
