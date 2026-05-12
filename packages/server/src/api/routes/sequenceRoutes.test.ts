@@ -1249,4 +1249,134 @@ describe("POST /sequences/run — groups", () => {
     expect(getJob(jobId)?.status).toBe("completed")
     expect(vol.existsSync("/collapsed-runs")).toBe(true)
   })
+
+  // ─── P0 dry-run safety guard ──────────────────────────────────────────────
+  //
+  // The user lost real files when "Dry Run" was on because the client
+  // wasn't forwarding the flag and the server ran deleteFolder for real.
+  // The client now appends `?fake=1` (or `?fake=failure`) for dry-run.
+  // These tests are the server-side contract for that flag: when the
+  // sequence route is hit with `?fake=...`, the real command observables
+  // (including deleteFolder) must NOT execute against the filesystem.
+  //
+  // These tests intentionally target deleteFolder specifically — it is
+  // THE command whose real execution caused the data loss.
+  describe("dry-run safety — ?fake=1 disables real deleteFolder", () => {
+    test("deleteFolder via ?fake=1 leaves the target folder intact", async () => {
+      // memfs setup: a folder that, if deleteFolder ran for real,
+      // would be wiped.
+      vol.fromJSON({
+        "/precious/keep-me.txt": "irreplaceable",
+        "/precious/nested/also-keep-me.bin":
+          "also-irreplaceable",
+      })
+
+      const response = await post("/sequences/run?fake=1", {
+        steps: [
+          {
+            id: "doomed_if_real",
+            command: "deleteFolder",
+            params: {
+              folderPath: "/precious",
+              confirm: true,
+            },
+          },
+        ],
+      })
+      expect(response.status).toBe(202)
+      const { jobId } = (await response.json()) as {
+        jobId: string
+      }
+
+      // Fake observables resolve quickly (capped at 400ms by
+      // TIMING_OVERRIDES for deleteFolder); give it a generous window.
+      await flushAfter(600)
+
+      // The job must still complete (the fake path emits success).
+      expect(getJob(jobId)?.status).toBe("completed")
+      // The folder MUST still exist. If this assertion fails, the
+      // fake path is broken and dry-run is data-loss-unsafe.
+      expect(vol.existsSync("/precious")).toBe(true)
+      expect(vol.existsSync("/precious/keep-me.txt")).toBe(
+        true,
+      )
+      expect(
+        vol.existsSync("/precious/nested/also-keep-me.bin"),
+      ).toBe(true)
+    })
+
+    test("deleteFolder via ?fake=failure leaves the target folder intact (and the job fails as instructed)", async () => {
+      vol.fromJSON({
+        "/precious-failure/keep-me.txt":
+          "irreplaceable-failure",
+      })
+
+      const response = await post(
+        "/sequences/run?fake=failure",
+        {
+          steps: [
+            {
+              id: "doomed_if_real",
+              command: "deleteFolder",
+              params: {
+                folderPath: "/precious-failure",
+                confirm: true,
+              },
+            },
+          ],
+        },
+      )
+      expect(response.status).toBe(202)
+      const { jobId } = (await response.json()) as {
+        jobId: string
+      }
+
+      // failureScenario emits N progress events on a setInterval before
+      // throwing; the total wall-clock varies with the command's
+      // TIMING_OVERRIDE. Poll until the job reaches a terminal state.
+      await waitFor(() => {
+        const status = getJob(jobId)?.status
+        return status === "failed" || status === "completed"
+          ? status
+          : undefined
+      }, 3000)
+
+      // The fake-failure scenario emits an error, so the umbrella
+      // job is failed — but the folder must NOT have been touched.
+      expect(getJob(jobId)?.status).toBe("failed")
+      expect(vol.existsSync("/precious-failure")).toBe(true)
+      expect(
+        vol.existsSync("/precious-failure/keep-me.txt"),
+      ).toBe(true)
+    })
+
+    // Control: without ?fake=*, the REAL deleteFolder runs and the
+    // folder is gone. This proves the test fixture would otherwise
+    // delete — i.e. the safety above is meaningful, not a memfs quirk.
+    test("CONTROL: deleteFolder WITHOUT ?fake actually deletes the folder", async () => {
+      vol.fromJSON({
+        "/control-doomed/keep-me.txt": "this will go",
+      })
+
+      const response = await post("/sequences/run", {
+        steps: [
+          {
+            id: "real_delete",
+            command: "deleteFolder",
+            params: {
+              folderPath: "/control-doomed",
+              confirm: true,
+            },
+          },
+        ],
+      })
+      const { jobId } = (await response.json()) as {
+        jobId: string
+      }
+      await flushAfter(40)
+
+      expect(getJob(jobId)?.status).toBe("completed")
+      expect(vol.existsSync("/control-doomed")).toBe(false)
+    })
+  })
 })

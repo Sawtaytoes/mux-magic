@@ -16,7 +16,12 @@ import {
   setStepRunStatusAtom,
 } from "./sequenceAtoms"
 import { stepsAtom } from "./stepsAtom"
-import { apiRunModalAtom, runningAtom } from "./uiAtoms"
+import {
+  apiRunModalAtom,
+  dryRunAtom,
+  failureModeAtom,
+  runningAtom,
+} from "./uiAtoms"
 
 const makeStep = (overrides: Partial<Step> = {}): Step => ({
   id: "step_1",
@@ -187,6 +192,80 @@ describe("runOrStopStepAtom", () => {
       store.set(commandsAtom, COMMANDS)
 
       await store.set(runOrStopStepAtom, "inner_1")
+
+      expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+        "/sequences/run",
+        expect.objectContaining({ method: "POST" }),
+      )
+    })
+  })
+
+  // ─── P0 regression guard: dry-run query forwarding ─────────────────────────
+  //
+  // Without this, every "Run Step" while the DRY RUN badge was on
+  // still executed real commands on the server (the user lost real
+  // files to deleteFolder). These tests fail if any future change
+  // drops the dry-run forwarding from runOrStopStepAtom.
+  describe("dry-run forwarding", () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ jobId: "job_new" }),
+        }),
+      )
+    })
+
+    test("posts to /sequences/run with NO fake query when dryRun is off", async () => {
+      const step = makeStep()
+      const store = makeStore(step)
+      store.set(dryRunAtom, false)
+      store.set(failureModeAtom, false)
+
+      await store.set(runOrStopStepAtom, "step_1")
+
+      expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+        "/sequences/run",
+        expect.objectContaining({ method: "POST" }),
+      )
+    })
+
+    test("posts to /sequences/run?fake=1 when dryRun is on (no failureMode)", async () => {
+      const step = makeStep()
+      const store = makeStore(step)
+      store.set(dryRunAtom, true)
+      store.set(failureModeAtom, false)
+
+      await store.set(runOrStopStepAtom, "step_1")
+
+      expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+        "/sequences/run?fake=1",
+        expect.objectContaining({ method: "POST" }),
+      )
+    })
+
+    test("posts to /sequences/run?fake=failure when dryRun AND failureMode are both on", async () => {
+      const step = makeStep()
+      const store = makeStore(step)
+      store.set(dryRunAtom, true)
+      store.set(failureModeAtom, true)
+
+      await store.set(runOrStopStepAtom, "step_1")
+
+      expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+        "/sequences/run?fake=failure",
+        expect.objectContaining({ method: "POST" }),
+      )
+    })
+
+    test("ignores failureMode when dryRun is off (defensive — real call should not silently become fake)", async () => {
+      const step = makeStep()
+      const store = makeStore(step)
+      store.set(dryRunAtom, false)
+      store.set(failureModeAtom, true)
+
+      await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
         "/sequences/run",

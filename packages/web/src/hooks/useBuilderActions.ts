@@ -4,6 +4,7 @@ import { flushSync } from "react-dom"
 import { isGroup } from "../jobs/sequenceUtils"
 import { toYamlStr } from "../jobs/yamlSerializer"
 import { commandsAtom } from "../state/commandsAtom"
+import { buildRunFetchUrl } from "../state/dryRunQuery"
 import {
   canRedoAtom,
   canUndoAtom,
@@ -28,6 +29,8 @@ import {
 } from "../state/stepsAtom"
 import {
   apiRunModalAtom,
+  dryRunAtom,
+  failureModeAtom,
   runningAtom,
 } from "../state/uiAtoms"
 import type { Group, Step, StepLink } from "../types"
@@ -224,8 +227,13 @@ export const useBuilderActions = () => {
       childStepId: null,
       source: "sequence",
     })
+    // Dry-run gate — see packages/web/src/state/dryRunQuery.ts.
+    const runUrl = buildRunFetchUrl("/sequences/run", {
+      isDryRun: store.get(dryRunAtom),
+      isFailureMode: store.get(failureModeAtom),
+    })
     try {
-      const response = await fetch("/sequences/run", {
+      const response = await fetch(runUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ yaml }),
@@ -411,8 +419,14 @@ export const useBuilderActions = () => {
         source: "sequence",
       })
 
+      // Dry-run gate — see packages/web/src/state/dryRunQuery.ts.
+      const runUrl = buildRunFetchUrl("/sequences/run", {
+        isDryRun: store.get(dryRunAtom),
+        isFailureMode: store.get(failureModeAtom),
+      })
+
       try {
-        const response = await fetch("/sequences/run", {
+        const response = await fetch(runUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ yaml }),

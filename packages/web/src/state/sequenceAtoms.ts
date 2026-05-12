@@ -8,9 +8,15 @@ import type {
   StepLink,
 } from "../types"
 import { commandsAtom } from "./commandsAtom"
+import { buildRunFetchUrl } from "./dryRunQuery"
 import { pathsAtom } from "./pathsAtom"
 import { stepCounterAtom, stepsAtom } from "./stepsAtom"
-import { apiRunModalAtom, runningAtom } from "./uiAtoms"
+import {
+  apiRunModalAtom,
+  dryRunAtom,
+  failureModeAtom,
+  runningAtom,
+} from "./uiAtoms"
 
 // ─── Step mutations ───────────────────────────────────────────────────────────
 
@@ -576,8 +582,17 @@ export const runOrStopStepAtom = atom(
       source: "step",
     })
 
+    // Dry-run gate — see packages/web/src/state/dryRunQuery.ts.
+    // Without this, every "Run Step" while the DRY RUN badge is on
+    // would still execute real commands on the server. Real file
+    // deletions resulted (the P0 bug this fixes).
+    const runUrl = buildRunFetchUrl("/sequences/run", {
+      isDryRun: get(dryRunAtom),
+      isFailureMode: get(failureModeAtom),
+    })
+
     try {
-      const response = await fetch("/sequences/run", {
+      const response = await fetch(runUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ yaml }),
