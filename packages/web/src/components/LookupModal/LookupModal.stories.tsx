@@ -64,11 +64,22 @@ export const DvdCompareWithResults: Story = {
       stage: "search" as const,
       formatFilter: "Blu-ray 4K",
       results: [
-        { name: "Neon Genesis Evangelion (1995)" } as never,
         {
-          name: "Evangelion: 1.11 You Are (Not) Alone",
-        } as never,
-      ],
+          baseTitle: "Neon Genesis Evangelion",
+          year: "1995",
+          variants: [
+            { id: "fid-1", variant: "Blu-ray 4K" },
+            { id: "fid-2", variant: "Blu-ray" },
+          ],
+        },
+        {
+          baseTitle: "Evangelion: 1.11 You Are (Not) Alone",
+          year: "2009",
+          variants: [
+            { id: "fid-3", variant: "Blu-ray 4K" },
+          ],
+        },
+      ] as never,
     } satisfies LookupState,
   },
 }

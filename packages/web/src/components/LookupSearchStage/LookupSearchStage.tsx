@@ -16,6 +16,34 @@ const SEARCH_ENDPOINTS: Record<LookupType, string> = {
   dvdcompare: "/queries/searchDvdCompare",
 }
 
+type DvdCompareApiResult = {
+  baseTitle: string
+  id: number
+  variant: string
+  year: string
+}
+
+const groupDvdCompareResults = (
+  flat: DvdCompareApiResult[],
+): LookupGroup[] => {
+  const map = new Map<string, LookupGroup>()
+  for (const item of flat) {
+    const key = `${item.baseTitle}||${item.year}`
+    if (!map.has(key)) {
+      map.set(key, {
+        baseTitle: item.baseTitle,
+        year: item.year,
+        variants: [],
+      })
+    }
+    map.get(key)?.variants.push({
+      id: String(item.id),
+      variant: item.variant,
+    })
+  }
+  return Array.from(map.values())
+}
+
 const fetchSearch = async (
   lookupType: LookupType,
   searchTerm: string,
@@ -33,8 +61,15 @@ const fetchSearch = async (
       results?: LookupSearchResult[]
       error?: string
     }
+    const rawResults = data.results ?? []
+    const results =
+      lookupType === "dvdcompare"
+        ? (groupDvdCompareResults(
+            rawResults as unknown as DvdCompareApiResult[],
+          ) as unknown as LookupSearchResult[])
+        : rawResults
     return {
-      results: data.results ?? [],
+      results,
       error: data.error ?? null,
     }
   } catch (error) {
@@ -129,22 +164,13 @@ export const LookupSearchStage = ({
       : state.lookupType === "dvdcompare" &&
           state.formatFilter !== "all"
         ? (
-            state.results as Array<{
-              groups?: LookupGroup[]
-            }>
+            state.results as unknown as LookupGroup[]
+          ).filter((group) =>
+            group.variants?.some(
+              (variant) =>
+                variant.variant === state.formatFilter,
+            ),
           )
-            .map((group) => ({
-              ...group,
-              groups: (group.groups ?? []).filter((grp) =>
-                grp.variants?.some(
-                  (variant) =>
-                    variant.variant === state.formatFilter,
-                ),
-              ),
-            }))
-            .filter(
-              (group) => (group.groups?.length ?? 0) > 0,
-            )
         : state.results
 
   return (
