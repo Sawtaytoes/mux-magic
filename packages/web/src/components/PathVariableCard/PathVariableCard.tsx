@@ -228,8 +228,8 @@ export const PathVariableCard = ({
       />
       {isPendingDelete && (
         <div
+          role="alert"
           className="mt-3 rounded-lg border border-amber-600/50 bg-amber-900/20 px-3 py-2 text-xs"
-          data-testid="pending-delete-prompt"
         >
           <p className="text-amber-300 font-medium mb-2">
             This path variable is used by the following

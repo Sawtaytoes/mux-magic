@@ -137,13 +137,13 @@ describe("PathPicker visibility", () => {
         <PathPicker />
       </Provider>,
     )
-    expect(screen.queryByTestId("path-picker")).toBeNull()
+    expect(screen.queryByRole("listbox", { name: "Path picker" })).toBeNull()
   })
 
   test("renders picker when atom has state", () => {
     renderPicker()
     expect(
-      screen.getByTestId("path-picker"),
+      screen.getByRole("listbox", { name: "Path picker" }),
     ).toBeInTheDocument()
   })
 
@@ -284,7 +284,7 @@ describe("PathPicker keyboard navigation", () => {
     expect(store.get(pathPickerStateAtom)).toBeNull()
     await waitFor(() =>
       expect(
-        screen.queryByTestId("path-picker"),
+        screen.queryByRole("listbox", { name: "Path picker" }),
       ).not.toBeInTheDocument(),
     )
   })

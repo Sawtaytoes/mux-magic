@@ -71,9 +71,7 @@ describe("JobsPage", () => {
         status: "running",
       },
     ])
-    expect(screen.getAllByTestId("job-card")).toHaveLength(
-      2,
-    )
+    expect(screen.getAllByRole("article")).toHaveLength(2)
   })
 
   test("does not render child jobs as top-level cards", () => {
@@ -90,15 +88,13 @@ describe("JobsPage", () => {
         parentJobId: "parent",
       },
     ])
-    expect(screen.getAllByTestId("job-card")).toHaveLength(
-      1,
-    )
+    expect(screen.getAllByRole("article")).toHaveLength(1)
   })
 
   test("shows the StatusBar", () => {
     renderPage()
     expect(
-      screen.getByTestId("status-bar"),
+      screen.getByRole("status"),
     ).toBeInTheDocument()
   })
 

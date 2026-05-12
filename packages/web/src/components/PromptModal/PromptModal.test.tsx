@@ -70,7 +70,7 @@ describe("PromptModal", () => {
     })
     renderWithStore(store)
     fireEvent.click(
-      screen.getByTestId("prompt-modal-backdrop"),
+      screen.getByRole("dialog").parentElement as HTMLElement,
     )
     await waitFor(() =>
       expect(store.get(promptModalAtom)).toBeNull(),

@@ -36,7 +36,6 @@ export const Modal = ({
       onKeyDown={(event) => {
         if (event.key === "Escape") onClose()
       }}
-      data-testid="modal-backdrop"
     >
       <div
         role="dialog"

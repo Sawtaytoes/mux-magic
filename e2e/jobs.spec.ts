@@ -67,8 +67,7 @@ test.describe("Jobs page — SSE stream", () => {
 
     await page.goto(`${webBase}/`)
 
-    // The JobCard renders an article with data-testid="job-card".
-    const jobCard = page.locator("[data-testid='job-card']")
+    const jobCard = page.getByRole("article")
     await expect(jobCard).toBeVisible()
     // Job ID is shown in the card meta section.
     await expect(jobCard).toContainText("job-running-001")
@@ -108,7 +107,7 @@ test.describe("Jobs page — SSE stream", () => {
 
     await page.goto(`${webBase}/`)
 
-    const jobCard = page.locator("[data-testid='job-card']")
+    const jobCard = page.getByRole("article")
     await expect(jobCard).toBeVisible()
     await expect(
       jobCard.getByText("completed"),
@@ -147,14 +146,14 @@ test.describe("Jobs page — SSE stream", () => {
     await page.goto(`${webBase}/`)
 
     await expect(
-      page.locator("[data-testid='job-card']"),
+      page.getByRole("article"),
     ).toHaveCount(2)
     // Newest first — JobsList reverses insertion order.
     await expect(
-      page.locator("[data-testid='job-card']").first(),
+      page.getByRole("article").first(),
     ).toContainText("job-beta")
     await expect(
-      page.locator("[data-testid='job-card']").last(),
+      page.getByRole("article").last(),
     ).toContainText("job-alpha")
   })
 
@@ -192,10 +191,10 @@ test.describe("Jobs page — SSE stream", () => {
 
     // Only the parent should appear at the top level.
     await expect(
-      page.locator("[data-testid='job-card']"),
+      page.getByRole("article"),
     ).toHaveCount(1)
     await expect(
-      page.locator("[data-testid='job-card']"),
+      page.getByRole("article"),
     ).toContainText("parent-job")
   })
 })

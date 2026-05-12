@@ -110,13 +110,13 @@ afterEach(() => {
 describe("EnumPicker visibility", () => {
   test("renders nothing when atom is null", () => {
     renderPicker(false)
-    expect(screen.queryByTestId("enum-picker")).toBeNull()
+    expect(screen.queryByRole("listbox", { name: "Option picker" })).toBeNull()
   })
 
   test("renders picker when atom has state", () => {
     renderPicker(true)
     expect(
-      screen.getByTestId("enum-picker"),
+      screen.getByRole("listbox", { name: "Option picker" }),
     ).toBeInTheDocument()
   })
 })

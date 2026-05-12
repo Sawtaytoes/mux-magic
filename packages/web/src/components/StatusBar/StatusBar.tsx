@@ -25,8 +25,8 @@ export const StatusBar = () => {
   const { label, className } = statusConfig[status]
   return (
     <div
+      role="status"
       className={`text-xs px-1 py-0.5 ${className}`}
-      data-testid="status-bar"
       data-status={status}
     >
       {label}

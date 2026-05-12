@@ -396,9 +396,10 @@ export const PathPicker = () => {
   return createPortal(
     <div
       id="path-picker-popover"
+      role="listbox"
+      aria-label="Path picker"
       className="fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col"
       style={{ top, left, width: PICKER_WIDTH, maxHeight }}
-      data-testid="path-picker"
     >
       <div className="overflow-y-auto py-1">
         {pickerState.entries === null ? (

@@ -242,7 +242,6 @@ export const CommandPicker = () => {
       aria-label="Command picker"
       className="fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col"
       style={{ top, left, width: PICKER_WIDTH, maxHeight }}
-      data-testid="command-picker"
     >
       <input
         ref={inputRef}

@@ -20,13 +20,24 @@ export const ProgressBar = ({
       ? `${(Math.max(0, Math.min(1, ratio)) * 100).toFixed(1)}%`
       : null
 
+  const valuenow =
+    ratio !== null
+      ? Math.round(Math.max(0, Math.min(1, ratio)) * 100)
+      : undefined
+
   return (
-    <div className="space-y-1" data-testid="progress-bar">
+    <div
+      className="space-y-1"
+      role="progressbar"
+      aria-label="Job progress"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={valuenow}
+    >
       <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
         <div
           className={`h-full bg-blue-500 rounded-full transition-all ${isIndeterminate ? "animate-pulse w-full" : ""}`}
           style={pct !== null ? { width: pct } : undefined}
-          data-testid="progress-fill"
         />
       </div>
       <ProgressLabel snapshot={snapshot} />

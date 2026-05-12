@@ -238,7 +238,6 @@ export const EnumPicker = () => {
       aria-label="Option picker"
       className="fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col"
       style={{ top, left, width: PICKER_WIDTH, maxHeight }}
-      data-testid="enum-picker"
     >
       <input
         ref={inputRef}

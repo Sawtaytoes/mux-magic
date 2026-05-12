@@ -113,7 +113,9 @@ describe("YamlModal", () => {
     const user = userEvent.setup()
     const store = renderModal(true)
 
-    await user.click(screen.getByTestId("modal-backdrop"))
+    await user.click(
+      screen.getByRole("dialog", { name: "YAML" }).parentElement as HTMLElement,
+    )
 
     expect(store.get(yamlModalOpenAtom)).toBe(false)
   })

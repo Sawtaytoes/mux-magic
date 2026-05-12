@@ -152,18 +152,18 @@ describe("JobCard progress bar", () => {
     )
 
     expect(
-      screen.getByTestId("progress-bar"),
+      screen.getByRole("progressbar"),
     ).toBeInTheDocument()
   })
 
   test("hides progress bar for running jobs with no snapshot yet", () => {
     renderCard(runningJob)
-    expect(screen.queryByTestId("progress-bar")).toBeNull()
+    expect(screen.queryByRole("progressbar")).toBeNull()
   })
 
   test("hides progress bar for completed jobs", () => {
     renderCard(completedJob)
-    expect(screen.queryByTestId("progress-bar")).toBeNull()
+    expect(screen.queryByRole("progressbar")).toBeNull()
   })
 })
 

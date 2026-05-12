@@ -15,27 +15,30 @@ const renderBar = (snapshot: ProgressSnapshot) =>
 describe("ProgressBar fill", () => {
   test("renders a determinate bar at the given ratio", () => {
     renderBar({ ratio: 0.5 })
-    const fill = screen.getByTestId("progress-fill")
-    expect(fill.style.width).toBe("50%")
-    expect(fill.className).not.toContain("animate-pulse")
+    const bar = screen.getByRole("progressbar")
+    expect(bar).toHaveAttribute("aria-valuenow", "50")
   })
 
   test("renders indeterminate when ratio is absent", () => {
     renderBar({})
-    const fill = screen.getByTestId("progress-fill")
-    expect(fill.className).toContain("animate-pulse")
+    const bar = screen.getByRole("progressbar")
+    expect(bar).not.toHaveAttribute("aria-valuenow")
   })
 
   test("clamps ratio below 0 to 0%", () => {
     renderBar({ ratio: -0.5 })
-    const fill = screen.getByTestId("progress-fill")
-    expect(fill.style.width).toBe("0%")
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    )
   })
 
   test("clamps ratio above 1 to 100%", () => {
     renderBar({ ratio: 1.5 })
-    const fill = screen.getByTestId("progress-fill")
-    expect(fill.style.width).toBe("100%")
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "100",
+    )
   })
 })
 

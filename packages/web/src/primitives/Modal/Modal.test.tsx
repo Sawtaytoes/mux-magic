@@ -36,9 +36,6 @@ const renderModal = (isOpen: boolean, onClose = vi.fn()) =>
 describe("Modal visibility", () => {
   test("renders nothing when isOpen is false", () => {
     renderModal(false)
-    expect(
-      screen.queryByTestId("modal-backdrop"),
-    ).toBeNull()
     expect(screen.queryByText("Modal content")).toBeNull()
   })
 
@@ -57,7 +54,9 @@ describe("Modal close interactions", () => {
   test("backdrop click calls onClose", () => {
     const onClose = vi.fn()
     renderModal(true, onClose)
-    fireEvent.click(screen.getByTestId("modal-backdrop"))
+    fireEvent.click(
+      screen.getByRole("dialog", { name: "Test modal" }).parentElement as HTMLElement,
+    )
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 

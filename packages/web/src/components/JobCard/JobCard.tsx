@@ -99,8 +99,6 @@ export const JobCard = ({ job }: JobCardProps) => {
   return (
     <article
       className="bg-slate-900 border border-slate-700 rounded-lg p-4 space-y-3"
-      data-testid="job-card"
-      data-id={job.id}
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-2">

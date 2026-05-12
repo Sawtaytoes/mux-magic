@@ -143,7 +143,9 @@ describe("CommandHelpModal", () => {
         <CommandHelpModal />
       </Provider>,
     )
-    await user.click(screen.getByTestId("modal-backdrop"))
+    await user.click(
+      screen.getByRole("dialog").parentElement as HTMLElement,
+    )
     expect(store.get(commandHelpModalOpenAtom)).toBe(false)
   })
 })

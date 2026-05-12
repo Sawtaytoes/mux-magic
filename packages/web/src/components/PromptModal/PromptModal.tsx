@@ -135,7 +135,6 @@ export const PromptModal = () => {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       role="none"
-      data-testid="prompt-modal-backdrop"
       onClick={(event) => {
         if (event.target === event.currentTarget) close()
       }}
@@ -143,7 +142,12 @@ export const PromptModal = () => {
         if (event.key === "Escape") close()
       }}
     >
-      <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 p-5 flex flex-col gap-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="prompt-message"
+        className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 p-5 flex flex-col gap-4"
+      >
         <p
           id="prompt-message"
           className="text-slate-100 text-sm leading-relaxed"

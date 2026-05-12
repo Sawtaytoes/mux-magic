@@ -187,9 +187,9 @@ test.describe("DslRulesBuilder — When panel", () => {
       "[data-details-key$=':when:0']",
     )
     await whenDetails.locator("summary").click()
-    const conditionSelect = whenDetails.getByTestId(
-      "condition-type-select",
-    )
+    const conditionSelect = whenDetails.getByRole("combobox", {
+      name: "Condition type",
+    })
     await expect(conditionSelect).toBeVisible()
 
     // Select a condition from the dropdown. selectOption resolving without
