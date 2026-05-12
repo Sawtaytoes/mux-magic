@@ -124,14 +124,18 @@ describe("SubtitleRulesField", () => {
     // Initially collapsed: svg should have -rotate-90
     const svgCollapsed = toggleButton.querySelector("svg")
     expect(svgCollapsed).not.toBeNull()
-    expect(svgCollapsed?.className).toContain("-rotate-90")
+    expect(svgCollapsed?.getAttribute("class")).toContain(
+      "-rotate-90",
+    )
 
     await userEvent.click(toggleButton)
 
     // Now expanded: svg should NOT have -rotate-90
     const svgExpanded = toggleButton.querySelector("svg")
     expect(svgExpanded).not.toBeNull()
-    expect(svgExpanded?.className).not.toContain("-rotate-90")
+    expect(
+      svgExpanded?.getAttribute("class"),
+    ).not.toContain("-rotate-90")
   })
 
   it("preview section is collapsible", async () => {

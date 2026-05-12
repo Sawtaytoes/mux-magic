@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { useBuilderActions } from "../../hooks/useBuilderActions"
+import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import type { CommandField, Step } from "../../types"
 import { DslRulesBuilder } from "../DslRulesBuilder/DslRulesBuilder"
 import { RuleCard } from "../DslRulesBuilder/RuleCard"
@@ -90,7 +91,7 @@ export const SubtitleRulesField = ({
             }}
             className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 w-full text-left mb-1"
           >
-            {isPreviewOpen ? "▾" : "▸"}
+            <CollapseChevron isCollapsed={!isPreviewOpen} />
             {
               "Default rules (applied before user rules; read-only):"
             }

@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { isPlainObject } from "./clauseUtils"
 import {
   addPredicate,
@@ -224,55 +225,60 @@ export const PredicatesManager = ({
   onCommitPredicates,
 }: PredicatesManagerProps) => {
   const detailsKey = `${stepId}:predicates`
-  const isOpen =
-    !isReadOnly && openDetailsKeys.has(detailsKey)
+  const [isOpen, setIsOpen] = useState(
+    !isReadOnly && openDetailsKeys.has(detailsKey),
+  )
   const predicateNames = Object.keys(predicates)
 
   return (
-    <details
-      open={isOpen}
+    <div
       data-details-key={detailsKey}
       className="mt-3 border border-slate-700/60 rounded"
-      onToggle={(event) => {
-        onToggleDetails(
-          detailsKey,
-          (event.target as HTMLDetailsElement).open,
-        )
-      }}
     >
-      <summary className="cursor-pointer text-xs text-slate-400 px-2 py-1 select-none">
+      <button
+        type="button"
+        onClick={() => {
+          const next = !isOpen
+          setIsOpen(next)
+          onToggleDetails(detailsKey, next)
+        }}
+        className="flex items-center gap-1 cursor-pointer text-xs text-slate-400 px-2 py-1 select-none w-full text-left"
+      >
+        <CollapseChevron isCollapsed={!isOpen} />
         Predicates ({predicateNames.length})
-      </summary>
-      <div className="px-2 py-1.5">
-        {predicateNames.map((predicateName) => (
-          <PredicateCard
-            key={predicateName}
-            predicates={predicates}
-            predicateName={predicateName}
-            isReadOnly={isReadOnly}
-            onCommitPredicates={onCommitPredicates}
-          />
-        ))}
-        {predicateNames.length === 0 && (
-          <p className="text-xs text-slate-500 italic">
-            No predicates. Define reusable match sets here
-            to reference via $ref.
-          </p>
-        )}
-        {!isReadOnly && (
-          <button
-            type="button"
-            onClick={() => {
-              onCommitPredicates(
-                addPredicate({ predicates }),
-              )
-            }}
-            className="text-xs text-slate-400 hover:text-blue-400 mt-2"
-          >
-            + Add predicate
-          </button>
-        )}
-      </div>
-    </details>
+      </button>
+      {isOpen && (
+        <div className="px-2 py-1.5">
+          {predicateNames.map((predicateName) => (
+            <PredicateCard
+              key={predicateName}
+              predicates={predicates}
+              predicateName={predicateName}
+              isReadOnly={isReadOnly}
+              onCommitPredicates={onCommitPredicates}
+            />
+          ))}
+          {predicateNames.length === 0 && (
+            <p className="text-xs text-slate-500 italic">
+              No predicates. Define reusable match sets here
+              to reference via $ref.
+            </p>
+          )}
+          {!isReadOnly && (
+            <button
+              type="button"
+              onClick={() => {
+                onCommitPredicates(
+                  addPredicate({ predicates }),
+                )
+              }}
+              className="text-xs text-slate-400 hover:text-blue-400 mt-2"
+            >
+              + Add predicate
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   )
 }

@@ -5,9 +5,8 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
-
-import type { PredicatesMap } from "./types"
 import { PredicatesManager } from "./PredicatesManager"
+import type { PredicatesMap } from "./types"
 
 afterEach(() => {
   cleanup()
@@ -44,7 +43,9 @@ describe("PredicatesManager chevron (B5)", () => {
       name: /predicates/i,
     })
     const svg = button.querySelector("svg")
-    expect(svg?.className).toContain("-rotate-90")
+    expect(svg?.getAttribute("class")).toContain(
+      "-rotate-90",
+    )
   })
 
   it("svg loses -rotate-90 after clicking to expand", async () => {
@@ -54,7 +55,9 @@ describe("PredicatesManager chevron (B5)", () => {
     })
     await userEvent.click(button)
     const svg = button.querySelector("svg")
-    expect(svg?.className).not.toContain("-rotate-90")
+    expect(svg?.getAttribute("class")).not.toContain(
+      "-rotate-90",
+    )
   })
 
   it("clicking again re-collapses and restores -rotate-90", async () => {
@@ -65,6 +68,8 @@ describe("PredicatesManager chevron (B5)", () => {
     await userEvent.click(button)
     await userEvent.click(button)
     const svg = button.querySelector("svg")
-    expect(svg?.className).toContain("-rotate-90")
+    expect(svg?.getAttribute("class")).toContain(
+      "-rotate-90",
+    )
   })
 })

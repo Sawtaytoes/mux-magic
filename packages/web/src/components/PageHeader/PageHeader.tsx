@@ -137,8 +137,16 @@ export const PageHeader = () => {
             type="button"
             id="dry-run-badge"
             onClick={toggleDryRun}
-            className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/35 active:scale-95 text-amber-400 border border-amber-500/40 self-center transition-all"
-            title="Dry run ON — click to disable"
+            className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded active:scale-95 self-center transition-all border ${
+              failureMode
+                ? "bg-red-500/20 hover:bg-red-500/35 text-red-400 border-red-500/40"
+                : "bg-amber-500/20 hover:bg-amber-500/35 text-amber-400 border-amber-500/40"
+            }`}
+            title={
+              failureMode
+                ? "Dry run ON (failure mode) — click to disable"
+                : "Dry run ON — click to disable"
+            }
           >
             DRY RUN
           </button>
