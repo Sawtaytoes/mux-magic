@@ -6,10 +6,7 @@
     "moduleResolution": "NodeNext",
     "noEmit": true,
     "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
-    "paths": {
-      "@media-tools/web/*": ["packages/web/*"]
-    }
+    "baseUrl": "."
   },
   "include": ["e2e", "scripts", "*.json", "*.ts"],
   "exclude": [".claude/workspaces", "packages"]

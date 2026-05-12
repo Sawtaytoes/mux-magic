@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./job-types": {
+      "types": "./src/jobs/types.ts",
+      "default": "./src/jobs/types.ts"
+    }
+  },
   "description": "React 19 + Vite frontend for media-tools.",
   "scripts": {
     "build:storybook": "storybook build --config-dir .storybook",

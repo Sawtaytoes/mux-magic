@@ -1,13 +1,11 @@
-import type { Job } from "@media-tools/web/src/types"
-
+import type { Job } from "@media-tools/web/job-types"
 import { expect, test } from "@playwright/test"
+
+import { webBaseUrl } from "./playwright.setup.js"
 
 // playwright.config.ts sets baseURL to the web server (port 5173). Tests
 // can use relative paths (page.goto("/")) for SPA navigation. webBase is
 // kept for tests that were already using it and not changed in this pass.
-const webPort = Number(process.env.WEB_PORT ?? 5173)
-const webBase = `http://localhost:${webPort}`
-
 const makeJob = (overrides: Partial<Job> = {}): Job => ({
   id: "test-job-1",
   command: "copyFiles",
@@ -29,7 +27,7 @@ test.describe("Jobs page — SSE stream", () => {
       })
     })
 
-    await page.goto(`${webBase}/`)
+    await page.goto(`${webBaseUrl}/`)
 
     await expect(
       page.getByRole("heading", { name: "Jobs" }),
@@ -65,7 +63,7 @@ test.describe("Jobs page — SSE stream", () => {
       })
     })
 
-    await page.goto(`${webBase}/`)
+    await page.goto(`${webBaseUrl}/`)
 
     const jobCard = page.getByRole("article")
     await expect(jobCard).toBeVisible()
@@ -105,7 +103,7 @@ test.describe("Jobs page — SSE stream", () => {
       })
     })
 
-    await page.goto(`${webBase}/`)
+    await page.goto(`${webBaseUrl}/`)
 
     const jobCard = page.getByRole("article")
     await expect(jobCard).toBeVisible()
@@ -143,11 +141,9 @@ test.describe("Jobs page — SSE stream", () => {
       })
     })
 
-    await page.goto(`${webBase}/`)
+    await page.goto(`${webBaseUrl}/`)
 
-    await expect(
-      page.getByRole("article"),
-    ).toHaveCount(2)
+    await expect(page.getByRole("article")).toHaveCount(2)
     // Newest first — JobsList reverses insertion order.
     await expect(
       page.getByRole("article").first(),
@@ -187,14 +183,12 @@ test.describe("Jobs page — SSE stream", () => {
       })
     })
 
-    await page.goto(`${webBase}/`)
+    await page.goto(`${webBaseUrl}/`)
 
     // Only the parent should appear at the top level.
-    await expect(
-      page.getByRole("article"),
-    ).toHaveCount(1)
-    await expect(
-      page.getByRole("article"),
-    ).toContainText("parent-job")
+    await expect(page.getByRole("article")).toHaveCount(1)
+    await expect(page.getByRole("article")).toContainText(
+      "parent-job",
+    )
   })
 })

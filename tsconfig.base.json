@@ -10,9 +10,6 @@
     "strict": true,
     "target": "ESNext",
     "useDefineForClassFields": true,
-    "baseUrl": ".",
-    "paths": {
-      "@media-tools/web/*": ["packages/web/*"]
-    }
+    "baseUrl": "."
   }
 }

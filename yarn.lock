@@ -1903,7 +1903,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@media-tools/web@workspace:packages/web":
+"@media-tools/web@workspace:*, @media-tools/web@workspace:packages/web":
   version: 0.0.0-use.local
   resolution: "@media-tools/web@workspace:packages/web"
   dependencies:
@@ -7762,6 +7762,7 @@ __metadata:
   dependencies:
     "@biomejs/biome": "npm:^2.4.15"
     "@changesets/cli": "npm:^2.31.0"
+    "@media-tools/web": "workspace:*"
     "@playwright/mcp": "npm:^0.0.75"
     "@playwright/test": "npm:^1.59.1"
     "@total-typescript/ts-reset": "npm:^0.6.1"
