@@ -1,4 +1,5 @@
 import {
+  closestCenter,
   DndContext,
   type DragEndEvent,
   type DragOverEvent,
@@ -34,6 +35,14 @@ export const BuilderSequenceList = () => {
     null,
   )
   const [overId, setOverId] = useState<string | null>(null)
+  // Last-known container the pointer was hovering over a sortable item
+  // in. dnd-kit's `over.data.current.sortable.containerId` is only set
+  // when `over` is a sortable item — when the pointer crosses gaps or
+  // hits a non-sortable droppable (the group's body zone), it goes
+  // undefined, which previously fell back to "top-level" and caused
+  // intra-group drags to escape the group. (B2)
+  const [activeContainerId, setActiveContainerId] =
+    useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -44,15 +53,36 @@ export const BuilderSequenceList = () => {
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string)
+    // Seed the tracker with the source container so intra-group drops
+    // back into the source still resolve correctly.
+    const sourceContainerId =
+      (event.active.data.current?.sortable
+        ?.containerId as string) ?? "top-level"
+    setActiveContainerId(sourceContainerId)
   }
 
   const handleDragOver = (event: DragOverEvent) => {
     setOverId((event.over?.id as string) ?? null)
+    const overContainerId = event.over?.data.current
+      ?.sortable?.containerId as string | undefined
+    if (overContainerId) {
+      setActiveContainerId(overContainerId)
+    } else if (
+      typeof event.over?.id === "string" &&
+      event.over.id.endsWith("-droppable")
+    ) {
+      // Hovering the group body droppable — treat as targeting that group.
+      setActiveContainerId(
+        event.over.id.replace(/-droppable$/, ""),
+      )
+    }
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null)
     setOverId(null)
+    const stableContainerId = activeContainerId
+    setActiveContainerId(null)
     const { active, over } = event
     if (!over || active.id === over.id) return
 
@@ -61,7 +91,9 @@ export const BuilderSequenceList = () => {
         ?.containerId as string) ?? "top-level"
     let targetContainerId =
       (over.data.current?.sortable
-        ?.containerId as string) ?? "top-level"
+        ?.containerId as string) ??
+      stableContainerId ??
+      "top-level"
 
     let resolvedOverId = over.id as string
     if (resolvedOverId.endsWith("-droppable")) {
@@ -252,12 +284,14 @@ export const BuilderSequenceList = () => {
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={() => {
         setActiveId(null)
         setOverId(null)
+        setActiveContainerId(null)
       }}
     >
       <SortableContext
