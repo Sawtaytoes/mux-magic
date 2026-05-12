@@ -11,6 +11,7 @@ import {
   test,
   vi,
 } from "vitest"
+import { makeFakeJob } from "../../jobs/__fixtures__/makeFakeJob"
 import type { Job } from "../../jobs/types"
 import { jobsAtom } from "../../state/jobsAtom"
 import { jobsConnectionAtom } from "../../state/jobsConnectionAtom"
@@ -60,33 +61,33 @@ describe("JobsPage", () => {
 
   test("renders a card for each top-level job", () => {
     renderPage([
-      {
+      makeFakeJob({
         id: "j1",
         commandName: "copyFiles",
         status: "completed",
-      },
-      {
+      }),
+      makeFakeJob({
         id: "j2",
         commandName: "remuxToMkv",
         status: "running",
-      },
+      }),
     ])
     expect(screen.getAllByRole("article")).toHaveLength(2)
   })
 
   test("does not render child jobs as top-level cards", () => {
     renderPage([
-      {
+      makeFakeJob({
         id: "parent",
         commandName: "sequence",
         status: "running",
-      },
-      {
+      }),
+      makeFakeJob({
         id: "child",
         commandName: "copyFiles",
         status: "running",
         parentJobId: "parent",
-      },
+      }),
     ])
     expect(screen.getAllByRole("article")).toHaveLength(1)
   })

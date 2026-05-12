@@ -8,6 +8,10 @@
       "types": "./src/api/types.ts",
       "default": "./src/api/types.ts"
     },
+    "./api-schemas": {
+      "types": "./src/api/schemas.ts",
+      "default": "./src/api/schemas.ts"
+    },
     "./*": "./*"
   },
   "description": "Hono API server + CLI for batch media file operations.",

@@ -8,7 +8,7 @@
 //   - commands/types.ts                      (EnumOption, CommandField, CommandDefinition, Commands)
 //   - components/PathPicker/types.ts         (DirEntry)
 //   - components/LookupModal/types.ts        (Lookup*, LookupState)
-//   - components/ApiRunModal/types.ts        (RunStatus, ApiRunState)
+//   - components/ApiRunModal/types.ts        (ActiveChild, ApiRunState — status uses server JobStatus)
 //   - components/PromptModal/types.ts        (Prompt*, PromptData)
 //   - components/FileExplorerModal/types.ts  (FileEntry, Sort*, FileExplorerState)
 //   - jobs/types.ts                          (Job, JobStatus, ProgressSnapshot)

@@ -8,6 +8,7 @@ const statusClassMap: Record<string, string> = {
   completed: "bg-emerald-950 text-emerald-400",
   failed: "bg-red-950 text-red-400",
   cancelled: "bg-slate-700 text-slate-300",
+  skipped: "bg-slate-800 text-slate-400",
 }
 
 export const StatusBadge = ({

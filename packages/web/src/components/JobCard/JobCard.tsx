@@ -86,22 +86,26 @@ export const JobCard = ({ job }: JobCardProps) => {
     (child) => child.parentJobId === job.id,
   )
 
-  const sourcePath =
-    typeof job.params?.sourcePath === "string"
-      ? job.params.sourcePath
+  // `job.params: unknown` (server-canonical type) — narrow before reading.
+  const paramsObject =
+    job.params != null && typeof job.params === "object"
+      ? (job.params as Record<string, unknown>)
       : null
-
+  const sourcePath =
+    paramsObject &&
+    typeof paramsObject.sourcePath === "string"
+      ? paramsObject.sourcePath
+      : null
   const hasParams =
-    job.params !== undefined &&
-    typeof job.params === "object" &&
-    Object.keys(job.params).length > 0
+    paramsObject !== null &&
+    Object.keys(paramsObject).length > 0
 
   return (
     <article className="bg-slate-900 border border-slate-700 rounded-lg p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <span className="font-semibold truncate">
-          {commandLabel(job.commandName ?? job.command)}
+          {commandLabel(job.commandName)}
         </span>
         <div className="flex items-center gap-2 shrink-0">
           {eta && (

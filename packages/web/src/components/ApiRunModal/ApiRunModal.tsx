@@ -1,3 +1,7 @@
+import type {
+  JobLogsEvent,
+  JobStatus,
+} from "@media-tools/server/api-types"
 import { useAtom, useSetAtom } from "jotai"
 import {
   useCallback,
@@ -6,7 +10,6 @@ import {
   useState,
 } from "react"
 import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
-import type { RunStatus } from "../../components/ApiRunModal/types"
 import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import { useTolerantEventSource } from "../../hooks/useTolerantEventSource"
 import { Modal } from "../../primitives/Modal/Modal"
@@ -16,12 +19,13 @@ import { ChildProgressTracker } from "../ChildProgressTracker/ChildProgressTrack
 
 // ─── Status badge colours ─────────────────────────────────────────────────────
 
-const STATUS_CLASSES: Record<RunStatus, string> = {
+const STATUS_CLASSES: Record<JobStatus, string> = {
   pending: "bg-slate-700 text-slate-300",
   running: "bg-amber-700 text-amber-100",
   completed: "bg-emerald-700 text-emerald-100",
   failed: "bg-red-700 text-red-100",
   cancelled: "bg-slate-600 text-slate-100",
+  skipped: "bg-slate-500 text-slate-100",
 }
 
 export const ApiRunModal = () => {
@@ -32,7 +36,7 @@ export const ApiRunModal = () => {
   const setStepRunStatus = useSetAtom(setStepRunStatusAtom)
 
   const [logs, setLogs] = useState<string[]>([])
-  const [status, setStatus] = useState<RunStatus>("pending")
+  const [status, setStatus] = useState<JobStatus>("pending")
   const [seqDone, setSeqDone] = useState(false)
 
   const logsEndRef = useRef<HTMLDivElement>(null)
@@ -67,12 +71,11 @@ export const ApiRunModal = () => {
   // ─── Parent SSE (sequence-level events) ────────────────────────────────────
 
   const handleParentMessage = useCallback(
-    (data: Record<string, unknown>) => {
-      if (data.type === "step-started") {
-        const newChildJobId =
-          (data.childJobId as string) ?? null
-        const newStepId = (data.stepId as string) ?? null
-        if (newStepId) {
+    (data: JobLogsEvent) => {
+      if ("type" in data && data.type === "step-started") {
+        const startedStepId = data.stepId
+        const childJobId = data.childJobId
+        if (startedStepId) {
           setModalState((prev) =>
             prev
               ? {
@@ -80,25 +83,24 @@ export const ApiRunModal = () => {
                   activeChildren: [
                     ...prev.activeChildren,
                     {
-                      stepId: newStepId,
-                      jobId: newChildJobId,
+                      stepId: startedStepId,
+                      jobId: childJobId,
                     },
                   ],
                 }
               : prev,
           )
           setStepRunStatus({
-            stepId: newStepId,
+            stepId: startedStepId,
             status: "running",
-            jobId: newChildJobId,
+            jobId: childJobId,
           })
         }
         return
       }
-      if (data.type === "step-finished") {
-        const finishedStepId =
-          (data.stepId as string) ?? null
-        if (finishedStepId) {
+      if ("type" in data && data.type === "step-finished") {
+        if (data.stepId) {
+          const finishedStepId = data.stepId
           setModalState((prev) =>
             prev
               ? {
@@ -113,21 +115,19 @@ export const ApiRunModal = () => {
           )
           setStepRunStatus({
             stepId: finishedStepId,
-            status:
-              (data.status as string | null) ?? "completed",
+            status: data.status,
             jobId: null,
           })
         }
         return
       }
-      if (data.line) {
-        setLogs((prev) => [...prev, data.line as string])
+      if ("line" in data) {
+        const lineEvent = data
+        setLogs((prev) => [...prev, lineEvent.line])
         return
       }
-      if (data.done) {
-        const finalStatus =
-          (data.status as RunStatus) || "completed"
-        setStatus(finalStatus)
+      if ("done" in data && data.done) {
+        setStatus(data.status)
         setModalState((prev) =>
           prev ? { ...prev, activeChildren: [] } : prev,
         )
@@ -146,7 +146,7 @@ export const ApiRunModal = () => {
     setRunning(false)
   }, [setRunning, setModalState])
 
-  useTolerantEventSource<Record<string, unknown>>({
+  useTolerantEventSource<JobLogsEvent>({
     url: parentUrl ?? "",
     enabled: parentUrl !== null && !seqDone,
     onMessage: handleParentMessage,

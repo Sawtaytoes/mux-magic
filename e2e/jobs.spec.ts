@@ -8,8 +8,18 @@ import { webBaseUrl } from "./playwright.setup.js"
 // kept for tests that were already using it and not changed in this pass.
 const makeJob = (overrides: Partial<Job> = {}): Job => ({
   id: "test-job-1",
-  command: "copyFiles",
+  commandName: "copyFiles",
+  completedAt: null,
+  error: null,
+  logs: [],
+  outputFolderName: null,
+  outputs: null,
+  params: null,
+  parentJobId: null,
+  results: [],
+  startedAt: null,
   status: "running",
+  stepId: null,
   ...overrides,
 })
 
@@ -49,8 +59,7 @@ test.describe("Jobs page — SSE stream", () => {
   }) => {
     const job = makeJob({
       id: "job-running-001",
-      command: "copyFiles",
-      commandName: "Copy Files",
+      commandName: "copyFiles",
       status: "running",
     })
 
@@ -81,8 +90,7 @@ test.describe("Jobs page — SSE stream", () => {
   }) => {
     const runningJob = makeJob({
       id: "job-complete-002",
-      command: "moveFiles",
-      commandName: "Move Files",
+      commandName: "moveFiles",
       status: "running",
     })
     const completedJob: Job = {
@@ -117,14 +125,12 @@ test.describe("Jobs page — SSE stream", () => {
   }) => {
     const jobAlpha = makeJob({
       id: "job-alpha",
-      command: "makeDirectory",
-      commandName: "Make Directory",
+      commandName: "makeDirectory",
       status: "completed",
     })
     const jobBeta = makeJob({
       id: "job-beta",
-      command: "deleteFilesByExtension",
-      commandName: "Delete Files by Extension",
+      commandName: "deleteFilesByExtension",
       status: "failed",
     })
 
@@ -158,14 +164,12 @@ test.describe("Jobs page — SSE stream", () => {
   }) => {
     const parentJob = makeJob({
       id: "parent-job",
-      command: "copyFiles",
-      commandName: "Copy Files",
+      commandName: "copyFiles",
       status: "running",
     })
     const childJob = makeJob({
       id: "child-job",
-      command: "copyFiles",
-      commandName: "Copy Files",
+      commandName: "copyFiles",
       status: "running",
       parentJobId: "parent-job",
     })

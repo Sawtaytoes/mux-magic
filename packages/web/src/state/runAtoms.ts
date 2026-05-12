@@ -1,3 +1,4 @@
+import type { CreateJobResponse } from "@media-tools/server/api-types"
 import { atom } from "jotai"
 import { buildParams } from "../commands/buildParams"
 import { isGroup } from "../jobs/sequenceUtils"
@@ -144,9 +145,8 @@ export const runOrStopStepAtom = atom(
         set(runningAtom, false)
         return
       }
-      const data = (await response.json()) as {
-        jobId: string
-      }
+      const data =
+        (await response.json()) as CreateJobResponse
       set(setStepRunStatusAtom, {
         stepId,
         status: "running",

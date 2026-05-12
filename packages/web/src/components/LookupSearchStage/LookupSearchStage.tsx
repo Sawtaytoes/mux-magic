@@ -1,4 +1,12 @@
-import type { DvdCompareResult } from "@media-tools/server/api-types"
+import type {
+  DvdCompareResult,
+  ListDvdCompareReleasesResponse,
+  SearchAnidbResponse,
+  SearchDvdCompareResponse,
+  SearchMalResponse,
+  SearchMovieDbResponse,
+  SearchTvdbResponse,
+} from "@media-tools/server/api-types"
 import { useEffect, useRef } from "react"
 import type {
   LookupGroup,
@@ -8,6 +16,17 @@ import type {
   LookupType,
 } from "../../components/LookupModal/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
+
+// Union of all five search endpoints' response envelopes. The
+// per-endpoint discriminator lives in `results[number]`, not on the
+// envelope itself, so the narrowing happens after we know which lookup
+// type was requested.
+type AnySearchResponse =
+  | SearchMalResponse
+  | SearchAnidbResponse
+  | SearchTvdbResponse
+  | SearchMovieDbResponse
+  | SearchDvdCompareResponse
 
 const SEARCH_ENDPOINTS: Record<LookupType, string> = {
   mal: "/queries/searchMal",
@@ -51,11 +70,9 @@ const fetchSearch = async (
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ searchTerm }),
     })
-    const data = (await resp.json()) as {
-      results?: LookupSearchResult[]
-      error?: string
-    }
-    const rawResults = data.results ?? []
+    const data = (await resp.json()) as AnySearchResponse
+    const rawResults = (data.results ??
+      []) as LookupSearchResult[]
     const results =
       lookupType === "dvdcompare"
         ? (groupDvdCompareResults(
@@ -93,13 +110,10 @@ const fetchReleases = async (
         body: JSON.stringify({ dvdCompareId }),
       },
     )
-    const data = (await resp.json()) as {
-      releases?: LookupRelease[]
-      debug?: unknown
-      error?: string
-    }
+    const data =
+      (await resp.json()) as ListDvdCompareReleasesResponse
     return {
-      releases: data.releases ?? [],
+      releases: (data.releases ?? []) as LookupRelease[],
       debug: data.debug ?? null,
       error: data.error ?? null,
     }

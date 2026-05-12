@@ -1,3 +1,4 @@
+import type { ListDirectoryEntriesResponse } from "@media-tools/server/api-types"
 import { useAtom, useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
@@ -17,11 +18,7 @@ const PICKER_MAX_HEIGHT = 280
 
 const fetchDirEntries = async (
   parentPath: string,
-): Promise<{
-  entries?: DirEntry[]
-  error?: string
-  separator?: string
-}> => {
+): Promise<ListDirectoryEntriesResponse> => {
   const response = await fetch(
     "/queries/listDirectoryEntries",
     {
@@ -30,11 +27,7 @@ const fetchDirEntries = async (
       body: JSON.stringify({ path: parentPath }),
     },
   )
-  return response.json() as Promise<{
-    entries?: DirEntry[]
-    error?: string
-    separator?: string
-  }>
+  return response.json() as Promise<ListDirectoryEntriesResponse>
 }
 
 // ─── Position ────────────────────────────────────────────────────────────────

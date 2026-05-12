@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import { makeFakeJob } from "../../jobs/__fixtures__/makeFakeJob"
 import type {
   Job,
   ProgressSnapshot,
@@ -43,12 +44,12 @@ const makeSequenceChild = (
   const ratio = ((index * 17) % 97) / 100
   const filesTotal = 3 + (index % 8)
   return {
-    job: {
+    job: makeFakeJob({
       id: jobId,
       commandName: COMMANDS[index % COMMANDS.length],
       status: "running",
       parentJobId: "seq-1",
-    },
+    }),
     snapshot: {
       ratio,
       filesDone: Math.floor(ratio * filesTotal),
@@ -71,7 +72,7 @@ const meta: Meta<typeof JobCard> = {
 export default meta
 type Story = StoryObj<typeof JobCard>
 
-const pendingJob: Job = {
+const pendingJob = makeFakeJob({
   id: "job-pending",
   commandName: "copyFiles",
   status: "pending",
@@ -79,17 +80,17 @@ const pendingJob: Job = {
     sourcePath: "/media/movies/Inception.mkv",
     destPath: "/backup/",
   },
-}
+})
 
-const runningJob: Job = {
+const runningJob = makeFakeJob({
   id: "job-running",
   commandName: "remuxToMkv",
   status: "running",
   startedAt: new Date(Date.now() - 45_000).toISOString(),
   params: { sourcePath: "/media/movies/Dune.mkv" },
-}
+})
 
-const completedJob: Job = {
+const completedJob = makeFakeJob({
   id: "job-done",
   commandName: "extractSubtitles",
   status: "completed",
@@ -97,36 +98,36 @@ const completedJob: Job = {
   completedAt: new Date(Date.now() - 10_000).toISOString(),
   params: { sourcePath: "/media/Dune.mkv" },
   results: [{ file: "/media/Dune.srt", track: 0 }],
-}
+})
 
-const failedJob: Job = {
+const failedJob = makeFakeJob({
   id: "job-failed",
   commandName: "moveFiles",
   status: "failed",
   error:
     "ENOENT: no such file or directory, rename '/media/old.mkv'",
-}
+})
 
-const sequenceJob: Job = {
+const sequenceJob = makeFakeJob({
   id: "seq-1",
   commandName: "sequence",
   status: "running",
   startedAt: new Date(Date.now() - 90_000).toISOString(),
-}
+})
 
-const childA: Job = {
+const childA = makeFakeJob({
   id: "seq-1-a",
   commandName: "remuxToMkv",
   status: "completed",
   parentJobId: "seq-1",
-}
+})
 
-const childB: Job = {
+const childB = makeFakeJob({
   id: "seq-1-b",
   commandName: "extractSubtitles",
   status: "running",
   parentJobId: "seq-1",
-}
+})
 
 export const Pending: Story = {
   args: { job: pendingJob },

@@ -13,6 +13,7 @@ import {
   test,
   vi,
 } from "vitest"
+import { makeFakeJob } from "../../jobs/__fixtures__/makeFakeJob"
 import type { Job } from "../../jobs/types"
 import { jobsAtom } from "../../state/jobsAtom"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
@@ -23,20 +24,20 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-const pendingJob: Job = {
+const pendingJob = makeFakeJob({
   id: "job-1",
   commandName: "copyFiles",
   status: "pending",
-}
+})
 
-const runningJob: Job = {
+const runningJob = makeFakeJob({
   id: "job-2",
   commandName: "remuxToMkv",
   status: "running",
   startedAt: new Date("2026-01-01T10:00:00Z").toISOString(),
-}
+})
 
-const completedJob: Job = {
+const completedJob = makeFakeJob({
   id: "job-3",
   commandName: "extractSubtitles",
   status: "completed",
@@ -45,14 +46,14 @@ const completedJob: Job = {
     "2026-01-01T10:01:00Z",
   ).toISOString(),
   results: [{ file: "/out.srt" }],
-}
+})
 
-const failedJob: Job = {
+const failedJob = makeFakeJob({
   id: "job-4",
   commandName: "moveFiles",
   status: "failed",
   error: "File not found",
-}
+})
 
 const renderCard = (job: Job, extraJobs: Job[] = []) => {
   const store = createStore()
@@ -82,11 +83,13 @@ describe("JobCard rendering", () => {
   })
 
   test("falls back to the raw command name for unknown commands", () => {
-    renderCard({
-      id: "x",
-      commandName: "unknownThing",
-      status: "pending",
-    })
+    renderCard(
+      makeFakeJob({
+        id: "x",
+        commandName: "unknownThing",
+        status: "pending",
+      }),
+    )
     expect(
       screen.getByText("unknownThing"),
     ).toBeInTheDocument()
@@ -229,18 +232,18 @@ describe("JobCard cancel button", () => {
 // ─── Children / steps ────────────────────────────────────────────────────────
 
 describe("JobCard steps disclosure", () => {
-  const parentJob: Job = {
+  const parentJob = makeFakeJob({
     id: "parent",
     commandName: "sequence",
     status: "running",
-  }
+  })
 
-  const childJob: Job = {
+  const childJob = makeFakeJob({
     id: "child-1",
     commandName: "copyFiles",
     status: "running",
     parentJobId: "parent",
-  }
+  })
 
   test("shows steps section when children are present", () => {
     renderCard(parentJob, [childJob])

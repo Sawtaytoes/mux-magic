@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import { makeFakeJob } from "../../jobs/__fixtures__/makeFakeJob"
 import type {
   Job,
   ProgressSnapshot,
@@ -63,7 +64,7 @@ export const WithJobs: Story = {
   decorators: [
     withStore(
       [
-        {
+        makeFakeJob({
           id: "j1",
           commandName: "remuxToMkv",
           status: "running",
@@ -71,8 +72,8 @@ export const WithJobs: Story = {
             Date.now() - 45_000,
           ).toISOString(),
           params: { sourcePath: "/media/Dune.mkv" },
-        },
-        {
+        }),
+        makeFakeJob({
           id: "j2",
           commandName: "extractSubtitles",
           status: "completed",
@@ -82,13 +83,13 @@ export const WithJobs: Story = {
           completedAt: new Date(
             Date.now() - 30_000,
           ).toISOString(),
-        },
-        {
+        }),
+        makeFakeJob({
           id: "j3",
           commandName: "moveFiles",
           status: "failed",
           error: "ENOENT: /media/old.mkv not found",
-        },
+        }),
       ],
       "connected",
       new Map([

@@ -3,13 +3,12 @@
 //
 // `source: "step"` vs `"sequence"` is the discriminant the modal uses
 // to decide which title to render ("Run Step" vs "Run Sequence").
+//
+// `status` reuses the server-canonical `JobStatus` so a new status added
+// server-side (e.g. "skipped" from sequence step short-circuiting) fails
+// web typecheck rather than silently falling into an undefined CSS class.
 
-export type RunStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled"
+import type { JobStatus } from "@media-tools/server/api-types"
 
 export type ActiveChild = {
   stepId: string
@@ -18,7 +17,7 @@ export type ActiveChild = {
 
 export type ApiRunState = {
   jobId: string | null
-  status: RunStatus
+  status: JobStatus
   logs: string[]
   activeChildren: ActiveChild[]
   source: "step" | "sequence"

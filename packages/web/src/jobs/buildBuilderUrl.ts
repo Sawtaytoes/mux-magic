@@ -26,7 +26,7 @@ export const buildBuilderUrl = (job: Job): string => {
     steps: [
       {
         id: "step1",
-        command: job.commandName ?? job.command ?? "",
+        command: job.commandName,
         params:
           job.params && typeof job.params === "object"
             ? job.params

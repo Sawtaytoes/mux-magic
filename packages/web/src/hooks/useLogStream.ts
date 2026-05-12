@@ -1,22 +1,18 @@
+import type {
+  JobLogDoneEvent,
+  JobLogsEvent,
+} from "@media-tools/server/api-types"
 import { useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef } from "react"
 import { mergeProgress } from "../jobs/mergeProgress"
-import type { ProgressSnapshot } from "../jobs/types"
 import type { LogEntry } from "../state/logsByJobIdAtom"
 import { logsByJobIdAtom } from "../state/logsByJobIdAtom"
 import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
 
-export type LogStreamDonePayload = {
-  status?: string
-  results?: unknown[]
-  outputs?: Record<string, unknown> | null
-  error?: string | null
-}
-
-type LogEventData =
-  | { line: string }
-  | ({ type: "progress" } & Partial<ProgressSnapshot>)
-  | ({ done: boolean } & LogStreamDonePayload)
+// Terminal payload the SSE stream delivers when a job finishes. Matches
+// the server's wire shape directly so adding/removing fields server-side
+// fails web typecheck on consumers like StepCard.
+export type LogStreamDonePayload = JobLogDoneEvent
 
 // Opens /jobs/:id/logs on demand and pipes lines + progress into shared atoms.
 // Deduplicates log lines using the SSE lastEventId so server replay-from-0
@@ -42,9 +38,9 @@ export const useLogStream = (
     esRef.current = es
 
     es.onmessage = (event: MessageEvent) => {
-      let data: LogEventData
+      let data: JobLogsEvent
       try {
-        data = JSON.parse(event.data) as LogEventData
+        data = JSON.parse(event.data) as JobLogsEvent
       } catch {
         return
       }
@@ -80,8 +76,19 @@ export const useLogStream = (
         "type" in data &&
         data.type === "progress"
       ) {
-        const progressEvent =
-          data as Partial<ProgressSnapshot>
+        // Server's ProgressEvent has `ratio: number | null`;
+        // mergeProgress expects `ratio?: number` (null is meaningless to
+        // the bar). Coerce null → undefined at the SSE boundary so the
+        // merged snapshot stays clean.
+        const progressEvent = {
+          ratio: data.ratio ?? undefined,
+          filesDone: data.filesDone,
+          filesTotal: data.filesTotal,
+          currentFiles: data.currentFiles?.map((file) => ({
+            path: file.path,
+            ratio: file.ratio ?? undefined,
+          })),
+        }
         setProgress((prev) => {
           const next = new Map(prev)
           next.set(

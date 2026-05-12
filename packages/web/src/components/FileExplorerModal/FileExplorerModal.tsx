@@ -1,3 +1,8 @@
+import type {
+  DeleteFilesResponse,
+  DeleteModeResponse,
+  ListFilesResponse,
+} from "@media-tools/server/api-types"
 import { useAtom } from "jotai"
 import {
   useCallback,
@@ -207,10 +212,8 @@ export const FileExplorerModal = () => {
         )
         if (path) url.searchParams.set("path", path)
         const resp = await fetch(url)
-        const data = (await resp.json()) as {
-          mode: "trash" | "permanent"
-          reason?: string
-        }
+        const data =
+          (await resp.json()) as DeleteModeResponse
         setDeleteMode(data.mode)
         setDeleteModeReason(data.reason ?? null)
       } catch {
@@ -234,16 +237,12 @@ export const FileExplorerModal = () => {
       url.searchParams.set("path", path)
       url.searchParams.set("includeDuration", "1")
       const resp = await fetch(url)
-      const data = (await resp.json()) as {
-        entries?: FileEntry[]
-        separator?: string
-        error?: string
-      }
+      const data = (await resp.json()) as ListFilesResponse
       if (data.error) {
         setError(data.error)
       } else {
-        setEntries(data.entries ?? [])
-        if (data.separator) setSeparator(data.separator)
+        setEntries(data.entries)
+        setSeparator(data.separator)
         setSelected(new Set())
       }
     } catch (fetchError) {
@@ -358,13 +357,8 @@ export const FileExplorerModal = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paths }),
       })
-      const data = (await resp.json()) as {
-        results: Array<{
-          ok: boolean
-          path: string
-          error?: string
-        }>
-      }
+      const data =
+        (await resp.json()) as DeleteFilesResponse
       const failed = data.results.filter(
         (result) => !result.ok,
       )

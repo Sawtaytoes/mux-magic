@@ -1,3 +1,4 @@
+import type { CreateJobResponse } from "@media-tools/server/api-types"
 import { useStore } from "jotai"
 import { useCallback } from "react"
 import { apiRunModalAtom } from "../components/ApiRunModal/apiRunModalAtom"
@@ -246,9 +247,8 @@ export const useBuilderActions = () => {
         store.set(runningAtom, false)
         return
       }
-      const data = (await response.json()) as {
-        jobId: string
-      }
+      const data =
+        (await response.json()) as CreateJobResponse
       store.set(apiRunModalAtom, (prev) =>
         prev
           ? {
