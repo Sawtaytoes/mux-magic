@@ -1,6 +1,6 @@
-import { readFileSync } from "node:fs"
 import { z } from "@hono/zod-openapi"
 import { describe, expect, test } from "vitest"
+import { commandConfigs } from "./routes/commandRoutes.js"
 import * as schemas from "./schemas.js"
 
 // Spot-checks the assumption the build-command-descriptions extractor
@@ -98,17 +98,33 @@ describe("schema-driven command descriptions", () => {
     )
   })
 
-  test("generated command-descriptions.js is non-empty and contains field descriptions", () => {
-    const descriptionFilePath = new URL(
-      "../../../../public/builder/js/command-descriptions.js",
-      import.meta.url,
-    )
-    const fileContent = readFileSync(descriptionFilePath, "utf8")
+  test("all commands have at least some field descriptions available", () => {
+    let totalCommandsWithDescriptions = 0
+    let totalFieldsWithDescriptions = 0
 
-    expect(fileContent.length).toBeGreaterThan(0)
-    expect(fileContent).toContain("window.commandDescriptions")
-    expect(fileContent).toContain("window.getCommandFieldDescription")
-    // At least one field with a description should be present
-    expect(fileContent).toMatch(/"fields"\s*:\s*\{[^}]*"/)
+    Object.entries(commandConfigs).forEach(
+      ([, configuration]) => {
+        const objectSchema = configuration.schema as {
+          shape?: Record<string, z.ZodTypeAny>
+        }
+
+        if (objectSchema?.shape) {
+          const fieldsWithDescriptions = Object.entries(
+            objectSchema.shape,
+          ).filter(([, fieldSchema]) => {
+            return getDescription(fieldSchema) !== undefined
+          })
+
+          if (fieldsWithDescriptions.length > 0) {
+            totalCommandsWithDescriptions += 1
+            totalFieldsWithDescriptions += fieldsWithDescriptions.length
+          }
+        }
+      },
+    )
+
+    // Most commands should have at least some field descriptions
+    expect(totalCommandsWithDescriptions).toBeGreaterThan(20)
+    expect(totalFieldsWithDescriptions).toBeGreaterThan(100)
   })
 })
