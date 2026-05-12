@@ -491,9 +491,11 @@ export const FileExplorerModal = () => {
                     >
                       {seg.label}
                     </button>
-                    <span className="text-slate-500">
-                      {separator}
-                    </span>
+                    {seg.label !== separator && (
+                      <span className="text-slate-500">
+                        {separator}
+                      </span>
+                    )}
                   </span>
                 )
               })}

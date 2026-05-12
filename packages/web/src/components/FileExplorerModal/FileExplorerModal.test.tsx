@@ -174,4 +174,81 @@ describe("FileExplorerModal", () => {
     ).toBeInTheDocument()
     fetchSpy.mockRestore()
   })
+
+  test("breadcrumb for /media/Anime has no double slash", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation((url) => {
+        const urlStr = String(url)
+        if (urlStr.includes("/files/list")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                entries: [],
+                separator: "/",
+              }),
+              { status: 200 },
+            ),
+          )
+        }
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ mode: "trash" }),
+            { status: 200 },
+          ),
+        )
+      })
+    const store = createStore()
+    store.set(fileExplorerAtom, {
+      path: "/media/Anime",
+      pickerOnSelect: null,
+    })
+    renderWithStore(store)
+    await screen.findByText("Folder is empty.")
+    expect(screen.queryByText("//")).toBeNull()
+    expect(
+      screen.getByRole("button", { name: "/" }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "media" }),
+    ).toBeInTheDocument()
+    fetchSpy.mockRestore()
+  })
+
+  test("breadcrumb for G:\\Anime renders drive letter and folder", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation((url) => {
+        const urlStr = String(url)
+        if (urlStr.includes("/files/list")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                entries: [],
+                separator: "\\",
+              }),
+              { status: 200 },
+            ),
+          )
+        }
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ mode: "trash" }),
+            { status: 200 },
+          ),
+        )
+      })
+    const store = createStore()
+    store.set(fileExplorerAtom, {
+      path: "G:\\Anime",
+      pickerOnSelect: null,
+    })
+    renderWithStore(store)
+    await screen.findByText("Folder is empty.")
+    expect(
+      screen.getByRole("button", { name: "G:" }),
+    ).toBeInTheDocument()
+    expect(screen.getByText("Anime")).toBeInTheDocument()
+    fetchSpy.mockRestore()
+  })
 })
