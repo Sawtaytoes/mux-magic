@@ -193,7 +193,10 @@ const PASTE_YAML = [
 
 test.describe("Step controls — paste", () => {
   test.beforeEach(async ({ page, context }) => {
-    await context.grantPermissions(["clipboard-read"])
+    await context.grantPermissions([
+      "clipboard-read",
+      "clipboard-write",
+    ])
 
     const yaml = encodeSeq(
       [
