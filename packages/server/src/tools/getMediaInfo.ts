@@ -1,10 +1,17 @@
 import { execFile as execFileCallback } from "node:child_process"
 import { promisify } from "node:util"
-import { defer, map, Observable } from "rxjs"
+import {
+  catchError,
+  defer,
+  EMPTY,
+  map,
+  Observable,
+  throwError,
+} from "rxjs"
 
 import { mediaInfoPath } from "./appPaths.js"
 import type { Iso6391LanguageCode } from "./iso6391LanguageCodes.js"
-import { logAndSwallow } from "./logAndSwallow.js"
+import { logError } from "./logMessage.js"
 
 const execFile = promisify(execFileCallback)
 
@@ -262,7 +269,22 @@ export const getMediaInfo = (
           (mediaInfoJsonString) =>
             JSON.parse(mediaInfoJsonString) as MediaInfo,
         ),
-        logAndSwallow(getMediaInfo),
+        catchError((error: unknown) => {
+          const isAbortError =
+            error instanceof Error &&
+            error.name === "AbortError"
+          if (isAbortError) return EMPTY
+
+          const nodeError = error as {
+            syscall?: string
+          }
+          if (nodeError.syscall === "spawn") {
+            return throwError(() => error)
+          }
+
+          logError(getMediaInfo.name, error)
+          return EMPTY
+        }),
       )
       .subscribe(subscriber)
 

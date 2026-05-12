@@ -208,8 +208,14 @@ describe("toYamlStr — paths block", () => {
 
 describe("toYamlStr — blank step filtering", () => {
   test("omits blank steps (command: '') from a group's YAML", () => {
-    const realStep = makeStep({ id: "real-1", command: "makeDirectory" })
-    const blankStep = makeStep({ id: "blank-1", command: "" })
+    const realStep = makeStep({
+      id: "real-1",
+      command: "makeDirectory",
+    })
+    const blankStep = makeStep({
+      id: "blank-1",
+      command: "",
+    })
     const group: SequenceItem = {
       kind: "group",
       id: "group-1",
@@ -226,8 +232,14 @@ describe("toYamlStr — blank step filtering", () => {
   })
 
   test("omits a standalone blank top-level step from the sequence", () => {
-    const blankStep = makeStep({ id: "blank-2", command: "" })
-    const realStep = makeStep({ id: "real-2", command: "makeDirectory" })
+    const blankStep = makeStep({
+      id: "blank-2",
+      command: "",
+    })
+    const realStep = makeStep({
+      id: "real-2",
+      command: "makeDirectory",
+    })
 
     const result = toYamlStr(
       [blankStep, realStep] as SequenceItem[],

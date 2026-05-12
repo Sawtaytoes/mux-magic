@@ -89,7 +89,6 @@ logsRoutes.openapi(
         job.status === "completed" ||
         job.status === "failed" ||
         job.status === "cancelled" ||
-        job.status === "noop" ||
         job.status === "skipped"
       ) {
         const latestProgress = getLatestJobProgress(job.id)

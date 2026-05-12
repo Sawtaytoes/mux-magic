@@ -14,20 +14,20 @@ export const ffmpegPath: string =
 export const mediaInfoPath =
   process.env.MEDIAINFO_PATH ??
   (isWindows
-    ? "assets/mediainfo/MediaInfo.exe"
+    ? "assets.downloaded/mediainfo/MediaInfo.exe"
     : "mediainfo")
 
 // mkvtoolnix-64-bit-91.0
 export const mkvExtractPath = isWindows
-  ? "assets/mkvtoolnix/mkvextract.exe"
+  ? "assets.downloaded/mkvtoolnix/mkvextract.exe"
   : "mkvextract"
 
 // mkvtoolnix-64-bit-91.0
 export const mkvMergePath = isWindows
-  ? "assets/mkvtoolnix/mkvmerge.exe"
+  ? "assets.downloaded/mkvtoolnix/mkvmerge.exe"
   : "mkvmerge"
 
 // mkvtoolnix-64-bit-91.0
 export const mkvPropEditPath = isWindows
-  ? "assets/mkvtoolnix/mkvpropedit.exe"
+  ? "assets.downloaded/mkvtoolnix/mkvpropedit.exe"
   : "mkvpropedit"

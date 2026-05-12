@@ -30,6 +30,7 @@ export type Step = {
   status: string | null
   jobId?: string | null
   error: string | null
+  hasResults?: boolean | null
   isCollapsed: boolean
 }
 

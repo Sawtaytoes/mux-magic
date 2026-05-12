@@ -27,7 +27,7 @@ describe("mediaInfoPath", () => {
     const { mediaInfoPath } = await import("./appPaths.js")
     const isWindows = process.platform === "win32"
     const expected = isWindows
-      ? "assets/mediainfo/MediaInfo.exe"
+      ? "assets.downloaded/mediainfo/MediaInfo.exe"
       : "mediainfo"
     expect(mediaInfoPath).toBe(expected)
   })

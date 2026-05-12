@@ -247,9 +247,8 @@ export const PageHeader = () => {
               <polyline points="5,11 10,16 15,11" />
             </svg>
           </button>
+          <span className="w-px h-6 bg-slate-700 mx-1" />
         </div>
-
-        <span className="w-px h-6 bg-slate-700 mx-1" />
 
         {/* Controls menu */}
         <div

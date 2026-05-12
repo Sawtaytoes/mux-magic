@@ -164,11 +164,19 @@ export const runOrStopStepAtom = atom(
           if (msg.done) {
             const finalStatus =
               (msg.status as string) || "completed"
+            const resultsList = msg.results as
+              | unknown[]
+              | null
+              | undefined
+            const hasResults = Array.isArray(resultsList)
+              ? resultsList.length > 0
+              : null
             set(setStepRunStatusAtom, {
               stepId,
               status: finalStatus,
               jobId: null,
               error: (msg.error as string | null) ?? null,
+              hasResults,
             })
             set(runningAtom, false)
             es.close()

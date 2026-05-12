@@ -1,12 +1,11 @@
-import { stat } from "node:fs/promises"
 import { join } from "node:path"
 import {
   concatMap,
-  defer,
   filter,
+  from,
   map,
   tap,
-  throwIfEmpty,
+  throwError,
   toArray,
 } from "rxjs"
 import {
@@ -20,7 +19,6 @@ import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { logInfo } from "../tools/logMessage.js"
 import { makeDirectory } from "../tools/makeDirectory.js"
-import { noopIfEmpty } from "../tools/noopIfEmpty.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type KeepLanguagesRequiredProps = {
@@ -53,28 +51,25 @@ export const keepLanguages = ({
   sourcePath,
   subtitlesLanguages: selectedSubtitlesLanguages,
 }: KeepLanguagesProps) =>
-  // Guarantee the output folder exists even when no files needed
-  // trimming. Downstream sequence steps that link via { linkedTo,
-  // output: 'folder' } resolve to <sourcePath>/<outputFolderName> and
-  // would ENOENT otherwise — flattenOutput/copyFiles/etc. all assume
-  // the folder is at least *present* (empty is fine — nothing to copy).
-  defer(() => stat(sourcePath)).pipe(
-    concatMap(() =>
-      makeDirectory(join(sourcePath, outputFolderName)),
-    ),
-    concatMap(() =>
-      getFilesAtDepth({
-        depth: isRecursive ? 1 : 0,
-        sourcePath,
-      }),
-    ),
+  getFilesAtDepth({
+    depth: isRecursive ? 1 : 0,
+    sourcePath,
+  }).pipe(
     filterIsVideoFile(),
-    throwIfEmpty(
-      () =>
-        new Error(
-          `No video files found in "${sourcePath}"`,
-        ),
-    ),
+    toArray(),
+    concatMap((videoFiles) => {
+      if (videoFiles.length === 0) {
+        return throwError(
+          () =>
+            new Error(
+              `No video files found in "${sourcePath}"`,
+            ),
+        )
+      }
+      return makeDirectory(
+        join(sourcePath, outputFolderName),
+      ).pipe(concatMap(() => from(videoFiles)))
+    }),
     withFileProgress((fileInfo) =>
       getTrackLanguages(fileInfo.fullPath).pipe(
         map(({ audioLanguages, ...otherProps }) => ({
@@ -161,5 +156,4 @@ export const keepLanguages = ({
     ),
     toArray(),
     logAndRethrow(keepLanguages),
-    noopIfEmpty(),
   )

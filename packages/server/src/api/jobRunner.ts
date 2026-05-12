@@ -1,6 +1,5 @@
 import { catchError, EMPTY, type Observable } from "rxjs"
 
-import { NoopError } from "../tools/noopIfEmpty.js"
 import {
   completeSubject,
   createSubject,
@@ -50,14 +49,6 @@ export const runJob = (
             if (getJob(jobId)?.status === "cancelled")
               return EMPTY
 
-            if (err instanceof NoopError) {
-              updateJob(jobId, {
-                completedAt: new Date(),
-                status: "noop",
-              })
-              return EMPTY
-            }
-
             updateJob(jobId, {
               completedAt: new Date(),
               error: String(err),
@@ -92,10 +83,7 @@ export const runJob = (
               return
             }
 
-            if (
-              job?.status !== "failed" &&
-              job?.status !== "noop"
-            ) {
+            if (job?.status !== "failed") {
               const outputs =
                 options.extractOutputs && job
                   ? options.extractOutputs(job.results)
