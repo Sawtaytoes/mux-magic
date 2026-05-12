@@ -1,4 +1,5 @@
 import { useSetAtom } from "jotai"
+import { apiBase } from "../apiBase"
 import type { Job } from "../jobs/types"
 import { jobsAtom } from "../state/jobsAtom"
 import { jobsConnectionAtom } from "../state/jobsConnectionAtom"
@@ -13,7 +14,7 @@ export const useSseStream = (): void => {
   const setProgress = useSetAtom(progressByJobIdAtom)
 
   useTolerantEventSource<Job>({
-    url: "/jobs/stream",
+    url: `${apiBase}/jobs/stream`,
     onConnected: () => setConnection("connected"),
     onPossiblyDisconnected: () => setConnection("unstable"),
     onMessage: (job) => {
