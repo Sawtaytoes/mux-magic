@@ -1,5 +1,6 @@
 import {
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -237,5 +238,75 @@ describe("PathPicker selection", () => {
     expect(step?.params.sourcePath).toBe(
       "/home/user/Documents/",
     )
+  })
+})
+
+describe("PathPicker keyboard navigation", () => {
+  test("Enter selects the active directory entry", async () => {
+    const { store, input } = renderPicker()
+
+    await waitFor(() => screen.getByText("Documents"))
+
+    fireEvent.keyDown(input, { key: "Enter" })
+
+    const steps = store.get(stepsAtom)
+    const step = steps.find(
+      (item) => "id" in item && item.id === "step-1",
+    ) as { params: Record<string, unknown> } | undefined
+    expect(step?.params.sourcePath).toBe(
+      "/home/user/Documents/",
+    )
+  })
+
+  test("Tab selects the active directory entry", async () => {
+    const { store, input } = renderPicker()
+
+    await waitFor(() => screen.getByText("Documents"))
+
+    fireEvent.keyDown(input, { key: "Tab" })
+
+    const steps = store.get(stepsAtom)
+    const step = steps.find(
+      (item) => "id" in item && item.id === "step-1",
+    ) as { params: Record<string, unknown> } | undefined
+    expect(step?.params.sourcePath).toBe(
+      "/home/user/Documents/",
+    )
+  })
+
+  test("Escape closes the picker without selecting", async () => {
+    const { store, input } = renderPicker()
+
+    await waitFor(() => screen.getByText("Documents"))
+
+    fireEvent.keyDown(input, { key: "Escape" })
+
+    expect(store.get(pathPickerStateAtom)).toBeNull()
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId("path-picker"),
+      ).not.toBeInTheDocument(),
+    )
+  })
+
+  test("ArrowDown moves activeIndex to the next entry", async () => {
+    const { store, input } = renderPicker()
+
+    await waitFor(() => screen.getByText("Documents"))
+
+    fireEvent.keyDown(input, { key: "ArrowDown" })
+
+    expect(store.get(pathPickerStateAtom)?.activeIndex).toBe(1)
+  })
+
+  test("ArrowUp wraps activeIndex to the last entry", async () => {
+    const { store, input } = renderPicker()
+
+    await waitFor(() => screen.getByText("Documents"))
+
+    fireEvent.keyDown(input, { key: "ArrowUp" })
+
+    // 3 directory entries (Documents, Downloads, Pictures); wrap 0 → 2
+    expect(store.get(pathPickerStateAtom)?.activeIndex).toBe(2)
   })
 })
