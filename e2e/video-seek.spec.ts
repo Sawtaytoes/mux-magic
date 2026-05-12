@@ -1,13 +1,19 @@
 import { execFileSync } from "node:child_process"
-import { readFileSync } from "node:fs"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { existsSync, readFileSync } from "node:fs"
+import { platform, tmpdir } from "node:os"
+import { join, resolve } from "node:path"
 
 import { expect, test } from "@playwright/test"
-import ffmpegStaticPath from "ffmpeg-static"
 
-const ffmpegPath: string =
-  (ffmpegStaticPath as unknown as string) ?? "ffmpeg"
+const isWindows = platform() === "win32"
+const localFfmpegPath = resolve(
+  import.meta.dirname,
+  "../packages/server/assets.downloaded/ffmpeg/bin/ffmpeg.exe",
+)
+const ffmpegPath =
+  isWindows && existsSync(localFfmpegPath)
+    ? localFfmpegPath
+    : "ffmpeg"
 
 // 60-second synthetic fMP4: blue 320×240 H.264 High@L4.1 + Opus 48 kHz stereo.
 // Generated once for the whole suite; each test reads from this buffer.
