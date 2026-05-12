@@ -95,6 +95,18 @@ describe("runOrStopStepAtom", () => {
           json: () => Promise.resolve({ jobId: "job_new" }),
         }),
       )
+      // Stub EventSource globally — jsdom doesn't provide it. Tests
+      // that need to control SSE behaviour replace this stub inline.
+      vi.stubGlobal(
+        "EventSource",
+        class {
+          static CLOSED = 2
+          readyState = 1
+          onmessage: unknown = null
+          onerror: unknown = null
+          close() {}
+        },
+      )
     })
 
     test("POSTs to /commands/:name (NOT /sequences/run) when step is idle — B4 fix", async () => {
@@ -118,27 +130,64 @@ describe("runOrStopStepAtom", () => {
       ).toBe(false)
     })
 
-    test("opens ApiRunModal with jobId from server response", async () => {
+    test("does NOT open ApiRunModal when running a step", async () => {
       const step = makeStep()
       const store = makeStore(step)
 
       await store.set(runOrStopStepAtom, "step_1")
 
-      expect(store.get(apiRunModalAtom)).toMatchObject({
-        jobId: "job_new",
-        status: "running",
-      })
+      expect(store.get(apiRunModalAtom)).toBeNull()
     })
 
-    test("sets source:'step' on apiRunModalAtom when running a single step", async () => {
+    test("sets step status to 'running' and jobId inline after server responds", async () => {
       const step = makeStep()
       const store = makeStore(step)
 
       await store.set(runOrStopStepAtom, "step_1")
 
-      expect(store.get(apiRunModalAtom)).toMatchObject({
-        source: "step",
-      })
+      const updated = store.get(stepsAtom)[0] as Step
+      expect(updated.status).toBe("running")
+      expect(updated.jobId).toBe("job_new")
+    })
+
+    test("sets step status to 'completed' and clears jobId when SSE done event fires", async () => {
+      let capturedOnMessage:
+        | ((event: MessageEvent) => void)
+        | null = null
+
+      class MockEventSource {
+        static CLOSED = 2
+        readyState = 1
+        onmessage:
+          | ((event: MessageEvent) => void)
+          | null = null
+        onerror: (() => void) | null = null
+        constructor() {
+          capturedOnMessage = (event: MessageEvent) =>
+            this.onmessage?.(event)
+        }
+        close() {
+          this.readyState = MockEventSource.CLOSED
+        }
+      }
+      vi.stubGlobal("EventSource", MockEventSource)
+
+      const step = makeStep()
+      const store = makeStore(step)
+
+      await store.set(runOrStopStepAtom, "step_1")
+
+      // Simulate SSE done event
+      capturedOnMessage?.(
+        new MessageEvent("message", {
+          data: JSON.stringify({ done: true, status: "completed" }),
+        }),
+      )
+
+      const updated = store.get(stepsAtom)[0] as Step
+      expect(updated.status).toBe("completed")
+      expect(updated.jobId).toBeNull()
+      expect(store.get(runningAtom)).toBe(false)
     })
 
     test("does nothing when runningAtom is already true", async () => {
@@ -160,7 +209,7 @@ describe("runOrStopStepAtom", () => {
       expect(vi.mocked(fetch)).not.toHaveBeenCalled()
     })
 
-    test("sets apiRunModal to failed when fetch throws", async () => {
+    test("sets step status to 'failed' when fetch throws (no modal opened)", async () => {
       vi.stubGlobal(
         "fetch",
         vi
@@ -172,9 +221,9 @@ describe("runOrStopStepAtom", () => {
 
       await store.set(runOrStopStepAtom, "step_1")
 
-      expect(store.get(apiRunModalAtom)).toMatchObject({
-        status: "failed",
-      })
+      const updated = store.get(stepsAtom)[0] as Step
+      expect(updated.status).toBe("failed")
+      expect(store.get(apiRunModalAtom)).toBeNull()
       expect(store.get(runningAtom)).toBe(false)
     })
 
@@ -255,6 +304,16 @@ describe("runOrStopStepAtom", () => {
           ok: true,
           json: () => Promise.resolve({ jobId: "job_new" }),
         }),
+      )
+      vi.stubGlobal(
+        "EventSource",
+        class {
+          static CLOSED = 2
+          readyState = 1
+          onmessage: unknown = null
+          onerror: unknown = null
+          close() {}
+        },
       )
     })
 

@@ -1,6 +1,5 @@
 import { atom } from "jotai"
 import { buildParams } from "../commands/buildParams"
-import { apiRunModalAtom } from "../components/ApiRunModal/apiRunModalAtom"
 import { isGroup } from "../jobs/sequenceUtils"
 import type {
   PathVariable,
@@ -14,6 +13,7 @@ import {
   failureModeAtom,
 } from "./dryRunQuery"
 import { pathsAtom } from "./pathsAtom"
+import { setStepRunStatusAtom } from "./stepAtoms"
 import { stepsAtom } from "./stepsAtom"
 
 // True while ANY run (single step, group, or full sequence) is in
@@ -116,14 +116,7 @@ export const runOrStopStepAtom = atom(
     )
 
     set(runningAtom, true)
-    set(apiRunModalAtom, {
-      jobId: null,
-      status: "pending",
-      logs: [],
-      childJobId: null,
-      childStepId: null,
-      source: "step",
-    })
+    set(setStepRunStatusAtom, { stepId, status: "running" })
 
     // B4 fix: single-step runs hit /commands/:name (creates one flat
     // job) instead of /sequences/run (creates umbrella + child). The
@@ -144,28 +137,57 @@ export const runOrStopStepAtom = atom(
         body: JSON.stringify(resolvedParams),
       })
       if (!response.ok) {
-        set(apiRunModalAtom, (prev) =>
-          prev ? { ...prev, status: "failed" } : prev,
-        )
+        set(setStepRunStatusAtom, {
+          stepId,
+          status: "failed",
+        })
         set(runningAtom, false)
         return
       }
       const data = (await response.json()) as {
         jobId: string
       }
-      set(apiRunModalAtom, (prev) =>
-        prev
-          ? {
-              ...prev,
-              jobId: data.jobId,
-              status: "running",
-            }
-          : prev,
-      )
+      set(setStepRunStatusAtom, {
+        stepId,
+        status: "running",
+        jobId: data.jobId,
+      })
+
+      // Fire-and-forget SSE listener: updates the step's status badge
+      // inline when the job finishes, without opening any modal.
+      const es = new EventSource(`/jobs/${data.jobId}/logs`)
+      es.onmessage = (event: MessageEvent) => {
+        try {
+          const msg = JSON.parse(
+            event.data as string,
+          ) as Record<string, unknown>
+          if (msg.done) {
+            const finalStatus =
+              (msg.status as string) || "completed"
+            set(setStepRunStatusAtom, {
+              stepId,
+              status: finalStatus,
+              jobId: null,
+            })
+            set(runningAtom, false)
+            es.close()
+          }
+        } catch {
+          // ignore malformed JSON
+        }
+      }
+      es.onerror = () => {
+        if (es.readyState === EventSource.CLOSED) {
+          set(setStepRunStatusAtom, {
+            stepId,
+            status: "failed",
+            jobId: null,
+          })
+          set(runningAtom, false)
+        }
+      }
     } catch {
-      set(apiRunModalAtom, (prev) =>
-        prev ? { ...prev, status: "failed" } : prev,
-      )
+      set(setStepRunStatusAtom, { stepId, status: "failed" })
       set(runningAtom, false)
     }
   },
