@@ -168,6 +168,7 @@ export const runOrStopStepAtom = atom(
               stepId,
               status: finalStatus,
               jobId: null,
+              error: (msg.error as string | null) ?? null,
             })
             set(runningAtom, false)
             es.close()

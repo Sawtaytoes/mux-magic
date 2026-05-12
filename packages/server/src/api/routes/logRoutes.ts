@@ -92,6 +92,7 @@ logsRoutes.openapi(
           status: job.status,
           results: job.results,
           outputs: job.outputs,
+          error: job.error,
         })
         stopKeepalive()
         return
@@ -106,6 +107,7 @@ logsRoutes.openapi(
           status: finishedJob?.status ?? job.status,
           results: finishedJob?.results ?? job.results,
           outputs: finishedJob?.outputs ?? null,
+          error: finishedJob?.error ?? job.error,
         })
         stopKeepalive()
         return
@@ -126,6 +128,7 @@ logsRoutes.openapi(
               status: completedJob?.status ?? job.status,
               results: completedJob?.results ?? job.results,
               outputs: completedJob?.outputs ?? null,
+              error: completedJob?.error ?? job.error,
             })
             resolve()
           },
@@ -134,6 +137,7 @@ logsRoutes.openapi(
             await send({
               done: true,
               status: failedJob?.status ?? job.status,
+              error: failedJob?.error ?? job.error,
             })
             resolve()
           },

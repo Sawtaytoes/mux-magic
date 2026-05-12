@@ -300,6 +300,7 @@ export const setStepRunStatusAtom = atom(
       stepId: string
       status: string | null
       jobId?: string | null
+      error?: string | null
     },
   ) => {
     const patch = (step: Step): Step => {
@@ -309,6 +310,9 @@ export const setStepRunStatusAtom = atom(
         status: args.status,
         ...(args.jobId !== undefined
           ? { jobId: args.jobId }
+          : {}),
+        ...(args.error !== undefined
+          ? { error: args.error }
           : {}),
       }
     }
