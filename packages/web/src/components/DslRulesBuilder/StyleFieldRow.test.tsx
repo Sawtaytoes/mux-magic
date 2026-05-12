@@ -5,9 +5,9 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { StyleFieldRow } from "./StyleFieldRow"
 import { ComputeFromEditor } from "./ComputeFromEditor"
-import type { DslRule, ComputeFrom } from "./types"
+import { StyleFieldRow } from "./StyleFieldRow"
+import type { ComputeFrom, DslRule } from "./types"
 
 afterEach(() => {
   cleanup()
@@ -27,7 +27,10 @@ const makeSetStyleFieldsRules = (
 
 describe("StyleFieldRow — field key autocomplete (B14)", () => {
   it("renders the field key as a clickable trigger button", () => {
-    const rules = makeSetStyleFieldsRules("Fontname", "Arial")
+    const rules = makeSetStyleFieldsRules(
+      "Fontname",
+      "Arial",
+    )
     render(
       <StyleFieldRow
         rules={rules}
@@ -45,7 +48,10 @@ describe("StyleFieldRow — field key autocomplete (B14)", () => {
 
   it("clicking the field key trigger reveals Fontname as a dropdown option", async () => {
     const user = userEvent.setup()
-    const rules = makeSetStyleFieldsRules("Fontname", "Arial")
+    const rules = makeSetStyleFieldsRules(
+      "Fontname",
+      "Arial",
+    )
     render(
       <StyleFieldRow
         rules={rules}
@@ -88,14 +94,20 @@ describe("StyleFieldRow — field key autocomplete (B14)", () => {
     })
     await user.click(option)
     expect(onCommitRules).toHaveBeenCalled()
-    const nextRules = onCommitRules.mock.calls[0][0] as DslRule[]
-    const fields = (nextRules[0] as { fields: Record<string, unknown> }).fields
+    const nextRules = onCommitRules.mock
+      .calls[0][0] as DslRule[]
+    const fields = (
+      nextRules[0] as { fields: Record<string, unknown> }
+    ).fields
     expect(Object.keys(fields)).toContain("PrimaryColour")
   })
 
   it("does not open the picker when isReadOnly", async () => {
     const user = userEvent.setup()
-    const rules = makeSetStyleFieldsRules("Fontname", "Arial")
+    const rules = makeSetStyleFieldsRules(
+      "Fontname",
+      "Arial",
+    )
     render(
       <StyleFieldRow
         rules={rules}
@@ -160,7 +172,9 @@ describe("ComputeFromEditor — property autocomplete (B14)", () => {
       screen.getByRole("option", { name: "PlayResY" }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole("option", { name: "PrimaryColour" }),
+      screen.queryByRole("option", {
+        name: "PrimaryColour",
+      }),
     ).not.toBeInTheDocument()
   })
 
@@ -210,9 +224,10 @@ describe("ComputeFromEditor — property autocomplete (B14)", () => {
     })
     await user.click(option)
     expect(onCommitRules).toHaveBeenCalled()
-    const nextRules = onCommitRules.mock.calls[0][0] as DslRule[]
+    const nextRules = onCommitRules.mock
+      .calls[0][0] as DslRule[]
     const fieldValue = (
-      nextRules[0] as {
+      nextRules[0] as unknown as {
         fields: { Fontsize: { computeFrom: ComputeFrom } }
       }
     ).fields.Fontsize.computeFrom
@@ -240,9 +255,10 @@ describe("ComputeFromEditor — property autocomplete (B14)", () => {
     await user.type(input, "CustomProp")
     await user.keyboard("{Enter}")
     expect(onCommitRules).toHaveBeenCalled()
-    const nextRules = onCommitRules.mock.calls[0][0] as DslRule[]
+    const nextRules = onCommitRules.mock
+      .calls[0][0] as DslRule[]
     const fieldValue = (
-      nextRules[0] as {
+      nextRules[0] as unknown as {
         fields: { Fontsize: { computeFrom: ComputeFrom } }
       }
     ).fields.Fontsize.computeFrom

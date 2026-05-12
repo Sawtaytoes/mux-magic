@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { AssFieldPicker } from "./AssFieldPicker"
+import { STYLE_FIELDS } from "./assFields"
 import { ComputeFromEditor } from "./ComputeFromEditor"
 import { isPlainObject } from "./clauseUtils"
 import {
@@ -42,32 +44,28 @@ export const StyleFieldRow = ({
         .computeFrom
     : null
 
-  const [draftKey, setDraftKey] = useState(fieldKey)
   const [draftLiteral, setDraftLiteral] =
     useState(literalValue)
 
   return (
     <div className="border border-slate-700/40 rounded px-2 py-1.5 mt-1 bg-slate-900/20">
       <div className="flex items-center gap-1.5">
-        <input
-          type="text"
-          value={draftKey}
-          placeholder="MarginV"
-          readOnly={isReadOnly}
-          onChange={(event) => {
-            setDraftKey(event.target.value)
-          }}
-          onBlur={() => {
+        <AssFieldPicker
+          label={fieldKey}
+          value={fieldKey}
+          options={STYLE_FIELDS}
+          isReadOnly={isReadOnly}
+          inputId={`ssf-field-${ruleIndex}-${fieldKey}`}
+          onChange={(newKey) => {
             onCommitRules(
               renameStyleField({
                 rules,
                 ruleIndex,
                 oldKey: fieldKey,
-                newKey: draftKey,
+                newKey,
               }),
             )
           }}
-          className="w-32 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
         />
         <span className="text-slate-500 text-xs">=</span>
         {isComputed ? (

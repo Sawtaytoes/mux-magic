@@ -1,4 +1,9 @@
 import { useRef, useState } from "react"
+import { AssFieldPicker } from "./AssFieldPicker"
+import {
+  SCRIPT_INFO_FIELDS,
+  STYLE_FIELDS,
+} from "./assFields"
 import { isPlainObject } from "./clauseUtils"
 import {
   addComputeFromOp,
@@ -188,9 +193,10 @@ export const ComputeFromEditor = ({
   while (opIdsRef.current.length < ops.length) {
     opIdsRef.current.push(crypto.randomUUID())
   }
-  const [draftProperty, setDraftProperty] = useState(
-    computeFrom.property ?? "",
-  )
+
+  const scope = computeFrom.scope ?? "scriptInfo"
+  const propertyOptions =
+    scope === "style" ? STYLE_FIELDS : SCRIPT_INFO_FIELDS
 
   return (
     <div className="border border-slate-700/60 rounded px-2 py-1.5 bg-slate-900/40 mt-1">
@@ -201,27 +207,23 @@ export const ComputeFromEditor = ({
         >
           property
         </label>
-        <input
-          id={`cfe-property-${ruleIndex}-${fieldKey}`}
-          type="text"
-          value={draftProperty}
-          placeholder="PlayResY"
-          readOnly={isReadOnly}
-          onChange={(event) => {
-            setDraftProperty(event.target.value)
-          }}
-          onBlur={() => {
+        <AssFieldPicker
+          label="property"
+          value={computeFrom.property ?? ""}
+          options={propertyOptions}
+          isReadOnly={isReadOnly}
+          inputId={`cfe-property-${ruleIndex}-${fieldKey}`}
+          onChange={(newProperty) => {
             onCommitRules(
               setComputeFromField({
                 rules,
                 ruleIndex,
                 fieldKey,
                 propertyName: "property",
-                value: draftProperty,
+                value: newProperty,
               }),
             )
           }}
-          className="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
         />
         <label
           htmlFor={`cfe-scope-${ruleIndex}-${fieldKey}`}
@@ -232,7 +234,7 @@ export const ComputeFromEditor = ({
         <select
           id={`cfe-scope-${ruleIndex}-${fieldKey}`}
           disabled={isReadOnly}
-          value={computeFrom.scope ?? "scriptInfo"}
+          value={scope}
           onChange={(event) => {
             onCommitRules(
               setComputeFromField({
