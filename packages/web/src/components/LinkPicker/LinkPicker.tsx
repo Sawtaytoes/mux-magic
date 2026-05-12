@@ -15,7 +15,7 @@ import {
 import { stepsAtom } from "../../state/stepsAtom"
 import type {
   Commands,
-  PathVar,
+  PathVariable,
   SequenceItem,
   StepLink,
 } from "../../types"
@@ -36,7 +36,7 @@ type PathLinkItem = {
   value: string
   label: string
   detail: string
-  pathVarId: string
+  pathVariableId: string
 }
 
 type StepLinkItem = {
@@ -52,7 +52,7 @@ type LinkItem = PathLinkItem | StepLinkItem
 const buildItems = (
   anchor: LinkPickerAnchor,
   allSteps: SequenceItem[],
-  paths: PathVar[],
+  paths: PathVariable[],
   commands: Commands,
 ): LinkItem[] => {
   const flatOrder = flattenSteps(allSteps)
@@ -69,13 +69,13 @@ const buildItems = (
 
   const items: LinkItem[] = []
 
-  paths.forEach((pathVar) => {
+  paths.forEach((pathVariable) => {
     items.push({
       kind: "path",
-      value: `path:${pathVar.id}`,
-      label: pathVar.label || "(unnamed)",
-      detail: pathVar.value || "",
-      pathVarId: pathVar.id,
+      value: `path:${pathVariable.id}`,
+      label: pathVariable.label || "(unnamed)",
+      detail: pathVariable.value || "",
+      pathVariableId: pathVariable.id,
     })
   })
 
@@ -118,7 +118,8 @@ const findInitialIndex = (
   if (typeof link === "string") {
     const idx = items.findIndex(
       (item) =>
-        item.kind === "path" && item.pathVarId === link,
+        item.kind === "path" &&
+        item.pathVariableId === link,
     )
     return idx >= 0 ? idx : 0
   }
@@ -276,7 +277,7 @@ export const LinkPicker = () => {
       setLink(
         anchor.stepId,
         anchor.fieldName,
-        item.pathVarId,
+        item.pathVariableId,
       )
     } else {
       setLink(anchor.stepId, anchor.fieldName, {

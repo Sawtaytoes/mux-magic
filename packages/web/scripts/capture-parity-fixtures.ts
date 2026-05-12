@@ -49,14 +49,14 @@ type FixtureStep = {
   links: Record<string, StepLink>
 }
 
-type PathVar = {
+type PathVariable = {
   id: string
   label: string
   value: string
 }
 
 type FixtureInput = {
-  paths: PathVar[]
+  paths: PathVariable[]
   step: FixtureStep
 }
 
@@ -149,12 +149,15 @@ const buildParams = (
 const buildYaml = (
   step: FixtureStep,
   resolvedParams: Record<string, unknown>,
-  paths: PathVar[],
+  paths: PathVariable[],
 ): string => {
   const pathsObj = Object.fromEntries(
-    paths.map((pathVar) => [
-      pathVar.id,
-      { label: pathVar.label, value: pathVar.value },
+    paths.map((pathVariable) => [
+      pathVariable.id,
+      {
+        label: pathVariable.label,
+        value: pathVariable.value,
+      },
     ]),
   )
   return dump(
@@ -174,7 +177,7 @@ const buildYaml = (
 
 // ─── Fixture input factory ────────────────────────────────────────────────────
 
-const BASE_PATHS: PathVar[] = [
+const BASE_PATHS: PathVariable[] = [
   {
     id: "basePath",
     label: "Base Path",

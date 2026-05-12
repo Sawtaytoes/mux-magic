@@ -348,7 +348,7 @@ export const PathPicker = () => {
       })
     } else {
       setPathValue({
-        pathVarId: snapshot.target.pathVarId,
+        pathVariableId: snapshot.target.pathVariableId,
         value: newValue,
       })
     }

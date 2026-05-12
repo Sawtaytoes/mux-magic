@@ -2,21 +2,21 @@ import yaml from "js-yaml"
 import type {
   Commands,
   Group,
-  PathVar,
+  PathVariable,
   SequenceItem,
   Step,
 } from "../types"
 
 type LoadContext = {
   commands: Commands
-  currentPaths: PathVar[]
+  currentPaths: PathVariable[]
   currentStepCounter: number
   seenIds: Set<string>
 }
 
 export type LoadYamlResult = {
   steps: SequenceItem[]
-  paths: PathVar[]
+  paths: PathVariable[]
   stepCounter: number
 }
 
@@ -99,13 +99,14 @@ const loadStepItem = (
       ) {
         // Path-variable reference — restore as a string link if the path
         // var exists, otherwise keep the literal so the user can fix it.
-        const pathVarId = value.slice(1)
+        const pathVariableId = value.slice(1)
         if (
           currentPaths.find(
-            (pathVar) => pathVar.id === pathVarId,
+            (pathVariable) =>
+              pathVariable.id === pathVariableId,
           )
         ) {
-          step.links[field.name] = pathVarId
+          step.links[field.name] = pathVariableId
         } else {
           step.params[field.name] = value
         }
@@ -197,7 +198,7 @@ const loadGroupItem = (
   }
 }
 
-const ensureBasePath = (): PathVar[] => [
+const ensureBasePath = (): PathVariable[] => [
   { id: "basePath", label: "basePath", value: "" },
 ]
 
@@ -208,7 +209,7 @@ const ensureBasePath = (): PathVar[] => [
 export const loadYamlFromText = (
   text: string,
   commands: Commands,
-  currentPaths: PathVar[],
+  currentPaths: PathVariable[],
   _currentStepCounter: number,
 ): LoadYamlResult => {
   const data = yaml.load(text)
@@ -232,10 +233,10 @@ export const loadYamlFromText = (
             string,
             Record<string, string>
           >,
-        ).map(([id, pathVar]) => ({
+        ).map(([id, pathVariable]) => ({
           id,
-          label: pathVar.label || id,
-          value: pathVar.value || "",
+          label: pathVariable.label || id,
+          value: pathVariable.value || "",
         }))
       }
       if (!paths.length) paths = ensureBasePath()

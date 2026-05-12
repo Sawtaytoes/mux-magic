@@ -14,24 +14,30 @@ import {
   vi,
 } from "vitest"
 import { pathsAtom } from "../../state/pathsAtom"
-import type { PathVar } from "../../types"
-import { PathVarCard } from "./PathVarCard"
+import type { PathVariable } from "../../types"
+import { PathVariableCard } from "./PathVariableCard"
 
 const makePath = (
-  overrides: Partial<PathVar> = {},
-): PathVar => ({
+  overrides: Partial<PathVariable> = {},
+): PathVariable => ({
   id: "basePath",
   label: "Base Path",
   value: "/mnt/media",
   ...overrides,
 })
 
-const renderCard = (pathVar: PathVar, isFirst = true) => {
+const renderCard = (
+  pathVariable: PathVariable,
+  isFirst = true,
+) => {
   const store = createStore()
-  store.set(pathsAtom, [pathVar])
+  store.set(pathsAtom, [pathVariable])
   render(
     <Provider store={store}>
-      <PathVarCard pathVar={pathVar} isFirst={isFirst} />
+      <PathVariableCard
+        pathVariable={pathVariable}
+        isFirst={isFirst}
+      />
     </Provider>,
   )
   return store
@@ -42,7 +48,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe("PathVarCard", () => {
+describe("PathVariableCard", () => {
   test("renders the label input with current value", () => {
     renderCard(makePath({ label: "Base Path" }))
     expect(

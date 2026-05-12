@@ -17,7 +17,11 @@ import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { linkPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { Commands, PathVar, Step } from "../../types"
+import type {
+  Commands,
+  PathVariable,
+  Step,
+} from "../../types"
 import { LinkPicker } from "./LinkPicker"
 
 const TRIGGER_RECT = {
@@ -44,7 +48,7 @@ const makePath = (
   id: string,
   label: string,
   value: string,
-): PathVar => ({
+): PathVariable => ({
   id,
   label,
   value,

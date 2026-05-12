@@ -56,7 +56,7 @@ export const linkPickerStateAtom =
 
 export type PathPickerTarget =
   | { mode: "step"; stepId: string; fieldName: string }
-  | { mode: "pathVar"; pathVarId: string }
+  | { mode: "pathVariable"; pathVariableId: string }
 
 export type PathPickerState = {
   inputElement: HTMLElement

@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest"
 
-import type { Commands, PathVar } from "../types"
+import type { Commands, PathVariable } from "../types"
 import { loadYamlFromText } from "./loadYaml"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const BASE_PATHS: PathVar[] = [
+const BASE_PATHS: PathVariable[] = [
   { id: "basePath", label: "basePath", value: "" },
 ]
 
@@ -120,7 +120,7 @@ steps:
   })
 
   test("restores path-variable links from @-prefixed values", () => {
-    const paths: PathVar[] = [
+    const paths: PathVariable[] = [
       {
         id: "basePath",
         label: "basePath",

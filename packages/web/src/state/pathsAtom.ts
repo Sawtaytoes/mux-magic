@@ -3,49 +3,55 @@ import {
   flattenSteps,
   isGroup,
 } from "../jobs/sequenceUtils"
-import type { PathVar, SequenceItem, Step } from "../types"
+import type {
+  PathVariable,
+  SequenceItem,
+  Step,
+} from "../types"
 import { stepsAtom } from "./stepsAtom"
 
-export const pathsAtom = atom<PathVar[]>([])
+export const pathsAtom = atom<PathVariable[]>([])
 
-export type PathVarUsage = {
+export type PathVariableUsage = {
   stepId: string
   fieldName: string
 }
 
-export type PathVarResolution =
+export type PathVariableResolution =
   | { kind: "replace"; targetId: string }
   | { kind: "unlink" }
 
-export type PendingPathVarDelete = {
-  pathVarId: string
-  pathVarValue: string
-  usages: PathVarUsage[]
-  resolutions: Record<string, PathVarResolution>
+export type PendingPathVariableDelete = {
+  pathVariableId: string
+  pathVariableValue: string
+  usages: PathVariableUsage[]
+  resolutions: Record<string, PathVariableResolution>
 }
 
-export const pendingPathVarDeleteAtom =
-  atom<PendingPathVarDelete | null>(null)
+export const pendingPathVariableDeleteAtom =
+  atom<PendingPathVariableDelete | null>(null)
 
 const usageKey = (stepId: string, fieldName: string) =>
   `${stepId}:${fieldName}`
 
-export const removePathVarAtom = atom(
+export const removePathVariableAtom = atom(
   null,
-  (get, set, pathVarId: string) => {
+  (get, set, pathVariableId: string) => {
     const paths = get(pathsAtom)
     const steps = get(stepsAtom)
-    const pathVar = paths.find((pv) => pv.id === pathVarId)
-    if (!pathVar) return
+    const pathVariable = paths.find(
+      (pv) => pv.id === pathVariableId,
+    )
+    if (!pathVariable) return
 
-    const usages: PathVarUsage[] = []
+    const usages: PathVariableUsage[] = []
     for (const { step } of flattenSteps(steps)) {
       for (const [fieldName, link] of Object.entries(
         step.links,
       )) {
         if (
           typeof link === "string" &&
-          link === pathVarId
+          link === pathVariableId
         ) {
           usages.push({ stepId: step.id, fieldName })
         }
@@ -55,29 +61,31 @@ export const removePathVarAtom = atom(
     if (usages.length === 0) {
       set(
         pathsAtom,
-        paths.filter((pv) => pv.id !== pathVarId),
+        paths.filter((pv) => pv.id !== pathVariableId),
       )
       return
     }
 
-    const resolutions: Record<string, PathVarResolution> =
-      {}
+    const resolutions: Record<
+      string,
+      PathVariableResolution
+    > = {}
     for (const { stepId, fieldName } of usages) {
       resolutions[usageKey(stepId, fieldName)] = {
         kind: "unlink",
       }
     }
 
-    set(pendingPathVarDeleteAtom, {
-      pathVarId,
-      pathVarValue: pathVar.value,
+    set(pendingPathVariableDeleteAtom, {
+      pathVariableId,
+      pathVariableValue: pathVariable.value,
       usages,
       resolutions,
     })
   },
 )
 
-export const setPathVarResolutionAtom = atom(
+export const setPathVariableResolutionAtom = atom(
   null,
   (
     get,
@@ -85,12 +93,12 @@ export const setPathVarResolutionAtom = atom(
     args: {
       stepId: string
       fieldName: string
-      resolution: PathVarResolution
+      resolution: PathVariableResolution
     },
   ) => {
-    const pending = get(pendingPathVarDeleteAtom)
+    const pending = get(pendingPathVariableDeleteAtom)
     if (!pending) return
-    set(pendingPathVarDeleteAtom, {
+    set(pendingPathVariableDeleteAtom, {
       ...pending,
       resolutions: {
         ...pending.resolutions,
@@ -103,9 +111,9 @@ export const setPathVarResolutionAtom = atom(
 
 const applyResolutionsToStep = (
   step: Step,
-  usages: PathVarUsage[],
-  resolutions: Record<string, PathVarResolution>,
-  pathVarValue: string,
+  usages: PathVariableUsage[],
+  resolutions: Record<string, PathVariableResolution>,
+  pathVariableValue: string,
 ): Step => {
   const stepUsages = usages.filter(
     (usage) => usage.stepId === step.id,
@@ -122,21 +130,25 @@ const applyResolutionsToStep = (
       links[fieldName] = resolution.targetId
     } else {
       delete links[fieldName]
-      params[fieldName] = pathVarValue
+      params[fieldName] = pathVariableValue
     }
   }
 
   return { ...step, links, params }
 }
 
-export const confirmPathVarDeleteAtom = atom(
+export const confirmPathVariableDeleteAtom = atom(
   null,
   (get, set) => {
-    const pending = get(pendingPathVarDeleteAtom)
+    const pending = get(pendingPathVariableDeleteAtom)
     if (!pending) return
 
-    const { pathVarId, pathVarValue, usages, resolutions } =
-      pending
+    const {
+      pathVariableId,
+      pathVariableValue,
+      usages,
+      resolutions,
+    } = pending
 
     set(stepsAtom, (items: SequenceItem[]) =>
       items.map((item) => {
@@ -148,7 +160,7 @@ export const confirmPathVarDeleteAtom = atom(
                 step,
                 usages,
                 resolutions,
-                pathVarValue,
+                pathVariableValue,
               ),
             ),
           }
@@ -157,21 +169,21 @@ export const confirmPathVarDeleteAtom = atom(
           item as Step,
           usages,
           resolutions,
-          pathVarValue,
+          pathVariableValue,
         )
       }),
     )
 
     set(pathsAtom, (paths) =>
-      paths.filter((pv) => pv.id !== pathVarId),
+      paths.filter((pv) => pv.id !== pathVariableId),
     )
-    set(pendingPathVarDeleteAtom, null)
+    set(pendingPathVariableDeleteAtom, null)
   },
 )
 
-export const cancelPathVarDeleteAtom = atom(
+export const cancelPathVariableDeleteAtom = atom(
   null,
   (_get, set) => {
-    set(pendingPathVarDeleteAtom, null)
+    set(pendingPathVariableDeleteAtom, null)
   },
 )

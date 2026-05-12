@@ -15,7 +15,7 @@ Unlike the other pickers, all transient state (entries, query, active index, sep
 
 - **Fetch** → keyed on `(parentPath, requestToken)`. Re-fetches when either changes; cancellation via the effect cleanup prevents stale writes if a newer request lands first.
 - **Cache hit** → if `cachedParentPath === parentPath` and `entries !== null`, the effect short-circuits without re-fetching.
-- **Selection** → builds a new value `<base><sep><entry.name><sep>` and dispatches to `setParamAtom` (`target.mode === "step"`) or `setPathValueAtom` (`target.mode === "pathVar"`). Then re-anchors the picker to the input's new `getBoundingClientRect` and bumps `requestToken` to fetch the now-deeper folder.
+- **Selection** → builds a new value `<base><sep><entry.name><sep>` and dispatches to `setParamAtom` (`target.mode === "step"`) or `setPathValueAtom` (`target.mode === "pathVariable"`). Then re-anchors the picker to the input's new `getBoundingClientRect` and bumps `requestToken` to fetch the now-deeper folder.
 - **Position** → 380 × 280 popover. Flips above on `spaceBelow < 160`. Clamps to viewport with 8px margin.
 - **Filtering** → `name.toLowerCase().startsWith(query.toLowerCase())` (prefix match, not substring), then sorted alphabetically.
 - **Outside click** → closes; clicks inside `#path-picker-popover` *or* the original input are ignored.
@@ -26,7 +26,7 @@ Unlike the other pickers, all transient state (entries, query, active index, sep
 |------|------|
 | `pathPickerStateAtom` | The single source of truth: input ref, target descriptor, parent path, query, entries, matches, error, separator, request token, debounce timer |
 | `setParamAtom` | Persists step path values when `target.mode === "step"` |
-| `setPathValueAtom` | Persists path-var values when `target.mode === "pathVar"` |
+| `setPathValueAtom` | Persists path-var values when `target.mode === "pathVariable"` |
 
 ## Server endpoint
 

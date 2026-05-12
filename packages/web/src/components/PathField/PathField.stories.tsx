@@ -46,7 +46,7 @@ export const WithValue: Story = {
   },
 }
 
-export const LinkedToPathVar: Story = {
+export const LinkedToPathVariable: Story = {
   args: {
     field,
     step: {

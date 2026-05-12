@@ -14,7 +14,7 @@ import {
 import { pathsAtom } from "../state/pathsAtom"
 import {
   addPathAtom,
-  addPathVarAtom,
+  addPathVariableAtom,
   changeCommandAtom,
   insertGroupAtom,
   insertStepAtom,
@@ -169,19 +169,19 @@ export const useBuilderActions = () => {
   }, [store, pushHistory])
 
   const setPathValue = useCallback(
-    (pathVarId: string, value: string) => {
+    (pathVariableId: string, value: string) => {
       pushHistory()
-      store.set(setPathValueAtom, { pathVarId, value })
+      store.set(setPathValueAtom, { pathVariableId, value })
     },
     [store, pushHistory],
   )
 
-  const addPathVar = useCallback(
-    (pathVarId: string, value: string) => {
+  const addPathVariable = useCallback(
+    (pathVariableId: string, value: string) => {
       pushHistory()
-      store.set(addPathVarAtom, {
-        id: pathVarId,
-        label: pathVarId,
+      store.set(addPathVariableAtom, {
+        id: pathVariableId,
+        label: pathVariableId,
         value,
       })
     },
@@ -462,7 +462,7 @@ export const useBuilderActions = () => {
 
   return {
     addPath,
-    addPathVar,
+    addPathVariable,
     changeCommand,
     copyGroupYaml,
     copyStepYaml,

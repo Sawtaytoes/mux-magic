@@ -3,7 +3,7 @@ import { buildParams } from "../commands/buildParams"
 import { isGroup } from "../jobs/sequenceUtils"
 import type {
   Group,
-  PathVar,
+  PathVariable,
   SequenceItem,
   Step,
   StepLink,
@@ -29,7 +29,7 @@ import {
 // sending.
 const resolveParams = (
   params: Record<string, unknown>,
-  paths: PathVar[],
+  paths: PathVariable[],
 ): Record<string, unknown> => {
   return Object.fromEntries(
     Object.entries(params).map(([key, value]) => {
@@ -37,14 +37,14 @@ const resolveParams = (
         typeof value === "string" &&
         value.startsWith("@")
       ) {
-        const pathVarId = value.slice(1)
-        const pathVar = paths.find(
-          (candidate) => candidate.id === pathVarId,
+        const pathVariableId = value.slice(1)
+        const pathVariable = paths.find(
+          (candidate) => candidate.id === pathVariableId,
         )
         // Fall back to the raw `@id` string when the path var is
         // missing so the server's per-command validation surfaces
         // a clear error rather than silently dropping the field.
-        return [key, pathVar?.value ?? value]
+        return [key, pathVariable?.value ?? value]
       }
       return [key, value]
     }),
@@ -488,14 +488,14 @@ export const addPathAtom = atom(null, (_get, set) => {
   set(pathsAtom, (paths) => [
     ...paths,
     {
-      id: `pathVar_${Math.random().toString(36).slice(2, 8)}`,
+      id: `pathVariable_${Math.random().toString(36).slice(2, 8)}`,
       label: "",
       value: "",
     },
   ])
 })
 
-export const addPathVarAtom = atom(
+export const addPathVariableAtom = atom(
   null,
   (
     _get,
@@ -514,11 +514,11 @@ export const setPathValueAtom = atom(
   (
     _get,
     set,
-    args: { pathVarId: string; value: string },
+    args: { pathVariableId: string; value: string },
   ) => {
     set(pathsAtom, (paths) =>
       paths.map((path) =>
-        path.id === args.pathVarId
+        path.id === args.pathVariableId
           ? { ...path, value: args.value }
           : path,
       ),

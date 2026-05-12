@@ -2,16 +2,19 @@ import { createStore } from "jotai"
 import { describe, expect, test } from "vitest"
 import type { Step } from "../types"
 import {
-  cancelPathVarDeleteAtom,
-  confirmPathVarDeleteAtom,
+  cancelPathVariableDeleteAtom,
+  confirmPathVariableDeleteAtom,
   pathsAtom,
-  pendingPathVarDeleteAtom,
-  removePathVarAtom,
-  setPathVarResolutionAtom,
+  pendingPathVariableDeleteAtom,
+  removePathVariableAtom,
+  setPathVariableResolutionAtom,
 } from "./pathsAtom"
 import { stepsAtom } from "./stepsAtom"
 
-const makePathVar = (id: string, value = "/mnt/media") => ({
+const makePathVariable = (
+  id: string,
+  value = "/mnt/media",
+) => ({
   id,
   label: id,
   value,
@@ -31,31 +34,33 @@ const makeStep = (
   isCollapsed: false,
 })
 
-describe("removePathVarAtom", () => {
+describe("removePathVariableAtom", () => {
   test("unused path var is deleted immediately", () => {
     const store = createStore()
-    store.set(pathsAtom, [makePathVar("basePath")])
+    store.set(pathsAtom, [makePathVariable("basePath")])
     store.set(stepsAtom, [makeStep("step1")])
 
-    store.set(removePathVarAtom, "basePath")
+    store.set(removePathVariableAtom, "basePath")
 
     expect(store.get(pathsAtom)).toHaveLength(0)
-    expect(store.get(pendingPathVarDeleteAtom)).toBeNull()
+    expect(
+      store.get(pendingPathVariableDeleteAtom),
+    ).toBeNull()
   })
 
   test("in-use path var sets pendingDelete instead of deleting", () => {
     const store = createStore()
-    store.set(pathsAtom, [makePathVar("basePath")])
+    store.set(pathsAtom, [makePathVariable("basePath")])
     store.set(stepsAtom, [
       makeStep("step1", { inputPath: "basePath" }),
     ])
 
-    store.set(removePathVarAtom, "basePath")
+    store.set(removePathVariableAtom, "basePath")
 
     expect(store.get(pathsAtom)).toHaveLength(1)
-    const pending = store.get(pendingPathVarDeleteAtom)
+    const pending = store.get(pendingPathVariableDeleteAtom)
     expect(pending).not.toBeNull()
-    expect(pending?.pathVarId).toBe("basePath")
+    expect(pending?.pathVariableId).toBe("basePath")
     expect(pending?.usages).toEqual([
       { stepId: "step1", fieldName: "inputPath" },
     ])
@@ -63,7 +68,7 @@ describe("removePathVarAtom", () => {
 
   test("pendingDelete lists all affected fields across steps", () => {
     const store = createStore()
-    store.set(pathsAtom, [makePathVar("basePath")])
+    store.set(pathsAtom, [makePathVariable("basePath")])
     store.set(stepsAtom, [
       makeStep("step1", {
         inputPath: "basePath",
@@ -72,9 +77,9 @@ describe("removePathVarAtom", () => {
       makeStep("step2", { sourcePath: "basePath" }),
     ])
 
-    store.set(removePathVarAtom, "basePath")
+    store.set(removePathVariableAtom, "basePath")
 
-    const pending = store.get(pendingPathVarDeleteAtom)
+    const pending = store.get(pendingPathVariableDeleteAtom)
     expect(pending?.usages).toHaveLength(3)
     expect(pending?.usages).toContainEqual({
       stepId: "step1",
@@ -92,7 +97,7 @@ describe("removePathVarAtom", () => {
 
   test("object links (step output refs) are not counted as path var usages", () => {
     const store = createStore()
-    store.set(pathsAtom, [makePathVar("basePath")])
+    store.set(pathsAtom, [makePathVariable("basePath")])
     store.set(stepsAtom, [
       makeStep("step1", {
         inputPath: {
@@ -102,32 +107,34 @@ describe("removePathVarAtom", () => {
       }),
     ])
 
-    store.set(removePathVarAtom, "basePath")
+    store.set(removePathVariableAtom, "basePath")
 
     expect(store.get(pathsAtom)).toHaveLength(0)
-    expect(store.get(pendingPathVarDeleteAtom)).toBeNull()
+    expect(
+      store.get(pendingPathVariableDeleteAtom),
+    ).toBeNull()
   })
 })
 
-describe("setPathVarResolutionAtom", () => {
+describe("setPathVariableResolutionAtom", () => {
   test("replace-with swaps the link reference in pendingDelete resolutions", () => {
     const store = createStore()
     store.set(pathsAtom, [
-      makePathVar("basePath"),
-      makePathVar("altPath"),
+      makePathVariable("basePath"),
+      makePathVariable("altPath"),
     ])
     store.set(stepsAtom, [
       makeStep("step1", { inputPath: "basePath" }),
     ])
-    store.set(removePathVarAtom, "basePath")
+    store.set(removePathVariableAtom, "basePath")
 
-    store.set(setPathVarResolutionAtom, {
+    store.set(setPathVariableResolutionAtom, {
       stepId: "step1",
       fieldName: "inputPath",
       resolution: { kind: "replace", targetId: "altPath" },
     })
 
-    const pending = store.get(pendingPathVarDeleteAtom)
+    const pending = store.get(pendingPathVariableDeleteAtom)
     expect(pending?.resolutions["step1:inputPath"]).toEqual(
       {
         kind: "replace",
@@ -138,43 +145,43 @@ describe("setPathVarResolutionAtom", () => {
 
   test("unlink resolution is recorded", () => {
     const store = createStore()
-    store.set(pathsAtom, [makePathVar("basePath")])
+    store.set(pathsAtom, [makePathVariable("basePath")])
     store.set(stepsAtom, [
       makeStep("step1", { inputPath: "basePath" }),
     ])
-    store.set(removePathVarAtom, "basePath")
+    store.set(removePathVariableAtom, "basePath")
 
-    store.set(setPathVarResolutionAtom, {
+    store.set(setPathVariableResolutionAtom, {
       stepId: "step1",
       fieldName: "inputPath",
       resolution: { kind: "unlink" },
     })
 
-    const pending = store.get(pendingPathVarDeleteAtom)
+    const pending = store.get(pendingPathVariableDeleteAtom)
     expect(pending?.resolutions["step1:inputPath"]).toEqual(
       { kind: "unlink" },
     )
   })
 })
 
-describe("confirmPathVarDeleteAtom", () => {
+describe("confirmPathVariableDeleteAtom", () => {
   test("replace-with swaps step link to new path var ID", () => {
     const store = createStore()
     store.set(pathsAtom, [
-      makePathVar("basePath"),
-      makePathVar("altPath"),
+      makePathVariable("basePath"),
+      makePathVariable("altPath"),
     ])
     store.set(stepsAtom, [
       makeStep("step1", { inputPath: "basePath" }),
     ])
-    store.set(removePathVarAtom, "basePath")
-    store.set(setPathVarResolutionAtom, {
+    store.set(removePathVariableAtom, "basePath")
+    store.set(setPathVariableResolutionAtom, {
       stepId: "step1",
       fieldName: "inputPath",
       resolution: { kind: "replace", targetId: "altPath" },
     })
 
-    store.set(confirmPathVarDeleteAtom)
+    store.set(confirmPathVariableDeleteAtom)
 
     const steps = store.get(stepsAtom) as Step[]
     expect(steps[0].links.inputPath).toBe("altPath")
@@ -183,33 +190,37 @@ describe("confirmPathVarDeleteAtom", () => {
         .get(pathsAtom)
         .find((pv) => pv.id === "basePath"),
     ).toBeUndefined()
-    expect(store.get(pendingPathVarDeleteAtom)).toBeNull()
+    expect(
+      store.get(pendingPathVariableDeleteAtom),
+    ).toBeNull()
   })
 
   test("unlink removes link and writes literal value to params", () => {
     const store = createStore()
     store.set(pathsAtom, [
-      makePathVar("basePath", "/mnt/media"),
+      makePathVariable("basePath", "/mnt/media"),
     ])
     store.set(stepsAtom, [
       makeStep("step1", { inputPath: "basePath" }),
     ])
-    store.set(removePathVarAtom, "basePath")
+    store.set(removePathVariableAtom, "basePath")
 
-    store.set(confirmPathVarDeleteAtom)
+    store.set(confirmPathVariableDeleteAtom)
 
     const steps = store.get(stepsAtom) as Step[]
     expect(steps[0].links.inputPath).toBeUndefined()
     expect(steps[0].params.inputPath).toBe("/mnt/media")
     expect(store.get(pathsAtom)).toHaveLength(0)
-    expect(store.get(pendingPathVarDeleteAtom)).toBeNull()
+    expect(
+      store.get(pendingPathVariableDeleteAtom),
+    ).toBeNull()
   })
 
   test("multiple usages resolved independently in one atomic commit", () => {
     const store = createStore()
     store.set(pathsAtom, [
-      makePathVar("basePath", "/mnt/base"),
-      makePathVar("altPath"),
+      makePathVariable("basePath", "/mnt/base"),
+      makePathVariable("altPath"),
     ])
     store.set(stepsAtom, [
       makeStep("step1", {
@@ -217,15 +228,15 @@ describe("confirmPathVarDeleteAtom", () => {
         outputPath: "basePath",
       }),
     ])
-    store.set(removePathVarAtom, "basePath")
-    store.set(setPathVarResolutionAtom, {
+    store.set(removePathVariableAtom, "basePath")
+    store.set(setPathVariableResolutionAtom, {
       stepId: "step1",
       fieldName: "inputPath",
       resolution: { kind: "replace", targetId: "altPath" },
     })
     // outputPath left as default "unlink"
 
-    store.set(confirmPathVarDeleteAtom)
+    store.set(confirmPathVariableDeleteAtom)
 
     const steps = store.get(stepsAtom) as Step[]
     expect(steps[0].links.inputPath).toBe("altPath")
@@ -234,18 +245,20 @@ describe("confirmPathVarDeleteAtom", () => {
   })
 })
 
-describe("cancelPathVarDeleteAtom", () => {
+describe("cancelPathVariableDeleteAtom", () => {
   test("cancel clears pendingDelete without modifying anything", () => {
     const store = createStore()
-    store.set(pathsAtom, [makePathVar("basePath")])
+    store.set(pathsAtom, [makePathVariable("basePath")])
     store.set(stepsAtom, [
       makeStep("step1", { inputPath: "basePath" }),
     ])
-    store.set(removePathVarAtom, "basePath")
+    store.set(removePathVariableAtom, "basePath")
 
-    store.set(cancelPathVarDeleteAtom)
+    store.set(cancelPathVariableDeleteAtom)
 
-    expect(store.get(pendingPathVarDeleteAtom)).toBeNull()
+    expect(
+      store.get(pendingPathVariableDeleteAtom),
+    ).toBeNull()
     expect(store.get(pathsAtom)).toHaveLength(1)
     const steps = store.get(stepsAtom) as Step[]
     expect(steps[0].links.inputPath).toBe("basePath")

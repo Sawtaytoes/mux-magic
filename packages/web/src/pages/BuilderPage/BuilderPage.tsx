@@ -26,7 +26,7 @@ import {
   stepCounterAtom,
   stepsAtom,
 } from "../../state/stepsAtom"
-import { BuilderPathVarList } from "../BuilderPathVarList/BuilderPathVarList"
+import { BuilderPathVariableList } from "../BuilderPathVariableList/BuilderPathVariableList"
 import { BuilderSequenceList } from "../BuilderSequenceList/BuilderSequenceList"
 
 // ─── BuilderPage ──────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@ export const BuilderPage = () => {
       const paths = store.get(pathsAtom)
       const hasContent =
         steps.length > 0 ||
-        paths.some((pathVar) => pathVar.value)
+        paths.some((pathVariable) => pathVariable.value)
       const url = new URL(window.location.href)
       if (hasContent) {
         const yaml = toYamlStr(steps, paths, commands)
@@ -140,7 +140,7 @@ export const BuilderPage = () => {
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 py-4">
-          <BuilderPathVarList />
+          <BuilderPathVariableList />
           <BuilderSequenceList />
         </div>
       </main>

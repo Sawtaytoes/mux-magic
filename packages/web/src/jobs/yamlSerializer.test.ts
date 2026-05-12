@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 
 import type {
   Commands,
-  PathVar,
+  PathVariable,
   SequenceItem,
   Step,
 } from "../types"
@@ -22,7 +22,7 @@ const makeStep = (overrides: Partial<Step> = {}): Step => ({
   ...overrides,
 })
 
-const BASE_PATH: PathVar = {
+const BASE_PATH: PathVariable = {
   id: "basePath",
   label: "Base Path",
   value: "/fixture/media",
@@ -45,7 +45,7 @@ const MAKE_DIR_COMMAND: Commands = {
 
 describe("toYamlStr — empty states", () => {
   test("returns sentinel when steps is empty and no path values set", () => {
-    const paths: PathVar[] = [
+    const paths: PathVariable[] = [
       { id: "basePath", label: "Base Path", value: "" },
     ]
     expect(toYamlStr([], paths, {})).toBe("# No steps yet")
@@ -64,7 +64,7 @@ describe("toYamlStr — link resolution", () => {
       command: "makeDirectory",
       links: { filePath: "basePath" },
     })
-    const paths: PathVar[] = [BASE_PATH]
+    const paths: PathVariable[] = [BASE_PATH]
 
     const result = toYamlStr(
       [step] as SequenceItem[],
@@ -85,7 +85,7 @@ describe("toYamlStr — link resolution", () => {
         },
       },
     })
-    const paths: PathVar[] = [BASE_PATH]
+    const paths: PathVariable[] = [BASE_PATH]
 
     const result = toYamlStr(
       [step] as SequenceItem[],

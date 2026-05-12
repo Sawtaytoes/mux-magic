@@ -1,19 +1,19 @@
 import { useAtomValue, useSetAtom } from "jotai"
 
-import { PathVarCard } from "../../components/PathVarCard/PathVarCard"
+import { PathVariableCard } from "../../components/PathVariableCard/PathVariableCard"
 import { pathsAtom } from "../../state/pathsAtom"
 import { addPathAtom } from "../../state/sequenceAtoms"
 
-export const BuilderPathVarList = () => {
+export const BuilderPathVariableList = () => {
   const paths = useAtomValue(pathsAtom)
   const addPath = useSetAtom(addPathAtom)
 
   return (
     <div className="flex flex-col gap-2 mb-4">
-      {paths.map((pathVar, idx) => (
-        <PathVarCard
-          key={pathVar.id}
-          pathVar={pathVar}
+      {paths.map((pathVariable, idx) => (
+        <PathVariableCard
+          key={pathVariable.id}
+          pathVariable={pathVariable}
           isFirst={idx === 0}
         />
       ))}

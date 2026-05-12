@@ -1,16 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
 import { pathsAtom } from "../../state/pathsAtom"
-import type { PathVar } from "../../types"
-import { PathVarCard } from "./PathVarCard"
+import type { PathVariable } from "../../types"
+import { PathVariableCard } from "./PathVariableCard"
 
-const basePath: PathVar = {
+const basePath: PathVariable = {
   id: "basePath",
   label: "Base Path",
   value: "/mnt/media",
 }
 
-const withStore = (paths: PathVar[]) => {
+const withStore = (paths: PathVariable[]) => {
   const store = createStore()
   store.set(pathsAtom, paths)
   return (Story: React.ComponentType) => (
@@ -20,9 +20,9 @@ const withStore = (paths: PathVar[]) => {
   )
 }
 
-const meta: Meta<typeof PathVarCard> = {
-  title: "Components/PathVarCard",
-  component: PathVarCard,
+const meta: Meta<typeof PathVariableCard> = {
+  title: "Components/PathVariableCard",
+  component: PathVariableCard,
   parameters: {
     layout: "padded",
     backgrounds: { default: "dark" },
@@ -30,11 +30,11 @@ const meta: Meta<typeof PathVarCard> = {
 }
 
 export default meta
-type Story = StoryObj<typeof PathVarCard>
+type Story = StoryObj<typeof PathVariableCard>
 
 export const BasePath: Story = {
   decorators: [withStore([basePath])],
-  args: { pathVar: basePath, isFirst: true },
+  args: { pathVariable: basePath, isFirst: true },
 }
 
 export const SecondaryPath: Story = {
@@ -49,7 +49,7 @@ export const SecondaryPath: Story = {
     ]),
   ],
   args: {
-    pathVar: {
+    pathVariable: {
       id: "outputPath",
       label: "Output Path",
       value: "/mnt/output",
@@ -61,7 +61,7 @@ export const SecondaryPath: Story = {
 export const EmptyValue: Story = {
   decorators: [withStore([{ ...basePath, value: "" }])],
   args: {
-    pathVar: { ...basePath, value: "" },
+    pathVariable: { ...basePath, value: "" },
     isFirst: false,
   },
 }

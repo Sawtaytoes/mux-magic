@@ -1,35 +1,39 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
 import {
-  cancelPathVarDeleteAtom,
-  confirmPathVarDeleteAtom,
+  cancelPathVariableDeleteAtom,
+  confirmPathVariableDeleteAtom,
   pathsAtom,
-  pendingPathVarDeleteAtom,
-  removePathVarAtom,
-  setPathVarResolutionAtom,
+  pendingPathVariableDeleteAtom,
+  removePathVariableAtom,
+  setPathVariableResolutionAtom,
 } from "../../state/pathsAtom"
 import { pathPickerStateAtom } from "../../state/pickerAtoms"
 import { fileExplorerAtom } from "../../state/uiAtoms"
-import type { PathVar } from "../../types"
+import type { PathVariable } from "../../types"
 
-interface PathVarCardProps {
-  pathVar: PathVar
+interface PathVariableCardProps {
+  pathVariable: PathVariable
   isFirst: boolean
 }
 
-export const PathVarCard = ({
-  pathVar,
+export const PathVariableCard = ({
+  pathVariable,
   isFirst,
-}: PathVarCardProps) => {
+}: PathVariableCardProps) => {
   const allPaths = useAtomValue(pathsAtom)
   const setPaths = useSetAtom(pathsAtom)
   const setFileExplorer = useSetAtom(fileExplorerAtom)
   const setPathPickerState = useSetAtom(pathPickerStateAtom)
-  const removePath = useSetAtom(removePathVarAtom)
-  const setResolution = useSetAtom(setPathVarResolutionAtom)
-  const confirm = useSetAtom(confirmPathVarDeleteAtom)
-  const cancel = useSetAtom(cancelPathVarDeleteAtom)
-  const pending = useAtomValue(pendingPathVarDeleteAtom)
+  const removePath = useSetAtom(removePathVariableAtom)
+  const setResolution = useSetAtom(
+    setPathVariableResolutionAtom,
+  )
+  const confirm = useSetAtom(confirmPathVariableDeleteAtom)
+  const cancel = useSetAtom(cancelPathVariableDeleteAtom)
+  const pending = useAtomValue(
+    pendingPathVariableDeleteAtom,
+  )
 
   const valueInputRef = useRef<HTMLInputElement>(null)
   const debounceTimerRef = useRef<ReturnType<
@@ -48,7 +52,9 @@ export const PathVarCard = ({
   const setLabel = (label: string) => {
     setPaths((paths) =>
       paths.map((path) =>
-        path.id === pathVar.id ? { ...path, label } : path,
+        path.id === pathVariable.id
+          ? { ...path, label }
+          : path,
       ),
     )
   }
@@ -56,15 +62,17 @@ export const PathVarCard = ({
   const setValue = (value: string) => {
     setPaths((paths) =>
       paths.map((path) =>
-        path.id === pathVar.id ? { ...path, value } : path,
+        path.id === pathVariable.id
+          ? { ...path, value }
+          : path,
       ),
     )
   }
 
   const handleBrowse = async () => {
-    if (pathVar.value) {
+    if (pathVariable.value) {
       setFileExplorer({
-        path: pathVar.value,
+        path: pathVariable.value,
         pickerOnSelect: null,
       })
     } else {
@@ -94,7 +102,7 @@ export const PathVarCard = ({
     const currentInput = valueInputRef.current
     // Open the path picker when the input looks like a path: starts with
     // / or \ (POSIX / UNC) OR a Windows drive letter prefix like `C:\`.
-    // PathField uses the same regex — PathVarCard was missing the drive
+    // PathField uses the same regex — PathVariableCard was missing the drive
     // letter branch, which is why typeahead never opened on Windows.
     if (
       currentInput &&
@@ -116,8 +124,8 @@ export const PathVarCard = ({
         setPathPickerState({
           inputElement: currentInput,
           target: {
-            mode: "pathVar",
-            pathVarId: pathVar.id,
+            mode: "pathVariable",
+            pathVariableId: pathVariable.id,
           },
           parentPath,
           query,
@@ -145,14 +153,15 @@ export const PathVarCard = ({
   }
 
   const isPendingDelete =
-    pending !== null && pending.pathVarId === pathVar.id
+    pending !== null &&
+    pending.pathVariableId === pathVariable.id
   const otherPaths = allPaths.filter(
-    (pv) => pv.id !== pathVar.id,
+    (pv) => pv.id !== pathVariable.id,
   )
 
   return (
     <div
-      data-path-var={pathVar.id}
+      data-path-var={pathVariable.id}
       className="col-span-full bg-slate-800/40 rounded-xl border border-dashed border-slate-600 px-4 py-3"
     >
       <div className="flex items-center gap-2 mb-2">
@@ -160,12 +169,12 @@ export const PathVarCard = ({
           type="button"
           onClick={handleBrowse}
           title={
-            pathVar.value
+            pathVariable.value
               ? "Browse files in this folder"
               : "Browse to pick a folder for this path variable"
           }
           aria-label={
-            pathVar.value
+            pathVariable.value
               ? "Browse files in this folder"
               : "Pick a folder for this path variable"
           }
@@ -175,9 +184,9 @@ export const PathVarCard = ({
         </button>
         <input
           type="text"
-          defaultValue={pathVar.label}
+          defaultValue={pathVariable.label}
           data-action="set-path-label"
-          data-pv-id={pathVar.id}
+          data-pv-id={pathVariable.id}
           onChange={(event) =>
             setLabel(event.currentTarget.value)
           }
@@ -189,7 +198,7 @@ export const PathVarCard = ({
         {!isFirst && (
           <button
             type="button"
-            onClick={() => removePath(pathVar.id)}
+            onClick={() => removePath(pathVariable.id)}
             title="Remove path variable"
             aria-label="Remove path variable"
             className="text-xs text-slate-500 hover:text-red-400 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700"
@@ -201,10 +210,10 @@ export const PathVarCard = ({
       <input
         ref={valueInputRef}
         type="text"
-        defaultValue={pathVar.value}
+        defaultValue={pathVariable.value}
         placeholder="/mnt/media or D:\Media"
         data-action="set-path-value"
-        data-pv-id={pathVar.id}
+        data-pv-id={pathVariable.id}
         onChange={(event) =>
           handleValueChange(event.currentTarget.value)
         }

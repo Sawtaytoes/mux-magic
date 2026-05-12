@@ -14,7 +14,7 @@ import { stepsAtom } from "../../state/stepsAtom"
 import { fileExplorerAtom } from "../../state/uiAtoms"
 import type {
   CommandField,
-  PathVar,
+  PathVariable,
   SequenceItem,
   Step,
   StepLink,
@@ -28,15 +28,15 @@ type PathFieldProps = {
 
 const resolveLinkLabel = (
   link: StepLink | undefined,
-  paths: PathVar[],
+  paths: PathVariable[],
   steps: SequenceItem[],
 ): string => {
   if (!link) {
     return "— custom —"
   }
   if (typeof link === "string") {
-    const pathVar = paths.find((pv) => pv.id === link)
-    return pathVar?.label ?? link
+    const pathVariable = paths.find((pv) => pv.id === link)
+    return pathVariable?.label ?? link
   }
   if (link && typeof link === "object" && link.linkedTo) {
     const flat = flattenSteps(steps)
@@ -55,8 +55,12 @@ export const PathField = ({
   field,
   step,
 }: PathFieldProps) => {
-  const { addPathVar, setLink, setParam, setPathValue } =
-    useBuilderActions()
+  const {
+    addPathVariable,
+    setLink,
+    setParam,
+    setPathValue,
+  } = useBuilderActions()
   const setFileExplorer = useSetAtom(fileExplorerAtom)
   const setLinkPickerState = useSetAtom(linkPickerStateAtom)
   const setPathPickerState = useSetAtom(pathPickerStateAtom)
@@ -166,8 +170,8 @@ export const PathField = ({
           if (typeof link === "string") {
             setPathValue(link, value ?? "")
           } else if (!step.params[field.name] && value) {
-            const newId = `pathVar_${Math.random().toString(36).slice(2, 8)}`
-            addPathVar(newId, value)
+            const newId = `pathVariable_${Math.random().toString(36).slice(2, 8)}`
+            addPathVariable(newId, value)
             setLink(step.id, field.name, newId)
           } else {
             setParam(step.id, field.name, value)
@@ -194,8 +198,8 @@ export const PathField = ({
             const pickerTarget =
               typeof link === "string"
                 ? ({
-                    mode: "pathVar",
-                    pathVarId: link,
+                    mode: "pathVariable",
+                    pathVariableId: link,
                   } as const)
                 : ({
                     mode: "step",

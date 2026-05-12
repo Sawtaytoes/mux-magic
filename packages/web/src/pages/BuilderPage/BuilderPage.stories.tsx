@@ -7,7 +7,10 @@ import {
   stepCounterAtom,
   stepsAtom,
 } from "../../state/stepsAtom"
-import type { PathVar, SequenceItem } from "../../types"
+import type {
+  PathVariable,
+  SequenceItem,
+} from "../../types"
 import { BuilderPage } from "./BuilderPage"
 
 // BuilderPage calls useHydrateAtoms([[commandsAtom, COMMANDS]]) on mount,
@@ -15,7 +18,7 @@ import { BuilderPage } from "./BuilderPage"
 
 const withStore = (
   steps: SequenceItem[] = [],
-  paths: PathVar[] = [
+  paths: PathVariable[] = [
     { id: "basePath", label: "basePath", value: "" },
   ],
   stepCounter: number = steps.length,

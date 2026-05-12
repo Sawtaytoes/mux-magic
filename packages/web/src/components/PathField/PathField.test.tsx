@@ -165,7 +165,7 @@ describe("PathField", () => {
     expect(linkedId).toBe(updatedPaths[0].id)
   })
 
-  it("typing into unlinked PathField with existing param value updates param (not addPathVar)", () => {
+  it("typing into unlinked PathField with existing param value updates param (not addPathVariable)", () => {
     const store = createStore()
     store.set(stepsAtom, [
       createTestStep({
@@ -201,7 +201,7 @@ describe("PathField", () => {
 
   it("typing in linked PathField syncs value to other fields linked to same variable", () => {
     const store = createStore()
-    const basePathVar = {
+    const basePathVariable = {
       id: "basePath",
       label: "basePath",
       value: "/old",
@@ -217,7 +217,7 @@ describe("PathField", () => {
       params: {},
     })
 
-    store.set(pathsAtom, [basePathVar])
+    store.set(pathsAtom, [basePathVariable])
     store.set(stepsAtom, [step1, step2])
 
     render(

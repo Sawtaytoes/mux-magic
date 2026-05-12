@@ -3,7 +3,7 @@
 // globals (paths, steps); the TS versions take them as explicit parameters so
 // they are pure functions that React components can call from atoms / hooks.
 
-import type { Commands, PathVar, Step } from "../types"
+import type { Commands, PathVariable, Step } from "../types"
 
 // Returns the canonical "source" field name for a command — the field whose
 // linked value represents the input folder the step reads from.
@@ -35,7 +35,7 @@ export const mainSrcField = (
 // this step's output via an object link `{ linkedTo, output: "folder" }`.
 export const stepOutput = (
   step: Step,
-  paths: PathVar[],
+  paths: PathVariable[],
   commands: Commands,
   findStep: (id: string) => Step | undefined,
 ): string => {
@@ -117,7 +117,7 @@ export const stepOutput = (
 export const getLinkedValue = (
   step: Step,
   fieldName: string,
-  paths: PathVar[],
+  paths: PathVariable[],
   commands: Commands,
   findStep: (id: string) => Step | undefined,
 ): string | null => {
@@ -125,10 +125,10 @@ export const getLinkedValue = (
   if (!link) return null
 
   if (typeof link === "string") {
-    const pathVar = paths.find(
-      (pathVarEntry) => pathVarEntry.id === link,
+    const pathVariable = paths.find(
+      (pathVariableEntry) => pathVariableEntry.id === link,
     )
-    return pathVar?.value || null
+    return pathVariable?.value || null
   }
 
   if (

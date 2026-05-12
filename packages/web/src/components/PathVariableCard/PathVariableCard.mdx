@@ -1,11 +1,11 @@
-{/* PathVarCard.mdx */}
+{/* PathVariableCard.mdx */}
 
 import { Meta, Canvas } from "@storybook/addon-docs/blocks";
-import * as PathVarCardStories from "./PathVarCard.stories";
+import * as PathVariableCardStories from "./PathVariableCard.stories";
 
-<Meta of={PathVarCardStories} />
+<Meta of={PathVariableCardStories} />
 
-# PathVarCard
+# PathVariableCard
 
 A top-of-builder card declaring a named path variable (e.g., **Base Path** → `/mnt/media`). Other steps reference the variable via `LinkPicker`, so renaming the value in one place updates every downstream link.
 
@@ -16,7 +16,7 @@ Spans the full grid (`col-span-full`) and renders with a dashed border to distin
 - **Label** → uncontrolled input. Commits on every change via the `pathsAtom` updater. Shown as a small accent above the value field.
 - **Value** → uncontrolled input, `font-mono`. Commits on blur (not on every keystroke — fewer atom writes for what's typically a long path).
 - **Browse 📁 button** → two paths:
-  - If `pathVar.value` is set → opens `FileExplorerModal` rooted at that path with no `pickerOnSelect` (read-only browse).
+  - If `pathVariable.value` is set → opens `FileExplorerModal` rooted at that path with no `pickerOnSelect` (read-only browse).
   - If empty → fetches `/files/default-path` for a sensible starting directory, then opens the explorer with a `pickerOnSelect` callback that writes the chosen path back into the path var.
 - **Remove ✕** → only renders when `!isFirst`. The first path variable cannot be removed.
 
@@ -33,12 +33,12 @@ Spans the full grid (`col-span-full`) and renders with a dashed border to distin
 
 ## Base path (first, undeletable)
 
-<Canvas of={PathVarCardStories.BasePath} />
+<Canvas of={PathVariableCardStories.BasePath} />
 
 ## Secondary path (deletable)
 
-<Canvas of={PathVarCardStories.SecondaryPath} />
+<Canvas of={PathVariableCardStories.SecondaryPath} />
 
 ## Empty value
 
-<Canvas of={PathVarCardStories.EmptyValue} />
+<Canvas of={PathVariableCardStories.EmptyValue} />

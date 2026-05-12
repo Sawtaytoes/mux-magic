@@ -59,7 +59,7 @@ export type Step = {
   isCollapsed: boolean
 }
 
-export type PathVar = {
+export type PathVariable = {
   id: string
   label: string
   value: string
