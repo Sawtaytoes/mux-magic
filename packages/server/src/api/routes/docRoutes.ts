@@ -7,7 +7,11 @@ import { openApiDocs } from "../openApiDocConfig.js"
 export const addDocRoutes = async (
   honoRoutes: OpenAPIHono,
 ) => {
-  honoRoutes.get("/", Scalar({ url: "/openapi.json" }))
+  const schemaUrl = process.env.REMOTE_SERVER_URL
+    ? `${process.env.REMOTE_SERVER_URL}/openapi.json`
+    : "/openapi.json"
+
+  honoRoutes.get("/", Scalar({ url: schemaUrl }))
 
   honoRoutes.doc("/openapi.json", openApiDocs)
 
