@@ -651,7 +651,7 @@ jobs:
 `biome check` (no `--write` flag) checks both formatting and linting without modifying files.
 It exits with a non-zero code if any file is unformatted or has a lint error — CI fails, PR is blocked.
 
-**Developer workflow**: run `yarn format` (which runs `biome check --write`) locally before committing.
+**Developer workflow**: run `yarn lint` (which runs `biome check --write`) locally before committing.
 **CI**: runs `biome check` (read-only check). Never runs `--write` in CI.
 
 To make this frictionless, consider adding a pre-commit hook so formatting happens automatically:
@@ -850,9 +850,7 @@ Config (`biome.json` at root):
 ```
 
 Scripts (add to root `package.json`):
-- `yarn biome check` — lint + format check (CI gate: must pass with 0 errors)
-- `yarn biome check --write` — auto-fix everything fixable
-- `yarn format` — alias for `yarn biome check --write`
+- `yarn lint` — alias for Biome and ESLint autofix.
 
 ### ESLint (Minimal: Two Plugins Only)
 
