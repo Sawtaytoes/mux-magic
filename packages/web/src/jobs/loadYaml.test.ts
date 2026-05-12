@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
-
-import type { Commands, PathVariable } from "../types"
+import type { Commands } from "../commands/types"
+import type { PathVariable } from "../types"
 import { loadYamlFromText } from "./loadYaml"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

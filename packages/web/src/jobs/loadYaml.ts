@@ -1,6 +1,6 @@
 import yaml from "js-yaml"
+import type { Commands } from "../commands/types"
 import type {
-  Commands,
   Group,
   PathVariable,
   SequenceItem,

@@ -76,7 +76,9 @@
       "Skill(update-config:*)",
       "Skill(update-config)",
       "mcp__playwright__browser_evaluate",
-      "mcp__playwright__browser_tabs"
+      "mcp__playwright__browser_tabs",
+      "Bash(ls -la \"d:\\\\Projects\\\\Personal\\\\media-tools\\\\\" | head -20)",
+      "Read(//d/Projects/Personal/**)"
     ],
     "deny": [
       "Bash(Get-ChildItem *)",

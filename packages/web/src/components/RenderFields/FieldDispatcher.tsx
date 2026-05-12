@@ -1,4 +1,5 @@
-import type { CommandField, Step } from "../../types"
+import type { CommandField } from "../../commands/types"
+import type { Step } from "../../types"
 import { BooleanField } from "../BooleanField/BooleanField"
 import { EnumField } from "../EnumField/EnumField"
 import { FolderMultiSelectField } from "../FolderMultiSelectField/FolderMultiSelectField"

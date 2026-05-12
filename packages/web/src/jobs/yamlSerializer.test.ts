@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest"
-
+import type { Commands } from "../commands/types"
 import type {
-  Commands,
   PathVariable,
   SequenceItem,
   Step,

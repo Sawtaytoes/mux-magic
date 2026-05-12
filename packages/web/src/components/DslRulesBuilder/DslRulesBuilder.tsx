@@ -101,6 +101,7 @@ export const DslRulesBuilder = ({
               rules={rules}
               ruleIndex={ruleIndex}
               rule={rule}
+              ruleKey={getRuleKey(rule)}
               predicates={predicates}
               isReadOnly={isReadOnly}
               isFirst={ruleIndex === 0}

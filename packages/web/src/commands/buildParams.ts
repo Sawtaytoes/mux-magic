@@ -1,4 +1,5 @@
-import type { CommandDefinition, Step } from "../types"
+import type { CommandDefinition } from "../commands/types"
+import type { Step } from "../types"
 
 // ─── buildParams ──────────────────────────────────────────────────────────────
 // Ported verbatim from scripts/capture-parity-fixtures.ts (which was ported

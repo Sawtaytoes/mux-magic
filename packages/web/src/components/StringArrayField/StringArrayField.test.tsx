@@ -6,8 +6,9 @@ import {
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, it } from "vitest"
 import { FIXTURE_COMMANDS_BUNDLE_C } from "../../commands/__fixtures__/commands"
+import type { CommandField } from "../../commands/types"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { CommandField, Step } from "../../types"
+import type { Step } from "../../types"
 import { StringArrayField } from "./StringArrayField"
 
 const renderField = (step: Step, field: CommandField) => {

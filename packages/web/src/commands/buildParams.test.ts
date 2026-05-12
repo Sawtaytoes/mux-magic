@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
-
-import type { CommandDefinition, Step } from "../types"
+import type { CommandDefinition } from "../commands/types"
+import type { Step } from "../types"
 import { buildParams } from "./buildParams"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

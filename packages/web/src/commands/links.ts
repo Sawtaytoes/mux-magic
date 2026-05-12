@@ -3,7 +3,8 @@
 // globals (paths, steps); the TS versions take them as explicit parameters so
 // they are pure functions that React components can call from atoms / hooks.
 
-import type { Commands, PathVariable, Step } from "../types"
+import type { Commands } from "../commands/types"
+import type { PathVariable, Step } from "../types"
 
 // Returns the canonical "source" field name for a command — the field whose
 // linked value represents the input folder the step reads from.

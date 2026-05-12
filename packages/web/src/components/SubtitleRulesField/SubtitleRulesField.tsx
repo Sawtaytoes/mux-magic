@@ -1,8 +1,8 @@
 import { useState } from "react"
-
+import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
-import type { CommandField, Step } from "../../types"
+import type { Step } from "../../types"
 import { DslRulesBuilder } from "../DslRulesBuilder/DslRulesBuilder"
 import { RuleCard } from "../DslRulesBuilder/RuleCard"
 import type { DslRule } from "../DslRulesBuilder/types"

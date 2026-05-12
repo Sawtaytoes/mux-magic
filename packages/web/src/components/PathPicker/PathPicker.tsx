@@ -1,6 +1,7 @@
 import { useAtom, useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
+import type { DirEntry } from "../../components/PathPicker/types"
 import { setPathValueAtom } from "../../state/pathsAtom"
 import {
   type PathPickerState,
@@ -8,7 +9,6 @@ import {
   type TriggerRect,
 } from "../../state/pickerAtoms"
 import { setParamAtom } from "../../state/stepAtoms"
-import type { DirEntry } from "../../types"
 
 const PICKER_WIDTH = 380
 const PICKER_MAX_HEIGHT = 280

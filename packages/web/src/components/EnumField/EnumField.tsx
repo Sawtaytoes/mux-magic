@@ -1,7 +1,8 @@
 import { useSetAtom } from "jotai"
 import { useRef } from "react"
+import type { CommandField } from "../../commands/types"
 import { enumPickerStateAtom } from "../../state/pickerAtoms"
-import type { CommandField, Step } from "../../types"
+import type { Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
 
 type EnumFieldProps = {

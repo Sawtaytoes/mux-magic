@@ -5,7 +5,7 @@
 // command accepts; `outputFolderName` is the subfolder suffix this command
 // writes its output into (null = writes in-place or caller supplies path).
 
-import type { Commands } from "../types"
+import type { Commands } from "../commands/types"
 
 export const COMMANDS: Commands = {
   // File Operations

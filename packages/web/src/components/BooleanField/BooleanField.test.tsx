@@ -5,8 +5,9 @@ import {
 } from "@testing-library/react"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, test } from "vitest"
+import type { CommandField } from "../../commands/types"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { CommandField, Step } from "../../types"
+import type { Step } from "../../types"
 import { BooleanField } from "./BooleanField"
 
 const mockStep: Step = {

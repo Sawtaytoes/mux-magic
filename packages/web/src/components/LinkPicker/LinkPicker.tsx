@@ -2,6 +2,7 @@ import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { stepOutput } from "../../commands/links"
+import type { Commands } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
 import { flattenSteps } from "../../jobs/sequenceUtils"
@@ -14,7 +15,6 @@ import {
 } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type {
-  Commands,
   PathVariable,
   SequenceItem,
   StepLink,

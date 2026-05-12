@@ -15,11 +15,11 @@ import {
   test,
   vi,
 } from "vitest"
+import type { Commands } from "../../commands/types"
 import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { Commands } from "../../types"
 import { LoadModal } from "./LoadModal"
 
 // Minimal COMMANDS fixture — one command with one field

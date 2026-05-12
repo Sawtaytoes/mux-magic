@@ -6,7 +6,8 @@ import {
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, test } from "vitest"
 import { FIXTURE_COMMANDS_BUNDLE_B } from "../../commands/__fixtures__/commands"
-import type { CommandField, Step } from "../../types"
+import type { CommandField } from "../../commands/types"
+import type { Step } from "../../types"
 import { LanguageCodeField } from "./LanguageCodeField"
 
 const createMockStep = (

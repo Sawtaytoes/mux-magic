@@ -1,8 +1,9 @@
 import { useAtomValue } from "jotai"
 
 import { isFieldVisible } from "../../commands/fieldVisibility"
+import type { CommandField } from "../../commands/types"
 import { commandsAtom } from "../../state/commandsAtom"
-import type { CommandField, Step } from "../../types"
+import type { Step } from "../../types"
 import { FieldDispatcher } from "./FieldDispatcher"
 
 // ─── RenderFields ─────────────────────────────────────────────────────────────

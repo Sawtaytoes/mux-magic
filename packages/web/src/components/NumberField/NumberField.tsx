@@ -1,5 +1,6 @@
+import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
-import type { CommandField, Step } from "../../types"
+import type { Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
 
 type NumberFieldProps = {

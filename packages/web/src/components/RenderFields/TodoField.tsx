@@ -1,4 +1,5 @@
-import type { CommandField, Step } from "../../types"
+import type { CommandField } from "../../commands/types"
+import type { Step } from "../../types"
 
 type TodoFieldProps = {
   type: string

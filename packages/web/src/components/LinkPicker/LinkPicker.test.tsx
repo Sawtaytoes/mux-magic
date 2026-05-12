@@ -13,15 +13,12 @@ import {
   test,
   vi,
 } from "vitest"
+import type { Commands } from "../../commands/types"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { linkPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
-import type {
-  Commands,
-  PathVariable,
-  Step,
-} from "../../types"
+import type { PathVariable, Step } from "../../types"
 import { LinkPicker } from "./LinkPicker"
 
 const TRIGGER_RECT = {

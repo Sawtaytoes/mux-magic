@@ -1,6 +1,10 @@
 import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import { createPortal, flushSync } from "react-dom"
+import type {
+  Commands,
+  EnumOption,
+} from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { findStepById } from "../../jobs/sequenceUtils"
 import { commandsAtom } from "../../state/commandsAtom"
@@ -10,11 +14,7 @@ import {
   type TriggerRect,
 } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
-import type {
-  Commands,
-  EnumOption,
-  SequenceItem,
-} from "../../types"
+import type { SequenceItem } from "../../types"
 
 const PICKER_WIDTH = 300
 const PICKER_MAX_HEIGHT = 400

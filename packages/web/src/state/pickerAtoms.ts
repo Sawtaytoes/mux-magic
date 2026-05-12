@@ -1,5 +1,5 @@
 import { atom } from "jotai"
-import type { DirEntry } from "../types"
+import type { DirEntry } from "../components/PathPicker/types"
 
 export type TriggerRect = {
   left: number

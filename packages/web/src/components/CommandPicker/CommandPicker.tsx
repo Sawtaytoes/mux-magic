@@ -1,6 +1,7 @@
 import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import { createPortal, flushSync } from "react-dom"
+import type { Commands } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
 import { findStepById } from "../../jobs/sequenceUtils"
@@ -11,7 +12,7 @@ import {
   type TriggerRect,
 } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { Commands, SequenceItem } from "../../types"
+import type { SequenceItem } from "../../types"
 
 const TAG_ORDER = [
   "File Operations",

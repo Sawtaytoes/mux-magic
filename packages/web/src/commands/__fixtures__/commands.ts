@@ -2,7 +2,7 @@
 // Stable subset of commands for W2A–W2D test files. One command per field type.
 // Frozen after W1 commit 8 — import from here in all Wave B component tests.
 
-import type { Commands } from "../../types"
+import type { Commands } from "../../commands/types"
 
 // boolean, path, number — BooleanField / NumberField / StringField (W2A)
 export const FIXTURE_COMMANDS_BUNDLE_A: Commands = {

@@ -1,4 +1,4 @@
-import type { CommandField } from "../types"
+import type { CommandField } from "../commands/types"
 
 export const isFieldVisible = (
   visibleWhen: CommandField["visibleWhen"],

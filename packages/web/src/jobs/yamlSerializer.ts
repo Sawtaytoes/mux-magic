@@ -1,8 +1,8 @@
 import { dump } from "js-yaml"
 
 import { buildParams } from "../commands/buildParams"
+import type { Commands } from "../commands/types"
 import type {
-  Commands,
   Group,
   PathVariable,
   SequenceItem,

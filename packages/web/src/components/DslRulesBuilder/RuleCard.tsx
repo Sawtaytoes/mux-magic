@@ -21,6 +21,7 @@ type RuleCardProps = {
   rules: DslRule[]
   ruleIndex: number
   rule: DslRule
+  ruleKey: string
   predicates: PredicatesMap
   isReadOnly: boolean
   isFirst: boolean
@@ -38,6 +39,7 @@ export const RuleCard = ({
   rules,
   ruleIndex,
   rule,
+  ruleKey,
   predicates,
   isReadOnly,
   isFirst,
@@ -49,6 +51,7 @@ export const RuleCard = ({
 }: RuleCardProps) => (
   <div
     data-rule-key={ruleIndex}
+    style={{ viewTransitionName: `rule-${ruleKey}` }}
     className="border border-slate-700 rounded px-3 py-2 bg-slate-800/60"
   >
     <div className="flex items-center gap-2">
