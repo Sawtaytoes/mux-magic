@@ -1254,15 +1254,15 @@ describe("POST /sequences/run — groups", () => {
   //
   // The user lost real files when "Dry Run" was on because the client
   // wasn't forwarding the flag and the server ran deleteFolder for real.
-  // The client now appends `?fake=1` (or `?fake=failure`) for dry-run.
+  // The client now appends `?fake=success` (or `?fake=failure`) for dry-run.
   // These tests are the server-side contract for that flag: when the
   // sequence route is hit with `?fake=...`, the real command observables
   // (including deleteFolder) must NOT execute against the filesystem.
   //
   // These tests intentionally target deleteFolder specifically — it is
   // THE command whose real execution caused the data loss.
-  describe("dry-run safety — ?fake=1 disables real deleteFolder", () => {
-    test("deleteFolder via ?fake=1 leaves the target folder intact", async () => {
+  describe("dry-run safety — ?fake=success disables real deleteFolder", () => {
+    test("deleteFolder via ?fake=success leaves the target folder intact", async () => {
       // memfs setup: a folder that, if deleteFolder ran for real,
       // would be wiped.
       vol.fromJSON({
@@ -1271,18 +1271,21 @@ describe("POST /sequences/run — groups", () => {
           "also-irreplaceable",
       })
 
-      const response = await post("/sequences/run?fake=1", {
-        steps: [
-          {
-            id: "doomed_if_real",
-            command: "deleteFolder",
-            params: {
-              folderPath: "/precious",
-              confirm: true,
+      const response = await post(
+        "/sequences/run?fake=success",
+        {
+          steps: [
+            {
+              id: "doomed_if_real",
+              command: "deleteFolder",
+              params: {
+                folderPath: "/precious",
+                confirm: true,
+              },
             },
-          },
-        ],
-      })
+          ],
+        },
+      )
       expect(response.status).toBe(202)
       const { jobId } = (await response.json()) as {
         jobId: string

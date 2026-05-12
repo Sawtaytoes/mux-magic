@@ -103,7 +103,7 @@ describe("useBuilderActions.runViaApi — dry-run forwarding", () => {
     )
   })
 
-  test("posts to /sequences/run?fake=1 when dryRun is on, failureMode off", async () => {
+  test("posts to /sequences/run?fake=success when dryRun is on, failureMode off", async () => {
     const store = setupStore()
     store.set(dryRunAtom, true)
     store.set(failureModeAtom, false)
@@ -117,7 +117,7 @@ describe("useBuilderActions.runViaApi — dry-run forwarding", () => {
     await result.current.runViaApi()
 
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "/sequences/run?fake=1",
+      "/sequences/run?fake=success",
       expect.objectContaining({ method: "POST" }),
     )
   })
@@ -195,7 +195,7 @@ describe("useBuilderActions.runGroup — dry-run forwarding", () => {
     )
   })
 
-  test("posts to /sequences/run?fake=1 when dryRun is on, failureMode off", async () => {
+  test("posts to /sequences/run?fake=success when dryRun is on, failureMode off", async () => {
     const store = setupStoreWithGroup()
     store.set(dryRunAtom, true)
     store.set(failureModeAtom, false)
@@ -209,7 +209,7 @@ describe("useBuilderActions.runGroup — dry-run forwarding", () => {
     await result.current.runGroup("group_1")
 
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "/sequences/run?fake=1",
+      "/sequences/run?fake=success",
       expect.objectContaining({ method: "POST" }),
     )
   })

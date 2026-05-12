@@ -23,7 +23,12 @@ export const buildRunFetchUrl = (
   inputs: DryRunInputs,
 ): string => {
   if (!inputs.isDryRun) return baseUrl
-  const fakeValue = inputs.isFailureMode ? "failure" : "1"
+  // ?fake=success / ?fake=failure parallels the server scenario names
+  // (see packages/server/src/fake-data/scenarios/*). Avoids the older
+  // "?fake=1" alias which leaves readers guessing what 1 means.
+  const fakeValue = inputs.isFailureMode
+    ? "failure"
+    : "success"
   const separator = baseUrl.includes("?") ? "&" : "?"
   return `${baseUrl}${separator}fake=${fakeValue}`
 }

@@ -20,13 +20,13 @@ describe("buildRunFetchUrl — Dry-Run query forwarding", () => {
     ).toBe("/sequences/run")
   })
 
-  test("appends ?fake=1 when dry-run is on and failureMode is off", () => {
+  test("appends ?fake=success when dry-run is on and failureMode is off", () => {
     expect(
       buildRunFetchUrl("/sequences/run", {
         isDryRun: true,
         isFailureMode: false,
       }),
-    ).toBe("/sequences/run?fake=1")
+    ).toBe("/sequences/run?fake=success")
   })
 
   test("appends ?fake=failure when dry-run AND failureMode are both on", () => {
@@ -44,7 +44,7 @@ describe("buildRunFetchUrl — Dry-Run query forwarding", () => {
         isDryRun: true,
         isFailureMode: false,
       }),
-    ).toBe("/commands/foo?bar=baz&fake=1")
+    ).toBe("/commands/foo?bar=baz&fake=success")
   })
 
   test("works for the /commands/:name endpoint shape", () => {
@@ -53,7 +53,7 @@ describe("buildRunFetchUrl — Dry-Run query forwarding", () => {
         isDryRun: true,
         isFailureMode: false,
       }),
-    ).toBe("/commands/deleteFolder?fake=1")
+    ).toBe("/commands/deleteFolder?fake=success")
   })
 
   test("works for the /commands/:name endpoint shape with failure mode", () => {

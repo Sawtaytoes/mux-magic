@@ -22,12 +22,16 @@ import { replaceFlacWithPcmAudioScenario } from "./scenarios/replaceFlacWithPcmA
 import { storeAspectRatioDataScenario } from "./scenarios/storeAspectRatioData.js"
 import { successScenario } from "./scenarios/success.js"
 
-// Recognize all fake-mode values: "1"/"true"/"yes" for default (success),
-// "failure"/"fail" for scripted-error mode, "inProgress" for stuck mode.
+// Recognize all fake-mode values. The "success" name is preferred over
+// "1"/"true"/"yes" because it sits parallel to the "failure" and
+// "inProgress" scenario names, making the query string self-documenting
+// (?fake=success / ?fake=failure / ?fake=inProgress). The 1/true/yes
+// aliases are retained for back-compat with anything posting raw flags.
 const isFakeQuery = (raw: string | undefined): boolean => {
   if (!raw) return false
   const lowered = raw.toLowerCase()
   return (
+    lowered === "success" ||
     lowered === "1" ||
     lowered === "true" ||
     lowered === "yes" ||

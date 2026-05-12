@@ -231,7 +231,7 @@ describe("runOrStopStepAtom", () => {
       )
     })
 
-    test("posts to /sequences/run?fake=1 when dryRun is on (no failureMode)", async () => {
+    test("posts to /sequences/run?fake=success when dryRun is on (no failureMode)", async () => {
       const step = makeStep()
       const store = makeStore(step)
       store.set(dryRunAtom, true)
@@ -240,7 +240,7 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/sequences/run?fake=1",
+        "/sequences/run?fake=success",
         expect.objectContaining({ method: "POST" }),
       )
     })
