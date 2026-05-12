@@ -22,6 +22,8 @@ Plus function destructuring (2+ args → single object param), always-braced `if
 
 **Before opening a PR:** Search your diff for `for(`, `var`, `let` (with reassignment), single-letter names, boolean names without `is`/`has`, `return` (outside tests), and import paths ending in folders. Fix every hit.
 
+**Indentation:** Biome enforces 2-space indentation everywhere. Never use tabs. Run `yarn biome format --write <file>` on every file you create or modify, then `git add` the result. Do not rely on your editor's auto-conversion — verify the committed bytes with `git show HEAD:<path> | cat -A` and confirm no `^I` (tab) characters appear. CI runs on Linux where editor-level tab→space conversion does not happen.
+
 ## Testing
 
 👉 **Full reference:** [docs/agents/testing.md](docs/agents/testing.md)
@@ -30,9 +32,11 @@ Quick checklist:
 
 - Write a test when you fix a bug — every fix needs a regression guard
 - Run `yarn test` and `yarn typecheck` before every commit
+- Run `yarn lint` from repo root before every push (not just workspace-scoped lint)
 - Run `yarn e2e` before merging UI or API route changes
 - Keep tests in sync with code changes — tests are documentation
 - Verify Playwright tests pass before reporting a fix
+- **When changing a component's HTML structure** (e.g. replacing `<details>`/`<summary>` with `<button>`, swapping element types, renaming `data-*` attributes): grep `e2e/` for the old element type, attribute name, or selector and update every matching Playwright locator
 
 Frameworks: vitest (unit + app-command), Hono in-process testing, Playwright (e2e).
 
