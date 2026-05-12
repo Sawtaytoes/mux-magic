@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test"
 import {
   apiBaseUrl,
   webBaseUrl,
-} from "e2e/playwright.setup.js"
+} from "./e2e/playwright.setup.js"
 
 // E2E tests against the React app. Post-react-migration, the React SPA is
 // served by the dev web-server at WEB_PORT (default 5173). The api-server
