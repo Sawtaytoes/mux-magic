@@ -1,28 +1,28 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
-import type { Job } from "../../jobs/types"
+import type { Job, ProgressSnapshot } from "../../jobs/types"
 import { jobsAtom } from "../../state/jobsAtom"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
 import { JobCard } from "./JobCard"
 
+const COMMANDS = [
+  "remuxToMkv",
+  "extractSubtitles",
+  "copyFiles",
+  "moveFiles",
+  "ffmpegTranscode",
+] as const
+
 const withStore = (
   jobs: Job[],
-  progress?: Map<
-    string,
-    {
-      ratio?: number
-      bytesPerSecond?: number
-      bytesRemaining?: number
-    }
-  >,
+  progress?: Map<string, ProgressSnapshot>,
 ) => {
   const store = createStore()
   store.set(
     jobsAtom,
     new Map(jobs.map((job) => [job.id, job])),
   )
-  if (progress)
-    store.set(progressByJobIdAtom, progress as never)
+  if (progress) store.set(progressByJobIdAtom, progress)
   return (Story: React.ComponentType) => (
     <Provider store={store}>
       <div className="max-w-2xl p-4 space-y-4 bg-slate-950 min-h-screen">
@@ -30,6 +30,32 @@ const withStore = (
       </div>
     </Provider>
   )
+}
+
+// Generates a deterministic running child job + progress snapshot.
+const makeSequenceChild = (
+  index: number,
+): { job: Job; snapshot: ProgressSnapshot } => {
+  const jobId = `seq-1-child-${index}`
+  const ratio = ((index * 17) % 97) / 100
+  const filesTotal = 3 + (index % 8)
+  return {
+    job: {
+      id: jobId,
+      commandName: COMMANDS[index % COMMANDS.length],
+      status: "running",
+      parentJobId: "seq-1",
+    },
+    snapshot: {
+      ratio,
+      filesDone: Math.floor(ratio * filesTotal),
+      filesTotal,
+      bytesPerSecond: (2 + index) * 3_000_000,
+      bytesRemaining: Math.floor(
+        (1 - ratio) * 100_000_000,
+      ),
+    },
+  }
 }
 
 const meta: Meta<typeof JobCard> = {
@@ -182,5 +208,67 @@ export const Sequence: Story = {
         ],
       ]),
     ),
+  ],
+}
+
+const childARunning: Job = {
+  ...childA,
+  status: "running",
+}
+
+export const SequenceParallelSteps: Story = {
+  args: { job: sequenceJob },
+  decorators: [
+    withStore(
+      [sequenceJob, childARunning, childB],
+      new Map([
+        [
+          "seq-1-a",
+          {
+            ratio: 0.78,
+            filesDone: 7,
+            filesTotal: 9,
+            bytesPerSecond: 12_000_000,
+            bytesRemaining: 22_000_000,
+            currentFiles: [
+              {
+                path: "/media/movies/Dune.mkv",
+                ratio: 0.78,
+              },
+            ],
+          },
+        ],
+        [
+          "seq-1-b",
+          {
+            ratio: 0.15,
+            filesDone: 1,
+            filesTotal: 6,
+            bytesPerSecond: 5_000_000,
+            bytesRemaining: 85_000_000,
+          },
+        ],
+      ]),
+    ),
+  ],
+}
+
+export const Sequence10Children: Story = {
+  args: { job: sequenceJob },
+  decorators: [
+    (() => {
+      const pairs = Array.from({ length: 10 }, (_, idx) =>
+        makeSequenceChild(idx + 1),
+      )
+      return withStore(
+        [sequenceJob, ...pairs.map(({ job }) => job)],
+        new Map(
+          pairs.map(({ job, snapshot }) => [
+            job.id,
+            snapshot,
+          ]),
+        ),
+      )
+    })(),
   ],
 }
