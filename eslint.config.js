@@ -38,7 +38,6 @@ export default defineConfig(
       "**/public/**",
       "**/scripts/**",
       "**/storybook-static/**",
-      "e2e/**",
       "examples/**",
       "packages/server/src/schema.generated/**",
       "packages/web/src/api/schema.generated.ts",

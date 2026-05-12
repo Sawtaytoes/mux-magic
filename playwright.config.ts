@@ -1,4 +1,8 @@
 import { defineConfig, devices } from "@playwright/test"
+import {
+  apiBaseUrl,
+  webBaseUrl,
+} from "e2e/playwright.setup.js"
 
 // E2E tests against the React app. Post-react-migration, the React SPA is
 // served by the dev web-server at WEB_PORT (default 5173). The api-server
@@ -13,16 +17,6 @@ import { defineConfig, devices } from "@playwright/test"
 // overwrite a process.env value that's already set, so shell wins.
 //
 // To run interactively: `yarn e2e:ui`. CI / one-shot: `yarn e2e`.
-try {
-  process.loadEnvFile()
-} catch {}
-
-const port = Number(process.env.PORT ?? 3000)
-const webPort = Number(process.env.WEB_PORT ?? 5173)
-
-export const apiBaseURL = `http://localhost:${port}`
-export const webBaseURL = `http://localhost:${webPort}`
-
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -31,7 +25,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: webBaseURL,
+    baseURL: webBaseUrl,
     trace: "on-first-retry",
   },
   projects: [
@@ -46,7 +40,7 @@ export default defineConfig({
     {
       name: "API",
       command: "yarn prod:api-server",
-      url: `${apiBaseURL}/`,
+      url: `${apiBaseUrl}/`,
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
       stderr: "pipe",
@@ -55,7 +49,7 @@ export default defineConfig({
     {
       name: "Web",
       command: "yarn prod:web-server",
-      url: `${webBaseURL}/`,
+      url: `${webBaseUrl}/`,
       reuseExistingServer: !process.env.CI,
       stdout: "pipe",
       stderr: "pipe",
