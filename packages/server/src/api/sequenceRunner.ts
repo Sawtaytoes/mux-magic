@@ -374,6 +374,8 @@ export const runSequenceJob = (
     // Completed. jobRunner uses results.concat(emission) which flattens
     // a single-level array — the original in-line subscriber comment
     // about array-of-array still applies here.
+    // "noop" means the command ran successfully but had nothing to do —
+    // treat it identically to "completed" so downstream steps still run.
     const outputs = finalChild?.outputs ?? null
     return {
       kind: "completed",

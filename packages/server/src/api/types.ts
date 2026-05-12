@@ -2,6 +2,7 @@ export type JobStatus =
   | "pending"
   | "running"
   | "completed"
+  | "noop"
   | "failed"
   | "cancelled"
   | "skipped"

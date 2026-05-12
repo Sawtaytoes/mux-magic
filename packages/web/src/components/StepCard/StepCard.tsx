@@ -384,6 +384,12 @@ const StepCardInner = ({
                   {" subfolder"}
                 </p>
               )}
+              {step.status === "noop" && (
+                <p className="text-xs text-blue-300 bg-blue-950/40 border border-blue-800/50 rounded px-2 py-1 mb-2">
+                  Step completed — No items reported — see logs above for
+                  detail.
+                </p>
+              )}
               {step.error && (
                 <p className="text-xs text-red-400 bg-red-950/40 rounded px-2 py-1 mb-2 font-mono">
                   {step.error}

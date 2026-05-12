@@ -20,6 +20,7 @@ import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { logInfo } from "../tools/logMessage.js"
 import { makeDirectory } from "../tools/makeDirectory.js"
+import { noopIfEmpty } from "../tools/noopIfEmpty.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type KeepLanguagesRequiredProps = {
@@ -160,4 +161,5 @@ export const keepLanguages = ({
     ),
     toArray(),
     logAndRethrow(keepLanguages),
+    noopIfEmpty(),
   )
