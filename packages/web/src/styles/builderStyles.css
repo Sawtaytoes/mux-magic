@@ -28,15 +28,22 @@
   pointer-events: none;
 }
 
-/* Drag-and-drop handle (@dnd-kit). touch-action:none lets pointer
-   events reach the dnd-kit sensor on touch screens without the
-   browser intercepting the scroll gesture first. */
+/* Drag-and-drop visuals (SortableJS). The grip handle gets a grab
+   cursor; the placeholder Sortable inserts at the hover position
+   fades the original card so the user sees where it'll land; the
+   card actively being dragged gets a subtle blue ring. */
 [data-drag-handle] {
   cursor: grab;
   touch-action: none;
 }
 [data-drag-handle]:active {
   cursor: grabbing;
+}
+.drag-ghost {
+  opacity: 0.35;
+}
+.drag-chosen {
+  box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5);
 }
 
 /* View-transition timing for the move-step swap */
@@ -302,15 +309,13 @@
    available width while honoring a 280px minimum so two cards side-
    by-side stay legible (and three+ cards wrap before getting cramped). */
 .group-card-parallel .parallel-group > .step-card {
-  flex: 1 1 220px;
+  flex: 1 1 280px;
   min-width: 0;
 }
-/* Below ~480px the parallel-group container is too narrow for two
+/* Below ~640px the parallel-group container is too narrow for two
    cards side-by-side — collapse to a single column to avoid awkward
-   half-width cards. 640px was too high: on a typical laptop the
-   builder pane is 600-700px, putting group cards right at the old
-   boundary and intermittently stacking cards vertically. */
-@container group-card (max-width: 480px) {
+   half-width cards. */
+@container group-card (max-width: 640px) {
   .group-card-parallel .parallel-group {
     flex-direction: column;
   }

@@ -50,6 +50,7 @@
       "Bash(xargs -r kill)",
       "Bash(yarn *)",
       "Bash(yarn typecheck * | tail *)",
+      "mcp__ide__*",
       "mcp__playwright__browser_*",
       "PowerShell($proc | netstat -ano *)",
       "PowerShell(cat *)",

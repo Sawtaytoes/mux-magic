@@ -1,85 +1,19 @@
-import {
-  DndContext,
-  type DragEndEvent,
-  type DragOverEvent,
-  DragOverlay,
-  type DragStartEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core"
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import { useAtomValue, useSetAtom } from "jotai"
-import { useState } from "react"
-import { flushSync } from "react-dom"
+import { useAtomValue } from "jotai"
+import { useRef } from "react"
+import { useDragAndDrop } from "../../components/DragAndDrop/DragAndDrop"
 import { GroupCard } from "../../components/GroupCard/GroupCard"
 import { InsertDivider } from "../../components/InsertDivider/InsertDivider"
 import { StepCard } from "../../components/StepCard/StepCard"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { isGroup } from "../../jobs/sequenceUtils"
-import { dragReorderAtom } from "../../state/sequenceAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { Group, Step } from "../../types"
+import type { Step } from "../../types"
 
 export const BuilderSequenceList = () => {
   const steps = useAtomValue(stepsAtom)
   const actions = useBuilderActions()
-  const dragReorder = useSetAtom(dragReorderAtom)
-  const [activeId, setActiveId] = useState<string | null>(
-    null,
-  )
-  const [overId, setOverId] = useState<string | null>(null)
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  )
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string)
-  }
-
-  const handleDragOver = (event: DragOverEvent) => {
-    setOverId((event.over?.id as string) ?? null)
-  }
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveId(null)
-    setOverId(null)
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const sourceContainerId =
-      (active.data.current?.sortable
-        ?.containerId as string) ?? "top-level"
-    let targetContainerId =
-      (over.data.current?.sortable
-        ?.containerId as string) ?? "top-level"
-
-    let resolvedOverId = over.id as string
-    if (resolvedOverId.endsWith("-droppable")) {
-      const groupId = resolvedOverId.replace(
-        /-droppable$/,
-        "",
-      )
-      targetContainerId = groupId
-      resolvedOverId = ""
-    }
-
-    dragReorder({
-      activeId: active.id as string,
-      overId: resolvedOverId,
-      sourceContainerId,
-      targetContainerId,
-    })
-  }
+  const containerRef = useRef<HTMLDivElement>(null)
+  useDragAndDrop(containerRef)
 
   const handlePaste =
     (index: number) =>
@@ -88,10 +22,8 @@ export const BuilderSequenceList = () => {
       event.stopPropagation()
     }
 
-  const topLevelIds = steps.map((item) =>
-    isGroup(item) ? item.id : (item as Step).id,
-  )
-
+  // Build the rendered item list alongside a running flat index that numbers
+  // steps globally (groups don't get a flat index; their inner steps do).
   const { items } = steps.reduce<{
     items: React.ReactNode[]
     flatIndex: number
@@ -101,26 +33,12 @@ export const BuilderSequenceList = () => {
         <InsertDivider
           key={`divider-before-${item.id}`}
           index={itemIndex}
-          onInsertStep={() =>
-            document.startViewTransition(() =>
-              flushSync(() =>
-                actions.insertStep(itemIndex),
-              ),
-            )
-          }
+          onInsertStep={() => actions.insertStep(itemIndex)}
           onInsertSequentialGroup={() =>
-            document.startViewTransition(() =>
-              flushSync(() =>
-                actions.insertGroup(itemIndex, false),
-              ),
-            )
+            actions.insertGroup(itemIndex, false)
           }
           onInsertParallelGroup={() =>
-            document.startViewTransition(() =>
-              flushSync(() =>
-                actions.insertGroup(itemIndex, true),
-              ),
-            )
+            actions.insertGroup(itemIndex, true)
           }
           onPaste={handlePaste(itemIndex)}
         />
@@ -138,10 +56,6 @@ export const BuilderSequenceList = () => {
               startingFlatIndex={acc.flatIndex}
               isFirst={itemIndex === 0}
               isLast={itemIndex === steps.length - 1}
-              isDropTarget={
-                overId === item.id ||
-                overId === `${item.id}-droppable`
-              }
             />,
           ],
           flatIndex: acc.flatIndex + item.steps.length,
@@ -159,7 +73,6 @@ export const BuilderSequenceList = () => {
             index={acc.flatIndex}
             isFirst={itemIndex === 0}
             isLast={itemIndex === steps.length - 1}
-            isDropTarget={overId === step.id}
           />,
         ],
         flatIndex: acc.flatIndex + 1,
@@ -172,53 +85,16 @@ export const BuilderSequenceList = () => {
     <InsertDivider
       key="divider-end"
       index={steps.length}
-      onInsertStep={() =>
-        document.startViewTransition(() =>
-          flushSync(() => actions.insertStep(steps.length)),
-        )
-      }
+      onInsertStep={() => actions.insertStep(steps.length)}
       onInsertSequentialGroup={() =>
-        document.startViewTransition(() =>
-          flushSync(() =>
-            actions.insertGroup(steps.length, false),
-          ),
-        )
+        actions.insertGroup(steps.length, false)
       }
       onInsertParallelGroup={() =>
-        document.startViewTransition(() =>
-          flushSync(() =>
-            actions.insertGroup(steps.length, true),
-          ),
-        )
+        actions.insertGroup(steps.length, true)
       }
       onPaste={handlePaste(steps.length)}
     />
   )
-
-  const activeStep = activeId
-    ? ((steps.find(
-        (item) =>
-          !isGroup(item) && (item as Step).id === activeId,
-      ) as Step | undefined) ??
-      steps
-        .filter(isGroup)
-        .flatMap((group) => (group as Group).steps)
-        .find((step) => step.id === activeId))
-    : null
-
-  const activeGroup = activeId
-    ? ((steps.find(
-        (item) => isGroup(item) && item.id === activeId,
-      ) as Group | undefined) ?? null)
-    : null
-
-  const activeStepFlatIndex = activeStep
-    ? steps
-        .filter((item) => !isGroup(item))
-        .findIndex(
-          (item) => (item as Step).id === activeStep.id,
-        )
-    : -1
 
   if (steps.length === 0) {
     return (
@@ -226,22 +102,12 @@ export const BuilderSequenceList = () => {
         <p className="text-sm">No steps yet.</p>
         <InsertDivider
           index={0}
-          onInsertStep={() =>
-            document.startViewTransition(() =>
-              flushSync(() => actions.insertStep(0)),
-            )
-          }
+          onInsertStep={() => actions.insertStep(0)}
           onInsertSequentialGroup={() =>
-            document.startViewTransition(() =>
-              flushSync(() =>
-                actions.insertGroup(0, false),
-              ),
-            )
+            actions.insertGroup(0, false)
           }
           onInsertParallelGroup={() =>
-            document.startViewTransition(() =>
-              flushSync(() => actions.insertGroup(0, true)),
-            )
+            actions.insertGroup(0, true)
           }
           onPaste={handlePaste(0)}
         />
@@ -250,54 +116,13 @@ export const BuilderSequenceList = () => {
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-      onDragCancel={() => {
-        setActiveId(null)
-        setOverId(null)
-      }}
+    <div
+      ref={containerRef}
+      id="steps-el"
+      className="flex flex-col gap-3"
     >
-      <SortableContext
-        id="top-level"
-        items={topLevelIds}
-        strategy={verticalListSortingStrategy}
-      >
-        <div id="steps-el" className="flex flex-col gap-3">
-          {items}
-          {trailingDivider}
-        </div>
-      </SortableContext>
-      <DragOverlay>
-        {activeStep ? (
-          <div className="opacity-90 rotate-1 shadow-2xl">
-            <StepCard
-              step={activeStep}
-              index={
-                activeStepFlatIndex < 0
-                  ? 0
-                  : activeStepFlatIndex
-              }
-              isFirst={false}
-              isLast={false}
-              isDragOverlay
-            />
-          </div>
-        ) : activeGroup ? (
-          <div className="opacity-90 rotate-1 shadow-2xl">
-            <GroupCard
-              group={activeGroup}
-              itemIndex={0}
-              startingFlatIndex={0}
-              isFirst={false}
-              isLast={false}
-              isDragOverlay
-            />
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+      {items}
+      {trailingDivider}
+    </div>
   )
 }

@@ -1,11 +1,5 @@
-import {
-  defaultAnimateLayoutChanges,
-  useSortable,
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useRef, useState } from "react"
-import { flushSync } from "react-dom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
@@ -34,21 +28,16 @@ interface StepCardProps {
   isFirst: boolean
   isLast: boolean
   parentGroupId?: string | null
-  isDragOverlay?: boolean
-  isDropTarget?: boolean
 }
 
-const StepCardInner = ({
+export const StepCard = ({
   step,
   index,
   isFirst,
   isLast,
   parentGroupId = null,
-  isDragOverlay = false,
-  isDropTarget = false,
 }: StepCardProps) => {
   const [actionsOpen, setActionsOpen] = useState(false)
-  const [isCopied, setIsCopied] = useState(false)
 
   const toggleCollapsed = useSetAtom(
     toggleStepCollapsedAtom,
@@ -70,23 +59,6 @@ const StepCardInner = ({
 
   const { copyStepYaml } = useBuilderActions()
   const triggerRef = useRef<HTMLButtonElement>(null)
-
-  const sortable = useSortable({
-    id: step.id,
-    animateLayoutChanges: defaultAnimateLayoutChanges,
-  })
-  const dragStyle = isDragOverlay
-    ? {}
-    : {
-        transform: CSS.Transform.toString(
-          sortable.transform,
-        ),
-        transition:
-          sortable.transition ??
-          (sortable.transform
-            ? "transform 250ms ease"
-            : undefined),
-      }
 
   const label = commandLabel(step.command) || step.command
 
@@ -145,35 +117,20 @@ const StepCardInner = ({
       }
     | undefined
 
-  const opacity =
-    sortable.isDragging && !isDragOverlay ? 0.3 : 1
-
   return (
     <div
-      ref={isDragOverlay ? undefined : sortable.setNodeRef}
       id={`step-${step.id}`}
+      data-sortable-item
       data-step-card={step.id}
-      style={{
-        viewTransitionName: `step-${step.id}`,
-        ...dragStyle,
-        opacity,
-      }}
-      className={`step-card bg-slate-800 rounded-xl border border-slate-700 overflow-hidden${isDropTarget && !isDragOverlay ? " ring-2 ring-blue-500/60" : ""}`}
+      style={{ viewTransitionName: `step-${step.id}` }}
+      className="step-card bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
     >
       <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-700 bg-slate-800/80">
         <button
           type="button"
           data-drag-handle
-          aria-label="Drag to reorder"
           title="Drag to reorder"
-          className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 shrink-0 select-none cursor-grab active:cursor-grabbing"
-          ref={
-            isDragOverlay
-              ? undefined
-              : sortable.setActivatorNodeRef
-          }
-          {...(isDragOverlay ? {} : sortable.attributes)}
-          {...(isDragOverlay ? {} : sortable.listeners)}
+          className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 shrink-0 select-none"
         >
           ⠿
         </button>
@@ -221,7 +178,6 @@ const StepCardInner = ({
             type="button"
             onClick={openCommandHelp}
             title="Show docs for this command's settings"
-            aria-label="Show docs for this command's settings"
             className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-blue-300 hover:bg-slate-700 text-xs"
           >
             ⓘ
@@ -231,105 +187,79 @@ const StepCardInner = ({
           type="button"
           onClick={() => setActionsOpen((prev) => !prev)}
           title="Step actions"
-          aria-label="Step actions"
           className="step-hamburger-btn w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 text-base leading-none"
         >
           ≡
         </button>
-        <div
-          className={`step-actions${actionsOpen ? " open" : ""} flex items-center gap-1`}
-        >
-          <button
-            type="button"
-            onClick={() => void runOrStopStep(step.id)}
-            disabled={!step.command}
-            title={
-              step.status === "running" && step.jobId
-                ? "Cancel this step"
-                : "Run this step only"
-            }
-            aria-label={
-              step.status === "running" && step.jobId
-                ? "Cancel this step"
-                : "Run this step only"
-            }
-            data-step-run-stop={step.id}
-            className={`step-run-stop ${step.status === "running" && step.jobId ? "is-running" : ""}`}
-          >
-            <span className="step-run-stop-icon step-run-stop-play">
-              ▶
-            </span>
-            <span className="step-run-stop-icon step-run-stop-stop">
-              ⏹
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const fn = () =>
+        {actionsOpen && (
+          <div className="step-actions flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => void runOrStopStep(step.id)}
+              disabled={!step.command}
+              title={
+                step.status === "running" && step.jobId
+                  ? "Cancel this step"
+                  : "Run this step only"
+              }
+              data-step-run-stop={step.id}
+              className={`step-run-stop ${step.status === "running" && step.jobId ? "is-running" : ""}`}
+            >
+              <span className="step-run-stop-icon step-run-stop-play">
+                ▶
+              </span>
+              <span className="step-run-stop-icon step-run-stop-stop">
+                ⏹
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() =>
                 moveStep({
                   stepId: step.id,
                   direction: -1,
                   parentGroupId,
                 })
-              document.startViewTransition
-                ? document.startViewTransition(() =>
-                    flushSync(fn),
-                  )
-                : fn()
-            }}
-            disabled={isFirst}
-            aria-label="Move step up"
-            className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const fn = () =>
+              }
+              disabled={isFirst}
+              className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              onClick={() =>
                 moveStep({
                   stepId: step.id,
                   direction: 1,
                   parentGroupId,
                 })
-              document.startViewTransition
-                ? document.startViewTransition(() =>
-                    flushSync(fn),
-                  )
-                : fn()
-            }}
-            disabled={isLast}
-            aria-label="Move step down"
-            className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
-          >
-            ↓
-          </button>
-          {step.command && (
+              }
+              disabled={isLast}
+              className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 text-xs"
+            >
+              ↓
+            </button>
+            {step.command && (
+              <button
+                type="button"
+                onClick={() => copyStepYaml(step.id)}
+                title="Copy this step's YAML"
+                className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-700 text-xs border border-transparent"
+              >
+                <CopyIcon />
+              </button>
+            )}
             <button
               type="button"
-              onClick={async () => {
-                await copyStepYaml(step.id)
-                setIsCopied(true)
-                setTimeout(() => setIsCopied(false), 1500)
-              }}
-              title="Copy this step's YAML"
-              aria-label="Copy this step's YAML"
-              className={`w-6 h-6 flex items-center justify-center rounded text-xs border transition-colors ${isCopied ? "text-emerald-400 border-emerald-500/50 bg-slate-700" : "text-slate-500 hover:text-emerald-400 hover:bg-slate-700 border-transparent"}`}
+              onClick={() => removeStep(step.id)}
+              title="Remove this step"
+              className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs"
             >
-              {isCopied ? "✓" : <CopyIcon />}
+              ✕
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => removeStep(step.id)}
-            title="Remove this step"
-            aria-label="Remove this step"
-            className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 text-xs"
-          >
-            ✕
-          </button>
-        </div>
+          </div>
+        )}
       </div>
       {!step.isCollapsed && (
         <div className="px-3 py-2">
@@ -377,7 +307,3 @@ const StepCardInner = ({
     </div>
   )
 }
-
-export const StepCard = (props: StepCardProps) => (
-  <StepCardInner {...props} />
-)
