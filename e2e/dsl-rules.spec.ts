@@ -184,18 +184,17 @@ test.describe("DslRulesBuilder — When panel", () => {
       .click()
 
     const whenDetails = page.locator(
-      "details[data-details-key$=':when:0']",
+      "[data-details-key$=':when:0']",
     )
     await whenDetails.locator("summary").click()
-    await expect(whenDetails).toHaveAttribute("open")
+    const conditionSelect = whenDetails.locator("select")
+    await expect(conditionSelect).toBeVisible()
 
     // Select a condition from the dropdown.
-    await whenDetails
-      .locator("select")
-      .selectOption("anyScriptInfo")
+    await conditionSelect.selectOption("anyScriptInfo")
 
     // Panel must remain open.
-    await expect(whenDetails).toHaveAttribute("open")
+    await expect(conditionSelect).toBeVisible()
   })
 })
 
