@@ -223,13 +223,18 @@ export const ApiRunModal = () => {
         )
       : null
 
+  const modalTitle =
+    modalState?.source === "step"
+      ? "Run Step"
+      : "Run Sequence"
+
   return (
     <Modal
       isOpen={Boolean(modalState)}
       onClose={() => {
         void close()
       }}
-      ariaLabel="Run Sequence"
+      ariaLabel={modalTitle}
     >
       {modalState && (
         <div
@@ -239,7 +244,7 @@ export const ApiRunModal = () => {
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700 shrink-0">
             <span className="text-slate-300 text-sm font-medium">
-              Run Sequence
+              {modalTitle}
             </span>
             {modalState.jobId && (
               <span

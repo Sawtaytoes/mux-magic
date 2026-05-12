@@ -14,12 +14,14 @@ const makeState = (
     | "failed"
     | "cancelled",
   logs: string[] = [],
+  source: "step" | "sequence" = "sequence",
 ): ApiRunState => ({
   jobId,
   status,
   logs,
   childJobId: null,
   childStepId: null,
+  source,
 })
 
 const meta: Meta<typeof ApiRunModal> = {

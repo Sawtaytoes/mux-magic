@@ -573,6 +573,7 @@ export const runOrStopStepAtom = atom(
       logs: [],
       childJobId: null,
       childStepId: null,
+      source: "step",
     })
 
     try {

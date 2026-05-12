@@ -221,6 +221,7 @@ export const useBuilderActions = () => {
       logs: [],
       childJobId: null,
       childStepId: null,
+      source: "sequence",
     })
     try {
       const response = await fetch("/sequences/run", {
@@ -382,6 +383,7 @@ export const useBuilderActions = () => {
         logs: [],
         childJobId: null,
         childStepId: null,
+        source: "sequence",
       })
 
       try {

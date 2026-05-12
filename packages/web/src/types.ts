@@ -145,6 +145,7 @@ export type ApiRunState = {
   logs: string[]
   childJobId: string | null
   childStepId: string | null
+  source: "step" | "sequence"
 }
 
 // ─── Wave E: Prompt Modal ─────────────────────────────────────────────────────

@@ -48,6 +48,7 @@ describe("ApiRunModal", () => {
       logs: [],
       childJobId: null,
       childStepId: null,
+      source: "sequence",
     })
     renderWithStore(store)
     expect(
@@ -59,6 +60,21 @@ describe("ApiRunModal", () => {
     expect(screen.getByText("running")).toBeInTheDocument()
   })
 
+  test("renders 'Run Step' title when source is step", () => {
+    const store = createStore()
+    store.set(apiRunModalAtom, {
+      jobId: "job-99",
+      status: "running",
+      logs: [],
+      childJobId: null,
+      childStepId: null,
+      source: "step",
+    })
+    renderWithStore(store)
+    expect(screen.getByText("Run Step")).toBeInTheDocument()
+    expect(screen.queryByText("Run Sequence")).toBeNull()
+  })
+
   test("shows Cancel button when status is running", () => {
     const store = createStore()
     store.set(apiRunModalAtom, {
@@ -67,6 +83,7 @@ describe("ApiRunModal", () => {
       logs: [],
       childJobId: null,
       childStepId: null,
+      source: "sequence",
     })
     renderWithStore(store)
     expect(
@@ -82,6 +99,7 @@ describe("ApiRunModal", () => {
       logs: [],
       childJobId: null,
       childStepId: null,
+      source: "sequence",
     })
     renderWithStore(store)
     expect(
@@ -102,6 +120,7 @@ describe("ApiRunModal", () => {
       logs: [],
       childJobId: null,
       childStepId: null,
+      source: "sequence",
     })
     renderWithStore(store)
     await userEvent.click(screen.getByTitle("Close"))
@@ -123,6 +142,7 @@ describe("ApiRunModal", () => {
       logs: [],
       childJobId: null,
       childStepId: null,
+      source: "sequence",
     })
     renderWithStore(store)
     await userEvent.click(screen.getByTitle("Close"))
