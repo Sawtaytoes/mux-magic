@@ -1,0 +1,20 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "hasDuplicateMusicFiles",
+    "params": {
+      "isRecursive": true,
+      "recursiveDepth": 2
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

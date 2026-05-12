@@ -1,0 +1,36 @@
+{/* CommandPicker.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as CommandPickerStories from "./CommandPicker.stories";
+
+<Meta of={CommandPickerStories} />
+
+# CommandPicker
+
+A portal-rendered command palette that appears when a step's command field is clicked. Lists every command in `commandsAtom` grouped by `TAG_ORDER` (File / Audio / Track / Subtitle / Analysis / Naming / Video / Metadata Operations), with type-ahead search across name, label, and tag.
+
+Selection calls `useBuilderActions().changeCommand(stepId, name)` to update the builder. Renders nothing when `commandPickerStateAtom` is `null`.
+
+## Behaviour
+
+- **Open** → `commandPickerStateAtom` is set with `{ anchor: { stepId }, triggerRect }`. Focus moves to the search input on the next tick; `activeIndex` initializes to the step's current command (or `0` if not found).
+- **Position** → computed from `triggerRect` and the picker's max size (340 × 400). Flips above the trigger when there's < 200px below and more space above. Clamps to viewport edges with an 8px margin.
+- **Search** → matches `name`, `commandLabel(name)`, or `tag` (case-insensitive). Resets `activeIndex` to 0 on every keystroke.
+- **Keyboard** → `↑/↓` move within filtered list (wraps), `Enter` selects, `Esc` closes.
+- **Outside click** → captured at the document level (`mousedown`, `useCapture: true`). Clicking inside `#cmd-picker-react` is a no-op; anywhere else closes the picker.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `commandPickerStateAtom` | Visibility + anchor. `null` ⇒ unmounted; `{ anchor, triggerRect }` ⇒ open at that location |
+| `commandsAtom` | Map of all command definitions (provides `tag` for grouping) |
+| `stepsAtom` | Provides the step's current command for initial highlight |
+
+## Open
+
+<Canvas of={CommandPickerStories.Open} />
+
+## Closed
+
+<Canvas of={CommandPickerStories.Closed} />

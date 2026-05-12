@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: reorderTracks
+    params: {sourcePath: '@basePath', isRecursive: true, videoTrackIndexes: [0], audioTrackIndexes: [1, 0], subtitlesTrackIndexes: [0]}

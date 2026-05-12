@@ -1,0 +1,21 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "nameAnimeEpisodes",
+    "params": {
+      "malId": 39534,
+      "malName": "Violet Evergarden",
+      "seasonNumber": 2
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{/* CommandHelpModal.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as CommandHelpModalStories from "./CommandHelpModal.stories";
+
+<Meta of={CommandHelpModalStories} />
+
+# CommandHelpModal
+
+A per-command reference modal showing the command summary, any note or output folder, and a full list of typed fields with descriptions.
+
+Opens when the user clicks the ⓘ button on a step card header. The `commandHelpModalCommandAtom` drives which command is shown; setting it to `null` (or `isOpen={false}`) hides the modal.
+
+Field descriptions come from `window.getCommandFieldDescription` (populated from `src/api/schemas.ts` at prebuild).
+
+## With fields
+
+<Canvas of={CommandHelpModalStories.WithFields} />
+
+## No fields
+
+<Canvas of={CommandHelpModalStories.NoFields} />

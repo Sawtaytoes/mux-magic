@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: replaceTracks
+    params: {sourceFilesPath: '@basePath', destinationFilesPath: '@basePath', hasChapterSyncOffset: true, globalOffset: 100, includeChapters: true, audioLanguages: [eng], subtitlesLanguages: [eng], videoLanguages: [eng], offsets: [0, 100]}

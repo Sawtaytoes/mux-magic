@@ -1,0 +1,52 @@
+{/* GroupCard.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as GroupCardStories from "./GroupCard.stories";
+
+<Meta of={GroupCardStories} />
+
+# GroupCard
+
+A container that holds an ordered list of `StepCard` children, marked as either **sequential** (`flex-col`) or **parallel** (`flex-row flex-wrap`). The body class — `parallel-group` vs `serial-group` — is what the runner reads to decide whether to dispatch children one-after-another or via `Promise.all`.
+
+Renders an inline editable label, a parallel/sequential badge, and a control bar with collapse-all / expand-all double-chevrons, "+ Step", paste, move ↑/↓, copy YAML, run, and remove.
+
+## Behaviour
+
+- **Label** → controlled `onChange` (commits on every keystroke via `updateGroupLabelAtom`). Placeholder reflects the group kind and step count: `"Parallel group (3 steps)"`.
+- **Toggle** → `toggleGroupCollapsedAtom` collapses the group itself (hides the body container). Distinct from the double-chevrons which collapse the *children* via `setGroupChildrenCollapsedAtom`.
+- **Add step** → calls `addStepToGroupAtom(group.id)`. New step starts blank.
+- **Paste** → calls `window.pasteCardAt({ parentGroupId })` so the legacy paste machinery routes the clipboard contents into this group.
+- **Run** → calls `window.runGroup(group.id)` which posts to `/sequences/run` server-side. Independent from the per-step Run/Stop button.
+- **Layout** → when expanded, each child `StepCard` receives `index = startingFlatIndex + idx`. The parent (builder list) is responsible for computing `startingFlatIndex` so step numbers stay continuous across groups.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `toggleGroupCollapsedAtom` | Flips `group.isCollapsed` (hides the body) |
+| `setGroupChildrenCollapsedAtom` | Bulk-collapses or expands every child step |
+| `updateGroupLabelAtom` | Persists label edits |
+| `addStepToGroupAtom` | Appends a blank step to the group |
+| `moveGroupAtom` | Reorders the group within the top-level builder list |
+| `removeGroupAtom` | Deletes the group and all its steps |
+
+## Window globals consumed
+
+| Global | Role |
+|--------|------|
+| `window.pasteCardAt` | Paste-from-clipboard into this group |
+| `window.copyGroupYaml` | Copy this group's YAML representation |
+| `window.runGroup` | Run the group via `/sequences/run` |
+
+## Sequential
+
+<Canvas of={GroupCardStories.Sequential} />
+
+## Parallel
+
+<Canvas of={GroupCardStories.Parallel} />
+
+## Collapsed
+
+<Canvas of={GroupCardStories.Collapsed} />

@@ -1,0 +1,44 @@
+{/* StringField.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as StringFieldStories from "./StringField.stories";
+
+<Meta of={StringFieldStories} />
+
+# StringField
+
+A text input for `type: "string"` step fields — the workhorse of the builder body. Wraps the input with a `FieldLabel` so the tooltip key + required asterisk come for free.
+
+Like `BooleanField`, this is **uncontrolled** (`defaultValue`, not `value`). The `onInput` handler writes back through `window.setParam` on every keystroke. Empty strings are converted to `undefined` so the YAML serializer can drop the key entirely instead of emitting `field: ""`.
+
+## Behaviour
+
+- **Initial value** → `String(step.params[field.name] ?? "")`. Defensive `String(...)` because some legacy paths store numbers in string fields.
+- **Persistence** → `onInput` (not `onChange`) — fires on every keystroke. Writes `newValue || undefined` so blanks remove the param rather than emit empty strings.
+- **Placeholder** → `field.placeholder ?? ""`.
+- **Label + tooltip** → delegated to `FieldLabel`. The wrapping `<div>` is purely a flex/spacing container.
+
+## Props
+
+| Prop | Type | Notes |
+|------|------|-------|
+| `step` | `Step` | Source of `params[field.name]` and `command` (passed to `FieldLabel`) |
+| `field` | `CommandField` | `{ name, label?, placeholder?, required? }` |
+
+## Window globals consumed
+
+| Global | Role |
+|--------|------|
+| `window.setParam` | Persists the new value. Empty strings collapse to `undefined` so YAML omits the key |
+
+## Empty
+
+<Canvas of={StringFieldStories.Empty} />
+
+## With value
+
+<Canvas of={StringFieldStories.WithValue} />
+
+## Required
+
+<Canvas of={StringFieldStories.Required} />

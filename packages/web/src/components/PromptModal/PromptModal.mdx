@@ -1,0 +1,48 @@
+{/* PromptModal.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as PromptModalStories from "./PromptModal.stories";
+
+<Meta of={PromptModalStories} />
+
+# PromptModal
+
+A multiple-choice modal that pauses a running job to ask the user something — usually "which of these candidate files should I use?". Fired by the server when a step's logic encounters ambiguity; the user's pick is POSTed back to `/jobs/<id>/input` so the worker can resume.
+
+Options are sorted with the convention: `1..9` first (in numeric order, with `0` placed at the end of digits), then negative-indexed sentinel options (`-1` skip, `-2` cancel) at the bottom.
+
+## Behaviour
+
+- **Open** → `promptModalAtom` set with `{ jobId, promptId, message, options, filePaths? }`.
+- **Pick** → calls `submitPromptChoice(jobId, promptId, selectedIndex)` (POSTs `{ promptId, selectedIndex }`) then closes.
+- **Per-row Play button** → if a `filePaths` entry matches an option's `index`, that row gets a green **▶ Play** button on the right that calls `window.openVideoModal(rowFilePath)` without picking the option.
+- **Top-level Play button** → if `promptData.filePath` is set (single-file context), shows a Play button above the option list.
+- **Keyboard**:
+  - Digit keys (`0-9`) → if any option has matching `index`, picks it instantly.
+  - `Space` → picks the skip option (`index === -1`) if present.
+  - `Escape` or `-` → picks the cancel option (`index === -2`) if present, else falls back to skip.
+- **Backdrop click** → closes without submitting (no input written back to the server).
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `promptModalAtom` | The full prompt payload. `null` ⇒ closed |
+
+## Server endpoint
+
+`POST /jobs/<jobId>/input` with `{ promptId, selectedIndex }`. Negative indices have semantic meaning: `-1` = skip, `-2` = cancel.
+
+## Window globals consumed
+
+| Global | Role |
+|--------|------|
+| `window.openVideoModal` | Plays a candidate file in the embedded video modal (provided by `FileExplorerModal`) |
+
+## Default
+
+<Canvas of={PromptModalStories.Default} />
+
+## With per-row play buttons
+
+<Canvas of={PromptModalStories.WithPerRowPlayButtons} />

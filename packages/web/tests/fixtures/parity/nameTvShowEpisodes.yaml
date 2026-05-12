@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: nameTvShowEpisodes
+    params: {sourcePath: '@basePath', tvdbId: 76703, tvdbName: One Piece, seasonNumber: 1}

@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: extractSubtitles
+    params: {sourcePath: '@basePath', isRecursive: true, subtitlesLanguage: eng}

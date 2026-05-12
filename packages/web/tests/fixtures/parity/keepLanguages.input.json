@@ -1,0 +1,23 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "keepLanguages",
+    "params": {
+      "isRecursive": true,
+      "audioLanguages": ["eng", "jpn"],
+      "subtitlesLanguages": ["eng"],
+      "useFirstAudioLanguage": true,
+      "useFirstSubtitlesLanguage": true
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

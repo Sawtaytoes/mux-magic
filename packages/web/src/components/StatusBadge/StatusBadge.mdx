@@ -1,0 +1,22 @@
+{/* StatusBadge.mdx */}
+
+import { Meta, Canvas, Controls } from "@storybook/addon-docs/blocks";
+import * as StatusBadgeStories from "./StatusBadge.stories";
+
+<Meta of={StatusBadgeStories} />
+
+# StatusBadge
+
+A pill-shaped badge that colors itself based on the job or step status string. Unknown status values render with no color class (plain text).
+
+## Props
+
+<Controls />
+
+## Status variants
+
+<Canvas of={StatusBadgeStories.Pending} />
+<Canvas of={StatusBadgeStories.Running} />
+<Canvas of={StatusBadgeStories.Completed} />
+<Canvas of={StatusBadgeStories.Failed} />
+<Canvas of={StatusBadgeStories.Cancelled} />

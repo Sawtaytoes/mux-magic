@@ -1,0 +1,20 @@
+{/* FieldTooltip.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as FieldTooltipStories from "./FieldTooltip.stories";
+
+<Meta of={FieldTooltipStories} />
+
+# FieldTooltip
+
+Wraps a label element and shows a positioned tooltip on hover (with a 200ms delay) or on click/tap. Renders nothing when `description` is empty.
+
+The tooltip uses `createPortal` to mount on `document.body`, escaping any `overflow:hidden` container. Positioning mirrors the legacy `field-tooltip.js` logic: tooltip prefers below the anchor and flips above when there isn't room.
+
+## With description
+
+<Canvas of={FieldTooltipStories.WithDescription} />
+
+## No description
+
+<Canvas of={FieldTooltipStories.NoDescription} />

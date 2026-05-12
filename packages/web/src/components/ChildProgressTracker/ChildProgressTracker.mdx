@@ -1,0 +1,42 @@
+{/* ChildProgressTracker.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as ChildProgressTrackerStories from "./ChildProgressTracker.stories";
+
+<Meta of={ChildProgressTrackerStories} />
+
+# ChildProgressTracker
+
+A self-contained progress row for one active child step inside `ApiRunModal`. Given a `stepId` (label) and a `jobId` (data source), it opens its own SSE log stream via `useLogStream` and reads the resulting `ProgressSnapshot` from `progressByJobIdAtom`. Renders the step ID label above a `ProgressBar`.
+
+The SSE connection is fire-and-forget: calling `connect()` on mount starts streaming progress events into the shared atom. The component unmounts when its step finishes, closing the stream automatically.
+
+## Behaviour
+
+- **On mount** — calls `useLogStream(jobId).connect()` to start streaming `/jobs/:jobId/logs`.
+- **While running** — reads `progressByJobIdAtom.get(jobId)` on every atom update and passes it to `ProgressBar`.
+- **No snapshot yet** — falls back to `{}`, which renders an **indeterminate** pulse bar.
+- **On unmount** — `useLogStream`'s cleanup closes the `EventSource`.
+
+## Props
+
+| Prop | Type | Notes |
+|------|------|-------|
+| `stepId` | `string` | Label shown above the bar (`Step {stepId}`) |
+| `jobId` | `string` | Key into `progressByJobIdAtom`; also the SSE stream target |
+
+## Indeterminate
+
+<Canvas of={ChildProgressTrackerStories.Indeterminate} />
+
+## Determinate
+
+<Canvas of={ChildProgressTrackerStories.Determinate} />
+
+## With per-file rows
+
+<Canvas of={ChildProgressTrackerStories.WithPerFileRows} />
+
+## Complete
+
+<Canvas of={ChildProgressTrackerStories.Complete} />

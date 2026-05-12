@@ -1,0 +1,45 @@
+{/* JobsPage.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as JobsPageStories from "./JobsPage.stories";
+
+<Meta of={JobsPageStories} />
+
+# JobsPage
+
+The full Jobs page (mounted at `/`). Mounts `useSseStream()` on render, which opens the persistent EventSource for `/jobs/events` and feeds `jobsAtom`, `progressByJobIdAtom`, `logsByJobIdAtom`, and `jobsConnectionAtom` from the wire.
+
+Renders a header (page title + "Sequence Builder ↗" link + `StatusBar`) and the list of top-level jobs (those without a `parentJobId`). Newest jobs first — the `jobsAtom` `Map` preserves insertion order, so reversing gives newest-first.
+
+## Behaviour
+
+- **Mount** → `useSseStream()` runs once. The hook owns the EventSource lifecycle, heartbeat watchdog, and reconnection logic. Component itself is just a layout shell.
+- **Empty state** → when there are no top-level jobs, render a centered "No jobs yet…" message linking back to the builder.
+- **List** → top-level jobs only; sequence-children render *inside* their parent's `JobCard` via the steps disclosure.
+- **Status badge** → top-right; lives in `StatusBar`.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `jobsAtom` | Source of truth for the job list. Written by `useSseStream`, read here for filtering top-level jobs |
+
+## Server stream
+
+`GET /jobs/events` (SSE). Owned by `useSseStream` — see that hook for the event vocabulary (`job-update`, `progress`, `log-line`, etc.).
+
+## Empty (no jobs)
+
+<Canvas of={JobsPageStories.Empty} />
+
+## Connecting
+
+<Canvas of={JobsPageStories.Connecting} />
+
+## Unstable connection
+
+<Canvas of={JobsPageStories.Unstable} />
+
+## With jobs (running, completed, failed)
+
+<Canvas of={JobsPageStories.WithJobs} />

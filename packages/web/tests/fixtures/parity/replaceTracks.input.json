@@ -1,0 +1,26 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "replaceTracks",
+    "params": {
+      "hasChapterSyncOffset": true,
+      "globalOffset": 100,
+      "includeChapters": true,
+      "audioLanguages": ["eng"],
+      "subtitlesLanguages": ["eng"],
+      "videoLanguages": ["eng"],
+      "offsets": [0, 100]
+    },
+    "links": {
+      "sourceFilesPath": "basePath",
+      "destinationFilesPath": "basePath"
+    }
+  }
+}

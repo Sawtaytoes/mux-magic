@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "linked": [["@media-tools/server", "@media-tools/web"]],
+  "access": "restricted",
+  "baseBranch": "react-migration",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}

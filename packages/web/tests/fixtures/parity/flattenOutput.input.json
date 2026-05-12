@@ -1,0 +1,19 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "flattenOutput",
+    "params": {
+      "deleteSourceFolder": true
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

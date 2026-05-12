@@ -1,25 +1,11 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "allowJs": false,
-    "allowSyntheticDefaultImports": true,
-    "composite": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "isolatedModules": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    // "noEmit": true,
-    // "noUncheckedIndexedAccess": true, // This is too strict.
-    "outDir": "dist",
-    "resolveJsonModule": true,
-    // "rootDir": "src",
-    "skipLibCheck": true,
-    "strict": true,
-    "target": "ESNext",
-    "useDefineForClassFields": true,
+    "noEmit": true,
   },
-  "include": [
-    "src",
-  ],
+  "include": ["e2e", "scripts", "*.json", "*.ts"],
+  "exclude": [".claude/workspaces", "packages"]
 }

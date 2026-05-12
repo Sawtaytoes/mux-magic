@@ -1,0 +1,119 @@
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
+import { InsertDivider } from "./InsertDivider"
+
+const makeProps = () => ({
+  index: 0,
+  onInsertStep: vi.fn(),
+  onInsertSequentialGroup: vi.fn(),
+  onInsertParallelGroup: vi.fn(),
+  onPaste: vi.fn(),
+})
+
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
+
+describe("InsertDivider", () => {
+  test("renders all four action buttons", () => {
+    render(<InsertDivider {...makeProps()} />)
+    expect(
+      screen.getByTitle(/insert a step here/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByTitle(/insert a sequential group here/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByTitle(/insert a parallel group here/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByTitle(
+        /paste a copied step or group here/i,
+      ),
+    ).toBeInTheDocument()
+  })
+
+  test("calls onInsertStep when Step button is clicked", async () => {
+    const props = makeProps()
+    const user = userEvent.setup()
+    render(<InsertDivider {...props} />)
+
+    await user.click(
+      screen.getByTitle(/insert a step here/i),
+    )
+
+    expect(props.onInsertStep).toHaveBeenCalledOnce()
+  })
+
+  test("calls onInsertSequentialGroup when Group button is clicked", async () => {
+    const props = makeProps()
+    const user = userEvent.setup()
+    render(<InsertDivider {...props} />)
+
+    await user.click(
+      screen.getByTitle(/insert a sequential group here/i),
+    )
+
+    expect(
+      props.onInsertSequentialGroup,
+    ).toHaveBeenCalledOnce()
+  })
+
+  test("calls onInsertParallelGroup when Parallel button is clicked", async () => {
+    const props = makeProps()
+    const user = userEvent.setup()
+    render(<InsertDivider {...props} />)
+
+    await user.click(
+      screen.getByTitle(/insert a parallel group here/i),
+    )
+
+    expect(
+      props.onInsertParallelGroup,
+    ).toHaveBeenCalledOnce()
+  })
+
+  test("calls onPaste when Paste button is clicked", async () => {
+    const props = makeProps()
+    const user = userEvent.setup()
+    render(<InsertDivider {...props} />)
+
+    await user.click(
+      screen.getByTitle(
+        /paste a copied step or group here/i,
+      ),
+    )
+
+    expect(props.onPaste).toHaveBeenCalledOnce()
+  })
+
+  test("does not cross-fire callbacks", async () => {
+    const props = makeProps()
+    const user = userEvent.setup()
+    render(<InsertDivider {...props} />)
+
+    await user.click(
+      screen.getByTitle(/insert a step here/i),
+    )
+
+    expect(
+      props.onInsertSequentialGroup,
+    ).not.toHaveBeenCalled()
+    expect(
+      props.onInsertParallelGroup,
+    ).not.toHaveBeenCalled()
+    expect(props.onPaste).not.toHaveBeenCalled()
+  })
+})

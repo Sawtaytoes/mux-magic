@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: deleteFilesByExtension
+    params: {sourcePath: '@basePath', extensions: [.srt, .idx], isRecursive: true, recursiveDepth: 2}

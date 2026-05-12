@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>media-tools</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!--
+      Loads window.getCommandFieldDescription / getCommandSummary /
+      commandDescriptions, all generated at prebuild time from the
+      .describe(...) calls in src/api/schemas.ts. Must load BEFORE the
+      React bundle so CommandFieldEntry and FieldTooltip can read it.
+      Source: packages/server/scripts/build-command-descriptions.ts.
+    -->
+    <script src="/command-descriptions.js"></script>
+    <script type="module" src="/src/app.tsx"></script>
+  </body>
+</html>

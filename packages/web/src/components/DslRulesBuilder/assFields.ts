@@ -1,0 +1,42 @@
+// ASS [Script Info] known keys
+export const SCRIPT_INFO_FIELDS = [
+  "Title",
+  "ScriptType",
+  "WrapStyle",
+  "PlayResX",
+  "PlayResY",
+  "ScaledBorderAndShadow",
+  "YCbCr Matrix",
+  "LastStyleStorage",
+  "Video File",
+  "Video Aspect Ratio",
+  "Video Zoom",
+  "Video Position",
+] as const
+
+// ASS [V4+ Styles] column names
+export const STYLE_FIELDS = [
+  "Name",
+  "Fontname",
+  "Fontsize",
+  "PrimaryColour",
+  "SecondaryColour",
+  "OutlineColour",
+  "BackColour",
+  "Bold",
+  "Italic",
+  "Underline",
+  "StrikeOut",
+  "ScaleX",
+  "ScaleY",
+  "Spacing",
+  "Angle",
+  "BorderStyle",
+  "Outline",
+  "Shadow",
+  "Alignment",
+  "MarginL",
+  "MarginR",
+  "MarginV",
+  "Encoding",
+] as const

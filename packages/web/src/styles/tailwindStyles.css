@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #0f172a; /* slate-900 */
+    color: #f1f5f9; /* slate-100 */
+    min-height: 100vh;
+  }
+
+  /* Thin slate-tinted scrollbars on all scrollable elements — matches
+     the dark theme and avoids the jarring default browser scrollbar. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.5) transparent;
+  }
+}

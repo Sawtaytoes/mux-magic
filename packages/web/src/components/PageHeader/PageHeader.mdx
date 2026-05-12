@@ -1,0 +1,57 @@
+{/* PageHeader.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as PageHeaderStories from "./PageHeader.stories";
+
+<Meta of={PageHeaderStories} />
+
+# PageHeader
+
+The top bar of the builder page. Hosts navigation (New Sequence, Jobs link), undo/redo, collapse-all / expand-all, dry-run + failure-mode toggles, the run buttons, and YAML import/export icons.
+
+All actions are wired directly to Jotai atoms and hooks — there is no legacy bridge layer.
+
+## Behaviour
+
+- **Responsive menus** → Two collapsible panels (`page-menu-nav` and `page-menu-controls`) that show/hide based on `openMenu`. Toggle buttons (`#page-nav-toggle`, `#page-controls-toggle`) flip the state; clicks outside the panels close them via a document `mousedown` listener.
+- **Esc** → closes open modal (YamlModal / ApiRunModal via atom) and any open responsive panel.
+- **Dry-run badge** → Renders only when `dryRunAtom` is true. Clicking it (or the toggle in the controls menu) flips the atom AND writes to `localStorage["isDryRun"]`.
+- **Failure-mode toggle** → Only rendered when dry-run is on. Persists to `localStorage["dryRunScenario"]`.
+- **Undo/redo enable state** → Driven by `canUndoAtom` / `canRedoAtom` from `historyAtoms.ts`; updated by `useBuilderActions`.
+- **Run buttons** → `▶ Run Sequence` calls `runViaApi` from `useBuilderActions`. Both are disabled while `runningAtom` is true.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `dryRunAtom` | Drives the badge + toggle. Mirrored to `localStorage["isDryRun"]` |
+| `failureModeAtom` | "Simulate Failures" toggle. Mirrored to `localStorage["dryRunScenario"]` |
+| `runningAtom` | Disables run buttons while a sequence is in flight |
+| `canUndoAtom` / `canRedoAtom` | Enable/disable undo + redo buttons |
+
+## Actions (via useBuilderActions)
+
+| Action | Role |
+|--------|------|
+| `startNew` | "New Sequence" button |
+| `undo` / `redo` | Toolbar buttons |
+| `setAllCollapsed(bool)` | Collapse-all / expand-all |
+| `runViaApi` | ▶ Run via API button |
+| `addPath` | "Add Path" button |
+| `copyYaml` | Copy YAML icon |
+
+## Default
+
+<Canvas of={PageHeaderStories.Default} />
+
+## Dry-run active
+
+<Canvas of={PageHeaderStories.DryRunActive} />
+
+## Dry-run with simulated failures
+
+<Canvas of={PageHeaderStories.DryRunWithFailures} />
+
+## Run in flight (buttons disabled)
+
+<Canvas of={PageHeaderStories.RunInFlight} />

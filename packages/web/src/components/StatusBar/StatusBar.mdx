@@ -1,0 +1,38 @@
+{/* StatusBar.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as StatusBarStories from "./StatusBar.stories";
+
+<Meta of={StatusBarStories} />
+
+# StatusBar
+
+A minimal text indicator showing the SSE connection state for the jobs stream. Lives in the top-right of `JobsPage`'s header.
+
+Reads `jobsConnectionAtom`, which is one of three states maintained by `useSseStream`:
+
+| State | Color | Meaning |
+|-------|-------|---------|
+| `connecting` | slate-400 | Initial state before the EventSource opens (or while reconnecting) |
+| `connected` | emerald-400 | Stream is live; jobs/progress events flowing |
+| `unstable` | amber-400 | Stream silent past the heartbeat threshold; auto-retry in progress |
+
+The component is intentionally small — it's a one-line render of `jobsConnectionAtom` with a class lookup. The interesting logic lives in `useSseStream` (heartbeat watchdog, exponential reconnect, etc.) which writes the atom.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `jobsConnectionAtom` | Source of truth for the connection state. Written by `useSseStream`, read here |
+
+## Connecting
+
+<Canvas of={StatusBarStories.Connecting} />
+
+## Connected
+
+<Canvas of={StatusBarStories.Connected} />
+
+## Unstable
+
+<Canvas of={StatusBarStories.Unstable} />

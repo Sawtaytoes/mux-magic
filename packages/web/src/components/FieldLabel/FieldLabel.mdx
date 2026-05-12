@@ -1,0 +1,38 @@
+{/* FieldLabel.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as FieldLabelStories from "./FieldLabel.stories";
+
+<Meta of={FieldLabelStories} />
+
+# FieldLabel
+
+A reusable `<label>` for command fields. Renders the field's human label (or its raw name if no label), an optional red `*` for required fields, and the `data-tooltip-key` attribute that wires it into the global `FieldTooltip` hover system.
+
+Used by `StringField`, `NumberField`, and any other field that wraps an input. `BooleanField` uses its own inline `<label>` because its checkbox sits inside the label rather than above it.
+
+## Behaviour
+
+- **Label resolution** → `field.label ?? field.name`. The component never reads from a translation system or schema — whatever's on the field object wins.
+- **Required asterisk** → only rendered when `field.required === true`.
+- **Tooltip key** → `data-tooltip-key={`${command}:${field.name}`}`. `FieldTooltip` watches `mouseover` for elements carrying this attribute and resolves the description through `window.getCommandFieldDescription`.
+- **Cursor** → `cursor-help` so the user knows there's a tooltip.
+
+## Props
+
+| Prop | Type | Notes |
+|------|------|-------|
+| `command` | `string` | Command name; first half of the tooltip key |
+| `field` | `Pick<CommandField, "name" \| "label" \| "required">` | Only the three fields this component actually reads — accepts a wider type but only depends on these |
+
+## Default
+
+<Canvas of={FieldLabelStories.Default} />
+
+## Required (with asterisk)
+
+<Canvas of={FieldLabelStories.Required} />
+
+## No label (falls back to field name)
+
+<Canvas of={FieldLabelStories.NoLabel} />

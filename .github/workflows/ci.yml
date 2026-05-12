@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [react-migration, master]
+  push:
+    branches: [react-migration]
+
+env:
+  PORT: 3000
+  REMOTE_SERVER_DOMAIN: http://localhost
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - run: yarn lint:biome
+      - run: yarn lint:eslint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - run: yarn generate:internal-api-schemas
+      - run: yarn typecheck
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - run: yarn install-playwright-browser
+      - run: yarn generate:internal-api-schemas
+      - run: yarn test
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - run: yarn playwright install chromium --with-deps
+      - run: yarn generate:internal-api-schemas
+      - run: yarn build:web-static
+      - run: yarn e2e
+
+  version:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/react-migration'
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, unit-tests]
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - uses: changesets/action@v1
+        with:
+          # Only attempt to publish when NPM_TOKEN is configured. Without
+          # this guard, every push to react-migration fails on ENEEDAUTH
+          # because changesets/action falls through to publishing any
+          # workspace whose current version isn't on npm yet.
+          publish: ${{ secrets.NPM_TOKEN && 'yarn changeset publish' || '' }}
+          title: "chore: version packages"
+          commit: "chore: version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

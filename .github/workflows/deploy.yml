@@ -29,6 +29,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: corepack enable && yarn install --immutable
+
+      - name: Generate OpenAPI schemas
+        run: yarn generate-schemas-ci
+
       - name: Build Docker image
         uses: docker/build-push-action@v7
         with:

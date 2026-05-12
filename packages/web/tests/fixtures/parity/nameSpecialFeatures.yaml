@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: nameSpecialFeatures
+    params: {sourcePath: '@basePath', dvdCompareId: 74759, dvdCompareName: 'The Lord of the Rings: The Fellowship of the Ring', dvdCompareReleaseHash: 12345, dvdCompareReleaseLabel: Extended Edition, fixedOffset: 500, timecodePadding: 3, autoNameDuplicates: true, tmdbId: 120, tmdbName: 'The Lord of the Rings: The Fellowship of the Ring'}

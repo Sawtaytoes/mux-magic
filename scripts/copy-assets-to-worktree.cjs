@@ -23,10 +23,9 @@ const tryGit = (args) => {
       cwd: repoRoot,
       stdio: ["ignore", "pipe", "ignore"],
     })
-    .toString()
-    .trim()
-  }
-  catch {
+      .toString()
+      .trim()
+  } catch {
     return ""
   }
 }
@@ -35,19 +34,36 @@ const tryGit = (args) => {
 // In the main worktree this is ".git" (relative); in a sibling worktree it is
 // an absolute path like /repo/.git. path.resolve handles both cases correctly:
 // an absolute segment resets resolution so the repoRoot prefix is ignored.
-const gitCommonDirectory = tryGit("rev-parse --git-common-dir")
-const mainRepoRoot = resolve(repoRoot, gitCommonDirectory, "..")
+const gitCommonDirectory = tryGit(
+  "rev-parse --git-common-dir",
+)
+const mainRepoRoot = resolve(
+  repoRoot,
+  gitCommonDirectory,
+  "..",
+)
 const sourceAssetsPath = join(mainRepoRoot, "assets")
 const destinationAssetsPath = join(repoRoot, "assets")
 
-const isAlreadyMainWorktree = sourceAssetsPath === destinationAssetsPath
+const isAlreadyMainWorktree =
+  sourceAssetsPath === destinationAssetsPath
 const isSourceMissing = !existsSync(sourceAssetsPath)
-const isDestinationPresent = existsSync(destinationAssetsPath)
+const isDestinationPresent = existsSync(
+  destinationAssetsPath,
+)
 
-if (isAlreadyMainWorktree || isSourceMissing || isDestinationPresent) {
+if (
+  isAlreadyMainWorktree ||
+  isSourceMissing ||
+  isDestinationPresent
+) {
   process.exit(0)
 }
 
-console.log(`[copy-assets] ${sourceAssetsPath} → ${destinationAssetsPath}`)
-cpSync(sourceAssetsPath, destinationAssetsPath, { recursive: true })
+console.log(
+  `[copy-assets] ${sourceAssetsPath} → ${destinationAssetsPath}`,
+)
+cpSync(sourceAssetsPath, destinationAssetsPath, {
+  recursive: true,
+})
 console.log("[copy-assets] done")

@@ -1,27 +1,22 @@
-import { readFileSync } from "node:fs"
 import { defineConfig, devices } from "@playwright/test"
+import {
+  apiBaseUrl,
+  webBaseUrl,
+} from "./e2e/playwright.setup.js"
 
-// E2E tests against the builder UI. The api-server boots an HTTP server
-// on whichever PORT the project's .env declares, serves
-// /api/builder/index.html from public/, and exposes /commands/* +
-// /queries/*. Playwright drives it through Chromium.
+// E2E tests against the React app. Post-react-migration, the React SPA is
+// served by the dev web-server at WEB_PORT (default 5173). The api-server
+// still runs at PORT (default 3000) for backend HTTP calls made from the
+// browser. Playwright navigates to the SPA, so use.baseURL points at the
+// web server; the webServer entries below still boot both because the SPA
+// hits the API at runtime.
 //
-// We sniff PORT out of .env at config-load time so this file tracks the
-// user's local port choice without anyone having to keep two configs in
-// sync. Defaults to 3000 if .env is absent or has no PORT line.
+// Ports come from process.env (shell / CI workflow) first, falling back
+// to .env if present, then to the same defaults as
+// packages/server/src/tools/envVars.ts. Node's loadEnvFile won't
+// overwrite a process.env value that's already set, so shell wins.
 //
 // To run interactively: `yarn e2e:ui`. CI / one-shot: `yarn e2e`.
-const port = (() => {
-  try {
-    const env = readFileSync(".env", "utf8")
-    const match = /^PORT\s*=\s*(\d+)\s*$/m.exec(env)
-    if (match) return Number(match[1])
-  } catch {}
-  return 3000
-})()
-
-const baseURL = `http://localhost:${port}`
-
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -30,7 +25,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL,
+    baseURL: webBaseUrl,
     trace: "on-first-retry",
   },
   projects: [
@@ -39,14 +34,26 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  // Boots the api-server before tests run; reuses an existing server in
-  // dev so re-running locally is fast (no cold-start penalty).
-  webServer: {
-    command: "yarn start-server",
-    url: `${baseURL}/builder/`,
-    reuseExistingServer: !process.env.CI,
-    stdout: "ignore",
-    stderr: "pipe",
-    timeout: 30 * 1000,
-  },
+  // Boots both servers before tests run; reuses existing servers in dev
+  // so re-running locally is fast (no cold-start penalty).
+  webServer: [
+    {
+      name: "API",
+      command: "yarn prod:api-server",
+      url: `${apiBaseUrl}/`,
+      reuseExistingServer: !process.env.CI,
+      stdout: "pipe",
+      stderr: "pipe",
+      timeout: 30 * 1000,
+    },
+    {
+      name: "Web",
+      command: "yarn prod:web-server",
+      url: `${webBaseUrl}/`,
+      reuseExistingServer: !process.env.CI,
+      stdout: "pipe",
+      stderr: "pipe",
+      timeout: 30 * 1000,
+    },
+  ],
 })

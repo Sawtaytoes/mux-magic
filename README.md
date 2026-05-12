@@ -146,7 +146,7 @@ Examples:
 ### Build a standalone Windows executable
 
 ```sh
-yarn sea
+yarn cli-app:sea
 ```
 
 Output: `dist/media-tools.exe`
@@ -483,7 +483,7 @@ The response carries the job id; `curl -N http://localhost:3000/jobs/<jobId>/log
 ```sh
 yarn test          # run all tests (vitest)
 yarn typecheck     # TypeScript type check without emitting
-yarn build         # bundle CLI to build/media-tools.cjs (used by `yarn sea`)
+yarn build:cli-app # bundle CLI to build/media-tools.cjs (used by `yarn sea`)
 ```
 
 Tests live next to their source files (`foo.ts` → `foo.test.ts`). The filesystem is globally mocked with `memfs` in tests — see `vitest.setup.ts`.
