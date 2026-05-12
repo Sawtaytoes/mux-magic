@@ -18,7 +18,7 @@ try {
 } catch {}
 
 const port = Number(process.env.PORT ?? 3000)
-const webPort = Number(process.env.WEB_PORT ?? 4173)
+const webPort = Number(process.env.WEB_PORT ?? 5173)
 
 const apiBaseURL = `http://localhost:${port}`
 const webBaseURL = `http://localhost:${webPort}`

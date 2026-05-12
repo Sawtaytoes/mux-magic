@@ -6,6 +6,6 @@
     "moduleResolution": "NodeNext",
     "noEmit": true
   },
-  "include": ["scripts", "*.json", "*.ts"],
+  "include": ["e2e", "scripts", "*.json", "*.ts"],
   "exclude": [".claude/workspaces", "packages"]
 }

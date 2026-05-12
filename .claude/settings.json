@@ -16,6 +16,7 @@
       "Bash(ffprobe *)",
       "Bash(file *)",
       "Bash(find *)",
+      "Bash(findstr *)",
       "Bash(gh auth *)",
       "Bash(gh pr *)",
       "Bash(gh run *)",
@@ -24,6 +25,7 @@
       "Bash(head *)",
       "Bash(ifconfig *)",
       "Bash(ip *)",
+      "Bash(ls * | head *)",
       "Bash(ls *)",
       "Bash(lsof *)",
       "Bash(nc *)",
@@ -50,6 +52,8 @@
       "Bash(xargs -r kill)",
       "Bash(yarn *)",
       "Bash(yarn typecheck * | tail *)",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_tabs",
       "mcp__playwright__browser* *",
       "PowerShell($proc | netstat -ano *)",
       "PowerShell(cat *)",
@@ -73,12 +77,9 @@
       "PowerShell(Where-*)",
       "PowerShell(yarn *)",
       "Read(**)",
+      "Read(//**)",
       "Skill(update-config:*)",
-      "Skill(update-config)",
-      "mcp__playwright__browser_evaluate",
-      "mcp__playwright__browser_tabs",
-      "Bash(ls -la \"d:\\\\Projects\\\\Personal\\\\media-tools\\\\\" | head -20)",
-      "Read(//d/Projects/Personal/**)"
+      "Skill(update-config)"
     ],
     "deny": [
       "Bash(Get-ChildItem *)",
@@ -87,7 +88,10 @@
       "PowerShell(npm *)",
       "PowerShell(npx *)"
     ],
-    "ask": ["Bash(yarn dlx *)", "PowerShell(yarn dlx *)"]
+    "ask": [
+      "Bash(yarn dlx *)",
+      "PowerShell(yarn dlx *)"
+    ]
   },
   "hooks": {
     "WorktreeCreate": [
