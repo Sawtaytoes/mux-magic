@@ -145,6 +145,21 @@ describe("StepCard", () => {
     expect(screen.queryByText(/Wave B pending/)).toBeNull()
   })
 
+  test("B12: calls startViewTransition when ✕ delete button is clicked", async () => {
+    const spy = vi
+      .spyOn(document, "startViewTransition")
+      .mockReturnValue(
+        undefined as unknown as ViewTransition,
+      )
+    const user = userEvent.setup()
+    renderCard(makeStep())
+
+    await user.click(screen.getByTitle(/step actions/i))
+    await user.click(screen.getByTitle(/remove this step/i))
+
+    expect(spy).toHaveBeenCalledOnce()
+  })
+
   test("B1: calls startViewTransition when ↑ button is clicked", async () => {
     const spy = vi
       .spyOn(document, "startViewTransition")

@@ -136,6 +136,38 @@ describe("GroupCard", () => {
     expect((items[0] as Group).steps).toHaveLength(3)
   })
 
+  test("B12: calls startViewTransition when ✕ delete button is clicked", async () => {
+    const spy = vi
+      .spyOn(document, "startViewTransition")
+      .mockReturnValue(
+        undefined as unknown as ViewTransition,
+      )
+    const user = userEvent.setup()
+    renderCard(makeGroup())
+
+    await user.click(
+      screen.getByTitle(/remove this group/i),
+    )
+
+    expect(spy).toHaveBeenCalledOnce()
+  })
+
+  test("B12: calls startViewTransition when 📋 Paste button is clicked", async () => {
+    const spy = vi
+      .spyOn(document, "startViewTransition")
+      .mockReturnValue(
+        undefined as unknown as ViewTransition,
+      )
+    const user = userEvent.setup()
+    renderCard(makeGroup())
+
+    await user.click(
+      screen.getByTitle(/paste a copied step/i),
+    )
+
+    expect(spy).toHaveBeenCalledOnce()
+  })
+
   test("B1: calls startViewTransition when ↑ button is clicked", async () => {
     const spy = vi
       .spyOn(document, "startViewTransition")
