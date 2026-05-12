@@ -1,5 +1,6 @@
 import type { CreateJobResponse } from "@media-tools/server/api-types"
 import { atom } from "jotai"
+import { apiBase } from "../apiBase"
 import { buildParams } from "../commands/buildParams"
 import { isGroup } from "../jobs/sequenceUtils"
 import type {
@@ -87,7 +88,7 @@ export const runOrStopStepAtom = atom(
     // Cancel an in-flight step run.
     if (step.status === "running" && step.jobId) {
       try {
-        await fetch(`/jobs/${step.jobId}`, {
+        await fetch(`${apiBase}/jobs/${step.jobId}`, {
           method: "DELETE",
         })
       } catch {

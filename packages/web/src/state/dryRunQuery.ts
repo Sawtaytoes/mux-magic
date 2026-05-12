@@ -14,6 +14,7 @@
 // is forwarded uniformly to the server.
 
 import { atom } from "jotai"
+import { apiBase } from "../apiBase"
 
 // Initial values are hydrated from localStorage so the badge survives
 // page reloads. The PageHeader toggle handler writes back to
@@ -32,9 +33,10 @@ export type DryRunInputs = {
 }
 
 export const buildRunFetchUrl = (
-  baseUrl: string,
+  path: string,
   inputs: DryRunInputs,
 ): string => {
+  const baseUrl = `${apiBase}${path}`
   if (!inputs.isDryRun) return baseUrl
   // ?fake=success / ?fake=failure parallels the server scenario names
   // (see packages/server/src/fake-data/scenarios/*). Avoids the older

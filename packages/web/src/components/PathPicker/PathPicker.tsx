@@ -2,6 +2,7 @@ import type { ListDirectoryEntriesResponse } from "@media-tools/server/api-types
 import { useAtom, useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
+import { apiBase } from "../../apiBase"
 import type { DirEntry } from "../../components/PathPicker/types"
 import { setPathValueAtom } from "../../state/pathsAtom"
 import {
@@ -20,7 +21,7 @@ const fetchDirEntries = async (
   parentPath: string,
 ): Promise<ListDirectoryEntriesResponse> => {
   const response = await fetch(
-    "/queries/listDirectoryEntries",
+    `${apiBase}/queries/listDirectoryEntries`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

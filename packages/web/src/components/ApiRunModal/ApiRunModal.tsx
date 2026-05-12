@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react"
+import { apiBase } from "../../apiBase"
 import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
 import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import { useTolerantEventSource } from "../../hooks/useTolerantEventSource"
@@ -65,7 +66,7 @@ export const ApiRunModal = () => {
   }, [modalState])
 
   const parentUrl = modalState?.jobId
-    ? `/jobs/${modalState.jobId}/logs`
+    ? `${apiBase}/jobs/${modalState.jobId}/logs`
     : null
 
   // ─── Parent SSE (sequence-level events) ────────────────────────────────────
@@ -157,7 +158,7 @@ export const ApiRunModal = () => {
     const jobId = modalState?.jobId
     if (jobId && status === "running") {
       try {
-        await fetch(`/jobs/${jobId}`, { method: "DELETE" })
+        await fetch(`${apiBase}/jobs/${jobId}`, { method: "DELETE" })
       } catch {
         // Best-effort cancel.
       }
@@ -169,7 +170,7 @@ export const ApiRunModal = () => {
   const cancel = useCallback(async () => {
     if (!modalState?.jobId) return
     try {
-      await fetch(`/jobs/${modalState.jobId}`, {
+      await fetch(`${apiBase}/jobs/${modalState.jobId}`, {
         method: "DELETE",
       })
     } catch {

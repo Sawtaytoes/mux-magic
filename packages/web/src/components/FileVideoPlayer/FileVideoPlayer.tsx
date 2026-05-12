@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
 } from "react"
+import { apiBase } from "../../apiBase"
 
 const BROWSER_UNSUPPORTED_AUDIO = new Set([
   "ac-3",
@@ -53,7 +54,7 @@ export const FileVideoPlayer = ({
   }, [clearMse])
 
   useEffect(() => {
-    fetch("/version", { cache: "no-store" })
+    fetch(`${apiBase}/version`, { cache: "no-store" })
       .then((resp) => resp.json())
       .then((data: { isContainerized?: boolean }) => {
         setIsContainerized(data.isContainerized === true)
@@ -69,15 +70,10 @@ export const FileVideoPlayer = ({
     player.src = ""
 
     const setupPlayback = async () => {
-      const audioFormatUrl = new URL(
-        "/files/audio-codec",
-        window.location.origin,
-      )
-      audioFormatUrl.searchParams.set("path", path)
       let audioFormat: string | null = null
       try {
         const resp = await fetch(
-          audioFormatUrl.toString(),
+          `${apiBase}/files/audio-codec?${new URLSearchParams({ path })}`,
           {
             cache: "no-store",
             signal: AbortSignal.timeout(30_000),
@@ -102,20 +98,9 @@ export const FileVideoPlayer = ({
 
       let playbackUrl: string
       if (needsTranscode) {
-        const transcodeUrl = new URL(
-          "/transcode/audio",
-          window.location.origin,
-        )
-        transcodeUrl.searchParams.set("path", path)
-        transcodeUrl.searchParams.set("codec", "opus")
-        playbackUrl = transcodeUrl.toString()
+        playbackUrl = `${apiBase}/transcode/audio?${new URLSearchParams({ path, codec: "opus" })}`
       } else {
-        const streamUrl = new URL(
-          "/files/stream",
-          window.location.origin,
-        )
-        streamUrl.searchParams.set("path", path)
-        playbackUrl = streamUrl.toString()
+        playbackUrl = `${apiBase}/files/stream?${new URLSearchParams({ path })}`
       }
 
       setStatusVisible(needsTranscode)
@@ -149,7 +134,7 @@ export const FileVideoPlayer = ({
     if (!path) return
     setOpenLabel("⏳ Launching…")
     try {
-      const resp = await fetch("/files/open-external", {
+      const resp = await fetch(`${apiBase}/files/open-external`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path }),

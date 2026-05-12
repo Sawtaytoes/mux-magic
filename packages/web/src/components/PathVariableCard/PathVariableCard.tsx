@@ -1,5 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
+import { apiBase } from "../../apiBase"
 import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
 import {
   cancelPathVariableDeleteAtom,
@@ -78,7 +79,7 @@ export const PathVariableCard = ({
     } else {
       let startPath = "/"
       try {
-        const response = await fetch("/files/default-path")
+        const response = await fetch(`${apiBase}/files/default-path`)
         const data = (await response.json()) as {
           path?: string
         }

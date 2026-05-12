@@ -8,6 +8,7 @@ import type {
   SearchTvdbResponse,
 } from "@media-tools/server/api-types"
 import { useEffect, useRef } from "react"
+import { apiBase } from "../../apiBase"
 import type {
   LookupGroup,
   LookupRelease,
@@ -65,7 +66,9 @@ const fetchSearch = async (
   error: string | null
 }> => {
   try {
-    const resp = await fetch(SEARCH_ENDPOINTS[lookupType], {
+    const resp = await fetch(
+      `${apiBase}${SEARCH_ENDPOINTS[lookupType]}`,
+      {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ searchTerm }),
@@ -103,7 +106,7 @@ const fetchReleases = async (
 }> => {
   try {
     const resp = await fetch(
-      "/queries/listDvdCompareReleases",
+      `${apiBase}/queries/listDvdCompareReleases`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

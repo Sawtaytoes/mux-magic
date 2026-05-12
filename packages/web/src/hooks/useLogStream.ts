@@ -4,6 +4,7 @@ import type {
 } from "@media-tools/server/api-types"
 import { useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef } from "react"
+import { apiBase } from "../apiBase"
 import { mergeProgress } from "../jobs/mergeProgress"
 import type { LogEntry } from "../state/logsByJobIdAtom"
 import { logsByJobIdAtom } from "../state/logsByJobIdAtom"
@@ -34,7 +35,7 @@ export const useLogStream = (
   const connect = useCallback(() => {
     if (esRef.current !== null) return
 
-    const es = new EventSource(`/jobs/${jobId}/logs`)
+    const es = new EventSource(`${apiBase}/jobs/${jobId}/logs`)
     esRef.current = es
 
     es.onmessage = (event: MessageEvent) => {

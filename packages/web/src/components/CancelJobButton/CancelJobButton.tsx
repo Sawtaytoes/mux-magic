@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { apiBase } from "../../apiBase"
 
 export const CancelJobButton = ({
   jobId,
@@ -10,7 +11,7 @@ export const CancelJobButton = ({
   const handleClick = async () => {
     setDisabled(true)
     try {
-      await fetch(`/jobs/${jobId}`, { method: "DELETE" })
+      await fetch(`${apiBase}/jobs/${jobId}`, { method: "DELETE" })
     } catch {
       setDisabled(false)
     }

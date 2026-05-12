@@ -10,6 +10,7 @@ import {
   useMemo,
   useState,
 } from "react"
+import { apiBase } from "../../apiBase"
 import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
 import type {
   FileEntry,
@@ -206,12 +207,11 @@ export const FileExplorerModal = () => {
   const loadDeleteMode = useCallback(
     async (path: string) => {
       try {
-        const url = new URL(
-          "/files/delete-mode",
-          window.location.origin,
+        const params = new URLSearchParams()
+        if (path) params.set("path", path)
+        const resp = await fetch(
+          `${apiBase}/files/delete-mode?${params}`,
         )
-        if (path) url.searchParams.set("path", path)
-        const resp = await fetch(url)
         const data =
           (await resp.json()) as DeleteModeResponse
         setDeleteMode(data.mode)
@@ -230,13 +230,13 @@ export const FileExplorerModal = () => {
     setLoading(true)
     setError(null)
     try {
-      const url = new URL(
-        "/files/list",
-        window.location.origin,
+      const params = new URLSearchParams({
+        path,
+        includeDuration: "1",
+      })
+      const resp = await fetch(
+        `${apiBase}/files/list?${params}`,
       )
-      url.searchParams.set("path", path)
-      url.searchParams.set("includeDuration", "1")
-      const resp = await fetch(url)
       const data = (await resp.json()) as ListFilesResponse
       if (data.error) {
         setError(data.error)
@@ -352,7 +352,7 @@ export const FileExplorerModal = () => {
       joinPath(currentPath, name, separator),
     )
     try {
-      const resp = await fetch("/files", {
+      const resp = await fetch(`${apiBase}/files`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paths }),

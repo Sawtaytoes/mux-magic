@@ -1,3 +1,4 @@
+import { apiBase } from "../../apiBase"
 import type {
   LookupRelease,
   LookupState,
@@ -13,7 +14,7 @@ const fetchReleases = async (
 }> => {
   try {
     const resp = await fetch(
-      "/queries/listDvdCompareReleases",
+      `${apiBase}/queries/listDvdCompareReleases`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

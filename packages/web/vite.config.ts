@@ -15,6 +15,10 @@ import { defineConfig } from "vite"
 // Production is unaffected because Hono serves both the API and the
 // built Vite output as one process — no separate ports, no proxy needed.
 //
+// When REMOTE_SERVER_URL is set (e.g. https://example.com/api), the
+// frontend uses it as the API base URL and makes absolute cross-origin
+// requests directly — the dev proxy is bypassed in that case.
+//
 // Honors PORT env var so anyone overriding the API port locally still
 // works.
 const apiPort = Number(process.env.PORT ?? 3000)
@@ -29,6 +33,7 @@ const apiPaths = [
   "/jobs",
   "/sequences",
   "/server-id",
+  "/transcode",
   "/version",
   "/openapi.json",
 ]
@@ -41,6 +46,11 @@ export default defineConfig({
     }),
     tailwindcss(),
   ],
+  define: {
+    "import.meta.env.VITE_API_BASE": JSON.stringify(
+      process.env.REMOTE_SERVER_URL ?? "",
+    ),
+  },
   server: {
     open: true,
     port: 5173,

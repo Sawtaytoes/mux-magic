@@ -1,5 +1,6 @@
 import { useAtom } from "jotai"
 import { useEffect, useRef } from "react"
+import { apiBase } from "../../apiBase"
 import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import type { PromptOption } from "../../components/PromptModal/types"
 
@@ -9,7 +10,7 @@ const submitPromptChoice = async (
   selectedIndex: number,
 ) => {
   try {
-    await fetch(`/jobs/${jobId}/input`, {
+    await fetch(`${apiBase}/jobs/${jobId}/input`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ promptId, selectedIndex }),
