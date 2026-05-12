@@ -96,7 +96,7 @@ Future workers spawned in separate Claude sessions: read the handout above, find
 | W8D | 8 — B6 info panel field descriptions | ✅ Done | 2026-05-11 | Brief: [docs/workers/w8d.md](workers/w8d.md). Haiku OFF low. Test for field descriptions + fixed predev:api-server hook to fire on yarn start. |
 | W8E | 8 — B7 pathsAtom stale state on linked PathField | 🔄 In Progress | 2026-05-11 | Brief: [docs/workers/w8e.md](workers/w8e.md). Sonnet ON medium. |
 | W8F | 8 — B8 PathField typeahead TAB/Enter keyboard broken | 🔄 In Progress | 2026-05-11 | Brief: [docs/workers/w8f.md](workers/w8f.md). Sonnet ON medium. |
-| W8G | 8 — B9 MediaInfo.exe path + B10 startup race | 🔄 In Progress | 2026-05-11 | Brief: [docs/workers/w8g.md](workers/w8g.md). Haiku OFF low. |
+| W8G | 8 — B9 MediaInfo.exe path + B10 startup race | ✅ Done | 2026-05-11 | Brief: [docs/workers/w8g.md](workers/w8g.md). Haiku OFF low. Commits: 503f32f (appPaths.test+fix), 62915a0 (docs), 6e93271 (startup wait-on). TDD: test first for B9, env-var override added with fallback to platform defaults. B10: `wait-on tcp:3000` delays web-server until API is ready, eliminates startup race. Tests pass, lint clean. |
 | W8H | 8 — B12 paste/delete card animations | ⬜ Not Started | — | Brief: [docs/workers/w8h.md](workers/w8h.md). Haiku OFF low. Parallel with W8B–W8G W8I W8J. |
 | W8I | 8 — B14 setStyleFields autocomplete dropdowns | ⬜ Not Started | — | Brief: [docs/workers/w8i.md](workers/w8i.md). Sonnet ON medium. Parallel with W8B–W8H W8J. |
 | W8J | 8 — B15 path var deletion in-use guard | ⬜ Not Started | — | Brief: [docs/workers/w8j.md](workers/w8j.md). Sonnet ON medium. Parallel with W8B–W8I. |
