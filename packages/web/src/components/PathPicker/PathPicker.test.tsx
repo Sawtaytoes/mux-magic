@@ -137,7 +137,11 @@ describe("PathPicker visibility", () => {
         <PathPicker />
       </Provider>,
     )
-    expect(screen.queryByRole("listbox", { name: "Path picker" })).toBeNull()
+    expect(
+      screen.queryByRole("listbox", {
+        name: "Path picker",
+      }),
+    ).toBeNull()
   })
 
   test("renders picker when atom has state", () => {
@@ -284,7 +288,9 @@ describe("PathPicker keyboard navigation", () => {
     expect(store.get(pathPickerStateAtom)).toBeNull()
     await waitFor(() =>
       expect(
-        screen.queryByRole("listbox", { name: "Path picker" }),
+        screen.queryByRole("listbox", {
+          name: "Path picker",
+        }),
       ).not.toBeInTheDocument(),
     )
   })

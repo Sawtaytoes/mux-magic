@@ -103,7 +103,11 @@ afterEach(() => {
 describe("LinkPicker visibility", () => {
   test("renders nothing when atom is null", () => {
     renderPicker(false)
-    expect(screen.queryByRole("listbox", { name: "Link picker" })).toBeNull()
+    expect(
+      screen.queryByRole("listbox", {
+        name: "Link picker",
+      }),
+    ).toBeNull()
   })
 
   test("renders picker when atom has state", () => {

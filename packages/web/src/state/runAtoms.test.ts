@@ -158,9 +158,8 @@ describe("runOrStopStepAtom", () => {
       class MockEventSource {
         static CLOSED = 2
         readyState = 1
-        onmessage:
-          | ((event: MessageEvent) => void)
-          | null = null
+        onmessage: ((event: MessageEvent) => void) | null =
+          null
         onerror: (() => void) | null = null
         constructor() {
           capturedOnMessage = (event: MessageEvent) =>
@@ -180,7 +179,10 @@ describe("runOrStopStepAtom", () => {
       // Simulate SSE done event
       capturedOnMessage?.(
         new MessageEvent("message", {
-          data: JSON.stringify({ done: true, status: "completed" }),
+          data: JSON.stringify({
+            done: true,
+            status: "completed",
+          }),
         }),
       )
 

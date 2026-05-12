@@ -68,7 +68,12 @@ export const keepLanguages = ({
       }),
     ),
     filterIsVideoFile(),
-    throwIfEmpty(() => new Error(`No video files found in "${sourcePath}"`)),
+    throwIfEmpty(
+      () =>
+        new Error(
+          `No video files found in "${sourcePath}"`,
+        ),
+    ),
     withFileProgress((fileInfo) =>
       getTrackLanguages(fileInfo.fullPath).pipe(
         map(({ audioLanguages, ...otherProps }) => ({

@@ -114,7 +114,8 @@ describe("YamlModal", () => {
     const store = renderModal(true)
 
     await user.click(
-      screen.getByRole("dialog", { name: "YAML" }).parentElement as HTMLElement,
+      screen.getByRole("dialog", { name: "YAML" })
+        .parentElement as HTMLElement,
     )
 
     expect(store.get(yamlModalOpenAtom)).toBe(false)

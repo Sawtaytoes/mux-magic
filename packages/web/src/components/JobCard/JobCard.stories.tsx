@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
-import type { Job, ProgressSnapshot } from "../../jobs/types"
+import type {
+  Job,
+  ProgressSnapshot,
+} from "../../jobs/types"
 import { jobsAtom } from "../../state/jobsAtom"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
 import { JobCard } from "./JobCard"
@@ -51,9 +54,7 @@ const makeSequenceChild = (
       filesDone: Math.floor(ratio * filesTotal),
       filesTotal,
       bytesPerSecond: (2 + index) * 3_000_000,
-      bytesRemaining: Math.floor(
-        (1 - ratio) * 100_000_000,
-      ),
+      bytesRemaining: Math.floor((1 - ratio) * 100_000_000),
     },
   }
 }
@@ -151,16 +152,6 @@ export const Running: Story = {
   ],
 }
 
-export const Completed: Story = {
-  args: { job: completedJob },
-  decorators: [withStore([completedJob])],
-}
-
-export const Failed: Story = {
-  args: { job: failedJob },
-  decorators: [withStore([failedJob])],
-}
-
 export const RunningMultipleTransfers: Story = {
   args: { job: runningJob },
   decorators: [
@@ -190,6 +181,16 @@ export const RunningMultipleTransfers: Story = {
       ]),
     ),
   ],
+}
+
+export const Completed: Story = {
+  args: { job: completedJob },
+  decorators: [withStore([completedJob])],
+}
+
+export const Failed: Story = {
+  args: { job: failedJob },
+  decorators: [withStore([failedJob])],
 }
 
 export const Sequence: Story = {

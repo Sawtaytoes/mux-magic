@@ -101,7 +101,8 @@ describe("LoadModal close interactions", () => {
     renderModal(true)
 
     fireEvent.click(
-      screen.getByRole("dialog", { name: "Load YAML" }).parentElement as HTMLElement,
+      screen.getByRole("dialog", { name: "Load YAML" })
+        .parentElement as HTMLElement,
     )
 
     await waitFor(() =>

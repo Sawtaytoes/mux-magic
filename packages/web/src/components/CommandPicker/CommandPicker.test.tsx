@@ -97,14 +97,18 @@ describe("CommandPicker visibility", () => {
   test("renders nothing when atom is null", () => {
     renderPicker(false)
     expect(
-      screen.queryByRole("listbox", { name: "Command picker" }),
+      screen.queryByRole("listbox", {
+        name: "Command picker",
+      }),
     ).toBeNull()
   })
 
   test("renders picker when atom has state", () => {
     renderPicker(true)
     expect(
-      screen.getByRole("listbox", { name: "Command picker" }),
+      screen.getByRole("listbox", {
+        name: "Command picker",
+      }),
     ).toBeInTheDocument()
   })
 })

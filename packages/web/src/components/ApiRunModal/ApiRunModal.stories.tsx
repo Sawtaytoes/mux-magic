@@ -43,9 +43,7 @@ const makeChild = (
       filesDone: Math.floor(ratio * filesTotal),
       filesTotal,
       bytesPerSecond: (2 + index) * 3_000_000,
-      bytesRemaining: Math.floor(
-        (1 - ratio) * 100_000_000,
-      ),
+      bytesRemaining: Math.floor((1 - ratio) * 100_000_000),
     },
   }
 }

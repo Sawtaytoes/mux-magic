@@ -93,9 +93,7 @@ describe("JobsPage", () => {
 
   test("shows the StatusBar", () => {
     renderPage()
-    expect(
-      screen.getByRole("status"),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("status")).toBeInTheDocument()
   })
 
   test("shows Connected status when connected", () => {

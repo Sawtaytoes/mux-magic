@@ -192,10 +192,9 @@ describe("FileExplorerModal", () => {
           )
         }
         return Promise.resolve(
-          new Response(
-            JSON.stringify({ mode: "trash" }),
-            { status: 200 },
-          ),
+          new Response(JSON.stringify({ mode: "trash" }), {
+            status: 200,
+          }),
         )
       })
     const store = createStore()
@@ -232,10 +231,9 @@ describe("FileExplorerModal", () => {
           )
         }
         return Promise.resolve(
-          new Response(
-            JSON.stringify({ mode: "trash" }),
-            { status: 200 },
-          ),
+          new Response(JSON.stringify({ mode: "trash" }), {
+            status: 200,
+          }),
         )
       })
     const store = createStore()

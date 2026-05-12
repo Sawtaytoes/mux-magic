@@ -43,8 +43,8 @@ describe("StatusBar", () => {
 
   test("exposes data-status attribute for CSS targeting", () => {
     renderBar("connected")
-    expect(
-      screen.getByRole("status").dataset.status,
-    ).toBe("connected")
+    expect(screen.getByRole("status").dataset.status).toBe(
+      "connected",
+    )
   })
 })

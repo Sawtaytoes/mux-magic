@@ -8,7 +8,8 @@ import { ChildProgressTracker } from "./ChildProgressTracker"
 const STEP_ID = "step-3"
 const JOB_ID = "child-job-1"
 
-const withProgress = (snapshot: ProgressSnapshot) =>
+const withProgress =
+  (snapshot: ProgressSnapshot) =>
   (Story: React.ComponentType) => {
     const [store] = useState(() => {
       const newStore = createStore()

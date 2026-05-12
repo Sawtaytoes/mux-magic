@@ -55,7 +55,8 @@ describe("Modal close interactions", () => {
     const onClose = vi.fn()
     renderModal(true, onClose)
     fireEvent.click(
-      screen.getByRole("dialog", { name: "Test modal" }).parentElement as HTMLElement,
+      screen.getByRole("dialog", { name: "Test modal" })
+        .parentElement as HTMLElement,
     )
     expect(onClose).toHaveBeenCalledTimes(1)
   })

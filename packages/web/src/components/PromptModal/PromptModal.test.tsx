@@ -70,7 +70,8 @@ describe("PromptModal", () => {
     })
     renderWithStore(store)
     fireEvent.click(
-      screen.getByRole("dialog").parentElement as HTMLElement,
+      screen.getByRole("dialog")
+        .parentElement as HTMLElement,
     )
     await waitFor(() =>
       expect(store.get(promptModalAtom)).toBeNull(),

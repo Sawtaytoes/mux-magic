@@ -144,7 +144,8 @@ describe("CommandHelpModal", () => {
       </Provider>,
     )
     await user.click(
-      screen.getByRole("dialog").parentElement as HTMLElement,
+      screen.getByRole("dialog")
+        .parentElement as HTMLElement,
     )
     expect(store.get(commandHelpModalOpenAtom)).toBe(false)
   })

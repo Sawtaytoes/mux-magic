@@ -97,9 +97,7 @@ export const JobCard = ({ job }: JobCardProps) => {
     Object.keys(job.params).length > 0
 
   return (
-    <article
-      className="bg-slate-900 border border-slate-700 rounded-lg p-4 space-y-3"
-    >
+    <article className="bg-slate-900 border border-slate-700 rounded-lg p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <span className="font-semibold truncate">

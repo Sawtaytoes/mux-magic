@@ -187,7 +187,10 @@ export const runOrStopStepAtom = atom(
         }
       }
     } catch {
-      set(setStepRunStatusAtom, { stepId, status: "failed" })
+      set(setStepRunStatusAtom, {
+        stepId,
+        status: "failed",
+      })
       set(runningAtom, false)
     }
   },
