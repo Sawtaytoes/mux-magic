@@ -1,3 +1,4 @@
+import type { DvdCompareResult } from "@media-tools/server/api-types"
 import { useEffect, useRef } from "react"
 import type {
   LookupGroup,
@@ -16,15 +17,8 @@ const SEARCH_ENDPOINTS: Record<LookupType, string> = {
   dvdcompare: "/queries/searchDvdCompare",
 }
 
-type DvdCompareApiResult = {
-  baseTitle: string
-  id: number
-  variant: string
-  year: string
-}
-
 const groupDvdCompareResults = (
-  flat: DvdCompareApiResult[],
+  flat: DvdCompareResult[],
 ): LookupGroup[] => {
   const map = new Map<string, LookupGroup>()
   for (const item of flat) {
@@ -65,7 +59,7 @@ const fetchSearch = async (
     const results =
       lookupType === "dvdcompare"
         ? (groupDvdCompareResults(
-            rawResults as unknown as DvdCompareApiResult[],
+            rawResults as unknown as DvdCompareResult[],
           ) as unknown as LookupSearchResult[])
         : rawResults
     return {

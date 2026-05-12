@@ -100,6 +100,11 @@ export type StepEvent = {
   status: JobStatus
 }
 
+export type {
+  DvdCompareResult,
+  DvdCompareVariant,
+} from "../tools/searchDvdCompare.js"
+
 import type {
   directoryEntrySchema,
   fileExplorerEntrySchema,
