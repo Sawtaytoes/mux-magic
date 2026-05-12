@@ -33,6 +33,7 @@ Quick checklist:
 - Write a test when you fix a bug — every fix needs a regression guard
 - Run `yarn test` and `yarn typecheck` before every commit
 - Run `yarn lint` from repo root before every push (not just workspace-scoped lint)
+- Run `yarn start` in a separate terminal first (starts API + web + Storybook); then `yarn e2e` reuses those servers
 - Run `yarn e2e` before merging UI or API route changes
 - Keep tests in sync with code changes — tests are documentation
 - Verify Playwright tests pass before reporting a fix
