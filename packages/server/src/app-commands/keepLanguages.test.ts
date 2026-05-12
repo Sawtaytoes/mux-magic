@@ -31,4 +31,19 @@ describe(keepLanguages.name, () => {
     const folderStats = await stat("/work/LANGUAGE-TRIMMED")
     expect(folderStats.isDirectory()).toBe(true)
   })
+
+  test("errors when sourcePath does not exist", async () => {
+    await expect(
+      firstValueFrom(
+        keepLanguages({
+          audioLanguages: ["jpn"],
+          hasFirstAudioLanguage: false,
+          hasFirstSubtitlesLanguage: false,
+          isRecursive: false,
+          sourcePath: "/nonexistent",
+          subtitlesLanguages: ["eng"],
+        }).pipe(toArray()),
+      ),
+    ).rejects.toMatchObject({ code: "ENOENT" })
+  })
 })

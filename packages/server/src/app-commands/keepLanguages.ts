@@ -1,5 +1,6 @@
+import { stat } from "node:fs/promises"
 import { join } from "node:path"
-import { concatMap, filter, map, tap, toArray } from "rxjs"
+import { concatMap, defer, filter, map, tap, toArray } from "rxjs"
 import {
   keepSpecifiedLanguageTracks,
   keepSpecifiedLanguageTracksDefaultProps,
@@ -48,7 +49,8 @@ export const keepLanguages = ({
   // output: 'folder' } resolve to <sourcePath>/<outputFolderName> and
   // would ENOENT otherwise — flattenOutput/copyFiles/etc. all assume
   // the folder is at least *present* (empty is fine — nothing to copy).
-  makeDirectory(join(sourcePath, outputFolderName)).pipe(
+  defer(() => stat(sourcePath)).pipe(
+    concatMap(() => makeDirectory(join(sourcePath, outputFolderName))),
     concatMap(() =>
       getFilesAtDepth({
         depth: isRecursive ? 1 : 0,
