@@ -58,6 +58,7 @@ logsRoutes.openapi(
     if (!job)
       return context.json({ error: "Job not found" }, 404)
 
+    context.header("X-Accel-Buffering", "no")
     return streamSSE(context, async (stream) => {
       const stopKeepalive = startSseKeepalive(stream)
 

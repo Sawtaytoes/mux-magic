@@ -92,8 +92,9 @@ jobRoutes.openapi(
       },
     },
   }),
-  (context) =>
-    streamSSE(context, async (stream) => {
+  (context) => {
+    context.header("X-Accel-Buffering", "no")
+    return streamSSE(context, async (stream) => {
       const stopKeepalive = startSseKeepalive(stream)
 
       const send = (job: object) =>
@@ -119,7 +120,8 @@ jobRoutes.openapi(
       })
 
       stopKeepalive()
-    }),
+    })
+  }
 )
 
 jobRoutes.openapi(

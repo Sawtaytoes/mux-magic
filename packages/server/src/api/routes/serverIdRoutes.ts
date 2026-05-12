@@ -35,8 +35,9 @@ serverIdRoutes.openapi(
       },
     },
   }),
-  (context) =>
-    streamSSE(context, async (stream) => {
+  (context) => {
+    context.header("X-Accel-Buffering", "no")
+    return streamSSE(context, async (stream) => {
       const stopKeepalive = startSseKeepalive(stream)
 
       await stream.writeSSE({
@@ -51,5 +52,6 @@ serverIdRoutes.openapi(
       })
 
       stopKeepalive()
-    }),
+    })
+  },
 )
