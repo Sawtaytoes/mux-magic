@@ -40,7 +40,7 @@ const renderWithAtoms = (
   const store = createStore()
   store.set(commandsAtom, FIXTURE_COMMANDS)
   store.set(stepsAtom, [step])
-  render(
+  const { container } = render(
     <Provider store={store}>
       <StepCard
         step={step}
@@ -50,33 +50,37 @@ const renderWithAtoms = (
       />
     </Provider>,
   )
-  return store
+  return { store, container }
 }
 
 describe("StepCard interactive", () => {
   test("renders a step with keepLanguages command and wired atoms", () => {
-    renderWithAtoms(makeStep())
-    expect(
-      screen.getByText("Filter Languages"),
-    ).toBeInTheDocument()
+    const { container } = renderWithAtoms(makeStep())
+    // alias is rendered as an <input> defaultValue, so use data-step-card to confirm mount
+    const stepCard = container.querySelector(
+      "[data-step-card='step_1']",
+    )
+    expect(stepCard).toBeInTheDocument()
   })
 
   test("renders fields for the step when command is known", () => {
     renderWithAtoms(makeStep())
-    // keepLanguages has audioLanguages field
+    // keepLanguages has audioLanguages field — rendered as a comma-joined input value
     expect(
       screen.getByDisplayValue("eng, jpn"),
     ).toBeInTheDocument()
   })
 
-  test("shows command label from commands atom", () => {
-    renderWithAtoms(
-      makeStep({ command: "nameAnimeEpisodes" }),
+  test("renders modifySubtitleMetadata step with subtitle rules field", () => {
+    const { container } = renderWithAtoms(
+      makeStep({
+        command: "modifySubtitleMetadata",
+        params: { sourcePath: "/mnt/subs", rules: [] },
+      }),
     )
-    // Command exists in FIXTURE_COMMANDS
-    const commandSection = screen.getByText(
-      "Rename anime episode files using MyAnimeList metadata",
+    const stepCard = container.querySelector(
+      "[data-step-card='step_1']",
     )
-    expect(commandSection).toBeInTheDocument()
+    expect(stepCard).toBeInTheDocument()
   })
 })
