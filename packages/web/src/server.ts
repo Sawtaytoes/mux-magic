@@ -1,43 +1,40 @@
-import { readFileSync } from "node:fs"
+import { readFileSync, writeFileSync } from "node:fs"
 import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
 import { WEB_PORT } from "@media-tools/server/src/tools/envVars.js"
 import { logInfo } from "@media-tools/server/src/tools/logMessage.js"
 import { Hono } from "hono"
 
-// Read once at startup — REMOTE_SERVER_URL is static for the lifetime of the process.
-const remoteServerUrl = process.env.REMOTE_SERVER_URL ?? ""
+// If REMOTE_SERVER_URL is set, inject window.__API_BASE__ into the built
+// index.html once at startup so the frontend reads the correct API base URL
+// at runtime — no rebuild required. Writing to disk lets serveStatic serve
+// the modified file directly for all routes.
+if (process.env.REMOTE_SERVER_URL) {
+  try {
+    const raw = readFileSync("./dist/index.html", "utf8")
+    const injected = raw.replace(
+      "</head>",
+      `<script>window.__API_BASE__=${JSON.stringify(process.env.REMOTE_SERVER_URL)}</script></head>`,
+    )
+    writeFileSync("./dist/index.html", injected, "utf8")
+  } catch {
+    // dist/index.html not present (e.g. before first build) — skip injection.
+  }
+}
 
 export const app = new Hono()
 
-// SPA routes (no file extension): inject window.__API_BASE__ and serve
-// index.html. Must come BEFORE serveStatic so that the root path "/" is
-// handled here rather than by serveStatic finding ./dist/index.html directly
-// (which would skip injection). Extension paths fall through via next() so
-// serveStatic can serve JS/CSS/font assets normally.
-// Read per-request so a rebuild+server-restart picks up new asset hashes.
-app.get("*", async (context, next) => {
-  if (/\.[^/]+$/.test(context.req.path)) return next()
-  try {
-    const raw = readFileSync("./dist/index.html", "utf8")
-    const html = remoteServerUrl
-      ? raw.replace(
-          "</head>",
-          `<script>window.__API_BASE__=${JSON.stringify(remoteServerUrl)}</script></head>`,
-        )
-      : raw
-    return context.html(html)
-  } catch {
-    return context.notFound()
-  }
-})
-
-// Static assets (JS, CSS, fonts, etc.). Prevent caching so changes are
-// picked up immediately without a hard refresh.
+// Serve all static assets and SPA routes from ./dist. Non-file paths (no
+// extension) are rewritten to /index.html so the SPA handles client-side
+// routing. Cache headers prevent stale assets after a redeployment.
 app.use(
   "*",
   serveStatic({
     root: "./dist",
+    rewriteRequestPath: (path) => {
+      if (/\.[^/]+$/.test(path)) return path
+      return "/index.html"
+    },
     onFound: (_path, ctx) => {
       ctx.header(
         "Cache-Control",
