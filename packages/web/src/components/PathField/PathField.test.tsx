@@ -198,4 +198,29 @@ describe("PathField", () => {
     const updatedPaths = store.get(pathsAtom)
     expect(updatedPaths).toHaveLength(0)
   })
+
+  it("typing in linked PathField syncs value to other fields linked to same variable", () => {
+    const store = createStore()
+    const basePathVar = { id: "basePath", label: "basePath", value: "/old" }
+    const step1 = createTestStep({ id: "step-1", links: { filePath: "basePath" }, params: {} })
+    const step2 = createTestStep({ id: "step-2", links: { filePath: "basePath" }, params: {} })
+
+    store.set(pathsAtom, [basePathVar])
+    store.set(stepsAtom, [step1, step2])
+
+    render(
+      <Provider store={store}>
+        <PathField field={field} step={step1} />
+        <PathField field={field} step={step2} />
+      </Provider>,
+    )
+
+    const inputs = screen.getAllByRole("textbox")
+    fireEvent.change(inputs[0], { target: { value: "/new" } })
+
+    const updatedPaths = store.get(pathsAtom)
+    expect(updatedPaths[0].value).toBe("/new")
+    expect(inputs[0]).toHaveValue("/new")
+    expect(inputs[1]).toHaveValue("/new")
+  })
 })
