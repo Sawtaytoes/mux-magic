@@ -107,6 +107,9 @@ export const SubtitleRulesField = ({
                     rules={DEFAULT_RULES_PREVIEW}
                     ruleIndex={ruleIndex}
                     rule={rule}
+                    ruleKey={
+                      DEFAULT_RULES_PREVIEW_KEYS[ruleIndex]
+                    }
                     predicates={{}}
                     isReadOnly={true}
                     isFirst={ruleIndex === 0}
