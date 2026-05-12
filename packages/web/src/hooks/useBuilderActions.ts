@@ -401,34 +401,27 @@ export const useBuilderActions = () => {
         store.set(stepCounterAtom, result.stepCounter)
       }
 
-      // Run the state update inside a View Transition so React's
-      // re-render animates. The helper handles startViewTransition +
-      // flushSync + the fallback when the API is unavailable. We can
-      // only wrap the SYNC `applyPaste` (after the async clipboard
-      // read resolves) — wrapping pasteCardAt as a whole would put
-      // the state update outside the transition's snapshot window.
-      //
-      // After the transition finishes (pseudo-elements removed, real DOM
-      // visible), add .step-enter to each newly inserted element so it
-      // slides in rather than just crossfading from nothing.
-      await runWithViewTransition(applyPaste)
-
-      for (const { type, id } of newItemIds) {
-        const selector =
-          type === "group"
-            ? `[data-group="${id}"]`
-            : `[data-step-card="${id}"]`
-        const el = document.querySelector(selector)
-        if (el instanceof HTMLElement) {
-          el.classList.add("step-enter")
-          el.addEventListener(
-            "animationend",
-            () => {
-              el.classList.remove("step-enter")
-            },
-            { once: true },
+      // Inject a scoped <style> that overrides the default crossfade on
+      // ::view-transition-new pseudo-elements for each incoming card so
+      // they use stepEnter (slide from above + fade) instead. This runs
+      // inside the same transition as the surrounding cards shifting down,
+      // so all animations are synchronised rather than sequential.
+      // The style is removed once the transition finishes.
+      if (newItemIds.length > 0) {
+        const styleEl = document.createElement("style")
+        const selectors = newItemIds
+          .map(
+            ({ type, id }) =>
+              `::view-transition-new(${type === "group" ? `group-${id}` : `step-${id}`})`,
           )
-        }
+          .join(",")
+        styleEl.textContent = `${selectors}{animation:stepEnter 220ms ease-out;}`
+        document.head.appendChild(styleEl)
+        runWithViewTransition(applyPaste).finally(() => {
+          styleEl.remove()
+        })
+      } else {
+        runWithViewTransition(applyPaste)
       }
     },
     [store, pushHistory],

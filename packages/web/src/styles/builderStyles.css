@@ -44,6 +44,13 @@
 ::view-transition-new(*) {
   animation-duration: 220ms;
 }
+/* Match the position-shift animation (::view-transition-group) to the same
+   duration so existing cards slide into their new slots in sync with the
+   old/new crossfade and any injected stepEnter on a newly pasted card. */
+::view-transition-group(*) {
+  animation-duration: 220ms;
+  animation-timing-function: ease;
+}
 
 /* Each step has its own `view-transition-name` so it gets a separate
    snapshot during the add/move/remove animation. Without an explicit
