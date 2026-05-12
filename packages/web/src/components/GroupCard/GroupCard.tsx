@@ -6,7 +6,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { useSetAtom } from "jotai"
+import { useAtomValue, useSetAtom } from "jotai"
 import { useState } from "react"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
@@ -19,6 +19,7 @@ import {
   toggleGroupCollapsedAtom,
   updateGroupLabelAtom,
 } from "../../state/groupAtoms"
+import { runningAtom } from "../../state/runAtoms"
 import { addStepToGroupAtom } from "../../state/stepAtoms"
 import type { Group, Step } from "../../types"
 import { runWithViewTransition } from "../../utils/runWithViewTransition"
@@ -55,6 +56,7 @@ export const GroupCard = ({
   const removeGroup = useSetAtom(removeGroupAtom)
   const { copyGroupYaml, pasteCardAt, runGroup } =
     useBuilderActions()
+  const isGloballyRunning = useAtomValue(runningAtom)
   const [isCopied, setIsCopied] = useState(false)
 
   const { active } = useDndContext()
@@ -263,11 +265,14 @@ export const GroupCard = ({
         <button
           type="button"
           onClick={() => runGroup(group.id)}
-          disabled={!hasRunnableSteps}
+          disabled={!hasRunnableSteps || isGloballyRunning}
+          aria-disabled={!hasRunnableSteps || isGloballyRunning}
           title={
-            hasRunnableSteps
-              ? "Run this group via /sequences/run"
-              : "Add a step with a command before running"
+            !hasRunnableSteps
+              ? "Add a step with a command before running"
+              : isGloballyRunning
+                ? "Another job is already running"
+                : "Run this group via /sequences/run"
           }
           className="text-[10px] text-emerald-500 hover:text-emerald-300 px-2 py-0.5 rounded border border-emerald-700/50 hover:border-emerald-500 hover:bg-emerald-950/30 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-emerald-500 disabled:hover:border-emerald-700/50 disabled:hover:bg-transparent"
         >
