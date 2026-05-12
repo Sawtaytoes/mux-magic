@@ -1,8 +1,8 @@
 import { useAtomValue } from "jotai"
 
 import { commandLabel } from "../../jobs/commandLabels"
+import type { Job } from "../../jobs/types"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
-import type { Job } from "../../types"
 import { CancelJobButton } from "../CancelJobButton/CancelJobButton"
 import { JobLogsDisclosure } from "../JobLogsDisclosure/JobLogsDisclosure"
 import { ProgressBar } from "../ProgressBar/ProgressBar"

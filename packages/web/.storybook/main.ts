@@ -17,6 +17,9 @@ const config: StorybookConfig = {
     "@storybook/addon-themes",
     "@storybook/addon-vitest",
   ],
+  core: {
+    disableTelemetry: true,
+  },
   framework: {
     name: "@storybook/react-vite",
     options: {},

@@ -1,4 +1,4 @@
-import type { Job } from "../types"
+import type { Job } from "../jobs/types"
 
 // Format decision (W5A): keep JSON rather than switching to YAML.
 // JSON is ~20% smaller than the YAML equivalent (no indentation / key repetition).

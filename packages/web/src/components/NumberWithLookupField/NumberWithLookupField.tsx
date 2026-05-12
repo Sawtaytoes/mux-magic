@@ -1,13 +1,10 @@
 import { useSetAtom } from "jotai"
 
 import { LOOKUP_LINKS } from "../../commands/lookupLinks"
+import type { LookupType } from "../../components/LookupModal/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { lookupModalAtom } from "../../state/uiAtoms"
-import type {
-  CommandField,
-  LookupType,
-  Step,
-} from "../../types"
+import type { CommandField, Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
 
 type NumberWithLookupFieldProps = {

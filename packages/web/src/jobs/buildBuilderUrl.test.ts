@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { FIXTURE_COMMANDS_BUNDLE_A } from "../commands/__fixtures__/commands"
-import type { Job } from "../types"
+import type { Job } from "../jobs/types"
 import { buildBuilderUrl } from "./buildBuilderUrl"
 import { decodeSeqParam } from "./decodeSeqParam"
 import { loadYamlFromText } from "./loadYaml"

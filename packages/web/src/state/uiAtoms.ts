@@ -1,10 +1,8 @@
 import { atom } from "jotai"
-import type {
-  ApiRunState,
-  FileExplorerState,
-  LookupState,
-  PromptData,
-} from "../types"
+import type { ApiRunState } from "../components/ApiRunModal/types"
+import type { FileExplorerState } from "../components/FileExplorerModal/types"
+import type { LookupState } from "../components/LookupModal/types"
+import type { PromptData } from "../components/PromptModal/types"
 
 export const loadModalOpenAtom = atom<boolean>(false)
 export const yamlModalOpenAtom = atom<boolean>(false)

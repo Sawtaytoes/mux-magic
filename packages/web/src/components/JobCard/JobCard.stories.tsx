@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import type { Job } from "../../jobs/types"
 import { jobsAtom } from "../../state/jobsAtom"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
-import type { Job } from "../../types"
 import { JobCard } from "./JobCard"
 
 const withStore = (

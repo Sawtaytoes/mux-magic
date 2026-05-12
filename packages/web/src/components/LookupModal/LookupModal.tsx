@@ -1,9 +1,11 @@
 import { useAtom } from "jotai"
 import { useEffect, useRef } from "react"
-
+import type {
+  LookupState,
+  LookupType,
+} from "../../components/LookupModal/types"
 import { Modal } from "../../primitives/Modal/Modal"
 import { lookupModalAtom } from "../../state/uiAtoms"
-import type { LookupState, LookupType } from "../../types"
 import { LookupReleaseStage } from "../LookupReleaseStage/LookupReleaseStage"
 import { LookupSearchStage } from "../LookupSearchStage/LookupSearchStage"
 import { LookupVariantStage } from "../LookupVariantStage/LookupVariantStage"

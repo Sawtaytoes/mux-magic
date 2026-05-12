@@ -1,13 +1,12 @@
 import { useEffect, useRef } from "react"
-
-import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type {
   LookupGroup,
   LookupRelease,
   LookupSearchResult,
   LookupState,
   LookupType,
-} from "../../types"
+} from "../../components/LookupModal/types"
+import { useBuilderActions } from "../../hooks/useBuilderActions"
 
 const SEARCH_ENDPOINTS: Record<LookupType, string> = {
   mal: "/queries/searchMal",

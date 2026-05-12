@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
 import { useState } from "react"
+import type { LookupState } from "../../components/LookupModal/types"
 import { lookupModalAtom } from "../../state/uiAtoms"
-import type { LookupState } from "../../types"
 import { LookupModal } from "./LookupModal"
 
 const empty = {

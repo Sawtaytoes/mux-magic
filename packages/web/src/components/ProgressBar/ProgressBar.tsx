@@ -1,4 +1,4 @@
-import type { ProgressSnapshot } from "../../types"
+import type { ProgressSnapshot } from "../../jobs/types"
 
 import { ProgressFileRow } from "../ProgressFileRow/ProgressFileRow"
 import { ProgressLabel } from "../ProgressLabel/ProgressLabel"

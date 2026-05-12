@@ -1,11 +1,22 @@
-import type {
-  DirEntry,
-  FileEntry,
-  JobStatus,
-  PromptOption,
-} from "@media-tools/server/api-types"
+// Shared domain types — used across many components and not owned by
+// any single feature. Feature-specific types live next to their feature:
+//
+//   - components/LookupModal/types.ts        (Lookup*, LookupState)
+//   - components/ApiRunModal/types.ts        (RunStatus, ApiRunState)
+//   - components/PromptModal/types.ts        (Prompt*, PromptData)
+//   - components/FileExplorerModal/types.ts  (FileEntry, Sort*, FileExplorerState)
+//   - jobs/types.ts                          (Job, JobStatus, ProgressSnapshot)
+//
+// Only add a type here if it is genuinely cross-cutting (5+ feature
+// consumers). Otherwise colocate it.
+//
+// DirEntry is re-exported from the server because it is the shared API
+// contract for "what /files returns" and is consumed by PathPicker +
+// FileExplorerModal + FolderMultiSelectField.
 
-export type { DirEntry, FileEntry, JobStatus, PromptOption }
+import type { DirEntry } from "@media-tools/server/api-types"
+
+export type { DirEntry }
 
 export type EnumOption = {
   value: string | number | boolean
@@ -79,131 +90,3 @@ export type Group = {
 }
 
 export type SequenceItem = Step | Group
-
-// ─── Wave E: Lookup Modal ─────────────────────────────────────────────────────
-
-export type LookupType =
-  | "mal"
-  | "anidb"
-  | "tvdb"
-  | "tmdb"
-  | "dvdcompare"
-export type LookupStage = "search" | "variant" | "release"
-
-export type LookupSearchResult = {
-  malId?: number
-  aid?: number
-  tvdbId?: number
-  movieDbId?: number
-  name?: string
-  title?: string
-  year?: string
-}
-
-export type LookupVariant = {
-  id: string
-  variant: string
-}
-
-export type LookupGroup = {
-  baseTitle: string
-  year?: string
-  variants: LookupVariant[]
-}
-
-export type LookupRelease = {
-  hash: string | number
-  label: string
-}
-
-export type LookupState = {
-  lookupType: LookupType
-  stepId: string
-  fieldName: string
-  stage: LookupStage
-  searchTerm: string
-  searchError: string | null
-  results: LookupSearchResult[] | null
-  formatFilter: string
-  selectedGroup: LookupGroup | null
-  selectedVariant: string | null
-  selectedFid: string | null
-  releases: LookupRelease[] | null
-  releasesDebug: unknown
-  releasesError: string | null
-  loading: boolean
-}
-
-// ─── Wave E: Run Sequence / ApiRunModal ───────────────────────────────────────
-
-export type RunStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled"
-
-export type ApiRunState = {
-  jobId: string | null
-  status: RunStatus
-  logs: string[]
-  childJobId: string | null
-  childStepId: string | null
-  source: "step" | "sequence"
-}
-
-// ─── Wave E: Prompt Modal ─────────────────────────────────────────────────────
-
-export type PromptFilePath = {
-  index: number
-  path: string
-}
-
-export type PromptData = {
-  jobId: string
-  promptId: string
-  message: string
-  filePath?: string
-  filePaths?: PromptFilePath[]
-  options: PromptOption[]
-}
-
-// ─── Wave E: File Explorer Modal ──────────────────────────────────────────────
-
-export type SortColumn =
-  | "default"
-  | "name"
-  | "duration"
-  | "size"
-  | "mtime"
-export type SortDirection = "asc" | "desc"
-
-export type FileExplorerState = {
-  path: string
-  pickerOnSelect: ((selectedPath: string) => void) | null
-}
-
-// ─── Wave F: Jobs page ────────────────────────────────────────────────────────
-
-export type ProgressSnapshot = {
-  ratio?: number
-  filesDone?: number
-  filesTotal?: number
-  bytesPerSecond?: number
-  bytesRemaining?: number
-  currentFiles?: Array<{ path: string; ratio?: number }>
-}
-
-export type Job = {
-  id: string
-  commandName?: string
-  command?: string
-  status: JobStatus
-  startedAt?: string
-  completedAt?: string
-  parentJobId?: string
-  stepId?: string
-  params?: Record<string, unknown>
-  error?: string
-  results?: unknown[]
-}

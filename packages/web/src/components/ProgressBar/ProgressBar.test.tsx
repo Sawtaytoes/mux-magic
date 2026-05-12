@@ -4,7 +4,7 @@ import {
   screen,
 } from "@testing-library/react"
 import { afterEach, describe, expect, test } from "vitest"
-import type { ProgressSnapshot } from "../../types"
+import type { ProgressSnapshot } from "../../jobs/types"
 import { ProgressBar } from "./ProgressBar"
 
 afterEach(cleanup)

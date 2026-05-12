@@ -1,8 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef } from "react"
-
+import type { Job } from "../../jobs/types"
 import { stepsOpenByJobIdAtom } from "../../state/stepsOpenByJobIdAtom"
-import type { Job } from "../../types"
 import { JobStepRow } from "../JobStepRow/JobStepRow"
 
 export const JobStepsDisclosure = ({

@@ -1,4 +1,4 @@
 import { atom } from "jotai"
-import type { Job } from "../types"
+import type { Job } from "../jobs/types"
 
 export const jobsAtom = atom<Map<string, Job>>(new Map())

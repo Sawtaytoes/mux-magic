@@ -1,10 +1,10 @@
 import { useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef } from "react"
 import { mergeProgress } from "../jobs/mergeProgress"
+import type { ProgressSnapshot } from "../jobs/types"
 import type { LogEntry } from "../state/logsByJobIdAtom"
 import { logsByJobIdAtom } from "../state/logsByJobIdAtom"
 import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
-import type { ProgressSnapshot } from "../types"
 
 type LogEventData =
   | { line: string }

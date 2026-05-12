@@ -1,8 +1,8 @@
 import { useSetAtom } from "jotai"
+import type { Job } from "../jobs/types"
 import { jobsAtom } from "../state/jobsAtom"
 import { jobsConnectionAtom } from "../state/jobsConnectionAtom"
 import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
-import type { Job } from "../types"
 import { useTolerantEventSource } from "./useTolerantEventSource"
 
 // Connects to /jobs/stream and keeps jobsAtom in sync.

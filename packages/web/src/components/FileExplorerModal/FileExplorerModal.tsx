@@ -5,13 +5,12 @@ import {
   useMemo,
   useState,
 } from "react"
-
-import { fileExplorerAtom } from "../../state/uiAtoms"
 import type {
   FileEntry,
   SortColumn,
   SortDirection,
-} from "../../types"
+} from "../../components/FileExplorerModal/types"
+import { fileExplorerAtom } from "../../state/uiAtoms"
 import { FileVideoPlayer } from "../FileVideoPlayer/FileVideoPlayer"
 
 // ─── Constants ────────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { useAtom } from "jotai"
 import { useEffect, useRef } from "react"
+import type { PromptOption } from "../../components/PromptModal/types"
 import { promptModalAtom } from "../../state/uiAtoms"
-import type { PromptOption } from "../../types"
 
 const submitPromptChoice = async (
   jobId: string,

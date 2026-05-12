@@ -1,4 +1,4 @@
-import type { ProgressSnapshot } from "../types"
+import type { ProgressSnapshot } from "../jobs/types"
 
 export const mergeProgress = (
   snapshot: ProgressSnapshot | undefined,

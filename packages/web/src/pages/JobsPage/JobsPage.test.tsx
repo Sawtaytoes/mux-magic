@@ -11,9 +11,9 @@ import {
   test,
   vi,
 } from "vitest"
+import type { Job } from "../../jobs/types"
 import { jobsAtom } from "../../state/jobsAtom"
 import { jobsConnectionAtom } from "../../state/jobsConnectionAtom"
-import type { Job } from "../../types"
 import { JobsPage } from "./JobsPage"
 
 // useSseStream opens an EventSource — stub it out so tests don't need a real server.

@@ -1,8 +1,8 @@
-import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type {
   LookupRelease,
   LookupState,
-} from "../../types"
+} from "../../components/LookupModal/types"
+import { useBuilderActions } from "../../hooks/useBuilderActions"
 
 const fetchReleases = async (
   dvdCompareId: string,

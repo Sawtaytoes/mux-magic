@@ -1,10 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import type {
+  Job,
+  ProgressSnapshot,
+} from "../../jobs/types"
 import { jobsAtom } from "../../state/jobsAtom"
 import type { ConnectionStatus } from "../../state/jobsConnectionAtom"
 import { jobsConnectionAtom } from "../../state/jobsConnectionAtom"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
-import type { Job, ProgressSnapshot } from "../../types"
 import { JobsPage } from "./JobsPage"
 
 // JobsPage calls useSseStream which opens an EventSource.

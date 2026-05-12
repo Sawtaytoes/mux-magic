@@ -1,5 +1,5 @@
+import type { LookupState } from "../../components/LookupModal/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
-import type { LookupState } from "../../types"
 
 interface LookupReleaseStageProps {
   state: LookupState
