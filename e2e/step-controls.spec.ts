@@ -178,3 +178,104 @@ test.describe("Step controls — delete", () => {
     ).toContainText("Make Directory")
   })
 })
+
+// ─── Step controls — paste 📋 ─────────────────────────────────────────────────
+// Paste reads from the system clipboard (navigator.clipboard.readText) so the
+// tests write YAML directly to the clipboard via page.evaluate and grant the
+// clipboard-read permission on the browser context.
+
+const PASTE_YAML = [
+  "steps:",
+  "  - id: step-pasted",
+  "    command: deleteFilesByExtension",
+  "    params: {}",
+].join("\n")
+
+test.describe("Step controls — paste", () => {
+  test.beforeEach(async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read"])
+
+    const yaml = encodeSeq(
+      [
+        "steps:",
+        "  - id: step-alpha",
+        "    command: copyFiles",
+        "    params: {}",
+        "  - id: step-beta",
+        "    command: makeDirectory",
+        "    params:",
+        "      filePath: /tmp/test",
+      ].join("\n"),
+    )
+    await page.goto(`/builder/?seq=${yaml}`)
+
+    // Pre-load clipboard with a valid step YAML.
+    await page.evaluate(
+      (text) => navigator.clipboard.writeText(text),
+      PASTE_YAML,
+    )
+  })
+
+  test("📋 paste at top inserts card as first step", async ({
+    page,
+  }) => {
+    await page
+      .getByTitle("Paste a copied step or group here")
+      .first()
+      .click()
+
+    await expect(page.locator(".step-card")).toHaveCount(3)
+    await expect(
+      page.locator(".step-card").first(),
+    ).toContainText("Delete Files by Extension")
+    // Original cards follow in order.
+    await expect(
+      page.locator(".step-card").nth(1),
+    ).toContainText("Copy Files")
+    await expect(
+      page.locator(".step-card").last(),
+    ).toContainText("Make Directory")
+  })
+
+  test("📋 paste between cards inserts at correct position", async ({
+    page,
+  }) => {
+    // Dividers: [0]=before first, [1]=between cards, [2]=after last.
+    await page
+      .getByTitle("Paste a copied step or group here")
+      .nth(1)
+      .click()
+
+    await expect(page.locator(".step-card")).toHaveCount(3)
+    await expect(
+      page.locator(".step-card").first(),
+    ).toContainText("Copy Files")
+    await expect(
+      page.locator(".step-card").nth(1),
+    ).toContainText("Delete Files by Extension")
+    await expect(
+      page.locator(".step-card").last(),
+    ).toContainText("Make Directory")
+  })
+
+  test("📋 paste at bottom inserts card as last step", async ({
+    page,
+  }) => {
+    await page
+      .getByTitle("Paste a copied step or group here")
+      .last()
+      .click()
+
+    await expect(page.locator(".step-card")).toHaveCount(3)
+    await expect(
+      page.locator(".step-card").last(),
+    ).toContainText("Delete Files by Extension")
+    // Original order is preserved above it.
+    await expect(
+      page.locator(".step-card").first(),
+    ).toContainText("Copy Files")
+    await expect(
+      page.locator(".step-card").nth(1),
+    ).toContainText("Make Directory")
+  })
+})

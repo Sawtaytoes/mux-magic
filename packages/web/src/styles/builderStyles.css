@@ -3,7 +3,7 @@
 @keyframes stepEnter {
   from {
     opacity: 0;
-    transform: translateY(-6px) scale(0.985);
+    transform: translateY(-100%);
   }
   to {
     opacity: 1;
