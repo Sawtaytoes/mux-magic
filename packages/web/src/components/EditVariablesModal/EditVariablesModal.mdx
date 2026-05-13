@@ -1,0 +1,16 @@
+import { Canvas, Meta } from "@storybook/blocks"
+import * as EditVariablesModalStories from "./EditVariablesModal.stories"
+
+<Meta of={EditVariablesModalStories} />
+
+# EditVariablesModal
+
+Modal surface for centralized CRUD across all sequence-level variable types. Opens via the "Variables" button in the page header. Wraps `VariablesPanel` in the project's `Modal` primitive.
+
+## Atom
+
+Controlled by `editVariablesModalOpenAtom` (`boolean`). Set to `true` to open; close button, Escape key, and backdrop click all set it back to `false`.
+
+## Stories
+
+<Canvas of={EditVariablesModalStories.Open} />

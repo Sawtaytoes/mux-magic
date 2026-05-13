@@ -1,0 +1,20 @@
+import { Canvas, Meta } from "@storybook/blocks"
+import * as VariablesPanelStories from "./VariablesPanel.stories"
+
+<Meta of={VariablesPanelStories} />
+
+# VariablesPanel
+
+The shared body for the Edit Variables modal and the right-sidebar variables view. Renders a list of all sequence-level variables and an "Add Variable" button that opens a type picker.
+
+## Props
+
+None — this component reads directly from `variablesAtom` and dispatches via `addVariableAtom`.
+
+## Stories
+
+<Canvas of={VariablesPanelStories.Empty} />
+
+<Canvas of={VariablesPanelStories.WithOnePathVariable} />
+
+<Canvas of={VariablesPanelStories.WithMultiplePathVariables} />

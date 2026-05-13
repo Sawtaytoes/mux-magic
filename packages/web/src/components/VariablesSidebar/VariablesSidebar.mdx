@@ -1,0 +1,17 @@
+import { Canvas, Meta } from "@storybook/blocks"
+import * as VariablesSidebarStories from "./VariablesSidebar.stories"
+
+<Meta of={VariablesSidebarStories} />
+
+# VariablesSidebar
+
+Persistent right-sidebar view of the sequence variables. Visible at `lg:` breakpoints and above; hidden on smaller screens where the Edit Variables modal is the only access point. Wraps `VariablesPanel` in an `<aside>` container.
+
+## Responsive behavior
+
+- **Below `lg`:** `hidden` — sidebar is not visible.
+- **At `lg` and above:** `flex` — docked to the right of the sequence list.
+
+## Stories
+
+<Canvas of={VariablesSidebarStories.WithVariable} />

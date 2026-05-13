@@ -69,11 +69,14 @@ describe("VariablesPanel", () => {
     ).toBeInTheDocument()
   })
 
-  test("Add Variable button adds a path variable via addVariableAtom", async () => {
+  test("Add Variable button opens type picker, then selecting a type adds the variable", async () => {
     const user = userEvent.setup()
     const store = renderPanel([])
     await user.click(
       screen.getByRole("button", { name: /add variable/i }),
+    )
+    await user.click(
+      screen.getByRole("button", { name: /^path$/i }),
     )
     const variables = store.get(variablesAtom)
     expect(variables).toHaveLength(1)
