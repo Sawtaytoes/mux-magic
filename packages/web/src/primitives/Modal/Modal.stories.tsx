@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { useState } from "react"
+import { action } from "storybook/actions"
 import { Modal } from "./Modal"
 
 const meta: Meta<typeof Modal> = {
@@ -73,10 +74,10 @@ export const Closed: Story = {
   render: () => (
     <Modal
       isOpen={false}
-      onClose={() => {}}
+      onClose={action("onClose")}
       ariaLabel="Closed modal"
     >
-      <SampleContent onClose={() => {}} />
+      <SampleContent onClose={action("onClose")} />
     </Modal>
   ),
   parameters: {

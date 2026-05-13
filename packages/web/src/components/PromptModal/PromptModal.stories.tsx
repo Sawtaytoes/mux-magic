@@ -1,9 +1,28 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import { createStore, Provider } from "jotai"
+import { createStore, Provider, useSetAtom } from "jotai"
 import { useState } from "react"
 import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import type { PromptData } from "../../components/PromptModal/types"
 import { PromptModal } from "./PromptModal"
+
+const ReOpenButton = ({
+  initialState,
+}: {
+  initialState: PromptData
+}) => {
+  const setPrompt = useSetAtom(promptModalAtom)
+  return (
+    <div className="p-4">
+      <button
+        type="button"
+        className="text-xs bg-slate-700 text-white px-3 py-1.5 rounded"
+        onClick={() => setPrompt(initialState)}
+      >
+        Re-open modal
+      </button>
+    </div>
+  )
+}
 
 const meta: Meta<typeof PromptModal> = {
   title: "Modals/PromptModal",
@@ -42,7 +61,26 @@ export default meta
 
 type Story = StoryObj<typeof PromptModal>
 
-export const Default: Story = {}
+export const Default: Story = {
+  render: () => (
+    <>
+      <ReOpenButton
+        initialState={{
+          jobId: "job-demo",
+          promptId: "prompt-demo",
+          message:
+            "Multiple files matched — which one should be used for the artwork extraction?",
+          options: [
+            { index: 1, label: "Movie.2023.BluRay.mkv" },
+            { index: 2, label: "Movie.2023.WEB-DL.mkv" },
+            { index: -1, label: "Skip this step" },
+          ],
+        }}
+      />
+      <PromptModal />
+    </>
+  ),
+}
 
 export const WithPerRowPlayButtons: Story = {
   parameters: {
@@ -61,4 +99,25 @@ export const WithPerRowPlayButtons: Story = {
       ],
     } satisfies PromptData,
   },
+  render: () => (
+    <>
+      <ReOpenButton
+        initialState={{
+          jobId: "job-fp",
+          promptId: "prompt-fp",
+          message: "Pick the best source file:",
+          filePaths: [
+            { index: 1, path: "/movies/Movie.mkv" },
+            { index: 2, path: "/movies/Movie-extras.mkv" },
+          ],
+          options: [
+            { index: 1, label: "Main feature" },
+            { index: 2, label: "Extras disc" },
+            { index: -1, label: "Skip" },
+          ],
+        }}
+      />
+      <PromptModal />
+    </>
+  ),
 }

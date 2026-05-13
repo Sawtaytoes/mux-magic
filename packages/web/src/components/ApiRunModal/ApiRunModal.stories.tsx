@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import { createStore, Provider } from "jotai"
+import { createStore, Provider, useSetAtom } from "jotai"
 import { useState } from "react"
 import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
 import type {
@@ -9,6 +9,25 @@ import type {
 import type { ProgressSnapshot } from "../../jobs/types"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
 import { ApiRunModal } from "./ApiRunModal"
+
+const ReOpenButton = ({
+  initialState,
+}: {
+  initialState: ApiRunState
+}) => {
+  const setApiRun = useSetAtom(apiRunModalAtom)
+  return (
+    <div className="p-4">
+      <button
+        type="button"
+        className="text-xs bg-slate-700 text-white px-3 py-1.5 rounded"
+        onClick={() => setApiRun(initialState)}
+      >
+        Re-open modal
+      </button>
+    </div>
+  )
+}
 
 const makeState = (
   jobId: string | null,
@@ -100,37 +119,84 @@ export default meta
 
 type Story = StoryObj<typeof ApiRunModal>
 
+const runningOneJobParams = makeRunningParams(1)
+const runningParallelJobsParams = makeRunningParams(2)
+const running10ChildrenParams = makeRunningParams(10)
+const completedState = makeState("job-42", "completed", [
+  "[rename] Processing file 1 of 12…",
+  "[rename] Processing file 2 of 12…",
+  "[rename] Done.",
+])
+const failedState = makeState("job-42", "failed", [
+  "[rename] Starting…",
+  "[rename] Error: permission denied",
+])
+const noJobYetState = makeState(null, "pending")
+
 export const RunningOneJob: Story = {
-  parameters: makeRunningParams(1),
+  parameters: runningOneJobParams,
+  render: () => (
+    <>
+      <ReOpenButton
+        initialState={runningOneJobParams.initialState}
+      />
+      <ApiRunModal />
+    </>
+  ),
 }
 
 export const RunningParallelJobs: Story = {
-  parameters: makeRunningParams(2),
+  parameters: runningParallelJobsParams,
+  render: () => (
+    <>
+      <ReOpenButton
+        initialState={
+          runningParallelJobsParams.initialState
+        }
+      />
+      <ApiRunModal />
+    </>
+  ),
 }
 
 export const Running10Children: Story = {
-  parameters: makeRunningParams(10),
+  parameters: running10ChildrenParams,
+  render: () => (
+    <>
+      <ReOpenButton
+        initialState={running10ChildrenParams.initialState}
+      />
+      <ApiRunModal />
+    </>
+  ),
 }
 
 export const Completed: Story = {
-  parameters: {
-    initialState: makeState("job-42", "completed", [
-      "[rename] Processing file 1 of 12…",
-      "[rename] Processing file 2 of 12…",
-      "[rename] Done.",
-    ]),
-  },
+  parameters: { initialState: completedState },
+  render: () => (
+    <>
+      <ReOpenButton initialState={completedState} />
+      <ApiRunModal />
+    </>
+  ),
 }
 
 export const Failed: Story = {
-  parameters: {
-    initialState: makeState("job-42", "failed", [
-      "[rename] Starting…",
-      "[rename] Error: permission denied",
-    ]),
-  },
+  parameters: { initialState: failedState },
+  render: () => (
+    <>
+      <ReOpenButton initialState={failedState} />
+      <ApiRunModal />
+    </>
+  ),
 }
 
 export const NoJobYet: Story = {
-  parameters: { initialState: makeState(null, "pending") },
+  parameters: { initialState: noJobYetState },
+  render: () => (
+    <>
+      <ReOpenButton initialState={noJobYetState} />
+      <ApiRunModal />
+    </>
+  ),
 }
