@@ -1,11 +1,12 @@
 import { sep } from "node:path"
+import {
+  addFolderNameBeforeFilename,
+  replaceFileExtension,
+} from "@mux-magic/tools"
 import { concatMap, map, of } from "rxjs"
-
-import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js"
 import type { subtitlesFileExtensions } from "../tools/filterIsSubtitlesFile.js"
 import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { EXTRACTED_SUBTITLES_FOLDER_NAME } from "../tools/outputFolderNames.js"
-import { replaceFileExtension } from "../tools/replaceFileExtension.js"
 import { runMkvExtract } from "./runMkvExtract.js"
 
 export const subtitleCodecExtension = {

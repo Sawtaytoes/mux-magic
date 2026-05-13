@@ -1,11 +1,13 @@
+import {
+  getFiles,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { concatMap, filter, map, tap, toArray } from "rxjs"
 import {
   getAudioOffset,
   getAudioOffsetDefaultProps,
 } from "../cli-spawn-operations/getAudioOffset.js"
-import { getFiles } from "../tools/getFiles.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type GetAudioOffsetsRequiredProps = {
@@ -82,5 +84,5 @@ export const getAudioOffsets = ({
         toArray(),
       ),
     ),
-    logAndRethrow(getAudioOffsets),
+    logAndRethrowPipelineError(getAudioOffsets),
   )

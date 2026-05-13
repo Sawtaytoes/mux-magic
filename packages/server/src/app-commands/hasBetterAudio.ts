@@ -1,12 +1,14 @@
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { concatMap, filter, map, reduce, tap } from "rxjs"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import {
   type AudioTrack,
   getMediaInfo,
 } from "../tools/getMediaInfo.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const hasBetterAudio = ({
@@ -127,5 +129,5 @@ export const hasBetterAudio = ({
         }),
       ),
     ),
-    logAndRethrow(hasBetterAudio),
+    logAndRethrowPipelineError(hasBetterAudio),
   )

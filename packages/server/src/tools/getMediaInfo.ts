@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from "node:child_process"
 import { promisify } from "node:util"
+import { logError } from "@mux-magic/tools"
 import {
   catchError,
   defer,
@@ -8,10 +9,8 @@ import {
   Observable,
   throwError,
 } from "rxjs"
-
 import { mediaInfoPath } from "./appPaths.js"
 import type { Iso6391LanguageCode } from "./iso6391LanguageCodes.js"
-import { logError } from "./logMessage.js"
 
 const execFile = promisify(execFileCallback)
 

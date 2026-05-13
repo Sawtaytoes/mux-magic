@@ -1,5 +1,11 @@
 import { dirname, join } from "node:path"
 import {
+  getFiles,
+  insertIntoArray,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
+import {
   concatMap,
   filter,
   map,
@@ -14,10 +20,6 @@ import {
 import { mergeMediaFiles } from "../cli-spawn-operations/mergeMediaFiles.js"
 import { splitSegmentFfmpeg } from "../cli-spawn-operations/splitChaptersFfmpeg.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFiles } from "../tools/getFiles.js"
-import { insertIntoArray } from "../tools/insertIntoArray.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const FALLBACK_INTRO_FILENAME = "merge-intro.mkv"
@@ -191,5 +193,5 @@ export const mergeOrderedChapters = ({
         ),
     ),
     toArray(),
-    logAndRethrow(mergeOrderedChapters),
+    logAndRethrowPipelineError(mergeOrderedChapters),
   )

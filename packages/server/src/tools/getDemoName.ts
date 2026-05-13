@@ -1,3 +1,4 @@
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import {
   EMPTY,
   filter,
@@ -8,11 +9,9 @@ import {
   of,
   reduce,
 } from "rxjs"
-
 import { replaceAudioFormatByChannelCount } from "./audioHelpers.js"
 import type { MediaInfo } from "./getMediaInfo.js"
 import { replaceHdrFormat } from "./hdrHelpers.js"
-import { logAndSwallow } from "./logAndSwallow.js"
 import { replaceResolutionName } from "./resolutionHelpers.js"
 
 export const getDemoName = ({
@@ -69,7 +68,7 @@ export const getDemoName = ({
                   sampingRate,
                 }),
           ),
-          logAndSwallow(getDemoName),
+          logAndSwallowPipelineError(getDemoName),
         )
       }
 
@@ -107,5 +106,5 @@ export const getDemoName = ({
         renamingFunction(modifiedFilename),
       filename,
     ),
-    logAndSwallow(getDemoName),
+    logAndSwallowPipelineError(getDemoName),
   )

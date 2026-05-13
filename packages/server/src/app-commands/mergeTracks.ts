@@ -1,5 +1,11 @@
 import { access, readFile } from "node:fs/promises"
 import { extname, join } from "node:path"
+import {
+  getFiles,
+  getFolder,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { XMLParser } from "fast-xml-parser"
 import {
   catchError,
@@ -23,11 +29,7 @@ import {
 } from "../cli-spawn-operations/mergeSubtitlesMkvMerge.js"
 import type { ChaptersXml } from "../tools/ChaptersXml.js"
 import { subtitlesFileExtensionSet } from "../tools/filterIsSubtitlesFile.js"
-import { getFiles } from "../tools/getFiles.js"
-import { getFolder } from "../tools/getFolder.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import {
   convertTimecodeToMilliseconds,
   parseMediaFileChapterTimestamp,
@@ -274,5 +276,5 @@ export const mergeTracks = ({
       ),
     ),
     toArray(),
-    logAndRethrow(mergeTracks),
+    logAndRethrowPipelineError(mergeTracks),
   )

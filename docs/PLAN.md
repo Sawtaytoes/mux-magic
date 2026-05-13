@@ -54,7 +54,7 @@ Status values: `planned` → `ready` → `in-progress` → `blocked` → `done`.
 
 | Track | Owns |
 |---|---|
-| `shared` | `packages/shared/**`, root configs, `.github/**`, top-level docs, AGENTS.md |
+| `tools` | `packages/tools/**` (renamed from `packages/shared/**` in worker 39), root configs, `.github/**`, top-level docs, AGENTS.md |
 | `web` | `packages/web/**` only |
 | `srv` | `packages/server/**` only |
 | `cli` | `packages/cli/**` (new package created in Phase 2) |
@@ -94,7 +94,7 @@ master                                master
 
 **Merge-to-master points:**
 
-- **End of Phase 0** — rebrand published; `@mux-magic/shared` available on npm; Gallery-Downloader uses it.
+- **End of Phase 0** — rebrand published; `@mux-magic/tools` available on npm (renamed from `@mux-magic/tools` by worker 39); Gallery-Downloader uses it.
 - **End of Phase 6** — full revamp ships.
 
 No intermediate master merges.
@@ -105,7 +105,7 @@ No intermediate master merges.
 
 | Phase | Title | Workers | Merges to master? |
 |:---:|---|---|:---:|
-| 0 | Rebrand foundation | 01 02 03 04 | **YES** |
+| 0 | Rebrand foundation | 39 → 01, plus 02 03 04 (parallel) | **YES** |
 | 1A | High-blast-radius (ESLint config, serial) | 05 → 06 → 07 | No |
 | 1B | Improvements (parallel fan-out with Variables foundation sub-chain) | 08–1f + 36, 37 (26 workers; 36 → 37 serial sub-chain blocks 11+35+37) | No |
 | 2 | CLI package extraction | 20 → 21 | No |
@@ -124,13 +124,16 @@ No intermediate master merges.
                                   ▼                      │
         ┌────────────────────────────────────────┐       │
         │  PHASE 0  ── Rebrand foundation        │       │
-        │  Run 02, 03, 04 in parallel first      │       │
-        │  Run 01 after (avoids AGENTS.md churn) │       │
+        │  Run 39, 02, 03, 04 in parallel first  │       │
+        │  Run 01 after (avoids AGENTS.md churn  │       │
+        │  AND inherits the tools/ rename)       │       │
         │                                        │       │
-        │   01 mux-magic-rename       Sonnet/H   │       │
+        │   39 shared-to-tools-rename Sonnet/H   │       │
         │   02 npm-publish-key        Haiku/L    │       │
         │   03 storybook-vitest-fix   Sonnet/M   │       │
         │   04 worker-conventions     Haiku/L    │       │
+        │        ▼                               │       │
+        │   01 mux-magic-rename       Sonnet/H   │       │
         └─────────────────┬──────────────────────┘       │
                           │                              │
                           ▼   ═══ MERGE TO MASTER ═══════│
@@ -407,14 +410,17 @@ Serial because 37 imports the new types/atoms from 36. Workers 11 and 35 also de
 
 | File | Owner worker(s) | How |
 |---|---|---|
-| Root `package.json` | `01` rename, `18` loadenvfile, `20` cli-extract | Sequenced |
-| `packages/server/package.json` | `01`, `18`, `20`, `2d` | Same sequence |
+| Root `package.json` | `01` rename, `18` loadenvfile, `20` cli-extract, `39` shared→tools | Sequenced |
+| `packages/server/package.json` | `01`, `18`, `20`, `2d`, `39` (selective tool moves) | Same sequence |
 | `packages/web/package.json` | `01`, `18` | Sequence |
+| `packages/shared/` directory | `39` (renames → `packages/tools/`) | Single-owner |
 | AGENTS.md | `04` (full pass); progress lines go in workers/README.md | Single-owner |
 | workers/README.md | Every worker updates its own row only | Line-isolated; merge-safe |
 | NSF command files | Phase 3 workers — strictly sequential | Enforced by dependency chain |
 
 **Recommendation:** start Phase 1B fan-out workers only after Phase 1A's three serial workers complete.
+
+**Phase 0 ordering:** worker `39` (shared→tools rename + selective server-tools migration) must merge before worker `01` (mux-magic rebrand), so `01` only deals with `@mux-magic/tools` (not the older `@mux-magic/tools`). Workers `02`, `03`, `04` are unaffected by `39` and can run in parallel with it.
 
 ---
 
@@ -422,6 +428,7 @@ Serial because 37 imports the new types/atoms from 36. Workers 11 and 35 also de
 
 | Worker | Decision |
 |:--:|---|
+| 39 | **`packages/shared/` renames to `packages/tools/`** and the npm scope becomes `@mux-magic/tools`. Reusable utilities currently under `packages/server/src/tools/` (console log helpers, file lookups, anything not tied to this server's API) move into `packages/tools/`. Gives Gallery-Downloader a single npm dep instead of duplicating those utilities. Runs in Phase 0 before worker 01 so 01 only handles `@mux-magic/tools` references. |
 | 1b | **Gallery-Downloader** is the final name for the renamed Media-Sync. |
 | 22 | **Keep existing code; rename only** → `nameSpecialFeaturesDvdCompareTmdb`. Two NEW sibling commands (23 `nameMovieCutsDvdCompareTmdb` and 34 `onlyNameSpecialFeaturesDvdCompare`) plus shared DVD Compare ID variable type (35). |
 | 27 | **`paused`** state (clean lifecycle: pending → running → paused → complete/failed). Separate `reason` field for human-readable cause. |
@@ -437,7 +444,7 @@ Serial because 37 imports the new types/atoms from 36. Workers 11 and 35 also de
 | Confidence | Workers |
 |---|---|
 | **High** (mechanical / well-bounded) | 02, 03, 04, 0a, 0b, 0e, 10, 12, 13, 18, 2d, 32 |
-| **Medium** (judgment calls, standard patterns) | 01, 05, 06, 07, 08, 09, 0c, 0d, 0f, 11, 14, 15, 16, 17, 19, 1a, 1b, 1c, 1d, 1e, 1f, 21, 22, 23, 25, 26, 27, 29, 2a, 2b, 30, 31, 33, 34, 35, 36, 37 |
+| **Medium** (judgment calls, standard patterns) | 01, 05, 06, 07, 08, 09, 0c, 0d, 0f, 11, 14, 15, 16, 17, 19, 1a, 1b, 1c, 1d, 1e, 1f, 21, 22, 23, 25, 26, 27, 29, 2a, 2b, 30, 31, 33, 34, 35, 36, 37, 39 |
 | **Low — model recommendation uncertain** | **20, 24, 28, 2c, 2f, 38** — all currently Opus or High-effort Sonnet. These are where Opus's cost may be justified by failure-mode severity. Revisit per worker. |
 
 ---

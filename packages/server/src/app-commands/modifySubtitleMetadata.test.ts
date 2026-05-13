@@ -1,10 +1,9 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
+import { captureConsoleMessage } from "@mux-magic/tools"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
-
-import { captureConsoleMessage } from "../tools/captureConsoleMessage.js"
 import { modifySubtitleMetadata } from "./modifySubtitleMetadata.js"
 
 const MINIMAL_ASS = `[Script Info]

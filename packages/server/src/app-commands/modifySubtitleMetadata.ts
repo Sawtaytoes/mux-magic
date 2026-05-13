@@ -1,6 +1,11 @@
 import { readFile, writeFile } from "node:fs/promises"
 import { extname } from "node:path"
 import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
+import {
   concatMap,
   defer,
   EMPTY,
@@ -26,9 +31,6 @@ import type {
   NamedPredicates,
 } from "../tools/assTypes.js"
 import { buildDefaultSubtitleModificationRules } from "../tools/buildDefaultSubtitleModificationRules.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ModifySubtitleMetadataRequiredProps = {
@@ -184,6 +186,6 @@ export const modifySubtitleMetadata = ({
         ),
       )
     }),
-    logAndRethrow(modifySubtitleMetadata),
+    logAndRethrowPipelineError(modifySubtitleMetadata),
   )
 }

@@ -1,6 +1,7 @@
 export const cleanupFilename = (filename: string) =>
   filename
-    .replaceAll(/: /g, " - ")
+    .replaceAll("\n", " ")
+    .replaceAll(/(\w): /g, "$1 - ")
     .replaceAll(/:/g, "-")
     .replaceAll("?", "_")
     .replaceAll('"', "")
@@ -9,4 +10,5 @@ export const cleanupFilename = (filename: string) =>
     .replaceAll(">", "]")
     .replaceAll("*", "@")
     .replaceAll("...", "--")
-    .replaceAll("\n", " ")
+    .replaceAll(" | ", " - ")
+    .trim()

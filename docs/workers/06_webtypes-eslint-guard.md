@@ -72,4 +72,4 @@ Some legitimate local types may match the pattern. Provide an allowlist via `esl
 
 - Renaming or rewriting existing server `api-types` exports
 - Adding more API-shape exports (worker 1f or downstream do that as needed)
-- Enforcing the same rule in `packages/server/` or `packages/shared/` — those packages legitimately define API shapes
+- Enforcing the same rule in `packages/server/` or `packages/tools/` — those packages legitimately define API shapes

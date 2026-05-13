@@ -10,7 +10,7 @@ import {
   tap,
 } from "rxjs"
 
-import { logAndSwallow } from "./logAndSwallow.js"
+import { logAndSwallowPipelineError } from "./logAndSwallowPipelineError.js"
 import { logInfo } from "./logMessage.js"
 
 export const getLastItemInFilePath = (filePath: string) =>
@@ -73,5 +73,7 @@ export const createRenameFileOrFolderObservable =
           map(() => ({ newPath, oldPath })),
         ),
       ),
-      logAndSwallow(createRenameFileOrFolderObservable),
+      logAndSwallowPipelineError(
+        createRenameFileOrFolderObservable,
+      ),
     )

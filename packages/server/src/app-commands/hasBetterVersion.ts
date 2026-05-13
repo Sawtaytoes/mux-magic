@@ -1,3 +1,8 @@
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  naturalSort,
+} from "@mux-magic/tools"
 import chalk from "chalk"
 import {
   concatMap,
@@ -8,10 +13,7 @@ import {
   toArray,
 } from "rxjs"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { getUhdDiscForumPostData } from "../tools/getUhdDiscForumPostData.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { naturalSort } from "../tools/naturalSort.js"
 
 export const hasBetterVersion = ({
   isRecursive,
@@ -99,5 +101,5 @@ export const hasBetterVersion = ({
         `\n\n${matchingSections}\n\n`,
       )
     }),
-    logAndRethrow(hasBetterVersion),
+    logAndRethrowPipelineError(hasBetterVersion),
   )

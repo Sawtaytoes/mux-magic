@@ -12,8 +12,8 @@ import {
   canRedoAtom,
   canUndoAtom,
   redoStackAtom,
-  undoStackAtom,
   type Snapshot,
+  undoStackAtom,
 } from "../state/historyAtoms"
 import { pathsAtom } from "../state/pathsAtom"
 import { stepsAtom } from "../state/stepsAtom"
@@ -27,24 +27,33 @@ const Harness = () => {
     useBuilderActions()
   return (
     <>
-      <button onClick={addPath}>Add Path</button>
+      <button type="button" onClick={addPath}>
+        Add Path
+      </button>
       <button
+        type="button"
         onClick={() => setPathValue("test", "/v1")}
       >
         Set V1
       </button>
       <button
+        type="button"
         onClick={() => setPathValue("test", "/v2")}
       >
         Set V2
       </button>
       <button
+        type="button"
         onClick={() => setPathValue("test", "/v3")}
       >
         Set V3
       </button>
-      <button onClick={undo}>Undo</button>
-      <button onClick={redo}>Redo</button>
+      <button type="button" onClick={undo}>
+        Undo
+      </button>
+      <button type="button" onClick={redo}>
+        Redo
+      </button>
     </>
   )
 }

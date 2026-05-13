@@ -158,7 +158,9 @@ export const ApiRunModal = () => {
     const jobId = modalState?.jobId
     if (jobId && status === "running") {
       try {
-        await fetch(`${apiBase}/jobs/${jobId}`, { method: "DELETE" })
+        await fetch(`${apiBase}/jobs/${jobId}`, {
+          method: "DELETE",
+        })
       } catch {
         // Best-effort cancel.
       }

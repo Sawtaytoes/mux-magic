@@ -134,11 +134,14 @@ export const FileVideoPlayer = ({
     if (!path) return
     setOpenLabel("⏳ Launching…")
     try {
-      const resp = await fetch(`${apiBase}/files/open-external`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path }),
-      })
+      const resp = await fetch(
+        `${apiBase}/files/open-external`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path }),
+        },
+      )
       const data = (await resp.json()) as {
         ok: boolean
         error?: string

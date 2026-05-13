@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs"
 import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
 import { WEB_PORT } from "@media-tools/server/src/tools/envVars.js"
-import { logInfo } from "@media-tools/server/src/tools/logMessage.js"
+import { logInfo } from "@mux-magic/tools/src/logMessage.js"
 import { Hono } from "hono"
 
 // If REMOTE_SERVER_URL is set, inject window.__API_BASE__ into the built

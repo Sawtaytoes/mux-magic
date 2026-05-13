@@ -1,9 +1,9 @@
+import { logError, logInfo } from "@mux-magic/tools"
 import type { Observable } from "rxjs"
 import {
   getEffectiveCommandConfigs,
   type Scenario,
 } from "../fake-data/index.js"
-import { logError, logInfo } from "../tools/logMessage.js"
 import { runJob } from "./jobRunner.js"
 import {
   cancelOrSkipJob,

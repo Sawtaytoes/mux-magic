@@ -1,5 +1,6 @@
 import { stat } from "node:fs/promises"
 import { join } from "node:path"
+import { captureConsoleMessage } from "@mux-magic/tools"
 import { vol } from "memfs"
 import { firstValueFrom, of, toArray } from "rxjs"
 import {
@@ -9,8 +10,6 @@ import {
   test,
   vi,
 } from "vitest"
-
-import { captureConsoleMessage } from "../tools/captureConsoleMessage.js"
 import { remuxToMkv } from "./remuxToMkv.js"
 
 // mkvmerge isn't a thing in memfs, so the spawn wrapper is mocked out.

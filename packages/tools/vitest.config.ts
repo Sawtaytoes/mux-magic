@@ -6,7 +6,8 @@ export default defineConfig({
     // and break under vitest because @playwright/test's describe/test globals
     // aren't compatible.
     exclude: ["**/node_modules/**", "**/dist/**"],
-    name: "shared",
+    name: "tools",
     include: ["src/**/*.test.ts"],
+    setupFiles: ["./vitest.setup.ts"],
   },
 })

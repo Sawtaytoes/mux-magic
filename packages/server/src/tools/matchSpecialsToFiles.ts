@@ -1,3 +1,4 @@
+import type { FileInfo } from "@mux-magic/tools"
 import {
   concatMap,
   EMPTY,
@@ -5,13 +6,11 @@ import {
   type Observable,
   of,
 } from "rxjs"
-
 import type { AnidbEpisode } from "../types/anidb.js"
 import {
   effectiveDurationDeltaMinutes,
   letterPrefixForType,
 } from "../types/anidb.js"
-import type { FileInfo } from "./getFiles.js"
 import { getUserSearchInput } from "./getUserSearchInput.js"
 import { readMediaDurationMinutes } from "./readMediaDurationMinutes.js"
 

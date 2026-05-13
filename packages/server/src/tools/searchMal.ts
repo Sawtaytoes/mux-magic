@@ -1,7 +1,6 @@
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import malScraper from "mal-scraper"
 import { from, map, type Observable } from "rxjs"
-
-import { logAndSwallow } from "./logAndSwallow.js"
 
 export type MalResult = {
   airDate?: string
@@ -62,5 +61,5 @@ export const lookupMalById = (
         ""
       return name ? { name } : null
     }),
-    logAndSwallow(lookupMalById),
+    logAndSwallowPipelineError(lookupMalById),
   )

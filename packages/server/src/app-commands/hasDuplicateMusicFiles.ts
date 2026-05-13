@@ -1,5 +1,9 @@
 import { basename, dirname, join } from "node:path"
 import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+} from "@mux-magic/tools"
+import {
   groupBy,
   map,
   mergeMap,
@@ -8,8 +12,6 @@ import {
   tap,
 } from "rxjs"
 import { filterIsAudioFile } from "../tools/filterIsAudioFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 
 export const hasDuplicateMusicFiles = ({
   isRecursive,
@@ -52,5 +54,5 @@ export const hasDuplicateMusicFiles = ({
     tap((directoryWithDuplicates) => {
       console.info(directoryWithDuplicates)
     }),
-    logAndRethrow(hasDuplicateMusicFiles),
+    logAndRethrowPipelineError(hasDuplicateMusicFiles),
   )

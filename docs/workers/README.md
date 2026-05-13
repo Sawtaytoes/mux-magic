@@ -23,7 +23,7 @@ This is the live tracking document for all workers in the Mux-Magic huge revamp.
 
 | Track | Owns |
 |---|---|
-| `shared` | `packages/shared/**`, root configs, `.github/**`, top-level docs, `AGENTS.md` |
+| `tools` | `packages/tools/**` (renamed from `packages/shared/**` in worker 39), root configs, `.github/**`, top-level docs, `AGENTS.md` |
 | `web` | `packages/web/**` only |
 | `srv` | `packages/server/**` only |
 | `cli` | `packages/cli/**` (new package created in Phase 2) |
@@ -36,12 +36,13 @@ This is the live tracking document for all workers in the Mux-Magic huge revamp.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 01 | [mux-magic-rename](01_mux-magic-rename.md) | shared | Sonnet | High | ON | — | ready |
-| 02 | [npm-publish-key-setup](02_npm-publish-key-setup.md) | shared | Haiku | Low | OFF | — | in-progress |
+| 39 | [shared-to-tools-rename](39_shared-to-tools-rename.md) | tools | Sonnet | High | ON | — | ready |
+| 01 | [mux-magic-rename](01_mux-magic-rename.md) | tools | Sonnet | High | ON | 39 | ready |
+| 02 | [npm-publish-key-setup](02_npm-publish-key-setup.md) | tools | Haiku | Low | OFF | — | in-progress |
 | 03 | [storybook-vitest-filter-fix](03_storybook-vitest-filter-fix.md) | infra | Sonnet | Medium | ON | — | ready |
-| 04 | [worker-conventions-agents-md](04_worker-conventions-agents-md.md) | shared | Haiku | Low | OFF | — | ready |
+| 04 | [worker-conventions-agents-md](04_worker-conventions-agents-md.md) | tools | Haiku | Low | OFF | — | ready |
 
-**Spawn recommendation:** start `02`, `03`, `04` in parallel (each touches small, disjoint files). Run `01` (full rename pass) AFTER they all merge, to avoid AGENTS.md / GitHub-Actions churn.
+**Spawn recommendation:** start `39`, `02`, `03`, `04` in parallel (each touches small, disjoint files; `39` owns the `packages/shared/` → `packages/tools/` rename plus selective migration of reusable utilities from `packages/server/src/tools/`). Run `01` (full rebrand pass) AFTER all four have merged, so `01` only renames `@media-tools/tools` → `@mux-magic/tools` (no leftover `@mux-magic/tools` references).
 
 ---
 
@@ -101,7 +102,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 1b | [media-sync-rename-to-gallery-downloader](1b_media-sync-rename-to-gallery-downloader.md) | cross | Sonnet | High | ON | 01 | ready |
 | 1c | [gallery-downloader-decouple-and-ha-endpoint](1c_gallery-downloader-decouple-and-ha-endpoint.md) | cross | Sonnet | High | ON | 1b | ready |
-| 1d | [gallery-downloader-consume-mux-magic-shared](1d_gallery-downloader-consume-mux-magic-shared.md) | cross | Sonnet | Medium | ON | 1c, 02 + a published `@mux-magic/shared` release | ready |
+| 1d | [gallery-downloader-consume-mux-magic-tools](1d_gallery-downloader-consume-mux-magic-tools.md) | cross | Sonnet | Medium | ON | 1c, 02, 39 + a published `@mux-magic/tools` release | ready |
 | 1e | [mux-magic-webhook-reporter](1e_mux-magic-webhook-reporter.md) | srv | Sonnet | Medium | ON | 01 | ready |
 | 1f | [mux-magic-anime-manga-commands](1f_mux-magic-anime-manga-commands.md) | srv+web | Sonnet | High | ON | 01 | ready |
 

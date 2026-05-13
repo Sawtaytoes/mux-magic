@@ -3,7 +3,7 @@
 // one-time deprecation warning per call. Will be removed in a future
 // release once existing sequences and saved configs have migrated.
 
-import { logWarning } from "../tools/logMessage.js"
+import { logWarning } from "@mux-magic/tools"
 import {
   type ExtractSubtitlesProps,
   extractSubtitles,

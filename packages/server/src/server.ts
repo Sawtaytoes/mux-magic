@@ -5,11 +5,10 @@
 import "./logBuildBanner.js"
 
 import { serve } from "@hono/node-server"
-
+import { logInfo } from "@mux-magic/tools"
 import { app } from "./api/hono-routes.js"
 import { installLogCapture } from "./api/logCapture.js"
 import { API_PORT, MAX_THREADS } from "./tools/envVars.js"
-import { logInfo } from "./tools/logMessage.js"
 import { initTaskScheduler } from "./tools/taskScheduler.js"
 
 installLogCapture()

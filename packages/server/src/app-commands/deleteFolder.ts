@@ -1,8 +1,9 @@
 import { rm } from "node:fs/promises"
+import {
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { defer, map, type Observable } from "rxjs"
-
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 
 export const deleteFolder = ({
   confirm,
@@ -27,5 +28,5 @@ export const deleteFolder = ({
       logInfo("DELETED", path)
       return path
     }),
-    logAndRethrow(deleteFolder),
+    logAndRethrowPipelineError(deleteFolder),
   )

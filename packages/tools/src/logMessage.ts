@@ -28,6 +28,14 @@ export const messageTemplate = {
       "\n",
       secondItem,
     ),
+  // Description followed by N items, each separated by a newline. Useful for
+  // download-summary logs and batch-result reports where the caller has a
+  // header line plus a variable-length list of details.
+  multipleItems: (description: string, items: string[]) =>
+    [description].concat(
+      "\n",
+      items.flatMap((item) => [item].concat("\n")),
+    ),
   noItems: () => [],
   singleItem: (item: unknown) => [item],
 } as const
@@ -61,17 +69,28 @@ export const createLogMessage =
       titleBackgroundColor,
     )(createAddColorToChalk(titleTextColor)(new Chalk()))
 
+    // Fallback dispatch when no templateName is set: a description string +
+    // an array of items at positions 0 and 1 is the multipleItems shape.
+    // Otherwise pick a template by arity.
     const message = templateName
       ? messageTemplate[templateName](
           // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556)
           ...content,
         )
-      : content.length in numericalMessageTemplateFallback
-        ? numericalMessageTemplateFallback[content.length](
+      : content.at(0) !== undefined &&
+          Array.isArray(content.at(1))
+        ? messageTemplate.multipleItems(
             // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556)
             ...content,
           )
-        : null
+        : content.length in numericalMessageTemplateFallback
+          ? numericalMessageTemplateFallback[
+              content.length
+            ](
+              // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556)
+              ...content,
+            )
+          : null
 
     console[logType](
       optionallyColoredChalk(`[${title}]`),

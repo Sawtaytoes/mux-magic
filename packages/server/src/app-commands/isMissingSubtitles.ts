@@ -1,11 +1,13 @@
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+} from "@mux-magic/tools"
 import { concatMap, filter, map, tap } from "rxjs"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import {
   getMediaInfo,
   type TextTrack,
 } from "../tools/getMediaInfo.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const isMissingSubtitles = ({
@@ -37,5 +39,5 @@ export const isMissingSubtitles = ({
         ),
       { concurrency: Infinity },
     ),
-    logAndRethrow(isMissingSubtitles),
+    logAndRethrowPipelineError(isMissingSubtitles),
   )

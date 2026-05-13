@@ -1,7 +1,7 @@
 import { dirname, join } from "node:path"
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import type { Observable } from "rxjs"
 import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
-import { logAndSwallow } from "../tools/logAndSwallow.js"
 import { LANGUAGE_TRIMMED_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import { runMkvMerge } from "./runMkvMerge.js"
 
@@ -53,5 +53,7 @@ export const keepSpecifiedLanguageTracks = ({
       dirname(filePath),
       join(dirname(filePath), outputFolderName),
     ),
-  }).pipe(logAndSwallow(keepSpecifiedLanguageTracks))
+  }).pipe(
+    logAndSwallowPipelineError(keepSpecifiedLanguageTracks),
+  )
 }

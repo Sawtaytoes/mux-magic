@@ -1,11 +1,10 @@
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import { from, type Observable } from "rxjs"
-
 import {
   gotoPage,
   launchBrowser,
   performAndWaitForNavigation,
 } from "./launchBrowser.js"
-import { logAndSwallow } from "./logAndSwallow.js"
 
 export type DvdCompareVariant =
   | "DVD"
@@ -312,7 +311,7 @@ export const lookupDvdCompareFilm = (
         name: `${result.baseTitle}${variantSuffix}${yearSuffix}`,
       }
     })(),
-  ).pipe(logAndSwallow(lookupDvdCompareFilm))
+  ).pipe(logAndSwallowPipelineError(lookupDvdCompareFilm))
 
 export const lookupDvdCompareRelease = (
   dvdCompareId: number,
@@ -330,7 +329,9 @@ export const lookupDvdCompareRelease = (
       )
       return matched ? { label: matched.label } : null
     })(),
-  ).pipe(logAndSwallow(lookupDvdCompareRelease))
+  ).pipe(
+    logAndSwallowPipelineError(lookupDvdCompareRelease),
+  )
 
 export type DvdCompareReleaseScrape = {
   // Raw text of the chosen release's "Extras" section. Lines are
@@ -460,4 +461,4 @@ export const searchDvdCompare = ({
         await browser.close()
       }
     })(),
-  ).pipe(logAndSwallow(searchDvdCompare))
+  ).pipe(logAndSwallowPipelineError(searchDvdCompare))

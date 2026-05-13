@@ -79,7 +79,9 @@ export const PathVariableCard = ({
     } else {
       let startPath = "/"
       try {
-        const response = await fetch(`${apiBase}/files/default-path`)
+        const response = await fetch(
+          `${apiBase}/files/default-path`,
+        )
         const data = (await response.json()) as {
           path?: string
         }

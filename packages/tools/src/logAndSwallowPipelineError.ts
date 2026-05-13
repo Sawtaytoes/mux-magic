@@ -10,8 +10,8 @@ import { logError } from "./logMessage.js"
 // per-file `mergeMap`/`concatMap` callbacks where one bad item shouldn't
 // abort the rest of the batch (e.g. spawn-op wrappers, per-file fetch
 // helpers). For OUTER terminal pipes that need the error to reach the
-// runner, use `logAndRethrow` instead.
-export const logAndSwallow = <PipelineValue>(
+// runner, use `logAndRethrowPipelineError` instead.
+export const logAndSwallowPipelineError = <PipelineValue>(
   func: { name: string } | string,
 ): OperatorFunction<PipelineValue, PipelineValue> =>
   catchError((error) => {

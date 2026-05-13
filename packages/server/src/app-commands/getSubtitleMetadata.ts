@@ -1,10 +1,12 @@
 import { readFile } from "node:fs/promises"
 import { extname } from "node:path"
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+} from "@mux-magic/tools"
 import { defer, filter, map, toArray } from "rxjs"
 import { parseAssFile } from "../tools/assFileTools.js"
 import type { AssScriptInfoProperty } from "../tools/assTypes.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export type SubtitleFileMetadata = {
@@ -92,5 +94,5 @@ export const getSubtitleMetadata = ({
       ),
     ),
     toArray(),
-    logAndRethrow(getSubtitleMetadata),
+    logAndRethrowPipelineError(getSubtitleMetadata),
   )

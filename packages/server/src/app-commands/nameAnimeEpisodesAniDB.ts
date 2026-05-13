@@ -1,5 +1,12 @@
 import { basename } from "node:path"
 import {
+  cleanupFilename,
+  getFiles,
+  logAndRethrowPipelineError,
+  logInfo,
+  naturalSort,
+} from "@mux-magic/tools"
+import {
   concatMap,
   EMPTY,
   filter,
@@ -11,15 +18,10 @@ import {
   switchMap,
   toArray,
 } from "rxjs"
-import { cleanupFilename } from "../tools/cleanupFilename.js"
 import { detectMovieFormatVariants } from "../tools/detectMovieFormatVariants.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFiles } from "../tools/getFiles.js"
 import { getUserSearchInput } from "../tools/getUserSearchInput.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { matchSpecialsToFiles } from "../tools/matchSpecialsToFiles.js"
-import { naturalSort } from "../tools/naturalSort.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { readMediaDurationMinutes } from "../tools/readMediaDurationMinutes.js"
 import {
@@ -431,5 +433,5 @@ export const nameAnimeEpisodesAniDB = ({
         fileInfo.renameFile(renamedFilename),
       { concurrency: Infinity },
     ),
-    logAndRethrow(nameAnimeEpisodesAniDB),
+    logAndRethrowPipelineError(nameAnimeEpisodesAniDB),
   )

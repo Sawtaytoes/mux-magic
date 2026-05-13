@@ -101,5 +101,5 @@ Currently reports only errors to HA. Extend to also report:
 - The actual download logic (preserved as-is)
 - Mux-Magic-side webhook receiver (worker `1e` does the Mux-Magic outbound side)
 - Mux-Magic anime/manga commands that the new HA orchestration will eventually call (worker `1f`)
-- Consuming `@mux-magic/shared` (worker `1d`)
+- Consuming `@mux-magic/tools` (worker `1d`)
 - Renaming directories on disk (user's manual action)

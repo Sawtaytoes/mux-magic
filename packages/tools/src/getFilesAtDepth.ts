@@ -1,7 +1,7 @@
 import { concat, concatMap, EMPTY, filter, iif } from "rxjs"
 import { getFiles } from "./getFiles.js"
 import { getFolder } from "./getFolder.js"
-import { logPipelineError } from "./logPipelineError.js"
+import { logAndRethrowPipelineError } from "./logAndRethrowPipelineError.js"
 
 export const getFilesAtDepth = ({
   depth,
@@ -29,4 +29,4 @@ export const getFilesAtDepth = ({
       ),
       EMPTY,
     ),
-  ).pipe(logPipelineError(getFilesAtDepth))
+  ).pipe(logAndRethrowPipelineError(getFilesAtDepth))

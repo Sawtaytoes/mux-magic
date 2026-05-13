@@ -2,18 +2,22 @@ import { throwError } from "rxjs"
 import { describe, expect, test } from "vitest"
 
 import { captureLogMessage } from "./captureLogMessage.js"
-import { logAndSwallow } from "./logAndSwallow.js"
+import { logAndRethrowPipelineError } from "./logAndRethrowPipelineError.js"
 import { runTestScheduler } from "./test-runners.js"
 
-describe(logAndSwallow.name, () => {
-  test("catches a pipeline error and completes cleanly", async () => {
+describe(logAndRethrowPipelineError.name, () => {
+  test("logs the error and re-emits it so downstream catchError handlers fire", async () => {
     captureLogMessage("error", (logMessageSpy) => {
       runTestScheduler(({ expectObservable }) => {
+        // "#" = error notification (vs. "|" for clean complete).
+        // logAndSwallowPipelineError returns "|";
+        // logAndRethrowPipelineError must return "#" with the original
+        // error preserved.
         expectObservable(
           throwError(() => "test error").pipe(
-            logAndSwallow("testFunction"),
+            logAndRethrowPipelineError("testFunction"),
           ),
-        ).toBe("|")
+        ).toBe("#", undefined, "test error")
       })
 
       expect(logMessageSpy).toHaveBeenCalledOnce()
@@ -23,32 +27,21 @@ describe(logAndSwallow.name, () => {
           text.includes("testFunction"),
         ),
       ).toContain("testFunction")
-
-      expect(
-        logMessageSpy.mock.calls[0].find((text) =>
-          text.includes("test error"),
-        ),
-      ).toContain("test error")
     })
   })
 
-  test("logs an error buffer", async () => {
+  test("logs an error buffer and re-emits the original error", async () => {
     captureLogMessage("error", (logMessageSpy) => {
       runTestScheduler(({ expectObservable }) => {
+        const errorBuffer = Buffer.from("test error")
         expectObservable(
-          throwError(() => Buffer.from("test error")).pipe(
-            logAndSwallow("testFunction"),
+          throwError(() => errorBuffer).pipe(
+            logAndRethrowPipelineError("testFunction"),
           ),
-        ).toBe("|")
+        ).toBe("#", undefined, errorBuffer)
       })
 
       expect(logMessageSpy).toHaveBeenCalledOnce()
-
-      expect(
-        logMessageSpy.mock.calls[0].find((text) =>
-          text.includes("testFunction"),
-        ),
-      ).toContain("testFunction")
 
       expect(
         logMessageSpy.mock.calls[0].find((text) =>

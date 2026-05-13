@@ -1,7 +1,7 @@
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import { from, type Observable } from "rxjs"
 import { processUhdDiscForumPost } from "../app-commands/processUhdDiscForumPost.cherrio.js"
 import { gotoPage, launchBrowser } from "./launchBrowser.js"
-import { logAndSwallow } from "./logAndSwallow.js"
 
 export type UhdDiscForumPostItem = {
   movieName: string
@@ -62,4 +62,6 @@ export const getUhdDiscForumPostData = (): Observable<
         await browser.close()
       }
     })(),
-  ).pipe(logAndSwallow(getUhdDiscForumPostData))
+  ).pipe(
+    logAndSwallowPipelineError(getUhdDiscForumPostData),
+  )

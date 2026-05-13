@@ -1,11 +1,7 @@
+import { logError, logInfo } from "@mux-magic/tools"
 import { Observable } from "rxjs"
-
 import { emitJobEvent } from "../../api/jobStore.js"
 import { getActiveJobId } from "../../api/logCapture.js"
-import {
-  logError,
-  logInfo,
-} from "../../tools/logMessage.js"
 
 // Total runtime before the scripted error fires. Short on purpose — the
 // failure scenario is mostly there so the UI's red-state styling and the

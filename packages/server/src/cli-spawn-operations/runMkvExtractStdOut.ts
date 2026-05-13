@@ -1,10 +1,11 @@
 import { spawn } from "node:child_process"
+import {
+  logAndSwallowPipelineError,
+  logWarning,
+} from "@mux-magic/tools"
 import { Observable } from "rxjs"
-
 import { mkvExtractPath } from "../tools/appPaths.js"
 import { createTtyAffordances } from "../tools/createTtyAffordances.js"
-import { logAndSwallow } from "../tools/logAndSwallow.js"
-import { logWarning } from "../tools/logMessage.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
 export const runMkvExtractStdOut = ({
@@ -72,4 +73,4 @@ export const runMkvExtractStdOut = ({
     })
 
     return treeKillOnUnsubscribe(childProcess)
-  }).pipe(logAndSwallow(runMkvExtractStdOut))
+  }).pipe(logAndSwallowPipelineError(runMkvExtractStdOut))

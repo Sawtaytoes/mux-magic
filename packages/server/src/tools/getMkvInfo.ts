@@ -1,11 +1,10 @@
 import { spawn } from "node:child_process"
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import { map, Observable } from "rxjs"
-
 import { treeKillOnUnsubscribe } from "../cli-spawn-operations/treeKillChild.js"
 import { mkvMergePath } from "./appPaths.js"
 import { createTtyAffordances } from "./createTtyAffordances.js"
 import type { Iso6392LanguageCode } from "./iso6392LanguageCodes.js"
-import { logAndSwallow } from "./logAndSwallow.js"
 
 export type Chapter = {
   num_entries: number
@@ -165,5 +164,5 @@ export const getMkvInfo = (
       (mkvInfoJsonString) =>
         JSON.parse(mkvInfoJsonString) as MkvInfo,
     ),
-    logAndSwallow(getMkvInfo),
+    logAndSwallowPipelineError(getMkvInfo),
   )

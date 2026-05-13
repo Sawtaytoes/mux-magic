@@ -1,6 +1,13 @@
 import { rm, stat } from "node:fs/promises"
 import { basename, dirname, join } from "node:path"
 import {
+  aclSafeCopyFile,
+  type CopyOptions,
+  getFiles,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
+import {
   concatMap,
   defer,
   finalize,
@@ -11,15 +18,7 @@ import {
   tap,
   toArray,
 } from "rxjs"
-
 import { getActiveJobId } from "../api/logCapture.js"
-import {
-  aclSafeCopyFile,
-  type CopyOptions,
-} from "../tools/aclSafeCopyFile.js"
-import { getFiles } from "../tools/getFiles.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { runTasks } from "../tools/taskScheduler.js"
 
@@ -166,7 +165,7 @@ export const flattenOutput = ({
           }
           return of(sourcePath)
         }),
-        logAndRethrow(flattenOutput),
+        logAndRethrowPipelineError(flattenOutput),
       )
       .subscribe(subscriber)
 

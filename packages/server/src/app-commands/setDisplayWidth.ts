@@ -1,8 +1,10 @@
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { tap, toArray } from "rxjs"
 import { setDisplayWidthMkvPropEdit } from "../cli-spawn-operations/setDisplayWidthMkvPropEdit.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const setDisplayWidth = ({
@@ -34,5 +36,5 @@ export const setDisplayWidth = ({
       ),
     ),
     toArray(),
-    logAndRethrow(setDisplayWidth),
+    logAndRethrowPipelineError(setDisplayWidth),
   )

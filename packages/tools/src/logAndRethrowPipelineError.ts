@@ -10,8 +10,8 @@ import { logError } from "./logMessage.js"
 // in jobRunner / sequenceRunner can flip the job's status to "failed".
 // Use this at the OUTER terminal pipe of an app-command. For INNER pipes
 // that should skip a broken item and continue the batch, use
-// `logAndSwallow` instead.
-export const logAndRethrow = <PipelineValue>(
+// `logAndSwallowPipelineError` instead.
+export const logAndRethrowPipelineError = <PipelineValue>(
   func: { name: string } | string,
 ): OperatorFunction<PipelineValue, PipelineValue> =>
   catchError((error) => {

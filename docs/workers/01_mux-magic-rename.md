@@ -4,8 +4,8 @@
 **Branch:** `feat/mux-magic-revamp/01-mux-magic-rename`
 **Worktree:** `.claude/worktrees/01_mux-magic-rename/`
 **Phase:** 0
-**Depends on:** Workers 02, 03, 04 should land first to avoid conflicts on overlapping files (AGENTS.md, publish-shared.yml, storybook configs)
-**Parallel with:** Not recommended — coordinates with 02/03/04 via merge order, not parallelism
+**Depends on:** Workers 02, 03, 04, **39** should land first to avoid conflicts on overlapping files (AGENTS.md, publish workflow, storybook configs, `packages/shared/` → `packages/tools/` rename)
+**Parallel with:** Not recommended — coordinates with 02/03/04/39 via merge order, not parallelism
 
 This is the **rebrand worker**. After it ships, the project is officially named **Mux-Magic** (with hyphen) and all `@media-tools/*` npm scopes are renamed to `@mux-magic/*`. The work is broad but mechanical.
 
@@ -13,14 +13,14 @@ This is the **rebrand worker**. After it ships, the project is officially named 
 
 ## Universal Rules
 
-1. **Branch & worktree — create AFTER 02, 03, 04 have merged**
+1. **Branch & worktree — create AFTER 02, 03, 04, 39 have merged**
    ```powershell
    git fetch origin
    git checkout feat/mux-magic-revamp
    git pull
-   # Verify 02, 03, 04 have merged into feat/mux-magic-revamp:
-   git log --oneline feat/mux-magic-revamp | findstr /R "02-npm 03-storybook 04-worker"
-   # All three commits should appear. If not, wait for them to merge first.
+   # Verify 02, 03, 04, 39 have merged into feat/mux-magic-revamp:
+   git log --oneline feat/mux-magic-revamp | findstr /R "02-npm 03-storybook 04-worker 39-shared-to-tools"
+   # All four commits should appear. If not, wait for them to merge first.
    git worktree add .claude/worktrees/01_mux-magic-rename -b feat/mux-magic-revamp/01-mux-magic-rename feat/mux-magic-revamp
    cd .claude/worktrees/01_mux-magic-rename
    ```
@@ -47,7 +47,7 @@ Rename the project from `media-tools` (current) to **`Mux-Magic`** (user-facing)
 |---|---|---|
 | User-facing product name (README, docs, comments) | `media-tools`, `Media-Tools`, `MediaTools` | **`Mux-Magic`** |
 | npm scope | `@media-tools/...` | `@mux-magic/...` |
-| Workspace package names | `@media-tools/server`, `@media-tools/web`, `@media-tools/shared` | `@mux-magic/server`, `@mux-magic/web`, `@mux-magic/shared` |
+| Workspace package names | `@media-tools/server`, `@media-tools/web`, `@media-tools/tools` (renamed from `shared` by worker 39) | `@mux-magic/server`, `@mux-magic/web`, `@mux-magic/tools` |
 | Root `package.json#name` | `media-tools` | `mux-magic` |
 | Directory name on disk | `d:\Projects\Personal\media-tools\` | **Leave as-is.** The user renames the directory manually (not in scope for this worker). |
 | GitHub repo name | `media-tools` | **Leave as-is.** The user renames the repo manually. |
@@ -64,12 +64,12 @@ If you encounter a string that's ambiguous (e.g., a literal string `"media-tools
 1. **`chore(rename): workspace package names`** — rename `name` fields in:
    - [packages/server/package.json](../../packages/server/package.json) → `@mux-magic/server`
    - [packages/web/package.json](../../packages/web/package.json) → `@mux-magic/web`
-   - [packages/shared/package.json](../../packages/shared/package.json) → `@mux-magic/shared`
+   - [packages/tools/package.json](../../packages/tools/package.json) → `@mux-magic/tools` (worker 39 already renamed it from `@media-tools/shared` → `@media-tools/tools`)
    - Also update cross-package dependencies: any `dependencies` / `devDependencies` block referencing the old names.
    - Root [package.json](../../package.json) — rename `name: "media-tools"` → `"mux-magic"`; rename any internal devDependency `"@media-tools/web": "workspace:*"` → `"@mux-magic/web": "workspace:*"`.
    - Run `yarn install` to refresh `yarn.lock` after these changes.
 
-2. **`chore(rename): @media-tools imports → @mux-magic`** — repo-wide replace of `@media-tools/server`, `@media-tools/web`, `@media-tools/shared` in all `.ts`, `.tsx`, `.mjs`, `.cjs`, `.js` files. Use Grep first to count occurrences and confirm the scope; then apply with `Edit --replace_all` per file (or scripted sed-equivalent).
+2. **`chore(rename): @media-tools imports → @mux-magic`** — repo-wide replace of `@media-tools/server`, `@media-tools/web`, `@media-tools/tools` in all `.ts`, `.tsx`, `.mjs`, `.cjs`, `.js` files. Use Grep first to count occurrences and confirm the scope; then apply with `Edit --replace_all` per file (or scripted sed-equivalent). After worker 39 there should be **no** `@media-tools/shared` references left to handle.
 
 3. **`chore(rename): scripts referencing @media-tools workspaces`** — root and per-package `package.json#scripts` may reference `yarn workspace @media-tools/...`. Rename to `@mux-magic/...`. Per [feedback_rename_strategy.md](C:\Users\satur\.claude\projects\d--Projects-Personal-media-tools\memory\feedback_rename_strategy.md): pick `replace_all` per file for high-density renames; `grep-then-rename` only if blast radius is small.
 
@@ -96,11 +96,12 @@ Critical-blast-radius files (touch carefully, one per commit):
 - [package.json](../../package.json) (root)
 - [packages/server/package.json](../../packages/server/package.json)
 - [packages/web/package.json](../../packages/web/package.json)
-- [packages/shared/package.json](../../packages/shared/package.json)
+- [packages/tools/package.json](../../packages/tools/package.json) (renamed from `packages/shared/package.json` by worker 39)
 - [yarn.lock](../../yarn.lock) (regenerated by `yarn install`)
 - [AGENTS.md](../../AGENTS.md)
 - [.github/workflows/ci.yml](../../.github/workflows/ci.yml)
 - [.github/workflows/deploy.yml](../../.github/workflows/deploy.yml)
+- [.github/workflows/publish-tools.yml](../../.github/workflows/publish-tools.yml) (renamed by worker 39; check name if 39 left it as `publish-shared.yml`)
 
 Pattern files (likely many; use `Grep` for exact list):
 - All `**/*.{ts,tsx,mjs,cjs,js}` containing `@media-tools/` or `media-tools` or `MEDIA_TOOLS` or `MediaTools`
@@ -135,12 +136,12 @@ For each rename pass:
 
 ## Verification checklist
 
-- [ ] Worker 02 ✅, Worker 03 ✅, Worker 04 ✅ merged into `feat/mux-magic-revamp` before this worker starts
+- [ ] Worker 02 ✅, Worker 03 ✅, Worker 04 ✅, Worker 39 ✅ merged into `feat/mux-magic-revamp` before this worker starts
 - [ ] Worktree created at `.claude/worktrees/01_mux-magic-rename/`
 - [ ] Manifest row updated to `in-progress`
 - [ ] All 7 suggested commits landed (or merged into fewer commits with clear messages)
 - [ ] `yarn install` re-run after package.json renames; `yarn.lock` updated
-- [ ] No `@media-tools/` references remain in `**/*.{ts,tsx,mjs,cjs,js,json,yml,yaml}` (verify with `Grep`)
+- [ ] No `@media-tools/` references remain in `**/*.{ts,tsx,mjs,cjs,js,json,yml,yaml}` (verify with `Grep`). Note: after worker 39, the only `@media-tools/*` references should be `@media-tools/server`, `@media-tools/web`, `@media-tools/tools` (worker 39 already renamed `shared` → `tools` in the package name).
 - [ ] No `media-tools` user-facing references remain in `**/*.md` outside the noted historical directories (verify with `Grep` — note: the WORD "media" elsewhere is fine; just check `media-tools` and `Media-Tools`)
 - [ ] `yarn lint` clean
 - [ ] `yarn typecheck` clean across all workspaces
@@ -159,7 +160,7 @@ For each rename pass:
   - Rename the GitHub repo from `media-tools` to `mux-magic` (or keep as-is — user's call)
   - Rename the local directory `d:\Projects\Personal\media-tools\` → `d:\Projects\Personal\mux-magic\` (user's call)
   - Add `NPM_TOKEN` secret to GitHub Actions if not already done (worker 02 documented this)
-  - Tag a release: `git tag shared-v<X.Y.Z>` → triggers `publish-shared.yml` to publish `@mux-magic/shared` to npm
+  - Tag a release: `git tag shared-v<X.Y.Z>` (tag prefix is package-agnostic — kept as-is) → triggers `publish-tools.yml` to publish `@mux-magic/tools` to npm
 - **Then the integration branch can merge to master**, completing Phase 0.
 - **Then Phase 1A workers spawn** (`05 → 06 → 07` serial chain on `eslint.config.js`).
 
@@ -170,7 +171,7 @@ For each rename pass:
 - Directory rename on disk (user does this)
 - GitHub repo rename (user does this)
 - Renaming `MEDIA_TOOLS_API_URL` / other env var names (deferred — separate concern from branding)
-- Renaming the package in [.github/workflows/publish-shared.yml](../../.github/workflows/publish-shared.yml) (already done by worker 02)
+- Renaming the package in the npm publish workflow (worker 02 handled the `@media-tools/shared` → `@mux-magic/tools` rename; worker 39 then renamed `shared` → `tools` in the same workflow). Worker 01 still updates `@media-tools/tools` → `@mux-magic/tools` if any references remain.
 - Renaming worker prompt files in `docs/workers/` (they're already on the new naming scheme)
 - Changing API route paths, operationIds, or schema field names (public API contract)
 - Adding any new feature or behavior change

@@ -69,10 +69,11 @@ const fetchSearch = async (
     const resp = await fetch(
       `${apiBase}${SEARCH_ENDPOINTS[lookupType]}`,
       {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ searchTerm }),
-    })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ searchTerm }),
+      },
+    )
     const data = (await resp.json()) as AnySearchResponse
     const rawResults = (data.results ??
       []) as LookupSearchResult[]

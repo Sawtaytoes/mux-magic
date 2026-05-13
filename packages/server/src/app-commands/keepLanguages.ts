@@ -1,5 +1,11 @@
 import { join } from "node:path"
 import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+  makeDirectory,
+} from "@mux-magic/tools"
+import {
   concatMap,
   filter,
   from,
@@ -13,12 +19,8 @@ import {
   keepSpecifiedLanguageTracksDefaultProps,
 } from "../cli-spawn-operations/keepSpecifiedLanguageTracks.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { getTrackLanguages } from "../tools/getTrackLanguages.js"
 import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
-import { makeDirectory } from "../tools/makeDirectory.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type KeepLanguagesRequiredProps = {
@@ -155,5 +157,5 @@ export const keepLanguages = ({
       ),
     ),
     toArray(),
-    logAndRethrow(keepLanguages),
+    logAndRethrowPipelineError(keepLanguages),
   )

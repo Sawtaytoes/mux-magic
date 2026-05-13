@@ -1,11 +1,12 @@
 import { spawn } from "node:child_process"
 import { EOL } from "node:os"
+import {
+  logAndSwallowPipelineError,
+  logWarning,
+} from "@mux-magic/tools"
 import { Observable } from "rxjs"
-
 import { audioOffsetFinderPath } from "../tools/appPaths.js"
 import { createTtyAffordances } from "../tools/createTtyAffordances.js"
-import { logAndSwallow } from "../tools/logAndSwallow.js"
-import { logWarning } from "../tools/logMessage.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
 export const getOffsetFromAudioOffsetOutput = (
@@ -119,4 +120,4 @@ export const runAudioOffsetFinder = ({
     })
 
     return treeKillOnUnsubscribe(childProcess)
-  }).pipe(logAndSwallow(runAudioOffsetFinder))
+  }).pipe(logAndSwallowPipelineError(runAudioOffsetFinder))

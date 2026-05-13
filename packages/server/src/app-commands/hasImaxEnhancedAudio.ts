@@ -1,7 +1,9 @@
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+} from "@mux-magic/tools"
 import { EMPTY, filter, map, mergeMap, of, tap } from "rxjs"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const hasImaxEnhancedAudio = ({
@@ -36,5 +38,5 @@ export const hasImaxEnhancedAudio = ({
         ),
       { concurrency: Infinity },
     ),
-    logAndRethrow(hasImaxEnhancedAudio),
+    logAndRethrowPipelineError(hasImaxEnhancedAudio),
   )

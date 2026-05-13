@@ -1,3 +1,7 @@
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+} from "@mux-magic/tools"
 import colors from "ansi-colors"
 import {
   concatAll,
@@ -11,9 +15,7 @@ import {
   toArray,
 } from "rxjs"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { getMkvInfo } from "../tools/getMkvInfo.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const hasWrongDefaultTrack = ({
@@ -65,5 +67,5 @@ export const hasWrongDefaultTrack = ({
       ),
     ),
     toArray(),
-    logAndRethrow(hasWrongDefaultTrack),
+    logAndRethrowPipelineError(hasWrongDefaultTrack),
   )

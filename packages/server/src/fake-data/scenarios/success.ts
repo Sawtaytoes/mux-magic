@@ -1,8 +1,7 @@
+import { logInfo } from "@mux-magic/tools"
 import { Observable } from "rxjs"
-
 import { emitJobEvent } from "../../api/jobStore.js"
 import { getActiveJobId } from "../../api/logCapture.js"
-import { logInfo } from "../../tools/logMessage.js"
 
 // Default total runtime for the success scenario. Slightly longer than
 // `failure` / `inProgress` so success is the visible "happy path" while

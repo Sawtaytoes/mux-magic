@@ -1,6 +1,5 @@
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import { from, map, type Observable } from "rxjs"
-
-import { logAndSwallow } from "./logAndSwallow.js"
 
 // Public-facing shape for builder UI + nameMovies app-command consumption.
 // Year is the four-digit release year extracted from TMDB's release_date
@@ -71,7 +70,7 @@ const requireTmdbApiKey = (): string => {
 
 // 10-second timeout. Without an AbortController, a stalled TMDB
 // connection (rate-limit, TLS hang, packet loss) hangs fetch
-// indefinitely — and since `logAndSwallow` downstream only catches
+// indefinitely — and since `logAndSwallowPipelineError` downstream only catches
 // errors, the whole observable chain (e.g. `canonicalizeMovieTitle`
 // in `nameSpecialFeatures`) freezes silently with no terminal SSE
 // "done" event. Timing out turns the hang into an error → swallowed
@@ -142,7 +141,7 @@ export const searchMovieDb = (
           .results,
       ),
     ),
-    logAndSwallow(searchMovieDb),
+    logAndSwallowPipelineError(searchMovieDb),
   )
 }
 
@@ -163,5 +162,5 @@ export const lookupMovieDbById = (
       // structured { title, year } pair it uses to build the filename.
       return { name: year ? `${title} (${year})` : title }
     }),
-    logAndSwallow(lookupMovieDbById),
+    logAndSwallowPipelineError(lookupMovieDbById),
   )

@@ -1,11 +1,13 @@
+import {
+  getFiles,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { concatMap, filter, map, tap, toArray } from "rxjs"
 import {
   replaceAttachmentsMkvMerge,
   replaceAttachmentsMkvMergeDefaultProps,
 } from "../cli-spawn-operations/replaceAttachmentsMkvMerge.js"
-import { getFiles } from "../tools/getFiles.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ReplaceAttachmentsRequiredProps = {
@@ -75,5 +77,5 @@ export const replaceAttachments = ({
         toArray(),
       ),
     ),
-    logAndRethrow(replaceAttachments),
+    logAndRethrowPipelineError(replaceAttachments),
   )

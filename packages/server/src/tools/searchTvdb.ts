@@ -1,3 +1,4 @@
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import {
   from,
   map,
@@ -5,8 +6,6 @@ import {
   type Observable,
   of,
 } from "rxjs"
-
-import { logAndSwallow } from "./logAndSwallow.js"
 import { getTvdbFetchClient } from "./tvdbApi.js"
 
 export type TvdbResult = {
@@ -119,5 +118,5 @@ export const lookupTvdbById = (
         }),
       ),
     ),
-    logAndSwallow(lookupTvdbById),
+    logAndSwallowPipelineError(lookupTvdbById),
   )

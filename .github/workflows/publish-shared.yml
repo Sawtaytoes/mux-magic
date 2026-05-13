@@ -1,4 +1,4 @@
-name: Publish @mux-magic/shared
+name: Publish @mux-magic/tools
 
 # Triggered by tags of the form `shared-vX.Y.Z`. Tag from local:
 #   git tag shared-v0.1.0 && git push --tags
@@ -6,7 +6,7 @@ name: Publish @mux-magic/shared
 # Requires the NPM_TOKEN repo secret to be set (an automation token from
 # npmjs.com with publish access to the @mux-magic scope).
 #
-# This workflow publishes @mux-magic/shared to npm for consumption by
+# This workflow publishes @mux-magic/tools to npm for consumption by
 # <media-sync-renamed> and other downstream tools.
 on:
   push:
@@ -27,7 +27,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - run: corepack enable
       - run: yarn install --immutable
-      - run: yarn workspace @mux-magic/shared run build
-      - run: yarn workspace @mux-magic/shared npm publish --access public
+      - run: yarn workspace @mux-magic/tools run build
+      - run: yarn workspace @mux-magic/tools npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

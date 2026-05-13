@@ -6,6 +6,11 @@ import {
 } from "node:fs/promises"
 import { join, sep } from "node:path"
 import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
+import {
   catchError,
   concatMap,
   defer,
@@ -22,13 +27,10 @@ import {
   getAspectRatioData,
 } from "../cli-spawn-operations/getAspectRatioData.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import {
   getMediaInfo,
   type VideoTrack,
 } from "../tools/getMediaInfo.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { runTasks } from "../tools/taskScheduler.js"
 
@@ -275,5 +277,5 @@ export const storeAspectRatioData = ({
           map(() => ({ jsonFilePath })),
         ),
     ),
-    logAndRethrow(storeAspectRatioData),
+    logAndRethrowPipelineError(storeAspectRatioData),
   )

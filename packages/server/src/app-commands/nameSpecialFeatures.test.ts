@@ -1,6 +1,6 @@
+import type { FileInfo } from "@mux-magic/tools"
 import { describe, expect, test } from "vitest"
 import type { MovieIdentity } from "../tools/canonicalizeMovieTitle.js"
-import type { FileInfo } from "../tools/getFiles.js"
 import type {
   Cut,
   SpecialFeature,

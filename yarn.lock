@@ -1842,6 +1842,7 @@ __metadata:
   dependencies:
     "@hono/node-server": "npm:^2.0.2"
     "@hono/zod-openapi": "npm:^1.4.0"
+    "@mux-magic/tools": "workspace:*"
     "@scalar/hono-api-reference": "npm:^0.10.14"
     "@scalar/openapi-to-markdown": "npm:^0.5.14"
     "@types/cli-progress": "npm:^3.11.6"
@@ -1868,16 +1869,6 @@ __metadata:
     vitest: "npm:^4.1.5"
     yargs: "npm:^18.0.0"
     zod: "npm:^4.4.3"
-  languageName: unknown
-  linkType: soft
-
-"@media-tools/shared@workspace:packages/shared":
-  version: 0.0.0-use.local
-  resolution: "@media-tools/shared@workspace:packages/shared"
-  dependencies:
-    fast-sort: "npm:^3.4.1"
-    typescript: "npm:^6.0.3"
-    vitest: "npm:^4.1.5"
   languageName: unknown
   linkType: soft
 
@@ -1940,6 +1931,20 @@ __metadata:
   checksum: 10c0/6ffe97fc7a84acc3d25464542b061e2525b6964c694c4fb325b91d01b61229124c457d5af75cf5eeb96969741769cc104d5d2d11e26d6dbae995aa9398fd9a7e
   languageName: node
   linkType: hard
+
+"@mux-magic/tools@workspace:*, @mux-magic/tools@workspace:packages/tools":
+  version: 0.0.0-use.local
+  resolution: "@mux-magic/tools@workspace:packages/tools"
+  dependencies:
+    "@types/node": "npm:^25.6.2"
+    chalk: "npm:^5.6.2"
+    fast-sort: "npm:^3.4.1"
+    memfs: "npm:^4.57.2"
+    rxjs: "npm:^7.8.2"
+    typescript: "npm:^6.0.3"
+    vitest: "npm:^4.1.5"
+  languageName: unknown
+  linkType: soft
 
 "@napi-rs/wasm-runtime@npm:^1.1.4":
   version: 1.1.4

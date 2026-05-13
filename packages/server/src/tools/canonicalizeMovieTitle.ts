@@ -57,7 +57,7 @@ export const canonicalizeMovieTitle = ({
       }
     }),
     catchError(() => of(fallback)),
-    // searchMovieDb wraps its inner pipe with `logAndSwallow` which
+    // searchMovieDb wraps its inner pipe with `logAndSwallowPipelineError` which
     // returns EMPTY on error (no emission, just complete). That
     // bypasses the catchError above — so without defaultIfEmpty,
     // a TMDB error would silently complete this stream with zero

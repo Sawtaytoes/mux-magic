@@ -3,6 +3,12 @@ import {
   rename as fsRename,
 } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
+import type { FileInfo } from "@mux-magic/tools"
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  makeDirectory,
+} from "@mux-magic/tools"
 import {
   concat,
   concatMap,
@@ -21,7 +27,6 @@ import {
   throwError,
   toArray,
 } from "rxjs"
-
 import {
   canonicalizeMovieTitle,
   type MovieIdentity,
@@ -30,8 +35,6 @@ import {
   convertDurationToDvdCompareTimecode,
   getFileDuration,
 } from "../tools/getFileDuration.js"
-import type { FileInfo } from "../tools/getFiles.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
 import {
   getIsSimilarTimecode,
@@ -39,8 +42,6 @@ import {
   type TimecodeDeviation,
 } from "../tools/getSpecialFeatureFromTimecode.js"
 import { getUserSearchInput } from "../tools/getUserSearchInput.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { makeDirectory } from "../tools/makeDirectory.js"
 import {
   type Cut,
   type PossibleName,
@@ -339,7 +340,7 @@ const stripExtension = (filename: string): string =>
 // Topological reorder: a rename whose target name equals another file's
 // CURRENT name has to run AFTER that other file's rename completes —
 // otherwise the OS rejects it ("File or folder already exists") and the
-// downstream logAndSwallow drops the file silently. Defer such renames
+// downstream logAndSwallowPipelineError drops the file silently. Defer such renames
 // to the end of the queue and run sequentially (concurrency: 1) so the
 // freed-up slot is available by the time the deferred rename fires.
 // Cycles (A→B, B→A) need a two-phase temp-rename pass to break the
@@ -1026,7 +1027,7 @@ export const nameSpecialFeatures = ({
               // "International Trailer without Narration -trailer.mkv" being
               // renamed to "with Narration", while another file is being
               // renamed to "without Narration") which previously raced and
-              // silently dropped one file via logAndSwallow.
+              // silently dropped one file via logAndSwallowPipelineError.
               const conflictOrderedRenames =
                 reorderRenamesForOnDiskConflicts(renames)
 
@@ -1317,6 +1318,6 @@ export const nameSpecialFeatures = ({
         (renameObservable) => renameObservable,
         { concurrency: 1 },
       ),
-      logAndRethrow(nameSpecialFeatures),
+      logAndRethrowPipelineError(nameSpecialFeatures),
     )
 }

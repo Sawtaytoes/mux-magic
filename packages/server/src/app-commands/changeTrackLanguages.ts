@@ -1,13 +1,15 @@
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+} from "@mux-magic/tools"
 import { concatMap, EMPTY, filter, from, map } from "rxjs"
 import { updateTrackLanguage } from "../cli-spawn-operations/updateTrackLanguage.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import {
   getMkvInfo,
   type MkvTookNixTrackType,
 } from "../tools/getMkvInfo.js"
 import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const changeTrackLanguages = ({
@@ -73,6 +75,6 @@ export const changeTrackLanguages = ({
         ),
       ),
     ),
-    logAndRethrow(changeTrackLanguages),
+    logAndRethrowPipelineError(changeTrackLanguages),
   )
 }

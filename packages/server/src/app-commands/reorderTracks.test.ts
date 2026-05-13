@@ -1,8 +1,7 @@
+import { captureConsoleMessage } from "@mux-magic/tools"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
-
-import { captureConsoleMessage } from "../tools/captureConsoleMessage.js"
 import { reorderTracks } from "./reorderTracks.js"
 
 describe(reorderTracks.name, () => {

@@ -1,3 +1,7 @@
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+} from "@mux-magic/tools"
 import { concatMap, of, toArray } from "rxjs"
 import { convertVariableToConstantBitrate } from "../cli-spawn-operations/convertVariableToConstantBitrate.js"
 import {
@@ -6,8 +10,6 @@ import {
   type VideoEncoder,
 } from "../cli-spawn-operations/inverseTelecineVideo.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 /**
@@ -50,5 +52,5 @@ export const inverseTelecineDiscRips = ({
       ),
     ),
     toArray(),
-    logAndRethrow(inverseTelecineDiscRips),
+    logAndRethrowPipelineError(inverseTelecineDiscRips),
   )

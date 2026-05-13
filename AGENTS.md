@@ -106,7 +106,7 @@ See the detailed guide for CLI command modules, adding new commands, and utility
 
 ## npm Publishing
 
-`@mux-magic/shared` is the only package published to npm (the public consumer surface
+`@mux-magic/tools` is the only package published to npm (the public consumer surface
 for `<media-sync-renamed>` and other downstream tools).
 
 **One-time setup** (user does this manually):
@@ -123,5 +123,5 @@ for `<media-sync-renamed>` and other downstream tools).
 
 **Verifying:**
 
-- `yarn info @mux-magic/shared` shows the latest version after publish completes.
+- `yarn info @mux-magic/tools` shows the latest version after publish completes.
 - `.github/workflows/publish-shared.yml` is the source of truth for the publish steps.

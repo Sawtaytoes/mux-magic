@@ -1,9 +1,11 @@
 import { unlink } from "node:fs/promises"
 import { extname } from "node:path"
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { defer, filter, map, tap } from "rxjs"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export type DeleteFilesByExtensionRequiredProps = {
@@ -51,6 +53,6 @@ export const deleteFilesByExtension = ({
         map(() => fileInfo.fullPath),
       ),
     ),
-    logAndRethrow(deleteFilesByExtension),
+    logAndRethrowPipelineError(deleteFilesByExtension),
   )
 }

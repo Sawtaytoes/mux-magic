@@ -81,5 +81,5 @@ After each: run media-sync's own gate (`yarn lint`, `yarn typecheck`, `yarn test
 
 - Removing the scheduler (worker `1c`'s job)
 - Adding HA inbound endpoint (worker `1c`)
-- Consuming `@mux-magic/shared` (worker `1d`)
+- Consuming `@mux-magic/tools` (worker `1d`)
 - Functional behavior changes

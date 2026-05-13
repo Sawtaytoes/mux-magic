@@ -20,13 +20,16 @@ describe(makeDirectory.name, () => {
 
     await expect(
       new Promise((resolve, reject) => {
-        vol.readdir("/movies", (error, data) => {
-          if (error) {
-            reject(error)
-          } else {
-            resolve(data)
-          }
-        })
+        vol.readdir(
+          "/movies",
+          (error: unknown, data: unknown) => {
+            if (error) {
+              reject(error)
+            } else {
+              resolve(data)
+            }
+          },
+        )
       }),
     ).resolves.toEqual([
       "Star Wars (1977)",
@@ -41,17 +44,28 @@ describe(makeDirectory.name, () => {
 
     await expect(
       new Promise((resolve, reject) => {
-        vol.readdir("/movies", (error, data) => {
-          if (error) {
-            reject(error)
-          } else {
-            resolve(data)
-          }
-        })
+        vol.readdir(
+          "/movies",
+          (error: unknown, data: unknown) => {
+            if (error) {
+              reject(error)
+            } else {
+              resolve(data)
+            }
+          },
+        )
       }),
     ).resolves.toEqual([
       "Star Wars (1977)",
       "Super Mario Bros (1993)",
     ])
+  })
+
+  test("emits the directory path so callers can chain off of it", async () => {
+    const folderPath = "/movies/Tron (1982)"
+
+    await expect(
+      firstValueFrom(makeDirectory(folderPath)),
+    ).resolves.toBe(folderPath)
   })
 })

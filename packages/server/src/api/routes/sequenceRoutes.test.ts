@@ -186,8 +186,8 @@ describe("POST /sequences/run", () => {
   test("fails the umbrella job and stops the recursion when a step's command observable errors", async () => {
     // Regression for the "completed but had errors" bug: catchNamedError
     // returned EMPTY, swallowing errors before they reached the runner's
-    // catchError handler. After splitting into logAndRethrow (outer
-    // terminal pipes) and logAndSwallow (inner per-file pipes), an
+    // catchError handler. After splitting into logAndRethrowPipelineError (outer
+    // terminal pipes) and logAndSwallowPipelineError (inner per-file pipes), an
     // app-command's error must propagate up to the umbrella status and
     // halt the recursive runStep advance.
     //

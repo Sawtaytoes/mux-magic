@@ -11,8 +11,8 @@ import {
   canRedoAtom,
   canUndoAtom,
   redoStackAtom,
-  undoStackAtom,
   type Snapshot,
+  undoStackAtom,
 } from "../state/historyAtoms"
 import { useBuilderKeyboard } from "./useBuilderKeyboard"
 
@@ -59,9 +59,7 @@ describe("Ctrl+Z", () => {
     store.set(undoStackAtom, [emptySnapshot])
     store.set(canUndoAtom, true)
     renderWithStore(store)
-    await userEvent.click(
-      screen.getByTestId("text-input"),
-    )
+    await userEvent.click(screen.getByTestId("text-input"))
     await userEvent.keyboard("{Control>}z{/Control}")
     expect(store.get(undoStackAtom)).toHaveLength(1)
   })
@@ -71,9 +69,7 @@ describe("Ctrl+Z", () => {
     store.set(undoStackAtom, [emptySnapshot])
     store.set(canUndoAtom, true)
     renderWithStore(store)
-    await userEvent.click(
-      screen.getByTestId("text-area"),
-    )
+    await userEvent.click(screen.getByTestId("text-area"))
     await userEvent.keyboard("{Control>}z{/Control}")
     expect(store.get(undoStackAtom)).toHaveLength(1)
   })

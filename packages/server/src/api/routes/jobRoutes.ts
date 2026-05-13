@@ -121,7 +121,7 @@ jobRoutes.openapi(
 
       stopKeepalive()
     })
-  }
+  },
 )
 
 jobRoutes.openapi(

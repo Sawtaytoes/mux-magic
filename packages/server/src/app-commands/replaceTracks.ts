@@ -1,4 +1,9 @@
 import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
+import {
   concatMap,
   filter,
   map,
@@ -11,10 +16,7 @@ import {
   replaceTracksMkvMerge,
   replaceTracksMkvMergeDefaultProps,
 } from "../cli-spawn-operations/replaceTracksMkvMerge.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ReplaceTracksRequiredProps = {
@@ -118,5 +120,5 @@ export const replaceTracks = ({
         toArray(),
       ),
     ),
-    logAndRethrow(replaceTracks),
+    logAndRethrowPipelineError(replaceTracks),
   )

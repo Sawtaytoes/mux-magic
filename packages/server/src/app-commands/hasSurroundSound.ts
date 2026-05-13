@@ -1,13 +1,15 @@
 import { dirname } from "node:path"
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { filter, groupBy, map, take, tap } from "rxjs"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import {
   type AudioTrack,
   getMediaInfo,
 } from "../tools/getMediaInfo.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import {
   mergeMapOrdered,
   runTasks,
@@ -166,5 +168,5 @@ export const hasSurroundSound = ({
         }),
       ),
     ),
-    logAndRethrow(hasSurroundSound),
+    logAndRethrowPipelineError(hasSurroundSound),
   )

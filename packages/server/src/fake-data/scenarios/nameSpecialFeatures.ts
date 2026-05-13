@@ -1,3 +1,4 @@
+import { logInfo } from "@mux-magic/tools"
 import {
   concat,
   ignoreElements,
@@ -5,10 +6,8 @@ import {
   of,
   timer,
 } from "rxjs"
-
 import { emitJobEvent } from "../../api/jobStore.js"
 import { getActiveJobId } from "../../api/logCapture.js"
-import { logInfo } from "../../tools/logMessage.js"
 
 // Completes after `ms` without emitting any values — used as a sequenced
 // delay inside concat so each phase has realistic pacing.

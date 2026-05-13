@@ -1,8 +1,7 @@
 import { mkdir } from "node:fs/promises"
 import { dirname } from "node:path"
+import { addFolderNameBeforeFilename } from "@mux-magic/tools"
 import { concatMap, from, map, of } from "rxjs"
-
-import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js"
 import { AUDIO_CONVERTED_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import { runFfmpeg } from "./runFfmpeg.js"
 

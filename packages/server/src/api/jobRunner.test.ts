@@ -1,6 +1,6 @@
+import { logAndRethrowPipelineError } from "@mux-magic/tools"
 import { of, Subject, throwError } from "rxjs"
 import { afterEach, describe, expect, test } from "vitest"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { runJob } from "./jobRunner.js"
 import {
   cancelJob,
@@ -106,9 +106,9 @@ describe(runJob.name, () => {
     expect(getJob(job.id)?.status).toBe("cancelled")
   })
 
-  test("a logAndRethrow-piped error reaches the runner and marks the job failed", async () => {
+  test("a logAndRethrowPipelineError-piped error reaches the runner and marks the job failed", async () => {
     // Defends against accidentally re-introducing EMPTY as the catchError
-    // return at the operator level. If logAndRethrow ever turns back into
+    // return at the operator level. If logAndRethrowPipelineError ever turns back into
     // a swallow, this test fails because complete fires instead of error
     // and the job ends up "completed" with the boom message logged but
     // never surfaced.
@@ -118,7 +118,7 @@ describe(runJob.name, () => {
       job.id,
       throwError(
         () => new Error("operator-level boom"),
-      ).pipe(logAndRethrow("testCommand")),
+      ).pipe(logAndRethrowPipelineError("testCommand")),
     )
 
     await flushMicrotasks()

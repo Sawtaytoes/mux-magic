@@ -1,4 +1,10 @@
 import {
+  getFiles,
+  logAndRethrowPipelineError,
+  logInfo,
+  naturalSort,
+} from "@mux-magic/tools"
+import {
   concatMap,
   filter,
   from,
@@ -11,10 +17,6 @@ import {
   splitChaptersMkvMergeDefaultProps,
 } from "../cli-spawn-operations/splitChaptersMkvMerge.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFiles } from "../tools/getFiles.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
-import { naturalSort } from "../tools/naturalSort.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type SplitChaptersRequiredProps = {
@@ -71,5 +73,5 @@ export const splitChapters = ({
         toArray(),
       ),
     ),
-    logAndRethrow(splitChapters),
+    logAndRethrowPipelineError(splitChapters),
   )

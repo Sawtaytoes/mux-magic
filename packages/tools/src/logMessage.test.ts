@@ -89,6 +89,25 @@ describe("messageTemplate", () => {
       "new.mkv",
     ])
   })
+
+  test(messageTemplate.multipleItems.name, () => {
+    expect(
+      messageTemplate.multipleItems("DOWNLOADED", [
+        "a.mkv",
+        "b.mkv",
+        "c.mkv",
+      ]),
+    ).toEqual([
+      "DOWNLOADED",
+      "\n",
+      "a.mkv",
+      "\n",
+      "b.mkv",
+      "\n",
+      "c.mkv",
+      "\n",
+    ])
+  })
 })
 
 describe(createLogMessage.name, () => {
@@ -126,24 +145,25 @@ describe(createLogMessage.name, () => {
     // TODO: TEST COLORS
   })
 
-  test("logs an informational message", async () => {
+  test("dispatches to the multipleItems template when content arg 1 is an array", async () => {
     captureConsoleMessage("info", (consoleSpy) => {
       createLogMessage({
         logType: "info",
-      })("RENAMED", "old.mkv", "new.mkv")
+      })("DOWNLOADED", "Files downloaded:", ["a.mkv", "b.mkv"])
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        "[RENAMED]",
+        "[DOWNLOADED]",
         "\n",
-        "old.mkv",
+        "Files downloaded:",
         "\n",
-        "new.mkv",
+        "a.mkv",
+        "\n",
+        "b.mkv",
+        "\n",
         "\n",
         "\n",
       )
     })
-
-    // TODO: TEST COLORS
   })
 })
 

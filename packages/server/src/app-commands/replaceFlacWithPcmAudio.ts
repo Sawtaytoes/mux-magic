@@ -1,4 +1,9 @@
 import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
+import {
   concatMap,
   filter,
   map,
@@ -11,13 +16,10 @@ import {
   convertFlacToPcmAudioDefaultProps,
 } from "../cli-spawn-operations/convertFlacToPcmAudio.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import {
   type AudioTrack,
   getMediaInfo,
 } from "../tools/getMediaInfo.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ReplaceFlacWithPcmAudioRequiredProps = {
@@ -86,5 +88,5 @@ export const replaceFlacWithPcmAudio = ({
         ),
     ),
     toArray(),
-    logAndRethrow(replaceFlacWithPcmAudio),
+    logAndRethrowPipelineError(replaceFlacWithPcmAudio),
   )

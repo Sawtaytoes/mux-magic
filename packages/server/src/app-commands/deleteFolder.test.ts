@@ -1,4 +1,5 @@
 import { stat } from "node:fs/promises"
+import { captureConsoleMessage } from "@mux-magic/tools"
 import { vol } from "memfs"
 import {
   firstValueFrom,
@@ -6,8 +7,6 @@ import {
   toArray,
 } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
-
-import { captureConsoleMessage } from "../tools/captureConsoleMessage.js"
 import { deleteFolder } from "./deleteFolder.js"
 
 describe(deleteFolder.name, () => {
@@ -42,7 +41,7 @@ describe(deleteFolder.name, () => {
 
   test("refuses to run and emits a propagated error when confirm is false", async () =>
     captureConsoleMessage("error", async () => {
-      // logAndRethrow re-emits the thrown error so the runner can mark the
+      // logAndRethrowPipelineError re-emits the thrown error so the runner can mark the
       // job as failed instead of silently no-opping. The destructive
       // command's refusal must be loud, not invisible.
       await expect(

@@ -1,4 +1,11 @@
 import { basename } from "node:path"
+import {
+  cleanupFilename,
+  getFiles,
+  logAndRethrowPipelineError,
+  logInfo,
+  naturalSort,
+} from "@mux-magic/tools"
 import malScraper from "mal-scraper"
 import {
   concatMap,
@@ -13,13 +20,8 @@ import {
   toArray,
   zip,
 } from "rxjs"
-import { cleanupFilename } from "../tools/cleanupFilename.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFiles } from "../tools/getFiles.js"
 import { getUserSearchInput } from "../tools/getUserSearchInput.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
-import { naturalSort } from "../tools/naturalSort.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { searchMal } from "../tools/searchMal.js"
 
@@ -177,5 +179,5 @@ export const nameAnimeEpisodes = ({
         fileInfo.renameFile(renamedFilename),
       { concurrency: Infinity },
     ),
-    logAndRethrow(nameAnimeEpisodes),
+    logAndRethrowPipelineError(nameAnimeEpisodes),
   )

@@ -31,7 +31,7 @@ Guidelines for writing code in this repository. These rules apply to **every** s
 
    The single allowed exception is `return` inside test bodies (`it("name", async () => { ... })`), where bodies are imperative `expect(...)` sequences. Outside tests, search your diff for `return ` and fix every hit.
 
-9. **No barrel files.** No `index.ts` or `index.css` re-export files inside component, state, util, or icon folders. Import each module by its full path: `import { LoadModal } from "./components/LoadModal"`, not `from "./components"`. The single allowed barrel is `packages/shared/src/index.ts`, which exists only because `@media-tools/shared` is published to npm and consumers need a stable public entry point. Enforced by `import-x/no-barrel-files` in `eslint.config.js`.
+9. **No barrel files.** No `index.ts` or `index.css` re-export files inside component, state, util, or icon folders. Import each module by its full path: `import { LoadModal } from "./components/LoadModal"`, not `from "./components"`. The single allowed barrel is `packages/tools/src/index.ts`, which exists only because `@media-tools/shared` is published to npm and consumers need a stable public entry point. Enforced by `import-x/no-barrel-files` in `eslint.config.js`.
 
 ## Before Opening a PR — Self-Check Your Diff
 

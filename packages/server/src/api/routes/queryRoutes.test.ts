@@ -1,5 +1,5 @@
 import { sep as nativePathSeparator } from "node:path"
-
+import { captureConsoleMessage } from "@mux-magic/tools"
 import { vol } from "memfs"
 import {
   afterEach,
@@ -8,8 +8,6 @@ import {
   expect,
   test,
 } from "vitest"
-
-import { captureConsoleMessage } from "../../tools/captureConsoleMessage.js"
 import { queryRoutes } from "./queryRoutes.js"
 
 // Hono in-process tests for the query routes that have no external

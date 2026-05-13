@@ -1,9 +1,11 @@
 import { readFile, writeFile } from "node:fs/promises"
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { concatMap, defer, map, tap, toArray } from "rxjs"
 import { filterIsSubtitlesFile } from "../tools/filterIsSubtitlesFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const adjustPositionString = (
@@ -78,7 +80,7 @@ export const adjustSubtitlePositions = ({
       ),
     ),
     toArray(),
-    logAndRethrow(adjustSubtitlePositions),
+    logAndRethrowPipelineError(adjustSubtitlePositions),
   )
 
 adjustSubtitlePositions({

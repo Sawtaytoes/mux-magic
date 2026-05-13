@@ -5,6 +5,7 @@ import { extname } from "node:path"
 import { Readable } from "node:stream"
 
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
+import { renameFileOrFolder } from "@mux-magic/tools"
 import { firstValueFrom, lastValueFrom } from "rxjs"
 import {
   fakeDefaultPath,
@@ -14,7 +15,6 @@ import {
   getFakeScenario,
   isFakeRequest,
 } from "../../fake-data/index.js"
-import { renameFileOrFolder } from "../../tools/createRenameFileOrFolder.js"
 import {
   deleteFiles,
   getDeleteMode,

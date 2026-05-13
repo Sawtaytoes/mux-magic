@@ -1,6 +1,10 @@
-﻿import { spawn } from "node:child_process"
+import { spawn } from "node:child_process"
 import { unlink } from "node:fs/promises"
 import { extname } from "node:path"
+import {
+  logAndSwallowPipelineError,
+  logWarning,
+} from "@mux-magic/tools"
 import colors from "ansi-colors"
 import cliProgress from "cli-progress"
 import {
@@ -14,8 +18,6 @@ import { getActiveJobId } from "../api/logCapture.js"
 import { ffmpegPath as defaultFfmpegPath } from "../tools/appPaths.js"
 import { getFileDuration } from "../tools/getFileDuration.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
-import { logAndSwallow } from "../tools/logAndSwallow.js"
-import { logWarning } from "../tools/logMessage.js"
 import { convertTimecodeToMilliseconds } from "../tools/parseTimestamps.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
@@ -311,5 +313,5 @@ export const runFfmpeg = ({
           }
         }),
     ),
-    logAndSwallow(runFfmpeg),
+    logAndSwallowPipelineError(runFfmpeg),
   )

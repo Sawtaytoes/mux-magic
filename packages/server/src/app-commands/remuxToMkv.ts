@@ -1,6 +1,11 @@
 import { stat, unlink } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 import {
+  getFilesAtDepth,
+  logAndSwallowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
+import {
   concatMap,
   defer,
   filter,
@@ -9,11 +14,7 @@ import {
   type Observable,
   tap,
 } from "rxjs"
-
 import { remuxMkvMerge } from "../cli-spawn-operations/remuxMkvMerge.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
-import { logAndSwallow } from "../tools/logAndSwallow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 // Pass-through container remux for every file in `sourcePath` whose
@@ -103,7 +104,7 @@ export const remuxToMkv = ({
         // terminal handler — the OUTER observable has no catch, so a
         // failure outside this concatMap (e.g. getFiles itself ENOENT)
         // still propagates to the runner.
-        logAndSwallow(remuxToMkv),
+        logAndSwallowPipelineError(remuxToMkv),
       )
     }),
   )

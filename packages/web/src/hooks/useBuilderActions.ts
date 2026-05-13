@@ -5,12 +5,12 @@ import { apiRunModalAtom } from "../components/ApiRunModal/apiRunModalAtom"
 import { isGroup } from "../jobs/sequenceUtils"
 import { toYamlStr } from "../jobs/yamlSerializer"
 import { commandsAtom } from "../state/commandsAtom"
+import { dragReorderAtom } from "../state/dragAtoms"
 import {
   buildRunFetchUrl,
   dryRunAtom,
   failureModeAtom,
 } from "../state/dryRunQuery"
-import { dragReorderAtom } from "../state/dragAtoms"
 import {
   insertGroupAtom,
   moveGroupAtom,
@@ -20,8 +20,8 @@ import {
   canRedoAtom,
   canUndoAtom,
   redoStackAtom,
-  undoStackAtom,
   type Snapshot,
+  undoStackAtom,
 } from "../state/historyAtoms"
 import {
   addPathAtom,
@@ -91,7 +91,9 @@ export const useBuilderActions = () => {
       ...prev,
       captureSnapshot(store),
     ])
-    runWithViewTransition(() => applySnapshot(store, snapshot))
+    runWithViewTransition(() =>
+      applySnapshot(store, snapshot),
+    )
     store.set(
       canUndoAtom,
       store.get(undoStackAtom).length > 0,
@@ -108,7 +110,9 @@ export const useBuilderActions = () => {
       ...prev,
       captureSnapshot(store),
     ])
-    runWithViewTransition(() => applySnapshot(store, snapshot))
+    runWithViewTransition(() =>
+      applySnapshot(store, snapshot),
+    )
     store.set(
       canRedoAtom,
       store.get(redoStackAtom).length > 0,

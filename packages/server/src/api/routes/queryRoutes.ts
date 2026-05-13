@@ -1,6 +1,7 @@
 import { sep as pathSeparator } from "node:path"
 
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
+import { listDirectoryEntries } from "@mux-magic/tools"
 import { lastValueFrom } from "rxjs"
 import { getSubtitleMetadata } from "../../app-commands/getSubtitleMetadata.js"
 import {
@@ -16,7 +17,6 @@ import {
   fakeSearchTvdb,
   isFakeRequest,
 } from "../../fake-data/index.js"
-import { listDirectoryEntries } from "../../tools/listDirectoryEntries.js"
 import {
   lookupAnidbById,
   pickAnidbSeriesName,

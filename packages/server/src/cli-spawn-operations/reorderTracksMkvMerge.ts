@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises"
 import { dirname } from "node:path"
+import { addFolderNameBeforeFilename } from "@mux-magic/tools"
 import { concatMap, from, map, of } from "rxjs"
-import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js"
 import { REORDERED_TRACKS_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import { runMkvMerge } from "./runMkvMerge.js"
 

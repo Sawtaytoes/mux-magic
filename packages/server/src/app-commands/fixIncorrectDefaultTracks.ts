@@ -1,8 +1,10 @@
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+} from "@mux-magic/tools"
 import { map, toArray } from "rxjs"
 import { setOnlyFirstTracksAsDefault } from "../cli-spawn-operations/setOnlyFirstTracksAsDefault.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const fixIncorrectDefaultTracks = ({
@@ -32,5 +34,5 @@ export const fixIncorrectDefaultTracks = ({
         })),
       ),
     ),
-    logAndRethrow(fixIncorrectDefaultTracks),
+    logAndRethrowPipelineError(fixIncorrectDefaultTracks),
   )

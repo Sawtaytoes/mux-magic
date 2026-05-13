@@ -83,7 +83,9 @@
       "Read(**)",
       "Read(//**)",
       "Skill(update-config:*)",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\Projects\\\\Personal\\\\media-sync\\\\packages\\\\tools\" -Recurse -File | Where-Object { $_.FullName -notmatch \"node_modules|dist\" } | Select-Object -ExpandProperty FullName)",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\Projects\\\\Personal\\\\media-sync\\\\packages\\\\shared-tools\" -Recurse -File | Where-Object { $_.FullName -notmatch \"node_modules|dist\" -and $_.Name -notmatch \"\\\\.tsbuildinfo$\" } | Select-Object -ExpandProperty FullName)"
     ],
     "deny": [
       "Bash(Get-ChildItem *)",
@@ -92,10 +94,7 @@
       "PowerShell(npm *)",
       "PowerShell(npx *)"
     ],
-    "ask": [
-      "Bash(yarn dlx *)",
-      "PowerShell(yarn dlx *)"
-    ]
+    "ask": ["Bash(yarn dlx *)", "PowerShell(yarn dlx *)"]
   },
   "hooks": {
     "WorktreeCreate": [

@@ -1,4 +1,9 @@
 import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
+import {
   concatMap,
   EMPTY,
   filter,
@@ -10,11 +15,8 @@ import {
   extractSubtitleTrackDefaultProps,
 } from "../cli-spawn-operations/extractSubtitleTrack.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { getMkvInfo } from "../tools/getMkvInfo.js"
 import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 // Image-format subtitle codecs. mkvextract can pull them but the
@@ -111,5 +113,5 @@ export const extractSubtitles = ({
       ),
     ),
     toArray(),
-    logAndRethrow(extractSubtitles),
+    logAndRethrowPipelineError(extractSubtitles),
   )

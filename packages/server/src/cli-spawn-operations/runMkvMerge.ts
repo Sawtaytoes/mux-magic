@@ -1,14 +1,15 @@
 import { spawn } from "node:child_process"
 import { unlink } from "node:fs/promises"
+import {
+  logAndSwallowPipelineError,
+  logWarning,
+} from "@mux-magic/tools"
 import colors from "ansi-colors"
 import cliProgress from "cli-progress"
 import { Observable } from "rxjs"
-
 import { getActiveJobId } from "../api/logCapture.js"
 import { mkvMergePath } from "../tools/appPaths.js"
 import { createTtyAffordances } from "../tools/createTtyAffordances.js"
-import { logAndSwallow } from "../tools/logAndSwallow.js"
-import { logWarning } from "../tools/logMessage.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
@@ -155,4 +156,4 @@ export const runMkvMerge = ({
       if (tracker !== null) tracker.finish()
       treeKillTeardown()
     }
-  }).pipe(logAndSwallow(runMkvMerge))
+  }).pipe(logAndSwallowPipelineError(runMkvMerge))

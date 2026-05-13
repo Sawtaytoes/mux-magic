@@ -1,7 +1,6 @@
 import { extname } from "node:path"
+import type { FileInfo } from "@mux-magic/tools"
 import { filter } from "rxjs"
-
-import type { FileInfo } from "./getFiles.js"
 
 export const subtitlesFileExtensions = [
   ".ass",

@@ -35,7 +35,9 @@ export const useLogStream = (
   const connect = useCallback(() => {
     if (esRef.current !== null) return
 
-    const es = new EventSource(`${apiBase}/jobs/${jobId}/logs`)
+    const es = new EventSource(
+      `${apiBase}/jobs/${jobId}/logs`,
+    )
     esRef.current = es
 
     es.onmessage = (event: MessageEvent) => {

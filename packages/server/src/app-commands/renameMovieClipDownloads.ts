@@ -1,5 +1,7 @@
-import { getFiles } from "../tools/getFiles.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
+import {
+  getFiles,
+  logAndRethrowPipelineError,
+} from "@mux-magic/tools"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const renameMovieClipDownloads = ({
@@ -25,5 +27,5 @@ export const renameMovieClipDownloads = ({
         ),
       { concurrency: Infinity },
     ),
-    logAndRethrow(renameMovieClipDownloads),
+    logAndRethrowPipelineError(renameMovieClipDownloads),
   )

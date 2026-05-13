@@ -1,3 +1,4 @@
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import {
   EMPTY,
   filter,
@@ -8,7 +9,6 @@ import {
 } from "rxjs"
 import { convertNumberToTimeString } from "./getFileDuration.js"
 import { getUserSearchInput } from "./getUserSearchInput.js"
-import { logAndSwallow } from "./logAndSwallow.js"
 import {
   type SpecialFeature,
   specialFeatureTypes,
@@ -353,5 +353,7 @@ export const getSpecialFeatureFromTimecode = ({
 
       return of(`${text} -${type}`)
     }),
-    logAndSwallow(getSpecialFeatureFromTimecode),
+    logAndSwallowPipelineError(
+      getSpecialFeatureFromTimecode,
+    ),
   )

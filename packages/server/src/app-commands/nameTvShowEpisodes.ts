@@ -1,4 +1,10 @@
 import {
+  cleanupFilename,
+  getFiles,
+  logAndRethrowPipelineError,
+  naturalSort,
+} from "@mux-magic/tools"
+import {
   concatMap,
   filter,
   from,
@@ -7,13 +13,9 @@ import {
   switchMap,
   toArray,
 } from "rxjs"
-import { cleanupFilename } from "../tools/cleanupFilename.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFiles } from "../tools/getFiles.js"
 import { getRandomString } from "../tools/getRandomString.js"
 import { getUserSearchInput } from "../tools/getUserSearchInput.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { naturalSort } from "../tools/naturalSort.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { searchTvdb } from "../tools/searchTvdb.js"
 import { getTvdbFetchClient } from "../tools/tvdbApi.js"
@@ -172,5 +174,5 @@ export const nameTvShowEpisodes = ({
         fileInfo.renameFile(renamedFilename),
       { concurrency: Infinity },
     ),
-    logAndRethrow(nameTvShowEpisodes),
+    logAndRethrowPipelineError(nameTvShowEpisodes),
   )

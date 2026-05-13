@@ -1,3 +1,4 @@
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import {
   filter,
   from,
@@ -6,7 +7,6 @@ import {
   reduce,
 } from "rxjs"
 import { getTimecodeAtOffset } from "./getSpecialFeatureFromTimecode.js"
-import { logAndSwallow } from "./logAndSwallow.js"
 
 export const specialFeatureTypes = [
   "behindthescenes",
@@ -336,5 +336,5 @@ export const parseSpecialFeatures = (
           specialFeatureText,
         ),
       })),
-      logAndSwallow(parseSpecialFeatures),
+      logAndSwallowPipelineError(parseSpecialFeatures),
     )

@@ -1,4 +1,8 @@
 import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+} from "@mux-magic/tools"
+import {
   concatMap,
   count,
   EMPTY,
@@ -7,9 +11,7 @@ import {
   of,
   tap,
 } from "rxjs"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const hasManyAudioTracks = ({
@@ -41,5 +43,5 @@ export const hasManyAudioTracks = ({
         ),
       { concurrency: Infinity },
     ),
-    logAndRethrow(hasManyAudioTracks),
+    logAndRethrowPipelineError(hasManyAudioTracks),
   )

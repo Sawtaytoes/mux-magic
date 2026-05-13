@@ -1,3 +1,4 @@
+import { captureConsoleMessage } from "@mux-magic/tools"
 import { firstValueFrom } from "rxjs"
 import {
   afterEach,
@@ -7,8 +8,6 @@ import {
   test,
   vi,
 } from "vitest"
-
-import { captureConsoleMessage } from "./captureConsoleMessage.js"
 import {
   lookupMovieDbById,
   type MovieDbRawSearchResult,
@@ -212,14 +211,14 @@ describe("searchMovieDb (network)", () => {
     ])
   })
 
-  test("surfaces a 401 from TMDB through logAndSwallow (logs + completes empty)", async () =>
+  test("surfaces a 401 from TMDB through logAndSwallowPipelineError (logs + completes empty)", async () =>
     captureConsoleMessage("error", async () => {
       globalThis.fetch = (async () =>
         new Response("Invalid API key.", {
           status: 401,
         })) as unknown as typeof globalThis.fetch
 
-      // logAndSwallow swallows the error into EMPTY, so firstValueFrom on
+      // logAndSwallowPipelineError swallows the error into EMPTY, so firstValueFrom on
       // toArray() gives an empty result without throwing. The error message
       // is logged via console.error, which captureConsoleMessage silences.
       const { toArray } = await import("rxjs")

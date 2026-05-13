@@ -6,9 +6,8 @@ import {
   writeFile,
 } from "node:fs/promises"
 import { join } from "node:path"
-
+import { logError, logInfo } from "@mux-magic/tools"
 import { getAnidbCacheDir } from "./getAnidbCacheDir.js"
-import { logError, logInfo } from "./logMessage.js"
 
 // manami-project/anime-offline-database is a community-maintained JSON
 // dataset that cross-references AniDB / MAL / AniList / Kitsu ids. We use

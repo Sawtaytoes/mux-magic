@@ -1,3 +1,8 @@
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { concatMap, EMPTY, map, toArray } from "rxjs"
 import {
   reorderTracksFfmpeg,
@@ -5,9 +10,6 @@ import {
 } from "../cli-spawn-operations/reorderTracksFfmpeg.js"
 import { setOnlyFirstTracksAsDefault } from "../cli-spawn-operations/setOnlyFirstTracksAsDefault.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
-import { logInfo } from "../tools/logMessage.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ReorderTracksRequiredProps = {
@@ -91,6 +93,6 @@ export const reorderTracks = ({
           ),
         ),
     ),
-    logAndRethrow(reorderTracks),
+    logAndRethrowPipelineError(reorderTracks),
   )
 }

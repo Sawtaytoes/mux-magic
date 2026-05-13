@@ -1,8 +1,10 @@
+import {
+  getFilesAtDepth,
+  logAndRethrowPipelineError,
+} from "@mux-magic/tools"
 import { mergeMap } from "rxjs"
 import { getDemoName } from "../tools/getDemoName.js"
-import { getFilesAtDepth } from "../tools/getFilesAtDepth.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
-import { logAndRethrow } from "../tools/logAndRethrow.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const renameDemos = ({
@@ -31,5 +33,5 @@ export const renameDemos = ({
         ),
       { concurrency: Infinity },
     ),
-    logAndRethrow(renameDemos),
+    logAndRethrowPipelineError(renameDemos),
   )

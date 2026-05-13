@@ -1,3 +1,4 @@
+import { logInfo } from "@mux-magic/tools"
 import {
   concat,
   from,
@@ -5,10 +6,8 @@ import {
   Observable,
   timer,
 } from "rxjs"
-
 import { emitJobEvent } from "../../api/jobStore.js"
 import { getActiveJobId } from "../../api/logCapture.js"
-import { logInfo } from "../../tools/logMessage.js"
 
 const pause = (ms: number): Observable<never> =>
   timer(ms).pipe(ignoreElements()) as Observable<never>

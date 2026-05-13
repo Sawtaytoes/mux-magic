@@ -1,6 +1,6 @@
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import { XMLParser } from "fast-xml-parser"
 import { from, map, type Observable } from "rxjs"
-
 import type {
   AnidbAnime,
   AnidbEpisodeType,
@@ -11,7 +11,6 @@ import {
   findAnimeByQuery,
   loadAnimeIndex,
 } from "./animeOfflineDatabase.js"
-import { logAndSwallow } from "./logAndSwallow.js"
 
 // AniDB HTTP API client identifiers — public, not secrets. Tied to the
 // software registered at https://anidb.net/software/3767 (display name
@@ -43,7 +42,7 @@ export const searchAnidb = (
         type: entry.type,
       })),
     ),
-    logAndSwallow(searchAnidb),
+    logAndSwallowPipelineError(searchAnidb),
   )
 
 const xmlParser = new XMLParser({
@@ -128,5 +127,5 @@ export const lookupAnidbById = (
     }),
   ).pipe(
     map(parseAnidbAnimeXml),
-    logAndSwallow(lookupAnidbById),
+    logAndSwallowPipelineError(lookupAnidbById),
   )

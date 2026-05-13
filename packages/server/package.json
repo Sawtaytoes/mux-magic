@@ -32,6 +32,7 @@
   "dependencies": {
     "@hono/node-server": "^2.0.2",
     "@hono/zod-openapi": "^1.4.0",
+    "@mux-magic/tools": "workspace:*",
     "@scalar/hono-api-reference": "^0.10.14",
     "@scalar/openapi-to-markdown": "^0.5.14",
     "ansi-colors": "^4.1.3",

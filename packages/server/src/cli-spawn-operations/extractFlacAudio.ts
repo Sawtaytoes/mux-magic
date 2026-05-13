@@ -1,9 +1,10 @@
+import {
+  addFolderNameBeforeFilename,
+  replaceFileExtension,
+} from "@mux-magic/tools"
 import { concatMap, map, of } from "rxjs"
-
-import { addFolderNameBeforeFilename } from "../tools/addFolderNameBeforeFilename.js"
 import { convertIso6391ToIso6392 } from "../tools/convertIso6391ToIso6392.js"
 import type { Iso6391LanguageCode } from "../tools/iso6391LanguageCodes.js"
-import { replaceFileExtension } from "../tools/replaceFileExtension.js"
 import { runMkvExtract } from "./runMkvExtract.js"
 
 export const extractedPath = "EXTRACTED-FLAC-AUDIO"

@@ -1,3 +1,4 @@
+import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import {
   filter,
   map,
@@ -10,7 +11,6 @@ import type {
   GeneralTrack,
   MediaInfo,
 } from "./getMediaInfo.js"
-import { logAndSwallow } from "./logAndSwallow.js"
 
 export const convertNumberToTimeString = (
   number: number,
@@ -72,5 +72,5 @@ export const getFileDuration = ({
     ),
     take(1),
     map((generalTrack) => Number(generalTrack.Duration)),
-    logAndSwallow(getFileDuration),
+    logAndSwallowPipelineError(getFileDuration),
   )
