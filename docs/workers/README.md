@@ -85,7 +85,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | 13 | [merge-subtitles-offsets-label](13_merge-subtitles-offsets-label.md) | web | Haiku | Low | OFF | 01 | done |
 | 14 | [dryrun-to-query-string](14_dryrun-to-query-string.md) | web | Sonnet | Medium | ON | 01 | done |
 | 15 | [dry-run-silent-failures](15_dry-run-silent-failures.md) | web | Sonnet | Medium | ON | 01 | done |
-| 16 | [user-event-migration](16_user-event-migration.md) | web | Sonnet | High | ON | 01 | ready |
+| 16 | [user-event-migration](16_user-event-migration.md) | web | Sonnet | High | ON | 01 | in-progress |
 | 17 | [run-in-background-sequence-modal](17_run-in-background-sequence-modal.md) | web | Sonnet | High | ON | 10 | ready |
 
 ### Other track (3 workers)
