@@ -52,7 +52,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 05 | [is-has-eslint-rule](05_is-has-eslint-rule.md) | infra | Sonnet | Medium | ON | 01 | in-progress |
+| 05 | [is-has-eslint-rule](05_is-has-eslint-rule.md) | infra | Sonnet | Medium | ON | 01 | done |
 | 06 | [webtypes-eslint-guard](06_webtypes-eslint-guard.md) | infra | Sonnet | Medium | ON | 05 | ready |
 | 07 | [one-component-per-file](07_one-component-per-file.md) | infra | Sonnet | Medium | ON | 06 | ready |
 
