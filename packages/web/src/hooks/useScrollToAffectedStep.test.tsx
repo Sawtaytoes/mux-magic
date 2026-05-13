@@ -36,23 +36,15 @@ const makeStep = (id: string): Step => ({
   isCollapsed: false,
 })
 
-const StepNodes = () => {
+const Harness = () => {
+  useScrollToAffectedStep()
+  const { undo, redo } = useBuilderActions()
   const steps = useAtomValue(stepsAtom)
   return (
     <>
       {steps.map((item) => (
         <div key={item.id} id={`step-${item.id}`} />
       ))}
-    </>
-  )
-}
-
-const Harness = () => {
-  useScrollToAffectedStep()
-  const { undo, redo } = useBuilderActions()
-  return (
-    <>
-      <StepNodes />
       <button type="button" onClick={undo}>
         Undo
       </button>
