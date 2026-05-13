@@ -18,9 +18,11 @@ test(
   async () => {
     const eslint = new ESLint({ cwd: workspaceRoot })
     const [result] = await eslint.lintFiles([fixturePath])
+    // suppressedMessages items are LintMessage objects extended with `suppressions`
+    // (not wrapped in a { message } envelope), so spread them directly.
     const namingViolations = [
       ...result.messages,
-      ...result.suppressedMessages.map((suppressed) => suppressed.message),
+      ...result.suppressedMessages,
     ].filter(
       (message) => message.ruleId === "@typescript-eslint/naming-convention",
     )
