@@ -10,7 +10,7 @@ export default defineConfig({
     }),
   ],
   test: {
-    name: "storybook",
+    name: `storybook:${join(import.meta.dirname, ".storybook")}`,
     browser: {
       enabled: true,
       provider: playwright(),

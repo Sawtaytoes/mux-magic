@@ -149,7 +149,10 @@ describe(createLogMessage.name, () => {
     captureConsoleMessage("info", (consoleSpy) => {
       createLogMessage({
         logType: "info",
-      })("DOWNLOADED", "Files downloaded:", ["a.mkv", "b.mkv"])
+      })("DOWNLOADED", "Files downloaded:", [
+        "a.mkv",
+        "b.mkv",
+      ])
 
       expect(consoleSpy).toHaveBeenCalledWith(
         "[DOWNLOADED]",
