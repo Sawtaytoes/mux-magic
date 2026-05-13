@@ -29,6 +29,11 @@ export const runWithViewTransition = (
     const transition = document.startViewTransition(() => {
       flushSync(fn)
     })
+    // All three ViewTransition promises reject with AbortError when a
+    // transition is skipped (e.g. another transition starts first). Silently
+    // catch each one so they don't surface as unhandled rejections in CI.
+    transition?.ready?.catch(() => {})
+    transition?.updateCallbackDone?.catch(() => {})
     return (
       transition?.finished ?? Promise.resolve()
     ).catch(() => {})
