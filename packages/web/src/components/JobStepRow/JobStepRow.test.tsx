@@ -1,4 +1,8 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, test } from "vitest"
 import { makeFakeJob } from "../../jobs/__fixtures__/makeFakeJob"
@@ -88,9 +92,7 @@ describe("JobStepRow rendering", () => {
 
   test("does not render stepId span when stepId is null", () => {
     renderRow({ stepId: null })
-    expect(
-      screen.queryByTestId("step-id"),
-    ).toBeNull()
+    expect(screen.queryByTestId("step-id")).toBeNull()
   })
 
   test("shows error message when child has error", () => {
