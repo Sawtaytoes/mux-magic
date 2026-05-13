@@ -19,7 +19,6 @@ jobs:
         with: { node-version: 24 }
       - run: corepack enable
       - run: yarn install --immutable
-      - run: yarn workspace @mux-magic/tools run build
       - uses: changesets/action@v1
         with:
           # Only attempt to publish when NPM_TOKEN is configured. Without
