@@ -1,4 +1,4 @@
-# Media File Tools
+# Mux Magic
 
 ![Mux Magic logo](docs/images/mux-magic-logo.png)
 
