@@ -51,7 +51,7 @@ export const SequenceRunModal = () => {
     logsEndRef.current?.scrollIntoView({
       behavior: "smooth",
     })
-  }, [logs])
+  }, [])
 
   // Sync status + log reset when a new job opens.
   useEffect(() => {

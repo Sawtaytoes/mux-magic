@@ -86,7 +86,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | 14 | [dryrun-to-query-string](14_dryrun-to-query-string.md) | web | Sonnet | Medium | ON | 01 | done |
 | 15 | [dry-run-silent-failures](15_dry-run-silent-failures.md) | web | Sonnet | Medium | ON | 01 | done |
 | 16 | [user-event-migration](16_user-event-migration.md) | web | Sonnet | High | ON | 01 | done |
-| 17 | [run-in-background-sequence-modal](17_run-in-background-sequence-modal.md) | web | Sonnet | High | ON | 10 | in-progress |
+| 17 | [run-in-background-sequence-modal](17_run-in-background-sequence-modal.md) | web | Sonnet | High | ON | 10 | done |
 
 ### Other track (3 workers)
 

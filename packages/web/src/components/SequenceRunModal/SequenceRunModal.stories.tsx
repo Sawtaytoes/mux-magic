@@ -3,12 +3,12 @@ import { createStore, Provider, useSetAtom } from "jotai"
 import { useState } from "react"
 import type { ProgressSnapshot } from "../../jobs/types"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
+import { SequenceRunModal } from "./SequenceRunModal"
 import { sequenceRunModalAtom } from "./sequenceRunModalAtom"
 import type {
   ActiveChild,
   SequenceRunModalState,
 } from "./types"
-import { SequenceRunModal } from "./SequenceRunModal"
 
 const ReOpenButton = ({
   initialState,

@@ -28,31 +28,31 @@ async function stubSequenceRun(
   })
 
   // GET /jobs/:id/logs (SSE) → streams a running event then stays open
-  await page.route(`**/jobs/${jobId}/logs`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "text/event-stream",
-      headers: { "Cache-Control": "no-cache" },
-      // Send an initial line event so the modal shows content.
-      body: 'data: {"line":"Starting sequence…"}\n\n',
-    })
-  })
-
-  // DELETE /jobs/:id → accepts cancel
   await page.route(
-    `**/jobs/${jobId}`,
+    `**/jobs/${jobId}/logs`,
     async (route) => {
-      if (route.request().method() === "DELETE") {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ ok: true }),
-        })
-        return
-      }
-      await route.continue()
+      await route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        headers: { "Cache-Control": "no-cache" },
+        // Send an initial line event so the modal shows content.
+        body: 'data: {"line":"Starting sequence…"}\n\n',
+      })
     },
   )
+
+  // DELETE /jobs/:id → accepts cancel
+  await page.route(`**/jobs/${jobId}`, async (route) => {
+    if (route.request().method() === "DELETE") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      })
+      return
+    }
+    await route.continue()
+  })
 }
 
 async function triggerRunSequence(page: Page) {
@@ -106,7 +106,9 @@ test.describe("SequenceRunModal — background flow", () => {
     ).toBeVisible()
   })
 
-  test("clicking badge re-opens modal", async ({ page }) => {
+  test("clicking badge re-opens modal", async ({
+    page,
+  }) => {
     await triggerRunSequence(page)
     await page
       .getByRole("button", {
