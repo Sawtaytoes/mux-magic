@@ -103,3 +103,25 @@ See the detailed guide for CLI command modules, adding new commands, and utility
 **Worktree workflow:** Commit as you go → push to PR → user reviews → merge when told.
 
 **Commit conventions:** One logical group per commit. Don't batch multi-step work into a single end-of-session commit. Use `git add -p` to split unrelated concerns in the same file.
+
+## npm Publishing
+
+`@mux-magic/shared` is the only package published to npm (the public consumer surface
+for `<media-sync-renamed>` and other downstream tools).
+
+**One-time setup** (user does this manually):
+
+1. Generate an npm automation token from npmjs.com with publish access to the
+   `@mux-magic` scope.
+2. Add it to GitHub Actions repo secrets as `NPM_TOKEN`.
+
+**Publishing a new version:**
+
+1. Bump version in `packages/shared/package.json`.
+2. Tag: `git tag shared-v<X.Y.Z>` (note: `shared-` prefix is package-agnostic).
+3. `git push --tags` — the `publish-shared.yml` workflow runs and publishes.
+
+**Verifying:**
+
+- `yarn info @mux-magic/shared` shows the latest version after publish completes.
+- `.github/workflows/publish-shared.yml` is the source of truth for the publish steps.

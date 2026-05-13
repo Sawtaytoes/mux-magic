@@ -37,7 +37,7 @@ This is the live tracking document for all workers in the Mux-Magic huge revamp.
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 01 | [mux-magic-rename](01_mux-magic-rename.md) | shared | Sonnet | High | ON | — | ready |
-| 02 | [npm-publish-key-setup](02_npm-publish-key-setup.md) | shared | Haiku | Low | OFF | — | ready |
+| 02 | [npm-publish-key-setup](02_npm-publish-key-setup.md) | shared | Haiku | Low | OFF | — | in-progress |
 | 03 | [storybook-vitest-filter-fix](03_storybook-vitest-filter-fix.md) | infra | Sonnet | Medium | ON | — | ready |
 | 04 | [worker-conventions-agents-md](04_worker-conventions-agents-md.md) | shared | Haiku | Low | OFF | — | ready |
 
