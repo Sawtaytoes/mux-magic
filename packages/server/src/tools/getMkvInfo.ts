@@ -168,24 +168,22 @@ export const getMkvInfo = (
         string,
         unknown
       >
-      const rawContainer = raw["container"] as Record<
+      const rawContainer = raw.container as Record<
         string,
         unknown
       >
-      const rawTracks = raw["tracks"] as Array<
+      const rawTracks = raw.tracks as Array<
         Record<string, unknown>
       >
       return {
         ...raw,
         container: {
           ...rawContainer,
-          isRecognized: rawContainer[
-            "recognized"
-          ] as boolean,
-          isSupported: rawContainer["supported"] as boolean,
+          isRecognized: rawContainer.recognized as boolean,
+          isSupported: rawContainer.supported as boolean,
         },
         tracks: rawTracks.map((track) => {
-          const rawProps = track["properties"] as Record<
+          const rawProps = track.properties as Record<
             string,
             unknown
           >
@@ -193,15 +191,12 @@ export const getMkvInfo = (
             ...track,
             properties: {
               ...rawProps,
-              isDefaultTrack: rawProps[
-                "default_track"
-              ] as boolean,
-              isEnabledTrack: rawProps[
-                "enabled_track"
-              ] as boolean,
-              isForcedTrack: rawProps[
-                "forced_track"
-              ] as boolean,
+              isDefaultTrack:
+                rawProps.default_track as boolean,
+              isEnabledTrack:
+                rawProps.enabled_track as boolean,
+              isForcedTrack:
+                rawProps.forced_track as boolean,
             },
           }
         }),
