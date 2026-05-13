@@ -1,18 +1,19 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
-import { pathsAtom } from "../../state/pathsAtom"
-import type { PathVariable } from "../../types"
-import { PathVariableCard } from "./PathVariableCard"
+import { variablesAtom } from "../../state/variablesAtom"
+import type { Variable } from "../../types"
+import { VariableCard } from "./VariableCard"
 
-const basePath: PathVariable = {
+const basePath: Variable = {
   id: "basePath",
   label: "Base Path",
   value: "/mnt/media",
+  type: "path",
 }
 
-const withStore = (paths: PathVariable[]) => {
+const withStore = (variables: Variable[]) => {
   const store = createStore()
-  store.set(pathsAtom, paths)
+  store.set(variablesAtom, variables)
   return (Story: React.ComponentType) => (
     <Provider store={store}>
       <Story />
@@ -20,9 +21,9 @@ const withStore = (paths: PathVariable[]) => {
   )
 }
 
-const meta: Meta<typeof PathVariableCard> = {
-  title: "Components/PathVariableCard",
-  component: PathVariableCard,
+const meta: Meta<typeof VariableCard> = {
+  title: "Components/VariableCard",
+  component: VariableCard,
   parameters: {
     layout: "padded",
     backgrounds: { default: "dark" },
@@ -30,11 +31,11 @@ const meta: Meta<typeof PathVariableCard> = {
 }
 
 export default meta
-type Story = StoryObj<typeof PathVariableCard>
+type Story = StoryObj<typeof VariableCard>
 
 export const BasePath: Story = {
   decorators: [withStore([basePath])],
-  args: { pathVariable: basePath, isFirst: true },
+  args: { variable: basePath, isFirst: true },
 }
 
 export const SecondaryPath: Story = {
@@ -45,14 +46,16 @@ export const SecondaryPath: Story = {
         id: "outputPath",
         label: "Output Path",
         value: "/mnt/output",
+        type: "path",
       },
     ]),
   ],
   args: {
-    pathVariable: {
+    variable: {
       id: "outputPath",
       label: "Output Path",
       value: "/mnt/output",
+      type: "path",
     },
     isFirst: false,
   },
@@ -61,7 +64,7 @@ export const SecondaryPath: Story = {
 export const EmptyValue: Story = {
   decorators: [withStore([{ ...basePath, value: "" }])],
   args: {
-    pathVariable: { ...basePath, value: "" },
+    variable: { ...basePath, value: "" },
     isFirst: false,
   },
 }

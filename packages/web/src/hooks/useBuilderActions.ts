@@ -50,6 +50,7 @@ const DEFAULT_BASE_PATH = {
   id: "basePath",
   label: "basePath",
   value: "",
+  type: "path" as const,
 }
 
 const captureSnapshot = (

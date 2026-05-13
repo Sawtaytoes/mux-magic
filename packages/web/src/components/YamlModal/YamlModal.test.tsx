@@ -87,6 +87,7 @@ describe("YamlModal", () => {
         id: "basePath",
         label: "basePath",
         value: "/media",
+        type: "path" as const,
       },
     ])
     render(

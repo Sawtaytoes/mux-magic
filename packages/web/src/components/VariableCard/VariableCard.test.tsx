@@ -13,31 +13,26 @@ import {
   test,
   vi,
 } from "vitest"
-import { pathsAtom } from "../../state/pathsAtom"
-import type { PathVariable } from "../../types"
-import { PathVariableCard } from "./PathVariableCard"
+import { variablesAtom } from "../../state/variablesAtom"
+import type { Variable } from "../../types"
+import { VariableCard } from "./VariableCard"
 
-const makePath = (
-  overrides: Partial<PathVariable> = {},
-): PathVariable => ({
+const makeVariable = (
+  overrides: Partial<Variable> = {},
+): Variable => ({
   id: "basePath",
   label: "Base Path",
   value: "/mnt/media",
+  type: "path",
   ...overrides,
 })
 
-const renderCard = (
-  pathVariable: PathVariable,
-  isFirst = true,
-) => {
+const renderCard = (variable: Variable, isFirst = true) => {
   const store = createStore()
-  store.set(pathsAtom, [pathVariable])
+  store.set(variablesAtom, [variable])
   render(
     <Provider store={store}>
-      <PathVariableCard
-        pathVariable={pathVariable}
-        isFirst={isFirst}
-      />
+      <VariableCard variable={variable} isFirst={isFirst} />
     </Provider>,
   )
   return store
@@ -48,30 +43,30 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe("PathVariableCard", () => {
+describe("VariableCard", () => {
   test("renders the label input with current value", () => {
-    renderCard(makePath({ label: "Base Path" }))
+    renderCard(makeVariable({ label: "Base Path" }))
     expect(
       screen.getByDisplayValue("Base Path"),
     ).toBeInTheDocument()
   })
 
   test("renders the value input with current path", () => {
-    renderCard(makePath({ value: "/mnt/media" }))
+    renderCard(makeVariable({ value: "/mnt/media" }))
     expect(
       screen.getByDisplayValue("/mnt/media"),
     ).toBeInTheDocument()
   })
 
-  test("does not show remove button for first path var", () => {
-    renderCard(makePath(), true)
+  test("does not show remove button for first variable", () => {
+    renderCard(makeVariable(), true)
     expect(
       screen.queryByTitle(/remove path variable/i),
     ).toBeNull()
   })
 
-  test("shows remove button for non-first path var", () => {
-    renderCard(makePath({ id: "extraPath" }), false)
+  test("shows remove button for non-first variable", () => {
+    renderCard(makeVariable({ id: "extraPath" }), false)
     expect(
       screen.getByTitle(/remove path variable/i),
     ).toBeInTheDocument()
@@ -79,7 +74,7 @@ describe("PathVariableCard", () => {
 
   test("updates label in atom on change", () => {
     const store = renderCard(
-      makePath({ label: "Base Path" }),
+      makeVariable({ label: "Base Path" }),
     )
 
     const labelInput = screen.getByDisplayValue("Base Path")
@@ -87,13 +82,15 @@ describe("PathVariableCard", () => {
       target: { value: "Media Path" },
     })
 
-    expect(store.get(pathsAtom)[0].label).toBe("Media Path")
+    expect(store.get(variablesAtom)[0].label).toBe(
+      "Media Path",
+    )
   })
 
-  test("removes path from atom when remove button clicked", async () => {
+  test("removes variable from atom when remove button clicked", async () => {
     const user = userEvent.setup()
     const store = renderCard(
-      makePath({ id: "extraPath" }),
+      makeVariable({ id: "extraPath" }),
       false,
     )
 
@@ -101,6 +98,13 @@ describe("PathVariableCard", () => {
       screen.getByTitle(/remove path variable/i),
     )
 
-    expect(store.get(pathsAtom)).toHaveLength(0)
+    expect(store.get(variablesAtom)).toHaveLength(0)
+  })
+
+  test("shows path type label in type badge", () => {
+    renderCard(makeVariable())
+    expect(
+      screen.getByText("path variable"),
+    ).toBeInTheDocument()
   })
 })

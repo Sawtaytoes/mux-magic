@@ -39,7 +39,12 @@ const makeStore = (step: Step) => {
   const store = createStore()
   store.set(stepsAtom, [step])
   store.set(pathsAtom, [
-    { id: "basePath", label: "basePath", value: "/media" },
+    {
+      id: "basePath",
+      label: "basePath",
+      value: "/media",
+      type: "path" as const,
+    },
   ])
   store.set(commandsAtom, COMMANDS)
   return store
@@ -217,6 +222,7 @@ describe("runOrStopStepAtom", () => {
           id: "basePath",
           label: "basePath",
           value: "/media",
+          type: "path" as const,
         },
       ])
       store.set(commandsAtom, COMMANDS)

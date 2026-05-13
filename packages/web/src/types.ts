@@ -34,11 +34,22 @@ export type Step = {
   isCollapsed: boolean
 }
 
-export type PathVariable = {
+// VariableType is a discriminator union. Workers 11 and 35 register additional
+// types ("threadCount", "dvdCompareId") — this union grows as they land.
+export type VariableType = "path"
+
+export type Variable<
+  T extends VariableType = VariableType,
+> = {
   id: string
   label: string
   value: string
+  type: T
 }
+
+// Back-compat alias: PathVariable is structurally equivalent to Variable<"path">.
+// Callers using PathVariable continue to compile; migrate them to Variable over time.
+export type PathVariable = Variable<"path">
 
 export type Group = {
   kind: "group"

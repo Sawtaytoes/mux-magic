@@ -49,6 +49,7 @@ const makePath = (
   id,
   label,
   value,
+  type: "path",
 })
 
 const renderPicker = (isOpen = false) => {

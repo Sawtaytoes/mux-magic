@@ -4,9 +4,9 @@ import { buildParams } from "../commands/buildParams"
 import type { Commands } from "../commands/types"
 import type {
   Group,
-  PathVariable,
   SequenceItem,
   Step,
+  Variable,
 } from "../types"
 import { isGroup } from "./sequenceUtils"
 
@@ -45,29 +45,30 @@ const hasContent = (item: SequenceItem): boolean =>
 
 export const toYamlStr = (
   steps: SequenceItem[],
-  paths: PathVariable[],
+  paths: Variable[],
   commands: Commands,
 ): string => {
   const filledItems = steps.filter(hasContent)
   const hasSomething =
     filledItems.length > 0 ||
-    paths.some((pathVariable) => pathVariable.value)
+    paths.some((variable) => variable.value)
 
   if (!hasSomething) return "# No steps yet"
 
-  const pathsObj = Object.fromEntries(
-    paths.map((pathVariable) => [
-      pathVariable.id,
+  const variablesObj = Object.fromEntries(
+    paths.map((variable) => [
+      variable.id,
       {
-        label: pathVariable.label,
-        value: pathVariable.value,
+        label: variable.label,
+        value: variable.value,
+        type: variable.type,
       },
     ]),
   )
 
   return dump(
     {
-      paths: pathsObj,
+      variables: variablesObj,
       steps: filledItems.map((item) =>
         isGroup(item)
           ? groupToYaml(item, commands)

@@ -9,7 +9,12 @@ import { loadYamlFromText } from "./loadYaml"
 // Verifies that the ?seq= URL format is stable across encode+decode.
 
 const DEFAULT_PATHS = [
-  { id: "basePath", label: "basePath", value: "" },
+  {
+    id: "basePath",
+    label: "basePath",
+    value: "",
+    type: "path" as const,
+  },
 ]
 
 describe("buildBuilderUrl round-trip", () => {
