@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 import type { Commands } from "../commands/types"
-import type { PathVariable } from "../types"
+import type { PathVariable, Variable } from "../types"
 import { loadYamlFromText } from "./loadYaml"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -245,5 +245,85 @@ steps:
     steps: []
 `
     expect(() => load(yaml)).toThrow("non-empty")
+  })
+})
+
+// ─── Variable type on loaded path variables ───────────────────────────────────
+
+describe("Variable.type on loaded path variables", () => {
+  test("legacy paths: block populates type: path on each entry", () => {
+    const yamlText = `
+paths:
+  basePath:
+    label: Base
+    value: /mnt/media
+steps: []
+`
+    const result = load(yamlText)
+    const variable = result.paths[0] as Variable
+    expect(variable.type).toBe("path")
+  })
+})
+
+// ─── variables: block (new format) ───────────────────────────────────────────
+
+describe("variables: block (new format)", () => {
+  test("reads variables: block with explicit type field", () => {
+    const yamlText = `
+variables:
+  basePath:
+    label: Base
+    value: /mnt/media
+    type: path
+steps:
+  - id: step1
+    command: makeDirectory
+    params:
+      path: '@basePath'
+`
+    const result = load(yamlText)
+    expect(result.paths).toHaveLength(1)
+    const variable = result.paths[0] as Variable
+    expect(variable.type).toBe("path")
+    expect(variable.id).toBe("basePath")
+    expect(variable.value).toBe("/mnt/media")
+  })
+
+  test("variables: link resolution works with @-prefix", () => {
+    const yamlText = `
+variables:
+  myPath:
+    label: My Path
+    value: /output
+    type: path
+steps:
+  - command: makeDirectory
+    params:
+      path: '@myPath'
+`
+    const result = load(yamlText)
+    const step = result.steps[0] as {
+      links: Record<string, string>
+    }
+    expect(step.links.path).toBe("myPath")
+  })
+
+  test("variables: wins over paths: on the same id", () => {
+    const yamlText = `
+paths:
+  basePath:
+    label: Old Label
+    value: /old
+variables:
+  basePath:
+    label: New Label
+    value: /new
+    type: path
+steps: []
+`
+    const result = load(yamlText)
+    expect(result.paths).toHaveLength(1)
+    expect(result.paths[0].value).toBe("/new")
+    expect(result.paths[0].label).toBe("New Label")
   })
 })
