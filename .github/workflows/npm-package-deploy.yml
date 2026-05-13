@@ -1,11 +1,15 @@
 name: NPM Package Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
     branches: [master]
+    types: [completed]
+  workflow_dispatch:
 
 jobs:
   version:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
