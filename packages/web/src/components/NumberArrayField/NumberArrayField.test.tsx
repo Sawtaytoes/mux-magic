@@ -198,7 +198,9 @@ describe("NumberArrayField", () => {
     })
     fireEvent.blur(input)
     const steps = store.get(stepsAtom)
-    expect(steps[0].params.offsets).toEqual([10, 20, 30])
+    expect((steps[0] as Step).params.offsets).toEqual([
+      10, 20, 30,
+    ])
   })
 
   test("parses whitespace-separated numbers into array on blur", () => {
@@ -210,7 +212,9 @@ describe("NumberArrayField", () => {
     })
     fireEvent.blur(input)
     const steps = store.get(stepsAtom)
-    expect(steps[0].params.offsets).toEqual([10, 20, 30])
+    expect((steps[0] as Step).params.offsets).toEqual([
+      10, 20, 30,
+    ])
   })
 
   test("ignores non-numeric tokens on blur — valid numbers still saved", () => {
@@ -222,6 +226,8 @@ describe("NumberArrayField", () => {
     })
     fireEvent.blur(input)
     const steps = store.get(stepsAtom)
-    expect(steps[0].params.offsets).toEqual([5, 10])
+    expect((steps[0] as Step).params.offsets).toEqual([
+      5, 10,
+    ])
   })
 })

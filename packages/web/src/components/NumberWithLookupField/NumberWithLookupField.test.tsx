@@ -1,11 +1,12 @@
 import { render, screen } from "@testing-library/react"
-import { Provider } from "jotai"
+import { createStore, Provider } from "jotai"
 import { describe, expect, it, test } from "vitest"
 
 import {
   FIXTURE_COMMANDS_BUNDLE_B,
   FIXTURE_COMMANDS_BUNDLE_D,
 } from "../../commands/__fixtures__/commands"
+import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
 import { NumberWithLookupField } from "./NumberWithLookupField"
 
@@ -177,7 +178,7 @@ describe("NumberWithLookupField", () => {
     ).toBeInTheDocument()
   })
 
-  test("with hasIncrementButtons true — increment button increases value", () => {
+  test("with hasIncrementButtons true — increment button updates store value by 1", () => {
     const withButtonsField = {
       ...field,
       hasIncrementButtons: true,
@@ -185,8 +186,10 @@ describe("NumberWithLookupField", () => {
     const step = createTestStep({
       params: { malId: 5, malName: "" },
     })
+    const store = createStore()
+    store.set(stepsAtom, [step])
     render(
-      <Provider>
+      <Provider store={store}>
         <NumberWithLookupField
           field={withButtonsField}
           step={step}
@@ -197,7 +200,7 @@ describe("NumberWithLookupField", () => {
       name: /increment/i,
     })
     incrementButton.click()
-    const input = screen.getByDisplayValue(6)
-    expect(input).toBeInTheDocument()
+    const steps = store.get(stepsAtom)
+    expect((steps[0] as Step).params.malId).toBe(6)
   })
 })
