@@ -1,3 +1,4 @@
+import "./loadEnv.js"
 import { readFileSync, writeFileSync } from "node:fs"
 import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
