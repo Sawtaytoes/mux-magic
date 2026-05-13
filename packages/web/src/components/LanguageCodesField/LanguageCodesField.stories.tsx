@@ -8,7 +8,6 @@ import { LanguageCodesField } from "./LanguageCodesField"
 const meta = {
   title: "Fields/LanguageCodesField",
   component: LanguageCodesField,
-  tags: ["autodocs"],
   decorators: [
     (Story, context) => {
       const store = createStore()

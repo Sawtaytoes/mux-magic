@@ -4,7 +4,6 @@ import { TagInputBase } from "./TagInputBase"
 const meta = {
   title: "Primitives/TagInputBase",
   component: TagInputBase,
-  tags: ["autodocs"],
 } satisfies Meta<typeof TagInputBase>
 
 export default meta

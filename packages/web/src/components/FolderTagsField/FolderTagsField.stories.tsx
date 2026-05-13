@@ -8,7 +8,6 @@ import { FolderTagsField } from "./FolderTagsField"
 const meta = {
   title: "Fields/FolderTagsField",
   component: FolderTagsField,
-  tags: ["autodocs"],
   decorators: [
     (Story, context) => {
       const store = createStore()

@@ -224,7 +224,8 @@ describe("LanguageCodesField — filter autocomplete", () => {
     const engOption = within(listbox)
       .getAllByRole("option")
       .find((opt) => within(opt).queryByText("eng"))
-    await user.click(engOption!)
+    if (!engOption) throw new Error("eng option not found")
+    await user.click(engOption)
 
     const steps = store.get(stepsAtom)
     expect(
