@@ -153,8 +153,12 @@ export default defineConfig(
     // AGENTS.md convention: one component per file in packages/web.
     files: ["packages/web/**/*.{ts,tsx}"],
     plugins: { react: reactPlugin },
+    settings: { react: { version: "19.0.0" } },
     rules: {
-      "react/no-multi-comp": ["error", { ignoreStateless: false }],
+      "react/no-multi-comp": [
+        "error",
+        { ignoreStateless: false },
+      ],
     },
   },
   {
