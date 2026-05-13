@@ -18,6 +18,7 @@
       "Bash(file *)",
       "Bash(find *)",
       "Bash(findstr *)",
+      "Bash(gh api *)",
       "Bash(gh auth *)",
       "Bash(gh pr *)",
       "Bash(gh run *)",
@@ -66,6 +67,8 @@
       "PowerShell(Get-*)",
       "PowerShell(Get-ChildItem * | ForEach-Object *)",
       "PowerShell(Get-ChildItem * | Select-Object *)",
+      "PowerShell(Get-ChildItem * | Select-Object *)",
+      "PowerShell(Get-ChildItem * | Where-Object * } | Select-Object *)",
       "PowerShell(gh --version 2>&1)",
       "PowerShell(git *)",
       "PowerShell(ls *)",
@@ -83,9 +86,7 @@
       "Read(**)",
       "Read(//**)",
       "Skill(update-config:*)",
-      "Skill(update-config)",
-      "PowerShell(Get-ChildItem -Path \"D:\\\\Projects\\\\Personal\\\\media-sync\\\\packages\\\\tools\" -Recurse -File | Where-Object { $_.FullName -notmatch \"node_modules|dist\" } | Select-Object -ExpandProperty FullName)",
-      "PowerShell(Get-ChildItem -Path \"D:\\\\Projects\\\\Personal\\\\media-sync\\\\packages\\\\shared-tools\" -Recurse -File | Where-Object { $_.FullName -notmatch \"node_modules|dist\" -and $_.Name -notmatch \"\\\\.tsbuildinfo$\" } | Select-Object -ExpandProperty FullName)"
+      "Skill(update-config)"
     ],
     "deny": [
       "Bash(Get-ChildItem *)",
