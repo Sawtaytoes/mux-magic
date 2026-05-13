@@ -1,179 +1,100 @@
-﻿# Mux Magic
+# Mux Magic
 
 ![Mux Magic logo](docs/images/mux-magic-logo.png)
 
-A Node.js toolkit for batch media file operations: MKV track manipulation, file renaming, subtitle merging, IVTC, aspect ratio analysis, and more. Ships as both a **CLI** and a **REST API**.
+A Node.js toolkit for batch media file operations:
+
+- MKV track manipulation
+- file renaming
+- subtitle merging
+- aspect ratio analysis
+- ...and much, much more!
+
+Ships as both a **[CLI](docs/cli.md)** and a multi-tenant **[REST API](docs/api.md)** (now preferred).
+
+## Why I built it
+
+I've been using this library ever since I started purchasing physical media in 2023. I never liked the physical nature of it, so I rip everything I buy. Sadly, there aren't any good tools for ingesting that stuff, so I wrote my own!
+
+I use this all the time for:
+
+1. Naming special features, anime, and TV show episodes from disc rips.
+1. Removing non-English or non-Japanese languages to save on space (especially now that storage costs are only going up).
+1. Muxing fansubs into my Japanese anime import rips with time-alignment (this feature is so important!).
+
+## New API mode
+
+In the past, this was just a CLI runner, and while I had a Docker container, I was using a CLI in the browser to run things commands 1-by-1.
+
+Since building out the API, it now includes significantly better visibility, it lets you build sequences and share those sequence templates around, and
 
 ---
 
-## Screenshots
+### Jobs
 
-### Jobs UI
-
-The Jobs page gives a live view of every running and completed job. It polls the server over SSE, so status badges and log lines update without a page refresh.
-
-![Jobs UI showing running, completed, and failed jobs](docs/images/jobs.png)
+![Jobs overview showing running, completed, and failed jobs](docs/images/jobs-overview.png)
 
 ### Sequence Builder
 
-The Sequence Builder lets you compose multi-step pipelines visually. Each step card has a command picker, inline path typeahead, and step-output linking. The **View YAML** button shows the sequence document you can POST directly to `/sequences/run`.
+![Sequence Builder with a multi-step pipeline](docs/images/sequence-builder-overview.png)
 
-![Sequence Builder with a two-step pipeline](docs/images/builder.png)
+You can run a huge sequence of steps like this (I use this):
+![Sequence Builder with steps collapsed](docs/images/sequence-builder-collapsed.png)
 
-![Sequence Builder YAML modal](docs/images/builder-yaml.png)
-
-> **Regenerating screenshots.** Start the server (`yarn start-server`) then run `yarn screenshots`. This launches headless Chromium with `?mock=1` (MSW fake-data mode — no real files needed) and writes PNGs to `docs/images/`. Playwright Chromium must be installed first (`yarn install-playwright-browser`).
-
----
-
-## Prerequisites
-
-- **Node.js** 22+
-- **Yarn** 4+
-- **Python 3** (for some legacy helpers)
-- External binaries on `PATH`: `mkvtoolnix`, `ffmpeg`, `mediainfo`
-
-## Installation
-
-```sh
-yarn install
-yarn dlx @yarnpkg/sdks vscode   # one-time VS Code SDK setup
-```
-
-Copy `.env.example` to `.env` if environment variables are needed (e.g. `PORT`).
+And then you can grab the YAML and share it around. It's also stored in the URL's query string, so copy-pasting a link works too if you wanna share around your templates!
 
 ---
 
-## CLI
-
-Run any command through the `yarn media` script:
+## Quick start with Docker
 
 ```sh
-yarn media <command> [options]
-yarn media --help                  # list all commands
-yarn media <command> --help        # options for a specific command
+docker run -d \
+  -p 4173:4173 \
+  -p 3000:3000 \
+  -e MAX_THREADS=2 \
+  -e ANIDB_CACHE_FOLDER=/cache/anidb \
+  -e TMDB_API_KEY=your-key-here \
+  -v /your/media-library:/media \
+  -v anidb-cache:/cache/anidb \
+  mux-magic
 ```
 
-### Commands
+The UI is available at `http://localhost:4173`. The API is at `http://localhost:3000`.
 
-| Command | Syntax | Description |
-|---|---|---|
-| `changeTrackLanguages` | `<sourcePath>` | Change the language tag on video, audio, or subtitle tracks. Useful when tracks were mislabelled (e.g. English subs marked as Japanese). |
-| `copyFiles` | `<sourcePath> <destinationPath>` | Copy all files from one directory into another. Does not recurse. Handy for moving processed files (e.g. from a `LANGUAGE-TRIMMED` output dir) back to the original. |
-| `extractSubtitles` | `<sourcePath>` | Extract subtitle tracks into separate files alongside each video file. |
-| `copyOutSubtitles` | `<sourcePath>` | **Deprecated** — alias for `extractSubtitles`. Will be removed in a future release. |
-| `fixIncorrectDefaultTracks` | `<sourcePath>` | Set the first track of each type (video/audio/subs) as the default and unset all others. |
-| `getAudioOffsets` | `<sourceFilesPath> <destinationFilesPath>` | Print the audio offset between matching files in two directories. |
-| `hasBetterAudio` | `<sourcePath>` | List files where a higher channel-count audio track is not first. |
-| `hasBetterVersion` | `<sourcePath>` | List Ultra HD Blu-ray releases where a better version exists (sourced from criterionforum.org). |
-| `hasDuplicateMusicFiles` | `<sourcePath>` | List directories containing duplicate music files (same name, different format, or `(2)`/` - Copy` copies). |
-| `hasImaxEnhancedAudio` | `<sourcePath>` | List files that contain an IMAX Enhanced audio track. |
-| `hasManyAudioTracks` | `<sourcePath>` | List files with more than one audio track. |
-| `hasSurroundSound` | `<sourcePath>` | List files with audio channel counts above 2. |
-| `hasWrongDefaultTrack` | `<sourcePath>` | List files where the default audio or subtitle track is not the first track. |
-| `inverseTelecineDiscRips` | `<sourcePath>` | Re-encode the video track to convert 60i disc rips back to 24p (IVTC). SDR, 8-bit, native 24fps sources only. |
-| `isMissingSubtitles` | `<sourcePath>` | List files and folders that have no subtitle tracks. |
-| `keepLanguages` | `<sourcePath>` | Remove all audio and subtitle tracks except the specified ISO 639-2 languages. |
-| `mergeOrderedChapters` | `<sourcePath> [introFilename] [outroFilename]` | Merge files that use ordered chapters with a shared intro/outro into self-contained files. Requires PCM audio (convert FLAC first). |
-| `mergeTracks` | `<subtitlesPath> <mediaFilesPath> [offsets...]` | Add subtitle tracks (and optionally chapters) from a matching directory into media files. |
-| `moveFiles` | `<sourcePath> <destinationPath>` | Copy all files to a destination then delete the source directory. Equivalent to `copyFiles` + delete. |
-| `nameAnimeEpisodes` | `<sourcePath> <searchTerm>` | Rename anime episode files using MyAnimeList metadata. |
-| `nameAnimeEpisodesAniDB` | `<sourcePath> <searchTerm>` | Rename episode files using titles from AniDB. Better OVA/special coverage than MAL. See [AniDB command notes](#anidb-command-notes). |
-| `nameSpecialFeatures` | `<sourcePath> <url>` | Rename disc special features using timecodes from a dvdcompare.net URL. |
-| `nameTvShowEpisodes` | `<sourcePath> <searchTerm>` | Rename episode files using titles from TVDB. |
-| `renameDemos` | `<sourcePath>` | Rename demo files to the standard format (see [Demo file format](#demo-file-format)). |
-| `renameMovieClipDownloads` | `<sourcePath>` | Rename TomSawyer AVSForums movie clips to the demo format. |
-| `reorderTracks` | `<sourcePath>` | Reorder video, audio, or subtitle tracks by index. |
-| `replaceAttachments` | `<sourceFilesPath> <destinationFilesPath>` | Copy font/attachment files from source MKVs into matching destination MKVs. |
-| `replaceFlacWithPcmAudio` | `<sourcePath>` | Convert FLAC audio tracks to PCM at the same bit depth. |
-| `replaceTracks` | `<sourceFilesPath> <destinationFilesPath> [offsets...]` | Replace audio, subtitle, or chapter tracks in destination files with tracks from matching source files. |
-| `setDisplayWidth` | `<sourcePath>` | Override the display width (DAR) of video files. Useful for correcting 4:3 vs 16:9 on anamorphic DVD rips. |
-| `splitChapters` | `<sourcePath> <chapterSplits...>` | Split a large file into separate files at given chapter boundaries. Useful for disc rips that contain multiple episodes. |
-| `storeAspectRatioData` | `<sourcePath> [folders...]` | Scan media files and write their internal crop/aspect ratio data to a JSON file. |
+### Docker Compose
 
-### Common options
+```yaml
+services:
+  mux-magic:
+    image: mux-magic
+    ports:
+      - "4173:4173"
+      - "3000:3000"
+    environment:
+      MAX_THREADS: 2
+      DELETE_TO_TRASH: "false"
+      ANIDB_CACHE_FOLDER: /cache/anidb
+      TMDB_API_KEY: your-key-here
+    volumes:
+      - /your/media-library:/media
+      - anidb-cache:/cache/anidb
 
-Most commands support:
-
-| Option | Alias | Description |
-|---|---|---|
-| `--recursive` | `-r` | Recurse into subdirectories. |
-| `--recursiveDepth N` | `-d N` | Limit recursion to N levels deep (use with `-r`). |
-
-Language options accept [ISO 639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes) three-letter codes (e.g. `eng`, `jpn`, `fra`).
-
-### AniDB command notes
-
-`nameAnimeEpisodesAniDB` is a parallel implementation to `nameAnimeEpisodes` that uses AniDB instead of MAL. AniDB has better coverage of OVAs and specials.
-
-**Search backend.** anidb.net is behind a Cloudflare interactive challenge and the HTTP API has no name-search endpoint. Search uses the [manami-project anime-offline-database](https://github.com/manami-project/anime-offline-database), a community-maintained JSON dataset that cross-references AniDB / MAL / AniList / Kitsu IDs. The dataset is downloaded once (~60 MB) and cached for 7 days under `<ANIDB_CACHE_FOLDER>/manami/` (defaults to `./.cache/anidb/manami/`). Refreshes do a HEAD-redirect version check first and skip the download when the upstream version slug matches what's on disk.
-
-**Lookup backend.** Once you have an aid, episode metadata is fetched from `api.anidb.net:9001` (the AniDB HTTP API, which is on a separate host that bypasses Cloudflare). Per-anime XML is cached for 7 days under `<ANIDB_CACHE_FOLDER>/anime/<aid>.xml`.
-
-**Cache location.** Set `ANIDB_CACHE_FOLDER` in `.env` (or your container env) to point both caches at a directory that survives restarts — important in Docker where the project-relative `./.cache/anidb/` is ephemeral.
-
-**Episode types (`episodeType` param).** Six modes — one per AniDB episode-type code — so users can run each subset separately rather than mixing them in one prompt loop:
-
-- `regular` (default) — type=1. Files map to episodes index-for-index after natural sort. Each pair also reads the file's mediainfo duration and logs a `DURATION MISMATCH` warning when the file/episode lengths diverge by more than 2 minutes (the rename still applies — the warning is advisory). Output: `<seriesName> - sNNeNN - <episodeTitle>` using AniDB's epno verbatim.
-- `specials` — type=2 (S). Per-file picker (see below). Output: `<seriesName> - s00eNN - <episodeTitle>`.
-- `credits` — type=3 (C, OP/ED songs). Per-file picker. Output: `<seriesName> - s00eNN - <episodeTitle>`.
-- `trailers` — type=4 (T, PVs/promos). Per-file picker. Output: `<seriesName> - s00eNN - <episodeTitle>`.
-- `parodies` — type=5 (P). Per-file picker. Output: `<seriesName> - s00eNN - <episodeTitle>`.
-- `others` — type=6 (O, director's-cut alternates). Same index-paired flow as `regular`, with the same duration sanity-check warning. Output: `<seriesName> - sNNeNN - <episodeTitle>` using `seasonNumber` and a sequential index.
-
-**Per-file picker (specials / credits / trailers / parodies).** Each file's mediainfo duration is matched against AniDB's rough minute-length estimates; the picker surfaces the top length-ranked candidates plus skip and cancel options, and already-claimed entries drop out of subsequent prompts. Keys in the builder modal: `0`–`9` pick a candidate, **Space** skips the current file, **Esc** cancels the loop and applies any matches confirmed so far.
-
-**Complete vs Parts pre-prompt.** When AniDB's filtered list contains both a "complete" entry and "Part N" entries for the same content (common for OVAs and movies with multi-part rips), the rename surfaces a one-time prompt asking which form your files match. The chosen subset feeds into the normal pairing — index-paired for `regular`/`others`, picker for the rest.
-
-In the CLI, the picker prompts hit your terminal one file at a time. In the API/builder, the same prompts ride the existing job-event channel — answer them in the job log surface as the job runs.
-
-**Planned features (not yet implemented).**
-
-- **Episode range/list filter.** Name only a subset of files — e.g., `episodes: "1-4"` or `"5,7,10"`. Useful when you've already named some episodes and got the rest later.
-
-### Demo file format
-
-`renameDemos` and related commands produce filenames following this pattern:
-
-```
-<Title> (<Year>) [<Scene>] {<Resolution> [<AspectRatio>] <DynamicRange> & <AudioFormat>}
+volumes:
+  anidb-cache:
 ```
 
-Examples:
-
-- `Ford v Ferrari (2019) [Broken Brakes] {4K HDR10 & Dolby Atmos TrueHD}`
-- `Pink Floyd - The Dark Side Of The Moon - Any Colour You Like {FHD SDR & Dolby Atmos TrueHD}`
-- `[Dolby] Argon {SD SDR & Dolby Digital 5.1}`
-
-### Build a standalone Windows executable
-
-```sh
-yarn cli-app:sea
-```
-
-Output: `dist/mux-magic.exe`
+> **Volume note.** Mount your media library at `/media` — write access is required since most commands modify files in place. The `anidb-cache` named volume ensures the AniDB metadata cache survives container restarts — without it, the ~60 MB dataset re-downloads on every start.
 
 ---
 
-## REST API
+## Configuration
 
-The API runs long-running commands as background **jobs** and streams their output over SSE.
-
-### Start the server
-
-```sh
-yarn server                                    # default port 3000
-PORT=8080 yarn server                          # custom port
-```
-
-### Environment variables
-
-All environment variables are optional. Set them in `.env` or pass them to the server:
+All environment variables are optional. Set them in `.env` or pass them to the container:
 
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `3000` | Server port. |
-| `MAX_THREADS` | CPU core count | Concurrent thread limit for all commands. **Important for lower-end systems** — set to 2–4 to reduce memory/CPU usage. Example: `MAX_THREADS=2 yarn server`. |
+| `MAX_THREADS` | CPU thread count | Concurrent thread limit for all commands. **Important for lower-end systems** — set to 2–4 to reduce memory/CPU usage. |
 | `DELETE_TO_TRASH` | `true` | Send deleted files to trash instead of permanent deletion. Set to `false` for immediate deletion. |
 | `MAX_TRANSCODE_CONCURRENCY` | `4` | Maximum number of concurrent audio transcode jobs (for browser audio playback fallback). Lower this on resource-constrained systems. |
 | `TRANSCODE_CACHE_MAX_BYTES` | `4294967296` (4 GB) | Maximum size of the transcode cache directory. Cache lives in `os.tmpdir()/media-tools-transcode-cache/`. |
@@ -182,310 +103,10 @@ All environment variables are optional. Set them in `.env` or pass them to the s
 | `REMOTE_SERVER_URL` | — | Public URL for remote-server links in API documentation. Only needed when the server is accessible from the internet. |
 | `MEDIA_TOOLS_FAKE_DATA` | — | Set to `true` or `1` to populate the UI with mock data (useful for development/screenshots). |
 
-#### Docker example
-
-```dockerfile
-ENV PORT=3000
-ENV MAX_THREADS=2
-ENV DELETE_TO_TRASH=false
-ENV ANIDB_CACHE_FOLDER=/cache/anidb
-ENV TMDB_API_KEY=your-key-here
-
-VOLUME ["/cache/anidb"]
-EXPOSE 3000
-CMD ["yarn", "server"]
-```
-
-Or via `docker run`:
-
-```sh
-docker run -e PORT=3000 -e MAX_THREADS=2 -e ANIDB_CACHE_FOLDER=/cache/anidb -v /host/cache:/cache/anidb mux-magic
-```
-
-### Job lifecycle
-
-1. `POST /jobs/<command>` — creates a job, starts it immediately, returns `{ jobId, logsUrl }` with HTTP 202.
-2. `GET /jobs/:id/logs` — SSE stream. Each event is JSON:
-   - `{ "line": "..." }` — a log line from stdout/stderr.
-   - `{ "done": true, "status": "completed" | "failed" | "cancelled" }` — terminal event.
-3. `GET /jobs/:id` — poll job state at any time.
-4. `DELETE /jobs/:id` — cancel a running job. Tears down the RxJS subscription and tree-kills the child process(es). Idempotent: 202 with the cancelled job body when actioned, 204 No Content when the job is already in a terminal state, 404 when the id is unknown.
-
-### Endpoints
-
-#### Job management
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/jobs` | List all jobs (logs excluded from response). |
-| `GET` | `/jobs/:id` | Get a single job including its buffered logs. |
-| `GET` | `/jobs/:id/logs` | SSE stream of log lines and a final done event. |
-
-#### Job commands
-
-All commands are started with `POST`. The body is JSON. `sourcePath` is required for all commands that take it.
-
-| Path | Required body fields | Optional body fields |
-|---|---|---|
-| `POST /jobs/changeTrackLanguages` | `sourcePath` | `audioLanguage`, `subtitlesLanguage`, `videoLanguage`, `isRecursive` |
-| `POST /jobs/copyFiles` | `sourcePath`, `destinationPath` | — |
-| `POST /jobs/fixIncorrectDefaultTracks` | `sourcePath` | `isRecursive` |
-| `POST /jobs/hasBetterAudio` | `sourcePath` | `isRecursive`, `recursiveDepth` |
-| `POST /jobs/hasBetterVersion` | `sourcePath` | `isRecursive`, `recursiveDepth` |
-| `POST /jobs/hasDuplicateMusicFiles` | `sourcePath` | `isRecursive`, `recursiveDepth` |
-| `POST /jobs/hasImaxEnhancedAudio` | `sourcePath` | `isRecursive` |
-| `POST /jobs/hasManyAudioTracks` | `sourcePath` | `isRecursive` |
-| `POST /jobs/hasSurroundSound` | `sourcePath` | `isRecursive`, `recursiveDepth` |
-| `POST /jobs/hasWrongDefaultTrack` | `sourcePath` | `isRecursive` |
-| `POST /jobs/isMissingSubtitles` | `sourcePath` | `isRecursive` |
-| `POST /jobs/keepLanguages` | `sourcePath` | `audioLanguages[]`, `subtitlesLanguages[]`, `useFirstAudioLanguage`, `useFirstSubtitlesLanguage`, `isRecursive` |
-| `POST /jobs/mergeTracks` | `subtitlesPath`, `mediaFilesPath` | `offsets[]`, `hasChapterSyncOffset`, `globalOffset`, `includeChapters` |
-| `POST /jobs/moveFiles` | `sourcePath`, `destinationPath` | — |
-| `POST /jobs/nameAnimeEpisodes` | `sourcePath`, `searchTerm` | `seasonNumber`, `malId` |
-| `POST /jobs/nameAnimeEpisodesAniDB` | `sourcePath` | `searchTerm`, `seasonNumber`, `anidbId` (see [AniDB command notes](#anidb-command-notes)) |
-| `POST /jobs/nameSpecialFeatures` | `sourcePath`, `url` | `fixedOffset`, `timecodePadding` |
-| `POST /jobs/nameTvShowEpisodes` | `sourcePath`, `searchTerm`, `seasonNumber` | — |
-| `POST /jobs/renameDemos` | `sourcePath` | `isRecursive` |
-| `POST /jobs/renameMovieClipDownloads` | `sourcePath` | — |
-| `POST /jobs/reorderTracks` | `sourcePath` | `audioTrackIndexes[]`, `subtitlesTrackIndexes[]`, `videoTrackIndexes[]`, `isRecursive` |
-| `POST /jobs/replaceAttachments` | `sourceFilesPath`, `destinationFilesPath` | — |
-| `POST /jobs/replaceFlacWithPcmAudio` | `sourcePath` | `isRecursive` |
-| `POST /jobs/replaceTracks` | `sourceFilesPath`, `destinationFilesPath` | `audioLanguages[]`, `subtitlesLanguages[]`, `videoLanguages[]`, `offsets[]`, `hasChapterSyncOffset`, `globalOffset`, `includeChapters` |
-| `POST /jobs/setDisplayWidth` | `sourcePath` | `displayWidth` (default 853), `isRecursive`, `recursiveDepth` |
-| `POST /jobs/splitChapters` | `sourcePath`, `chapterSplits[]` | — |
-| `POST /jobs/storeAspectRatioData` | `sourcePath` | `folders[]`, `force`, `isRecursive`, `recursiveDepth`, `outputPath`, `rootPath`, `threads` |
-
-> **Not yet available via API:** `copyOutSubtitles`, `getAudioOffsets`, `inverseTelecineDiscRips`, `mergeOrderedChapters`.
-
-#### Browser-safe audio playback (Builder file-explorer modal)
-
-The Builder's file-explorer modal includes a `<video>` preview that plays files directly via `GET /files/stream`. For most rips the audio decodes fine, but disc rips often carry codecs no browser can decode (DTS, TrueHD, MLP, AC-3 outside of Edge, EAC-3 outside of Apple devices). To avoid silent video, the modal probes the source's audio codec via `GET /files/audio-codec?path=…` and, when needed, automatically swaps `<video>.src` to `GET /transcode/audio?path=…&codec=opus`. That endpoint re-encodes only the audio (video stream is `-c:v copy`, so no GPU is involved) and serves the result as Opus-in-WebM with HTTP Range support.
-
-**The transcode endpoint requires media to be mounted at `/media` inside the server container.** The path-safety check is hardcoded — paths outside `/media` return 403. Mount the volume in your Docker Compose / run command, e.g.:
-
-```yaml
-volumes:
-  - /your/host/media-library:/media:ro
-```
-
-If the volume isn't mounted (or the file lives elsewhere), the modal falls back to the direct `/files/stream` path; you'll see video without audio for unsupported-codec sources, and the **Open in external app** fallback (VLC etc.) is always available as a last resort.
-
-The transcode cache lives under `os.tmpdir()/media-tools-transcode-cache/` and is bounded at 4 GB by default — override via `TRANSCODE_CACHE_MAX_BYTES`. Concurrent encodes are gated at 4 by default — override via `MAX_TRANSCODE_CONCURRENCY`. Same-source-and-params requests coalesce onto one in-flight encode automatically.
-
-#### Example: start a job and stream its logs
-
-```sh
-# Start the job
-curl -s -X POST http://localhost:3000/jobs/keepLanguages \
-  -H "Content-Type: application/json" \
-  -d '{"sourcePath":"/media/anime","audioLanguages":["jpn"],"subtitlesLanguages":["eng"],"isRecursive":true}' \
-| jq
-# → { "jobId": "abc-123", "logsUrl": "/jobs/abc-123/logs" }
-
-# Stream the output
-curl -s http://localhost:3000/jobs/abc-123/logs
-# data: {"line":"Processing file.mkv..."}
-# data: {"line":"Done."}
-# data: {"done":true,"status":"completed"}
-```
-
-### Job object shape
-
-```json
-{
-  "id": "abc-123",
-  "command": "keepLanguages",
-  "params": { "sourcePath": "/media/anime", "..." : "..." },
-  "status": "pending | running | completed | failed",
-  "logs": ["line 1", "line 2"],
-  "startedAt": "2026-01-01T00:00:00.000Z",
-  "completedAt": "2026-01-01T00:01:00.000Z",
-  "error": null,
-  "outputs": null
-}
-```
-
-`outputs` is populated when a command publishes named runtime values (see the **Sequence Runner** section below). Most commands leave it `null`.
-
 ---
 
-## Sequence Runner — multi-step pipelines as YAML
+## Usage Docs
 
-`POST /sequences/run` accepts a list of commands, runs them in order under a **single umbrella job**, and streams every step's output through one SSE log feed. Steps reference each other symbolically — a downstream step can consume an upstream step's output folder or a named runtime value without the caller hardcoding any paths or computing intermediate state.
-
-This is the right endpoint to use whenever you'd otherwise script multiple `POST /jobs/<command>` calls in sequence.
-
-### Endpoint
-
-```
-POST /sequences/run
-Content-Type: application/json
-```
-
-Body — one of:
-
-- `{ "yaml": "<yaml string>" }` — server parses and validates.
-- `{ "paths": {...}, "steps": [...] }` — pre-parsed JSON shape.
-
-Response (`202`):
-
-```json
-{ "jobId": "abc-123", "logsUrl": "/jobs/abc-123/logs" }
-```
-
-The umbrella job's lifecycle is the same as any other (`GET /jobs/:id`, SSE at `/jobs/:id/logs`). It flips to `failed` on the first failed step and skips the remainder; otherwise it completes after every step finishes.
-
-### Document shape
-
-```yaml
-paths:
-  <pathId>:
-    label: <display label, optional>
-    value: <literal filesystem path>
-
-steps:
-  - id: <stableStringId>
-    command: <registered command name>
-    params:
-      <fieldName>: <literal | "@pathId" | { linkedTo, output }>
-```
-
-- **`paths`** is the only place where literal filesystem paths appear. Every step body references them symbolically.
-- **`steps[].id`** is a stable string. If you omit it, the server auto-assigns `step1`, `step2`, …. It's the target of every `linkedTo` reference, so set explicit ids when you need to reference earlier steps.
-- **`steps[].command`** must match a registered command. The full registry is exposed at `GET /doc` (OpenAPI). Unknown command names fail the umbrella job before any step runs.
-- **`steps[].params`** values can take **three forms** — see below.
-
-### The three param value forms
-
-#### 1. Literal
-
-Plain JSON value that matches the command's request schema.
-
-```yaml
-audioLanguages: [jpn]
-isRecursive: true
-recursiveDepth: 2
-```
-
-#### 2. Path-variable reference: `"@<pathId>"`
-
-A string starting with `@` resolves to the matching path's `value` at runtime. **Quote it in YAML** — `@` is a reserved indicator at the start of a scalar.
-
-```yaml
-paths:
-  workDir:
-    value: 'D:\Anime\Show\__work'
-steps:
-  - id: filterLangs
-    command: keepLanguages
-    params:
-      sourcePath: '@workDir'        # → 'D:\Anime\Show\__work'
-```
-
-#### 3. Step-output reference: `{ linkedTo, output }`
-
-Resolves to a value the source step produced. There are two `output` flavors:
-
-##### a) `output: folder` — synthesized output directory
-
-Every command declares (or implies) where its writes land. For commands with an `outputFolderName` (e.g., `keepLanguages` writes into `<sourcePath>/LANGUAGE-TRIMMED`), `output: folder` resolves to that path. For `flattenOutput`, it resolves to `dirname(sourcePath)` (since flattenOutput copies up one level). For commands that have neither but do have a `destinationPath` / `destinationFilesPath`, that's used. This is the form you want **whenever a downstream step needs to operate on the previous step's output directory**.
-
-```yaml
-paths:
-  workDir:
-    value: 'D:\Anime\Show\__work'
-steps:
-  - id: filterLangs
-    command: keepLanguages          # writes to <sourcePath>/LANGUAGE-TRIMMED
-    params:
-      sourcePath: '@workDir'
-  - id: copyBack
-    command: copyFiles
-    params:
-      sourcePath:
-        linkedTo: filterLangs
-        output: folder              # → '<workDir>/LANGUAGE-TRIMMED'
-      destinationPath: '@workDir'
-```
-
-##### b) `output: <name>` — named runtime output
-
-Some commands publish structured runtime values for downstream steps. Each such command declares its output schema; the value is captured when that command's job completes and made available to later steps. No commands currently expose named outputs other than the synthesized `folder`. Earlier versions had a `computeDefaultSubtitleRules` step whose `rules` named output flowed into `modifySubtitleMetadata`; that has been folded into `modifySubtitleMetadata`'s `hasDefaultRules: true` toggle (see [docs/dsl/subtitle-rules.md](docs/dsl/subtitle-rules.md) `Default rules toggle`).
-
-```yaml
-steps:
-  - id: applyRules
-    command: modifySubtitleMetadata
-    params:
-      sourcePath: '@workDir'
-      hasDefaultRules: true        # default heuristic prepended to rules
-      rules: []                    # optional user overrides run after defaults
-```
-
-To discover which commands publish named outputs, hit `GET /doc` — every command's spec includes its outputs declaration. New commands may add named outputs without breaking existing sequences.
-
-### Resolution rules (worth memorizing)
-
-- A step can only reference steps **earlier in the array**. Forward references error before the umbrella job starts.
-- A reference to a missing path / step / output **fails the umbrella job** with a clear message in the SSE stream — there is no silent fallback.
-- The synthesized `folder` output is computed from the source step's *resolved* params, so chains compose correctly across many steps (e.g., step 5 referencing step 4's folder where step 4 itself referenced step 3).
-- **There are no `if`/`when` predicates in the YAML.** Commands that should "skip when nothing to do" (e.g., `reorderTracks` with empty index arrays, `modifySubtitleMetadata` with empty rules) implement an empty-input no-op themselves. If you need conditional execution, build the YAML conditionally on the caller side.
-- Empty arrays and `null` values pass through unchanged — they're not the same as "absent."
-
-### Authoring YAML from another service
-
-The OpenAPI spec at `GET /doc` is the source of truth. For each command you'll see:
-
-1. **Request body schema** — what params the command accepts (literals, `@pathId`, or `{ linkedTo, output }` are all valid for any field).
-2. **Output declarations** — `outputFolderName` (so `output: folder` resolves), and any named outputs declared via `extractOutputs`.
-
-A useful pattern: have your service hold the higher-level configuration (e.g., "does this anime need track reordering?") and decide step inclusion on its side. Then serialize one YAML payload and POST it. The umbrella job's job id is your handle for everything that follows — log streaming, status polling, error surfacing.
-
-### Worked example: anime subtitle pipeline
-
-The repo ships [`examples/process-anime-subtitles.yaml`](examples/process-anime-subtitles.yaml) — a complete multi-step pipeline that filters track languages, extracts subtitles, applies default subtitle modification rules in place via `modifySubtitleMetadata` with `hasDefaultRules: true`, re-merges, copies the result up to the parent series folder, and cleans up the work directory. It's a dense reference for path-vars + folder outputs together. A companion test at `examples/process-anime-subtitles.test.ts` validates the document and walks every link reference, so a regression in any command's metadata fails CI before the example silently rots.
-
-### Minimal copy-paste example
-
-```bash
-curl -X POST http://localhost:3000/sequences/run \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "paths": {
-      "workDir": { "value": "D:\\Anime\\Show\\__work" }
-    },
-    "steps": [
-      {
-        "id": "filterLangs",
-        "command": "keepLanguages",
-        "params": {
-          "sourcePath": "@workDir",
-          "audioLanguages": ["jpn"],
-          "subtitlesLanguages": ["eng"]
-        }
-      },
-      {
-        "id": "copyBack",
-        "command": "copyFiles",
-        "params": {
-          "sourcePath": { "linkedTo": "filterLangs", "output": "folder" },
-          "destinationPath": "@workDir"
-        }
-      }
-    ]
-  }'
-```
-
-The response carries the job id; `curl -N http://localhost:3000/jobs/<jobId>/logs` tails the unified log stream.
-
----
-
-## Development
-
-```sh
-yarn test          # run all tests (vitest)
-yarn typecheck     # TypeScript type check without emitting
-yarn build:cli-app # bundle CLI to build/mux-magic.cjs (used by `yarn sea`)
-```
-
-Tests live next to their source files (`foo.ts` → `foo.test.ts`). The filesystem is globally mocked with `memfs` in tests — see `vitest.setup.ts`.
+- [REST API & Sequence Runner](docs/api.md)
+- [CLI commands](docs/cli.md)
+- [Local development](docs/development.md)
