@@ -1,0 +1,27 @@
+import { Canvas, Controls, Meta } from "@storybook/blocks"
+import * as Stories from "./LanguageCodesField.stories"
+
+<Meta of={Stories} />
+
+# LanguageCodesField
+
+Filterable autocomplete tag field for ISO 639-2 language codes. Used wherever a command accepts multiple language codes (e.g. `keepLanguages.audioLanguages`).
+
+## Behavior
+
+- Typing in the filter input narrows the dropdown to matching languages by code **or** English name.
+- English (`eng`) is always pinned at the top of the unfiltered list.
+- Selecting an option appends it to the selected set and clears the filter.
+- Each selected language renders as a removable tag showing the English name and code.
+- Already-selected languages are excluded from the dropdown.
+
+## Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `step` | `Step` | The builder step that owns this field. |
+| `field` | `CommandField` | Field metadata from the command definition (`type: "languageCodes"`). |
+
+<Canvas of={Stories.Empty} />
+<Canvas of={Stories.OneTag} />
+<Canvas of={Stories.ManyTags} />
