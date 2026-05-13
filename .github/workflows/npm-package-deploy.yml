@@ -13,21 +13,19 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      id-token: write
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
-        with: { node-version: 24 }
+        with:
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org'
       - run: corepack enable
       - run: yarn install --immutable
       - uses: changesets/action@v1
         with:
-          # Only attempt to publish when NPM_TOKEN is configured. Without
-          # this guard, every push to react-migration fails on ENEEDAUTH
-          # because changesets/action falls through to publishing any
-          # workspace whose current version isn't on npm yet.
-          publish: ${{ secrets.NPM_TOKEN && 'yarn changeset publish' || '' }}
+          publish: yarn changeset publish --provenance
           title: "chore: version packages"
           commit: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
