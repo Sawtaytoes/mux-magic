@@ -1,5 +1,7 @@
 # Media File Tools
 
+![Mux Magic logo](docs/images/mux-magic-logo.png)
+
 A Node.js toolkit for batch media file operations: MKV track manipulation, file renaming, subtitle merging, IVTC, aspect ratio analysis, and more. Ships as both a **CLI** and a **REST API**.
 
 ---
