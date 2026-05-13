@@ -26,6 +26,18 @@
 import { defineConfig } from "eslint/config"
 import tseslint from "typescript-eslint"
 
+// AGENTS.md rule #4: booleans start with `is` or `has`.
+// Enforced here because @typescript-eslint/naming-convention uses TypeScript
+// type information (types: ["boolean"]) which Biome cannot access.
+const IS_HAS_BOOLEAN_RULE = {
+  selector: ["variable", "parameter", "property"],
+  types: ["boolean"],
+  format: null,
+  prefix: ["is", "has"],
+  // Allow underscore-prefixed names (_ ignore-placeholder, __dirname, etc.)
+  filter: { regex: "^(__|_)", match: false },
+}
+
 export default defineConfig(
   {
     ignores: [
@@ -73,6 +85,11 @@ export default defineConfig(
           // — only enforce length on variables and parameters.
           properties: "never",
         },
+      ],
+      // AGENTS.md rule #4: booleans start with `is` or `has`.
+      "@typescript-eslint/naming-convention": [
+        "error",
+        IS_HAS_BOOLEAN_RULE,
       ],
     },
   },
