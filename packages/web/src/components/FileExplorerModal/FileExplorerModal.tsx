@@ -365,8 +365,7 @@ export const FileExplorerModal = () => {
       if (failed.length > 0) {
         const summary = failed
           .map(
-            (result) =>
-              `• ${result.path}: ${result.error}`,
+            (result) => `• ${result.path}: ${result.error}`,
           )
           .join("\n")
         window.alert(
