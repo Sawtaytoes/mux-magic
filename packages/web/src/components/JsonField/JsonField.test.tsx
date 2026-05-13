@@ -3,8 +3,16 @@ import {
   render,
   screen,
 } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, describe, expect, it } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  it,
+  test,
+  vi,
+} from "vitest"
 import type { CommandField } from "../../commands/types"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
@@ -274,5 +282,39 @@ describe("JsonField", () => {
     renderField(step, field)
     const textarea = screen.getByRole("textbox")
     expect(textarea).not.toHaveAttribute("aria-required")
+  })
+
+  test("isReadOnly suppresses onChange — textarea has readOnly attribute", async () => {
+    const user = userEvent.setup()
+    const step: Step = {
+      id: "step-1",
+      alias: "",
+      command: "testCommand",
+      params: { testJson: '{"key": "value"}' },
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    const store = createStore()
+    store.set(stepsAtom, [step])
+    render(
+      <Provider store={store}>
+        <JsonField
+          field={field}
+          step={step}
+          isReadOnly={true}
+        />
+      </Provider>,
+    )
+    const textarea = screen.getByRole("textbox")
+    expect(textarea).toHaveAttribute("readonly")
+    const valueBefore =
+      textarea.getAttribute("value") ??
+      (textarea as HTMLTextAreaElement).value
+    await user.type(textarea, "extra")
+    expect((textarea as HTMLTextAreaElement).value).toBe(
+      valueBefore,
+    )
   })
 })
