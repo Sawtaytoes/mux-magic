@@ -3,6 +3,7 @@ import type { Step } from "../../types"
 import { BooleanField } from "../BooleanField/BooleanField"
 import { EnumField } from "../EnumField/EnumField"
 import { FolderMultiSelectField } from "../FolderMultiSelectField/FolderMultiSelectField"
+import { FolderTagsField } from "../FolderTagsField/FolderTagsField"
 import { JsonField } from "../JsonField/JsonField"
 import { LanguageCodeField } from "../LanguageCodeField/LanguageCodeField"
 import { LanguageCodesField } from "../LanguageCodesField/LanguageCodesField"
@@ -55,6 +56,8 @@ export const FieldDispatcher = ({
       return (
         <FolderMultiSelectField field={field} step={step} />
       )
+    case "folderTags":
+      return <FolderTagsField field={field} step={step} />
     case "string":
       return <StringField field={field} step={step} />
     case "subtitleRules":

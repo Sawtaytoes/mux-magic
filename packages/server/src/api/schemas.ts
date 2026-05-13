@@ -107,6 +107,12 @@ export const extractSubtitlesRequestSchema = z.object({
     .describe(
       "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
     ),
+  folders: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "Folder names to extract subtitles into. Each extracted subtitle file is placed inside the named sub-folder relative to the source file location. Leave empty to use the default output folder.",
+    ),
 })
 
 /** @deprecated Renamed to {@link extractSubtitlesRequestSchema}. Kept as an alias so existing callers don't break. */
