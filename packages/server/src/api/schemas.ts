@@ -854,7 +854,7 @@ export const mergeTracksRequestSchema = z.object({
     .array(z.number())
     .default([])
     .describe(
-      "Space-separated list of time-alignment offsets to set for each individual file in milliseconds.",
+      "Offsets (milliseconds, one per episode). Provide one offset per source file. The order must match the order of episodes selected above. Negative values shift the subtitle earlier; positive values shift it later. This field is only useful for manual runs; sequences and schedules should rely on auto-aligned tracks.",
     ),
 })
 

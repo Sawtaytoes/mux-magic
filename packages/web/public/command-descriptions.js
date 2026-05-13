@@ -175,7 +175,7 @@ window.commandDescriptions = {
       "hasChapterSyncOffset": "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the subtitles path. Falls back to globalOffset (or per-file offsets) when no chapters.xml is found.",
       "globalOffset": "The offset in milliseconds to apply to all audio being transferred.",
       "includeChapters": "Adds chapters along with other tracks.",
-      "offsets": "Space-separated list of time-alignment offsets to set for each individual file in milliseconds."
+      "offsets": "Offsets (milliseconds, one per episode). Provide one offset per source file. The order must match the order of episodes selected above. Negative values shift the subtitle earlier; positive values shift it later. This field is only useful for manual runs; sequences and schedules should rely on auto-aligned tracks."
     }
   },
   "moveFiles": {

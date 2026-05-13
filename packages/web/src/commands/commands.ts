@@ -460,7 +460,7 @@ export const COMMANDS: Commands = {
         }),
         field("offsets", {
           type: "numberArray",
-          label: "Per-file Offsets (ms)",
+          label: "Offsets (milliseconds, one per episode)",
           placeholder: "0, -200, 150",
         }),
       ],
