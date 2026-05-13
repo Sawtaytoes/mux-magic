@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react"
 
-type DisconnectInfo = { final: boolean }
+type DisconnectInfo = { isFinal: boolean }
 
 type Options<T> = {
   url: string
-  enabled?: boolean
+  isEnabled?: boolean
   graceMs?: number
   onMessage?: (data: T, event: MessageEvent) => void
   onConnected?: () => void
@@ -16,7 +16,7 @@ type Options<T> = {
 // invisible to the UI. Callback refs prevent re-running when handler identities change.
 export const useTolerantEventSource = <T>({
   url,
-  enabled = true,
+  isEnabled = true,
   graceMs = 5000,
   onMessage,
   onConnected,
@@ -30,7 +30,7 @@ export const useTolerantEventSource = <T>({
   onDisconnectedRef.current = onPossiblyDisconnected
 
   useEffect(() => {
-    if (!enabled) return
+    if (!isEnabled) return
 
     const es = new EventSource(url)
     let lostTimer: ReturnType<typeof setTimeout> | null =
@@ -60,13 +60,13 @@ export const useTolerantEventSource = <T>({
     es.onerror = () => {
       if (es.readyState === EventSource.CLOSED) {
         clearLostTimer()
-        onDisconnectedRef.current?.({ final: true })
+        onDisconnectedRef.current?.({ isFinal: true })
         return
       }
       if (lostTimer !== null) return
       lostTimer = setTimeout(() => {
         lostTimer = null
-        onDisconnectedRef.current?.({ final: false })
+        onDisconnectedRef.current?.({ isFinal: false })
       }, graceMs)
     }
 
@@ -74,5 +74,5 @@ export const useTolerantEventSource = <T>({
       clearLostTimer()
       es.close()
     }
-  }, [url, enabled, graceMs])
+  }, [url, isEnabled, graceMs])
 }

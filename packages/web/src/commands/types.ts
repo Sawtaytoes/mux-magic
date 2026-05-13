@@ -20,14 +20,14 @@ export type CommandField = {
   type: string
   label?: string
   description?: string
-  required?: boolean
+  isRequired?: boolean
   default?: unknown
   options?: EnumOption[]
   companionNameField?: string
   sourceField?: string
   lookupType?: string
   placeholder?: string
-  linkable?: boolean
+  isLinkable?: boolean
   visibleWhen?: Record<string, unknown>
   min?: number
   max?: number

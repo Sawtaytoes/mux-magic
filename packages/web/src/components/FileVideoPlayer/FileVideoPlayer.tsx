@@ -28,7 +28,8 @@ export const FileVideoPlayer = ({
 }: FileVideoPlayerProps) => {
   const playerRef = useRef<HTMLVideoElement>(null)
   const mseCleanupRef = useRef<(() => void) | null>(null)
-  const [statusVisible, setStatusVisible] = useState(false)
+  const [isStatusVisible, setIsStatusVisible] =
+    useState(false)
   const [isContainerized, setIsContainerized] =
     useState(false)
   const [copyLabel, setCopyLabel] = useState("📋 Copy path")
@@ -89,7 +90,7 @@ export const FileVideoPlayer = ({
         // Leave null — will use direct stream.
       }
 
-      const needsTranscode =
+      const isNeedingTranscode =
         typeof audioFormat === "string" &&
         audioFormat.length > 0 &&
         BROWSER_UNSUPPORTED_AUDIO.has(
@@ -97,16 +98,16 @@ export const FileVideoPlayer = ({
         )
 
       let playbackUrl: string
-      if (needsTranscode) {
+      if (isNeedingTranscode) {
         playbackUrl = `${apiBase}/transcode/audio?${new URLSearchParams({ path, codec: "opus" })}`
       } else {
         playbackUrl = `${apiBase}/files/stream?${new URLSearchParams({ path })}`
       }
 
-      setStatusVisible(needsTranscode)
+      setIsStatusVisible(isNeedingTranscode)
       player.addEventListener(
         "canplay",
-        () => setStatusVisible(false),
+        () => setIsStatusVisible(false),
         {
           once: true,
         },
@@ -143,10 +144,10 @@ export const FileVideoPlayer = ({
         },
       )
       const data = (await resp.json()) as {
-        ok: boolean
+        isOk: boolean
         error?: string
       }
-      setOpenLabel(data.ok ? "✓ Launched" : "✗ Failed")
+      setOpenLabel(data.isOk ? "✓ Launched" : "✗ Failed")
     } catch {
       setOpenLabel("✗ Failed")
     }
@@ -177,7 +178,7 @@ export const FileVideoPlayer = ({
           >
             {path}
           </span>
-          {statusVisible && (
+          {isStatusVisible && (
             <span
               id="video-modal-status"
               className="text-[10px] text-amber-300 bg-amber-900/40 border border-amber-700/50 px-1.5 py-0.5 rounded font-medium"

@@ -5,7 +5,7 @@ type FieldLabelProps = {
   command: string
   field: Pick<
     CommandField,
-    "name" | "label" | "required" | "description"
+    "name" | "label" | "isRequired" | "description"
   >
 }
 
@@ -20,7 +20,7 @@ export const FieldLabel = ({
     <FieldTooltip description={field.description ?? ""}>
       <span>
         {field.label ?? field.name}
-        {field.required && (
+        {field.isRequired && (
           <span className="text-red-400"> *</span>
         )}
       </span>

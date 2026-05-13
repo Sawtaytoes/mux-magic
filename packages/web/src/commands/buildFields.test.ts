@@ -58,11 +58,11 @@ describe("fieldBuilder", () => {
     })
     const field = fieldBuilder(schema)
     expect(
-      field("sourcePath", { type: "string" }).required,
+      field("sourcePath", { type: "string" }).isRequired,
     ).toBe(true)
-    expect(field("tag", { type: "string" }).required).toBe(
-      false,
-    )
+    expect(
+      field("tag", { type: "string" }).isRequired,
+    ).toBe(false)
   })
 
   test("required override wins when explicitly given", () => {
@@ -71,8 +71,8 @@ describe("fieldBuilder", () => {
     })
     const field = fieldBuilder(schema)
     expect(
-      field("malId", { type: "number", required: true })
-        .required,
+      field("malId", { type: "number", isRequired: true })
+        .isRequired,
     ).toBe(true)
   })
 

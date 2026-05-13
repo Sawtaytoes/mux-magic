@@ -9,7 +9,7 @@ import type { CommandField, EnumOption } from "./types"
 //   - `lookupType`, `companionNameField`, `sourceField`: lookup-modal
 //     wiring (e.g. malId field opens a MAL lookup that also writes
 //     malName). Web-owned UX.
-//   - `linkable`, `visibleWhen`: builder-UI state machinery.
+//   - `isLinkable`, `visibleWhen`: builder-UI state machinery.
 //   - `min`, `max`: numeric UI clamps. Zod's own bounds could feed these
 //     in a future iteration; for now they're override-only.
 //   - `options`: enum dropdown choices. Auto-derived from `z.enum(...)`
@@ -20,16 +20,16 @@ import type { CommandField, EnumOption } from "./types"
 //     drift hole the audit found.
 export type FieldOverrides = Omit<
   CommandField,
-  "name" | "description" | "required"
+  "name" | "description" | "isRequired"
 > & {
   // Web can override the schema's .describe() with a UI-friendlier
   // version. When absent, the Zod description is used.
   description?: string
-  // Override the derived `required` flag. The helper defaults to
+  // Override the derived `isRequired` flag. The helper defaults to
   // `!optional()` from the schema; the UI can declare otherwise when
   // e.g. a lookup-populated id is schema-optional but UI-required
   // (the form refuses to submit until the lookup runs).
-  required?: boolean
+  isRequired?: boolean
 }
 
 // Walks the Zod node chain (default-wraps, optional-wraps) down to the
@@ -121,8 +121,8 @@ export const fieldBuilder = <
       name,
       description:
         overrides.description ?? introspected.description,
-      required:
-        overrides.required ?? !introspected.isOptional,
+      isRequired:
+        overrides.isRequired ?? !introspected.isOptional,
       // Default precedence: explicit override wins; otherwise pull from
       // the Zod schema. Web tests for `default === undefined` to mean
       // "no default" so we only set it when there is one.
@@ -143,19 +143,19 @@ export const fieldBuilder = <
 }
 
 // Helper to spread overrides without re-applying description / default
-// / options / required (those are merged above with introspection
+// / options / isRequired (those are merged above with introspection
 // precedence).
 const stripOverrideMetadata = (
   overrides: FieldOverrides,
 ): Omit<
   FieldOverrides,
-  "description" | "default" | "options" | "required"
+  "description" | "default" | "options" | "isRequired"
 > => {
   const {
     description: _description,
     default: _default,
     options: _options,
-    required: _required,
+    isRequired: _isRequired,
     ...rest
   } = overrides
   return rest

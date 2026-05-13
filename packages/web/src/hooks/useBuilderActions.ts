@@ -249,8 +249,8 @@ export const useBuilderActions = () => {
   )
 
   const setAllCollapsed = useCallback(
-    (collapsed: boolean) => {
-      store.set(setAllCollapsedAtom, collapsed)
+    (isCollapsed: boolean) => {
+      store.set(setAllCollapsedAtom, isCollapsed)
     },
     [store],
   )

@@ -55,5 +55,5 @@ export type LookupState = {
   releases: LookupRelease[] | null
   releasesDebug: unknown
   releasesError: string | null
-  loading: boolean
+  isLoading: boolean
 }

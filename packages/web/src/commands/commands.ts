@@ -668,7 +668,7 @@ export const COMMANDS: Commands = {
         field("rules", {
           type: "subtitleRules",
           label: "Rules",
-          required: false,
+          isRequired: false,
         }),
       ],
       groups: [
@@ -907,7 +907,7 @@ export const COMMANDS: Commands = {
           lookupType: "mal",
           label: "MAL ID",
           placeholder: "39534",
-          required: true,
+          isRequired: true,
           companionNameField: "malName",
         }),
         field("seasonNumber", {
@@ -942,7 +942,7 @@ export const COMMANDS: Commands = {
           lookupType: "anidb",
           label: "AniDB Anime ID",
           placeholder: "8160",
-          required: true,
+          isRequired: true,
           companionNameField: "anidbName",
         }),
         field("seasonNumber", {
@@ -1010,7 +1010,7 @@ export const COMMANDS: Commands = {
           lookupType: "dvdcompare",
           label: "DVDCompare Film ID",
           placeholder: "74759",
-          required: true,
+          isRequired: true,
           companionNameField: "dvdCompareName",
         }),
         // Drift: schema has no default for `dvdCompareReleaseHash`
@@ -1073,7 +1073,7 @@ export const COMMANDS: Commands = {
           lookupType: "tvdb",
           label: "TVDB ID",
           placeholder: "76703",
-          required: true,
+          isRequired: true,
           companionNameField: "tvdbName",
         }),
         // Schema defaults seasonNumber to 1; surfacing that default in

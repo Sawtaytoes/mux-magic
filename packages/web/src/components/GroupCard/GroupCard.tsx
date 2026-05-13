@@ -176,7 +176,7 @@ export const GroupCard = ({
           onClick={() =>
             setChildrenCollapsed({
               groupId: group.id,
-              collapsed: true,
+              isCollapsed: true,
             })
           }
           title="Collapse all inner steps"
@@ -189,7 +189,7 @@ export const GroupCard = ({
           onClick={() =>
             setChildrenCollapsed({
               groupId: group.id,
-              collapsed: false,
+              isCollapsed: false,
             })
           }
           title="Expand all inner steps"

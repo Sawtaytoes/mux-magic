@@ -48,9 +48,9 @@ steps:
 `.trim()
 
 // Wraps the component with an isolated Jotai store so tests don't bleed state.
-const renderModal = (initialOpen = false) => {
+const renderModal = (isInitiallyOpen = false) => {
   const store = createStore()
-  store.set(loadModalOpenAtom, initialOpen)
+  store.set(loadModalOpenAtom, isInitiallyOpen)
   store.set(commandsAtom, mockCommands)
 
   render(

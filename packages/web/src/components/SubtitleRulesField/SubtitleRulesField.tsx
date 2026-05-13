@@ -87,7 +87,7 @@ export const SubtitleRulesField = ({
           <button
             type="button"
             onClick={() => {
-              setIsPreviewOpen((prev) => !prev)
+              setIsPreviewOpen((isPrev) => !isPrev)
             }}
             className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 w-full text-left mb-1"
           >

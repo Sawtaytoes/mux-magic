@@ -53,10 +53,10 @@ const computePosition = (rect: TriggerRect) => {
   const spaceBelow =
     window.innerHeight - rect.bottom - margin
   const spaceAbove = rect.top - margin
-  const flipAbove =
+  const isFlippedAbove =
     spaceBelow < 160 && spaceAbove > spaceBelow
   const { top, height } = (() => {
-    if (flipAbove) {
+    if (isFlippedAbove) {
       const flippedHeight = Math.min(
         maxHeight,
         Math.max(0, spaceAbove),
@@ -222,10 +222,10 @@ export const PathPicker = () => {
       return
     }
 
-    let cancelled = false
+    let isCancelled = false
     fetchDirEntries(parentPath)
       .then((data) => {
-        if (cancelled) {
+        if (isCancelled) {
           return
         }
         setPickerState((prev) => {
@@ -254,7 +254,7 @@ export const PathPicker = () => {
         })
       })
       .catch((err: unknown) => {
-        if (cancelled) {
+        if (isCancelled) {
           return
         }
         const errorMessage =
@@ -273,7 +273,7 @@ export const PathPicker = () => {
       })
 
     return () => {
-      cancelled = true
+      isCancelled = true
     }
   }, [
     pickerState?.parentPath,
@@ -346,7 +346,7 @@ export const PathPicker = () => {
     }
 
     // Compute updated picker navigation state.
-    const trailingSlash = /[\\/]$/.test(newValue)
+    const hasTrailingSlash = /[\\/]$/.test(newValue)
     const lastSepIndex = Math.max(
       newValue.lastIndexOf("/"),
       newValue.lastIndexOf("\\"),
@@ -355,7 +355,7 @@ export const PathPicker = () => {
       lastSepIndex <= 0
         ? newValue
         : newValue.slice(0, lastSepIndex) || "/"
-    const newQuery = trailingSlash
+    const newQuery = hasTrailingSlash
       ? ""
       : lastSepIndex < 0
         ? newValue

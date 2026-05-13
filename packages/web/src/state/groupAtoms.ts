@@ -39,7 +39,7 @@ export const setGroupChildrenCollapsedAtom = atom(
   (
     _get,
     set,
-    args: { groupId: string; collapsed: boolean },
+    args: { groupId: string; isCollapsed: boolean },
   ) => {
     set(stepsAtom, (items) =>
       items.map((item) => {
@@ -49,7 +49,7 @@ export const setGroupChildrenCollapsedAtom = atom(
           ...item,
           steps: item.steps.map((step) => ({
             ...step,
-            isCollapsed: args.collapsed,
+            isCollapsed: args.isCollapsed,
           })),
         }
       }),

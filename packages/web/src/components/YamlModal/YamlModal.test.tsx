@@ -29,9 +29,9 @@ const makeStep = (override = {}) => ({
   ...override,
 })
 
-const renderModal = (initialOpen = false) => {
+const renderModal = (isInitiallyOpen = false) => {
   const store = createStore()
-  store.set(yamlModalOpenAtom, initialOpen)
+  store.set(yamlModalOpenAtom, isInitiallyOpen)
   render(
     <Provider store={store}>
       <YamlModal />

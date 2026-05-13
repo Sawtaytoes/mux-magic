@@ -238,9 +238,9 @@ export const PredicatesManager = ({
       <button
         type="button"
         onClick={() => {
-          const next = !isOpen
-          setIsOpen(next)
-          onToggleDetails(detailsKey, next)
+          const isNextOpen = !isOpen
+          setIsOpen(isNextOpen)
+          onToggleDetails(detailsKey, isNextOpen)
         }}
         className="flex items-center gap-1 cursor-pointer text-xs text-slate-400 px-2 py-1 select-none w-full text-left"
       >

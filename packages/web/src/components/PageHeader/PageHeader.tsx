@@ -26,12 +26,12 @@ const toggleMenu = (
 // ─── PageHeader ───────────────────────────────────────────────────────────────
 
 export const PageHeader = () => {
-  const [dryRun, setDryRun] = useAtom(dryRunAtom)
-  const [failureMode, setFailureMode] =
+  const [isDryRun, setIsDryRun] = useAtom(dryRunAtom)
+  const [isFailureMode, setIsFailureMode] =
     useAtom(failureModeAtom)
-  const running = useAtomValue(runningAtom)
-  const canUndo = useAtomValue(canUndoAtom)
-  const canRedo = useAtomValue(canRedoAtom)
+  const isRunning = useAtomValue(runningAtom)
+  const isUndoPossible = useAtomValue(canUndoAtom)
+  const isRedoPossible = useAtomValue(canRedoAtom)
   const setLoadModalOpen = useSetAtom(loadModalOpenAtom)
   const setYamlModalOpen = useSetAtom(yamlModalOpenAtom)
 
@@ -73,17 +73,20 @@ export const PageHeader = () => {
   }, [])
 
   const toggleDryRun = () => {
-    const next = !dryRun
-    setDryRun(next)
-    localStorage.setItem("isDryRun", next ? "1" : "0")
+    const isNextDryRun = !isDryRun
+    setIsDryRun(isNextDryRun)
+    localStorage.setItem(
+      "isDryRun",
+      isNextDryRun ? "1" : "0",
+    )
   }
 
   const toggleFailureMode = () => {
-    const next = !failureMode
-    setFailureMode(next)
+    const isNextFailureMode = !isFailureMode
+    setIsFailureMode(isNextFailureMode)
     localStorage.setItem(
       "dryRunScenario",
-      next ? "failure" : "",
+      isNextFailureMode ? "failure" : "",
     )
   }
 
@@ -132,18 +135,18 @@ export const PageHeader = () => {
         </h1>
 
         {/* Dry-run badge */}
-        {dryRun && (
+        {isDryRun && (
           <button
             type="button"
             id="dry-run-badge"
             onClick={toggleDryRun}
             className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded active:scale-95 self-center transition-all border ${
-              failureMode
+              isFailureMode
                 ? "bg-red-500/20 hover:bg-red-500/35 text-red-400 border-red-500/40"
                 : "bg-amber-500/20 hover:bg-amber-500/35 text-amber-400 border-amber-500/40"
             }`}
             title={
-              failureMode
+              isFailureMode
                 ? "Dry run ON (failure mode) — click to disable"
                 : "Dry run ON — click to disable"
             }
@@ -191,7 +194,7 @@ export const PageHeader = () => {
             id="undo-btn"
             onClick={() => void actions.undo()}
             title="Undo (Ctrl+Z)"
-            disabled={!canUndo}
+            disabled={!isUndoPossible}
             className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7"
           >
             ↶
@@ -201,7 +204,7 @@ export const PageHeader = () => {
             id="redo-btn"
             onClick={() => void actions.redo()}
             title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
-            disabled={!canRedo}
+            disabled={!isRedoPossible}
             className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7"
           >
             ↷
@@ -266,12 +269,12 @@ export const PageHeader = () => {
             >
               <span className="leading-none">Dry Run</span>
               <Switch
-                isOn={dryRun}
+                isOn={isDryRun}
                 activeTrackClass="bg-amber-500 border-amber-400"
               />
             </button>
 
-            {dryRun && (
+            {isDryRun && (
               <button
                 type="button"
                 id="failure-mode-btn"
@@ -283,7 +286,7 @@ export const PageHeader = () => {
                   Simulate Failures
                 </span>
                 <Switch
-                  isOn={failureMode}
+                  isOn={isFailureMode}
                   activeTrackClass="bg-red-600 border-red-500"
                 />
               </button>
@@ -293,7 +296,7 @@ export const PageHeader = () => {
               type="button"
               id="run-btn"
               onClick={() => void actions.runViaApi()}
-              disabled={running}
+              disabled={isRunning}
               title="Run the entire sequence via the server-side sequence API (/sequences/run)"
               className="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
             >
@@ -303,7 +306,7 @@ export const PageHeader = () => {
               type="button"
               id="run-api-btn"
               onClick={() => void actions.runViaApi()}
-              disabled={running}
+              disabled={isRunning}
               title="POST the YAML to /sequences/run as one umbrella job (server-side orchestration)"
               className="text-xs bg-sky-700 hover:bg-sky-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
             >

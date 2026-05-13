@@ -24,7 +24,10 @@ vi.mock("../hooks/useSseStream", () => ({
 
 afterEach(cleanup)
 
-const renderPage = (jobs: Job[] = [], connected = true) => {
+const renderPage = (
+  jobs: Job[] = [],
+  isConnected = true,
+) => {
   const store = createStore()
   store.set(
     jobsAtom,
@@ -32,7 +35,7 @@ const renderPage = (jobs: Job[] = [], connected = true) => {
   )
   store.set(
     jobsConnectionAtom,
-    connected ? "connected" : "connecting",
+    isConnected ? "connected" : "connecting",
   )
 
   render(

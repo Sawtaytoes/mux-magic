@@ -55,7 +55,7 @@ const mockCommands = {
 }
 
 const renderPicker = (
-  open = false,
+  isOpen = false,
   currentValue?: string,
 ) => {
   const store = createStore()
@@ -74,7 +74,7 @@ const renderPicker = (
       isCollapsed: false,
     },
   ])
-  if (open) {
+  if (isOpen) {
     store.set(enumPickerStateAtom, {
       anchor: {
         stepId: "step-1",

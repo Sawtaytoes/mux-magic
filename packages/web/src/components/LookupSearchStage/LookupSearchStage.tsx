@@ -154,13 +154,13 @@ export const LookupSearchStage = ({
   const runSearch = async () => {
     const term = state.searchTerm.trim()
     if (!term) return
-    onUpdate({ loading: true, searchError: null })
+    onUpdate({ isLoading: true, searchError: null })
     const { results, error } = await fetchSearch(
       state.lookupType,
       term,
     )
     onUpdate({
-      loading: false,
+      isLoading: false,
       results,
       searchError: error,
     })
@@ -204,11 +204,11 @@ export const LookupSearchStage = ({
           type="button"
           onClick={() => void runSearch()}
           disabled={
-            state.loading || !state.searchTerm.trim()
+            state.isLoading || !state.searchTerm.trim()
           }
           className="text-xs bg-blue-700 hover:bg-blue-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
         >
-          {state.loading ? "Searching…" : "Search"}
+          {state.isLoading ? "Searching…" : "Search"}
         </button>
       </div>
 
@@ -299,7 +299,7 @@ export const LookupSearchStage = ({
                       selectedVariant:
                         group.variants[0].variant,
                       stage: "release",
-                      loading: true,
+                      isLoading: true,
                     })
                     fetchReleases(
                       group.variants[0].id,
@@ -308,7 +308,7 @@ export const LookupSearchStage = ({
                         releases,
                         releasesDebug: debug,
                         releasesError: error,
-                        loading: false,
+                        isLoading: false,
                       })
                     })
                   } else {

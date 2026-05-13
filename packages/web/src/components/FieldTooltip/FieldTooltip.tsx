@@ -36,10 +36,10 @@ export const FieldTooltip = ({
     const tooltipWidth = tooltipEl?.offsetWidth ?? 200
 
     const preferredTop = anchorRect.bottom + GAP
-    const overflowsBottom =
+    const isOverflowingBottom =
       preferredTop + tooltipHeight >
       window.innerHeight - MARGIN
-    const top = overflowsBottom
+    const top = isOverflowingBottom
       ? Math.max(
           MARGIN,
           anchorRect.top - tooltipHeight - GAP,

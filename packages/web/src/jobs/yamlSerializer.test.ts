@@ -34,7 +34,7 @@ const MAKE_DIR_COMMAND: Commands = {
         name: "filePath",
         type: "path",
         label: "Directory Path",
-        required: true,
+        isRequired: true,
       },
     ],
   },
@@ -107,7 +107,7 @@ describe("toYamlStr — buildParams default omission", () => {
           {
             name: "sourcePath",
             type: "path",
-            required: true,
+            isRequired: true,
           },
           {
             name: "isRecursive",
@@ -139,7 +139,7 @@ describe("toYamlStr — buildParams default omission", () => {
           {
             name: "sourcePath",
             type: "path",
-            required: true,
+            isRequired: true,
           },
           {
             name: "isRecursive",

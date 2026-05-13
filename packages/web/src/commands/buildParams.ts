@@ -40,17 +40,17 @@ export const buildParams = (
       return baseValue
     })()
 
-    const skipPrimary =
+    const isSkippingPrimary =
       resolvedValue === undefined ||
       resolvedValue === null ||
       resolvedValue === "" ||
       (Array.isArray(resolvedValue) &&
         resolvedValue.length === 0) ||
-      (!field.required &&
+      (!field.isRequired &&
         field.default !== undefined &&
         resolvedValue === field.default)
 
-    if (!skipPrimary) {
+    if (!isSkippingPrimary) {
       result[field.name] = resolvedValue
     }
 

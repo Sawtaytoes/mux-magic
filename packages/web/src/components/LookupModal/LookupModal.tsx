@@ -63,7 +63,7 @@ export const LookupModal = () => {
 
   const title =
     LOOKUP_TITLES[state?.lookupType ?? "mal"] ?? "Lookup"
-  const canGoBack =
+  const isGoBackPossible =
     state?.stage === "variant" || state?.stage === "release"
 
   const goBack = () => {
@@ -87,7 +87,7 @@ export const LookupModal = () => {
         >
           {/* Header */}
           <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700 shrink-0">
-            {canGoBack && (
+            {isGoBackPossible && (
               <button
                 type="button"
                 id="lookup-back-btn"

@@ -32,7 +32,7 @@ describe("buildParams — string link branch (@id prefix)", () => {
           name: "filePath",
           type: "path",
           label: "Directory Path",
-          required: true,
+          isRequired: true,
         },
       ],
     }
@@ -59,7 +59,7 @@ describe("buildParams — simple passthrough branch", () => {
           name: "sourcePath",
           type: "path",
           label: "Output Folder to Flatten",
-          required: true,
+          isRequired: true,
         },
         {
           name: "deleteSourceFolder",
@@ -107,7 +107,7 @@ describe("buildParams — simple passthrough branch", () => {
           name: "seasonNumber",
           type: "number",
           label: "Season Number",
-          required: true,
+          isRequired: true,
           default: 1,
         },
       ],
@@ -144,7 +144,7 @@ describe("buildParams — simple passthrough branch", () => {
         {
           name: "extensions",
           type: "stringArray",
-          required: true,
+          isRequired: true,
         },
       ],
     }
@@ -168,7 +168,7 @@ describe("buildParams — object link branch", () => {
           name: "sourcePath",
           type: "path",
           label: "Source Path",
-          required: true,
+          isRequired: true,
         },
       ],
     }
@@ -198,7 +198,7 @@ describe("buildParams — object link branch", () => {
           name: "sourcePath",
           type: "path",
           label: "Source Path",
-          required: true,
+          isRequired: true,
         },
       ],
     }
@@ -236,14 +236,14 @@ describe("buildParams — companionNameField branch", () => {
           name: "sourcePath",
           type: "path",
           label: "Source Path",
-          required: true,
+          isRequired: true,
         },
         {
           name: "malId",
           type: "numberWithLookup",
           lookupType: "mal",
           label: "MAL ID",
-          required: true,
+          isRequired: true,
           companionNameField: "malName",
         },
         {
@@ -278,7 +278,7 @@ describe("buildParams — companionNameField branch", () => {
         {
           name: "malId",
           type: "numberWithLookup",
-          required: true,
+          isRequired: true,
           companionNameField: "malName",
         },
       ],
@@ -306,12 +306,12 @@ describe("buildParams — persistedKeys branch", () => {
         {
           name: "sourcePath",
           type: "path",
-          required: true,
+          isRequired: true,
         },
         {
           name: "dvdCompareId",
           type: "numberWithLookup",
-          required: true,
+          isRequired: true,
           companionNameField: "dvdCompareName",
         },
         {

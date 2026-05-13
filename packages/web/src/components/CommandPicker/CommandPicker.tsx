@@ -90,10 +90,10 @@ const computePosition = (
   const spaceBelow =
     window.innerHeight - rect.bottom - margin
   const spaceAbove = rect.top - margin
-  const flipAbove =
+  const isFlippedAbove =
     spaceBelow < 200 && spaceAbove > spaceBelow
   const { top, height } = (() => {
-    if (flipAbove) {
+    if (isFlippedAbove) {
       const flippedHeight = Math.min(
         maxHeight,
         Math.max(0, spaceAbove),

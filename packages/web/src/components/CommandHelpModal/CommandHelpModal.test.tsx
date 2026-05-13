@@ -26,7 +26,7 @@ const mockCommand = {
       name: "input",
       label: "Input file",
       type: "path",
-      required: true,
+      isRequired: true,
     },
     {
       name: "preset",

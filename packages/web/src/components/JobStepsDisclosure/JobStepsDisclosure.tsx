@@ -18,9 +18,10 @@ export const JobStepsDisclosure = ({
   )
   const setStepsOpen = useSetAtom(stepsOpenByJobIdAtom)
 
-  const defaultOpen =
+  const isDefaultOpen =
     jobStatus === "running" || jobStatus === "pending"
-  const isOpen = stepsOpenByJobId.get(jobId) ?? defaultOpen
+  const isOpen =
+    stepsOpenByJobId.get(jobId) ?? isDefaultOpen
 
   const detailsRef = useRef<HTMLDetailsElement>(null)
   const skipNextToggleRef = useRef(isOpen)

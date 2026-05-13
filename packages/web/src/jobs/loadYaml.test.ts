@@ -12,13 +12,13 @@ const BASE_PATHS: PathVariable[] = [
 const FAKE_COMMANDS: Commands = {
   makeDirectory: {
     fields: [
-      { name: "path", type: "path", linkable: true },
+      { name: "path", type: "path", isLinkable: true },
     ],
   },
   copyFiles: {
     fields: [
-      { name: "source", type: "path", linkable: true },
-      { name: "dest", type: "path", linkable: true },
+      { name: "source", type: "path", isLinkable: true },
+      { name: "dest", type: "path", isLinkable: true },
     ],
   },
 }

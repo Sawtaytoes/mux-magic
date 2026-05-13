@@ -5,7 +5,7 @@ export const CopyTextButton = ({
 }: {
   getText: () => string
 }) => {
-  const [copied, setCopied] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
 
   const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation()
@@ -13,8 +13,8 @@ export const CopyTextButton = ({
     navigator.clipboard
       .writeText(getText())
       .then(() => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+        setIsCopied(true)
+        setTimeout(() => setIsCopied(false), 2000)
       })
       .catch(() => {})
   }
@@ -25,7 +25,7 @@ export const CopyTextButton = ({
       onClick={handleClick}
       className="ml-2 text-xs text-slate-500 hover:text-slate-300 shrink-0"
     >
-      {copied ? "✓ Copied" : "📋 Copy"}
+      {isCopied ? "✓ Copied" : "📋 Copy"}
     </button>
   )
 }

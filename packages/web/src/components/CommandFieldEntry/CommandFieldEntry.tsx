@@ -29,7 +29,7 @@ export const CommandFieldEntry = ({
         <span className="text-[10px] uppercase tracking-wide text-slate-400 bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5">
           {field.type}
         </span>
-        {field.required && (
+        {field.isRequired && (
           <span className="text-[10px] uppercase tracking-wide font-semibold text-red-300 bg-red-950/60 border border-red-700/50 rounded px-1.5 py-0.5">
             required
           </span>

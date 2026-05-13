@@ -51,7 +51,7 @@ const makePath = (
   value,
 })
 
-const renderPicker = (open = false) => {
+const renderPicker = (isOpen = false) => {
   const store = createStore()
 
   store.set(stepsAtom, [
@@ -68,7 +68,7 @@ const renderPicker = (open = false) => {
     ),
   ])
 
-  if (open) {
+  if (isOpen) {
     store.set(linkPickerStateAtom, {
       anchor: { stepId: "step-3", fieldName: "sourcePath" },
       triggerRect: TRIGGER_RECT,
@@ -228,7 +228,7 @@ describe("LinkPicker step detail", () => {
             name: "sourcePath",
             type: "path",
             label: "Source Path",
-            required: true,
+            isRequired: true,
           },
         ],
       },

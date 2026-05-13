@@ -26,7 +26,7 @@ export const Required: Story = {
     field: {
       name: "filename",
       label: "Filename",
-      required: true,
+      isRequired: true,
     },
   },
 }

@@ -238,7 +238,7 @@ describe("JsonField", () => {
   it("sets aria-required when field is required", () => {
     const requiredField: CommandField = {
       ...field,
-      required: true,
+      isRequired: true,
     }
     const step: Step = {
       id: "step-1",

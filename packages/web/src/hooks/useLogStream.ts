@@ -100,7 +100,7 @@ export const useLogStream = (
           )
           return next
         })
-      } else if ("done" in data && data.done) {
+      } else if ("isDone" in data && data.isDone) {
         es.close()
         esRef.current = null
         onDoneRef.current?.(data)

@@ -59,7 +59,7 @@ export const Required: Story = {
       name: "filename",
       type: "string",
       label: "Filename",
-      required: true,
+      isRequired: true,
     },
   },
 }

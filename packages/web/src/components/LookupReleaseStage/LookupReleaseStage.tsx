@@ -11,7 +11,7 @@ export const LookupReleaseStage = ({
   onClose,
 }: LookupReleaseStageProps) => {
   const { setParam } = useBuilderActions()
-  if (state.loading) {
+  if (state.isLoading) {
     return (
       <p className="text-slate-500 text-sm text-center py-4">
         Loading releases…

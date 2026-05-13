@@ -67,7 +67,7 @@ export const LookupVariantStage = ({
       selectedVariant: variant,
       stage: "release",
       releases: null,
-      loading: true,
+      isLoading: true,
     })
     fetchReleases(variantId).then(
       ({ releases, debug, error }) => {
@@ -82,7 +82,7 @@ export const LookupVariantStage = ({
             releases,
             releasesDebug: debug,
             releasesError: error,
-            loading: false,
+            isLoading: false,
           })
         }
       },

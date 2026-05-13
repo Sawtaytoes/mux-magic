@@ -163,17 +163,17 @@ export const setScaleResolutionFlag = ({
   rules,
   ruleIndex,
   flagName,
-  value,
+  isValue,
 }: {
   rules: DslRule[]
   ruleIndex: number
   flagName: "hasScaledBorderAndShadow"
-  value: boolean
+  isValue: boolean
 }): DslRule[] =>
   updateRuleAt({
     rules,
     ruleIndex,
-    updater: (rule) => ({ ...rule, [flagName]: value }),
+    updater: (rule) => ({ ...rule, [flagName]: isValue }),
   })
 
 // ─── hasDefaultRules toggle ───────────────────────────────────────────────────

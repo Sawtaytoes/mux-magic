@@ -89,11 +89,11 @@ export const dragReorderAtom = atom(
 
       // ── Cross-container ───────────────────────────────────
       // Groups cannot be dragged into a group body.
-      const activeIsGroup = items.some(
+      const isActiveGroup = items.some(
         (item) => isGroup(item) && item.id === activeId,
       )
       if (
-        activeIsGroup &&
+        isActiveGroup &&
         targetContainerId !== "top-level"
       )
         return items

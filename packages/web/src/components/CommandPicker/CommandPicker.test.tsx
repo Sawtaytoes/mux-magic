@@ -47,7 +47,7 @@ const mockCommands = {
   },
 }
 
-const renderPicker = (open = false) => {
+const renderPicker = (isOpen = false) => {
   const store = createStore()
   store.set(commandsAtom, mockCommands)
   store.set(stepsAtom, [
@@ -62,7 +62,7 @@ const renderPicker = (open = false) => {
       isCollapsed: false,
     },
   ])
-  if (open) {
+  if (isOpen) {
     store.set(commandPickerStateAtom, {
       anchor: { stepId: "step-1" },
       triggerRect: TRIGGER_RECT,

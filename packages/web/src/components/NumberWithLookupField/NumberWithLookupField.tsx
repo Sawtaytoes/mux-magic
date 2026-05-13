@@ -52,7 +52,7 @@ export const NumberWithLookupField = ({
       releases: null,
       releasesDebug: null,
       releasesError: null,
-      loading: false,
+      isLoading: false,
     })
   }
 

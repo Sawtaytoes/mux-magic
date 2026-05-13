@@ -110,7 +110,7 @@ const StepCardInner = ({
   isDragOverlay = false,
   isDropTarget = false,
 }: StepCardProps) => {
-  const [actionsOpen, setActionsOpen] = useState(false)
+  const [isActionsOpen, setIsActionsOpen] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
 
   const toggleCollapsed = useSetAtom(
@@ -302,7 +302,9 @@ const StepCardInner = ({
         )}
         <button
           type="button"
-          onClick={() => setActionsOpen((prev) => !prev)}
+          onClick={() =>
+            setIsActionsOpen((isPrev) => !isPrev)
+          }
           title="Step actions"
           aria-label="Step actions"
           className="step-hamburger-btn w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 text-base leading-none"
@@ -310,7 +312,7 @@ const StepCardInner = ({
           ≡
         </button>
         <div
-          className={`step-actions${actionsOpen ? " open" : ""} flex items-center gap-1`}
+          className={`step-actions${isActionsOpen ? " open" : ""} flex items-center gap-1`}
         >
           <button
             type="button"

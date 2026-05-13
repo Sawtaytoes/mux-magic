@@ -11,20 +11,20 @@ import { stepsAtom } from "./stepsAtom"
 
 export const setAllCollapsedAtom = atom(
   null,
-  (_get, set, collapsed: boolean) => {
+  (_get, set, isCollapsed: boolean) => {
     set(stepsAtom, (items) =>
       items.map((item) => {
         if (isGroup(item)) {
           return {
             ...item,
-            isCollapsed: collapsed,
+            isCollapsed,
             steps: item.steps.map((step) => ({
               ...step,
-              isCollapsed: collapsed,
+              isCollapsed,
             })),
           }
         }
-        return { ...item, isCollapsed: collapsed }
+        return { ...item, isCollapsed }
       }),
     )
   },

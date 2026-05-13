@@ -190,7 +190,7 @@ export const FileExplorerModal = () => {
     useState<SortColumn>("default")
   const [sortDirection, setSortDirection] =
     useState<SortDirection>("asc")
-  const [loading, setLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [videoPath, setVideoPath] = useState<string | null>(
     null,
@@ -227,7 +227,7 @@ export const FileExplorerModal = () => {
   )
 
   const loadListing = useCallback(async (path: string) => {
-    setLoading(true)
+    setIsLoading(true)
     setError(null)
     try {
       const params = new URLSearchParams({
@@ -248,7 +248,7 @@ export const FileExplorerModal = () => {
     } catch (fetchError) {
       setError(String(fetchError))
     }
-    setLoading(false)
+    setIsLoading(false)
   }, [])
 
   // Load data when currentPath is set/changes.
@@ -305,18 +305,18 @@ export const FileExplorerModal = () => {
 
   const toggleSelected = (
     name: string,
-    checked: boolean,
+    isChecked: boolean,
   ) => {
     setSelected((prev) => {
       const next = new Set(prev)
-      if (checked) next.add(name)
+      if (isChecked) next.add(name)
       else next.delete(name)
       return next
     })
   }
 
-  const selectAll = (checked: boolean) => {
-    if (checked) {
+  const selectAll = (isChecked: boolean) => {
+    if (isChecked) {
       setSelected(
         new Set(
           entries
@@ -360,7 +360,7 @@ export const FileExplorerModal = () => {
       const data =
         (await resp.json()) as DeleteFilesResponse
       const failed = data.results.filter(
-        (result) => !result.ok,
+        (result) => !result.isOk,
       )
       if (failed.length > 0) {
         const summary = failed
@@ -544,24 +544,24 @@ export const FileExplorerModal = () => {
             id="file-explorer-body"
             className="flex-1 overflow-y-auto min-h-0"
           >
-            {loading && (
+            {isLoading && (
               <p className="text-slate-500 text-sm py-4 text-center">
                 Loadingâ€¦
               </p>
             )}
-            {!loading && error && (
+            {!isLoading && error && (
               <p className="text-rose-400 text-sm py-4 px-3">
                 {error}
               </p>
             )}
-            {!loading &&
+            {!isLoading &&
               !error &&
               sortedEntries.length === 0 && (
                 <p className="text-slate-500 text-sm py-4 text-center">
                   Folder is empty.
                 </p>
               )}
-            {!loading &&
+            {!isLoading &&
               !error &&
               sortedEntries.length > 0 && (
                 <div className="px-3 py-2">

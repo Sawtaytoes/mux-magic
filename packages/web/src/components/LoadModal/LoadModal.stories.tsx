@@ -6,11 +6,11 @@ import { LoadModal } from "./LoadModal"
 
 // Store is created inside useState so each mount gets a fresh atom — navigating
 // away and back resets the modal to its initial state instead of staying closed.
-const withStore = (initialOpen: boolean) => {
+const withStore = (isInitiallyOpen: boolean) => {
   return (Story: React.ComponentType) => {
     const [store] = useState(() => {
       const newStore = createStore()
-      newStore.set(loadModalOpenAtom, initialOpen)
+      newStore.set(loadModalOpenAtom, isInitiallyOpen)
       return newStore
     })
 

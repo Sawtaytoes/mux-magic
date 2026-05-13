@@ -39,7 +39,7 @@ describe("FieldLabel", () => {
         field={{
           name: "filename",
           label: "Filename",
-          required: true,
+          isRequired: true,
         }}
       />,
     )
@@ -53,7 +53,7 @@ describe("FieldLabel", () => {
         field={{
           name: "filename",
           label: "Filename",
-          required: false,
+          isRequired: false,
         }}
       />,
     )

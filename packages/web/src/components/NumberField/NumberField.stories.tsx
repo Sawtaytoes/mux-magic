@@ -71,7 +71,7 @@ export const Required: Story = {
       name: "width",
       type: "number",
       label: "Width (px)",
-      required: true,
+      isRequired: true,
     },
   },
 }

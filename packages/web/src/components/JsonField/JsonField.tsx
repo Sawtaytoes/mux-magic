@@ -51,7 +51,7 @@ export const JsonField = ({
       placeholder={field.placeholder ?? "[]"}
       onChange={(event) => handleChange(event.target.value)}
       rows={3}
-      aria-required={field.required ? "true" : undefined}
+      aria-required={field.isRequired ? "true" : undefined}
       className="w-full bg-slate-900 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono resize-y"
     />
   )

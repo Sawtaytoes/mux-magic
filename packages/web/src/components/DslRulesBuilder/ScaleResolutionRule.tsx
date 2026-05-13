@@ -32,14 +32,14 @@ const DimensionInput = ({
   label,
   ariaLabel,
   value,
-  readOnly,
+  isReadOnly,
   onCommit,
 }: {
   id: string
   label: string
   ariaLabel?: string
   value: number
-  readOnly: boolean
+  isReadOnly: boolean
   onCommit: (nextValue: number) => void
 }) => {
   const [draft, setDraft] = useState(String(value))
@@ -56,7 +56,7 @@ const DimensionInput = ({
         id={id}
         type="number"
         value={draft}
-        readOnly={readOnly}
+        readOnly={isReadOnly}
         aria-label={ariaLabel}
         onChange={(event) => {
           setDraft(event.target.value)
@@ -96,7 +96,7 @@ export const ScaleResolutionRuleBody = ({
           label="width"
           ariaLabel="From width"
           value={rule.from?.width ?? 0}
-          readOnly={isReadOnly}
+          isReadOnly={isReadOnly}
           onCommit={(val) => {
             onCommitRules(
               setScaleResolutionDimension({
@@ -114,7 +114,7 @@ export const ScaleResolutionRuleBody = ({
             id={`srr-from-height-${ruleIndex}`}
             label="height"
             value={rule.from?.height ?? 0}
-            readOnly={isReadOnly}
+            isReadOnly={isReadOnly}
             onCommit={(val) => {
               onCommitRules(
                 setScaleResolutionDimension({
@@ -137,7 +137,7 @@ export const ScaleResolutionRuleBody = ({
           id={`srr-to-width-${ruleIndex}`}
           label="width"
           value={rule.to?.width ?? 0}
-          readOnly={isReadOnly}
+          isReadOnly={isReadOnly}
           onCommit={(val) => {
             onCommitRules(
               setScaleResolutionDimension({
@@ -155,7 +155,7 @@ export const ScaleResolutionRuleBody = ({
             id={`srr-to-height-${ruleIndex}`}
             label="height"
             value={rule.to?.height ?? 0}
-            readOnly={isReadOnly}
+            isReadOnly={isReadOnly}
             onCommit={(val) => {
               onCommitRules(
                 setScaleResolutionDimension({
@@ -182,7 +182,7 @@ export const ScaleResolutionRuleBody = ({
               rules,
               ruleIndex,
               flagName: "hasScaledBorderAndShadow",
-              value: event.target.checked,
+              isValue: event.target.checked,
             }),
           )
         }}
