@@ -59,6 +59,13 @@ All three workers touch `eslint.config.js` and must run sequentially.
 
 ## Phase 1B — Independent improvements (parallel fan-out)
 
+### Foundation sub-chain (serial; blocks workers 11, 35, 37)
+
+| ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
+|:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
+| 36 | [variables-system-foundation](36_variables-system-foundation.md) | web | Sonnet | High | ON | 01 | ready |
+| 37 | [edit-variables-modal-and-sidebar](37_edit-variables-modal-and-sidebar.md) | web | Sonnet | Medium | ON | 36 | ready |
+
 ### Web track (16 workers)
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
@@ -72,7 +79,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | 0e | [story-actions-and-reopen](0e_story-actions-and-reopen.md) | web | Haiku | Low | OFF | 01 | ready |
 | 0f | [undo-redo-scroll-to-affected](0f_undo-redo-scroll-to-affected.md) | web | Sonnet | Medium | ON | 01 | ready |
 | 10 | [apirunmodal-rename](10_apirunmodal-rename.md) | web | Haiku | Low | OFF | 01 | ready |
-| 11 | [limit-execution-threads-ui](11_limit-execution-threads-ui.md) | web+srv | Sonnet | Medium | ON | 01 | ready |
+| 11 | [limit-execution-threads-ui](11_limit-execution-threads-ui.md) — per-job thread cap as a `threadCount` Variable; adds `DEFAULT_THREAD_COUNT` env var; per-job quota enforcement in `taskScheduler.ts` | web+srv | Sonnet | High | ON | 01, 36 (Variables foundation) | ready |
 | 12 | [sequence-jobs-formatting](12_sequence-jobs-formatting.md) | web | Haiku | Low | OFF | 01 | ready |
 | 13 | [merge-subtitles-offsets-label](13_merge-subtitles-offsets-label.md) | web | Haiku | Low | OFF | 01 | ready |
 | 14 | [dryrun-to-query-string](14_dryrun-to-query-string.md) | web | Sonnet | Medium | ON | 01 | ready |
@@ -122,7 +129,7 @@ The existing `nameSpecialFeatures` code is preserved (renamed only). Two new sib
 | 26 | `nsf-edition-organizer` | srv+web | Sonnet | High | ON | 25 | planned |
 | 27 | `nsf-cache-state-persistence` — adds `paused` job state with separate `reason` field (e.g. `reason: user_input`) | srv+web | Sonnet | High | ON | 25 | planned |
 | 34 | `onlyNameSpecialFeaturesDvdCompare-new-command` — new command: non-movie variant (no TMDB needed) | srv+web | Sonnet | High | ON | 22, 35 | planned |
-| 35 | `dvd-compare-id-variable` — sequence-level "DVD Compare ID variable" concept like path variables; steps reference "Step X DVD Compare ID" | srv+web | Sonnet | High | ON | 22 | planned |
+| 35 | `dvd-compare-id-variable` — registers `dvdCompareId` as a Variable type in the new system (multi-instance, named); adds "Step X DVD Compare ID" link picker. Generic pattern for future TMDB/AniDB ID types | srv+web | Sonnet | Medium | ON | 22, 36 (Variables foundation) | planned |
 
 ---
 
@@ -136,6 +143,7 @@ The existing `nameSpecialFeatures` code is preserved (renamed only). Two new sib
 | 2b | `error-persistence-webhook` | srv | Sonnet | Medium | ON | 28 | planned |
 | 2c | `pure-functions-sweep` | srv+web | Sonnet | High | ON | 20 | planned |
 | 2d | `asset-fallback-to-cli` | srv | Haiku | Low | OFF | 01 | planned |
+| 38 | [per-file-pipelining](38_per-file-pipelining.md) — rewire `sequenceRunner.ts` to stream files through steps via rxjs composition; file 1 hits step 3 while file 2 still on step 1. Multiplies value of worker 11's thread budget | srv | **Opus** | High | ON | 20, 21, 28 | ready |
 
 ---
 
@@ -143,7 +151,7 @@ The existing `nameSpecialFeatures` code is preserved (renamed only). Two new sib
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 2e | `trace-moe-anime-split` | srv+web | Sonnet | High | ON | 24 | planned |
+| 2e | `trace-moe-anime-split` | srv+web | Sonnet | High | ON | 24, 38 (benefits from per-file pipelining) | planned |
 | 2f | `ffmpeg-gpu-reencode-endpoint` — Opus confirmed (AI struggles without a browser to test) | srv | **Opus** | High | ON | 28 | planned |
 | 30 | `gpu-aspect-ratio-multi-gpu` | srv | Sonnet | Medium | ON | 01 | planned |
 | 31 | `duplicate-manga-detection` | srv | Sonnet | Medium | ON | 1d | planned |
