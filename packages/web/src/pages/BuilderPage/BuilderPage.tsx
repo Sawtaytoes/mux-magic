@@ -3,7 +3,7 @@ import { useHydrateAtoms } from "jotai/utils"
 import { useEffect } from "react"
 
 import { COMMANDS } from "../../commands/commands"
-import { ApiRunModal } from "../../components/ApiRunModal/ApiRunModal"
+import { SequenceRunModal } from "../../components/SequenceRunModal/SequenceRunModal"
 import { CommandHelpModal } from "../../components/CommandHelpModal/CommandHelpModal"
 import { CommandPicker } from "../../components/CommandPicker/CommandPicker"
 import { EnumPicker } from "../../components/EnumPicker/EnumPicker"
@@ -150,7 +150,7 @@ export const BuilderPage = () => {
       <LoadModal />
       <CommandHelpModal />
       <PromptModal />
-      <ApiRunModal />
+      <SequenceRunModal />
       <LookupModal />
       <FileExplorerModal />
 

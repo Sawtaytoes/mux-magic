@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider, useSetAtom } from "jotai"
 import { useState } from "react"
-import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
-import type {
-  ActiveChild,
-  ApiRunState,
-} from "../../components/ApiRunModal/types"
 import type { ProgressSnapshot } from "../../jobs/types"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
-import { ApiRunModal } from "./ApiRunModal"
+import { sequenceRunModalAtom } from "./sequenceRunModalAtom"
+import type {
+  ActiveChild,
+  SequenceRunModalState,
+} from "./types"
+import { SequenceRunModal } from "./SequenceRunModal"
 
 const ReOpenButton = ({
   initialState,
@@ -40,7 +40,8 @@ const makeState = (
   logs: string[] = [],
   source: "step" | "sequence" = "sequence",
   activeChildren: ActiveChild[] = [],
-): ApiRunState => ({
+): SequenceRunModalState => ({
+  mode: "open",
   jobId,
   status,
   logs,
@@ -88,20 +89,20 @@ const makeRunningParams = (count: number) => {
   }
 }
 
-const meta: Meta<typeof ApiRunModal> = {
-  title: "Modals/ApiRunModal",
-  component: ApiRunModal,
+const meta: Meta<typeof SequenceRunModal> = {
+  title: "Modals/SequenceRunModal",
+  component: SequenceRunModal,
   decorators: [
     (Story, context) => {
       const initialState = context.parameters
-        .initialState as ApiRunState
+        .initialState as SequenceRunModalState
       const initialProgress = context.parameters
         .initialProgress as
         | Map<string, ProgressSnapshot>
         | undefined
       const [store] = useState(() => {
         const newStore = createStore()
-        newStore.set(apiRunModalAtom, initialState)
+        newStore.set(sequenceRunModalAtom, initialState)
         if (initialProgress) {
           newStore.set(progressByJobIdAtom, initialProgress)
         }
@@ -117,7 +118,7 @@ const meta: Meta<typeof ApiRunModal> = {
 }
 export default meta
 
-type Story = StoryObj<typeof ApiRunModal>
+type Story = StoryObj<typeof SequenceRunModal>
 
 const runningOneJobParams = makeRunningParams(1)
 const runningParallelJobsParams = makeRunningParams(2)

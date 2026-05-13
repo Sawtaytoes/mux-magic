@@ -1,6 +1,7 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
 import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
+import { sequenceRunModalAtom } from "../../components/SequenceRunModal/sequenceRunModalAtom"
 import { yamlModalOpenAtom } from "../../components/YamlModal/yamlModalAtom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { Switch } from "../../primitives/Switch/Switch"
@@ -34,6 +35,11 @@ export const PageHeader = () => {
   const isRedoPossible = useAtomValue(canRedoAtom)
   const setLoadModalOpen = useSetAtom(loadModalOpenAtom)
   const setYamlModalOpen = useSetAtom(yamlModalOpenAtom)
+  const [sequenceRunModal, setSequenceRunModal] = useAtom(
+    sequenceRunModalAtom,
+  )
+  const isBackgroundJobRunning =
+    sequenceRunModal.mode === "background"
 
   const actions = useBuilderActions()
 
@@ -123,6 +129,25 @@ export const PageHeader = () => {
             Sequence Builder
           </a>
         </h1>
+
+        {/* Background job badge */}
+        {isBackgroundJobRunning && (
+          <button
+            type="button"
+            id="background-job-badge"
+            onClick={() =>
+              setSequenceRunModal((prev) =>
+                prev.mode === "background"
+                  ? { ...prev, mode: "open" }
+                  : prev,
+              )
+            }
+            className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded active:scale-95 self-center transition-all border bg-sky-500/20 hover:bg-sky-500/35 text-sky-400 border-sky-500/40"
+            title="1 background job running — click to re-open"
+          >
+            1 background job
+          </button>
+        )}
 
         {/* Dry-run badge */}
         {isDryRun && (

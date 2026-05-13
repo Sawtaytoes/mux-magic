@@ -1,7 +1,7 @@
 ﻿import type { CreateJobResponse } from "@mux-magic/server/api-types"
 import { useStore } from "jotai"
 import { useCallback } from "react"
-import { apiRunModalAtom } from "../components/ApiRunModal/apiRunModalAtom"
+import { sequenceRunModalAtom } from "../components/SequenceRunModal/sequenceRunModalAtom"
 import { isGroup } from "../jobs/sequenceUtils"
 import { toYamlStr } from "../jobs/yamlSerializer"
 import { commandsAtom } from "../state/commandsAtom"
@@ -298,7 +298,8 @@ export const useBuilderActions = () => {
       store.get(commandsAtom),
     )
     store.set(runningAtom, true)
-    store.set(apiRunModalAtom, {
+    store.set(sequenceRunModalAtom, {
+      mode: "open",
       jobId: null,
       status: "pending",
       logs: [],
@@ -317,16 +318,18 @@ export const useBuilderActions = () => {
         body: JSON.stringify({ yaml }),
       })
       if (!response.ok) {
-        store.set(apiRunModalAtom, (prev) =>
-          prev ? { ...prev, status: "failed" } : prev,
+        store.set(sequenceRunModalAtom, (prev) =>
+          prev.mode !== "closed"
+            ? { ...prev, status: "failed" }
+            : prev,
         )
         store.set(runningAtom, false)
         return
       }
       const data =
         (await response.json()) as CreateJobResponse
-      store.set(apiRunModalAtom, (prev) =>
-        prev
+      store.set(sequenceRunModalAtom, (prev) =>
+        prev.mode !== "closed"
           ? {
               ...prev,
               jobId: data.jobId,
@@ -335,8 +338,10 @@ export const useBuilderActions = () => {
           : prev,
       )
     } catch {
-      store.set(apiRunModalAtom, (prev) =>
-        prev ? { ...prev, status: "failed" } : prev,
+      store.set(sequenceRunModalAtom, (prev) =>
+        prev.mode !== "closed"
+          ? { ...prev, status: "failed" }
+          : prev,
       )
       store.set(runningAtom, false)
     }
@@ -541,7 +546,8 @@ export const useBuilderActions = () => {
 
       const yaml = toYamlStr([foundGroup], paths, commands)
       store.set(runningAtom, true)
-      store.set(apiRunModalAtom, {
+      store.set(sequenceRunModalAtom, {
+        mode: "open",
         jobId: null,
         status: "pending",
         logs: [],
@@ -562,8 +568,10 @@ export const useBuilderActions = () => {
           body: JSON.stringify({ yaml }),
         })
         if (!response.ok) {
-          store.set(apiRunModalAtom, (prev) =>
-            prev ? { ...prev, status: "failed" } : prev,
+          store.set(sequenceRunModalAtom, (prev) =>
+            prev.mode !== "closed"
+              ? { ...prev, status: "failed" }
+              : prev,
           )
           store.set(runningAtom, false)
           return
@@ -571,8 +579,8 @@ export const useBuilderActions = () => {
         const data = (await response.json()) as {
           jobId: string
         }
-        store.set(apiRunModalAtom, (prev) =>
-          prev
+        store.set(sequenceRunModalAtom, (prev) =>
+          prev.mode !== "closed"
             ? {
                 ...prev,
                 jobId: data.jobId,
@@ -581,8 +589,10 @@ export const useBuilderActions = () => {
             : prev,
         )
       } catch {
-        store.set(apiRunModalAtom, (prev) =>
-          prev ? { ...prev, status: "failed" } : prev,
+        store.set(sequenceRunModalAtom, (prev) =>
+          prev.mode !== "closed"
+            ? { ...prev, status: "failed" }
+            : prev,
         )
         store.set(runningAtom, false)
       }

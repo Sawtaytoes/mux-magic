@@ -1,5 +1,6 @@
 import {
   cleanup,
+  fireEvent,
   render,
   screen,
 } from "@testing-library/react"
@@ -67,9 +68,7 @@ describe("SequenceRunModal", () => {
       source: "step",
     })
     renderWithStore(store)
-    expect(
-      screen.getByText("Run Step"),
-    ).toBeInTheDocument()
+    expect(screen.getByText("Run Step")).toBeInTheDocument()
     expect(screen.queryByText("Run Sequence")).toBeNull()
   })
 
@@ -124,7 +123,7 @@ describe("SequenceRunModal", () => {
 
   // ─── TDD step 2: Backdrop click backgrounds (does NOT cancel) ──────────────
 
-  test("clicking the backdrop sets mode to background without cancelling", async () => {
+  test("clicking the backdrop sets mode to background without cancelling", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("{}", { status: 200 }),
     )
@@ -132,11 +131,10 @@ describe("SequenceRunModal", () => {
     store.set(sequenceRunModalAtom, openState)
     renderWithStore(store)
 
-    const backdrop = document.querySelector(
-      '[role="none"]',
-    ) as HTMLElement
-    expect(backdrop).not.toBeNull()
-    await userEvent.click(backdrop)
+    const backdrop = screen.getByRole("dialog", {
+      name: "Run Sequence",
+    }).parentElement as HTMLElement
+    fireEvent.click(backdrop)
 
     const state = store.get(sequenceRunModalAtom)
     expect(state.mode).toBe("background")
@@ -151,7 +149,9 @@ describe("SequenceRunModal", () => {
   test("Cancel button calls DELETE on the job and closes modal", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue(new Response("{}", { status: 200 }))
+      .mockResolvedValue(
+        new Response("{}", { status: 200 }),
+      )
     const store = createStore()
     store.set(sequenceRunModalAtom, openState)
     renderWithStore(store)
@@ -266,6 +266,8 @@ describe("PageHeader background badge", () => {
       }),
     )
 
-    expect(store.get(sequenceRunModalAtom).mode).toBe("open")
+    expect(store.get(sequenceRunModalAtom).mode).toBe(
+      "open",
+    )
   })
 })
