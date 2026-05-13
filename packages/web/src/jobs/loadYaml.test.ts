@@ -181,6 +181,7 @@ steps: []
       id: "myPath",
       label: "My Path",
       value: "/home/user/media",
+      type: "path",
     })
   })
 
