@@ -1836,9 +1836,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@media-tools/server@workspace:*, @media-tools/server@workspace:packages/server":
+"@mswjs/interceptors@npm:^0.41.3":
+  version: 0.41.8
+  resolution: "@mswjs/interceptors@npm:0.41.8"
+  dependencies:
+    "@open-draft/deferred-promise": "npm:^2.2.0"
+    "@open-draft/logger": "npm:^0.3.0"
+    "@open-draft/until": "npm:^2.0.0"
+    is-node-process: "npm:^1.2.0"
+    outvariant: "npm:^1.4.3"
+    strict-event-emitter: "npm:^0.5.1"
+  checksum: 10c0/6ffe97fc7a84acc3d25464542b061e2525b6964c694c4fb325b91d01b61229124c457d5af75cf5eeb96969741769cc104d5d2d11e26d6dbae995aa9398fd9a7e
+  languageName: node
+  linkType: hard
+
+"@mux-magic/server@workspace:*, @mux-magic/server@workspace:packages/server":
   version: 0.0.0-use.local
-  resolution: "@media-tools/server@workspace:packages/server"
+  resolution: "@mux-magic/server@workspace:packages/server"
   dependencies:
     "@hono/node-server": "npm:^2.0.2"
     "@hono/zod-openapi": "npm:^1.4.0"
@@ -1872,14 +1886,28 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@media-tools/web@workspace:*, @media-tools/web@workspace:packages/web":
+"@mux-magic/tools@workspace:*, @mux-magic/tools@workspace:packages/tools":
   version: 0.0.0-use.local
-  resolution: "@media-tools/web@workspace:packages/web"
+  resolution: "@mux-magic/tools@workspace:packages/tools"
+  dependencies:
+    "@types/node": "npm:^25.6.2"
+    chalk: "npm:^5.6.2"
+    fast-sort: "npm:^3.4.1"
+    memfs: "npm:^4.57.2"
+    rxjs: "npm:^7.8.2"
+    typescript: "npm:^6.0.3"
+    vitest: "npm:^4.1.5"
+  languageName: unknown
+  linkType: soft
+
+"@mux-magic/web@workspace:*, @mux-magic/web@workspace:packages/web":
+  version: 0.0.0-use.local
+  resolution: "@mux-magic/web@workspace:packages/web"
   dependencies:
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
-    "@media-tools/server": "workspace:*"
+    "@mux-magic/server": "workspace:*"
     "@radix-ui/react-popover": "npm:^1.1.15"
     "@rolldown/plugin-babel": "npm:^0.2.3"
     "@storybook/addon-a11y": "npm:^10.3.6"
@@ -1914,34 +1942,6 @@ __metadata:
     tsx: "npm:^4.21.0"
     typescript: "npm:^6.0.3"
     vite: "npm:^8.0.11"
-    vitest: "npm:^4.1.5"
-  languageName: unknown
-  linkType: soft
-
-"@mswjs/interceptors@npm:^0.41.3":
-  version: 0.41.8
-  resolution: "@mswjs/interceptors@npm:0.41.8"
-  dependencies:
-    "@open-draft/deferred-promise": "npm:^2.2.0"
-    "@open-draft/logger": "npm:^0.3.0"
-    "@open-draft/until": "npm:^2.0.0"
-    is-node-process: "npm:^1.2.0"
-    outvariant: "npm:^1.4.3"
-    strict-event-emitter: "npm:^0.5.1"
-  checksum: 10c0/6ffe97fc7a84acc3d25464542b061e2525b6964c694c4fb325b91d01b61229124c457d5af75cf5eeb96969741769cc104d5d2d11e26d6dbae995aa9398fd9a7e
-  languageName: node
-  linkType: hard
-
-"@mux-magic/tools@workspace:*, @mux-magic/tools@workspace:packages/tools":
-  version: 0.0.0-use.local
-  resolution: "@mux-magic/tools@workspace:packages/tools"
-  dependencies:
-    "@types/node": "npm:^25.6.2"
-    chalk: "npm:^5.6.2"
-    fast-sort: "npm:^3.4.1"
-    memfs: "npm:^4.57.2"
-    rxjs: "npm:^7.8.2"
-    typescript: "npm:^6.0.3"
     vitest: "npm:^4.1.5"
   languageName: unknown
   linkType: soft
@@ -7657,36 +7657,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"media-tools@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "media-tools@workspace:."
-  dependencies:
-    "@biomejs/biome": "npm:^2.4.15"
-    "@changesets/cli": "npm:^2.31.0"
-    "@media-tools/web": "workspace:*"
-    "@playwright/mcp": "npm:^0.0.75"
-    "@playwright/test": "npm:^1.59.1"
-    "@total-typescript/ts-reset": "npm:^0.6.1"
-    "@types/node": "npm:^25.6.2"
-    "@vitest/browser": "npm:^4.1.5"
-    "@vitest/browser-playwright": "npm:^4.1.5"
-    "@vitest/ui": "npm:^4.1.5"
-    "@yarnpkg/sdks": "npm:^3.2.3"
-    concurrently: "npm:^9.2.1"
-    cpx2: "npm:^8.0.2"
-    esbuild: "npm:^0.28.0"
-    eslint: "npm:^10.3.0"
-    fast-sort: "npm:^3.4.1"
-    playwright: "npm:^1.59.1"
-    rimraf: "npm:^6.1.3"
-    tsx: "npm:^4.21.0"
-    typescript: "npm:^6.0.3"
-    typescript-eslint: "npm:^8.59.2"
-    vitest: "npm:^4.1.5"
-    wait-on: "npm:^9.0.5"
-  languageName: unknown
-  linkType: soft
-
 "memfs@npm:^4.57.2":
   version: 4.57.2
   resolution: "memfs@npm:4.57.2"
@@ -8238,6 +8208,36 @@ __metadata:
   checksum: 10c0/12cdb36a101694c7a6b296632e6d93a30b74401873cf7507c88861441a090c71c77a58f213acadad03bc0c8fa186639dec99d68a14497773a8744320c136e701
   languageName: node
   linkType: hard
+
+"mux-magic@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "mux-magic@workspace:."
+  dependencies:
+    "@biomejs/biome": "npm:^2.4.15"
+    "@changesets/cli": "npm:^2.31.0"
+    "@mux-magic/web": "workspace:*"
+    "@playwright/mcp": "npm:^0.0.75"
+    "@playwright/test": "npm:^1.59.1"
+    "@total-typescript/ts-reset": "npm:^0.6.1"
+    "@types/node": "npm:^25.6.2"
+    "@vitest/browser": "npm:^4.1.5"
+    "@vitest/browser-playwright": "npm:^4.1.5"
+    "@vitest/ui": "npm:^4.1.5"
+    "@yarnpkg/sdks": "npm:^3.2.3"
+    concurrently: "npm:^9.2.1"
+    cpx2: "npm:^8.0.2"
+    esbuild: "npm:^0.28.0"
+    eslint: "npm:^10.3.0"
+    fast-sort: "npm:^3.4.1"
+    playwright: "npm:^1.59.1"
+    rimraf: "npm:^6.1.3"
+    tsx: "npm:^4.21.0"
+    typescript: "npm:^6.0.3"
+    typescript-eslint: "npm:^8.59.2"
+    vitest: "npm:^4.1.5"
+    wait-on: "npm:^9.0.5"
+  languageName: unknown
+  linkType: soft
 
 "nanoid@npm:^3.3.11":
   version: 3.3.12

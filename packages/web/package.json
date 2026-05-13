@@ -1,5 +1,5 @@
 {
-  "name": "@media-tools/web",
+  "name": "@mux-magic/web",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
       "default": "./src/jobs/types.ts"
     }
   },
-  "description": "React 19 + Vite frontend for media-tools.",
+  "description": "React 19 + Vite frontend for Mux-Magic.",
   "scripts": {
     "build:storybook": "storybook build --config-dir .storybook",
     "build": "vite build",
@@ -34,7 +34,7 @@
     "react-router": "^7.15.0"
   },
   "devDependencies": {
-    "@media-tools/server": "workspace:*",
+    "@mux-magic/server": "workspace:*",
     "@rolldown/plugin-babel": "^0.2.3",
     "@storybook/addon-a11y": "^10.3.6",
     "@storybook/addon-docs": "^10.3.6",

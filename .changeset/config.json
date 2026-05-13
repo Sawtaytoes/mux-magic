@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/@changesets/config/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "linked": [["@media-tools/server", "@media-tools/web"]],
+  "linked": [["@mux-magic/server", "@mux-magic/web"]],
   "access": "restricted",
   "baseBranch": "react-migration",
   "updateInternalDependencies": "patch",
