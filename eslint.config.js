@@ -1,11 +1,16 @@
 // Minimal ESLint config — Biome covers formatting and most linting.
-// ESLint is kept only for two specialized plugins Biome has not ported:
+// ESLint is kept only for specialized plugins Biome has not ported:
 //
 //   - eslint-plugin-react-compiler — flags patterns that prevent React Compiler
 //     from auto-memoizing components (mutations in render, conditional hooks, etc.)
 //
 //   - eslint-plugin-testing-library — encourages getByRole over getByText in
 //     React component tests (.test.tsx files only)
+//
+//   - eslint-plugin-react (react/no-multi-comp) — enforces AGENTS.md convention
+//     of one component per file in packages/web. Storybook stories files and
+//     __fixtures__ directories are excluded (they legitimately export many
+//     components for testing/demo purposes).
 //
 // Plus structural rules that enforce AGENTS.md conventions Biome cannot cover:
 //
@@ -24,6 +29,7 @@
 // the target shape once the plugins land.
 
 import { defineConfig } from "eslint/config"
+import reactPlugin from "eslint-plugin-react"
 import tseslint from "typescript-eslint"
 
 // AGENTS.md rule #4: booleans start with `is` or `has`.
@@ -141,6 +147,24 @@ export default defineConfig(
         "error",
         ...WEB_API_SHAPE_RULES,
       ],
+    },
+  },
+  {
+    // AGENTS.md convention: one component per file in packages/web.
+    files: ["packages/web/**/*.{ts,tsx}"],
+    plugins: { react: reactPlugin },
+    rules: {
+      "react/no-multi-comp": ["error", { ignoreStateless: false }],
+    },
+  },
+  {
+    // Storybook stories and __fixtures__ legitimately export multiple components.
+    files: [
+      "packages/web/**/__fixtures__/**/*.{ts,tsx}",
+      "packages/web/**/*.stories.tsx",
+    ],
+    rules: {
+      "react/no-multi-comp": "off",
     },
   },
 )
