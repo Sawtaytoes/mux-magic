@@ -64,24 +64,24 @@ All three workers touch `eslint.config.js` and must run sequentially.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 36 | [variables-system-foundation](36_variables-system-foundation.md) | web | Sonnet | High | ON | 01 | ready |
+| 36 | [variables-system-foundation](36_variables-system-foundation.md) | web | Sonnet | High | ON | 01 | in-progress |
 | 37 | [edit-variables-modal-and-sidebar](37_edit-variables-modal-and-sidebar.md) | web | Sonnet | Medium | ON | 36 | ready |
 
 ### Web track (16 workers)
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 08 | [language-fields-and-tagify](08_language-fields-and-tagify.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 08 | [language-fields-and-tagify](08_language-fields-and-tagify.md) | web | Sonnet | Medium | ON | 01 | in-progress |
 | 09 | [number-fields-redesign](09_number-fields-redesign.md) | web | Sonnet | Medium | ON | 01 | ready |
 | 0a | [json-field-readonly](0a_json-field-readonly.md) | web | Haiku | Low | OFF | 01 | ready |
 | 0b | [auto-paste-yaml](0b_auto-paste-yaml.md) | web | Haiku | Low | OFF | 01 | ready |
 | 0c | [scale-resolution-aspect-lock](0c_scale-resolution-aspect-lock.md) | web | Sonnet | Medium | ON | 01 | ready |
 | 0d | [narrow-view-menu-animate](0d_narrow-view-menu-animate.md) | web | Sonnet | Medium | ON | 01 | ready |
-| 0e | [story-actions-and-reopen](0e_story-actions-and-reopen.md) | web | Haiku | Low | OFF | 01 | ready |
-| 0f | [undo-redo-scroll-to-affected](0f_undo-redo-scroll-to-affected.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 0e | [story-actions-and-reopen](0e_story-actions-and-reopen.md) | web | Haiku | Low | OFF | 01 | in-progress |
+| 0f | [undo-redo-scroll-to-affected](0f_undo-redo-scroll-to-affected.md) | web | Sonnet | Medium | ON | 01 | in-progress |
 | 10 | [apirunmodal-rename](10_apirunmodal-rename.md) | web | Haiku | Low | OFF | 01 | ready |
 | 11 | [limit-execution-threads-ui](11_limit-execution-threads-ui.md) — per-job thread cap as a `threadCount` Variable; adds `DEFAULT_THREAD_COUNT` env var; per-job quota enforcement in `taskScheduler.ts` | web+srv | Sonnet | High | ON | 01, 36 (Variables foundation) | ready |
-| 12 | [sequence-jobs-formatting](12_sequence-jobs-formatting.md) | web | Haiku | Low | OFF | 01 | ready |
+| 12 | [sequence-jobs-formatting](12_sequence-jobs-formatting.md) | web | Haiku | Low | OFF | 01 | in-progress |
 | 13 | [merge-subtitles-offsets-label](13_merge-subtitles-offsets-label.md) | web | Haiku | Low | OFF | 01 | ready |
 | 14 | [dryrun-to-query-string](14_dryrun-to-query-string.md) | web | Sonnet | Medium | ON | 01 | ready |
 | 15 | [dry-run-silent-failures](15_dry-run-silent-failures.md) | web | Sonnet | Medium | ON | 01 | ready |
