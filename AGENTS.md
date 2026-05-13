@@ -44,10 +44,10 @@ Frameworks: vitest (unit + app-command), Hono in-process testing, Playwright (e2
 ### Pre-merge gate (run in order)
 
 1. `yarn lint` — auto-fix formatting (biome + eslint); re-stage changed files
-2. `yarn test` — unit + integration
-3. `yarn typecheck` — full monorepo type check
-4. `yarn lint` — biome + eslint from repo root
-5. `yarn e2e` — Playwright end-to-end (final gate)
+2. `yarn typecheck` — full monorepo type check
+3. `yarn test` — unit + integration (vitest)
+4. `yarn e2e` — Playwright end-to-end (using your own PORT/WEB_PORT, see "Worker port/PID protocol")
+5. `yarn lint` — **re-run last** so Biome catches any formatting touched by typecheck/test/e2e fixes
 
 ### Forbidden test styles
 
@@ -98,12 +98,48 @@ See the detailed guide for CLI command modules, adding new commands, and utility
 
 **Role identification:**
 
-- **Primary** (`media-tools/`): Never push unless told. Commit-as-you-go keeps work safe.
-- **Worker** (`media-tools-worker-<name>/`): Commit and push every change to feature branch. Merge only when told.
+- **Primary** (repo root, branch `master` or `feat/mux-magic-revamp`):
+  Never push unless told. Commit-as-you-go keeps work safe.
+- **Worker** (`.claude/worktrees/<id>_<slug>/`, branch `worker-<id>-<slug>`):
+  Commit and push every change to your sub-branch. Open a PR against `feat/mux-magic-revamp`.
+  Only merge when explicitly told.
 
 **Worktree workflow:** Commit as you go → push to PR → user reviews → merge when told.
 
 **Commit conventions:** One logical group per commit. Don't batch multi-step work into a single end-of-session commit. Use `git add -p` to split unrelated concerns in the same file.
+
+## Worker port/PID protocol
+
+Workers running e2e in worktrees must not collide with each other or with the user's
+running dev servers. Pick random unused ports per session and tear down only your own PIDs.
+
+### PowerShell (Windows)
+
+```powershell
+$env:PORT = Get-Random -Minimum 30000 -Maximum 65000
+$env:WEB_PORT = Get-Random -Minimum 30000 -Maximum 65000
+$servers = Start-Process -PassThru -NoNewWindow yarn -ArgumentList "prod:servers"
+$serversPid = $servers.Id
+# … run `yarn e2e` …
+Stop-Process -Id $serversPid -Force
+```
+
+### Bash (Linux/Mac)
+
+```bash
+export PORT=$((30000 + RANDOM % 35000))
+export WEB_PORT=$((30000 + RANDOM % 35000))
+yarn prod:servers &
+SERVERS_PID=$!
+# … run `yarn e2e` …
+kill -9 "$SERVERS_PID"
+```
+
+**Rule:** never `pkill` or `taskkill /F /IM node.exe` — those kill other workers' and the
+user's servers too. Always target your captured PID.
+
+If `playwright.config.ts` `reuseExistingServer` is true, set `CI=true` for your session
+so Playwright spins up its own servers against your PORT/WEB_PORT.
 
 ## npm Publishing
 
@@ -126,3 +162,30 @@ for `<media-sync-renamed>` and other downstream tools).
 
 - `yarn info @mux-magic/tools` shows the latest version after publish completes.
 - `.github/workflows/publish-shared.yml` is the source of truth for the publish steps.
+
+## Worker addressing
+
+The Mux-Magic huge revamp uses sequential 2-hex worker IDs (`01`–`35`+) with the manifest
+table at [docs/workers/README.md](docs/workers/README.md). Each worker has a corresponding
+prompt file at `docs/workers/<id>_<slug>.md`. Workers update their own row in the manifest
+when they start (`in-progress`) and finish (`done`); IDs are never renumbered.
+
+## Test coverage discipline
+
+For any functionality change, tests must match the change scope:
+
+- **Adding new functionality:** write tests covering the new behavior. Unit for logic;
+  component/integration for UI; e2e if the feature spans more than one route or has
+  cross-component interactions.
+- **Updating existing functionality:** add tests for the new behavior OR update existing
+  tests. Don't leave tests asserting old behavior that the change has invalidated.
+- **e2e tests are valuable where they make sense.** Particularly: full sequence runs,
+  modal flows that span open → action → close, undo/redo, drag-and-drop. Less valuable
+  for pure-presentation changes.
+
+This is in addition to the existing TDD-failing-test-first convention. TDD catches bugs
+(write the test that proves the bug, then fix); the discipline above catches missing
+coverage (new feature without tests, or refactor that left tests asserting dead code).
+
+**Why:** manual testing is the user's compensation when automated coverage is thin.
+Tests that match change scope keep that out-of-pocket cost low.
