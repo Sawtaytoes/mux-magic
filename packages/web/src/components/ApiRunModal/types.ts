@@ -1,4 +1,4 @@
-﻿// Types owned by ApiRunModal â€” the modal that opens when a step,
+﻿// Types owned by ApiRunModal — the modal that opens when a step,
 // group, or full sequence is run via the API.
 //
 // `source: "step"` vs `"sequence"` is the discriminant the modal uses

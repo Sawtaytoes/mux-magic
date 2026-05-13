@@ -1,4 +1,4 @@
-﻿// Types owned by FileExplorerModal â€” the file-browser modal opened
+﻿// Types owned by FileExplorerModal — the file-browser modal opened
 // from PathField, PathVariableCard, and "Browse folders" buttons.
 //
 // FileEntry is defined server-side (shared API contract); the sort

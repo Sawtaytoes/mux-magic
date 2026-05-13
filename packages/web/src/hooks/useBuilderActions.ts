@@ -286,7 +286,7 @@ export const useBuilderActions = () => {
       activeChildren: [],
       source: "sequence",
     })
-    // Dry-run gate â€” see packages/web/src/state/dryRunQuery.ts.
+    // Dry-run gate — see packages/web/src/state/dryRunQuery.ts.
     const runUrl = buildRunFetchUrl("/sequences/run", {
       isDryRun: store.get(dryRunAtom),
       isFailureMode: store.get(failureModeAtom),
@@ -405,7 +405,7 @@ export const useBuilderActions = () => {
           existingIds,
         )
       } catch {
-        // Clipboard content is not valid YAML â€” silently ignore.
+        // Clipboard content is not valid YAML — silently ignore.
         return
       }
 
@@ -530,7 +530,7 @@ export const useBuilderActions = () => {
         source: "sequence",
       })
 
-      // Dry-run gate â€” see packages/web/src/state/dryRunQuery.ts.
+      // Dry-run gate — see packages/web/src/state/dryRunQuery.ts.
       const runUrl = buildRunFetchUrl("/sequences/run", {
         isDryRun: store.get(dryRunAtom),
         isFailureMode: store.get(failureModeAtom),

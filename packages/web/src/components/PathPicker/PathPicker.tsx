@@ -15,7 +15,7 @@ import { setParamAtom } from "../../state/stepAtoms"
 const PICKER_WIDTH = 380
 const PICKER_MAX_HEIGHT = 280
 
-// â”€â”€â”€ Async fetch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Async fetch ──────────────────────────────────────────────────────────────
 
 const fetchDirEntries = async (
   parentPath: string,
@@ -31,7 +31,7 @@ const fetchDirEntries = async (
   return response.json() as Promise<ListDirectoryEntriesResponse>
 }
 
-// â”€â”€â”€ Position â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Position ────────────────────────────────────────────────────────────────
 
 const computePosition = (rect: TriggerRect) => {
   const margin = 8
@@ -83,7 +83,7 @@ const computePosition = (rect: TriggerRect) => {
   }
 }
 
-// â”€â”€â”€ Matching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Matching ─────────────────────────────────────────────────────────────────
 
 const computeMatches = (
   entries: DirEntry[] | null,
@@ -105,7 +105,7 @@ const computeMatches = (
     )
 }
 
-// â”€â”€â”€ Value computation (pure) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Value computation (pure) ─────────────────────────────────────────────────
 
 const computeNewValue = (
   entry: DirEntry,
@@ -120,7 +120,7 @@ const computeNewValue = (
   return `${base}${separator}${entry.name}${separator}`
 }
 
-// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export const PathPicker = () => {
   const [pickerState, setPickerState] = useAtom(
@@ -203,7 +203,7 @@ export const PathPicker = () => {
       )
   }, [pickerState, setPickerState])
 
-  // Fires whenever parentPath or requestToken changes â€” the bridge sets a new
+  // Fires whenever parentPath or requestToken changes — the bridge sets a new
   // requestToken after the debounce delay, which kicks off the actual fetch.
   useEffect(() => {
     if (!pickerState) {
@@ -398,7 +398,7 @@ export const PathPicker = () => {
       <div className="overflow-y-auto py-1">
         {pickerState.entries === null ? (
           <p className="text-xs text-slate-500 text-center py-3">
-            Loadingâ€¦
+            Loading…
           </p>
         ) : pickerState.error ? (
           <p className="text-xs text-red-400 text-center py-3 wrap-break-word px-3">

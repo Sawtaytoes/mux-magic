@@ -1,4 +1,4 @@
-﻿// â”€â”€â”€ Command definitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+﻿// ─── Command definitions ──────────────────────────────────────────────────────
 //
 // Each entry describes one API command the sequence builder can wire up.
 // `tag` groups commands in the picker; `fields` lists the parameters the
@@ -10,7 +10,7 @@
 // request schemas via `fieldBuilder`. This makes field-name typos a
 // compile error and stops server-side `.default(...)` values from
 // drifting away from the UI's hard-coded defaults. UI-only attributes
-// (type, label, lookupType, visibleWhen, â€¦) stay on the override object.
+// (type, label, lookupType, visibleWhen, …) stay on the override object.
 // Commands not yet migrated keep their plain literal `fields` arrays.
 
 import {
@@ -97,7 +97,7 @@ export const COMMANDS: Commands = {
       tag: "File Operations",
       outputFolderName: null,
       // Files land in dirname(sourcePath), so the folder a downstream step
-      // should chain off is the parent of the source â€” not the source itself.
+      // should chain off is the parent of the source — not the source itself.
       outputComputation: "parentOfSource",
       fields: [
         field("sourcePath", {
@@ -177,7 +177,7 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 â€” the runtime sentinel for "use default
+        // Schema default is 0 — the runtime sentinel for "use default
         // depth of 2". UI shows that literally; if 2 is wanted instead,
         // override `default` here.
         field("recursiveDepth", {
@@ -202,7 +202,7 @@ export const COMMANDS: Commands = {
     const field = fieldBuilder(deleteFolderRequestSchema)
     return {
       summary:
-        "Recursively delete a folder and all its contents (DESTRUCTIVE â€” requires Confirm)",
+        "Recursively delete a folder and all its contents (DESTRUCTIVE — requires Confirm)",
       tag: "File Operations",
       outputFolderName: null,
       fields: [
@@ -579,8 +579,8 @@ export const COMMANDS: Commands = {
     )
     return {
       summary:
-        "[DEPRECATED â€” use extractSubtitles] Extract subtitle tracks into separate files alongside each video file",
-      note: "DEPRECATED: this command was renamed to 'extractSubtitles'. Update your saved sequences â€” the old name will be removed in a future release.",
+        "[DEPRECATED — use extractSubtitles] Extract subtitle tracks into separate files alongside each video file",
+      note: "DEPRECATED: this command was renamed to 'extractSubtitles'. Update your saved sequences — the old name will be removed in a future release.",
       tag: "Subtitle Operations",
       outputFolderName: "EXTRACTED-SUBTITLES",
       fields: [
@@ -638,7 +638,7 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 â€” runtime sentinel for "use default depth of 2"
+        // Schema default is 0 — runtime sentinel for "use default depth of 2"
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
@@ -655,9 +655,9 @@ export const COMMANDS: Commands = {
         field("predicates", { type: "hidden" }),
         field("hasDefaultRules", { type: "hidden" }),
         // `subtitleRules` is the structured form-builder for the
-        // modifySubtitleMetadata DSL â€” see
+        // modifySubtitleMetadata DSL — see
         // public/builder/js/components/dsl-rules-builder.js. It renders
-        // its own dispatcher in renderFields. NOT `linkable` â€” the only
+        // its own dispatcher in renderFields. NOT `linkable` — the only
         // command that emitted a `rules` output (computeDefaultSubtitleRules)
         // was dropped in W26b in favor of the `hasDefaultRules` toggle, so
         // there's nothing upstream to wire into. Strip the link picker
@@ -696,7 +696,7 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 â€” runtime sentinel for "use default depth of 2"
+        // Schema default is 0 — runtime sentinel for "use default depth of 2"
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
@@ -732,7 +732,7 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 â€” runtime sentinel for "use default depth of 2"
+        // Schema default is 0 — runtime sentinel for "use default depth of 2"
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
@@ -768,7 +768,7 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 â€” runtime sentinel for "use default depth of 2"
+        // Schema default is 0 — runtime sentinel for "use default depth of 2"
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
@@ -844,7 +844,7 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 â€” runtime sentinel for "use default depth of 2"
+        // Schema default is 0 — runtime sentinel for "use default depth of 2"
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
@@ -900,7 +900,7 @@ export const COMMANDS: Commands = {
           label: "Source Path",
         }),
         // Schema marks malId optional (the CLI can take searchTerm instead),
-        // but the builder form requires it â€” the lookup populates it before
+        // but the builder form requires it — the lookup populates it before
         // submit. Override the helper's derivation.
         field("malId", {
           type: "numberWithLookup",
@@ -926,7 +926,7 @@ export const COMMANDS: Commands = {
     return {
       summary:
         "Rename anime episode files using AniDB metadata (better OVA/special coverage than MAL)",
-      note: "Specials / Credits / Trailers / Parodies each run an interactive length-matched per-file picker â€” answer the prompts in the job log. Space skips the current file; Esc cancels the loop and applies any matches confirmed so far. Regular and Others are index-paired with a duration sanity-check warning when the file and AniDB lengths diverge by >2m. If AniDB lists both a 'Complete' and 'Part N' form, you'll be asked which one your files match. Episode-range selection is still planned â€” see README Â§AniDB command notes.",
+      note: "Specials / Credits / Trailers / Parodies each run an interactive length-matched per-file picker — answer the prompts in the job log. Space skips the current file; Esc cancels the loop and applies any matches confirmed so far. Regular and Others are index-paired with a duration sanity-check warning when the file and AniDB lengths diverge by >2m. If AniDB lists both a 'Complete' and 'Part N' form, you'll be asked which one your files match. Episode-range selection is still planned — see README §AniDB command notes.",
       tag: "Naming Operations",
       outputFolderName: null,
       fields: [
@@ -935,7 +935,7 @@ export const COMMANDS: Commands = {
           label: "Source Path",
         }),
         // Schema marks anidbId optional (the CLI accepts searchTerm), but
-        // the builder form requires it â€” the lookup populates it before
+        // the builder form requires it — the lookup populates it before
         // submit. Override the helper's derivation.
         field("anidbId", {
           type: "numberWithLookup",
@@ -987,14 +987,14 @@ export const COMMANDS: Commands = {
     )
     return {
       summary:
-        "Rename special features (and the main movie file) based on DVDCompare timecodes â€” title canonicalized via TMDB",
+        "Rename special features (and the main movie file) based on DVDCompare timecodes — title canonicalized via TMDB",
       tag: "Naming Operations",
       outputFolderName: null,
       // Auto-resolved TMDB match (set by resolveTmdbForStep when the user
       // picks a DVDCompare release). Not user-editable, but persisted in
       // YAML so a shared seq URL keeps pointing at the same matched film
-      // across reloads. The app-command itself ignores these â€” they exist
-      // purely so the input-area "â†— Title (year) on TMDB" link survives a
+      // across reloads. The app-command itself ignores these — they exist
+      // purely so the input-area "↗ Title (year) on TMDB" link survives a
       // round-trip.
       persistedKeys: ["tmdbId", "tmdbName"],
       fields: [
@@ -1003,7 +1003,7 @@ export const COMMANDS: Commands = {
           label: "Source Path",
         }),
         // Schema marks dvdCompareId optional (the CLI accepts searchTerm),
-        // but the builder form requires it â€” the lookup populates it
+        // but the builder form requires it — the lookup populates it
         // before submit. Override the helper's derivation.
         field("dvdCompareId", {
           type: "numberWithLookup",
@@ -1032,12 +1032,12 @@ export const COMMANDS: Commands = {
         }),
         // Defaults to false in the Builder so the Phase-B "which file is
         // which?" pick modal becomes the interactive UX. Schema also
-        // defaults to false â€” matches the UI.
+        // defaults to false — matches the UI.
         field("autoNameDuplicates", {
           type: "boolean",
           label: "Auto-name duplicates",
           description:
-            "When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/â€¦ suffixes deterministically. Pass false to instead emit a duplicate-pick prompt for each ambiguous group.",
+            "When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/… suffixes deterministically. Pass false to instead emit a duplicate-pick prompt for each ambiguous group.",
         }),
       ],
       // Group small numeric fields side-by-side on wider cards, using
@@ -1066,7 +1066,7 @@ export const COMMANDS: Commands = {
           label: "Source Path",
         }),
         // Schema marks tvdbId optional (the CLI accepts searchTerm), but
-        // the builder form requires it â€” the lookup populates it before
+        // the builder form requires it — the lookup populates it before
         // submit. Override the helper's derivation.
         field("tvdbId", {
           type: "numberWithLookup",
@@ -1145,7 +1145,7 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 â€” runtime sentinel for "use default depth of 2"
+        // Schema default is 0 — runtime sentinel for "use default depth of 2"
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
@@ -1199,7 +1199,7 @@ export const COMMANDS: Commands = {
           type: "string",
           label: "Root Path",
           description:
-            "Path your media player (Plex, Jellyfin, Emby) sees for your library â€” written into the output JSON's file paths so the player can match its catalog. The path does not have to exist on this machine.",
+            "Path your media player (Plex, Jellyfin, Emby) sees for your library — written into the output JSON's file paths so the player can match its catalog. The path does not have to exist on this machine.",
         }),
         field("folders", {
           type: "folderMultiSelect",

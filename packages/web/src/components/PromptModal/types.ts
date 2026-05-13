@@ -1,4 +1,4 @@
-﻿// Types owned by PromptModal â€” the modal that surfaces interactive
+﻿// Types owned by PromptModal — the modal that surfaces interactive
 // prompts emitted by a running job (e.g. "Pick which audio track to keep").
 //
 // PromptOption is defined server-side (shared API contract); the rest

@@ -13,7 +13,7 @@ Do not improvise architecture. Do not add libraries not listed here. When in dou
 
 ## Context
 
-The Mux-Magic project currently serves a 77-file plain-JavaScript frontend (in `public/builder/` and `public/jobs/`) via a Hono API server. There is no bundler for the frontend â€” files are served raw as ES modules. State is managed via `window.mediaTools` globals and module-level variables. Tests run in real Chromium via `@vitest/browser`.
+The Mux-Magic project currently serves a 77-file plain-JavaScript frontend (in `public/builder/` and `public/jobs/`) via a Hono API server. There is no bundler for the frontend — files are served raw as ES modules. State is managed via `window.mediaTools` globals and module-level variables. Tests run in real Chromium via `@vitest/browser`.
 
 This migration adds:
 - **React 19** with React Compiler (auto-memoization)
@@ -25,7 +25,7 @@ This migration adds:
 - **ESLint** (minimal, two plugins only)
 - **Storybook v10** for component documentation
 - **Yarn 4 workspaces** (monorepo)
-- **`@mux-magic/shared`** â€” a new npm-published package for utilities shared with media-sync
+- **`@mux-magic/shared`** — a new npm-published package for utilities shared with media-sync
 
 The migration is **iterative**: the app keeps working at every step.
 Legacy JS files are deleted only after the equivalent React component is fully working and tested.
@@ -42,18 +42,18 @@ Move stale docs to `docs/archive/` so they don't confuse you or other workers:
 
 ```
 docs/
-â”œâ”€â”€ archive/                          # moved here; do not read unless debugging old features
-â”‚   â”œâ”€â”€ builder-refactor-followups.md
-â”‚   â”œâ”€â”€ file-explorer-phase-b.md
-â”‚   â”œâ”€â”€ sse-last-event-id-resume.md
-â”‚   â”œâ”€â”€ mse-transcode-player.md
-â”‚   â””â”€â”€ options/                      # all files in options/
-â”œâ”€â”€ dsl/                              # keep â€” DSL rules are still active
-â”œâ”€â”€ diagnostics/                      # keep â€” Docker runbook is still relevant
-â”œâ”€â”€ orchestration/                    # keep â€” orchestration README is still relevant
-â”œâ”€â”€ sequence-examples.md              # keep â€” useful for testing
-â”œâ”€â”€ CHECKLIST.md                      # replace with react-migration-checklist.md (see below)
-â””â”€â”€ react-migration-checklist.md      # NEW â€” AI workers update this as they complete tasks
+┌── archive/                          # moved here; do not read unless debugging old features
+│   ┌── builder-refactor-followups.md
+│   ┌── file-explorer-phase-b.md
+│   ┌── sse-last-event-id-resume.md
+│   ┌── mse-transcode-player.md
+│   └── options/                      # all files in options/
+┌── dsl/                              # keep — DSL rules are still active
+┌── diagnostics/                      # keep — Docker runbook is still relevant
+┌── orchestration/                    # keep — orchestration README is still relevant
+┌── sequence-examples.md              # keep — useful for testing
+┌── CHECKLIST.md                      # replace with react-migration-checklist.md (see below)
+└── react-migration-checklist.md      # NEW — AI workers update this as they complete tasks
 ```
 
 ### CHECKLIST.md
@@ -102,116 +102,116 @@ Rules:
 
 ```
 Mux-Magic/
-â”œâ”€â”€ package.json                       # root; workspaces: ["packages/*"]
-â”œâ”€â”€ tsconfig.base.json                 # shared base TS config
-â”œâ”€â”€ biome.json                         # formatter + linter (root, covers all packages)
-â”œâ”€â”€ eslint.config.js                   # minimal: react-compiler + testing-library only
-â”œâ”€â”€ vitest.config.ts                   # root: references both server + web projects
-â”œâ”€â”€ playwright.config.ts               # unchanged
-â”‚
-â”œâ”€â”€ .github/
-â”‚   â””â”€â”€ workflows/
-â”‚       â”œâ”€â”€ deploy.yml                 # existing: Docker build + push to ghcr.io
-â”‚       â””â”€â”€ publish-shared.yml         # NEW: publish @mux-magic/shared to npm on tag
-â”‚
-â”œâ”€â”€ .storybook/
-â”‚   â”œâ”€â”€ main.ts                        # @storybook/react-vite, v10
-â”‚   â””â”€â”€ preview.ts                     # Jotai Provider, MSW, Tailwind theme
-â”‚
-â”œâ”€â”€ e2e/                               # Playwright specs (unchanged)
-â”‚   â”œâ”€â”€ builder.spec.ts
-â”‚   â””â”€â”€ video-seek.spec.ts
-â”‚
-â”œâ”€â”€ public/                            # LEGACY â€” deleted incrementally; gone by Final PR
-â”‚   â””â”€â”€ builder/js/...                 # 77 files being replaced
-â”‚
-â””â”€â”€ packages/
-    â”‚
-    â”œâ”€â”€ server/                        # existing server code, moved here
-    â”‚   â”œâ”€â”€ package.json               # name: "@mux-magic/server"
-    â”‚   â”œâ”€â”€ tsconfig.json              # NodeNext, no jsx, extends ../../tsconfig.base.json
-    â”‚   â””â”€â”€ src/
-    â”‚       â”œâ”€â”€ api/
-    â”‚       â”œâ”€â”€ cli/
-    â”‚       â”œâ”€â”€ tools/
-    â”‚       â”œâ”€â”€ app-commands/
-    â”‚       â”œâ”€â”€ cli-commands/
-    â”‚       â”œâ”€â”€ cli-spawn-operations/
-    â”‚       â”œâ”€â”€ shared/                # server-internal types/utils shared by api/ AND cli/
-    â”‚       â”‚                          # (renamed from current src/__shared__/ â€” drop the underscores)
-    â”‚       â”‚                          # NOT published to npm; use packages/shared/ for that
-    â”‚       â””â”€â”€ server.ts
-    â”‚
-    â”œâ”€â”€ web/                           # Vite frontend
-    â”‚   â”œâ”€â”€ package.json               # name: "@mux-magic/web"
-    â”‚   â”œâ”€â”€ tsconfig.json              # ESNext, bundler, jsx: react-jsx
-    â”‚   â”œâ”€â”€ vite.config.ts
-    â”‚   â”œâ”€â”€ vitest.config.ts           # browser project only
-    â”‚   â”œâ”€â”€ index.html                 # single HTML entry; React Router handles /builder
-    â”‚   â”œâ”€â”€ public/
-    â”‚   â”‚   â””â”€â”€ mockServiceWorker.js   # generated by `msw init`
-    â”‚   â””â”€â”€ src/
-    â”‚       â”œâ”€â”€ app.tsx                # Vite entry: boots Jotai + MSW + mounts router
-    â”‚       â”œâ”€â”€ router.tsx             # React Router v7 route definitions
-    â”‚       â”œâ”€â”€ pages/                 # one file per route; thin wrappers only
-    â”‚       â”‚   â”œâ”€â”€ BuilderPage.tsx    # route component for /builder
-    â”‚       â”‚   â””â”€â”€ JobsPage.tsx       # route component for /
-    â”‚       â”œâ”€â”€ components/            # flat shared component library; all builder + jobs components
-    â”‚       â”‚   â”œâ”€â”€ LoadModal.tsx      # one file per component
-    â”‚       â”‚   â”œâ”€â”€ LoadModal.test.tsx
-    â”‚       â”‚   â”œâ”€â”€ LoadModal.stories.tsx
-    â”‚       â”‚   â”œâ”€â”€ LoadModal.mdx
-    â”‚       â”‚   â”œâ”€â”€ StepCard.tsx
-    â”‚       â”‚   â”œâ”€â”€ JobCard.tsx
-    â”‚       â”‚   â”œâ”€â”€ BooleanField.tsx
-    â”‚       â”‚   â”œâ”€â”€ CommandPicker.tsx
-    â”‚       â”‚   â”œâ”€â”€ Popover.tsx        # Radix-based primitives live here too
-    â”‚       â”‚   â””â”€â”€ ...               # (all 77 legacy files end up here)
-    â”‚       â”œâ”€â”€ icons/                 # inline SVGs as React components
-    â”‚       â”‚   â”œâ”€â”€ CollapseChevron.tsx
-    â”‚       â”‚   â”œâ”€â”€ CopyIcon.tsx
-    â”‚       â”‚   â””â”€â”€ ...
-    â”‚       â”œâ”€â”€ state/                 # Jotai atoms; one file per atom or atom group
-    â”‚       â”‚   â”œâ”€â”€ stepsAtom.ts
-    â”‚       â”‚   â”œâ”€â”€ pathsAtom.ts
-    â”‚       â”‚   â”œâ”€â”€ historyAtoms.ts
-    â”‚       â”‚   â”œâ”€â”€ uiAtoms.ts         # modal open states, selected step, etc.
-    â”‚       â”‚   â”œâ”€â”€ flattenedStepsAtom.ts
-    â”‚       â”‚   â”œâ”€â”€ commandsAtom.ts
-    â”‚       â”‚   â””â”€â”€ bridge.ts          # TRANSITIONAL: window.mediaTools â†” Jotai
-    â”‚       â”œâ”€â”€ mocks/
-    â”‚       â”‚   â”œâ”€â”€ browser.ts         # MSW worker setup
-    â”‚       â”‚   â””â”€â”€ handlers.ts        # HTTP mock handlers
-    â”‚       â”œâ”€â”€ api/
-    â”‚       â”‚   â”œâ”€â”€ client.ts          # openapi-fetch client
-    â”‚       â”‚   â””â”€â”€ schema.generated.ts  # generated; NOT committed to git
-    â”‚       â””â”€â”€ styles/
-    â”‚           â”œâ”€â”€ tailwindStyles.css  # @import "tailwindcss"; â€” Tailwind v4 entry
-    â”‚           â””â”€â”€ builderStyles.css   # existing 325-line custom CSS (unchanged, moved)
-    â”‚
-    â””â”€â”€ shared/                        # publishable npm package
-        â”œâ”€â”€ package.json               # name: "@mux-magic/shared"; public; version-tagged
-        â”œâ”€â”€ tsconfig.json
-        â””â”€â”€ src/
-            â”œâ”€â”€ index.ts               # ONLY barrel file in the project; re-exports all public APIs
-            â”œâ”€â”€ logMessage.ts          # copied from server/src/tools/logMessage.ts
-            â”œâ”€â”€ naturalSort.ts
-            â”œâ”€â”€ createRenameFileOrFolder.ts
-            â”œâ”€â”€ captureLogMessage.ts
-            â”œâ”€â”€ catchNamedError.ts
-            â”œâ”€â”€ rethrowNamedError.ts
-            â”œâ”€â”€ makeDirectory.ts
-            â”œâ”€â”€ aclSafeCopyFile.ts
-            â”œâ”€â”€ readFiles.ts
-            â”œâ”€â”€ readFilesAtDepth.ts
-            â””â”€â”€ readFolders.ts
+┌── package.json                       # root; workspaces: ["packages/*"]
+┌── tsconfig.base.json                 # shared base TS config
+┌── biome.json                         # formatter + linter (root, covers all packages)
+┌── eslint.config.js                   # minimal: react-compiler + testing-library only
+┌── vitest.config.ts                   # root: references both server + web projects
+┌── playwright.config.ts               # unchanged
+│
+┌── .github/
+│   └── workflows/
+│       ┌── deploy.yml                 # existing: Docker build + push to ghcr.io
+│       └── publish-shared.yml         # NEW: publish @mux-magic/shared to npm on tag
+│
+┌── .storybook/
+│   ┌── main.ts                        # @storybook/react-vite, v10
+│   └── preview.ts                     # Jotai Provider, MSW, Tailwind theme
+│
+┌── e2e/                               # Playwright specs (unchanged)
+│   ┌── builder.spec.ts
+│   └── video-seek.spec.ts
+│
+┌── public/                            # LEGACY — deleted incrementally; gone by Final PR
+│   └── builder/js/...                 # 77 files being replaced
+│
+└── packages/
+    │
+    ┌── server/                        # existing server code, moved here
+    │   ┌── package.json               # name: "@mux-magic/server"
+    │   ┌── tsconfig.json              # NodeNext, no jsx, extends ../../tsconfig.base.json
+    │   └── src/
+    │       ┌── api/
+    │       ┌── cli/
+    │       ┌── tools/
+    │       ┌── app-commands/
+    │       ┌── cli-commands/
+    │       ┌── cli-spawn-operations/
+    │       ┌── shared/                # server-internal types/utils shared by api/ AND cli/
+    │       │                          # (renamed from current src/__shared__/ — drop the underscores)
+    │       │                          # NOT published to npm; use packages/shared/ for that
+    │       └── server.ts
+    │
+    ┌── web/                           # Vite frontend
+    │   ┌── package.json               # name: "@mux-magic/web"
+    │   ┌── tsconfig.json              # ESNext, bundler, jsx: react-jsx
+    │   ┌── vite.config.ts
+    │   ┌── vitest.config.ts           # browser project only
+    │   ┌── index.html                 # single HTML entry; React Router handles /builder
+    │   ┌── public/
+    │   │   └── mockServiceWorker.js   # generated by `msw init`
+    │   └── src/
+    │       ┌── app.tsx                # Vite entry: boots Jotai + MSW + mounts router
+    │       ┌── router.tsx             # React Router v7 route definitions
+    │       ┌── pages/                 # one file per route; thin wrappers only
+    │       │   ┌── BuilderPage.tsx    # route component for /builder
+    │       │   └── JobsPage.tsx       # route component for /
+    │       ┌── components/            # flat shared component library; all builder + jobs components
+    │       │   ┌── LoadModal.tsx      # one file per component
+    │       │   ┌── LoadModal.test.tsx
+    │       │   ┌── LoadModal.stories.tsx
+    │       │   ┌── LoadModal.mdx
+    │       │   ┌── StepCard.tsx
+    │       │   ┌── JobCard.tsx
+    │       │   ┌── BooleanField.tsx
+    │       │   ┌── CommandPicker.tsx
+    │       │   ┌── Popover.tsx        # Radix-based primitives live here too
+    │       │   └── ...               # (all 77 legacy files end up here)
+    │       ┌── icons/                 # inline SVGs as React components
+    │       │   ┌── CollapseChevron.tsx
+    │       │   ┌── CopyIcon.tsx
+    │       │   └── ...
+    │       ┌── state/                 # Jotai atoms; one file per atom or atom group
+    │       │   ┌── stepsAtom.ts
+    │       │   ┌── pathsAtom.ts
+    │       │   ┌── historyAtoms.ts
+    │       │   ┌── uiAtoms.ts         # modal open states, selected step, etc.
+    │       │   ┌── flattenedStepsAtom.ts
+    │       │   ┌── commandsAtom.ts
+    │       │   └── bridge.ts          # TRANSITIONAL: window.mediaTools ↔ Jotai
+    │       ┌── mocks/
+    │       │   ┌── browser.ts         # MSW worker setup
+    │       │   └── handlers.ts        # HTTP mock handlers
+    │       ┌── api/
+    │       │   ┌── client.ts          # openapi-fetch client
+    │       │   └── schema.generated.ts  # generated; NOT committed to git
+    │       └── styles/
+    │           ┌── tailwindStyles.css  # @import "tailwindcss"; — Tailwind v4 entry
+    │           └── builderStyles.css   # existing 325-line custom CSS (unchanged, moved)
+    │
+    └── shared/                        # publishable npm package
+        ┌── package.json               # name: "@mux-magic/shared"; public; version-tagged
+        ┌── tsconfig.json
+        └── src/
+            ┌── index.ts               # ONLY barrel file in the project; re-exports all public APIs
+            ┌── logMessage.ts          # copied from server/src/tools/logMessage.ts
+            ┌── naturalSort.ts
+            ┌── createRenameFileOrFolder.ts
+            ┌── captureLogMessage.ts
+            ┌── catchNamedError.ts
+            ┌── rethrowNamedError.ts
+            ┌── makeDirectory.ts
+            ┌── aclSafeCopyFile.ts
+            ┌── readFiles.ts
+            ┌── readFilesAtDepth.ts
+            └── readFolders.ts
             # Zod schemas: if added, one file per entity (e.g., jobSchema.ts, sequenceSchema.ts)
             # Do NOT put all schemas in a single schemas.ts file
 ```
 
 ### Function Style
 
-**Always use `const` + arrow functions (`=>`). Never use `function` declarations unless `this` binding is explicitly required** (it almost never is in React code â€” hooks, event handlers, and utilities all close over the outer scope).
+**Always use `const` + arrow functions (`=>`). Never use `function` declarations unless `this` binding is explicitly required** (it almost never is in React code — hooks, event handlers, and utilities all close over the outer scope).
 
 ```ts
 // WRONG
@@ -240,7 +240,7 @@ const fetchJobs = async () => {
   return res.data
 }
 
-// In tests, async/await with explicit return is always fine â€” tests are sequential by design
+// In tests, async/await with explicit return is always fine — tests are sequential by design
 it("loads jobs", async () => {
   const result = await fetchJobs()
   expect(result).toHaveLength(3)
@@ -293,10 +293,10 @@ ESLint rule to enforce this: `import-x/no-barrel-files` (add to `eslint.config.j
 ## Routing: React Router v7 (Declarative Mode)
 
 React Router v7 was previously called Remix. **Use Declarative Mode** (not Framework/SSR mode).
-This means `<BrowserRouter>` + `<Routes>` â€” no Vite plugin, no file-based routing, no SSR.
+This means `<BrowserRouter>` + `<Routes>` — no Vite plugin, no file-based routing, no SSR.
 
 There is one `index.html`. The `/builder` route is handled entirely by React Router in the browser
-â€” no `builder.html` file is needed.
+— no `builder.html` file is needed.
 
 ```ts
 // packages/web/src/router.tsx
@@ -320,7 +320,7 @@ export function AppRouter() {
 
 **Why not Framework mode**: you don't need SSR, file-based routing, or server actions. Declarative mode is the right-sized tool.
 
-**Why not TanStack Router**: React Router v7 declarative mode is simpler for this SPA and is the industry standard. TanStack Router is better when you need full type-safe URL search params from the start â€” defer this if needed.
+**Why not TanStack Router**: React Router v7 declarative mode is simpler for this SPA and is the industry standard. TanStack Router is better when you need full type-safe URL search params from the start — defer this if needed.
 
 ---
 
@@ -366,7 +366,7 @@ packages/web/src/api/schema.generated.ts
 
 The project already has `src/generateSchemas.ts` that generates schemas programmatically.
 In the monorepo it moves to `packages/server/src/generateSchemas.ts`.
-The npm script calls it directly via `tsx` â€” do not replace this with a raw `openapi-typescript` CLI call.
+The npm script calls it directly via `tsx` — do not replace this with a raw `openapi-typescript` CLI call.
 
 ```json
 "generate-schemas": "tsx --env-file ./.env packages/server/src/generateSchemas.ts"
@@ -415,8 +415,8 @@ Do not make the client code depend on a file that must be fetched at runtime.
 Run each server in its own terminal. Do not use `concurrently`.
 
 ```
-Terminal 1: yarn workspace @mux-magic/server run start  â†’ Hono API on :3000
-Terminal 2: yarn workspace @mux-magic/web run dev       â†’ Vite frontend on :5173
+Terminal 1: yarn workspace @mux-magic/server run start  → Hono API on :3000
+Terminal 2: yarn workspace @mux-magic/web run dev       → Vite frontend on :5173
 ```
 
 Optionally, add a root-level `dev` script to `package.json` that uses Yarn 4's native parallel runner:
@@ -425,7 +425,7 @@ Optionally, add a root-level `dev` script to `package.json` that uses Yarn 4's n
 "dev": "yarn workspaces foreach --all --parallel --interlaced run dev"
 ```
 
-This is Yarn 4's built-in mechanism â€” no extra dependency needed.
+This is Yarn 4's built-in mechanism — no extra dependency needed.
 
 Modify `packages/server/src/api/hono-routes.ts` to proxy to Vite in dev:
 
@@ -447,7 +447,7 @@ API routes, SSE, and WebSocket connections go to Hono only, never to Vite.
 
 ### Production (Single Process)
 
-`yarn build:web` â†’ outputs to `packages/web/dist/`.
+`yarn build:web` → outputs to `packages/web/dist/`.
 Hono serves that dir as static files at `/*` (the prod branch above).
 One process, one port. This is the same architecture as today.
 
@@ -561,12 +561,12 @@ Both `packages/server` and `packages/web` declare `@mux-magic/shared` as a `work
 }
 ```
 
-`workspace:*` means Yarn resolves the package directly from `packages/shared/` in the monorepo â€” no publish step needed during development. When Changesets publishes a release, it automatically rewrites `workspace:*` to the pinned version number (`"^1.2.0"`) in the published artifact. Consumers in `media-sync` get the real version; the monorepo uses the live source.
+`workspace:*` means Yarn resolves the package directly from `packages/shared/` in the monorepo — no publish step needed during development. When Changesets publishes a release, it automatically rewrites `workspace:*` to the pinned version number (`"^1.2.0"`) in the published artifact. Consumers in `media-sync` get the real version; the monorepo uses the live source.
 
 ### Parallel Workstream: media-sync Migration
 
 **Blocks on**: `@mux-magic/shared` v0.1.0 published to npm (happens in PR #1).
-**Independent of**: React wave work (Waves Aâ€“F). Can run concurrently.
+**Independent of**: React wave work (Waves A–F). Can run concurrently.
 **Repo**: `../media-sync` (separate repo, separate PRs).
 
 Once `@mux-magic/shared` is published:
@@ -649,7 +649,7 @@ jobs:
 ### Biome Formatting in CI
 
 `biome check` (no `--write` flag) checks both formatting and linting without modifying files.
-It exits with a non-zero code if any file is unformatted or has a lint error â€” CI fails, PR is blocked.
+It exits with a non-zero code if any file is unformatted or has a lint error — CI fails, PR is blocked.
 
 **Developer workflow**: run `yarn lint` (which runs `biome check --write`) locally before committing.
 **CI**: runs `biome check` (read-only check). Never runs `--write` in CI.
@@ -694,8 +694,8 @@ Use `@changesets/cli` for automated version bumping as PRs merge.
 
 **Two version streams:**
 
-- `@mux-magic/server` + `@mux-magic/web` â€” always bump together (one app version, shared by the Docker image tag and any UI version display)
-- `@mux-magic/shared` â€” bumps independently; its version is what consumers in `media-sync` pin to
+- `@mux-magic/server` + `@mux-magic/web` — always bump together (one app version, shared by the Docker image tag and any UI version display)
+- `@mux-magic/shared` — bumps independently; its version is what consumers in `media-sync` pin to
 
 **Setup** (done in PR #1):
 
@@ -717,7 +717,7 @@ Configure `.changeset/config.json`:
 }
 ```
 
-Set `"access": "public"` for `@mux-magic/shared` in its own `package.json` â€” Changesets respects per-package `publishConfig.access`.
+Set `"access": "public"` for `@mux-magic/shared` in its own `package.json` — Changesets respects per-package `publishConfig.access`.
 
 **PR author workflow** (each AI worker follows this per PR):
 ```bash
@@ -726,7 +726,7 @@ git add .changeset/
 git commit -m "chore: add changeset"
 ```
 
-**On merge to `react-migration`** â€” a GitHub Action runs automatically:
+**On merge to `react-migration`** — a GitHub Action runs automatically:
 
 Add to `.github/workflows/ci.yml` a new job (runs only on push to `react-migration`, not on PRs):
 ```yaml
@@ -758,13 +758,13 @@ The Docker image is tagged with the server package version (already done in `dep
 
 ---
 
-### Branch Protection (GitHub Settings â€” done once by repo owner)
+### Branch Protection (GitHub Settings — done once by repo owner)
 
-In GitHub repo Settings â†’ Branches â†’ Add rule for `react-migration`:
+In GitHub repo Settings → Branches → Add rule for `react-migration`:
 
 - Require status checks to pass: `lint`, `typecheck`, `unit-tests`, `e2e`
 - Require branches to be up to date before merging
-- Do NOT require `deploy` (the Docker build) â€” that only runs on `master`
+- Do NOT require `deploy` (the Docker build) — that only runs on `master`
 
 ---
 
@@ -777,13 +777,13 @@ The existing `Dockerfile` runs a single process: `yarn start-server` (Hono API o
 ### Updated Architecture
 
 In the final state, the Docker container runs **both** the API server (Hono) and the web server
-(Hono serving the Vite-built static files as one process â€” see Vite + Hono Coexistence section).
+(Hono serving the Vite-built static files as one process — see Vite + Hono Coexistence section).
 
 Because Hono serves both API routes AND the built frontend in production, **you still have one process**.
 The `start-docker` script is just `yarn start-server` (no change needed here).
 
 nginx-proxy-manager sits in front and routes:
-- `app.yourdomain.com` â†’ container port `$PORT` (serves both API at `/api/*` and frontend at `/*`)
+- `app.yourdomain.com` → container port `$PORT` (serves both API at `/api/*` and frontend at `/*`)
 
 ### Environment Variables
 
@@ -823,7 +823,7 @@ Or add a root-level `start-docker` script to `package.json` that does the same.
 **Biome v2** handles formatting and most linting. Full format+lint mode enabled.
 
 First run will reformat existing server-side files (including the hand-styled
-`src/tools/addFolderNameBeforeFilename.ts`). This is a one-time cost â€” accept it.
+`src/tools/addFolderNameBeforeFilename.ts`). This is a one-time cost — accept it.
 
 Biome natively covers:
 - JS, TS, JSX formatting (2-space indent, double quotes, trailing commas, semicolons)
@@ -850,14 +850,14 @@ Config (`biome.json` at root):
 ```
 
 Scripts (add to root `package.json`):
-- `yarn lint` â€” alias for Biome and ESLint autofix.
+- `yarn lint` — alias for Biome and ESLint autofix.
 
 ### ESLint (Minimal: Two Plugins Only)
 
 ESLint is kept only for two specialized plugins Biome has not yet ported:
 
-1. **`eslint-plugin-react-compiler`** â€” error when code pattern prevents React Compiler from optimizing
-2. **`eslint-plugin-testing-library`** â€” warn on getByText/findByText when getByRole should be used
+1. **`eslint-plugin-react-compiler`** — error when code pattern prevents React Compiler from optimizing
+2. **`eslint-plugin-testing-library`** — warn on getByText/findByText when getByRole should be used
 
 ```ts
 // eslint.config.js
@@ -889,7 +889,7 @@ export default [
 ### React Compiler (Auto-Memoization)
 
 React 19 + `babel-plugin-react-compiler` auto-memoizes components and hook return values.
-**Do not use** `useMemo`, `useCallback`, or `React.memo` manually â€” the compiler handles it.
+**Do not use** `useMemo`, `useCallback`, or `React.memo` manually — the compiler handles it.
 
 The only exception: when exporting a stable reference across a module boundary that a
 non-React subscriber needs to remain stable (document this with a comment).
@@ -904,15 +904,15 @@ react({
 ```
 
 `eslint-plugin-react-compiler` warns when code patterns prevent optimization.
-Treat these as errors â€” they are real bugs (mutations in render, conditional hooks, etc.).
+Treat these as errors — they are real bugs (mutations in render, conditional hooks, etc.).
 
 ### Testing
 
-- **Vitest 4** â€” two projects: "node" (server logic) + "browser" (React components in real Chromium)
-- **@testing-library/react** â€” component tests; `getByRole` first, `getByText` only as fallback
-- **@testing-library/user-event** â€” user interaction simulation
-- **@testing-library/jest-dom** â€” extended matchers (`toBeInTheDocument`, etc.)
-- **Playwright** â€” E2E tests in `e2e/`; keep separate; do not consolidate into Vitest
+- **Vitest 4** — two projects: "node" (server logic) + "browser" (React components in real Chromium)
+- **@testing-library/react** — component tests; `getByRole` first, `getByText` only as fallback
+- **@testing-library/user-event** — user interaction simulation
+- **@testing-library/jest-dom** — extended matchers (`toBeInTheDocument`, etc.)
+- **Playwright** — E2E tests in `e2e/`; keep separate; do not consolidate into Vitest
 
 Test file rule: `ComponentName.test.tsx` lives next to `ComponentName.tsx`.
 No separate `__tests__/` folders for component tests.
@@ -931,17 +931,17 @@ Global decorator (`preview.ts`): wrap all stories in Jotai `<Provider>`, apply T
 enable MSW via `msw-storybook-addon`.
 
 Scripts:
-- `yarn storybook` â€” dev on `:6006`
-- `yarn build-storybook` â€” static output for deployment
+- `yarn storybook` — dev on `:6006`
+- `yarn build-storybook` — static output for deployment
 
 ### Tailwind v4 + Vite
 
 Replace the CDN runtime (`public/vendor/tailwind-3.4.17.js`) with **Tailwind v4** + `@tailwindcss/vite`.
 
 CSS file naming (no `index.css`):
-- `packages/web/src/styles/tailwindStyles.css` â€” `@import "tailwindcss";` only
-- `packages/web/src/styles/builderStyles.css` â€” the existing 325-line custom CSS (unchanged)
-- `packages/web/src/styles/jobsStyles.css` â€” custom CSS for jobs page (if any)
+- `packages/web/src/styles/tailwindStyles.css` — `@import "tailwindcss";` only
+- `packages/web/src/styles/builderStyles.css` — the existing 325-line custom CSS (unchanged)
+- `packages/web/src/styles/jobsStyles.css` — custom CSS for jobs page (if any)
 
 Both are imported as side-effects in `app.tsx`. No `@apply`. No CSS Modules.
 
@@ -961,8 +961,8 @@ Tasks:
 3. Create `tsconfig.base.json`, update each workspace's `tsconfig.json`
 4. Add `vite.config.ts` in `packages/web/` with `@vitejs/plugin-react` (React Compiler enabled), `@tailwindcss/vite`
 5. Create `packages/web/index.html` (single entry; references `src/app.tsx`; no `builder.html` needed)
-6. Create `packages/web/src/app.tsx` â€” boots Jotai `Provider`, MSW opt-in, mounts React Router, imports legacy JS as side-effect
-7. Create `packages/web/src/router.tsx` â€” `<BrowserRouter>` with two `<Route>` entries (stub `BuilderPage`, stub `JobsPage` in `src/pages/`)
+6. Create `packages/web/src/app.tsx` — boots Jotai `Provider`, MSW opt-in, mounts React Router, imports legacy JS as side-effect
+7. Create `packages/web/src/router.tsx` — `<BrowserRouter>` with two `<Route>` entries (stub `BuilderPage`, stub `JobsPage` in `src/pages/`)
 8. Create `packages/web/src/styles/tailwindStyles.css` and `builderStyles.css` (copied from `public/builder/builder.css`)
 9. Create Biome config (`biome.json`)
 10. Create minimal ESLint config (`eslint.config.js`)
@@ -976,8 +976,8 @@ Tasks:
 18. Add `generate-schemas` script to root `package.json`
 19. Create `docs/react-migration-plan.md` (copy this document)
 20. Create `docs/react-migration-checklist.md`
-21. Archive `docs/CHECKLIST.md` â†’ `docs/archive/CHECKLIST-2026-05-08.md`
-22. Archive stale docs â†’ `docs/archive/`
+21. Archive `docs/CHECKLIST.md` → `docs/archive/CHECKLIST-2026-05-08.md`
+22. Archive stale docs → `docs/archive/`
 
 **Verification**:
 - `yarn workspace web run dev` starts Vite without errors
@@ -987,7 +987,7 @@ Tasks:
 - `yarn eslint .` passes
 - No TypeScript errors (`yarn typecheck`)
 
-### PR #2: First Component â€” LoadModal
+### PR #2: First Component — LoadModal
 
 **Goal**: One React component replaces one legacy JS file, end-to-end.
 **Depends on**: PR #1 merged to `react-migration`.
@@ -1004,8 +1004,8 @@ Tasks:
 8. Update `docs/react-migration-checklist.md`
 
 **Verification**:
-- Click "Load YAML" â†’ modal opens (React-rendered)
-- Paste valid YAML â†’ sequence loads into builder (legacy JS still renders steps)
+- Click "Load YAML" → modal opens (React-rendered)
+- Paste valid YAML → sequence loads into builder (legacy JS still renders steps)
 - `LoadModal.test.tsx` passes in Vitest browser project
 - `LoadModal` story renders in Storybook
 - No console errors; no regressions in other modals
@@ -1015,32 +1015,32 @@ Tasks:
 Each wave can be divided across multiple AI workers on separate worktrees.
 Workers follow the exact recipe established in PR #2 for each component.
 
-**Wave A** â€” leaf components (no dependencies on other in-progress React components):
+**Wave A** — leaf components (no dependencies on other in-progress React components):
 - `YamlModal`, `CommandHelpModal`, `FieldTooltip`, `CollapseChevron`, `CopyIcon`, `InsertDivider`, `StatusBadge`
 - Parallelizable: assign one component per worker
 
-**Wave B** â€” fields (shared field-rendering protocol):
+**Wave B** — fields (shared field-rendering protocol):
 - Convert `RenderFields.tsx` first (one worker, blocks the rest)
 - Then (parallelizable): `BooleanField`, `EnumField`, `StringField`, `NumberField`, `PathField`, `JsonField`, `LanguageCodeField`, `LanguageCodesField`, `NumberArrayField`, `StringArrayField`, `NumberWithLookupField`, `SubtitleRulesField`
 
-**Wave C** â€” pickers (need `Popover` primitive first):
+**Wave C** — pickers (need `Popover` primitive first):
 - Build `packages/web/src/primitives/Popover.tsx` (Radix `@radix-ui/react-popover`, one worker)
 - Then (parallelizable): `CommandPicker`, `EnumPicker`, `LinkPicker`, `PathPicker`
 
-**Wave D** â€” cards (depend on Wave B fields + Wave C pickers):
+**Wave D** — cards (depend on Wave B fields + Wave C pickers):
 - `StepCard`, `GroupCard`, `PathVarCard`
-- `DragAndDrop` â€” wrap existing `Sortable.js` library in a `useEffect`; do not replace the library
+- `DragAndDrop` — wrap existing `Sortable.js` library in a `useEffect`; do not replace the library
 
-**Wave E** â€” page structure (depends on all prior waves):
+**Wave E** — page structure (depends on all prior waves):
 - `PageHeader` (converts inline HTML; exposes `openLoadModal` via atom instead of global function)
 - `LookupModal`, `FileExplorerModal`, `RunSequence`, `ApiRunModal`, `PromptModal`
 - `DslRulesBuilder` (complex; treat as its own PR with sub-components)
 
-**Wave F** â€” Jobs page (independent from Waves Aâ€“E; can start any time after PR #1):
+**Wave F** — Jobs page (independent from Waves A–E; can start any time after PR #1):
 - `JobCard`, `StatusBar`, `SseStream` (no dependencies on builder components)
 - `JobsPage.tsx` becomes a real page after wave F
 
-**Final PR** â€” cleanup (after all waves complete, user confirms):
+**Final PR** — cleanup (after all waves complete, user confirms):
 - Delete `public/builder/`, `public/jobs/`, `public/builder/index.html`
 - Delete `packages/web/src/state/bridge.ts` and all references to `window.mediaTools`
 - Delete `packages/web/index.html` dual-entry HTML if still present
@@ -1065,10 +1065,10 @@ Workers follow the exact recipe established in PR #2 for each component.
 - `docs/react-migration-plan.md`, `docs/react-migration-checklist.md`
 
 ### Modified files (PR #1)
-- `package.json` (root) â€” add `workspaces`, scripts
-- `packages/server/src/api/hono-routes.ts` â€” add dev proxy
-- `Dockerfile` â€” update CMD
-- `.gitignore` â€” add `schema.generated.ts`
+- `package.json` (root) — add `workspaces`, scripts
+- `packages/server/src/api/hono-routes.ts` — add dev proxy
+- `Dockerfile` — update CMD
+- `.gitignore` — add `schema.generated.ts`
 
 ### Generated (not committed)
 - `packages/web/src/api/schema.generated.ts`
@@ -1079,26 +1079,26 @@ Workers follow the exact recipe established in PR #2 for each component.
 
 ### Development Workflow
 1. `yarn install`
-2. `yarn workspace server run start` (terminal 1 â†’ API on :3000)
+2. `yarn workspace server run start` (terminal 1 → API on :3000)
 3. `yarn generate-schemas` (generates typed API client)
-4. `yarn workspace web run dev` (terminal 2 â†’ Vite on :5173)
-5. Open `http://localhost:3000/` â†’ Jobs page (proxied via Hono â†’ Vite)
-6. Open `http://localhost:3000/builder` â†’ Builder page
-7. `http://localhost:6006` â†’ Storybook
+4. `yarn workspace web run dev` (terminal 2 → Vite on :5173)
+5. Open `http://localhost:3000/` → Jobs page (proxied via Hono → Vite)
+6. Open `http://localhost:3000/builder` → Builder page
+7. `http://localhost:6006` → Storybook
 
 ### Per-PR Verification Checklist
-- `yarn biome check` â†’ 0 errors
-- `yarn eslint .` â†’ 0 errors (react-compiler violations are errors, not warnings)
-- `yarn typecheck` â†’ 0 errors
-- `yarn test` â†’ all pass (node + browser projects)
-- `yarn e2e` â†’ all pass (Playwright, run against real Hono server)
+- `yarn biome check` → 0 errors
+- `yarn eslint .` → 0 errors (react-compiler violations are errors, not warnings)
+- `yarn typecheck` → 0 errors
+- `yarn test` → all pass (node + browser projects)
+- `yarn e2e` → all pass (Playwright, run against real Hono server)
 - Manual: navigate to `/` and `/builder`, verify no console errors, verify feature works
 
 ### Production Build Check
 ```bash
-yarn build:web          # Vite bundle â†’ packages/web/dist/
+yarn build:web          # Vite bundle → packages/web/dist/
 yarn workspace server run start-server   # Hono serves dist/
-# Open http://localhost:3000 â€” should load built React app, not Vite dev server
+# Open http://localhost:3000 — should load built React app, not Vite dev server
 ```
 
 ---
@@ -1107,7 +1107,7 @@ yarn workspace server run start-server   # Hono serves dist/
 
 **Planned after the Final PR is merged and the user confirms migration complete.**
 
-The project will be renamed from `Mux-Magic` â†’ **MuxMagic**. This is a pure rename â€” no architecture changes.
+The project will be renamed from `Mux-Magic` → **MuxMagic**. This is a pure rename — no architecture changes.
 
 Scope of the rename:
 
@@ -1127,16 +1127,16 @@ The local directory and repo rename requires coordination outside this repo (CI 
 
 ## Things We Are NOT Doing
 
-- **SSR or React Server Components** â€” this is a local-user tool, SPA is correct
-- **React Router Framework mode** â€” no file-based routing, no server actions needed
-- **Form library** (`react-hook-form`, `formik`) â€” Jotai handles form state
-- **ShadCN pre-installed components** â€” start with Radix + Tailwind; add ShadCN if duplication appears
-- **Icon library** â€” inline SVGs as React components in `icons.tsx`
-- **CSS-in-JS**, CSS Modules â€” Tailwind + global CSS files
-- **XState / state machines** â€” not yet; the existing imperative approach works
-- **Auth** â€” out of scope for this tool
-- **Publishing `@mux-magic/web` to npm** â€” only `@mux-magic/shared` is published
-- **Converting media-sync to React** â€” that happens after this migration is done and the shared library is published
+- **SSR or React Server Components** — this is a local-user tool, SPA is correct
+- **React Router Framework mode** — no file-based routing, no server actions needed
+- **Form library** (`react-hook-form`, `formik`) — Jotai handles form state
+- **ShadCN pre-installed components** — start with Radix + Tailwind; add ShadCN if duplication appears
+- **Icon library** — inline SVGs as React components in `icons.tsx`
+- **CSS-in-JS**, CSS Modules — Tailwind + global CSS files
+- **XState / state machines** — not yet; the existing imperative approach works
+- **Auth** — out of scope for this tool
+- **Publishing `@mux-magic/web` to npm** — only `@mux-magic/shared` is published
+- **Converting media-sync to React** — that happens after this migration is done and the shared library is published
 
 ---
 
@@ -1146,16 +1146,16 @@ Use this to decide which Claude model to assign to each worker task.
 
 **Models referenced:**
 
-- **Opus** (`claude-opus-4-7`) â€” highest capability; use for architecture and novel design decisions
-- **Sonnet** (`claude-sonnet-4-6`) â€” balanced; use with extended thinking for moderately complex work
-- **Haiku** (`claude-haiku-4-5`) â€” fast and cheap; use with thinking enabled for clear pattern-execution
+- **Opus** (`claude-opus-4-7`) — highest capability; use for architecture and novel design decisions
+- **Sonnet** (`claude-sonnet-4-6`) — balanced; use with extended thinking for moderately complex work
+- **Haiku** (`claude-haiku-4-5`) — fast and cheap; use with thinking enabled for clear pattern-execution
 
 > Haiku does not have adjustable effort levels (low/medium/high thinking budget) the way Sonnet does,
 > but it does support thinking. Enable it for any task marked "Haiku (thinking)".
 
 | Task | Model | Effort | Reason |
 | ---- | ----- | ------ | ------ |
-| **PR #1: Bootstrap** | Opus | â€” | Sets the entire foundation; architectural mistakes here cascade to all 77+ subsequent PRs |
+| **PR #1: Bootstrap** | Opus | — | Sets the entire foundation; architectural mistakes here cascade to all 77+ subsequent PRs |
 | **PR #2: LoadModal (template)** | Sonnet | High | First component establishes the pattern every wave worker follows; must be correct |
 | **Wave A: leaf components** | Haiku | Thinking | Mechanical conversions; pattern established by PR #2 |
 | **Wave B: RenderFields dispatcher** | Sonnet | Medium | Field dispatch table design needs care; all field workers depend on it |
@@ -1163,23 +1163,23 @@ Use this to decide which Claude model to assign to each worker task.
 | **Wave C: Popover primitive** | Sonnet | Medium | Radix integration + keyboard/focus behavior needs careful thought |
 | **Wave C: individual pickers** | Haiku | Thinking | Mechanical; primitive already built |
 | **Wave D: StepCard, GroupCard, PathVarCard** | Sonnet | Medium | Complex prop threading through many components |
-| **Wave D: DragAndDrop (Sortable wrapper)** | Sonnet | High | React â†” imperative library interop is non-trivial; ref lifecycle is subtle |
+| **Wave D: DragAndDrop (Sortable wrapper)** | Sonnet | High | React ↔ imperative library interop is non-trivial; ref lifecycle is subtle |
 | **Wave E: PageHeader, LookupModal** | Sonnet | Medium | Multi-component trees but predictable structure |
 | **Wave E: RunSequence, ApiRunModal** | Sonnet | High | SSE streaming + job state coordination is complex |
-| **Wave E: DslRulesBuilder** | Opus | â€” | Most complex builder component; many sub-states and interactions |
+| **Wave E: DslRulesBuilder** | Opus | — | Most complex builder component; many sub-states and interactions |
 | **Wave F: Jobs page** | Haiku | Thinking | Simpler than builder; SSE pattern is already established in the codebase |
 | **Final PR: cleanup** | Sonnet | Medium | Deleting bridge + consolidating roots; needs careful regression checking |
 | **media-sync workstream** | Haiku | Thinking | Mechanical file replacements once shared package is published |
 | **CI / Changesets / tooling setup** | Sonnet | Low | Config-heavy but well-documented; mistakes are easy to catch |
-| **Per-PR changeset descriptions** | Haiku | â€” | Trivial; describe what changed in plain English |
+| **Per-PR changeset descriptions** | Haiku | — | Trivial; describe what changed in plain English |
 
 **Estimated worker concurrency by wave:**
 
-- **Wave A**: 4â€“5 workers (each takes one leaf component)
-- **Wave B fields**: 6â€“8 workers after RenderFields merges
-- **Wave C pickers**: 2â€“3 workers after Popover merges
+- **Wave A**: 4–5 workers (each takes one leaf component)
+- **Wave B fields**: 6–8 workers after RenderFields merges
+- **Wave C pickers**: 2–3 workers after Popover merges
 - **Wave D**: 3 workers (one per card type; DragAndDrop is its own)
-- **Wave E**: 2â€“3 workers (split by component complexity)
+- **Wave E**: 2–3 workers (split by component complexity)
 - **Wave F**: 1 worker (Jobs page is simpler and smaller)
 - **media-sync**: 1 worker, runs in parallel with any wave
 
@@ -1199,7 +1199,7 @@ Last updated: [date] by [worker/AI]
 | PR | Description | Status | Branch | Notes |
 |----|-------------|--------|--------|-------|
 | PR #1 | Bootstrap (monorepo, Vite, Biome, Storybook) | [ ] Not started | react-migration | |
-| PR #2 | LoadModal â€” first component | [ ] Not started | | |
+| PR #2 | LoadModal — first component | [ ] Not started | | |
 | Wave A-1 | YamlModal | [ ] Not started | | |
 | Wave A-2 | CommandHelpModal | [ ] Not started | | |
 | Wave A-3 | FieldTooltip | [ ] Not started | | |
