@@ -1,6 +1,14 @@
 import { atom } from "jotai"
-import { flattenSteps, isGroup } from "../jobs/sequenceUtils"
-import type { SequenceItem, Step, Variable, VariableType } from "../types"
+import {
+  flattenSteps,
+  isGroup,
+} from "../jobs/sequenceUtils"
+import type {
+  SequenceItem,
+  Step,
+  Variable,
+  VariableType,
+} from "../types"
 import { stepsAtom } from "./stepsAtom"
 
 export const variablesAtom = atom<Variable[]>([])
@@ -12,7 +20,11 @@ export const addVariableAtom = atom(
   (
     _get,
     set,
-    args: { type: VariableType; label?: string; value?: string },
+    args: {
+      type: VariableType
+      label?: string
+      value?: string
+    },
   ) => {
     set(variablesAtom, (variables) => [
       ...variables,
@@ -72,13 +84,21 @@ export const removeVariableAtom = atom(
   (get, set, variableId: string) => {
     const variables = get(variablesAtom)
     const steps = get(stepsAtom)
-    const variable = variables.find((v) => v.id === variableId)
+    const variable = variables.find(
+      (existingVariable) =>
+        existingVariable.id === variableId,
+    )
     if (!variable) return
 
     const usages: VariableUsage[] = []
     for (const { step } of flattenSteps(steps)) {
-      for (const [fieldName, link] of Object.entries(step.links)) {
-        if (typeof link === "string" && link === variableId) {
+      for (const [fieldName, link] of Object.entries(
+        step.links,
+      )) {
+        if (
+          typeof link === "string" &&
+          link === variableId
+        ) {
           usages.push({ stepId: step.id, fieldName })
         }
       }
@@ -87,14 +107,20 @@ export const removeVariableAtom = atom(
     if (usages.length === 0) {
       set(
         variablesAtom,
-        variables.filter((v) => v.id !== variableId),
+        variables.filter(
+          (existingVariable) =>
+            existingVariable.id !== variableId,
+        ),
       )
       return
     }
 
-    const resolutions: Record<string, VariableResolution> = {}
+    const resolutions: Record<string, VariableResolution> =
+      {}
     for (const { stepId, fieldName } of usages) {
-      resolutions[usageKey(stepId, fieldName)] = { kind: "unlink" }
+      resolutions[usageKey(stepId, fieldName)] = {
+        kind: "unlink",
+      }
     }
 
     set(pendingVariableDeleteAtom, {
@@ -123,7 +149,8 @@ export const setVariableResolutionAtom = atom(
       ...pending,
       resolutions: {
         ...pending.resolutions,
-        [usageKey(args.stepId, args.fieldName)]: args.resolution,
+        [usageKey(args.stepId, args.fieldName)]:
+          args.resolution,
       },
     })
   },
@@ -135,14 +162,17 @@ const applyResolutionsToStep = (
   resolutions: Record<string, VariableResolution>,
   variableValue: string,
 ): Step => {
-  const stepUsages = usages.filter((usage) => usage.stepId === step.id)
+  const stepUsages = usages.filter(
+    (usage) => usage.stepId === step.id,
+  )
   if (stepUsages.length === 0) return step
 
   const links = { ...step.links }
   const params = { ...step.params }
 
   for (const { fieldName } of stepUsages) {
-    const resolution = resolutions[usageKey(step.id, fieldName)]
+    const resolution =
+      resolutions[usageKey(step.id, fieldName)]
     if (resolution?.kind === "replace") {
       links[fieldName] = resolution.targetId
     } else {
@@ -160,7 +190,12 @@ export const confirmVariableDeleteAtom = atom(
     const pending = get(pendingVariableDeleteAtom)
     if (!pending) return
 
-    const { variableId, variableValue, usages, resolutions } = pending
+    const {
+      variableId,
+      variableValue,
+      usages,
+      resolutions,
+    } = pending
 
     set(stepsAtom, (items: SequenceItem[]) =>
       items.map((item) => {
@@ -187,12 +222,18 @@ export const confirmVariableDeleteAtom = atom(
     )
 
     set(variablesAtom, (variables) =>
-      variables.filter((v) => v.id !== variableId),
+      variables.filter(
+        (existingVariable) =>
+          existingVariable.id !== variableId,
+      ),
     )
     set(pendingVariableDeleteAtom, null)
   },
 )
 
-export const cancelVariableDeleteAtom = atom(null, (_get, set) => {
-  set(pendingVariableDeleteAtom, null)
-})
+export const cancelVariableDeleteAtom = atom(
+  null,
+  (_get, set) => {
+    set(pendingVariableDeleteAtom, null)
+  },
+)

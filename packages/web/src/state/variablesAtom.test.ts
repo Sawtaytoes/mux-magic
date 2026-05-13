@@ -80,7 +80,9 @@ describe("variablesAtom", () => {
       value: "/mnt/media",
     })
     const [variable] = store.get(variablesAtom)
-    store.set(stepsAtom, [makeStep("step1", { source: variable.id })])
+    store.set(stepsAtom, [
+      makeStep("step1", { source: variable.id }),
+    ])
     store.set(removeVariableAtom, variable.id)
     expect(store.get(variablesAtom)).toHaveLength(1)
   })
@@ -90,7 +92,12 @@ describe("pathsAtom back-compat alias", () => {
   test("returns only path-typed variables", () => {
     const store = createStore()
     store.set(variablesAtom, [
-      { id: "v1", label: "Path A", value: "/a", type: "path" },
+      {
+        id: "v1",
+        label: "Path A",
+        value: "/a",
+        type: "path",
+      },
     ])
     const paths = store.get(pathsAtom)
     expect(paths).toHaveLength(1)

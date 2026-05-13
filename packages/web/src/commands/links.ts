@@ -4,7 +4,7 @@
 // they are pure functions that React components can call from atoms / hooks.
 
 import type { Commands } from "../commands/types"
-import type { Variable, Step } from "../types"
+import type { Step, Variable } from "../types"
 
 // PathVariable is now Variable<"path"> — callers passing PathVariable[] still
 // compile; both shapes are structurally identical.

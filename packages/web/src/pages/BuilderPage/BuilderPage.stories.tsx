@@ -19,7 +19,12 @@ import { BuilderPage } from "./BuilderPage"
 const withStore = (
   steps: SequenceItem[] = [],
   paths: PathVariable[] = [
-    { id: "basePath", label: "basePath", value: "" },
+    {
+      id: "basePath",
+      label: "basePath",
+      value: "",
+      type: "path",
+    },
   ],
   stepCounter: number = steps.length,
 ) => {
@@ -86,6 +91,7 @@ export const MidEdit: Story = {
           id: "basePath",
           label: "basePath",
           value: "/media/anime",
+          type: "path" as const,
         },
       ],
       2,
@@ -171,6 +177,7 @@ export const FullPipeline: Story = {
           id: "basePath",
           label: "basePath",
           value: "/media/anime/violet-evergarden",
+          type: "path" as const,
         },
       ],
       5,
@@ -220,6 +227,7 @@ export const StepRunning: Story = {
           id: "basePath",
           label: "basePath",
           value: "/media/anime",
+          type: "path" as const,
         },
       ],
       3,

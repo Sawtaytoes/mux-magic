@@ -2,6 +2,7 @@ import { useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
 import { apiBase } from "../../apiBase"
 import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
+import { pathPickerStateAtom } from "../../state/pickerAtoms"
 import {
   cancelVariableDeleteAtom,
   confirmVariableDeleteAtom,
@@ -11,7 +12,6 @@ import {
   setVariableValueAtom,
   variablesAtom,
 } from "../../state/variablesAtom"
-import { pathPickerStateAtom } from "../../state/pickerAtoms"
 import type { Variable } from "../../types"
 
 interface VariableCardProps {
@@ -31,7 +31,9 @@ const PathValueInput = ({
   onValueChange: (value: string) => void
 }) => {
   const setPathPickerState = useSetAtom(pathPickerStateAtom)
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const debounceTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null)
 
   useEffect(
     () => () => {
@@ -123,17 +125,23 @@ export const VariableCard = ({
   const setVariables = useSetAtom(variablesAtom)
   const setFileExplorer = useSetAtom(fileExplorerAtom)
   const remove = useSetAtom(removeVariableAtom)
-  const setResolution = useSetAtom(setVariableResolutionAtom)
+  const setResolution = useSetAtom(
+    setVariableResolutionAtom,
+  )
   const confirm = useSetAtom(confirmVariableDeleteAtom)
   const cancel = useSetAtom(cancelVariableDeleteAtom)
   const pending = useAtomValue(pendingVariableDeleteAtom)
 
-  const valueInputRef = useRef<HTMLInputElement | null>(null)
+  const valueInputRef = useRef<HTMLInputElement | null>(
+    null,
+  )
 
   const setLabel = (label: string) => {
     setVariables((variables) =>
-      variables.map((v) =>
-        v.id === variable.id ? { ...v, label } : v,
+      variables.map((existingVariable) =>
+        existingVariable.id === variable.id
+          ? { ...existingVariable, label }
+          : existingVariable,
       ),
     )
   }
@@ -160,7 +168,10 @@ export const VariableCard = ({
       setFileExplorer({
         path: startPath,
         pickerOnSelect: (selectedPath) => {
-          setValue({ variableId: variable.id, value: selectedPath })
+          setValue({
+            variableId: variable.id,
+            value: selectedPath,
+          })
         },
       })
     }
@@ -169,7 +180,9 @@ export const VariableCard = ({
   const isPendingDelete =
     pending !== null && pending.variableId === variable.id
   const otherVariables = allVariables.filter(
-    (v) => v.id !== variable.id && v.type === variable.type,
+    (otherVariable) =>
+      otherVariable.id !== variable.id &&
+      otherVariable.type === variable.type,
   )
 
   return (
@@ -271,9 +284,12 @@ export const VariableCard = ({
                   <option value="unlink">
                     Unlink (use literal value)
                   </option>
-                  {otherVariables.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      Replace with: {v.label}
+                  {otherVariables.map((otherVariable) => (
+                    <option
+                      key={otherVariable.id}
+                      value={otherVariable.id}
+                    >
+                      Replace with: {otherVariable.label}
                     </option>
                   ))}
                 </select>
@@ -309,4 +325,6 @@ export const PathVariableCard = ({
 }: {
   pathVariable: Variable
   isFirst: boolean
-}) => <VariableCard variable={pathVariable} isFirst={isFirst} />
+}) => (
+  <VariableCard variable={pathVariable} isFirst={isFirst} />
+)

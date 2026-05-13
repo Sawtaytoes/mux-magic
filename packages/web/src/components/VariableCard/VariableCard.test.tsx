@@ -103,6 +103,8 @@ describe("VariableCard", () => {
 
   test("shows path type label in type badge", () => {
     renderCard(makeVariable())
-    expect(screen.getByText("path variable")).toBeInTheDocument()
+    expect(
+      screen.getByText("path variable"),
+    ).toBeInTheDocument()
   })
 })

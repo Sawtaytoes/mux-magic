@@ -38,11 +38,13 @@ const withOpenPicker = () => {
       id: "basePath",
       label: "Base Path",
       value: "/home/user/videos",
+      type: "path" as const,
     },
     {
       id: "outputPath",
       label: "Output Path",
       value: "/home/user/output",
+      type: "path" as const,
     },
   ])
   store.set(linkPickerStateAtom, {

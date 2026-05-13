@@ -38,7 +38,9 @@ export type Step = {
 // types ("threadCount", "dvdCompareId") — this union grows as they land.
 export type VariableType = "path"
 
-export type Variable<T extends VariableType = VariableType> = {
+export type Variable<
+  T extends VariableType = VariableType,
+> = {
   id: string
   label: string
   value: string

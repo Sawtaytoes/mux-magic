@@ -77,7 +77,12 @@ const seedTestPath = (
   store: ReturnType<typeof createStore>,
 ) => {
   store.set(pathsAtom, [
-    { id: "test", label: "test", value: "/initial" },
+    {
+      id: "test",
+      label: "test",
+      value: "/initial",
+      type: "path" as const,
+    },
   ])
 }
 

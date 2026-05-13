@@ -201,7 +201,12 @@ const loadGroupItem = (
 }
 
 const ensureBasePath = (): Variable[] => [
-  { id: "basePath", label: "basePath", value: "", type: "path" },
+  {
+    id: "basePath",
+    label: "basePath",
+    value: "",
+    type: "path",
+  },
 ]
 
 const parseLegacyPathsBlock = (
@@ -229,9 +234,13 @@ const mergeVariables = (
   loser: Variable[],
   winner: Variable[],
 ): Variable[] => {
-  const winnerIds = new Set(winner.map((v) => v.id))
+  const winnerIds = new Set(
+    winner.map((variable) => variable.id),
+  )
   return [
-    ...loser.filter((v) => !winnerIds.has(v.id)),
+    ...loser.filter(
+      (variable) => !winnerIds.has(variable.id),
+    ),
     ...winner,
   ]
 }

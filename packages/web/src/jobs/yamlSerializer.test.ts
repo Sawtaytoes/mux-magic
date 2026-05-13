@@ -27,6 +27,7 @@ const BASE_PATH: PathVariable = {
   id: "basePath",
   label: "Base Path",
   value: "/fixture/media",
+  type: "path",
 }
 
 const MAKE_DIR_COMMAND: Commands = {
@@ -47,7 +48,12 @@ const MAKE_DIR_COMMAND: Commands = {
 describe("toYamlStr — empty states", () => {
   test("returns sentinel when steps is empty and no path values set", () => {
     const paths: PathVariable[] = [
-      { id: "basePath", label: "Base Path", value: "" },
+      {
+        id: "basePath",
+        label: "Base Path",
+        value: "",
+        type: "path",
+      },
     ]
     expect(toYamlStr([], paths, {})).toBe("# No steps yet")
   })
@@ -217,7 +223,11 @@ describe("toYamlStr — variables: block output", () => {
   }
 
   test("writes variables: key, not paths:", () => {
-    const result = toYamlStr([], [PATH_VAR], MAKE_DIR_COMMAND)
+    const result = toYamlStr(
+      [],
+      [PATH_VAR],
+      MAKE_DIR_COMMAND,
+    )
     const parsed = yaml.load(result) as Record<
       string,
       unknown
@@ -227,7 +237,11 @@ describe("toYamlStr — variables: block output", () => {
   })
 
   test("each variable entry includes the type field", () => {
-    const result = toYamlStr([], [PATH_VAR], MAKE_DIR_COMMAND)
+    const result = toYamlStr(
+      [],
+      [PATH_VAR],
+      MAKE_DIR_COMMAND,
+    )
     const parsed = yaml.load(result) as Record<
       string,
       unknown
@@ -240,7 +254,11 @@ describe("toYamlStr — variables: block output", () => {
   })
 
   test("variable entry includes label and value", () => {
-    const result = toYamlStr([], [PATH_VAR], MAKE_DIR_COMMAND)
+    const result = toYamlStr(
+      [],
+      [PATH_VAR],
+      MAKE_DIR_COMMAND,
+    )
     const parsed = yaml.load(result) as Record<
       string,
       unknown
@@ -316,7 +334,14 @@ describe("toYamlStr — blank step filtering", () => {
 
     const result = toYamlStr(
       [group],
-      [{ id: "basePath", label: "Base Path", value: "" }],
+      [
+        {
+          id: "basePath",
+          label: "Base Path",
+          value: "",
+          type: "path" as const,
+        },
+      ],
       {},
     )
 

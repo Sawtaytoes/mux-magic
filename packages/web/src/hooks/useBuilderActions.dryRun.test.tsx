@@ -57,7 +57,12 @@ const setupStore = () => {
   const store = createStore()
   store.set(stepsAtom, [makeStep()])
   store.set(pathsAtom, [
-    { id: "basePath", label: "basePath", value: "/media" },
+    {
+      id: "basePath",
+      label: "basePath",
+      value: "/media",
+      type: "path" as const,
+    },
   ])
   store.set(commandsAtom, COMMANDS)
   return store
@@ -170,6 +175,7 @@ describe("useBuilderActions.runGroup — dry-run forwarding", () => {
         id: "basePath",
         label: "basePath",
         value: "/media",
+        type: "path" as const,
       },
     ])
     store.set(commandsAtom, COMMANDS)

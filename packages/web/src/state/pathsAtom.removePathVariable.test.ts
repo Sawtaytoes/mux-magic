@@ -18,6 +18,7 @@ const makePathVariable = (
   id,
   label: id,
   value,
+  type: "path" as const,
 })
 
 const makeStep = (

@@ -103,6 +103,7 @@ describe("PathField", () => {
         id: "basePath",
         label: "basePath",
         value: "/old/path",
+        type: "path" as const,
       },
     ])
     store.set(stepsAtom, [
@@ -205,6 +206,7 @@ describe("PathField", () => {
       id: "basePath",
       label: "basePath",
       value: "/old",
+      type: "path" as const,
     }
     const step1 = createTestStep({
       id: "step-1",

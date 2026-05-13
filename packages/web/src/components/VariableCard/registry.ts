@@ -8,7 +8,10 @@ export type VariableTypeDefinition<
   label: string
   cardinality: "singleton" | "multi"
   defaultValue?: () => Promise<string> | string
-  validate?: (value: string) => { isValid: boolean; message?: string }
+  validate?: (value: string) => {
+    isValid: boolean
+    message?: string
+  }
   renderValueInput: (
     variable: Variable<T>,
     onChange: (value: string) => void,
@@ -21,12 +24,14 @@ const registry = new Map<
   VariableTypeDefinition<VariableType>
 >()
 
-export const registerVariableType = <T extends VariableType>(
+export const registerVariableType = <
+  T extends VariableType,
+>(
   definition: VariableTypeDefinition<T>,
 ): void => {
   registry.set(
     definition.type,
-    definition as VariableTypeDefinition<VariableType>,
+    definition as unknown as VariableTypeDefinition<VariableType>,
   )
 }
 

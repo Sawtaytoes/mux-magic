@@ -6,7 +6,12 @@ import { loadYamlFromText } from "./loadYaml"
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const BASE_PATHS: PathVariable[] = [
-  { id: "basePath", label: "basePath", value: "" },
+  {
+    id: "basePath",
+    label: "basePath",
+    value: "",
+    type: "path",
+  },
 ]
 
 const FAKE_COMMANDS: Commands = {
@@ -125,6 +130,7 @@ steps:
         id: "basePath",
         label: "basePath",
         value: "/media",
+        type: "path",
       },
     ]
     const yaml = `

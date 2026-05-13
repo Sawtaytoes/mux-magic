@@ -30,12 +30,21 @@ export const pathsAtom = atom(
     update: Variable[] | ((prev: Variable[]) => Variable[]),
   ) => {
     const current = get(variablesAtom)
-    const prevPaths = current.filter((v) => v.type === "path")
+    const prevPaths = current.filter(
+      (variable) => variable.type === "path",
+    )
     const newPaths = (
-      typeof update === "function" ? update(prevPaths) : update
-    ).map((pathVariable) => ({ ...pathVariable, type: "path" as const }))
+      typeof update === "function"
+        ? update(prevPaths)
+        : update
+    ).map((pathVariable) => ({
+      ...pathVariable,
+      type: "path" as const,
+    }))
     set(variablesAtom, [
-      ...current.filter((v) => v.type !== "path"),
+      ...current.filter(
+        (variable) => variable.type !== "path",
+      ),
       ...newPaths,
     ])
   },
@@ -101,7 +110,8 @@ export type {
   VariableUsage as PathVariableUsage,
 } from "./variablesAtom"
 
-export const pendingPathVariableDeleteAtom = pendingVariableDeleteAtom
+export const pendingPathVariableDeleteAtom =
+  pendingVariableDeleteAtom
 
 export const removePathVariableAtom = atom(
   null,
