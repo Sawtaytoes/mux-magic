@@ -29,8 +29,18 @@ import tseslint from "typescript-eslint"
 // AGENTS.md rule #4: booleans start with `is` or `has`.
 // Enforced here because @typescript-eslint/naming-convention uses TypeScript
 // type information (types: ["boolean"]) which Biome cannot access.
+//
+// Selector rationale: we use "typeProperty" and "classProperty" rather than
+// the broader "property" to avoid flagging object literal properties that are
+// external API contracts (yargs option configs, DOM EventInit, etc.) which we
+// cannot rename. "variable" and "parameter" cover all local/module declarations.
 const IS_HAS_BOOLEAN_RULE = {
-  selector: ["variable", "parameter", "property"],
+  selector: [
+    "variable",
+    "parameter",
+    "typeProperty",
+    "classProperty",
+  ],
   types: ["boolean"],
   format: null,
   prefix: ["is", "has"],
