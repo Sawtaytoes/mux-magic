@@ -46,6 +46,6 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/sawtaytoes/media-tools:latest
-            ghcr.io/sawtaytoes/media-tools:${{ github.sha }}
-            ghcr.io/sawtaytoes/media-tools:${{ github.ref_name }}
+            ghcr.io/sawtaytoes/mux-magic:latest
+            ghcr.io/sawtaytoes/mux-magic:${{ github.sha }}
+            ghcr.io/sawtaytoes/mux-magic:${{ github.ref_name }}
