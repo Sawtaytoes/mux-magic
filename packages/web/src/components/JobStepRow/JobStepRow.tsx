@@ -25,11 +25,14 @@ export const JobStepRow = ({
           <span className="text-xs text-slate-500 shrink-0">
             {index + 1}.
           </span>
-          <strong className="text-sm truncate">
+          <strong className="text-sm truncate min-w-0">
             {commandLabel(child.commandName)}
           </strong>
           {child.stepId && (
-            <span className="text-xs text-slate-500 truncate">
+            <span
+              className="text-xs text-slate-500 truncate min-w-0"
+              title={child.stepId}
+            >
               {child.stepId}
             </span>
           )}
