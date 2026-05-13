@@ -1,4 +1,4 @@
 {
-  "main": "build/media-tools.cjs",
+  "main": "build/mux-magic.cjs",
   "output": "build/sea-prep.blob"
 }

@@ -34,10 +34,10 @@ try {
   const built = data.buildTime || "unknown"
   const node = data.nodeVersion || process.version
   console.log(
-    `media-tools git=${sha} built=${built} node=${node}`,
+    `Mux-Magic git=${sha} built=${built} node=${node}`,
   )
 } catch {
   console.log(
-    `media-tools git=dev built=unknown node=${process.version}`,
+    `Mux-Magic git=dev built=unknown node=${process.version}`,
   )
 }
