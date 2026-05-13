@@ -16,7 +16,7 @@ const empty = {
   releases: null,
   releasesDebug: null,
   releasesError: null,
-  loading: false,
+  isLoading: false,
 }
 
 const meta: Meta<typeof LookupModal> = {

@@ -127,7 +127,7 @@ export const ApiRunModal = () => {
         setLogs((prev) => [...prev, lineEvent.line])
         return
       }
-      if ("done" in data && data.done) {
+      if ("isDone" in data && data.isDone) {
         setStatus(data.status)
         setModalState((prev) =>
           prev ? { ...prev, activeChildren: [] } : prev,

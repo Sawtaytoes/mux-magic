@@ -38,7 +38,7 @@ const baseState = {
   releases: null,
   releasesDebug: null,
   releasesError: null,
-  loading: false,
+  isLoading: false,
 }
 
 describe("LookupModal", () => {
