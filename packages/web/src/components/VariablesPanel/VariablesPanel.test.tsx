@@ -6,10 +6,7 @@ import {
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, test } from "vitest"
-import {
-  addVariableAtom,
-  variablesAtom,
-} from "../../state/variablesAtom"
+import { variablesAtom } from "../../state/variablesAtom"
 import type { Variable } from "../../types"
 import { VariablesPanel } from "./VariablesPanel"
 
@@ -41,7 +38,9 @@ afterEach(() => {
 describe("VariablesPanel", () => {
   test("renders empty state when no variables exist", () => {
     renderPanel([])
-    expect(screen.getByText(/no variables/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/no variables/i),
+    ).toBeInTheDocument()
   })
 
   test("renders a VariableCard for each variable in the atom", () => {

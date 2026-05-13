@@ -4,7 +4,9 @@ import { VariablesPanel } from "../VariablesPanel/VariablesPanel"
 import { editVariablesModalOpenAtom } from "./editVariablesModalOpenAtom"
 
 export const EditVariablesModal = () => {
-  const [isOpen, setIsOpen] = useAtom(editVariablesModalOpenAtom)
+  const [isOpen, setIsOpen] = useAtom(
+    editVariablesModalOpenAtom,
+  )
 
   return (
     <Modal

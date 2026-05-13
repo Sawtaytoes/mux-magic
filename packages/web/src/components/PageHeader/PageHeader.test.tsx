@@ -191,7 +191,9 @@ describe("PageHeader", () => {
     const user = userEvent.setup()
     const store = createStore()
     renderWithStore(store)
-    expect(store.get(editVariablesModalOpenAtom)).toBe(false)
+    expect(store.get(editVariablesModalOpenAtom)).toBe(
+      false,
+    )
     await user.click(
       screen.getByRole("button", { name: /variables/i }),
     )

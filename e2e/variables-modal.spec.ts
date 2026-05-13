@@ -1,14 +1,8 @@
-import { expect, test } from "@playwright/test"
+import { expect, type Page, test } from "@playwright/test"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-async function openVariablesModal(
-  page: Parameters<typeof test>[1] extends (args: {
-    page: infer P
-  }) => unknown
-    ? P
-    : never,
-) {
+async function openVariablesModal(page: Page) {
   await page
     .getByRole("button", { name: "Variables" })
     .click()
@@ -52,7 +46,9 @@ test.describe("Edit Variables modal", () => {
     ).toBeHidden()
   })
 
-  test("close button closes the modal", async ({ page }) => {
+  test("close button closes the modal", async ({
+    page,
+  }) => {
     await openVariablesModal(page)
     await page
       .getByRole("button", { name: /close/i })
@@ -74,9 +70,7 @@ test.describe("Edit Variables modal", () => {
       .click()
     // A new variable card should appear inside the modal.
     await expect(
-      page
-        .getByRole("dialog")
-        .getByText("path variable"),
+      page.getByRole("dialog").getByText("path variable"),
     ).toBeVisible()
   })
 
@@ -131,9 +125,7 @@ test.describe("Variable YAML round-trip", () => {
 
     // Give it a label.
     const dialog = page.getByRole("dialog")
-    const labelInput = dialog
-      .getByRole("textbox")
-      .first()
+    const labelInput = dialog.getByRole("textbox").first()
     await labelInput.fill("Media Root")
 
     await page.keyboard.press("Escape")
@@ -142,7 +134,9 @@ test.describe("Variable YAML round-trip", () => {
     await page
       .getByRole("button", { name: "Sequence actions" })
       .click()
-    await page.getByRole("button", { name: "View YAML" }).click()
+    await page
+      .getByRole("button", { name: "View YAML" })
+      .click()
     const yamlModal = page.locator("#yaml-modal")
     await expect(yamlModal).toBeVisible()
     const yamlText = await yamlModal
@@ -178,7 +172,7 @@ test.describe("Variable YAML round-trip", () => {
     // Re-open modal and verify the variable survived.
     await openVariablesModal(page)
     await expect(
-      page.getByDisplayValue("Media Root"),
+      page.locator("input[value='Media Root']"),
     ).toBeVisible()
   })
 })

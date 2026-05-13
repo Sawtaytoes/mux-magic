@@ -1,4 +1,8 @@
-import { cleanup, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  render,
+  screen,
+} from "@testing-library/react"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, test } from "vitest"
 import { variablesAtom } from "../../state/variablesAtom"

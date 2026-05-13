@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
 import { variablesAtom } from "../../state/variablesAtom"
-import { editVariablesModalOpenAtom } from "./editVariablesModalOpenAtom"
 import { EditVariablesModal } from "./EditVariablesModal"
+import { editVariablesModalOpenAtom } from "./editVariablesModalOpenAtom"
 
 const withStore = (isOpen: boolean) => {
   const store = createStore()

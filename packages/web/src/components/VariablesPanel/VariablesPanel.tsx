@@ -1,14 +1,12 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useState } from "react"
 import {
-  getVariableTypeDefinition,
-} from "../VariableCard/registry"
-import { VariableCard } from "../VariableCard/VariableCard"
-import {
   addVariableAtom,
   variablesAtom,
 } from "../../state/variablesAtom"
 import type { VariableType } from "../../types"
+import { getVariableTypeDefinition } from "../VariableCard/registry"
+import { VariableCard } from "../VariableCard/VariableCard"
 
 // ─── Type picker ──────────────────────────────────────────────────────────────
 
@@ -27,7 +25,9 @@ const TypePicker = ({
     const definition = getVariableTypeDefinition(type)
     if (!definition) return false
     if (definition.cardinality === "singleton") {
-      return !variables.some((variable) => variable.type === type)
+      return !variables.some(
+        (variable) => variable.type === type,
+      )
     }
     return true
   })

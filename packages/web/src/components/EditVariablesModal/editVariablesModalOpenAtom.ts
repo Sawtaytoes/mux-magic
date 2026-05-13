@@ -1,3 +1,4 @@
 import { atom } from "jotai"
 
-export const editVariablesModalOpenAtom = atom<boolean>(false)
+export const editVariablesModalOpenAtom =
+  atom<boolean>(false)

@@ -7,8 +7,8 @@ import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, test } from "vitest"
 import { variablesAtom } from "../../state/variablesAtom"
-import { editVariablesModalOpenAtom } from "./editVariablesModalOpenAtom"
 import { EditVariablesModal } from "./EditVariablesModal"
+import { editVariablesModalOpenAtom } from "./editVariablesModalOpenAtom"
 
 const renderModal = (isOpen = false) => {
   const store = createStore()
@@ -29,22 +29,20 @@ afterEach(() => {
 describe("EditVariablesModal", () => {
   test("renders nothing when atom is false", () => {
     renderModal(false)
-    expect(
-      screen.queryByRole("dialog"),
-    ).toBeNull()
+    expect(screen.queryByRole("dialog")).toBeNull()
   })
 
   test("renders the modal when atom is true", () => {
     renderModal(true)
-    expect(
-      screen.getByRole("dialog"),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
   })
 
   test("modal has accessible label 'Edit Variables'", () => {
     renderModal(true)
     expect(
-      screen.getByRole("dialog", { name: /edit variables/i }),
+      screen.getByRole("dialog", {
+        name: /edit variables/i,
+      }),
     ).toBeInTheDocument()
   })
 
@@ -61,7 +59,9 @@ describe("EditVariablesModal", () => {
     await user.click(
       screen.getByRole("button", { name: /close/i }),
     )
-    expect(store.get(editVariablesModalOpenAtom)).toBe(false)
+    expect(store.get(editVariablesModalOpenAtom)).toBe(
+      false,
+    )
   })
 
   test("Escape key closes the modal", async () => {
@@ -69,7 +69,9 @@ describe("EditVariablesModal", () => {
     const store = renderModal(true)
     expect(store.get(editVariablesModalOpenAtom)).toBe(true)
     await user.keyboard("{Escape}")
-    expect(store.get(editVariablesModalOpenAtom)).toBe(false)
+    expect(store.get(editVariablesModalOpenAtom)).toBe(
+      false,
+    )
   })
 
   test("backdrop click closes the modal", async () => {
@@ -79,6 +81,8 @@ describe("EditVariablesModal", () => {
       "[role='none']",
     ) as HTMLElement
     await user.click(backdrop)
-    expect(store.get(editVariablesModalOpenAtom)).toBe(false)
+    expect(store.get(editVariablesModalOpenAtom)).toBe(
+      false,
+    )
   })
 })
