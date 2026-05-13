@@ -249,6 +249,7 @@ export const commandConfigs: Record<
   extractSubtitles: {
     getObservable: (body) =>
       extractSubtitles({
+        folders: body.folders,
         isRecursive: body.isRecursive,
         sourcePath: body.sourcePath,
         subtitlesLanguage: body.subtitlesLanguage,

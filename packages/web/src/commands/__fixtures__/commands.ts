@@ -284,10 +284,35 @@ export const FIXTURE_COMMANDS_BUNDLE_D: Commands = {
   },
 }
 
+// folderTags — FolderTagsField (W08)
+export const FIXTURE_COMMANDS_BUNDLE_E: Commands = {
+  extractSubtitles: {
+    summary: "Extract subtitle tracks into separate files",
+    tag: "Subtitle Operations",
+    outputFolderName: "EXTRACTED-SUBTITLES",
+    fields: [
+      {
+        name: "sourcePath",
+        type: "path",
+        label: "Source Path",
+        isRequired: true,
+      },
+      {
+        name: "folders",
+        type: "folderTags",
+        label: "Folders",
+        description:
+          "Folder names to extract subtitles into. Leave empty to use the default output folder.",
+      },
+    ],
+  },
+}
+
 // Combined export for tests that need multiple bundles at once
 export const FIXTURE_COMMANDS: Commands = {
   ...FIXTURE_COMMANDS_BUNDLE_A,
   ...FIXTURE_COMMANDS_BUNDLE_B,
   ...FIXTURE_COMMANDS_BUNDLE_C,
   ...FIXTURE_COMMANDS_BUNDLE_D,
+  ...FIXTURE_COMMANDS_BUNDLE_E,
 }

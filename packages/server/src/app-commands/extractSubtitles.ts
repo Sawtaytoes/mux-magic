@@ -38,6 +38,7 @@ type ExtractSubtitlesRequiredProps = {
 
 type ExtractSubtitlesOptionalProps = {
   outputFolderName?: string
+  folders?: string[]
 }
 
 export type ExtractSubtitlesProps =

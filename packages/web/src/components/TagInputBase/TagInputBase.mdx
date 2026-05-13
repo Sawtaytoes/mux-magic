@@ -1,0 +1,33 @@
+import { Canvas, Meta } from "@storybook/blocks"
+import * as Stories from "./TagInputBase.stories"
+
+<Meta of={Stories} />
+
+# TagInputBase
+
+Low-level primitive that combines a tag list with a text input. Used as the shared foundation for `LanguageCodesField` (autocomplete) and `FolderTagsField` (free-type).
+
+## Structure
+
+```
+┌─────────────────────────────────────┐
+│ [Tag A ✕]  [Tag B ✕]               │  ← tag list (hidden when empty)
+│ ┌─────────────────────────────────┐ │
+│ │ Type here…                      │ │  ← text input
+│ └─────────────────────────────────┘ │
+│   [dropdown children slot]          │  ← optional autocomplete list
+└─────────────────────────────────────┘
+```
+
+## Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `tags` | `TagItem[]` | Tags to display. Each has `key`, `label` (ReactNode), and `title` (used as `aria-label` on the remove button). |
+| `onRemove` | `(key: string) => void` | Called when a tag's remove button is clicked. |
+| `inputProps` | `InputHTMLAttributes` | Spread onto the `<input>` element. Caller controls `value`, `onChange`, `onKeyDown`, `placeholder`, etc. |
+| `children` | `ReactNode` | Rendered inside the `relative` wrapper below the input — use for autocomplete dropdowns. |
+
+<Canvas of={Stories.Empty} />
+<Canvas of={Stories.WithTags} />
+<Canvas of={Stories.WithManyTags} />
