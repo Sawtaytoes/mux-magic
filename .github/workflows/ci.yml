@@ -1,4 +1,4 @@
-name: CI
+name: CI & NPM Deploy
 
 on:
   pull_request:
