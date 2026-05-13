@@ -98,6 +98,23 @@ describe("schema-driven command descriptions", () => {
     )
   })
 
+  test("mergeTracks offsets field has the per-episode label and help text", () => {
+    const offsetsDescription = getDescription(
+      schemas.mergeTracksRequestSchema.shape.offsets,
+    )
+
+    expect(offsetsDescription).toContain("one per episode")
+    expect(offsetsDescription).toContain(
+      "Provide one offset per source file",
+    )
+    expect(offsetsDescription).toContain(
+      "Negative values shift the subtitle earlier",
+    )
+    expect(offsetsDescription).toContain(
+      "sequences and schedules should rely on auto-aligned tracks",
+    )
+  })
+
   test("all commands have at least some field descriptions available", () => {
     let totalCommandsWithDescriptions = 0
     let totalFieldsWithDescriptions = 0
