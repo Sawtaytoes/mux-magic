@@ -111,14 +111,18 @@ All three workers touch `eslint.config.js` and must run sequentially.
 
 ## Phase 3 — Name Special Features overhaul
 
+The existing `nameSpecialFeatures` code is preserved (renamed only). Two new sibling commands are added for narrower workflows, plus a shared "DVD Compare ID variable" concept that lets steps reference each other's lookup IDs (similar to path variables).
+
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 22 | `nsf-vendor-postfix-rename` | srv+web | Sonnet | Medium | ON | 21 | planned |
-| 23 | `nameMovieByDb-new-command` | srv+web | Sonnet | High | ON | 22 | planned |
-| 24 | `source-path-abstraction` | srv+web | **Opus** | High | ON | All Phase 1 done | planned |
+| 22 | `nsf-rename-to-dvdcompare-tmdb` — rename existing `nameSpecialFeatures` → `nameSpecialFeaturesDvdCompareTmdb`; **code unchanged** | srv+web | Sonnet | Medium | ON | 21 | planned |
+| 23 | `nameMovieCutsDvdCompareTmdb-new-command` — new command: rename movies + move into directories by edition. Uses TMDB + DVD Compare | srv+web | Sonnet | High | ON | 22, 35 | planned |
+| 24 | `source-path-abstraction` — unified `SourcePath` control (field name `sourcePath` internal, "Source Path" user-facing) | srv+web | **Opus** | High | ON | All Phase 1 done | planned |
 | 25 | `nsf-fix-unnamed-overhaul` | srv+web | Sonnet | High | ON | 22 | planned |
 | 26 | `nsf-edition-organizer` | srv+web | Sonnet | High | ON | 25 | planned |
-| 27 | `nsf-cache-state-persistence` | srv+web | Sonnet | High | ON | 25 | planned |
+| 27 | `nsf-cache-state-persistence` — adds `paused` job state with separate `reason` field (e.g. `reason: user_input`) | srv+web | Sonnet | High | ON | 25 | planned |
+| 34 | `onlyNameSpecialFeaturesDvdCompare-new-command` — new command: non-movie variant (no TMDB needed) | srv+web | Sonnet | High | ON | 22, 35 | planned |
+| 35 | `dvd-compare-id-variable` — sequence-level "DVD Compare ID variable" concept like path variables; steps reference "Step X DVD Compare ID" | srv+web | Sonnet | High | ON | 22 | planned |
 
 ---
 
@@ -140,7 +144,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 2e | `trace-moe-anime-split` | srv+web | Sonnet | High | ON | 24 | planned |
-| 2f | `ffmpeg-gpu-reencode-endpoint` | srv | **Opus** | High | ON | 28 | planned |
+| 2f | `ffmpeg-gpu-reencode-endpoint` — Opus confirmed (AI struggles without a browser to test) | srv | **Opus** | High | ON | 28 | planned |
 | 30 | `gpu-aspect-ratio-multi-gpu` | srv | Sonnet | Medium | ON | 01 | planned |
 | 31 | `duplicate-manga-detection` | srv | Sonnet | Medium | ON | 1d | planned |
 | 32 | `command-search-tags` | web | Haiku | Low | OFF | 22 | planned |
@@ -151,17 +155,29 @@ All three workers touch `eslint.config.js` and must run sequentially.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 33 | `final-merge-and-cleanup` | shared | Sonnet | Medium | ON | All Phase 5 done | planned |
+| 33 | `final-merge-and-cleanup` — user performs manual smoke testing in addition to standard gates | shared | Sonnet | Medium | ON | All Phase 5 done | planned |
 
 ---
 
-## Open Questions blocking specific workers
+## Open Questions — resolved
 
-| Worker | Question |
+All originally-flagged questions now have decided answers. Captured here for traceability:
+
+| Worker | Decision |
 |:--:|---|
-| 22 | Rename `nameSpecialFeatures` to single `nameSpecialFeaturesDvdCompare` OR split into `nameMovieCutsDvdCompare` + `nameSpecialFeaturesDvdCompare`? |
-| 27 | 1-word name for the new "awaiting user input" job state? Options: `awaiting-input`, `paused`, `held`, `interactive`. |
-| 11 | Server-side thread-cap persistence: `settings.json`, sqlite, or new server config endpoint? |
-| 2f | FFmpeg GPU re-encode model: keep Opus or downgrade to Sonnet/High? |
-| 24 | SourcePath field naming: `sourcePath`, `inputPath`, or `source`? Touches every command schema. |
-| 33 | Final verification beyond standard gates? Manual user-test per phase deliverable? Docker dry-run? |
+| 11 | **Per-job setting, not server-persisted.** Env var stays as the system ceiling; user picks per-sequence value via UI (clamped). Stored in YAML template + URL query string. Server exposes `GET /system/threads` for the UI to display the ceiling. Worker 11 prompt updated. |
+| 22 | **Keep existing code; rename only.** `nameSpecialFeatures` → `nameSpecialFeaturesDvdCompareTmdb`. Add two NEW sibling commands (workers 23 and 34) + shared DVD Compare ID variable concept (worker 35). The original command stays so the user can compare behavior before deprecating it. |
+| 24 | **`sourcePath` internal, "Source Path" user-facing.** No further naming question. |
+| 27 | **State name: `paused`** (clean lifecycle: pending → running → paused → complete/failed). Separate `reason` field for human-readable cause (e.g. `reason: user_input`). |
+| 2f | **Opus confirmed** for FFmpeg GPU re-encode — AI struggles without a browser to verify and the failure mode is "looks right, doesn't work." |
+| 33 | **Manual smoke testing required** in addition to standard gates. User performs the manual pass; this worker doesn't automate beyond gates. |
+
+## Test coverage discipline (applies to every worker)
+
+Per [feedback_test_coverage_required.md](C:\Users\satur\.claude\projects\d--Projects-Personal-media-tools\memory\feedback_test_coverage_required.md):
+
+- **Adding functionality:** write tests covering the new behavior.
+- **Updating functionality:** add or update tests to reflect the change.
+- **e2e tests:** valuable for full sequence runs, modal flows, undo/redo, drag-and-drop; less so for pure-presentation changes.
+
+This is on top of TDD-failing-test-first (already in AGENTS.md). Goal: catch bugs before the user encounters them in manual use.

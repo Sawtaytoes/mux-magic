@@ -127,15 +127,41 @@ In the existing **"## Workflows & Collaboration"** section, update the role-iden
 
 ### Section 4 (new) — pointer to worker manifest
 
-Add a one-paragraph section at the END of `AGENTS.md`:
+Add a one-paragraph section near the bottom of `AGENTS.md`:
 
 ```markdown
 ## Worker addressing
 
-The Mux-Magic huge revamp uses sequential 2-hex worker IDs (`01`–`33`) with the manifest
+The Mux-Magic huge revamp uses sequential 2-hex worker IDs (`01`–`35`+) with the manifest
 table at [docs/workers/README.md](docs/workers/README.md). Each worker has a corresponding
 prompt file at `docs/workers/<id>_<slug>.md`. Workers update their own row in the manifest
 when they start (`in-progress`) and finish (`done`); IDs are never renumbered.
+```
+
+### Section 5 (new) — test coverage discipline
+
+Add at the bottom of `AGENTS.md`:
+
+```markdown
+## Test coverage discipline
+
+For any functionality change, tests must match the change scope:
+
+- **Adding new functionality:** write tests covering the new behavior. Unit for logic;
+  component/integration for UI; e2e if the feature spans more than one route or has
+  cross-component interactions.
+- **Updating existing functionality:** add tests for the new behavior OR update existing
+  tests. Don't leave tests asserting old behavior that the change has invalidated.
+- **e2e tests are valuable where they make sense.** Particularly: full sequence runs,
+  modal flows that span open → action → close, undo/redo, drag-and-drop. Less valuable
+  for pure-presentation changes.
+
+This is in addition to the existing TDD-failing-test-first convention. TDD catches bugs
+(write the test that proves the bug, then fix); the discipline above catches missing
+coverage (new feature without tests, or refactor that left tests asserting dead code).
+
+**Why:** manual testing is the user's compensation when automated coverage is thin.
+Tests that match change scope keep that out-of-pocket cost low.
 ```
 
 ---
