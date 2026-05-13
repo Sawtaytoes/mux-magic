@@ -22,10 +22,12 @@ jobs:
           package-manager-cache: false  # never use caching in release builds
       - run: corepack enable
       - run: yarn install --immutable
-      - uses: changesets/action@v1
-        with:
-          publish: yarn changeset publish
-          title: "chore: version packages"
-          commit: "chore: version packages"
+      - run: cd packages/tools
+      - run: npm publish
+      # - uses: changesets/action@v1
+      #   with:
+      #     publish: yarn changeset publish
+      #     title: "chore: version packages"
+      #     commit: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
