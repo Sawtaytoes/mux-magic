@@ -915,6 +915,7 @@ export const COMMANDS: Commands = {
           placeholder: "39534",
           isRequired: true,
           companionNameField: "malName",
+          hasIncrementButtons: false,
         }),
         field("seasonNumber", {
           type: "number",
@@ -950,6 +951,7 @@ export const COMMANDS: Commands = {
           placeholder: "8160",
           isRequired: true,
           companionNameField: "anidbName",
+          hasIncrementButtons: false,
         }),
         field("seasonNumber", {
           type: "number",
@@ -1018,6 +1020,7 @@ export const COMMANDS: Commands = {
           placeholder: "74759",
           isRequired: true,
           companionNameField: "dvdCompareName",
+          hasIncrementButtons: false,
         }),
         // Drift: schema has no default for `dvdCompareReleaseHash`
         // (`.optional()` with no `.default()`), but the UI defaults to 1
@@ -1081,6 +1084,7 @@ export const COMMANDS: Commands = {
           placeholder: "76703",
           isRequired: true,
           companionNameField: "tvdbName",
+          hasIncrementButtons: false,
         }),
         // Schema defaults seasonNumber to 1; surfacing that default in
         // the UI matches the other naming commands. Previously this was

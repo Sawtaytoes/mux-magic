@@ -109,6 +109,7 @@ export const FIXTURE_COMMANDS_BUNDLE_B: Commands = {
         label: "AniDB Anime ID",
         isRequired: true,
         companionNameField: "anidbName",
+        hasIncrementButtons: false,
       },
       {
         name: "episodeType",
@@ -241,6 +242,7 @@ export const FIXTURE_COMMANDS_BUNDLE_D: Commands = {
         label: "MAL ID",
         isRequired: true,
         companionNameField: "malName",
+        hasIncrementButtons: false,
       },
     ],
   },

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
@@ -6,6 +7,14 @@ type NumberArrayFieldProps = {
   field: CommandField
   step: Step
 }
+
+const parseNumberArray = (text: string): number[] =>
+  text
+    .split(/[\s,]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0)
+    .map(Number)
+    .filter((num) => !Number.isNaN(num))
 
 export const NumberArrayField = ({
   field,
@@ -20,24 +29,30 @@ export const NumberArrayField = ({
     ? value.join(", ")
     : ""
 
-  const handleChange = (text: string) => {
-    const array = text
-      .split(",")
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0)
-      .map(Number)
-      .filter((num) => !Number.isNaN(num))
+  const [inputValue, setInputValue] = useState(displayValue)
 
-    setParam(step.id, field.name, array)
+  useEffect(() => {
+    setInputValue(displayValue)
+  }, [displayValue])
+
+  const handleBlur = () => {
+    setParam(
+      step.id,
+      field.name,
+      parseNumberArray(inputValue),
+    )
   }
 
   return (
     <input
       id={`${step.command}-${field.name}`}
       type="text"
-      value={displayValue}
+      value={inputValue}
       placeholder={field.placeholder ?? "0, 100"}
-      onChange={(event) => handleChange(event.target.value)}
+      onChange={(event) =>
+        setInputValue(event.target.value)
+      }
+      onBlur={handleBlur}
       aria-required={field.isRequired ? "true" : undefined}
       className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
     />
