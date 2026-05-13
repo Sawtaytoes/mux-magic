@@ -1,6 +1,6 @@
 {
   "name": "@mux-magic/tools",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Reusable utilities (file system, logging, rxjs operators) shared between @mux-magic/server and sibling tools like Gallery-Downloader.",
   "main": "./src/index.ts",
@@ -21,7 +21,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Sawtaytoes/mux-magic"
+    "url": "git+https://github.com/Sawtaytoes/mux-magic.git"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
