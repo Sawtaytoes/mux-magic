@@ -24,3 +24,8 @@ jobs:
       - run: yarn install --immutable
       - run: npm publish --provenance --access public
         working-directory: packages/tools
+      # - uses: changesets/action@v1
+      #   with:
+      #     publish: yarn changeset publish
+      #     title: "chore: version packages"
+      #     commit: "chore: version packages"
