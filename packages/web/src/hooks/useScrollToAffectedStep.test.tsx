@@ -77,7 +77,8 @@ describe("useScrollToAffectedStep", () => {
 
   beforeEach(() => {
     scrollIntoViewSpy = vi.fn()
-    Element.prototype.scrollIntoView = scrollIntoViewSpy
+    Element.prototype.scrollIntoView =
+      scrollIntoViewSpy as unknown as typeof Element.prototype.scrollIntoView
   })
 
   test("scrolls to a step restored by undo", async () => {

@@ -21,6 +21,7 @@ import {
   canUndoAtom,
   redoStackAtom,
   type Snapshot,
+  scrollToStepAtom,
   undoStackAtom,
 } from "../state/historyAtoms"
 import {
@@ -44,6 +45,7 @@ import {
   stepsAtom,
 } from "../state/stepsAtom"
 import type { Group, Step, StepLink } from "../types"
+import { findFirstChangedStepId } from "../utils/diffSteps"
 import { runWithViewTransition } from "../utils/runWithViewTransition"
 
 const DEFAULT_BASE_PATH = {
@@ -86,14 +88,22 @@ export const useBuilderActions = () => {
     const undoStack = store.get(undoStackAtom)
     if (!undoStack.length) return
     const snapshot = undoStack[undoStack.length - 1]
+    const currentSnapshot = captureSnapshot(store)
     store.set(undoStackAtom, undoStack.slice(0, -1))
     store.set(redoStackAtom, (prev) => [
       ...prev,
-      captureSnapshot(store),
+      currentSnapshot,
     ])
+    const affectedId = findFirstChangedStepId(
+      snapshot.steps,
+      currentSnapshot.steps,
+    )
     runWithViewTransition(() =>
       applySnapshot(store, snapshot),
-    )
+    ).then(() => {
+      if (affectedId)
+        store.set(scrollToStepAtom, affectedId)
+    })
     store.set(
       canUndoAtom,
       store.get(undoStackAtom).length > 0,
@@ -105,14 +115,22 @@ export const useBuilderActions = () => {
     const redoStack = store.get(redoStackAtom)
     if (!redoStack.length) return
     const snapshot = redoStack[redoStack.length - 1]
+    const currentSnapshot = captureSnapshot(store)
     store.set(redoStackAtom, redoStack.slice(0, -1))
     store.set(undoStackAtom, (prev) => [
       ...prev,
-      captureSnapshot(store),
+      currentSnapshot,
     ])
+    const affectedId = findFirstChangedStepId(
+      snapshot.steps,
+      currentSnapshot.steps,
+    )
     runWithViewTransition(() =>
       applySnapshot(store, snapshot),
-    )
+    ).then(() => {
+      if (affectedId)
+        store.set(scrollToStepAtom, affectedId)
+    })
     store.set(
       canRedoAtom,
       store.get(redoStackAtom).length > 0,

@@ -12,3 +12,5 @@ export const redoStackAtom = atom<Snapshot[]>([])
 
 export const canUndoAtom = atom<boolean>(false)
 export const canRedoAtom = atom<boolean>(false)
+
+export const scrollToStepAtom = atom<string | null>(null)
