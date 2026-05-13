@@ -1,6 +1,10 @@
 import { catchError, EMPTY, type Observable } from "rxjs"
 
 import {
+  registerJobClaim,
+  unregisterJobClaim,
+} from "../tools/taskScheduler.js"
+import {
   completeSubject,
   createSubject,
   getJob,
@@ -27,9 +31,19 @@ export const runJob = (
     extractOutputs?: (
       results: unknown[],
     ) => Record<string, unknown>
+    // Per-job thread-count claim. When set, the task scheduler limits this
+    // job to at most `threadCountClaim` concurrent tasks in addition to
+    // the global MAX_THREADS cap. Registered before the observable starts
+    // and torn down after it reaches a terminal state.
+    threadCountClaim?: number | null
   } = {},
 ): Promise<Job | undefined> => {
   createSubject(jobId)
+
+  const { threadCountClaim } = options
+  if (threadCountClaim != null) {
+    registerJobClaim(jobId, threadCountClaim)
+  }
 
   updateJob(jobId, {
     startedAt: new Date(),
@@ -38,8 +52,15 @@ export const runJob = (
 
   return new Promise<Job | undefined>((resolve) => {
     // Run the observable inside the job's async context so all console.*
-    // calls from the pipeline are routed to this job's log stream.
+    // calls from the pipeline are routed to this job's log stream, and so
+    // that runTask() can read getActiveJobId() for per-job quota tracking.
     withJobContext(jobId, () => {
+      const teardownClaim = (): void => {
+        if (threadCountClaim != null) {
+          unregisterJobClaim(jobId)
+        }
+      }
+
       const subscription = observable
         .pipe(
           catchError((err) => {
@@ -79,6 +100,7 @@ export const runJob = (
             // Same guard as above — preserve the terminal status set by
             // cancelJob even if the inner pipeline races to complete first.
             if (job?.status === "cancelled") {
+              teardownClaim()
               unregisterJobSubscription(jobId)
               return
             }
@@ -96,11 +118,13 @@ export const runJob = (
               })
             }
 
+            teardownClaim()
             completeSubject(jobId)
             unregisterJobSubscription(jobId)
           },
           error: () => {
             if (getJob(jobId)?.status === "cancelled") {
+              teardownClaim()
               unregisterJobSubscription(jobId)
               return
             }
@@ -115,6 +139,7 @@ export const runJob = (
               })
             }
 
+            teardownClaim()
             completeSubject(jobId)
             unregisterJobSubscription(jobId)
           },

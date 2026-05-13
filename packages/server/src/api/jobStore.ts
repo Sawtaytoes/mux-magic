@@ -49,12 +49,14 @@ export const createJob = ({
   outputFolderName = null,
   parentJobId = null,
   stepId = null,
+  threadCountClaim = null,
 }: {
   commandName: string
   params?: unknown
   outputFolderName?: string | null
   parentJobId?: string | null
   stepId?: string | null
+  threadCountClaim?: number | null
 }): Job => {
   const job: Job = {
     commandName,
@@ -70,6 +72,7 @@ export const createJob = ({
     startedAt: null,
     status: "pending",
     stepId,
+    threadCountClaim,
   }
 
   jobs.set(job.id, job)
