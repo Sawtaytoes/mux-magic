@@ -6,7 +6,7 @@ import { join } from "node:path"
 
 // Persistent on-disk LRU cache of audio-transcoded copies, keyed on the
 // source path + the encode parameters. Lives under
-// `os.tmpdir()/media-tools-transcode-cache/`.
+// `os.tmpdir()/mux-magic-transcode-cache/`.
 //
 // The cache key is hashed (sha-256, hex) so the on-disk filename is
 // always safe regardless of source-path content. All entries use `.mp4`
@@ -60,7 +60,7 @@ const parseMaxBytes = (): number => {
 }
 
 const cacheDirectoryPath = (): string =>
-  join(tmpdir(), "media-tools-transcode-cache")
+  join(tmpdir(), "mux-magic-transcode-cache")
 
 let isCacheDirectoryEnsured = false
 const ensureCacheDirectory = (): string => {
