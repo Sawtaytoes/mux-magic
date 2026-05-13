@@ -1,0 +1,47 @@
+{/* VariableCard.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as VariableCardStories from "./VariableCard.stories";
+
+<Meta of={VariableCardStories} />
+
+# VariableCard
+
+A top-of-builder card declaring a named variable (e.g., **Base Path** → `/mnt/media`). Dispatches on `variable.type` to render the appropriate value input. Currently supports `type: "path"`; workers 11 and 35 register additional types via the `registerVariableType` API.
+
+Other steps reference variables via `LinkPicker`, so updating the value in one place propagates to every downstream link.
+
+## Behaviour
+
+- **Label** → uncontrolled input. Commits on every change via `variablesAtom`.
+- **Value** → controlled input for `type: "path"`. Commits every keystroke so linked PathFields re-render live.
+- **Browse 📁 button** (path type only) → two modes:
+  - If `variable.value` is set → opens `FileExplorerModal` rooted at that path (read-only browse).
+  - If empty → fetches `/files/default-path` and opens the explorer with a picker callback.
+- **Remove ✕** → only shown when `!isFirst`. Triggers delete-with-usage-scan flow; shows conflict resolution UI if any steps link to this variable.
+- **Type badge** → shows `"path variable"`, `"threadCount variable"`, etc. for discoverability.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `variablesAtom` | Source of truth; `VariableCard` reads and writes label/value back through it |
+| `removeVariableAtom` | Triggers the delete-with-usage-scan flow |
+| `pendingVariableDeleteAtom` | Controls the conflict-resolution alert |
+| `fileExplorerAtom` | Controls the `FileExplorerModal` (path type only) |
+
+## Type registry
+
+New variable types register a `VariableTypeDefinition` via `registerVariableType`. The registry lives at `VariableCard/registry.ts` and is consumed by workers 11, 35, and 37.
+
+## Base path (first, undeletable)
+
+<Canvas of={VariableCardStories.BasePath} />
+
+## Secondary path (deletable)
+
+<Canvas of={VariableCardStories.SecondaryPath} />
+
+## Empty value
+
+<Canvas of={VariableCardStories.EmptyValue} />
