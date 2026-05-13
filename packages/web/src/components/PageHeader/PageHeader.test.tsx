@@ -23,6 +23,7 @@ import {
   failureModeAtom,
 } from "../../state/dryRunQuery"
 import { runningAtom } from "../../state/runAtoms"
+import { editVariablesModalOpenAtom } from "../EditVariablesModal/editVariablesModalOpenAtom"
 import { PageHeader } from "./PageHeader"
 
 const renderWithStore = (
@@ -176,6 +177,25 @@ describe("PageHeader", () => {
     expect(badge?.getAttribute("title")).toContain(
       "failure mode",
     )
+  })
+
+  test("Variables button is visible in the header", () => {
+    const store = createStore()
+    renderWithStore(store)
+    expect(
+      screen.getByRole("button", { name: /variables/i }),
+    ).toBeInTheDocument()
+  })
+
+  test("clicking Variables button sets editVariablesModalOpenAtom to true", async () => {
+    const user = userEvent.setup()
+    const store = createStore()
+    renderWithStore(store)
+    expect(store.get(editVariablesModalOpenAtom)).toBe(false)
+    await user.click(
+      screen.getByRole("button", { name: /variables/i }),
+    )
+    expect(store.get(editVariablesModalOpenAtom)).toBe(true)
   })
 
   test("disables Run Sequence and Run via API buttons while running", () => {
