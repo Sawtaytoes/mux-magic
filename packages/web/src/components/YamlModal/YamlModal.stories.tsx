@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import { createStore, Provider } from "jotai"
+import { createStore, Provider, useSetAtom } from "jotai"
 import { useState } from "react"
 import { COMMANDS } from "../../commands/commands"
 import { yamlModalOpenAtom } from "../../components/YamlModal/yamlModalAtom"
@@ -41,6 +41,21 @@ const withStore = (
   }
 }
 
+const ReOpenButton = () => {
+  const setOpen = useSetAtom(yamlModalOpenAtom)
+  return (
+    <div className="p-4">
+      <button
+        type="button"
+        className="text-xs bg-slate-700 text-white px-3 py-1.5 rounded"
+        onClick={() => setOpen(true)}
+      >
+        Re-open modal
+      </button>
+    </div>
+  )
+}
+
 const meta: Meta<typeof YamlModal> = {
   title: "Modals/YamlModal",
   component: YamlModal,
@@ -67,8 +82,20 @@ export const WithSteps: Story = {
       true,
     ),
   ],
+  render: () => (
+    <>
+      <ReOpenButton />
+      <YamlModal />
+    </>
+  ),
 }
 
 export const EmptySequence: Story = {
   decorators: [withStore([], [], true)],
+  render: () => (
+    <>
+      <ReOpenButton />
+      <YamlModal />
+    </>
+  ),
 }

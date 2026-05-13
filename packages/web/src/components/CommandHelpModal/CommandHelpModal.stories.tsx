@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import { createStore, Provider } from "jotai"
+import { createStore, Provider, useSetAtom } from "jotai"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
@@ -50,6 +50,21 @@ const withStore = (commandName: string) => {
   )
 }
 
+const ReOpenButton = () => {
+  const setOpen = useSetAtom(commandHelpModalOpenAtom)
+  return (
+    <div className="p-4">
+      <button
+        type="button"
+        className="text-xs bg-slate-700 text-white px-3 py-1.5 rounded"
+        onClick={() => setOpen(true)}
+      >
+        Re-open modal
+      </button>
+    </div>
+  )
+}
+
 const meta: Meta<typeof CommandHelpModal> = {
   title: "Modals/CommandHelpModal",
   component: CommandHelpModal,
@@ -64,8 +79,20 @@ type Story = StoryObj<typeof CommandHelpModal>
 
 export const WithFields: Story = {
   decorators: [withStore("ffmpeg")],
+  render: () => (
+    <>
+      <ReOpenButton />
+      <CommandHelpModal />
+    </>
+  ),
 }
 
 export const NoFields: Story = {
   decorators: [withStore("noFields")],
+  render: () => (
+    <>
+      <ReOpenButton />
+      <CommandHelpModal />
+    </>
+  ),
 }

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import { createStore, Provider } from "jotai"
+import { createStore, Provider, useSetAtom } from "jotai"
 import { useState } from "react"
 import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
 import { LoadModal } from "./LoadModal"
@@ -22,6 +22,21 @@ const withStore = (isInitiallyOpen: boolean) => {
   }
 }
 
+const ReOpenButton = () => {
+  const setOpen = useSetAtom(loadModalOpenAtom)
+  return (
+    <div className="p-4">
+      <button
+        type="button"
+        className="text-xs bg-slate-700 text-white px-3 py-1.5 rounded"
+        onClick={() => setOpen(true)}
+      >
+        Re-open modal
+      </button>
+    </div>
+  )
+}
+
 const meta: Meta<typeof LoadModal> = {
   title: "Modals/LoadModal",
   component: LoadModal,
@@ -36,6 +51,12 @@ type Story = StoryObj<typeof LoadModal>
 
 export const Open: Story = {
   decorators: [withStore(true)],
+  render: () => (
+    <>
+      <ReOpenButton />
+      <LoadModal />
+    </>
+  ),
 }
 
 export const Closed: Story = {
@@ -52,6 +73,12 @@ export const Closed: Story = {
 
 export const WithError: Story = {
   decorators: [withStore(true)],
+  render: () => (
+    <>
+      <ReOpenButton />
+      <LoadModal />
+    </>
+  ),
   play: async ({ canvasElement }) => {
     // Simulate an invalid YAML paste to surface the error state.
     const event = new ClipboardEvent("paste", {
