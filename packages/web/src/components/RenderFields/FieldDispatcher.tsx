@@ -51,7 +51,13 @@ export const FieldDispatcher = ({
     case "numberArray":
       return <NumberArrayField field={field} step={step} />
     case "json":
-      return <JsonField field={field} step={step} />
+      return (
+        <JsonField
+          field={field}
+          step={step}
+          isReadOnly={false}
+        />
+      )
     case "folderMultiSelect":
       return (
         <FolderMultiSelectField field={field} step={step} />

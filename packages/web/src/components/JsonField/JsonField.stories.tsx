@@ -99,3 +99,16 @@ export const WithPlaceholder: Story = {
     },
   },
 }
+
+export const ReadOnly: Story = {
+  args: {
+    field,
+    step: {
+      ...mockStep,
+      params: {
+        testJson: { key: "value", nested: { foo: "bar" } },
+      },
+    },
+    isReadOnly: true,
+  },
+}
