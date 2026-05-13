@@ -40,7 +40,7 @@ This is the live tracking document for all workers in the Mux-Magic huge revamp.
 | 01 | [mux-magic-rename](01_mux-magic-rename.md) | tools | Sonnet | High | ON | 39 | ready |
 | 02 | [npm-publish-key-setup](02_npm-publish-key-setup.md) | tools | Haiku | Low | OFF | — | in-progress |
 | 03 | [storybook-vitest-filter-fix](03_storybook-vitest-filter-fix.md) | infra | Sonnet | Medium | ON | — | done |
-| 04 | [worker-conventions-agents-md](04_worker-conventions-agents-md.md) | tools | Haiku | Low | OFF | — | in-progress |
+| 04 | [worker-conventions-agents-md](04_worker-conventions-agents-md.md) | tools | Haiku | Low | OFF | — | done |
 
 **Spawn recommendation:** start `39`, `02`, `03`, `04` in parallel (each touches small, disjoint files; `39` owns the `packages/shared/` → `packages/tools/` rename plus selective migration of reusable utilities from `packages/server/src/tools/`). Run `01` (full rebrand pass) AFTER all four have merged, so `01` only renames `@media-tools/tools` → `@mux-magic/tools` (no leftover `@mux-magic/tools` references).
 
