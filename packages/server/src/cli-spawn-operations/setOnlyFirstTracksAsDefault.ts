@@ -40,7 +40,7 @@ export const setOnlyFirstTracksAsDefault = ({
           groupBy((track) => track.type),
           mergeMap((group$) => group$.pipe(take(1))),
           filter(
-            (track) => !track.properties.default_track,
+            (track) => !track.properties.isDefaultTrack,
           ),
           map(() => false),
           endWith(true),
@@ -54,7 +54,7 @@ export const setOnlyFirstTracksAsDefault = ({
             group$.pipe(
               skip(1),
               filter(
-                (track) => track.properties.default_track,
+                (track) => track.properties.isDefaultTrack,
               ),
             ),
           ),

@@ -39,10 +39,10 @@ import { runTasks } from "../tools/taskScheduler.js"
 // sibling fail-fast) must interrupt the in-flight stream copy mid-byte
 // instead of letting the remaining files finish.
 export const flattenOutput = ({
-  deleteSourceFolder = false,
+  isDeletingSourceFolder = false,
   sourcePath,
 }: {
-  deleteSourceFolder?: boolean
+  isDeletingSourceFolder?: boolean
   sourcePath: string
 }): Observable<string> => {
   const targetParentPath = dirname(sourcePath)
@@ -153,7 +153,7 @@ export const flattenOutput = ({
         ),
         toArray(),
         concatMap(() => {
-          if (deleteSourceFolder) {
+          if (isDeletingSourceFolder) {
             return defer(() =>
               rm(sourcePath, { recursive: true }),
             ).pipe(

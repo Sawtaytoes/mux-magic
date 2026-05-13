@@ -69,9 +69,9 @@ describe(copyFiles.name, () => {
       setTimeout(resolve, 50),
     )
 
-    const aExists = vol.existsSync("/sync-dst/a.txt")
-    const bExists = vol.existsSync("/sync-dst/b.txt")
-    expect(aExists).toBe(false)
-    expect(bExists).toBe(false)
+    const isFileAPresent = vol.existsSync("/sync-dst/a.txt")
+    const isFileBPresent = vol.existsSync("/sync-dst/b.txt")
+    expect(isFileAPresent).toBe(false)
+    expect(isFileBPresent).toBe(false)
   })
 })

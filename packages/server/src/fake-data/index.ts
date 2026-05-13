@@ -164,12 +164,12 @@ const scenarioForCommand = (
 const buildFakeConfig = (
   command: CommandName,
   scenario: Scenario,
-  bypassOverrides = false,
+  isBypassingOverrides = false,
 ): CommandConfig => {
   const real = realCommandConfigs[command]
   const label = `fake/${command}`
 
-  const customFactory = bypassOverrides
+  const customFactory = isBypassingOverrides
     ? undefined
     : OBSERVABLE_OVERRIDES[command]
 
@@ -231,10 +231,10 @@ export const getFakeCommandConfigs = (): Record<
 // scenario uniformly, bypassing OBSERVABLE_OVERRIDES so the whole
 // sequence behaves predictably (all fail, or all stay in-flight).
 export const getEffectiveCommandConfigs = (
-  useFake: boolean,
+  isUsingFake: boolean,
   globalScenario?: Scenario | null,
 ): Record<CommandName, CommandConfig> => {
-  if (!useFake) return realCommandConfigs
+  if (!isUsingFake) return realCommandConfigs
   if (!globalScenario) return getFakeCommandConfigs()
   // Global override — build fresh (not memoized; only used for the
   // opt-in failure/inProgress modes, not the default success path).
@@ -336,14 +336,14 @@ export const fakeRenameFile = ({
 }) => {
   if (scenario === "failure") {
     return {
-      ok: false as const,
+      isOk: false as const,
       newPath: null,
       error:
         "fake: rename failed (dry-run failure scenario)",
     }
   }
   return {
-    ok: true as const,
+    isOk: true as const,
     newPath,
     error: null,
   }

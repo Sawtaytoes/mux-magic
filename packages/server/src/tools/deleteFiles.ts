@@ -10,7 +10,7 @@ export type DeleteMode = "trash" | "permanent"
 
 export type DeleteResult = {
   path: string
-  ok: boolean
+  isOk: boolean
   // Reflects the strategy actually used for this path. Differs from the
   // batch-level `mode` when the global setting is `trash` but a specific
   // path is on a Windows network drive (no Recycle Bin available there)
@@ -84,7 +84,7 @@ export const deleteFiles = async (
             : String(error)
         return {
           path,
-          ok: false,
+          isOk: false,
           mode: baseMode,
           error: message,
         }
@@ -99,7 +99,7 @@ export const deleteFiles = async (
         }
         return {
           path: validated,
-          ok: true,
+          isOk: true,
           mode: effectiveMode,
           error: null,
         }
@@ -110,7 +110,7 @@ export const deleteFiles = async (
             : String(error)
         return {
           path: validated,
-          ok: false,
+          isOk: false,
           mode: effectiveMode,
           error: message,
         }

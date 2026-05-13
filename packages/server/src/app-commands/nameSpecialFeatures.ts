@@ -248,12 +248,12 @@ export type NameSpecialFeaturesResult =
       unnamedFileCandidates?: UnnamedFileCandidate[]
     }
   | {
-      collision: true
+      hasCollision: true
       filename: string
       targetFilename: string
     }
   | {
-      movedToEditionFolder: true
+      hasMovedToEditionFolder: true
       filename: string
       destinationPath: string
     }
@@ -361,10 +361,10 @@ export const reorderRenamesForOnDiskConflicts = <
   const deferred: T[] = []
   for (const rename of renames) {
     const ownStem = stripExtension(rename.fileInfo.filename)
-    const collidesWithAnotherSource =
+    const isCollidingWithAnotherSource =
       sourceStems.has(rename.renamedFilename) &&
       rename.renamedFilename !== ownStem
-    if (collidesWithAnotherSource) {
+    if (isCollidingWithAnotherSource) {
       deferred.push(rename)
     } else {
       upfront.push(rename)
@@ -438,11 +438,11 @@ export const postProcessMatches = (
     renamedFilename: string
   }[] = []
   const unmatched: FileMatch[] = []
-  let anyCutMatched = false
+  let hasAnyCutMatched = false
 
   matches.forEach((match) => {
     if (match.kind === "cut") {
-      anyCutMatched = true
+      hasAnyCutMatched = true
       renames.push({
         fileInfo: match.fileInfo,
         renamedFilename: buildMovieFeatureName(
@@ -465,7 +465,7 @@ export const postProcessMatches = (
   // Some cuts matched by timecode → the unmatched files probably aren't
   // main-feature candidates (DVDCompare's extras list might just be
   // incomplete). Leave them alone, same as today's behavior.
-  if (anyCutMatched) return renames
+  if (hasAnyCutMatched) return renames
 
   // No cuts matched. Movie name not derivable means we can't rename
   // unmatched files as main features; leave them alone.
@@ -773,12 +773,12 @@ export const moveFileToEditionFolder = (
 }
 
 export const nameSpecialFeatures = ({
-  autoNameDuplicates = false,
+  isAutoNamingDuplicates = false,
   dvdCompareId,
   dvdCompareReleaseHash,
   fixedOffset,
-  moveToEditionFolders = false,
-  nonInteractive = false,
+  isMovingToEditionFolders = false,
+  isNonInteractive = false,
   searchTerm,
   sourcePath,
   timecodePaddingAmount,
@@ -791,20 +791,20 @@ export const nameSpecialFeatures = ({
   // a `getUserSearchInput` prompt so the user can pick which file
   // should keep the un-suffixed target name; the others fall through
   // to the same (2)/(3)/… counter.
-  autoNameDuplicates?: boolean
+  isAutoNamingDuplicates?: boolean
   dvdCompareId?: number
   dvdCompareReleaseHash?: number
   // When true, main-feature files with an {edition-…} tag are moved
   // into <sourceParent>/<Title (Year)>/<Title (Year) {edition-…}>/<file>
   // after renaming. Special-feature files are not moved.
-  moveToEditionFolders?: boolean
+  isMovingToEditionFolders?: boolean
   // When true: rename collisions auto-resolve by appending (2), (3), etc.
-  // When false (default): emit a { collision } event so the UI can prompt
+  // When false (default): emit a { hasCollision } event so the UI can prompt
   // the user to compare and choose. The CLI handler also defaults to
   // non-interactive=false so running from the terminal also surfaces the
-  // collision event (both interactive modes behave the same way at the
+  // hasCollision event (both interactive modes behave the same way at the
   // observable level — the difference is how the consumer reacts to it).
-  nonInteractive?: boolean
+  isNonInteractive?: boolean
   searchTerm?: string
   sourcePath: string
   url?: string
@@ -1041,7 +1041,7 @@ export const nameSpecialFeatures = ({
               // -1 (skip) the original DVDCompare order is preserved, which
               // is also the behavior under `autoNameDuplicates: true`.
               const promptForDuplicates$ =
-                autoNameDuplicates
+                isAutoNamingDuplicates
                   ? of(conflictOrderedRenames)
                   : reorderForDuplicatePrompts(
                       conflictOrderedRenames,
@@ -1072,12 +1072,13 @@ export const nameSpecialFeatures = ({
                         { previousFilenameCount },
                         { fileInfo, renamedFilename },
                       ) => {
-                        const intraRunDuplicate =
+                        const isIntraRunDuplicate =
                           renamedFilename in
                           previousFilenameCount
-                        const finalName = intraRunDuplicate
-                          ? `(${getNextFilenameCount(previousFilenameCount[renamedFilename])}) ${renamedFilename}`
-                          : renamedFilename
+                        const finalName =
+                          isIntraRunDuplicate
+                            ? `(${getNextFilenameCount(previousFilenameCount[renamedFilename])}) ${renamedFilename}`
+                            : renamedFilename
                         return {
                           previousFilenameCount: {
                             ...previousFilenameCount,
@@ -1114,7 +1115,7 @@ export const nameSpecialFeatures = ({
                                   isNoop: true,
                                 }
                               }
-                              if (nonInteractive) {
+                              if (isNonInteractive) {
                                 // Auto-suffix mode: find a free path via
                                 // findUniqueTargetPath (handles both intra-run
                                 // and pre-existing on-disk cases uniformly).
@@ -1135,7 +1136,7 @@ export const nameSpecialFeatures = ({
                               // Interactive mode: check if the target already
                               // exists on disk (distinct from intra-run dupes
                               // which the scan counter handles).
-                              const targetExistsOnDisk =
+                              const isTargetOnDisk =
                                 await access(
                                   desiredPath,
                                 ).then(
@@ -1145,8 +1146,8 @@ export const nameSpecialFeatures = ({
                               return {
                                 resolvedName: finalName,
                                 isCollision:
-                                  targetExistsOnDisk &&
-                                  !intraRunDuplicate,
+                                  isTargetOnDisk &&
+                                  !isIntraRunDuplicate,
                                 isNoop: false,
                               }
                             }).pipe(
@@ -1166,7 +1167,7 @@ export const nameSpecialFeatures = ({
                                     )
                                     return of<NameSpecialFeaturesResult>(
                                       {
-                                        collision: true,
+                                        hasCollision: true,
                                         filename:
                                           fileInfo.filename,
                                         targetFilename:
@@ -1193,7 +1194,7 @@ export const nameSpecialFeatures = ({
                                           // edition tag AND moveToEditionFolders is
                                           // requested, move it into the nested folder.
                                           if (
-                                            !moveToEditionFolders
+                                            !isMovingToEditionFolders
                                           ) {
                                             return of(
                                               renamedResult,
@@ -1247,7 +1248,7 @@ export const nameSpecialFeatures = ({
                                                     `Moved to edition folder: ${destPath}`,
                                                   )
                                                   return {
-                                                    movedToEditionFolder: true,
+                                                    hasMovedToEditionFolder: true,
                                                     filename:
                                                       resolvedName.concat(
                                                         extname(

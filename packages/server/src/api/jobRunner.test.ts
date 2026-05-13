@@ -210,13 +210,13 @@ describe(runJob.name, () => {
       commandName: "modifySubtitleMetadata",
     })
 
-    let extractCalled = false
+    let isExtractCalled = false
     runJob(
       job.id,
       throwError(() => new Error("boom")),
       {
         extractOutputs: (results) => {
-          extractCalled = true
+          isExtractCalled = true
           return { rules: results }
         },
       },
@@ -226,7 +226,7 @@ describe(runJob.name, () => {
 
     expect(getJob(job.id)?.status).toBe("failed")
     expect(getJob(job.id)?.outputs).toBeNull()
-    expect(extractCalled).toBe(false)
+    expect(isExtractCalled).toBe(false)
   })
 
   test("returned promise resolves with the final job snapshot on natural completion", async () => {

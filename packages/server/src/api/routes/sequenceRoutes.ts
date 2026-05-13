@@ -596,7 +596,7 @@ sequenceRoutes.openapi(
     })
 
     runSequenceJob(job.id, parsed, {
-      useFake: isFakeRequest(context),
+      isUsingFake: isFakeRequest(context),
       globalScenario: getFakeScenario(context),
     })
 

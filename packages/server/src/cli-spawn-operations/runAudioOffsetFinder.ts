@@ -79,7 +79,7 @@ export const runAudioOffsetFinder = ({
           "Process canceled by user.",
         )
 
-        if (tty.useTtyAffordances) {
+        if (tty.isUsingTtyAffordances) {
           setTimeout(() => {
             process.exit()
           }, 500)

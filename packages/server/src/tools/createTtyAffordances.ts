@@ -15,15 +15,18 @@ import { getActiveJobId } from "../api/logCapture.js"
 export const createTtyAffordances = (
   childProcess: ChildProcess,
 ): {
-  useTtyAffordances: boolean
+  isUsingTtyAffordances: boolean
   detach: () => void
 } => {
-  const inApiContext = Boolean(getActiveJobId())
-  const useTtyAffordances =
-    !inApiContext && Boolean(process.stdin.isTTY)
+  const isInApiContext = Boolean(getActiveJobId())
+  const isUsingTtyAffordances =
+    !isInApiContext && Boolean(process.stdin.isTTY)
 
-  if (!useTtyAffordances) {
-    return { useTtyAffordances: false, detach: () => {} }
+  if (!isUsingTtyAffordances) {
+    return {
+      isUsingTtyAffordances: false,
+      detach: () => {},
+    }
   }
 
   const onData = (inputBuffer: Buffer) => {
@@ -42,7 +45,7 @@ export const createTtyAffordances = (
   process.stdin.on("data", onData)
 
   return {
-    useTtyAffordances: true,
+    isUsingTtyAffordances: true,
     detach: () => {
       process.stdin.setRawMode(false)
       process.stdin.removeListener("data", onData)

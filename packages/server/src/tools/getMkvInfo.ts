@@ -24,8 +24,8 @@ export type ContainerProperties = {
 
 export type Container = {
   properties: ContainerProperties
-  recognized: boolean
-  supported: boolean
+  isRecognized: boolean
+  isSupported: boolean
   type: string
 }
 
@@ -37,11 +37,11 @@ export type TrackProperties = {
   codec_private_data?: string
   codec_private_length: number
   default_duration?: number
-  default_track: boolean
+  isDefaultTrack: boolean
   display_dimensions?: string
   display_unit?: number
-  enabled_track: boolean
-  forced_track: boolean
+  isEnabledTrack: boolean
+  isForcedTrack: boolean
   language: Iso6392LanguageCode | "und"
   minimum_timestamp?: number
   num_index_entries: number
@@ -114,7 +114,7 @@ export const getMkvInfo = (
     })
 
     childProcess.on("close", (code) => {
-      if (code === null && tty.useTtyAffordances) {
+      if (code === null && tty.isUsingTtyAffordances) {
         setTimeout(() => {
           process.exit()
         }, 500)
@@ -160,9 +160,52 @@ export const getMkvInfo = (
     // (runMkvMerge, runMkvExtract, runMkvPropEdit, runFfmpeg) already use.
     return treeKillOnUnsubscribe(childProcess)
   }).pipe(
-    map(
-      (mkvInfoJsonString) =>
-        JSON.parse(mkvInfoJsonString) as MkvInfo,
-    ),
+    map((mkvInfoJsonString) => {
+      // mkvmerge's JSON uses snake_case for boolean track properties that
+      // the TypeScript type renames to camelCase with is/has prefix. Map
+      // them here so consumers use the idiomatic TypeScript names.
+      const raw = JSON.parse(mkvInfoJsonString) as Record<
+        string,
+        unknown
+      >
+      const rawContainer = raw["container"] as Record<
+        string,
+        unknown
+      >
+      const rawTracks = raw["tracks"] as Array<
+        Record<string, unknown>
+      >
+      return {
+        ...raw,
+        container: {
+          ...rawContainer,
+          isRecognized: rawContainer[
+            "recognized"
+          ] as boolean,
+          isSupported: rawContainer["supported"] as boolean,
+        },
+        tracks: rawTracks.map((track) => {
+          const rawProps = track["properties"] as Record<
+            string,
+            unknown
+          >
+          return {
+            ...track,
+            properties: {
+              ...rawProps,
+              isDefaultTrack: rawProps[
+                "default_track"
+              ] as boolean,
+              isEnabledTrack: rawProps[
+                "enabled_track"
+              ] as boolean,
+              isForcedTrack: rawProps[
+                "forced_track"
+              ] as boolean,
+            },
+          }
+        }),
+      } as MkvInfo
+    }),
     logAndSwallowPipelineError(getMkvInfo),
   )

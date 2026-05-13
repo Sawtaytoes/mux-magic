@@ -40,11 +40,11 @@ export const getUserSearchInput = (params: {
         filePaths: params.filePaths,
       })
 
-      let resolved = false
+      let isResolved = false
 
       registerPrompt(promptId)
         .then((index) => {
-          resolved = true
+          isResolved = true
           observer.next(index)
           observer.complete()
         })
@@ -56,7 +56,7 @@ export const getUserSearchInput = (params: {
       // cancelled, parallel sibling failed, etc.) — not after natural
       // completion, where resolvePrompt already deleted the entry.
       return () => {
-        if (!resolved) cancelPrompt(promptId)
+        if (!isResolved) cancelPrompt(promptId)
       }
     }
 

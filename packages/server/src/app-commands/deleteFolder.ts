@@ -6,17 +6,17 @@ import {
 import { defer, map, type Observable } from "rxjs"
 
 export const deleteFolder = ({
-  confirm,
+  isConfirmed,
   folderPath,
 }: {
-  confirm: boolean
+  isConfirmed: boolean
   folderPath: string
 }): Observable<string> =>
   defer(async () => {
     // Safety guard: refuse to run unless the caller explicitly opted in.
-    // The Zod schema also enforces confirm: true at the API boundary, but
+    // The Zod schema also enforces isConfirmed: true at the API boundary, but
     // this layer protects CLI / direct callers too.
-    if (confirm !== true) {
+    if (isConfirmed !== true) {
       throw new Error(
         "deleteFolder refused — pass confirm: true (or --confirm on the CLI) to acknowledge this will recursively delete a directory.",
       )

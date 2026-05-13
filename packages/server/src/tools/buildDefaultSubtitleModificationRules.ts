@@ -70,7 +70,7 @@ export const buildDefaultSubtitleModificationRules = (
     IGNORED_STYLE_NAMES_REGEX_STRING,
     "i",
   )
-  const needsMarginLR =
+  const isNeedingMarginLR =
     hasIncorrectResolution ||
     subtitlesMetadata.some(({ styles }) =>
       styles.some(
@@ -87,7 +87,7 @@ export const buildDefaultSubtitleModificationRules = (
     MarginV: String(marginV),
   }
 
-  if (needsMarginLR) {
+  if (isNeedingMarginLR) {
     styleFields.MarginL = String(marginLRValue)
     styleFields.MarginR = String(marginLRValue)
   }

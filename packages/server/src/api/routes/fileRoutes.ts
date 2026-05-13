@@ -106,11 +106,11 @@ fileRoutes.openapi(
     }
     const { path, includeDuration } =
       context.req.valid("query")
-    const wantsDuration =
+    const isWantingDuration =
       includeDuration === "1" || includeDuration === "true"
     try {
       const result = await listFilesWithMetadata(path, {
-        includeDuration: wantsDuration,
+        isIncludingDuration: isWantingDuration,
       })
       return context.json({ ...result, error: null }, 200)
     } catch (error) {
@@ -293,14 +293,14 @@ fileRoutes.openapi(
   async (context) => {
     const { path } = context.req.valid("json")
     if (isFakeRequest(context)) {
-      return context.json({ ok: true, error: null }, 200)
+      return context.json({ isOk: true, error: null }, 200)
     }
     try {
       openInExternalApp(path)
-      return context.json({ ok: true, error: null }, 200)
+      return context.json({ isOk: true, error: null }, 200)
     } catch (error) {
       return context.json(
-        { ok: false, error: messageFromError(error) },
+        { isOk: false, error: messageFromError(error) },
         200,
       )
     }
@@ -341,7 +341,7 @@ fileRoutes.openapi(
       const result = {
         results: (paths as string[]).map((path) => ({
           path,
-          ok: true,
+          isOk: true,
           mode: "trash" as const,
           error: null,
         })),
@@ -373,7 +373,7 @@ fileRoutes.openapi(
     responses: {
       200: {
         description:
-          "Rename outcome — `ok: true` plus the validated new path on success, `ok: false` plus a message on failure.",
+          "Rename outcome — `isOk: true` plus the validated new path on success, `isOk: false` plus a message on failure.",
         content: {
           "application/json": {
             schema: schemas.renameFileResponseSchema,
@@ -396,27 +396,27 @@ fileRoutes.openapi(
     const validation = (() => {
       try {
         return {
-          ok: true as const,
+          isOk: true as const,
           oldPath: validateReadablePath(oldPath),
           newPath: validateReadablePath(newPath),
         }
       } catch (error) {
         if (error instanceof PathSafetyError) {
           return {
-            ok: false as const,
+            isOk: false as const,
             error: error.message,
           }
         }
         return {
-          ok: false as const,
+          isOk: false as const,
           error: messageFromError(error),
         }
       }
     })()
-    if (!validation.ok) {
+    if (!validation.isOk) {
       return context.json(
         {
-          ok: false,
+          isOk: false,
           newPath: null,
           error: validation.error,
         },
@@ -432,7 +432,7 @@ fileRoutes.openapi(
       )
       return context.json(
         {
-          ok: true,
+          isOk: true,
           newPath: validation.newPath,
           error: null,
         },
@@ -441,7 +441,7 @@ fileRoutes.openapi(
     } catch (error) {
       return context.json(
         {
-          ok: false,
+          isOk: false,
           newPath: null,
           error: messageFromError(error),
         },

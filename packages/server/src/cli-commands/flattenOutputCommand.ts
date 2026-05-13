@@ -51,7 +51,7 @@ export const flattenOutputCommand: CommandModule<
 
   handler: (argv) => {
     flattenOutput({
-      deleteSourceFolder: argv.deleteSourceFolder,
+      isDeletingSourceFolder: argv.deleteSourceFolder,
       sourcePath: argv.sourcePath,
     }).subscribe(subscribeCli())
   },

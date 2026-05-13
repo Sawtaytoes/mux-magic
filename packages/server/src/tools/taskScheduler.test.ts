@@ -106,14 +106,14 @@ describe(runTask.name, () => {
   test("does not start work for a queued Task that's unsubscribed before its slot opens", () => {
     initTaskScheduler(1)
 
-    let firstStarted = false
-    let secondStarted = false
-    let thirdStarted = false
+    let hasFirstStarted = false
+    let hasSecondStarted = false
+    let hasThirdStarted = false
     let firstCompleter: (() => void) | null = null
 
     const firstSubscription = runTask(
       new Observable<void>((subscriber) => {
-        firstStarted = true
+        hasFirstStarted = true
         firstCompleter = () => subscriber.complete()
       }),
     ).subscribe()
@@ -121,7 +121,7 @@ describe(runTask.name, () => {
     // Second is queued behind the first.
     const secondSubscription = runTask(
       defer(() => {
-        secondStarted = true
+        hasSecondStarted = true
         return of(undefined)
       }),
     ).subscribe()
@@ -129,14 +129,14 @@ describe(runTask.name, () => {
     // Third is queued behind the second.
     runTask(
       defer(() => {
-        thirdStarted = true
+        hasThirdStarted = true
         return of(undefined)
       }),
     ).subscribe()
 
-    expect(firstStarted).toBe(true)
-    expect(secondStarted).toBe(false)
-    expect(thirdStarted).toBe(false)
+    expect(hasFirstStarted).toBe(true)
+    expect(hasSecondStarted).toBe(false)
+    expect(hasThirdStarted).toBe(false)
 
     // Cancel the queued second BEFORE its slot opens.
     secondSubscription.unsubscribe()
@@ -148,8 +148,8 @@ describe(runTask.name, () => {
     // bypasses that — the callback always runs sync on subscribe().
     ;(firstCompleter as (() => void) | null)?.()
 
-    expect(secondStarted).toBe(false)
-    expect(thirdStarted).toBe(true)
+    expect(hasSecondStarted).toBe(false)
+    expect(hasThirdStarted).toBe(true)
 
     firstSubscription.unsubscribe()
   })
@@ -159,7 +159,7 @@ describe(runTask.name, () => {
 
     let firstSubscribeCount = 0
     let firstUnsubscribeCount = 0
-    let secondStarted = false
+    let hasSecondStarted = false
 
     const firstSubscription = runTask(
       new Observable<void>(() => {
@@ -172,19 +172,19 @@ describe(runTask.name, () => {
 
     runTask(
       defer(() => {
-        secondStarted = true
+        hasSecondStarted = true
         return of(undefined)
       }),
     ).subscribe()
 
     expect(firstSubscribeCount).toBe(1)
-    expect(secondStarted).toBe(false)
+    expect(hasSecondStarted).toBe(false)
 
     // Cancel the in-flight first Task → slot frees → second runs.
     firstSubscription.unsubscribe()
 
     expect(firstUnsubscribeCount).toBe(1)
-    expect(secondStarted).toBe(true)
+    expect(hasSecondStarted).toBe(true)
   })
 
   test("propagates errors from the wrapped observable to the caller", async () => {
@@ -207,15 +207,15 @@ describe(runTask.name, () => {
     expect(result).toBe(error)
 
     // Slot must release on error too — verify by running another Task.
-    let nextStarted = false
+    let hasNextStarted = false
     runTask(
       defer(() => {
-        nextStarted = true
+        hasNextStarted = true
         return of(undefined)
       }),
     ).subscribe()
 
-    expect(nextStarted).toBe(true)
+    expect(hasNextStarted).toBe(true)
   })
 })
 

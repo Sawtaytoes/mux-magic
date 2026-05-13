@@ -46,7 +46,7 @@ export const hasWrongDefaultTrack = ({
                 take(1),
                 filter(
                   ({ properties }) =>
-                    !properties.default_track,
+                    !properties.isDefaultTrack,
                 ),
               ),
             ),

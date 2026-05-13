@@ -21,7 +21,7 @@ describe(deleteFolder.name, () => {
   test("recursively removes the folder when confirm is true", async () => {
     const result = await lastValueFrom(
       deleteFolder({
-        confirm: true,
+        isConfirmed: true,
         folderPath: "/work/TEMP/AUDIO-OFFSETS",
       }),
     )
@@ -47,7 +47,7 @@ describe(deleteFolder.name, () => {
       await expect(
         firstValueFrom(
           deleteFolder({
-            confirm: false,
+            isConfirmed: false,
             folderPath: "/work/TEMP/AUDIO-OFFSETS",
           }).pipe(toArray()),
         ),

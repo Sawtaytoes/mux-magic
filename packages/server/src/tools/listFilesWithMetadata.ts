@@ -39,7 +39,7 @@ export type ListFilesWithMetadataOptions = {
   // Off by default since each call spawns the mediainfo binary; on a
   // network share this can take ~100ms per file. Concurrency is capped
   // at 8 internally so a folder of 100 files doesn't spawn 100 procs.
-  includeDuration?: boolean
+  isIncludingDuration?: boolean
 }
 
 export type ListFilesWithMetadataResult = {
@@ -186,7 +186,7 @@ export const listFilesWithMetadata = async (
     )
   })
 
-  if (options.includeDuration) {
+  if (options.isIncludingDuration) {
     // Indexes of video-extension files only — directories and non-video
     // files stay duration: null. mapWithConcurrency keeps the parallel
     // mediainfo spawns capped at 8.

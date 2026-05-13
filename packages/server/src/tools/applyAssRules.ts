@@ -102,7 +102,7 @@ const evaluatePerSourceClause = ({
 }): boolean => {
   const { matches, excludes } = splitClause({ clause })
 
-  const matchesPasses = matches
+  const hasMatchesPasses = matches
     ? matchesAllPairs({
         pairs: resolvePredicateBody({
           body: matches,
@@ -111,19 +111,19 @@ const evaluatePerSourceClause = ({
         source,
       })
     : true
-  if (!matchesPasses) {
+  if (!hasMatchesPasses) {
     return false
   }
 
   if (excludes) {
-    const excludesMatched = matchesAllPairs({
+    const hasExcludesMatched = matchesAllPairs({
       pairs: resolvePredicateBody({
         body: excludes,
         predicates,
       }),
       source,
     })
-    if (excludesMatched) {
+    if (hasExcludesMatched) {
       return false
     }
   }

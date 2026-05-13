@@ -115,10 +115,10 @@ export type StepEvent = {
 
 // Terminal payload for the /jobs/:id/logs SSE stream. Sent once on
 // completion / failure / cancellation. Has no `type` discriminator — the
-// presence of `done: true` is the discriminator (matches the wire format
+// presence of `isDone: true` is the discriminator (matches the wire format
 // emitted by logRoutes.ts).
 export type JobLogDoneEvent = {
-  done: true
+  isDone: true
   status: JobStatus
   results?: unknown[]
   outputs?: Record<string, unknown> | null

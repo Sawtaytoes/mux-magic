@@ -90,10 +90,10 @@ export const nameSpecialFeaturesCommand: CommandModule<
     const cliObserver = subscribeCli()
     let renamedCount = 0
     nameSpecialFeatures({
-      autoNameDuplicates: argv.autoNameDuplicates,
+      isAutoNamingDuplicates: argv.autoNameDuplicates,
       fixedOffset: argv.fixedOffset,
-      moveToEditionFolders: argv.moveToEditionFolders,
-      nonInteractive: argv.nonInteractive,
+      isMovingToEditionFolders: argv.moveToEditionFolders,
+      isNonInteractive: argv.nonInteractive,
       sourcePath: argv.sourcePath,
       timecodePaddingAmount: argv.timecodePadding,
       url: argv.url,
@@ -129,14 +129,14 @@ export const nameSpecialFeaturesCommand: CommandModule<
           }
           return
         }
-        if ("collision" in event) {
+        if ("hasCollision" in event) {
           console.warn(
             `[REVIEW NEEDED] "${event.filename}" → "${event.targetFilename}" already exists. ` +
               "Pass --non-interactive to auto-suffix instead.",
           )
           return
         }
-        if ("movedToEditionFolder" in event) {
+        if ("hasMovedToEditionFolder" in event) {
           console.log(
             `Moved to edition folder: ${event.filename} → ${event.destinationPath}`,
           )

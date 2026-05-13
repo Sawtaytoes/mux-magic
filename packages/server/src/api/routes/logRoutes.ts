@@ -12,7 +12,7 @@ import { startSseKeepalive } from "../sseKeepalive.js"
 export const logsRoutes = new OpenAPIHono()
 
 // SSE log stream.
-// Each event data is JSON: { line: string } | { done: true, status: JobStatus }
+// Each event data is JSON: { line: string } | { isDone: true, status: JobStatus }
 // Replays buffered logs first, then streams live lines until the job finishes.
 logsRoutes.openapi(
   createRoute({
@@ -95,7 +95,7 @@ logsRoutes.openapi(
         const latestProgress = getLatestJobProgress(job.id)
         if (latestProgress) await send(latestProgress)
         await send({
-          done: true,
+          isDone: true,
           status: job.status,
           results: job.results,
           outputs: job.outputs,
@@ -112,7 +112,7 @@ logsRoutes.openapi(
         const latestProgress = getLatestJobProgress(job.id)
         if (latestProgress) await send(latestProgress)
         await send({
-          done: true,
+          isDone: true,
           status: finishedJob?.status ?? job.status,
           results: finishedJob?.results ?? job.results,
           outputs: finishedJob?.outputs ?? null,
@@ -133,7 +133,7 @@ logsRoutes.openapi(
           complete: async () => {
             const completedJob = getJob(job.id)
             await send({
-              done: true,
+              isDone: true,
               status: completedJob?.status ?? job.status,
               results: completedJob?.results ?? job.results,
               outputs: completedJob?.outputs ?? null,
@@ -144,7 +144,7 @@ logsRoutes.openapi(
           error: async () => {
             const failedJob = getJob(job.id)
             await send({
-              done: true,
+              isDone: true,
               status: failedJob?.status ?? job.status,
               error: failedJob?.error ?? job.error,
             })

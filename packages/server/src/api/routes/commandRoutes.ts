@@ -175,7 +175,7 @@ export type CommandConfig = {
   // — Scalar UI renders the route with a strikethrough + badge so users
   // can see it's on the way out alongside the runtime [name] DEPRECATED
   // log line emitted by the underlying app-command shim.
-  deprecated?: boolean
+  isDeprecated?: boolean
   schema: z.ZodTypeAny
   summary: string
   tags: string[]
@@ -218,7 +218,7 @@ export const commandConfigs: Record<
   flattenOutput: {
     getObservable: (body) =>
       flattenOutput({
-        deleteSourceFolder: body.deleteSourceFolder,
+        isDeletingSourceFolder: body.deleteSourceFolder,
         sourcePath: body.sourcePath,
       }),
     // Files land in dirname(sourcePath); downstream linkedTo:folder
@@ -232,7 +232,7 @@ export const commandConfigs: Record<
   copyOutSubtitles: {
     // Deprecated alias for extractSubtitles — getObservable points to the
     // shim app-command which logs a deprecation warning then delegates.
-    deprecated: true,
+    isDeprecated: true,
     getObservable: (body) =>
       copyOutSubtitles({
         isRecursive: body.isRecursive,
@@ -385,7 +385,7 @@ export const commandConfigs: Record<
   deleteFolder: {
     getObservable: (body) =>
       deleteFolder({
-        confirm: body.confirm,
+        isConfirmed: body.confirm,
         folderPath: body.folderPath,
       }),
     schema: schemas.deleteFolderRequestSchema,
@@ -481,12 +481,12 @@ export const commandConfigs: Record<
   nameSpecialFeatures: {
     getObservable: (body) =>
       nameSpecialFeatures({
-        autoNameDuplicates: body.autoNameDuplicates,
+        isAutoNamingDuplicates: body.autoNameDuplicates,
         dvdCompareId: body.dvdCompareId,
         dvdCompareReleaseHash: body.dvdCompareReleaseHash,
         fixedOffset: body.fixedOffset,
-        moveToEditionFolders: body.moveToEditionFolders,
-        nonInteractive: body.nonInteractive,
+        isMovingToEditionFolders: body.moveToEditionFolders,
+        isNonInteractive: body.nonInteractive,
         searchTerm: body.searchTerm,
         sourcePath: body.sourcePath,
         timecodePaddingAmount: body.timecodePadding,
@@ -695,7 +695,7 @@ commandNames.forEach((commandName) => {
   // `extractOutputs`) are looked up per-request so a `?fake=1` query
   // can swap them out without touching the OpenAPI surface.
   const {
-    deprecated,
+    isDeprecated,
     outputFolderName,
     schema,
     summary,
@@ -708,7 +708,7 @@ commandNames.forEach((commandName) => {
       path: `/commands/${commandName}`,
       summary,
       tags,
-      ...(deprecated ? { deprecated: true } : {}),
+      ...(isDeprecated ? { deprecated: true } : {}),
       request: {
         body: {
           content: {
@@ -733,9 +733,9 @@ commandNames.forEach((commandName) => {
     }),
     async (context) => {
       const body = context.req.valid("json")
-      const useFake = isFakeRequest(context)
+      const isUsingFake = isFakeRequest(context)
       const effectiveConfig = getEffectiveCommandConfigs(
-        useFake,
+        isUsingFake,
         getFakeScenario(context),
       )[commandName]
       return startCommandJob({

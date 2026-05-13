@@ -53,13 +53,13 @@ describe("POST /files/rename", () => {
       newPath: "/work/new-name.mkv",
     })
     const body = (await response.json()) as {
-      ok: boolean
+      isOk: boolean
       newPath: string | null
       error: string | null
     }
 
     expect(response.status).toBe(200)
-    expect(body.ok).toBe(true)
+    expect(body.isOk).toBe(true)
     // validateReadablePath returns the normalized path, so on Windows the
     // forward-slash input comes back as `\work\new-name.mkv`. Normalize
     // the expected value the same way to keep the assertion portable.
@@ -81,12 +81,12 @@ describe("POST /files/rename", () => {
       newPath: "/work/new-name.mkv",
     })
     const body = (await response.json()) as {
-      ok: boolean
+      isOk: boolean
       error: string | null
     }
 
     expect(response.status).toBe(200)
-    expect(body.ok).toBe(false)
+    expect(body.isOk).toBe(false)
     expect(body.error).toMatch(/absolute/i)
     const stillThere = await stat("/work/old-name.mkv")
     expect(stillThere.isFile()).toBe(true)
@@ -98,11 +98,11 @@ describe("POST /files/rename", () => {
       newPath: "new-name.mkv",
     })
     const body = (await response.json()) as {
-      ok: boolean
+      isOk: boolean
       error: string | null
     }
 
-    expect(body.ok).toBe(false)
+    expect(body.isOk).toBe(false)
     expect(body.error).toMatch(/absolute/i)
   })
 
@@ -112,11 +112,11 @@ describe("POST /files/rename", () => {
       newPath: "",
     })
     const body = (await response.json()) as {
-      ok: boolean
+      isOk: boolean
       error: string | null
     }
 
-    expect(body.ok).toBe(false)
+    expect(body.isOk).toBe(false)
     expect(body.error).toMatch(/required|empty|absolute/i)
   })
 
@@ -126,11 +126,11 @@ describe("POST /files/rename", () => {
       newPath: "/work/sibling.mkv",
     })
     const body = (await response.json()) as {
-      ok: boolean
+      isOk: boolean
       error: string | null
     }
 
-    expect(body.ok).toBe(false)
+    expect(body.isOk).toBe(false)
     expect(body.error).toMatch(/already exists/i)
     // Original is preserved — the rename never fired.
     const original = await stat("/work/old-name.mkv")
@@ -143,11 +143,11 @@ describe("POST /files/rename", () => {
       newPath: "/work/whatever.mkv",
     })
     const body = (await response.json()) as {
-      ok: boolean
+      isOk: boolean
       error: string | null
     }
 
-    expect(body.ok).toBe(false)
+    expect(body.isOk).toBe(false)
     expect(body.error).toBeTruthy()
   })
 
@@ -172,13 +172,13 @@ describe("POST /files/rename", () => {
       },
     )
     const body = (await response.json()) as {
-      ok: boolean
+      isOk: boolean
       newPath: string | null
       error: string | null
     }
 
     expect(response.status).toBe(200)
-    expect(body.ok).toBe(true)
+    expect(body.isOk).toBe(true)
     expect(body.newPath).toBe("/nonexistent/dest.mkv")
     expect(body.error).toBeNull()
     // Real file we seeded must still be present — fake path didn't run rename.
@@ -199,13 +199,13 @@ describe("POST /files/rename", () => {
       },
     )
     const body = (await response.json()) as {
-      ok: boolean
+      isOk: boolean
       newPath: string | null
       error: string | null
     }
 
     expect(response.status).toBe(200)
-    expect(body.ok).toBe(false)
+    expect(body.isOk).toBe(false)
     expect(body.newPath).toBeNull()
     expect(body.error).toMatch(/fake/i)
   })
@@ -237,7 +237,7 @@ describe("DELETE /files", () => {
     const body = (await response.json()) as {
       results: Array<{
         path: string
-        ok: boolean
+        isOk: boolean
         mode: "trash" | "permanent"
         error: string | null
       }>
@@ -247,13 +247,13 @@ describe("DELETE /files", () => {
     expect(body.results).toEqual([
       {
         path: "/work/file1.mkv",
-        ok: true,
+        isOk: true,
         mode: "trash",
         error: null,
       },
       {
         path: "/work/file2.mkv",
-        ok: true,
+        isOk: true,
         mode: "trash",
         error: null,
       },
@@ -279,12 +279,12 @@ describe("POST /files/open-external", () => {
       },
     )
     const body = (await response.json()) as {
-      ok: boolean
+      isOk: boolean
       error: string | null
     }
 
     expect(response.status).toBe(200)
-    expect(body.ok).toBe(true)
+    expect(body.isOk).toBe(true)
     expect(body.error).toBeNull()
   })
 })

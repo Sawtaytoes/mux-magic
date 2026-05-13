@@ -46,7 +46,7 @@ export const deleteFolderCommand: CommandModule<
 
   handler: (argv) => {
     deleteFolder({
-      confirm: argv.confirm,
+      isConfirmed: argv.confirm,
       folderPath: argv.folderPath,
     }).subscribe(subscribeCli())
   },

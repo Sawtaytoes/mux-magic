@@ -253,8 +253,8 @@ jobRoutes.openapi(
       )
     }
 
-    const wasCancelled = cancelJob(id)
-    if (!wasCancelled) {
+    const isCancelled = cancelJob(id)
+    if (!isCancelled) {
       // Job exists but is already terminal — idempotent no-op.
       return context.body(null, 204)
     }

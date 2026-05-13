@@ -113,7 +113,7 @@ export const runSequenceJob = (
   jobId: string,
   body: SequenceBody,
   options: {
-    useFake?: boolean
+    isUsingFake?: boolean
     globalScenario?: Scenario | null
   } = {},
 ): void => {
@@ -123,14 +123,14 @@ export const runSequenceJob = (
     status: "running",
   })
 
-  const useFake = options.useFake ?? false
+  const isUsingFake = options.isUsingFake ?? false
   // Resolve which configs map to consult for each step. The real map's
   // identity is preserved when useFake is false (no extra cost on the
   // production path); switching to the fake map flips every step's
   // observable to a scripted timer source. Both maps share the same
   // keys and metadata so resolveSequenceParams treats them identically.
   const effectiveConfigs = getEffectiveCommandConfigs(
-    useFake,
+    isUsingFake,
     options.globalScenario,
   )
 
@@ -539,7 +539,7 @@ export const runSequenceJob = (
           "SEQUENCE",
           `Group "${groupLabel}" (serial, ${item.steps.length} step${item.steps.length === 1 ? "" : "s"}): starting.`,
         )
-        let groupFailed = false
+        let hasGroupFailed = false
         for (
           let innerIndex = 0;
           innerIndex < item.steps.length;
@@ -562,7 +562,7 @@ export const runSequenceJob = (
             markRemainingSkippedFromFlatIndex(
               flatIndexAfter(innerStep),
             )
-            groupFailed = true
+            hasGroupFailed = true
             break
           }
           stepsById[innerOutcome.stepId] = {
@@ -575,7 +575,7 @@ export const runSequenceJob = (
             `Step ${innerOutcome.stepId} (${innerStep.command}): completed.`,
           )
         }
-        if (groupFailed) {
+        if (hasGroupFailed) {
           logError(
             "SEQUENCE",
             `Group "${groupLabel}" (serial): failed at an inner step.`,

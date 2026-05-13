@@ -83,7 +83,7 @@ describe(deleteFiles.name, () => {
       "/disc-rips/SOLDIER/a.mkv",
       "/disc-rips/SOLDIER/b.mkv",
     ])
-    expect(results.every((res) => res.ok)).toBe(true)
+    expect(results.every((res) => res.isOk)).toBe(true)
     // network-drive detection is no-op on non-Windows runners; on
     // Windows it consults a cached PowerShell call, which won't include
     // the memfs G: drive (it's a fake), so the call falls through to
@@ -101,7 +101,7 @@ describe(deleteFiles.name, () => {
     const { results } = await deleteFiles([
       "/disc-rips/SOLDIER/a.mkv",
     ])
-    expect(results[0].ok).toBe(true)
+    expect(results[0].isOk).toBe(true)
     expect(results[0].mode).toBe("permanent")
     expect(trashCalls).toHaveLength(0)
     expect(() =>
@@ -115,8 +115,8 @@ describe(deleteFiles.name, () => {
       "/disc-rips/SOLDIER/a.mkv", // valid
       "relative/path.mkv", // relative — rejected
     ])
-    expect(results[0].ok).toBe(true)
-    expect(results[1].ok).toBe(false)
+    expect(results[0].isOk).toBe(true)
+    expect(results[1].isOk).toBe(false)
     expect(results[1].error).toMatch(/must be absolute/)
   })
 })

@@ -76,28 +76,28 @@ describe("evaluateWhenPredicate (G1)", () => {
       SAMPLE_HD,
       SAMPLE_SD_DVD,
     ])
-    const result = evaluateWhenPredicate({
+    const isResult = evaluateWhenPredicate({
       batchMetadata,
       predicate: {
         anyScriptInfo: { "YCbCr Matrix": "TV.601" },
       },
       predicates: {},
     })
-    expect(result).toBe(true)
+    expect(isResult).toBe(true)
   })
 
   test("anyScriptInfo shorthand returns false when no file matches", () => {
     const batchMetadata = buildBatchMetadata([
       SAMPLE_720P_NARROW,
     ])
-    const result = evaluateWhenPredicate({
+    const isResult = evaluateWhenPredicate({
       batchMetadata,
       predicate: {
         anyScriptInfo: { "YCbCr Matrix": "TV.601" },
       },
       predicates: {},
     })
-    expect(result).toBe(false)
+    expect(isResult).toBe(false)
   })
 
   test("excludes block rejects per-file matches that satisfy the negation set", () => {
@@ -106,7 +106,7 @@ describe("evaluateWhenPredicate (G1)", () => {
     const batchMetadata = buildBatchMetadata([
       SAMPLE_SD_DVD,
     ])
-    const result = evaluateWhenPredicate({
+    const isResult = evaluateWhenPredicate({
       batchMetadata,
       predicate: {
         anyScriptInfo: {
@@ -116,12 +116,12 @@ describe("evaluateWhenPredicate (G1)", () => {
       },
       predicates: {},
     })
-    expect(result).toBe(false)
+    expect(isResult).toBe(false)
   })
 
   test("excludes still passes per-file when the file does NOT match the negation set together", () => {
     const batchMetadata = buildBatchMetadata([SAMPLE_HD])
-    const result = evaluateWhenPredicate({
+    const isResult = evaluateWhenPredicate({
       batchMetadata,
       predicate: {
         anyScriptInfo: {
@@ -131,12 +131,12 @@ describe("evaluateWhenPredicate (G1)", () => {
       },
       predicates: {},
     })
-    expect(result).toBe(true)
+    expect(isResult).toBe(true)
   })
 
   test("$ref resolves named predicate from the predicates map (SD-DVD carve-out)", () => {
     const batchMetadata = buildBatchMetadata([SAMPLE_HD])
-    const result = evaluateWhenPredicate({
+    const isResult = evaluateWhenPredicate({
       batchMetadata,
       predicate: {
         anyScriptInfo: {
@@ -152,7 +152,7 @@ describe("evaluateWhenPredicate (G1)", () => {
         },
       },
     })
-    expect(result).toBe(true)
+    expect(isResult).toBe(true)
   })
 
   test("unknown $ref throws a descriptive error", () => {
@@ -173,12 +173,12 @@ describe("evaluateWhenPredicate (G1)", () => {
       SAMPLE_HD,
       SAMPLE_720P_NARROW,
     ])
-    const result = evaluateWhenPredicate({
+    const isResult = evaluateWhenPredicate({
       batchMetadata,
       predicate: { noneScriptInfo: { PlayResX: "640" } },
       predicates: {},
     })
-    expect(result).toBe(true)
+    expect(isResult).toBe(true)
   })
 
   test("notAllScriptInfo returns true when at least one file does not satisfy the clause", () => {
@@ -186,27 +186,27 @@ describe("evaluateWhenPredicate (G1)", () => {
       SAMPLE_HD,
       SAMPLE_SD_DVD,
     ])
-    const result = evaluateWhenPredicate({
+    const isResult = evaluateWhenPredicate({
       batchMetadata,
       predicate: { notAllScriptInfo: { PlayResX: "1920" } },
       predicates: {},
     })
-    expect(result).toBe(true)
+    expect(isResult).toBe(true)
   })
 
   test("anyStyle aggregates over flattened style rows across all files", () => {
     const batchMetadata = buildBatchMetadata([SAMPLE_HD])
-    const result = evaluateWhenPredicate({
+    const isResult = evaluateWhenPredicate({
       batchMetadata,
       predicate: { anyStyle: { Name: "Signs" } },
       predicates: {},
     })
-    expect(result).toBe(true)
+    expect(isResult).toBe(true)
   })
 
   test("multiple clauses are ANDed together", () => {
     const batchMetadata = buildBatchMetadata([SAMPLE_HD])
-    const result = evaluateWhenPredicate({
+    const isResult = evaluateWhenPredicate({
       batchMetadata,
       predicate: {
         anyScriptInfo: { "YCbCr Matrix": "TV.601" },
@@ -214,7 +214,7 @@ describe("evaluateWhenPredicate (G1)", () => {
       },
       predicates: {},
     })
-    expect(result).toBe(true)
+    expect(isResult).toBe(true)
   })
 })
 
@@ -249,7 +249,7 @@ describe("evaluateApplyIfPredicate (G3)", () => {
     const batchMetadata = buildBatchMetadata([
       SAMPLE_720P_NARROW,
     ])
-    const result = evaluateApplyIfPredicate({
+    const isResult = evaluateApplyIfPredicate({
       applyIf: { anyStyleMatches: { MarginL: { lt: 50 } } },
       fileMetadata:
         batchMetadata.at(0) ??
@@ -257,12 +257,12 @@ describe("evaluateApplyIfPredicate (G3)", () => {
           throw new Error("no metadata")
         })(),
     })
-    expect(result).toBe(true)
+    expect(isResult).toBe(true)
   })
 
   test("anyStyleMatches fails when no row qualifies", () => {
     const batchMetadata = buildBatchMetadata([SAMPLE_HD])
-    const result = evaluateApplyIfPredicate({
+    const isResult = evaluateApplyIfPredicate({
       applyIf: {
         anyStyleMatches: { MarginL: { gt: 1000 } },
       },
@@ -272,14 +272,14 @@ describe("evaluateApplyIfPredicate (G3)", () => {
           throw new Error("no metadata")
         })(),
     })
-    expect(result).toBe(false)
+    expect(isResult).toBe(false)
   })
 
   test("eq comparator matches numeric equality", () => {
     const batchMetadata = buildBatchMetadata([
       SAMPLE_720P_NARROW,
     ])
-    const result = evaluateApplyIfPredicate({
+    const isResult = evaluateApplyIfPredicate({
       applyIf: { anyStyleMatches: { MarginV: { eq: 15 } } },
       fileMetadata:
         batchMetadata.at(0) ??
@@ -287,12 +287,12 @@ describe("evaluateApplyIfPredicate (G3)", () => {
           throw new Error("no metadata")
         })(),
     })
-    expect(result).toBe(true)
+    expect(isResult).toBe(true)
   })
 
   test("string equality entry matches exact field value", () => {
     const batchMetadata = buildBatchMetadata([SAMPLE_HD])
-    const result = evaluateApplyIfPredicate({
+    const isResult = evaluateApplyIfPredicate({
       applyIf: { anyStyleMatches: { Name: "Signs" } },
       fileMetadata:
         batchMetadata.at(0) ??
@@ -300,12 +300,12 @@ describe("evaluateApplyIfPredicate (G3)", () => {
           throw new Error("no metadata")
         })(),
     })
-    expect(result).toBe(true)
+    expect(isResult).toBe(true)
   })
 
   test("noneStyleMatches succeeds when no row matches", () => {
     const batchMetadata = buildBatchMetadata([SAMPLE_HD])
-    const result = evaluateApplyIfPredicate({
+    const isResult = evaluateApplyIfPredicate({
       applyIf: {
         noneStyleMatches: { Name: "DoesNotExist" },
       },
@@ -315,7 +315,7 @@ describe("evaluateApplyIfPredicate (G3)", () => {
           throw new Error("no metadata")
         })(),
     })
-    expect(result).toBe(true)
+    expect(isResult).toBe(true)
   })
 
   test("setStyleFields skips files where applyIf rejects", () => {

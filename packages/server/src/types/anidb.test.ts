@@ -36,8 +36,8 @@ describe("isPickerCategory", () => {
     ["credits", true],
     ["trailers", true],
     ["parodies", true],
-  ] as const)("%s → %s", (category, expected) => {
-    expect(isPickerCategory(category)).toBe(expected)
+  ] as const)("%s → %s", (category, isExpected) => {
+    expect(isPickerCategory(category)).toBe(isExpected)
   })
 })
 

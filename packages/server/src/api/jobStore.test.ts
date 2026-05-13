@@ -166,16 +166,16 @@ describe(completeSubject.name, () => {
     const job = createJob({ commandName: "hasBetterAudio" })
     const subject = createSubject(job.id)
 
-    let completed = false
+    let isCompleted = false
     subject.subscribe({
       complete: () => {
-        completed = true
+        isCompleted = true
       },
     })
 
     completeSubject(job.id)
 
-    expect(completed).toBe(true)
+    expect(isCompleted).toBe(true)
     expect(getSubject(job.id)).toBeUndefined()
   })
 })
@@ -207,10 +207,10 @@ describe(cancelJob.name, () => {
       startedAt: new Date(),
     })
     const subject = createSubject(job.id)
-    let subjectCompleted = false
+    let isSubjectCompleted = false
     subject.subscribe({
       complete: () => {
-        subjectCompleted = true
+        isSubjectCompleted = true
       },
     })
 
@@ -218,7 +218,7 @@ describe(cancelJob.name, () => {
 
     expect(getJob(job.id)?.status).toBe("cancelled")
     expect(getJob(job.id)?.completedAt).toBeInstanceOf(Date)
-    expect(subjectCompleted).toBe(true)
+    expect(isSubjectCompleted).toBe(true)
     expect(getSubject(job.id)).toBeUndefined()
   })
 

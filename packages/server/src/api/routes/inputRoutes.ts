@@ -77,12 +77,12 @@ inputRoutes.openapi(
       return context.json({ ok: true as const }, 200)
     }
     const body = context.req.valid("json")
-    const resolved = resolvePrompt(
+    const isResolved = resolvePrompt(
       body.promptId,
       body.selectedIndex,
     )
 
-    if (!resolved) {
+    if (!isResolved) {
       return context.json(
         { error: "Job not found" as const },
         404,

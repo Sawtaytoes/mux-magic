@@ -1663,7 +1663,7 @@ export const deleteFilesResultSchema = z.object({
   path: z
     .string()
     .describe("The path the API attempted to delete"),
-  ok: z
+  isOk: z
     .boolean()
     .describe("True when the delete succeeded"),
   mode: z
@@ -1694,7 +1694,7 @@ export const openExternalRequestSchema = z.object({
 })
 
 export const openExternalResponseSchema = z.object({
-  ok: z
+  isOk: z
     .boolean()
     .describe(
       "True when the launcher process spawned. The launcher is detached/unref'd so this only reports the spawn — actual app launch may still fail asynchronously.",
@@ -1727,7 +1727,7 @@ export const renameFileRequestSchema = z.object({
 })
 
 export const renameFileResponseSchema = z.object({
-  ok: z
+  isOk: z
     .boolean()
     .describe(
       "True when the rename completed successfully.",

@@ -94,9 +94,9 @@ export const runFfmpeg = ({
             jobId !== undefined
               ? createProgressEmitter(jobId)
               : null
-          const inApiContext = emitter !== null
-          const useTtyAffordances =
-            !inApiContext && Boolean(process.stdin.isTTY)
+          const isInApiContext = emitter !== null
+          const isUsingTtyAffordances =
+            !isInApiContext && Boolean(process.stdin.isTTY)
           const tracker =
             emitter !== null
               ? emitter.startFile(outputFilePath)
@@ -203,7 +203,7 @@ export const runFfmpeg = ({
                 )
               }
 
-              if (!useTtyAffordances) {
+              if (!isUsingTtyAffordances) {
                 // No TTY bar in API context — skip the cli-progress
                 // draws so the dev watcher's stdout isn't flooded
                 // with carriage-returned redraws.
@@ -228,7 +228,7 @@ export const runFfmpeg = ({
           // CTRL+C handler — wired up to process.stdin only in CLI/TTY mode.
           // Held in a const so the listener can be removed on exit (otherwise
           // each runFfmpeg call leaks one listener).
-          const stdinDataHandler = useTtyAffordances
+          const stdinDataHandler = isUsingTtyAffordances
             ? (inputBuffer: Buffer) => {
                 const key = inputBuffer.toString()
 
@@ -248,7 +248,7 @@ export const runFfmpeg = ({
                   "Process canceled by user.",
                 )
 
-                if (useTtyAffordances) {
+                if (isUsingTtyAffordances) {
                   setTimeout(() => {
                     process.exit()
                   }, 500)
@@ -265,7 +265,7 @@ export const runFfmpeg = ({
 
             observer.complete()
 
-            if (useTtyAffordances) {
+            if (isUsingTtyAffordances) {
               cliProgressBar.stop()
               process.stdin.setRawMode(false)
               if (stdinDataHandler) {
@@ -290,7 +290,7 @@ export const runFfmpeg = ({
             childProcess.stdin.destroy()
           })
 
-          if (useTtyAffordances) {
+          if (isUsingTtyAffordances) {
             process.stdin.setRawMode(true)
             process.stdin.resume()
             process.stdin.setEncoding("utf8")

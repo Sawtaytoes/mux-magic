@@ -71,7 +71,7 @@ export const runMkvExtract = ({
         // cli-progress writes carriage-return redraws straight to
         // process.stdout. In API/daemon context those bytes leak
         // into the server log stream — gate the bar to TTY mode.
-        if (tty.useTtyAffordances) {
+        if (tty.isUsingTtyAffordances) {
           if (!hasStarted) {
             hasStarted = true
 
@@ -103,7 +103,7 @@ export const runMkvExtract = ({
             "Process canceled by user.",
           )
 
-          if (tty.useTtyAffordances) {
+          if (tty.isUsingTtyAffordances) {
             setTimeout(() => {
               process.exit()
             }, 500)

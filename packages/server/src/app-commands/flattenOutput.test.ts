@@ -54,7 +54,7 @@ describe(flattenOutput.name, () => {
   test("removes the source folder when deleteSourceFolder is true", async () => {
     await firstValueFrom(
       flattenOutput({
-        deleteSourceFolder: true,
+        isDeletingSourceFolder: true,
         sourcePath: "/work/SUBTITLED",
       }).pipe(toArray()),
     )
