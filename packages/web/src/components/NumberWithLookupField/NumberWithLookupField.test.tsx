@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import { Provider } from "jotai"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, test } from "vitest"
 
 import {
   FIXTURE_COMMANDS_BUNDLE_B,
@@ -108,5 +108,96 @@ describe("NumberWithLookupField", () => {
     expect(input).toBeInTheDocument()
     const companionLink = screen.getByText("Bleach")
     expect(companionLink).toBeInTheDocument()
+  })
+
+  test("with hasIncrementButtons false — renders no increment or decrement buttons", () => {
+    const noButtonsField = {
+      ...field,
+      hasIncrementButtons: false,
+    }
+    const step = createTestStep()
+    render(
+      <Provider>
+        <NumberWithLookupField
+          field={noButtonsField}
+          step={step}
+        />
+      </Provider>,
+    )
+    expect(
+      screen.queryByRole("button", { name: /increment/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /decrement/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  test("with hasIncrementButtons false — input is not a spinbutton (no type=number)", () => {
+    const noButtonsField = {
+      ...field,
+      hasIncrementButtons: false,
+    }
+    const step = createTestStep({
+      params: { malId: 42, malName: "" },
+    })
+    render(
+      <Provider>
+        <NumberWithLookupField
+          field={noButtonsField}
+          step={step}
+        />
+      </Provider>,
+    )
+    expect(
+      screen.queryByRole("spinbutton"),
+    ).not.toBeInTheDocument()
+    const input = screen.getByRole("textbox")
+    expect(input).toHaveDisplayValue("42")
+  })
+
+  test("with hasIncrementButtons true — renders custom increment and decrement buttons", () => {
+    const withButtonsField = {
+      ...field,
+      hasIncrementButtons: true,
+    }
+    const step = createTestStep()
+    render(
+      <Provider>
+        <NumberWithLookupField
+          field={withButtonsField}
+          step={step}
+        />
+      </Provider>,
+    )
+    expect(
+      screen.getByRole("button", { name: /increment/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /decrement/i }),
+    ).toBeInTheDocument()
+  })
+
+  test("with hasIncrementButtons true — increment button increases value", () => {
+    const withButtonsField = {
+      ...field,
+      hasIncrementButtons: true,
+    }
+    const step = createTestStep({
+      params: { malId: 5, malName: "" },
+    })
+    render(
+      <Provider>
+        <NumberWithLookupField
+          field={withButtonsField}
+          step={step}
+        />
+      </Provider>,
+    )
+    const incrementButton = screen.getByRole("button", {
+      name: /increment/i,
+    })
+    incrementButton.click()
+    const input = screen.getByDisplayValue(6)
+    expect(input).toBeInTheDocument()
   })
 })
