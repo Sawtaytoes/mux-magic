@@ -106,15 +106,16 @@ export const LanguageCodesField = ({
         }}
       >
         {isOpen && visibleOptions.length > 0 && (
-          <ul
+          <div
             role="listbox"
             className="absolute z-10 left-0 right-0 mt-1 bg-slate-800 border border-slate-600 rounded shadow-lg max-h-48 overflow-y-auto"
           >
             {visibleOptions.map(({ code, name }) => (
-              <li
+              <div
                 key={code}
                 role="option"
                 aria-selected={false}
+                tabIndex={-1}
                 onMouseDown={() => addCode(code)}
                 className="flex flex-col px-2 py-1.5 cursor-pointer hover:bg-slate-700 text-slate-200"
               >
@@ -122,9 +123,9 @@ export const LanguageCodesField = ({
                 <span className="font-mono text-slate-400 text-xs">
                   {code}
                 </span>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </TagInputBase>
     </div>

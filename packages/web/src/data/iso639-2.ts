@@ -1,9 +1,7 @@
-type LanguageEntry = {
+export const ISO_639_2_LANGUAGES: Array<{
   code: string
   name: string
-}
-
-export const ISO_639_2_LANGUAGES: LanguageEntry[] = [
+}> = [
   { code: "aar", name: "Afar" },
   { code: "abk", name: "Abkhazian" },
   { code: "afr", name: "Afrikaans" },
