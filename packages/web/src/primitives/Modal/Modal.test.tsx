@@ -1,6 +1,5 @@
 import {
   cleanup,
-  fireEvent,
   render,
   screen,
 } from "@testing-library/react"
@@ -51,10 +50,11 @@ describe("Modal visibility", () => {
 })
 
 describe("Modal close interactions", () => {
-  test("backdrop click calls onClose", () => {
+  test("backdrop click calls onClose", async () => {
+    const user = userEvent.setup()
     const onClose = vi.fn()
     renderModal(true, onClose)
-    fireEvent.click(
+    await user.click(
       screen.getByRole("dialog", { name: "Test modal" })
         .parentElement as HTMLElement,
     )

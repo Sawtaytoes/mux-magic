@@ -1,6 +1,5 @@
 import {
   cleanup,
-  fireEvent,
   render,
   screen,
   waitFor,
@@ -61,6 +60,7 @@ describe("PromptModal", () => {
   })
 
   test("closes the modal when backdrop is clicked", async () => {
+    const user = userEvent.setup()
     const store = createStore()
     store.set(promptModalAtom, {
       jobId: "job-1",
@@ -69,7 +69,7 @@ describe("PromptModal", () => {
       options: [{ index: 1, label: "Option A" }],
     })
     renderWithStore(store)
-    fireEvent.click(
+    await user.click(
       screen.getByRole("dialog")
         .parentElement as HTMLElement,
     )
@@ -79,6 +79,7 @@ describe("PromptModal", () => {
   })
 
   test("submits and closes when an option is clicked", async () => {
+    const user = userEvent.setup()
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(
@@ -92,7 +93,7 @@ describe("PromptModal", () => {
       options: [{ index: 1, label: "Option A" }],
     })
     renderWithStore(store)
-    await userEvent.click(
+    await user.click(
       screen.getByRole("button", { name: /Option A/ }),
     )
     expect(store.get(promptModalAtom)).toBeNull()

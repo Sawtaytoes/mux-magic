@@ -1,6 +1,5 @@
 import {
   cleanup,
-  fireEvent,
   render,
   screen,
 } from "@testing-library/react"
@@ -72,15 +71,15 @@ describe("VariableCard", () => {
     ).toBeInTheDocument()
   })
 
-  test("updates label in atom on change", () => {
+  test("updates label in atom on change", async () => {
+    const user = userEvent.setup({ delay: null })
     const store = renderCard(
       makeVariable({ label: "Base Path" }),
     )
 
     const labelInput = screen.getByDisplayValue("Base Path")
-    fireEvent.change(labelInput, {
-      target: { value: "Media Path" },
-    })
+    await user.clear(labelInput)
+    await user.type(labelInput, "Media Path")
 
     expect(store.get(variablesAtom)[0].label).toBe(
       "Media Path",
