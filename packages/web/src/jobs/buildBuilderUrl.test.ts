@@ -3,7 +3,7 @@ import { FIXTURE_COMMANDS_BUNDLE_A } from "../commands/__fixtures__/commands"
 import { makeFakeJob } from "./__fixtures__/makeFakeJob"
 import { buildBuilderUrl } from "./buildBuilderUrl"
 import { decodeSeqParam } from "./decodeSeqParam"
-import { loadYamlFromText } from "./loadYaml"
+import { loadYamlFromText } from "./yamlCodec"
 
 // Round-trip: buildBuilderUrl → decodeSeqParam → loadYamlFromText
 // Verifies that the ?seq= URL format is stable across encode+decode.
