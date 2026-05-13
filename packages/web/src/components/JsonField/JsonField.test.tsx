@@ -11,7 +11,6 @@ import {
   expect,
   it,
   test,
-  vi,
 } from "vitest"
 import type { CommandField } from "../../commands/types"
 import { stepsAtom } from "../../state/stepsAtom"
