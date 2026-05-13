@@ -65,6 +65,7 @@ export const COMPARATOR_VERBS = [
 export type ComparatorVerb =
   (typeof COMPARATOR_VERBS)[number]
 
+// eslint-disable-next-line no-restricted-syntax -- DSL builder UI type; not an API shape; "Entry" suffix is a local map-entry concept
 export type ApplyIfEntry = {
   [K in ComparatorVerb]?: number
 }

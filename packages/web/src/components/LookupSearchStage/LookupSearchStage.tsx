@@ -22,6 +22,7 @@ import { useBuilderActions } from "../../hooks/useBuilderActions"
 // per-endpoint discriminator lives in `results[number]`, not on the
 // envelope itself, so the narrowing happens after we know which lookup
 // type was requested.
+// eslint-disable-next-line no-restricted-syntax -- file-local union of already-imported server types; not a locally-defined API shape
 type AnySearchResponse =
   | SearchMalResponse
   | SearchAnidbResponse

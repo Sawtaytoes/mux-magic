@@ -14,6 +14,7 @@ type LoadContext = {
   seenIds: Set<string>
 }
 
+// eslint-disable-next-line no-restricted-syntax -- return type of a web-only YAML parsing utility; not an API response shape
 export type LoadYamlResult = {
   steps: SequenceItem[]
   paths: PathVariable[]

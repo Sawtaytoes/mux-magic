@@ -14,6 +14,7 @@ export type LookupType =
 
 export type LookupStage = "search" | "variant" | "release"
 
+// eslint-disable-next-line no-restricted-syntax -- web-only normalized search result; not in server/api-types (server emits per-provider types)
 export type LookupSearchResult = {
   malId?: number
   aid?: number

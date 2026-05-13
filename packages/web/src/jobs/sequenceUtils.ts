@@ -18,6 +18,7 @@ export const findStepById = (
       : undefined
   }, undefined)
 
+// eslint-disable-next-line no-restricted-syntax -- UI helper type for flattening the step tree; not an API shape
 export type FlatEntry = { step: Step; flatIndex: number }
 
 // Flattens top-level steps + group children into a single numbered list.

@@ -13,6 +13,7 @@ import { progressByJobIdAtom } from "../state/progressByJobIdAtom"
 // Terminal payload the SSE stream delivers when a job finishes. Matches
 // the server's wire shape directly so adding/removing fields server-side
 // fails web typecheck on consumers like StepCard.
+// eslint-disable-next-line no-restricted-syntax -- type alias for an already-imported server type; semantic rename for web consumers
 export type LogStreamDonePayload = JobLogDoneEvent
 
 // Opens /jobs/:id/logs on demand and pipes lines + progress into shared atoms.

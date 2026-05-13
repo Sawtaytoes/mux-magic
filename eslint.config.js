@@ -48,6 +48,35 @@ const IS_HAS_BOOLEAN_RULE = {
   filter: { regex: "^(__|_)", match: false },
 }
 
+// PR #74 aligned web types with @mux-magic/server/api-types. These selectors
+// block re-introducing local copies of API-shape types in packages/web.
+//
+// Allowlist: add `// eslint-disable-next-line no-restricted-syntax -- <reason>`
+// above the declaration for any legitimate local type that matches the pattern.
+// Documented exceptions (all carry eslint-disable-next-line at the declaration site):
+//   ApplyIfEntry (DslRulesBuilder/types.ts)         — DSL builder map-entry; not an API shape
+//   LookupSearchResult (LookupModal/types.ts)        — web-only normalized union of per-provider fields
+//   AnySearchResponse (LookupSearchStage.tsx)        — file-local union of imported server types
+//   LogStreamDonePayload (useLogStream.ts)           — type alias for JobLogDoneEvent (already imported)
+//   LoadYamlResult (loadYaml.ts)                     — return type of a YAML parsing utility
+//   FlatEntry (sequenceUtils.ts)                     — UI helper for flattening the step tree
+//   ConnectionStatus (jobsConnectionAtom.ts)         — frontend SSE connection state
+//   LogEntry (logsByJobIdAtom.ts)                    — Jotai atom element type
+const WEB_API_SHAPE_RULES = [
+  {
+    selector:
+      "TSTypeAliasDeclaration[id.name=/^[A-Z].*(Response|Request|Status|Result|Entry|Payload|Job|Schema)$/]",
+    message:
+      "API-shape types must be imported from @mux-magic/server/api-types, not defined locally. See PR #74.",
+  },
+  {
+    selector:
+      "TSInterfaceDeclaration[id.name=/^[A-Z].*(Response|Request|Status|Result|Entry|Payload|Job|Schema)$/]",
+    message:
+      "API-shape interfaces must be imported from @mux-magic/server/api-types, not defined locally. See PR #74.",
+  },
+]
+
 export default defineConfig(
   {
     ignores: [
@@ -100,6 +129,17 @@ export default defineConfig(
       "@typescript-eslint/naming-convention": [
         "error",
         IS_HAS_BOOLEAN_RULE,
+      ],
+    },
+  },
+  {
+    // Guard against re-introducing local API-shape types in packages/web.
+    // Server and tools packages legitimately define these; only web must import them.
+    files: ["packages/web/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        ...WEB_API_SHAPE_RULES,
       ],
     },
   },
