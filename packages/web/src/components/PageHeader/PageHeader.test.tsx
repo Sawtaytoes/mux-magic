@@ -5,10 +5,17 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, describe, expect, test } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 afterEach(() => {
   cleanup()
+  history.replaceState(null, "", window.location.pathname)
 })
 
 import {
@@ -46,6 +53,37 @@ describe("PageHeader", () => {
       screen.getByRole("button", { name: /dry run/i }),
     )
     expect(store.get(dryRunAtom)).toBe(true)
+  })
+
+  test("clicking Dry Run updates URL to ?fake=success", async () => {
+    const store = createStore()
+    renderWithStore(store)
+    await userEvent.click(
+      screen.getByRole("button", { name: /dry run/i }),
+    )
+    expect(
+      new URLSearchParams(window.location.search).get(
+        "fake",
+      ),
+    ).toBe("success")
+  })
+
+  test("clicking Dry Run does not write to localStorage", async () => {
+    const store = createStore()
+    renderWithStore(store)
+    const setItemSpy = vi.spyOn(
+      window.localStorage.__proto__,
+      "setItem",
+    )
+    await userEvent.click(
+      screen.getByRole("button", { name: /dry run/i }),
+    )
+    const dryRunCalls = setItemSpy.mock.calls.filter(
+      ([key]) =>
+        key === "isDryRun" || key === "dryRunScenario",
+    )
+    expect(dryRunCalls).toHaveLength(0)
+    setItemSpy.mockRestore()
   })
 
   test("shows the DRY RUN badge only when dry run is active", async () => {
@@ -89,6 +127,22 @@ describe("PageHeader", () => {
       }),
     )
     expect(store.get(failureModeAtom)).toBe(true)
+  })
+
+  test("clicking Simulate Failures updates URL to ?fake=failure", async () => {
+    const store = createStore()
+    store.set(dryRunAtom, true)
+    renderWithStore(store)
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: /simulate failures/i,
+      }),
+    )
+    expect(
+      new URLSearchParams(window.location.search).get(
+        "fake",
+      ),
+    ).toBe("failure")
   })
 
   test("DRY RUN badge has amber classes when failureMode is false", () => {
