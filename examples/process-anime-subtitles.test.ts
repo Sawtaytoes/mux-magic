@@ -1,10 +1,10 @@
-import { dirname, join } from "node:path"
+﻿import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import {
   resolveSequenceParams,
   type StepRuntimeRecord,
-} from "@media-tools/server/src/api/resolveSequenceParams.js"
-import { commandConfigs } from "@media-tools/server/src/api/routes/commandRoutes.js"
+} from "@mux-magic/server/src/api/resolveSequenceParams.js"
+import { commandConfigs } from "@mux-magic/server/src/api/routes/commandRoutes.js"
 import yaml from "js-yaml"
 import { describe, expect, test } from "vitest"
 
@@ -39,7 +39,7 @@ describe("examples/process-anime-subtitles.yaml", () => {
     expect(Array.isArray(doc.steps)).toBe(true)
     expect(doc.steps.length).toBeGreaterThan(0)
 
-    // Every step ships an `id` so downstream `linkedTo: …` references can hit it.
+    // Every step ships an `id` so downstream `linkedTo: â€¦` references can hit it.
     doc.steps.forEach((step) => {
       expect(typeof step.id).toBe("string")
       expect(step.id).toMatch(/^[a-zA-Z][a-zA-Z0-9_]*$/)
@@ -78,7 +78,7 @@ describe("examples/process-anime-subtitles.yaml", () => {
     // Walk the steps in order, mirroring what sequenceRunner does. After
     // each step, fabricate a plausible runtime record so subsequent
     // { linkedTo, output: 'folder' } references can resolve. For the named
-    // output ('rules'), just stuff a dummy array — the resolver only checks
+    // output ('rules'), just stuff a dummy array â€” the resolver only checks
     // existence by key, not content.
     doc.steps.forEach((step) => {
       const config =

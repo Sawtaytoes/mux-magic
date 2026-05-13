@@ -1,7 +1,7 @@
-import type {
+﻿import type {
   JobLogsEvent,
   JobStatus,
-} from "@media-tools/server/api-types"
+} from "@mux-magic/server/api-types"
 import { useAtom, useSetAtom } from "jotai"
 import {
   useCallback,
@@ -18,7 +18,7 @@ import { runningAtom } from "../../state/runAtoms"
 import { setStepRunStatusAtom } from "../../state/stepAtoms"
 import { ChildProgressTracker } from "../ChildProgressTracker/ChildProgressTracker"
 
-// ─── Status badge colours ─────────────────────────────────────────────────────
+// â”€â”€â”€ Status badge colours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const STATUS_CLASSES: Record<JobStatus, string> = {
   pending: "bg-slate-700 text-slate-300",
@@ -69,7 +69,7 @@ export const ApiRunModal = () => {
     ? `${apiBase}/jobs/${modalState.jobId}/logs`
     : null
 
-  // ─── Parent SSE (sequence-level events) ────────────────────────────────────
+  // â”€â”€â”€ Parent SSE (sequence-level events) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const handleParentMessage = useCallback(
     (data: JobLogsEvent) => {
@@ -188,9 +188,9 @@ export const ApiRunModal = () => {
     const original = btn?.textContent ?? "Copy logs"
     try {
       await navigator.clipboard.writeText(text)
-      if (btn) btn.textContent = "✓ Copied"
+      if (btn) btn.textContent = "âœ“ Copied"
     } catch {
-      if (btn) btn.textContent = "✗ Failed"
+      if (btn) btn.textContent = "âœ— Failed"
     }
     setTimeout(() => {
       if (btn) btn.textContent = original
@@ -255,7 +255,7 @@ export const ApiRunModal = () => {
               className="text-slate-400 hover:text-white text-base leading-none ml-1"
               title="Close"
             >
-              ✕
+              âœ•
             </button>
           </div>
 

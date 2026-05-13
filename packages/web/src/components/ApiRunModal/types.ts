@@ -1,4 +1,4 @@
-// Types owned by ApiRunModal — the modal that opens when a step,
+﻿// Types owned by ApiRunModal â€” the modal that opens when a step,
 // group, or full sequence is run via the API.
 //
 // `source: "step"` vs `"sequence"` is the discriminant the modal uses
@@ -8,7 +8,7 @@
 // server-side (e.g. "skipped" from sequence step short-circuiting) fails
 // web typecheck rather than silently falling into an undefined CSS class.
 
-import type { JobStatus } from "@media-tools/server/api-types"
+import type { JobStatus } from "@mux-magic/server/api-types"
 
 export type ActiveChild = {
   stepId: string

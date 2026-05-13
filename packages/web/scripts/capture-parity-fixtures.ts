@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 
 /**
  * Generates parity reference YAML + input.json for every command in commands.js.
@@ -7,7 +7,7 @@
  * Phase 4 (W4): re-run after migration; output must match baseline byte-for-byte.
  *   After W1 lands, swap the COMMANDS import to ../src/commands/commands.ts.
  *
- * Run: yarn workspace @media-tools/web tsx scripts/capture-parity-fixtures.ts
+ * Run: yarn workspace @mux-magic/web tsx scripts/capture-parity-fixtures.ts
  */
 
 import { mkdirSync, writeFileSync } from "node:fs"
@@ -22,7 +22,7 @@ const outputDir = join(
 )
 mkdirSync(outputDir, { recursive: true })
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type CommandField = {
   name: string
@@ -60,10 +60,10 @@ type FixtureInput = {
   step: FixtureStep
 }
 
-// ─── COMMANDS import (TS port — updated from legacy JS in Phase 4 / W4A) ───
+// â”€â”€â”€ COMMANDS import (TS port â€” updated from legacy JS in Phase 4 / W4A) â”€â”€â”€
 import { COMMANDS } from "../src/commands/commands"
 
-// ─── buildParams (ported verbatim from sequence-editor.js ~line 723) ─────────
+// â”€â”€â”€ buildParams (ported verbatim from sequence-editor.js ~line 723) â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // resolveLinks=false behavior: string links become "@id"; object links pass through.
 
 const buildParams = (
@@ -144,7 +144,7 @@ const buildParams = (
   return result
 }
 
-// ─── YAML serializer (matches yamlSerializer.ts options exactly) ─────────────
+// â”€â”€â”€ YAML serializer (matches yamlSerializer.ts options exactly) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const buildYaml = (
   step: FixtureStep,
@@ -175,7 +175,7 @@ const buildYaml = (
   )
 }
 
-// ─── Fixture input factory ────────────────────────────────────────────────────
+// â”€â”€â”€ Fixture input factory â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const BASE_PATHS: PathVariable[] = [
   {
@@ -196,15 +196,15 @@ const makeStep = (
   links,
 })
 
-// ─── Per-command fixture inputs ───────────────────────────────────────────────
+// â”€â”€â”€ Per-command fixture inputs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Values are realistic-but-deterministic.
-// Required path fields are linked to basePath (→ "@basePath" in YAML).
+// Required path fields are linked to basePath (â†’ "@basePath" in YAML).
 // Optional boolean fields are set to their non-default value so they appear.
 // Optional numeric fields are set to non-default values for the same reason.
 // This exercises every code path in buildParams for each command.
 
 const FIXTURE_INPUTS: Record<string, FixtureInput> = {
-  // ── File Operations ─────────────────────────────────────────────────────────
+  // â”€â”€ File Operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   makeDirectory: {
     paths: BASE_PATHS,
     step: makeStep(
@@ -295,7 +295,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
       { sourcePath: "basePath" },
     ),
   },
-  // ── Audio Operations ─────────────────────────────────────────────────────────
+  // â”€â”€ Audio Operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   getAudioOffsets: {
     paths: BASE_PATHS,
     step: makeStep(
@@ -315,7 +315,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
       { sourcePath: "basePath" },
     ),
   },
-  // ── Track Operations ─────────────────────────────────────────────────────────
+  // â”€â”€ Track Operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   changeTrackLanguages: {
     paths: BASE_PATHS,
     step: makeStep(
@@ -399,7 +399,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
       },
     ),
   },
-  // ── Subtitle Operations ───────────────────────────────────────────────────────
+  // â”€â”€ Subtitle Operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   extractSubtitles: {
     paths: BASE_PATHS,
     step: makeStep(
@@ -453,7 +453,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
       { sourcePath: "basePath" },
     ),
   },
-  // ── Analysis ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   hasBetterAudio: {
     paths: BASE_PATHS,
     step: makeStep(
@@ -510,7 +510,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
       { sourcePath: "basePath" },
     ),
   },
-  // ── Naming Operations ─────────────────────────────────────────────────────────
+  // â”€â”€ Naming Operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   nameAnimeEpisodes: {
     paths: BASE_PATHS,
     step: makeStep(
@@ -584,7 +584,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
       { sourcePath: "basePath" },
     ),
   },
-  // ── Video Operations ──────────────────────────────────────────────────────────
+  // â”€â”€ Video Operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   setDisplayWidth: {
     paths: BASE_PATHS,
     step: makeStep(
@@ -597,7 +597,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
       { sourcePath: "basePath" },
     ),
   },
-  // ── Metadata Operations ───────────────────────────────────────────────────────
+  // â”€â”€ Metadata Operations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   storeAspectRatioData: {
     paths: BASE_PATHS,
     step: makeStep(
@@ -614,7 +614,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
   },
 }
 
-// ─── Generate fixture files ───────────────────────────────────────────────────
+// â”€â”€â”€ Generate fixture files â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 let fixtureCount = 0
 const missingCommands: string[] = []

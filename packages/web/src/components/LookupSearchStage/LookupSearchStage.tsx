@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   DvdCompareResult,
   ListDvdCompareReleasesResponse,
   SearchAnidbResponse,
@@ -6,7 +6,7 @@ import type {
   SearchMalResponse,
   SearchMovieDbResponse,
   SearchTvdbResponse,
-} from "@media-tools/server/api-types"
+} from "@mux-magic/server/api-types"
 import { useEffect, useRef } from "react"
 import { apiBase } from "../../apiBase"
 import type {
@@ -197,7 +197,7 @@ export const LookupSearchStage = ({
             onUpdate({ searchTerm: event.target.value })
           }
           onKeyDown={handleKeyDown}
-          placeholder="Search…"
+          placeholder="Searchâ€¦"
           className="flex-1 bg-slate-700 border border-slate-600 text-slate-100 text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
         <button
@@ -208,7 +208,7 @@ export const LookupSearchStage = ({
           }
           className="text-xs bg-blue-700 hover:bg-blue-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
         >
-          {state.loading ? "Searching…" : "Search"}
+          {state.loading ? "Searchingâ€¦" : "Search"}
         </button>
       </div>
 
@@ -272,10 +272,10 @@ export const LookupSearchStage = ({
                 state.lookupType === "tmdb"
                   ? typedResult.year
                     ? `${typedResult.title} (${typedResult.year})`
-                    : (typedResult.title ?? "—")
+                    : (typedResult.title ?? "â€”")
                   : (typedResult.name ??
                     typedResult.baseTitle ??
-                    "—")
+                    "â€”")
               const keyHint =
                 index < 9 ? (
                   <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2 shrink-0">

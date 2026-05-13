@@ -1,4 +1,4 @@
-import type { CreateJobResponse } from "@media-tools/server/api-types"
+import type { CreateJobResponse } from "@mux-magic/server/api-types"
 import { atom } from "jotai"
 import { apiBase } from "../apiBase"
 import { buildParams } from "../commands/buildParams"

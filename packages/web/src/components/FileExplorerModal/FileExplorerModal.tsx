@@ -1,8 +1,8 @@
-import type {
+﻿import type {
   DeleteFilesResponse,
   DeleteModeResponse,
   ListFilesResponse,
-} from "@media-tools/server/api-types"
+} from "@mux-magic/server/api-types"
 import { useAtom } from "jotai"
 import {
   useCallback,
@@ -19,7 +19,7 @@ import type {
 } from "../../components/FileExplorerModal/types"
 import { FileVideoPlayer } from "../FileVideoPlayer/FileVideoPlayer"
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const VIDEO_EXTENSIONS = new Set([
   ".mkv",
@@ -45,7 +45,7 @@ const _BROWSER_UNSUPPORTED_AUDIO = new Set([
   "truehd",
 ])
 
-// ─── Utilities ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const isVideoFile = (name: string): boolean => {
   const dot = name.lastIndexOf(".")
@@ -65,7 +65,7 @@ const formatSize = (bytes: number): string => {
 }
 
 const formatMtime = (iso: string | null): string => {
-  if (!iso) return "—"
+  if (!iso) return "â€”"
   const dateObj = new Date(iso)
   const yyyy = dateObj.getFullYear()
   const mm = String(dateObj.getMonth() + 1).padStart(2, "0")
@@ -128,7 +128,7 @@ const buildBreadcrumb = (
   return segments
 }
 
-// ─── Sort ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Sort â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const buildComparator =
   (column: SortColumn, direction: SortDirection) =>
@@ -167,7 +167,7 @@ const buildComparator =
     return 0
   }
 
-// ─── FileExplorerModal ────────────────────────────────────────────────────────
+// â”€â”€â”€ FileExplorerModal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const FileExplorerModal = () => {
   const [explorerState, setExplorerState] = useAtom(
@@ -298,7 +298,7 @@ export const FileExplorerModal = () => {
     if (sortColumn !== column) return null
     return (
       <span className="ml-1 text-slate-300">
-        {sortDirection === "asc" ? "▲" : "▼"}
+        {sortDirection === "asc" ? "â–²" : "â–¼"}
       </span>
     )
   }
@@ -365,7 +365,7 @@ export const FileExplorerModal = () => {
       if (failed.length > 0) {
         const summary = failed
           .map(
-            (result) => `• ${result.path}: ${result.error}`,
+            (result) => `â€¢ ${result.path}: ${result.error}`,
           )
           .join("\n")
         window.alert(
@@ -434,8 +434,8 @@ export const FileExplorerModal = () => {
 
   const deleteModeLabel =
     deleteMode === "trash"
-      ? "Delete → Recycle Bin"
-      : "Delete → Permanent"
+      ? "Delete â†’ Recycle Bin"
+      : "Delete â†’ Permanent"
   const deleteModeClass =
     deleteMode === "trash"
       ? "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-emerald-900/50 text-emerald-300 border border-emerald-700/50"
@@ -501,7 +501,7 @@ export const FileExplorerModal = () => {
               title={
                 deleteMode === "permanent"
                   ? (deleteModeReason ??
-                    "Deletes are permanent — no recovery")
+                    "Deletes are permanent â€” no recovery")
                   : "Deletes go to the OS Recycle Bin"
               }
             >
@@ -524,7 +524,7 @@ export const FileExplorerModal = () => {
                 onClick={handleConfirmPick}
                 className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded font-medium"
               >
-                📌 Use this folder
+                ðŸ“Œ Use this folder
               </button>
             )}
 
@@ -534,7 +534,7 @@ export const FileExplorerModal = () => {
               className="text-slate-400 hover:text-white text-base leading-none ml-1"
               title="Close"
             >
-              ✕
+              âœ•
             </button>
           </div>
 
@@ -545,7 +545,7 @@ export const FileExplorerModal = () => {
           >
             {loading && (
               <p className="text-slate-500 text-sm py-4 text-center">
-                Loading…
+                Loadingâ€¦
               </p>
             )}
             {!loading && error && (
@@ -631,10 +631,10 @@ export const FileExplorerModal = () => {
                           entry.isFile &&
                           isVideoFile(entry.name)
                         const icon = entry.isDirectory
-                          ? "📁"
+                          ? "ðŸ“"
                           : isVideo
-                            ? "🎬"
-                            : "📄"
+                            ? "ðŸŽ¬"
+                            : "ðŸ“„"
 
                         return (
                           <tr
@@ -703,11 +703,11 @@ export const FileExplorerModal = () => {
                               )}
                             </td>
                             <td className="py-1 px-2 text-right text-slate-300 font-mono text-xs whitespace-nowrap">
-                              {entry.duration ?? "—"}
+                              {entry.duration ?? "â€”"}
                             </td>
                             <td className="py-1 px-2 text-right text-slate-400 font-mono text-xs whitespace-nowrap">
                               {entry.isDirectory
-                                ? "—"
+                                ? "â€”"
                                 : formatSize(entry.size)}
                             </td>
                             <td className="py-1 px-2 text-slate-400 font-mono text-xs whitespace-nowrap">
@@ -725,11 +725,11 @@ export const FileExplorerModal = () => {
                                     )
                                   }
                                 >
-                                  📋
+                                  ðŸ“‹
                                 </button>
                               ) : (
                                 <span className="text-slate-700">
-                                  —
+                                  â€”
                                 </span>
                               )}
                             </td>
@@ -742,7 +742,7 @@ export const FileExplorerModal = () => {
               )}
           </div>
 
-          {/* Footer — hidden in picker mode */}
+          {/* Footer â€” hidden in picker mode */}
           {!isPicker && (
             <div
               id="file-explorer-footer"

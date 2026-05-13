@@ -1,4 +1,4 @@
-import type { Job } from "@media-tools/web/job-types"
+﻿import type { Job } from "@mux-magic/web/job-types"
 import { expect, test } from "@playwright/test"
 
 import { webBaseUrl } from "./playwright.setup.js"
@@ -23,11 +23,11 @@ const makeJob = (overrides: Partial<Job> = {}): Job => ({
   ...overrides,
 })
 
-test.describe("Jobs page — SSE stream", () => {
+test.describe("Jobs page â€” SSE stream", () => {
   test("renders heading and empty-state when no jobs arrive", async ({
     page,
   }) => {
-    // Stub the stream with an empty body — no job events.
+    // Stub the stream with an empty body â€” no job events.
     await page.route("**/jobs/stream", async (route) => {
       await route.fulfill({
         status: 200,
@@ -150,7 +150,7 @@ test.describe("Jobs page — SSE stream", () => {
     await page.goto(`${webBaseUrl}/`)
 
     await expect(page.getByRole("article")).toHaveCount(2)
-    // Newest first — JobsList reverses insertion order.
+    // Newest first â€” JobsList reverses insertion order.
     await expect(
       page.getByRole("article").first(),
     ).toContainText("job-beta")

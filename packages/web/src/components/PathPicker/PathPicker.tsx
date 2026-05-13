@@ -1,4 +1,4 @@
-import type { ListDirectoryEntriesResponse } from "@media-tools/server/api-types"
+﻿import type { ListDirectoryEntriesResponse } from "@mux-magic/server/api-types"
 import { useAtom, useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
@@ -15,7 +15,7 @@ import { setParamAtom } from "../../state/stepAtoms"
 const PICKER_WIDTH = 380
 const PICKER_MAX_HEIGHT = 280
 
-// ─── Async fetch ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Async fetch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const fetchDirEntries = async (
   parentPath: string,
@@ -31,7 +31,7 @@ const fetchDirEntries = async (
   return response.json() as Promise<ListDirectoryEntriesResponse>
 }
 
-// ─── Position ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Position â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const computePosition = (rect: TriggerRect) => {
   const margin = 8
@@ -83,7 +83,7 @@ const computePosition = (rect: TriggerRect) => {
   }
 }
 
-// ─── Matching ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Matching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const computeMatches = (
   entries: DirEntry[] | null,
@@ -105,7 +105,7 @@ const computeMatches = (
     )
 }
 
-// ─── Value computation (pure) ─────────────────────────────────────────────────
+// â”€â”€â”€ Value computation (pure) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const computeNewValue = (
   entry: DirEntry,
@@ -120,7 +120,7 @@ const computeNewValue = (
   return `${base}${separator}${entry.name}${separator}`
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const PathPicker = () => {
   const [pickerState, setPickerState] = useAtom(
@@ -203,7 +203,7 @@ export const PathPicker = () => {
       )
   }, [pickerState, setPickerState])
 
-  // Fires whenever parentPath or requestToken changes — the bridge sets a new
+  // Fires whenever parentPath or requestToken changes â€” the bridge sets a new
   // requestToken after the debounce delay, which kicks off the actual fetch.
   useEffect(() => {
     if (!pickerState) {
@@ -398,7 +398,7 @@ export const PathPicker = () => {
       <div className="overflow-y-auto py-1">
         {pickerState.entries === null ? (
           <p className="text-xs text-slate-500 text-center py-3">
-            Loading…
+            Loadingâ€¦
           </p>
         ) : pickerState.error ? (
           <p className="text-xs text-red-400 text-center py-3 wrap-break-word px-3">
@@ -428,7 +428,7 @@ export const PathPicker = () => {
                 onClick={() => handleSelectEntry(entry)}
               >
                 <span className="shrink-0 text-slate-400">
-                  📁
+                  ðŸ“
                 </span>
                 <span className="font-mono text-xs flex-1 min-w-0 truncate">
                   {entry.name}

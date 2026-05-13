@@ -1,7 +1,7 @@
-import type {
+﻿import type {
   JobLogDoneEvent,
   JobLogsEvent,
-} from "@media-tools/server/api-types"
+} from "@mux-magic/server/api-types"
 import { useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef } from "react"
 import { apiBase } from "../apiBase"
@@ -81,7 +81,7 @@ export const useLogStream = (
       ) {
         // Server's ProgressEvent has `ratio: number | null`;
         // mergeProgress expects `ratio?: number` (null is meaningless to
-        // the bar). Coerce null → undefined at the SSE boundary so the
+        // the bar). Coerce null â†’ undefined at the SSE boundary so the
         // merged snapshot stays clean.
         const progressEvent = {
           ratio: data.ratio ?? undefined,
