@@ -118,6 +118,7 @@ export const ApiRunModal = () => {
             stepId: finishedStepId,
             status: data.status,
             jobId: null,
+            error: data.error ?? null,
           })
         }
         return

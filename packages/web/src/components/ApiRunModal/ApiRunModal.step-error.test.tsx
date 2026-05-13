@@ -1,3 +1,4 @@
+import type { JobLogsEvent } from "@mux-magic/server/api-types"
 import { cleanup, render } from "@testing-library/react"
 import { createStore, Provider } from "jotai"
 import {
@@ -8,7 +9,6 @@ import {
   test,
   vi,
 } from "vitest"
-import type { JobLogsEvent } from "@mux-magic/server/api-types"
 import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
@@ -76,8 +76,6 @@ const fireStepFinished = (
     childJobId: "job-child",
     stepId,
     status: "failed",
-    // @ts-expect-error — error field intentionally absent from current StepEvent type;
-    // this test documents the missing field and will pass once StepEvent is fixed.
     error: errorMessage,
   })
 }

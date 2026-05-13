@@ -111,6 +111,7 @@ export type StepEvent = {
   childJobId: string
   stepId: string | null
   status: JobStatus
+  error?: string | null
 }
 
 // Terminal payload for the /jobs/:id/logs SSE stream. Sent once on
