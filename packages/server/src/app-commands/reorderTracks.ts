@@ -24,7 +24,7 @@ type ReorderTracksRequiredProps = {
 
 type ReorderTracksOptionalProps = {
   outputFolderName?: string
-  shouldSkipOnTrackMisalignment?: boolean
+  isSkipOnTrackMisalignment?: boolean
 }
 
 export type ReorderTracksProps =
@@ -33,14 +33,14 @@ export type ReorderTracksProps =
 export const reorderTracksDefaultProps = {
   outputFolderName:
     reorderTracksFfmpegDefaultProps.outputFolderName,
-  shouldSkipOnTrackMisalignment: false,
+  isSkipOnTrackMisalignment: false,
 } satisfies ReorderTracksOptionalProps
 
 export const reorderTracks = ({
   audioTrackIndexes,
   isRecursive,
   outputFolderName = reorderTracksDefaultProps.outputFolderName,
-  shouldSkipOnTrackMisalignment = reorderTracksDefaultProps.shouldSkipOnTrackMisalignment,
+  isSkipOnTrackMisalignment = reorderTracksDefaultProps.isSkipOnTrackMisalignment,
   sourcePath,
   subtitlesTrackIndexes,
   videoTrackIndexes,
@@ -129,7 +129,7 @@ export const reorderTracks = ({
           if (firstMisalignment) {
             const { expected, got } = firstMisalignment
 
-            if (shouldSkipOnTrackMisalignment) {
+            if (isSkipOnTrackMisalignment) {
               logWarning(
                 "REORDER TRACKS",
                 `skipped — track misalignment, expected ${expected}, got ${got}`,
@@ -142,29 +142,31 @@ export const reorderTracks = ({
             )
           }
 
-          return reorderTracksFfmpeg({
-            audioTrackIndexes,
-            filePath: fileInfo.fullPath,
-            outputFolderName,
-            subtitlesTrackIndexes,
-            videoTrackIndexes,
-          })
-            // To do this with `mkvmerge`, tracks need to be numbered sequentially
-            // from video to audio to subtitles. It's more complicated and not as
-            // easy to replicate. Only use this if something is botched with `ffmpeg`.
-            .pipe(
-              concatMap((outputFilePath) =>
-                setOnlyFirstTracksAsDefault({
-                  filePath: outputFilePath,
-                }).pipe(
-                  toArray(),
-                  map(() => ({
-                    outputFilePath,
-                    sourceFilePath: fileInfo.fullPath,
-                  })),
+          return (
+            reorderTracksFfmpeg({
+              audioTrackIndexes,
+              filePath: fileInfo.fullPath,
+              outputFolderName,
+              subtitlesTrackIndexes,
+              videoTrackIndexes,
+            })
+              // To do this with `mkvmerge`, tracks need to be numbered sequentially
+              // from video to audio to subtitles. It's more complicated and not as
+              // easy to replicate. Only use this if something is botched with `ffmpeg`.
+              .pipe(
+                concatMap((outputFilePath) =>
+                  setOnlyFirstTracksAsDefault({
+                    filePath: outputFilePath,
+                  }).pipe(
+                    toArray(),
+                    map(() => ({
+                      outputFilePath,
+                      sourceFilePath: fileInfo.fullPath,
+                    })),
+                  ),
                 ),
-              ),
-            )
+              )
+          )
         }),
       ),
     ),

@@ -47,7 +47,7 @@ const builder = (yargs: Argv) =>
         "The order of all subtitles tracks that will appear in the resulting file by their index. Indexes start at `0`. If you leave out any track indexes, they will not appear in the resulting file.",
       type: "string",
     })
-    .option("shouldSkipOnTrackMisalignment", {
+    .option("isSkipOnTrackMisalignment", {
       boolean: true,
       default: false,
       describe:
@@ -85,8 +85,8 @@ export const reorderTracksCommand: CommandModule<
         (value) => Number(value),
       ),
       isRecursive: argv.isRecursive,
-      shouldSkipOnTrackMisalignment:
-        argv.shouldSkipOnTrackMisalignment,
+      isSkipOnTrackMisalignment:
+        argv.isSkipOnTrackMisalignment,
       sourcePath: argv.sourcePath,
       subtitlesTrackIndexes: argv.subtitlesTrackIndexes.map(
         (value) => Number(value),

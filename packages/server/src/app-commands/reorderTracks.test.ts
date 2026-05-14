@@ -8,25 +8,33 @@ import {
   test,
   vi,
 } from "vitest"
-import { reorderTracks } from "./reorderTracks.js"
 import type { MkvInfo } from "../tools/getMkvInfo.js"
+import { reorderTracks } from "./reorderTracks.js"
 
 vi.mock("../tools/getMkvInfo.js", () => ({
   getMkvInfo: vi.fn(),
 }))
 
-vi.mock("../cli-spawn-operations/reorderTracksFfmpeg.js", () => ({
-  reorderTracksFfmpeg: vi.fn(),
-  reorderTracksFfmpegDefaultProps: {
-    outputFolderName: "REORDERED-TRACKS",
-  },
-}))
+vi.mock(
+  "../cli-spawn-operations/reorderTracksFfmpeg.js",
+  () => ({
+    reorderTracksFfmpeg: vi.fn(),
+    reorderTracksFfmpegDefaultProps: {
+      outputFolderName: "REORDERED-TRACKS",
+    },
+  }),
+)
 
-vi.mock("../cli-spawn-operations/setOnlyFirstTracksAsDefault.js", () => ({
-  setOnlyFirstTracksAsDefault: vi.fn(),
-}))
+vi.mock(
+  "../cli-spawn-operations/setOnlyFirstTracksAsDefault.js",
+  () => ({
+    setOnlyFirstTracksAsDefault: vi.fn(),
+  }),
+)
 
-const { getMkvInfo } = await import("../tools/getMkvInfo.js")
+const { getMkvInfo } = await import(
+  "../tools/getMkvInfo.js"
+)
 const { reorderTracksFfmpeg } = await import(
   "../cli-spawn-operations/reorderTracksFfmpeg.js"
 )
@@ -60,22 +68,25 @@ const makeMkvInfoWithAudioTracks = (
   global_tags: [],
   identification_format_version: 12,
   track_tags: [],
-  tracks: Array.from({ length: audioTrackCount }, (_, index) => ({
-    codec: "AAC",
-    id: index,
-    properties: {
-      codec_id: "A_AAC",
-      codec_private_length: 0,
-      isDefaultTrack: index === 0,
-      isEnabledTrack: true,
-      isForcedTrack: false,
-      language: "und" as const,
-      num_index_entries: 0,
-      number: index + 1,
-      uid: index + 1,
-    },
-    type: "audio" as const,
-  })),
+  tracks: Array.from(
+    { length: audioTrackCount },
+    (_, index) => ({
+      codec: "AAC",
+      id: index,
+      properties: {
+        codec_id: "A_AAC",
+        codec_private_length: 0,
+        isDefaultTrack: index === 0,
+        isEnabledTrack: true,
+        isForcedTrack: false,
+        language: "und" as const,
+        num_index_entries: 0,
+        number: index + 1,
+        uid: index + 1,
+      },
+      type: "audio" as const,
+    }),
+  ),
   warnings: [],
 })
 
@@ -118,7 +129,7 @@ describe(reorderTracks.name, () => {
       expect(emissions).toEqual([])
     }))
 
-  describe("shouldSkipOnTrackMisalignment", () => {
+  describe("isSkipOnTrackMisalignment", () => {
     beforeEach(() => {
       vi.clearAllMocks()
       vol.fromJSON({ "/work/episode-01.mkv": "stream" })
@@ -128,7 +139,9 @@ describe(reorderTracks.name, () => {
       vi.mocked(reorderTracksFfmpeg).mockReturnValue(
         of("/work/REORDERED-TRACKS/episode-01.mkv"),
       )
-      vi.mocked(setOnlyFirstTracksAsDefault).mockReturnValue(EMPTY)
+      vi.mocked(
+        setOnlyFirstTracksAsDefault,
+      ).mockReturnValue(EMPTY)
     })
 
     test("skips file and logs warning when true and audio indexes exceed actual track count", async () => {
@@ -140,7 +153,7 @@ describe(reorderTracks.name, () => {
         reorderTracks({
           audioTrackIndexes: [0, 1, 2],
           isRecursive: false,
-          shouldSkipOnTrackMisalignment: true,
+          isSkipOnTrackMisalignment: true,
           sourcePath: "/work",
           subtitlesTrackIndexes: [],
           videoTrackIndexes: [],
@@ -148,9 +161,13 @@ describe(reorderTracks.name, () => {
       )
 
       expect(emissions).toEqual([])
-      expect(vi.mocked(reorderTracksFfmpeg)).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(reorderTracksFfmpeg),
+      ).not.toHaveBeenCalled()
 
-      const warningText = warnSpy.mock.calls.flat().join(" ")
+      const warningText = warnSpy.mock.calls
+        .flat()
+        .join(" ")
       expect(warningText).toContain("track misalignment")
       expect(warningText).toContain("expected 3")
       expect(warningText).toContain("got 2")
@@ -162,7 +179,7 @@ describe(reorderTracks.name, () => {
           reorderTracks({
             audioTrackIndexes: [0, 1, 2],
             isRecursive: false,
-            shouldSkipOnTrackMisalignment: false,
+            isSkipOnTrackMisalignment: false,
             sourcePath: "/work",
             subtitlesTrackIndexes: [],
             videoTrackIndexes: [],
