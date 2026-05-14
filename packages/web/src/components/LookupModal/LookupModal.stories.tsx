@@ -25,6 +25,7 @@ const ReOpenButton = ({
 }
 
 const empty = {
+  companionNameField: null,
   searchTerm: "",
   searchError: null,
   results: null,

@@ -27,6 +27,7 @@ const baseState = {
   lookupType: "mal" as const,
   stepId: "step-1",
   fieldName: "malId",
+  companionNameField: "malName" as string | null,
   stage: "search" as const,
   searchTerm: "",
   searchError: null,

@@ -115,17 +115,41 @@ export const findDvdCompareResults = (
       )
       const html = await response.text()
 
-      // DVDCompare redirects search.php to a specific film.php page when
-      // there's only one match. fetch follows the redirect by default, so
-      // the final response.url points at the film.php URL. Expose
-      // isDirectListing=true so callers can auto-select the ID and skip
-      // straight to the Release Hash prompt instead of showing a picker.
-      const redirectMatch = response.url.match(
+      // DVDCompare signals a single-match outcome in two ways:
+      //   1) HTTP redirect (search.php → film.php?fid=N). fetch follows it
+      //      automatically and response.url ends in film.php?fid=N.
+      //   2) JS redirect: the search-results page contains
+      //      <script>location.href="film.php?fid=N";</script>. Node-side
+      //      fetch can't execute scripts so we never reach film.php, but
+      //      the literal string is in the HTML and easy to detect.
+      // Both are treated identically: fetch the film page, parse its
+      // <title> for the canonical record, and return isDirectListing=true.
+      const directFidFromHttpRedirect = response.url.match(
         /film\.php\?fid=(\d+)/,
-      )
-      if (redirectMatch) {
-        const fid = Number(redirectMatch[1])
-        const filmInfo = parseDvdCompareFilmTitle(html, fid)
+      )?.[1]
+      const directFidFromJsRedirect =
+        directFidFromHttpRedirect
+          ? undefined
+          : html.match(
+              /location\.href\s*=\s*["']film\.php\?fid=(\d+)/,
+            )?.[1]
+      const directFid =
+        directFidFromHttpRedirect ?? directFidFromJsRedirect
+      if (directFid) {
+        const fid = Number(directFid)
+        // If the JS-redirect detected the fid, the current `html` is the
+        // tiny redirect page (no <title> with film info). Fetch the
+        // actual film page so parseDvdCompareFilmTitle has something to
+        // work with.
+        const filmHtml = directFidFromHttpRedirect
+          ? html
+          : await fetch(
+              `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${fid}`,
+            ).then((response) => response.text())
+        const filmInfo = parseDvdCompareFilmTitle(
+          filmHtml,
+          fid,
+        )
         const result: DvdCompareResult = filmInfo ?? {
           baseTitle: "",
           id: fid,

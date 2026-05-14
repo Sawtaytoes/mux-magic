@@ -86,19 +86,26 @@ export const BuilderPage = () => {
     }
   }, [store])
 
-  // Live URL syncing: on every change to steps / paths, re-encode the
-  // current YAML into ?seq= and replace the URL. Makes the URL a live
-  // source of truth — refreshing keeps state, bookmarks are restorable,
-  // copying the URL shares the working sequence.
+  // Live URL syncing: on every change to steps / paths, synchronously
+  // re-encode the current YAML into ?seq= and replace the URL. Writing
+  // synchronously (no setTimeout debounce) is the only race-free way to
+  // guarantee the URL reflects the latest keystroke when the user
+  // refreshes immediately after typing. Earlier versions used a 250ms
+  // debounce + beforeunload/pagehide flush, but that combination still
+  // dropped values when the user hit F5 inside the debounce window —
+  // beforeunload fired before the React commit / setTimeout queue had a
+  // pending write to flush.
   //
-  // Uses `store.sub` rather than `useAtomValue` so BuilderPage itself
-  // doesn't re-render on every atom change. The debounce keeps URL writes
-  // out of the keystroke hot path; 250ms is fast enough that bookmarking
-  // feels immediate.
+  // toYamlStr + history.replaceState are microsecond-scale operations
+  // (sub-1ms even for ~100-step sequences), so doing them per keystroke
+  // is fine. Uses `store.sub` rather than `useAtomValue` so BuilderPage
+  // itself doesn't re-render on every atom change.
+  //
+  // beforeunload/pagehide listeners stay as safety nets in case any
+  // future code path defers an atom write into a microtask or animation
+  // frame; they're no-ops today because writeUrl already ran on the
+  // change that triggered the unload.
   useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null =
-      null
-
     const writeUrl = () => {
       const commands = store.get(commandsAtom)
       if (!commands || Object.keys(commands).length === 0) {
@@ -119,18 +126,16 @@ export const BuilderPage = () => {
       window.history.replaceState({}, "", url.toString())
     }
 
-    const scheduleWrite = () => {
-      if (timeoutId !== null) clearTimeout(timeoutId)
-      timeoutId = setTimeout(writeUrl, 250)
-    }
-
-    const unsubSteps = store.sub(stepsAtom, scheduleWrite)
-    const unsubPaths = store.sub(pathsAtom, scheduleWrite)
+    const unsubSteps = store.sub(stepsAtom, writeUrl)
+    const unsubPaths = store.sub(pathsAtom, writeUrl)
+    window.addEventListener("beforeunload", writeUrl)
+    window.addEventListener("pagehide", writeUrl)
 
     return () => {
-      if (timeoutId !== null) clearTimeout(timeoutId)
       unsubSteps()
       unsubPaths()
+      window.removeEventListener("beforeunload", writeUrl)
+      window.removeEventListener("pagehide", writeUrl)
     }
   }, [store])
 

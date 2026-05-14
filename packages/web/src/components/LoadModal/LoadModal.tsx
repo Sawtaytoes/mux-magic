@@ -9,12 +9,14 @@ import {
   stepCounterAtom,
   stepsAtom,
 } from "../../state/stepsAtom"
+import { threadCountAtom } from "../../state/threadCountAtom"
 
 export const LoadModal = () => {
   const [isOpen, setIsOpen] = useAtom(loadModalOpenAtom)
   const setSteps = useSetAtom(stepsAtom)
   const setPaths = useSetAtom(pathsAtom)
   const setStepCounter = useSetAtom(stepCounterAtom)
+  const setThreadCount = useSetAtom(threadCountAtom)
   const currentPaths = useAtomValue(pathsAtom)
   const currentStepCounter = useAtomValue(stepCounterAtom)
   const commands = useAtomValue(commandsAtom)
@@ -41,6 +43,7 @@ export const LoadModal = () => {
         setSteps(result.steps)
         setPaths(result.paths)
         setStepCounter(result.stepCounter)
+        setThreadCount(result.threadCount)
         setIsOpen(false)
         return true
       } catch (err) {
@@ -61,6 +64,7 @@ export const LoadModal = () => {
       setSteps,
       setPaths,
       setStepCounter,
+      setThreadCount,
       setIsOpen,
     ],
   )

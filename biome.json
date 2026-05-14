@@ -15,7 +15,8 @@
       "!**/build",
       "!**/dist",
       "!**/node_modules",
-      "!packages/web/public"
+      "!packages/server/**/__fixtures__",
+      "!packages/web/**/__fixtures__"
     ]
   },
   "formatter": {

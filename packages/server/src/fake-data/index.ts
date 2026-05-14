@@ -354,36 +354,59 @@ export const fakeRenameFile = ({
 
 export const fakeSearchMal = () => ({
   results: [
-    { malId: 1, name: "Cowboy Bebop", mediaType: "TV" },
+    // name = title_english; nameJapanese = title (romaji). For MAL rows
+    // where the romaji equals the English-preferred name, we omit
+    // nameJapanese entirely (matches the production suppression rule in
+    // mapJikanSearchResults).
+    {
+      malId: 1,
+      name: "Cowboy Bebop",
+      mediaType: "TV",
+      year: "1998",
+    },
     {
       malId: 5114,
       name: "Fullmetal Alchemist: Brotherhood",
       mediaType: "TV",
+      year: "2009",
     },
-    { malId: 9253, name: "Steins;Gate", mediaType: "TV" },
+    {
+      malId: 39534,
+      name: "Toilet-Bound Hanako-kun",
+      nameJapanese: "Jibaku Shounen Hanako-kun",
+      mediaType: "TV",
+      year: "2020",
+    },
   ],
   error: null,
 })
 
 export const fakeSearchAnidb = () => ({
+  // name = English-preferred (manami synonym heuristic);
+  // nameJapanese = romaji `title` shown as subtitle when name swapped to
+  // English. Cowboy Bebop's English equals its romaji so no subtitle.
   results: [
     {
       aid: 1,
       name: "Cowboy Bebop",
       type: "TV",
       episodes: 26,
+      year: "1998",
     },
     {
-      aid: 23,
-      name: "Cowboy Bebop: Tengoku no Tobira",
-      type: "MOVIE",
-      episodes: 1,
+      aid: 11770,
+      name: "Re:Zero - Starting Life in Another World",
+      nameJapanese: "Re:Zero kara Hajimeru Isekai Seikatsu",
+      type: "TV",
+      episodes: 25,
+      year: "2016",
     },
     {
       aid: 6107,
       name: "Fullmetal Alchemist: Brotherhood",
       type: "TV",
       episodes: 64,
+      year: "2009",
     },
   ],
   error: null,

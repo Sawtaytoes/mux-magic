@@ -67,6 +67,56 @@ describe(parseAnimeIndex.name, () => {
     ).toBeUndefined()
   })
 
+  test("prefers an English-looking synonym over the romaji title and exposes romaji as a subtitle", () => {
+    // Synthetic manami payload — keep this independent of the on-disk
+    // fixture so the test pins the heuristic itself.
+    const synthetic = JSON.stringify({
+      data: [
+        {
+          sources: ["https://anidb.net/anime/11770"],
+          title: "Re:Zero kara Hajimeru Isekai Seikatsu",
+          synonyms: [
+            "Re:Zero - Starting Life in Another World",
+            "リゼロ",
+            "Re:ゼロから始める異世界生活",
+          ],
+          animeSeason: { year: 2016 },
+          type: "TV",
+          episodes: 25,
+        },
+        {
+          // Cowboy Bebop: title is already a recognizable English-style
+          // name; the heuristic should NOT swap to a less useful synonym
+          // and should leave nameJapanese undefined.
+          sources: ["https://anidb.net/anime/23"],
+          title: "Cowboy Bebop",
+          synonyms: ["カウボーイビバップ"],
+          animeSeason: { year: 1998 },
+          type: "TV",
+        },
+      ],
+    })
+    const index = parseAnimeIndex(synthetic)
+
+    const reZero = index.find(
+      (entry) => entry.aid === 11770,
+    )
+    expect(reZero?.name).toBe(
+      "Re:Zero - Starting Life in Another World",
+    )
+    expect(reZero?.nameJapanese).toBe(
+      "Re:Zero kara Hajimeru Isekai Seikatsu",
+    )
+
+    const cowboyBebop = index.find(
+      (entry) => entry.aid === 23,
+    )
+    expect(cowboyBebop?.name).toBe("Cowboy Bebop")
+    // No useful subtitle — primary already matches what users
+    // recognize. Don't print the same thing twice.
+    expect(cowboyBebop?.nameJapanese).toBeUndefined()
+  })
+
   test("builds a lowercased haystack from title + synonyms for substring matching", () => {
     const json = loadFixture("manami/manami-sample.json")
     const index = parseAnimeIndex(json)

@@ -1,11 +1,5 @@
 import { logAndSwallowPipelineError } from "@mux-magic/tools"
-import {
-  from,
-  map,
-  mergeMap,
-  type Observable,
-  of,
-} from "rxjs"
+import { from, map, mergeMap, type Observable } from "rxjs"
 import { getTvdbFetchClient } from "./tvdbApi.js"
 
 export type TvdbResult = {
@@ -77,44 +71,61 @@ export const searchTvdb = (
     ),
   )
 
+// TVDB exposes `year` directly on the series record and `firstAired`
+// on extended fetches. We pull either to surface "Show (Year)" in
+// reverse-lookup so saved YAML matches the picker.
+const extractYear = (
+  raw: { year?: string; firstAired?: string } | undefined,
+): string | undefined => {
+  if (!raw) return undefined
+  if (raw.year && /^\d{4}/.test(raw.year))
+    return raw.year.slice(0, 4)
+  const fromAired = raw.firstAired?.match(/^(\d{4})/)
+  return fromAired?.[1]
+}
+
 // Returns the English series title when TVDB has one on file, falling
 // back to the canonical /series/{id} name otherwise. The two-step lookup
 // matches the pickEnglishName logic in mapTvdbSearchResults so the
 // lookup modal and the typed-id reverse-lookup agree on which name to
-// surface for a given series.
+// surface for a given series. Always fetches /series/{id} to pull `year`,
+// even when the English translation alone provided the name.
 export const lookupTvdbById = (
   tvdbId: number,
-): Observable<{ name: string } | null> =>
+): Observable<{
+  name: string
+  year?: string
+} | null> =>
   from(getTvdbFetchClient()).pipe(
     mergeMap((tvdbFetchClient) =>
       from(
-        tvdbFetchClient.GET(
-          "/series/{id}/translations/{language}",
-          {
-            params: {
-              path: { id: tvdbId, language: "eng" },
-            },
-          },
-        ),
-      ).pipe(
-        mergeMap(({ data: translationData }) => {
-          const englishName =
-            translationData?.data?.name ?? ""
-          if (englishName) {
-            return of({ name: englishName })
-          }
-          return from(
-            tvdbFetchClient.GET("/series/{id}", {
+        Promise.all([
+          tvdbFetchClient.GET(
+            "/series/{id}/translations/{language}",
+            {
               params: {
-                path: { id: tvdbId },
+                path: { id: tvdbId, language: "eng" },
               },
-            }),
-          ).pipe(
-            map(({ data }) => {
-              const name = data?.data?.name ?? ""
-              return name ? { name } : null
-            }),
-          )
+            },
+          ),
+          tvdbFetchClient.GET("/series/{id}", {
+            params: { path: { id: tvdbId } },
+          }),
+        ]),
+      ).pipe(
+        map(([translationResponse, seriesResponse]) => {
+          const englishName =
+            translationResponse.data?.data?.name ?? ""
+          const seriesData = seriesResponse.data?.data as
+            | {
+                name?: string
+                year?: string
+                firstAired?: string
+              }
+            | undefined
+          const name = englishName || seriesData?.name || ""
+          if (!name) return null
+          return { name, year: extractYear(seriesData) }
         }),
       ),
     ),

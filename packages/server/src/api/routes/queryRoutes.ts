@@ -242,8 +242,13 @@ queryRoutes.openapi(
       const anime = await lastValueFrom(
         lookupAnidbById(body.anidbId),
       )
-      const name = anime
+      const baseName = anime
         ? pickAnidbSeriesName(anime.titles)
+        : ""
+      const name = baseName
+        ? anime?.year
+          ? `${baseName} (${anime.year})`
+          : baseName
         : ""
       return context.json({ name: name || null }, 200)
     } catch (err) {
@@ -499,7 +504,12 @@ queryRoutes.openapi(
     const result = await lastValueFrom(
       lookupMalById(body.malId),
     )
-    return context.json({ name: result?.name ?? null }, 200)
+    const formatted = result?.name
+      ? result.year
+        ? `${result.name} (${result.year})`
+        : result.name
+      : null
+    return context.json({ name: formatted }, 200)
   },
 )
 
@@ -539,7 +549,12 @@ queryRoutes.openapi(
     const result = await lastValueFrom(
       lookupTvdbById(body.tvdbId),
     )
-    return context.json({ name: result?.name ?? null }, 200)
+    const formatted = result?.name
+      ? result.year
+        ? `${result.name} (${result.year})`
+        : result.name
+      : null
+    return context.json({ name: formatted }, 200)
   },
 )
 

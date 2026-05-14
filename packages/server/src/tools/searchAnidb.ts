@@ -23,7 +23,11 @@ export type AnidbResult = {
   aid: number
   episodes?: number
   name: string
+  // Romaji `title` from manami when `name` is an English synonym pick;
+  // omitted when `name` IS the romaji title (no useful subtitle).
+  nameJapanese?: string
   type?: string
+  year?: string
 }
 
 // Search is backed by the manami-project anime-offline-database (see
@@ -39,7 +43,9 @@ export const searchAnidb = (
         aid: entry.aid,
         episodes: entry.episodes,
         name: entry.name,
+        nameJapanese: entry.nameJapanese,
         type: entry.type,
+        year: entry.year,
       })),
     ),
     logAndSwallowPipelineError(searchAnidb),
@@ -114,7 +120,20 @@ export const parseAnidbAnimeXml = (
     }),
   )
 
-  return { aid: Number(root.id), episodes, titles }
+  // <startdate> is YYYY-MM-DD or sometimes YYYY-MM or YYYY when AniDB
+  // only knows the year. Take the leading 4 digits — anything else is
+  // not a usable release year.
+  const startDateRaw =
+    typeof root.startdate === "string"
+      ? root.startdate
+      : root.startdate?.value
+  const yearMatch =
+    typeof startDateRaw === "string"
+      ? startDateRaw.match(/^(\d{4})/)
+      : null
+  const year = yearMatch?.[1]
+
+  return { aid: Number(root.id), episodes, titles, year }
 }
 
 export const lookupAnidbById = (

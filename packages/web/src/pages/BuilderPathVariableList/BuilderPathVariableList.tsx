@@ -1,6 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai"
 
 import { PathVariableCard } from "../../components/PathVariableCard/PathVariableCard"
+import { ThreadCountVariableCard } from "../../components/ThreadCountVariableCard/ThreadCountVariableCard"
 import {
   addPathAtom,
   pathsAtom,
@@ -19,6 +20,7 @@ export const BuilderPathVariableList = () => {
           isFirst={idx === 0}
         />
       ))}
+      <ThreadCountVariableCard />
       <button
         type="button"
         onClick={() => addPath()}

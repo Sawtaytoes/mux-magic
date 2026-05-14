@@ -50,6 +50,7 @@ export const toYamlStr = (
   steps: SequenceItem[],
   paths: Variable[],
   commands: Commands,
+  threadCount?: string | null,
 ): string => {
   const filledItems = steps.filter(hasContent)
   const hasSomething =
@@ -58,20 +59,27 @@ export const toYamlStr = (
 
   if (!hasSomething) return "# No steps yet"
 
-  const variablesObj = Object.fromEntries(
-    paths.map((variable) => [
-      variable.id,
-      {
-        label: variable.label,
-        value: variable.value,
-        type: variable.type,
-      },
-    ]),
-  )
+  const variablesObj = {
+    ...Object.fromEntries(
+      paths.map((variable) => [
+        variable.id,
+        {
+          label: variable.label,
+          value: variable.value,
+          type: variable.type,
+        },
+      ]),
+    ),
+    ...(threadCount != null
+      ? { tc: { type: "threadCount", value: threadCount } }
+      : {}),
+  }
 
   return dump(
     {
-      variables: variablesObj,
+      ...(Object.keys(variablesObj).length > 0
+        ? { variables: variablesObj }
+        : {}),
       steps: filledItems.map((item) =>
         isGroup(item)
           ? groupToYaml(item, commands)
@@ -96,6 +104,9 @@ export type LoadYamlResult = {
   steps: SequenceItem[]
   paths: Variable[]
   stepCounter: number
+  // Resolved from the YAML variables block; null when absent or no
+  // threadCount-typed entry is present.
+  threadCount: string | null
 }
 
 const isGroupItem = (item: unknown): boolean =>
@@ -285,6 +296,32 @@ const ensureBasePath = (): Variable[] => [
   },
 ]
 
+const extractThreadCount = (
+  dataObj: Record<string, unknown>,
+): string | null => {
+  const vars = dataObj.variables
+  if (
+    !vars ||
+    typeof vars !== "object" ||
+    Array.isArray(vars)
+  )
+    return null
+  const entries = Object.values(
+    vars as Record<string, unknown>,
+  )
+  const entry = entries.find(
+    (entry) =>
+      entry &&
+      typeof entry === "object" &&
+      !Array.isArray(entry) &&
+      (entry as Record<string, unknown>).type ===
+        "threadCount",
+  ) as Record<string, unknown> | undefined
+  if (!entry) return null
+  const val = entry.value
+  return typeof val === "string" ? val : String(val)
+}
+
 const parseLegacyPathsBlock = (
   rawPaths: Record<string, Record<string, string>>,
 ): Variable[] =>
@@ -338,6 +375,7 @@ export const loadYamlFromText = (
 
   let paths: Variable[] = currentPaths
   let stepsData: unknown[]
+  let threadCount: string | null = null
 
   if (
     data &&
@@ -379,6 +417,7 @@ export const loadYamlFromText = (
       }
       if (!paths.length) paths = ensureBasePath()
       stepsData = (dataObj.steps as unknown[]) || []
+      threadCount = extractThreadCount(dataObj)
     } else {
       throw new Error(
         'Expected a YAML sequence or object with "steps" key',
@@ -410,5 +449,6 @@ export const loadYamlFromText = (
     steps,
     paths,
     stepCounter: context.currentStepCounter,
+    threadCount,
   }
 }

@@ -36,6 +36,9 @@ const versionPath = (): string =>
 
 // Subset of the manami entry shape — only the fields we read.
 type ManamiEntry = {
+  animeSeason?: {
+    year?: number
+  }
   episodes?: number
   sources?: string[]
   synonyms?: string[]
@@ -49,8 +52,75 @@ export type AnimeIndexEntry = {
   // Lowercased title + synonyms joined with "\n", precomputed so search
   // is a single .includes() call per entry.
   matchHaystack: string
+  // Display name — prefers an English-looking synonym when the picker
+  // heuristic finds one, otherwise falls back to manami's `title` (which
+  // is typically romaji for Japanese anime). Mirrors the MAL behavior of
+  // showing English to the user.
   name: string
+  // Romaji `title` from manami, exposed as a subtitle in the picker
+  // **only when** `name` came from a synonym (i.e., differs from
+  // `title`). When `name === title`, this stays undefined so we don't
+  // print the same string twice.
+  nameJapanese?: string
   type?: string
+  year?: string
+}
+
+// Heuristic English-title detector for manami's flat, language-untagged
+// synonyms[]. Manami merges synonyms from AniDB / MAL / AniList / Kitsu
+// without language metadata, so the only reliable signal is English
+// stopwords — words that almost never appear in romaji renditions of
+// Japanese titles. (Romaji uses particles like `wa`, `no`, `ga`, `kara`,
+// `made` instead.) Score each Latin-script multi-word synonym by
+// stopword hits and pick the highest scorer with ≥1 match.
+//
+// Tradeoffs:
+//   - Misses English titles that happen to contain zero stopwords
+//     (rare; "Bleach", "Naruto" — but these are also already what users
+//     recognize, and they typically equal `title` in those cases).
+//   - Could occasionally pick the wrong synonym when multiple romaji
+//     variants happen to use English-looking words. Empirically rare.
+const ENGLISH_STOPWORDS_REGEX =
+  /\b(the|of|and|or|a|an|in|on|at|with|from|to|for|by|as|but|into|onto|over|under|after|before|world|life|love|story|war|day|night|girl|boy|prince|princess|king|queen|hero|magic|sword|knight|god|gods|angel|devil|wizard|saga|chronicles|adventures?)\b/gi
+
+// Latin-1-supplement-friendly: covers basic ASCII letters/digits + the
+// common Latin extended ranges that show up in licensed English titles
+// (em dashes, en dashes, smart quotes, accented letters in series like
+// "Pokémon"). Synonyms in CJK / Cyrillic / Hangul fail this and are
+// skipped before the stopword scoring runs.
+const LATIN_SCRIPT_REGEX = /^[ -ÿ‐-‧‰-⁞]+$/
+
+const scoreEnglishness = (text: string): number => {
+  if (!LATIN_SCRIPT_REGEX.test(text)) return 0
+  const matches = text.match(ENGLISH_STOPWORDS_REGEX)
+  return matches?.length ?? 0
+}
+
+// Returns a synonym whose Englishness score is STRICTLY HIGHER than the
+// title's score. Strict-greater matters: when title is "Fate/stay night"
+// and a synonym "Fate Stay Night" exists, both score 1 (on "night") and
+// the synonym is just a punctuation-stripped romaji variant — swapping
+// them would be cosmetic noise. Only an actual English title like
+// "Re:Zero - Starting Life in Another World" (score 2 on "in" + "world")
+// against romaji "Re:Zero kara Hajimeru Isekai Seikatsu" (score 0)
+// crosses the threshold.
+const pickEnglishSynonym = (
+  title: string,
+  synonyms: string[] | undefined,
+): string | undefined => {
+  if (!synonyms?.length) return undefined
+  const titleScore = scoreEnglishness(title)
+  let bestScore = titleScore
+  let bestSynonym: string | undefined
+  for (const synonym of synonyms) {
+    if (!/\s/.test(synonym)) continue // single-word synonyms aren't useful as a subtitle either
+    const score = scoreEnglishness(synonym)
+    if (score > bestScore) {
+      bestScore = score
+      bestSynonym = synonym
+    }
+  }
+  return bestSynonym
 }
 
 const isFresh = async (
@@ -191,12 +261,27 @@ export const parseAnimeIndex = (
       .join("\n")
       .toLowerCase()
 
+    const englishTitle = pickEnglishSynonym(
+      entry.title,
+      entry.synonyms,
+    )
+    const displayName = englishTitle ?? entry.title
     index.push({
       aid,
       episodes: entry.episodes,
       matchHaystack: haystack,
-      name: entry.title,
+      name: displayName,
+      // Only attach the romaji subtitle when we actually swapped to an
+      // English title — otherwise the subtitle would just duplicate the
+      // primary name.
+      nameJapanese:
+        englishTitle && entry.title !== englishTitle
+          ? entry.title
+          : undefined,
       type: entry.type,
+      year: entry.animeSeason?.year
+        ? String(entry.animeSeason.year)
+        : undefined,
     })
   }
   return index

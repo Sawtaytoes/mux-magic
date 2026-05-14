@@ -21,6 +21,9 @@ export type LookupSearchResult = {
   tvdbId?: number
   movieDbId?: number
   name?: string
+  // Native-script title (Japanese for MAL/AniDB) shown as a muted
+  // subtitle under the primary name in the picker.
+  nameJapanese?: string
   title?: string
   year?: string
 }
@@ -45,6 +48,11 @@ export type LookupState = {
   lookupType: LookupType
   stepId: string
   fieldName: string
+  // Companion field that receives the human-readable label (e.g. movie title).
+  // The primary fieldName receives only the numeric id/hash — keeping that
+  // field a plain number is what NumberWithLookupField expects (otherwise
+  // React tries to render an object as text and prints "[object Object]").
+  companionNameField: string | null
   stage: LookupStage
   searchTerm: string
   searchError: string | null

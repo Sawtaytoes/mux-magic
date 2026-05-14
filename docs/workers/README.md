@@ -76,11 +76,11 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | 0a | [json-field-readonly](0a_json-field-readonly.md) | web | Haiku | Low | OFF | 01 | done |
 | 0b | [auto-paste-yaml](0b_auto-paste-yaml.md) | web | Haiku | Low | OFF | 01 | done |
 | 0c | [scale-resolution-aspect-lock](0c_scale-resolution-aspect-lock.md) | web | Sonnet | Medium | ON | 01 | done |
-| 0d | [narrow-view-menu-animate](0d_narrow-view-menu-animate.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 0d | [narrow-view-menu-animate](0d_narrow-view-menu-animate.md) | web | Sonnet | Medium | ON | 01 | done |
 | 0e | [story-actions-and-reopen](0e_story-actions-and-reopen.md) | web | Haiku | Low | OFF | 01 | done |
 | 0f | [undo-redo-scroll-to-affected](0f_undo-redo-scroll-to-affected.md) | web | Sonnet | Medium | ON | 01 | done |
 | 10 | [apirunmodal-rename](10_apirunmodal-rename.md) — shipped as part of worker 17 (PR #95) | web | Haiku | Low | OFF | 01 | done |
-| 11 | [limit-execution-threads-ui](11_limit-execution-threads-ui.md) — per-job thread cap as a `threadCount` Variable; adds `DEFAULT_THREAD_COUNT` env var; per-job quota enforcement in `taskScheduler.ts` | web+srv | Sonnet | High | ON | 01, 36 (Variables foundation) | ready |
+| 11 | [limit-execution-threads-ui](11_limit-execution-threads-ui.md) — per-job thread cap as a `threadCount` Variable; adds `DEFAULT_THREAD_COUNT` env var; per-job quota enforcement in `taskScheduler.ts` | web+srv | Sonnet | High | ON | 01, 36 (Variables foundation) | done |
 | 12 | [sequence-jobs-formatting](12_sequence-jobs-formatting.md) | web | Haiku | Low | OFF | 01 | done |
 | 13 | [merge-subtitles-offsets-label](13_merge-subtitles-offsets-label.md) | web | Haiku | Low | OFF | 01 | done |
 | 14 | [dryrun-to-query-string](14_dryrun-to-query-string.md) | web | Sonnet | Medium | ON | 01 | done |
@@ -102,7 +102,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 1b | [media-sync-rename-to-gallery-downloader](1b_media-sync-rename-to-gallery-downloader.md) | cross | Sonnet | High | ON | 01 | done |
 | 1c | [gallery-downloader-decouple-and-ha-endpoint](1c_gallery-downloader-decouple-and-ha-endpoint.md) | cross | Sonnet | High | ON | 1b | done |
-| 1d | [gallery-downloader-consume-mux-magic-tools](1d_gallery-downloader-consume-mux-magic-tools.md) | cross | Sonnet | Medium | ON | 1c, 02, 39 + a published `@mux-magic/tools` release | in-progress |
+| 1d | [gallery-downloader-consume-mux-magic-tools](1d_gallery-downloader-consume-mux-magic-tools.md) | cross | Sonnet | Medium | ON | 1c, 02, 39 + a published `@mux-magic/tools` release | done |
 | 1e | [mux-magic-webhook-reporter](1e_mux-magic-webhook-reporter.md) | srv | Sonnet | Medium | ON | 01 | done |
 | 1f | [mux-magic-anime-manga-commands](1f_mux-magic-anime-manga-commands.md) | srv+web | Sonnet | High | ON | 01 | done |
 
@@ -114,6 +114,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 20 | [cli-package-extract](20_cli-package-extract.md) | cli | **Opus** | High | ON | All Phase 1 done | ready |
 | 21 | [observables-shared-split](21_observables-shared-split.md) — promotes `taskScheduler` + reusable rxjs operators from server into `@mux-magic/tools` | cli+srv | Sonnet | High | ON | 20 | ready |
+| 32 | [lookup-types-from-server](32_lookup-types-from-server.md) — migrates [LookupModal/types.ts](../../packages/web/src/components/LookupModal/types.ts) to import canonical `LookupSearchResult`/`LookupType`/`LookupVariant`/`LookupGroup`/`LookupRelease` from `@mux-magic/server`; eliminates the `eslint-disable no-restricted-syntax` bypass installed by worker 06. UI state shapes (`LookupState`, `LookupStage`) stay web-only. | srv+web | Sonnet | Medium | ON | 01, 06 | ready |
 
 ---
 
@@ -146,6 +147,8 @@ The existing `nameSpecialFeatures` code is preserved (renamed only by worker 22,
 | 2c | `pure-functions-sweep` | srv+web | Sonnet | High | ON | 20 | planned |
 | 2d | `asset-fallback-to-cli` | srv | Haiku | Low | OFF | 01 | planned |
 | 38 | [per-file-pipelining](38_per-file-pipelining.md) — rewire `sequenceRunner.ts` to stream files through steps via rxjs composition; file 1 hits step 3 while file 2 still on step 1. Multiplies value of worker 11's thread budget | srv | **Opus** | High | ON | 20, 21, 28 | ready |
+| 3b | [extract-subtitles-multi-language-type-filter](3b_extract-subtitles-multi-language-type-filter.md) — multi-language `subtitlesLanguages` array, tri-state `typesMode` (`none\|include\|exclude`) + `subtitleTypes` chip picker, single batched `mkvextract` call per file. Removes hardcoded image-codec auto-skip. | srv+web+cli | Sonnet | Medium | ON | 20 | planned |
+| 3c | [bcp47-language-variants](3c_bcp47-language-variants.md) — BCP 47 locale variants (`zh-Hans-CN`, `zh-Hant-HK`, `pt-BR`, …) via optional `ietf` field on `LanguageSelection`. Augments 3-letter codes, emits `language-ietf` to mkvpropedit/mkvmerge alongside legacy `language`. Secondary "Region/Variant" picker appears only for curated base languages. | srv+web+cli | Sonnet | Medium | ON | 08, 20 | planned |
 
 ---
 

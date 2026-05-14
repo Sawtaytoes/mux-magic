@@ -64,6 +64,13 @@ const fetchSearch = async (
   searchTerm: string,
 ): Promise<{
   results: LookupSearchResult[]
+  // For dvdcompare only: when the upstream search.php redirected
+  // straight to a single film page (uniquely-spelled titles like the
+  // misspelling "Tinker Tailor Solider Spy" → fid=55420), the API reports
+  // isDirectListing=true and returns the one matching record. The UI
+  // bypasses the picker and loads releases for that record directly,
+  // ignoring the user's format filter since the direct hit is canonical.
+  directListingResult: DvdCompareResult | null
   error: string | null
 }> => {
   try {
@@ -75,6 +82,13 @@ const fetchSearch = async (
         body: JSON.stringify({ searchTerm }),
       },
     )
+    if (!resp.ok) {
+      return {
+        results: [],
+        directListingResult: null,
+        error: `Server error: ${resp.status} ${resp.statusText}`,
+      }
+    }
     const data = (await resp.json()) as AnySearchResponse
     const rawResults = (data.results ??
       []) as LookupSearchResult[]
@@ -84,13 +98,30 @@ const fetchSearch = async (
             rawResults as unknown as DvdCompareResult[],
           ) as unknown as LookupSearchResult[])
         : rawResults
+    // A "direct listing" is when DVDCompare's search produced a single
+    // canonical hit. Two signals indicate this, either of which is enough:
+    //   1) Server set isDirectListing=true (its POST followed an HTTP
+    //      redirect to film.php for a unique-title match like "solider").
+    //   2) The raw search result list has exactly one entry — DVDCompare
+    //      returned a single-row results page rather than a redirect.
+    // Both cases mean the user has nothing to pick from at this stage, so
+    // the UI must skip the picker and load releases for that one film.
+    // Ignoring the format filter is intentional: when there's only one
+    // film to choose, the filter shouldn't be allowed to turn it into
+    // "No results."
+    const directListingResult =
+      lookupType === "dvdcompare" && rawResults.length === 1
+        ? (rawResults[0] as unknown as DvdCompareResult)
+        : null
     return {
       results,
+      directListingResult,
       error: data.error ?? null,
     }
   } catch (error) {
     return {
       results: [],
+      directListingResult: null,
       error:
         error instanceof Error
           ? error.message
@@ -99,6 +130,12 @@ const fetchSearch = async (
   }
 }
 
+// The server-side schema for /queries/listDvdCompareReleases requires
+// `dvdCompareId: z.number()`. The UI carries IDs as strings (because they
+// live in URL fragments and HTML attributes), so this helper coerces
+// before sending. A string body produced a 400 Bad Request whose response
+// payload included an object error — React then crashed trying to render
+// `{name, message}` as text. Number coercion + explicit ok-check end both.
 const fetchReleases = async (
   dvdCompareId: string,
 ): Promise<{
@@ -106,21 +143,48 @@ const fetchReleases = async (
   debug: unknown
   error: string | null
 }> => {
+  const numId = Number(dvdCompareId)
+  if (Number.isNaN(numId)) {
+    return {
+      releases: [],
+      debug: null,
+      error: "Invalid DVDCompare ID",
+    }
+  }
   try {
     const resp = await fetch(
       `${apiBase}/queries/listDvdCompareReleases`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dvdCompareId }),
+        body: JSON.stringify({ dvdCompareId: numId }),
       },
     )
+    if (!resp.ok) {
+      return {
+        releases: [],
+        debug: null,
+        error: `Server error: ${resp.status} ${resp.statusText}`,
+      }
+    }
     const data =
       (await resp.json()) as ListDvdCompareReleasesResponse
+    let error: unknown = data.error ?? null
+    if (
+      error &&
+      typeof error === "object" &&
+      "message" in error
+    ) {
+      error =
+        (error as { message?: string }).message ??
+        String(error)
+    } else if (error && typeof error !== "string") {
+      error = String(error)
+    }
     return {
       releases: (data.releases ?? []) as LookupRelease[],
       debug: data.debug ?? null,
-      error: data.error ?? null,
+      error: typeof error === "string" ? error : null,
     }
   } catch (error) {
     return {
@@ -152,14 +216,56 @@ export const LookupSearchStage = ({
     setTimeout(() => inputRef.current?.focus(), 50)
   }, [])
 
+  const loadReleasesForFid = async (
+    group: LookupGroup,
+    fidString: string,
+    variantLabel: string,
+  ) => {
+    onUpdate({
+      isLoading: true,
+      selectedGroup: group,
+      selectedFid: fidString,
+      selectedVariant: variantLabel,
+      stage: "release",
+    })
+    const { releases, debug, error } =
+      await fetchReleases(fidString)
+    onUpdate({
+      releases,
+      releasesDebug: debug,
+      releasesError: error,
+      isLoading: false,
+    })
+  }
+
   const runSearch = async () => {
     const term = state.searchTerm.trim()
     if (!term) return
     onUpdate({ isLoading: true, searchError: null })
-    const { results, error } = await fetchSearch(
-      state.lookupType,
-      term,
-    )
+    const { results, directListingResult, error } =
+      await fetchSearch(state.lookupType, term)
+    // Direct hit on DVDCompare: server redirected search.php to a single
+    // film page (e.g. "solider" → fid=55420). Skip the picker entirely
+    // and jump straight to release selection for that one film.
+    if (directListingResult) {
+      const fidString = String(directListingResult.id)
+      const syntheticGroup: LookupGroup = {
+        baseTitle: directListingResult.baseTitle,
+        year: directListingResult.year,
+        variants: [
+          {
+            id: fidString,
+            variant: directListingResult.variant,
+          },
+        ],
+      }
+      await loadReleasesForFid(
+        syntheticGroup,
+        fidString,
+        directListingResult.variant,
+      )
+      return
+    }
     onUpdate({
       isLoading: false,
       results,
@@ -267,16 +373,20 @@ export const LookupSearchStage = ({
                   tvdbId?: number
                   movieDbId?: number
                   name?: string
+                  nameJapanese?: string
                   title?: string
                 }
-              const label =
+              const baseLabel =
                 state.lookupType === "tmdb"
-                  ? typedResult.year
-                    ? `${typedResult.title} (${typedResult.year})`
-                    : (typedResult.title ?? "—")
+                  ? (typedResult.title ?? "—")
                   : (typedResult.name ??
                     typedResult.baseTitle ??
                     "—")
+              const label = typedResult.year
+                ? `${baseLabel} (${typedResult.year})`
+                : baseLabel
+              const japaneseSubtitle =
+                typedResult.nameJapanese
               const keyHint =
                 index < 9 ? (
                   <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2 shrink-0">
@@ -293,43 +403,43 @@ export const LookupSearchStage = ({
                     group.variants.length === 0
                   )
                     return
-                  if (group.variants.length === 1) {
-                    onUpdate({
-                      selectedGroup: group,
-                      selectedFid: group.variants[0].id,
-                      selectedVariant:
-                        group.variants[0].variant,
-                      stage: "release",
-                      isLoading: true,
-                    })
-                    fetchReleases(
-                      group.variants[0].id,
-                    ).then(({ releases, debug, error }) => {
-                      onUpdate({
-                        releases,
-                        releasesDebug: debug,
-                        releasesError: error,
-                        isLoading: false,
-                      })
-                    })
-                  } else {
-                    onUpdate({
-                      selectedGroup: group,
-                      stage: "variant",
-                    })
-                  }
+                  // No more disc-type picker. The user already chose a
+                  // Format at the top of the modal (Blu-ray 4K by
+                  // default for dvdcompare). Narrow to variants matching
+                  // that filter and load releases for the first match.
+                  // When filter is "all", just use the first variant —
+                  // the modal will never push the user through a second
+                  // dialog asking the same question twice.
+                  const matchingVariants =
+                    state.formatFilter === "all"
+                      ? group.variants
+                      : group.variants.filter(
+                          (variant) =>
+                            variant.variant ===
+                            state.formatFilter,
+                        )
+                  const pick =
+                    matchingVariants[0] ?? group.variants[0]
+                  void loadReleasesForFid(
+                    group,
+                    pick.id,
+                    pick.variant,
+                  )
                 } else {
                   let id: number | string | undefined
-                  let displayName = ""
+                  // Companion gets the year-augmented label so the saved
+                  // YAML mirrors what the picker showed (e.g.,
+                  // "Toilet-Bound Hanako-kun (2020)") and so the
+                  // typed-id reverse-lookup (which formats the same way
+                  // server-side) round-trips identically.
+                  let displayName =
+                    label === "—" ? "" : label
                   if (state.lookupType === "mal") {
                     id = typedResult.malId
-                    displayName = typedResult.name ?? ""
                   } else if (state.lookupType === "anidb") {
                     id = typedResult.aid
-                    displayName = typedResult.name ?? ""
                   } else if (state.lookupType === "tvdb") {
                     id = typedResult.tvdbId
-                    displayName = typedResult.name ?? ""
                   } else if (state.lookupType === "tmdb") {
                     id = typedResult.movieDbId
                     displayName = typedResult.year
@@ -337,11 +447,23 @@ export const LookupSearchStage = ({
                       : (typedResult.title ?? "")
                   }
                   if (id !== undefined) {
+                    // Write number to the primary numeric field, and
+                    // the display name to its companion field — never
+                    // an object, which would render as "[object Object]"
+                    // in NumberWithLookupField (it casts the value as
+                    // `number | undefined`).
                     setParam(
                       state.stepId,
                       state.fieldName,
-                      { id, name: displayName },
+                      id,
                     )
+                    if (state.companionNameField) {
+                      setParam(
+                        state.stepId,
+                        state.companionNameField,
+                        displayName,
+                      )
+                    }
                     onClose()
                   }
                 }
@@ -354,8 +476,15 @@ export const LookupSearchStage = ({
                   onClick={handleSelect}
                   className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"
                 >
-                  {keyHint}
-                  {label}
+                  <div className="flex items-baseline gap-2">
+                    {keyHint}
+                    <span>{label}</span>
+                  </div>
+                  {japaneseSubtitle && (
+                    <div className="text-xs text-slate-500 mt-0.5 truncate">
+                      {japaneseSubtitle}
+                    </div>
+                  )}
                 </button>
               )
             })}
