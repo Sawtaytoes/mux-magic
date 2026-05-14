@@ -9,6 +9,7 @@ import { hideBin } from "yargs/helpers"
 import { changeTrackLanguagesCommand } from "./cli-commands/changeTrackLanguagesCommand.js"
 import { copyFilesCommand } from "./cli-commands/copyFilesCommand.js"
 import { copyOutSubtitlesCommand } from "./cli-commands/copyOutSubtitlesCommand.js"
+import { deleteCopiedOriginalsCommand } from "./cli-commands/deleteCopiedOriginalsCommand.js"
 import { deleteFilesByExtensionCommand } from "./cli-commands/deleteFilesByExtensionCommand.js"
 import { deleteFolderCommand } from "./cli-commands/deleteFolderCommand.js"
 import { extractSubtitlesCommand } from "./cli-commands/extractSubtitlesCommand.js"
@@ -63,6 +64,7 @@ yargs(hideBin(process.argv))
   .command(flattenOutputCommand)
   .command(getAudioOffsetsCommand)
   .command(getSubtitleMetadataCommand)
+  .command(deleteCopiedOriginalsCommand)
   .command(deleteFilesByExtensionCommand)
   .command(deleteFolderCommand)
   .command(hasBetterAudioCommand)

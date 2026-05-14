@@ -1,77 +1,261 @@
+import { join } from "node:path"
 import { vol } from "memfs"
-import { describe, expect, test } from "vitest"
+import { firstValueFrom, toArray } from "rxjs"
+import { beforeEach, describe, expect, test } from "vitest"
 
 import { copyFiles } from "./copyFiles.js"
 
-// Direct Observable-level coverage for the cancel-cleanup contract on
-// copyFiles: the wrapper Observable must abort the in-flight per-file
-// copy when its subscription is torn down (sequence cancel / parallel
-// sibling fail-fast), and the half-written destination must not be
-// left behind. The lower-level `aclSafeCopyFile.test.ts` already
-// asserts the unlink-on-abort plumbing in isolation; this file proves
-// the wrapper actually wires its AbortController into that plumbing
-// so an unsubscribe propagates all the way down to a fs.unlink of the
-// partial destination file.
 describe(copyFiles.name, () => {
-  test("synchronous unsubscribe aborts the AbortController so per-file copies are not started", async () => {
-    // Subscribe and tear down in the same microtask, before getFiles'
-    // readdir promise has even resolved. This proves the wrapper
-    // Observable's teardown function fires regardless of whether any
-    // per-file copy actually started — the AbortController is aborted
-    // and the inner subscription is unsubscribed, so no destination
-    // file is ever created.
-    const seedFiles: Record<string, string> = {}
-    for (let index = 0; index < 8; index += 1) {
-      seedFiles[`/cancel-src/file${index}.txt`] =
-        "byte-".repeat(2000) + index
-    }
-    vol.fromJSON(seedFiles)
-
-    const subscription = copyFiles({
-      destinationPath: "/cancel-dst",
-      sourcePath: "/cancel-src",
-    }).subscribe()
-    subscription.unsubscribe()
-
-    // Allow any in-flight async work + the unlink-on-abort cleanup
-    // to run before we assert.
-    await new Promise<void>((resolve) =>
-      setTimeout(resolve, 50),
-    )
-
-    // No destination files should be present — either nothing started
-    // (the more common timing under memfs), or anything that did start
-    // was unlinked on abort. Both outcomes are equivalent for the
-    // contract: cancel must not leave half-written files behind.
-    for (let index = 0; index < 8; index += 1) {
-      expect(
-        vol.existsSync(`/cancel-dst/file${index}.txt`),
-      ).toBe(false)
-    }
+  beforeEach(() => {
+    vol.reset()
   })
 
-  test("unsubscribing before the first file emission leaves no destination files", async () => {
-    // Subscribe + unsubscribe synchronously: nothing has copied yet,
-    // and crucially nothing should be left over from a half-open
-    // write stream either.
-    vol.fromJSON({
-      "/sync-src/a.txt": "alpha",
-      "/sync-src/b.txt": "beta",
+  describe("basic copy (existing behaviour)", () => {
+    test("synchronous unsubscribe aborts the AbortController so per-file copies are not started", async () => {
+      const seedFiles: Record<string, string> = {}
+      for (let index = 0; index < 8; index += 1) {
+        seedFiles[`/cancel-src/file${index}.txt`] =
+          "byte-".repeat(2000) + index
+      }
+      vol.fromJSON(seedFiles)
+
+      const subscription = copyFiles({
+        destinationPath: "/cancel-dst",
+        sourcePath: "/cancel-src",
+      }).subscribe()
+      subscription.unsubscribe()
+
+      await new Promise<void>((resolve) =>
+        setTimeout(resolve, 50),
+      )
+
+      for (let index = 0; index < 8; index += 1) {
+        expect(
+          vol.existsSync(`/cancel-dst/file${index}.txt`),
+        ).toBe(false)
+      }
     })
 
-    const subscription = copyFiles({
-      destinationPath: "/sync-dst",
-      sourcePath: "/sync-src",
-    }).subscribe()
-    subscription.unsubscribe()
+    test("unsubscribing before the first file emission leaves no destination files", async () => {
+      vol.fromJSON({
+        "/sync-src/a.txt": "alpha",
+        "/sync-src/b.txt": "beta",
+      })
 
-    await new Promise<void>((resolve) =>
-      setTimeout(resolve, 50),
-    )
+      const subscription = copyFiles({
+        destinationPath: "/sync-dst",
+        sourcePath: "/sync-src",
+      }).subscribe()
+      subscription.unsubscribe()
 
-    const isFileAPresent = vol.existsSync("/sync-dst/a.txt")
-    const isFileBPresent = vol.existsSync("/sync-dst/b.txt")
-    expect(isFileAPresent).toBe(false)
-    expect(isFileBPresent).toBe(false)
+      await new Promise<void>((resolve) =>
+        setTimeout(resolve, 50),
+      )
+
+      expect(vol.existsSync("/sync-dst/a.txt")).toBe(false)
+      expect(vol.existsSync("/sync-dst/b.txt")).toBe(false)
+    })
+
+    test("emits one { source, destination } record per file copied", async () => {
+      vol.fromJSON({
+        "/src/ep01.mkv": "data1",
+        "/src/ep02.mkv": "data2",
+      })
+
+      const results = await firstValueFrom(
+        copyFiles({
+          sourcePath: "/src",
+          destinationPath: "/dst",
+        }).pipe(toArray()),
+      )
+
+      expect(
+        results.sort((recordA, recordB) =>
+          recordA.source.localeCompare(recordB.source),
+        ),
+      ).toEqual([
+        {
+          source: join("/src", "ep01.mkv"),
+          destination: join("/dst", "ep01.mkv"),
+        },
+        {
+          source: join("/src", "ep02.mkv"),
+          destination: join("/dst", "ep02.mkv"),
+        },
+      ])
+    })
+  })
+
+  describe("fileFilterRegex", () => {
+    test("copies only files whose names match the regex", async () => {
+      vol.fromJSON({
+        "/src/[GroupName] Show - 01 [1080p].mkv": "ep1",
+        "/src/[GroupName] Show - 02 [1080p].mkv": "ep2",
+        "/src/readme.txt": "notes",
+      })
+
+      const results = await firstValueFrom(
+        copyFiles({
+          sourcePath: "/src",
+          destinationPath: "/dst",
+          fileFilterRegex: "\\.mkv$",
+        }).pipe(toArray()),
+      )
+
+      expect(results).toHaveLength(2)
+      expect(vol.existsSync("/dst/readme.txt")).toBe(false)
+      expect(
+        vol.existsSync(
+          "/dst/[GroupName] Show - 01 [1080p].mkv",
+        ),
+      ).toBe(true)
+    })
+
+    test("emits nothing when no files match the regex", async () => {
+      vol.fromJSON({
+        "/src/show.txt": "notes",
+      })
+
+      const results = await firstValueFrom(
+        copyFiles({
+          sourcePath: "/src",
+          destinationPath: "/dst",
+          fileFilterRegex: "\\.mkv$",
+        }).pipe(toArray()),
+      )
+
+      expect(results).toHaveLength(0)
+    })
+  })
+
+  describe("renameRegex", () => {
+    test("applies pattern+replacement to the destination filename", async () => {
+      vol.fromJSON({
+        "/src/[Group] My Show - 01 [BD 1080p].mkv": "ep1",
+        "/src/[Group] My Show - 02 [BD 1080p].mkv": "ep2",
+      })
+
+      const results = await firstValueFrom(
+        copyFiles({
+          sourcePath: "/src",
+          destinationPath: "/dst",
+          renameRegex: {
+            pattern: "^\\[.*?\\] (.+?) \\[.*?\\](\\.\\w+)$",
+            replacement: "$1$2",
+          },
+        }).pipe(toArray()),
+      )
+
+      expect(
+        results.sort((recordA, recordB) =>
+          recordA.destination.localeCompare(
+            recordB.destination,
+          ),
+        ),
+      ).toEqual([
+        {
+          source: join(
+            "/src",
+            "[Group] My Show - 01 [BD 1080p].mkv",
+          ),
+          destination: join("/dst", "My Show - 01.mkv"),
+        },
+        {
+          source: join(
+            "/src",
+            "[Group] My Show - 02 [BD 1080p].mkv",
+          ),
+          destination: join("/dst", "My Show - 02.mkv"),
+        },
+      ])
+      expect(vol.existsSync("/dst/My Show - 01.mkv")).toBe(
+        true,
+      )
+      expect(vol.existsSync("/dst/My Show - 02.mkv")).toBe(
+        true,
+      )
+    })
+  })
+
+  describe("includeFolders", () => {
+    test("copies matching folders as units when includeFolders is true", async () => {
+      vol.fromJSON({
+        "/src/My Show S01/ep01.mkv": "ep1",
+        "/src/My Show S01/ep02.mkv": "ep2",
+        "/src/My Show S02/ep01.mkv": "ep3",
+        "/src/unrelated-file.txt": "skip",
+      })
+
+      const results = await firstValueFrom(
+        copyFiles({
+          sourcePath: "/src",
+          destinationPath: "/dst",
+          folderFilterRegex: "^My Show S\\d+$",
+          isIncludingFolders: true,
+        }).pipe(toArray()),
+      )
+
+      expect(results).toHaveLength(2)
+      expect(
+        vol.existsSync("/dst/My Show S01/ep01.mkv"),
+      ).toBe(true)
+      expect(
+        vol.existsSync("/dst/My Show S02/ep01.mkv"),
+      ).toBe(true)
+      expect(
+        vol.existsSync("/dst/unrelated-file.txt"),
+      ).toBe(false)
+    })
+
+    test("renames folders at destination when renameRegex provided", async () => {
+      vol.fromJSON({
+        "/src/[Group] My Show S01 [BD]/ep01.mkv": "ep1",
+      })
+
+      const results = await firstValueFrom(
+        copyFiles({
+          sourcePath: "/src",
+          destinationPath: "/dst",
+          folderFilterRegex: "\\[Group\\]",
+          isIncludingFolders: true,
+          renameRegex: {
+            pattern: "^\\[.*?\\] (.+?) \\[.*?\\]$",
+            replacement: "$1",
+          },
+        }).pipe(toArray()),
+      )
+
+      expect(results).toHaveLength(1)
+      expect(results[0].destination).toBe(
+        join("/dst", "My Show S01"),
+      )
+      expect(
+        vol.existsSync("/dst/My Show S01/ep01.mkv"),
+      ).toBe(true)
+    })
+
+    test("copies both files and folders when both regexes and includeFolders are set", async () => {
+      vol.fromJSON({
+        "/src/ShowFolder/ep01.mkv": "ep1",
+        "/src/loose.mkv": "loose",
+        "/src/ignore.txt": "skip",
+      })
+
+      await firstValueFrom(
+        copyFiles({
+          sourcePath: "/src",
+          destinationPath: "/dst",
+          fileFilterRegex: "\\.mkv$",
+          folderFilterRegex: "ShowFolder",
+          isIncludingFolders: true,
+        }).pipe(toArray()),
+      )
+
+      expect(
+        vol.existsSync("/dst/ShowFolder/ep01.mkv"),
+      ).toBe(true)
+      expect(vol.existsSync("/dst/loose.mkv")).toBe(true)
+      expect(vol.existsSync("/dst/ignore.txt")).toBe(false)
+    })
   })
 })
