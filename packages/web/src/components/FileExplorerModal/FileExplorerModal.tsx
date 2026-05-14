@@ -524,7 +524,7 @@ export const FileExplorerModal = () => {
                 onClick={handleConfirmPick}
                 className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded font-medium"
               >
-                ðŸ“Œ Use this folder
+                📌 Use this folder
               </button>
             )}
 
@@ -631,10 +631,10 @@ export const FileExplorerModal = () => {
                           entry.isFile &&
                           isVideoFile(entry.name)
                         const icon = entry.isDirectory
-                          ? "ðŸ“"
+                          ? "📁"
                           : isVideo
-                            ? "ðŸŽ¬"
-                            : "ðŸ“„"
+                            ? "🎬"
+                            : "📄"
 
                         return (
                           <tr
@@ -725,7 +725,7 @@ export const FileExplorerModal = () => {
                                     )
                                   }
                                 >
-                                  ðŸ“‹
+                                  📋
                                 </button>
                               ) : (
                                 <span className="text-slate-700">

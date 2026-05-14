@@ -428,7 +428,7 @@ export const PathPicker = () => {
                 onClick={() => handleSelectEntry(entry)}
               >
                 <span className="shrink-0 text-slate-400">
-                  ðŸ“
+                  📁
                 </span>
                 <span className="font-mono text-xs flex-1 min-w-0 truncate">
                   {entry.name}
