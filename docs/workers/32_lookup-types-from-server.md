@@ -1,5 +1,7 @@
 # Worker 32 — lookup-types-from-server
 
+**Status:** ✅ **done** — shipped in PR #104 (commit `9f5339cc`, merged into `feat/mux-magic-revamp`). See [Outcome](#outcome) below for what landed vs. what this prompt originally specified.
+
 **Model:** Sonnet · **Thinking:** ON · **Effort:** Medium
 **Branch:** `worker/32-lookup-types-from-server`
 **Worktree:** `.claude/worktrees/32_lookup-types-from-server/`
@@ -207,18 +209,18 @@ If any literal is missing a server-required field, fix the literal — don't wid
 
 ## Verification checklist
 
-- [ ] Worktree created
-- [ ] Manifest row → `in-progress`
-- [ ] Failing structural-type test first
-- [ ] Server exports `LookupSearchResult`, `LookupType`, `LookupVariant`, `LookupGroup`, `LookupRelease`
-- [ ] Web `LookupModal/types.ts` no longer declares duplicate shapes
-- [ ] `eslint-disable-next-line no-restricted-syntax` and its trailing comment removed from `LookupModal/types.ts`
-- [ ] `LookupState` and `LookupStage` remain web-only (state-machine shapes — do NOT move)
-- [ ] All `LookupSearchResult` literals across the web typecheck against the new union without `as` casts
-- [ ] Webtypes ESLint guard reports zero violations on the changed files
-- [ ] Standard pre-merge gate clean (`yarn lint → typecheck → test → e2e → lint`)
-- [ ] PR opened against `feat/mux-magic-revamp`
-- [ ] Manifest row → `done`
+- [x] Worktree created
+- [x] Manifest row → `in-progress`
+- [x] Failing structural-type test first
+- [x] Server exports `LookupSearchResult`, `LookupType`, `LookupRelease` *(see [Outcome](#outcome) for `LookupVariant`/`LookupGroup` deviation)*
+- [x] Web `LookupModal/types.ts` no longer declares duplicate shapes
+- [x] `eslint-disable-next-line no-restricted-syntax` and its trailing comment removed from `LookupModal/types.ts`
+- [x] `LookupState` and `LookupStage` remain web-only (state-machine shapes — do NOT move)
+- [x] All `LookupSearchResult` literals across the web typecheck against the new union without `as` casts
+- [x] Webtypes ESLint guard reports zero violations on the changed files
+- [x] Standard pre-merge gate clean (`yarn lint → typecheck → test → e2e → lint`)
+- [x] PR opened against `feat/mux-magic-revamp` (#104)
+- [x] Manifest row → `done`
 
 ## Out of scope
 
@@ -230,3 +232,15 @@ If any literal is missing a server-required field, fix the literal — don't wid
 ## Why this worker exists
 
 Worker 06 installed the webtypes ESLint guard to catch *exactly* this drift class: web declaring shapes the server is responsible for. The recent lookup overhaul (commit `863d4a87`) added `nameJapanese` to both server schemas (`searchAnidbResultSchema`) and the web's `LookupSearchResult`, in two places, by hand — that's the canonical "drift waiting to happen" pattern the guard prevents. This worker cleans up the one place we knowingly bypassed the guard, eliminating the audit-trail comment and the disable.
+
+## Outcome
+
+Shipped in PR #104 (`9f5339cc feat(worker-32): LookupModal types canonical from @mux-magic/server`) merged into `feat/mux-magic-revamp`.
+
+**Final state matches the original plan with one deliberate scope adjustment:**
+
+- ✅ `LookupSearchResult`, `LookupType`, `LookupRelease` promoted to canonical server exports in [packages/server/src/api/types.ts](../../packages/server/src/api/types.ts).
+- ✅ [packages/web/src/components/LookupModal/types.ts](../../packages/web/src/components/LookupModal/types.ts) re-exports those three from `@mux-magic/server/api-types`; the `eslint-disable-next-line no-restricted-syntax` is gone.
+- ✅ `LookupState` and `LookupStage` stayed web-only as planned.
+
+**Deviation — `LookupVariant` and `LookupGroup` stayed web-only.** The original prompt grouped these with the canonical data shapes, but during implementation they were correctly identified as a **web-side projection**: `groupDvdCompareResults()` in `LookupSearchStage` synthesizes them by collapsing flat `SearchDvdCompareResult[]` into `baseTitle + year` groups. The server never emits this shape, so moving them would have invented a contract the server doesn't have. The file header on [LookupModal/types.ts:27-29](../../packages/web/src/components/LookupModal/types.ts#L27-L29) documents the rule: "Web-only synthesis: … The server never emits this shape — it stays here." This is the right call — the line between *wire shapes* (server-owned) and *derived view shapes* (web-owned) is what worker 06's guard is ultimately about, and worker 32 ended up making that line sharper than the prompt did.

@@ -185,6 +185,8 @@ No intermediate master merges.
         │   20 cli-package-extract     Opus/H    │       │
         │        ▼                               │       │
         │   21 observables-shared-split          │       │
+        │   32 lookup-types-from-server (parallel│       │
+        │      — depends on 01, 06 only)         │       │
         └─────────────────┬──────────────────────┘       │
                           │                              │
                           ▼                              │
@@ -221,6 +223,8 @@ No intermediate master merges.
         │     2d asset-fallback-to-cli           │       │
         │     3b extract-subs multi-lang+type    │       │
         │     3c bcp47-language-variants         │       │
+        │     3e gallery-downloader-task-pools   │       │
+        │     40 file-organization-commands      │       │
         └─────────────────┬──────────────────────┘       │
                           │                              │
                           ▼                              │
