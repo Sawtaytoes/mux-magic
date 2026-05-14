@@ -1,6 +1,6 @@
 # Worker Manifest — Mux-Magic Huge Revamp
 
-This is the live tracking document for all workers in the Mux-Magic huge revamp. The full plan lives at [`C:\Users\satur\.claude\plans\claude-huge-revamp-idempotent-otter.md`](../../../../C:/Users/satur/.claude/plans/claude-huge-revamp-idempotent-otter.md) (local path on user's machine).
+This is the live tracking document for all workers in the Mux-Magic huge revamp. The full plan lives at [PLAN.md](PLAN.md).
 
 ## How to use this file
 
