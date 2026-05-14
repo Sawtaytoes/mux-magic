@@ -1,14 +1,13 @@
-import type {
-  Argv,
-  CommandBuilder,
-  CommandModule,
-} from "yargs"
-
 import {
   type NameSpecialFeaturesResult,
   nameSpecialFeatures,
 } from "@mux-magic/server/src/app-commands/nameSpecialFeatures.js"
 import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import type {
+  Argv,
+  CommandBuilder,
+  CommandModule,
+} from "yargs"
 
 type InferArgvOptions<T> =
   T extends Argv<infer U> ? U : never

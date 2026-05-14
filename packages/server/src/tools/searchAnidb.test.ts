@@ -98,7 +98,9 @@ describe(parseAnimeIndex.name, () => {
     })
     const index = parseAnimeIndex(synthetic)
 
-    const reZero = index.find((entry) => entry.aid === 11770)
+    const reZero = index.find(
+      (entry) => entry.aid === 11770,
+    )
     expect(reZero?.name).toBe(
       "Re:Zero - Starting Life in Another World",
     )
@@ -106,7 +108,9 @@ describe(parseAnimeIndex.name, () => {
       "Re:Zero kara Hajimeru Isekai Seikatsu",
     )
 
-    const cowboyBebop = index.find((entry) => entry.aid === 23)
+    const cowboyBebop = index.find(
+      (entry) => entry.aid === 23,
+    )
     expect(cowboyBebop?.name).toBe("Cowboy Bebop")
     // No useful subtitle — primary already matches what users
     // recognize. Don't print the same thing twice.

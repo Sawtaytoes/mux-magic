@@ -3,18 +3,17 @@
 // warning) so existing scripts don't break. Remove once those scripts
 // have migrated.
 
-import type {
-  Argv,
-  CommandBuilder,
-  CommandModule,
-} from "yargs"
-
 import { copyOutSubtitles } from "@mux-magic/server/src/app-commands/copyOutSubtitles.js"
 import {
   type Iso6392LanguageCode,
   iso6392LanguageCodes,
 } from "@mux-magic/server/src/tools/iso6392LanguageCodes.js"
 import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import type {
+  Argv,
+  CommandBuilder,
+  CommandModule,
+} from "yargs"
 
 type InferArgvOptions<T> =
   T extends Argv<infer U> ? U : never

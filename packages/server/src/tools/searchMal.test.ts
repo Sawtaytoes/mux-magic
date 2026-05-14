@@ -97,8 +97,9 @@ describe(mapJikanSearchResults.name, () => {
 
   test("leaves year undefined when neither prop.year nor parseable from is present", () => {
     expect(
-      mapJikanSearchResults([baseRow({ aired: undefined })])[0]
-        .year,
+      mapJikanSearchResults([
+        baseRow({ aired: undefined }),
+      ])[0].year,
     ).toBeUndefined()
   })
 
@@ -138,7 +139,9 @@ describe(mapJikanSearchResults.name, () => {
     expect(
       mapJikanSearchResults([
         baseRow({
-          images: { jpg: { image_url: "https://cdn/img.jpg" } },
+          images: {
+            jpg: { image_url: "https://cdn/img.jpg" },
+          },
         }),
       ])[0].imageUrl,
     ).toBe("https://cdn/img.jpg")

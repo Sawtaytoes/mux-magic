@@ -1,14 +1,14 @@
-import type {
-  Argv,
-  CommandBuilder,
-  CommandModule,
-} from "yargs"
 import { replaceTracks } from "@mux-magic/server/src/app-commands/replaceTracks.js"
 import {
   type Iso6392LanguageCode,
   iso6392LanguageCodes,
 } from "@mux-magic/server/src/tools/iso6392LanguageCodes.js"
 import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import type {
+  Argv,
+  CommandBuilder,
+  CommandModule,
+} from "yargs"
 
 type InferArgvOptions<T> =
   T extends Argv<infer U> ? U : never

@@ -1,12 +1,11 @@
+import { deleteCopiedOriginals } from "@mux-magic/server/src/app-commands/deleteCopiedOriginals.js"
+import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
 import { toArray } from "rxjs"
 import type {
   Argv,
   CommandBuilder,
   CommandModule,
 } from "yargs"
-
-import { deleteCopiedOriginals } from "@mux-magic/server/src/app-commands/deleteCopiedOriginals.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
 
 type InferArgvOptions<T> =
   T extends Argv<infer U> ? U : never

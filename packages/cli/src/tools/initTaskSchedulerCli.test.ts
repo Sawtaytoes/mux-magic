@@ -1,15 +1,14 @@
 import {
+  __resetTaskSchedulerForTests,
+  initTaskScheduler,
+} from "@mux-magic/server/src/tools/taskScheduler.js"
+import {
   beforeEach,
   describe,
   expect,
   test,
   vi,
 } from "vitest"
-
-import {
-  __resetTaskSchedulerForTests,
-  initTaskScheduler,
-} from "@mux-magic/server/src/tools/taskScheduler.js"
 
 describe("initTaskSchedulerCli", () => {
   beforeEach(() => {

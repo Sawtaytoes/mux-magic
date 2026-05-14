@@ -14,14 +14,11 @@ const cliEntry = resolve(packageRoot, "src/cli.ts")
 
 describe("@mux-magic/cli --help", () => {
   test("exits 0 and prints the registered command names", () => {
-    const result = spawnSync(
-      `tsx "${cliEntry}" --help`,
-      {
-        cwd: packageRoot,
-        encoding: "utf8",
-        shell: true,
-      },
-    )
+    const result = spawnSync(`tsx "${cliEntry}" --help`, {
+      cwd: packageRoot,
+      encoding: "utf8",
+      shell: true,
+    })
 
     expect(result.status).toBe(0)
 

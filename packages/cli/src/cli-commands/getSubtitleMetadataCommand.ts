@@ -1,10 +1,9 @@
+import { getSubtitleMetadata } from "@mux-magic/server/src/app-commands/getSubtitleMetadata.js"
 import type {
   Argv,
   CommandBuilder,
   CommandModule,
 } from "yargs"
-
-import { getSubtitleMetadata } from "@mux-magic/server/src/app-commands/getSubtitleMetadata.js"
 
 type InferArgvOptions<T> =
   T extends Argv<infer U> ? U : never

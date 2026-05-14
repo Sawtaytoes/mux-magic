@@ -69,9 +69,7 @@ describe("LanguageCodeField — selected tag rendering", () => {
       params: { audioLanguage: "jpn" },
     })
     renderField(step, field)
-    expect(
-      screen.getByText("Japanese"),
-    ).toBeInTheDocument()
+    expect(screen.getByText("Japanese")).toBeInTheDocument()
   })
 
   test("tag shows the language code", () => {

@@ -1,11 +1,10 @@
+import { moveFiles } from "@mux-magic/server/src/app-commands/moveFiles.js"
+import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
 import type {
   Argv,
   CommandBuilder,
   CommandModule,
 } from "yargs"
-
-import { moveFiles } from "@mux-magic/server/src/app-commands/moveFiles.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
 
 type InferArgvOptions<T> =
   T extends Argv<infer U> ? U : never

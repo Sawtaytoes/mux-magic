@@ -1,13 +1,12 @@
+import { nameAnimeEpisodesAniDB } from "@mux-magic/server/src/app-commands/nameAnimeEpisodesAniDB.js"
+import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import type { AnidbEpisodeCategory } from "@mux-magic/server/src/types/anidb.js"
 import { toArray } from "rxjs"
 import type {
   Argv,
   CommandBuilder,
   CommandModule,
 } from "yargs"
-
-import { nameAnimeEpisodesAniDB } from "@mux-magic/server/src/app-commands/nameAnimeEpisodesAniDB.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
-import type { AnidbEpisodeCategory } from "@mux-magic/server/src/types/anidb.js"
 
 type InferArgvOptions<T> =
   T extends Argv<infer U> ? U : never

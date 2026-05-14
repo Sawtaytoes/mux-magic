@@ -1,13 +1,12 @@
 import { readFileSync } from "node:fs"
+import { modifySubtitleMetadata } from "@mux-magic/server/src/app-commands/modifySubtitleMetadata.js"
+import type { AssModificationRule } from "@mux-magic/server/src/tools/assTypes.js"
+import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
 import type {
   Argv,
   CommandBuilder,
   CommandModule,
 } from "yargs"
-
-import { modifySubtitleMetadata } from "@mux-magic/server/src/app-commands/modifySubtitleMetadata.js"
-import type { AssModificationRule } from "@mux-magic/server/src/tools/assTypes.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
 
 type InferArgvOptions<T> =
   T extends Argv<infer U> ? U : never
