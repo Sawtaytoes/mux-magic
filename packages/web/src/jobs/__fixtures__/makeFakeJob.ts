@@ -20,5 +20,6 @@ export const makeFakeJob = (
   results: [],
   startedAt: null,
   stepId: null,
+  threadCountClaim: null,
   ...overrides,
 })

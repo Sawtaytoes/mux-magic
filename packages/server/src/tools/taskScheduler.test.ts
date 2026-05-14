@@ -500,8 +500,14 @@ describe("per-job quota — runTask with explicit jobId", () => {
     const runningA = { count: 0 }
     const completersA: Array<() => void> = []
 
-    runTask(makeWork(runningA, completersA), "job-a").subscribe()
-    runTask(makeWork(runningA, completersA), "job-a").subscribe()
+    runTask(
+      makeWork(runningA, completersA),
+      "job-a",
+    ).subscribe()
+    runTask(
+      makeWork(runningA, completersA),
+      "job-a",
+    ).subscribe()
 
     expect(runningA.count).toBe(1)
     expect(completersA.length).toBe(1)
@@ -526,17 +532,33 @@ describe("per-job quota — runTask with explicit jobId", () => {
     const completersA: Array<() => void> = []
     const completersB: Array<() => void> = []
 
-    runTask(makeWork(runningA, completersA), "job-a").subscribe()
-    runTask(makeWork(runningA, completersA), "job-a").subscribe()
-    runTask(makeWork(runningB, completersB), "job-b").subscribe()
-    runTask(makeWork(runningB, completersB), "job-b").subscribe()
+    runTask(
+      makeWork(runningA, completersA),
+      "job-a",
+    ).subscribe()
+    runTask(
+      makeWork(runningA, completersA),
+      "job-a",
+    ).subscribe()
+    runTask(
+      makeWork(runningB, completersB),
+      "job-b",
+    ).subscribe()
+    runTask(
+      makeWork(runningB, completersB),
+      "job-b",
+    ).subscribe()
 
     // job-a capped at 1; job-b can run 2 (both fit in global pool)
     expect(runningA.count).toBe(1)
     expect(runningB.count).toBe(2)
 
-    completersA.forEach((completer) => completer())
-    completersB.forEach((completer) => completer())
+    completersA.forEach((completer) => {
+      completer()
+    })
+    completersB.forEach((completer) => {
+      completer()
+    })
 
     unregisterJobClaim("job-a")
     unregisterJobClaim("job-b")
@@ -556,12 +578,18 @@ describe("per-job quota — runTask with explicit jobId", () => {
     const completersB: Array<() => void> = []
 
     // 4 tasks for A + 8 for B
-    Array.from({ length: 4 }).forEach(() =>
-      runTask(makeWork(runningA, completersA), "job-a").subscribe(),
-    )
-    Array.from({ length: 8 }).forEach(() =>
-      runTask(makeWork(runningB, completersB), "job-b").subscribe(),
-    )
+    Array.from({ length: 4 }).forEach(() => {
+      runTask(
+        makeWork(runningA, completersA),
+        "job-a",
+      ).subscribe()
+    })
+    Array.from({ length: 8 }).forEach(() => {
+      runTask(
+        makeWork(runningB, completersB),
+        "job-b",
+      ).subscribe()
+    })
 
     // A fills its claim (4); B gets the remaining 4 global slots.
     expect(runningA.count).toBe(4)
@@ -581,7 +609,9 @@ describe("per-job quota — runTask with explicit jobId", () => {
 
     expect(runningA.count).toBe(0)
 
-    completersB.forEach((completer) => completer())
+    completersB.forEach((completer) => {
+      completer()
+    })
 
     unregisterJobClaim("job-a")
     unregisterJobClaim("job-b")
