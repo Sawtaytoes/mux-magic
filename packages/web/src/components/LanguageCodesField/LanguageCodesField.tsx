@@ -1,36 +1,12 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import type { CommandField } from "../../commands/types"
-import {
-  ISO_639_2_LANGUAGES,
-  ISO_639_2_NAME_BY_CODE,
-} from "../../data/iso639-2"
+import { ISO_639_2_NAME_BY_CODE } from "../../data/iso639-2"
+import { buildOrderedLanguageOptions } from "../../data/orderLanguageOptions"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { LanguageDropdown } from "../LanguageDropdown/LanguageDropdown"
 import { TagInputBase } from "../TagInputBase/TagInputBase"
-
-const ENG_PINNED = "eng"
-const MAX_DROPDOWN_OPTIONS = 50
-
-const buildOrderedOptions = (filterText: string) => {
-  const lower = filterText.toLowerCase()
-  const matches = lower
-    ? ISO_639_2_LANGUAGES.filter(
-        ({ code, name }) =>
-          code.includes(lower) ||
-          name.toLowerCase().includes(lower),
-      )
-    : ISO_639_2_LANGUAGES
-
-  const engEntry = matches.find(
-    ({ code }) => code === ENG_PINNED,
-  )
-  const rest = matches.filter(
-    ({ code }) => code !== ENG_PINNED,
-  )
-  const ordered = engEntry ? [engEntry, ...rest] : rest
-  return ordered.slice(0, MAX_DROPDOWN_OPTIONS)
-}
 
 type LanguageCodesFieldProps = {
   step: Step
@@ -44,6 +20,7 @@ export const LanguageCodesField = ({
   const { setParam } = useBuilderActions()
   const [filterText, setFilterText] = useState("")
   const [isOpen, setIsOpen] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const selected = Array.isArray(step.params[field.name])
     ? (step.params[field.name] as string[])
@@ -67,9 +44,10 @@ export const LanguageCodesField = ({
     setIsOpen(false)
   }
 
-  const visibleOptions = buildOrderedOptions(
+  const visibleOptions = buildOrderedLanguageOptions({
     filterText,
-  ).filter(({ code }) => !selected.includes(code))
+    excluded: selected,
+  })
 
   const tags = selected.map((code) => ({
     key: code,
@@ -90,6 +68,7 @@ export const LanguageCodesField = ({
       <TagInputBase
         tags={tags}
         onRemove={removeCode}
+        inputRef={inputRef}
         inputProps={{
           role: "combobox",
           "aria-expanded": isOpen,
@@ -104,30 +83,13 @@ export const LanguageCodesField = ({
           onBlur: () =>
             setTimeout(() => setIsOpen(false), 150),
         }}
-      >
-        {isOpen && visibleOptions.length > 0 && (
-          <div
-            role="listbox"
-            className="absolute z-10 left-0 right-0 mt-1 bg-slate-800 border border-slate-600 rounded shadow-lg max-h-48 overflow-y-auto"
-          >
-            {visibleOptions.map(({ code, name }) => (
-              <div
-                key={code}
-                role="option"
-                aria-selected={false}
-                tabIndex={-1}
-                onMouseDown={() => addCode(code)}
-                className="flex flex-col px-2 py-1.5 cursor-pointer hover:bg-slate-700 text-slate-200"
-              >
-                <span className="text-xs">{name}</span>
-                <span className="font-mono text-slate-400 text-xs">
-                  {code}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </TagInputBase>
+      />
+      <LanguageDropdown
+        anchorRef={inputRef}
+        isOpen={isOpen}
+        options={visibleOptions}
+        onSelect={addCode}
+      />
     </div>
   )
 }

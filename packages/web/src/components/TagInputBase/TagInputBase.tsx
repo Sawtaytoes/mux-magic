@@ -8,6 +8,7 @@ type TagInputBaseProps = {
   tags: TagItem[]
   onRemove: (key: string) => void
   inputProps: React.InputHTMLAttributes<HTMLInputElement>
+  inputRef?: React.Ref<HTMLInputElement>
   children?: React.ReactNode
 }
 
@@ -15,6 +16,7 @@ export const TagInputBase = ({
   tags,
   onRemove,
   inputProps,
+  inputRef,
   children,
 }: TagInputBaseProps) => (
   <div className="flex flex-col gap-1">
@@ -41,6 +43,7 @@ export const TagInputBase = ({
     )}
     <div className="relative">
       <input
+        ref={inputRef}
         {...inputProps}
         className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
       />

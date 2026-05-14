@@ -24,22 +24,30 @@ const mockStep = (overrides?: Partial<Step>): Step => ({
   ...overrides,
 })
 
+const audioLanguageField =
+  FIXTURE_COMMANDS_BUNDLE_B.changeTrackLanguages.fields[1]
+
 export const Empty: Story = {
   args: {
     step: mockStep(),
-    field:
-      FIXTURE_COMMANDS_BUNDLE_B.changeTrackLanguages
-        .fields[1],
+    field: audioLanguageField,
   },
 }
 
-export const WithValue: Story = {
+export const WithSelection: Story = {
   args: {
     step: mockStep({
       params: { audioLanguage: "jpn" },
     }),
-    field:
-      FIXTURE_COMMANDS_BUNDLE_B.changeTrackLanguages
-        .fields[1],
+    field: audioLanguageField,
+  },
+}
+
+export const WithEnglishSelection: Story = {
+  args: {
+    step: mockStep({
+      params: { audioLanguage: "eng" },
+    }),
+    field: audioLanguageField,
   },
 }
