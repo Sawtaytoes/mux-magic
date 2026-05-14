@@ -124,13 +124,48 @@ export const BuilderPage = () => {
       timeoutId = setTimeout(writeUrl, 250)
     }
 
+    // Flush any pending debounced write synchronously. Without this, a
+    // refresh / tab close within the 250ms debounce window loses the
+    // user's most recent edit (the param change made it into atoms but
+    // never reached the URL). Mirrors the legacy
+    // public/builder/js/sequence-editor.js flushScheduledUpdateUrl
+    // pattern that solved the same race for typed inputs.
+    //
+    // Why both events: beforeunload fires reliably on Chromium for
+    // refresh/close, but Firefox is increasingly stingy about it
+    // (especially when the page wasn't interacted with) and Safari often
+    // skips it on mobile entirely. pagehide fires consistently across
+    // all engines including bfcache restores, so we bind both. Either
+    // firing is safe — the second is a no-op because timeoutId is
+    // cleared after the first flush.
+    const flushPendingWrite = () => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+        writeUrl()
+      }
+    }
+
     const unsubSteps = store.sub(stepsAtom, scheduleWrite)
     const unsubPaths = store.sub(pathsAtom, scheduleWrite)
+    window.addEventListener(
+      "beforeunload",
+      flushPendingWrite,
+    )
+    window.addEventListener("pagehide", flushPendingWrite)
 
     return () => {
       if (timeoutId !== null) clearTimeout(timeoutId)
       unsubSteps()
       unsubPaths()
+      window.removeEventListener(
+        "beforeunload",
+        flushPendingWrite,
+      )
+      window.removeEventListener(
+        "pagehide",
+        flushPendingWrite,
+      )
     }
   }, [store])
 
