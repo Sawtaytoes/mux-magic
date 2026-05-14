@@ -24,7 +24,7 @@
 
 4. **TDD:** write a test asserting the in-browser story-tests can spin up successfully. Test must fail before fix lands.
 
-5. **Commit-and-push as you go.** Update your row in [docs/workers/README.md](README.md) at start (`in-progress`) and end (`done`).
+5. **Commit-and-push as you go.** Update your row in [docs/workers/MANIFEST.md](MANIFEST.md) at start (`in-progress`) and end (`done`).
 
 6. **Test rules:** no snapshot, no screenshot. Inline expected values.
 

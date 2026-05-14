@@ -53,7 +53,7 @@ and calls `serve()`.
 
 ## Sequence Runner DSL
 
-External API consumers should read the **Sequence Runner** section of [README.md](../../README.md) — that's the source of truth for how `paths`, `'@pathId'`, `linkedTo`/`output`, and the `/sequences/run` endpoint compose. The implementation lives in:
+External API consumers should read the **Sequence Runner** section of [MANIFEST.md](../../MANIFEST.md) — that's the source of truth for how `paths`, `'@pathId'`, `linkedTo`/`output`, and the `/sequences/run` endpoint compose. The implementation lives in:
 - [src/api/resolveSequenceParams.ts](../../packages/server/src/api/resolveSequenceParams.ts)
 - [src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts)
 - [src/api/routes/sequenceRoutes.ts](../../packages/server/src/api/routes/sequenceRoutes.ts)

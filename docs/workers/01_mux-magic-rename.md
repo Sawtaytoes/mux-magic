@@ -31,7 +31,7 @@ This is the **rebrand worker**. After it ships, the project is officially named 
 
 4. **TDD:** for a rename, the "test" is `yarn typecheck` + `yarn test` passing. If you discover broken behavior caused by a missed rename, write a test that catches the specific broken case before fixing.
 
-5. **Commit-and-push as you go.** Break the rename into logical chunks (see "Suggested commit order" below). Update your row in [docs/workers/README.md](README.md).
+5. **Commit-and-push as you go.** Break the rename into logical chunks (see "Suggested commit order" below). Update your row in [docs/workers/MANIFEST.md](MANIFEST.md).
 
 6. **Yarn only.** Never npm/npx.
 
@@ -110,7 +110,7 @@ Pattern files (likely many; use `Grep` for exact list):
 ### Files NOT to touch
 - [docs/archive/](../../docs/archive/) — historical records
 - [docs/react-migration-prompts/](../../docs/react-migration-prompts/) — historical worker prompts
-- [docs/w8-bug-fix-wave.md](../../docs/w8-bug-fix-wave.md) and [docs/workers/w8*.md](../../docs/workers/) (existing w8/w9 prompts) — historical
+- [docs/w8-bug-fix-wave.md](../_archive/w8-bug-fix-wave.md) and [docs/workers/w8*.md](../../docs/workers/) (existing w8/w9 prompts) — historical
 - `node_modules/`
 - Anything under `.claude/worktrees/` (other workers in flight)
 - Env var **names** — leave `MEDIA_TOOLS_API_URL` etc. unchanged unless explicitly asked

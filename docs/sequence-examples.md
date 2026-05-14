@@ -1,6 +1,6 @@
 # Sequence YAML — real-world examples
 
-Concrete sequence payloads taken from media-sync's production pipelines. Each example is a self-contained YAML document that you can paste into the Sequence Builder's **Load YAML** panel or POST to `/sequences/run` directly. The shape and rules are documented in [README.md → Sequence Runner](../README.md#sequence-runner--multi-step-pipelines-as-yaml); this file is the gallery of "what real callers actually run."
+Concrete sequence payloads taken from media-sync's production pipelines. Each example is a self-contained YAML document that you can paste into the Sequence Builder's **Load YAML** panel or POST to `/sequences/run` directly. The shape and rules are documented in [MANIFEST.md → Sequence Runner](../MANIFEST.md#sequence-runner--multi-step-pipelines-as-yaml); this file is the gallery of "what real callers actually run."
 
 ## Index
 
@@ -210,7 +210,7 @@ If `rules` is empty or missing, `modifySubtitleMetadata` logs a no-op and return
 
 ## Pointers
 
-- Full sequence runner reference: [README.md § Sequence Runner](../README.md#sequence-runner--multi-step-pipelines-as-yaml).
+- Full sequence runner reference: [MANIFEST.md § Sequence Runner](../MANIFEST.md#sequence-runner--multi-step-pipelines-as-yaml).
 - Companion runnable file for example 1: [`examples/process-anime-subtitles.yaml`](../examples/process-anime-subtitles.yaml) (includes a `curl` invocation in its top-of-file comment).
 - Parallel-group example: [`examples/parallel-extract-and-info.yaml`](../examples/parallel-extract-and-info.yaml) — demonstrates `kind: group` + `isParallel: true`.
 - Command catalogue: `GET /doc` on a running server returns the OpenAPI spec, which lists every command's request schema and any named outputs (used by `output: <name>` references).

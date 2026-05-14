@@ -22,7 +22,7 @@
 
 3. **Pre-push gate:** `yarn lint → yarn typecheck → yarn test → (e2e if you touched runtime code) → yarn lint`.
 
-4. **Commit-and-push as you go.** Update your row in [docs/workers/README.md](README.md) at start (`in-progress`) and end (`done`).
+4. **Commit-and-push as you go.** Update your row in [docs/workers/MANIFEST.md](MANIFEST.md) at start (`in-progress`) and end (`done`).
 
 5. **Yarn only.** Never npm/npx.
 
@@ -43,7 +43,7 @@ Update the npm publish workflow to publish the rebranded shared package as `@mux
 
 2. **Tag prefix** — currently `shared-v*.*.*`. This is package-agnostic; **leave it as-is**. Don't rename to `mux-magic-shared-v*.*.*` unless you have a specific reason and document it in your PR. Existing CI/scripts may key off the tag prefix.
 
-3. **Documentation of `NPM_TOKEN` setup** — there is no project-level `CONTRIBUTING.md` or `README.md`. Add a new section to [AGENTS.md](../../AGENTS.md) near the bottom titled **"## npm Publishing"** documenting:
+3. **Documentation of `NPM_TOKEN` setup** — there is no project-level `CONTRIBUTING.md` or `MANIFEST.md`. Add a new section to [AGENTS.md](../../AGENTS.md) near the bottom titled **"## npm Publishing"** documenting:
 
    ```markdown
    ## npm Publishing
@@ -70,7 +70,7 @@ Update the npm publish workflow to publish the rebranded shared package as `@mux
 
 This worker (`02`) is intentionally **paired with `01`** (which does the actual package rename). The order matters:
 
-- **Run `02` BEFORE `01`** (in the spawn ordering recommended by [docs/workers/README.md](README.md)). After `02` ships, `publish-shared.yml` references `@mux-magic/tools` but the actual package is still named `@media-tools/shared`. **Do not push a release tag during this gap** — it will fail. Worker `01` fills the gap by renaming the package in code.
+- **Run `02` BEFORE `01`** (in the spawn ordering recommended by [docs/workers/MANIFEST.md](MANIFEST.md)). After `02` ships, `publish-shared.yml` references `@mux-magic/tools` but the actual package is still named `@media-tools/shared`. **Do not push a release tag during this gap** — it will fail. Worker `01` fills the gap by renaming the package in code.
 - After `01` ships, the workflow + package + downstream all align.
 
 If the user pushes a `shared-v*.*.*` tag between `02` merging and `01` merging, the workflow will fail because `yarn workspace @mux-magic/tools` won't resolve. Document this risk in your PR description.

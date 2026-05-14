@@ -52,7 +52,7 @@ After each: run media-sync's own gate (`yarn lint`, `yarn typecheck`, `yarn test
 - `D:\Projects\Personal\media-sync\packages\*\package.json` (all 5)
 - `D:\Projects\Personal\media-sync\packages\sync-anime-and-manga\src\mediaToolsApi.ts` (will be removed entirely by worker `1c`; for now, rename `mediaToolsApi` → `muxMagicApi` to match the Mux-Magic rebrand; the file will be deleted in 1c)
 - All `.ts` / `.tsx` imports
-- `D:\Projects\Personal\media-sync\README.md`
+- `D:\Projects\Personal\media-sync\MANIFEST.md`
 - Cross-repo references
 
 ### Files NOT to touch
@@ -64,7 +64,7 @@ After each: run media-sync's own gate (`yarn lint`, `yarn typecheck`, `yarn test
 ## Verification checklist
 
 - [ ] Worktree created in media-sync repo
-- [ ] Manifest row → `in-progress` (in Mux-Magic's `docs/workers/README.md`)
+- [ ] Manifest row → `in-progress` (in Mux-Magic's `docs/workers/MANIFEST.md`)
 - [ ] All 6 suggested commits landed
 - [ ] No `media-sync` references remain (except branch/repo names)
 - [ ] No `@media-tools/*` references remain (renamed to `@mux-magic/*`)

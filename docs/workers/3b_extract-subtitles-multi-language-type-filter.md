@@ -191,7 +191,7 @@ Saved sequences using the old `subtitlesLanguage` field will fail zod validation
   - `--subtitlesLanguages eng --typesMode include --subtitleTypes sup` → only `.sup` lands.
   - Server logs show exactly one `mkvextract` spawn per file with all `trackId:path` pairs on one command line.
 - [ ] PR opened against `feat/mux-magic-revamp`; description calls out the breaking change to saved sequences using the old `subtitlesLanguage` field name.
-- [ ] [docs/workers/README.md](README.md) row updated to `done`.
+- [ ] [docs/workers/MANIFEST.md](MANIFEST.md) row updated to `done`.
 
 ## Files
 

@@ -166,7 +166,7 @@ for `<media-sync-renamed>` and other downstream tools).
 ## Worker addressing
 
 The Mux-Magic huge revamp uses sequential 2-hex worker IDs (`01`–`35`+) with the manifest
-table at [docs/workers/README.md](docs/workers/README.md). Each worker has a corresponding
+table at [docs/workers/MANIFEST.md](docs/workers/MANIFEST.md). Each worker has a corresponding
 prompt file at `docs/workers/<id>_<slug>.md`. Workers update their own row in the manifest
 when they start (`in-progress`) and finish (`done`); IDs are never renumbered.
 

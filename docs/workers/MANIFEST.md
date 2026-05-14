@@ -190,7 +190,7 @@ All originally-flagged questions now have decided answers. Captured here for tra
 
 ## Test coverage discipline (applies to every worker)
 
-Per [feedback_test_coverage_required.md](C:\Users\satur\.claude\projects\d--Projects-Personal-media-tools\memory\feedback_test_coverage_required.md):
+Per [feedback_test_coverage_required.md](C:/Users/satur/.claude/projects/d--Projects-Personal-media-tools/memory/feedback_test_coverage_required.md):
 
 - **Adding functionality:** write tests covering the new behavior.
 - **Updating functionality:** add or update tests to reflect the change.

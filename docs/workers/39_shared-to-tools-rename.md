@@ -24,7 +24,7 @@
 
 4. **TDD:** for a rename + selective move, the "tests" are `yarn typecheck` + `yarn test` passing across all workspaces. If a moved utility had unit tests in `packages/server/src/tools/`, the tests move with the file. If you discover a behavior break caused by the move, write a failing test that reproduces it before fixing.
 
-5. **Commit-and-push as you go.** Break the work into logical chunks (see "Suggested commit order"). Update your row in [docs/workers/README.md](README.md).
+5. **Commit-and-push as you go.** Break the work into logical chunks (see "Suggested commit order"). Update your row in [docs/workers/MANIFEST.md](MANIFEST.md).
 
 6. **Yarn only.** Never npm/npx.
 
@@ -177,7 +177,7 @@ Pattern files (likely many; use `Grep` for exact list):
 - [docs/archive/](../../docs/archive/) — historical records
 - [docs/react-migration-prompts/](../../docs/react-migration-prompts/) — historical worker prompts
 - [docs/workers/w8*.md](../../docs/workers/), [docs/workers/w9*.md](../../docs/workers/) — historical
-- [docs/w8-bug-fix-wave.md](../../docs/w8-bug-fix-wave.md) — historical
+- [docs/w8-bug-fix-wave.md](../_archive/w8-bug-fix-wave.md) — historical
 - `node_modules/`
 - Anything under `.claude/worktrees/` (other workers in flight)
 - API route paths, operationIds, schema field names — public API contract

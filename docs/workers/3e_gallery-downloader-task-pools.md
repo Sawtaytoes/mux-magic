@@ -18,7 +18,7 @@
 
 ## Universal Rules (TL;DR)
 
-Worktree-isolated in **both** repos (mux-magic for the `@mux-magic/tools` extension, gallery-downloader for adoption). Random PORT/WEB_PORT where applicable. Pre-merge gate per repo: `yarn lint → typecheck → test → e2e (where applicable) → lint`. TDD: failing test first. Tests must cover the change scope. Yarn only. See [AGENTS.md](../../AGENTS.md). Background context in [docs/PLAN.md §2](../PLAN.md).
+Worktree-isolated in **both** repos (mux-magic for the `@mux-magic/tools` extension, gallery-downloader for adoption). Random PORT/WEB_PORT where applicable. Pre-merge gate per repo: `yarn lint → typecheck → test → e2e (where applicable) → lint`. TDD: failing test first. Tests must cover the change scope. Yarn only. See [AGENTS.md](../../AGENTS.md). Background context in [docs/PLAN.md §2](./PLAN.md).
 
 ---
 

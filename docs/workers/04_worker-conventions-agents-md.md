@@ -45,7 +45,7 @@ This is the **dry-run validation worker** for the huge revamp plan. Your mission
 
 5. **TDD:** for this worker, there is no application-code test to write. The "test" is a successful e2e run with your own PORT/WEB_PORT, proving the protocol works.
 
-6. **Commit-and-push as you go.** Update your row in [docs/workers/README.md](README.md) at start (`in-progress`) and end (`done`).
+6. **Commit-and-push as you go.** Update your row in [docs/workers/MANIFEST.md](MANIFEST.md) at start (`in-progress`) and end (`done`).
 
 7. **Test rules:** no snapshot tests, no screenshot tests, no VRT.
 
@@ -133,7 +133,7 @@ Add a one-paragraph section near the bottom of `AGENTS.md`:
 ## Worker addressing
 
 The Mux-Magic huge revamp uses sequential 2-hex worker IDs (`01`–`35`+) with the manifest
-table at [docs/workers/README.md](docs/workers/README.md). Each worker has a corresponding
+table at [docs/workers/MANIFEST.md](docs/workers/MANIFEST.md). Each worker has a corresponding
 prompt file at `docs/workers/<id>_<slug>.md`. Workers update their own row in the manifest
 when they start (`in-progress`) and finish (`done`); IDs are never renumbered.
 ```
@@ -169,7 +169,7 @@ Tests that match change scope keep that out-of-pocket cost low.
 ## Files
 
 - [AGENTS.md](../../AGENTS.md) — the only file you edit
-- [docs/workers/README.md](README.md) — update your own row at start and end only
+- [docs/workers/MANIFEST.md](MANIFEST.md) — update your own row at start and end only
 
 ---
 

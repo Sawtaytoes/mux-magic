@@ -1,6 +1,6 @@
 ﻿# Mux-Magic Huge Revamp — Master Plan
 
-This is the full plan document for the Mux-Magic huge revamp. The live worker tracker is in [workers/README.md](workers/README.md); each worker has a dedicated prompt file in [workers/](workers/).
+This is the full plan document for the Mux-Magic huge revamp. The live worker tracker is in [workers/MANIFEST.md](MANIFEST.md); each worker has a dedicated prompt file in [workers/]().
 
 ## Context
 
@@ -21,7 +21,7 @@ Both products today are coupled: Gallery-Downloader (Media-Sync) calls Mux-Magic
 
 Goals:
 
-1. The orchestrator AI is a **prompt writer**, not the implementer. This plan produces ~54 worker prompt files in [workers/](workers/), each consumable by a fresh Claude Code session.
+1. The orchestrator AI is a **prompt writer**, not the implementer. This plan produces ~54 worker prompt files in [workers/](), each consumable by a fresh Claude Code session.
 2. **Sequential hex IDs** (`01_<slug>.md`, `02_<slug>.md`, … through `38_<slug>.md`) so they're visually ordered. Execution order driven by the Markdown manifest table, not the filename.
 3. **One long-lived feature branch** `feat/mux-magic-revamp` cut from master in each repo. Each worker = worktree on a sub-branch, PRs into `feat/mux-magic-revamp`. Master merges only at explicit phase boundaries.
 4. **Cross-repo workers** run in worktrees inside `D:\Projects\Personal\media-sync` and coordinate with the Mux-Magic rename + decoupling.
@@ -38,15 +38,15 @@ Out of scope: Docker deploy pipeline tuning, NAS migration, anything outside the
 
 Examples:
 
-- [workers/01_mux-magic-rename.md](workers/01_mux-magic-rename.md)
-- [workers/0a_json-field-readonly.md](workers/0a_json-field-readonly.md)
-- [workers/1c_gallery-downloader-decouple-and-ha-endpoint.md](workers/1c_gallery-downloader-decouple-and-ha-endpoint.md)
+- [workers/01_mux-magic-rename.md](01_mux-magic-rename.md)
+- [workers/0a_json-field-readonly.md](0a_json-field-readonly.md)
+- [workers/1c_gallery-downloader-decouple-and-ha-endpoint.md](1c_gallery-downloader-decouple-and-ha-endpoint.md)
 
 **ID assignment rule:** sequential 2-hex (256 possible codes; ~54 in use). When inserting a new worker mid-plan, use the next unused code and let the table column for `phase` carry the real ordering. Never renumber.
 
 ### Manifest
 
-The live tracking table is at [workers/README.md](workers/README.md). This file (PLAN.md) is the reference for context + architecture decisions + flow chart; the README is the scannable per-worker tracker.
+The live tracking table is at [workers/MANIFEST.md](MANIFEST.md). This file (PLAN.md) is the reference for context + architecture decisions + flow chart; the README is the scannable per-worker tracker.
 
 Status values: `planned` → `ready` → `in-progress` → `blocked` → `done`. Workers update their own row when they start and finish.
 
@@ -354,7 +354,7 @@ Every worker prompt file follows this structure. When a worker is spawned, paste
 3. **Pre-push gate (in order):** `yarn lint → yarn typecheck → yarn test`. Re-run `yarn lint` last if you changed typecheck/test/e2e code.
 4. **Pre-merge gate:** `yarn e2e` against your own PORT/WEB_PORT.
 5. **TDD:** failing test first, then implement.
-6. **Commit-and-push as you go.** Update your row in workers/README.md.
+6. **Commit-and-push as you go.** Update your row in workers/MANIFEST.md.
 7. **Test rules:** no snapshot tests, no screenshot tests, no VRT. Inline expected values.
 8. **Package manager:** `yarn` only.
 
@@ -376,7 +376,7 @@ Every worker prompt file follows this structure. When a worker is spawned, paste
 
 - [ ] Standard gates clean
 - [ ] PR opened against `feat/mux-magic-revamp`
-- [ ] workers/README.md row updated to `done`
+- [ ] workers/MANIFEST.md row updated to `done`
 ```
 
 ---
@@ -388,7 +388,7 @@ Worker `04` edits AGENTS.md:
 1. **Worker port/PID section (new)** — PowerShell + Bash snippets for setting random ports + capturing PID.
 2. **Pre-push gate order (updated)** — `lint → typecheck → test → e2e → final lint`.
 3. **Worker role section (updated)** — Primary vs. Worker.
-4. **Worker addressing pointer (new)** — short paragraph pointing to workers/README.md.
+4. **Worker addressing pointer (new)** — short paragraph pointing to workers/MANIFEST.md.
 5. **Test coverage discipline (new)** — tests must match change scope; e2e for cross-component flows.
 
 Same update happens in Gallery-Downloader's AGENTS.md as part of worker `1b` (rename) or `1c` (decouple).
@@ -420,8 +420,8 @@ Serial because 37 imports the new types/atoms from 36. Workers 11 and 35 also de
 | `packages/server/package.json` | `01`, `18`, `20`, `2d`, `39` (selective tool moves) | Same sequence |
 | `packages/web/package.json` | `01`, `18` | Sequence |
 | `packages/shared/` directory | `39` (renames → `packages/tools/`) | Single-owner |
-| AGENTS.md | `04` (full pass); progress lines go in workers/README.md | Single-owner |
-| workers/README.md | Every worker updates its own row only | Line-isolated; merge-safe |
+| AGENTS.md | `04` (full pass); progress lines go in workers/MANIFEST.md | Single-owner |
+| workers/MANIFEST.md | Every worker updates its own row only | Line-isolated; merge-safe |
 | NSF command files | Phase 3 workers — strictly sequential | Enforced by dependency chain |
 
 **Recommendation:** start Phase 1B fan-out workers only after Phase 1A's three serial workers complete.
@@ -468,6 +468,6 @@ Serial because 37 imports the new types/atoms from 36. Workers 11 and 35 also de
 
 - Docker deploy pipeline (worker `01` only touches package names in `.github/workflows/deploy.yml`).
 - NAS / storage migration.
-- Anything in [archive/](archive/).
+- Anything in [archive/](../archive).
 - Performance tuning beyond `copyFile` exception in worker `2c`.
 - Anything not in the source task doc.

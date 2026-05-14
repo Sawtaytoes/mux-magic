@@ -18,15 +18,15 @@ The established convention (see [37_edit-variables-modal-and-sidebar.md](37_edit
 8. `## Verification checklist` — concrete bullets ending with `Manifest row → done` and `PR opened`
 9. `## Out of scope` — explicit non-goals so the worker doesn't expand the PR
 
-The manifest row in `docs/workers/README.md` should already be set to `ready` once the prompt file lands.
+The manifest row in `docs/workers/MANIFEST.md` should already be set to `ready` once the prompt file lands.
 
 ## 2. Hard-won knowledge from merging Phase 1
 
 The merge of 16 Phase 1B PRs surfaced patterns the prompt-writer should bake into future prompts. Including these explicitly in each prompt avoids re-learning them mid-execution.
 
-### 2.1 The README.md manifest is a perpetual conflict surface
+### 2.1 The MANIFEST.md manifest is a perpetual conflict surface
 
-Every worker updates its own row in `docs/workers/README.md` (to `in-progress`, then `done`). When N workers run in parallel, every merge after the first introduces a manifest conflict. The resolution is mechanical (keep base + apply this row's new status) but it has to happen.
+Every worker updates its own row in `docs/workers/MANIFEST.md` (to `in-progress`, then `done`). When N workers run in parallel, every merge after the first introduces a manifest conflict. The resolution is mechanical (keep base + apply this row's new status) but it has to happen.
 
 **For each prompt:** state that the worker MUST do the manifest update as its own dedicated `chore(manifest):` commit — never bundle it with code commits. This keeps rebases tractable later.
 
@@ -196,6 +196,6 @@ These were originally `?` in the plan; they now have decided answers and the pro
 ## 7. Memory pointers
 
 - The mux-magic project memory at `C:\Users\satur\.claude\projects\d--Projects-Personal-mux-magic\memory\` tracks the live state of merged/deferred PRs. It's local to the user's machine; do not include this path in any committed file.
-- The plan document referenced from `docs/workers/README.md` lives at `C:\Users\satur\.claude\plans\claude-huge-revamp-idempotent-otter.md` (also user-local).
+- The plan document referenced from `docs/workers/MANIFEST.md` lives at `C:\Users\satur\.claude\plans\claude-huge-revamp-idempotent-otter.md` (also user-local).
 
 Both are sources the prompt-writer can read for additional context; neither should be treated as the source of truth over what's actually in the codebase today.

@@ -14,7 +14,7 @@ yarn install
 yarn dlx @yarnpkg/sdks vscode   # one-time VS Code SDK setup
 ```
 
-Copy `.env.example` to `.env` and set any environment variables you need (e.g. `PORT`, `TMDB_API_KEY`). See the [configuration table](../README.md#configuration) for all options.
+Copy `.env.example` to `.env` and set any environment variables you need (e.g. `PORT`, `TMDB_API_KEY`). See the [configuration table](../MANIFEST.md#configuration) for all options.
 
 ---
 

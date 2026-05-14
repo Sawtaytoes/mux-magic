@@ -11,7 +11,7 @@
 
 ## Universal Rules (TL;DR)
 
-Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typecheck → test → e2e → lint`. TDD: failing test first. Tests must cover the change scope (see [feedback_test_coverage_required.md](C:\Users\satur\.claude\projects\d--Projects-Personal-media-tools\memory\feedback_test_coverage_required.md)). Yarn only. See [AGENTS.md](../../AGENTS.md). Background context lives in [docs/PLAN.md §5.B](../PLAN.md).
+Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typecheck → test → e2e → lint`. TDD: failing test first. Tests must cover the change scope (see [feedback_test_coverage_required.md](C:\Users\satur\.claude\projects\d--Projects-Personal-media-tools\memory\feedback_test_coverage_required.md)). Yarn only. See [AGENTS.md](../../AGENTS.md). Background context lives in [docs/PLAN.md §5.B](./PLAN.md).
 
 ## Your Mission
 
@@ -153,7 +153,7 @@ Required test coverage:
 
 ## Out of scope
 
-- Per-step thread caps (sequence-level is enough; covered by [docs/PLAN.md §5.C](../PLAN.md) as a future possibility)
+- Per-step thread caps (sequence-level is enough; covered by [docs/PLAN.md §5.C](./PLAN.md) as a future possibility)
 - Changing the existing `MAX_THREADS` env var semantics — it stays as the ceiling
 - GPU thread cap (different resource; covered by worker 30)
 - Live-update the cap on running jobs (cap applies to new jobs only)

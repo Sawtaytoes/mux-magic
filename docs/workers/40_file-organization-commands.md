@@ -99,7 +99,7 @@ All three are camelCase, follow the existing `flattenOutput` / `moveFiles` Obser
 - `packages/server/src/api/routes/commandRoutes.ts` — three imports (top, ~L22), three names in the command-name list (~L122), and three registry entries with `getObservable`, `schema`, `summary`, `tags: ["File Operations"]` mirroring the `flattenOutput` (L233) and `moveFiles` (L459) entries.
 - `packages/server/src/api/schemas.ts` — three Zod request schemas mirroring `flattenOutputRequestSchema` and `moveFilesRequestSchema`.
 - `packages/web/public/command-descriptions.js` — three new descriptions (or regenerate via `yarn build:command-descriptions` if available; otherwise hand-edit following the pattern at L36, L44, L256).
-- `docs/workers/README.md` — flip this worker's row to `in-progress` at start, `done` after PR merge.
+- `docs/workers/MANIFEST.md` — flip this worker's row to `in-progress` at start, `done` after PR merge.
 
 ### Pattern templates to mirror line-for-line
 
