@@ -49,6 +49,23 @@ export const makeDirectoryRequestSchema = z.object({
     ),
 })
 
+const renameRegexSchema = z
+  .object({
+    pattern: z
+      .string()
+      .describe(
+        "Regular expression pattern applied to each filename (or folder name).",
+      ),
+    replacement: z
+      .string()
+      .describe(
+        "Replacement string. Capture groups from `pattern` are available as $1, $2, etc.",
+      ),
+  })
+  .describe(
+    "Optional regex-based rename applied to each copied entry's name at the destination.",
+  )
+
 export const copyFilesRequestSchema = z.object({
   sourcePath: z
     .string()
@@ -59,6 +76,25 @@ export const copyFilesRequestSchema = z.object({
     .describe(
       "Directory to copy files into. Created if it does not already exist.",
     ),
+  fileFilterRegex: z
+    .string()
+    .optional()
+    .describe(
+      "If set, only files whose names match this regular expression are copied.",
+    ),
+  folderFilterRegex: z
+    .string()
+    .optional()
+    .describe(
+      "If set (and includeFolders is true), only folders whose names match this regular expression are copied.",
+    ),
+  includeFolders: z
+    .boolean()
+    .default(false)
+    .describe(
+      "When true, top-level subdirectories matching folderFilterRegex are copied as units (recursively). Files are only copied if fileFilterRegex is also set.",
+    ),
+  renameRegex: renameRegexSchema.optional(),
 })
 
 export const flattenOutputRequestSchema = z.object({
@@ -86,6 +122,21 @@ export const moveFilesRequestSchema = z.object({
     .default("")
     .describe(
       "Directory to move files into. Created if it does not already exist.",
+    ),
+  fileFilterRegex: z
+    .string()
+    .optional()
+    .describe(
+      "If set, only files whose names match this regular expression are moved.",
+    ),
+  renameRegex: renameRegexSchema.optional(),
+})
+
+export const deleteCopiedOriginalsRequestSchema = z.object({
+  sourcePaths: z
+    .array(z.string())
+    .describe(
+      "List of file or folder paths to delete. Typically provided via linkedTo from a prior copyFiles step's copiedSourcePaths output. Is a no-op when the list is empty.",
     ),
 })
 

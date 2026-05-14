@@ -1,4 +1,4 @@
-import { stat } from "node:fs/promises"
+import { cp, readdir, stat } from "node:fs/promises"
 import { extname, join } from "node:path"
 import {
   aclSafeCopyFile,
@@ -11,9 +11,12 @@ import {
 import {
   concatMap,
   defer,
+  EMPTY,
+  filter,
   finalize,
   from,
   map,
+  merge,
   Observable,
   tap,
   toArray,
@@ -21,6 +24,27 @@ import {
 import { getActiveJobId } from "../api/logCapture.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { runTasks } from "../tools/taskScheduler.js"
+
+export type CopyRecord = {
+  source: string
+  destination: string
+}
+
+export type RenameRegex = {
+  pattern: string
+  replacement: string
+}
+
+export const applyRenameRegex = (
+  name: string,
+  renameRegex: RenameRegex | undefined,
+): string =>
+  renameRegex
+    ? name.replace(
+        new RegExp(renameRegex.pattern),
+        renameRegex.replacement,
+      )
+    : name
 
 // Wraps the inner copy pipeline in an Observable whose teardown aborts
 // an internal AbortController. The signal threads into every per-file
@@ -31,133 +55,216 @@ import { runTasks } from "../tools/taskScheduler.js"
 // processes on unsubscribe.
 export const copyFiles = ({
   destinationPath,
+  fileFilterRegex,
+  folderFilterRegex,
+  isIncludingFolders = false,
+  renameRegex,
   sourcePath,
 }: {
   destinationPath: string
+  fileFilterRegex?: string
+  folderFilterRegex?: string
+  isIncludingFolders?: boolean
+  renameRegex?: RenameRegex
   sourcePath: string
-}): Observable<string> =>
-  new Observable<string>((subscriber) => {
+}): Observable<CopyRecord> =>
+  new Observable<CopyRecord>((subscriber) => {
     const abortController = new AbortController()
 
-    const innerSubscription = getFiles({ sourcePath })
-      .pipe(
-        // Materialize the file list so we know totalFiles + can stat for
-        // totalBytes upfront. The cost is N stats and holding N small
-        // FileInfo structs in memory; both are cheap relative to the
-        // bytes we're about to move.
-        toArray(),
-        concatMap((files) =>
-          defer(async () => {
-            const jobId = getActiveJobId()
-            const sizes =
-              jobId !== undefined
-                ? await Promise.all(
-                    files.map((file) =>
-                      stat(file.fullPath).then(
-                        (stats) => stats.size,
-                      ),
-                    ),
-                  )
-                : []
-            const totalBytes = sizes.reduce(
-              (sum, size) => sum + size,
-              0,
-            )
-            const emitter =
-              jobId !== undefined
-                ? createProgressEmitter(jobId, {
-                    totalFiles: files.length,
-                    totalBytes,
-                  })
-                : null
-            return { files, sizes, emitter }
-          }).pipe(
-            concatMap(({ files, sizes, emitter }) =>
-              from(
-                files.map((file, index) => ({
-                  file,
-                  size: sizes[index],
-                })),
-              ).pipe(
-                // Per-file copies go through the global Task scheduler — at
-                // MAX_THREADS=N, up to N copies run concurrently. Each gets
-                // its own FileTracker so the UI shows one row per active
-                // copy (path + percent), and the tracker.finish() in the
-                // finalize ensures slot release on cancel.
-                runTasks(({ file, size }) => {
-                  const targetPath = join(
-                    destinationPath,
-                    file.filename.concat(
-                      extname(file.fullPath),
-                    ),
-                  )
-
-                  const tracker =
-                    emitter !== null
-                      ? emitter.startFile(
-                          file.fullPath,
-                          size,
-                        )
-                      : null
-
-                  // aclSafeCopyFile.onProgress fires per chunk with
-                  // ABSOLUTE bytesWritten across the lifetime of one file
-                  // copy. The tracker's reportBytes wants per-chunk delta,
-                  // so we track the previous high-water mark per file.
-                  let lastBytesWritten = 0
-
-                  const copyOptions: CopyOptions = {
-                    signal: abortController.signal,
-                    ...(tracker !== null
-                      ? {
-                          onProgress: (event) => {
-                            const delta =
-                              event.bytesWritten -
-                              lastBytesWritten
-                            lastBytesWritten =
-                              event.bytesWritten
-                            tracker.reportBytes(delta)
-                          },
-                        }
-                      : {}),
-                  }
-
-                  return makeDirectory(
-                    destinationPath,
-                  ).pipe(
-                    concatMap(() =>
-                      aclSafeCopyFile(
-                        file.fullPath,
-                        targetPath,
-                        copyOptions,
-                      ),
-                    ),
-                    tap(() => {
-                      logInfo(
-                        "COPIED",
-                        file.fullPath,
-                        targetPath,
+    // File copy pipeline: uses getFiles() for the flat file listing so
+    // existing behaviour is preserved. Adds optional regex filter and
+    // rename on top.
+    // When includeFolders is true, files are only copied if fileFilterRegex
+    // is explicitly set — otherwise the command operates in folder-only mode.
+    const filesCopy$ =
+      isIncludingFolders && fileFilterRegex == null
+        ? EMPTY
+        : getFiles({ sourcePath }).pipe(
+            toArray(),
+            concatMap((files) =>
+              defer(async () => {
+                const filteredFiles =
+                  fileFilterRegex == null
+                    ? files
+                    : files.filter((file) =>
+                        new RegExp(fileFilterRegex).test(
+                          file.filename.concat(
+                            extname(file.fullPath),
+                          ),
+                        ),
                       )
-                    }),
-                    map(() => targetPath),
-                    finalize(() => tracker?.finish(size)),
-                  )
-                }),
-                finalize(() => emitter?.finalize()),
+                const jobId = getActiveJobId()
+                const sizes =
+                  jobId !== undefined
+                    ? await Promise.all(
+                        filteredFiles.map((file) =>
+                          stat(file.fullPath).then(
+                            (stats) => stats.size,
+                          ),
+                        ),
+                      )
+                    : []
+                const totalBytes = sizes.reduce(
+                  (sum, size) => sum + size,
+                  0,
+                )
+                const emitter =
+                  jobId !== undefined
+                    ? createProgressEmitter(jobId, {
+                        totalFiles: filteredFiles.length,
+                        totalBytes,
+                      })
+                    : null
+                return { filteredFiles, sizes, emitter }
+              }).pipe(
+                concatMap(
+                  ({ filteredFiles, sizes, emitter }) =>
+                    from(
+                      filteredFiles.map((file, index) => ({
+                        file,
+                        size: sizes[index] ?? 0,
+                      })),
+                    ).pipe(
+                      runTasks(({ file, size }) => {
+                        const destinationFilename =
+                          applyRenameRegex(
+                            file.filename.concat(
+                              extname(file.fullPath),
+                            ),
+                            renameRegex,
+                          )
+                        const targetPath = join(
+                          destinationPath,
+                          destinationFilename,
+                        )
+                        const tracker =
+                          emitter !== null
+                            ? emitter.startFile(
+                                file.fullPath,
+                                size,
+                              )
+                            : null
+                        // aclSafeCopyFile.onProgress fires per chunk with
+                        // ABSOLUTE bytesWritten. The tracker's reportBytes
+                        // wants per-chunk delta, so we track the high-water mark.
+                        let lastBytesWritten = 0
+                        const copyOptions: CopyOptions = {
+                          signal: abortController.signal,
+                          ...(tracker !== null
+                            ? {
+                                onProgress: (event) => {
+                                  const delta =
+                                    event.bytesWritten -
+                                    lastBytesWritten
+                                  lastBytesWritten =
+                                    event.bytesWritten
+                                  tracker.reportBytes(delta)
+                                },
+                              }
+                            : {}),
+                        }
+                        return makeDirectory(
+                          destinationPath,
+                        ).pipe(
+                          concatMap(() =>
+                            aclSafeCopyFile(
+                              file.fullPath,
+                              targetPath,
+                              copyOptions,
+                            ),
+                          ),
+                          tap(() => {
+                            logInfo(
+                              "COPIED",
+                              file.fullPath,
+                              targetPath,
+                            )
+                          }),
+                          map(() => ({
+                            source: file.fullPath,
+                            destination: targetPath,
+                          })),
+                          finalize(() =>
+                            tracker?.finish(size),
+                          ),
+                        )
+                      }),
+                      finalize(() => emitter?.finalize()),
+                    ),
+                ),
               ),
             ),
+          )
+
+    // Folder copy pipeline: only runs when includeFolders is true.
+    // Reads the top-level entries of sourcePath, filters directories by
+    // folderFilterRegex, and copies each matching folder recursively via
+    // fs.cp. Rename is applied to the folder name only (not its contents).
+    const foldersCopy$ = isIncludingFolders
+      ? defer(() =>
+          readdir(sourcePath, { withFileTypes: true }),
+        ).pipe(
+          concatMap((entries) => from(entries)),
+          filter((entry) => entry.isDirectory()),
+          filter(
+            (entry) =>
+              folderFilterRegex == null ||
+              new RegExp(folderFilterRegex).test(
+                entry.name,
+              ),
           ),
-        ),
-        logAndRethrowPipelineError(copyFiles),
-      )
+          concatMap((entry) => {
+            const sourceFolderPath = join(
+              sourcePath,
+              entry.name,
+            )
+            const destFolderName = applyRenameRegex(
+              entry.name,
+              renameRegex,
+            )
+            const destFolderPath = join(
+              destinationPath,
+              destFolderName,
+            )
+            return makeDirectory(destinationPath)
+              .pipe(
+                concatMap(() =>
+                  defer(() =>
+                    cp(sourceFolderPath, destFolderPath, {
+                      recursive: true,
+                    }),
+                  ),
+                ),
+              )
+              .pipe(
+                tap(() => {
+                  logInfo(
+                    "COPIED",
+                    sourceFolderPath,
+                    destFolderPath,
+                  )
+                }),
+                map(() => ({
+                  source: sourceFolderPath,
+                  destination: destFolderPath,
+                })),
+              )
+          }),
+        )
+      : EMPTY
+
+    const innerSubscription = merge(
+      filesCopy$,
+      foldersCopy$,
+    )
+      .pipe(logAndRethrowPipelineError(copyFiles))
       .subscribe(subscriber)
 
     return () => {
       // Order: abort first so an in-flight pipeline rejects via
       // AbortError rather than a downstream EBADF when streams are torn
       // down out from under it; then unsubscribe to stop further
-      // emissions. The catchError-as-EMPTY pattern at runJob means the
-      // AbortError doesn't surface to the outer subscriber.
+      // emissions.
       abortController.abort()
       innerSubscription.unsubscribe()
     }
