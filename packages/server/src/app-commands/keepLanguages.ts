@@ -138,12 +138,19 @@ export const keepLanguages = ({
             subtitlesLanguagesToKeep,
           }) =>
             keepSpecifiedLanguageTracks({
-              audioLanguages:
-                audioLanguagesToKeep.filter(Boolean),
+              audioLanguages: audioLanguagesToKeep.filter(
+                (lang): lang is NonNullable<typeof lang> =>
+                  Boolean(lang),
+              ),
               filePath: fileInfo.fullPath,
               outputFolderName,
               subtitlesLanguages:
-                subtitlesLanguagesToKeep.filter(Boolean),
+                subtitlesLanguagesToKeep.filter(
+                  (
+                    lang,
+                  ): lang is NonNullable<typeof lang> =>
+                    Boolean(lang),
+                ),
             }).pipe(
               tap(() => {
                 logInfo(

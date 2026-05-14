@@ -256,7 +256,10 @@ export const getSpecialFeatureFromTimecode = ({
                 !specialFeatureTimecode,
             )
             .flatMap(({ children }) => children)
-            .filter(Boolean)
+            .filter(
+              (child): child is NonNullable<typeof child> =>
+                Boolean(child),
+            )
             .filter(
               ({ timecode: SpecialFeatureChildTimecode }) =>
                 SpecialFeatureChildTimecode &&

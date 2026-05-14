@@ -41,11 +41,12 @@ export const getTrackLanguages = (filePath: string) =>
         ...trackLanguages,
         [track["@type"]]: [
           ...trackLanguages[track["@type"]],
-          ...(trackLanguages[track["@type"]].includes(
-            track.Language ?? "",
+          ...(track.Language === undefined ||
+          trackLanguages[track["@type"]].includes(
+            track.Language,
           )
             ? []
-            : [track.Language ?? ""]),
+            : [track.Language]),
         ],
       }),
       {

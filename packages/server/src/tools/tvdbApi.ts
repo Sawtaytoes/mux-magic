@@ -13,7 +13,7 @@ export const loginToTvdb = () =>
     baseUrl: tvdbApiUrl,
   }).POST("/login", {
     body: {
-      apikey: process.env.TVDB_API_KEY,
+      apikey: process.env.TVDB_API_KEY ?? "",
       pin: "",
     },
   })

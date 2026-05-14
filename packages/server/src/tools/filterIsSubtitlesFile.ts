@@ -9,7 +9,7 @@ export const subtitlesFileExtensions = [
   ".sup",
 ] as const
 
-export const subtitlesFileExtensionSet = new Set(
+export const subtitlesFileExtensionSet = new Set<string>(
   subtitlesFileExtensions,
 )
 
