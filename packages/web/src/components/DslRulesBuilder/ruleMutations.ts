@@ -5,10 +5,22 @@ import {
   type PredicatesMap,
   RULE_TYPES,
   type RuleType,
+  type ScaleResolutionGroup,
   type ScaleResolutionRule,
   type SetScriptInfoRule,
   type SetStyleFieldsRule,
 } from "./types"
+
+const ASPECT_LOCK_FLAG_BY_GROUP = {
+  from: "isFromAspectLocked",
+  to: "isToAspectLocked",
+} as const satisfies Record<
+  ScaleResolutionGroup,
+  "isFromAspectLocked" | "isToAspectLocked"
+>
+
+const FALLBACK_RATIO_WIDTH = 16
+const FALLBACK_RATIO_HEIGHT = 9
 
 export const updateRuleAt = ({
   rules,
@@ -155,6 +167,99 @@ export const setScaleResolutionDimension = ({
       return {
         ...rule,
         [group]: { ...groupValue, [dimension]: value },
+      }
+    },
+  })
+
+export const setScaleResolutionAspectLock = ({
+  rules,
+  ruleIndex,
+  group,
+  isLocked,
+}: {
+  rules: DslRule[]
+  ruleIndex: number
+  group: ScaleResolutionGroup
+  isLocked: boolean
+}): DslRule[] =>
+  updateRuleAt({
+    rules,
+    ruleIndex,
+    updater: (rule) => {
+      const flagKey = ASPECT_LOCK_FLAG_BY_GROUP[group]
+      const nextRule = {
+        ...(rule as ScaleResolutionRule),
+      } as ScaleResolutionRule
+      if (isLocked) {
+        delete nextRule[flagKey]
+      } else {
+        nextRule[flagKey] = false
+      }
+      return nextRule
+    },
+  })
+
+const computePairedDimension = ({
+  currentWidth,
+  currentHeight,
+  dimension,
+  value,
+}: {
+  currentWidth: number
+  currentHeight: number
+  dimension: "width" | "height"
+  value: number
+}): { width: number; height: number } => {
+  const hasUsableRatio =
+    currentWidth > 0 && currentHeight > 0
+  const refWidth = hasUsableRatio
+    ? currentWidth
+    : FALLBACK_RATIO_WIDTH
+  const refHeight = hasUsableRatio
+    ? currentHeight
+    : FALLBACK_RATIO_HEIGHT
+  if (dimension === "width") {
+    return {
+      width: value,
+      height: Math.round((value * refHeight) / refWidth),
+    }
+  }
+  return {
+    width: Math.round((value * refWidth) / refHeight),
+    height: value,
+  }
+}
+
+export const setScaleResolutionDimensionPaired = ({
+  rules,
+  ruleIndex,
+  group,
+  dimension,
+  value,
+}: {
+  rules: DslRule[]
+  ruleIndex: number
+  group: ScaleResolutionGroup
+  dimension: "width" | "height"
+  value: number
+}): DslRule[] =>
+  updateRuleAt({
+    rules,
+    ruleIndex,
+    updater: (rule) => {
+      const scaleRule = rule as ScaleResolutionRule
+      const groupValue = isPlainObject(scaleRule[group])
+        ? scaleRule[group]
+        : { width: 0, height: 0 }
+      const paired = computePairedDimension({
+        currentWidth: groupValue.width ?? 0,
+        currentHeight: groupValue.height ?? 0,
+        dimension,
+        value,
+      })
+      return {
+        ...scaleRule,
+        [group]: paired,
       }
     },
   })
