@@ -73,21 +73,11 @@ export const PageHeader = () => {
   }, [])
 
   const toggleDryRun = () => {
-    const isNextDryRun = !isDryRun
-    setIsDryRun(isNextDryRun)
-    localStorage.setItem(
-      "isDryRun",
-      isNextDryRun ? "1" : "0",
-    )
+    setIsDryRun(!isDryRun)
   }
 
   const toggleFailureMode = () => {
-    const isNextFailureMode = !isFailureMode
-    setIsFailureMode(isNextFailureMode)
-    localStorage.setItem(
-      "dryRunScenario",
-      isNextFailureMode ? "failure" : "",
-    )
+    setIsFailureMode(!isFailureMode)
   }
 
   return (

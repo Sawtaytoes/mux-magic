@@ -15,8 +15,8 @@ All actions are wired directly to Jotai atoms and hooks — there is no legacy b
 
 - **Responsive menus** → Two collapsible panels (`page-menu-nav` and `page-menu-controls`) that show/hide based on `openMenu`. Toggle buttons (`#page-nav-toggle`, `#page-controls-toggle`) flip the state; clicks outside the panels close them via a document `mousedown` listener.
 - **Esc** → closes open modal (YamlModal / ApiRunModal via atom) and any open responsive panel.
-- **Dry-run badge** → Renders only when `dryRunAtom` is true. Clicking it (or the toggle in the controls menu) flips the atom AND writes to `localStorage["isDryRun"]`.
-- **Failure-mode toggle** → Only rendered when dry-run is on. Persists to `localStorage["dryRunScenario"]`.
+- **Dry-run badge** → Renders only when `dryRunAtom` is true. Clicking it (or the toggle in the controls menu) flips the atom AND updates `?fake` in the URL (`history.replaceState`).
+- **Failure-mode toggle** → Only rendered when dry-run is on. Updates `?fake=failure` / `?fake=success` in the URL. State is per-tab and survives reload via the URL.
 - **Undo/redo enable state** → Driven by `canUndoAtom` / `canRedoAtom` from `historyAtoms.ts`; updated by `useBuilderActions`.
 - **Run buttons** → `▶ Run Sequence` calls `runViaApi` from `useBuilderActions`. Both are disabled while `runningAtom` is true.
 
@@ -24,8 +24,8 @@ All actions are wired directly to Jotai atoms and hooks — there is no legacy b
 
 | Atom | Role |
 |------|------|
-| `dryRunAtom` | Drives the badge + toggle. Mirrored to `localStorage["isDryRun"]` |
-| `failureModeAtom` | "Simulate Failures" toggle. Mirrored to `localStorage["dryRunScenario"]` |
+| `dryRunAtom` | Drives the badge + toggle. Backed by `?fake` URL param |
+| `failureModeAtom` | "Simulate Failures" toggle. Backed by `?fake=failure` URL param |
 | `runningAtom` | Disables run buttons while a sequence is in flight |
 | `canUndoAtom` / `canRedoAtom` | Enable/disable undo + redo buttons |
 
