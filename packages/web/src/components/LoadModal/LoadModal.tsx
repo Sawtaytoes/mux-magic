@@ -1,6 +1,9 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useState } from "react"
-import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
+import {
+  loadModalAutoPastingAtom,
+  loadModalOpenAtom,
+} from "../../components/LoadModal/loadModalAtom"
 import { loadYamlFromText } from "../../jobs/yamlCodec"
 import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
@@ -13,6 +16,9 @@ import { threadCountAtom } from "../../state/threadCountAtom"
 
 export const LoadModal = () => {
   const [isOpen, setIsOpen] = useAtom(loadModalOpenAtom)
+  const isAutoPasting = useAtomValue(
+    loadModalAutoPastingAtom,
+  )
   const setSteps = useSetAtom(stepsAtom)
   const setPaths = useSetAtom(pathsAtom)
   const setStepCounter = useSetAtom(stepCounterAtom)
@@ -91,7 +97,7 @@ export const LoadModal = () => {
 
   return (
     <Modal
-      isOpen={isOpen}
+      isOpen={isOpen && !isAutoPasting}
       onClose={close}
       ariaLabel="Load YAML"
     >

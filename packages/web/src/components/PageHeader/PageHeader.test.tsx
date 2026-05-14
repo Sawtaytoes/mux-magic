@@ -19,12 +19,20 @@ afterEach(() => {
   history.replaceState(null, "", window.location.pathname)
 })
 
+import type { Commands } from "../../commands/types"
+import { commandsAtom } from "../../state/commandsAtom"
 import {
   dryRunAtom,
   failureModeAtom,
 } from "../../state/dryRunQuery"
 import { runningAtom } from "../../state/runAtoms"
+import { stepsAtom } from "../../state/stepsAtom"
 import { editVariablesModalOpenAtom } from "../EditVariablesModal/editVariablesModalOpenAtom"
+import { LoadModal } from "../LoadModal/LoadModal"
+import {
+  loadModalAutoPastingAtom,
+  loadModalOpenAtom,
+} from "../LoadModal/loadModalAtom"
 import { PageHeader } from "./PageHeader"
 
 const renderWithStore = (
@@ -292,5 +300,139 @@ describe("PageHeader", () => {
     expect(
       screen.getByRole("button", { name: /run via api/i }),
     ).toBeDisabled()
+  })
+})
+
+// ─── Load button auto-paste / no-flash invariant ──────────────────────────────
+
+// Worker 3d regression guard. Worker 0b made the Load button onClick async
+// (await navigator.clipboard.readText() BEFORE deciding whether to open the
+// modal). That broke the e2e variable-YAML round-trip test because the modal
+// opened AFTER the test's synthetic paste event had already fired and been
+// dropped — leaving the backdrop in the DOM to intercept the next click.
+//
+// The fix opens the modal synchronously while also flipping
+// loadModalAutoPastingAtom synchronously, so LoadModal's paste listener
+// attaches immediately (catching synthetic pastes) while the Modal primitive
+// renders nothing (no visible flash). The tests below lock in both halves of
+// that invariant.
+
+const mockCommandsForLoad: Commands = {
+  testCommand: {
+    fields: [{ name: "inputPath", type: "path" }],
+  },
+}
+
+const minimalYaml = `
+- command: testCommand
+  params:
+    inputPath: /some/path
+`.trim()
+
+const renderHeaderAndLoadModal = (
+  store: ReturnType<typeof createStore>,
+) =>
+  render(
+    <Provider store={store}>
+      <PageHeader />
+      <LoadModal />
+    </Provider>,
+  )
+
+const clickLoadButton = async () => {
+  await openControlsMenu()
+  const loadButton = document.getElementById(
+    "load-btn",
+  ) as HTMLButtonElement | null
+  expect(loadButton).not.toBeNull()
+  await userEvent.click(loadButton as HTMLButtonElement)
+}
+
+describe("PageHeader Load button — no-flash invariant", () => {
+  test("does not render the modal backdrop while clipboard.readText() is in flight", async () => {
+    // Never resolves — simulates a slow / hanging clipboard read.
+    vi.spyOn(
+      navigator.clipboard,
+      "readText",
+    ).mockReturnValue(new Promise<string>(() => {}))
+
+    const store = createStore()
+    store.set(commandsAtom, mockCommandsForLoad)
+    renderHeaderAndLoadModal(store)
+
+    await clickLoadButton()
+
+    // The modal is logically "open" so its paste listener is attached,
+    // but the Modal primitive is gated on `isOpen && !isAutoPasting` so
+    // its backdrop must NOT be in the DOM.
+    expect(store.get(loadModalOpenAtom)).toBe(true)
+    expect(store.get(loadModalAutoPastingAtom)).toBe(true)
+    expect(
+      document.querySelector(".bg-black\\/70"),
+    ).toBeNull()
+    expect(screen.queryByText("Load YAML")).toBeNull()
+  })
+
+  test("synthetic paste with valid YAML during auto-paste-in-flight loads the YAML and never reveals the modal", async () => {
+    vi.spyOn(
+      navigator.clipboard,
+      "readText",
+    ).mockReturnValue(new Promise<string>(() => {}))
+
+    const store = createStore()
+    store.set(commandsAtom, mockCommandsForLoad)
+    renderHeaderAndLoadModal(store)
+
+    await clickLoadButton()
+    // Paste listener is now armed (LoadModal effect ran on isOpen=true)
+    // even though the Modal is not rendered.
+    expect(
+      document.querySelector(".bg-black\\/70"),
+    ).toBeNull()
+
+    // Dispatch the same kind of event the e2e test does.
+    const pasteEvent = new Event("paste", {
+      bubbles: true,
+      cancelable: true,
+    })
+    Object.defineProperty(pasteEvent, "clipboardData", {
+      value: {
+        getData: (_type: string) => minimalYaml,
+      },
+    })
+    document.dispatchEvent(pasteEvent)
+
+    // YAML applied + modal closed atomically. Backdrop never appears.
+    expect(store.get(stepsAtom)).toHaveLength(1)
+    expect(store.get(stepsAtom)[0]).toMatchObject({
+      command: "testCommand",
+    })
+    expect(store.get(loadModalOpenAtom)).toBe(false)
+    expect(
+      document.querySelector(".bg-black\\/70"),
+    ).toBeNull()
+  })
+
+  test("reveals the modal after clipboard.readText() rejects (manual paste fallback)", async () => {
+    vi.spyOn(
+      navigator.clipboard,
+      "readText",
+    ).mockRejectedValue(
+      new DOMException("denied", "NotAllowedError"),
+    )
+
+    const store = createStore()
+    store.set(commandsAtom, mockCommandsForLoad)
+    renderHeaderAndLoadModal(store)
+
+    await clickLoadButton()
+
+    // After the rejected promise + finally block flush, the modal becomes
+    // visible so the user can press Ctrl+V manually.
+    expect(
+      await screen.findByText("Load YAML"),
+    ).toBeInTheDocument()
+    expect(store.get(loadModalOpenAtom)).toBe(true)
+    expect(store.get(loadModalAutoPastingAtom)).toBe(false)
   })
 })

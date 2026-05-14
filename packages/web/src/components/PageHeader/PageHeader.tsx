@@ -1,7 +1,10 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
 import { editVariablesModalOpenAtom } from "../../components/EditVariablesModal/editVariablesModalOpenAtom"
-import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
+import {
+  loadModalAutoPastingAtom,
+  loadModalOpenAtom,
+} from "../../components/LoadModal/loadModalAtom"
 import { sequenceRunModalAtom } from "../../components/SequenceRunModal/sequenceRunModalAtom"
 import { yamlModalOpenAtom } from "../../components/YamlModal/yamlModalAtom"
 import { Z_INDEX } from "../../constants/zIndex"
@@ -74,6 +77,9 @@ export const PageHeader = () => {
   const isUndoPossible = useAtomValue(canUndoAtom)
   const isRedoPossible = useAtomValue(canRedoAtom)
   const setLoadModalOpen = useSetAtom(loadModalOpenAtom)
+  const setIsAutoPasting = useSetAtom(
+    loadModalAutoPastingAtom,
+  )
   const setYamlModalOpen = useSetAtom(yamlModalOpenAtom)
   const [sequenceRunModal, setSequenceRunModal] = useAtom(
     sequenceRunModalAtom,
@@ -440,15 +446,29 @@ export const PageHeader = () => {
                 type="button"
                 id="load-btn"
                 onClick={async () => {
-                  const isLoaded = await autoClipboardLoad()
-                  if (isLoaded) {
-                    setIsYamlPasted(true)
-                    setTimeout(
-                      () => setIsYamlPasted(false),
-                      1500,
-                    )
-                  } else {
-                    setLoadModalOpen(true)
+                  // Open the modal synchronously so LoadModal's paste
+                  // listener attaches THIS tick — required for synthetic
+                  // paste events (e.g., e2e tests) and for Ctrl+V that
+                  // arrives before clipboard.readText() resolves. Setting
+                  // both atoms in the same event-handler batch keeps the
+                  // Modal primitive's first commit invisible: LoadModal
+                  // gates its visible <Modal isOpen> on
+                  // `isOpen && !isAutoPasting`, so no flash.
+                  setLoadModalOpen(true)
+                  setIsAutoPasting(true)
+                  try {
+                    const isLoaded =
+                      await autoClipboardLoad()
+                    if (isLoaded) {
+                      setLoadModalOpen(false)
+                      setIsYamlPasted(true)
+                      setTimeout(
+                        () => setIsYamlPasted(false),
+                        1500,
+                      )
+                    }
+                  } finally {
+                    setIsAutoPasting(false)
                   }
                 }}
                 title="Load YAML"
