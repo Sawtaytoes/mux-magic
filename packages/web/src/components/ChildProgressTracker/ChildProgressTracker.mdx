@@ -7,7 +7,7 @@ import * as ChildProgressTrackerStories from "./ChildProgressTracker.stories";
 
 # ChildProgressTracker
 
-A self-contained progress row for one active child step inside `ApiRunModal`. Given a `stepId` (label) and a `jobId` (data source), it opens its own SSE log stream via `useLogStream` and reads the resulting `ProgressSnapshot` from `progressByJobIdAtom`. Renders the step ID label above a `ProgressBar`.
+A self-contained progress row for one active child step inside `SequenceRunModal`. Given a `stepId` (label) and a `jobId` (data source), it opens its own SSE log stream via `useLogStream` and reads the resulting `ProgressSnapshot` from `progressByJobIdAtom`. Renders the step ID label above a `ProgressBar`.
 
 The SSE connection is fire-and-forget: calling `connect()` on mount starts streaming progress events into the shared atom. The component unmounts when its step finishes, closing the stream automatically.
 

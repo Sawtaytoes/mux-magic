@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   JobLogsEvent,
   JobStatus,
 } from "@mux-magic/server/api-types"
@@ -10,13 +10,13 @@ import {
   useState,
 } from "react"
 import { apiBase } from "../../apiBase"
-import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
 import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import { useTolerantEventSource } from "../../hooks/useTolerantEventSource"
 import { Modal } from "../../primitives/Modal/Modal"
 import { runningAtom } from "../../state/runAtoms"
 import { setStepRunStatusAtom } from "../../state/stepAtoms"
 import { ChildProgressTracker } from "../ChildProgressTracker/ChildProgressTracker"
+import { sequenceRunModalAtom } from "./sequenceRunModalAtom"
 
 // ─── Status badge colours ─────────────────────────────────────────────────────
 
@@ -29,9 +29,10 @@ const STATUS_CLASSES: Record<JobStatus, string> = {
   skipped: "bg-slate-500 text-slate-100",
 }
 
-export const ApiRunModal = () => {
-  const [modalState, setModalState] =
-    useAtom(apiRunModalAtom)
+export const SequenceRunModal = () => {
+  const [modalState, setModalState] = useAtom(
+    sequenceRunModalAtom,
+  )
   const _setPromptData = useSetAtom(promptModalAtom)
   const setRunning = useSetAtom(runningAtom)
   const setStepRunStatus = useSetAtom(setStepRunStatusAtom)
@@ -53,10 +54,8 @@ export const ApiRunModal = () => {
   }, [])
 
   // Sync status + log reset when a new job opens.
-  // prevModalJobIdRef guards against re-running (and clearing logs)
-  // when modalState updates for reasons other than a new job opening.
   useEffect(() => {
-    if (!modalState) return
+    if (modalState.mode === "closed") return
     if (prevModalJobIdRef.current === modalState.jobId)
       return
     prevModalJobIdRef.current = modalState.jobId
@@ -65,8 +64,11 @@ export const ApiRunModal = () => {
     setIsSeqDone(false)
   }, [modalState])
 
-  const parentUrl = modalState?.jobId
-    ? `${apiBase}/jobs/${modalState.jobId}/logs`
+  const jobId =
+    modalState.mode !== "closed" ? modalState.jobId : null
+
+  const parentUrl = jobId
+    ? `${apiBase}/jobs/${jobId}/logs`
     : null
 
   // ─── Parent SSE (sequence-level events) ────────────────────────────────────
@@ -78,7 +80,7 @@ export const ApiRunModal = () => {
         const childJobId = data.childJobId
         if (startedStepId) {
           setModalState((prev) =>
-            prev
+            prev.mode !== "closed"
               ? {
                   ...prev,
                   activeChildren: [
@@ -103,7 +105,7 @@ export const ApiRunModal = () => {
         if (data.stepId) {
           const finishedStepId = data.stepId
           setModalState((prev) =>
-            prev
+            prev.mode !== "closed"
               ? {
                   ...prev,
                   activeChildren:
@@ -124,14 +126,15 @@ export const ApiRunModal = () => {
         return
       }
       if ("line" in data) {
-        const lineEvent = data
-        setLogs((prev) => [...prev, lineEvent.line])
+        setLogs((prev) => [...prev, data.line])
         return
       }
       if ("isDone" in data && data.isDone) {
         setStatus(data.status)
         setModalState((prev) =>
-          prev ? { ...prev, activeChildren: [] } : prev,
+          prev.mode !== "closed"
+            ? { ...prev, activeChildren: [] }
+            : prev,
         )
         setIsSeqDone(true)
         setRunning(false)
@@ -143,7 +146,9 @@ export const ApiRunModal = () => {
   const handleParentDisconnected = useCallback(() => {
     setStatus("failed")
     setModalState((prev) =>
-      prev ? { ...prev, activeChildren: [] } : prev,
+      prev.mode !== "closed"
+        ? { ...prev, activeChildren: [] }
+        : prev,
     )
     setRunning(false)
   }, [setRunning, setModalState])
@@ -155,36 +160,37 @@ export const ApiRunModal = () => {
     onPossiblyDisconnected: handleParentDisconnected,
   })
 
-  const close = useCallback(async () => {
-    const jobId = modalState?.jobId
-    if (jobId && status === "running") {
+  // ─── Actions ─────────────────────────────────────────────────────────────────
+
+  // Send the modal to the background — the job keeps running, SSE stays alive.
+  const sendToBackground = useCallback(() => {
+    setModalState((prev) =>
+      prev.mode !== "closed"
+        ? { ...prev, mode: "background" }
+        : prev,
+    )
+  }, [setModalState])
+
+  // Cancel explicitly terminates the job server-side and closes the modal.
+  const cancelJob = useCallback(async () => {
+    const currentJobId = jobId
+    if (currentJobId && status === "running") {
       try {
-        await fetch(`${apiBase}/jobs/${jobId}`, {
+        await fetch(`${apiBase}/jobs/${currentJobId}`, {
           method: "DELETE",
         })
       } catch {
         // Best-effort cancel.
       }
     }
-    setModalState(null)
+    setModalState({ mode: "closed" })
     setRunning(false)
-  }, [modalState?.jobId, status, setModalState, setRunning])
-
-  const cancel = useCallback(async () => {
-    if (!modalState?.jobId) return
-    try {
-      await fetch(`${apiBase}/jobs/${modalState.jobId}`, {
-        method: "DELETE",
-      })
-    } catch {
-      // Best-effort.
-    }
-  }, [modalState?.jobId])
+  }, [jobId, status, setModalState, setRunning])
 
   const copyLogs = useCallback(async () => {
     const text = logs.join("\n")
     const btn = document.getElementById(
-      "api-run-copy-btn",
+      "sequence-run-copy-btn",
     ) as HTMLButtonElement | null
     const original = btn?.textContent ?? "Copy logs"
     try {
@@ -198,105 +204,113 @@ export const ApiRunModal = () => {
     }, 1200)
   }, [logs])
 
+  if (modalState.mode === "closed") return null
+
   const statusClass =
     STATUS_CLASSES[status] ?? "bg-slate-700 text-slate-300"
 
-  const activeChildren = modalState?.activeChildren ?? []
+  const activeChildren = modalState.activeChildren ?? []
 
   const modalTitle =
-    modalState?.source === "step"
+    modalState.source === "step"
       ? "Run Step"
       : "Run Sequence"
 
   return (
     <Modal
-      isOpen={Boolean(modalState)}
-      onClose={() => {
-        void close()
-      }}
+      isOpen={modalState.mode === "open"}
+      onClose={sendToBackground}
       ariaLabel={modalTitle}
     >
-      {modalState && (
-        <div
-          id="api-run-modal"
-          className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col gap-0 overflow-hidden max-h-[85dvh]"
-        >
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700 shrink-0">
-            <span className="text-slate-300 text-sm font-medium">
-              {modalTitle}
-            </span>
-            {modalState.jobId && (
-              <span
-                id="api-run-jobid"
-                className="text-xs text-slate-500 font-mono"
-              >
-                job {modalState.jobId}
-              </span>
-            )}
+      <div
+        id="sequence-run-modal"
+        className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col gap-0 overflow-hidden max-h-[85dvh]"
+      >
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700 shrink-0">
+          <span className="text-slate-300 text-sm font-medium">
+            {modalTitle}
+          </span>
+          {modalState.jobId && (
             <span
-              id="api-run-status"
-              className={`text-xs px-2 py-0.5 rounded font-mono ml-auto ${statusClass}`}
+              id="sequence-run-jobid"
+              className="text-xs text-slate-500 font-mono"
             >
-              {status}
+              job {modalState.jobId}
             </span>
-            {status === "running" && (
-              <button
-                type="button"
-                id="api-run-cancel-btn"
-                onClick={() => void cancel()}
-                className="text-xs bg-red-700 hover:bg-red-600 text-white px-2 py-0.5 rounded font-medium"
-              >
-                Cancel
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => void close()}
-              className="text-slate-400 hover:text-white text-base leading-none ml-1"
-              title="Close"
-            >
-              ✕
-            </button>
-          </div>
-
-          {/* Active child step progress bars */}
-          {activeChildren.length > 0 && (
-            <div className="overflow-y-auto max-h-48 shrink-0">
-              {activeChildren.map((child) =>
-                child.jobId ? (
-                  <ChildProgressTracker
-                    key={child.stepId}
-                    stepId={child.stepId}
-                    jobId={child.jobId}
-                  />
-                ) : null,
-              )}
-            </div>
           )}
-
-          {/* Log output */}
-          <pre
-            id="api-run-logs"
-            className="flex-1 overflow-y-auto text-xs font-mono text-slate-300 px-4 py-3 whitespace-pre-wrap wrap-break-word min-h-0"
+          <span
+            id="sequence-run-status"
+            className={`text-xs px-2 py-0.5 rounded font-mono ml-auto ${statusClass}`}
           >
-            {logs.join("\n")}
-            <div ref={logsEndRef} />
-          </pre>
-
-          {/* Footer */}
-          <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-700 shrink-0">
+            {status}
+          </span>
+          {status === "running" && (
             <button
               type="button"
-              id="api-run-copy-btn"
-              onClick={() => void copyLogs()}
+              id="sequence-run-cancel-btn"
+              onClick={() => void cancelJob()}
+              className="text-xs bg-red-700 hover:bg-red-600 text-white px-2 py-0.5 rounded font-medium"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={sendToBackground}
+            className="text-slate-400 hover:text-white text-base leading-none ml-1"
+            title="Close"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Active child step progress bars */}
+        {activeChildren.length > 0 && (
+          <div className="overflow-y-auto max-h-48 shrink-0">
+            {activeChildren.map((child) =>
+              child.jobId ? (
+                <ChildProgressTracker
+                  key={child.stepId}
+                  stepId={child.stepId}
+                  jobId={child.jobId}
+                />
+              ) : null,
+            )}
+          </div>
+        )}
+
+        {/* Log output */}
+        <pre
+          id="sequence-run-logs"
+          className="flex-1 overflow-y-auto text-xs font-mono text-slate-300 px-4 py-3 whitespace-pre-wrap wrap-break-word min-h-0"
+        >
+          {logs.join("\n")}
+          <div ref={logsEndRef} />
+        </pre>
+
+        {/* Footer */}
+        <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-700 shrink-0">
+          <button
+            type="button"
+            id="sequence-run-copy-btn"
+            onClick={() => void copyLogs()}
+            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded border border-slate-600"
+          >
+            Copy logs
+          </button>
+          {status === "running" && (
+            <button
+              type="button"
+              id="sequence-run-background-btn"
+              onClick={sendToBackground}
               className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded border border-slate-600"
             >
-              Copy logs
+              Run in background
             </button>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </Modal>
   )
 }

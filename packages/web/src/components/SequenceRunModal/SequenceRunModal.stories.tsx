@@ -1,27 +1,27 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider, useSetAtom } from "jotai"
 import { useState } from "react"
-import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
-import type {
-  ActiveChild,
-  ApiRunState,
-} from "../../components/ApiRunModal/types"
 import type { ProgressSnapshot } from "../../jobs/types"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
-import { ApiRunModal } from "./ApiRunModal"
+import { SequenceRunModal } from "./SequenceRunModal"
+import { sequenceRunModalAtom } from "./sequenceRunModalAtom"
+import type {
+  ActiveChild,
+  SequenceRunModalState,
+} from "./types"
 
 const ReOpenButton = ({
   initialState,
 }: {
-  initialState: ApiRunState
+  initialState: SequenceRunModalState
 }) => {
-  const setApiRun = useSetAtom(apiRunModalAtom)
+  const setSequenceRun = useSetAtom(sequenceRunModalAtom)
   return (
     <div className="p-4">
       <button
         type="button"
         className="text-xs bg-slate-700 text-white px-3 py-1.5 rounded"
-        onClick={() => setApiRun(initialState)}
+        onClick={() => setSequenceRun(initialState)}
       >
         Re-open modal
       </button>
@@ -40,7 +40,8 @@ const makeState = (
   logs: string[] = [],
   source: "step" | "sequence" = "sequence",
   activeChildren: ActiveChild[] = [],
-): ApiRunState => ({
+): SequenceRunModalState => ({
+  mode: "open",
   jobId,
   status,
   logs,
@@ -88,20 +89,20 @@ const makeRunningParams = (count: number) => {
   }
 }
 
-const meta: Meta<typeof ApiRunModal> = {
-  title: "Modals/ApiRunModal",
-  component: ApiRunModal,
+const meta: Meta<typeof SequenceRunModal> = {
+  title: "Modals/SequenceRunModal",
+  component: SequenceRunModal,
   decorators: [
     (Story, context) => {
       const initialState = context.parameters
-        .initialState as ApiRunState
+        .initialState as SequenceRunModalState
       const initialProgress = context.parameters
         .initialProgress as
         | Map<string, ProgressSnapshot>
         | undefined
       const [store] = useState(() => {
         const newStore = createStore()
-        newStore.set(apiRunModalAtom, initialState)
+        newStore.set(sequenceRunModalAtom, initialState)
         if (initialProgress) {
           newStore.set(progressByJobIdAtom, initialProgress)
         }
@@ -117,7 +118,7 @@ const meta: Meta<typeof ApiRunModal> = {
 }
 export default meta
 
-type Story = StoryObj<typeof ApiRunModal>
+type Story = StoryObj<typeof SequenceRunModal>
 
 const runningOneJobParams = makeRunningParams(1)
 const runningParallelJobsParams = makeRunningParams(2)
@@ -140,7 +141,7 @@ export const RunningOneJob: Story = {
       <ReOpenButton
         initialState={runningOneJobParams.initialState}
       />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }
@@ -154,7 +155,7 @@ export const RunningParallelJobs: Story = {
           runningParallelJobsParams.initialState
         }
       />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }
@@ -166,7 +167,7 @@ export const Running10Children: Story = {
       <ReOpenButton
         initialState={running10ChildrenParams.initialState}
       />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }
@@ -176,7 +177,7 @@ export const Completed: Story = {
   render: () => (
     <>
       <ReOpenButton initialState={completedState} />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }
@@ -186,7 +187,7 @@ export const Failed: Story = {
   render: () => (
     <>
       <ReOpenButton initialState={failedState} />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }
@@ -196,7 +197,7 @@ export const NoJobYet: Story = {
   render: () => (
     <>
       <ReOpenButton initialState={noJobYetState} />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }

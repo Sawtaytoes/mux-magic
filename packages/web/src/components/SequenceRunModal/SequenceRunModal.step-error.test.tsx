@@ -9,12 +9,12 @@ import {
   test,
   vi,
 } from "vitest"
-import { apiRunModalAtom } from "../../components/ApiRunModal/apiRunModalAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
-import { ApiRunModal } from "./ApiRunModal"
+import { SequenceRunModal } from "./SequenceRunModal"
+import { sequenceRunModalAtom } from "./sequenceRunModalAtom"
 
-// Capture the onMessage callback injected by ApiRunModal into useTolerantEventSource
+// Capture the onMessage callback injected by SequenceRunModal into useTolerantEventSource
 // so tests can fire SSE events synchronously without a real server.
 let capturedOnMessage:
   | ((data: JobLogsEvent) => void)
@@ -49,7 +49,7 @@ const renderWithStore = (
 ) => {
   render(
     <Provider store={store}>
-      <ApiRunModal />
+      <SequenceRunModal />
     </Provider>,
   )
 }
@@ -58,7 +58,8 @@ const openModal = (
   store: ReturnType<typeof createStore>,
   stepId: string,
 ) => {
-  store.set(apiRunModalAtom, {
+  store.set(sequenceRunModalAtom, {
+    mode: "open",
     jobId: "job-umbrella",
     status: "running",
     logs: [],
@@ -86,7 +87,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe("ApiRunModal — dry-run error propagation for sequence-builder cards", () => {
+describe("SequenceRunModal — dry-run error propagation for sequence-builder cards", () => {
   beforeEach(() => {
     capturedOnMessage = undefined
   })

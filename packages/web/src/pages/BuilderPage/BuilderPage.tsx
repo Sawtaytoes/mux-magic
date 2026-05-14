@@ -3,7 +3,6 @@ import { useHydrateAtoms } from "jotai/utils"
 import { useEffect } from "react"
 
 import { COMMANDS } from "../../commands/commands"
-import { ApiRunModal } from "../../components/ApiRunModal/ApiRunModal"
 import { CommandHelpModal } from "../../components/CommandHelpModal/CommandHelpModal"
 import { CommandPicker } from "../../components/CommandPicker/CommandPicker"
 import { EnumPicker } from "../../components/EnumPicker/EnumPicker"
@@ -14,6 +13,7 @@ import { LookupModal } from "../../components/LookupModal/LookupModal"
 import { PageHeader } from "../../components/PageHeader/PageHeader"
 import { PathPicker } from "../../components/PathPicker/PathPicker"
 import { PromptModal } from "../../components/PromptModal/PromptModal"
+import { SequenceRunModal } from "../../components/SequenceRunModal/SequenceRunModal"
 import { YamlModal } from "../../components/YamlModal/YamlModal"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
 import { decodeSeqParam } from "../../jobs/decodeSeqParam"
@@ -150,7 +150,7 @@ export const BuilderPage = () => {
       <LoadModal />
       <CommandHelpModal />
       <PromptModal />
-      <ApiRunModal />
+      <SequenceRunModal />
       <LookupModal />
       <FileExplorerModal />
 
