@@ -1880,7 +1880,6 @@ __metadata:
     "@types/cli-progress": "npm:^3.11.6"
     "@types/js-yaml": "npm:^4.0.9"
     "@types/jsdom": "npm:^28.0.1"
-    "@types/yargs": "npm:^17.0.35"
     ansi-colors: "npm:^4.1.3"
     chalk: "npm:^5.6.2"
     cli-progress: "npm:^3.12.0"
@@ -1899,7 +1898,6 @@ __metadata:
     tsx: "npm:^4.21.0"
     typescript: "npm:^6.0.3"
     vitest: "npm:^4.1.5"
-    yargs: "npm:^18.0.0"
     zod: "npm:^4.4.3"
   languageName: unknown
   linkType: soft
