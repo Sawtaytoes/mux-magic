@@ -2,7 +2,7 @@
 
 **Model:** Sonnet · **Thinking:** ON · **Effort:** Medium
 **Branch:** `feat/gallery-downloader-revamp/1d-consume-tools` (in the Gallery-Downloader repo)
-**Worktree:** `D:\Projects\Personal\media-sync\.claude\worktrees\1d_consume_tools\`
+**Worktree:** `D:\Projects\Personal\gallery-downloader\.claude\worktrees\1d_consume_tools\`
 **Phase:** 1B cross-repo
 **Depends on:**
 
@@ -13,7 +13,7 @@
 
 **Parallel with:** 1e, 1f
 
-> **Status as of 2026-05-13:** Verified still in-progress per the manifest. Cross-repo work in the Gallery-Downloader repo — local `packages/shared-tools/` consolidation onto the published `@mux-magic/tools` is not yet complete.
+> **Status as of 2026-05-14:** Done. Merged to Gallery-Downloader `master` via PR #15 (merge commit `eb2b5ed`). Consuming `@mux-magic/tools@0.1.2`; local `shared-tools` retained for Gallery-Downloader-internal utilities (duplicates of upstream exports were removed).
 
 ## Universal Rules (TL;DR)
 
@@ -27,7 +27,7 @@ This worker is the **payoff** for worker `39`'s consolidation: every utility tha
 
 ### Investigation
 
-1. Read `D:\Projects\Personal\media-sync\packages\shared-tools\` (or the renamed equivalent after worker `1b`) to enumerate its exports.
+1. Read `D:\Projects\Personal\gallery-downloader\packages\shared-tools\` to enumerate its exports.
 2. Compare with `@mux-magic/tools`'s public surface — read [packages/tools/src/index.ts](../../packages/tools/src/index.ts) in the Mux-Magic repo (renamed from `packages/shared/src/index.ts` by worker 39).
 3. For each Gallery-Downloader-local utility:
    - **Exact match in `@mux-magic/tools`** → replace import; delete the local duplicate.
@@ -74,8 +74,8 @@ After updating imports and running `yarn install`:
 
 ## Files (in Gallery-Downloader repo)
 
-- `D:\Projects\Personal\media-sync\packages\shared-tools\src\*` — likely deletions
-- Many `D:\Projects\Personal\media-sync\packages\*\src\**\*.ts` — import path updates
+- `D:\Projects\Personal\gallery-downloader\packages\shared-tools\src\*` — likely deletions
+- Many `D:\Projects\Personal\gallery-downloader\packages\*\src\**\*.ts` — import path updates
 - Each consuming `package.json` — add `@mux-magic/tools` dep, remove `@<gd>/shared-tools` workspace dep if the package is gone
 
 ## Verification checklist
