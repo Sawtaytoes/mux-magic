@@ -36,7 +36,7 @@ This is the live tracking document for all workers in the Mux-Magic huge revamp.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 39 | [shared-to-tools-rename](39_shared-to-tools-rename.md) | tools | Sonnet | High | ON | — | ready |
+| 39 | [shared-to-tools-rename](39_shared-to-tools-rename.md) | tools | Sonnet | High | ON | — | done |
 | 01 | [mux-magic-rename](01_mux-magic-rename.md) | tools | Sonnet | High | ON | 39 | done |
 | 02 | [npm-publish-key-setup](02_npm-publish-key-setup.md) | tools | Haiku | Low | OFF | — | in-progress |
 | 03 | [storybook-vitest-filter-fix](03_storybook-vitest-filter-fix.md) | infra | Sonnet | Medium | ON | — | done |
@@ -101,8 +101,8 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 1b | [media-sync-rename-to-gallery-downloader](1b_media-sync-rename-to-gallery-downloader.md) | cross | Sonnet | High | ON | 01 | done |
-| 1c | [gallery-downloader-decouple-and-ha-endpoint](1c_gallery-downloader-decouple-and-ha-endpoint.md) | cross | Sonnet | High | ON | 1b | in-progress |
-| 1d | [gallery-downloader-consume-mux-magic-tools](1d_gallery-downloader-consume-mux-magic-tools.md) | cross | Sonnet | Medium | ON | 1c, 02, 39 + a published `@mux-magic/tools` release | ready |
+| 1c | [gallery-downloader-decouple-and-ha-endpoint](1c_gallery-downloader-decouple-and-ha-endpoint.md) | cross | Sonnet | High | ON | 1b | done |
+| 1d | [gallery-downloader-consume-mux-magic-tools](1d_gallery-downloader-consume-mux-magic-tools.md) | cross | Sonnet | Medium | ON | 1c, 02, 39 + a published `@mux-magic/tools` release | in-progress |
 | 1e | [mux-magic-webhook-reporter](1e_mux-magic-webhook-reporter.md) | srv | Sonnet | Medium | ON | 01 | done |
 | 1f | [mux-magic-anime-manga-commands](1f_mux-magic-anime-manga-commands.md) | srv+web | Sonnet | High | ON | 01 | done |
 
