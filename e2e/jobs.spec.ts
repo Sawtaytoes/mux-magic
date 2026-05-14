@@ -20,6 +20,7 @@ const makeJob = (overrides: Partial<Job> = {}): Job => ({
   startedAt: null,
   status: "running",
   stepId: null,
+  threadCountClaim: null,
   ...overrides,
 })
 

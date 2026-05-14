@@ -5,6 +5,7 @@ export type Snapshot = {
   steps: SequenceItem[]
   paths: PathVariable[]
   stepCounter: number
+  threadCount: string | null
 }
 
 export const undoStackAtom = atom<Snapshot[]>([])

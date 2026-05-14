@@ -330,13 +330,52 @@ const sequencePathSchema = z
     },
   })
 
+// Generic variable entry in the new `variables:` block (introduced by the
+// Variables system in worker 36). Each entry carries a `type` discriminator
+// so the server can extract typed variables (e.g. `threadCount`) without
+// treating them as path variables.
+const sequenceVariableSchema = z
+  .object({
+    label: z
+      .string()
+      .optional()
+      .describe(
+        "Display label (used by the builder UI; ignored at runtime).",
+      ),
+    value: z
+      .string()
+      .describe(
+        "The variable's current value as a string.",
+      ),
+    type: z
+      .string()
+      .describe(
+        "Variable type discriminator (e.g. `'path'`, `'threadCount'`). The server uses this to apply type-specific semantics at runtime.",
+      ),
+  })
+  .openapi("SequenceVariable", {
+    description:
+      "A typed variable definition. Path variables (type='path') are referenced from step params via `'@<id>'`. Other types (e.g. 'threadCount') carry runtime configuration consumed by the server.",
+    example: {
+      label: "Max threads",
+      value: "4",
+      type: "threadCount",
+    },
+  })
+
 const parsedSequenceSchema = z
   .object({
     paths: z
       .record(z.string(), sequencePathSchema)
       .optional()
       .describe(
-        "Top-level path-variable map keyed by path id. Each entry is referenced from step params via `'@<pathId>'`.",
+        "Top-level path-variable map keyed by path id. Each entry is referenced from step params via `'@<pathId>'`. Superseded by the `variables` block — both are accepted for backward compatibility.",
+      ),
+    variables: z
+      .record(z.string(), sequenceVariableSchema)
+      .optional()
+      .describe(
+        "Typed variable map (introduced by the Variables system). Entries with `type: 'path'` are resolved the same as legacy `paths` entries; entries with `type: 'threadCount'` set the per-job thread cap.",
       ),
     steps: z
       .array(sequenceItemSchema)

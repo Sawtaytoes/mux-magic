@@ -1,7 +1,6 @@
 import {
   finalize,
   ignoreElements,
-  mergeAll,
   mergeMap,
   Observable,
   type OperatorFunction,
@@ -11,21 +10,33 @@ import {
   tap,
 } from "rxjs"
 
+import { getActiveJobId } from "../api/logCapture.js"
+
 // ---------------------------------------------------------------------------
 // Process-wide Task scheduler
 //
 // A "Task" is a unit of heavy work (per-file copy, ffmpeg invocation, etc.)
 // that's part of a Job. Tasks compete for a fixed pool of `concurrency`
-// slots. Jobs themselves are NOT scheduled — only Tasks are. This avoids
-// the deadlock where N concurrent Jobs occupying all slots starve their
-// own inner Tasks.
+// slots under TWO coupled constraints:
+//   1. inflight-global < MAX_THREADS (unchanged from original design)
+//   2. inflight-for-job < job.claim  (new — per-job quota)
 //
-// Wiring: a single inbox Subject pipes through `mergeAll(concurrency)`
-// and is subscribed once at init. Each `runTask(work$)` pushes a gated
-// inner Observable onto the inbox; when the outer mergeAll grants a slot,
-// the gated Observable subscribes to `work$` and forwards values to the
-// caller. Slot is held for as long as the inner subscription is alive,
-// then released on natural complete/error or on caller unsubscribe.
+// The per-job claim is registered before a job's tasks are enqueued via
+// `registerJobClaim(jobId, claim)` and torn down via `unregisterJobClaim`
+// once the job finishes. Tasks without a jobId (null) are gated only by
+// the global cap.
+//
+// Wiring: a single inbox Subject carries `{ bridge$, jobId }` pairs through
+// a custom scheduler operator. Each `runTask(work$)` pushes a gated inner
+// Observable onto the inbox; when the operator grants a slot (both constraints
+// satisfied), it subscribes to bridge$ which then starts work$ and forwards
+// values to the caller. Slot is held for as long as the bridge$ subscription
+// is alive, then released on complete/error or on caller unsubscribe.
+//
+// Fair scheduling: when the front of the queue can't be admitted (per-job
+// cap full), the operator scans forward to find any task from a different
+// job that can run — preventing one job's saturated claim from blocking
+// other jobs' tasks.
 //
 // Composition rule: operators that already route through `runTask` /
 // `runTasks` MUST NOT be nested inside another finite-concurrency
@@ -33,10 +44,20 @@ import {
 // `mergeAll()` upstream and let the scheduler do the bounding.
 // ---------------------------------------------------------------------------
 
-let concurrency: number | null = null
-let inbox: Subject<Observable<unknown>> | null = null
+type ScheduledTask = {
+  bridge$: Observable<never>
+  jobId: string | null
+}
 
-const ensureInbox = (): Subject<Observable<unknown>> => {
+let concurrency: number | null = null
+let inbox: Subject<ScheduledTask> | null = null
+
+// Per-job thread claim registry — populated by registerJobClaim /
+// unregisterJobClaim outside the scheduler operator so callers can
+// register before enqueueing tasks.
+const claimByJob = new Map<string, number>()
+
+const ensureInbox = (): Subject<ScheduledTask> => {
   if (inbox === null) {
     throw new Error(
       "Task scheduler not initialized. Call initTaskScheduler() at process startup.",
@@ -44,6 +65,98 @@ const ensureInbox = (): Subject<Observable<unknown>> => {
   }
 
   return inbox
+}
+
+// Custom scheduler operator: replaces the former `mergeAll(concurrency)`.
+// Enforces the global cap AND the per-job claim on every admission decision.
+const buildScheduler =
+  (
+    maxConcurrency: number,
+  ): ((
+    source: Observable<ScheduledTask>,
+  ) => Observable<never>) =>
+  (source$) =>
+    new Observable<never>((outerSub) => {
+      let inflight = 0
+      const inflightByJob = new Map<string, number>()
+      const queue: ScheduledTask[] = []
+
+      const canAdmit = ({
+        jobId,
+      }: ScheduledTask): boolean => {
+        if (inflight >= maxConcurrency) return false
+        if (jobId === null) return true
+        const claim =
+          claimByJob.get(jobId) ?? maxConcurrency
+        return (inflightByJob.get(jobId) ?? 0) < claim
+      }
+
+      const onComplete = (jobId: string | null): void => {
+        inflight -= 1
+        if (jobId !== null) {
+          const count = (inflightByJob.get(jobId) ?? 0) - 1
+          if (count <= 0) {
+            inflightByJob.delete(jobId)
+          } else {
+            inflightByJob.set(jobId, count)
+          }
+        }
+        admitFromQueue()
+      }
+
+      const admit = (index: number): void => {
+        const task = queue.splice(index, 1)[0]
+        if (!task) return
+        inflight += 1
+        if (task.jobId !== null) {
+          inflightByJob.set(
+            task.jobId,
+            (inflightByJob.get(task.jobId) ?? 0) + 1,
+          )
+        }
+        task.bridge$.subscribe({
+          complete: () => onComplete(task.jobId),
+          error: () => onComplete(task.jobId),
+        })
+      }
+
+      const admitFromQueue = (): void => {
+        // Loop: each admit() removes one task from the queue and may open
+        // room for another (e.g. a per-job cap was the constraint, not the
+        // global cap). Stop when no admissible task remains.
+        while (true) {
+          const index = queue.findIndex(canAdmit)
+          if (index < 0) break
+          admit(index)
+        }
+      }
+
+      const subscription = source$.subscribe({
+        next: (task) => {
+          queue.push(task)
+          admitFromQueue()
+        },
+        error: (error) => outerSub.error(error),
+        complete: () => outerSub.complete(),
+      })
+
+      return () => subscription.unsubscribe()
+    })
+
+// Registers a per-job thread-count claim. Call this before enqueueing
+// any tasks for the job; the scheduler reads the claim at admission time.
+// If the jobId already has a claim, the new value overwrites it.
+export const registerJobClaim = (
+  jobId: string,
+  claim: number,
+): void => {
+  claimByJob.set(jobId, claim)
+}
+
+// Removes the per-job claim after the job finishes. Safe to call even
+// if the job had no registered claim (no-op).
+export const unregisterJobClaim = (jobId: string): void => {
+  claimByJob.delete(jobId)
 }
 
 // Init once at process startup. CLI passes 1 (sequential, equivalent to
@@ -69,9 +182,9 @@ export const initTaskScheduler = (
 
   concurrency = newConcurrency
 
-  const newInbox = new Subject<Observable<unknown>>()
+  const newInbox = new Subject<ScheduledTask>()
 
-  newInbox.pipe(mergeAll(newConcurrency)).subscribe()
+  newInbox.pipe(buildScheduler(newConcurrency)).subscribe()
 
   inbox = newInbox
 }
@@ -80,21 +193,30 @@ export const initTaskScheduler = (
 // enqueues the work; unsubscribing releases the slot (whether queued or
 // running). Values from work$ mirror through to the caller. If work$
 // errors, the caller sees the error.
+//
+// explicitJobId — pass a string or null in tests to bypass the async
+// context lookup. Omit in production; the scheduler reads the current
+// job id from the AsyncLocalStorage set by withJobContext() at subscribe
+// time (inside the Observable factory), so the context is always live.
 export const runTask = <T>(
   work$: Observable<T>,
+  explicitJobId?: string | null,
 ): Observable<T> =>
   new Observable<T>((subscriber) => {
+    const jobId =
+      explicitJobId !== undefined
+        ? explicitJobId
+        : (getActiveJobId() ?? null)
     const queue = ensureInbox()
 
     let isCancelled = false
     let bridgeSubscriber: Subscriber<never> | null = null
     let innerSubscription: Subscription | null = null
 
-    // Gated inner Observable. The outer mergeAll subscribes to this when
+    // Gated inner Observable. The scheduler subscribes to this when
     // a slot opens; we then start work$ and forward values to the caller.
     // Slot stays held for as long as this Observable is "alive" — it
-    // completes when work$ ends naturally OR when the caller unsubscribes
-    // (handled below).
+    // completes when work$ ends naturally OR when the caller unsubscribes.
     const bridge$ = new Observable<never>((bridgeSub) => {
       if (isCancelled) {
         bridgeSub.complete()
@@ -125,17 +247,17 @@ export const runTask = <T>(
       }
     })
 
-    queue.next(bridge$)
+    queue.next({ bridge$, jobId })
 
     return () => {
       isCancelled = true
 
       innerSubscription?.unsubscribe()
 
-      // If the bridge has already been picked up by the outer mergeAll,
-      // explicitly complete it so mergeAll frees the slot. If still
-      // queued, bridgeSubscriber is null and the isCancelled flag
-      // short-circuits when its slot eventually opens.
+      // If the bridge has already been picked up by the scheduler,
+      // explicitly complete it so the slot is freed. If still queued,
+      // bridgeSubscriber is null and the isCancelled flag short-circuits
+      // when its slot eventually opens.
       bridgeSubscriber?.complete()
     }
   })
@@ -264,6 +386,7 @@ export const runTasksOrdered = <T, R>(
 // a different concurrency.
 export const __resetTaskSchedulerForTests = (): void => {
   concurrency = null
+  claimByJob.clear()
 
   inbox?.complete()
 

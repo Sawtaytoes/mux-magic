@@ -4,6 +4,10 @@ import {
   getEffectiveCommandConfigs,
   type Scenario,
 } from "../fake-data/index.js"
+import {
+  resolveDefaultThreadCount,
+  resolveMaxThreads,
+} from "../tools/resolveThreadEnvVars.js"
 import { runJob } from "./jobRunner.js"
 import {
   cancelOrSkipJob,
@@ -46,9 +50,40 @@ export type SequenceGroup = {
 
 export type SequenceItem = SequenceStep | SequenceGroup
 
+export type SequenceVariable = {
+  label?: string
+  value: string
+  type: string
+}
+
 export type SequenceBody = {
   paths?: Record<string, SequencePath>
+  variables?: Record<string, SequenceVariable>
   steps: SequenceItem[]
+}
+
+// Resolves the per-job thread-count claim for a sequence run.
+// Reads the `threadCount` variable from the variables block (singleton —
+// the first one wins), clamps to MAX_THREADS, and falls back to
+// DEFAULT_THREAD_COUNT when no threadCount variable is present.
+const resolveThreadCountClaim = (
+  variables: Record<string, SequenceVariable> | undefined,
+): number => {
+  const maxThreads = resolveMaxThreads()
+
+  if (variables) {
+    const entry = Object.values(variables).find(
+      (variable) => variable.type === "threadCount",
+    )
+    if (entry) {
+      const raw = Number(entry.value)
+      if (Number.isInteger(raw) && raw >= 1) {
+        return Math.min(raw, maxThreads)
+      }
+    }
+  }
+
+  return Math.min(resolveDefaultThreadCount(), maxThreads)
 }
 
 const isGroup = (
@@ -138,6 +173,10 @@ export const runSequenceJob = (
     body.paths ?? {}
   const stepsById: Record<string, StepRuntimeRecord> = {}
 
+  const threadCountClaim = resolveThreadCountClaim(
+    body.variables,
+  )
+
   // Walk every underlying step (flattening group children inline) once
   // up front so we can:
   //   - assign stable ids in document order (so existing tests that
@@ -160,6 +199,7 @@ export const runSequenceJob = (
         params: step.params ?? {},
         parentJobId: jobId,
         stepId: stepIds[index],
+        threadCountClaim,
       })
       return child.id
     },
@@ -347,6 +387,7 @@ export const runSequenceJob = (
       stepObservable,
       {
         extractOutputs: config.extractOutputs,
+        threadCountClaim,
       },
     )
     const childStatus = finalChild?.status

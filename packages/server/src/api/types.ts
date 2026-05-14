@@ -34,6 +34,11 @@ export type Job = {
   // The Jobs UI shows this in the per-step row so the user can match a
   // child job to the corresponding step in the Sequence Builder.
   stepId: string | null
+  // Per-job thread-count claim registered with the task scheduler.
+  // Derived from the sequence's threadCount Variable at job creation;
+  // falls back to DEFAULT_THREAD_COUNT when not set. null for
+  // top-level (non-sequence) jobs, which use only the global cap.
+  threadCountClaim: number | null
 }
 
 // JSON-serialized projection of `Job` that the web client actually
