@@ -570,12 +570,6 @@ export const COMMANDS: Commands = {
           type: "languageCode",
           label: "Subtitles Language",
         }),
-        field("folders", {
-          type: "folderTags",
-          label: "Folders",
-          description:
-            "Folder names to extract subtitles into. Each extracted file is placed inside the named sub-folder relative to its source location. Leave empty to use the default output folder.",
-        }),
       ],
     }
   })(),
