@@ -19,6 +19,9 @@ export type LoadYamlResult = {
   steps: SequenceItem[]
   paths: PathVariable[]
   stepCounter: number
+  // Resolved from the YAML variables block; null when absent or no
+  // threadCount-typed entry is present.
+  threadCount: string | null
 }
 
 const isGroupItem = (item: unknown): boolean =>
@@ -203,6 +206,27 @@ const ensureBasePath = (): PathVariable[] => [
   { id: "basePath", label: "basePath", value: "" },
 ]
 
+const extractThreadCount = (
+  dataObj: Record<string, unknown>,
+): string | null => {
+  const vars = dataObj.variables
+  if (!vars || typeof vars !== "object" || Array.isArray(vars))
+    return null
+  const entries = Object.values(
+    vars as Record<string, unknown>,
+  )
+  const entry = entries.find(
+    (v) =>
+      v &&
+      typeof v === "object" &&
+      !Array.isArray(v) &&
+      (v as Record<string, unknown>).type === "threadCount",
+  ) as Record<string, unknown> | undefined
+  if (!entry) return null
+  const val = entry.value
+  return typeof val === "string" ? val : String(val)
+}
+
 // Parses YAML text and returns the new sequence state. Two formats accepted:
 //   - Canonical: { paths: {...}, steps: [...] }  (emitted by toYamlStr)
 //   - Legacy:    plain array of steps
@@ -218,6 +242,7 @@ export const loadYamlFromText = (
 
   let paths = currentPaths
   let stepsData: unknown[]
+  let threadCount: string | null = null
 
   if (
     data &&
@@ -243,6 +268,7 @@ export const loadYamlFromText = (
       }
       if (!paths.length) paths = ensureBasePath()
       stepsData = (dataObj.steps as unknown[]) || []
+      threadCount = extractThreadCount(dataObj)
     } else {
       throw new Error(
         'Expected a YAML sequence or object with "steps" key',
@@ -274,5 +300,6 @@ export const loadYamlFromText = (
     steps,
     paths,
     stepCounter: context.currentStepCounter,
+    threadCount,
   }
 }

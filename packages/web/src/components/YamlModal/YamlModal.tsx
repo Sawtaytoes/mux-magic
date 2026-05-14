@@ -5,6 +5,7 @@ import { toYamlStr } from "../../jobs/yamlSerializer"
 import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
+import { threadCountAtom } from "../../state/threadCountAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 
 export const YamlModal = () => {
@@ -12,13 +13,14 @@ export const YamlModal = () => {
   const steps = useAtomValue(stepsAtom)
   const paths = useAtomValue(pathsAtom)
   const commands = useAtomValue(commandsAtom)
+  const threadCount = useAtomValue(threadCountAtom)
   const [copyLabel, setCopyLabel] = useState("Copy")
 
   const close = () => setIsOpen(false)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(
-      toYamlStr(steps, paths, commands),
+      toYamlStr(steps, paths, commands, threadCount),
     )
     setCopyLabel("Copied!")
     setTimeout(() => setCopyLabel("Copy"), 2000)
@@ -59,7 +61,7 @@ export const YamlModal = () => {
           id="yaml-out"
           className="flex-1 overflow-auto p-4 text-xs text-emerald-400 font-mono leading-relaxed whitespace-pre"
         >
-          {toYamlStr(steps, paths, commands)}
+          {toYamlStr(steps, paths, commands, threadCount)}
         </pre>
       </div>
     </Modal>

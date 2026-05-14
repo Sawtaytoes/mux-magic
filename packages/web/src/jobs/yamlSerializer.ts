@@ -47,6 +47,7 @@ export const toYamlStr = (
   steps: SequenceItem[],
   paths: PathVariable[],
   commands: Commands,
+  threadCount?: string | null,
 ): string => {
   const filledItems = steps.filter(hasContent)
   const hasSomething =
@@ -65,8 +66,14 @@ export const toYamlStr = (
     ]),
   )
 
+  const variablesObj =
+    threadCount != null
+      ? { tc: { type: "threadCount", value: threadCount } }
+      : undefined
+
   return dump(
     {
+      ...(variablesObj ? { variables: variablesObj } : {}),
       paths: pathsObj,
       steps: filledItems.map((item) =>
         isGroup(item)

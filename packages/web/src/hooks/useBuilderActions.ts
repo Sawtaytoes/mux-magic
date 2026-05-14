@@ -30,6 +30,7 @@ import {
   setPathValueAtom,
 } from "../state/pathsAtom"
 import { runningAtom } from "../state/runAtoms"
+import { threadCountAtom } from "../state/threadCountAtom"
 import { setAllCollapsedAtom } from "../state/sequenceAtoms"
 import {
   changeCommandAtom,
@@ -58,6 +59,7 @@ const captureSnapshot = (
   steps: store.get(stepsAtom),
   paths: store.get(pathsAtom),
   stepCounter: store.get(stepCounterAtom),
+  threadCount: store.get(threadCountAtom),
 })
 
 const applySnapshot = (
@@ -67,6 +69,7 @@ const applySnapshot = (
   store.set(stepsAtom, snapshot.steps)
   store.set(pathsAtom, snapshot.paths)
   store.set(stepCounterAtom, snapshot.stepCounter)
+  store.set(threadCountAtom, snapshot.threadCount)
 }
 
 export const useBuilderActions = () => {
@@ -260,6 +263,7 @@ export const useBuilderActions = () => {
     store.set(stepsAtom, [])
     store.set(pathsAtom, [DEFAULT_BASE_PATH])
     store.set(stepCounterAtom, 0)
+    store.set(threadCountAtom, null)
   }, [store, pushHistory])
 
   const copyYaml = useCallback(async () => {
@@ -267,6 +271,7 @@ export const useBuilderActions = () => {
       store.get(stepsAtom),
       store.get(pathsAtom),
       store.get(commandsAtom),
+      store.get(threadCountAtom),
     )
     await navigator.clipboard.writeText(yaml)
   }, [store])
@@ -277,6 +282,7 @@ export const useBuilderActions = () => {
       store.get(stepsAtom),
       store.get(pathsAtom),
       store.get(commandsAtom),
+      store.get(threadCountAtom),
     )
     store.set(runningAtom, true)
     store.set(apiRunModalAtom, {
@@ -520,7 +526,12 @@ export const useBuilderActions = () => {
 
       if (!foundGroup) return
 
-      const yaml = toYamlStr([foundGroup], paths, commands)
+      const yaml = toYamlStr(
+        [foundGroup],
+        paths,
+        commands,
+        store.get(threadCountAtom),
+      )
       store.set(runningAtom, true)
       store.set(apiRunModalAtom, {
         jobId: null,
