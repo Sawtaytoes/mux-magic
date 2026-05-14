@@ -75,8 +75,8 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | 09 | [number-fields-redesign](09_number-fields-redesign.md) | web | Sonnet | Medium | ON | 01 | done |
 | 0a | [json-field-readonly](0a_json-field-readonly.md) | web | Haiku | Low | OFF | 01 | done |
 | 0b | [auto-paste-yaml](0b_auto-paste-yaml.md) | web | Haiku | Low | OFF | 01 | done |
-| 0c | [scale-resolution-aspect-lock](0c_scale-resolution-aspect-lock.md) | web | Sonnet | Medium | ON | 01 | ready |
-| 0d | [narrow-view-menu-animate](0d_narrow-view-menu-animate.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 0c | [scale-resolution-aspect-lock](0c_scale-resolution-aspect-lock.md) | web | Sonnet | Medium | ON | 01 | done |
+| 0d | [narrow-view-menu-animate](0d_narrow-view-menu-animate.md) | web | Sonnet | Medium | ON | 01 | done |
 | 0e | [story-actions-and-reopen](0e_story-actions-and-reopen.md) | web | Haiku | Low | OFF | 01 | done |
 | 0f | [undo-redo-scroll-to-affected](0f_undo-redo-scroll-to-affected.md) | web | Sonnet | Medium | ON | 01 | done |
 | 10 | [apirunmodal-rename](10_apirunmodal-rename.md) — shipped as part of worker 17 (PR #95) | web | Haiku | Low | OFF | 01 | done |
@@ -146,6 +146,8 @@ The existing `nameSpecialFeatures` code is preserved (renamed only by worker 22,
 | 2c | `pure-functions-sweep` | srv+web | Sonnet | High | ON | 20 | planned |
 | 2d | `asset-fallback-to-cli` | srv | Haiku | Low | OFF | 01 | planned |
 | 38 | [per-file-pipelining](38_per-file-pipelining.md) — rewire `sequenceRunner.ts` to stream files through steps via rxjs composition; file 1 hits step 3 while file 2 still on step 1. Multiplies value of worker 11's thread budget | srv | **Opus** | High | ON | 20, 21, 28 | ready |
+| 3b | [extract-subtitles-multi-language-type-filter](3b_extract-subtitles-multi-language-type-filter.md) — multi-language `subtitlesLanguages` array, tri-state `typesMode` (`none\|include\|exclude`) + `subtitleTypes` chip picker, single batched `mkvextract` call per file. Removes hardcoded image-codec auto-skip. | srv+web+cli | Sonnet | Medium | ON | 20 | planned |
+| 3c | [bcp47-language-variants](3c_bcp47-language-variants.md) — BCP 47 locale variants (`zh-Hans-CN`, `zh-Hant-HK`, `pt-BR`, …) via optional `ietf` field on `LanguageSelection`. Augments 3-letter codes, emits `language-ietf` to mkvpropedit/mkvmerge alongside legacy `language`. Secondary "Region/Variant" picker appears only for curated base languages. | srv+web+cli | Sonnet | Medium | ON | 08, 20 | planned |
 
 ---
 
