@@ -247,3 +247,78 @@ steps:
     expect(() => load(yaml)).toThrow("non-empty")
   })
 })
+
+// ─── variables block (threadCount) ───────────────────────────────────────────
+
+describe("loadYaml — threadCount from variables block", () => {
+  test("returns null threadCount when no variables block", () => {
+    const yaml = `
+paths:
+  basePath:
+    label: basePath
+    value: ''
+steps:
+  - id: step1
+    command: makeDirectory
+    params: {}
+`
+    expect(load(yaml).threadCount).toBeNull()
+  })
+
+  test("parses threadCount value from variables block", () => {
+    const yaml = `
+paths:
+  basePath:
+    label: basePath
+    value: ''
+variables:
+  tc:
+    type: threadCount
+    value: '4'
+steps:
+  - id: step1
+    command: makeDirectory
+    params: {}
+`
+    expect(load(yaml).threadCount).toBe("4")
+  })
+
+  test("ignores variables entries with non-threadCount type", () => {
+    const yaml = `
+paths:
+  basePath:
+    label: basePath
+    value: ''
+variables:
+  myPath:
+    type: path
+    value: /some/path
+steps:
+  - id: step1
+    command: makeDirectory
+    params: {}
+`
+    expect(load(yaml).threadCount).toBeNull()
+  })
+
+  test("finds threadCount among multiple variable entries", () => {
+    const yaml = `
+paths:
+  basePath:
+    label: basePath
+    value: ''
+variables:
+  myPath:
+    type: path
+    value: /some/path
+  tc:
+    type: threadCount
+    value: '8'
+steps:
+  - id: step1
+    command: makeDirectory
+    params: {}
+`
+    expect(load(yaml).threadCount).toBe("8")
+  })
+})

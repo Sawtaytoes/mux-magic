@@ -273,3 +273,49 @@ describe("toYamlStr — blank step filtering", () => {
     expect(result).toBe("# No steps yet")
   })
 })
+
+// ─── threadCount variable block ───────────────────────────────────────────────
+
+describe("toYamlStr — threadCount variable", () => {
+  test("omits variables block when threadCount is null", () => {
+    const result = toYamlStr(
+      [makeStep()] as SequenceItem[],
+      [BASE_PATH],
+      MAKE_DIR_COMMAND,
+      null,
+    )
+    expect(result).not.toContain("variables:")
+  })
+
+  test("omits variables block when threadCount not passed", () => {
+    const result = toYamlStr(
+      [makeStep()] as SequenceItem[],
+      [BASE_PATH],
+      MAKE_DIR_COMMAND,
+    )
+    expect(result).not.toContain("variables:")
+  })
+
+  test("includes variables block with threadCount type when set", () => {
+    const result = toYamlStr(
+      [makeStep()] as SequenceItem[],
+      [BASE_PATH],
+      MAKE_DIR_COMMAND,
+      "4",
+    )
+    expect(result).toContain("variables:")
+    expect(result).toContain("threadCount")
+    expect(result).toContain("4")
+  })
+
+  test("threadCount entry has type and value fields", () => {
+    const result = toYamlStr(
+      [makeStep()] as SequenceItem[],
+      [BASE_PATH],
+      MAKE_DIR_COMMAND,
+      "6",
+    )
+    expect(result).toMatch(/type:\s*threadCount/)
+    expect(result).toMatch(/value:\s*'?6'?/)
+  })
+})
