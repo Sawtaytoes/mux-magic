@@ -13,15 +13,15 @@ import type {
 const ReOpenButton = ({
   initialState,
 }: {
-  initialState: ApiRunState
+  initialState: SequenceRunModalState
 }) => {
-  const setApiRun = useSetAtom(apiRunModalAtom)
+  const setSequenceRun = useSetAtom(sequenceRunModalAtom)
   return (
     <div className="p-4">
       <button
         type="button"
         className="text-xs bg-slate-700 text-white px-3 py-1.5 rounded"
-        onClick={() => setApiRun(initialState)}
+        onClick={() => setSequenceRun(initialState)}
       >
         Re-open modal
       </button>
@@ -141,7 +141,7 @@ export const RunningOneJob: Story = {
       <ReOpenButton
         initialState={runningOneJobParams.initialState}
       />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }
@@ -155,7 +155,7 @@ export const RunningParallelJobs: Story = {
           runningParallelJobsParams.initialState
         }
       />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }
@@ -167,7 +167,7 @@ export const Running10Children: Story = {
       <ReOpenButton
         initialState={running10ChildrenParams.initialState}
       />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }
@@ -177,7 +177,7 @@ export const Completed: Story = {
   render: () => (
     <>
       <ReOpenButton initialState={completedState} />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }
@@ -187,7 +187,7 @@ export const Failed: Story = {
   render: () => (
     <>
       <ReOpenButton initialState={failedState} />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }
@@ -197,7 +197,7 @@ export const NoJobYet: Story = {
   render: () => (
     <>
       <ReOpenButton initialState={noJobYetState} />
-      <ApiRunModal />
+      <SequenceRunModal />
     </>
   ),
 }
