@@ -72,6 +72,7 @@ describe("PageHeader", () => {
   test("clicking Dry Run updates URL to ?fake=success", async () => {
     const store = createStore()
     renderWithStore(store)
+    await openControlsMenu()
     await userEvent.click(
       screen.getByRole("button", { name: /dry run/i }),
     )
@@ -89,6 +90,7 @@ describe("PageHeader", () => {
       window.localStorage.__proto__,
       "setItem",
     )
+    await openControlsMenu()
     await userEvent.click(
       screen.getByRole("button", { name: /dry run/i }),
     )
@@ -149,6 +151,7 @@ describe("PageHeader", () => {
     const store = createStore()
     store.set(dryRunAtom, true)
     renderWithStore(store)
+    await openControlsMenu()
     await userEvent.click(
       screen.getByRole("button", {
         name: /simulate failures/i,
