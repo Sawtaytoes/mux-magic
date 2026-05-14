@@ -4,30 +4,29 @@
 //   - LookupSearchStage / LookupVariantStage / LookupReleaseStage
 //   - NumberWithLookupField (kicks off a lookup)
 //   - lookupModalAtom (post-uiAtoms split)
+//
+// Canonical data shapes (LookupSearchResult, LookupType, LookupRelease) live
+// on the server via @mux-magic/server/api-types — re-exported here so
+// component imports stay path-stable. Web-side synthesis types (LookupVariant,
+// LookupGroup) and UI state shapes (LookupStage, LookupState) stay local.
 
-export type LookupType =
-  | "mal"
-  | "anidb"
-  | "tvdb"
-  | "tmdb"
-  | "dvdcompare"
+import type {
+  LookupRelease,
+  LookupSearchResult,
+  LookupType,
+} from "@mux-magic/server/api-types"
+
+export type {
+  LookupRelease,
+  LookupSearchResult,
+  LookupType,
+}
 
 export type LookupStage = "search" | "variant" | "release"
 
-// eslint-disable-next-line no-restricted-syntax -- web-only normalized search result; not in server/api-types (server emits per-provider types)
-export type LookupSearchResult = {
-  malId?: number
-  aid?: number
-  tvdbId?: number
-  movieDbId?: number
-  name?: string
-  // Native-script title (Japanese for MAL/AniDB) shown as a muted
-  // subtitle under the primary name in the picker.
-  nameJapanese?: string
-  title?: string
-  year?: string
-}
-
+// Web-only synthesis: groupDvdCompareResults() in LookupSearchStage builds
+// these by collapsing flat SearchDvdCompareResult[] into baseTitle+year
+// groups. The server never emits this shape — it stays here.
 export type LookupVariant = {
   id: string
   variant: string
@@ -37,11 +36,6 @@ export type LookupGroup = {
   baseTitle: string
   year?: string
   variants: LookupVariant[]
-}
-
-export type LookupRelease = {
-  hash: string | number
-  label: string
 }
 
 export type LookupState = {
