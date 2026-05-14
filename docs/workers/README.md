@@ -87,7 +87,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | 15 | [dry-run-silent-failures](15_dry-run-silent-failures.md) | web | Sonnet | Medium | ON | 01 | done |
 | 16 | [user-event-migration](16_user-event-migration.md) | web | Sonnet | High | ON | 01 | done |
 | 17 | [run-in-background-sequence-modal](17_run-in-background-sequence-modal.md) | web | Sonnet | High | ON | 10 | done |
-| 3d | [loadmodal-backdrop-leak-fix](3d_loadmodal-backdrop-leak-fix.md) — bug-fix follow-up to worker 0b: open LoadModal synchronously so the paste listener attaches before `navigator.clipboard.readText()` resolves; gates Modal visibility on a new `loadModalAutoPastingAtom` to avoid flash | web | Sonnet | Medium | ON | 0b | in-progress |
+| 3d | [loadmodal-backdrop-leak-fix](3d_loadmodal-backdrop-leak-fix.md) — bug-fix follow-up to worker 0b: open LoadModal synchronously so the paste listener attaches before `navigator.clipboard.readText()` resolves; gates Modal visibility on a new `loadModalAutoPastingAtom` to avoid flash | web | Sonnet | Medium | ON | 0b | done |
 
 ### Other track (3 workers)
 
