@@ -84,7 +84,12 @@ describe("useScrollToAffectedStep", () => {
 
     const store = createStore()
     store.set(undoStackAtom, [
-      { steps: allSteps, paths: [], stepCounter: 10 },
+      {
+        steps: allSteps,
+        paths: [],
+        stepCounter: 10,
+        threadCount: null,
+      },
     ])
     store.set(canUndoAtom, true)
     store.set(stepsAtom, stepsWithoutStep7)
@@ -110,7 +115,12 @@ describe("useScrollToAffectedStep", () => {
 
     const store = createStore()
     store.set(undoStackAtom, [
-      { steps: allSteps, paths: [], stepCounter: 2 },
+      {
+        steps: allSteps,
+        paths: [],
+        stepCounter: 2,
+        threadCount: null,
+      },
     ])
     store.set(canUndoAtom, true)
     store.set(stepsAtom, stepsWithoutB)
@@ -142,7 +152,12 @@ describe("useScrollToAffectedStep", () => {
     const store = createStore()
     const steps = [makeStep("step1"), makeStep("step2")]
     store.set(undoStackAtom, [
-      { steps: [], paths: [], stepCounter: 2 },
+      {
+        steps: [],
+        paths: [],
+        stepCounter: 2,
+        threadCount: null,
+      },
     ])
     store.set(canUndoAtom, true)
     store.set(stepsAtom, steps)
@@ -174,7 +189,12 @@ describe("useScrollToAffectedStep", () => {
       "../state/historyAtoms"
     )
     store.set(redoStackAtom, [
-      { steps: allSteps, paths: [], stepCounter: 3 },
+      {
+        steps: allSteps,
+        paths: [],
+        stepCounter: 3,
+        threadCount: null,
+      },
     ])
     store.set(canRedoAtom, true)
     store.set(stepsAtom, stepsWithoutZ)

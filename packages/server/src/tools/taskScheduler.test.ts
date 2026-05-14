@@ -11,9 +11,11 @@ import {
   __resetTaskSchedulerForTests,
   initTaskScheduler,
   mergeMapOrdered,
+  registerJobClaim,
   runTask,
   runTasks,
   runTasksOrdered,
+  unregisterJobClaim,
 } from "./taskScheduler.js"
 
 beforeEach(() => {
@@ -475,6 +477,167 @@ describe(mergeMapOrdered.name, () => {
       "done-b",
       "done-c",
     ])
+  })
+})
+
+describe("per-job quota — runTask with explicit jobId", () => {
+  const makeWork = (
+    runningRef: { count: number },
+    completers: Array<() => void>,
+  ) =>
+    new Observable<void>((subscriber) => {
+      runningRef.count += 1
+      completers.push(() => {
+        runningRef.count -= 1
+        subscriber.complete()
+      })
+    })
+
+  test("single job: per-job cap of 1 serialises tasks even when global pool has room", () => {
+    initTaskScheduler(8)
+    registerJobClaim("job-a", 1)
+
+    const runningA = { count: 0 }
+    const completersA: Array<() => void> = []
+
+    runTask(
+      makeWork(runningA, completersA),
+      "job-a",
+    ).subscribe()
+    runTask(
+      makeWork(runningA, completersA),
+      "job-a",
+    ).subscribe()
+
+    expect(runningA.count).toBe(1)
+    expect(completersA.length).toBe(1)
+
+    completersA[0]()
+    expect(runningA.count).toBe(1)
+    expect(completersA.length).toBe(2)
+
+    completersA[1]()
+    expect(runningA.count).toBe(0)
+
+    unregisterJobClaim("job-a")
+  })
+
+  test("per-job cap does not block tasks from a different job", () => {
+    initTaskScheduler(8)
+    registerJobClaim("job-a", 1)
+    registerJobClaim("job-b", 4)
+
+    const runningA = { count: 0 }
+    const runningB = { count: 0 }
+    const completersA: Array<() => void> = []
+    const completersB: Array<() => void> = []
+
+    runTask(
+      makeWork(runningA, completersA),
+      "job-a",
+    ).subscribe()
+    runTask(
+      makeWork(runningA, completersA),
+      "job-a",
+    ).subscribe()
+    runTask(
+      makeWork(runningB, completersB),
+      "job-b",
+    ).subscribe()
+    runTask(
+      makeWork(runningB, completersB),
+      "job-b",
+    ).subscribe()
+
+    // job-a capped at 1; job-b can run 2 (both fit in global pool)
+    expect(runningA.count).toBe(1)
+    expect(runningB.count).toBe(2)
+
+    completersA.forEach((completer) => {
+      completer()
+    })
+    completersB.forEach((completer) => {
+      completer()
+    })
+
+    unregisterJobClaim("job-a")
+    unregisterJobClaim("job-b")
+  })
+
+  test("global pool limits job B to remaining slots while job A occupies its claim", () => {
+    // MAX_THREADS=8, job A claim=4, job B claim=8.
+    // While A occupies 4 global slots, B can only use the remaining 4.
+    // After A finishes, B can use all 8.
+    initTaskScheduler(8)
+    registerJobClaim("job-a", 4)
+    registerJobClaim("job-b", 8)
+
+    const runningA = { count: 0 }
+    const runningB = { count: 0 }
+    const completersA: Array<() => void> = []
+    const completersB: Array<() => void> = []
+
+    // 4 tasks for A + 8 for B
+    Array.from({ length: 4 }).forEach(() => {
+      runTask(
+        makeWork(runningA, completersA),
+        "job-a",
+      ).subscribe()
+    })
+    Array.from({ length: 8 }).forEach(() => {
+      runTask(
+        makeWork(runningB, completersB),
+        "job-b",
+      ).subscribe()
+    })
+
+    // A fills its claim (4); B gets the remaining 4 global slots.
+    expect(runningA.count).toBe(4)
+    expect(runningB.count).toBe(4)
+    // 4 B tasks are still queued.
+    expect(completersB.length).toBe(4)
+
+    // Complete all A tasks one by one — each frees a slot that B claims.
+    completersA[0]()
+    expect(runningB.count).toBe(5)
+    completersA[1]()
+    expect(runningB.count).toBe(6)
+    completersA[2]()
+    expect(runningB.count).toBe(7)
+    completersA[3]()
+    expect(runningB.count).toBe(8)
+
+    expect(runningA.count).toBe(0)
+
+    completersB.forEach((completer) => {
+      completer()
+    })
+
+    unregisterJobClaim("job-a")
+    unregisterJobClaim("job-b")
+  })
+
+  test("tasks with no jobId (null) are gated only by the global cap", () => {
+    initTaskScheduler(2)
+
+    const running = { count: 0 }
+    const completers: Array<() => void> = []
+
+    runTask(makeWork(running, completers), null).subscribe()
+    runTask(makeWork(running, completers), null).subscribe()
+    runTask(makeWork(running, completers), null).subscribe()
+
+    // Only 2 admitted (global cap); no per-job quota applies.
+    expect(running.count).toBe(2)
+    expect(completers.length).toBe(2)
+
+    completers[0]()
+    expect(running.count).toBe(2)
+    expect(completers.length).toBe(3)
+
+    completers[1]()
+    completers[2]()
+    expect(running.count).toBe(0)
   })
 })
 

@@ -11,6 +11,7 @@ import { logsRoutes } from "./routes/logRoutes.js"
 import { queryRoutes } from "./routes/queryRoutes.js"
 import { sequenceRoutes } from "./routes/sequenceRoutes.js"
 import { serverIdRoutes } from "./routes/serverIdRoutes.js"
+import { systemRoutes } from "./routes/systemRoutes.js"
 import { transcodeRoutes } from "./routes/transcodeRoutes.js"
 import { versionRoutes } from "./routes/versionRoutes.js"
 
@@ -26,6 +27,7 @@ app.route("/", sequenceRoutes)
 app.route("/", haTriggerRoutes)
 app.route("/", fileRoutes)
 app.route("/", serverIdRoutes)
+app.route("/", systemRoutes)
 app.route("/", transcodeRoutes)
 app.route("/", versionRoutes)
 
