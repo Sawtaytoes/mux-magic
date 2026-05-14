@@ -1,6 +1,13 @@
 import { logAndRethrowPipelineError } from "@mux-magic/tools"
 import { of, Subject, throwError } from "rxjs"
-import { afterEach, describe, expect, test } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
+import * as webhookReporter from "../tools/webhookReporter.js"
 import { runJob } from "./jobRunner.js"
 import {
   cancelJob,
@@ -264,5 +271,96 @@ describe(runJob.name, () => {
 
     const final = await promise
     expect(final?.status).toBe("cancelled")
+  })
+})
+
+// ─── Webhook reporter integration ─────────────────────────────────────────────
+
+describe("runJob — webhook reporter calls", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  test("calls reportJobStarted when the job transitions to running", () => {
+    const startedSpy = vi
+      .spyOn(webhookReporter, "reportJobStarted")
+      .mockResolvedValue(undefined)
+    const job = createJob({ commandName: "copyFiles" })
+    const upstream = new Subject<never>()
+
+    runJob(job.id, upstream.asObservable())
+
+    expect(startedSpy).toHaveBeenCalledOnce()
+    expect(startedSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        commandName: "copyFiles",
+        jobId: job.id,
+      }),
+    )
+
+    upstream.complete()
+  })
+
+  test("calls reportJobCompleted when the observable completes", async () => {
+    vi.spyOn(
+      webhookReporter,
+      "reportJobStarted",
+    ).mockResolvedValue(undefined)
+    const completedSpy = vi
+      .spyOn(webhookReporter, "reportJobCompleted")
+      .mockResolvedValue(undefined)
+    const job = createJob({ commandName: "copyFiles" })
+
+    await runJob(job.id, of("result"))
+
+    expect(completedSpy).toHaveBeenCalledOnce()
+    expect(completedSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        commandName: "copyFiles",
+        jobId: job.id,
+      }),
+    )
+  })
+
+  test("calls reportJobFailed when the observable errors", async () => {
+    vi.spyOn(
+      webhookReporter,
+      "reportJobStarted",
+    ).mockResolvedValue(undefined)
+    const failedSpy = vi
+      .spyOn(webhookReporter, "reportJobFailed")
+      .mockResolvedValue(undefined)
+    const job = createJob({ commandName: "copyFiles" })
+
+    await runJob(
+      job.id,
+      throwError(() => new Error("boom")),
+    )
+
+    expect(failedSpy).toHaveBeenCalledOnce()
+    expect(failedSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        commandName: "copyFiles",
+        error: "Error: boom",
+        jobId: job.id,
+      }),
+    )
+  })
+
+  test("webhook reporter POST failures do not crash the job", async () => {
+    vi.spyOn(
+      webhookReporter,
+      "reportJobStarted",
+    ).mockRejectedValue(new Error("network down"))
+    vi.spyOn(
+      webhookReporter,
+      "reportJobCompleted",
+    ).mockRejectedValue(new Error("network down"))
+    const job = createJob({ commandName: "copyFiles" })
+
+    await expect(
+      runJob(job.id, of("done")),
+    ).resolves.toBeDefined()
+    expect(getJob(job.id)?.status).toBe("completed")
   })
 })
