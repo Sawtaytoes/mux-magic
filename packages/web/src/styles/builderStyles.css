@@ -79,15 +79,13 @@
   justify-content: space-between;
 }
 
+/* The menu stays mounted in both open and closed states so transform/opacity
+   can transition — `display: none` would prevent any animation. The closed
+   state is hidden via opacity + transform + visibility; visibility is
+   delayed until the fade-out finishes so closed menus do not intercept
+   clicks and stay out of the accessibility tree (paired with the
+   aria-hidden attribute set in PageHeader.tsx). */
 .page-menu {
-  display: none;
-}
-.page-menu-group,
-.page-menu-row {
-  display: contents;
-}
-
-.page-menu.open {
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -101,13 +99,64 @@
   border-radius: 0.5rem;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
   z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 200ms ease-out,
+    transform 200ms ease-out,
+    visibility 0s linear 200ms;
 }
-/* Anchor each popover under its toggle. */
-.page-menu-nav.open {
+.page-menu-group,
+.page-menu-row {
+  display: contents;
+}
+
+/* Anchor each popover under its toggle and pick its slide direction. */
+.page-menu-nav {
   left: 0.75rem;
+  transform: translateX(-110%);
 }
-.page-menu-controls.open {
+.page-menu-controls {
   right: 0.75rem;
+  transform: translateX(110%);
+}
+
+.page-menu.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0);
+  /* Visibility flips immediately on open so focus management + click work
+     from the first frame; opacity/transform animate over 200ms. */
+  transition:
+    opacity 200ms ease-out,
+    transform 200ms ease-out,
+    visibility 0s linear 0s;
+}
+
+/* Backdrop click-outside fades at half-speed (400ms) per spec; the actual
+   dismissal logic lives on a document-level mousedown listener in
+   PageHeader.tsx, so this is purely visual cueing via opacity on the
+   header bar. No DOM element is added — the rule is here so a future
+   backdrop element can opt in by setting `data-page-menu-backdrop`. */
+[data-page-menu-backdrop] {
+  transition: opacity 400ms ease-out;
+}
+
+/* Honor reduced-motion: snap open/close, no slide, no fade. The closed
+   state still hides the menu (opacity/visibility), only the transition
+   is removed so the change is instantaneous. */
+@media (prefers-reduced-motion: reduce) {
+  .page-menu,
+  .page-menu.open,
+  [data-page-menu-backdrop] {
+    transition: none;
+  }
+  .page-menu-nav,
+  .page-menu-controls {
+    transform: none;
+  }
 }
 
 .page-menu.open .page-menu-group {

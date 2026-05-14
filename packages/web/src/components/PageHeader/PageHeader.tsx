@@ -219,6 +219,7 @@ export const PageHeader = () => {
         {/* Nav menu (New Sequence, Jobs link) */}
         <div
           id="page-actions-nav"
+          aria-hidden={openMenu !== "nav"}
           className={`page-menu page-menu-nav${openMenu === "nav" ? " open" : ""}`}
         >
           <div className="page-menu-group">
@@ -310,6 +311,7 @@ export const PageHeader = () => {
         {/* Controls menu */}
         <div
           id="page-actions-controls"
+          aria-hidden={openMenu !== "controls"}
           className={`page-menu page-menu-controls${openMenu === "controls" ? " open" : ""}`}
         >
           {/* Mirror of #header-pinned for viewports where that cluster

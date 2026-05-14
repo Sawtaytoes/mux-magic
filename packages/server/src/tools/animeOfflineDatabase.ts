@@ -90,23 +90,37 @@ const ENGLISH_STOPWORDS_REGEX =
 // skipped before the stopword scoring runs.
 const LATIN_SCRIPT_REGEX = /^[ -ÿ‐-‧‰-⁞]+$/
 
+const scoreEnglishness = (text: string): number => {
+  if (!LATIN_SCRIPT_REGEX.test(text)) return 0
+  const matches = text.match(ENGLISH_STOPWORDS_REGEX)
+  return matches?.length ?? 0
+}
+
+// Returns a synonym whose Englishness score is STRICTLY HIGHER than the
+// title's score. Strict-greater matters: when title is "Fate/stay night"
+// and a synonym "Fate Stay Night" exists, both score 1 (on "night") and
+// the synonym is just a punctuation-stripped romaji variant — swapping
+// them would be cosmetic noise. Only an actual English title like
+// "Re:Zero - Starting Life in Another World" (score 2 on "in" + "world")
+// against romaji "Re:Zero kara Hajimeru Isekai Seikatsu" (score 0)
+// crosses the threshold.
 const pickEnglishSynonym = (
+  title: string,
   synonyms: string[] | undefined,
 ): string | undefined => {
   if (!synonyms?.length) return undefined
-  let bestScore = 0
+  const titleScore = scoreEnglishness(title)
+  let bestScore = titleScore
   let bestSynonym: string | undefined
   for (const synonym of synonyms) {
-    if (!/\s/.test(synonym)) continue // single-word synonyms aren't useful subtitles
-    if (!LATIN_SCRIPT_REGEX.test(synonym)) continue
-    const matches = synonym.match(ENGLISH_STOPWORDS_REGEX)
-    const score = matches?.length ?? 0
+    if (!/\s/.test(synonym)) continue // single-word synonyms aren't useful as a subtitle either
+    const score = scoreEnglishness(synonym)
     if (score > bestScore) {
       bestScore = score
       bestSynonym = synonym
     }
   }
-  return bestScore >= 1 ? bestSynonym : undefined
+  return bestSynonym
 }
 
 const isFresh = async (
@@ -247,7 +261,10 @@ export const parseAnimeIndex = (
       .join("\n")
       .toLowerCase()
 
-    const englishTitle = pickEnglishSynonym(entry.synonyms)
+    const englishTitle = pickEnglishSynonym(
+      entry.title,
+      entry.synonyms,
+    )
     const displayName = englishTitle ?? entry.title
     index.push({
       aid,

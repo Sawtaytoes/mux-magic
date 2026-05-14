@@ -1,5 +1,6 @@
 import type { LookupState } from "../../components/LookupModal/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
+import { formatDvdCompareDisplayName } from "../../utils/formatDvdCompareDisplayName"
 
 interface LookupReleaseStageProps {
   state: LookupState
@@ -66,10 +67,23 @@ export const LookupReleaseStage = ({
               state.companionNameField &&
               state.selectedGroup
             ) {
+              // Format must match the server-side lookupDvdCompareFilm
+              // formatter so cache hits survive round-trips. Without
+              // this, picker selection writes "Soldier" while the
+              // reverse-lookup writes "Soldier (UHD Blu-ray) (1998)" —
+              // visible as a value flicker on the next refresh or ID
+              // toggle. The shared formatter also handles the variant
+              // rename ("Blu-ray 4K" → "UHD Blu-ray") and the bare-DVD
+              // suppression rule (no variant suffix when variant=DVD).
               setParam(
                 state.stepId,
                 state.companionNameField,
-                state.selectedGroup.baseTitle,
+                formatDvdCompareDisplayName({
+                  baseTitle: state.selectedGroup.baseTitle,
+                  variant:
+                    state.selectedVariant ?? undefined,
+                  year: state.selectedGroup.year,
+                }),
               )
             }
             setParam(

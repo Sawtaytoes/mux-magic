@@ -10,476 +10,332 @@
 // extractor catches up.
 
 window.commandDescriptions = {
-  makeDirectory: {
-    summary:
-      "Create a directory (or the parent directory of a file path)",
-    fields: {
-      filePath:
-        "Directory path to create, or a file path whose parent directory should be created",
-    },
+  "makeDirectory": {
+    "summary": "Create a directory (or the parent directory of a file path)",
+    "fields": {
+      "filePath": "Directory path to create, or a file path whose parent directory should be created"
+    }
   },
-  changeTrackLanguages: {
-    summary: "Change language tags for media tracks",
-    fields: {
-      sourcePath:
-        "Directory with media files whose tracks need language metadata corrections.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-      audioLanguage:
-        "A 3-letter ISO-6392 language code for audio tracks. All tracks will be labeled with this language.",
-      subtitlesLanguage:
-        "A 3-letter ISO-6392 language code for subtitles tracks. All tracks will be labeled with this language.",
-      videoLanguage:
-        "A 3-letter ISO-6392 language code for video tracks. All tracks will be labeled with this language.",
-    },
+  "changeTrackLanguages": {
+    "summary": "Change language tags for media tracks",
+    "fields": {
+      "sourcePath": "Directory with media files whose tracks need language metadata corrections.",
+      "isRecursive": "Recursively looks in folders for media files.",
+      "audioLanguage": "A 3-letter ISO-6392 language code for audio tracks. All tracks will be labeled with this language.",
+      "subtitlesLanguage": "A 3-letter ISO-6392 language code for subtitles tracks. All tracks will be labeled with this language.",
+      "videoLanguage": "A 3-letter ISO-6392 language code for video tracks. All tracks will be labeled with this language."
+    }
   },
-  copyFiles: {
-    summary: "Copy files from source to destination",
-    fields: {
-      sourcePath: "Directory to copy files from.",
-      destinationPath:
-        "Directory to copy files into. Created if it does not already exist.",
-    },
+  "copyFiles": {
+    "summary": "Copy files from source to destination",
+    "fields": {
+      "sourcePath": "Directory to copy files from.",
+      "destinationPath": "Directory to copy files into. Created if it does not already exist."
+    }
   },
-  flattenOutput: {
-    summary:
-      "Flatten a chained step's output: copies the folder's contents up one level (deletes source only if requested)",
-    fields: {
-      sourcePath:
-        "Output folder produced by a previous step (e.g. /work/SUBTITLED). Its contents are copied up one level into its parent.",
-      deleteSourceFolder:
-        "Delete the source folder after copying. By default the source is preserved (debug-friendly).",
-    },
+  "flattenOutput": {
+    "summary": "Flatten a chained step's output: copies the folder's contents up one level (deletes source only if requested)",
+    "fields": {
+      "sourcePath": "Output folder produced by a previous step (e.g. /work/SUBTITLED). Its contents are copied up one level into its parent.",
+      "deleteSourceFolder": "Delete the source folder after copying. By default the source is preserved (debug-friendly)."
+    }
   },
-  copyOutSubtitles: {
-    summary:
-      "[DEPRECATED — use extractSubtitles] Extract subtitle tracks into separate files alongside each video file.",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-      subtitlesLanguage:
-        "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
-      folders:
-        "Folder names to extract subtitles into. Each extracted subtitle file is placed inside the named sub-folder relative to the source file location. Leave empty to use the default output folder.",
-    },
+  "copyOutSubtitles": {
+    "summary": "[DEPRECATED — use extractSubtitles] Extract subtitle tracks into separate files alongside each video file.",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files.",
+      "subtitlesLanguage": "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
+      "folders": "Folder names to extract subtitles into. Each extracted subtitle file is placed inside the named sub-folder relative to the source file location. Leave empty to use the default output folder."
+    }
   },
-  extractSubtitles: {
-    summary:
-      "Extract subtitle tracks into separate files alongside each video file.",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-      subtitlesLanguage:
-        "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
-      folders:
-        "Folder names to extract subtitles into. Each extracted subtitle file is placed inside the named sub-folder relative to the source file location. Leave empty to use the default output folder.",
-    },
+  "extractSubtitles": {
+    "summary": "Extract subtitle tracks into separate files alongside each video file.",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files.",
+      "subtitlesLanguage": "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
+      "folders": "Folder names to extract subtitles into. Each extracted subtitle file is placed inside the named sub-folder relative to the source file location. Leave empty to use the default output folder."
+    }
   },
-  fixIncorrectDefaultTracks: {
-    summary: "Fix incorrect default track designations",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-    },
+  "fixIncorrectDefaultTracks": {
+    "summary": "Fix incorrect default track designations",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files."
+    }
   },
-  getAudioOffsets: {
-    summary:
-      "Calculate audio synchronization offsets between files",
-    fields: {
-      sourceFilesPath:
-        "Directory with media files with tracks you want to copy.",
-      destinationFilesPath:
-        "Directory containing media files with tracks you want replaced.",
-    },
+  "getAudioOffsets": {
+    "summary": "Calculate audio synchronization offsets between files",
+    "fields": {
+      "sourceFilesPath": "Directory with media files with tracks you want to copy.",
+      "destinationFilesPath": "Directory containing media files with tracks you want replaced."
+    }
   },
-  hasBetterAudio: {
-    summary:
-      "Analyze and compare audio quality across files",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-      recursiveDepth:
-        "How many deep of child directories to follow (2 or 3) when using isRecursive.",
-    },
+  "hasBetterAudio": {
+    "summary": "Analyze and compare audio quality across files",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files.",
+      "recursiveDepth": "How many deep of child directories to follow (2 or 3) when using isRecursive."
+    }
   },
-  hasBetterVersion: {
-    summary: "Check if better version of media exists",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-      recursiveDepth:
-        "How many deep of child directories to follow (2 or 3) when using isRecursive.",
-    },
+  "hasBetterVersion": {
+    "summary": "Check if better version of media exists",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files.",
+      "recursiveDepth": "How many deep of child directories to follow (2 or 3) when using isRecursive."
+    }
   },
-  hasDuplicateMusicFiles: {
-    summary: "Identify duplicate music files",
-    fields: {
-      sourcePath:
-        "Directory containing music files or containing other directories of music files.",
-      isRecursive:
-        "Recursively looks in folders for music files.",
-      recursiveDepth:
-        "How many deep of child directories to follow (2 or 3) when using isRecursive.",
-    },
+  "hasDuplicateMusicFiles": {
+    "summary": "Identify duplicate music files",
+    "fields": {
+      "sourcePath": "Directory containing music files or containing other directories of music files.",
+      "isRecursive": "Recursively looks in folders for music files.",
+      "recursiveDepth": "How many deep of child directories to follow (2 or 3) when using isRecursive."
+    }
   },
-  hasImaxEnhancedAudio: {
-    summary: "Check for IMAX enhanced audio tracks",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-    },
+  "hasImaxEnhancedAudio": {
+    "summary": "Check for IMAX enhanced audio tracks",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files."
+    }
   },
-  hasManyAudioTracks: {
-    summary: "Identify files with many audio tracks",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-    },
+  "hasManyAudioTracks": {
+    "summary": "Identify files with many audio tracks",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files."
+    }
   },
-  hasSurroundSound: {
-    summary: "Check for surround sound audio tracks",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-      recursiveDepth:
-        "How many deep of child directories to follow (2 or 3) when using isRecursive.",
-    },
+  "hasSurroundSound": {
+    "summary": "Check for surround sound audio tracks",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files.",
+      "recursiveDepth": "How many deep of child directories to follow (2 or 3) when using isRecursive."
+    }
   },
-  hasWrongDefaultTrack: {
-    summary:
-      "Find files with incorrect default track selection",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-    },
+  "hasWrongDefaultTrack": {
+    "summary": "Find files with incorrect default track selection",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files."
+    }
   },
-  isMissingSubtitles: {
-    summary: "Identify media files missing subtitle tracks",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-    },
+  "isMissingSubtitles": {
+    "summary": "Identify media files missing subtitle tracks",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files."
+    }
   },
-  deleteFilesByExtension: {
-    summary:
-      "Delete files that match one or more extensions",
-    fields: {
-      sourcePath:
-        "Directory to search for files to delete.",
-      isRecursive:
-        "Recursively search subdirectories for matching files.",
-      recursiveDepth:
-        "Maximum recursion depth when --isRecursive is set (0 = default depth of 2).",
-    },
+  "deleteFilesByExtension": {
+    "summary": "Delete files that match one or more extensions",
+    "fields": {
+      "sourcePath": "Directory to search for files to delete.",
+      "isRecursive": "Recursively search subdirectories for matching files.",
+      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 2)."
+    }
   },
-  deleteFolder: {
-    summary:
-      "Recursively delete a folder (DESTRUCTIVE — requires confirm: true)",
-    fields: {
-      folderPath: "Folder to delete (recursively).",
-      confirm:
-        "Required: pass --confirm to acknowledge this is destructive. Without it the command refuses to run.",
-    },
+  "deleteFolder": {
+    "summary": "Recursively delete a folder (DESTRUCTIVE — requires confirm: true)",
+    "fields": {
+      "folderPath": "Folder to delete (recursively).",
+      "confirm": "Required: pass --confirm to acknowledge this is destructive. Without it the command refuses to run."
+    }
   },
-  modifySubtitleMetadata: {
-    summary:
-      "Apply DSL-driven modifications to ASS subtitle metadata. Set hasDefaultRules:true to prepend the in-tree default-rules heuristic.",
-    fields: {
-      sourcePath:
-        "Directory containing .ass subtitle files to modify.",
-      isRecursive:
-        "Recursively search subdirectories for .ass files.",
-      recursiveDepth:
-        "Maximum recursion depth when --isRecursive is set (0 = default depth of 2).",
-      hasDefaultRules:
-        'When true, the command runs the in-tree default-rules heuristic (`buildDefaultSubtitleModificationRules`) against the .ass files at `sourcePath` and PREPENDS the computed rules to `rules`. Defaults run first, user rules run after, so user rules can override. The heuristic emits: `setScriptInfo ScriptType=v4.00+`, `setScriptInfo YCbCr Matrix=TV.709` (when any file has TV.601 outside SD-DVD 640x480), `setStyleFields MarginV=round(PlayResY/1080*90)`, optional `MarginL/R=round(200/1920*PlayResX)` when narrow margins are detected on non-ignored styles, with `ignoredStyleNamesRegexString="signs?|op|ed|opening|ending"`. See docs/dsl/subtitle-rules.md `Default rules toggle` for the full table.',
-      predicates:
-        "Optional named-predicate map. Keys are predicate names; values are flat string-equality key→value maps. Referenced from rule `when:` clauses via `{ $ref: <name> }` inside `matches:` or `excludes:`. See docs/dsl/subtitle-rules.md Named predicates.",
-      rules:
-        "Ordered list of DSL modification rules to apply to each .ass file. Empty when only relying on `hasDefaultRules: true` for the rule set.",
-    },
+  "modifySubtitleMetadata": {
+    "summary": "Apply DSL-driven modifications to ASS subtitle metadata. Set hasDefaultRules:true to prepend the in-tree default-rules heuristic.",
+    "fields": {
+      "sourcePath": "Directory containing .ass subtitle files to modify.",
+      "isRecursive": "Recursively search subdirectories for .ass files.",
+      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 2).",
+      "hasDefaultRules": "When true, the command runs the in-tree default-rules heuristic (`buildDefaultSubtitleModificationRules`) against the .ass files at `sourcePath` and PREPENDS the computed rules to `rules`. Defaults run first, user rules run after, so user rules can override. The heuristic emits: `setScriptInfo ScriptType=v4.00+`, `setScriptInfo YCbCr Matrix=TV.709` (when any file has TV.601 outside SD-DVD 640x480), `setStyleFields MarginV=round(PlayResY/1080*90)`, optional `MarginL/R=round(200/1920*PlayResX)` when narrow margins are detected on non-ignored styles, with `ignoredStyleNamesRegexString=\"signs?|op|ed|opening|ending\"`. See docs/dsl/subtitle-rules.md `Default rules toggle` for the full table.",
+      "predicates": "Optional named-predicate map. Keys are predicate names; values are flat string-equality key→value maps. Referenced from rule `when:` clauses via `{ $ref: <name> }` inside `matches:` or `excludes:`. See docs/dsl/subtitle-rules.md Named predicates.",
+      "rules": "Ordered list of DSL modification rules to apply to each .ass file. Empty when only relying on `hasDefaultRules: true` for the rule set."
+    }
   },
-  keepLanguages: {
-    summary: "Filter media tracks by language",
-    fields: {
-      sourcePath:
-        "Directory where media files are located.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-      audioLanguages:
-        "A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed.",
-      subtitlesLanguages:
-        "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
-      useFirstAudioLanguage:
-        "The language of the first audio track is the only language kept for audio tracks.",
-      useFirstSubtitlesLanguage:
-        "The language of the first subtitles track is the only language kept for subtitles tracks.",
-    },
+  "keepLanguages": {
+    "summary": "Filter media tracks by language",
+    "fields": {
+      "sourcePath": "Directory where media files are located.",
+      "isRecursive": "Recursively looks in folders for media files.",
+      "audioLanguages": "A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed.",
+      "subtitlesLanguages": "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
+      "useFirstAudioLanguage": "The language of the first audio track is the only language kept for audio tracks.",
+      "useFirstSubtitlesLanguage": "The language of the first subtitles track is the only language kept for subtitles tracks."
+    }
   },
-  mergeTracks: {
-    summary: "Merge subtitle tracks into media files",
-    fields: {
-      mediaFilesPath:
-        "Directory with media files that need subtitles.",
-      subtitlesPath:
-        "Directory containing subdirectories with subtitle files and attachments/ that match the name of the media files in mediaFilesPath.",
-      hasChapterSyncOffset:
-        "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the subtitles path. Falls back to globalOffset (or per-file offsets) when no chapters.xml is found.",
-      globalOffset:
-        "The offset in milliseconds to apply to all audio being transferred.",
-      includeChapters:
-        "Adds chapters along with other tracks.",
-      offsets:
-        "Offsets (milliseconds, one per episode). Provide one offset per source file. The order must match the order of episodes selected above. Negative values shift the subtitle earlier; positive values shift it later. This field is only useful for manual runs; sequences and schedules should rely on auto-aligned tracks.",
-    },
+  "mergeTracks": {
+    "summary": "Merge subtitle tracks into media files",
+    "fields": {
+      "mediaFilesPath": "Directory with media files that need subtitles.",
+      "subtitlesPath": "Directory containing subdirectories with subtitle files and attachments/ that match the name of the media files in mediaFilesPath.",
+      "hasChapterSyncOffset": "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the subtitles path. Falls back to globalOffset (or per-file offsets) when no chapters.xml is found.",
+      "globalOffset": "The offset in milliseconds to apply to all audio being transferred.",
+      "includeChapters": "Adds chapters along with other tracks.",
+      "offsets": "Offsets (milliseconds, one per episode). Provide one offset per source file. The order must match the order of episodes selected above. Negative values shift the subtitle earlier; positive values shift it later. This field is only useful for manual runs; sequences and schedules should rely on auto-aligned tracks."
+    }
   },
-  moveFiles: {
-    summary: "Move files from source to destination",
-    fields: {
-      sourcePath:
-        "Directory to move files from. Deleted after all files are copied.",
-      destinationPath:
-        "Directory to move files into. Created if it does not already exist.",
-    },
+  "moveFiles": {
+    "summary": "Move files from source to destination",
+    "fields": {
+      "sourcePath": "Directory to move files from. Deleted after all files are copied.",
+      "destinationPath": "Directory to move files into. Created if it does not already exist."
+    }
   },
-  nameAnimeEpisodes: {
-    summary:
-      "Rename anime episode files using MyAnimeList metadata",
-    fields: {
-      sourcePath:
-        "Directory where all episodes are located.",
-      searchTerm:
-        "Name of the anime for searching MyAnimeList.com.",
-      seasonNumber:
-        "The season number to output when renaming useful for TVDB which has separate season number. For aniDB, use the default value 1.",
-      malId:
-        "MyAnimeList ID — when provided, skips the interactive search and uses this ID directly.",
-    },
+  "nameAnimeEpisodes": {
+    "summary": "Rename anime episode files using MyAnimeList metadata",
+    "fields": {
+      "sourcePath": "Directory where all episodes are located.",
+      "searchTerm": "Name of the anime for searching MyAnimeList.com.",
+      "seasonNumber": "The season number to output when renaming useful for TVDB which has separate season number. For aniDB, use the default value 1.",
+      "malId": "MyAnimeList ID — when provided, skips the interactive search and uses this ID directly."
+    }
   },
-  nameAnimeEpisodesAniDB: {
-    summary:
-      "Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Episode-range selection is planned — see README §AniDB command notes.",
-    fields: {
-      sourcePath:
-        "Directory where all episodes are located.",
-      searchTerm:
-        "Anime name for searching AniDB (via DuckDuckGo).",
-      seasonNumber:
-        "Season number for the output filename (Plex-style sNNeNN). Ignored when --episodeType=specials.",
-      anidbId:
-        "AniDB anime id (aid). When provided, skips the interactive search.",
-      episodeType:
-        "Which AniDB episode types to rename. Each non-regular sub-type is run separately: specials (S), credits (C, OP/ED), trailers (T), parodies (P) all run the length-matched per-file picker and emit Plex's s00eNN. Others (type=6 alts) and regular are index-paired with a duration sanity-check warning.",
-    },
+  "nameAnimeEpisodesAniDB": {
+    "summary": "Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Episode-range selection is planned — see README §AniDB command notes.",
+    "fields": {
+      "sourcePath": "Directory where all episodes are located.",
+      "searchTerm": "Anime name for searching AniDB (via DuckDuckGo).",
+      "seasonNumber": "Season number for the output filename (Plex-style sNNeNN). Ignored when --episodeType=specials.",
+      "anidbId": "AniDB anime id (aid). When provided, skips the interactive search.",
+      "episodeType": "Which AniDB episode types to rename. Each non-regular sub-type is run separately: specials (S), credits (C, OP/ED), trailers (T), parodies (P) all run the length-matched per-file picker and emit Plex's s00eNN. Others (type=6 alts) and regular are index-paired with a duration sanity-check warning."
+    }
   },
-  nameSpecialFeatures: {
-    summary:
-      "Rename special features (and the main movie file) based on DVDCompare timecodes; movie title is canonicalized via TMDB",
-    fields: {
-      sourcePath:
-        "Directory where special features are located.",
-      url: "DVDCompare.net URL including the chosen release's hash tag.",
-      dvdCompareId:
-        "DVDCompare film ID — when provided, constructs URL directly and bypasses search.",
-      dvdCompareReleaseHash:
-        "The hash (URL fragment #) from the DVDCompare release page denoting which release variant is selected for that film. Defaults to 1 (the first release option).",
-      searchTerm:
-        "Title to search on DVDCompare.net (used when no url or dvdCompareId).",
-      fixedOffset:
-        "Timecodes are pushed positively or negatively by this amount (in milliseconds).",
-      timecodePadding:
-        "Seconds that timecodes may be off. Defaults to 2, matching typical DVDCompare-vs-rip drift. Pass 0 for exact-match-only.",
-      moveToEditionFolders:
-        "After renaming, move main-feature files that carry a {edition-…} tag into a nested folder: <sourceParent>/<Title (Year)>/<Title (Year) {edition-…}>/<file>. Special-feature files are not moved.",
-      nonInteractive:
-        "When a rename target already exists on disk, automatically append (2), (3), … instead of emitting a review-needed collision event. Use this in scripts or when running without a UI that can display the collision prompt.",
-      autoNameDuplicates:
-        "When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/… suffixes deterministically. Pass false to instead emit a duplicate-pick prompt for each ambiguous group. Defaults to false so interactive runs prompt the user.",
-    },
+  "nameSpecialFeatures": {
+    "summary": "Rename special features (and the main movie file) based on DVDCompare timecodes; movie title is canonicalized via TMDB",
+    "fields": {
+      "sourcePath": "Directory where special features are located.",
+      "url": "DVDCompare.net URL including the chosen release's hash tag.",
+      "dvdCompareId": "DVDCompare film ID — when provided, constructs URL directly and bypasses search.",
+      "dvdCompareReleaseHash": "The hash (URL fragment #) from the DVDCompare release page denoting which release variant is selected for that film. Defaults to 1 (the first release option).",
+      "searchTerm": "Title to search on DVDCompare.net (used when no url or dvdCompareId).",
+      "fixedOffset": "Timecodes are pushed positively or negatively by this amount (in seconds).",
+      "timecodePadding": "Seconds that timecodes may be off. Defaults to 2, matching typical DVDCompare-vs-rip drift. Pass 0 for exact-match-only.",
+      "moveToEditionFolders": "After renaming, move main-feature files that carry a {edition-…} tag into a nested folder: <sourceParent>/<Title (Year)>/<Title (Year) {edition-…}>/<file>. Special-feature files are not moved.",
+      "nonInteractive": "When a rename target already exists on disk, automatically append (2), (3), … instead of emitting a review-needed collision event. Use this in scripts or when running without a UI that can display the collision prompt.",
+      "autoNameDuplicates": "When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/… suffixes deterministically. Pass false to instead emit a duplicate-pick prompt for each ambiguous group. Defaults to false so interactive runs prompt the user."
+    }
   },
-  nameTvShowEpisodes: {
-    summary:
-      "Rename TV show episode files based on metadata",
-    fields: {
-      sourcePath:
-        "Directory where all episodes for that season are located.",
-      searchTerm:
-        "Name of the TV show for searching TVDB.com.",
-      seasonNumber:
-        "The season number to lookup when renaming.",
-      tvdbId:
-        "TVDB ID — when provided, skips the interactive search and uses this ID directly.",
-    },
+  "nameTvShowEpisodes": {
+    "summary": "Rename TV show episode files based on metadata",
+    "fields": {
+      "sourcePath": "Directory where all episodes for that season are located.",
+      "searchTerm": "Name of the TV show for searching TVDB.com.",
+      "seasonNumber": "The season number to lookup when renaming.",
+      "tvdbId": "TVDB ID — when provided, skips the interactive search and uses this ID directly."
+    }
   },
-  remuxToMkv: {
-    summary:
-      "Pass-through container remux of every matching file into an .mkv sibling using mkvmerge",
-    fields: {
-      sourcePath: "Directory containing files to remux.",
-      isRecursive: "Recursively scan subdirectories.",
-      recursiveDepth:
-        "Maximum recursion depth when --isRecursive is set (0 = default depth of 2).",
-      isSourceDeletedOnSuccess:
-        "Delete each source file after its remux completes successfully.",
-    },
+  "remuxToMkv": {
+    "summary": "Pass-through container remux of every matching file into an .mkv sibling using mkvmerge",
+    "fields": {
+      "sourcePath": "Directory containing files to remux.",
+      "isRecursive": "Recursively scan subdirectories.",
+      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 2).",
+      "isSourceDeletedOnSuccess": "Delete each source file after its remux completes successfully."
+    }
   },
-  renameDemos: {
-    summary: "Rename demo files based on content analysis",
-    fields: {
-      sourcePath: "Directory where demo files are located.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-    },
+  "renameDemos": {
+    "summary": "Rename demo files based on content analysis",
+    "fields": {
+      "sourcePath": "Directory where demo files are located.",
+      "isRecursive": "Recursively looks in folders for media files."
+    }
   },
-  renameMovieClipDownloads: {
-    summary: "Rename downloaded movie clip files",
-    fields: {
-      sourcePath:
-        "Directory where downloaded movie demos are located.",
-    },
+  "renameMovieClipDownloads": {
+    "summary": "Rename downloaded movie clip files",
+    "fields": {
+      "sourcePath": "Directory where downloaded movie demos are located."
+    }
   },
-  reorderTracks: {
-    summary: "Reorder media tracks",
-    fields: {
-      sourcePath:
-        "Directory with media files whose tracks need reordering.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-      videoTrackIndexes:
-        "The order of all video tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file.",
-      audioTrackIndexes:
-        "The order of all audio tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file.",
-      subtitlesTrackIndexes:
-        "The order of all subtitles tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file.",
-      isSkipOnTrackMisalignment:
-        "When enabled, files whose track count does not match the supplied indexes are skipped with a warning instead of causing an error. Tracks should align if the command was added correctly.",
-    },
+  "reorderTracks": {
+    "summary": "Reorder media tracks",
+    "fields": {
+      "sourcePath": "Directory with media files whose tracks need reordering.",
+      "isRecursive": "Recursively looks in folders for media files.",
+      "videoTrackIndexes": "The order of all video tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file.",
+      "audioTrackIndexes": "The order of all audio tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file.",
+      "subtitlesTrackIndexes": "The order of all subtitles tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file.",
+      "isSkipOnTrackMisalignment": "When enabled, files whose track count does not match the supplied indexes are skipped with a warning instead of causing an error. Tracks should align if the command was added correctly."
+    }
   },
-  replaceAttachments: {
-    summary: "Replace attachments in media files",
-    fields: {
-      sourceFilesPath:
-        "Directory with media files with attachments you want to copy.",
-      destinationFilesPath:
-        "Directory containing media files with attachments you want replaced.",
-    },
+  "replaceAttachments": {
+    "summary": "Replace attachments in media files",
+    "fields": {
+      "sourceFilesPath": "Directory with media files with attachments you want to copy.",
+      "destinationFilesPath": "Directory containing media files with attachments you want replaced."
+    }
   },
-  replaceFlacWithPcmAudio: {
-    summary: "Replace FLAC audio with PCM audio",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-    },
+  "replaceFlacWithPcmAudio": {
+    "summary": "Replace FLAC audio with PCM audio",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files."
+    }
   },
-  replaceTracks: {
-    summary: "Replace media tracks in destination files",
-    fields: {
-      sourceFilesPath:
-        "Directory with media files with tracks you want to copy.",
-      destinationFilesPath:
-        "Directory containing media files with tracks you want replaced.",
-      hasChapterSyncOffset:
-        "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the source files path. Falls back to globalOffset (or per-file offsets) when false or when no chapters.xml is found.",
-      globalOffset:
-        "The offset in milliseconds to apply to all audio being transferred.",
-      includeChapters:
-        "Adds chapters along with other tracks.",
-      audioLanguages:
-        "A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed.",
-      subtitlesLanguages:
-        "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
-      videoLanguages:
-        "A 3-letter ISO-6392 language code for video tracks to keep. All others will be removed.",
-      offsets:
-        "Space-separated list of time-alignment offsets to set for each individual file in milliseconds.",
-    },
+  "replaceTracks": {
+    "summary": "Replace media tracks in destination files",
+    "fields": {
+      "sourceFilesPath": "Directory with media files with tracks you want to copy.",
+      "destinationFilesPath": "Directory containing media files with tracks you want replaced.",
+      "hasChapterSyncOffset": "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the source files path. Falls back to globalOffset (or per-file offsets) when false or when no chapters.xml is found.",
+      "globalOffset": "The offset in milliseconds to apply to all audio being transferred.",
+      "includeChapters": "Adds chapters along with other tracks.",
+      "audioLanguages": "A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed.",
+      "subtitlesLanguages": "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
+      "videoLanguages": "A 3-letter ISO-6392 language code for video tracks to keep. All others will be removed.",
+      "offsets": "Space-separated list of time-alignment offsets to set for each individual file in milliseconds."
+    }
   },
-  setDisplayWidth: {
-    summary: "Set display width for video tracks",
-    fields: {
-      sourcePath:
-        "Directory where video files are located.",
-      isRecursive:
-        "Recursively looks in folders for media files.",
-      recursiveDepth:
-        "How many deep of child directories to follow (2 or 3) when using isRecursive.",
-      displayWidth:
-        "Display width of the video file. For DVDs, they're all 3:2, but you can set them to the proper 4:3 or 16:9 aspect ratio with anamorphic (non-square) pixels using this value.",
-    },
+  "setDisplayWidth": {
+    "summary": "Set display width for video tracks",
+    "fields": {
+      "sourcePath": "Directory where video files are located.",
+      "isRecursive": "Recursively looks in folders for media files.",
+      "recursiveDepth": "How many deep of child directories to follow (2 or 3) when using isRecursive.",
+      "displayWidth": "Display width of the video file. For DVDs, they're all 3:2, but you can set them to the proper 4:3 or 16:9 aspect ratio with anamorphic (non-square) pixels using this value."
+    }
   },
-  splitChapters: {
-    summary: "Split media files by chapter markers",
-    fields: {
-      sourcePath:
-        "Directory where video files are located.",
-      chapterSplits:
-        "Space-separated list of comma-separated chapter markers. Splits occur at the beginning of the chapter.",
-    },
+  "splitChapters": {
+    "summary": "Split media files by chapter markers",
+    "fields": {
+      "sourcePath": "Directory where video files are located.",
+      "chapterSplits": "Space-separated list of comma-separated chapter markers. Splits occur at the beginning of the chapter."
+    }
   },
-  storeAspectRatioData: {
-    summary: "Analyze and store aspect ratio metadata",
-    fields: {
-      sourcePath:
-        "Directory containing media files or containing other directories of media files.",
-      isRecursive:
-        "Recursively look in folders for media files. Defaults to true since Plex-style libraries are nested (Movies/<title>/<file>); pass --no-isRecursive to scan only sourcePath.",
-      recursiveDepth:
-        "How many directory levels deep to scan, counting sourcePath as level 1. Default 3 covers Plex's edition layout (e.g. Movies/Soldier (1998)/Soldier (1998) {edition-Director's Cut}/file.mkv — 4 segments long, 3 levels of descent from Movies). Non-editioned Movies/<title>/<file> only needs 2, but over-recursing is safer than missing files. Only used with --isRecursive.",
-      outputPath:
-        "Location of the resulting JSON file. If using append mode, it will search here for the JSON file. By default, this uses the sourcePath.",
-      rootPath:
-        "Path your media player (Plex, Jellyfin, Emby) sees for your library — written into the output JSON's file paths so the player can match its catalog. The path does not have to exist on this machine and is not validated; in many setups it won't (e.g. Plex sees /media/Movies but you're scanning G:\\Movies — pass /media/Movies here). Path separator is auto-converted to match the format you provide.",
-      folders:
-        "List of folder names relative to the sourcePath that you want to look through. If you're searching a root path with lots of media files, but only some are in Plex, this can reduce the list down to only those provided to Plex. Ensure these folder names match the ones in Plex.",
-      force:
-        "Instead of appending the current JSON file, it will rescan every file.",
-    },
-  },
+  "storeAspectRatioData": {
+    "summary": "Analyze and store aspect ratio metadata",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively look in folders for media files. Defaults to true since Plex-style libraries are nested (Movies/<title>/<file>); pass --no-isRecursive to scan only sourcePath.",
+      "recursiveDepth": "How many directory levels deep to scan, counting sourcePath as level 1. Default 3 covers Plex's edition layout (e.g. Movies/Soldier (1998)/Soldier (1998) {edition-Director's Cut}/file.mkv — 4 segments long, 3 levels of descent from Movies). Non-editioned Movies/<title>/<file> only needs 2, but over-recursing is safer than missing files. Only used with --isRecursive.",
+      "outputPath": "Location of the resulting JSON file. If using append mode, it will search here for the JSON file. By default, this uses the sourcePath.",
+      "rootPath": "Path your media player (Plex, Jellyfin, Emby) sees for your library — written into the output JSON's file paths so the player can match its catalog. The path does not have to exist on this machine and is not validated; in many setups it won't (e.g. Plex sees /media/Movies but you're scanning G:\\Movies — pass /media/Movies here). Path separator is auto-converted to match the format you provide.",
+      "folders": "List of folder names relative to the sourcePath that you want to look through. If you're searching a root path with lots of media files, but only some are in Plex, this can reduce the list down to only those provided to Plex. Ensure these folder names match the ones in Plex.",
+      "force": "Instead of appending the current JSON file, it will rescan every file."
+    }
+  }
 }
 
-window.getCommandFieldDescription =
-  function getCommandFieldDescription({
-    commandName,
-    fieldName,
-  }) {
-    if (!commandName || !fieldName) {
-      return ""
-    }
-
-    const entry = window.commandDescriptions[commandName]
-
-    if (!entry) {
-      return ""
-    }
-
-    return entry.fields[fieldName] || ""
+window.getCommandFieldDescription = function getCommandFieldDescription({ commandName, fieldName }) {
+  if (!commandName || !fieldName) {
+    return ""
   }
 
-window.getCommandSummary = function getCommandSummary({
-  commandName,
-}) {
+  const entry = window.commandDescriptions[commandName]
+
+  if (!entry) {
+    return ""
+  }
+
+  return entry.fields[fieldName] || ""
+}
+
+window.getCommandSummary = function getCommandSummary({ commandName }) {
   if (!commandName) {
     return ""
   }

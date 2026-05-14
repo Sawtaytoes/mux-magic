@@ -1016,7 +1016,7 @@ export const nameSpecialFeaturesRequestSchema = z.object({
     .number()
     .default(0)
     .describe(
-      "Timecodes are pushed positively or negatively by this amount (in milliseconds).",
+      "Timecodes are pushed positively or negatively by this amount (in seconds).",
     ),
   timecodePadding: z
     .number()
