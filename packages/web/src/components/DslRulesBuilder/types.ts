@@ -146,13 +146,20 @@ export type SetScriptInfoRule = {
   when?: WhenMap
 }
 
+// `isFromAspectLocked` / `isToAspectLocked`: undefined ≡ locked (default).
+// We only write `false` (unlocked) explicitly; relocking deletes the key
+// so the lock-default leaves YAML round-trip clean for the common case.
 export type ScaleResolutionRule = {
   type: "scaleResolution"
   from: Resolution
   to: Resolution
   hasScaledBorderAndShadow?: boolean
+  isFromAspectLocked?: boolean
+  isToAspectLocked?: boolean
   when?: WhenMap
 }
+
+export type ScaleResolutionGroup = "from" | "to"
 
 export type SetStyleFieldsRule = {
   type: "setStyleFields"

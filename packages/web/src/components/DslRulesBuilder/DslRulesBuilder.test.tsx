@@ -19,7 +19,9 @@ import {
   changeRuleType,
   moveRule,
   removeRule,
+  setScaleResolutionAspectLock,
   setScaleResolutionDimension,
+  setScaleResolutionDimensionPaired,
   setScriptInfoField,
 } from "./ruleMutations"
 import {
@@ -177,6 +179,185 @@ describe("setScaleResolutionDimension", () => {
     expect(
       (result[0] as { from: { width: number } }).from.width,
     ).toBe(1920)
+  })
+})
+
+describe("setScaleResolutionAspectLock", () => {
+  it("marks the from group unlocked by writing isFromAspectLocked=false", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 1920, height: 1080 },
+        to: { width: 1280, height: 720 },
+      },
+    ]
+    const result = setScaleResolutionAspectLock({
+      rules,
+      ruleIndex: 0,
+      group: "from",
+      isLocked: false,
+    })
+    expect(
+      (result[0] as { isFromAspectLocked?: boolean })
+        .isFromAspectLocked,
+    ).toBe(false)
+  })
+
+  it("relocking the from group deletes the explicit unlocked flag (default is locked)", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 1920, height: 1080 },
+        to: { width: 1280, height: 720 },
+        isFromAspectLocked: false,
+      },
+    ]
+    const result = setScaleResolutionAspectLock({
+      rules,
+      ruleIndex: 0,
+      group: "from",
+      isLocked: true,
+    })
+    expect(
+      Object.hasOwn(
+        result[0] as Record<string, unknown>,
+        "isFromAspectLocked",
+      ),
+    ).toBe(false)
+  })
+
+  it("toggles the to group independently of the from group", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 1920, height: 1080 },
+        to: { width: 1280, height: 720 },
+      },
+    ]
+    const result = setScaleResolutionAspectLock({
+      rules,
+      ruleIndex: 0,
+      group: "to",
+      isLocked: false,
+    })
+    const updated = result[0] as {
+      isFromAspectLocked?: boolean
+      isToAspectLocked?: boolean
+    }
+    expect(updated.isToAspectLocked).toBe(false)
+    expect(updated.isFromAspectLocked).toBeUndefined()
+  })
+})
+
+describe("setScaleResolutionDimensionPaired", () => {
+  it("preserves ratio when editing from.width with existing 800x600 (4:3)", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 800, height: 600 },
+        to: { width: 0, height: 0 },
+      },
+    ]
+    const result = setScaleResolutionDimensionPaired({
+      rules,
+      ruleIndex: 0,
+      group: "from",
+      dimension: "width",
+      value: 1920,
+    })
+    const updated = result[0] as {
+      from: { width: number; height: number }
+    }
+    expect(updated.from.width).toBe(1920)
+    expect(updated.from.height).toBe(1440)
+  })
+
+  it("preserves ratio when editing from.height with existing 1920x1080 (16:9)", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 1920, height: 1080 },
+        to: { width: 0, height: 0 },
+      },
+    ]
+    const result = setScaleResolutionDimensionPaired({
+      rules,
+      ruleIndex: 0,
+      group: "from",
+      dimension: "height",
+      value: 540,
+    })
+    const updated = result[0] as {
+      from: { width: number; height: number }
+    }
+    expect(updated.from.height).toBe(540)
+    expect(updated.from.width).toBe(960)
+  })
+
+  it("falls back to 16:9 when existing dimensions are 0x0", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 0, height: 0 },
+        to: { width: 0, height: 0 },
+      },
+    ]
+    const result = setScaleResolutionDimensionPaired({
+      rules,
+      ruleIndex: 0,
+      group: "from",
+      dimension: "width",
+      value: 1920,
+    })
+    const updated = result[0] as {
+      from: { width: number; height: number }
+    }
+    expect(updated.from.width).toBe(1920)
+    expect(updated.from.height).toBe(1080)
+  })
+
+  it("falls back to 16:9 when editing height with 0x0 existing dimensions", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 0, height: 0 },
+        to: { width: 0, height: 0 },
+      },
+    ]
+    const result = setScaleResolutionDimensionPaired({
+      rules,
+      ruleIndex: 0,
+      group: "to",
+      dimension: "height",
+      value: 1080,
+    })
+    const updated = result[0] as {
+      to: { width: number; height: number }
+    }
+    expect(updated.to.height).toBe(1080)
+    expect(updated.to.width).toBe(1920)
+  })
+
+  it("does not mutate the other group", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 800, height: 600 },
+        to: { width: 1280, height: 720 },
+      },
+    ]
+    const result = setScaleResolutionDimensionPaired({
+      rules,
+      ruleIndex: 0,
+      group: "from",
+      dimension: "width",
+      value: 1600,
+    })
+    const updated = result[0] as {
+      to: { width: number; height: number }
+    }
+    expect(updated.to.width).toBe(1280)
+    expect(updated.to.height).toBe(720)
   })
 })
 
@@ -343,5 +524,55 @@ describe("DslRulesBuilder render", () => {
     expect(
       screen.getByDisplayValue("scaleResolution"),
     ).toBeInTheDocument()
+  })
+
+  it("renders aspect-lock chain buttons for both groups, locked by default", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 1920, height: 1080 },
+        to: { width: 1280, height: 720 },
+      },
+    ]
+    render(
+      <Provider>
+        <DslRulesBuilder step={createStep({ rules })} />
+      </Provider>,
+    )
+    const fromLock = screen.getByRole("button", {
+      name: /from aspect ratio lock/i,
+    })
+    const toLock = screen.getByRole("button", {
+      name: /to aspect ratio lock/i,
+    })
+    expect(fromLock).toHaveAttribute("aria-pressed", "true")
+    expect(toLock).toHaveAttribute("aria-pressed", "true")
+  })
+
+  it("reflects unlocked state when isFromAspectLocked is false", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 1920, height: 1080 },
+        to: { width: 1280, height: 720 },
+        isFromAspectLocked: false,
+      },
+    ]
+    render(
+      <Provider>
+        <DslRulesBuilder step={createStep({ rules })} />
+      </Provider>,
+    )
+    const fromLock = screen.getByRole("button", {
+      name: /from aspect ratio lock/i,
+    })
+    const toLock = screen.getByRole("button", {
+      name: /to aspect ratio lock/i,
+    })
+    expect(fromLock).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    )
+    expect(toLock).toHaveAttribute("aria-pressed", "true")
   })
 })
