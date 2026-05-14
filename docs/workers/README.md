@@ -161,7 +161,7 @@ The existing `nameSpecialFeatures` code is preserved (renamed only by worker 22,
 | 2f | `ffmpeg-gpu-reencode-endpoint` — Opus confirmed (AI struggles without a browser to test) | srv | **Opus** | High | ON | 28 | planned |
 | 30 | `gpu-aspect-ratio-multi-gpu` | srv | Sonnet | Medium | ON | 01 | planned |
 | 31 | `duplicate-manga-detection` | srv | Sonnet | Medium | ON | 1d | planned |
-| 32 | `command-search-tags` | web | Haiku | Low | OFF | 22 | planned |
+| 3f | `command-search-tags` | web | Haiku | Low | OFF | 22 | planned |
 
 ---
 
