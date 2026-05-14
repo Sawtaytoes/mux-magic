@@ -1,7 +1,6 @@
 import {
   act,
   cleanup,
-  fireEvent,
   render,
   screen,
   waitFor,
@@ -98,9 +97,10 @@ describe("LoadModal close interactions", () => {
   })
 
   test("clicking the backdrop hides the modal", async () => {
+    const user = userEvent.setup()
     renderModal(true)
 
-    fireEvent.click(
+    await user.click(
       screen.getByRole("dialog", { name: "Load YAML" })
         .parentElement as HTMLElement,
     )
