@@ -1,3 +1,4 @@
+import "./loadEnv.js"
 // Side-effect import — must come BEFORE any app-command import so the
 // scheduler is initialized at concurrency=1 before module bodies run.
 import "./tools/initTaskSchedulerCli.js"
