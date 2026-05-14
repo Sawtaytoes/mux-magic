@@ -110,7 +110,7 @@ No intermediate master merges.
 | 1B | Improvements (parallel fan-out with Variables foundation sub-chain) | 08–1f + 36, 37 (26 workers; 36 → 37 serial sub-chain blocks 11+35+37) | No |
 | 2 | CLI package extraction | 20 → 21 | No |
 | 3 | Name Special Features overhaul | 22–27 + 34, 35 (8 workers) | No |
-| 4 | Server infrastructure + per-file pipelining | 28–2d + 38 (7 workers) | No |
+| 4 | Server infrastructure + per-file pipelining | 28–2d + 38 + 3b + 3c (9 workers) | No |
 | 5 | HA + advanced features | 2e–32 | No |
 | 6 | Final consolidation | 33 | **YES** |
 
@@ -219,6 +219,8 @@ No intermediate master merges.
         │     2a server-template-storage         │       │
         │     2c pure-functions-sweep            │       │
         │     2d asset-fallback-to-cli           │       │
+        │     3b extract-subs multi-lang+type    │       │
+        │     3c bcp47-language-variants         │       │
         └─────────────────┬──────────────────────┘       │
                           │                              │
                           ▼                              │
