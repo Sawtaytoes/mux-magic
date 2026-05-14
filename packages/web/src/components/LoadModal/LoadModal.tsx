@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
 import { loadYamlFromText } from "../../jobs/loadYaml"
 import { Modal } from "../../primitives/Modal/Modal"
@@ -25,18 +25,12 @@ export const LoadModal = () => {
     setError(null)
   }
 
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handlePaste = (event: ClipboardEvent) => {
-      const text =
-        event.clipboardData?.getData("text/plain") ?? ""
-      if (!text.trim()) return
-      // Prevent paste inserting into any focused input that was open when the
-      // modal opened — the clipboard content is the only intended input here.
-      event.preventDefault()
-      setError(null)
-
+  // Shared loader used by both the Ctrl+V paste handler and the
+  // on-open auto-paste effect. Returns true on success so callers
+  // can decide what to do with the modal afterward.
+  const tryLoadYaml = useCallback(
+    (text: string, { isSilent }: { isSilent: boolean }) => {
+      if (!text.trim()) return false
       try {
         const result = loadYamlFromText(
           text,
@@ -48,29 +42,48 @@ export const LoadModal = () => {
         setPaths(result.paths)
         setStepCounter(result.stepCounter)
         setIsOpen(false)
+        return true
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Unknown error",
-        )
+        if (!isSilent) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unknown error",
+          )
+        }
+        return false
       }
+    },
+    [
+      commands,
+      currentPaths,
+      currentStepCounter,
+      setSteps,
+      setPaths,
+      setStepCounter,
+      setIsOpen,
+    ],
+  )
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handlePaste = (event: ClipboardEvent) => {
+      const text =
+        event.clipboardData?.getData("text/plain") ?? ""
+      if (!text.trim()) return
+      // Prevent paste inserting into any focused input that was open when the
+      // modal opened — the clipboard content is the only intended input here.
+      event.preventDefault()
+      setError(null)
+      tryLoadYaml(text, { isSilent: false })
     }
 
     document.addEventListener("paste", handlePaste)
     return () => {
       document.removeEventListener("paste", handlePaste)
     }
-  }, [
-    isOpen,
-    commands,
-    currentPaths,
-    currentStepCounter,
-    setSteps,
-    setPaths,
-    setStepCounter,
-    setIsOpen,
-  ])
+  }, [isOpen, tryLoadYaml])
 
   return (
     <Modal

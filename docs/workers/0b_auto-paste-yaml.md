@@ -7,7 +7,7 @@
 **Depends on:** 01
 **Parallel with:** all other 1B web workers
 
-> **Status as of 2026-05-13:** Verified still pending. [packages/web/src/components/YamlModal/YamlModal.tsx](../../packages/web/src/components/YamlModal/YamlModal.tsx) only calls `navigator.clipboard.writeText` (copy out); no `readText` (auto-paste in) exists in `packages/web/src/`.
+> **Status as of 2026-05-13:** Done. Shipped directly on `feat/mux-magic-revamp` (no separate worker branch). Architecture: the auto-paste logic is a custom hook [useAutoClipboardLoad](../../packages/web/src/hooks/useAutoClipboardLoad.ts) that reads the clipboard, checks if it looks like YAML (heuristic: contains `:` or starts with `-`), and if so, attempts to load via the existing `loadYamlFromText` pipeline. The hook is called on-demand in the [Load button's onClick](../../packages/web/src/components/PageHeader/PageHeader.tsx) — if successful, the button shows a green checkmark for 1.5s without opening the modal (zero flash, instant UX feedback). If it fails, the modal opens as a fallback for manual Ctrl+V paste. [LoadModal](../../packages/web/src/components/LoadModal/LoadModal.tsx) keeps the existing paste-event-driven path for both the fallback and any user who opens the modal manually. Tests: 12 for LoadModal (paste behavior), 5 for the hook (successful load, non-YAML rejection, empty/denied/invalid-YAML cases).
 
 ## Universal Rules (TL;DR)
 

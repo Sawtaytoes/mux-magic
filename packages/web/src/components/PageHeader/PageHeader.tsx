@@ -4,6 +4,8 @@ import { editVariablesModalOpenAtom } from "../../components/EditVariablesModal/
 import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
 import { sequenceRunModalAtom } from "../../components/SequenceRunModal/sequenceRunModalAtom"
 import { yamlModalOpenAtom } from "../../components/YamlModal/yamlModalAtom"
+import { Z_INDEX } from "../../constants/zIndex"
+import { useAutoClipboardLoad } from "../../hooks/useAutoClipboardLoad"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { Switch } from "../../primitives/Switch/Switch"
 import {
@@ -24,6 +26,43 @@ const toggleMenu = (
   current: OpenMenu,
   target: OpenMenu,
 ): OpenMenu => (current === target ? null : target)
+
+// ─── Reusable icon JSX ────────────────────────────────────────────────────────
+// Defined once so the pinned cluster (always-visible at ≥481px) and the
+// mobile-mirror group (only visible inside the ⋮ menu at ≤480px) can share
+// glyphs without duplicating ~25 lines of SVG markup per button.
+
+const collapseAllIcon = (
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-3.5 h-3.5 -rotate-90"
+  >
+    <polyline points="5,5 10,10 15,5" />
+    <polyline points="5,11 10,16 15,11" />
+  </svg>
+)
+
+const expandAllIcon = (
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-3.5 h-3.5"
+  >
+    <polyline points="5,5 10,10 15,5" />
+    <polyline points="5,11 10,16 15,11" />
+  </svg>
+)
 
 // ─── PageHeader ───────────────────────────────────────────────────────────────
 
@@ -46,9 +85,11 @@ export const PageHeader = () => {
   )
 
   const actions = useBuilderActions()
+  const autoClipboardLoad = useAutoClipboardLoad()
 
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null)
   const [isYamlCopied, setIsYamlCopied] = useState(false)
+  const [isYamlPasted, setIsYamlPasted] = useState(false)
 
   // ─── Click-outside dismissal for responsive menus ─────────────────────────
   useEffect(() => {
@@ -93,7 +134,8 @@ export const PageHeader = () => {
   return (
     <div
       id="page-header"
-      className="shrink-0 border-b border-slate-700 bg-slate-900 z-10"
+      className="shrink-0 border-b border-slate-700 bg-slate-900"
+      style={{ zIndex: Z_INDEX.sticky }}
     >
       <div className="page-header-inner flex items-center px-4 py-3 gap-3">
         {/* Responsive nav toggle */}
@@ -203,9 +245,15 @@ export const PageHeader = () => {
           </div>
         </div>
 
-        {/* Pinned: variables + undo/redo + collapse/expand */}
+        {/* Pinned: variables + undo/redo + collapse/expand.
+            role="toolbar" + aria-label make this a real accessibility
+            landmark — also lets tests scope queries via
+            `within(getByRole("toolbar"))` so the Variables button here
+            is distinguishable from its duplicate inside the ⋮ menu. */}
         <div
           id="header-pinned"
+          role="toolbar"
+          aria-label="Header actions"
           className="ml-auto flex items-center gap-1"
         >
           <button
@@ -214,11 +262,11 @@ export const PageHeader = () => {
             onClick={() => setEditVariablesModalOpen(true)}
             title="Edit sequence variables"
             aria-label="Variables"
-            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded border border-slate-600"
+            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded border border-slate-600 lg:hidden"
           >
             Variables
           </button>
-          <span className="w-px h-4 bg-slate-700 mx-0.5" />
+          <span className="w-px h-4 bg-slate-700 mx-0.5 lg:hidden" />
           <button
             type="button"
             id="undo-btn"
@@ -246,19 +294,7 @@ export const PageHeader = () => {
             title="Collapse every step + group"
             className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
           >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-3.5 h-3.5 -rotate-90"
-            >
-              <polyline points="5,5 10,10 15,5" />
-              <polyline points="5,11 10,16 15,11" />
-            </svg>
+            {collapseAllIcon}
           </button>
           <button
             type="button"
@@ -266,19 +302,7 @@ export const PageHeader = () => {
             title="Expand every step + group"
             className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
           >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-3.5 h-3.5"
-            >
-              <polyline points="5,5 10,10 15,5" />
-              <polyline points="5,11 10,16 15,11" />
-            </svg>
+            {expandAllIcon}
           </button>
           <span className="w-px h-6 bg-slate-700 mx-1" />
         </div>
@@ -288,6 +312,67 @@ export const PageHeader = () => {
           id="page-actions-controls"
           className={`page-menu page-menu-controls${openMenu === "controls" ? " open" : ""}`}
         >
+          {/* Mirror of #header-pinned for viewports where that cluster
+              is hidden (≤480px). CSS in builderStyles.css hides this
+              group at ≥481px so it never duplicates the pinned bar. */}
+          <div className="page-menu-group page-menu-mobile-mirror">
+            <button
+              type="button"
+              onClick={() => {
+                setEditVariablesModalOpen(true)
+                setOpenMenu(null)
+              }}
+              title="Edit sequence variables"
+              className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded font-medium border border-slate-600"
+            >
+              Variables
+            </button>
+            <div className="page-menu-row">
+              <button
+                type="button"
+                onClick={() => void actions.undo()}
+                title="Undo (Ctrl+Z)"
+                disabled={!isUndoPossible}
+                className="text-sm bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600"
+              >
+                ↶
+              </button>
+              <button
+                type="button"
+                onClick={() => void actions.redo()}
+                title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
+                disabled={!isRedoPossible}
+                className="text-sm bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600"
+              >
+                ↷
+              </button>
+            </div>
+            <div className="page-menu-row">
+              <button
+                type="button"
+                onClick={() =>
+                  actions.setAllCollapsed(true)
+                }
+                title="Collapse every step + group"
+                className="flex items-center justify-center px-2 py-1.5 rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
+              >
+                {collapseAllIcon}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  actions.setAllCollapsed(false)
+                }
+                title="Expand every step + group"
+                className="flex items-center justify-center px-2 py-1.5 rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
+              >
+                {expandAllIcon}
+              </button>
+            </div>
+          </div>
+
+          <span className="page-menu-sep page-menu-mobile-mirror w-px h-6 bg-slate-700 mx-1" />
+
           {/* Dry run + run actions */}
           <div className="page-menu-group">
             <button
@@ -352,24 +437,41 @@ export const PageHeader = () => {
               <button
                 type="button"
                 id="load-btn"
-                onClick={() => setLoadModalOpen(true)}
+                onClick={async () => {
+                  const isLoaded = await autoClipboardLoad()
+                  if (isLoaded) {
+                    setIsYamlPasted(true)
+                    setTimeout(
+                      () => setIsYamlPasted(false),
+                      1500,
+                    )
+                  } else {
+                    setLoadModalOpen(true)
+                  }
+                }}
                 title="Load YAML"
-                className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors"
+                className={`w-7 h-7 flex items-center justify-center rounded border transition-colors ${isYamlPasted ? "text-emerald-400 bg-slate-700 border-emerald-500/50" : "text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border-slate-700 hover:border-slate-600"}`}
               >
-                <svg
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4"
-                >
-                  <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5" />
-                  <path d="M16.5 7.5 12 3m0 0L7.5 7.5M12 3v13.5" />
-                </svg>
+                {isYamlPasted ? (
+                  <span className="text-xs font-bold">
+                    ✓
+                  </span>
+                ) : (
+                  <svg
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-4 h-4"
+                  >
+                    <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5" />
+                    <path d="M16.5 7.5 12 3m0 0L7.5 7.5M12 3v13.5" />
+                  </svg>
+                )}
               </button>
               {/* Copy YAML */}
               <button
