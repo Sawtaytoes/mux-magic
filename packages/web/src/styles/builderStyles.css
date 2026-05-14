@@ -146,6 +146,18 @@
   }
 }
 
+/* Above 480px the pinned cluster is visible, so the mirror group inside
+   the ⋮ menu must NOT render — otherwise the same Variables / undo-redo /
+   collapse-expand actions appear in both places. Specificity matches
+   `.page-menu.open .page-menu-group` (0,3,0); source order wins.
+   Covers both the .page-menu-group mirror and its trailing .page-menu-sep,
+   since both carry the .page-menu-mobile-mirror class. */
+@media (min-width: 481px) {
+  .page-menu.open .page-menu-mobile-mirror {
+    display: none;
+  }
+}
+
 /* Each step card establishes its own size container so headers adapt
    to the card's actual width, not the viewport — matters because the
    pane width changes with the YAML modal / load panel toggles. */
