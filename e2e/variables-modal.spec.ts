@@ -34,7 +34,7 @@ test.describe("Edit Variables modal", () => {
   }) => {
     await openVariablesModal(page)
     await expect(
-      page.getByText(/no variables/i),
+      page.getByRole("dialog").getByText(/no variables/i),
     ).toBeVisible()
   })
 
@@ -62,15 +62,16 @@ test.describe("Edit Variables modal", () => {
     page,
   }) => {
     await openVariablesModal(page)
-    await page
+    const dialog = page.getByRole("dialog")
+    await dialog
       .getByRole("button", { name: /add variable/i })
       .click()
-    await page
+    await dialog
       .getByRole("button", { name: /^path$/i })
       .click()
     // A new variable card should appear inside the modal.
     await expect(
-      page.getByRole("dialog").getByText("path variable"),
+      dialog.getByText("path variable"),
     ).toBeVisible()
   })
 
@@ -116,19 +117,28 @@ test.describe("Variable YAML round-trip", () => {
   }) => {
     // Create a path variable via the modal.
     await openVariablesModal(page)
-    await page
+    const dialog = page.getByRole("dialog")
+    await dialog
       .getByRole("button", { name: /add variable/i })
       .click()
-    await page
+    await dialog
       .getByRole("button", { name: /^path$/i })
       .click()
 
-    // Give it a label.
-    const dialog = page.getByRole("dialog")
+    // Give it a label and a value so toYamlStr sees a non-empty variable.
     const labelInput = dialog.getByRole("textbox").first()
     await labelInput.fill("Media Root")
+    const valueInput =
+      dialog.getByPlaceholder(/\/mnt\/media/i)
+    await valueInput.fill("/mnt/media")
 
-    await page.keyboard.press("Escape")
+    // Close the modal via the close button so we can access header controls.
+    await dialog
+      .getByRole("button", { name: /close/i })
+      .click()
+    await expect(
+      page.getByRole("dialog", { name: /edit variables/i }),
+    ).toBeHidden()
 
     // Copy YAML via header controls.
     await page
@@ -172,7 +182,9 @@ test.describe("Variable YAML round-trip", () => {
     // Re-open modal and verify the variable survived.
     await openVariablesModal(page)
     await expect(
-      page.locator("input[value='Media Root']"),
+      page
+        .getByRole("dialog")
+        .locator("input[value='Media Root']"),
     ).toBeVisible()
   })
 })
