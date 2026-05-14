@@ -74,7 +74,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | 08 | [language-fields-and-tagify](08_language-fields-and-tagify.md) | web | Sonnet | Medium | ON | 01 | done |
 | 09 | [number-fields-redesign](09_number-fields-redesign.md) | web | Sonnet | Medium | ON | 01 | done |
 | 0a | [json-field-readonly](0a_json-field-readonly.md) | web | Haiku | Low | OFF | 01 | done |
-| 0b | [auto-paste-yaml](0b_auto-paste-yaml.md) | web | Haiku | Low | OFF | 01 | ready |
+| 0b | [auto-paste-yaml](0b_auto-paste-yaml.md) | web | Haiku | Low | OFF | 01 | done |
 | 0c | [scale-resolution-aspect-lock](0c_scale-resolution-aspect-lock.md) | web | Sonnet | Medium | ON | 01 | ready |
 | 0d | [narrow-view-menu-animate](0d_narrow-view-menu-animate.md) | web | Sonnet | Medium | ON | 01 | ready |
 | 0e | [story-actions-and-reopen](0e_story-actions-and-reopen.md) | web | Haiku | Low | OFF | 01 | done |
@@ -93,7 +93,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 18 | [loadenvfile-migration](18_loadenvfile-migration.md) | infra | Haiku | Low | OFF | 01 | done |
-| 19 | [yaml-codec-merge](19_yaml-codec-merge.md) | web | Sonnet | Medium | ON | 01 | ready |
+| 19 | [yaml-codec-merge](19_yaml-codec-merge.md) | web | Sonnet | Medium | ON | 01 | done |
 | 1a | [reorder-tracks-skip-on-misalignment](1a_reorder-tracks-skip-on-misalignment.md) | srv+web | Sonnet | Medium | ON | 01 | done |
 
 ### Cross-repo track (5 workers)
