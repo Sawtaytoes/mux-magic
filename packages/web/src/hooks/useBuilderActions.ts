@@ -3,7 +3,7 @@ import { useStore } from "jotai"
 import { useCallback } from "react"
 import { sequenceRunModalAtom } from "../components/SequenceRunModal/sequenceRunModalAtom"
 import { isGroup } from "../jobs/sequenceUtils"
-import { toYamlStr } from "../jobs/yamlSerializer"
+import { toYamlStr } from "../jobs/yamlCodec"
 import { commandsAtom } from "../state/commandsAtom"
 import { dragReorderAtom } from "../state/dragAtoms"
 import {
@@ -402,7 +402,7 @@ export const useBuilderActions = () => {
       if (!text) return
 
       const { loadYamlFromText } = await import(
-        "../jobs/loadYaml"
+        "../jobs/yamlCodec"
       )
       const commands = store.get(commandsAtom)
       const currentPaths = store.get(pathsAtom)

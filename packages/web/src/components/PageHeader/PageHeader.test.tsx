@@ -2,6 +2,7 @@ import {
   cleanup,
   render,
   screen,
+  within,
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
@@ -182,8 +183,13 @@ describe("PageHeader", () => {
   test("Variables button is visible in the header", () => {
     const store = createStore()
     renderWithStore(store)
+    const toolbar = screen.getByRole("toolbar", {
+      name: /header actions/i,
+    })
     expect(
-      screen.getByRole("button", { name: /variables/i }),
+      within(toolbar).getByRole("button", {
+        name: /variables/i,
+      }),
     ).toBeInTheDocument()
   })
 
@@ -194,8 +200,13 @@ describe("PageHeader", () => {
     expect(store.get(editVariablesModalOpenAtom)).toBe(
       false,
     )
+    const toolbar = screen.getByRole("toolbar", {
+      name: /header actions/i,
+    })
     await user.click(
-      screen.getByRole("button", { name: /variables/i }),
+      within(toolbar).getByRole("button", {
+        name: /variables/i,
+      }),
     )
     expect(store.get(editVariablesModalOpenAtom)).toBe(true)
   })

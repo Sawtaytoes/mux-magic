@@ -22,7 +22,7 @@ export const LookupReleaseStage = ({
   if (state.releasesError) {
     return (
       <p className="text-rose-400 text-xs">
-        {state.releasesError}
+        {String(state.releasesError)}
       </p>
     )
   }

@@ -1,6 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback } from "react"
-import { loadYamlFromText } from "../jobs/loadYaml"
+import { loadYamlFromText } from "../jobs/yamlCodec"
 import { commandsAtom } from "../state/commandsAtom"
 import { pathsAtom } from "../state/pathsAtom"
 import {

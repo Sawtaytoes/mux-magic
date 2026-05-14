@@ -3,7 +3,11 @@ import { expect, type Page, test } from "@playwright/test"
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function openVariablesModal(page: Page) {
+  // Scope to the header toolbar — there is a second "Variables" button
+  // inside `#page-actions-controls` at intermediate widths, and the page
+  // header is designed so this scoping disambiguates.
   await page
+    .getByRole("toolbar", { name: "Header actions" })
     .getByRole("button", { name: "Variables" })
     .click()
   await expect(
@@ -13,7 +17,12 @@ async function openVariablesModal(page: Page) {
 
 // ─── Edit Variables modal ─────────────────────────────────────────────────────
 
+// The header "Variables" button is `lg:hidden` because the desktop layout
+// surfaces variables via the always-visible sidebar instead. Use a sub-lg
+// viewport so the button — and therefore the modal flow — is reachable.
 test.describe("Edit Variables modal", () => {
+  test.use({ viewport: { width: 800, height: 900 } })
+
   test.beforeEach(async ({ page }) => {
     await page.goto("/builder/")
   })
@@ -22,6 +31,7 @@ test.describe("Edit Variables modal", () => {
     page,
   }) => {
     await page
+      .getByRole("toolbar", { name: "Header actions" })
       .getByRole("button", { name: "Variables" })
       .click()
     await expect(
@@ -108,6 +118,10 @@ test.describe("Variables sidebar", () => {
 // ─── Variable YAML round-trip ─────────────────────────────────────────────────
 
 test.describe("Variable YAML round-trip", () => {
+  // Same as the "Edit Variables modal" suite: need a sub-lg viewport so the
+  // header Variables button (which opens the modal) is visible.
+  test.use({ viewport: { width: 800, height: 900 } })
+
   test.beforeEach(async ({ page }) => {
     await page.goto("/builder/")
   })

@@ -20,8 +20,10 @@ import { YamlModal } from "../../components/YamlModal/YamlModal"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
 import { decodeSeqParam } from "../../jobs/decodeSeqParam"
 import { encodeSeqParam } from "../../jobs/encodeSeqParam"
-import { loadYamlFromText } from "../../jobs/loadYaml"
-import { toYamlStr } from "../../jobs/yamlSerializer"
+import {
+  loadYamlFromText,
+  toYamlStr,
+} from "../../jobs/yamlCodec"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import {
