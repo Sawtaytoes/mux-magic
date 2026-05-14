@@ -7,6 +7,8 @@
 **Depends on:** 01
 **Parallel with:** all other 1B workers
 
+> **Status as of 2026-05-13:** Verified still pending. [packages/web/src/jobs/yamlSerializer.ts](../../packages/web/src/jobs/yamlSerializer.ts) and [packages/web/src/jobs/loadYaml.ts](../../packages/web/src/jobs/loadYaml.ts) both still exist as separate files; no `yamlCodec.ts` in `packages/web/src/jobs/`.
+
 ## Universal Rules (TL;DR)
 
 Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typecheck → test → e2e → lint`. TDD: failing test first. Yarn only. See [AGENTS.md](../../AGENTS.md).

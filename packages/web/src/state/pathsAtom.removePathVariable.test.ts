@@ -18,6 +18,7 @@ const makePathVariable = (
   id,
   label: id,
   value,
+  type: "path" as const,
 })
 
 const makeStep = (
@@ -60,7 +61,7 @@ describe("removePathVariableAtom", () => {
     expect(store.get(pathsAtom)).toHaveLength(1)
     const pending = store.get(pendingPathVariableDeleteAtom)
     expect(pending).not.toBeNull()
-    expect(pending?.pathVariableId).toBe("basePath")
+    expect(pending?.variableId).toBe("basePath")
     expect(pending?.usages).toEqual([
       { stepId: "step1", fieldName: "inputPath" },
     ])

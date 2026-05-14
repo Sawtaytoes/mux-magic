@@ -65,10 +65,9 @@ describe("StepCard interactive", () => {
 
   test("renders fields for the step when command is known", () => {
     renderWithAtoms(makeStep())
-    // keepLanguages has audioLanguages field — rendered as a comma-joined input value
-    expect(
-      screen.getByDisplayValue("eng, jpn"),
-    ).toBeInTheDocument()
+    // keepLanguages has audioLanguages field — now rendered as language tags
+    expect(screen.getByText("English")).toBeInTheDocument()
+    expect(screen.getByText("Japanese")).toBeInTheDocument()
   })
 
   test("renders modifySubtitleMetadata step with subtitle rules field", () => {

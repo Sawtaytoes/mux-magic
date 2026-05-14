@@ -5,11 +5,13 @@ import type { Step } from "../../types"
 type JsonFieldProps = {
   field: CommandField
   step: Step
+  isReadOnly?: boolean
 }
 
 export const JsonField = ({
   field,
   step,
+  isReadOnly = false,
 }: JsonFieldProps) => {
   const { setParam } = useBuilderActions()
 
@@ -41,6 +43,22 @@ export const JsonField = ({
       <div className="text-xs text-slate-400 bg-slate-900 rounded px-2 py-1.5 border border-slate-700 italic font-mono">
         Linked → {link.linkedTo}.{link.output ?? "folder"}
       </div>
+    )
+  }
+
+  if (isReadOnly) {
+    return (
+      <textarea
+        id={`${step.command}-${field.name}`}
+        value={displayValue}
+        placeholder={field.placeholder ?? "[]"}
+        readOnly
+        rows={3}
+        aria-required={
+          field.isRequired ? "true" : undefined
+        }
+        className="w-full bg-slate-900 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none font-mono resize-y cursor-default"
+      />
     )
   }
 

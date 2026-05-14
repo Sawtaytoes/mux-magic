@@ -7,6 +7,8 @@
 **Depends on:** 01
 **Parallel with:** all other 1B web workers
 
+> **Status as of 2026-05-13:** Verified still pending. [packages/web/src/components/YamlModal/YamlModal.tsx](../../packages/web/src/components/YamlModal/YamlModal.tsx) only calls `navigator.clipboard.writeText` (copy out); no `readText` (auto-paste in) exists in `packages/web/src/`.
+
 ## Universal Rules (TL;DR)
 
 Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typecheck → test → e2e → lint`. TDD: failing test first. Yarn only. See [AGENTS.md](../../AGENTS.md).

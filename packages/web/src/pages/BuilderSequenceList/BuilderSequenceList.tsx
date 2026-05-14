@@ -22,6 +22,7 @@ import { GroupCard } from "../../components/GroupCard/GroupCard"
 import { InsertDivider } from "../../components/InsertDivider/InsertDivider"
 import { StepCard } from "../../components/StepCard/StepCard"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
+import { useScrollToAffectedStep } from "../../hooks/useScrollToAffectedStep"
 import { isGroup } from "../../jobs/sequenceUtils"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Group, Step } from "../../types"
@@ -66,6 +67,7 @@ const collisionDetectionStrategy: CollisionDetection = (
 export const BuilderSequenceList = () => {
   const steps = useAtomValue(stepsAtom)
   const actions = useBuilderActions()
+  useScrollToAffectedStep()
   const [activeId, setActiveId] = useState<string | null>(
     null,
   )

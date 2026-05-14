@@ -7,8 +7,12 @@ import { makeDirectory } from "@mux-magic/tools"
 import type { Context } from "hono"
 import type { Observable } from "rxjs"
 import { changeTrackLanguages } from "../../app-commands/changeTrackLanguages.js"
-import { copyFiles } from "../../app-commands/copyFiles.js"
+import {
+  type CopyRecord,
+  copyFiles,
+} from "../../app-commands/copyFiles.js"
 import { copyOutSubtitles } from "../../app-commands/copyOutSubtitles.js"
+import { deleteCopiedOriginals } from "../../app-commands/deleteCopiedOriginals.js"
 import { deleteFilesByExtension } from "../../app-commands/deleteFilesByExtension.js"
 import { deleteFolder } from "../../app-commands/deleteFolder.js"
 import {
@@ -129,6 +133,7 @@ export const commandNames = [
   "hasSurroundSound",
   "hasWrongDefaultTrack",
   "isMissingSubtitles",
+  "deleteCopiedOriginals",
   "deleteFilesByExtension",
   "deleteFolder",
   "modifySubtitleMetadata",
@@ -209,10 +214,20 @@ export const commandConfigs: Record<
     getObservable: (body) =>
       copyFiles({
         destinationPath: body.destinationPath,
+        fileFilterRegex: body.fileFilterRegex,
+        folderFilterRegex: body.folderFilterRegex,
+        isIncludingFolders: body.includeFolders,
+        renameRegex: body.renameRegex,
         sourcePath: body.sourcePath,
       }),
+    extractOutputs: (results) => ({
+      copiedSourcePaths: (results as CopyRecord[]).map(
+        (record) => record.source,
+      ),
+    }),
     schema: schemas.copyFilesRequestSchema,
-    summary: "Copy files from source to destination",
+    summary:
+      "Copy files (and optionally folders) from source to destination, with optional regex filtering and renaming",
     tags: ["File Operations"],
   },
   flattenOutput: {
@@ -249,6 +264,7 @@ export const commandConfigs: Record<
   extractSubtitles: {
     getObservable: (body) =>
       extractSubtitles({
+        folders: body.folders,
         isRecursive: body.isRecursive,
         sourcePath: body.sourcePath,
         subtitlesLanguage: body.subtitlesLanguage,
@@ -445,10 +461,28 @@ export const commandConfigs: Record<
     getObservable: (body) =>
       moveFiles({
         destinationPath: body.destinationPath,
+        fileFilterRegex: body.fileFilterRegex,
+        renameRegex: body.renameRegex,
         sourcePath: body.sourcePath,
       }),
+    extractOutputs: (results) => ({
+      copiedSourcePaths: (results as CopyRecord[]).map(
+        (record) => record.source,
+      ),
+    }),
     schema: schemas.moveFilesRequestSchema,
-    summary: "Move files from source to destination",
+    summary:
+      "Move files from source to destination, with optional regex filtering and renaming",
+    tags: ["File Operations"],
+  },
+  deleteCopiedOriginals: {
+    getObservable: (body) =>
+      deleteCopiedOriginals({
+        sourcePaths: body.sourcePaths,
+      }),
+    schema: schemas.deleteCopiedOriginalsRequestSchema,
+    summary:
+      "Delete the original source files that were copied by a prior copyFiles or moveFiles step. Receives its sourcePaths list via linkedTo from the prior step's copiedSourcePaths output.",
     tags: ["File Operations"],
   },
   nameAnimeEpisodes: {
@@ -549,6 +583,8 @@ export const commandConfigs: Record<
       reorderTracks({
         audioTrackIndexes: body.audioTrackIndexes,
         isRecursive: body.isRecursive,
+        isSkipOnTrackMisalignment:
+          body.isSkipOnTrackMisalignment,
         sourcePath: body.sourcePath,
         subtitlesTrackIndexes: body.subtitlesTrackIndexes,
         videoTrackIndexes: body.videoTrackIndexes,

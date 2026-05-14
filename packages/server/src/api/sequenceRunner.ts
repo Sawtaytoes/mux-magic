@@ -402,6 +402,7 @@ export const runSequenceJob = (
       childJobId: childId,
       stepId,
       status: childStatus ?? "failed",
+      error: finalChild?.error ?? null,
     })
 
     if (childStatus === "cancelled") {

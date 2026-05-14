@@ -1,6 +1,8 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
+import { editVariablesModalOpenAtom } from "../../components/EditVariablesModal/editVariablesModalOpenAtom"
 import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
+import { sequenceRunModalAtom } from "../../components/SequenceRunModal/sequenceRunModalAtom"
 import { yamlModalOpenAtom } from "../../components/YamlModal/yamlModalAtom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { Switch } from "../../primitives/Switch/Switch"
@@ -34,6 +36,14 @@ export const PageHeader = () => {
   const isRedoPossible = useAtomValue(canRedoAtom)
   const setLoadModalOpen = useSetAtom(loadModalOpenAtom)
   const setYamlModalOpen = useSetAtom(yamlModalOpenAtom)
+  const [sequenceRunModal, setSequenceRunModal] = useAtom(
+    sequenceRunModalAtom,
+  )
+  const isBackgroundJobRunning =
+    sequenceRunModal.mode === "background"
+  const setEditVariablesModalOpen = useSetAtom(
+    editVariablesModalOpenAtom,
+  )
 
   const actions = useBuilderActions()
 
@@ -73,21 +83,11 @@ export const PageHeader = () => {
   }, [])
 
   const toggleDryRun = () => {
-    const isNextDryRun = !isDryRun
-    setIsDryRun(isNextDryRun)
-    localStorage.setItem(
-      "isDryRun",
-      isNextDryRun ? "1" : "0",
-    )
+    setIsDryRun(!isDryRun)
   }
 
   const toggleFailureMode = () => {
-    const isNextFailureMode = !isFailureMode
-    setIsFailureMode(isNextFailureMode)
-    localStorage.setItem(
-      "dryRunScenario",
-      isNextFailureMode ? "failure" : "",
-    )
+    setIsFailureMode(!isFailureMode)
   }
 
   return (
@@ -133,6 +133,25 @@ export const PageHeader = () => {
             Sequence Builder
           </a>
         </h1>
+
+        {/* Background job badge */}
+        {isBackgroundJobRunning && (
+          <button
+            type="button"
+            id="background-job-badge"
+            onClick={() =>
+              setSequenceRunModal((prev) =>
+                prev.mode === "background"
+                  ? { ...prev, mode: "open" }
+                  : prev,
+              )
+            }
+            className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded active:scale-95 self-center transition-all border bg-sky-500/20 hover:bg-sky-500/35 text-sky-400 border-sky-500/40"
+            title="1 background job running — click to re-open"
+          >
+            1 background job
+          </button>
+        )}
 
         {/* Dry-run badge */}
         {isDryRun && (
@@ -184,11 +203,22 @@ export const PageHeader = () => {
           </div>
         </div>
 
-        {/* Pinned: undo/redo + collapse/expand */}
+        {/* Pinned: variables + undo/redo + collapse/expand */}
         <div
           id="header-pinned"
           className="ml-auto flex items-center gap-1"
         >
+          <button
+            type="button"
+            id="variables-btn"
+            onClick={() => setEditVariablesModalOpen(true)}
+            title="Edit sequence variables"
+            aria-label="Variables"
+            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded border border-slate-600"
+          >
+            Variables
+          </button>
+          <span className="w-px h-4 bg-slate-700 mx-0.5" />
           <button
             type="button"
             id="undo-btn"

@@ -2,6 +2,19 @@ import { describe, expect, test } from "vitest"
 
 import { COMMANDS } from "./commands"
 
+describe("mergeTracks offsets field label", () => {
+  test("offsets field has the per-episode label", () => {
+    const mergeTracksFields = COMMANDS.mergeTracks.fields
+    const offsetsField = mergeTracksFields.find(
+      ({ name }) => name === "offsets",
+    )
+
+    expect(offsetsField?.label).toBe(
+      "Offsets (milliseconds, one per episode)",
+    )
+  })
+})
+
 describe("COMMANDS field descriptions (regression guard)", () => {
   test("every non-hidden command field has a non-empty description", () => {
     Object.entries(COMMANDS).forEach(

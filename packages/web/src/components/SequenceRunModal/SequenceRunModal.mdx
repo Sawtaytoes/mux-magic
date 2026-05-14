@@ -1,0 +1,51 @@
+{/* SequenceRunModal.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as SequenceRunModalStories from "./SequenceRunModal.stories";
+
+<Meta of={SequenceRunModalStories} />
+
+# SequenceRunModal
+
+The umbrella modal that opens when the user clicks **▶ Run Sequence** or **▶ Run via API** in `PageHeader`. Streams two SSE channels in parallel: the **parent** sequence (`/jobs/<id>/logs`) and the **child** step that's currently executing (`/jobs/<childId>/logs`).
+
+## Background mode
+
+Clicking **Run in background**, pressing **Escape**, clicking the **backdrop**, or pressing the **✕** button all move the modal to background — they do NOT cancel the job. A badge in `PageHeader` shows the number of background jobs; clicking it re-opens the modal with the live SSE stream intact.
+
+Only the explicit **Cancel** button terminates the job server-side (`DELETE /jobs/<id>`).
+
+## Behaviour
+
+- **Open** → `sequenceRunModalAtom` set with `{ mode: "open", jobId, status }`.
+- **Background** → `sequenceRunModalAtom` mode transitions to `"background"`. The component stays mounted (preserving SSE subscription and log state).
+- **Cancel** → `DELETE /jobs/<id>`, then `mode` → `"closed"`.
+- **Parent SSE messages**:
+  - `step-started` → adds child to `activeChildren`, calls `setStepRunStatusAtom`.
+  - `step-finished` → removes child, clears step card UI.
+  - `{ line }` → appended to the log buffer.
+  - `{ done, status }` → terminal state; sets `runningAtom` false.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `sequenceRunModalAtom` | `{ mode: "closed" }` ⇒ hidden. `{ mode: "open" }` ⇒ visible + streaming. `{ mode: "background" }` ⇒ hidden but SSE alive |
+| `runningAtom` | `false` on terminal SSE event or Cancel |
+| `setStepRunStatusAtom` | Updated on `step-started` / `step-finished` |
+
+## Running
+
+<Canvas of={SequenceRunModalStories.RunningOneJob} />
+
+## Completed
+
+<Canvas of={SequenceRunModalStories.Completed} />
+
+## Failed
+
+<Canvas of={SequenceRunModalStories.Failed} />
+
+## No job yet (pending state)
+
+<Canvas of={SequenceRunModalStories.NoJobYet} />

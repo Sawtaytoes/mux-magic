@@ -1,6 +1,5 @@
 import {
   cleanup,
-  fireEvent,
   render,
   screen,
   waitFor,
@@ -31,6 +30,9 @@ const TRIGGER_RECT = {
 const makeMockInput = (value = "/home/user/") => {
   const input = document.createElement("input")
   input.value = value
+  input.className = "mock-path-picker-input"
+  // Attach to body so the element can receive focus for keyboard event routing.
+  document.body.appendChild(input)
   vi.spyOn(input, "getBoundingClientRect").mockReturnValue({
     left: 100,
     top: 200,
@@ -124,6 +126,14 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  // Remove mock inputs appended to body before React cleanup.
+  Array.from(
+    document.body.querySelectorAll(
+      "input.mock-path-picker-input",
+    ),
+  ).forEach((element) => {
+    element.remove()
+  })
   cleanup()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
@@ -230,10 +240,11 @@ describe("PathPicker fetch error", () => {
 
 describe("PathPicker selection", () => {
   test("clicking a directory updates setParamAtom with new path", async () => {
+    const user = userEvent.setup()
     const { store } = renderPicker()
 
     await waitFor(() => screen.getByText("Documents"))
-    await userEvent.click(screen.getByText("Documents"))
+    await user.click(screen.getByText("Documents"))
 
     const steps = store.get(stepsAtom)
     const step = steps.find(
@@ -247,11 +258,13 @@ describe("PathPicker selection", () => {
 
 describe("PathPicker keyboard navigation", () => {
   test("Enter selects the active directory entry", async () => {
+    const user = userEvent.setup()
     const { store, input } = renderPicker()
 
     await waitFor(() => screen.getByText("Documents"))
 
-    fireEvent.keyDown(input, { key: "Enter" })
+    input.focus()
+    await user.keyboard("{Enter}")
 
     const steps = store.get(stepsAtom)
     const step = steps.find(
@@ -263,11 +276,13 @@ describe("PathPicker keyboard navigation", () => {
   })
 
   test("Tab selects the active directory entry", async () => {
+    const user = userEvent.setup()
     const { store, input } = renderPicker()
 
     await waitFor(() => screen.getByText("Documents"))
 
-    fireEvent.keyDown(input, { key: "Tab" })
+    input.focus()
+    await user.keyboard("{Tab}")
 
     const steps = store.get(stepsAtom)
     const step = steps.find(
@@ -279,11 +294,13 @@ describe("PathPicker keyboard navigation", () => {
   })
 
   test("Escape closes the picker without selecting", async () => {
+    const user = userEvent.setup()
     const { store, input } = renderPicker()
 
     await waitFor(() => screen.getByText("Documents"))
 
-    fireEvent.keyDown(input, { key: "Escape" })
+    input.focus()
+    await user.keyboard("{Escape}")
 
     expect(store.get(pathPickerStateAtom)).toBeNull()
     await waitFor(() =>
@@ -296,11 +313,13 @@ describe("PathPicker keyboard navigation", () => {
   })
 
   test("ArrowDown moves activeIndex to the next entry", async () => {
+    const user = userEvent.setup()
     const { store, input } = renderPicker()
 
     await waitFor(() => screen.getByText("Documents"))
 
-    fireEvent.keyDown(input, { key: "ArrowDown" })
+    input.focus()
+    await user.keyboard("{ArrowDown}")
 
     expect(
       store.get(pathPickerStateAtom)?.activeIndex,
@@ -308,11 +327,13 @@ describe("PathPicker keyboard navigation", () => {
   })
 
   test("ArrowUp wraps activeIndex to the last entry", async () => {
+    const user = userEvent.setup()
     const { store, input } = renderPicker()
 
     await waitFor(() => screen.getByText("Documents"))
 
-    fireEvent.keyDown(input, { key: "ArrowUp" })
+    input.focus()
+    await user.keyboard("{ArrowUp}")
 
     // 3 directory entries (Documents, Downloads, Pictures); wrap 0 → 2
     expect(

@@ -1,10 +1,7 @@
-import {
-  fireEvent,
-  render,
-  screen,
-} from "@testing-library/react"
-import { createStore, Provider } from "jotai"
-import { describe, expect, it } from "vitest"
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { createStore, Provider, useAtomValue } from "jotai"
+import { describe, expect, test } from "vitest"
 
 import { FIXTURE_COMMANDS_BUNDLE_D } from "../../commands/__fixtures__/commands"
 import { pathsAtom } from "../../state/pathsAtom"
@@ -26,11 +23,34 @@ const createTestStep = (
   ...overrides,
 })
 
+// Reads step from the atom so controlled inputs update after each onChange call.
+// Required for unlinked PathField tests where displayValue derives from the step
+// prop, not the atom — without this, the controlled input reverts to the prop
+// value after every keystroke, making user.type incompatible.
+const TestPathFieldFromAtom = ({
+  stepId,
+}: {
+  stepId: string
+}) => {
+  const allSteps = useAtomValue(stepsAtom)
+  const step = allSteps.find(
+    (item) => "id" in item && item.id === stepId,
+  ) as Step
+  return (
+    <PathField
+      field={
+        FIXTURE_COMMANDS_BUNDLE_D.makeDirectory.fields[0]
+      }
+      step={step}
+    />
+  )
+}
+
 describe("PathField", () => {
   const field =
     FIXTURE_COMMANDS_BUNDLE_D.makeDirectory.fields[0]
 
-  it("renders input with current value", () => {
+  test("renders input with current value", () => {
     const step = createTestStep({
       params: { filePath: "/home/user" },
     })
@@ -43,7 +63,7 @@ describe("PathField", () => {
     expect(input).toBeInTheDocument()
   })
 
-  it("shows browse button", () => {
+  test("shows browse button", () => {
     const step = createTestStep()
     render(
       <Provider>
@@ -54,7 +74,7 @@ describe("PathField", () => {
     expect(browseButton).toBeInTheDocument()
   })
 
-  it("shows link button with custom label when no link", () => {
+  test("shows link button with custom label when no link", () => {
     const step = createTestStep()
     render(
       <Provider>
@@ -66,7 +86,7 @@ describe("PathField", () => {
     ).toBeInTheDocument()
   })
 
-  it("shows link button with path var label when linked to path var", () => {
+  test("shows link button with path var label when linked to path var", () => {
     const step = createTestStep({
       links: { filePath: "basePath" },
     })
@@ -81,7 +101,7 @@ describe("PathField", () => {
     expect(button).toBeInTheDocument()
   })
 
-  it("makes input readonly when linked to step output", () => {
+  test("makes input readonly when linked to step output", () => {
     const step = createTestStep({
       links: {
         filePath: { linkedTo: "step-1", output: "folder" },
@@ -96,13 +116,15 @@ describe("PathField", () => {
     expect(input).toHaveAttribute("readonly")
   })
 
-  it("typing into linked PathField updates path variable value, not step param", () => {
+  test("typing into linked PathField updates path variable value, not step param", async () => {
+    const user = userEvent.setup({ delay: null })
     const store = createStore()
     store.set(pathsAtom, [
       {
         id: "basePath",
         label: "basePath",
         value: "/old/path",
+        type: "path" as const,
       },
     ])
     store.set(stepsAtom, [
@@ -123,9 +145,8 @@ describe("PathField", () => {
     )
 
     const input = screen.getByRole("textbox")
-    fireEvent.change(input, {
-      target: { value: "/new/path" },
-    })
+    await user.clear(input)
+    await user.type(input, "/new/path")
 
     const updatedPaths = store.get(pathsAtom)
     expect(updatedPaths[0].value).toBe("/new/path")
@@ -135,24 +156,22 @@ describe("PathField", () => {
     expect(updatedStep.params.filePath).toBeUndefined()
   })
 
-  it("typing into unlinked PathField with no existing param creates path var and links field", () => {
+  test("typing into unlinked PathField with no existing param creates path var and links field", async () => {
+    const user = userEvent.setup({ delay: null })
     const store = createStore()
     store.set(pathsAtom, [])
     store.set(stepsAtom, [
       createTestStep({ params: {}, links: {} }),
     ])
 
-    const step = createTestStep({ params: {}, links: {} })
     render(
       <Provider store={store}>
-        <PathField field={field} step={step} />
+        <TestPathFieldFromAtom stepId="test-step-1" />
       </Provider>,
     )
 
     const input = screen.getByRole("textbox")
-    fireEvent.change(input, {
-      target: { value: "/new/path" },
-    })
+    await user.type(input, "/new/path")
 
     const updatedPaths = store.get(pathsAtom)
     expect(updatedPaths).toHaveLength(1)
@@ -165,7 +184,8 @@ describe("PathField", () => {
     expect(linkedId).toBe(updatedPaths[0].id)
   })
 
-  it("typing into unlinked PathField with existing param value updates param (not addPathVariable)", () => {
+  test("typing into unlinked PathField with existing param value updates param (not addPathVariable)", async () => {
+    const user = userEvent.setup({ delay: null })
     const store = createStore()
     store.set(stepsAtom, [
       createTestStep({
@@ -174,37 +194,33 @@ describe("PathField", () => {
       }),
     ])
 
-    const step = createTestStep({
-      params: { filePath: "/existing" },
-      links: {},
-    })
     render(
       <Provider store={store}>
-        <PathField field={field} step={step} />
+        <TestPathFieldFromAtom stepId="test-step-1" />
       </Provider>,
     )
 
     const input = screen.getByRole("textbox")
-    fireEvent.change(input, {
-      target: { value: "/updated/path" },
-    })
+    await user.type(input, "/extra")
 
     const updatedSteps = store.get(stepsAtom)
     const updatedStep = updatedSteps[0] as Step
     expect(updatedStep.params.filePath).toBe(
-      "/updated/path",
+      "/existing/extra",
     )
 
     const updatedPaths = store.get(pathsAtom)
     expect(updatedPaths).toHaveLength(0)
   })
 
-  it("typing in linked PathField syncs value to other fields linked to same variable", () => {
+  test("typing in linked PathField syncs value to other fields linked to same variable", async () => {
+    const user = userEvent.setup({ delay: null })
     const store = createStore()
     const basePathVariable = {
       id: "basePath",
       label: "basePath",
       value: "/old",
+      type: "path" as const,
     }
     const step1 = createTestStep({
       id: "step-1",
@@ -228,9 +244,8 @@ describe("PathField", () => {
     )
 
     const inputs = screen.getAllByRole("textbox")
-    fireEvent.change(inputs[0], {
-      target: { value: "/new" },
-    })
+    await user.clear(inputs[0])
+    await user.type(inputs[0], "/new")
 
     const updatedPaths = store.get(pathsAtom)
     expect(updatedPaths[0].value).toBe("/new")

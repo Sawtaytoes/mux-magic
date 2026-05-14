@@ -1,0 +1,27 @@
+import { Canvas, Meta } from "@storybook/blocks"
+import * as Stories from "./FolderTagsField.stories"
+
+<Meta of={Stories} />
+
+# FolderTagsField
+
+Tag input for free-form folder names. Used by `extractSubtitles.folders` to specify destination sub-folder names for extracted subtitle files.
+
+## Behavior
+
+- Type a folder name and press **Enter** to add it as a tag.
+- Empty input is ignored on Enter.
+- Duplicate names are silently ignored.
+- Each tag has an **✕** button to remove it.
+- When the last tag is removed the param is set to `undefined` (omitted from YAML).
+
+## Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `step` | `Step` | The builder step that owns this field. |
+| `field` | `CommandField` | Field metadata from the command definition (`type: "folderTags"`). |
+
+<Canvas of={Stories.Empty} />
+<Canvas of={Stories.OneTag} />
+<Canvas of={Stories.ManyTags} />

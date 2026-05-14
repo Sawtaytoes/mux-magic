@@ -5,6 +5,11 @@ import {
   unregisterJobClaim,
 } from "../tools/taskScheduler.js"
 import {
+  reportJobCompleted,
+  reportJobFailed,
+  reportJobStarted,
+} from "../tools/webhookReporter.js"
+import {
   completeSubject,
   createSubject,
   getJob,
@@ -45,9 +50,18 @@ export const runJob = (
     registerJobClaim(jobId, threadCountClaim)
   }
 
-  updateJob(jobId, {
+  const startedJob = updateJob(jobId, {
     startedAt: new Date(),
     status: "running",
+  })
+
+  void reportJobStarted({
+    commandName: startedJob?.commandName ?? "",
+    jobId,
+    source:
+      startedJob?.commandName === "sequence"
+        ? "sequence"
+        : "step",
   })
 
   return new Promise<Job | undefined>((resolve) => {
@@ -70,10 +84,16 @@ export const runJob = (
             if (getJob(jobId)?.status === "cancelled")
               return EMPTY
 
-            updateJob(jobId, {
+            const failedJob = updateJob(jobId, {
               completedAt: new Date(),
               error: String(err),
               status: "failed",
+            })
+
+            void reportJobFailed({
+              commandName: failedJob?.commandName ?? "",
+              error: String(err),
+              jobId,
             })
 
             return EMPTY
@@ -111,10 +131,19 @@ export const runJob = (
                   ? options.extractOutputs(job.results)
                   : null
 
+              const completedAt = new Date()
               updateJob(jobId, {
-                completedAt: new Date(),
+                completedAt,
                 outputs,
                 status: "completed",
+              })
+
+              void reportJobCompleted({
+                commandName: job?.commandName ?? "",
+                completedAt,
+                jobId,
+                resultCount: job?.results.length ?? 0,
+                startedAt: job?.startedAt ?? null,
               })
             }
 

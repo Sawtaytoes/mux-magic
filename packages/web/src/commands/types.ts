@@ -31,6 +31,7 @@ export type CommandField = {
   visibleWhen?: Record<string, unknown>
   min?: number
   max?: number
+  hasIncrementButtons?: boolean
 }
 
 export type CommandDefinition = {

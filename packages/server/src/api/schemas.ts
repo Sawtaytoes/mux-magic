@@ -49,6 +49,23 @@ export const makeDirectoryRequestSchema = z.object({
     ),
 })
 
+const renameRegexSchema = z
+  .object({
+    pattern: z
+      .string()
+      .describe(
+        "Regular expression pattern applied to each filename (or folder name).",
+      ),
+    replacement: z
+      .string()
+      .describe(
+        "Replacement string. Capture groups from `pattern` are available as $1, $2, etc.",
+      ),
+  })
+  .describe(
+    "Optional regex-based rename applied to each copied entry's name at the destination.",
+  )
+
 export const copyFilesRequestSchema = z.object({
   sourcePath: z
     .string()
@@ -59,6 +76,25 @@ export const copyFilesRequestSchema = z.object({
     .describe(
       "Directory to copy files into. Created if it does not already exist.",
     ),
+  fileFilterRegex: z
+    .string()
+    .optional()
+    .describe(
+      "If set, only files whose names match this regular expression are copied.",
+    ),
+  folderFilterRegex: z
+    .string()
+    .optional()
+    .describe(
+      "If set (and includeFolders is true), only folders whose names match this regular expression are copied.",
+    ),
+  includeFolders: z
+    .boolean()
+    .default(false)
+    .describe(
+      "When true, top-level subdirectories matching folderFilterRegex are copied as units (recursively). Files are only copied if fileFilterRegex is also set.",
+    ),
+  renameRegex: renameRegexSchema.optional(),
 })
 
 export const flattenOutputRequestSchema = z.object({
@@ -87,6 +123,21 @@ export const moveFilesRequestSchema = z.object({
     .describe(
       "Directory to move files into. Created if it does not already exist.",
     ),
+  fileFilterRegex: z
+    .string()
+    .optional()
+    .describe(
+      "If set, only files whose names match this regular expression are moved.",
+    ),
+  renameRegex: renameRegexSchema.optional(),
+})
+
+export const deleteCopiedOriginalsRequestSchema = z.object({
+  sourcePaths: z
+    .array(z.string())
+    .describe(
+      "List of file or folder paths to delete. Typically provided via linkedTo from a prior copyFiles step's copiedSourcePaths output. Is a no-op when the list is empty.",
+    ),
 })
 
 export const extractSubtitlesRequestSchema = z.object({
@@ -106,6 +157,12 @@ export const extractSubtitlesRequestSchema = z.object({
     .optional()
     .describe(
       "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
+    ),
+  folders: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "Folder names to extract subtitles into. Each extracted subtitle file is placed inside the named sub-folder relative to the source file location. Leave empty to use the default output folder.",
     ),
 })
 
@@ -854,7 +911,7 @@ export const mergeTracksRequestSchema = z.object({
     .array(z.number())
     .default([])
     .describe(
-      "Space-separated list of time-alignment offsets to set for each individual file in milliseconds.",
+      "Offsets (milliseconds, one per episode). Provide one offset per source file. The order must match the order of episodes selected above. Negative values shift the subtitle earlier; positive values shift it later. This field is only useful for manual runs; sequences and schedules should rely on auto-aligned tracks.",
     ),
 })
 
@@ -1061,6 +1118,12 @@ export const reorderTracksRequestSchema = z.object({
     .default([])
     .describe(
       "The order of all subtitles tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file.",
+    ),
+  isSkipOnTrackMisalignment: z
+    .boolean()
+    .default(false)
+    .describe(
+      "When enabled, files whose track count does not match the supplied indexes are skipped with a warning instead of causing an error. Tracks should align if the command was added correctly.",
     ),
 })
 

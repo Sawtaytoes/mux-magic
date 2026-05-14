@@ -5,11 +5,12 @@ import type {
   PathVariable,
   SequenceItem,
   Step,
+  Variable,
 } from "../types"
 
 type LoadContext = {
   commands: Commands
-  currentPaths: PathVariable[]
+  currentPaths: Variable[]
   currentStepCounter: number
   seenIds: Set<string>
 }
@@ -17,7 +18,7 @@ type LoadContext = {
 // eslint-disable-next-line no-restricted-syntax -- return type of a web-only YAML parsing utility; not an API response shape
 export type LoadYamlResult = {
   steps: SequenceItem[]
-  paths: PathVariable[]
+  paths: Variable[]
   stepCounter: number
   // Resolved from the YAML variables block; null when absent or no
   // threadCount-typed entry is present.
@@ -202,8 +203,13 @@ const loadGroupItem = (
   }
 }
 
-const ensureBasePath = (): PathVariable[] => [
-  { id: "basePath", label: "basePath", value: "" },
+const ensureBasePath = (): Variable[] => [
+  {
+    id: "basePath",
+    label: "basePath",
+    value: "",
+    type: "path",
+  },
 ]
 
 const extractThreadCount = (
@@ -232,9 +238,47 @@ const extractThreadCount = (
   return typeof val === "string" ? val : String(val)
 }
 
-// Parses YAML text and returns the new sequence state. Two formats accepted:
-//   - Canonical: { paths: {...}, steps: [...] }  (emitted by toYamlStr)
-//   - Legacy:    plain array of steps
+const parseLegacyPathsBlock = (
+  rawPaths: Record<string, Record<string, string>>,
+): Variable[] =>
+  Object.entries(rawPaths).map(([id, entry]) => ({
+    id,
+    label: entry.label || id,
+    value: entry.value || "",
+    type: "path" as const,
+  }))
+
+const parseVariablesBlock = (
+  rawVariables: Record<string, Record<string, string>>,
+): Variable[] =>
+  Object.entries(rawVariables).map(([id, entry]) => ({
+    id,
+    label: entry.label || id,
+    value: entry.value || "",
+    type: (entry.type || "path") as Variable["type"],
+  }))
+
+// Merges two variable arrays; entries in `winner` override `loser` by id.
+const mergeVariables = (
+  loser: Variable[],
+  winner: Variable[],
+): Variable[] => {
+  const winnerIds = new Set(
+    winner.map((variable) => variable.id),
+  )
+  return [
+    ...loser.filter(
+      (variable) => !winnerIds.has(variable.id),
+    ),
+    ...winner,
+  ]
+}
+
+// Parses YAML text and returns the new sequence state. Accepted formats:
+//   - New canonical: { variables: {...}, steps: [...] }
+//   - Legacy canonical: { paths: {...}, steps: [...] }  (still readable)
+//   - Mixed: both blocks present — variables: wins per-id
+//   - Array: plain array of steps (oldest legacy format)
 // Throws on parse errors; caller is responsible for surfacing the message.
 export const loadYamlFromText = (
   text: string,
@@ -245,7 +289,7 @@ export const loadYamlFromText = (
 ): LoadYamlResult => {
   const data = yaml.load(text)
 
-  let paths = currentPaths
+  let paths: Variable[] = currentPaths
   let stepsData: unknown[]
   let threadCount: string | null = null
 
@@ -256,20 +300,36 @@ export const loadYamlFromText = (
   ) {
     const dataObj = data as Record<string, unknown>
     if (dataObj.steps !== undefined) {
-      if (
-        dataObj.paths &&
-        typeof dataObj.paths === "object"
-      ) {
-        paths = Object.entries(
-          dataObj.paths as Record<
-            string,
-            Record<string, string>
-          >,
-        ).map(([id, pathVariable]) => ({
-          id,
-          label: pathVariable.label || id,
-          value: pathVariable.value || "",
-        }))
+      const hasLegacyPaths =
+        dataObj.paths && typeof dataObj.paths === "object"
+      const hasVariables =
+        dataObj.variables &&
+        typeof dataObj.variables === "object"
+
+      if (hasLegacyPaths || hasVariables) {
+        const fromPaths = hasLegacyPaths
+          ? parseLegacyPathsBlock(
+              dataObj.paths as Record<
+                string,
+                Record<string, string>
+              >,
+            )
+          : []
+        const fromVariables = hasVariables
+          ? parseVariablesBlock(
+              dataObj.variables as Record<
+                string,
+                Record<string, string>
+              >,
+            )
+          : []
+        // variables: wins over paths: when both present for the same id
+        paths =
+          hasLegacyPaths && hasVariables
+            ? mergeVariables(fromPaths, fromVariables)
+            : hasVariables
+              ? fromVariables
+              : fromPaths
       }
       if (!paths.length) paths = ensureBasePath()
       stepsData = (dataObj.steps as unknown[]) || []

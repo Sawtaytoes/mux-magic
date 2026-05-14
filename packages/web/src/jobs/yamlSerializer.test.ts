@@ -1,9 +1,11 @@
+import yaml from "js-yaml"
 import { describe, expect, test } from "vitest"
 import type { Commands } from "../commands/types"
 import type {
   PathVariable,
   SequenceItem,
   Step,
+  Variable,
 } from "../types"
 import { toYamlStr } from "./yamlSerializer"
 
@@ -25,6 +27,7 @@ const BASE_PATH: PathVariable = {
   id: "basePath",
   label: "Base Path",
   value: "/fixture/media",
+  type: "path",
 }
 
 const MAKE_DIR_COMMAND: Commands = {
@@ -45,7 +48,12 @@ const MAKE_DIR_COMMAND: Commands = {
 describe("toYamlStr — empty states", () => {
   test("returns sentinel when steps is empty and no path values set", () => {
     const paths: PathVariable[] = [
-      { id: "basePath", label: "Base Path", value: "" },
+      {
+        id: "basePath",
+        label: "Base Path",
+        value: "",
+        type: "path",
+      },
     ]
     expect(toYamlStr([], paths, {})).toBe("# No steps yet")
   })
@@ -184,10 +192,10 @@ describe("toYamlStr — unknown command fallback", () => {
   })
 })
 
-// ─── Paths block ──────────────────────────────────────────────────────────────
+// ─── Paths block (legacy — still passes, tests content not key name) ─────────
 
 describe("toYamlStr — paths block", () => {
-  test("path variable with value appears in paths block", () => {
+  test("path variable with value appears in output", () => {
     const step = makeStep({
       command: "makeDirectory",
       links: { filePath: "basePath" },
@@ -201,6 +209,66 @@ describe("toYamlStr — paths block", () => {
 
     expect(result).toContain("basePath:")
     expect(result).toContain("value: /fixture/media")
+  })
+})
+
+// ─── variables: block (new format; these tests currently fail) ────────────────
+
+describe("toYamlStr — variables: block output", () => {
+  const PATH_VAR: Variable = {
+    id: "basePath",
+    label: "Base",
+    value: "/mnt/media",
+    type: "path",
+  }
+
+  test("writes variables: key, not paths:", () => {
+    const result = toYamlStr(
+      [],
+      [PATH_VAR],
+      MAKE_DIR_COMMAND,
+    )
+    const parsed = yaml.load(result) as Record<
+      string,
+      unknown
+    >
+    expect(parsed).toHaveProperty("variables")
+    expect(parsed).not.toHaveProperty("paths")
+  })
+
+  test("each variable entry includes the type field", () => {
+    const result = toYamlStr(
+      [],
+      [PATH_VAR],
+      MAKE_DIR_COMMAND,
+    )
+    const parsed = yaml.load(result) as Record<
+      string,
+      unknown
+    >
+    const variablesObj = parsed.variables as Record<
+      string,
+      { type?: string }
+    >
+    expect(variablesObj.basePath?.type).toBe("path")
+  })
+
+  test("variable entry includes label and value", () => {
+    const result = toYamlStr(
+      [],
+      [PATH_VAR],
+      MAKE_DIR_COMMAND,
+    )
+    const parsed = yaml.load(result) as Record<
+      string,
+      unknown
+    >
+    const variablesObj = parsed.variables as Record<
+      string,
+      { label?: string; value?: string }
+    >
+    expect(variablesObj.basePath?.label).toBe("Base")
+    expect(variablesObj.basePath?.value).toBe("/mnt/media")
   })
 })
 
@@ -266,7 +334,14 @@ describe("toYamlStr — blank step filtering", () => {
 
     const result = toYamlStr(
       [group],
-      [{ id: "basePath", label: "Base Path", value: "" }],
+      [
+        {
+          id: "basePath",
+          label: "Base Path",
+          value: "",
+          type: "path" as const,
+        },
+      ],
       {},
     )
 
@@ -277,23 +352,23 @@ describe("toYamlStr — blank step filtering", () => {
 // ─── threadCount variable block ───────────────────────────────────────────────
 
 describe("toYamlStr — threadCount variable", () => {
-  test("omits variables block when threadCount is null", () => {
+  test("does not include threadCount type entry when threadCount is null", () => {
     const result = toYamlStr(
       [makeStep()] as SequenceItem[],
       [BASE_PATH],
       MAKE_DIR_COMMAND,
       null,
     )
-    expect(result).not.toContain("variables:")
+    expect(result).not.toContain("threadCount")
   })
 
-  test("omits variables block when threadCount not passed", () => {
+  test("does not include threadCount type entry when threadCount not passed", () => {
     const result = toYamlStr(
       [makeStep()] as SequenceItem[],
       [BASE_PATH],
       MAKE_DIR_COMMAND,
     )
-    expect(result).not.toContain("variables:")
+    expect(result).not.toContain("threadCount")
   })
 
   test("includes variables block with threadCount type when set", () => {

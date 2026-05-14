@@ -8,7 +8,7 @@ import {
   vi,
 } from "vitest"
 import { COMMANDS } from "../commands/commands"
-import { apiRunModalAtom } from "../components/ApiRunModal/apiRunModalAtom"
+import { sequenceRunModalAtom } from "../components/SequenceRunModal/sequenceRunModalAtom"
 import {
   dryRunAtom,
   failureModeAtom,
@@ -39,7 +39,12 @@ const makeStore = (step: Step) => {
   const store = createStore()
   store.set(stepsAtom, [step])
   store.set(pathsAtom, [
-    { id: "basePath", label: "basePath", value: "/media" },
+    {
+      id: "basePath",
+      label: "basePath",
+      value: "/media",
+      type: "path" as const,
+    },
   ])
   store.set(commandsAtom, COMMANDS)
   return store
@@ -73,7 +78,7 @@ describe("runOrStopStepAtom", () => {
       )
     })
 
-    test("does not open ApiRunModal when cancelling", async () => {
+    test("does not open SequenceRunModal when cancelling", async () => {
       const step = makeStep({
         status: "running",
         jobId: "job_abc",
@@ -82,7 +87,9 @@ describe("runOrStopStepAtom", () => {
 
       await store.set(runOrStopStepAtom, "step_1")
 
-      expect(store.get(apiRunModalAtom)).toBeNull()
+      expect(store.get(sequenceRunModalAtom).mode).toBe(
+        "closed",
+      )
     })
   })
 
@@ -130,13 +137,15 @@ describe("runOrStopStepAtom", () => {
       ).toBe(false)
     })
 
-    test("does NOT open ApiRunModal when running a step", async () => {
+    test("does NOT open SequenceRunModal when running a step", async () => {
       const step = makeStep()
       const store = makeStore(step)
 
       await store.set(runOrStopStepAtom, "step_1")
 
-      expect(store.get(apiRunModalAtom)).toBeNull()
+      expect(store.get(sequenceRunModalAtom).mode).toBe(
+        "closed",
+      )
     })
 
     test("sets step status to 'running' and jobId inline after server responds", async () => {
@@ -195,7 +204,9 @@ describe("runOrStopStepAtom", () => {
 
       const updated = store.get(stepsAtom)[0] as Step
       expect(updated.status).toBe("failed")
-      expect(store.get(apiRunModalAtom)).toBeNull()
+      expect(store.get(sequenceRunModalAtom).mode).toBe(
+        "closed",
+      )
       expect(store.get(runningAtom)).toBe(false)
     })
 
@@ -217,6 +228,7 @@ describe("runOrStopStepAtom", () => {
           id: "basePath",
           label: "basePath",
           value: "/media",
+          type: "path" as const,
         },
       ])
       store.set(commandsAtom, COMMANDS)

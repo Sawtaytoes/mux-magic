@@ -15,7 +15,7 @@
     "build": "vite build",
     "dev": "vite",
     "preview": "vite preview",
-    "prod:server": "tsx --env-file-if-exists=../../.env src/server.ts",
+    "prod:server": "tsx src/server.ts",
     "storybook": "storybook dev -p 6006 --config-dir .storybook",
     "test:storybook": "vitest run --config vitest.storybook.config.ts",
     "test": "vitest",

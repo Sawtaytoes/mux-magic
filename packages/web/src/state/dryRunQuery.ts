@@ -2,29 +2,96 @@
 //
 // The server detects "fake / dry-run" mode via a `?fake=...` query param
 // on the request URL (see packages/server/src/fake-data/index.ts:
-// `isFakeRequest`, `getFakeScenario`). The client's `dryRunAtom` /
-// `failureModeAtom` state previously updated localStorage + the DRY RUN
-// badge ONLY — no fetch ever forwarded the flag — which meant every
-// "dry run" was a real run on the server. This caused real file
-// deletions via the `deleteFolder` command while the UI showed dry-run
-// state.
+// `isFakeRequest`, `getFakeScenario`). Both the atoms and every fetch
+// URL are driven by this single param:
 //
-// `buildRunFetchUrl` is the single chokepoint every command-run fetch
-// (sequences, single steps, groups) MUST pass through, so dry-run state
-// is forwarded uniformly to the server.
+//   ?fake=success  → isDryRun true,  isFailureMode false
+//   ?fake=failure  → isDryRun true,  isFailureMode true
+//   (absent)       → isDryRun false, isFailureMode false
+//
+// State is per-tab: each browser tab owns its URL, so one tab can be
+// in dry-run mode while another is in live mode.
 
 import { atom } from "jotai"
 import { apiBase } from "../apiBase"
 
-// Initial values are hydrated from localStorage so the badge survives
-// page reloads. The PageHeader toggle handler writes back to
-// localStorage on every change.
-export const dryRunAtom = atom<boolean>(
-  localStorage.getItem("isDryRun") === "1",
+type FakeParam = "success" | "failure" | null
+
+const readFakeFromUrl = (): FakeParam => {
+  const params = new URLSearchParams(window.location.search)
+  const value = params.get("fake")
+  if (value === "success" || value === "failure")
+    return value
+  return null
+}
+
+const writeFakeToUrl = (value: FakeParam): void => {
+  const params = new URLSearchParams(window.location.search)
+  if (value === null) {
+    params.delete("fake")
+  } else {
+    params.set("fake", value)
+  }
+  const search = params.toString()
+  history.replaceState(
+    null,
+    "",
+    search
+      ? `${window.location.pathname}?${search}`
+      : window.location.pathname,
+  )
+}
+
+// Bumped on every URL write or popstate so derived atoms re-read the URL.
+const urlVersionAtom = atom(0)
+urlVersionAtom.onMount = (set) => {
+  const handlePopState = () => {
+    set((version) => version + 1)
+  }
+  window.addEventListener("popstate", handlePopState)
+  return () => {
+    window.removeEventListener("popstate", handlePopState)
+  }
+}
+
+// Derives the ?fake param value from the URL; depends on urlVersionAtom
+// so subscribers are notified when the URL changes.
+const fakeParamAtom = atom(
+  (get): FakeParam => {
+    get(urlVersionAtom)
+    return readFakeFromUrl()
+  },
+  (_get, set, newValue: FakeParam): void => {
+    writeFakeToUrl(newValue)
+    set(urlVersionAtom, (version) => version + 1)
+  },
 )
 
-export const failureModeAtom = atom<boolean>(
-  localStorage.getItem("dryRunScenario") === "failure",
+export const dryRunAtom = atom(
+  (get) => get(fakeParamAtom) !== null,
+  (get, set, isNextDryRun: boolean): void => {
+    const isFailureMode = get(fakeParamAtom) === "failure"
+    set(
+      fakeParamAtom,
+      isNextDryRun
+        ? isFailureMode
+          ? "failure"
+          : "success"
+        : null,
+    )
+  },
+)
+
+export const failureModeAtom = atom(
+  (get) => get(fakeParamAtom) === "failure",
+  (get, set, isNextFailureMode: boolean): void => {
+    const isCurrentlyDryRun = get(fakeParamAtom) !== null
+    if (!isCurrentlyDryRun) return
+    set(
+      fakeParamAtom,
+      isNextFailureMode ? "failure" : "success",
+    )
+  },
 )
 
 export type DryRunInputs = {

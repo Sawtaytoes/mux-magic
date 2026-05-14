@@ -45,7 +45,8 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory containing media files or containing other directories of media files.",
       "isRecursive": "Recursively looks in folders for media files.",
-      "subtitlesLanguage": "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed."
+      "subtitlesLanguage": "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
+      "folders": "Folder names to extract subtitles into. Each extracted subtitle file is placed inside the named sub-folder relative to the source file location. Leave empty to use the default output folder."
     }
   },
   "extractSubtitles": {
@@ -53,7 +54,8 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory containing media files or containing other directories of media files.",
       "isRecursive": "Recursively looks in folders for media files.",
-      "subtitlesLanguage": "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed."
+      "subtitlesLanguage": "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
+      "folders": "Folder names to extract subtitles into. Each extracted subtitle file is placed inside the named sub-folder relative to the source file location. Leave empty to use the default output folder."
     }
   },
   "fixIncorrectDefaultTracks": {
@@ -175,7 +177,7 @@ window.commandDescriptions = {
       "hasChapterSyncOffset": "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the subtitles path. Falls back to globalOffset (or per-file offsets) when no chapters.xml is found.",
       "globalOffset": "The offset in milliseconds to apply to all audio being transferred.",
       "includeChapters": "Adds chapters along with other tracks.",
-      "offsets": "Space-separated list of time-alignment offsets to set for each individual file in milliseconds."
+      "offsets": "Offsets (milliseconds, one per episode). Provide one offset per source file. The order must match the order of episodes selected above. Negative values shift the subtitle earlier; positive values shift it later. This field is only useful for manual runs; sequences and schedules should rely on auto-aligned tracks."
     }
   },
   "moveFiles": {
@@ -257,7 +259,8 @@ window.commandDescriptions = {
       "isRecursive": "Recursively looks in folders for media files.",
       "videoTrackIndexes": "The order of all video tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file.",
       "audioTrackIndexes": "The order of all audio tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file.",
-      "subtitlesTrackIndexes": "The order of all subtitles tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file."
+      "subtitlesTrackIndexes": "The order of all subtitles tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file.",
+      "isSkipOnTrackMisalignment": "When enabled, files whose track count does not match the supplied indexes are skipped with a warning instead of causing an error. Tracks should align if the command was added correctly."
     }
   },
   "replaceAttachments": {

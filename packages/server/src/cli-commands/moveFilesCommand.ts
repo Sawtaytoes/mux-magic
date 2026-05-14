@@ -16,6 +16,10 @@ const builder = (yargs: Argv) =>
       '$0 moveFiles "/work/LANGUAGE-TRIMMED" "/work"',
       "Copies all files from LANGUAGE-TRIMMED into the work directory, then deletes the LANGUAGE-TRIMMED directory.",
     )
+    .example(
+      '$0 moveFiles "/staging" "/library" --fileFilterRegex "\\.mkv$" --renamePattern "^\\[.*?\\] (.+)$" --renameReplacement "$1"',
+      "Moves only MKV files, stripping leading [Group] tags, then removes the staging directory.",
+    )
     .positional("sourcePath", {
       demandOption: true,
       describe:
@@ -26,6 +30,21 @@ const builder = (yargs: Argv) =>
       demandOption: true,
       describe:
         "Directory to move files into. Created if it does not already exist.",
+      type: "string",
+    })
+    .option("fileFilterRegex", {
+      describe:
+        "Only move files whose names match this regex.",
+      type: "string",
+    })
+    .option("renamePattern", {
+      describe:
+        "Regex pattern for renaming files at destination. Must be paired with --renameReplacement.",
+      type: "string",
+    })
+    .option("renameReplacement", {
+      describe:
+        "Replacement string for --renamePattern. Capture groups available as $1, $2, etc.",
       type: "string",
     })
 
@@ -45,8 +64,18 @@ export const moveFilesCommand: CommandModule<
   >,
 
   handler: (argv) => {
+    const renameRegex =
+      argv.renamePattern != null &&
+      argv.renameReplacement != null
+        ? {
+            pattern: argv.renamePattern,
+            replacement: argv.renameReplacement,
+          }
+        : undefined
     moveFiles({
       destinationPath: argv.destinationPath,
+      fileFilterRegex: argv.fileFilterRegex,
+      renameRegex,
       sourcePath: argv.sourcePath,
     }).subscribe(subscribeCli())
   },

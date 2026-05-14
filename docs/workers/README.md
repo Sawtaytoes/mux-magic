@@ -36,9 +36,9 @@ This is the live tracking document for all workers in the Mux-Magic huge revamp.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 39 | [shared-to-tools-rename](39_shared-to-tools-rename.md) | tools | Sonnet | High | ON | — | ready |
+| 39 | [shared-to-tools-rename](39_shared-to-tools-rename.md) | tools | Sonnet | High | ON | — | done |
 | 01 | [mux-magic-rename](01_mux-magic-rename.md) | tools | Sonnet | High | ON | 39 | done |
-| 02 | [npm-publish-key-setup](02_npm-publish-key-setup.md) | tools | Haiku | Low | OFF | — | in-progress |
+| 02 | [npm-publish-key-setup](02_npm-publish-key-setup.md) | tools | Haiku | Low | OFF | — | done |
 | 03 | [storybook-vitest-filter-fix](03_storybook-vitest-filter-fix.md) | infra | Sonnet | Medium | ON | — | done |
 | 04 | [worker-conventions-agents-md](04_worker-conventions-agents-md.md) | tools | Haiku | Low | OFF | — | done |
 
@@ -54,7 +54,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 05 | [is-has-eslint-rule](05_is-has-eslint-rule.md) | infra | Sonnet | Medium | ON | 01 | done |
 | 06 | [webtypes-eslint-guard](06_webtypes-eslint-guard.md) | infra | Sonnet | Medium | ON | 05 | done |
-| 07 | [one-component-per-file](07_one-component-per-file.md) | infra | Sonnet | Medium | ON | 06 | ready |
+| 07 | [one-component-per-file](07_one-component-per-file.md) | infra | Sonnet | Medium | ON | 06 | done |
 
 ---
 
@@ -64,47 +64,47 @@ All three workers touch `eslint.config.js` and must run sequentially.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 36 | [variables-system-foundation](36_variables-system-foundation.md) | web | Sonnet | High | ON | 01 | in-progress |
-| 37 | [edit-variables-modal-and-sidebar](37_edit-variables-modal-and-sidebar.md) | web | Sonnet | Medium | ON | 36 | ready |
+| 36 | [variables-system-foundation](36_variables-system-foundation.md) | web | Sonnet | High | ON | 01 | done |
+| 37 | [edit-variables-modal-and-sidebar](37_edit-variables-modal-and-sidebar.md) | web | Sonnet | Medium | ON | 36 | done |
 
 ### Web track (16 workers)
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 08 | [language-fields-and-tagify](08_language-fields-and-tagify.md) | web | Sonnet | Medium | ON | 01 | in-progress |
-| 09 | [number-fields-redesign](09_number-fields-redesign.md) | web | Sonnet | Medium | ON | 01 | ready |
-| 0a | [json-field-readonly](0a_json-field-readonly.md) | web | Haiku | Low | OFF | 01 | ready |
+| 08 | [language-fields-and-tagify](08_language-fields-and-tagify.md) | web | Sonnet | Medium | ON | 01 | done |
+| 09 | [number-fields-redesign](09_number-fields-redesign.md) | web | Sonnet | Medium | ON | 01 | done |
+| 0a | [json-field-readonly](0a_json-field-readonly.md) | web | Haiku | Low | OFF | 01 | done |
 | 0b | [auto-paste-yaml](0b_auto-paste-yaml.md) | web | Haiku | Low | OFF | 01 | ready |
 | 0c | [scale-resolution-aspect-lock](0c_scale-resolution-aspect-lock.md) | web | Sonnet | Medium | ON | 01 | ready |
 | 0d | [narrow-view-menu-animate](0d_narrow-view-menu-animate.md) | web | Sonnet | Medium | ON | 01 | ready |
-| 0e | [story-actions-and-reopen](0e_story-actions-and-reopen.md) | web | Haiku | Low | OFF | 01 | in-progress |
-| 0f | [undo-redo-scroll-to-affected](0f_undo-redo-scroll-to-affected.md) | web | Sonnet | Medium | ON | 01 | in-progress |
-| 10 | [apirunmodal-rename](10_apirunmodal-rename.md) | web | Haiku | Low | OFF | 01 | ready |
+| 0e | [story-actions-and-reopen](0e_story-actions-and-reopen.md) | web | Haiku | Low | OFF | 01 | done |
+| 0f | [undo-redo-scroll-to-affected](0f_undo-redo-scroll-to-affected.md) | web | Sonnet | Medium | ON | 01 | done |
+| 10 | [apirunmodal-rename](10_apirunmodal-rename.md) — shipped as part of worker 17 (PR #95) | web | Haiku | Low | OFF | 01 | done |
 | 11 | [limit-execution-threads-ui](11_limit-execution-threads-ui.md) — per-job thread cap as a `threadCount` Variable; adds `DEFAULT_THREAD_COUNT` env var; per-job quota enforcement in `taskScheduler.ts` | web+srv | Sonnet | High | ON | 01, 36 (Variables foundation) | done |
 | 12 | [sequence-jobs-formatting](12_sequence-jobs-formatting.md) | web | Haiku | Low | OFF | 01 | done |
-| 13 | [merge-subtitles-offsets-label](13_merge-subtitles-offsets-label.md) | web | Haiku | Low | OFF | 01 | ready |
-| 14 | [dryrun-to-query-string](14_dryrun-to-query-string.md) | web | Sonnet | Medium | ON | 01 | ready |
-| 15 | [dry-run-silent-failures](15_dry-run-silent-failures.md) | web | Sonnet | Medium | ON | 01 | ready |
-| 16 | [user-event-migration](16_user-event-migration.md) | web | Sonnet | High | ON | 01 | ready |
-| 17 | [run-in-background-sequence-modal](17_run-in-background-sequence-modal.md) | web | Sonnet | High | ON | 10 | ready |
+| 13 | [merge-subtitles-offsets-label](13_merge-subtitles-offsets-label.md) | web | Haiku | Low | OFF | 01 | done |
+| 14 | [dryrun-to-query-string](14_dryrun-to-query-string.md) | web | Sonnet | Medium | ON | 01 | done |
+| 15 | [dry-run-silent-failures](15_dry-run-silent-failures.md) | web | Sonnet | Medium | ON | 01 | done |
+| 16 | [user-event-migration](16_user-event-migration.md) | web | Sonnet | High | ON | 01 | done |
+| 17 | [run-in-background-sequence-modal](17_run-in-background-sequence-modal.md) | web | Sonnet | High | ON | 10 | done |
 
 ### Other track (3 workers)
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 18 | [loadenvfile-migration](18_loadenvfile-migration.md) | infra | Haiku | Low | OFF | 01 | ready |
+| 18 | [loadenvfile-migration](18_loadenvfile-migration.md) | infra | Haiku | Low | OFF | 01 | done |
 | 19 | [yaml-codec-merge](19_yaml-codec-merge.md) | web | Sonnet | Medium | ON | 01 | ready |
-| 1a | [reorder-tracks-skip-on-misalignment](1a_reorder-tracks-skip-on-misalignment.md) | srv+web | Sonnet | Medium | ON | 01 | ready |
+| 1a | [reorder-tracks-skip-on-misalignment](1a_reorder-tracks-skip-on-misalignment.md) | srv+web | Sonnet | Medium | ON | 01 | done |
 
 ### Cross-repo track (5 workers)
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 1b | [media-sync-rename-to-gallery-downloader](1b_media-sync-rename-to-gallery-downloader.md) | cross | Sonnet | High | ON | 01 | ready |
-| 1c | [gallery-downloader-decouple-and-ha-endpoint](1c_gallery-downloader-decouple-and-ha-endpoint.md) | cross | Sonnet | High | ON | 1b | ready |
-| 1d | [gallery-downloader-consume-mux-magic-tools](1d_gallery-downloader-consume-mux-magic-tools.md) | cross | Sonnet | Medium | ON | 1c, 02, 39 + a published `@mux-magic/tools` release | ready |
-| 1e | [mux-magic-webhook-reporter](1e_mux-magic-webhook-reporter.md) | srv | Sonnet | Medium | ON | 01 | ready |
-| 1f | [mux-magic-anime-manga-commands](1f_mux-magic-anime-manga-commands.md) | srv+web | Sonnet | High | ON | 01 | ready |
+| 1b | [media-sync-rename-to-gallery-downloader](1b_media-sync-rename-to-gallery-downloader.md) | cross | Sonnet | High | ON | 01 | done |
+| 1c | [gallery-downloader-decouple-and-ha-endpoint](1c_gallery-downloader-decouple-and-ha-endpoint.md) | cross | Sonnet | High | ON | 1b | done |
+| 1d | [gallery-downloader-consume-mux-magic-tools](1d_gallery-downloader-consume-mux-magic-tools.md) | cross | Sonnet | Medium | ON | 1c, 02, 39 + a published `@mux-magic/tools` release | in-progress |
+| 1e | [mux-magic-webhook-reporter](1e_mux-magic-webhook-reporter.md) | srv | Sonnet | Medium | ON | 01 | done |
+| 1f | [mux-magic-anime-manga-commands](1f_mux-magic-anime-manga-commands.md) | srv+web | Sonnet | High | ON | 01 | done |
 
 ---
 
@@ -112,25 +112,26 @@ All three workers touch `eslint.config.js` and must run sequentially.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 20 | `cli-package-extract` | cli | **Opus** | High | ON | All Phase 1 done | planned |
-| 21 | `observables-shared-split` | cli | Sonnet | High | ON | 20 | planned |
+| 20 | [cli-package-extract](20_cli-package-extract.md) | cli | **Opus** | High | ON | All Phase 1 done | ready |
+| 21 | [observables-shared-split](21_observables-shared-split.md) — promotes `taskScheduler` + reusable rxjs operators from server into `@mux-magic/tools` | cli+srv | Sonnet | High | ON | 20 | ready |
 
 ---
 
 ## Phase 3 — Name Special Features overhaul
 
-The existing `nameSpecialFeatures` code is preserved (renamed only). Two new sibling commands are added for narrower workflows, plus a shared "DVD Compare ID variable" concept that lets steps reference each other's lookup IDs (similar to path variables).
+The existing `nameSpecialFeatures` code is preserved (renamed only by worker 22, then split into modules by worker 3a). Two new sibling commands are added for narrower workflows, plus a shared "DVD Compare ID variable" concept that lets steps reference each other's lookup IDs (similar to path variables). Workers 25, 26, 27 then improve specific subsystems of the renamed command.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 22 | `nsf-rename-to-dvdcompare-tmdb` — rename existing `nameSpecialFeatures` → `nameSpecialFeaturesDvdCompareTmdb`; **code unchanged** | srv+web | Sonnet | Medium | ON | 21 | planned |
-| 23 | `nameMovieCutsDvdCompareTmdb-new-command` — new command: rename movies + move into directories by edition. Uses TMDB + DVD Compare | srv+web | Sonnet | High | ON | 22, 35 | planned |
-| 24 | `source-path-abstraction` — unified `SourcePath` control (field name `sourcePath` internal, "Source Path" user-facing) | srv+web | **Opus** | High | ON | All Phase 1 done | planned |
-| 25 | `nsf-fix-unnamed-overhaul` | srv+web | Sonnet | High | ON | 22 | planned |
-| 26 | `nsf-edition-organizer` | srv+web | Sonnet | High | ON | 25 | planned |
-| 27 | `nsf-cache-state-persistence` — adds `paused` job state with separate `reason` field (e.g. `reason: user_input`) | srv+web | Sonnet | High | ON | 25 | planned |
-| 34 | `onlyNameSpecialFeaturesDvdCompare-new-command` — new command: non-movie variant (no TMDB needed) | srv+web | Sonnet | High | ON | 22, 35 | planned |
-| 35 | `dvd-compare-id-variable` — registers `dvdCompareId` as a Variable type in the new system (multi-instance, named); adds "Step X DVD Compare ID" link picker. Generic pattern for future TMDB/AniDB ID types | srv+web | Sonnet | Medium | ON | 22, 36 (Variables foundation) | planned |
+| 22 | [nsf-rename-to-dvdcompare-tmdb](22_nsf-rename-to-dvdcompare-tmdb.md) — rename existing `nameSpecialFeatures` → `nameSpecialFeaturesDvdCompareTmdb`; **code unchanged** | srv+web | Sonnet | Medium | ON | 21 | ready |
+| 3a | [nsf-pipeline-split-into-modules](3a_nsf-pipeline-split-into-modules.md) — behavior-preserving split of the 1,325-line NSF pipeline into focused modules. Unblocks parallel improvements in 25/26/27 | srv | **Opus** | High | ON | 22 | ready |
+| 23 | [nameMovieCutsDvdCompareTmdb-new-command](23_namemoviecuts-dvdcompare-tmdb-new-command.md) — new command: rename movies + move into directories by edition. Uses TMDB + DVD Compare | srv+web+cli | Sonnet | High | ON | 22, 35, 3a | ready |
+| 24 | [source-path-abstraction](24_source-path-abstraction.md) — unified `SourcePath` control (field name `sourcePath` internal, "Source Path" user-facing) | srv+web+cli | **Opus** | High | ON | All Phase 1 done | ready |
+| 25 | [nsf-fix-unnamed-overhaul](25_nsf-fix-unnamed-overhaul.md) — duration-aware ranking, order-based tie-break, per-release answer cache | srv+web | Sonnet | High | ON | 22, 3a | ready |
+| 26 | [nsf-edition-organizer](26_nsf-edition-organizer.md) — sibling-file co-movement, destination collision detection, `editionPlan` preview event | srv+web | Sonnet | High | ON | 25 (implicit 3a) | ready |
+| 27 | [nsf-cache-state-persistence](27_nsf-cache-state-persistence.md) — adds `paused` job state with separate `reason` field; persists jobs to disk | srv+web | Sonnet | High | ON | 25 (implicit 3a) | ready |
+| 34 | [onlyNameSpecialFeaturesDvdCompare-new-command](34_onlyNameSpecialFeaturesDvdCompare-new-command.md) — new command: non-movie variant (no TMDB needed) | srv+web+cli | Sonnet | High | ON | 22, 35, 3a | ready |
+| 35 | [dvd-compare-id-variable](35_dvd-compare-id-variable.md) — registers `dvdCompareId` as a Variable type in the new system (multi-instance, named); generic pattern for future TMDB/AniDB ID types | web | Sonnet | Medium | ON | 22, 36 (Variables foundation) | ready |
 
 ---
 

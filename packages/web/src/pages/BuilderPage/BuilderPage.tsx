@@ -3,9 +3,9 @@ import { useHydrateAtoms } from "jotai/utils"
 import { useEffect } from "react"
 
 import { COMMANDS } from "../../commands/commands"
-import { ApiRunModal } from "../../components/ApiRunModal/ApiRunModal"
 import { CommandHelpModal } from "../../components/CommandHelpModal/CommandHelpModal"
 import { CommandPicker } from "../../components/CommandPicker/CommandPicker"
+import { EditVariablesModal } from "../../components/EditVariablesModal/EditVariablesModal"
 import { EnumPicker } from "../../components/EnumPicker/EnumPicker"
 import { FileExplorerModal } from "../../components/FileExplorerModal/FileExplorerModal"
 import { LinkPicker } from "../../components/LinkPicker/LinkPicker"
@@ -14,6 +14,8 @@ import { LookupModal } from "../../components/LookupModal/LookupModal"
 import { PageHeader } from "../../components/PageHeader/PageHeader"
 import { PathPicker } from "../../components/PathPicker/PathPicker"
 import { PromptModal } from "../../components/PromptModal/PromptModal"
+import { SequenceRunModal } from "../../components/SequenceRunModal/SequenceRunModal"
+import { VariablesSidebar } from "../../components/VariablesSidebar/VariablesSidebar"
 import { YamlModal } from "../../components/YamlModal/YamlModal"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
 import { decodeSeqParam } from "../../jobs/decodeSeqParam"
@@ -26,7 +28,6 @@ import {
   stepCounterAtom,
   stepsAtom,
 } from "../../state/stepsAtom"
-import { BuilderPathVariableList } from "../BuilderPathVariableList/BuilderPathVariableList"
 import { BuilderSequenceList } from "../BuilderSequenceList/BuilderSequenceList"
 
 // ─── BuilderPage ──────────────────────────────────────────────────────────────
@@ -138,19 +139,22 @@ export const BuilderPage = () => {
     >
       <PageHeader />
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 py-4">
-          <BuilderPathVariableList />
-          <BuilderSequenceList />
-        </div>
-      </main>
+      <div className="flex-1 flex overflow-hidden">
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-4 py-4">
+            <BuilderSequenceList />
+          </div>
+        </main>
+        <VariablesSidebar />
+      </div>
 
       {/* Modals */}
+      <EditVariablesModal />
       <YamlModal />
       <LoadModal />
       <CommandHelpModal />
       <PromptModal />
-      <ApiRunModal />
+      <SequenceRunModal />
       <LookupModal />
       <FileExplorerModal />
 

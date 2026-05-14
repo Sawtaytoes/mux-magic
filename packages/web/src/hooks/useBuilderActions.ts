@@ -1,7 +1,7 @@
 ﻿import type { CreateJobResponse } from "@mux-magic/server/api-types"
 import { useStore } from "jotai"
 import { useCallback } from "react"
-import { apiRunModalAtom } from "../components/ApiRunModal/apiRunModalAtom"
+import { sequenceRunModalAtom } from "../components/SequenceRunModal/sequenceRunModalAtom"
 import { isGroup } from "../jobs/sequenceUtils"
 import { toYamlStr } from "../jobs/yamlSerializer"
 import { commandsAtom } from "../state/commandsAtom"
@@ -21,6 +21,7 @@ import {
   canUndoAtom,
   redoStackAtom,
   type Snapshot,
+  scrollToStepAtom,
   undoStackAtom,
 } from "../state/historyAtoms"
 import {
@@ -45,12 +46,14 @@ import {
 } from "../state/stepsAtom"
 import { threadCountAtom } from "../state/threadCountAtom"
 import type { Group, Step, StepLink } from "../types"
+import { findFirstChangedStepId } from "../utils/diffSteps"
 import { runWithViewTransition } from "../utils/runWithViewTransition"
 
 const DEFAULT_BASE_PATH = {
   id: "basePath",
   label: "basePath",
   value: "",
+  type: "path" as const,
 }
 
 const captureSnapshot = (
@@ -89,14 +92,22 @@ export const useBuilderActions = () => {
     const undoStack = store.get(undoStackAtom)
     if (!undoStack.length) return
     const snapshot = undoStack[undoStack.length - 1]
+    const currentSnapshot = captureSnapshot(store)
     store.set(undoStackAtom, undoStack.slice(0, -1))
     store.set(redoStackAtom, (prev) => [
       ...prev,
-      captureSnapshot(store),
+      currentSnapshot,
     ])
+    const affectedId = findFirstChangedStepId(
+      snapshot.steps,
+      currentSnapshot.steps,
+    )
     runWithViewTransition(() =>
       applySnapshot(store, snapshot),
-    )
+    ).then(() => {
+      if (affectedId)
+        store.set(scrollToStepAtom, affectedId)
+    })
     store.set(
       canUndoAtom,
       store.get(undoStackAtom).length > 0,
@@ -108,14 +119,22 @@ export const useBuilderActions = () => {
     const redoStack = store.get(redoStackAtom)
     if (!redoStack.length) return
     const snapshot = redoStack[redoStack.length - 1]
+    const currentSnapshot = captureSnapshot(store)
     store.set(redoStackAtom, redoStack.slice(0, -1))
     store.set(undoStackAtom, (prev) => [
       ...prev,
-      captureSnapshot(store),
+      currentSnapshot,
     ])
+    const affectedId = findFirstChangedStepId(
+      snapshot.steps,
+      currentSnapshot.steps,
+    )
     runWithViewTransition(() =>
       applySnapshot(store, snapshot),
-    )
+    ).then(() => {
+      if (affectedId)
+        store.set(scrollToStepAtom, affectedId)
+    })
     store.set(
       canRedoAtom,
       store.get(redoStackAtom).length > 0,
@@ -285,7 +304,8 @@ export const useBuilderActions = () => {
       store.get(threadCountAtom),
     )
     store.set(runningAtom, true)
-    store.set(apiRunModalAtom, {
+    store.set(sequenceRunModalAtom, {
+      mode: "open",
       jobId: null,
       status: "pending",
       logs: [],
@@ -304,16 +324,18 @@ export const useBuilderActions = () => {
         body: JSON.stringify({ yaml }),
       })
       if (!response.ok) {
-        store.set(apiRunModalAtom, (prev) =>
-          prev ? { ...prev, status: "failed" } : prev,
+        store.set(sequenceRunModalAtom, (prev) =>
+          prev.mode !== "closed"
+            ? { ...prev, status: "failed" }
+            : prev,
         )
         store.set(runningAtom, false)
         return
       }
       const data =
         (await response.json()) as CreateJobResponse
-      store.set(apiRunModalAtom, (prev) =>
-        prev
+      store.set(sequenceRunModalAtom, (prev) =>
+        prev.mode !== "closed"
           ? {
               ...prev,
               jobId: data.jobId,
@@ -322,8 +344,10 @@ export const useBuilderActions = () => {
           : prev,
       )
     } catch {
-      store.set(apiRunModalAtom, (prev) =>
-        prev ? { ...prev, status: "failed" } : prev,
+      store.set(sequenceRunModalAtom, (prev) =>
+        prev.mode !== "closed"
+          ? { ...prev, status: "failed" }
+          : prev,
       )
       store.set(runningAtom, false)
     }
@@ -533,7 +557,8 @@ export const useBuilderActions = () => {
         store.get(threadCountAtom),
       )
       store.set(runningAtom, true)
-      store.set(apiRunModalAtom, {
+      store.set(sequenceRunModalAtom, {
+        mode: "open",
         jobId: null,
         status: "pending",
         logs: [],
@@ -554,8 +579,10 @@ export const useBuilderActions = () => {
           body: JSON.stringify({ yaml }),
         })
         if (!response.ok) {
-          store.set(apiRunModalAtom, (prev) =>
-            prev ? { ...prev, status: "failed" } : prev,
+          store.set(sequenceRunModalAtom, (prev) =>
+            prev.mode !== "closed"
+              ? { ...prev, status: "failed" }
+              : prev,
           )
           store.set(runningAtom, false)
           return
@@ -563,8 +590,8 @@ export const useBuilderActions = () => {
         const data = (await response.json()) as {
           jobId: string
         }
-        store.set(apiRunModalAtom, (prev) =>
-          prev
+        store.set(sequenceRunModalAtom, (prev) =>
+          prev.mode !== "closed"
             ? {
                 ...prev,
                 jobId: data.jobId,
@@ -573,8 +600,10 @@ export const useBuilderActions = () => {
             : prev,
         )
       } catch {
-        store.set(apiRunModalAtom, (prev) =>
-          prev ? { ...prev, status: "failed" } : prev,
+        store.set(sequenceRunModalAtom, (prev) =>
+          prev.mode !== "closed"
+            ? { ...prev, status: "failed" }
+            : prev,
         )
         store.set(runningAtom, false)
       }

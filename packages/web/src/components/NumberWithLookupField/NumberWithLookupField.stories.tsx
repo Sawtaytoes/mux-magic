@@ -11,12 +11,21 @@ const meta: Meta<typeof NumberWithLookupField> = {
 export default meta
 type Story = StoryObj<typeof NumberWithLookupField>
 
-const field =
+const idLookupField =
   FIXTURE_COMMANDS_BUNDLE_D.nameAnimeEpisodes.fields[1]
 
-export const Empty: Story = {
+const numericField = {
+  ...idLookupField,
+  name: "episodeCount",
+  label: "Episode Count",
+  lookupType: undefined,
+  companionNameField: undefined,
+  hasIncrementButtons: true,
+}
+
+export const IdLookupEmpty: Story = {
   args: {
-    field,
+    field: idLookupField,
     step: {
       id: "example-1",
       alias: "",
@@ -30,9 +39,9 @@ export const Empty: Story = {
   },
 }
 
-export const WithValue: Story = {
+export const IdLookupWithValue: Story = {
   args: {
-    field,
+    field: idLookupField,
     step: {
       id: "example-2",
       alias: "",
@@ -46,9 +55,9 @@ export const WithValue: Story = {
   },
 }
 
-export const WithCompanionName: Story = {
+export const IdLookupWithCompanionName: Story = {
   args: {
-    field,
+    field: idLookupField,
     step: {
       id: "example-3",
       alias: "",
@@ -57,6 +66,38 @@ export const WithCompanionName: Story = {
         malId: 5114,
         malName: "Fullmetal Alchemist",
       },
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    },
+  },
+}
+
+export const NumericWithCustomButtons: Story = {
+  args: {
+    field: numericField,
+    step: {
+      id: "example-4",
+      alias: "",
+      command: "nameAnimeEpisodes",
+      params: { episodeCount: 12 },
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    },
+  },
+}
+
+export const NumericEmpty: Story = {
+  args: {
+    field: numericField,
+    step: {
+      id: "example-5",
+      alias: "",
+      command: "nameAnimeEpisodes",
+      params: {},
       links: {},
       status: null,
       error: null,

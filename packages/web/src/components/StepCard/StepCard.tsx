@@ -4,92 +4,29 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useAtomValue, useSetAtom } from "jotai"
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react"
+import { useRef, useState } from "react"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
 } from "../../components/CommandHelpModal/commandHelpAtoms"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
-import {
-  type LogStreamDonePayload,
-  useLogStream,
-} from "../../hooks/useLogStream"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
 import { commandLabel } from "../../jobs/commandLabels"
 import { commandsAtom } from "../../state/commandsAtom"
 import { commandPickerStateAtom } from "../../state/pickerAtoms"
-import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
 import {
   runningAtom,
   runOrStopStepAtom,
 } from "../../state/runAtoms"
 import {
-  setStepRunStatusAtom,
   toggleStepCollapsedAtom,
   updateStepAliasAtom,
 } from "../../state/stepAtoms"
 import type { Step } from "../../types"
-import { ProgressBar } from "../ProgressBar/ProgressBar"
 import { RenderFields } from "../RenderFields/RenderFields"
 import { StatusBadge } from "../StatusBadge/StatusBadge"
-
-// ─── Progress bar for a running step ─────────────────────────────────────────
-// Opens the single useLogStream connection for the running step so progress
-// events populate progressByJobIdAtom AND the terminal "done" event drives
-// the step-card status update (hasResults, error, final status). This is the
-// only SSE consumer for single-step runs — runOrStopStepAtom no longer opens
-// its own EventSource, which keeps the /jobs/:id/logs subscription single
-// per run instead of duplicating.
-
-const StepRunProgress = ({
-  stepId,
-  jobId,
-}: {
-  stepId: string
-  jobId: string
-}) => {
-  const progressByJobId = useAtomValue(progressByJobIdAtom)
-  const setStepRunStatus = useSetAtom(setStepRunStatusAtom)
-  const setRunning = useSetAtom(runningAtom)
-
-  const handleDone = useCallback(
-    (payload: LogStreamDonePayload) => {
-      const finalStatus = payload.status ?? "completed"
-      const hasResults = Array.isArray(payload.results)
-        ? payload.results.length > 0
-        : null
-      setStepRunStatus({
-        stepId,
-        status: finalStatus,
-        jobId: null,
-        error: payload.error ?? null,
-        hasResults,
-      })
-      setRunning(false)
-    },
-    [stepId, setStepRunStatus, setRunning],
-  )
-
-  const { connect } = useLogStream(jobId, handleDone)
-
-  useEffect(() => {
-    connect()
-  }, [connect])
-
-  const snap = progressByJobId.get(jobId) ?? {}
-
-  return (
-    <div className="px-3 py-2 border-b border-slate-700 bg-slate-900/60">
-      <ProgressBar snapshot={snap} />
-    </div>
-  )
-}
+import { StepRunProgress } from "./StepRunProgress"
 
 interface StepCardProps {
   step: Step
@@ -101,7 +38,7 @@ interface StepCardProps {
   isDropTarget?: boolean
 }
 
-const StepCardInner = ({
+export const StepCard = ({
   step,
   index,
   isFirst,
@@ -447,7 +384,3 @@ const StepCardInner = ({
     </div>
   )
 }
-
-export const StepCard = (props: StepCardProps) => (
-  <StepCardInner {...props} />
-)

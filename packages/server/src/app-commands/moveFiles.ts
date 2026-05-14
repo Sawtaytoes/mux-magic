@@ -21,16 +21,20 @@ import {
 import { getActiveJobId } from "../api/logCapture.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { runTasks } from "../tools/taskScheduler.js"
+import {
+  applyRenameRegex,
+  type RenameRegex,
+} from "./copyFiles.js"
 
 type MoveRecord = {
   source: string
   destination: string
 }
 
-// Copies every file in `sourcePath` into `destinationPath`, then removes
-// the source directory once all copies succeed. Emits a per-file
-// `{ source, destination }` record so the builder's Results panel can
-// show a readable "old → new" summary instead of a string of nulls.
+// Copies every matching file in `sourcePath` into `destinationPath`, then
+// removes the source directory once all copies succeed. Emits a per-file
+// `{ source, destination }` record so the builder's Results panel can show
+// a readable "old → new" summary instead of a string of nulls.
 //
 // Wraps the inner pipeline in an AbortController-aware Observable for
 // the same reason `copyFiles` does: an unsubscribe (sequence cancel,
@@ -38,9 +42,13 @@ type MoveRecord = {
 // mid-byte instead of letting the remaining gigabytes finish.
 export const moveFiles = ({
   destinationPath,
+  fileFilterRegex,
+  renameRegex,
   sourcePath,
 }: {
   destinationPath: string
+  fileFilterRegex?: string
+  renameRegex?: RenameRegex
   sourcePath: string
 }): Observable<MoveRecord> =>
   new Observable<MoveRecord>((subscriber) => {
@@ -53,8 +61,18 @@ export const moveFiles = ({
         // no active job context (CLI mode) — the per-file copy still
         // runs, just without progress emission.
         toArray(),
-        concatMap((files) =>
+        concatMap((allFiles) =>
           defer(async () => {
+            const files =
+              fileFilterRegex == null
+                ? allFiles
+                : allFiles.filter((file) =>
+                    new RegExp(fileFilterRegex).test(
+                      file.filename.concat(
+                        extname(file.fullPath),
+                      ),
+                    ),
+                  )
             const jobId = getActiveJobId()
             const sizes =
               jobId !== undefined
@@ -83,17 +101,22 @@ export const moveFiles = ({
               from(
                 files.map((file, index) => ({
                   file,
-                  size: sizes[index],
+                  size: sizes[index] ?? 0,
                 })),
               ).pipe(
                 // Per-file copies go through the global Task scheduler — see
                 // copyFiles.ts for the full rationale.
                 runTasks(({ file, size }) => {
+                  const destinationFilename =
+                    applyRenameRegex(
+                      file.filename.concat(
+                        extname(file.fullPath),
+                      ),
+                      renameRegex,
+                    )
                   const destinationFilePath = join(
                     destinationPath,
-                    file.filename.concat(
-                      extname(file.fullPath),
-                    ),
+                    destinationFilename,
                   )
 
                   const tracker =

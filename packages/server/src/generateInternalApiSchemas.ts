@@ -1,3 +1,4 @@
+import "./loadEnv.js"
 import { mkdir, writeFile } from "node:fs/promises"
 import openapiTS, { astToString } from "openapi-typescript"
 

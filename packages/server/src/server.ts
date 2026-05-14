@@ -1,3 +1,4 @@
+import "./loadEnv.js"
 // Banner first — see `logBuildBanner.ts` for why this is a
 // side-effect-only import at the top of the file (so `yarn api-server`
 // gets the same boot banner as `yarn server` without going through
