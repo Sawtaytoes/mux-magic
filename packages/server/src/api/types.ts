@@ -151,6 +151,7 @@ export type JobLogsEvent =
   | JobLogDoneEvent
 
 export type {
+  DvdCompareRelease,
   DvdCompareResult,
   DvdCompareVariant,
 } from "../tools/searchDvdCompare.js"
@@ -228,4 +229,49 @@ export type DeleteModeResponse = z.infer<
 >
 export type DeleteFilesResponse = z.infer<
   typeof schemas.deleteFilesResponseSchema
+>
+
+// ─── Lookup-picker canonical types (consumed by web LookupModal) ─────────────
+// The web's LookupModal needs a single union spanning all per-provider search
+// results plus the picker's enum of provider keys. Defining these here keeps
+// the type-vs-wire contract verifiable on the server; web imports as-is.
+
+export const LOOKUP_TYPES = [
+  "mal",
+  "anidb",
+  "tvdb",
+  "tmdb",
+  "dvdcompare",
+] as const
+export type LookupType = (typeof LOOKUP_TYPES)[number]
+
+// Per-provider search-result item types. SearchDvdCompareResult is aliased to
+// the existing DvdCompareResult (same shape, both schema-inferred and
+// tool-emitted) so callers can use the consistent Search*Result naming.
+export type SearchMalResult =
+  SearchMalResponse["results"][number]
+export type SearchAnidbResult =
+  SearchAnidbResponse["results"][number]
+export type SearchTvdbResult =
+  SearchTvdbResponse["results"][number]
+export type SearchMovieDbResult =
+  SearchMovieDbResponse["results"][number]
+export type SearchDvdCompareResult =
+  SearchDvdCompareResponse["results"][number]
+
+// Union of every per-provider search result. Discriminable structurally:
+// each branch has a distinguishing required field (malId / aid / tvdbId /
+// movieDbId / id+baseTitle for DVDCompare). Web picker code narrows by
+// checking which key is present.
+export type LookupSearchResult =
+  | SearchMalResult
+  | SearchAnidbResult
+  | SearchTvdbResult
+  | SearchMovieDbResult
+  | SearchDvdCompareResult
+
+// Release row from listDvdCompareReleases — shape lives on the tool, this
+// alias keeps the picker-stage naming aligned with the other Lookup* types.
+export type LookupRelease = z.infer<
+  typeof schemas.dvdCompareReleaseSchema
 >
