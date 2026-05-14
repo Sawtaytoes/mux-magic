@@ -14,10 +14,9 @@
     },
     "./*": "./*"
   },
-  "description": "Hono API server + CLI for batch media file operations.",
+  "description": "Hono API server for batch media file operations.",
   "scripts": {
     "build:command-descriptions": "tsx scripts/build-command-descriptions.ts",
-    "cli": "tsx src/cli.ts",
     "dev:server": "tsx watch src/server.ts",
     "generate:external-api-schemas": "tsx src/generateExternalApiSchemas.ts",
     "generate:internal-api-schemas:watch": "tsx watch src/generateInternalApiSchemas.ts",
@@ -47,14 +46,12 @@
     "rxjs": "^7.8.2",
     "trash": "^10.1.1",
     "tree-kill": "^1.2.2",
-    "yargs": "^18.0.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/cli-progress": "^3.11.6",
     "@types/js-yaml": "^4.0.9",
     "@types/jsdom": "^28.0.1",
-    "@types/yargs": "^17.0.35",
     "js-yaml": "^4.1.1",
     "msw": "^2.14.5",
     "openapi-typescript": "^7.13.0",
