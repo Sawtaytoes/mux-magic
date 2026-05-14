@@ -69,16 +69,21 @@ const ensureInbox = (): Subject<ScheduledTask> => {
 
 // Custom scheduler operator: replaces the former `mergeAll(concurrency)`.
 // Enforces the global cap AND the per-job claim on every admission decision.
-const buildScheduler = (
-  maxConcurrency: number,
-): ((source: Observable<ScheduledTask>) => Observable<never>) =>
+const buildScheduler =
+  (
+    maxConcurrency: number,
+  ): ((
+    source: Observable<ScheduledTask>,
+  ) => Observable<never>) =>
   (source$) =>
     new Observable<never>((outerSub) => {
       let inflight = 0
       const inflightByJob = new Map<string, number>()
       const queue: ScheduledTask[] = []
 
-      const canAdmit = ({ jobId }: ScheduledTask): boolean => {
+      const canAdmit = ({
+        jobId,
+      }: ScheduledTask): boolean => {
         if (inflight >= maxConcurrency) return false
         if (jobId === null) return true
         const claim =

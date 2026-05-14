@@ -10,13 +10,12 @@ type SystemThreads = {
 
 export const ThreadCountVariableCard = () => {
   const [value, setValue] = useAtom(threadCountAtom)
-  const [system, setSystem] = useState<SystemThreads | null>(
-    null,
-  )
+  const [system, setSystem] =
+    useState<SystemThreads | null>(null)
 
   useEffect(() => {
     fetch(`${apiBase}/system/threads`)
-      .then((r) => r.json())
+      .then((res) => res.json())
       .then((data: SystemThreads) => setSystem(data))
       .catch(() => {})
   }, [])
@@ -58,9 +57,7 @@ export const ThreadCountVariableCard = () => {
         max={system?.maxThreads}
         value={value ?? ""}
         placeholder={
-          system
-            ? String(system.defaultThreadCount)
-            : "2"
+          system ? String(system.defaultThreadCount) : "2"
         }
         onChange={handleChange}
         className="w-full bg-slate-900 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"

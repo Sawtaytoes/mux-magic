@@ -5,8 +5,8 @@ import { toYamlStr } from "../../jobs/yamlSerializer"
 import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
-import { threadCountAtom } from "../../state/threadCountAtom"
 import { stepsAtom } from "../../state/stepsAtom"
+import { threadCountAtom } from "../../state/threadCountAtom"
 
 export const YamlModal = () => {
   const [isOpen, setIsOpen] = useAtom(yamlModalOpenAtom)

@@ -1,5 +1,11 @@
 import { cpus } from "node:os"
-import { afterEach, beforeEach, describe, expect, test } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "vitest"
 
 import {
   resolveDefaultThreadCount,
@@ -27,7 +33,8 @@ afterEach(() => {
   if (savedDefaultThreadCount === undefined) {
     delete process.env.DEFAULT_THREAD_COUNT
   } else {
-    process.env.DEFAULT_THREAD_COUNT = savedDefaultThreadCount
+    process.env.DEFAULT_THREAD_COUNT =
+      savedDefaultThreadCount
   }
 })
 

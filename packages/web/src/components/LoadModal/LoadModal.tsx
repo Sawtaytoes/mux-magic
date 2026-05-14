@@ -5,11 +5,11 @@ import { loadYamlFromText } from "../../jobs/loadYaml"
 import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
-import { threadCountAtom } from "../../state/threadCountAtom"
 import {
   stepCounterAtom,
   stepsAtom,
 } from "../../state/stepsAtom"
+import { threadCountAtom } from "../../state/threadCountAtom"
 
 export const LoadModal = () => {
   const [isOpen, setIsOpen] = useAtom(loadModalOpenAtom)

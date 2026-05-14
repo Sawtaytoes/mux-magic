@@ -30,7 +30,6 @@ import {
   setPathValueAtom,
 } from "../state/pathsAtom"
 import { runningAtom } from "../state/runAtoms"
-import { threadCountAtom } from "../state/threadCountAtom"
 import { setAllCollapsedAtom } from "../state/sequenceAtoms"
 import {
   changeCommandAtom,
@@ -44,6 +43,7 @@ import {
   stepCounterAtom,
   stepsAtom,
 } from "../state/stepsAtom"
+import { threadCountAtom } from "../state/threadCountAtom"
 import type { Group, Step, StepLink } from "../types"
 import { runWithViewTransition } from "../utils/runWithViewTransition"
 

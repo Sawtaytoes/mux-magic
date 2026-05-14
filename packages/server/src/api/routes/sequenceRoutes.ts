@@ -344,7 +344,9 @@ const sequenceVariableSchema = z
       ),
     value: z
       .string()
-      .describe("The variable's current value as a string."),
+      .describe(
+        "The variable's current value as a string.",
+      ),
     type: z
       .string()
       .describe(

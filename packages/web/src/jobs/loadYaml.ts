@@ -210,17 +210,22 @@ const extractThreadCount = (
   dataObj: Record<string, unknown>,
 ): string | null => {
   const vars = dataObj.variables
-  if (!vars || typeof vars !== "object" || Array.isArray(vars))
+  if (
+    !vars ||
+    typeof vars !== "object" ||
+    Array.isArray(vars)
+  )
     return null
   const entries = Object.values(
     vars as Record<string, unknown>,
   )
   const entry = entries.find(
-    (v) =>
-      v &&
-      typeof v === "object" &&
-      !Array.isArray(v) &&
-      (v as Record<string, unknown>).type === "threadCount",
+    (entry) =>
+      entry &&
+      typeof entry === "object" &&
+      !Array.isArray(entry) &&
+      (entry as Record<string, unknown>).type ===
+        "threadCount",
   ) as Record<string, unknown> | undefined
   if (!entry) return null
   const val = entry.value

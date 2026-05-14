@@ -1,5 +1,11 @@
 import { cpus } from "node:os"
-import { afterEach, beforeEach, describe, expect, test } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "vitest"
 
 import { systemRoutes } from "./systemRoutes.js"
 
@@ -22,16 +28,19 @@ afterEach(() => {
   if (savedDefaultThreadCount === undefined) {
     delete process.env.DEFAULT_THREAD_COUNT
   } else {
-    process.env.DEFAULT_THREAD_COUNT = savedDefaultThreadCount
+    process.env.DEFAULT_THREAD_COUNT =
+      savedDefaultThreadCount
   }
 })
 
 describe("GET /system/threads", () => {
   test("returns the correct shape with default env", async () => {
-    const response = await systemRoutes.request("/system/threads")
+    const response = await systemRoutes.request(
+      "/system/threads",
+    )
 
     expect(response.status).toBe(200)
-    const body = await response.json() as {
+    const body = (await response.json()) as {
       maxThreads: unknown
       defaultThreadCount: unknown
       totalCpus: unknown
@@ -44,16 +53,28 @@ describe("GET /system/threads", () => {
 
   test("maxThreads respects MAX_THREADS env var", async () => {
     process.env.MAX_THREADS = "6"
-    const response = await systemRoutes.request("/system/threads")
-    const body = await response.json() as { maxThreads: number; defaultThreadCount: number; totalCpus: number }
+    const response = await systemRoutes.request(
+      "/system/threads",
+    )
+    const body = (await response.json()) as {
+      maxThreads: number
+      defaultThreadCount: number
+      totalCpus: number
+    }
 
     expect(body.maxThreads).toBe(6)
   })
 
   test("defaultThreadCount defaults to 2 when env var is unset", async () => {
     process.env.MAX_THREADS = "8"
-    const response = await systemRoutes.request("/system/threads")
-    const body = await response.json() as { maxThreads: number; defaultThreadCount: number; totalCpus: number }
+    const response = await systemRoutes.request(
+      "/system/threads",
+    )
+    const body = (await response.json()) as {
+      maxThreads: number
+      defaultThreadCount: number
+      totalCpus: number
+    }
 
     expect(body.defaultThreadCount).toBe(2)
   })
@@ -61,8 +82,14 @@ describe("GET /system/threads", () => {
   test("defaultThreadCount falls back to maxThreads when DEFAULT_THREAD_COUNT is 0", async () => {
     process.env.MAX_THREADS = "8"
     process.env.DEFAULT_THREAD_COUNT = "0"
-    const response = await systemRoutes.request("/system/threads")
-    const body = await response.json() as { maxThreads: number; defaultThreadCount: number; totalCpus: number }
+    const response = await systemRoutes.request(
+      "/system/threads",
+    )
+    const body = (await response.json()) as {
+      maxThreads: number
+      defaultThreadCount: number
+      totalCpus: number
+    }
 
     expect(body.defaultThreadCount).toBe(8)
     expect(body.maxThreads).toBe(8)
@@ -71,8 +98,14 @@ describe("GET /system/threads", () => {
   test("defaultThreadCount is clamped to maxThreads", async () => {
     process.env.MAX_THREADS = "4"
     process.env.DEFAULT_THREAD_COUNT = "99"
-    const response = await systemRoutes.request("/system/threads")
-    const body = await response.json() as { maxThreads: number; defaultThreadCount: number; totalCpus: number }
+    const response = await systemRoutes.request(
+      "/system/threads",
+    )
+    const body = (await response.json()) as {
+      maxThreads: number
+      defaultThreadCount: number
+      totalCpus: number
+    }
 
     expect(body.maxThreads).toBe(4)
     expect(body.defaultThreadCount).toBe(4)
