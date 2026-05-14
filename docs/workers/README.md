@@ -94,13 +94,13 @@ All three workers touch `eslint.config.js` and must run sequentially.
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 18 | [loadenvfile-migration](18_loadenvfile-migration.md) | infra | Haiku | Low | OFF | 01 | done |
 | 19 | [yaml-codec-merge](19_yaml-codec-merge.md) | web | Sonnet | Medium | ON | 01 | ready |
-| 1a | [reorder-tracks-skip-on-misalignment](1a_reorder-tracks-skip-on-misalignment.md) | srv+web | Sonnet | Medium | ON | 01 | in-progress |
+| 1a | [reorder-tracks-skip-on-misalignment](1a_reorder-tracks-skip-on-misalignment.md) | srv+web | Sonnet | Medium | ON | 01 | done |
 
 ### Cross-repo track (5 workers)
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 1b | [media-sync-rename-to-gallery-downloader](1b_media-sync-rename-to-gallery-downloader.md) | cross | Sonnet | High | ON | 01 | in-progress |
+| 1b | [media-sync-rename-to-gallery-downloader](1b_media-sync-rename-to-gallery-downloader.md) | cross | Sonnet | High | ON | 01 | done |
 | 1c | [gallery-downloader-decouple-and-ha-endpoint](1c_gallery-downloader-decouple-and-ha-endpoint.md) | cross | Sonnet | High | ON | 1b | in-progress |
 | 1d | [gallery-downloader-consume-mux-magic-tools](1d_gallery-downloader-consume-mux-magic-tools.md) | cross | Sonnet | Medium | ON | 1c, 02, 39 + a published `@mux-magic/tools` release | ready |
 | 1e | [mux-magic-webhook-reporter](1e_mux-magic-webhook-reporter.md) | srv | Sonnet | Medium | ON | 01 | done |
