@@ -134,7 +134,15 @@ describe("LookupReleaseStage", () => {
     expect(writes).toEqual(
       expect.arrayContaining([
         { name: "dvdCompareId", value: 74759 },
-        { name: "dvdCompareName", value: "Soldier" },
+        // Companion uses the shared formatDvdCompareDisplayName format
+        // (matches the server's lookupDvdCompareFilm output) so picker
+        // selection and reverse-lookup write identical strings — no
+        // value flicker on next refresh / ID toggle. "Blu-ray 4K"
+        // renders as "UHD Blu-ray" per displayDvdCompareVariant.
+        {
+          name: "dvdCompareName",
+          value: "Soldier (UHD Blu-ray) (1998)",
+        },
         { name: "dvdCompareReleaseHash", value: 1 },
         {
           name: "dvdCompareReleaseLabel",
