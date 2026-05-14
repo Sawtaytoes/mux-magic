@@ -1,5 +1,6 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
+import { editVariablesModalOpenAtom } from "../../components/EditVariablesModal/editVariablesModalOpenAtom"
 import { loadModalOpenAtom } from "../../components/LoadModal/loadModalAtom"
 import { sequenceRunModalAtom } from "../../components/SequenceRunModal/sequenceRunModalAtom"
 import { yamlModalOpenAtom } from "../../components/YamlModal/yamlModalAtom"
@@ -40,6 +41,9 @@ export const PageHeader = () => {
   )
   const isBackgroundJobRunning =
     sequenceRunModal.mode === "background"
+  const setEditVariablesModalOpen = useSetAtom(
+    editVariablesModalOpenAtom,
+  )
 
   const actions = useBuilderActions()
 
@@ -199,11 +203,22 @@ export const PageHeader = () => {
           </div>
         </div>
 
-        {/* Pinned: undo/redo + collapse/expand */}
+        {/* Pinned: variables + undo/redo + collapse/expand */}
         <div
           id="header-pinned"
           className="ml-auto flex items-center gap-1"
         >
+          <button
+            type="button"
+            id="variables-btn"
+            onClick={() => setEditVariablesModalOpen(true)}
+            title="Edit sequence variables"
+            aria-label="Variables"
+            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded border border-slate-600"
+          >
+            Variables
+          </button>
+          <span className="w-px h-4 bg-slate-700 mx-0.5" />
           <button
             type="button"
             id="undo-btn"
