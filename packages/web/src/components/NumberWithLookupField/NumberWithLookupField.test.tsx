@@ -1,6 +1,17 @@
-import { render, screen } from "@testing-library/react"
+import {
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react"
 import { createStore, Provider } from "jotai"
-import { describe, expect, it, test } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  it,
+  test,
+  vi,
+} from "vitest"
 
 import {
   FIXTURE_COMMANDS_BUNDLE_B,
@@ -202,5 +213,96 @@ describe("NumberWithLookupField", () => {
     incrementButton.click()
     const steps = store.get(stepsAtom)
     expect((steps[0] as Step).params.malId).toBe(6)
+  })
+})
+
+// Reverse-lookup auto-resolution.
+// ────────────────────────────────
+// When a numberWithLookup field has an ID but no companion name (typical
+// after the user types an ID directly, before LookupModal interaction),
+// the component should debounce-fetch the resolved name from the matching
+// /queries/lookup* endpoint and write it to the companion param.
+describe("NumberWithLookupField — reverse-lookup auto-resolution", () => {
+  const malField =
+    FIXTURE_COMMANDS_BUNDLE_D.nameAnimeEpisodes.fields[1]
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it("fetches and stores companion name on mount when ID is set but companion is empty", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ name: "Cowboy Bebop" }),
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const step: Step = {
+      id: "test-step-mal",
+      alias: "",
+      command: "nameAnimeEpisodes",
+      params: { malId: 1, malName: "" },
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    const store = createStore()
+    store.set(stepsAtom, [step])
+
+    render(
+      <Provider store={store}>
+        <NumberWithLookupField
+          field={malField}
+          step={step}
+        />
+      </Provider>,
+    )
+
+    await waitFor(
+      () => {
+        const updated = store.get(stepsAtom)[0] as Step
+        expect(updated.params.malName).toBe("Cowboy Bebop")
+      },
+      { timeout: 2000 },
+    )
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(String(url)).toContain("/queries/lookupMal")
+    expect(JSON.parse(init.body as string)).toEqual({
+      malId: 1,
+    })
+  })
+
+  it("skips the fetch when the companion name is already present (YAML cache)", async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal("fetch", fetchMock)
+
+    const step: Step = {
+      id: "test-step-cached",
+      alias: "",
+      command: "nameAnimeEpisodes",
+      params: {
+        malId: 5114,
+        malName: "Fullmetal Alchemist",
+      },
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    const store = createStore()
+    store.set(stepsAtom, [step])
+
+    render(
+      <Provider store={store}>
+        <NumberWithLookupField
+          field={malField}
+          step={step}
+        />
+      </Provider>,
+    )
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

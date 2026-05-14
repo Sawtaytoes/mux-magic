@@ -127,11 +127,12 @@ export const findDvdCompareResults = (
       const directFidFromHttpRedirect = response.url.match(
         /film\.php\?fid=(\d+)/,
       )?.[1]
-      const directFidFromJsRedirect = directFidFromHttpRedirect
-        ? undefined
-        : html.match(
-            /location\.href\s*=\s*["']film\.php\?fid=(\d+)/,
-          )?.[1]
+      const directFidFromJsRedirect =
+        directFidFromHttpRedirect
+          ? undefined
+          : html.match(
+              /location\.href\s*=\s*["']film\.php\?fid=(\d+)/,
+            )?.[1]
       const directFid =
         directFidFromHttpRedirect ?? directFidFromJsRedirect
       if (directFid) {

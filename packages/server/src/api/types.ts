@@ -199,6 +199,30 @@ export type SearchDvdCompareResponse = z.infer<
 export type ListDvdCompareReleasesResponse = z.infer<
   typeof schemas.listDvdCompareReleasesResponseSchema
 >
+export type LookupMalRequest = z.infer<
+  typeof schemas.lookupMalRequestSchema
+>
+export type LookupAnidbRequest = z.infer<
+  typeof schemas.lookupAnidbRequestSchema
+>
+export type LookupTvdbRequest = z.infer<
+  typeof schemas.lookupTvdbRequestSchema
+>
+export type LookupMovieDbRequest = z.infer<
+  typeof schemas.lookupMovieDbRequestSchema
+>
+export type LookupDvdCompareRequest = z.infer<
+  typeof schemas.lookupDvdCompareRequestSchema
+>
+export type LookupDvdCompareReleaseRequest = z.infer<
+  typeof schemas.lookupDvdCompareReleaseRequestSchema
+>
+export type NameLookupResponse = z.infer<
+  typeof schemas.nameLookupResponseSchema
+>
+export type LabelLookupResponse = z.infer<
+  typeof schemas.labelLookupResponseSchema
+>
 export type DeleteModeResponse = z.infer<
   typeof schemas.deleteModeResponseSchema
 >

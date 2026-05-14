@@ -1365,7 +1365,15 @@ export const searchAnidbResultSchema = z.object({
   aid: z.number().describe("AniDB anime id"),
   name: z
     .string()
-    .describe("Primary title from manami-project dataset"),
+    .describe(
+      "Display title (English-preferred via manami synonyms heuristic, falling back to romaji title)",
+    ),
+  nameJapanese: z
+    .string()
+    .optional()
+    .describe(
+      "Romaji title — surfaced as a subtitle in the picker when the primary name is an English synonym",
+    ),
   type: z
     .string()
     .optional()
@@ -1376,6 +1384,12 @@ export const searchAnidbResultSchema = z.object({
     .number()
     .optional()
     .describe("Total episode count"),
+  year: z
+    .string()
+    .optional()
+    .describe(
+      "Release year (4-digit, sourced from manami's animeSeason.year)",
+    ),
 })
 
 export const searchAnidbResponseSchema = z.object({

@@ -373,6 +373,7 @@ export const LookupSearchStage = ({
                   tvdbId?: number
                   movieDbId?: number
                   name?: string
+                  nameJapanese?: string
                   title?: string
                 }
               const baseLabel =
@@ -384,6 +385,8 @@ export const LookupSearchStage = ({
               const label = typedResult.year
                 ? `${baseLabel} (${typedResult.year})`
                 : baseLabel
+              const japaneseSubtitle =
+                typedResult.nameJapanese
               const keyHint =
                 index < 9 ? (
                   <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2 shrink-0">
@@ -424,16 +427,19 @@ export const LookupSearchStage = ({
                   )
                 } else {
                   let id: number | string | undefined
-                  let displayName = ""
+                  // Companion gets the year-augmented label so the saved
+                  // YAML mirrors what the picker showed (e.g.,
+                  // "Toilet-Bound Hanako-kun (2020)") and so the
+                  // typed-id reverse-lookup (which formats the same way
+                  // server-side) round-trips identically.
+                  let displayName =
+                    label === "—" ? "" : label
                   if (state.lookupType === "mal") {
                     id = typedResult.malId
-                    displayName = typedResult.name ?? ""
                   } else if (state.lookupType === "anidb") {
                     id = typedResult.aid
-                    displayName = typedResult.name ?? ""
                   } else if (state.lookupType === "tvdb") {
                     id = typedResult.tvdbId
-                    displayName = typedResult.name ?? ""
                   } else if (state.lookupType === "tmdb") {
                     id = typedResult.movieDbId
                     displayName = typedResult.year
@@ -470,8 +476,15 @@ export const LookupSearchStage = ({
                   onClick={handleSelect}
                   className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"
                 >
-                  {keyHint}
-                  {label}
+                  <div className="flex items-baseline gap-2">
+                    {keyHint}
+                    <span>{label}</span>
+                  </div>
+                  {japaneseSubtitle && (
+                    <div className="text-xs text-slate-500 mt-0.5 truncate">
+                      {japaneseSubtitle}
+                    </div>
+                  )}
                 </button>
               )
             })}

@@ -27,6 +27,9 @@ export type AnidbAnime = {
     type: AnidbTitleType
     value: string
   }[]
+  // Year extracted from <startdate> (which is YYYY-MM-DD or partial like YYYY).
+  // Optional because not every anime has a published start date.
+  year?: string
 }
 
 // User-facing grouping for the rename command. Each AniDB episode

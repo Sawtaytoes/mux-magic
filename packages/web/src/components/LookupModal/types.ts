@@ -21,6 +21,9 @@ export type LookupSearchResult = {
   tvdbId?: number
   movieDbId?: number
   name?: string
+  // Native-script title (Japanese for MAL/AniDB) shown as a muted
+  // subtitle under the primary name in the picker.
+  nameJapanese?: string
   title?: string
   year?: string
 }
