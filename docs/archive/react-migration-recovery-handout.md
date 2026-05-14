@@ -66,7 +66,7 @@ Small commits, push after each logical group. Do not batch a day's work into one
 The prior migration failed because the checklist drifted from reality. To prevent this:
 
 - **Single source of truth:** [docs/react-migration-checklist.md](docs/react-migration-checklist.md). No parallel docs.
-- **When you START your worker section:** edit the checklist to mark your row as `ðŸ”„ In Progress` with the date and your model name. Commit and push as `chore(checklist): W<your-id> in progress`.
+- **When you START your worker section:** edit the checklist to mark your row as `🔄 In Progress` with the date and your model name. Commit and push as `chore(checklist): W<your-id> in progress`.
 - **After every commit you push:** update the checklist's "Progress Log" sub-section with one line: `W<id> | <date> | <commit short message>`. This is part of the same commit as your code change — do not split it.
 - **When you FINISH and verify the pre-push gate:** edit the checklist to mark your row as `✅ Done` with the date and a one-line summary of what shipped. Commit as `chore(checklist): W<your-id> complete`.
 - **If you escalate or get blocked:** edit the checklist to mark your row as `⚠️ Blocked` with the reason. Then notify the user.
@@ -106,7 +106,7 @@ The checklist format is defined under [#checklist-template] below — use it ver
 
 You don't need to interrupt workers — they keep the checklist honest as part of their workflow (see Universal Rule #8). To check status at any time:
 
-1. **Open [docs/react-migration-checklist.md](docs/react-migration-checklist.md).** The top table shows every worker's status (`⬜ Not Started`, `ðŸ”„ In Progress`, `✅ Done`, `⚠️ Blocked`).
+1. **Open [docs/react-migration-checklist.md](docs/react-migration-checklist.md).** The top table shows every worker's status (`⬜ Not Started`, `🔄 In Progress`, `✅ Done`, `⚠️ Blocked`).
 2. **Scan the "Progress Log"** at the bottom — newest entries are last. Each line is one push: `W<id> | <date> | <commit message>`. This tells you exactly what shipped without reading git history.
 3. **Look for ⚠️ Blocked rows** — these need your attention. Workers add a "reason" line next to the status so you can act without re-deriving context.
 4. **Read the per-worker sub-checklists** — each phase has a `[ ] step-name` list. You can see exactly how far through their steps a worker is.
@@ -790,7 +790,7 @@ Last updated: <date> by <worker-id> (<model-name>)
 | W4B | 4 — E2E tests (worktree) | <model> | ⬜ Not Started | — | — | Parallel with W4A; merges to master after W4A |
 | W5 | 5 — Parity-trap + code-smell + a11y cleanup | <model> | ⬜ Not Started | — | — | Runs after W4A + W4B both done. (Was W6 before rename.) |
 
-**Status legend:** ⬜ Not Started · ðŸ”„ In Progress · ✅ Done · ⚠️ Blocked · ❌ Failed
+**Status legend:** ⬜ Not Started · 🔄 In Progress · ✅ Done · ⚠️ Blocked · ❌ Failed
 
 ## Per-Worker Detail
 

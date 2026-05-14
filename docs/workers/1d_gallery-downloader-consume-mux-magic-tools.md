@@ -13,6 +13,8 @@
 
 **Parallel with:** 1e, 1f
 
+> **Status as of 2026-05-13:** Verified still in-progress per the manifest. Cross-repo work in the Gallery-Downloader repo — local `packages/shared-tools/` consolidation onto the published `@mux-magic/tools` is not yet complete.
+
 ## Universal Rules (TL;DR)
 
 Worktree-isolated in the Gallery-Downloader repo. Yarn only.

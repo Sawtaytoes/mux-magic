@@ -7,6 +7,8 @@
 **Depends on:** 01
 **Parallel with:** all other 1B web workers
 
+> **Status as of 2026-05-13:** Verified still pending. No `NarrowMenu*` file exists; [packages/web/src/components/PageHeader/](../../packages/web/src/components/PageHeader/) contains no `translate-x` / slide / transform-transition styles.
+
 ## Universal Rules (TL;DR)
 
 Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typecheck → test → e2e → lint`. TDD: failing test first. Yarn only. See [AGENTS.md](../../AGENTS.md).

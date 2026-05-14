@@ -28,7 +28,7 @@ The repo is in the middle of a vanilla-JS → React 19 migration that previously
 | Worker | Phase | Status | Branch / Worktree |
 |---|---|---|---|
 | Pre-W0 → W5C | 0–5 | ✅ All Done + merged | various |
-| W6A | 6 — e2e completion | ðŸ”„ Running (user just spawned) | `.claude/worktrees/w6` on `e2e-completion` |
+| W6A | 6 — e2e completion | 🔄 Running (user just spawned) | `.claude/worktrees/w6` on `e2e-completion` |
 | W6B | 6 — dnd-kit swap | ✅ Done + merged (commit `dc11213`) | was `.claude/worktrees/w6b` on `feat/dnd-kit-migration` |
 | W7 | 7 — Modal primitive + Storybook reorg + missing toggle | ⬜ Ready (not spawned) | will run in `.claude/worktrees/w7` on `feat/storybook-reorg` |
 

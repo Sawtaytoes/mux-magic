@@ -7,6 +7,8 @@
 **Depends on:** 01 (rename), **36 (Variables foundation must land first)**
 **Parallel with:** all other 1B web workers (but coordinates with the Variables foundation via Variable type registration)
 
+> **Status as of 2026-05-13:** Verified still pending. `DEFAULT_THREAD_COUNT` has zero occurrences outside docs; `threadCount` is reserved only as a forward-looking comment in [packages/web/src/types.ts:38](../../packages/web/src/types.ts#L38) (placed by worker 36). The scheduler still uses a single global `MAX_THREADS` cap.
+
 ## Universal Rules (TL;DR)
 
 Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typecheck → test → e2e → lint`. TDD: failing test first. Tests must cover the change scope (see [feedback_test_coverage_required.md](C:\Users\satur\.claude\projects\d--Projects-Personal-media-tools\memory\feedback_test_coverage_required.md)). Yarn only. See [AGENTS.md](../../AGENTS.md). Background context lives in [docs/PLAN.md §5.B](../PLAN.md).
