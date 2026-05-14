@@ -50,7 +50,8 @@ export const LanguageCodeField = ({
           label: (
             <>
               <span>
-                {ISO_639_2_NAME_BY_CODE[selected] ?? selected}
+                {ISO_639_2_NAME_BY_CODE[selected] ??
+                  selected}
               </span>
               <span className="font-mono text-slate-400 ml-1">
                 {selected}
