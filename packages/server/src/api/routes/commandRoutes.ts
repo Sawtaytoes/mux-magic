@@ -550,6 +550,8 @@ export const commandConfigs: Record<
       reorderTracks({
         audioTrackIndexes: body.audioTrackIndexes,
         isRecursive: body.isRecursive,
+        shouldSkipOnTrackMisalignment:
+          body.shouldSkipOnTrackMisalignment,
         sourcePath: body.sourcePath,
         subtitlesTrackIndexes: body.subtitlesTrackIndexes,
         videoTrackIndexes: body.videoTrackIndexes,

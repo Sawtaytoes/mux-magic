@@ -2,6 +2,7 @@ import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
   logInfo,
+  logWarning,
 } from "@mux-magic/tools"
 import { concatMap, EMPTY, map, toArray } from "rxjs"
 import {
@@ -10,6 +11,7 @@ import {
 } from "../cli-spawn-operations/reorderTracksFfmpeg.js"
 import { setOnlyFirstTracksAsDefault } from "../cli-spawn-operations/setOnlyFirstTracksAsDefault.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
+import { getMkvInfo } from "../tools/getMkvInfo.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ReorderTracksRequiredProps = {
@@ -22,6 +24,7 @@ type ReorderTracksRequiredProps = {
 
 type ReorderTracksOptionalProps = {
   outputFolderName?: string
+  shouldSkipOnTrackMisalignment?: boolean
 }
 
 export type ReorderTracksProps =
@@ -30,12 +33,14 @@ export type ReorderTracksProps =
 export const reorderTracksDefaultProps = {
   outputFolderName:
     reorderTracksFfmpegDefaultProps.outputFolderName,
+  shouldSkipOnTrackMisalignment: false,
 } satisfies ReorderTracksOptionalProps
 
 export const reorderTracks = ({
   audioTrackIndexes,
   isRecursive,
   outputFolderName = reorderTracksDefaultProps.outputFolderName,
+  shouldSkipOnTrackMisalignment = reorderTracksDefaultProps.shouldSkipOnTrackMisalignment,
   sourcePath,
   subtitlesTrackIndexes,
   videoTrackIndexes,
@@ -69,29 +74,99 @@ export const reorderTracks = ({
     // file that was actually reordered (instead of an array of nulls
     // from the discarded toArray of the inner setOnlyFirst pipe).
     withFileProgress((fileInfo) =>
-      reorderTracksFfmpeg({
-        audioTrackIndexes,
-        filePath: fileInfo.fullPath,
-        outputFolderName,
-        subtitlesTrackIndexes,
-        videoTrackIndexes,
-      })
-        // To do this with `mkvmerge`, tracks need to be numbered sequentially
-        // from video to audio to subtitles. It's more complicated and not as
-        // easy to replicate. Only use this if something is botched with `ffmpeg`.
-        .pipe(
-          concatMap((outputFilePath) =>
-            setOnlyFirstTracksAsDefault({
-              filePath: outputFilePath,
-            }).pipe(
-              toArray(),
-              map(() => ({
-                outputFilePath,
-                sourceFilePath: fileInfo.fullPath,
-              })),
-            ),
-          ),
-        ),
+      getMkvInfo(fileInfo.fullPath).pipe(
+        concatMap(({ tracks }) => {
+          const audioTrackCount = tracks.filter(
+            ({ type }) => type === "audio",
+          ).length
+          const videoTrackCount = tracks.filter(
+            ({ type }) => type === "video",
+          ).length
+          const subtitlesTrackCount = tracks.filter(
+            ({ type }) => type === "subtitles",
+          ).length
+
+          const maxAudioIndex =
+            audioTrackIndexes.length > 0
+              ? Math.max(...audioTrackIndexes)
+              : -1
+          const maxVideoIndex =
+            videoTrackIndexes.length > 0
+              ? Math.max(...videoTrackIndexes)
+              : -1
+          const maxSubtitlesIndex =
+            subtitlesTrackIndexes.length > 0
+              ? Math.max(...subtitlesTrackIndexes)
+              : -1
+
+          const audioMisalignment =
+            maxAudioIndex >= audioTrackCount
+              ? {
+                  expected: maxAudioIndex + 1,
+                  got: audioTrackCount,
+                }
+              : null
+          const videoMisalignment =
+            maxVideoIndex >= videoTrackCount
+              ? {
+                  expected: maxVideoIndex + 1,
+                  got: videoTrackCount,
+                }
+              : null
+          const subtitlesMisalignment =
+            maxSubtitlesIndex >= subtitlesTrackCount
+              ? {
+                  expected: maxSubtitlesIndex + 1,
+                  got: subtitlesTrackCount,
+                }
+              : null
+
+          const firstMisalignment =
+            audioMisalignment ??
+            videoMisalignment ??
+            subtitlesMisalignment
+
+          if (firstMisalignment) {
+            const { expected, got } = firstMisalignment
+
+            if (shouldSkipOnTrackMisalignment) {
+              logWarning(
+                "REORDER TRACKS",
+                `skipped — track misalignment, expected ${expected}, got ${got}`,
+              )
+              return EMPTY
+            }
+
+            throw new Error(
+              `Track misalignment: expected ${expected} tracks, got ${got}. tracks should align if the command was added correctly.`,
+            )
+          }
+
+          return reorderTracksFfmpeg({
+            audioTrackIndexes,
+            filePath: fileInfo.fullPath,
+            outputFolderName,
+            subtitlesTrackIndexes,
+            videoTrackIndexes,
+          })
+            // To do this with `mkvmerge`, tracks need to be numbered sequentially
+            // from video to audio to subtitles. It's more complicated and not as
+            // easy to replicate. Only use this if something is botched with `ffmpeg`.
+            .pipe(
+              concatMap((outputFilePath) =>
+                setOnlyFirstTracksAsDefault({
+                  filePath: outputFilePath,
+                }).pipe(
+                  toArray(),
+                  map(() => ({
+                    outputFilePath,
+                    sourceFilePath: fileInfo.fullPath,
+                  })),
+                ),
+              ),
+            )
+        }),
+      ),
     ),
     logAndRethrowPipelineError(reorderTracks),
   )

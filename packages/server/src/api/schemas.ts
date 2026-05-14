@@ -1068,6 +1068,12 @@ export const reorderTracksRequestSchema = z.object({
     .describe(
       "The order of all subtitles tracks that will appear in the resulting file by their index. Indexes start at 0. If you leave out any track indexes, they will not appear in the resulting file.",
     ),
+  shouldSkipOnTrackMisalignment: z
+    .boolean()
+    .default(false)
+    .describe(
+      "When enabled, files whose track count does not match the supplied indexes are skipped with a warning instead of causing an error. Tracks should align if the command was added correctly.",
+    ),
 })
 
 export const replaceAttachmentsRequestSchema = z.object({
