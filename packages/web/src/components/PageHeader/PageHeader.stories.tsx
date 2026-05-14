@@ -7,6 +7,11 @@ import {
 import { runningAtom } from "../../state/runAtoms"
 import { PageHeader } from "./PageHeader"
 
+// Both menus animate from a transformed/transparent state into place over
+// 200ms. Stories prefixed `…MenuOpen` click the relevant toggle in their
+// play function so the open state renders for visual review. The transition
+// happens once on mount — refresh the iframe to see it replay.
+
 const meta: Meta<typeof PageHeader> = {
   title: "Components/PageHeader",
   component: PageHeader,
@@ -57,5 +62,34 @@ export const RunInFlight: Story = {
       store.set(runningAtom, true)
       return store
     })(),
+  },
+}
+
+const clickToggle = (
+  canvasElement: HTMLElement,
+  toggleId: string,
+) => {
+  const button = canvasElement.ownerDocument.getElementById(
+    toggleId,
+  ) as HTMLButtonElement | null
+  button?.click()
+}
+
+export const NavMenuOpen: Story = {
+  play: async ({ canvasElement }) => {
+    clickToggle(canvasElement, "page-nav-toggle")
+  },
+}
+
+export const ControlsMenuOpen: Story = {
+  parameters: {
+    store: (() => {
+      const store = createStore()
+      store.set(dryRunAtom, true)
+      return store
+    })(),
+  },
+  play: async ({ canvasElement }) => {
+    clickToggle(canvasElement, "page-controls-toggle")
   },
 }
