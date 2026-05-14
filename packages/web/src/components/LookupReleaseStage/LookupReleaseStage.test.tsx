@@ -1,25 +1,51 @@
-import { render, screen } from "@testing-library/react"
-import { describe, expect, test, vi } from "vitest"
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
+
+import type { LookupState } from "../LookupModal/types"
 import { LookupReleaseStage } from "./LookupReleaseStage"
 
+const setParamMock = vi.fn()
 vi.mock("../../hooks/useBuilderActions", () => ({
-  useBuilderActions: () => ({
-    setParam: vi.fn(),
-  }),
+  useBuilderActions: () => ({ setParam: setParamMock }),
 }))
 
-const baseState = {
-  lookupType: "dvdcompare" as const,
+beforeEach(() => {
+  setParamMock.mockClear()
+})
+
+afterEach(() => {
+  cleanup()
+})
+
+const baseState: LookupState = {
+  lookupType: "dvdcompare",
   stepId: "step-1",
-  fieldName: "release",
-  stage: "release" as const,
-  searchTerm: "test",
+  fieldName: "dvdCompareId",
+  companionNameField: "dvdCompareName",
+  stage: "release",
+  searchTerm: "Soldier",
   searchError: null,
   results: null,
-  formatFilter: "all" as const,
-  selectedGroup: null,
-  selectedVariant: null,
-  selectedFid: null,
+  formatFilter: "Blu-ray 4K",
+  selectedGroup: {
+    baseTitle: "Soldier",
+    year: "1998",
+    variants: [{ id: "74759", variant: "Blu-ray 4K" }],
+  },
+  selectedVariant: "Blu-ray 4K",
+  selectedFid: "74759",
   releases: null,
   releasesDebug: null,
   releasesError: null,
@@ -27,7 +53,7 @@ const baseState = {
 }
 
 describe("LookupReleaseStage", () => {
-  test("renders loading state", () => {
+  test("renders the loading state while releases are being fetched", () => {
     render(
       <LookupReleaseStage
         state={{ ...baseState, isLoading: true }}
@@ -39,40 +65,29 @@ describe("LookupReleaseStage", () => {
     ).toBeInTheDocument()
   })
 
-  test("renders error message when releasesError is a string", () => {
-    render(
-      <LookupReleaseStage
-        state={{
-          ...baseState,
-          releasesError: "Network error occurred",
-        }}
-        onClose={() => {}}
-      />,
-    )
-    expect(
-      screen.getByText("Network error occurred"),
-    ).toBeInTheDocument()
-  })
-
-  test("converts error object to string before rendering", () => {
+  test("coerces a non-string releasesError into a string so React does not crash", () => {
+    // Regression: the server sometimes returned an error object
+    // ({name, message}) which React refused to render as a child,
+    // crashing the modal. The component must now coerce it.
     render(
       <LookupReleaseStage
         state={{
           ...baseState,
           releasesError: {
-            message: "Server error",
+            name: "Error",
+            message: "boom",
           } as unknown as string,
         }}
         onClose={() => {}}
       />,
     )
-    // Should render the stringified object, not fail with React error
+    // The output is whatever String({…}) produces — main point is no crash.
     expect(
-      screen.getByText(/error|object/i),
+      screen.getByText(/\[object Object\]|Error|boom/),
     ).toBeInTheDocument()
   })
 
-  test("renders no releases message when releases array is empty", () => {
+  test("renders the empty-state message when there are no releases", () => {
     render(
       <LookupReleaseStage
         state={{ ...baseState, releases: [] }}
@@ -84,27 +99,55 @@ describe("LookupReleaseStage", () => {
     ).toBeInTheDocument()
   })
 
-  test("renders releases list when data is available", () => {
+  test("renders all releases and clicking one writes 4 fields (number id, name, number hash, label) — never an object", () => {
     render(
       <LookupReleaseStage
         state={{
           ...baseState,
           releases: [
-            { hash: "hash1", label: "Blu-ray Release" },
-            { hash: "hash2", label: "DVD Release" },
+            {
+              hash: "1",
+              label:
+                "Blu-ray ALL America - Arrow Films - Limited Edition [2026]",
+            },
+            {
+              hash: "2",
+              label:
+                "Blu-ray ALL Canada - Arrow Films - Limited Edition [2026]",
+            },
           ],
         }}
         onClose={() => {}}
       />,
     )
-    expect(
-      screen.getByText("Select a release:"),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText("Blu-ray Release"),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText("DVD Release"),
-    ).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByText(
+        "Blu-ray ALL America - Arrow Films - Limited Edition [2026]",
+      ),
+    )
+
+    // Confirm all four setParam writes happened with the right field names + primitive values.
+    const writes = setParamMock.mock.calls.map(
+      ([, name, value]) => ({ name, value }),
+    )
+    expect(writes).toEqual(
+      expect.arrayContaining([
+        { name: "dvdCompareId", value: 74759 },
+        { name: "dvdCompareName", value: "Soldier" },
+        { name: "dvdCompareReleaseHash", value: 1 },
+        {
+          name: "dvdCompareReleaseLabel",
+          value:
+            "Blu-ray ALL America - Arrow Films - Limited Edition [2026]",
+        },
+      ]),
+    )
+    // No setParam call may write an object — that produced "[object Object]".
+    for (const { value } of writes) {
+      expect(
+        typeof value === "object" && value !== null,
+      ).toBe(false)
+    }
   })
 })

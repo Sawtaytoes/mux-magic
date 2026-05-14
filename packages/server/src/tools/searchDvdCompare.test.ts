@@ -1,3 +1,5 @@
+import { join } from "node:path"
+
 import { firstValueFrom } from "rxjs"
 import {
   afterEach,
@@ -16,6 +18,17 @@ import {
   parseDvdCompareSearchHtml,
   parseDvdCompareTitleText,
 } from "./searchDvdCompare.js"
+
+// vitest.setup.ts mocks node:fs globally with memfs, so use vi.importActual
+// to read on-disk fixtures at module init (same pattern as searchAnidb.test.ts).
+const realFs =
+  await vi.importActual<typeof import("node:fs")>("node:fs")
+const FIXTURES_DIR = join(
+  import.meta.dirname,
+  "__fixtures__",
+)
+const loadFixture = (rel: string): string =>
+  realFs.readFileSync(join(FIXTURES_DIR, rel), "utf8")
 
 describe(parseDvdCompareTitleText.name, () => {
   test("parses bare title with year as DVD variant", () => {
@@ -298,6 +311,34 @@ describe(parseDvdCompareReleasesHtml.name, () => {
       },
     ])
   })
+
+  test("parses real Soldier (Blu-ray 4K) page fixture (fid=74759)", () => {
+    // End-to-end regression guard: the full HTML body was downloaded
+    // from https://www.dvdcompare.net/comparisons/film.php?fid=74759&sel=on
+    // and saved to __fixtures__. If DVDCompare changes their markup or our
+    // parser regresses, this test fails immediately with the real HTML.
+    const html = loadFixture(
+      "dvdcompare-soldier-4k-74759.html",
+    )
+
+    expect(parseDvdCompareReleasesHtml(html)).toEqual([
+      {
+        hash: "1",
+        label:
+          "Blu-ray ALL America - Arrow Films - Limited Edition [2026]",
+      },
+      {
+        hash: "2",
+        label:
+          "Blu-ray ALL Canada - Arrow Films - Limited Edition [2026]",
+      },
+      {
+        hash: "3",
+        label:
+          "Blu-ray ALL United Kingdom - Arrow Films - Limited Edition [2026]",
+      },
+    ])
+  })
 })
 
 describe(displayDvdCompareVariant.name, () => {
@@ -504,6 +545,66 @@ describe(findDvdCompareResults.name, () => {
         year: "1998",
       },
     ])
+  })
+
+  test("detects JS-redirect ('<script>location.href=film.php?fid=N</script>') as direct listing and fetches the film page (real 'solider' fixture)", async () => {
+    // DVDCompare's POST /search.php doesn't actually issue an HTTP 302.
+    // Instead, when there's a unique hit, the body is a normal 200 page
+    // containing a small <script>location.href="film.php?fid=N";</script>
+    // block. Node-side fetch can't execute scripts, so the previous code
+    // saw a "results page with no anchors" and returned an empty list,
+    // producing "No results" in the UI for inputs like 'solider'.
+    //
+    // After the fix, the server detects the JS-redirect marker and
+    // performs a second fetch to film.php?fid=N so it can parse the
+    // canonical record. Both fetches are mocked here.
+    const searchPageHtml = loadFixture(
+      "dvdcompare-search-solider-js-redirect.html",
+    )
+    const filmPageHtml = loadFixture(
+      "dvdcompare-soldier-4k-74759.html",
+    )
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes("search.php")) {
+        return Promise.resolve(
+          makeSearchPageResponse(
+            searchPageHtml,
+            "https://www.dvdcompare.net/comparisons/search.php",
+          ),
+        )
+      }
+      // Second call lands on film.php — return the film page fixture.
+      return Promise.resolve(
+        makeSearchPageResponse(
+          filmPageHtml,
+          "https://www.dvdcompare.net/comparisons/film.php?fid=55420",
+        ),
+      )
+    })
+    globalThis.fetch =
+      fetchMock as unknown as typeof globalThis.fetch
+
+    const outcome = await firstValueFrom(
+      findDvdCompareResults("solider"),
+    )
+
+    expect(outcome.isDirectListing).toBe(true)
+    expect(outcome.results).toHaveLength(1)
+    // The fid is extracted from the JS-redirect literal in the search HTML.
+    expect(outcome.results[0].id).toBe(55420)
+    // Both endpoints were called — once for search, once for the JS-redirect
+    // film page — proving the JS-redirect branch fires.
+    const calledUrls = fetchMock.mock.calls.map(
+      (call) => call[0] as string,
+    )
+    expect(
+      calledUrls.some((url) => url.includes("search.php")),
+    ).toBe(true)
+    expect(
+      calledUrls.some((url) =>
+        url.includes("film.php?fid=55420"),
+      ),
+    ).toBe(true)
   })
 
   test("returns isDirectListing:true with a fallback stub when the redirect film page title can't be parsed", async () => {
