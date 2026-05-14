@@ -214,7 +214,7 @@ window.commandDescriptions = {
       "dvdCompareId": "DVDCompare film ID — when provided, constructs URL directly and bypasses search.",
       "dvdCompareReleaseHash": "The hash (URL fragment #) from the DVDCompare release page denoting which release variant is selected for that film. Defaults to 1 (the first release option).",
       "searchTerm": "Title to search on DVDCompare.net (used when no url or dvdCompareId).",
-      "fixedOffset": "Timecodes are pushed positively or negatively by this amount (in milliseconds).",
+      "fixedOffset": "Timecodes are pushed positively or negatively by this amount (in seconds).",
       "timecodePadding": "Seconds that timecodes may be off. Defaults to 2, matching typical DVDCompare-vs-rip drift. Pass 0 for exact-match-only.",
       "moveToEditionFolders": "After renaming, move main-feature files that carry a {edition-…} tag into a nested folder: <sourceParent>/<Title (Year)>/<Title (Year) {edition-…}>/<file>. Special-feature files are not moved.",
       "nonInteractive": "When a rename target already exists on disk, automatically append (2), (3), … instead of emitting a review-needed collision event. Use this in scripts or when running without a UI that can display the collision prompt.",

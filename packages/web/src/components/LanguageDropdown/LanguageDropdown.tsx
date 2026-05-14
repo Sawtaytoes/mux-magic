@@ -25,8 +25,9 @@ export const LanguageDropdown = ({
   options,
   onSelect,
 }: LanguageDropdownProps) => {
-  const [position, setPosition] =
-    useState<Position | null>(null)
+  const [position, setPosition] = useState<Position | null>(
+    null,
+  )
 
   useLayoutEffect(() => {
     if (!isOpen) {

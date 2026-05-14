@@ -87,6 +87,60 @@ export const AllRuleKinds: Story = {
   },
 }
 
+export const ScaleResolutionLocked: Story = {
+  args: {
+    step: {
+      ...baseStep,
+      params: {
+        rules: [
+          {
+            type: "scaleResolution",
+            from: { width: 1920, height: 1080 },
+            to: { width: 1280, height: 720 },
+          },
+        ],
+      },
+    },
+  },
+}
+
+export const ScaleResolutionFromUnlocked: Story = {
+  args: {
+    step: {
+      ...baseStep,
+      params: {
+        rules: [
+          {
+            type: "scaleResolution",
+            from: { width: 1920, height: 1080 },
+            to: { width: 1280, height: 720 },
+            isFromAspectLocked: false,
+          },
+        ],
+      },
+    },
+  },
+}
+
+export const ScaleResolutionBothUnlocked: Story = {
+  args: {
+    step: {
+      ...baseStep,
+      params: {
+        rules: [
+          {
+            type: "scaleResolution",
+            from: { width: 1920, height: 1080 },
+            to: { width: 1280, height: 720 },
+            isFromAspectLocked: false,
+            isToAspectLocked: false,
+          },
+        ],
+      },
+    },
+  },
+}
+
 export const ReadOnly: Story = {
   args: {
     isReadOnly: true,

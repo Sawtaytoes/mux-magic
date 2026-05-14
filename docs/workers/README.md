@@ -112,7 +112,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 20 | [cli-package-extract](20_cli-package-extract.md) | cli | **Opus** | High | ON | All Phase 1 done | ready |
+| 20 | [cli-package-extract](20_cli-package-extract.md) | cli | **Opus** | High | ON | All Phase 1 done | done |
 | 21 | [observables-shared-split](21_observables-shared-split.md) — promotes `taskScheduler` + reusable rxjs operators from server into `@mux-magic/tools` | cli+srv | Sonnet | High | ON | 20 | ready |
 | 32 | [lookup-types-from-server](32_lookup-types-from-server.md) — migrates [LookupModal/types.ts](../../packages/web/src/components/LookupModal/types.ts) to import canonical `LookupSearchResult`/`LookupType`/`LookupRelease` from `@mux-magic/server`; eliminates the `eslint-disable no-restricted-syntax` bypass installed by worker 06. `LookupVariant`/`LookupGroup` stay web-only (UI synthesis); `LookupState`/`LookupStage` stay web-only (state machine). | srv+web | Sonnet | Medium | ON | 01, 06 | done |
 
@@ -149,6 +149,7 @@ The existing `nameSpecialFeatures` code is preserved (renamed only by worker 22,
 | 38 | [per-file-pipelining](38_per-file-pipelining.md) — rewire `sequenceRunner.ts` to stream files through steps via rxjs composition; file 1 hits step 3 while file 2 still on step 1. Multiplies value of worker 11's thread budget | srv | **Opus** | High | ON | 20, 21, 28 | ready |
 | 3b | [extract-subtitles-multi-language-type-filter](3b_extract-subtitles-multi-language-type-filter.md) — multi-language `subtitlesLanguages` array, tri-state `typesMode` (`none\|include\|exclude`) + `subtitleTypes` chip picker, single batched `mkvextract` call per file. Removes hardcoded image-codec auto-skip. | srv+web+cli | Sonnet | Medium | ON | 20 | planned |
 | 3c | [bcp47-language-variants](3c_bcp47-language-variants.md) — BCP 47 locale variants (`zh-Hans-CN`, `zh-Hant-HK`, `pt-BR`, …) via optional `ietf` field on `LanguageSelection`. Augments 3-letter codes, emits `language-ietf` to mkvpropedit/mkvmerge alongside legacy `language`. Secondary "Region/Variant" picker appears only for curated base languages. | srv+web+cli | Sonnet | Medium | ON | 08, 20 | planned |
+| 3e | [gallery-downloader-task-pools](3e_gallery-downloader-task-pools.md) — adds named per-task-type concurrency pools to `@mux-magic/tools` taskScheduler (third admission dimension alongside global cap + per-job claim); adopts in Gallery-Downloader so image downloads, Webtoons lookups, DLsite scrapes, etc. each get their own rate-limit-derived cap. Two PRs — mux-magic API extension publishes first, then gallery-downloader bumps and adopts. | tools+cross | Sonnet | High | ON | 21, 1d + a published `@mux-magic/tools` minor bump after 21 | ready |
 
 ---
 

@@ -1027,11 +1027,11 @@ export const COMMANDS: Commands = {
         }),
         field("fixedOffset", {
           type: "number",
-          label: "Fixed Offset (ms)",
+          label: "Fixed Offset (s)",
         }),
         field("timecodePadding", {
           type: "number",
-          label: "Timecode Padding",
+          label: "Timecode Padding (s)",
         }),
         // Defaults to false in the Builder so the Phase-B "which file is
         // which?" pick modal becomes the interactive UX. Schema also
@@ -1048,7 +1048,7 @@ export const COMMANDS: Commands = {
       // side-by-side), not just the viewport.
       groups: [
         {
-          fields: ["fixedOffset", "timecodePadding"],
+          fields: ["timecodePadding", "fixedOffset"],
           layout: "field-group-two-col",
         },
       ],

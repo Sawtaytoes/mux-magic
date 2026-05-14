@@ -396,8 +396,7 @@ export const fakeSearchAnidb = () => ({
     {
       aid: 11770,
       name: "Re:Zero - Starting Life in Another World",
-      nameJapanese:
-        "Re:Zero kara Hajimeru Isekai Seikatsu",
+      nameJapanese: "Re:Zero kara Hajimeru Isekai Seikatsu",
       type: "TV",
       episodes: 25,
       year: "2016",
