@@ -1,7 +1,10 @@
 import { useStore } from "jotai"
 import { useEffect } from "react"
 import { isGroup } from "../jobs/sequenceUtils"
-import { scrollToStepAtom } from "../state/historyAtoms"
+import {
+  scrollSeqAtom,
+  scrollToStepAtom,
+} from "../state/historyAtoms"
 import { stepsAtom } from "../state/stepsAtom"
 import type { Group } from "../types"
 
@@ -18,6 +21,14 @@ export const useScrollToAffectedStep = (): void => {
       if (!stepId) return
 
       store.set(scrollToStepAtom, null)
+      // Bump the seq so async producers (e.g. paste, which sets
+      // scrollToStepAtom only after its view transition resolves) can
+      // detect that the viewport has been moved by another action and
+      // skip their now-stale scroll. See scrollSeqAtom doc.
+      store.set(
+        scrollSeqAtom,
+        store.get(scrollSeqAtom) + 1,
+      )
 
       // Defer to the next frame so callers that set scrollToStepAtom
       // synchronously after creating a step (insertStep, insertGroup,

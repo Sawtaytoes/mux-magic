@@ -21,6 +21,7 @@ import {
   canUndoAtom,
   redoStackAtom,
   type Snapshot,
+  scrollSeqAtom,
   scrollToStepAtom,
   undoStackAtom,
 } from "../state/historyAtoms"
@@ -539,6 +540,13 @@ export const useBuilderActions = () => {
         return null
       })()
 
+      // Capture the seq before the view transition so we can detect
+      // a more recent scroll-targeting action (insert, undo/redo,
+      // another paste) and skip our delayed scroll if so. Otherwise
+      // the user-visible viewport jumps back to the pasted item once
+      // the transition resolves, overriding the more recent intent.
+      const startScrollSeq = store.get(scrollSeqAtom)
+
       let transition: Promise<void>
       if (newItemIds.length > 0) {
         const styleEl = document.createElement("style")
@@ -561,6 +569,14 @@ export const useBuilderActions = () => {
 
       if (firstNewStepId) {
         transition.then(() => {
+          if (
+            store.get(scrollSeqAtom) !== startScrollSeq
+          ) {
+            // Another scroll-targeting action ran while the paste
+            // transition was animating — its target is what the user
+            // expects to see, so don't override it.
+            return
+          }
           store.set(scrollToStepAtom, firstNewStepId)
         })
       }

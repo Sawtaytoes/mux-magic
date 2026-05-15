@@ -31,7 +31,10 @@ import type { Group, Step } from "../types"
 import { useBuilderActions } from "./useBuilderActions"
 import { useScrollToAffectedStep } from "./useScrollToAffectedStep"
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 const makeStep = (id: string): Step => ({
   id,
@@ -407,6 +410,92 @@ describe("useScrollToAffectedStep", () => {
     const target = scrollIntoViewSpy.mock.contexts[0]
     expect(target).toBeInstanceOf(HTMLElement)
     expect((target as HTMLElement).id).toBe("step-child_one")
+  })
+
+  test("paste does not override a more recent insert that happens during the view transition", async () => {
+    // Single-step paste so result.steps[0].id is predictable.
+    const pastedYaml = [
+      "paths: {}",
+      "steps:",
+      "  - id: pasted_one",
+      "    command: ''",
+    ].join("\n")
+    vi.spyOn(
+      navigator.clipboard,
+      "readText",
+    ).mockResolvedValue(pastedYaml)
+
+    // Hold the view transition open until the test releases it. This
+    // simulates the real-world race: paste's transition is still
+    // animating when the user clicks "+ step".
+    let releaseFinished: () => void = () => {}
+    const finishedPromise = new Promise<void>((resolve) => {
+      releaseFinished = resolve
+    })
+    vi.spyOn(
+      document,
+      "startViewTransition",
+    ).mockImplementation((fn) => {
+      ;(fn as () => void)?.()
+      return {
+        ready: Promise.resolve(),
+        updateCallbackDone: Promise.resolve(),
+        finished: finishedPromise,
+        skipTransition: () => {},
+      } as unknown as ViewTransition
+    })
+
+    const store = createStore()
+    store.set(stepsAtom, [makeStep("existing")])
+
+    renderWithStore(store)
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Paste At End" }),
+    )
+    // Wait for the paste to apply its DOM mutation but NOT for the
+    // (still pending) finishedPromise → so its scroll trigger is queued.
+    await waitFor(() => {
+      const ids = store
+        .get(stepsAtom)
+        .map((item) => item.id)
+      expect(ids).toContain("pasted_one")
+    })
+    expect(scrollIntoViewSpy).not.toHaveBeenCalled()
+
+    // Now the user clicks "+ step" while the paste transition is
+    // still pending. This should scroll to the new inserted step.
+    // After paste, stepCounterAtom is the loader's internal counter
+    // (always starts at 0, advances per YAML step) — here, 1. So the
+    // newly inserted step's id is `step${1+1}` = step2.
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Insert Step At End",
+      }),
+    )
+
+    // The insert's scroll fires immediately (rAF, no transition wait).
+    await waitFor(() => {
+      expect(scrollIntoViewSpy).toHaveBeenCalledTimes(1)
+    })
+    const insertTarget = scrollIntoViewSpy.mock.contexts[0]
+    expect((insertTarget as HTMLElement).id).toBe(
+      "step-step2",
+    )
+
+    // Now release the paste transition. Its delayed scroll trigger
+    // must NOT override the insert that happened in the meantime.
+    releaseFinished()
+    // Give the .then chain + any rAF a chance to run.
+    await new Promise<void>((resolve) =>
+      setTimeout(resolve, 50),
+    )
+
+    // Still only one scroll, still on the insert's target.
+    expect(scrollIntoViewSpy).toHaveBeenCalledTimes(1)
+    expect(scrollIntoViewSpy.mock.contexts[0]).toBe(
+      insertTarget,
+    )
   })
 
   test("scrolls to a step restored by redo", async () => {
