@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/2c_pure-functions-sweep/`
 **Phase:** 4 (server infrastructure)
 **Depends on:** 20 (CLI extract — finalizes the split between business logic and process I/O)
-**Parallel with:** 41, 29, 2a, 2d, 3b, 3c, 3e, 40. **NOT parallel with 38 (per-file-pipelining)** — that worker rewrites the same command handlers this one touches; coordinate. **NOT parallel with Phase 3 NSF workers** if this worker reaches into the NSF code paths — keep this sweep out of `nameSpecialFeatures*` files entirely (Phase 3 owns that surface). When this lands first: Phase 3 rebases trivially. When Phase 3 lands first: this worker excludes those files.
+**Parallel with:** 41, 2a, 3b, 3c, 3e, 40. **NOT parallel with 38 (per-file-pipelining)** — that worker rewrites the same command handlers this one touches; coordinate. **NOT parallel with Phase 3 NSF workers** if this worker reaches into the NSF code paths — keep this sweep out of `nameSpecialFeatures*` files entirely (Phase 3 owns that surface). When this lands first: Phase 3 rebases trivially. When Phase 3 lands first: this worker excludes those files.
 
 > **Why this worker exists:** the server's helper layer mixes side effects (filesystem reads, child-process spawns, env-var reads, `Date.now()` calls, RNG) into otherwise pure-looking transforms. This makes testing painful — every test ends up mocking three or four modules to exercise one branch. The fix is mechanical but high-judgement: thread the side-effectful inputs in as parameters or injected deps, leave the side-effect call sites at the edges, and turn the middle into actual pure functions.
 

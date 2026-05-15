@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/2b_error-persistence-webhook/`
 **Phase:** 4 (server infrastructure)
 **Depends on:** 41 (structured-logging — provides the structured error record format and the trace IDs to correlate)
-**Parallel with:** 29, 2a, 2c, 2d, 38, 3b, 3c, 3e, 40. NOT parallel with 41 — must wait for it.
+**Parallel with:** 2a, 2c, 38, 3b, 3c, 3e, 40. NOT parallel with 41 — must wait for it.
 
 > **Why this worker exists:** today a failed job emits a `console.error` (or, after worker 41, a structured `logger.error`), the failure is fed into `appendJobLog`, and [webhookReporter.ts](../../packages/server/src/tools/webhookReporter.ts)'s `reportJobFailed` fires a fire-and-forget HTTP POST. There is no persistent error record — once the job leaves `jobStore` (which is in-memory only), the error is gone. If Home Assistant missed the webhook (network blip, restart, downstream offline) there is no way to replay it. This worker adds a small on-disk error store and a replay-on-startup pass for unacked webhook deliveries.
 

@@ -107,11 +107,11 @@ No intermediate master merges.
 |:---:|---|---|:---:|
 | 0 | Rebrand foundation | 39 → 01, plus 02 03 04 (parallel) | **YES** |
 | 1A | High-blast-radius (ESLint config, serial) | 05 → 06 → 07 | No |
-| 1B | Improvements (parallel fan-out with Variables foundation sub-chain) | 08–1f + 36, 37 (26 workers; 36 → 37 serial sub-chain blocks 11+35+37) | No |
+| 1B | Improvements (parallel fan-out with Variables foundation sub-chain) | 08–1f + 36, 37 + 46 (26 workers; 36 → 37 serial sub-chain blocks 11+35+37; 46 is a follow-up bug-fix on 0c) | No |
 | 2 | CLI package extraction | 20 → 21 | No |
-| 3 | Name Special Features overhaul | 22–27 + 34, 35 (8 workers) | No |
-| 4 | Server infrastructure + per-file pipelining | 41, 29, 2a, 2b, 2c, 2d + 38 + 3b + 3c + 3e + 40 (11 workers; original `28` slot moved to a Phase 1B cleanup, structured-logging relocated to `41`) | No |
-| 5 | HA + advanced features | 2e–32 + 42, 43 | No |
+| 3 | Name Special Features overhaul | 22–27 + 34, 35 + 49 (8 workers) | No |
+| 4 | Server infrastructure + per-file pipelining | 41, 2a, 2b, 2c + 38 + 3b + 3c + 3e + 40 + 47 (10 workers; original `28` slot moved to a Phase 1B cleanup, structured-logging relocated to `41`; 47 fixes a `/version` containerization false-positive) | No |
+| 5 | HA + advanced features | 2e–32 + 42, 43 + 48, 4a–4f, 50–52 | No |
 | 6 | Final consolidation | 33 | **YES** |
 
 ---
@@ -162,6 +162,7 @@ No intermediate master merges.
         │     08 09 0a 0b 0c 0d 0e 0f            │       │
         │     10 12 13 14 15 16 17               │       │
         │     11* (waits for 36 — uses Variables)│       │
+        │     46 (0c follow-up: aspect-link)     │       │
         │                                        │       │
         │   Other (3, all parallel):             │       │
         │     18 loadenvfile                     │       │
@@ -199,6 +200,7 @@ No intermediate master merges.
         │        ┌─→ 34 onlyNameSpecialFeatures  │       │
         │        ┌─→ 35 dvd-compare-id-variable  │       │
         │        ┌─→ 24 source-path-abstraction  │       │
+        │        ┌─→ 49 dvdcompare-id-shortcut   │       │
         │        ▼                               │       │
         │   25 fix-unnamed-overhaul              │       │
         │        ┌─→ 26 editions                 │       │
@@ -220,11 +222,11 @@ No intermediate master merges.
         │   Parallel with 41+38:                 │       │
         │     2a server-template-storage         │       │
         │     2c pure-functions-sweep            │       │
-        │     2d asset-fallback-to-cli           │       │
         │     3b extract-subs multi-lang+type    │       │
         │     3c bcp47-language-variants         │       │
         │     3e gallery-downloader-task-pools   │       │
         │     40 file-organization-commands      │       │
+        │     47 version-iscontainerized-fix     │       │
         └─────────────────┬──────────────────────┘       │
                           │                              │
                           ▼                              │
@@ -239,6 +241,17 @@ No intermediate master merges.
         │   32 command-search-tags               │       │
         │   42 foreach-folder-bulk               │       │
         │   43 log-sequence-caller-info          │       │
+        │   ── backlog (planned, parallel) ──    │       │
+        │   48 file-explorer-search-and-filters  │       │
+        │   4a duplicate-music-scheduler-audit   │       │
+        │   4b audio-library-fingerprint-dedup   │       │
+        │   4c subtitle-attachments + granular   │       │
+        │   4d chapter-renumber                  │       │
+        │   4e detect-trailing-credit-chapters   │       │
+        │   4f signs-songs-forced-flag           │       │
+        │   50 wav-to-flac                       │       │
+        │   51 release-date-into-date-tag        │       │
+        │   52 dvdcompare-cuts-censorship-check  │       │
         └─────────────────┬──────────────────────┘       │
                           │                              │
                           ▼                              │
@@ -419,7 +432,7 @@ Serial because 37 imports the new types/atoms from 36. Workers 11 and 35 also de
 | File | Owner worker(s) | How |
 |---|---|---|
 | Root `package.json` | `01` rename, `18` loadenvfile, `20` cli-extract, `39` shared→tools | Sequenced |
-| `packages/server/package.json` | `01`, `18`, `20`, `2d`, `39` (selective tool moves) | Same sequence |
+| `packages/server/package.json` | `01`, `18`, `20`, `39` (selective tool moves) | Same sequence |
 | `packages/web/package.json` | `01`, `18` | Sequence |
 | `packages/shared/` directory | `39` (renames → `packages/tools/`) | Single-owner |
 | AGENTS.md | `04` (full pass); progress lines go in workers/MANIFEST.md | Single-owner |
@@ -451,7 +464,7 @@ Serial because 37 imports the new types/atoms from 36. Workers 11 and 35 also de
 
 | Confidence | Workers |
 |---|---|
-| **High** (mechanical / well-bounded) | 02, 03, 04, 0a, 0b, 0e, 10, 12, 13, 18, 2d, 32 |
+| **High** (mechanical / well-bounded) | 02, 03, 04, 0a, 0b, 0e, 10, 12, 13, 18, 32 |
 | **Medium** (judgment calls, standard patterns) | 01, 05, 06, 07, 08, 09, 0c, 0d, 0f, 11, 14, 15, 16, 17, 19, 1a, 1b, 1c, 1d, 1e, 1f, 21, 22, 23, 25, 26, 27, 29, 2a, 2b, 30, 31, 33, 34, 35, 36, 37, 39 |
 | **Low — model recommendation uncertain** | **20, 24, 2c, 2f, 38** — all currently Opus or High-effort Sonnet. These are where Opus's cost may be justified by failure-mode severity. Revisit per worker. (Worker 41 was on this list when it bundled OTel; downgraded to Sonnet/Medium once OTel was stripped — see `41_structured-logging.md`.) |
 

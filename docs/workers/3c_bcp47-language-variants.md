@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/3c_bcp47-language-variants/`
 **Phase:** 4
 **Depends on:** 08 (LanguageCodesField rebuild), 20 (CLI extract — schema location may have moved)
-**Parallel with:** 28, 29, 2a, 2b, 2c, 2d, 38, 3b (no file overlap with any of them)
+**Parallel with:** 28, 2a, 2b, 2c, 38, 3b (no file overlap with any of them)
 
 ## Universal Rules (TL;DR)
 

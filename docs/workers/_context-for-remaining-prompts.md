@@ -1,6 +1,6 @@
 # Context for writing the remaining worker prompts
 
-This document captures what a future worker (call it "the prompt-writer") needs to know to produce prompt files for the Phase 2-6 workers that don't yet have one (`20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 2a, 2b, 2c, 2d, 2e, 2f, 30, 31, 32, 33, 34, 35`). Worker `38` (per-file-pipelining) already has a prompt and can be used alongside `37`/`11`/`17` as additional templates.
+This document captures what a future worker (call it "the prompt-writer") needs to know to produce prompt files for the Phase 2-6 workers that don't yet have one (`20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 2a, 2b, 2c, 2e, 2f, 30, 31, 32, 33, 34, 35`). Worker `38` (per-file-pipelining) already has a prompt and can be used alongside `37`/`11`/`17` as additional templates.
 
 Read this before starting. It is not a substitute for `docs/PLAN.md` or `AGENTS.md` — those still apply.
 
@@ -166,7 +166,6 @@ The original `nameSpecialFeatures` command is preserved and renamed to `nameSpec
 - **2a — `server-template-storage`:** Server-side persistence for sequence templates.
 - **2b — `error-persistence-webhook`:** Persist errors and surface via the webhook reporter from worker 1e. Depends on 28.
 - **2c — `pure-functions-sweep`:** Refactor side-effectful helpers into pure functions where possible. Depends on 20.
-- **2d — `asset-fallback-to-cli`:** Server delegates to CLI for asset operations that aren't web-accessible.
 - **38 — already has a prompt.** Skip.
 
 ### Phase 5 (HA + advanced features; parallel)

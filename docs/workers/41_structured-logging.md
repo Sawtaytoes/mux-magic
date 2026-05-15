@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/41_structured-logging/`
 **Phase:** 4 (server infrastructure)
 **Depends on:** 21 (observables-shared-split — provides the place where the logger lives)
-**Parallel with:** 2a (server-template-storage), 2c (pure-functions-sweep), 2d (asset-fallback-to-cli), 3b, 3c, 3e, 40 — none of these touch the central logging surface. NOT parallel with 38 (per-file-pipelining), 2b (error-persistence-webhook), or 2f (ffmpeg-gpu-reencode) — those depend on this one landing first.
+**Parallel with:** 2a (server-template-storage), 2c (pure-functions-sweep), 3b, 3c, 3e, 40 — none of these touch the central logging surface. NOT parallel with 38 (per-file-pipelining), 2b (error-persistence-webhook), or 2f (ffmpeg-gpu-reencode) — those depend on this one landing first.
 
 > **Why this worker exists:** the server today routes per-job output through [logCapture.ts](../../packages/server/src/api/logCapture.ts) (an `AsyncLocalStorage`-keyed ANSI-stripping router that calls `appendJobLog`), but underneath every call site is still a plain `console.log` / `console.warn` / `console.error` writing a single human-formatted line. There is no machine-readable structure, no trace correlation across rxjs boundaries beyond the job ID that `logCapture` already threads, and no replay-friendly format for worker 2b's error store to attach to. Worker 2b (error persistence + webhook) wants to attach structured fields to errors. Worker 38 (per-file pipelining) wants to follow one file across N steps. Both currently can't, because the logging surface is string-shaped. This worker introduces a structured logger, migrates the server's call sites, and preserves the existing `appendJobLog` + SSE behaviour so the web UI is unaffected.
 

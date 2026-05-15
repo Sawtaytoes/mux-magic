@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/2a_server-template-storage/`
 **Phase:** 4 (server infrastructure)
 **Depends on:** 01 (rebrand)
-**Parallel with:** 41, 29, 2c, 2d, 38, 3b, 3c, 3e, 40. Adds new server routes + a new web sidebar surface; doesn't touch the existing YAML codec internals (it consumes them), so it doesn't collide with Phase 3 NSF work or the Variables foundation from 36/37.
+**Parallel with:** 41, 2c, 38, 3b, 3c, 3e, 40. Adds new server routes + a new web sidebar surface; doesn't touch the existing YAML codec internals (it consumes them), so it doesn't collide with Phase 3 NSF work or the Variables foundation from 36/37.
 
 > **Why this worker exists:** sequence templates today live in three places: the URL query string (`?seq=…` encoded YAML; see [encodeSeqParam.ts](../../packages/web/src/jobs/encodeSeqParam.ts)), pasted YAML via the Load modal ([LoadModal.tsx](../../packages/web/src/components/LoadModal/LoadModal.tsx) + [useAutoClipboardLoad.ts](../../packages/web/src/hooks/useAutoClipboardLoad.ts)), and ad-hoc files the user keeps locally. There is no shared library, no way to send "the same template" to a second machine without copy/paste, and no way for Home Assistant or a future webhook trigger to invoke a named template by id. This worker adds server-side persistence: `GET/POST/PUT/DELETE /api/templates` backed by a flat JSON file on disk, plus a new web sidebar listing the saved templates and one-click load. The server becomes the source of truth; the URL query string stays as the ephemeral "share-this-instance" mechanism.
 

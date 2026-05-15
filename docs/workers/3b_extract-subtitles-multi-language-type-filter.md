@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/3b_extract-subtitles-multi-language-type-filter/`
 **Phase:** 4 (server infrastructure)
 **Depends on:** 20 (CLI extract — `extractSubtitlesCommand.ts` moves to `packages/cli/`)
-**Parallel with:** Other Phase 4 workers that don't touch `runMkvExtract` / `extractSubtitleTrack` / `extractSubtitles` (29, 2a, 2b, 2d). NOT parallel with 2c (pure-functions-sweep) — coordinate if it rewrites the same app-command.
+**Parallel with:** Other Phase 4 workers that don't touch `runMkvExtract` / `extractSubtitleTrack` / `extractSubtitles` (2a, 2b). NOT parallel with 2c (pure-functions-sweep) — coordinate if it rewrites the same app-command.
 
 ## Universal Rules (TL;DR)
 
