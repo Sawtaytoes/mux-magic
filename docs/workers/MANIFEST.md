@@ -89,6 +89,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | 17 | [run-in-background-sequence-modal](17_run-in-background-sequence-modal.md) | web | Sonnet | High | ON | 10 | done |
 | 3d | [loadmodal-backdrop-leak-fix](3d_loadmodal-backdrop-leak-fix.md) — bug-fix follow-up to worker 0b: open LoadModal synchronously so the paste listener attaches before `navigator.clipboard.readText()` resolves; gates Modal visibility on a new `loadModalAutoPastingAtom` to avoid flash | web | Sonnet | Medium | ON | 0b | done |
 | 28 | [threadcount-variable-registry-unification](28_threadcount-variable-registry-unification.md) — cleanup follow-up to worker 11: registers `threadCount` in the unified Variables registry from worker 36 (was a parallel side-channel); makes TypePicker registry-driven. Originally slotted for the Phase 4 structured-logging worker; that worker relocated to id `41` per the "never renumber" rule. | web | Sonnet | Medium | ON | 11, 36, 37 | ready |
+| 43 | [builder-seqjson-param](43_builder-seqjson-param.md) — Builder URL shrink: live writer + `buildBuilderUrl` switch to minified-JSON + base64url under new `?seqJson=` param. Legacy `?seq=` still decodes via fallback. No compression in prod (deferred); committed `vitest bench` measures YAML vs JSON raw + gzipped to inform a future compression worker. | web | Sonnet | Medium | ON | 01 | ready |
 
 ### Other track (3 workers)
 
