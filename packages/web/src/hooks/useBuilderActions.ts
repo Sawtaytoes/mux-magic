@@ -173,7 +173,11 @@ export const useBuilderActions = () => {
   const insertStep = useCallback(
     (index: number, parentGroupId?: string | null) => {
       pushHistory()
-      store.set(insertStepAtom, { index, parentGroupId })
+      const newId = store.set(insertStepAtom, {
+        index,
+        parentGroupId,
+      })
+      if (newId) store.set(scrollToStepAtom, newId)
     },
     [store, pushHistory],
   )
@@ -181,7 +185,11 @@ export const useBuilderActions = () => {
   const insertGroup = useCallback(
     (index: number, isParallel: boolean) => {
       pushHistory()
-      store.set(insertGroupAtom, { index, isParallel })
+      const newId = store.set(insertGroupAtom, {
+        index,
+        isParallel,
+      })
+      if (newId) store.set(scrollToStepAtom, newId)
     },
     [store, pushHistory],
   )
@@ -516,6 +524,22 @@ export const useBuilderActions = () => {
       // inside the same transition as the surrounding cards shifting down,
       // so all animations are synchronised rather than sequential.
       // The style is removed once the transition finishes.
+      // The first newly-rendered step we can scroll to. For top-level
+      // group paste the entry id is the group itself, which has no
+      // `#step-<id>` element — descend into the group's first child.
+      const firstNewStepId: string | null = (() => {
+        for (const item of result.steps) {
+          if (isGroup(item)) {
+            const inner = (item as Group).steps[0]
+            if (inner) return inner.id
+          } else {
+            return (item as Step).id
+          }
+        }
+        return null
+      })()
+
+      let transition: Promise<void>
       if (newItemIds.length > 0) {
         const styleEl = document.createElement("style")
         const selectors = newItemIds
@@ -526,11 +550,19 @@ export const useBuilderActions = () => {
           .join(",")
         styleEl.textContent = `${selectors}{animation:stepEnter 220ms ease-out;}`
         document.head.appendChild(styleEl)
-        runWithViewTransition(applyPaste).finally(() => {
+        transition = runWithViewTransition(
+          applyPaste,
+        ).finally(() => {
           styleEl.remove()
         })
       } else {
-        runWithViewTransition(applyPaste)
+        transition = runWithViewTransition(applyPaste)
+      }
+
+      if (firstNewStepId) {
+        transition.then(() => {
+          store.set(scrollToStepAtom, firstNewStepId)
+        })
       }
     },
     [store, pushHistory],

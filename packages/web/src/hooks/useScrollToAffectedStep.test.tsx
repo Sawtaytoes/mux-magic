@@ -5,7 +5,12 @@ import {
   waitFor,
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { createStore, Provider, useAtomValue } from "jotai"
+import {
+  createStore,
+  Provider,
+  useAtomValue,
+  useSetAtom,
+} from "jotai"
 import {
   afterEach,
   beforeEach,
@@ -14,12 +19,15 @@ import {
   test,
   vi,
 } from "vitest"
+import { isGroup } from "../jobs/sequenceUtils"
 import {
   canUndoAtom,
+  scrollToStepAtom,
   undoStackAtom,
 } from "../state/historyAtoms"
-import { stepsAtom } from "../state/stepsAtom"
-import type { Step } from "../types"
+import { addStepToGroupAtom } from "../state/stepAtoms"
+import { stepCounterAtom, stepsAtom } from "../state/stepsAtom"
+import type { Group, Step } from "../types"
 import { useBuilderActions } from "./useBuilderActions"
 import { useScrollToAffectedStep } from "./useScrollToAffectedStep"
 
@@ -36,20 +44,67 @@ const makeStep = (id: string): Step => ({
   isCollapsed: false,
 })
 
+const renderItem = (item: Step | Group) => {
+  if (isGroup(item)) {
+    return (
+      <div key={item.id} data-group={item.id}>
+        {item.steps.map((step) => (
+          <div key={step.id} id={`step-${step.id}`} />
+        ))}
+      </div>
+    )
+  }
+  return <div key={item.id} id={`step-${item.id}`} />
+}
+
 const Harness = () => {
   useScrollToAffectedStep()
-  const { undo, redo } = useBuilderActions()
-  const steps = useAtomValue(stepsAtom)
+  const { undo, redo, insertStep, insertGroup, pasteCardAt } =
+    useBuilderActions()
+  const addStepToGroup = useSetAtom(addStepToGroupAtom)
+  const scrollToStep = useSetAtom(scrollToStepAtom)
+  const items = useAtomValue(stepsAtom)
   return (
     <>
-      {steps.map((item) => (
-        <div key={item.id} id={`step-${item.id}`} />
-      ))}
+      {items.map(renderItem)}
       <button type="button" onClick={undo}>
         Undo
       </button>
       <button type="button" onClick={redo}>
         Redo
+      </button>
+      <button
+        type="button"
+        onClick={() => insertStep(items.length)}
+      >
+        Insert Step At End
+      </button>
+      <button
+        type="button"
+        onClick={() => insertGroup(items.length, false)}
+      >
+        Insert Group At End
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          const firstGroup = items.find(isGroup) as
+            | Group
+            | undefined
+          if (!firstGroup) return
+          const newId = addStepToGroup(firstGroup.id)
+          if (newId) scrollToStep(newId)
+        }}
+      >
+        Add Step To First Group
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          void pasteCardAt({})
+        }}
+      >
+        Paste At End
       </button>
     </>
   )
@@ -172,6 +227,186 @@ describe("useScrollToAffectedStep", () => {
       setTimeout(resolve, 50)
     })
     expect(scrollIntoViewSpy).not.toHaveBeenCalled()
+  })
+
+  test("scrolls to the new step when insertStep is called at the end", async () => {
+    const initial = Array.from({ length: 5 }, (_, i) =>
+      makeStep(`step${i + 1}`),
+    )
+    const store = createStore()
+    store.set(stepsAtom, initial)
+    store.set(stepCounterAtom, 5)
+
+    renderWithStore(store)
+
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Insert Step At End",
+      }),
+    )
+
+    await waitFor(() => {
+      expect(scrollIntoViewSpy).toHaveBeenCalled()
+    })
+
+    const newStepEl = document.getElementById("step-step6")
+    expect(newStepEl).not.toBeNull()
+    expect(scrollIntoViewSpy.mock.contexts[0]).toBe(newStepEl)
+  })
+
+  test("scrolls to the new step inside a group when insertGroup is called", async () => {
+    const store = createStore()
+    store.set(stepsAtom, [makeStep("existing")])
+    store.set(stepCounterAtom, 1)
+
+    renderWithStore(store)
+
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Insert Group At End",
+      }),
+    )
+
+    await waitFor(() => {
+      expect(scrollIntoViewSpy).toHaveBeenCalled()
+    })
+
+    // The scroll target should be the new step inside the group, not
+    // the group container itself.
+    const newStepEl = document.getElementById("step-step2")
+    expect(newStepEl).not.toBeNull()
+    expect(scrollIntoViewSpy.mock.contexts[0]).toBe(newStepEl)
+  })
+
+  test("scrolls to the new step when addStepToGroup appends inside a group", async () => {
+    const existingStep = makeStep("inGroupA")
+    const group: Group = {
+      kind: "group",
+      id: "groupA",
+      label: "",
+      isParallel: false,
+      isCollapsed: false,
+      steps: [existingStep],
+    }
+    const store = createStore()
+    store.set(stepsAtom, [group])
+    store.set(stepCounterAtom, 7)
+
+    renderWithStore(store)
+
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Add Step To First Group",
+      }),
+    )
+
+    await waitFor(() => {
+      expect(scrollIntoViewSpy).toHaveBeenCalled()
+    })
+
+    // addStepToGroupAtom uses the underscore form `step_${n+1}`
+    const newStepEl = document.getElementById("step-step_8")
+    expect(newStepEl).not.toBeNull()
+    expect(scrollIntoViewSpy.mock.contexts[0]).toBe(newStepEl)
+  })
+
+  test("scrolls to the first pasted step after pasteCardAt", async () => {
+    const pastedYaml = [
+      "paths: {}",
+      "steps:",
+      "  - id: pasted_one",
+      "    command: ''",
+      "  - id: pasted_two",
+      "    command: ''",
+    ].join("\n")
+    vi.spyOn(
+      navigator.clipboard,
+      "readText",
+    ).mockResolvedValue(pastedYaml)
+    // pasteCardAt wraps the state update in startViewTransition.
+    // Mock so the callback runs immediately (mirrors GroupCard.test).
+    vi.spyOn(
+      document,
+      "startViewTransition",
+    ).mockImplementation((fn) => {
+      ;(fn as () => void)?.()
+      return {
+        ready: Promise.resolve(),
+        updateCallbackDone: Promise.resolve(),
+        finished: Promise.resolve(),
+        skipTransition: () => {},
+      } as unknown as ViewTransition
+    })
+
+    const store = createStore()
+    store.set(stepsAtom, [makeStep("existing")])
+
+    renderWithStore(store)
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Paste At End" }),
+    )
+
+    await waitFor(() => {
+      expect(scrollIntoViewSpy).toHaveBeenCalled()
+    })
+
+    // The first pasted step (pasted_one) should be the scroll target.
+    // loadYamlFromText preserves source ids when they don't collide
+    // with existingIds, and "existing" is the only seeded id.
+    const target = scrollIntoViewSpy.mock.contexts[0]
+    expect(target).toBeInstanceOf(HTMLElement)
+    expect((target as HTMLElement).id).toBe("step-pasted_one")
+  })
+
+  test("scrolls into the first child step when pasting a group at the top level", async () => {
+    const pastedYaml = [
+      "paths: {}",
+      "steps:",
+      "  - kind: group",
+      "    id: pasted_group",
+      "    isParallel: false",
+      "    steps:",
+      "      - id: child_one",
+      "        command: ''",
+      "      - id: child_two",
+      "        command: ''",
+    ].join("\n")
+    vi.spyOn(
+      navigator.clipboard,
+      "readText",
+    ).mockResolvedValue(pastedYaml)
+    vi.spyOn(
+      document,
+      "startViewTransition",
+    ).mockImplementation((fn) => {
+      ;(fn as () => void)?.()
+      return {
+        ready: Promise.resolve(),
+        updateCallbackDone: Promise.resolve(),
+        finished: Promise.resolve(),
+        skipTransition: () => {},
+      } as unknown as ViewTransition
+    })
+
+    const store = createStore()
+    store.set(stepsAtom, [makeStep("existing")])
+
+    renderWithStore(store)
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Paste At End" }),
+    )
+
+    await waitFor(() => {
+      expect(scrollIntoViewSpy).toHaveBeenCalled()
+    })
+
+    // For a top-level group paste the scroll target should descend into
+    // the group's first child (the group container has no `#step-<id>`).
+    const target = scrollIntoViewSpy.mock.contexts[0]
+    expect(target).toBeInstanceOf(HTMLElement)
+    expect((target as HTMLElement).id).toBe("step-child_one")
   })
 
   test("scrolls to a step restored by redo", async () => {

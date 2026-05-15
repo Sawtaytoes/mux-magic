@@ -165,6 +165,7 @@ export const insertStepAtom = atom(
       arr.splice(args.index, 0, newStep)
       return arr
     })
+    return newStep.id
   },
 )
 
@@ -190,6 +191,7 @@ export const addStepToGroupAtom = atom(
         return { ...item, steps: [...item.steps, newStep] }
       }),
     )
+    return newStep.id
   },
 )
 

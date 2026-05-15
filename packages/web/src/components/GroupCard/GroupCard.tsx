@@ -17,6 +17,7 @@ import {
   toggleGroupCollapsedAtom,
   updateGroupLabelAtom,
 } from "../../state/groupAtoms"
+import { scrollToStepAtom } from "../../state/historyAtoms"
 import { runningAtom } from "../../state/runAtoms"
 import { addStepToGroupAtom } from "../../state/stepAtoms"
 import type { Group, Step } from "../../types"
@@ -49,6 +50,7 @@ export const GroupCard = ({
     setGroupChildrenCollapsedAtom,
   )
   const addStep = useSetAtom(addStepToGroupAtom)
+  const scrollToStep = useSetAtom(scrollToStepAtom)
   const {
     copyGroupYaml,
     moveGroup,
@@ -199,7 +201,10 @@ export const GroupCard = ({
         </button>
         <button
           type="button"
-          onClick={() => addStep(group.id)}
+          onClick={() => {
+            const newId = addStep(group.id)
+            if (newId) scrollToStep(newId)
+          }}
           title="Add a step inside this group"
           className="text-[10px] text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded border border-slate-700 hover:border-slate-500"
         >
