@@ -24,7 +24,7 @@ Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typechec
    - `PUT    /api/templates/:id`         → update; body `{ name?, description?, yaml }`; `updatedAt` bumped
    - `DELETE /api/templates/:id`         → delete
 
-   All routes use `@hono/zod-openapi`'s `createRoute` so they show up in `/openapi.json` (and benefit from worker 29 once it lands).
+   All routes use `@hono/zod-openapi`'s `createRoute` so they show up in `/openapi.json`.
 
 2. Storage: a single JSON file at `${APP_DATA_DIR}/templates.json` (where `APP_DATA_DIR` comes from [appPaths.ts](../../packages/server/src/tools/appPaths.ts)). Shape:
 

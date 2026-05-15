@@ -48,7 +48,7 @@ const run = async (args: ParsedArgs) => {
 }
 ```
 
-`tryServer` is a 250ms-timeout `HEAD /api/health` (the same endpoint worker 29 may also rely on — coordinate). On any timeout, connection refused, DNS failure, or non-2xx, treat the server as unreachable and fall back.
+`tryServer` is a 250ms-timeout `HEAD /api/health`. On any timeout, connection refused, DNS failure, or non-2xx, treat the server as unreachable and fall back.
 
 When falling back, print a single one-line stderr notice the first time per process: `mux-magic: server unreachable at <url>; running locally`. Suppress subsequent notices (a `WeakSet<args>` keyed on the runtime, or a module-level boolean — whichever is simpler).
 
@@ -90,7 +90,7 @@ If the user passed `--server` explicitly, **don't fall back** — fail loudly. T
 - [packages/cli/src/serverProbe.ts](../../packages/cli/src/serverProbe.ts) — new; the 250ms probe + one-shot notice
 - [packages/cli/src/commands/](../../packages/cli/src/commands/) — one edit per command that gets the fallback path
 - Tests for each
-- Possibly: [packages/server/src/api/routes/](../../packages/server/src/api/routes/) — add `/api/health` if worker 29 hasn't already
+- Possibly: [packages/server/src/api/routes/](../../packages/server/src/api/routes/) — add `/api/health` if not present
 
 ## Verification checklist
 

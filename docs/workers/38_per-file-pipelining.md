@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/38_per-file-pipelining/`
 **Phase:** 4 (server infrastructure)
 **Depends on:** 20 (CLI extract), 21 (observables-shared-split), 41 (structured-logging — needed for trace IDs to follow individual files through the pipeline; was originally id `28` before reassignment)
-**Parallel with:** Other Phase 4 workers that don't touch sequenceRunner or command handlers (29 openapi-codegen-optional, 2a server-template-storage). NOT parallel with 2c (pure-functions-sweep) — that worker rewrites loops in command handlers; coordinate to avoid merge conflicts.
+**Parallel with:** Other Phase 4 workers that don't touch sequenceRunner or command handlers (2a server-template-storage). NOT parallel with 2c (pure-functions-sweep) — that worker rewrites loops in command handlers; coordinate to avoid merge conflicts.
 
 ## Universal Rules (TL;DR)
 

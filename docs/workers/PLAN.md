@@ -218,7 +218,6 @@ No intermediate master merges.
         │      (depends on 20+21+41)             │       │
         │                                        │       │
         │   Parallel with 41+38:                 │       │
-        │     29 openapi-codegen-optional        │       │
         │     2a server-template-storage         │       │
         │     2c pure-functions-sweep            │       │
         │     2d asset-fallback-to-cli           │       │
