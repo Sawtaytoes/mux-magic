@@ -1,11 +1,13 @@
 import { atom } from "jotai"
 import { isGroup } from "../jobs/sequenceUtils"
 import type { SequenceItem, Step, StepLink } from "../types"
+import { commandsAtom } from "./commandsAtom"
 import {
   collectExistingIds,
   makeStepId,
 } from "./idAllocator"
 import { stepsAtom } from "./stepsAtom"
+import { variablesAtom } from "./variablesAtom"
 
 // ─── Step CRUD ────────────────────────────────────────────────────────────────
 // Atoms that mutate individual steps. A step can live at the top level
@@ -192,13 +194,60 @@ export const addStepToGroupAtom = atom(
   },
 )
 
+// Returns a fresh dvdCompareId Variable id IF the named command has a
+// `dvdCompareId` field; otherwise null. Side-effect: appends the new
+// variable to variablesAtom. Worker 35: removes the manual "+ Add
+// Variable" click when a user picks a command that needs one — the
+// variable appears in the Variables panel and the step links to it.
+const ensureDvdCompareIdVariable = (
+  get: <T>(atomToRead: import("jotai").Atom<T>) => T,
+  set: <Value, Args extends unknown[], Result>(
+    writableAtom: import("jotai").WritableAtom<
+      Value,
+      Args,
+      Result
+    >,
+    ...args: Args
+  ) => Result,
+  commandName: string,
+): string | null => {
+  const commands = get(commandsAtom)
+  const commandDefinition = commands[commandName]
+  if (!commandDefinition) return null
+  const hasDvdCompareIdField =
+    commandDefinition.fields.some(
+      (field) => field.name === "dvdCompareId",
+    )
+  if (!hasDvdCompareIdField) return null
+
+  const existing = get(variablesAtom)
+  const newId = `dvdCompareIdVariable_${Math.random().toString(36).slice(2, 8)}`
+  set(variablesAtom, [
+    ...existing,
+    {
+      id: newId,
+      label: "",
+      value: "",
+      type: "dvdCompareId",
+    },
+  ])
+  return newId
+}
+
 export const changeCommandAtom = atom(
   null,
   (
-    _get,
+    get,
     set,
     args: { stepId: string; commandName: string },
   ) => {
+    const autoLinkVarId = ensureDvdCompareIdVariable(
+      get,
+      set,
+      args.commandName,
+    )
+    const autoLinks: Record<string, StepLink> =
+      autoLinkVarId ? { dvdCompareId: autoLinkVarId } : {}
     set(stepsAtom, (items) =>
       items.map((item) => {
         if (!isGroup(item)) {
@@ -207,7 +256,7 @@ export const changeCommandAtom = atom(
             ...item,
             command: args.commandName,
             params: {},
-            links: {},
+            links: autoLinks,
           }
         }
         return {
@@ -218,7 +267,7 @@ export const changeCommandAtom = atom(
                   ...step,
                   command: args.commandName,
                   params: {},
-                  links: {},
+                  links: autoLinks,
                 }
               : step,
           ),

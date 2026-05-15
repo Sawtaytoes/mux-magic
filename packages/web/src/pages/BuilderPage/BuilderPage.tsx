@@ -28,6 +28,7 @@ import {
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
+import { variablesAtom } from "../../state/variablesAtom"
 import { BuilderSequenceList } from "../BuilderSequenceList/BuilderSequenceList"
 
 // ─── BuilderPage ──────────────────────────────────────────────────────────────
@@ -63,7 +64,9 @@ export const BuilderPage = () => {
         store.get(pathsAtom),
       )
       store.set(stepsAtom, result.steps)
-      store.set(pathsAtom, result.paths)
+      // Write to variablesAtom so non-path types loaded from ?seq= survive
+      // (worker 35: dvdCompareId, future TMDB/AniDB).
+      store.set(variablesAtom, result.paths)
 
       // Intentionally NOT stripping ?seq= from the URL. Earlier code did so
       // (to prevent refresh from clobbering edits) but that caused a worse
@@ -109,10 +112,12 @@ export const BuilderPage = () => {
         return
       }
       const steps = store.get(stepsAtom)
-      const paths = store.get(pathsAtom)
+      // ?seq= captures all variable types (path + dvdCompareId + future)
+      // so URL sharing round-trips a complete sequence.
+      const paths = store.get(variablesAtom)
       const hasContent =
         steps.length > 0 ||
-        paths.some((pathVariable) => pathVariable.value)
+        paths.some((variable) => variable.value)
       const url = new URL(window.location.href)
       if (hasContent) {
         const yaml = toYamlStr(steps, paths, commands)
@@ -124,7 +129,7 @@ export const BuilderPage = () => {
     }
 
     const unsubSteps = store.sub(stepsAtom, writeUrl)
-    const unsubPaths = store.sub(pathsAtom, writeUrl)
+    const unsubPaths = store.sub(variablesAtom, writeUrl)
     window.addEventListener("beforeunload", writeUrl)
     window.addEventListener("pagehide", writeUrl)
 

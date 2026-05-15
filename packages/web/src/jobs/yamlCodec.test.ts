@@ -296,6 +296,37 @@ describe("toYamlStr — variables: block output", () => {
     expect(variablesObj.basePath?.label).toBe("Base")
     expect(variablesObj.basePath?.value).toBe("/mnt/media")
   })
+
+  test("round-trips a dvdCompareId variable with type preserved", () => {
+    const dvdCompareIdVariable: Variable = {
+      id: "dvdCompareIdVariable_xyz",
+      label: "Spider-Man 2002",
+      value: "spider-man-2002",
+      type: "dvdCompareId",
+    }
+    const yamlStr = toYamlStr(
+      [],
+      [dvdCompareIdVariable],
+      MAKE_DIR_COMMAND,
+    )
+    const reloaded = loadYamlFromText(
+      yamlStr,
+      MAKE_DIR_COMMAND,
+      [],
+    )
+    const dvdCompareIdReloaded = reloaded.paths.find(
+      (variable) =>
+        variable.id === "dvdCompareIdVariable_xyz",
+    )
+    expect(dvdCompareIdReloaded).toBeDefined()
+    expect(dvdCompareIdReloaded?.type).toBe("dvdCompareId")
+    expect(dvdCompareIdReloaded?.label).toBe(
+      "Spider-Man 2002",
+    )
+    expect(dvdCompareIdReloaded?.value).toBe(
+      "spider-man-2002",
+    )
+  })
 })
 
 // ─── toYamlStr — blank step persistence ──────────────────────────────────────

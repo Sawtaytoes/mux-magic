@@ -1,4 +1,5 @@
 import type { JSX } from "react"
+import { DVD_COMPARE_ID_VARIABLE_DEFINITION } from "../../state/variableTypes/dvdCompareId"
 import type { Variable, VariableType } from "../../types"
 
 export type VariableTypeDefinition<
@@ -40,6 +41,10 @@ export const getVariableTypeDefinition = (
 ): VariableTypeDefinition<VariableType> | undefined =>
   registry.get(type as VariableType)
 
+export const listVariableTypes = (): Array<
+  VariableTypeDefinition<VariableType>
+> => Array.from(registry.values())
+
 // ─── Register built-in types ──────────────────────────────────────────────────
 
 // The path type is the baseline; workers 11 and 35 register additional types.
@@ -57,3 +62,9 @@ registerVariableType({
     )
   },
 })
+
+// Worker 35: dvdCompareId. Future ID-style types (TMDB, AniDB, MAL) follow
+// the same pattern — one DEFINITION constant per type file under
+// `src/state/variableTypes/`, registered here so the registry stays the
+// single bootstrap point.
+registerVariableType(DVD_COMPARE_ID_VARIABLE_DEFINITION)

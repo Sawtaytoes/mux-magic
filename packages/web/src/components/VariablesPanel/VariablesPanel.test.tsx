@@ -93,6 +93,38 @@ describe("VariablesPanel", () => {
     ).toBeInTheDocument()
   })
 
+  test("type picker shows DVD Compare ID alongside Path", async () => {
+    const user = userEvent.setup()
+    renderPanel([])
+    await user.click(
+      screen.getByRole("button", { name: /add variable/i }),
+    )
+    expect(
+      screen.getByRole("button", {
+        name: /dvd compare id/i,
+      }),
+    ).toBeVisible()
+    expect(
+      screen.getByRole("button", { name: /^path$/i }),
+    ).toBeVisible()
+  })
+
+  test("picking DVD Compare ID adds a dvdCompareId variable", async () => {
+    const user = userEvent.setup()
+    const store = renderPanel([])
+    await user.click(
+      screen.getByRole("button", { name: /add variable/i }),
+    )
+    await user.click(
+      screen.getByRole("button", {
+        name: /dvd compare id/i,
+      }),
+    )
+    const variables = store.get(variablesAtom)
+    expect(variables).toHaveLength(1)
+    expect(variables[0].type).toBe("dvdCompareId")
+  })
+
   test("multiple variables: first has no remove button, second does", () => {
     renderPanel([
       makeVariable({ id: "v1", label: "First" }),

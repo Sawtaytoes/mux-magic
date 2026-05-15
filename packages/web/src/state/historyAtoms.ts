@@ -1,9 +1,11 @@
 import { atom } from "jotai"
-import type { PathVariable, SequenceItem } from "../types"
+import type { SequenceItem, Variable } from "../types"
 
 export type Snapshot = {
   steps: SequenceItem[]
-  paths: PathVariable[]
+  // Holds every variable type (path, dvdCompareId, …); the field name is
+  // historical from when only path variables existed.
+  paths: Variable[]
   threadCount: string | null
 }
 

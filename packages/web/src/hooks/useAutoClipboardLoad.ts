@@ -4,6 +4,7 @@ import { loadYamlFromText } from "../jobs/yamlCodec"
 import { commandsAtom } from "../state/commandsAtom"
 import { pathsAtom } from "../state/pathsAtom"
 import { stepsAtom } from "../state/stepsAtom"
+import { variablesAtom } from "../state/variablesAtom"
 
 const looksLikeYaml = (text: string): boolean => {
   const trimmed = text.trim()
@@ -13,7 +14,9 @@ const looksLikeYaml = (text: string): boolean => {
 
 export const useAutoClipboardLoad = () => {
   const setSteps = useSetAtom(stepsAtom)
-  const setPaths = useSetAtom(pathsAtom)
+  // Write to variablesAtom so non-path variable types survive an auto-load
+  // (post-worker-35).
+  const setVariables = useSetAtom(variablesAtom)
   const currentPaths = useAtomValue(pathsAtom)
   const commands = useAtomValue(commandsAtom)
 
@@ -33,10 +36,10 @@ export const useAutoClipboardLoad = () => {
         currentPaths,
       )
       setSteps(result.steps)
-      setPaths(result.paths)
+      setVariables(result.paths)
       return true
     } catch {
       return false
     }
-  }, [commands, currentPaths, setSteps, setPaths])
+  }, [commands, currentPaths, setSteps, setVariables])
 }

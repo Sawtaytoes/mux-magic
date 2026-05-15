@@ -136,7 +136,8 @@ The existing `nameSpecialFeatures` code is preserved (renamed only by worker 22,
 | 26 | [nsf-edition-organizer](26_nsf-edition-organizer.md) — sibling-file co-movement, destination collision detection, `editionPlan` preview event | srv+web | Sonnet | High | ON | 25 (implicit 3a) | ready |
 | 27 | [nsf-cache-state-persistence](27_nsf-cache-state-persistence.md) — adds `paused` job state with separate `reason` field; persists jobs to disk | srv+web | Sonnet | High | ON | 25 (implicit 3a) | ready |
 | 34 | [onlyNameSpecialFeaturesDvdCompare-new-command](34_onlyNameSpecialFeaturesDvdCompare-new-command.md) — new command: non-movie variant (no TMDB needed) | srv+web+cli | Sonnet | High | ON | 22, 35, 3a | ready |
-| 35 | [dvd-compare-id-variable](35_dvd-compare-id-variable.md) — registers `dvdCompareId` as a Variable type in the new system (multi-instance, named); generic pattern for future TMDB/AniDB ID types | web | Sonnet | Medium | ON | 22, 36 (Variables foundation) | ready |
+| 35 | [dvd-compare-id-variable](35_dvd-compare-id-variable.md) — registers `dvdCompareId` as a Variable type in the new system (multi-instance, named); generic pattern for future TMDB/AniDB ID types | web | Sonnet | Medium | ON | 22, 36 (Variables foundation) | done |
+| 45 | [id-variable-types-and-field-link-awareness](45_id-variable-types-and-field-link-awareness.md) — register `tmdbId`/`anidbId`/`malId` Variable types (batch); generalize worker 35's auto-create scan to any field whose name matches a registered linkable type; make `NumberWithLookupField` link-aware so typing in the step field writes through to the linked Variable transparently | web | Sonnet | Medium-High | ON | 35, 36, 37 | ready |
 
 ---
 

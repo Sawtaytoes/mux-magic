@@ -12,6 +12,7 @@ import {
   variablesAtom,
 } from "../../state/variablesAtom"
 import type { Variable } from "../../types"
+import { DvdCompareIdInput } from "./DvdCompareIdInput"
 import { PathValueInput } from "./PathValueInput"
 
 interface VariableCardProps {
@@ -142,6 +143,14 @@ export const VariableCard = ({
         <PathValueInput
           variable={variable}
           valueInputRef={valueInputRef}
+          onValueChange={(value) =>
+            setValue({ variableId: variable.id, value })
+          }
+        />
+      )}
+      {variable.type === "dvdCompareId" && (
+        <DvdCompareIdInput
+          variable={variable as Variable<"dvdCompareId">}
           onValueChange={(value) =>
             setValue({ variableId: variable.id, value })
           }

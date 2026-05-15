@@ -4,14 +4,16 @@ import { yamlModalOpenAtom } from "../../components/YamlModal/yamlModalAtom"
 import { toYamlStr } from "../../jobs/yamlCodec"
 import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
-import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import { threadCountAtom } from "../../state/threadCountAtom"
+import { variablesAtom } from "../../state/variablesAtom"
 
 export const YamlModal = () => {
   const [isOpen, setIsOpen] = useAtom(yamlModalOpenAtom)
   const steps = useAtomValue(stepsAtom)
-  const paths = useAtomValue(pathsAtom)
+  // Read variablesAtom (all types) so the emitted YAML includes non-path
+  // variables like dvdCompareId. Reading pathsAtom would silently drop them.
+  const paths = useAtomValue(variablesAtom)
   const commands = useAtomValue(commandsAtom)
   const threadCount = useAtomValue(threadCountAtom)
   const [copyLabel, setCopyLabel] = useState("Copy")

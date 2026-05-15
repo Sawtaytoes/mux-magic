@@ -43,6 +43,7 @@ import {
 } from "../state/stepAtoms"
 import { stepsAtom } from "../state/stepsAtom"
 import { threadCountAtom } from "../state/threadCountAtom"
+import { variablesAtom } from "../state/variablesAtom"
 import type { Group, Step, StepLink } from "../types"
 import { findFirstChangedStepId } from "../utils/diffSteps"
 import { runWithViewTransition } from "../utils/runWithViewTransition"
@@ -54,11 +55,13 @@ const DEFAULT_BASE_PATH = {
   type: "path" as const,
 }
 
+// History snapshots cover every variable type so undo/redo doesn't drop
+// dvdCompareId (or future types) the way reading pathsAtom would.
 const captureSnapshot = (
   store: ReturnType<typeof useStore>,
 ): Snapshot => ({
   steps: store.get(stepsAtom),
-  paths: store.get(pathsAtom),
+  paths: store.get(variablesAtom),
   threadCount: store.get(threadCountAtom),
 })
 
@@ -67,7 +70,7 @@ const applySnapshot = (
   snapshot: Snapshot,
 ) => {
   store.set(stepsAtom, snapshot.steps)
-  store.set(pathsAtom, snapshot.paths)
+  store.set(variablesAtom, snapshot.paths)
   store.set(threadCountAtom, snapshot.threadCount)
 }
 
@@ -291,7 +294,9 @@ export const useBuilderActions = () => {
   const copyYaml = useCallback(async () => {
     const yaml = toYamlStr(
       store.get(stepsAtom),
-      store.get(pathsAtom),
+      // All variables (path + dvdCompareId + future types); pathsAtom would
+      // silently drop non-path types from the emitted YAML.
+      store.get(variablesAtom),
       store.get(commandsAtom),
       store.get(threadCountAtom),
     )
@@ -302,7 +307,7 @@ export const useBuilderActions = () => {
     if (store.get(runningAtom)) return
     const yaml = toYamlStr(
       store.get(stepsAtom),
-      store.get(pathsAtom),
+      store.get(variablesAtom),
       store.get(commandsAtom),
       store.get(threadCountAtom),
     )
@@ -359,7 +364,8 @@ export const useBuilderActions = () => {
   const copyStepYaml = useCallback(
     async (stepId: string) => {
       const allItems = store.get(stepsAtom)
-      const paths = store.get(pathsAtom)
+      // All variable types; see copyYaml above for the rationale.
+      const paths = store.get(variablesAtom)
       const commands = store.get(commandsAtom)
 
       // Walk top-level steps and group children to find the step.
@@ -388,7 +394,7 @@ export const useBuilderActions = () => {
   const copyGroupYaml = useCallback(
     async (groupId: string) => {
       const allItems = store.get(stepsAtom)
-      const paths = store.get(pathsAtom)
+      const paths = store.get(variablesAtom)
       const commands = store.get(commandsAtom)
 
       const foundGroup = allItems.find(
@@ -578,7 +584,7 @@ export const useBuilderActions = () => {
       if (store.get(runningAtom)) return
 
       const allItems = store.get(stepsAtom)
-      const paths = store.get(pathsAtom)
+      const paths = store.get(variablesAtom)
       const commands = store.get(commandsAtom)
 
       const foundGroup = allItems.find(

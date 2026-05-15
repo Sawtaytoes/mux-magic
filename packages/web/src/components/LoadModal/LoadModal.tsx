@@ -10,6 +10,7 @@ import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import { threadCountAtom } from "../../state/threadCountAtom"
+import { variablesAtom } from "../../state/variablesAtom"
 
 export const LoadModal = () => {
   const [isOpen, setIsOpen] = useAtom(loadModalOpenAtom)
@@ -17,7 +18,10 @@ export const LoadModal = () => {
     loadModalAutoPastingAtom,
   )
   const setSteps = useSetAtom(stepsAtom)
-  const setPaths = useSetAtom(pathsAtom)
+  // Write to variablesAtom (not pathsAtom): result.paths can include any
+  // variable type (path, dvdCompareId, …). Writing through pathsAtom would
+  // drop non-path types on every YAML load.
+  const setVariables = useSetAtom(variablesAtom)
   const setThreadCount = useSetAtom(threadCountAtom)
   const currentPaths = useAtomValue(pathsAtom)
   const commands = useAtomValue(commandsAtom)
@@ -41,7 +45,7 @@ export const LoadModal = () => {
           currentPaths,
         )
         setSteps(result.steps)
-        setPaths(result.paths)
+        setVariables(result.paths)
         setThreadCount(result.threadCount)
         setIsOpen(false)
         return true
@@ -60,7 +64,7 @@ export const LoadModal = () => {
       commands,
       currentPaths,
       setSteps,
-      setPaths,
+      setVariables,
       setThreadCount,
       setIsOpen,
     ],

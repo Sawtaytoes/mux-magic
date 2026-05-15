@@ -1,9 +1,7 @@
 import { useAtomValue } from "jotai"
 import { variablesAtom } from "../../state/variablesAtom"
 import type { VariableType } from "../../types"
-import { getVariableTypeDefinition } from "../VariableCard/registry"
-
-const AVAILABLE_TYPES: VariableType[] = ["path"]
+import { listVariableTypes } from "../VariableCard/registry"
 
 export const TypePicker = ({
   onPick,
@@ -14,16 +12,16 @@ export const TypePicker = ({
 }) => {
   const variables = useAtomValue(variablesAtom)
 
-  const availableTypes = AVAILABLE_TYPES.filter((type) => {
-    const definition = getVariableTypeDefinition(type)
-    if (!definition) return false
-    if (definition.cardinality === "singleton") {
-      return !variables.some(
-        (variable) => variable.type === type,
-      )
-    }
-    return true
-  })
+  const availableTypes = listVariableTypes().filter(
+    (definition) => {
+      if (definition.cardinality === "singleton") {
+        return variables.every(
+          (variable) => variable.type !== definition.type,
+        )
+      }
+      return true
+    },
+  )
 
   return (
     <div
@@ -34,19 +32,16 @@ export const TypePicker = ({
       <p className="text-xs text-slate-400 mb-1">
         Choose a variable type:
       </p>
-      {availableTypes.map((type) => {
-        const definition = getVariableTypeDefinition(type)
-        return (
-          <button
-            key={type}
-            type="button"
-            onClick={() => onPick(type)}
-            className="text-xs text-left px-3 py-1.5 rounded hover:bg-slate-700 text-slate-200"
-          >
-            {definition?.label ?? type}
-          </button>
-        )
-      })}
+      {availableTypes.map((definition) => (
+        <button
+          key={definition.type}
+          type="button"
+          onClick={() => onPick(definition.type)}
+          className="text-xs text-left px-3 py-1.5 rounded hover:bg-slate-700 text-slate-200"
+        >
+          {definition.label}
+        </button>
+      ))}
       {availableTypes.length === 0 && (
         <p className="text-xs text-slate-500 px-3 py-1.5">
           All variable types are already added.

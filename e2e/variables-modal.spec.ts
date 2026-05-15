@@ -85,6 +85,26 @@ test.describe("Edit Variables modal", () => {
     ).toBeVisible()
   })
 
+  test("Add Variable → DVD Compare ID creates a dvdCompareId variable", async ({
+    page,
+  }) => {
+    await openVariablesModal(page)
+    const dialog = page.getByRole("dialog")
+    await dialog
+      .getByRole("button", { name: /add variable/i })
+      .click()
+    await dialog
+      .getByRole("button", { name: /dvd compare id/i })
+      .click()
+    await expect(
+      dialog.getByText("dvdCompareId variable"),
+    ).toBeVisible()
+    // No folder browse button: this isn't a path variable.
+    await expect(
+      dialog.getByTitle(/browse|pick a folder/i),
+    ).toHaveCount(0)
+  })
+
   test("sequence list no longer renders path variable cards inline", async ({
     page,
   }) => {
@@ -199,6 +219,85 @@ test.describe("Variable YAML round-trip", () => {
       page
         .getByRole("dialog")
         .locator("input[value='Media Root']"),
+    ).toBeVisible()
+  })
+
+  test("dvdCompareId variable survives YAML copy-reload", async ({
+    page,
+  }) => {
+    // Create a dvdCompareId variable via the modal.
+    await openVariablesModal(page)
+    const dialog = page.getByRole("dialog")
+    await dialog
+      .getByRole("button", { name: /add variable/i })
+      .click()
+    await dialog
+      .getByRole("button", { name: /dvd compare id/i })
+      .click()
+
+    // Label + value so toYamlStr emits the variable.
+    const labelInput = dialog.getByRole("textbox").first()
+    await labelInput.fill("Spider-Man 2002")
+    const valueInput = dialog.getByPlaceholder(
+      /spider-man-2002 or https/i,
+    )
+    await valueInput.fill("spider-man-2002")
+
+    await dialog
+      .getByRole("button", { name: /close/i })
+      .click()
+    await expect(
+      page.getByRole("dialog", { name: /edit variables/i }),
+    ).toBeHidden()
+
+    // Copy YAML.
+    await page
+      .getByRole("button", { name: "Sequence actions" })
+      .click()
+    await page
+      .getByRole("button", { name: "View YAML" })
+      .click()
+    const yamlModal = page.locator("#yaml-modal")
+    await expect(yamlModal).toBeVisible()
+    const yamlText = await yamlModal
+      .locator("#yaml-out")
+      .innerText()
+    await page.keyboard.press("Escape")
+
+    expect(yamlText).toContain("Spider-Man 2002")
+    expect(yamlText).toContain("dvdCompareId")
+
+    // Reload via LoadModal paste.
+    await page
+      .getByRole("button", { name: "Sequence actions" })
+      .click()
+    await page.locator("#load-btn").click()
+    await page.evaluate((text: string) => {
+      const dt = new DataTransfer()
+      dt.setData("text/plain", text)
+      document.dispatchEvent(
+        new ClipboardEvent("paste", {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: dt,
+        }),
+      )
+    }, yamlText)
+    await expect(
+      page.getByText(/Paste your saved sequence YAML/),
+    ).toBeHidden()
+
+    // Variable survives reload — both label and type badge are present.
+    await openVariablesModal(page)
+    await expect(
+      page
+        .getByRole("dialog")
+        .locator("input[value='Spider-Man 2002']"),
+    ).toBeVisible()
+    await expect(
+      page
+        .getByRole("dialog")
+        .getByText("dvdCompareId variable"),
     ).toBeVisible()
   })
 })

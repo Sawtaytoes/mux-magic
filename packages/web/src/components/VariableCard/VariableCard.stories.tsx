@@ -68,3 +68,57 @@ export const EmptyValue: Story = {
     isFirst: false,
   },
 }
+
+// ─── dvdCompareId variant (worker 35) ────────────────────────────────────────
+
+const dvdCompareIdSlug: Variable = {
+  id: "dvdCompareIdVariable_xyz",
+  label: "Spider-Man 2002",
+  value: "spider-man-2002",
+  type: "dvdCompareId",
+}
+
+export const DvdCompareIdSlug: Story = {
+  decorators: [withStore([dvdCompareIdSlug])],
+  args: { variable: dvdCompareIdSlug, isFirst: true },
+}
+
+export const DvdCompareIdNumeric: Story = {
+  decorators: [
+    withStore([{ ...dvdCompareIdSlug, value: "74759" }]),
+  ],
+  args: {
+    variable: { ...dvdCompareIdSlug, value: "74759" },
+    isFirst: true,
+  },
+}
+
+export const DvdCompareIdUrl: Story = {
+  decorators: [
+    withStore([
+      {
+        ...dvdCompareIdSlug,
+        value:
+          "https://dvdcompare.net/comparisons/film.php?fid=74759",
+      },
+    ]),
+  ],
+  args: {
+    variable: {
+      ...dvdCompareIdSlug,
+      value:
+        "https://dvdcompare.net/comparisons/film.php?fid=74759",
+    },
+    isFirst: true,
+  },
+}
+
+export const DvdCompareIdEmpty: Story = {
+  decorators: [
+    withStore([{ ...dvdCompareIdSlug, value: "" }]),
+  ],
+  args: {
+    variable: { ...dvdCompareIdSlug, value: "" },
+    isFirst: false,
+  },
+}

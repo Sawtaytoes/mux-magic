@@ -106,4 +106,53 @@ describe("VariableCard", () => {
       screen.getByText("path variable"),
     ).toBeInTheDocument()
   })
+
+  test("renders a dvdCompareId value input when type is dvdCompareId", () => {
+    const variable: Variable = {
+      id: "dvdCompareIdVariable_abc",
+      label: "Spider-Man 2002",
+      value: "spider-man-2002",
+      type: "dvdCompareId",
+    }
+    renderCard(variable)
+    expect(
+      screen.getByDisplayValue("spider-man-2002"),
+    ).toBeVisible()
+    expect(
+      screen.getByText("dvdCompareId variable"),
+    ).toBeVisible()
+  })
+
+  test("the dvdCompareId input reflects the variable's atom value", () => {
+    // Data binding (atom → input) only. Typing into a Jotai-backed
+    // controlled input via user-event races vitest-browser's keystroke
+    // timing; the end-to-end user flow (type → atom update → YAML round-
+    // trip) is covered in e2e/variables-modal.spec.ts under "dvdCompareId
+    // variable survives YAML copy-reload". See AGENTS.md "Test interaction
+    // conventions" for the documented constraint.
+    const variable: Variable = {
+      id: "dvdCompareIdVariable_abc",
+      label: "Spider-Man 2002",
+      value: "74759",
+      type: "dvdCompareId",
+    }
+    renderCard(variable)
+    const valueInput = screen.getByPlaceholderText(
+      /spider-man-2002 or/i,
+    )
+    expect(valueInput).toHaveValue("74759")
+  })
+
+  test("does not show the folder browse button for dvdCompareId variables", () => {
+    const variable: Variable = {
+      id: "dvdCompareIdVariable_abc",
+      label: "Spider-Man 2002",
+      value: "",
+      type: "dvdCompareId",
+    }
+    renderCard(variable)
+    expect(
+      screen.queryByTitle(/browse|pick a folder/i),
+    ).toBeNull()
+  })
 })

@@ -3,7 +3,7 @@
 // Callers reading pathsAtom continue to work; migrate writes to variablesAtom over time.
 
 import { atom } from "jotai"
-import type { Variable } from "../types"
+import type { PathVariable } from "../types"
 import {
   cancelVariableDeleteAtom,
   confirmVariableDeleteAtom,
@@ -19,19 +19,28 @@ export { variablesAtom }
 // merge back into variablesAtom (replacing path variables, preserving others).
 // This keeps all existing callers — store.set(pathsAtom, [...]) and
 // useSetAtom(pathsAtom) — working without modification.
+// The filters narrow to `PathVariable` via type predicates so downstream
+// consumers (LinkPicker, runAtoms, yamlCodec) keep their existing
+// `PathVariable[]` signatures. Worker 35 added the second variable type
+// (`dvdCompareId`); without these predicates, TS widens to the full union
+// and every path-only consumer would need a filter at the call site.
 export const pathsAtom = atom(
   (get) =>
     get(variablesAtom).filter(
-      (variable) => variable.type === "path",
+      (variable): variable is PathVariable =>
+        variable.type === "path",
     ),
   (
     get,
     set,
-    update: Variable[] | ((prev: Variable[]) => Variable[]),
+    update:
+      | PathVariable[]
+      | ((prev: PathVariable[]) => PathVariable[]),
   ) => {
     const current = get(variablesAtom)
     const prevPaths = current.filter(
-      (variable) => variable.type === "path",
+      (variable): variable is PathVariable =>
+        variable.type === "path",
     )
     const newPaths = (
       typeof update === "function"
