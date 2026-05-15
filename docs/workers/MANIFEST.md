@@ -167,6 +167,7 @@ The existing `nameSpecialFeatures` code is preserved (renamed only by worker 22,
 | 31 | `duplicate-manga-detection` | srv | Sonnet | Medium | ON | 1d | planned |
 | 3f | `command-search-tags` | web | Haiku | Low | OFF | 22 | planned |
 | 42 | [foreach-folder-bulk](42_foreach-folder-bulk.md) — new `forEachFolder` group kind iterates child steps over each subfolder of a parent dir; central `<parentPath>/.mux-magic.yaml` registry supplies per-folder `dvdCompareId` so NSF runs without prompting; pre-flight consistency check halts on registry/disk drift; sub-jobs `paused` (worker 27) or `skipped` with `needs-attention` on interactive input; review queue page resolves them. Also collapses `InsertDivider` to a three-control layout (Step, Group ▾ dropdown, Paste). | srv+web | Sonnet | High | ON | 27, 35, 36, 25 (soft) | ready |
+| 43 | [log-sequence-caller-info](43_log-sequence-caller-info.md) — capture caller identity (IP, reverse-DNS hostname, `Origin`, `Referer`, `User-Agent`) at `/sequences/run` dispatch; persist as a structured `callerInfo` field on the umbrella sequence Job and emit as the first log line. Helper `getCallerInfo(context)` + bounded async `resolveCallerHostname`. Renders a "Dispatched by" row in `JobCard` with a full-details disclosure. | srv+web | Sonnet | Medium | ON | 01, 41 (soft) | ready |
 
 ---
 

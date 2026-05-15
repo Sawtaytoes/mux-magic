@@ -111,7 +111,7 @@ No intermediate master merges.
 | 2 | CLI package extraction | 20 → 21 | No |
 | 3 | Name Special Features overhaul | 22–27 + 34, 35 (8 workers) | No |
 | 4 | Server infrastructure + per-file pipelining | 41, 29, 2a, 2b, 2c, 2d + 38 + 3b + 3c + 3e + 40 (11 workers; original `28` slot moved to a Phase 1B cleanup, structured-logging relocated to `41`) | No |
-| 5 | HA + advanced features | 2e–32 | No |
+| 5 | HA + advanced features | 2e–32 + 42, 43 | No |
 | 6 | Final consolidation | 33 | **YES** |
 
 ---
@@ -237,6 +237,8 @@ No intermediate master merges.
         │   30 gpu-aspect-ratio-multi-gpu        │       │
         │   31 duplicate-manga-detection         │       │
         │   32 command-search-tags               │       │
+        │   42 foreach-folder-bulk               │       │
+        │   43 log-sequence-caller-info          │       │
         └─────────────────┬──────────────────────┘       │
                           │                              │
                           ▼                              │
