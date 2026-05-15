@@ -1,7 +1,25 @@
 import { atom } from "jotai"
-import { isGroup } from "../jobs/sequenceUtils"
+import {
+  collectStepAndGroupIds,
+  isGroup,
+} from "../jobs/sequenceUtils"
 import type { SequenceItem, Step, StepLink } from "../types"
 import { stepCounterAtom, stepsAtom } from "./stepsAtom"
+
+// Picks the next id of the form `${prefix}${n}` that doesn't collide
+// with any existing id. Starts from `counter + 1` and walks forward.
+// Returns both the id and the suffix used so callers can advance
+// stepCounterAtom to match (otherwise the next insert would search
+// over the same gap).
+const nextNonCollidingStepId = (
+  taken: Set<string>,
+  prefix: string,
+  counter: number,
+): { id: string; counter: number } => {
+  let n = counter + 1
+  while (taken.has(`${prefix}${n}`)) n++
+  return { id: `${prefix}${n}`, counter: n }
+}
 
 // ─── Step CRUD ────────────────────────────────────────────────────────────────
 // Atoms that mutate individual steps. A step can live at the top level
@@ -137,8 +155,14 @@ export const insertStepAtom = atom(
     args: { index: number; parentGroupId?: string | null },
   ) => {
     const counter = get(stepCounterAtom)
+    const taken = collectStepAndGroupIds(get(stepsAtom))
+    const next = nextNonCollidingStepId(
+      taken,
+      "step",
+      counter,
+    )
     const newStep: Step = {
-      id: `step${counter + 1}`,
+      id: next.id,
       alias: "",
       command: "",
       params: {},
@@ -147,7 +171,7 @@ export const insertStepAtom = atom(
       error: null,
       isCollapsed: false,
     }
-    set(stepCounterAtom, counter + 1)
+    set(stepCounterAtom, next.counter)
     set(stepsAtom, (items) => {
       if (args.parentGroupId) {
         return items.map((item) => {
@@ -173,8 +197,14 @@ export const addStepToGroupAtom = atom(
   null,
   (get, set, groupId: string) => {
     const counter = get(stepCounterAtom)
+    const taken = collectStepAndGroupIds(get(stepsAtom))
+    const next = nextNonCollidingStepId(
+      taken,
+      "step_",
+      counter,
+    )
     const newStep: Step = {
-      id: `step_${counter + 1}`,
+      id: next.id,
       alias: "",
       command: "",
       params: {},
@@ -183,7 +213,7 @@ export const addStepToGroupAtom = atom(
       error: null,
       isCollapsed: false,
     }
-    set(stepCounterAtom, counter + 1)
+    set(stepCounterAtom, next.counter)
     set(stepsAtom, (items) =>
       items.map((item) => {
         if (!isGroup(item) || item.id !== groupId)

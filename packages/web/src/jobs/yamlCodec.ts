@@ -444,7 +444,7 @@ export const loadYamlFromText = (
   text: string,
   commands: Commands,
   currentPaths: PathVariable[],
-  _currentStepCounter: number,
+  currentStepCounter: number,
   existingIds?: Set<string>,
 ): LoadYamlResult => {
   const data = load(text)
@@ -511,7 +511,10 @@ export const loadYamlFromText = (
   const context: LoadContext = {
     commands,
     currentPaths: paths,
-    currentStepCounter: 0,
+    // Honor the caller's counter so paste/auto-load advance from
+    // wherever the builder is, instead of resetting to 0 and
+    // emitting ids that collide with pre-existing steps.
+    currentStepCounter,
     seenIds: new Set<string>(existingIds),
     warnedLegacyFields: new Set<string>(),
   }

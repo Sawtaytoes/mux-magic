@@ -1,5 +1,8 @@
 import { atom } from "jotai"
-import { isGroup } from "../jobs/sequenceUtils"
+import {
+  collectStepAndGroupIds,
+  isGroup,
+} from "../jobs/sequenceUtils"
 import type { Group, Step } from "../types"
 import { stepCounterAtom, stepsAtom } from "./stepsAtom"
 
@@ -97,8 +100,11 @@ export const insertGroupAtom = atom(
     args: { index: number; isParallel: boolean },
   ) => {
     const counter = get(stepCounterAtom)
+    const taken = collectStepAndGroupIds(get(stepsAtom))
+    let nextCounter = counter + 1
+    while (taken.has(`step${nextCounter}`)) nextCounter++
     const newStep: Step = {
-      id: `step${counter + 1}`,
+      id: `step${nextCounter}`,
       alias: "",
       command: "",
       params: {},
@@ -107,15 +113,23 @@ export const insertGroupAtom = atom(
       error: null,
       isCollapsed: false,
     }
+    let groupId = `group_${Math.random()
+      .toString(36)
+      .slice(2, 8)}`
+    while (taken.has(groupId)) {
+      groupId = `group_${Math.random()
+        .toString(36)
+        .slice(2, 8)}`
+    }
     const newGroup: Group = {
       kind: "group",
-      id: `group_${Math.random().toString(36).slice(2, 8)}`,
+      id: groupId,
       label: "",
       isParallel: args.isParallel,
       isCollapsed: false,
       steps: [newStep],
     }
-    set(stepCounterAtom, counter + 1)
+    set(stepCounterAtom, nextCounter)
     set(stepsAtom, (items) => {
       const arr = [...items]
       arr.splice(args.index, 0, newGroup)
