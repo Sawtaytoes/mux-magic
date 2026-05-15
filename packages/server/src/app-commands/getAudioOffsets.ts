@@ -12,7 +12,7 @@ import { withFileProgress } from "../tools/progressEmitter.js"
 
 type GetAudioOffsetsRequiredProps = {
   destinationFilesPath: string
-  sourceFilesPath: string
+  sourcePath: string
 }
 
 type GetAudioOffsetsOptionalProps = {
@@ -31,10 +31,10 @@ export const getAudioOffsetsDefaultProps = {
 export const getAudioOffsets = ({
   destinationFilesPath,
   outputFolderName = getAudioOffsetsDefaultProps.outputFolderName,
-  sourceFilesPath,
+  sourcePath,
 }: GetAudioOffsetsProps) =>
   getFiles({
-    sourcePath: sourceFilesPath,
+    sourcePath,
   }).pipe(
     toArray(),
     concatMap((sourceFileInfos) =>

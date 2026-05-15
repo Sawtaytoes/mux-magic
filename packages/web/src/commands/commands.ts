@@ -64,9 +64,9 @@ export const COMMANDS: Commands = {
       tag: "File Operations",
       outputFolderName: null,
       fields: [
-        field("filePath", {
+        field("sourcePath", {
           type: "path",
-          label: "Directory Path",
+          label: "Source Path",
         }),
       ],
     }
@@ -139,9 +139,9 @@ export const COMMANDS: Commands = {
       tag: "File Operations",
       outputFolderName: "REPLACED-ATTACHMENTS",
       fields: [
-        field("sourceFilesPath", {
+        field("sourcePath", {
           type: "path",
-          label: "Source Files Path",
+          label: "Source Path",
         }),
         field("destinationFilesPath", {
           type: "path",
@@ -206,9 +206,9 @@ export const COMMANDS: Commands = {
       tag: "File Operations",
       outputFolderName: null,
       fields: [
-        field("folderPath", {
+        field("sourcePath", {
           type: "path",
-          label: "Folder to Delete",
+          label: "Source Path",
         }),
         field("confirm", {
           type: "boolean",
@@ -295,9 +295,9 @@ export const COMMANDS: Commands = {
       tag: "Audio Operations",
       outputFolderName: "AUDIO-OFFSETS",
       fields: [
-        field("sourceFilesPath", {
+        field("sourcePath", {
           type: "path",
-          label: "Source Files Path",
+          label: "Source Path",
         }),
         field("destinationFilesPath", {
           type: "path",
@@ -438,9 +438,9 @@ export const COMMANDS: Commands = {
       tag: "Track Operations",
       outputFolderName: "SUBTITLED",
       fields: [
-        field("mediaFilesPath", {
+        field("sourcePath", {
           type: "path",
-          label: "Media Files Path",
+          label: "Source Path",
         }),
         field("subtitlesPath", {
           type: "path",
@@ -506,9 +506,9 @@ export const COMMANDS: Commands = {
       tag: "Track Operations",
       outputFolderName: "REPLACED-TRACKS",
       fields: [
-        field("sourceFilesPath", {
+        field("sourcePath", {
           type: "path",
-          label: "Source Files Path",
+          label: "Source Path",
         }),
         field("destinationFilesPath", {
           type: "path",

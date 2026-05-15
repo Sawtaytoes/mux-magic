@@ -191,7 +191,7 @@ export const commandConfigs: Record<
   CommandConfig
 > = {
   makeDirectory: {
-    getObservable: (body) => makeDirectory(body.filePath),
+    getObservable: (body) => makeDirectory(body.sourcePath),
     schema: schemas.makeDirectoryRequestSchema,
     summary:
       "Create a directory (or the parent directory of a file path)",
@@ -289,7 +289,7 @@ export const commandConfigs: Record<
     getObservable: (body) =>
       getAudioOffsets({
         destinationFilesPath: body.destinationFilesPath,
-        sourceFilesPath: body.sourceFilesPath,
+        sourcePath: body.sourcePath,
       }),
     outputFolderName:
       getAudioOffsetsDefaultProps.outputFolderName,
@@ -401,7 +401,7 @@ export const commandConfigs: Record<
     getObservable: (body) =>
       deleteFolder({
         isConfirmed: body.confirm,
-        folderPath: body.folderPath,
+        sourcePath: body.sourcePath,
       }),
     schema: schemas.deleteFolderRequestSchema,
     summary:
@@ -446,8 +446,8 @@ export const commandConfigs: Record<
         globalOffsetInMilliseconds: body.globalOffset,
         hasChapterSyncOffset: body.hasChapterSyncOffset,
         hasChapters: body.includeChapters,
-        mediaFilesPath: body.mediaFilesPath,
         offsetsInMilliseconds: body.offsets,
+        sourcePath: body.sourcePath,
         subtitlesPath: body.subtitlesPath,
       }),
     outputFolderName:
@@ -477,11 +477,11 @@ export const commandConfigs: Record<
   deleteCopiedOriginals: {
     getObservable: (body) =>
       deleteCopiedOriginals({
-        sourcePaths: body.sourcePaths,
+        pathsToDelete: body.pathsToDelete,
       }),
     schema: schemas.deleteCopiedOriginalsRequestSchema,
     summary:
-      "Delete the original source files that were copied by a prior copyFiles or moveFiles step. Receives its sourcePaths list via linkedTo from the prior step's copiedSourcePaths output.",
+      "Delete the original source files that were copied by a prior copyFiles or moveFiles step. Receives its pathsToDelete list via linkedTo from the prior step's copiedSourcePaths output.",
     tags: ["File Operations"],
   },
   nameAnimeEpisodes: {
@@ -598,7 +598,7 @@ export const commandConfigs: Record<
     getObservable: (body) =>
       replaceAttachments({
         destinationFilesPath: body.destinationFilesPath,
-        sourceFilesPath: body.sourceFilesPath,
+        sourcePath: body.sourcePath,
       }),
     outputFolderName:
       replaceAttachmentsDefaultProps.outputFolderName,
@@ -627,7 +627,7 @@ export const commandConfigs: Record<
         hasChapterSyncOffset: body.hasChapterSyncOffset,
         hasChapters: body.includeChapters,
         offsets: body.offsets,
-        sourceFilesPath: body.sourceFilesPath,
+        sourcePath: body.sourcePath,
         subtitlesLanguages: body.subtitlesLanguages,
         videoLanguages: body.videoLanguages,
       }),

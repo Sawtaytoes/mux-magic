@@ -15,7 +15,7 @@ const builder = (yargs: Argv) =>
       '$0 getAudioOffsets "G:\\Anime\\Code Geass Good Audio" "G:\\Anime\\Code Geass Bad Audio"',
       "For all media files that have matching names (minus the extension), it calculates and prints the audio offset.",
     )
-    .positional("sourceFilesPath", {
+    .positional("sourcePath", {
       demandOption: true,
       describe:
         "Directory with containing media files with tracks you want to copy.",
@@ -35,7 +35,7 @@ export const getAudioOffsetsCommand: CommandModule<
   Args
 > = {
   command:
-    "getAudioOffsets <sourceFilesPath> <destinationFilesPath>",
+    "getAudioOffsets <sourcePath> <destinationFilesPath>",
   describe:
     "Get the audio offset of media files in two directories where files share the same name.",
 
@@ -47,7 +47,7 @@ export const getAudioOffsetsCommand: CommandModule<
   handler: (argv) => {
     getAudioOffsets({
       destinationFilesPath: argv.destinationFilesPath,
-      sourceFilesPath: argv.sourceFilesPath,
+      sourcePath: argv.sourcePath,
     }).subscribe(subscribeCli())
   },
 }

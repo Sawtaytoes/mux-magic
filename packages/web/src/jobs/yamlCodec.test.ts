@@ -43,9 +43,9 @@ const MAKE_DIR_COMMAND: Commands = {
   makeDirectory: {
     fields: [
       {
-        name: "filePath",
+        name: "sourcePath",
         type: "path",
-        label: "Directory Path",
+        label: "Source Path",
         isRequired: true,
       },
     ],
@@ -95,7 +95,7 @@ describe("toYamlStr — link resolution", () => {
   test("string link becomes @<id> in serialized params", () => {
     const step = makeStep({
       command: "makeDirectory",
-      links: { filePath: "basePath" },
+      links: { sourcePath: "basePath" },
     })
     const paths: PathVariable[] = [BASE_PATH]
 
@@ -105,14 +105,14 @@ describe("toYamlStr — link resolution", () => {
       MAKE_DIR_COMMAND,
     )
 
-    expect(result).toContain("filePath: '@basePath'")
+    expect(result).toContain("sourcePath: '@basePath'")
   })
 
   test("object link is serialized as linkedTo/output object", () => {
     const step = makeStep({
       command: "makeDirectory",
       links: {
-        filePath: {
+        sourcePath: {
           linkedTo: "prev-step",
           output: "folder",
         },
@@ -224,7 +224,7 @@ describe("toYamlStr — paths block", () => {
   test("path variable with value appears in output", () => {
     const step = makeStep({
       command: "makeDirectory",
-      links: { filePath: "basePath" },
+      links: { sourcePath: "basePath" },
     })
 
     const result = toYamlStr(
@@ -676,5 +676,257 @@ steps: []
     expect(result.paths).toHaveLength(1)
     expect(result.paths[0].value).toBe("/new")
     expect(result.paths[0].label).toBe("New Label")
+  })
+})
+
+// ─── Legacy field renames (worker 24 — source path abstraction) ───────────────
+// User-saved YAML templates still use the pre-rename field names. The codec
+// remaps known legacy field names to their canonical replacement at read
+// time and emits a one-time per-rename console.warn so the user knows their
+// template is out-of-date. The write path always uses the canonical name.
+
+describe("legacy field renames — read-time remapping", () => {
+  const LEGACY_RENAME_COMMANDS: Commands = {
+    getAudioOffsets: {
+      fields: [
+        {
+          name: "sourcePath",
+          type: "path",
+          isRequired: true,
+          isLinkable: true,
+        },
+        {
+          name: "destinationFilesPath",
+          type: "path",
+          isRequired: true,
+          isLinkable: true,
+        },
+      ],
+    },
+    mergeTracks: {
+      fields: [
+        {
+          name: "sourcePath",
+          type: "path",
+          isRequired: true,
+          isLinkable: true,
+        },
+        {
+          name: "subtitlesPath",
+          type: "path",
+          isRequired: true,
+          isLinkable: true,
+        },
+      ],
+    },
+    replaceAttachments: {
+      fields: [
+        {
+          name: "sourcePath",
+          type: "path",
+          isRequired: true,
+          isLinkable: true,
+        },
+        {
+          name: "destinationFilesPath",
+          type: "path",
+          isRequired: true,
+          isLinkable: true,
+        },
+      ],
+    },
+    replaceTracks: {
+      fields: [
+        {
+          name: "sourcePath",
+          type: "path",
+          isRequired: true,
+          isLinkable: true,
+        },
+        {
+          name: "destinationFilesPath",
+          type: "path",
+          isRequired: true,
+          isLinkable: true,
+        },
+      ],
+    },
+    deleteFolder: {
+      fields: [
+        {
+          name: "sourcePath",
+          type: "path",
+          isRequired: true,
+          isLinkable: true,
+        },
+      ],
+    },
+    makeDirectory: {
+      fields: [
+        {
+          name: "sourcePath",
+          type: "path",
+          isRequired: true,
+          isLinkable: true,
+        },
+      ],
+    },
+    deleteCopiedOriginals: {
+      fields: [
+        {
+          name: "pathsToDelete",
+          type: "json",
+          isRequired: true,
+        },
+      ],
+    },
+  }
+
+  const loadWithRenameCommands = (text: string) =>
+    loadYamlFromText(
+      text,
+      LEGACY_RENAME_COMMANDS,
+      BASE_PATHS,
+      0,
+    )
+
+  test.each([
+    ["getAudioOffsets", "sourceFilesPath"],
+    ["mergeTracks", "mediaFilesPath"],
+    ["replaceAttachments", "sourceFilesPath"],
+    ["replaceTracks", "sourceFilesPath"],
+    ["deleteFolder", "folderPath"],
+    ["makeDirectory", "filePath"],
+  ])("legacy %s.%s in params remaps to sourcePath", (command, legacyField) => {
+    const yamlText = `
+steps:
+  - command: ${command}
+    params:
+      ${legacyField}: /some/literal/path
+`
+    const result = loadWithRenameCommands(yamlText)
+    const step = result.steps[0] as Step
+    expect(step.params.sourcePath).toBe(
+      "/some/literal/path",
+    )
+    expect(step.params[legacyField]).toBeUndefined()
+  })
+
+  test.each([
+    ["getAudioOffsets", "sourceFilesPath"],
+    ["mergeTracks", "mediaFilesPath"],
+    ["replaceAttachments", "sourceFilesPath"],
+    ["replaceTracks", "sourceFilesPath"],
+    ["deleteFolder", "folderPath"],
+    ["makeDirectory", "filePath"],
+  ])("legacy %s.%s as @-link remaps to sourcePath link", (command, legacyField) => {
+    const yamlText = `
+steps:
+  - command: ${command}
+    params:
+      ${legacyField}: '@basePath'
+`
+    const result = loadWithRenameCommands(yamlText)
+    const step = result.steps[0] as Step
+    expect(step.links.sourcePath).toBe("basePath")
+    expect(step.links[legacyField]).toBeUndefined()
+  })
+
+  test("legacy deleteCopiedOriginals.sourcePaths remaps to pathsToDelete", () => {
+    const yamlText = `
+steps:
+  - command: deleteCopiedOriginals
+    params:
+      sourcePaths:
+        - /a
+        - /b
+`
+    const result = loadWithRenameCommands(yamlText)
+    const step = result.steps[0] as Step
+    expect(step.params.pathsToDelete).toEqual(["/a", "/b"])
+    expect(step.params.sourcePaths).toBeUndefined()
+  })
+
+  test("canonical new-name wins when both are present", () => {
+    const yamlText = `
+steps:
+  - command: makeDirectory
+    params:
+      sourcePath: /winner
+      filePath: /loser
+`
+    const result = loadWithRenameCommands(yamlText)
+    const step = result.steps[0] as Step
+    expect(step.params.sourcePath).toBe("/winner")
+  })
+
+  test("emits console.warn when a legacy field is remapped", () => {
+    const warnings: string[] = []
+    const originalWarn = console.warn
+    console.warn = (...args: unknown[]) => {
+      warnings.push(args.map(String).join(" "))
+    }
+    try {
+      const yamlText = `
+steps:
+  - command: makeDirectory
+    params:
+      filePath: /old/style
+`
+      loadWithRenameCommands(yamlText)
+    } finally {
+      console.warn = originalWarn
+    }
+    expect(warnings.length).toBeGreaterThan(0)
+    expect(
+      warnings.some((warning) =>
+        warning.includes("filePath"),
+      ),
+    ).toBe(true)
+    expect(
+      warnings.some((warning) =>
+        warning.includes("sourcePath"),
+      ),
+    ).toBe(true)
+  })
+})
+
+// ─── Legacy field renames — write path uses canonical names ───────────────────
+
+describe("legacy field renames — write path", () => {
+  test("toYamlStr writes sourcePath, never the legacy field name", () => {
+    const commands: Commands = {
+      mergeTracks: {
+        fields: [
+          {
+            name: "sourcePath",
+            type: "path",
+            isRequired: true,
+            isLinkable: true,
+          },
+          {
+            name: "subtitlesPath",
+            type: "path",
+            isRequired: true,
+            isLinkable: true,
+          },
+        ],
+      },
+    }
+    const step = makeStep({
+      id: "step-mt",
+      command: "mergeTracks",
+      links: {
+        sourcePath: "basePath",
+        subtitlesPath: "basePath",
+      },
+    })
+    const result = toYamlStr(
+      [step] as SequenceItem[],
+      [BASE_PATH],
+      commands,
+    )
+    expect(result).toContain("sourcePath: '@basePath'")
+    expect(result).not.toContain("mediaFilesPath")
   })
 })

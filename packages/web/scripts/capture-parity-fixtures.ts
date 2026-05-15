@@ -210,7 +210,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
     step: makeStep(
       "makeDirectory",
       {},
-      { filePath: "basePath" },
+      { sourcePath: "basePath" },
     ),
   },
   copyFiles: {
@@ -249,7 +249,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
       "replaceAttachments",
       {},
       {
-        sourceFilesPath: "basePath",
+        sourcePath: "basePath",
         destinationFilesPath: "basePath",
       },
     ),
@@ -271,7 +271,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
     step: makeStep(
       "deleteFolder",
       { confirm: true },
-      { folderPath: "basePath" },
+      { sourcePath: "basePath" },
     ),
   },
   splitChapters: {
@@ -302,7 +302,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
       "getAudioOffsets",
       {},
       {
-        sourceFilesPath: "basePath",
+        sourcePath: "basePath",
         destinationFilesPath: "basePath",
       },
     ),
@@ -362,7 +362,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
         offsets: [0, -200, 150],
       },
       {
-        mediaFilesPath: "basePath",
+        sourcePath: "basePath",
         subtitlesPath: "basePath",
       },
     ),
@@ -394,7 +394,7 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
         offsets: [0, 100],
       },
       {
-        sourceFilesPath: "basePath",
+        sourcePath: "basePath",
         destinationFilesPath: "basePath",
       },
     ),

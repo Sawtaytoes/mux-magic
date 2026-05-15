@@ -11,7 +11,7 @@
     "command": "replaceAttachments",
     "params": {},
     "links": {
-      "sourceFilesPath": "basePath",
+      "sourcePath": "basePath",
       "destinationFilesPath": "basePath"
     }
   }

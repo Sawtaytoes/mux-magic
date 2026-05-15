@@ -22,7 +22,7 @@ describe(deleteFolder.name, () => {
     const result = await lastValueFrom(
       deleteFolder({
         isConfirmed: true,
-        folderPath: "/work/TEMP/AUDIO-OFFSETS",
+        sourcePath: "/work/TEMP/AUDIO-OFFSETS",
       }),
     )
 
@@ -48,7 +48,7 @@ describe(deleteFolder.name, () => {
         firstValueFrom(
           deleteFolder({
             isConfirmed: false,
-            folderPath: "/work/TEMP/AUDIO-OFFSETS",
+            sourcePath: "/work/TEMP/AUDIO-OFFSETS",
           }).pipe(toArray()),
         ),
       ).rejects.toThrow(/confirm: true/i)
@@ -69,7 +69,7 @@ describe(deleteFolder.name, () => {
           // @ts-expect-error — deliberately calling without confirm to exercise
           // the runtime guard that protects CLI / direct callers.
           deleteFolder({
-            folderPath: "/work/TEMP/AUDIO-OFFSETS",
+            sourcePath: "/work/TEMP/AUDIO-OFFSETS",
           }).pipe(toArray()),
         ),
       ).rejects.toThrow(/confirm: true/i)

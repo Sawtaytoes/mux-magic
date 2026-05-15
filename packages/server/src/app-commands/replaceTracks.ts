@@ -25,7 +25,7 @@ type ReplaceTracksRequiredProps = {
   hasChapterSyncOffset: boolean
   hasChapters: boolean
   offsets: number[]
-  sourceFilesPath: string
+  sourcePath: string
   subtitlesLanguages: Iso6392LanguageCode[]
   videoLanguages: Iso6392LanguageCode[]
 }
@@ -51,13 +51,13 @@ export const replaceTracks = ({
   hasChapters,
   offsets,
   outputFolderName = replaceTracksDefaultProps.outputFolderName,
-  sourceFilesPath,
+  sourcePath,
   subtitlesLanguages,
   videoLanguages,
 }: ReplaceTracksProps) =>
   getFilesAtDepth({
     depth: 0,
-    sourcePath: sourceFilesPath,
+    sourcePath,
   }).pipe(
     toArray(),
     concatMap((sourceFileInfos) =>

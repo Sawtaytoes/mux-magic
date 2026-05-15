@@ -7,10 +7,10 @@ import { defer, map, type Observable } from "rxjs"
 
 export const deleteFolder = ({
   isConfirmed,
-  folderPath,
+  sourcePath,
 }: {
   isConfirmed: boolean
-  folderPath: string
+  sourcePath: string
 }): Observable<string> =>
   defer(async () => {
     // Safety guard: refuse to run unless the caller explicitly opted in.
@@ -21,8 +21,8 @@ export const deleteFolder = ({
         "deleteFolder refused — pass confirm: true (or --confirm on the CLI) to acknowledge this will recursively delete a directory.",
       )
     }
-    await rm(folderPath, { recursive: true })
-    return folderPath
+    await rm(sourcePath, { recursive: true })
+    return sourcePath
   }).pipe(
     map((path) => {
       logInfo("DELETED", path)

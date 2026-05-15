@@ -92,11 +92,34 @@ export const toYamlStr = (
 
 // ─── Loader ───────────────────────────────────────────────────────────────────
 
+// Per-command legacy field renames (worker 24 — source path abstraction).
+// Keyed as `command -> { newFieldName: oldFieldName }`. When loading a step's
+// params, if the canonical field name is missing but its legacy alias is
+// present, the value is migrated over and a one-time deprecation warning is
+// emitted per (command, legacyName) pair within the load call. The write
+// path always emits the canonical name — there is no codec setting to opt
+// out, because YAML templates round-trip through here.
+const legacyFieldRenames: Record<
+  string,
+  Record<string, string>
+> = {
+  getAudioOffsets: { sourcePath: "sourceFilesPath" },
+  mergeTracks: { sourcePath: "mediaFilesPath" },
+  replaceAttachments: { sourcePath: "sourceFilesPath" },
+  replaceTracks: { sourcePath: "sourceFilesPath" },
+  deleteFolder: { sourcePath: "folderPath" },
+  makeDirectory: { sourcePath: "filePath" },
+  deleteCopiedOriginals: {
+    pathsToDelete: "sourcePaths",
+  },
+}
+
 type LoadContext = {
   commands: Commands
   currentPaths: Variable[]
   currentStepCounter: number
   seenIds: Set<string>
+  warnedLegacyFields: Set<string>
 }
 
 // eslint-disable-next-line no-restricted-syntax -- return type of a web-only YAML parsing utility; not an API response shape
@@ -179,8 +202,36 @@ const loadStepItem = (
     | Record<string, unknown>
     | undefined
 
+  const legacyRenamesForCommand =
+    legacyFieldRenames[commandName] ?? {}
+
   for (const field of commandDefinition.fields) {
-    const value = rawParams?.[field.name]
+    const legacyName = legacyRenamesForCommand[field.name]
+    const canonicalValue = rawParams?.[field.name]
+    const legacyValue =
+      legacyName !== undefined
+        ? rawParams?.[legacyName]
+        : undefined
+    const isUsingLegacy =
+      canonicalValue === undefined &&
+      legacyValue !== undefined
+    const value = isUsingLegacy
+      ? legacyValue
+      : canonicalValue
+
+    if (isUsingLegacy && legacyName !== undefined) {
+      const warnKey = `${commandName}.${legacyName}`
+      if (!context.warnedLegacyFields.has(warnKey)) {
+        context.warnedLegacyFields.add(warnKey)
+        // Intentional console.warn — surfaces template-load deprecation to
+        // anyone watching the dev-tools console. No UI surface today; can be
+        // promoted to a structured warning channel later if needed.
+        console.warn(
+          `[mux-magic] YAML template uses deprecated field "${legacyName}" on command "${commandName}"; remapped to "${field.name}". Resave the template to silence this warning.`,
+        )
+      }
+    }
+
     if (value !== undefined) {
       if (
         typeof value === "string" &&
@@ -437,6 +488,7 @@ export const loadYamlFromText = (
     currentPaths: paths,
     currentStepCounter: 0,
     seenIds: new Set<string>(existingIds),
+    warnedLegacyFields: new Set<string>(),
   }
 
   const steps = stepsData.map((item) =>

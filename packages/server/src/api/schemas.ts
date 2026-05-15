@@ -42,7 +42,7 @@ export const jobNotFoundSchema = z
 
 // Command request schemas
 export const makeDirectoryRequestSchema = z.object({
-  filePath: z
+  sourcePath: z
     .string()
     .describe(
       "Directory path to create, or a file path whose parent directory should be created",
@@ -133,7 +133,7 @@ export const moveFilesRequestSchema = z.object({
 })
 
 export const deleteCopiedOriginalsRequestSchema = z.object({
-  sourcePaths: z
+  pathsToDelete: z
     .array(z.string())
     .describe(
       "List of file or folder paths to delete. Typically provided via linkedTo from a prior copyFiles step's copiedSourcePaths output. Is a no-op when the list is empty.",
@@ -171,7 +171,7 @@ export const copyOutSubtitlesRequestSchema =
   extractSubtitlesRequestSchema
 
 export const getAudioOffsetsRequestSchema = z.object({
-  sourceFilesPath: z
+  sourcePath: z
     .string()
     .describe(
       "Directory with media files with tracks you want to copy.",
@@ -396,7 +396,7 @@ export const deleteFilesByExtensionRequestSchema = z.object(
 )
 
 export const deleteFolderRequestSchema = z.object({
-  folderPath: z
+  sourcePath: z
     .string()
     .describe("Folder to delete (recursively)."),
   confirm: z
@@ -881,7 +881,7 @@ export const keepLanguagesRequestSchema = z.object({
 })
 
 export const mergeTracksRequestSchema = z.object({
-  mediaFilesPath: z
+  sourcePath: z
     .string()
     .describe(
       "Directory with media files that need subtitles.",
@@ -889,7 +889,7 @@ export const mergeTracksRequestSchema = z.object({
   subtitlesPath: z
     .string()
     .describe(
-      "Directory containing subdirectories with subtitle files and attachments/ that match the name of the media files in mediaFilesPath.",
+      "Directory containing subdirectories with subtitle files and attachments/ that match the name of the media files in sourcePath.",
     ),
   hasChapterSyncOffset: z
     .boolean()
@@ -1128,7 +1128,7 @@ export const reorderTracksRequestSchema = z.object({
 })
 
 export const replaceAttachmentsRequestSchema = z.object({
-  sourceFilesPath: z
+  sourcePath: z
     .string()
     .describe(
       "Directory with media files with attachments you want to copy.",
@@ -1156,7 +1156,7 @@ export const replaceFlacWithPcmAudioRequestSchema =
   })
 
 export const replaceTracksRequestSchema = z.object({
-  sourceFilesPath: z
+  sourcePath: z
     .string()
     .describe(
       "Directory with media files with tracks you want to copy.",

@@ -5,4 +5,4 @@ paths:
 steps:
   - id: step-fixture
     command: mergeTracks
-    params: {mediaFilesPath: '@basePath', subtitlesPath: '@basePath', hasChapterSyncOffset: true, globalOffset: 100, includeChapters: true, offsets: [0, -200, 150]}
+    params: {sourcePath: '@basePath', subtitlesPath: '@basePath', hasChapterSyncOffset: true, globalOffset: 100, includeChapters: true, offsets: [0, -200, 150]}

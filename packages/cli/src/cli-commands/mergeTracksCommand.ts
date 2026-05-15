@@ -18,10 +18,10 @@ const builder = (yargs: Argv) =>
     .positional("subtitlesPath", {
       demandOption: true,
       describe:
-        "Directory containing subdirectories with subtitle files and `attachments/` that match the name of the media files in `mediaFilesPath`.",
+        "Directory containing subdirectories with subtitle files and `attachments/` that match the name of the media files in `sourcePath`.",
       type: "string",
     })
-    .positional("mediaFilesPath", {
+    .positional("sourcePath", {
       demandOption: true,
       describe:
         "Directory with media files that need subtitles.",
@@ -67,7 +67,7 @@ export const mergeTracksCommand: CommandModule<
   Args
 > = {
   command:
-    "mergeTracks <subtitlesPath> <mediaFilesPath> [offsets...]",
+    "mergeTracks <subtitlesPath> <sourcePath> [offsets...]",
   describe:
     "Merge subtitles files with media files and only keep specified languages.",
 
@@ -81,7 +81,7 @@ export const mergeTracksCommand: CommandModule<
       globalOffsetInMilliseconds: argv.globalOffset,
       hasChapterSyncOffset: argv.hasChapterSyncOffset,
       hasChapters: argv.includeChapters,
-      mediaFilesPath: argv.mediaFilesPath,
+      sourcePath: argv.sourcePath,
       offsetsInMilliseconds: argv.offsets,
       subtitlesPath: argv.subtitlesPath,
     }).subscribe(subscribeCli())

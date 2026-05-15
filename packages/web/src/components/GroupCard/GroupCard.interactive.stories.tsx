@@ -81,7 +81,7 @@ const parallelGroup: Group = {
       id: "step_p1",
       alias: "Encode Video",
       command: "makeDirectory",
-      params: { filePath: "/mnt/output" },
+      params: { sourcePath: "/mnt/output" },
       links: {},
       status: null,
       error: null,

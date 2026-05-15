@@ -19,7 +19,7 @@
       "offsets": [0, 100]
     },
     "links": {
-      "sourceFilesPath": "basePath",
+      "sourcePath": "basePath",
       "destinationFilesPath": "basePath"
     }
   }

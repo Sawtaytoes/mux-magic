@@ -12,7 +12,7 @@ import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ReplaceAttachmentsRequiredProps = {
   destinationFilesPath: string
-  sourceFilesPath: string
+  sourcePath: string
 }
 
 type ReplaceAttachmentsOptionalProps = {
@@ -31,10 +31,10 @@ export const replaceAttachmentsDefaultProps = {
 export const replaceAttachments = ({
   destinationFilesPath,
   outputFolderName = replaceAttachmentsDefaultProps.outputFolderName,
-  sourceFilesPath,
+  sourcePath,
 }: ReplaceAttachmentsProps) =>
   getFiles({
-    sourcePath: sourceFilesPath,
+    sourcePath,
   }).pipe(
     toArray(),
     concatMap((mediaFiles) =>

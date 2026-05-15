@@ -15,7 +15,7 @@ const createTestStep = (
   id: "test-step-1",
   alias: "",
   command: "makeDirectory",
-  params: { filePath: "/test/path" },
+  params: { sourcePath: "/test/path" },
   links: {},
   status: null,
   error: null,
@@ -52,7 +52,7 @@ describe("PathField", () => {
 
   test("renders input with current value", () => {
     const step = createTestStep({
-      params: { filePath: "/home/user" },
+      params: { sourcePath: "/home/user" },
     })
     render(
       <Provider>
@@ -88,7 +88,7 @@ describe("PathField", () => {
 
   test("shows link button with path var label when linked to path var", () => {
     const step = createTestStep({
-      links: { filePath: "basePath" },
+      links: { sourcePath: "basePath" },
     })
     render(
       <Provider>
@@ -104,7 +104,10 @@ describe("PathField", () => {
   test("makes input readonly when linked to step output", () => {
     const step = createTestStep({
       links: {
-        filePath: { linkedTo: "step-1", output: "folder" },
+        sourcePath: {
+          linkedTo: "step-1",
+          output: "folder",
+        },
       },
     })
     render(
@@ -129,13 +132,13 @@ describe("PathField", () => {
     ])
     store.set(stepsAtom, [
       createTestStep({
-        links: { filePath: "basePath" },
+        links: { sourcePath: "basePath" },
         params: {},
       }),
     ])
 
     const step = createTestStep({
-      links: { filePath: "basePath" },
+      links: { sourcePath: "basePath" },
       params: {},
     })
     render(
@@ -153,7 +156,7 @@ describe("PathField", () => {
 
     const updatedSteps = store.get(stepsAtom)
     const updatedStep = updatedSteps[0] as Step
-    expect(updatedStep.params.filePath).toBeUndefined()
+    expect(updatedStep.params.sourcePath).toBeUndefined()
   })
 
   test("typing into unlinked PathField with no existing param creates path var and links field", async () => {
@@ -179,7 +182,7 @@ describe("PathField", () => {
 
     const updatedSteps = store.get(stepsAtom)
     const updatedStep = updatedSteps[0] as Step
-    const linkedId = updatedStep.links?.filePath
+    const linkedId = updatedStep.links?.sourcePath
     expect(typeof linkedId).toBe("string")
     expect(linkedId).toBe(updatedPaths[0].id)
   })
@@ -189,7 +192,7 @@ describe("PathField", () => {
     const store = createStore()
     store.set(stepsAtom, [
       createTestStep({
-        params: { filePath: "/existing" },
+        params: { sourcePath: "/existing" },
         links: {},
       }),
     ])
@@ -205,7 +208,7 @@ describe("PathField", () => {
 
     const updatedSteps = store.get(stepsAtom)
     const updatedStep = updatedSteps[0] as Step
-    expect(updatedStep.params.filePath).toBe(
+    expect(updatedStep.params.sourcePath).toBe(
       "/existing/extra",
     )
 
@@ -224,12 +227,12 @@ describe("PathField", () => {
     }
     const step1 = createTestStep({
       id: "step-1",
-      links: { filePath: "basePath" },
+      links: { sourcePath: "basePath" },
       params: {},
     })
     const step2 = createTestStep({
       id: "step-2",
-      links: { filePath: "basePath" },
+      links: { sourcePath: "basePath" },
       params: {},
     })
 

@@ -5,4 +5,4 @@ paths:
 steps:
   - id: step-fixture
     command: deleteFolder
-    params: {folderPath: '@basePath', confirm: true}
+    params: {sourcePath: '@basePath', confirm: true}

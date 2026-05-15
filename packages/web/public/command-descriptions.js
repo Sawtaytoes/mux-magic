@@ -13,7 +13,7 @@ window.commandDescriptions = {
   "makeDirectory": {
     "summary": "Create a directory (or the parent directory of a file path)",
     "fields": {
-      "filePath": "Directory path to create, or a file path whose parent directory should be created"
+      "sourcePath": "Directory path to create, or a file path whose parent directory should be created"
     }
   },
   "changeTrackLanguages": {
@@ -27,10 +27,14 @@ window.commandDescriptions = {
     }
   },
   "copyFiles": {
-    "summary": "Copy files from source to destination",
+    "summary": "Copy files (and optionally folders) from source to destination, with optional regex filtering and renaming",
     "fields": {
       "sourcePath": "Directory to copy files from.",
-      "destinationPath": "Directory to copy files into. Created if it does not already exist."
+      "destinationPath": "Directory to copy files into. Created if it does not already exist.",
+      "fileFilterRegex": "If set, only files whose names match this regular expression are copied.",
+      "folderFilterRegex": "If set (and includeFolders is true), only folders whose names match this regular expression are copied.",
+      "includeFolders": "When true, top-level subdirectories matching folderFilterRegex are copied as units (recursively). Files are only copied if fileFilterRegex is also set.",
+      "renameRegex": "Optional regex-based rename applied to each copied entry's name at the destination."
     }
   },
   "flattenOutput": {
@@ -68,7 +72,7 @@ window.commandDescriptions = {
   "getAudioOffsets": {
     "summary": "Calculate audio synchronization offsets between files",
     "fields": {
-      "sourceFilesPath": "Directory with media files with tracks you want to copy.",
+      "sourcePath": "Directory with media files with tracks you want to copy.",
       "destinationFilesPath": "Directory containing media files with tracks you want replaced."
     }
   },
@@ -143,7 +147,7 @@ window.commandDescriptions = {
   "deleteFolder": {
     "summary": "Recursively delete a folder (DESTRUCTIVE — requires confirm: true)",
     "fields": {
-      "folderPath": "Folder to delete (recursively).",
+      "sourcePath": "Folder to delete (recursively).",
       "confirm": "Required: pass --confirm to acknowledge this is destructive. Without it the command refuses to run."
     }
   },
@@ -172,8 +176,8 @@ window.commandDescriptions = {
   "mergeTracks": {
     "summary": "Merge subtitle tracks into media files",
     "fields": {
-      "mediaFilesPath": "Directory with media files that need subtitles.",
-      "subtitlesPath": "Directory containing subdirectories with subtitle files and attachments/ that match the name of the media files in mediaFilesPath.",
+      "sourcePath": "Directory with media files that need subtitles.",
+      "subtitlesPath": "Directory containing subdirectories with subtitle files and attachments/ that match the name of the media files in sourcePath.",
       "hasChapterSyncOffset": "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the subtitles path. Falls back to globalOffset (or per-file offsets) when no chapters.xml is found.",
       "globalOffset": "The offset in milliseconds to apply to all audio being transferred.",
       "includeChapters": "Adds chapters along with other tracks.",
@@ -181,10 +185,18 @@ window.commandDescriptions = {
     }
   },
   "moveFiles": {
-    "summary": "Move files from source to destination",
+    "summary": "Move files from source to destination, with optional regex filtering and renaming",
     "fields": {
       "sourcePath": "Directory to move files from. Deleted after all files are copied.",
-      "destinationPath": "Directory to move files into. Created if it does not already exist."
+      "destinationPath": "Directory to move files into. Created if it does not already exist.",
+      "fileFilterRegex": "If set, only files whose names match this regular expression are moved.",
+      "renameRegex": "Optional regex-based rename applied to each copied entry's name at the destination."
+    }
+  },
+  "deleteCopiedOriginals": {
+    "summary": "Delete the original source files that were copied by a prior copyFiles or moveFiles step. Receives its pathsToDelete list via linkedTo from the prior step's copiedSourcePaths output.",
+    "fields": {
+      "pathsToDelete": "List of file or folder paths to delete. Typically provided via linkedTo from a prior copyFiles step's copiedSourcePaths output. Is a no-op when the list is empty."
     }
   },
   "nameAnimeEpisodes": {
@@ -266,7 +278,7 @@ window.commandDescriptions = {
   "replaceAttachments": {
     "summary": "Replace attachments in media files",
     "fields": {
-      "sourceFilesPath": "Directory with media files with attachments you want to copy.",
+      "sourcePath": "Directory with media files with attachments you want to copy.",
       "destinationFilesPath": "Directory containing media files with attachments you want replaced."
     }
   },
@@ -280,7 +292,7 @@ window.commandDescriptions = {
   "replaceTracks": {
     "summary": "Replace media tracks in destination files",
     "fields": {
-      "sourceFilesPath": "Directory with media files with tracks you want to copy.",
+      "sourcePath": "Directory with media files with tracks you want to copy.",
       "destinationFilesPath": "Directory containing media files with tracks you want replaced.",
       "hasChapterSyncOffset": "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the source files path. Falls back to globalOffset (or per-file offsets) when false or when no chapters.xml is found.",
       "globalOffset": "The offset in milliseconds to apply to all audio being transferred.",

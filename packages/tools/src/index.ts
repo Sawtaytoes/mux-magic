@@ -54,6 +54,11 @@ export { makeDirectory } from "./makeDirectory.js"
 export { naturalSort } from "./naturalSort.js"
 export { replaceFileExtension } from "./replaceFileExtension.js"
 export {
+  SOURCE_PATH_FIELD_NAME,
+  SOURCE_PATH_LABEL,
+  type SourcePath,
+} from "./sourcePath.js"
+export {
   __resetTaskSchedulerForTests,
   initTaskScheduler,
   mergeMapOrdered,

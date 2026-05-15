@@ -5,4 +5,4 @@ paths:
 steps:
   - id: step-fixture
     command: replaceTracks
-    params: {sourceFilesPath: '@basePath', destinationFilesPath: '@basePath', hasChapterSyncOffset: true, globalOffset: 100, includeChapters: true, audioLanguages: [eng], subtitlesLanguages: [eng], videoLanguages: [eng], offsets: [0, 100]}
+    params: {sourcePath: '@basePath', destinationFilesPath: '@basePath', hasChapterSyncOffset: true, globalOffset: 100, includeChapters: true, audioLanguages: [eng], subtitlesLanguages: [eng], videoLanguages: [eng], offsets: [0, 100]}

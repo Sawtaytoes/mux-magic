@@ -11,7 +11,11 @@ import type { Step, Variable } from "../types"
 type PathVariable = Variable
 
 // Returns the canonical "source" field name for a command — the field whose
-// linked value represents the input folder the step reads from.
+// linked value represents the input folder the step reads from. Worker 24
+// codified `sourcePath` as the universal name; the fallback to the first
+// `type: "path"` field stays for commands that legitimately have no
+// `sourcePath` (e.g. `copyFiles` which uses `sourcePath` already; future
+// commands that only have a destination).
 export const mainSrcField = (
   commandName: string,
   commands: Commands,
@@ -19,16 +23,10 @@ export const mainSrcField = (
   const commandDefinition = commands[commandName]
   if (!commandDefinition) return null
 
-  const preferredFieldName = [
-    "sourcePath",
-    "sourceFilesPath",
-    "mediaFilesPath",
-  ].find((fieldName) =>
-    commandDefinition.fields.some(
-      (field) => field.name === fieldName,
-    ),
+  const hasSourcePath = commandDefinition.fields.some(
+    (field) => field.name === "sourcePath",
   )
-  if (preferredFieldName) return preferredFieldName
+  if (hasSourcePath) return "sourcePath"
 
   const pathField = commandDefinition.fields.find(
     (field) => field.type === "path",

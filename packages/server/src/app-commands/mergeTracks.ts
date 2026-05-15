@@ -39,7 +39,7 @@ import { withFileProgress } from "../tools/progressEmitter.js"
 const xmlParser = new XMLParser()
 
 type MergeTracksRequiredProps = {
-  mediaFilesPath: string
+  sourcePath: string
   subtitlesPath: string
 }
 
@@ -71,7 +71,7 @@ export const mergeTracks = ({
   globalOffsetInMilliseconds = mergeTracksDefaultProps.globalOffsetInMilliseconds,
   hasChapterSyncOffset = mergeTracksDefaultProps.hasChapterSyncOffset,
   hasChapters = mergeTracksDefaultProps.hasChapters,
-  mediaFilesPath,
+  sourcePath,
   offsetsInMilliseconds = mergeTracksDefaultProps.offsetsInMilliseconds,
   outputFolderName = mergeTracksDefaultProps.outputFolderName,
   subtitlesPath,
@@ -81,7 +81,7 @@ export const mergeTracks = ({
       sourcePath: subtitlesPath,
     }).pipe(toArray()),
     getFiles({
-      sourcePath: mediaFilesPath,
+      sourcePath,
     }).pipe(toArray()),
   ]).pipe(
     concatMap(([subtitlesFolder, mediaFiles]) =>

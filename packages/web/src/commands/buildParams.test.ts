@@ -29,9 +29,9 @@ describe("buildParams — string link branch (@id prefix)", () => {
     const commandDefinition: CommandDefinition = {
       fields: [
         {
-          name: "filePath",
+          name: "sourcePath",
           type: "path",
-          label: "Directory Path",
+          label: "Source Path",
           isRequired: true,
         },
       ],
@@ -39,11 +39,11 @@ describe("buildParams — string link branch (@id prefix)", () => {
     const step = makeStep(
       "makeDirectory",
       {},
-      { filePath: "basePath" },
+      { sourcePath: "basePath" },
     )
 
     expect(buildParams(step, commandDefinition)).toEqual({
-      filePath: "@basePath",
+      sourcePath: "@basePath",
     })
   })
 })

@@ -16,7 +16,7 @@ const builder = (yargs: Argv) =>
       '$0 deleteCopiedOriginals "/staging/ep01.mkv" "/staging/ep02.mkv"',
       "Deletes the two source files after they have been successfully copied to the library.",
     )
-    .positional("sourcePaths", {
+    .positional("pathsToDelete", {
       array: true,
       demandOption: true,
       describe:
@@ -30,7 +30,7 @@ export const deleteCopiedOriginalsCommand: CommandModule<
   Record<string, unknown>,
   Args
 > = {
-  command: "deleteCopiedOriginals <sourcePaths..>",
+  command: "deleteCopiedOriginals <pathsToDelete..>",
   describe:
     "Delete the original source files that were previously copied by a copyFiles or moveFiles step. Is a no-op when the list is empty.",
 
@@ -41,7 +41,7 @@ export const deleteCopiedOriginalsCommand: CommandModule<
 
   handler: (argv) => {
     deleteCopiedOriginals({
-      sourcePaths: argv.sourcePaths ?? [],
+      pathsToDelete: argv.pathsToDelete ?? [],
     })
       .pipe(toArray())
       .subscribe(subscribeCli())

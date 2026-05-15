@@ -13,7 +13,7 @@
       "confirm": true
     },
     "links": {
-      "folderPath": "basePath"
+      "sourcePath": "basePath"
     }
   }
 }

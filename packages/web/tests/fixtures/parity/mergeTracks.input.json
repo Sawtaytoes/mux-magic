@@ -16,7 +16,7 @@
       "offsets": [0, -200, 150]
     },
     "links": {
-      "mediaFilesPath": "basePath",
+      "sourcePath": "basePath",
       "subtitlesPath": "basePath"
     }
   }

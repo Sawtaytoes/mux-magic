@@ -31,7 +31,7 @@ const builder = (yargs: Argv) =>
       '$0 replaceTracks "G:\\Anime\\Code Geass with Chapters" "G:\\Anime\\Code Geass missing Chapters" -c',
       "For all media files that have matching names (minus the extension), it adds chapters to the media files missing them.",
     )
-    .positional("sourceFilesPath", {
+    .positional("sourcePath", {
       demandOption: true,
       describe:
         "Directory with containing media files with tracks you want to copy.",
@@ -110,7 +110,7 @@ export const replaceTracksCommand: CommandModule<
   Args
 > = {
   command:
-    "replaceTracks <sourceFilesPath> <destinationFilesPath> [offsets...]",
+    "replaceTracks <sourcePath> <destinationFilesPath> [offsets...]",
   describe:
     "Copy tracks from one media file and replace them in another making sure to only keep the chosen languages.",
 
@@ -128,7 +128,7 @@ export const replaceTracksCommand: CommandModule<
       hasChapterSyncOffset: argv.hasChapterSyncOffset,
       hasChapters: argv.includeChapters,
       offsets: argv.offsets.map((offset) => Number(offset)),
-      sourceFilesPath: argv.sourceFilesPath,
+      sourcePath: argv.sourcePath,
       subtitlesLanguages:
         argv.subtitlesLanguages as Iso6392LanguageCode[],
       videoLanguages:

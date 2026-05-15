@@ -35,11 +35,11 @@ export type ResolveResult = {
   errors: string[]
 }
 
-const MAIN_SOURCE_FIELD_NAMES = [
-  "sourcePath",
-  "sourceFilesPath",
-  "mediaFilesPath",
-] as const
+// Worker 24 codified `sourcePath` as the universal primary-input field name
+// across every command. The previous legacy aliases (sourceFilesPath,
+// mediaFilesPath) are no longer declared by any command schema, so a
+// single-entry list suffices.
+const MAIN_SOURCE_FIELD_NAMES = ["sourcePath"] as const
 
 const stripTrailingSlash = (path: string): string =>
   path.replace(/[\\/]$/u, "")

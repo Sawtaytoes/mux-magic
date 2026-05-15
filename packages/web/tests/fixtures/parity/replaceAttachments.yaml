@@ -5,4 +5,4 @@ paths:
 steps:
   - id: step-fixture
     command: replaceAttachments
-    params: {sourceFilesPath: '@basePath', destinationFilesPath: '@basePath'}
+    params: {sourcePath: '@basePath', destinationFilesPath: '@basePath'}

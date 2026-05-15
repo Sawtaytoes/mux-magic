@@ -15,7 +15,7 @@ const builder = (yargs: Argv) =>
       '$0 deleteFolder "/work/~TEMP/AUDIO-OFFSETS" --confirm',
       "Recursively deletes the AUDIO-OFFSETS scratch directory left behind by getAudioOffsets.",
     )
-    .positional("folderPath", {
+    .positional("sourcePath", {
       demandOption: true,
       describe: "Folder to delete (recursively).",
       type: "string",
@@ -34,7 +34,7 @@ export const deleteFolderCommand: CommandModule<
   Record<string, unknown>,
   Args
 > = {
-  command: "deleteFolder <folderPath>",
+  command: "deleteFolder <sourcePath>",
   describe:
     "Recursively delete a folder and all its contents. Useful for cleaning up scratch directories like ~TEMP/AUDIO-OFFSETS after running getAudioOffsets. Requires --confirm.",
 
@@ -46,7 +46,7 @@ export const deleteFolderCommand: CommandModule<
   handler: (argv) => {
     deleteFolder({
       isConfirmed: argv.confirm,
-      folderPath: argv.folderPath,
+      sourcePath: argv.sourcePath,
     }).subscribe(subscribeCli())
   },
 }

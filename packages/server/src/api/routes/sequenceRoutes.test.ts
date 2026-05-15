@@ -85,7 +85,7 @@ describe("POST /sequences/run", () => {
       steps: [
         {
           command: "makeDirectory",
-          params: { filePath: "@workDir" },
+          params: { sourcePath: "@workDir" },
         },
       ],
     })
@@ -122,7 +122,7 @@ describe("POST /sequences/run", () => {
         "steps:",
         "  - command: makeDirectory",
         "    params:",
-        "      filePath: '@workDir'",
+        "      sourcePath: '@workDir'",
       ].join("\n"),
     })
     expect(response.status).toBe(202)
@@ -135,12 +135,12 @@ describe("POST /sequences/run", () => {
         {
           id: "first",
           command: "makeDirectory",
-          params: { filePath: "@root" },
+          params: { sourcePath: "@root" },
         },
         {
           id: "second",
           command: "makeDirectory",
-          params: { filePath: "@root" },
+          params: { sourcePath: "@root" },
         },
       ],
     })
@@ -168,7 +168,7 @@ describe("POST /sequences/run", () => {
       steps: [
         {
           command: "makeDirectory",
-          params: { filePath: "@missing" },
+          params: { sourcePath: "@missing" },
         },
       ],
     })
@@ -204,12 +204,12 @@ describe("POST /sequences/run", () => {
         {
           id: "refuse",
           command: "deleteFolder",
-          params: { folderPath: "/work", confirm: false },
+          params: { sourcePath: "/work", confirm: false },
         },
         {
           id: "should-not-run",
           command: "makeDirectory",
-          params: { filePath: "/never-created" },
+          params: { sourcePath: "/never-created" },
         },
       ],
     })
@@ -279,11 +279,11 @@ describe("POST /sequences/run", () => {
         {
           id: "alpha",
           command: "makeDirectory",
-          params: { filePath: "@root" },
+          params: { sourcePath: "@root" },
         },
         {
           command: "makeDirectory",
-          params: { filePath: "@root" },
+          params: { sourcePath: "@root" },
         },
       ],
     })
@@ -321,22 +321,22 @@ describe("POST /sequences/run", () => {
         {
           id: "ok",
           command: "makeDirectory",
-          params: { filePath: "/ok" },
+          params: { sourcePath: "/ok" },
         },
         {
           id: "boom",
           command: "deleteFolder",
-          params: { folderPath: "/work", confirm: false },
+          params: { sourcePath: "/work", confirm: false },
         },
         {
           id: "downstream1",
           command: "makeDirectory",
-          params: { filePath: "/down1" },
+          params: { sourcePath: "/down1" },
         },
         {
           id: "downstream2",
           command: "makeDirectory",
-          params: { filePath: "/down2" },
+          params: { sourcePath: "/down2" },
         },
       ],
     })
@@ -368,12 +368,12 @@ describe("POST /sequences/run", () => {
         {
           id: "broken",
           command: "makeDirectory",
-          params: { filePath: "@missing" },
+          params: { sourcePath: "@missing" },
         },
         {
           id: "after",
           command: "makeDirectory",
-          params: { filePath: "/never" },
+          params: { sourcePath: "/never" },
         },
       ],
     })
@@ -399,7 +399,7 @@ describe("POST /sequences/run", () => {
         {
           id: "only",
           command: "makeDirectory",
-          params: { filePath: "@root" },
+          params: { sourcePath: "@root" },
         },
       ],
     })
@@ -426,7 +426,7 @@ describe("POST /sequences/run", () => {
         { command: "doesNotExist", params: {} },
         {
           command: "makeDirectory",
-          params: { filePath: "/should-not-run" },
+          params: { sourcePath: "/should-not-run" },
         },
       ],
     })
@@ -456,7 +456,7 @@ describe("POST /sequences/run — groups", () => {
         {
           id: "before",
           command: "makeDirectory",
-          params: { filePath: "@root" },
+          params: { sourcePath: "@root" },
         },
         {
           kind: "group",
@@ -466,19 +466,19 @@ describe("POST /sequences/run — groups", () => {
             {
               id: "g1",
               command: "makeDirectory",
-              params: { filePath: "@root" },
+              params: { sourcePath: "@root" },
             },
             {
               id: "g2",
               command: "makeDirectory",
-              params: { filePath: "@root" },
+              params: { sourcePath: "@root" },
             },
           ],
         },
         {
           id: "after",
           command: "makeDirectory",
-          params: { filePath: "@root" },
+          params: { sourcePath: "@root" },
         },
       ],
     })
@@ -530,13 +530,13 @@ describe("POST /sequences/run — groups", () => {
         "  - id: same",
         "    command: makeDirectory",
         "    params:",
-        "      filePath: /a",
+        "      sourcePath: /a",
         "  - kind: group",
         "    steps:",
         "      - id: same",
         "        command: makeDirectory",
         "        params:",
-        "          filePath: /b",
+        "          sourcePath: /b",
       ].join("\n"),
     })
     expect(response.status).toBe(400)
@@ -558,7 +558,7 @@ describe("POST /sequences/run — groups", () => {
         "      - id: alpha",
         "        command: makeDirectory",
         "        params:",
-        "          filePath: /alpha",
+        "          sourcePath: /alpha",
         "      - id: beta",
         "        command: copyFiles",
         "        params:",
@@ -589,27 +589,27 @@ describe("POST /sequences/run — groups", () => {
             {
               id: "innerOk",
               command: "makeDirectory",
-              params: { filePath: "/inner-ok" },
+              params: { sourcePath: "/inner-ok" },
             },
             {
               id: "innerBoom",
               command: "deleteFolder",
               params: {
-                folderPath: "/work",
+                sourcePath: "/work",
                 confirm: false,
               },
             },
             {
               id: "innerSkip",
               command: "makeDirectory",
-              params: { filePath: "/inner-skip" },
+              params: { sourcePath: "/inner-skip" },
             },
           ],
         },
         {
           id: "afterGroup",
           command: "makeDirectory",
-          params: { filePath: "/after-group" },
+          params: { sourcePath: "/after-group" },
         },
       ],
     })
@@ -727,13 +727,13 @@ describe("POST /sequences/run — groups", () => {
             {
               id: "innerSuccess",
               command: "makeDirectory",
-              params: { filePath: "/inner-success" },
+              params: { sourcePath: "/inner-success" },
             },
             {
               id: "innerBoom",
               command: "deleteFolder",
               params: {
-                folderPath: "/work",
+                sourcePath: "/work",
                 confirm: false,
               },
             },
@@ -742,7 +742,7 @@ describe("POST /sequences/run — groups", () => {
         {
           id: "afterGroup",
           command: "makeDirectory",
-          params: { filePath: "/after-group" },
+          params: { sourcePath: "/after-group" },
         },
       ],
     })
@@ -800,7 +800,7 @@ describe("POST /sequences/run — groups", () => {
               id: "boom",
               command: "deleteFolder",
               params: {
-                folderPath: "/work",
+                sourcePath: "/work",
                 confirm: false,
               },
             },
@@ -809,7 +809,7 @@ describe("POST /sequences/run — groups", () => {
         {
           id: "after",
           command: "makeDirectory",
-          params: { filePath: "/after" },
+          params: { sourcePath: "/after" },
         },
       ],
     })
@@ -936,12 +936,12 @@ describe("POST /sequences/run — groups", () => {
         {
           id: "second",
           command: "makeDirectory",
-          params: { filePath: "/should-not-run" },
+          params: { sourcePath: "/should-not-run" },
         },
         {
           id: "third",
           command: "makeDirectory",
-          params: { filePath: "/also-should-not-run" },
+          params: { sourcePath: "/also-should-not-run" },
         },
       ],
     })
@@ -1019,7 +1019,7 @@ describe("POST /sequences/run — groups", () => {
         {
           id: "afterGroup",
           command: "makeDirectory",
-          params: { filePath: "/after-cancel-group" },
+          params: { sourcePath: "/after-cancel-group" },
         },
       ],
     })
@@ -1086,7 +1086,7 @@ describe("POST /sequences/run — groups", () => {
         {
           id: "second",
           command: "makeDirectory",
-          params: { filePath: "/step-event-after" },
+          params: { sourcePath: "/step-event-after" },
         },
       ],
     })
@@ -1197,7 +1197,7 @@ describe("POST /sequences/run — groups", () => {
           id: "boom",
           command: "deleteFolder",
           params: {
-            folderPath: "/step-fail-work",
+            sourcePath: "/step-fail-work",
             confirm: false,
           },
         },
@@ -1236,7 +1236,7 @@ describe("POST /sequences/run — groups", () => {
         {
           id: "collapsed",
           command: "makeDirectory",
-          params: { filePath: "/collapsed-runs" },
+          params: { sourcePath: "/collapsed-runs" },
           isCollapsed: true,
         },
       ],
@@ -1279,7 +1279,7 @@ describe("POST /sequences/run — groups", () => {
               id: "doomed_if_real",
               command: "deleteFolder",
               params: {
-                folderPath: "/precious",
+                sourcePath: "/precious",
                 confirm: true,
               },
             },
@@ -1322,7 +1322,7 @@ describe("POST /sequences/run — groups", () => {
               id: "doomed_if_real",
               command: "deleteFolder",
               params: {
-                folderPath: "/precious-failure",
+                sourcePath: "/precious-failure",
                 confirm: true,
               },
             },
@@ -1367,7 +1367,7 @@ describe("POST /sequences/run — groups", () => {
             id: "real_delete",
             command: "deleteFolder",
             params: {
-              folderPath: "/control-doomed",
+              sourcePath: "/control-doomed",
               confirm: true,
             },
           },

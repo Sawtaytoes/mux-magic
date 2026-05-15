@@ -15,7 +15,7 @@ const builder = (yargs: Argv) =>
       '$0 replaceAttachments "G:\\Anime\\Code Geass HAS ATTACHMENTS" "G:\\Anime\\Code Geass MISSING ATTACHMENTS"',
       "For all media files that have matching names (minus the extension), it replaces the attachments (fonts, etc) which typically affect subtitles.",
     )
-    .positional("sourceFilesPath", {
+    .positional("sourcePath", {
       demandOption: true,
       describe:
         "Directory with containing media files with attachments you want to copy.",
@@ -35,7 +35,7 @@ export const replaceAttachmentsCommand: CommandModule<
   Args
 > = {
   command:
-    "replaceAttachments <sourceFilesPath> <destinationFilesPath>",
+    "replaceAttachments <sourcePath> <destinationFilesPath>",
   describe:
     "Copy tracks from one media file and replace them in another making sure to only keep the chosen languages.",
 
@@ -47,7 +47,7 @@ export const replaceAttachmentsCommand: CommandModule<
   handler: (argv) => {
     replaceAttachments({
       destinationFilesPath: argv.destinationFilesPath,
-      sourceFilesPath: argv.sourceFilesPath,
+      sourcePath: argv.sourcePath,
     }).subscribe(subscribeCli())
   },
 }

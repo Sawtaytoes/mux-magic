@@ -193,9 +193,9 @@ export const FIXTURE_COMMANDS_BUNDLE_C: Commands = {
     outputFolderName: "SUBTITLED",
     fields: [
       {
-        name: "mediaFilesPath",
+        name: "sourcePath",
         type: "path",
-        label: "Media Files Path",
+        label: "Source Path",
         isRequired: true,
       },
       {
@@ -216,9 +216,9 @@ export const FIXTURE_COMMANDS_BUNDLE_D: Commands = {
     outputFolderName: null,
     fields: [
       {
-        name: "filePath",
+        name: "sourcePath",
         type: "path",
-        label: "Directory Path",
+        label: "Source Path",
         isRequired: true,
       },
     ],

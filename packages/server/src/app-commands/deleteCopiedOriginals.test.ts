@@ -11,7 +11,7 @@ describe(deleteCopiedOriginals.name, () => {
     vol.reset()
   })
 
-  test("deletes every path in the sourcePaths list", async () => {
+  test("deletes every path in the pathsToDelete list", async () => {
     vol.fromJSON({
       "/staging/ep01.mkv": "ep1",
       "/staging/ep02.mkv": "ep2",
@@ -19,7 +19,7 @@ describe(deleteCopiedOriginals.name, () => {
 
     await firstValueFrom(
       deleteCopiedOriginals({
-        sourcePaths: [
+        pathsToDelete: [
           join("/staging", "ep01.mkv"),
           join("/staging", "ep02.mkv"),
         ],
@@ -42,7 +42,7 @@ describe(deleteCopiedOriginals.name, () => {
 
     const results = await firstValueFrom(
       deleteCopiedOriginals({
-        sourcePaths: [
+        pathsToDelete: [
           join("/staging", "ep01.mkv"),
           join("/staging", "ep02.mkv"),
         ],
@@ -57,9 +57,9 @@ describe(deleteCopiedOriginals.name, () => {
     )
   })
 
-  test("is a no-op and emits nothing when sourcePaths is empty", async () => {
+  test("is a no-op and emits nothing when pathsToDelete is empty", async () => {
     const results = await firstValueFrom(
-      deleteCopiedOriginals({ sourcePaths: [] }).pipe(
+      deleteCopiedOriginals({ pathsToDelete: [] }).pipe(
         toArray(),
       ),
     )
@@ -74,7 +74,7 @@ describe(deleteCopiedOriginals.name, () => {
 
     await firstValueFrom(
       deleteCopiedOriginals({
-        sourcePaths: [join("/staging", "ShowFolder")],
+        pathsToDelete: [join("/staging", "ShowFolder")],
       }).pipe(toArray()),
     )
 

@@ -76,7 +76,7 @@ describe("POST /commands/:name — dry-run safety", () => {
     const response = await post(
       "/commands/deleteFolder?fake=success",
       {
-        folderPath: "/precious-cmd",
+        sourcePath: "/precious-cmd",
         confirm: true,
       },
     )
@@ -114,7 +114,7 @@ describe("POST /commands/:name — dry-run safety", () => {
     const response = await post(
       "/commands/deleteFolder?fake=failure",
       {
-        folderPath: "/precious-cmd-failure",
+        sourcePath: "/precious-cmd-failure",
         confirm: true,
       },
     )
@@ -149,7 +149,7 @@ describe("POST /commands/:name — dry-run safety", () => {
     })
 
     const response = await post("/commands/deleteFolder", {
-      folderPath: "/control-cmd-doomed",
+      sourcePath: "/control-cmd-doomed",
       confirm: true,
     })
     expect(response.status).toBe(202)

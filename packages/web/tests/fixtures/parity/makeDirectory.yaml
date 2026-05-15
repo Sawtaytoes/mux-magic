@@ -5,4 +5,4 @@ paths:
 steps:
   - id: step-fixture
     command: makeDirectory
-    params: {filePath: '@basePath'}
+    params: {sourcePath: '@basePath'}
