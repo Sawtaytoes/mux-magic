@@ -51,6 +51,14 @@ export default defineConfig({
       command: "yarn prod:web-server",
       url: `${webBaseUrl}/`,
       reuseExistingServer: !process.env.CI,
+      // The prod web server serves `./dist` statically with no proxy,
+      // so the SPA can only reach the api when `window.__API_BASE__`
+      // is injected into index.html — which the web server only does
+      // when `REMOTE_SERVER_URL` is set in its env. Without this,
+      // every cross-origin fetch from the SPA lands on the web origin
+      // and gets the SPA index.html 404 fallback, breaking any spec
+      // that exercises real api round-trips (e.g. saved-templates).
+      env: { REMOTE_SERVER_URL: apiBaseUrl },
       stdout: "pipe",
       stderr: "pipe",
       timeout: 30 * 1000,

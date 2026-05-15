@@ -62,17 +62,36 @@ export const SavedTemplatesPanel = () => {
   >(null)
   const isSaveModalOpen = pendingSaveYaml !== null
 
-  const refetch = useCallback(async () => {
-    try {
-      const list = await fetchTemplateList()
-      setTemplates(list)
-      setErrorMessage(null)
-    } catch (error) {
+  // Surfaces a failure inline in the sidebar. Used only for failures
+  // during user-initiated actions (save, update, delete, load) so the
+  // user sees what just broke. Passive failures during the initial
+  // list fetch are kept silent — the empty-list fallback ("No saved
+  // templates yet.") is the right rendering in deployments where the
+  // api isn't reachable (e.g. SPA served standalone without window
+  // .__API_BASE__ pointing anywhere useful), and a permanent red
+  // alert on every page load otherwise leaks into unrelated tests
+  // and noisily clutters the sidebar for users who don't use
+  // templates at all.
+  const surfaceActionError = useCallback(
+    (error: unknown) => {
       setErrorMessage(
         error instanceof Error
           ? error.message
           : String(error),
       )
+    },
+    [setErrorMessage],
+  )
+
+  const refetch = useCallback(async () => {
+    try {
+      const list = await fetchTemplateList()
+      setTemplates(list)
+      setErrorMessage(null)
+    } catch {
+      // Initial-load failures (and refetches after an action) stay
+      // silent — see the comment above. Reaching the api is a system
+      // concern; the empty-list fallback covers the UI.
     }
   }, [setTemplates, setErrorMessage])
 
@@ -130,11 +149,7 @@ export const SavedTemplatesPanel = () => {
       url.searchParams.delete("seq")
       window.history.replaceState({}, "", url.toString())
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : String(error),
-      )
+      surfaceActionError(error)
     }
   }
 
@@ -162,11 +177,7 @@ export const SavedTemplatesPanel = () => {
       await updateTemplate(id, { yaml: readCurrentYaml() })
       await refetch()
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : String(error),
-      )
+      surfaceActionError(error)
     }
   }
 
@@ -188,11 +199,7 @@ export const SavedTemplatesPanel = () => {
       })
       await refetch()
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : String(error),
-      )
+      surfaceActionError(error)
     }
   }
 
@@ -213,11 +220,7 @@ export const SavedTemplatesPanel = () => {
       })
       await refetch()
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : String(error),
-      )
+      surfaceActionError(error)
     }
   }
 
@@ -235,11 +238,7 @@ export const SavedTemplatesPanel = () => {
         setSelectedTemplateId(null)
       await refetch()
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : String(error),
-      )
+      surfaceActionError(error)
     }
   }
 
