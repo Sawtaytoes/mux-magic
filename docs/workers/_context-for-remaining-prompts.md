@@ -162,7 +162,7 @@ The original `nameSpecialFeatures` command is preserved and renamed to `nameSpec
 
 ### Phase 4 (Server infrastructure)
 
-- **28 — `structured-logging-otel`:** Replace `console.log` with structured logger; export OTLP spans. Model: Opus. Depends on 21.
+- **28 (now `41`) — `structured-logging`:** Replace `console.log` with a structured logger in `@mux-magic/tools`; bridge to `appendJobLog`; AsyncLocalStorage trace correlation via synthetic-uuid `startSpan`. No OTel — single-server self-hosted means there's no collector to ship to. Model: Sonnet/Medium. Depends on 21. Slot `28` was reassigned to a Phase 1B follow-up before the Phase 4 prompts were written; this worker now lives at `41`.
 - **29 — `openapi-codegen-optional`:** Optional OpenAPI schema codegen step. Probably from Hono routes via `@hono/zod-openapi`.
 - **2a — `server-template-storage`:** Server-side persistence for sequence templates.
 - **2b — `error-persistence-webhook`:** Persist errors and surface via the webhook reporter from worker 1e. Depends on 28.

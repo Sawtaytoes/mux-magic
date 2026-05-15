@@ -110,7 +110,7 @@ No intermediate master merges.
 | 1B | Improvements (parallel fan-out with Variables foundation sub-chain) | 08–1f + 36, 37 (26 workers; 36 → 37 serial sub-chain blocks 11+35+37) | No |
 | 2 | CLI package extraction | 20 → 21 | No |
 | 3 | Name Special Features overhaul | 22–27 + 34, 35 (8 workers) | No |
-| 4 | Server infrastructure + per-file pipelining | 28–2d + 38 + 3b + 3c (9 workers) | No |
+| 4 | Server infrastructure + per-file pipelining | 41, 29, 2a, 2b, 2c, 2d + 38 + 3b + 3c + 3e + 40 (11 workers; original `28` slot moved to a Phase 1B cleanup, structured-logging relocated to `41`) | No |
 | 5 | HA + advanced features | 2e–32 | No |
 | 6 | Final consolidation | 33 | **YES** |
 
@@ -209,14 +209,15 @@ No intermediate master merges.
         ┌────────────────────────────────────────┐       │
         │  PHASE 4 ── Server infrastructure      │       │
         │                                        │       │
-        │   28 structured-logging-otel Opus/H    │       │
-        │        ▼                               │       │
+        │   41 structured-logging      Sonnet/M  │       │
+        │        ▼   (was id `28`; renumbered    │       │
+        │             after slot reassigned)     │       │
         │   2b error-persistence-webhook         │       │
         │                                        │       │
         │   38 per-file-pipelining     Opus/H    │       │
-        │      (depends on 20+21+28)             │       │
+        │      (depends on 20+21+41)             │       │
         │                                        │       │
-        │   Parallel with 28+38:                 │       │
+        │   Parallel with 41+38:                 │       │
         │     29 openapi-codegen-optional        │       │
         │     2a server-template-storage         │       │
         │     2c pure-functions-sweep            │       │
@@ -451,7 +452,7 @@ Serial because 37 imports the new types/atoms from 36. Workers 11 and 35 also de
 |---|---|
 | **High** (mechanical / well-bounded) | 02, 03, 04, 0a, 0b, 0e, 10, 12, 13, 18, 2d, 32 |
 | **Medium** (judgment calls, standard patterns) | 01, 05, 06, 07, 08, 09, 0c, 0d, 0f, 11, 14, 15, 16, 17, 19, 1a, 1b, 1c, 1d, 1e, 1f, 21, 22, 23, 25, 26, 27, 29, 2a, 2b, 30, 31, 33, 34, 35, 36, 37, 39 |
-| **Low — model recommendation uncertain** | **20, 24, 28, 2c, 2f, 38** — all currently Opus or High-effort Sonnet. These are where Opus's cost may be justified by failure-mode severity. Revisit per worker. |
+| **Low — model recommendation uncertain** | **20, 24, 2c, 2f, 38** — all currently Opus or High-effort Sonnet. These are where Opus's cost may be justified by failure-mode severity. Revisit per worker. (Worker 41 was on this list when it bundled OTel; downgraded to Sonnet/Medium once OTel was stripped — see `41_structured-logging.md`.) |
 
 ---
 

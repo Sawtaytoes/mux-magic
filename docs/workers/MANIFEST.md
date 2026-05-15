@@ -88,6 +88,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | 16 | [user-event-migration](16_user-event-migration.md) | web | Sonnet | High | ON | 01 | done |
 | 17 | [run-in-background-sequence-modal](17_run-in-background-sequence-modal.md) | web | Sonnet | High | ON | 10 | done |
 | 3d | [loadmodal-backdrop-leak-fix](3d_loadmodal-backdrop-leak-fix.md) — bug-fix follow-up to worker 0b: open LoadModal synchronously so the paste listener attaches before `navigator.clipboard.readText()` resolves; gates Modal visibility on a new `loadModalAutoPastingAtom` to avoid flash | web | Sonnet | Medium | ON | 0b | done |
+| 28 | [threadcount-variable-registry-unification](28_threadcount-variable-registry-unification.md) — cleanup follow-up to worker 11: registers `threadCount` in the unified Variables registry from worker 36 (was a parallel side-channel); makes TypePicker registry-driven. Originally slotted for the Phase 4 structured-logging worker; that worker relocated to id `41` per the "never renumber" rule. | web | Sonnet | Medium | ON | 11, 36, 37 | ready |
 
 ### Other track (3 workers)
 
@@ -139,15 +140,17 @@ The existing `nameSpecialFeatures` code is preserved (renamed only by worker 22,
 
 ## Phase 4 — Server infrastructure
 
+> Note: the structured-logging worker (originally numbered `28`) is now `41` — slot `28` was reassigned to a Phase 1B follow-up before the Phase 4 prompts were written. Plan rule: never renumber existing workers.
+
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 28 | `structured-logging-otel` | srv+cli | **Opus** | High | ON | 21 | planned |
-| 29 | `openapi-codegen-optional` | srv+infra | Sonnet | Medium | ON | 01 | planned |
-| 2a | `server-template-storage` | srv+web | Sonnet | High | ON | 01 | planned |
-| 2b | `error-persistence-webhook` | srv | Sonnet | Medium | ON | 28 | planned |
-| 2c | `pure-functions-sweep` | srv+web | Sonnet | High | ON | 20 | planned |
-| 2d | `asset-fallback-to-cli` | srv | Haiku | Low | OFF | 01 | planned |
-| 38 | [per-file-pipelining](38_per-file-pipelining.md) — rewire `sequenceRunner.ts` to stream files through steps via rxjs composition; file 1 hits step 3 while file 2 still on step 1. Multiplies value of worker 11's thread budget | srv | **Opus** | High | ON | 20, 21, 28 | ready |
+| 41 | [structured-logging](41_structured-logging.md) — structured logger in `@mux-magic/tools` bridged to `appendJobLog`; AsyncLocalStorage trace correlation via synthetic-uuid `startSpan`; migrates server job-context `console.*` calls; ships `/api/logs/structured` SSE feed. No new runtime deps. | srv+cli | Sonnet | Medium | ON | 21 | ready |
+| 29 | [openapi-codegen-optional](29_openapi-codegen-optional.md) — opt-in `yarn codegen:api` that turns `/openapi.json` into typed paths under `@mux-magic/tools/api.generated/`; CI drift check | srv+infra | Sonnet | Medium | ON | 01 | ready |
+| 2a | [server-template-storage](2a_server-template-storage.md) — file-backed `/api/templates` CRUD + web sidebar; templates become the canonical reusable form, URL query stays as the share-this-instance mechanism | srv+web | Sonnet | High | ON | 01 | ready |
+| 2b | [error-persistence-webhook](2b_error-persistence-webhook.md) — on-disk job-error store + delivery state machine with backoff; boot-time replay of pending webhook deliveries; `/api/errors` routes | srv | Sonnet | Medium | ON | 41 | ready |
+| 2c | [pure-functions-sweep](2c_pure-functions-sweep.md) — extract pure cores from `packages/server/src/tools/**`; thin wrappers retain exported signatures; refactor-only, no behavior changes; excludes `nameSpecialFeatures*` (Phase 3) and `app-commands/**` (worker 38) | srv+web | Sonnet | High | ON | 20 | ready |
+| 2d | [asset-fallback-to-cli](2d_asset-fallback-to-cli.md) — CLI probes a healthy server; on transport failure (refused/timeout/DNS), read-only commands run locally via `@mux-magic/tools` instead of failing | srv+cli | Haiku | Low | OFF | 01, 20 | ready |
+| 38 | [per-file-pipelining](38_per-file-pipelining.md) — rewire `sequenceRunner.ts` to stream files through steps via rxjs composition; file 1 hits step 3 while file 2 still on step 1. Multiplies value of worker 11's thread budget | srv | **Opus** | High | ON | 20, 21, 41 | ready |
 | 3b | [extract-subtitles-multi-language-type-filter](3b_extract-subtitles-multi-language-type-filter.md) — multi-language `subtitlesLanguages` array, tri-state `typesMode` (`none\|include\|exclude`) + `subtitleTypes` chip picker, single batched `mkvextract` call per file. Removes hardcoded image-codec auto-skip. | srv+web+cli | Sonnet | Medium | ON | 20 | planned |
 | 3c | [bcp47-language-variants](3c_bcp47-language-variants.md) — BCP 47 locale variants (`zh-Hans-CN`, `zh-Hant-HK`, `pt-BR`, …) via optional `ietf` field on `LanguageSelection`. Augments 3-letter codes, emits `language-ietf` to mkvpropedit/mkvmerge alongside legacy `language`. Secondary "Region/Variant" picker appears only for curated base languages. | srv+web+cli | Sonnet | Medium | ON | 08, 20 | planned |
 | 3e | [gallery-downloader-task-pools](3e_gallery-downloader-task-pools.md) — adds named per-task-type concurrency pools to `@mux-magic/tools` taskScheduler (third admission dimension alongside global cap + per-job claim); adopts in Gallery-Downloader so image downloads, Webtoons lookups, DLsite scrapes, etc. each get their own rate-limit-derived cap. Two PRs — mux-magic API extension publishes first, then gallery-downloader bumps and adopts. | tools+cross | Sonnet | High | ON | 21, 1d + a published `@mux-magic/tools` minor bump after 21 | ready |
@@ -190,10 +193,8 @@ All originally-flagged questions now have decided answers. Captured here for tra
 
 ## Test coverage discipline (applies to every worker)
 
-Per [feedback_test_coverage_required.md](C:/Users/satur/.claude/projects/d--Projects-Personal-media-tools/memory/feedback_test_coverage_required.md):
+This is on top of TDD-failing-test-first (already in [AGENTS.md](../../AGENTS.md)). Goal: catch bugs before the user encounters them in manual use.
 
 - **Adding functionality:** write tests covering the new behavior.
 - **Updating functionality:** add or update tests to reflect the change.
 - **e2e tests:** valuable for full sequence runs, modal flows, undo/redo, drag-and-drop; less so for pure-presentation changes.
-
-This is on top of TDD-failing-test-first (already in AGENTS.md). Goal: catch bugs before the user encounters them in manual use.
