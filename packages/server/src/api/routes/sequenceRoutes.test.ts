@@ -99,6 +99,38 @@ describe("POST /sequences/run", () => {
     expect(body.logsUrl).toBe(`/jobs/${body.jobId}/logs`)
   })
 
+  // Regression: the deployed YAML/Builder emits path variables under the
+  // canonical `variables` block (each tagged with type: "path"), not the
+  // legacy `paths` block. A bug in sequenceRunner read only body.paths, so
+  // every `@pathVariable_*` reference failed with "Unknown path variable".
+  // This test pins the new shape to the resolver.
+  test("resolves @pathId references that live under the canonical `variables` block", async () => {
+    const response = await post("/sequences/run", {
+      variables: {
+        pathVariable_abc123: {
+          label: "pathVariable_abc123",
+          value: "/from-variables",
+          type: "path",
+        },
+      },
+      steps: [
+        {
+          command: "makeDirectory",
+          params: { sourcePath: "@pathVariable_abc123" },
+        },
+      ],
+    })
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
+
+    await flushAfter(50)
+
+    const job = getJob(jobId)
+    expect(job?.status).toBe("completed")
+    expect(job?.error).toBeNull()
+  })
+
   test("rejects malformed YAML with a 400", async () => {
     const response = await post("/sequences/run", {
       yaml: "this is: : : invalid yaml",

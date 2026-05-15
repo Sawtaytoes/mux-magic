@@ -175,8 +175,14 @@ export const runSequenceJob = (
     options.globalScenario,
   )
 
-  const pathsById: Record<string, SequencePath> =
-    body.paths ?? {}
+  const pathsById: Record<string, SequencePath> = {
+    ...body.paths,
+    ...Object.fromEntries(
+      Object.entries(body.variables ?? {}).filter(
+        ([, variable]) => variable.type === "path",
+      ),
+    ),
+  }
   const stepsById: Record<string, StepRuntimeRecord> = {}
 
   const threadCountClaim = resolveThreadCountClaim(
