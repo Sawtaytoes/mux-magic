@@ -1,7 +1,10 @@
 import { atom } from "jotai"
 import { isGroup } from "../jobs/sequenceUtils"
 import type { Group, Step } from "../types"
-import { collectExistingIds, makeStepId } from "./idAllocator"
+import {
+  collectExistingIds,
+  makeStepId,
+} from "./idAllocator"
 import { stepsAtom } from "./stepsAtom"
 
 // ─── Group CRUD ───────────────────────────────────────────────────────────────

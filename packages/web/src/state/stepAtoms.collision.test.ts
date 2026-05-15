@@ -35,13 +35,15 @@ describe("step id allocation — uniqueness under churn", () => {
   test("200 random insert/remove operations never produce duplicate ids", () => {
     const store = createStore()
 
-    for (let i = 0; i < 200; i++) {
+    for (let index = 0; index < 200; index++) {
       const items = store.get(stepsAtom)
       const action = Math.random()
 
       if (items.length > 0 && action < 0.3) {
         // Remove a random top-level step (skip groups for simplicity).
-        const stepItems = items.filter((it) => !isGroup(it)) as Step[]
+        const stepItems = items.filter(
+          (it) => !isGroup(it),
+        ) as Step[]
         if (stepItems.length > 0) {
           const target =
             stepItems[
@@ -74,9 +76,9 @@ describe("step id allocation — uniqueness under churn", () => {
     // Seed thousands of pre-existing ids so the random space is
     // densely populated and the regen-on-collision loop has work to do.
     const seeded: SequenceItem[] = []
-    for (let i = 0; i < 5000; i++) {
+    for (let index = 0; index < 5000; index++) {
       seeded.push({
-        id: `step_${i.toString(36).padStart(4, "0")}`,
+        id: `step_${index.toString(36).padStart(4, "0")}`,
         alias: "",
         command: "",
         params: {},

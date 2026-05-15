@@ -62,8 +62,13 @@ const renderItem = (item: Step | Group) => {
 
 const Harness = () => {
   useScrollToAffectedStep()
-  const { undo, redo, insertStep, insertGroup, pasteCardAt } =
-    useBuilderActions()
+  const {
+    undo,
+    redo,
+    insertStep,
+    insertGroup,
+    pasteCardAt,
+  } = useBuilderActions()
   const addStepToGroup = useSetAtom(addStepToGroupAtom)
   const scrollToStep = useSetAtom(scrollToStepAtom)
   const items = useAtomValue(stepsAtom)
@@ -230,8 +235,8 @@ describe("useScrollToAffectedStep", () => {
   })
 
   test("scrolls to the new step when insertStep is called at the end", async () => {
-    const initial = Array.from({ length: 5 }, (_, i) =>
-      makeStep(`step${i + 1}`),
+    const initial = Array.from({ length: 5 }, (_, index) =>
+      makeStep(`step${index + 1}`),
     )
     const store = createStore()
     store.set(stepsAtom, initial)
@@ -255,7 +260,9 @@ describe("useScrollToAffectedStep", () => {
       `step-${newStep.id}`,
     )
     expect(newStepEl).not.toBeNull()
-    expect(scrollIntoViewSpy.mock.contexts[0]).toBe(newStepEl)
+    expect(scrollIntoViewSpy.mock.contexts[0]).toBe(
+      newStepEl,
+    )
   })
 
   test("scrolls to the new step inside a group when insertGroup is called", async () => {
@@ -284,7 +291,9 @@ describe("useScrollToAffectedStep", () => {
       `step-${innerStep.id}`,
     )
     expect(newStepEl).not.toBeNull()
-    expect(scrollIntoViewSpy.mock.contexts[0]).toBe(newStepEl)
+    expect(scrollIntoViewSpy.mock.contexts[0]).toBe(
+      newStepEl,
+    )
   })
 
   test("scrolls to the new step when addStepToGroup appends inside a group", async () => {
@@ -320,7 +329,9 @@ describe("useScrollToAffectedStep", () => {
       `step-${newStep.id}`,
     )
     expect(newStepEl).not.toBeNull()
-    expect(scrollIntoViewSpy.mock.contexts[0]).toBe(newStepEl)
+    expect(scrollIntoViewSpy.mock.contexts[0]).toBe(
+      newStepEl,
+    )
   })
 
   test("scrolls to the first pasted step after pasteCardAt", async () => {
@@ -369,7 +380,9 @@ describe("useScrollToAffectedStep", () => {
     // with existingIds, and "existing" is the only seeded id.
     const target = scrollIntoViewSpy.mock.contexts[0]
     expect(target).toBeInstanceOf(HTMLElement)
-    expect((target as HTMLElement).id).toBe("step-pasted_one")
+    expect((target as HTMLElement).id).toBe(
+      "step-pasted_one",
+    )
   })
 
   test("scrolls into the first child step when pasting a group at the top level", async () => {
@@ -419,7 +432,9 @@ describe("useScrollToAffectedStep", () => {
     // the group's first child (the group container has no `#step-<id>`).
     const target = scrollIntoViewSpy.mock.contexts[0]
     expect(target).toBeInstanceOf(HTMLElement)
-    expect((target as HTMLElement).id).toBe("step-child_one")
+    expect((target as HTMLElement).id).toBe(
+      "step-child_one",
+    )
   })
 
   test("paste does not override a more recent insert that happens during the view transition", async () => {

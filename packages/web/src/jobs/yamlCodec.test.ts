@@ -605,7 +605,9 @@ steps:
       const renameCalls = warnSpy.mock.calls.filter(
         ([msg]) =>
           typeof msg === "string" &&
-          msg.includes('renamed command "nameSpecialFeatures"'),
+          msg.includes(
+            'renamed command "nameSpecialFeatures"',
+          ),
       )
       expect(renameCalls).toHaveLength(1)
     } finally {
@@ -927,7 +929,11 @@ describe("legacy field renames — read-time remapping", () => {
   }
 
   const loadWithRenameCommands = (text: string) =>
-    loadYamlFromText(text, LEGACY_RENAME_COMMANDS, BASE_PATHS)
+    loadYamlFromText(
+      text,
+      LEGACY_RENAME_COMMANDS,
+      BASE_PATHS,
+    )
 
   test.each([
     ["getAudioOffsets", "sourceFilesPath"],

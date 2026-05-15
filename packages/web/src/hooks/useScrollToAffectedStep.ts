@@ -25,10 +25,7 @@ export const useScrollToAffectedStep = (): void => {
       // scrollToStepAtom only after its view transition resolves) can
       // detect that the viewport has been moved by another action and
       // skip their now-stale scroll. See scrollSeqAtom doc.
-      store.set(
-        scrollSeqAtom,
-        store.get(scrollSeqAtom) + 1,
-      )
+      store.set(scrollSeqAtom, store.get(scrollSeqAtom) + 1)
 
       // Defer to the next frame so callers that set scrollToStepAtom
       // synchronously after creating a step (insertStep, insertGroup,

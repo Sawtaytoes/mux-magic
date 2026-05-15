@@ -1,6 +1,9 @@
 import { describe, expect, test, vi } from "vitest"
-import { collectExistingIds, makeStepId } from "./idAllocator"
 import type { SequenceItem } from "../types"
+import {
+  collectExistingIds,
+  makeStepId,
+} from "./idAllocator"
 
 describe("makeStepId", () => {
   test("returns an id matching `step_${4 base36 chars}`", () => {
@@ -13,8 +16,10 @@ describe("makeStepId", () => {
     // still returns something not in it. The regen-on-collision loop
     // is the only thing keeping this from being flaky.
     const existing = new Set<string>()
-    for (let i = 0; i < 5000; i++) {
-      existing.add(`step_${i.toString(36).padStart(4, "0")}`)
+    for (let index = 0; index < 5000; index++) {
+      existing.add(
+        `step_${index.toString(36).padStart(4, "0")}`,
+      )
     }
     const id = makeStepId(existing)
     expect(existing.has(id)).toBe(false)

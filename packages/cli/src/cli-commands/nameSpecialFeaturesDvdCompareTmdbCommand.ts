@@ -1,7 +1,5 @@
-import {
-  type NameSpecialFeaturesResult,
-  nameSpecialFeaturesDvdCompareTmdb,
-} from "@mux-magic/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.js"
+import type { NameSpecialFeaturesResult } from "@mux-magic/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.events.js"
+import { nameSpecialFeaturesDvdCompareTmdb } from "@mux-magic/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.js"
 import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
 import type {
   Argv,

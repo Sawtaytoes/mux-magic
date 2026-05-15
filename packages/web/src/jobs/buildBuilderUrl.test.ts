@@ -165,9 +165,9 @@ describe("buildBuilderUrl round-trip", () => {
       (result.steps[0] as { id: string; command: string })
         .command,
     ).toBe("")
-    expect(
-      (result.steps[0] as { id: string }).id,
-    ).toBe("blank_pad")
+    expect((result.steps[0] as { id: string }).id).toBe(
+      "blank_pad",
+    )
     expect(
       (result.steps[1] as { command: string }).command,
     ).toBe("flattenOutput")

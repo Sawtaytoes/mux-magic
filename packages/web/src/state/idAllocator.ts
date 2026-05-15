@@ -22,7 +22,9 @@ export const collectExistingIds = (
   return taken
 }
 
-export const makeStepId = (existing: Set<string>): string => {
+export const makeStepId = (
+  existing: Set<string>,
+): string => {
   // Loop is bounded in practice — base36^4 = ~1.68M ids vs.
   // a sequence in the hundreds — but we still loop rather
   // than retry-once so collision bugs surface as slowness

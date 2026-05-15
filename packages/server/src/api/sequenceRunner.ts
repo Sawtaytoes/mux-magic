@@ -109,9 +109,7 @@ const flattenItems = (items: SequenceItem[]): FlatStep[] =>
     isGroup(item)
       ? item.steps
           .filter((step) => step.command !== "")
-          .map(
-            (step): FlatStep => ({ step, group: item }),
-          )
+          .map((step): FlatStep => ({ step, group: item }))
       : item.command === ""
         ? []
         : [{ step: item, group: null }],

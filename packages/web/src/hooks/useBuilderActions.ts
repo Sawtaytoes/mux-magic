@@ -560,9 +560,7 @@ export const useBuilderActions = () => {
 
       if (firstNewStepId) {
         transition.then(() => {
-          if (
-            store.get(scrollSeqAtom) !== startScrollSeq
-          ) {
+          if (store.get(scrollSeqAtom) !== startScrollSeq) {
             // Another scroll-targeting action ran while the paste
             // transition was animating — its target is what the user
             // expects to see, so don't override it.

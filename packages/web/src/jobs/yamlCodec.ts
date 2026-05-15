@@ -2,6 +2,7 @@ import { dump, load } from "js-yaml"
 
 import { buildParams } from "../commands/buildParams"
 import type { Commands } from "../commands/types"
+import { makeStepId } from "../state/idAllocator"
 import type {
   Group,
   PathVariable,
@@ -9,7 +10,6 @@ import type {
   Step,
   Variable,
 } from "../types"
-import { makeStepId } from "../state/idAllocator"
 import { isGroup } from "./sequenceUtils"
 
 const RENAMED_COMMANDS: Record<string, string> = {
@@ -46,7 +46,9 @@ const groupToYaml = (group: Group, commands: Commands) => ({
   ...(group.label ? { label: group.label } : {}),
   ...(group.isParallel ? { isParallel: true } : {}),
   ...(group.isCollapsed ? { isCollapsed: true } : {}),
-  steps: group.steps.map((step) => stepToYaml(step, commands)),
+  steps: group.steps.map((step) =>
+    stepToYaml(step, commands),
+  ),
 })
 
 export const toYamlStr = (
