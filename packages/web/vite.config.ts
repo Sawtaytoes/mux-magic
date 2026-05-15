@@ -27,6 +27,7 @@ const apiTarget = `http://localhost:${apiPort}`
 // Paths that belong to the Hono API server, not the Vite SPA. Keep this
 // list in lockstep with packages/server/src/api/*Routes.ts files.
 const apiPaths = [
+  "/api",
   "/files",
   "/commands",
   "/queries",

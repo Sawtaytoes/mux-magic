@@ -1,3 +1,4 @@
+import { SavedTemplatesPanel } from "../SavedTemplates/SavedTemplatesPanel"
 import { VariablesPanel } from "../VariablesPanel/VariablesPanel"
 
 export const VariablesSidebar = () => (
@@ -12,6 +13,7 @@ export const VariablesSidebar = () => (
     </div>
     <div className="px-4 py-3">
       <VariablesPanel />
+      <SavedTemplatesPanel />
     </div>
   </aside>
 )
