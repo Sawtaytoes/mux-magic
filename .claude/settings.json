@@ -103,8 +103,10 @@
       "PowerShell(Where-*)",
       "PowerShell(yarn *)",
       "PowerShell(yarn workspace *)",
+      "Edit(**)",
       "Read(**)",
       "Read(//**)",
+      "Write(**)",
       "Skill(update-config:*)",
       "Skill(update-config)"
     ],
