@@ -18,6 +18,7 @@ import { SequenceRunModal } from "../../components/SequenceRunModal/SequenceRunM
 import { VariablesSidebar } from "../../components/VariablesSidebar/VariablesSidebar"
 import { YamlModal } from "../../components/YamlModal/YamlModal"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
+import { usePageTitle } from "../../hooks/usePageTitle"
 import { decodeSeqParam } from "../../jobs/decodeSeqParam"
 import { encodeSeqParam } from "../../jobs/encodeSeqParam"
 import {
@@ -35,6 +36,7 @@ import { BuilderSequenceList } from "../BuilderSequenceList/BuilderSequenceList"
 // ─── BuilderPage ──────────────────────────────────────────────────────────────
 
 export const BuilderPage = () => {
+  usePageTitle("Sequence Builder")
   useBuilderKeyboard()
   useHydrateAtoms([[commandsAtom, COMMANDS]])
 

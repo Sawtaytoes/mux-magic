@@ -1,9 +1,11 @@
 import { StatusBar } from "../../components/StatusBar/StatusBar"
+import { usePageTitle } from "../../hooks/usePageTitle"
 import { useSseStream } from "../../hooks/useSseStream"
 
 import { JobsList } from "../JobsList/JobsList"
 
 export const JobsPage = () => {
+  usePageTitle("Jobs")
   useSseStream()
 
   return (
