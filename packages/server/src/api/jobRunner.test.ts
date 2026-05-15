@@ -329,7 +329,20 @@ describe("runJob — webhook reporter calls", () => {
     ).mockResolvedValue(undefined)
     const failedSpy = vi
       .spyOn(webhookReporter, "reportJobFailed")
-      .mockResolvedValue(undefined)
+      .mockImplementation(async ({ jobId, error }) => ({
+        errorName: undefined,
+        fileId: undefined,
+        id: "test-error-id",
+        jobId,
+        level: "error",
+        msg: error,
+        occurredAt: new Date().toISOString(),
+        spanId: undefined,
+        stack: undefined,
+        stepIndex: undefined,
+        traceId: undefined,
+        webhookDelivery: { attempts: 0, state: "pending" },
+      }))
     const job = createJob({ commandName: "copyFiles" })
 
     await runJob(

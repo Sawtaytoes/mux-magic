@@ -12,6 +12,8 @@ import {
   setLoggingMode,
 } from "@mux-magic/tools"
 import { app } from "./api/hono-routes.js"
+import { resumePendingDeliveries } from "./api/jobErrorDeliveryQueue.js"
+import { loadJobErrorsFromDisk } from "./api/jobErrorStore.js"
 import {
   getActiveJobId,
   installLogBridge,
@@ -35,5 +37,14 @@ serve(
   },
   () => {
     logInfo("API SERVER LISTENING PORT", API_PORT)
+    // Replay any persisted errors whose webhook delivery was still
+    // `pending` when the previous process exited. Async + fire-and-
+    // forget: the server is already accepting connections; we don't
+    // block startup on disk I/O.
+    loadJobErrorsFromDisk()
+      .then(() => {
+        resumePendingDeliveries()
+      })
+      .catch(() => undefined)
   },
 )
