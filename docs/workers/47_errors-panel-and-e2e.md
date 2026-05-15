@@ -1,8 +1,8 @@
-# Worker 45 — errors-panel-and-e2e
+# Worker 47 — errors-panel-and-e2e
 
 **Model:** Sonnet · **Thinking:** ON · **Effort:** Medium
-**Branch:** `worker-45-errors-panel-and-e2e`
-**Worktree:** `.claude/worktrees/45_errors-panel-and-e2e/`
+**Branch:** `worker-47-errors-panel-and-e2e`
+**Worktree:** `.claude/worktrees/47_errors-panel-and-e2e/`
 **Phase:** 4 (server infrastructure follow-up)
 **Depends on:** 2b (provides the `/api/errors` routes, store, and delivery state machine — without it there is nothing to render or to drive an e2e)
 **Parallel with:** any other Phase 4 worker that does not touch `packages/web/src/components/ErrorsPanel/` or `e2e/errors/`.
