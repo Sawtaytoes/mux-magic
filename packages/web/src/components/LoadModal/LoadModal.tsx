@@ -8,10 +8,7 @@ import { loadYamlFromText } from "../../jobs/yamlCodec"
 import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
-import {
-  stepCounterAtom,
-  stepsAtom,
-} from "../../state/stepsAtom"
+import { stepsAtom } from "../../state/stepsAtom"
 import { threadCountAtom } from "../../state/threadCountAtom"
 
 export const LoadModal = () => {
@@ -21,10 +18,8 @@ export const LoadModal = () => {
   )
   const setSteps = useSetAtom(stepsAtom)
   const setPaths = useSetAtom(pathsAtom)
-  const setStepCounter = useSetAtom(stepCounterAtom)
   const setThreadCount = useSetAtom(threadCountAtom)
   const currentPaths = useAtomValue(pathsAtom)
-  const currentStepCounter = useAtomValue(stepCounterAtom)
   const commands = useAtomValue(commandsAtom)
   const [error, setError] = useState<string | null>(null)
 
@@ -44,11 +39,9 @@ export const LoadModal = () => {
           text,
           commands,
           currentPaths,
-          currentStepCounter,
         )
         setSteps(result.steps)
         setPaths(result.paths)
-        setStepCounter(result.stepCounter)
         setThreadCount(result.threadCount)
         setIsOpen(false)
         return true
@@ -66,10 +59,8 @@ export const LoadModal = () => {
     [
       commands,
       currentPaths,
-      currentStepCounter,
       setSteps,
       setPaths,
-      setStepCounter,
       setThreadCount,
       setIsOpen,
     ],

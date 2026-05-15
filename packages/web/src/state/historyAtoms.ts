@@ -4,7 +4,6 @@ import type { PathVariable, SequenceItem } from "../types"
 export type Snapshot = {
   steps: SequenceItem[]
   paths: PathVariable[]
-  stepCounter: number
   threadCount: string | null
 }
 

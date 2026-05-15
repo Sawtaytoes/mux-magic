@@ -9,6 +9,7 @@ import type {
   Step,
   Variable,
 } from "../types"
+import { makeStepId } from "../state/idAllocator"
 import { isGroup } from "./sequenceUtils"
 
 const RENAMED_COMMANDS: Record<string, string> = {
@@ -26,11 +27,16 @@ const buildParamsForStep = (
   return buildParams(step, commandDefinition)
 }
 
+// Blank steps (command: "") are persisted explicitly so undo/redo,
+// paste, and `?seq=` round-trips don't silently drop them. The
+// runner side-channels them as no-ops; see sequenceRunner.ts.
 const stepToYaml = (step: Step, commands: Commands) => ({
   id: step.id,
   ...(step.alias ? { alias: step.alias } : {}),
   command: step.command,
-  params: buildParamsForStep(step, commands),
+  params: step.command
+    ? buildParamsForStep(step, commands)
+    : {},
   ...(step.isCollapsed ? { isCollapsed: true } : {}),
 })
 
@@ -40,15 +46,8 @@ const groupToYaml = (group: Group, commands: Commands) => ({
   ...(group.label ? { label: group.label } : {}),
   ...(group.isParallel ? { isParallel: true } : {}),
   ...(group.isCollapsed ? { isCollapsed: true } : {}),
-  steps: group.steps
-    .filter((step) => Boolean(step.command))
-    .map((step) => stepToYaml(step, commands)),
+  steps: group.steps.map((step) => stepToYaml(step, commands)),
 })
-
-const hasContent = (item: SequenceItem): boolean =>
-  "command" in item
-    ? Boolean(item.command)
-    : item.steps.some((step) => Boolean(step.command))
 
 export const toYamlStr = (
   steps: SequenceItem[],
@@ -56,9 +55,8 @@ export const toYamlStr = (
   commands: Commands,
   threadCount?: string | null,
 ): string => {
-  const filledItems = steps.filter(hasContent)
   const hasSomething =
-    filledItems.length > 0 ||
+    steps.length > 0 ||
     paths.some((variable) => variable.value)
 
   if (!hasSomething) return "# No steps yet"
@@ -84,7 +82,7 @@ export const toYamlStr = (
       ...(Object.keys(variablesObj).length > 0
         ? { variables: variablesObj }
         : {}),
-      steps: filledItems.map((item) =>
+      steps: steps.map((item) =>
         isGroup(item)
           ? groupToYaml(item, commands)
           : stepToYaml(item, commands),
@@ -121,7 +119,6 @@ const legacyFieldRenames: Record<
 type LoadContext = {
   commands: Commands
   currentPaths: Variable[]
-  currentStepCounter: number
   seenIds: Set<string>
   warnedLegacyFields: Set<string>
 }
@@ -130,7 +127,6 @@ type LoadContext = {
 export type LoadYamlResult = {
   steps: SequenceItem[]
   paths: Variable[]
-  stepCounter: number
   // Resolved from the YAML variables block; null when absent or no
   // threadCount-typed entry is present.
   threadCount: string | null
@@ -144,14 +140,14 @@ const isGroupItem = (item: unknown): boolean =>
   )
 
 // Creates a bare step shell — params and links are empty; loadStepItem fills
-// them from the YAML. The counter is advanced here so every step gets a
-// unique auto-generated ID even when the YAML omits explicit ids.
+// them from the YAML. Mints a fresh random id and reserves it in seenIds
+// so subsequent autos and explicit-id collision suffixes can't reuse it.
 const createStep = (
   commandName: string,
   context: LoadContext,
 ): Step => {
-  context.currentStepCounter++
-  const autoId = `step${context.currentStepCounter}`
+  const autoId = makeStepId(context.seenIds)
+  context.seenIds.add(autoId)
   return {
     id: autoId,
     alias: "",
@@ -200,21 +196,20 @@ const loadStepItem = (
   const step = createStep(commandName, context)
 
   if (typeof raw.id === "string" && raw.id) {
+    // YAML pinned a literal id — preserve it for back-compat with
+    // saved templates, but if it collides with something already
+    // present (paste-into-existing-sequence, two YAML files merged)
+    // suffix it to keep ids unique. The auto id we minted in
+    // createStep is discarded in that case; seenIds keeps the
+    // stale slot, which is harmless given the 1.68M id space.
     let candidateId = raw.id
     let suffix = 2
     while (context.seenIds.has(candidateId)) {
       candidateId = `${raw.id}_${suffix++}`
     }
     step.id = candidateId
-    const match = /^step(\d+)$/.exec(raw.id)
-    if (match) {
-      const restoredCount = Number(match[1])
-      if (restoredCount > context.currentStepCounter) {
-        context.currentStepCounter = restoredCount
-      }
-    }
+    context.seenIds.add(step.id)
   }
-  context.seenIds.add(step.id)
 
   if (typeof raw.alias === "string") step.alias = raw.alias
   if (raw.isCollapsed === true) step.isCollapsed = true
@@ -444,7 +439,6 @@ export const loadYamlFromText = (
   text: string,
   commands: Commands,
   currentPaths: PathVariable[],
-  currentStepCounter: number,
   existingIds?: Set<string>,
 ): LoadYamlResult => {
   const data = load(text)
@@ -511,10 +505,8 @@ export const loadYamlFromText = (
   const context: LoadContext = {
     commands,
     currentPaths: paths,
-    // Honor the caller's counter so paste/auto-load advance from
-    // wherever the builder is, instead of resetting to 0 and
-    // emitting ids that collide with pre-existing steps.
-    currentStepCounter,
+    // Pre-seed seenIds with the caller's existing ids so paste/auto-load
+    // can't mint a random id that collides with a step already on the page.
     seenIds: new Set<string>(existingIds),
     warnedLegacyFields: new Set<string>(),
   }
@@ -528,7 +520,6 @@ export const loadYamlFromText = (
   return {
     steps,
     paths,
-    stepCounter: context.currentStepCounter,
     threadCount,
   }
 }

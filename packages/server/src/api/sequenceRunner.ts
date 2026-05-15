@@ -100,13 +100,21 @@ type FlatStep = {
   group: SequenceGroup | null
 }
 
+// Blank placeholder steps from the Builder UI are persisted in YAML
+// (so undo/redo and `?seq=` round-trips don't drop them) but they are
+// runtime no-ops — drop them here so they never get a child job and
+// never appear in the iteration loop.
 const flattenItems = (items: SequenceItem[]): FlatStep[] =>
   items.flatMap((item): FlatStep[] =>
     isGroup(item)
-      ? item.steps.map(
-          (step): FlatStep => ({ step, group: item }),
-        )
-      : [{ step: item, group: null }],
+      ? item.steps
+          .filter((step) => step.command !== "")
+          .map(
+            (step): FlatStep => ({ step, group: item }),
+          )
+      : item.command === ""
+        ? []
+        : [{ step: item, group: null }],
   )
 
 const isKnownCommand = (
@@ -449,7 +457,27 @@ export const runSequenceJob = (
       const umbrella = getJob(jobId)
       if (!umbrella || umbrella.status !== "running") return
 
-      const item = body.steps[itemIndex]
+      const rawItem = body.steps[itemIndex]
+
+      // Blank top-level step — placeholder card from the Builder UI,
+      // intentionally a no-op. flattenItems already excluded it from
+      // the child-job pool, so there is nothing to skip-mark.
+      if (!isGroup(rawItem) && rawItem.command === "")
+        continue
+
+      // Strip blank placeholder steps from inside groups too. If a
+      // group has no real steps left after filtering, skip it
+      // entirely (no log line, no umbrella thrash).
+      const item: SequenceItem = isGroup(rawItem)
+        ? {
+            ...rawItem,
+            steps: rawItem.steps.filter(
+              (step) => step.command !== "",
+            ),
+          }
+        : rawItem
+
+      if (isGroup(item) && item.steps.length === 0) continue
 
       if (isGroup(item)) {
         const groupLabel =

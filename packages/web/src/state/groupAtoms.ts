@@ -1,10 +1,8 @@
 import { atom } from "jotai"
-import {
-  collectStepAndGroupIds,
-  isGroup,
-} from "../jobs/sequenceUtils"
+import { isGroup } from "../jobs/sequenceUtils"
 import type { Group, Step } from "../types"
-import { stepCounterAtom, stepsAtom } from "./stepsAtom"
+import { collectExistingIds, makeStepId } from "./idAllocator"
+import { stepsAtom } from "./stepsAtom"
 
 // ─── Group CRUD ───────────────────────────────────────────────────────────────
 // Atoms that mutate groups (top-level containers). Step-level operations
@@ -99,12 +97,9 @@ export const insertGroupAtom = atom(
     set,
     args: { index: number; isParallel: boolean },
   ) => {
-    const counter = get(stepCounterAtom)
-    const taken = collectStepAndGroupIds(get(stepsAtom))
-    let nextCounter = counter + 1
-    while (taken.has(`step${nextCounter}`)) nextCounter++
+    const taken = collectExistingIds(get(stepsAtom))
     const newStep: Step = {
-      id: `step${nextCounter}`,
+      id: makeStepId(taken),
       alias: "",
       command: "",
       params: {},
@@ -113,6 +108,7 @@ export const insertGroupAtom = atom(
       error: null,
       isCollapsed: false,
     }
+    taken.add(newStep.id)
     let groupId = `group_${Math.random()
       .toString(36)
       .slice(2, 8)}`
@@ -129,7 +125,6 @@ export const insertGroupAtom = atom(
       isCollapsed: false,
       steps: [newStep],
     }
-    set(stepCounterAtom, nextCounter)
     set(stepsAtom, (items) => {
       const arr = [...items]
       arr.splice(args.index, 0, newGroup)

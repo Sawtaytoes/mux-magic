@@ -41,10 +41,7 @@ import {
   setLinkAtom,
   setParamAtom,
 } from "../state/stepAtoms"
-import {
-  stepCounterAtom,
-  stepsAtom,
-} from "../state/stepsAtom"
+import { stepsAtom } from "../state/stepsAtom"
 import { threadCountAtom } from "../state/threadCountAtom"
 import type { Group, Step, StepLink } from "../types"
 import { findFirstChangedStepId } from "../utils/diffSteps"
@@ -62,7 +59,6 @@ const captureSnapshot = (
 ): Snapshot => ({
   steps: store.get(stepsAtom),
   paths: store.get(pathsAtom),
-  stepCounter: store.get(stepCounterAtom),
   threadCount: store.get(threadCountAtom),
 })
 
@@ -72,7 +68,6 @@ const applySnapshot = (
 ) => {
   store.set(stepsAtom, snapshot.steps)
   store.set(pathsAtom, snapshot.paths)
-  store.set(stepCounterAtom, snapshot.stepCounter)
   store.set(threadCountAtom, snapshot.threadCount)
 }
 
@@ -290,7 +285,6 @@ export const useBuilderActions = () => {
     pushHistory()
     store.set(stepsAtom, [])
     store.set(pathsAtom, [DEFAULT_BASE_PATH])
-    store.set(stepCounterAtom, 0)
     store.set(threadCountAtom, null)
   }, [store, pushHistory])
 
@@ -421,7 +415,6 @@ export const useBuilderActions = () => {
       )
       const commands = store.get(commandsAtom)
       const currentPaths = store.get(pathsAtom)
-      const currentCounter = store.get(stepCounterAtom)
 
       const existingIds = new Set<string>()
       for (const item of store.get(stepsAtom)) {
@@ -440,7 +433,6 @@ export const useBuilderActions = () => {
           text,
           commands,
           currentPaths,
-          currentCounter,
           existingIds,
         )
       } catch {
@@ -516,7 +508,6 @@ export const useBuilderActions = () => {
           updated.splice(insertIndex, 0, ...result.steps)
           return updated
         })
-        store.set(stepCounterAtom, result.stepCounter)
       }
 
       // Inject a scoped <style> that overrides the default crossfade on

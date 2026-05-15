@@ -26,7 +26,7 @@ import {
   undoStackAtom,
 } from "../state/historyAtoms"
 import { addStepToGroupAtom } from "../state/stepAtoms"
-import { stepCounterAtom, stepsAtom } from "../state/stepsAtom"
+import { stepsAtom } from "../state/stepsAtom"
 import type { Group, Step } from "../types"
 import { useBuilderActions } from "./useBuilderActions"
 import { useScrollToAffectedStep } from "./useScrollToAffectedStep"
@@ -145,7 +145,6 @@ describe("useScrollToAffectedStep", () => {
       {
         steps: allSteps,
         paths: [],
-        stepCounter: 10,
         threadCount: null,
       },
     ])
@@ -176,7 +175,6 @@ describe("useScrollToAffectedStep", () => {
       {
         steps: allSteps,
         paths: [],
-        stepCounter: 2,
         threadCount: null,
       },
     ])
@@ -213,7 +211,6 @@ describe("useScrollToAffectedStep", () => {
       {
         steps: [],
         paths: [],
-        stepCounter: 2,
         threadCount: null,
       },
     ])
@@ -238,7 +235,6 @@ describe("useScrollToAffectedStep", () => {
     )
     const store = createStore()
     store.set(stepsAtom, initial)
-    store.set(stepCounterAtom, 5)
 
     renderWithStore(store)
 
@@ -252,7 +248,12 @@ describe("useScrollToAffectedStep", () => {
       expect(scrollIntoViewSpy).toHaveBeenCalled()
     })
 
-    const newStepEl = document.getElementById("step-step6")
+    const items = store.get(stepsAtom)
+    const newStep = items[items.length - 1] as Step
+    expect(newStep.id).toMatch(/^step_[a-z0-9]{4}$/)
+    const newStepEl = document.getElementById(
+      `step-${newStep.id}`,
+    )
     expect(newStepEl).not.toBeNull()
     expect(scrollIntoViewSpy.mock.contexts[0]).toBe(newStepEl)
   })
@@ -260,7 +261,6 @@ describe("useScrollToAffectedStep", () => {
   test("scrolls to the new step inside a group when insertGroup is called", async () => {
     const store = createStore()
     store.set(stepsAtom, [makeStep("existing")])
-    store.set(stepCounterAtom, 1)
 
     renderWithStore(store)
 
@@ -276,7 +276,13 @@ describe("useScrollToAffectedStep", () => {
 
     // The scroll target should be the new step inside the group, not
     // the group container itself.
-    const newStepEl = document.getElementById("step-step2")
+    const items = store.get(stepsAtom)
+    const newGroup = items[items.length - 1] as Group
+    const innerStep = newGroup.steps[0]
+    expect(innerStep.id).toMatch(/^step_[a-z0-9]{4}$/)
+    const newStepEl = document.getElementById(
+      `step-${innerStep.id}`,
+    )
     expect(newStepEl).not.toBeNull()
     expect(scrollIntoViewSpy.mock.contexts[0]).toBe(newStepEl)
   })
@@ -293,7 +299,6 @@ describe("useScrollToAffectedStep", () => {
     }
     const store = createStore()
     store.set(stepsAtom, [group])
-    store.set(stepCounterAtom, 7)
 
     renderWithStore(store)
 
@@ -307,8 +312,13 @@ describe("useScrollToAffectedStep", () => {
       expect(scrollIntoViewSpy).toHaveBeenCalled()
     })
 
-    // addStepToGroupAtom uses the underscore form `step_${n+1}`
-    const newStepEl = document.getElementById("step-step_8")
+    const updatedGroup = store.get(stepsAtom)[0] as Group
+    const newStep =
+      updatedGroup.steps[updatedGroup.steps.length - 1]
+    expect(newStep.id).toMatch(/^step_[a-z0-9]{4}$/)
+    const newStepEl = document.getElementById(
+      `step-${newStep.id}`,
+    )
     expect(newStepEl).not.toBeNull()
     expect(scrollIntoViewSpy.mock.contexts[0]).toBe(newStepEl)
   })
@@ -464,10 +474,7 @@ describe("useScrollToAffectedStep", () => {
     expect(scrollIntoViewSpy).not.toHaveBeenCalled()
 
     // Now the user clicks "+ step" while the paste transition is
-    // still pending. This should scroll to the new inserted step.
-    // After paste, stepCounterAtom is the loader's internal counter
-    // (always starts at 0, advances per YAML step) — here, 1. So the
-    // newly inserted step's id is `step${1+1}` = step2.
+    // still pending. The new step gets a random `step_xxxx` id.
     await userEvent.click(
       screen.getByRole("button", {
         name: "Insert Step At End",
@@ -478,9 +485,10 @@ describe("useScrollToAffectedStep", () => {
     await waitFor(() => {
       expect(scrollIntoViewSpy).toHaveBeenCalledTimes(1)
     })
-    const insertTarget = scrollIntoViewSpy.mock.contexts[0]
-    expect((insertTarget as HTMLElement).id).toBe(
-      "step-step2",
+    const insertTarget = scrollIntoViewSpy.mock
+      .contexts[0] as HTMLElement
+    expect(insertTarget.id).toMatch(
+      /^step-step_[a-z0-9]{4}$/,
     )
 
     // Now release the paste transition. Its delayed scroll trigger
@@ -516,7 +524,6 @@ describe("useScrollToAffectedStep", () => {
       {
         steps: allSteps,
         paths: [],
-        stepCounter: 3,
         threadCount: null,
       },
     ])

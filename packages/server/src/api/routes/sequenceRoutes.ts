@@ -81,9 +81,9 @@ const sequenceStepSchema = z
         "Optional human-readable alias. Surfaced by the builder UI's step header; ignored at runtime.",
       ),
     command: z
-      .enum(commandNames)
+      .union([z.literal(""), z.enum(commandNames)])
       .describe(
-        "Name of the registered command to run. Must be one of the names listed at `GET /commands` (or surfaced individually as `POST /commands/<name>` endpoints).",
+        "Name of the registered command to run. Must be one of the names listed at `GET /commands` (or surfaced individually as `POST /commands/<name>` endpoints). Empty string `''` marks a placeholder/blank step from the Builder UI — the runner skips it as a no-op so YAML round-trips don't lose the slot.",
       ),
     params: z
       .record(z.string(), z.unknown())

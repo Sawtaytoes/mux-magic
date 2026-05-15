@@ -313,6 +313,35 @@ describe("POST /sequences/run", () => {
     ).toBe(true)
   })
 
+  test("blank placeholder steps (command: '') are skipped — no child job, no error", async () => {
+    // Builder UI persists blank cards in YAML so undo/redo and `?seq=`
+    // round-trips don't drop them. The runner treats them as no-ops.
+    const response = await post("/sequences/run", {
+      paths: { root: { value: "/blank-skip" } },
+      steps: [
+        { id: "blank-1", command: "" },
+        {
+          id: "real",
+          command: "makeDirectory",
+          params: { sourcePath: "@root" },
+        },
+        { id: "blank-2", command: "" },
+      ],
+    })
+    expect(response.status).toBe(202)
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
+
+    await flushAfter(50)
+
+    const children = getChildJobs(jobId)
+    expect(children).toHaveLength(1)
+    expect(children[0].stepId).toBe("real")
+    expect(children[0].status).toBe("completed")
+    expect(getJob(jobId)?.status).toBe("completed")
+  })
+
   test("marks downstream child jobs as skipped when an earlier step fails", async () => {
     vol.fromJSON({ "/work/keep": "" })
 

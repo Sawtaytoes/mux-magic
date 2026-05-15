@@ -3,10 +3,7 @@ import { createStore, Provider } from "jotai"
 import { COMMANDS } from "../../commands/commands"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
-import {
-  stepCounterAtom,
-  stepsAtom,
-} from "../../state/stepsAtom"
+import { stepsAtom } from "../../state/stepsAtom"
 import type {
   PathVariable,
   SequenceItem,
@@ -26,13 +23,11 @@ const withStore = (
       type: "path",
     },
   ],
-  stepCounter: number = steps.length,
 ) => {
   const store = createStore()
   store.set(commandsAtom, COMMANDS)
   store.set(stepsAtom, steps)
   store.set(pathsAtom, paths)
-  store.set(stepCounterAtom, stepCounter)
 
   return (Story: React.ComponentType) => (
     <Provider store={store}>
@@ -94,7 +89,6 @@ export const MidEdit: Story = {
           type: "path" as const,
         },
       ],
-      2,
     ),
   ],
 }
@@ -180,7 +174,6 @@ export const FullPipeline: Story = {
           type: "path" as const,
         },
       ],
-      5,
     ),
   ],
 }
@@ -230,7 +223,6 @@ export const StepRunning: Story = {
           type: "path" as const,
         },
       ],
-      3,
     ),
   ],
 }

@@ -67,7 +67,7 @@ const FAKE_COMMANDS: Commands = {
 }
 
 const load = (text: string) =>
-  loadYamlFromText(text, FAKE_COMMANDS, BASE_PATHS, 0)
+  loadYamlFromText(text, FAKE_COMMANDS, BASE_PATHS)
 
 // ─── toYamlStr — empty states ─────────────────────────────────────────────────
 
@@ -298,10 +298,14 @@ describe("toYamlStr — variables: block output", () => {
   })
 })
 
-// ─── toYamlStr — blank step filtering ────────────────────────────────────────
+// ─── toYamlStr — blank step persistence ──────────────────────────────────────
+//
+// Blank cards from the Builder UI are persisted in YAML so undo/redo,
+// copy-yaml, and `?seq=` round-trips keep the slot. The server's
+// runner treats `command: ""` as a no-op (sequenceRunner.ts).
 
-describe("toYamlStr — blank step filtering", () => {
-  test("omits blank steps (command: '') from a group's YAML", () => {
+describe("toYamlStr — blank step persistence", () => {
+  test("emits blank steps (command: '') inside a group with their id intact", () => {
     const realStep = makeStep({
       id: "real-1",
       command: "makeDirectory",
@@ -322,10 +326,11 @@ describe("toYamlStr — blank step filtering", () => {
     const result = toYamlStr([group], [], MAKE_DIR_COMMAND)
 
     expect(result).toContain("real-1")
-    expect(result).not.toContain("blank-1")
+    expect(result).toContain("blank-1")
+    expect(result).toContain("command: ''")
   })
 
-  test("omits a standalone blank top-level step from the sequence", () => {
+  test("emits a standalone blank top-level step", () => {
     const blankStep = makeStep({
       id: "blank-2",
       command: "",
@@ -342,10 +347,10 @@ describe("toYamlStr — blank step filtering", () => {
     )
 
     expect(result).toContain("real-2")
-    expect(result).not.toContain("blank-2")
+    expect(result).toContain("blank-2")
   })
 
-  test("returns sentinel when a group contains only blank steps", () => {
+  test("a group of only blank steps still serializes (no-op slot is preserved)", () => {
     const group: SequenceItem = {
       kind: "group",
       id: "group-2",
@@ -371,7 +376,59 @@ describe("toYamlStr — blank step filtering", () => {
       {},
     )
 
-    expect(result).toBe("# No steps yet")
+    expect(result).toContain("blank-3")
+    expect(result).toContain("blank-4")
+  })
+})
+
+// ─── Blank step round-trip ───────────────────────────────────────────────────
+
+describe("blank step round-trip (toYaml → loadYaml)", () => {
+  test("preserves a blank step at top level and inside a group", () => {
+    const blankTop = makeStep({
+      id: "blank_top",
+      command: "",
+    })
+    const real = makeStep({
+      id: "real_one",
+      command: "makeDirectory",
+    })
+    const blankInGroup = makeStep({
+      id: "blank_in_group",
+      command: "",
+    })
+    const group = {
+      kind: "group" as const,
+      id: "group_g1",
+      label: "",
+      isParallel: false,
+      isCollapsed: false,
+      steps: [real, blankInGroup],
+    }
+
+    const serialized = toYamlStr(
+      [blankTop, group] as SequenceItem[],
+      [],
+      MAKE_DIR_COMMAND,
+    )
+    const reloaded = loadYamlFromText(
+      serialized,
+      MAKE_DIR_COMMAND,
+      BASE_PATHS,
+    )
+
+    const [topItem, groupItem] = reloaded.steps as [
+      Step,
+      { steps: Step[] },
+    ]
+    expect(topItem.id).toBe("blank_top")
+    expect(topItem.command).toBe("")
+    const innerIds = groupItem.steps.map((step) => step.id)
+    expect(innerIds).toEqual(["real_one", "blank_in_group"])
+    const innerCommands = groupItem.steps.map(
+      (step) => step.command,
+    )
+    expect(innerCommands).toEqual(["makeDirectory", ""])
   })
 })
 
@@ -503,7 +560,6 @@ steps:
         ].join("\n"),
         commandsWithRename,
         BASE_PATHS,
-        0,
       )
       expect(result.steps).toHaveLength(1)
       const step = result.steps[0] as Step
@@ -545,7 +601,6 @@ steps:
         ].join("\n"),
         commandsWithRename,
         BASE_PATHS,
-        0,
       )
       const renameCalls = warnSpy.mock.calls.filter(
         ([msg]) =>
@@ -577,7 +632,6 @@ steps:
       yaml,
       FAKE_COMMANDS,
       paths,
-      0,
     )
     const step = result.steps[0] as {
       links: Record<string, unknown>
@@ -873,12 +927,7 @@ describe("legacy field renames — read-time remapping", () => {
   }
 
   const loadWithRenameCommands = (text: string) =>
-    loadYamlFromText(
-      text,
-      LEGACY_RENAME_COMMANDS,
-      BASE_PATHS,
-      0,
-    )
+    loadYamlFromText(text, LEGACY_RENAME_COMMANDS, BASE_PATHS)
 
   test.each([
     ["getAudioOffsets", "sourceFilesPath"],

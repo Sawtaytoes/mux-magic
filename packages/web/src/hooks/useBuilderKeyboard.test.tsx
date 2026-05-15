@@ -21,7 +21,6 @@ afterEach(cleanup)
 const emptySnapshot: Snapshot = {
   steps: [],
   paths: [],
-  stepCounter: 0,
   threadCount: null,
 }
 

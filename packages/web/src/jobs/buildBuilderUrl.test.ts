@@ -57,7 +57,6 @@ describe("buildBuilderUrl round-trip", () => {
       decoded,
       FIXTURE_COMMANDS_BUNDLE_A,
       DEFAULT_PATHS,
-      0,
     )
 
     expect(result.steps).toHaveLength(1)
@@ -116,7 +115,6 @@ describe("buildBuilderUrl round-trip", () => {
       decoded,
       FIXTURE_COMMANDS_BUNDLE_A,
       DEFAULT_PATHS,
-      0,
     )
 
     expect(result.steps).toHaveLength(2)
@@ -126,6 +124,53 @@ describe("buildBuilderUrl round-trip", () => {
     expect(
       (result.steps[1] as { command: string }).command,
     ).toBe("setDisplayWidth")
+  })
+
+  it("round-trips a sequence containing a blank placeholder step through ?seq=", () => {
+    const job = makeFakeJob({
+      id: "j3",
+      commandName: "sequence",
+      status: "completed",
+      params: {
+        paths: {
+          basePath: { label: "basePath", value: "/media" },
+        },
+        steps: [
+          { id: "blank_pad", command: "" },
+          {
+            id: "real",
+            command: "flattenOutput",
+            params: { sourcePath: "@basePath" },
+          },
+        ],
+      },
+    })
+
+    const url = buildBuilderUrl(job)
+    const b64 = new URLSearchParams(url.split("?")[1]).get(
+      "seq",
+    )
+    const decoded = decodeSeqParam(b64)
+    if (!decoded)
+      throw new Error("decodeSeqParam returned null")
+
+    const result = loadYamlFromText(
+      decoded,
+      FIXTURE_COMMANDS_BUNDLE_A,
+      DEFAULT_PATHS,
+    )
+
+    expect(result.steps).toHaveLength(2)
+    expect(
+      (result.steps[0] as { id: string; command: string })
+        .command,
+    ).toBe("")
+    expect(
+      (result.steps[0] as { id: string }).id,
+    ).toBe("blank_pad")
+    expect(
+      (result.steps[1] as { command: string }).command,
+    ).toBe("flattenOutput")
   })
 
   it("decodeSeqParam returns null for malformed base64", () => {

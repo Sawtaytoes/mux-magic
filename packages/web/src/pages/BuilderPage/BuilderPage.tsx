@@ -27,10 +27,7 @@ import {
 } from "../../jobs/yamlCodec"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
-import {
-  stepCounterAtom,
-  stepsAtom,
-} from "../../state/stepsAtom"
+import { stepsAtom } from "../../state/stepsAtom"
 import { BuilderSequenceList } from "../BuilderSequenceList/BuilderSequenceList"
 
 // ─── BuilderPage ──────────────────────────────────────────────────────────────
@@ -64,11 +61,9 @@ export const BuilderPage = () => {
         decoded,
         store.get(commandsAtom),
         store.get(pathsAtom),
-        store.get(stepCounterAtom),
       )
       store.set(stepsAtom, result.steps)
       store.set(pathsAtom, result.paths)
-      store.set(stepCounterAtom, result.stepCounter)
 
       // Intentionally NOT stripping ?seq= from the URL. Earlier code did so
       // (to prevent refresh from clobbering edits) but that caused a worse
