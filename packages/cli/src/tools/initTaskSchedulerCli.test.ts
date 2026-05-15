@@ -1,7 +1,7 @@
 import {
   __resetTaskSchedulerForTests,
   initTaskScheduler,
-} from "@mux-magic/server/src/tools/taskScheduler.js"
+} from "@mux-magic/tools"
 import {
   beforeEach,
   describe,

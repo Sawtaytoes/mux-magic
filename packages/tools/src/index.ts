@@ -54,6 +54,16 @@ export { makeDirectory } from "./makeDirectory.js"
 export { naturalSort } from "./naturalSort.js"
 export { replaceFileExtension } from "./replaceFileExtension.js"
 export {
+  __resetTaskSchedulerForTests,
+  initTaskScheduler,
+  mergeMapOrdered,
+  registerJobClaim,
+  runTask,
+  runTasks,
+  runTasksOrdered,
+  unregisterJobClaim,
+} from "./taskScheduler.js"
+export {
   getOperatorValue,
   runPromiseScheduler,
   runTestScheduler,

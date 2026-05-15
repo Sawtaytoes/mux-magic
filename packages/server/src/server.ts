@@ -6,14 +6,19 @@ import "./loadEnv.js"
 import "./logBuildBanner.js"
 
 import { serve } from "@hono/node-server"
-import { logInfo } from "@mux-magic/tools"
+import {
+  initTaskScheduler,
+  logInfo,
+} from "@mux-magic/tools"
 import { app } from "./api/hono-routes.js"
-import { installLogCapture } from "./api/logCapture.js"
+import {
+  getActiveJobId,
+  installLogCapture,
+} from "./api/logCapture.js"
 import { API_PORT, MAX_THREADS } from "./tools/envVars.js"
-import { initTaskScheduler } from "./tools/taskScheduler.js"
 
 installLogCapture()
-initTaskScheduler(MAX_THREADS)
+initTaskScheduler(MAX_THREADS, { getActiveJobId })
 
 serve(
   {

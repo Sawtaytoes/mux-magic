@@ -9,6 +9,7 @@ import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
   logInfo,
+  runTasks,
 } from "@mux-magic/tools"
 import {
   catchError,
@@ -32,7 +33,6 @@ import {
   type VideoTrack,
 } from "../tools/getMediaInfo.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
-import { runTasks } from "../tools/taskScheduler.js"
 
 export type AspectRatioData = Record<
   string,

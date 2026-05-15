@@ -1,9 +1,9 @@
-import { catchError, EMPTY, type Observable } from "rxjs"
-
 import {
   registerJobClaim,
   unregisterJobClaim,
-} from "../tools/taskScheduler.js"
+} from "@mux-magic/tools"
+import { catchError, EMPTY, type Observable } from "rxjs"
+
 import {
   reportJobCompleted,
   reportJobFailed,

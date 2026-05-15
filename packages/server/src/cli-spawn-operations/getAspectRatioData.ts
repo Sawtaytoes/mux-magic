@@ -1,3 +1,4 @@
+import { runTasks } from "@mux-magic/tools"
 import {
   bufferCount,
   concatMap,
@@ -9,7 +10,6 @@ import {
   reduce,
 } from "rxjs"
 
-import { runTasks } from "../tools/taskScheduler.js"
 import { runReadlineFfmpeg } from "./runReadlineFfmpeg.js"
 
 export type AspectRatioCalculation = {

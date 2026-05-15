@@ -1,10 +1,9 @@
-import { vol } from "memfs"
-import { afterEach, beforeEach, vi } from "vitest"
-
 import {
   __resetTaskSchedulerForTests,
   initTaskScheduler,
-} from "./src/tools/taskScheduler.js"
+} from "@mux-magic/tools"
+import { vol } from "memfs"
+import { afterEach, beforeEach, vi } from "vitest"
 
 // Always mock `fs` because it's used everywhere, and we never want to hit the filesystem.
 vi.mock("node:fs")

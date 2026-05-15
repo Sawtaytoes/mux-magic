@@ -114,7 +114,7 @@ All three workers touch `eslint.config.js` and must run sequentially.
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 20 | [cli-package-extract](20_cli-package-extract.md) | cli | **Opus** | High | ON | All Phase 1 done | done |
-| 21 | [observables-shared-split](21_observables-shared-split.md) — promotes `taskScheduler` + reusable rxjs operators from server into `@mux-magic/tools` | cli+srv | Sonnet | High | ON | 20 | ready |
+| 21 | [observables-shared-split](21_observables-shared-split.md) — promotes `taskScheduler` + reusable rxjs operators from server into `@mux-magic/tools` | cli+srv | Sonnet | High | ON | 20 | done |
 | 32 | [lookup-types-from-server](32_lookup-types-from-server.md) — migrates [LookupModal/types.ts](../../packages/web/src/components/LookupModal/types.ts) to import canonical `LookupSearchResult`/`LookupType`/`LookupRelease` from `@mux-magic/server`; eliminates the `eslint-disable no-restricted-syntax` bypass installed by worker 06. `LookupVariant`/`LookupGroup` stay web-only (UI synthesis); `LookupState`/`LookupStage` stay web-only (state machine). | srv+web | Sonnet | Medium | ON | 01, 06 | done |
 
 ---

@@ -1,3 +1,4 @@
+import { runTask } from "@mux-magic/tools"
 import {
   concatMap,
   from,
@@ -11,7 +12,6 @@ import {
 import { emitJobEvent } from "../api/jobStore.js"
 import { getActiveJobId } from "../api/logCapture.js"
 import type { ProgressEvent } from "../api/types.js"
-import { runTask } from "./taskScheduler.js"
 
 // Hard cap on emission frequency. The user-facing requirement is "max
 // of 1s between updates"; the deferred-first-emit behavior gives the

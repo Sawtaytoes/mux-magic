@@ -7,6 +7,7 @@ import {
   logAndRethrowPipelineError,
   logInfo,
   makeDirectory,
+  runTasks,
 } from "@mux-magic/tools"
 import {
   concatMap,
@@ -23,7 +24,6 @@ import {
 } from "rxjs"
 import { getActiveJobId } from "../api/logCapture.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
-import { runTasks } from "../tools/taskScheduler.js"
 
 export type CopyRecord = {
   source: string

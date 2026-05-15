@@ -10,7 +10,15 @@ import {
   tap,
 } from "rxjs"
 
-import { getActiveJobId } from "../api/logCapture.js"
+// The scheduler historically read the active job id from server-only
+// AsyncLocalStorage. To keep @mux-magic/tools free of server imports,
+// the provider is injected at init time. CLI passes nothing (constant
+// null); server passes its real getActiveJobId from logCapture.
+type GetActiveJobId = () => string | null | undefined
+
+const nullJobIdProvider: GetActiveJobId = () => null
+
+let getActiveJobId: GetActiveJobId = nullJobIdProvider
 
 // ---------------------------------------------------------------------------
 // Process-wide Task scheduler
@@ -166,11 +174,18 @@ export const unregisterJobClaim = (jobId: string): void => {
 // downgrade concurrency.
 export const initTaskScheduler = (
   newConcurrency: number,
+  options?: {
+    getActiveJobId?: GetActiveJobId
+  },
 ): void => {
   if (
     concurrency !== null &&
     concurrency === newConcurrency
   ) {
+    if (options?.getActiveJobId) {
+      getActiveJobId = options.getActiveJobId
+    }
+
     return
   }
 
@@ -181,6 +196,10 @@ export const initTaskScheduler = (
   }
 
   concurrency = newConcurrency
+
+  if (options?.getActiveJobId) {
+    getActiveJobId = options.getActiveJobId
+  }
 
   const newInbox = new Subject<ScheduledTask>()
 
@@ -387,6 +406,7 @@ export const runTasksOrdered = <T, R>(
 export const __resetTaskSchedulerForTests = (): void => {
   concurrency = null
   claimByJob.clear()
+  getActiveJobId = nullJobIdProvider
 
   inbox?.complete()
 

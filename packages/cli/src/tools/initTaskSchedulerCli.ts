@@ -1,4 +1,4 @@
-import { initTaskScheduler } from "@mux-magic/server/src/tools/taskScheduler.js"
+import { initTaskScheduler } from "@mux-magic/tools"
 
 // Imported as a side-effect from src/cli.ts as the FIRST import so the
 // scheduler is initialized at concurrency=1 before any app-command

@@ -3,6 +3,8 @@ import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
   logInfo,
+  mergeMapOrdered,
+  runTasks,
 } from "@mux-magic/tools"
 import { filter, groupBy, map, take, tap } from "rxjs"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
@@ -10,10 +12,6 @@ import {
   type AudioTrack,
   getMediaInfo,
 } from "../tools/getMediaInfo.js"
-import {
-  mergeMapOrdered,
-  runTasks,
-} from "../tools/taskScheduler.js"
 
 export const hasSurroundSound = ({
   isRecursive,

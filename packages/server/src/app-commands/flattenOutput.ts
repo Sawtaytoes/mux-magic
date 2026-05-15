@@ -6,6 +6,7 @@ import {
   getFiles,
   logAndRethrowPipelineError,
   logInfo,
+  runTasks,
 } from "@mux-magic/tools"
 import {
   concatMap,
@@ -20,7 +21,6 @@ import {
 } from "rxjs"
 import { getActiveJobId } from "../api/logCapture.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
-import { runTasks } from "../tools/taskScheduler.js"
 
 // Copies every file in `sourcePath` up one level into its parent directory,
 // overwriting any same-named originals. By default the source folder is
