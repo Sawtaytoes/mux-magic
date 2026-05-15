@@ -45,7 +45,7 @@ import { modifySubtitleMetadata } from "../../app-commands/modifySubtitleMetadat
 import { moveFiles } from "../../app-commands/moveFiles.js"
 import { nameAnimeEpisodes } from "../../app-commands/nameAnimeEpisodes.js"
 import { nameAnimeEpisodesAniDB } from "../../app-commands/nameAnimeEpisodesAniDB.js"
-import { nameSpecialFeatures } from "../../app-commands/nameSpecialFeatures.js"
+import { nameSpecialFeaturesDvdCompareTmdb } from "../../app-commands/nameSpecialFeaturesDvdCompareTmdb.js"
 import { nameTvShowEpisodes } from "../../app-commands/nameTvShowEpisodes.js"
 import { remuxToMkv } from "../../app-commands/remuxToMkv.js"
 import { renameDemos } from "../../app-commands/renameDemos.js"
@@ -142,7 +142,7 @@ export const commandNames = [
   "moveFiles",
   "nameAnimeEpisodes",
   "nameAnimeEpisodesAniDB",
-  "nameSpecialFeatures",
+  "nameSpecialFeaturesDvdCompareTmdb",
   "nameTvShowEpisodes",
   "remuxToMkv",
   "renameDemos",
@@ -511,9 +511,9 @@ export const commandConfigs: Record<
       "Rename anime episode files using AniDB metadata (regular, specials with length-matched picker, or type=6 alternates)",
     tags: ["Naming Operations"],
   },
-  nameSpecialFeatures: {
+  nameSpecialFeaturesDvdCompareTmdb: {
     getObservable: (body) =>
-      nameSpecialFeatures({
+      nameSpecialFeaturesDvdCompareTmdb({
         isAutoNamingDuplicates: body.autoNameDuplicates,
         dvdCompareId: body.dvdCompareId,
         dvdCompareReleaseHash: body.dvdCompareReleaseHash,
@@ -525,7 +525,8 @@ export const commandConfigs: Record<
         timecodePaddingAmount: body.timecodePadding,
         url: body.url,
       }),
-    schema: schemas.nameSpecialFeaturesRequestSchema,
+    schema:
+      schemas.nameSpecialFeaturesDvdCompareTmdbRequestSchema,
     summary:
       "Rename special features (and the main movie file) based on DVDCompare timecodes; movie title is canonicalized via TMDB",
     tags: ["Naming Operations"],

@@ -468,6 +468,17 @@ steps:
     expect(() => load(yaml)).toThrow("Unknown command")
   })
 
+  test("rejects legacy nameSpecialFeatures with rename-aware error", () => {
+    const yaml = `
+steps:
+  - command: nameSpecialFeatures
+    params: {}
+`
+    expect(() => load(yaml)).toThrow(
+      /renamed to ["']?nameSpecialFeaturesDvdCompareTmdb["']?/,
+    )
+  })
+
   test("restores path-variable links from @-prefixed values", () => {
     const paths: PathVariable[] = [
       {

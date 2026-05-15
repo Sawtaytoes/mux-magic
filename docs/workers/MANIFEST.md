@@ -125,7 +125,7 @@ The existing `nameSpecialFeatures` code is preserved (renamed only by worker 22,
 
 | ID | Slug | Track | Model | Effort | Thinking | Depends | Status |
 |:--:|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 22 | [nsf-rename-to-dvdcompare-tmdb](22_nsf-rename-to-dvdcompare-tmdb.md) — rename existing `nameSpecialFeatures` → `nameSpecialFeaturesDvdCompareTmdb`; **code unchanged** | srv+web | Sonnet | Medium | ON | 21 | ready |
+| 22 | [nsf-rename-to-dvdcompare-tmdb](22_nsf-rename-to-dvdcompare-tmdb.md) — rename existing `nameSpecialFeatures` → `nameSpecialFeaturesDvdCompareTmdb`; **code unchanged** | srv+web | Sonnet | Medium | ON | 21 | done |
 | 3a | [nsf-pipeline-split-into-modules](3a_nsf-pipeline-split-into-modules.md) — behavior-preserving split of the 1,325-line NSF pipeline into focused modules. Unblocks parallel improvements in 25/26/27 | srv | **Opus** | High | ON | 22 | ready |
 | 23 | [nameMovieCutsDvdCompareTmdb-new-command](23_namemoviecuts-dvdcompare-tmdb-new-command.md) — new command: rename movies + move into directories by edition. Uses TMDB + DVD Compare | srv+web+cli | Sonnet | High | ON | 22, 35, 3a | ready |
 | 24 | [source-path-abstraction](24_source-path-abstraction.md) — unified `SourcePath` control (field name `sourcePath` internal, "Source Path" user-facing) | srv+web+cli | **Opus** | High | ON | All Phase 1 done | done |

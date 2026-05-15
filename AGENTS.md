@@ -24,6 +24,8 @@ Plus function destructuring (2+ args → single object param), always-braced `if
 
 **Indentation:** Biome enforces 2-space indentation everywhere. Never use tabs. Run `yarn biome format --write <file>` on every file you create or modify, then `git add` the result. Do not rely on your editor's auto-conversion — verify the committed bytes with `git show HEAD:<path> | cat -A` and confirm no `^I` (tab) characters appear. CI runs on Linux where editor-level tab→space conversion does not happen.
 
+**PowerShell file IO — UTF-8 trap (Windows):** Never bulk-edit source files with `Get-Content -Raw` + `Set-Content -Encoding utf8`. On Windows PowerShell 5.1, `Get-Content` defaults to the system code page (Windows-1252), NOT UTF-8 — it misreads multi-byte UTF-8 sequences (e.g. `─` = `E2 94 80`) as three individual Windows-1252 bytes (`â`, `"`, `€`), and `Set-Content -Encoding utf8` then re-encodes that mojibake as actual UTF-8, producing the doubly-broken `â"€` you'll see in box-drawing comments and emoji. Fixing this corruption is a manual chore that takes hours. For any bulk-edit script, use `[System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)` and `[System.IO.File]::WriteAllText($path, $content, (New-Object System.Text.UTF8Encoding $false))` — these operate on raw bytes outside PowerShell's encoding pipeline and produce UTF-8 without a BOM. Better still: prefer the dedicated Edit tool over any bulk-replace script when the file count is small enough.
+
 ## Testing
 
 👉 **Full reference:** [docs/agents/testing.md](docs/agents/testing.md)

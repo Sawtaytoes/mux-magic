@@ -10,7 +10,7 @@ import {
 import { failureScenario } from "./scenarios/failure.js"
 import { getAudioOffsetsScenario } from "./scenarios/getAudioOffsets.js"
 import { inProgressScenario } from "./scenarios/inProgress.js"
-import { nameSpecialFeaturesScenario } from "./scenarios/nameSpecialFeatures.js"
+import { nameSpecialFeaturesDvdCompareTmdbScenario } from "./scenarios/nameSpecialFeaturesDvdCompareTmdb.js"
 import {
   nameAnimeEpisodesAniDBScenario,
   nameAnimeEpisodesScenario,
@@ -109,7 +109,8 @@ const OBSERVABLE_OVERRIDES: Partial<
   getAudioOffsets: getAudioOffsetsScenario,
   nameAnimeEpisodes: nameAnimeEpisodesScenario,
   nameAnimeEpisodesAniDB: nameAnimeEpisodesAniDBScenario,
-  nameSpecialFeatures: nameSpecialFeaturesScenario,
+  nameSpecialFeaturesDvdCompareTmdb:
+    nameSpecialFeaturesDvdCompareTmdbScenario,
   nameTvShowEpisodes: nameTvShowEpisodesScenario,
   renameDemos: renameDemosScenario,
   renameMovieClipDownloads:

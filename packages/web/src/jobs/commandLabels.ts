@@ -42,7 +42,8 @@ const commandLabels: Record<string, string> = {
   // Naming Operations
   nameAnimeEpisodes: "Name Anime Episodes (MAL)",
   nameAnimeEpisodesAniDB: "Name Anime Episodes (AniDB)",
-  nameSpecialFeatures: "Name Special Features",
+  nameSpecialFeaturesDvdCompareTmdb:
+    "Name Special Features (DVD Compare + TMDB)",
   nameTvShowEpisodes: "Name TV Show Episodes",
   renameDemos: "Rename Demos",
   renameMovieClipDownloads: "Rename Movie Clip Downloads",

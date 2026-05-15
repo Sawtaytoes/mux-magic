@@ -1,4 +1,4 @@
-﻿// ─── Command definitions ──────────────────────────────────────────────────────
+// ─── Command definitions ──────────────────────────────────────────────────────
 //
 // Each entry describes one API command the sequence builder can wire up.
 // `tag` groups commands in the picker; `fields` lists the parameters the
@@ -38,7 +38,7 @@ import {
   moveFilesRequestSchema,
   nameAnimeEpisodesAniDBRequestSchema,
   nameAnimeEpisodesRequestSchema,
-  nameSpecialFeaturesRequestSchema,
+  nameSpecialFeaturesDvdCompareTmdbRequestSchema,
   nameTvShowEpisodesRequestSchema,
   remuxToMkvRequestSchema,
   renameDemosRequestSchema,
@@ -983,9 +983,9 @@ export const COMMANDS: Commands = {
       ],
     }
   })(),
-  nameSpecialFeatures: (() => {
+  nameSpecialFeaturesDvdCompareTmdb: (() => {
     const field = fieldBuilder(
-      nameSpecialFeaturesRequestSchema,
+      nameSpecialFeaturesDvdCompareTmdbRequestSchema,
     )
     return {
       summary:

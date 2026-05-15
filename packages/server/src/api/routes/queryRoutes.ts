@@ -314,7 +314,7 @@ queryRoutes.openapi(
     path: "/queries/searchMovieDb",
     summary: "Search The Movie Database (TMDB) for a film",
     description:
-      "Returns up to 20 movies matching the search term. Optional `year` narrows results so the builder can resolve the right film when title is shared across eras (e.g. 'Soldier' 1998 vs 1982). Used by the builder to populate the movieDbId field for nameMovies and to confirm the canonical match for nameSpecialFeatures. Requires TMDB_API_KEY in the environment.",
+      "Returns up to 20 movies matching the search term. Optional `year` narrows results so the builder can resolve the right film when title is shared across eras (e.g. 'Soldier' 1998 vs 1982). Used by the builder to populate the movieDbId field for nameMovies and to confirm the canonical match for nameSpecialFeaturesDvdCompareTmdb. Requires TMDB_API_KEY in the environment.",
     tags: ["Naming Operations"],
     request: {
       body: {

@@ -8,7 +8,7 @@
   ],
   "step": {
     "id": "step-fixture",
-    "command": "nameSpecialFeatures",
+    "command": "nameSpecialFeaturesDvdCompareTmdb",
     "params": {
       "dvdCompareId": 74759,
       "dvdCompareName": "The Lord of the Rings: The Fellowship of the Ring",

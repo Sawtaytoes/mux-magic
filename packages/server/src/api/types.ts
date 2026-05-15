@@ -72,7 +72,7 @@ export type PromptEvent = {
   // aren't tied to a specific file (e.g. global search-results prompts).
   filePath?: string
   // Optional per-option file paths for multi-file prompts (e.g. the
-  // duplicate-detection picker emitted by nameSpecialFeatures when two
+  // duplicate-detection picker emitted by nameSpecialFeaturesDvdCompareTmdb when two
   // or more files match the same target name). Each entry pairs an
   // option's `index` with the absolute path the option represents so
   // the Builder can render a ▶ Play button on each row. Independent of

@@ -61,7 +61,7 @@ export const canonicalizeMovieTitle = ({
     // returns EMPTY on error (no emission, just complete). That
     // bypasses the catchError above — so without defaultIfEmpty,
     // a TMDB error would silently complete this stream with zero
-    // emissions, and the downstream `concatMap` in nameSpecialFeatures
+    // emissions, and the downstream `concatMap` in nameSpecialFeaturesDvdCompareTmdb
     // would never see a movie identity. The whole rename pipeline
     // would then no-op without surfacing why. defaultIfEmpty
     // guarantees we always emit at least the fallback.

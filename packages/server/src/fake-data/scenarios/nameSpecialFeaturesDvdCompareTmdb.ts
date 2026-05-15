@@ -22,13 +22,18 @@ const effect = (fn: () => void): Observable<never> =>
     sub.complete()
   })
 
-export const nameSpecialFeaturesScenario = (
+export const nameSpecialFeaturesDvdCompareTmdbScenario = (
   body: unknown,
   options: { label?: string } = {},
 ): Observable<unknown> => {
-  const label = options.label ?? "fake/nameSpecialFeatures"
+  const label =
+    options.label ??
+    "fake/nameSpecialFeaturesDvdCompareTmdb"
 
-  logInfo(label, "Starting fake nameSpecialFeatures run.")
+  logInfo(
+    label,
+    "Starting fake nameSpecialFeaturesDvdCompareTmdb run.",
+  )
   logInfo(label, `Body: ${JSON.stringify(body)}`)
 
   const emitProgress = (ratio: number) => {

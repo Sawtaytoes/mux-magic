@@ -295,7 +295,7 @@ describe("buildParams — companionNameField branch", () => {
 })
 
 // ─── Branch: persistedKeys ────────────────────────────────────────────────────
-// Representative: nameSpecialFeatures with tmdbId/tmdbName persisted.
+// Representative: nameSpecialFeaturesDvdCompareTmdb with tmdbId/tmdbName persisted.
 // Uses parity fixture input values.
 
 describe("buildParams — persistedKeys branch", () => {
@@ -334,7 +334,7 @@ describe("buildParams — persistedKeys branch", () => {
       ],
     }
     const step = makeStep(
-      "nameSpecialFeatures",
+      "nameSpecialFeaturesDvdCompareTmdb",
       {
         dvdCompareId: 74759,
         dvdCompareName:
@@ -372,10 +372,13 @@ describe("buildParams — persistedKeys branch", () => {
       persistedKeys: ["tmdbId", "tmdbName"],
       fields: [],
     }
-    const step = makeStep("nameSpecialFeatures", {
-      tmdbId: "",
-      tmdbName: null,
-    })
+    const step = makeStep(
+      "nameSpecialFeaturesDvdCompareTmdb",
+      {
+        tmdbId: "",
+        tmdbName: null,
+      },
+    )
 
     expect(buildParams(step, commandDefinition)).toEqual({})
   })

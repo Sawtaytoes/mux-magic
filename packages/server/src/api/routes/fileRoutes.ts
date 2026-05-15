@@ -359,7 +359,7 @@ fileRoutes.openapi(
     path: "/files/rename",
     summary: "Rename a single file in place",
     description:
-      "Used by the nameSpecialFeatures result card so the user can fix unrenamed entries one row at a time. Both `oldPath` and `newPath` are validated for absolute / no-traversal safety. The underlying helper aborts when `newPath` already exists, so the API can't silently overwrite an existing file.",
+      "Used by the nameSpecialFeaturesDvdCompareTmdb result card so the user can fix unrenamed entries one row at a time. Both `oldPath` and `newPath` are validated for absolute / no-traversal safety. The underlying helper aborts when `newPath` already exists, so the API can't silently overwrite an existing file.",
     tags: ["File Operations"],
     request: {
       body: {

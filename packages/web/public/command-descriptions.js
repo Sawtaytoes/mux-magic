@@ -218,7 +218,7 @@ window.commandDescriptions = {
       "episodeType": "Which AniDB episode types to rename. Each non-regular sub-type is run separately: specials (S), credits (C, OP/ED), trailers (T), parodies (P) all run the length-matched per-file picker and emit Plex's s00eNN. Others (type=6 alts) and regular are index-paired with a duration sanity-check warning."
     }
   },
-  "nameSpecialFeatures": {
+  "nameSpecialFeaturesDvdCompareTmdb": {
     "summary": "Rename special features (and the main movie file) based on DVDCompare timecodes; movie title is canonicalized via TMDB",
     "fields": {
       "sourcePath": "Directory where special features are located.",

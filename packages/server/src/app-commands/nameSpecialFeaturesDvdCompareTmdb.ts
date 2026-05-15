@@ -772,7 +772,7 @@ export const moveFileToEditionFolder = (
   )
 }
 
-export const nameSpecialFeatures = ({
+export const nameSpecialFeaturesDvdCompareTmdb = ({
   isAutoNamingDuplicates = false,
   dvdCompareId,
   dvdCompareReleaseHash,
@@ -1319,6 +1319,8 @@ export const nameSpecialFeatures = ({
         (renameObservable) => renameObservable,
         { concurrency: 1 },
       ),
-      logAndRethrowPipelineError(nameSpecialFeatures),
+      logAndRethrowPipelineError(
+        nameSpecialFeaturesDvdCompareTmdb,
+      ),
     )
 }

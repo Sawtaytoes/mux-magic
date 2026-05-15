@@ -982,67 +982,68 @@ export const nameAnimeEpisodesAniDBRequestSchema = z
     "Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Episode-range selection is planned — see README §AniDB command notes.",
   )
 
-export const nameSpecialFeaturesRequestSchema = z.object({
-  sourcePath: z
-    .string()
-    .describe(
-      "Directory where special features are located.",
-    ),
-  url: z
-    .string()
-    .optional()
-    .describe(
-      "DVDCompare.net URL including the chosen release's hash tag.",
-    ),
-  dvdCompareId: z
-    .number()
-    .optional()
-    .describe(
-      "DVDCompare film ID — when provided, constructs URL directly and bypasses search.",
-    ),
-  dvdCompareReleaseHash: z
-    .number()
-    .optional()
-    .describe(
-      "The hash (URL fragment #) from the DVDCompare release page denoting which release variant is selected for that film. Defaults to 1 (the first release option).",
-    ),
-  searchTerm: z
-    .string()
-    .optional()
-    .describe(
-      "Title to search on DVDCompare.net (used when no url or dvdCompareId).",
-    ),
-  fixedOffset: z
-    .number()
-    .default(0)
-    .describe(
-      "Timecodes are pushed positively or negatively by this amount (in seconds).",
-    ),
-  timecodePadding: z
-    .number()
-    .default(2)
-    .describe(
-      "Seconds that timecodes may be off. Defaults to 2, matching typical DVDCompare-vs-rip drift. Pass 0 for exact-match-only.",
-    ),
-  moveToEditionFolders: z
-    .boolean()
-    .default(false)
-    .describe(
-      "After renaming, move main-feature files that carry a {edition-…} tag into a nested folder: <sourceParent>/<Title (Year)>/<Title (Year) {edition-…}>/<file>. Special-feature files are not moved.",
-    ),
-  nonInteractive: z
-    .boolean()
-    .default(false)
-    .describe(
-      "When a rename target already exists on disk, automatically append (2), (3), … instead of emitting a review-needed collision event. Use this in scripts or when running without a UI that can display the collision prompt.",
-    ),
-  autoNameDuplicates: z
-    .boolean()
-    .default(false)
-    .describe(
-      "When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/… suffixes deterministically. Pass false to instead emit a duplicate-pick prompt for each ambiguous group. Defaults to false so interactive runs prompt the user.",
-    ),
-})
+export const nameSpecialFeaturesDvdCompareTmdbRequestSchema =
+  z.object({
+    sourcePath: z
+      .string()
+      .describe(
+        "Directory where special features are located.",
+      ),
+    url: z
+      .string()
+      .optional()
+      .describe(
+        "DVDCompare.net URL including the chosen release's hash tag.",
+      ),
+    dvdCompareId: z
+      .number()
+      .optional()
+      .describe(
+        "DVDCompare film ID — when provided, constructs URL directly and bypasses search.",
+      ),
+    dvdCompareReleaseHash: z
+      .number()
+      .optional()
+      .describe(
+        "The hash (URL fragment #) from the DVDCompare release page denoting which release variant is selected for that film. Defaults to 1 (the first release option).",
+      ),
+    searchTerm: z
+      .string()
+      .optional()
+      .describe(
+        "Title to search on DVDCompare.net (used when no url or dvdCompareId).",
+      ),
+    fixedOffset: z
+      .number()
+      .default(0)
+      .describe(
+        "Timecodes are pushed positively or negatively by this amount (in seconds).",
+      ),
+    timecodePadding: z
+      .number()
+      .default(2)
+      .describe(
+        "Seconds that timecodes may be off. Defaults to 2, matching typical DVDCompare-vs-rip drift. Pass 0 for exact-match-only.",
+      ),
+    moveToEditionFolders: z
+      .boolean()
+      .default(false)
+      .describe(
+        "After renaming, move main-feature files that carry a {edition-…} tag into a nested folder: <sourceParent>/<Title (Year)>/<Title (Year) {edition-…}>/<file>. Special-feature files are not moved.",
+      ),
+    nonInteractive: z
+      .boolean()
+      .default(false)
+      .describe(
+        "When a rename target already exists on disk, automatically append (2), (3), … instead of emitting a review-needed collision event. Use this in scripts or when running without a UI that can display the collision prompt.",
+      ),
+    autoNameDuplicates: z
+      .boolean()
+      .default(false)
+      .describe(
+        "When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/… suffixes deterministically. Pass false to instead emit a duplicate-pick prompt for each ambiguous group. Defaults to false so interactive runs prompt the user.",
+      ),
+  })
 
 export const nameTvShowEpisodesRequestSchema = z.object({
   sourcePath: z
@@ -1784,7 +1785,7 @@ export const openExternalResponseSchema = z.object({
     ),
 })
 
-// Phase B — interactive renaming used by the nameSpecialFeatures result
+// Phase B — interactive renaming used by the nameSpecialFeaturesDvdCompareTmdb result
 // card. Both paths are validated against pathSafety (absolute + no
 // traversal). The endpoint reuses the existing renameFileOrFolder helper
 // which already aborts when the destination already exists, so the API

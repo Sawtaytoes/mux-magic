@@ -18,7 +18,7 @@ import {
   postProcessMatches,
   promoteRenameToFront,
   reorderRenamesForOnDiskConflicts,
-} from "./nameSpecialFeatures.js"
+} from "./nameSpecialFeaturesDvdCompareTmdb.js"
 
 const makeFileInfo = (filename: string): FileInfo => ({
   filename,

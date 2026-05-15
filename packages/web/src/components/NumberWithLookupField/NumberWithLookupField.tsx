@@ -75,7 +75,7 @@ export const NumberWithLookupField = ({
     field.hasIncrementButtons ?? true
 
   const isNameSpecialFeaturesDvdCompareCard =
-    step.command === "nameSpecialFeatures" &&
+    step.command === "nameSpecialFeaturesDvdCompareTmdb" &&
     lookupType === "dvdcompare" &&
     field.name === "dvdCompareId"
 
@@ -142,7 +142,7 @@ export const NumberWithLookupField = ({
         fieldName: companionField,
         value: name,
       })
-      // Cascade: after a DVDCompare film resolves on a nameSpecialFeatures
+      // Cascade: after a DVDCompare film resolves on a nameSpecialFeaturesDvdCompareTmdb
       // card, kick the secondary TMDB resolution (right-side link target).
       if (isDvdCompareCardLocal) {
         const parsed = parseDvdCompareDisplayName(name)
@@ -264,7 +264,8 @@ export const NumberWithLookupField = ({
       return lookupConfig?.homeUrl ?? "#"
     }
     if (
-      step.command === "nameSpecialFeatures" &&
+      step.command ===
+        "nameSpecialFeaturesDvdCompareTmdb" &&
       lookupType === "dvdcompare"
     ) {
       return lookupConfig.buildUrl(rawValue, step.params)
@@ -279,7 +280,7 @@ export const NumberWithLookupField = ({
 
   // Right-side text link, mirrors legacy public/builder/js/fields/
   // number-with-lookup-field.js. Two cases:
-  //   (a) nameSpecialFeatures + dvdcompare → "↗ Open on TheMovieDB". Target
+  //   (a) nameSpecialFeaturesDvdCompareTmdb + dvdcompare → "↗ Open on TheMovieDB". Target
   //       prefers tmdbId (resolved via secondary TMDB search), then falls
   //       back to a TMDB search-by-title URL using the parsed DVDCompare
   //       display name, then TMDB home.

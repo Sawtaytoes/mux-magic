@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 
 /**
  * Generates parity reference YAML + input.json for every command in commands.js.
@@ -536,10 +536,10 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
       { sourcePath: "basePath" },
     ),
   },
-  nameSpecialFeatures: {
+  nameSpecialFeaturesDvdCompareTmdb: {
     paths: BASE_PATHS,
     step: makeStep(
-      "nameSpecialFeatures",
+      "nameSpecialFeaturesDvdCompareTmdb",
       {
         dvdCompareId: 74759,
         dvdCompareName:

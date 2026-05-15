@@ -11,6 +11,10 @@ import type {
 } from "../types"
 import { isGroup } from "./sequenceUtils"
 
+const RENAMED_COMMANDS: Record<string, string> = {
+  nameSpecialFeatures: "nameSpecialFeaturesDvdCompareTmdb",
+}
+
 // ─── Serializer ───────────────────────────────────────────────────────────────
 
 const buildParamsForStep = (
@@ -169,8 +173,15 @@ const loadStepItem = (
 
   const commandName =
     typeof raw.command === "string" ? raw.command : ""
-  if (commandName && !commands[commandName])
+  if (commandName && !commands[commandName]) {
+    const renamedTo = RENAMED_COMMANDS[commandName]
+    if (renamedTo) {
+      throw new Error(
+        `Command "${commandName}" was renamed to "${renamedTo}". Update your template.`,
+      )
+    }
     throw new Error(`Unknown command: ${commandName}`)
+  }
 
   const step = createStep(commandName, context)
 

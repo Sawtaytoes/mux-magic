@@ -1,7 +1,7 @@
 import {
   type NameSpecialFeaturesResult,
-  nameSpecialFeatures,
-} from "@mux-magic/server/src/app-commands/nameSpecialFeatures.js"
+  nameSpecialFeaturesDvdCompareTmdb,
+} from "@mux-magic/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.js"
 import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
 import type {
   Argv,
@@ -15,7 +15,7 @@ type InferArgvOptions<T> =
 const builder = (yargs: Argv) =>
   yargs
     .example(
-      '$0 nameSpecialFeatures "~/disc-rips/movieName" "https://dvdcompare.net/comparisons/film.php?fid=55539#1"',
+      '$0 nameSpecialFeaturesDvdCompareTmdb "~/disc-rips/movieName" "https://dvdcompare.net/comparisons/film.php?fid=55539#1"',
       "Names all special features in the movie folder using the DVDCompare.net release at `#1`.",
     )
     .positional("sourcePath", {
@@ -72,11 +72,12 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const nameSpecialFeaturesCommand: CommandModule<
+export const nameSpecialFeaturesDvdCompareTmdbCommand: CommandModule<
   Record<string, unknown>,
   Args
 > = {
-  command: "nameSpecialFeatures <sourcePath> <url>",
+  command:
+    "nameSpecialFeaturesDvdCompareTmdb <sourcePath> <url>",
   describe:
     "Name all special features in a directory according to a DVDCompare.net URL.",
 
@@ -88,7 +89,7 @@ export const nameSpecialFeaturesCommand: CommandModule<
   handler: (argv) => {
     const cliObserver = subscribeCli()
     let renamedCount = 0
-    nameSpecialFeatures({
+    nameSpecialFeaturesDvdCompareTmdb({
       isAutoNamingDuplicates: argv.autoNameDuplicates,
       fixedOffset: argv.fixedOffset,
       isMovingToEditionFolders: argv.moveToEditionFolders,

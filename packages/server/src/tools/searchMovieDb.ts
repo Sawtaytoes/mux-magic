@@ -72,7 +72,7 @@ const requireTmdbApiKey = (): string => {
 // connection (rate-limit, TLS hang, packet loss) hangs fetch
 // indefinitely — and since `logAndSwallowPipelineError` downstream only catches
 // errors, the whole observable chain (e.g. `canonicalizeMovieTitle`
-// in `nameSpecialFeatures`) freezes silently with no terminal SSE
+// in `nameSpecialFeaturesDvdCompareTmdb`) freezes silently with no terminal SSE
 // "done" event. Timing out turns the hang into an error → swallowed
 // → chain proceeds with the DVDCompare-derived fallback identity.
 const TMDB_FETCH_TIMEOUT_MS = 10_000
