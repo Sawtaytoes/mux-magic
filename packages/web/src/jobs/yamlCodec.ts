@@ -171,16 +171,30 @@ const loadStepItem = (
   const { commands, currentPaths } = context
   const raw = item as Record<string, unknown>
 
-  const commandName =
+  let commandName =
     typeof raw.command === "string" ? raw.command : ""
   if (commandName && !commands[commandName]) {
     const renamedTo = RENAMED_COMMANDS[commandName]
-    if (renamedTo) {
+    if (renamedTo && commands[renamedTo]) {
+      // Transparent shim: rewrite the legacy command name to its
+      // current registered name so saved YAML / `?seq=` URLs keep
+      // loading after a rename. Mirrors the legacy field-rename
+      // warning style above (one-time per (command) pair per load).
+      const warnKey = `__cmd:${commandName}`
+      if (!context.warnedLegacyFields.has(warnKey)) {
+        context.warnedLegacyFields.add(warnKey)
+        console.warn(
+          `[mux-magic] YAML template uses renamed command "${commandName}"; remapped to "${renamedTo}". Resave the template to silence this warning.`,
+        )
+      }
+      commandName = renamedTo
+    } else if (renamedTo) {
       throw new Error(
-        `Command "${commandName}" was renamed to "${renamedTo}". Update your template.`,
+        `Command "${commandName}" was renamed to "${renamedTo}", but "${renamedTo}" is not registered.`,
       )
+    } else {
+      throw new Error(`Unknown command: ${commandName}`)
     }
-    throw new Error(`Unknown command: ${commandName}`)
   }
 
   const step = createStep(commandName, context)

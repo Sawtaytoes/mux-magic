@@ -1,5 +1,5 @@
 import yaml from "js-yaml"
-import { describe, expect, test } from "vitest"
+import { describe, expect, test, vi } from "vitest"
 import type { Commands } from "../commands/types"
 import type {
   PathVariable,
@@ -468,15 +468,94 @@ steps:
     expect(() => load(yaml)).toThrow("Unknown command")
   })
 
-  test("rejects legacy nameSpecialFeatures with rename-aware error", () => {
+  test("rejects legacy nameSpecialFeatures when target rename is also unregistered", () => {
+    // FAKE_COMMANDS does not include nameSpecialFeaturesDvdCompareTmdb,
+    // so the rename target itself is missing and the load must fail
+    // explicitly rather than silently producing a broken step.
     const yaml = `
 steps:
   - command: nameSpecialFeatures
     params: {}
 `
     expect(() => load(yaml)).toThrow(
-      /renamed to ["']?nameSpecialFeaturesDvdCompareTmdb["']?/,
+      /renamed to ["']?nameSpecialFeaturesDvdCompareTmdb["']?, but ["']?nameSpecialFeaturesDvdCompareTmdb["']? is not registered/,
     )
+  })
+
+  test("transparently shims renamed nameSpecialFeatures when target is registered", () => {
+    const commandsWithRename: Commands = {
+      ...FAKE_COMMANDS,
+      nameSpecialFeaturesDvdCompareTmdb: {
+        fields: [
+          { name: "path", type: "path", isLinkable: true },
+        ],
+      },
+    }
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => {})
+    try {
+      const result = loadYamlFromText(
+        [
+          "steps:",
+          "  - command: nameSpecialFeatures",
+          "    params: {}",
+        ].join("\n"),
+        commandsWithRename,
+        BASE_PATHS,
+        0,
+      )
+      expect(result.steps).toHaveLength(1)
+      const step = result.steps[0] as Step
+      expect(step.command).toBe(
+        "nameSpecialFeaturesDvdCompareTmdb",
+      )
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'renamed command "nameSpecialFeatures"',
+        ),
+      )
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+
+  test("emits the rename warning only once per load call", () => {
+    const commandsWithRename: Commands = {
+      ...FAKE_COMMANDS,
+      nameSpecialFeaturesDvdCompareTmdb: {
+        fields: [
+          { name: "path", type: "path", isLinkable: true },
+        ],
+      },
+    }
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => {})
+    try {
+      loadYamlFromText(
+        [
+          "steps:",
+          "  - command: nameSpecialFeatures",
+          "    params: {}",
+          "  - command: nameSpecialFeatures",
+          "    params: {}",
+          "  - command: nameSpecialFeatures",
+          "    params: {}",
+        ].join("\n"),
+        commandsWithRename,
+        BASE_PATHS,
+        0,
+      )
+      const renameCalls = warnSpy.mock.calls.filter(
+        ([msg]) =>
+          typeof msg === "string" &&
+          msg.includes('renamed command "nameSpecialFeatures"'),
+      )
+      expect(renameCalls).toHaveLength(1)
+    } finally {
+      warnSpy.mockRestore()
+    }
   })
 
   test("restores path-variable links from @-prefixed values", () => {
