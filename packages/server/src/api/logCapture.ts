@@ -1,24 +1,30 @@
-import { AsyncLocalStorage } from "node:async_hooks"
+import {
+  formatLogLine,
+  type LoggerContext,
+  loggingContext,
+  registerLogSink,
+  withLoggingContext,
+} from "@mux-magic/tools"
 
 import { appendJobLog } from "./jobStore.js"
 
 // ---------------------------------------------------------------------------
 // Async-context tracking
 //
-// AsyncLocalStorage propagates through Promises, setTimeout, and EventEmitter
-// callbacks, so log lines produced anywhere in an observable pipeline are
-// routed to the correct job without a shared mutable variable.
+// The single AsyncLocalStorage instance lives in @mux-magic/tools so the
+// structured logger and `withJobContext` share one context object. Anywhere
+// that used to read `jobContext.getStore()` now reads
+// `loggingContext.getStore()?.jobId`. If you ever split these apart again,
+// fix `installLogBridge` below and every call to `getActiveJobId`.
 // ---------------------------------------------------------------------------
-
-const jobContext = new AsyncLocalStorage<string>()
 
 export const withJobContext = <T>(
   jobId: string,
   fn: () => T,
-): T => jobContext.run(jobId, fn)
+): T => withLoggingContext({ jobId }, fn)
 
 export const getActiveJobId = (): string | undefined =>
-  jobContext.getStore()
+  loggingContext.getStore()?.jobId
 
 // ---------------------------------------------------------------------------
 // ANSI strip
@@ -33,6 +39,10 @@ export const stripAnsi = (ansiString: string): string =>
 
 // ---------------------------------------------------------------------------
 // Console patch — call installLogCapture() once at server startup.
+//
+// Acts as the migration fallback for worker 41: any `console.*` call inside
+// a job context that we have not yet rewritten to `getLogger().info(...)`
+// keeps flowing through this path with no visible change to the SSE feed.
 // ---------------------------------------------------------------------------
 
 export const originalConsole = {
@@ -52,7 +62,7 @@ const ts = (): string => {
 }
 
 const capture = (args: unknown[]): void => {
-  const jobId = jobContext.getStore()
+  const jobId = getActiveJobId()
 
   if (!jobId) {
     return
@@ -83,7 +93,7 @@ export const installLogCapture = (): void => {
     "error",
   ] as const) {
     console[method] = (...args: unknown[]) => {
-      const jobId = jobContext.getStore()
+      const jobId = getActiveJobId()
       if (jobId) {
         capture(args)
       } else {
@@ -103,3 +113,37 @@ export const uninstallLogCapture = (): void => {
     console[method] = originalConsole[method]
   }
 }
+
+// ---------------------------------------------------------------------------
+// Structured-logger bridge
+//
+// Registers a LogSink with @mux-magic/tools that turns every structured
+// LogRecord with a jobId into a single appendJobLog line. Records produced
+// outside a job context (no jobId) are dropped by this sink — other sinks
+// (the future /api/logs/structured SSE feed; worker 2b's error store for
+// `level: "error"` records) may still consume them.
+// ---------------------------------------------------------------------------
+
+let unregisterBridge: (() => void) | null = null
+
+export const installLogBridge = (): void => {
+  if (unregisterBridge) {
+    return
+  }
+  unregisterBridge = registerLogSink((record) => {
+    if (typeof record.jobId !== "string") {
+      return
+    }
+    appendJobLog(record.jobId, formatLogLine(record))
+  })
+}
+
+export const uninstallLogBridge = (): void => {
+  if (unregisterBridge) {
+    unregisterBridge()
+    unregisterBridge = null
+  }
+}
+
+export type { LoggerContext }
+export { loggingContext }

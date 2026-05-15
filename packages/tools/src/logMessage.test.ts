@@ -2,6 +2,15 @@ import { Chalk } from "chalk"
 import { describe, expect, test } from "vitest"
 import { captureConsoleMessage } from "./captureConsoleMessage.js"
 import {
+  __resetLogSinksForTests,
+  type LogRecord,
+  registerLogSink,
+} from "./logging/logger.js"
+import {
+  __resetLoggingModeForTests,
+  setLoggingMode,
+} from "./logging/mode.js"
+import {
   createAddColorToChalk,
   createLogMessage,
   logError,
@@ -118,9 +127,11 @@ describe(createLogMessage.name, () => {
       })("HELLO WORLD")
 
       expect(consoleSpy).toHaveBeenCalledOnce()
-
-      expect(consoleSpy.mock.calls.at(0)?.at(0)).toContain(
-        "HELLO WORLD",
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("HELLO WORLD"),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
       )
     })
   })
@@ -175,8 +186,11 @@ describe(logError.name, () => {
     captureConsoleMessage("error", (consoleSpy) => {
       logError("ERROR")
 
-      expect(consoleSpy.mock.calls.at(0)?.at(0)).toContain(
-        "ERROR",
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("ERROR"),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
       )
     })
   })
@@ -187,8 +201,11 @@ describe(logInfo.name, () => {
     captureConsoleMessage("info", (consoleSpy) => {
       logInfo("INFO")
 
-      expect(consoleSpy.mock.calls.at(0)?.at(0)).toContain(
-        "INFO",
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("INFO"),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
       )
     })
   })
@@ -199,9 +216,95 @@ describe(logWarning.name, () => {
     captureConsoleMessage("warn", (consoleSpy) => {
       logWarning("WARNING")
 
-      expect(consoleSpy.mock.calls.at(0)?.at(0)).toContain(
-        "WARNING",
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("WARNING"),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
       )
+    })
+  })
+})
+
+describe("logMessage mode-awareness", () => {
+  test('"api" mode emits a structured record AND skips chalk console', () => {
+    __resetLogSinksForTests()
+    let records: readonly LogRecord[] = []
+    registerLogSink((record) => {
+      records = records.concat(record)
+    })
+    setLoggingMode("api")
+
+    captureConsoleMessage("info", (consoleSpy) => {
+      logInfo("SEQUENCE", "Step step1 starting.")
+      expect(consoleSpy).not.toHaveBeenCalled()
+    })
+
+    __resetLoggingModeForTests()
+    __resetLogSinksForTests()
+
+    expect(records).toHaveLength(1)
+    expect(records[0]).toMatchObject({
+      level: "info",
+      tag: "SEQUENCE",
+      msg: "Step step1 starting.",
+    })
+  })
+
+  test('"cli" mode (default) emits NO structured record', () => {
+    __resetLogSinksForTests()
+    let records: readonly LogRecord[] = []
+    registerLogSink((record) => {
+      records = records.concat(record)
+    })
+
+    captureConsoleMessage("info", () => {
+      logInfo("SEQUENCE", "Step step1 starting.")
+    })
+
+    expect(records).toHaveLength(0)
+    __resetLogSinksForTests()
+  })
+
+  test('"cli-debug" mode emits BOTH a structured record AND the chalk console line', () => {
+    __resetLogSinksForTests()
+    let records: readonly LogRecord[] = []
+    registerLogSink((record) => {
+      records = records.concat(record)
+    })
+    setLoggingMode("cli-debug")
+
+    captureConsoleMessage("info", (consoleSpy) => {
+      logInfo("SEQUENCE", "Step step1 starting.")
+      expect(consoleSpy).toHaveBeenCalled()
+    })
+
+    __resetLoggingModeForTests()
+    __resetLogSinksForTests()
+
+    expect(records).toHaveLength(1)
+    expect(records[0]?.tag).toBe("SEQUENCE")
+  })
+
+  test('"api" mode for logError emits a structured "error" record', () => {
+    __resetLogSinksForTests()
+    let records: readonly LogRecord[] = []
+    registerLogSink((record) => {
+      records = records.concat(record)
+    })
+    setLoggingMode("api")
+
+    captureConsoleMessage("error", () => {
+      logError("SEQUENCE", "boom")
+    })
+
+    __resetLoggingModeForTests()
+    __resetLogSinksForTests()
+
+    expect(records[0]).toMatchObject({
+      level: "error",
+      tag: "SEQUENCE",
+      msg: "boom",
     })
   })
 })

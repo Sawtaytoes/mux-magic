@@ -6,6 +6,12 @@ import {
   type ForegroundColorName,
 } from "chalk"
 
+import {
+  getLogger,
+  type LogLevel,
+} from "./logging/logger.js"
+import { getLoggingMode } from "./logging/mode.js"
+
 export const createAddColorToChalk =
   (chalkColor?: ColorName) =>
   (chalkInstance: ChalkInstance) =>
@@ -91,6 +97,29 @@ export const createLogMessage =
               ...content,
             )
           : null
+
+    const mode = getLoggingMode()
+    const messageArray = message || content
+
+    if (mode === "api" || mode === "cli-debug") {
+      const structuredMsg = (
+        messageArray as readonly unknown[]
+      )
+        .map((part) =>
+          typeof part === "string" ? part : String(part),
+        )
+        .join(" ")
+        .trim()
+      const structuredLevel: LogLevel =
+        logType === "log" ? "info" : logType
+      getLogger()[structuredLevel](structuredMsg, {
+        tag: title,
+      })
+    }
+
+    if (mode === "api") {
+      return
+    }
 
     console[logType](
       optionallyColoredChalk(`[${title}]`),

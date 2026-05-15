@@ -11,16 +11,19 @@ file renaming, subtitle merging, etc.) using mkvtoolnix, ffmpeg, and mediainfo.
 
 👉 **Full reference:** [docs/agents/code-rules.md](docs/agents/code-rules.md)
 
-Quick summary of the four most-violated rules:
+Quick summary of the five most-violated rules:
 
 1. **No `for`/`for...of`/`while` loops over arrays.** Use `forEach`/`map`/`filter`/`reduce`.
 2. **`const` only. No `var`. No `let` mutation.**
 3. **Spell every variable name out.** No single letters or abbreviations.
 4. **Booleans start with `is` or `has`.** `isSourceDeleted`, not `deleteSource`.
+5. **No array mutation.** No `.push`, `.splice`, `.pop`, `.shift`, `.unshift`, in-place `.sort`/`.reverse`. Build new arrays with `.map`/`.filter`/`.reduce`/`.flatMap`/`.concat`. Prefer the declarative `xs.concat(item)` over `[...xs, item]` for appends — same immutable semantics, reads as plain English. Apply this to test code (sink callbacks, fixtures) as well as production code.
 
 Plus function destructuring (2+ args → single object param), always-braced `if`/`else`, arrow functions with implicit returns, no barrel files, and use `Array.from(foo.values())` instead of `[...foo.values()]` for explicit intent.
 
-**Before opening a PR:** Search your diff for `for(`, `var`, `let` (with reassignment), single-letter names, boolean names without `is`/`has`, `return` (outside tests), and import paths ending in folders. Fix every hit.
+**Test-assertion style.** Prefer `expect(spy).toHaveBeenCalledWith(...)` / `.toHaveBeenNthCalledWith(n, ...)` / `.toHaveBeenLastCalledWith(...)` over reaching into `.mock.calls[i]?.[j]`. Use `expect.objectContaining({...})` / `expect.stringContaining(...)` / `expect.anything()` matchers when you only care about a partial shape. The `.mock.calls` accessor is the escape hatch — reserve it for cases where you need to extract a captured callback and invoke it.
+
+**Before opening a PR:** Search your diff for `for(`, `var`, `let` (with reassignment), single-letter names, boolean names without `is`/`has`, `return` (outside tests), import paths ending in folders, `.push(`/`.splice(`/`.pop(`/`.shift(`/`.unshift(`, in-place `.sort()`/`.reverse()`, and `.mock.calls[`. Fix every hit.
 
 **Indentation:** Biome enforces 2-space indentation everywhere. Never use tabs. Run `yarn biome format --write <file>` on every file you create or modify, then `git add` the result. Do not rely on your editor's auto-conversion — verify the committed bytes with `git show HEAD:<path> | cat -A` and confirm no `^I` (tab) characters appear. CI runs on Linux where editor-level tab→space conversion does not happen.
 

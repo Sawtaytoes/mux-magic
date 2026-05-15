@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
+import { registerLogSink } from "@mux-magic/tools"
 import { streamSSE } from "hono/streaming"
 
 import {
@@ -169,6 +170,67 @@ logsRoutes.openapi(
         stream.onAbort(() => {
           stopKeepalive()
           sub.unsubscribe()
+          resolve()
+        })
+      })
+
+      stopKeepalive()
+    })
+  },
+)
+
+// Server-wide structured-log feed. Subscribes a LogSink to the
+// @mux-magic/tools logger for the lifetime of the SSE connection and
+// JSON-encodes every record onto the wire. The legacy `/jobs/:id/logs`
+// endpoint above stays untouched. Worker 2b's error store and any
+// future log-analytics client read from here.
+//
+// No per-job filter: callers that only care about one job filter
+// client-side on `record.jobId`. Keeping the server filter-free means
+// records that fire outside a job context (server lifecycle warnings,
+// startSpan trace IDs spanning no job, etc.) are still reachable.
+logsRoutes.openapi(
+  createRoute({
+    method: "get",
+    path: "/logs/structured",
+    summary:
+      "Stream server-wide structured log records via Server-Sent Events",
+    tags: ["Job Management"],
+    responses: {
+      200: {
+        description:
+          "SSE stream of JSON-encoded LogRecord objects",
+        content: {
+          "text/event-stream": {
+            schema: {
+              type: "string",
+              description:
+                "JSON-encoded LogRecord per event",
+            },
+          },
+        },
+      },
+    },
+  }),
+  (context) => {
+    context.header("X-Accel-Buffering", "no")
+    return streamSSE(context, async (stream) => {
+      const stopKeepalive = startSseKeepalive(stream)
+
+      const unregister = registerLogSink((record) => {
+        stream
+          .writeSSE({ data: JSON.stringify(record) })
+          .catch(() => {
+            // Stream was closed mid-write; the onAbort handler will
+            // unregister this sink. Swallowing here prevents an
+            // unhandled rejection during teardown.
+          })
+      })
+
+      await new Promise<void>((resolve) => {
+        stream.onAbort(() => {
+          unregister()
+          stopKeepalive()
           resolve()
         })
       })

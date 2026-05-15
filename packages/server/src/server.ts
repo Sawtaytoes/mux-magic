@@ -9,15 +9,23 @@ import { serve } from "@hono/node-server"
 import {
   initTaskScheduler,
   logInfo,
+  setLoggingMode,
 } from "@mux-magic/tools"
 import { app } from "./api/hono-routes.js"
 import {
   getActiveJobId,
+  installLogBridge,
   installLogCapture,
 } from "./api/logCapture.js"
 import { API_PORT, MAX_THREADS } from "./tools/envVars.js"
 
 installLogCapture()
+installLogBridge()
+// API mode: route `logInfo` / `logError` / `logWarning` through the
+// structured logger (and thence through `installLogBridge`'s sink to
+// appendJobLog) rather than to chalk-coloured console output. The web
+// UI is the audience here, not a human terminal.
+setLoggingMode("api")
 initTaskScheduler(MAX_THREADS, { getActiveJobId })
 
 serve(
