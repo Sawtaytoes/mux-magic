@@ -117,3 +117,28 @@ This is a small change — one map lookup before resolving the command — but i
 - Any behavior change to the renamed command (workers 25, 26, 27 do targeted improvements after this rename lands).
 - Worker 23, 34 (new sibling commands) — they depend on this rename but are separate workers.
 - Worker 35 (dvdCompareId Variable type) — uses the new command name but is registered independently.
+
+---
+
+## What shipped (PR #109, merged 2026-05-15, squash commit `b61a4067`)
+
+Three deviations from this prompt are worth recording for successor workers (3a, 23, 25, 26, 27, 34, 35) so they don't reverse-engineer them from commit messages:
+
+1. **YAML back-compat — hard reject, not soft warn.** User overrode the prompt's "accept legacy `command: nameSpecialFeatures` with deprecation warning" guidance. Legacy YAML now throws a rename-aware error: `Command "nameSpecialFeatures" was renamed to "nameSpecialFeaturesDvdCompareTmdb". Update your template.` Implementation: a generic `RENAMED_COMMANDS` map at the top of [packages/web/src/jobs/yamlCodec.ts](../../packages/web/src/jobs/yamlCodec.ts), consulted before the existing "Unknown command" throw. The map is structured to grow — successor workers that rename commands should append entries here rather than adding new bespoke error paths.
+
+2. **Branch name deviation.** Prompt specified `feat/mux-magic-revamp/22-nsf-rename-to-dvdcompare-tmdb`, but git can't create a branch nested under an existing ref while `feat/mux-magic-revamp` exists as a leaf branch (`refs/heads/feat/mux-magic-revamp` is a file, can't become a directory containing another ref). Worker used `worker-22-nsf-rename-to-dvdcompare-tmdb` instead (matches the AGENTS.md convention and recent merges like `worker-20-cli-package-extract`). Future workers should follow the `worker-<id>-<slug>` pattern.
+
+3. **AGENTS.md PowerShell UTF-8 trap guard.** The first attempt at the bulk identifier replace used `Get-Content -Raw` + `Set-Content -Encoding utf8`, which on Windows PowerShell 5.1 reads via the system code page (Windows-1252) and corrupts UTF-8 multi-byte characters into double-mojibake (`─` → `â"€`). The user had spent hours fixing this same class of bug the night before (commit `e7a8a4b1`), caught my repeat immediately, and asked for a reset + reapply. The fix uses `[System.IO.File]::ReadAllText/WriteAllText` with explicit UTF-8 (no BOM), bypassing PowerShell's encoding pipeline. A guard documenting this trap was added to [AGENTS.md](../../AGENTS.md) under the Code Rules section.
+
+### UI label
+
+Visible picker label is **"Name Special Features (DVD Compare + TMDB)"** (the legible default from the prompt's two options), set in [packages/web/src/jobs/commandLabels.ts](../../packages/web/src/jobs/commandLabels.ts).
+
+### API surface
+
+- `POST /commands/nameSpecialFeaturesDvdCompareTmdb` is the only registered route. Legacy `POST /commands/nameSpecialFeatures` returns 404 (clean break — the route registration is data-driven, so unregistering the old key naturally drops the URL).
+- Zod schema renamed to `nameSpecialFeaturesDvdCompareTmdbRequestSchema`. No response-schema rename needed (the command uses the shared `createJobResponseSchema`).
+
+### Pre-merge gate
+
+All green: typecheck (5.6s) · 1498 unit tests passing · lint (8 formatting auto-fixes on first pass, 0 on final) · 52 e2e tests passing (38.7s).

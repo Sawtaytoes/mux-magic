@@ -35,7 +35,7 @@ yarn media <command> --help        # options for a specific command
 | `moveFiles` | `<sourcePath> <destinationPath>` | Copy all files to a destination then delete the source directory. Equivalent to `copyFiles` + delete. |
 | `nameAnimeEpisodes` | `<sourcePath> <searchTerm>` | Rename anime episode files using MyAnimeList metadata. |
 | `nameAnimeEpisodesAniDB` | `<sourcePath> <searchTerm>` | Rename episode files using titles from AniDB. Better OVA/special coverage than MAL. See [AniDB command notes](#anidb-command-notes). |
-| `nameSpecialFeatures` | `<sourcePath> <url>` | Rename disc special features using timecodes from a dvdcompare.net URL. |
+| `nameSpecialFeaturesDvdCompareTmdb` | `<sourcePath> <url>` | Rename disc special features using timecodes from a dvdcompare.net URL; movie title canonicalized via TMDB. Renamed from `nameSpecialFeatures` in worker 22 to stay legible alongside upcoming sibling commands. |
 | `nameTvShowEpisodes` | `<sourcePath> <searchTerm>` | Rename episode files using titles from TVDB. |
 | `renameDemos` | `<sourcePath>` | Rename demo files to the standard format (see [Demo file format](#demo-file-format)). |
 | `renameMovieClipDownloads` | `<sourcePath>` | Rename TomSawyer AVSForums movie clips to the demo format. |
