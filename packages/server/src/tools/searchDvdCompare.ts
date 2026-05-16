@@ -70,18 +70,16 @@ export const parseDvdCompareSearchHtml = (
 ): DvdCompareResult[] => {
   const linkPattern =
     /<a[^>]+href=["'][^"']*film\.php\?fid=(\d+)[^"']*["'][^>]*>([^<]+)<\/a>/g
-  const results: DvdCompareResult[] = []
-  let match: RegExpExecArray | null
 
-  // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic regex exec loop
-  while ((match = linkPattern.exec(html)) !== null) {
-    const id = Number(match[1])
-    if (id <= 0) continue
-    const text = decodeHtmlEntities(match[2]).trim()
-    results.push(parseDvdCompareTitleText(text, id))
-  }
-
-  return results
+  return Array.from(html.matchAll(linkPattern))
+    .map((match) => ({
+      id: Number(match[1]),
+      text: decodeHtmlEntities(match[2]).trim(),
+    }))
+    .filter(({ id }) => id > 0)
+    .map(({ id, text }) =>
+      parseDvdCompareTitleText(text, id),
+    )
 }
 
 export type DvdCompareSearchOutcome = {
@@ -187,17 +185,13 @@ export const parseDvdCompareReleasesHtml = (
   //     the submit button get filtered out.
   const pattern =
     /<input\b(?=[^>]*\btype\s*=\s*["']?checkbox\b)(?=[^>]*\bname\s*=\s*["']?(\d+)\b)[^>]*>([\s\S]*?)(?=<br\b|<input\b|$)/gi
-  const releases: DvdCompareRelease[] = []
-  let match: RegExpExecArray | null
 
-  // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic regex exec loop
-  while ((match = pattern.exec(html)) !== null) {
-    const hash = match[1]
-    const label = stripTagsAndCollapse(match[2])
-    if (label) releases.push({ hash, label })
-  }
-
-  return releases
+  return Array.from(html.matchAll(pattern))
+    .map((match) => ({
+      hash: match[1],
+      label: stripTagsAndCollapse(match[2]),
+    }))
+    .filter(({ label }) => Boolean(label))
 }
 
 export type DvdCompareReleasesDebug = {

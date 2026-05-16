@@ -22,23 +22,24 @@ const finalizeSection = (
   sectionLines: string[],
 ): AssSection => {
   if (sectionName === "Script Info") {
-    const entries: AssScriptInfoEntry[] = []
-    for (const line of sectionLines) {
-      const trimmed = line.trimEnd()
-      if (!trimmed) continue
-      if (trimmed.startsWith(";")) {
-        entries.push({ type: "comment", text: trimmed })
-      } else {
+    const entries = sectionLines.flatMap(
+      (line): AssScriptInfoEntry[] => {
+        const trimmed = line.trimEnd()
+        if (!trimmed) return []
+        if (trimmed.startsWith(";")) {
+          return [{ type: "comment", text: trimmed }]
+        }
         const colonIdx = trimmed.indexOf(": ")
-        if (colonIdx !== -1) {
-          entries.push({
+        if (colonIdx === -1) return []
+        return [
+          {
             type: "property",
             key: trimmed.slice(0, colonIdx),
             value: trimmed.slice(colonIdx + 2),
-          })
-        }
-      }
-    }
+          },
+        ]
+      },
+    )
     return {
       sectionName,
       sectionType: "scriptInfo",
@@ -58,29 +59,38 @@ const finalizeSection = (
       .split(",")
       .map((field) => field.trim())
 
-    const entries: AssFormatEntry[] = []
-    for (const line of sectionLines) {
-      const trimmed = line.trimEnd()
-      if (
-        !trimmed ||
-        trimmed.trimStart().startsWith("Format:")
-      )
-        continue
+    const entries: AssFormatEntry[] = sectionLines.flatMap(
+      (line) => {
+        const trimmed = line.trimEnd()
+        if (
+          !trimmed ||
+          trimmed.trimStart().startsWith("Format:")
+        )
+          return []
 
-      const colonIdx = trimmed.indexOf(":")
-      if (colonIdx === -1) continue
+        const colonIdx = trimmed.indexOf(":")
+        if (colonIdx === -1) return []
 
-      const entryType = trimmed.slice(0, colonIdx).trimEnd()
-      const rest = trimmed.slice(colonIdx + 1).trimStart()
-      const values = splitCsvIntoFields(rest, format.length)
+        const entryType = trimmed
+          .slice(0, colonIdx)
+          .trimEnd()
+        const rest = trimmed.slice(colonIdx + 1).trimStart()
+        const values = splitCsvIntoFields(
+          rest,
+          format.length,
+        )
 
-      const fields: Record<string, string> = {}
-      format.forEach((fieldName, idx) => {
-        fields[fieldName] = values[idx] ?? ""
-      })
+        const fields: Record<string, string> =
+          Object.fromEntries(
+            format.map((fieldName, idx) => [
+              fieldName,
+              values[idx] ?? "",
+            ]),
+          )
 
-      entries.push({ entryType, fields })
-    }
+        return [{ entryType, fields }]
+      },
+    )
     return {
       sectionName,
       sectionType: "formatted",
@@ -96,38 +106,61 @@ const finalizeSection = (
   }
 }
 
+type AssParseState = {
+  sections: AssSection[]
+  currentSectionName: string | null
+  currentSectionLines: string[]
+}
+
 export const parseAssFile = (content: string): AssFile => {
   const lines = content.replace(/^\uFEFF/, "").split("\n")
-  const sections: AssSection[] = []
-  let currentSectionName: string | null = null
-  let currentSectionLines: string[] = []
 
-  for (const line of lines) {
-    const sectionMatch = line.trimEnd().match(/^\[(.+)\]$/)
-    if (sectionMatch) {
-      if (currentSectionName !== null) {
-        sections.push(
+  const finalState = lines.reduce<AssParseState>(
+    (state, line) => {
+      const sectionMatch = line
+        .trimEnd()
+        .match(/^\[(.+)\]$/)
+      if (sectionMatch) {
+        return {
+          sections:
+            state.currentSectionName !== null
+              ? state.sections.concat(
+                  finalizeSection(
+                    state.currentSectionName,
+                    state.currentSectionLines,
+                  ),
+                )
+              : state.sections,
+          currentSectionName: sectionMatch[1],
+          currentSectionLines: [],
+        }
+      }
+      if (state.currentSectionName !== null) {
+        return {
+          sections: state.sections,
+          currentSectionName: state.currentSectionName,
+          currentSectionLines:
+            state.currentSectionLines.concat(line),
+        }
+      }
+      return state
+    },
+    {
+      sections: [],
+      currentSectionName: null,
+      currentSectionLines: [],
+    },
+  )
+
+  const sections =
+    finalState.currentSectionName !== null
+      ? finalState.sections.concat(
           finalizeSection(
-            currentSectionName,
-            currentSectionLines,
+            finalState.currentSectionName,
+            finalState.currentSectionLines,
           ),
         )
-      }
-      currentSectionName = sectionMatch[1]
-      currentSectionLines = []
-    } else if (currentSectionName !== null) {
-      currentSectionLines.push(line)
-    }
-  }
-
-  if (currentSectionName !== null) {
-    sections.push(
-      finalizeSection(
-        currentSectionName,
-        currentSectionLines,
-      ),
-    )
-  }
+      : finalState.sections
 
   return { sections }
 }

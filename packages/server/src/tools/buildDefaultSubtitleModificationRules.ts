@@ -20,13 +20,11 @@ const IGNORED_STYLE_NAMES_REGEX_STRING =
 export const buildDefaultSubtitleModificationRules = (
   subtitlesMetadata: SubtitleFileMetadata[],
 ): SubtitleModificationRule[] => {
-  const rules: SubtitleModificationRule[] = []
-
-  rules.push({
+  const scriptTypeRule: SubtitleModificationRule = {
     type: "setScriptInfo",
     key: "ScriptType",
     value: "v4.00+",
-  })
+  }
 
   const hasIncorrectColorspace = subtitlesMetadata.some(
     ({ scriptInfo }) =>
@@ -37,13 +35,16 @@ export const buildDefaultSubtitleModificationRules = (
       ),
   )
 
-  if (hasIncorrectColorspace) {
-    rules.push({
-      type: "setScriptInfo",
-      key: "YCbCr Matrix",
-      value: "TV.709",
-    })
-  }
+  const colorspaceRules: SubtitleModificationRule[] =
+    hasIncorrectColorspace
+      ? [
+          {
+            type: "setScriptInfo",
+            key: "YCbCr Matrix",
+            value: "TV.709",
+          },
+        ]
+      : []
 
   // Resolution scaling has a TODO in media-sync (didn't always work for
   // every show). Preserve that behavior by leaving the flag false here so
@@ -85,19 +86,25 @@ export const buildDefaultSubtitleModificationRules = (
 
   const styleFields: Record<string, string> = {
     MarginV: String(marginV),
+    ...(isNeedingMarginLR
+      ? {
+          MarginL: String(marginLRValue),
+          MarginR: String(marginLRValue),
+        }
+      : {}),
   }
 
-  if (isNeedingMarginLR) {
-    styleFields.MarginL = String(marginLRValue)
-    styleFields.MarginR = String(marginLRValue)
-  }
-
-  rules.push({
+  const styleFieldsRule: SubtitleModificationRule = {
     type: "setStyleFields",
     fields: styleFields,
     ignoredStyleNamesRegexString:
       IGNORED_STYLE_NAMES_REGEX_STRING,
-  })
+  }
 
-  return rules
+  const seedRules: SubtitleModificationRule[] = [
+    scriptTypeRule,
+  ]
+  return seedRules
+    .concat(colorspaceRules)
+    .concat(styleFieldsRule)
 }

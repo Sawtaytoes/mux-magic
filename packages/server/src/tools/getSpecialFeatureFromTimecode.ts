@@ -145,23 +145,25 @@ export const getTimecodeAtOffset = (
   timecode: string,
   offset: number,
 ) => {
-  const date = new Date(0, 0, 0, 0, 0, 0)
-
-  timecode
+  const reversedParts = timecode
     .split(":")
     .reverse()
     .map((timeString) => Number(timeString))
-    .forEach((timeValue, index) => {
-      if (index === 0) {
-        date.setSeconds(timeValue)
-      } else if (index === 1) {
-        date.setMinutes(timeValue)
-      } else if (index === 2) {
-        date.setHours(timeValue)
-      }
-    })
-
-  date.setSeconds(date.getSeconds() + offset)
+  const seconds = reversedParts[0] ?? 0
+  const minutes = reversedParts[1] ?? 0
+  const hours = reversedParts[2] ?? 0
+  // Folding `offset` into the Date constructor lets the standard
+  // overflow/underflow rules normalize a negative or >60 offset back into
+  // h:mm:ss form — matching the original `setSeconds(getSeconds() + offset)`
+  // chain without mutation.
+  const date = new Date(
+    0,
+    0,
+    0,
+    hours,
+    minutes,
+    seconds + offset,
+  )
 
   return [
     date.getHours(),

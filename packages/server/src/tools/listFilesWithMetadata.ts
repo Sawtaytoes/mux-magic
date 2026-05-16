@@ -175,40 +175,57 @@ export const listFilesWithMetadata = async (
   // Sort: directories first (capital D > files alphabetically wouldn't
   // give that property naturally), then case-insensitive name. Mirrors
   // standard file-explorer expectations.
-  entries.sort((entryA, entryB) => {
-    if (entryA.isDirectory !== entryB.isDirectory) {
-      return entryA.isDirectory ? -1 : 1
-    }
-    return entryA.name.localeCompare(
-      entryB.name,
-      undefined,
-      { sensitivity: "base" },
-    )
-  })
-
-  if (options.isIncludingDuration) {
-    // Indexes of video-extension files only — directories and non-video
-    // files stay duration: null. mapWithConcurrency keeps the parallel
-    // mediainfo spawns capped at 8.
-    const videoIndexes = entries
-      .map((entry, index) => ({ entry, index }))
-      .filter(
-        ({ entry }) =>
-          entry.isFile && isVideoExtension(entry.name),
+  const sortedEntries = entries.toSorted(
+    (entryA, entryB) => {
+      if (entryA.isDirectory !== entryB.isDirectory) {
+        return entryA.isDirectory ? -1 : 1
+      }
+      return entryA.name.localeCompare(
+        entryB.name,
+        undefined,
+        { sensitivity: "base" },
       )
-    const durations = await mapWithConcurrency(
-      videoIndexes,
-      8,
-      ({ entry }) =>
-        computeDuration(join(validatedPath, entry.name)),
-    )
-    videoIndexes.forEach(({ index }, durationIndex) => {
-      entries[index].duration = durations[durationIndex]
-    })
+    },
+  )
+
+  if (!options.isIncludingDuration) {
+    return {
+      entries: sortedEntries,
+      separator: nativePathSeparator,
+    }
   }
 
+  // Indexes of video-extension files only — directories and non-video
+  // files stay duration: null. mapWithConcurrency keeps the parallel
+  // mediainfo spawns capped at 8.
+  const videoIndexes = sortedEntries
+    .map((entry, index) => ({ entry, index }))
+    .filter(
+      ({ entry }) =>
+        entry.isFile && isVideoExtension(entry.name),
+    )
+  const durations = await mapWithConcurrency(
+    videoIndexes,
+    8,
+    ({ entry }) =>
+      computeDuration(join(validatedPath, entry.name)),
+  )
+  const durationByIndex = new Map(
+    videoIndexes.map(({ index }, durationIndex) => [
+      index,
+      durations[durationIndex],
+    ]),
+  )
+
   return {
-    entries,
+    entries: sortedEntries.map((entry, index) =>
+      durationByIndex.has(index)
+        ? {
+            ...entry,
+            duration: durationByIndex.get(index) ?? null,
+          }
+        : entry,
+    ),
     separator: nativePathSeparator,
   }
 }

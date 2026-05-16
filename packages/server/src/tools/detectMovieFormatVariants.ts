@@ -35,15 +35,10 @@ const titleMatchesParts = (
 export const detectMovieFormatVariants = (
   episodes: AnidbEpisode[],
 ): MovieFormatVariants | null => {
-  const parts: AnidbEpisode[] = []
-  const complete: AnidbEpisode[] = []
-  for (const episode of episodes) {
-    if (titleMatchesParts(episode)) {
-      parts.push(episode)
-    } else {
-      complete.push(episode)
-    }
-  }
+  const parts = episodes.filter(titleMatchesParts)
+  const complete = episodes.filter(
+    (episode) => !titleMatchesParts(episode),
+  )
   // We only signal ambiguity when both subsets are non-empty — a list
   // of Part-only or Complete-only entries isn't an ambiguity, the
   // existing index pairing handles it. We also require parts.length
