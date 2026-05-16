@@ -1,4 +1,6 @@
 import { stat } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { vol } from "memfs"
 import { firstValueFrom, of, throwError, toArray } from "rxjs"
 import {
@@ -81,6 +83,9 @@ describe("renumberChapters", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vol.reset()
+    // performRemux writes its temp XML under os.tmpdir() — ensure the
+    // host temp dir exists inside memfs so the write doesn't ENOENT.
+    vol.mkdirSync(tmpdir(), { recursive: true })
     vi.spyOn(console, "info").mockImplementation(() => {})
   })
 
@@ -110,7 +115,7 @@ describe("renumberChapters", () => {
     expect(emissions).toEqual([
       {
         action: "renumbered",
-        filePath: "/work/episode.mkv",
+        filePath: join("/work", "episode.mkv"),
         renamedCount: 3,
       },
     ])
@@ -147,7 +152,7 @@ describe("renumberChapters", () => {
     expect(emissions).toEqual([
       {
         action: "already-sequential",
-        filePath: "/work/episode.mkv",
+        filePath: join("/work", "episode.mkv"),
       },
     ])
     expect(writeChaptersMkvMerge).not.toHaveBeenCalled()
@@ -176,7 +181,7 @@ describe("renumberChapters", () => {
     expect(emissions).toEqual([
       {
         action: "skipped",
-        filePath: "/work/episode.mkv",
+        filePath: join("/work", "episode.mkv"),
         reason: "no-chapters",
       },
     ])
@@ -208,7 +213,7 @@ describe("renumberChapters", () => {
     expect(emissions).toEqual([
       {
         action: "skipped",
-        filePath: "/work/episode.mkv",
+        filePath: join("/work", "episode.mkv"),
         reason: "no-numbered-chapters",
       },
     ])
@@ -240,7 +245,7 @@ describe("renumberChapters", () => {
     expect(emissions).toEqual([
       {
         action: "skipped",
-        filePath: "/work/episode.mkv",
+        filePath: join("/work", "episode.mkv"),
         reason: "mixed-chapter-names",
       },
     ])
@@ -310,7 +315,7 @@ describe("renumberChapters", () => {
     expect(emissions).toEqual([
       {
         action: "renumbered",
-        filePath: "/work/episode.mkv",
+        filePath: join("/work", "episode.mkv"),
         renamedCount: 2,
       },
     ])
@@ -333,19 +338,24 @@ describe("renumberChapters", () => {
     })
     vi.spyOn(console, "error").mockImplementation(() => {})
 
-    // First call throws; second call returns good chapters.
-    vi.mocked(runMkvExtractStdOut)
-      .mockReturnValueOnce(
-        throwError(() => new Error("mkvextract crashed")),
-      )
-      .mockReturnValueOnce(
-        of(
+    // Per-file response keyed by input path — robust to filesystem
+    // listing order (getFilesAtDepth doesn't guarantee alphabetical).
+    vi.mocked(runMkvExtractStdOut).mockImplementation(
+      ({ args }: { args: string[] }) => {
+        const filePath = args[args.length - 1]
+        if (filePath.includes("broken")) {
+          return throwError(
+            () => new Error("mkvextract crashed"),
+          )
+        }
+        return of(
           buildChaptersXml([
             "Chapter 05",
             "Chapter 06",
           ]),
-        ),
-      )
+        )
+      },
+    )
     stubWriteChaptersMkvMergeWritingFile()
 
     const emissions = await firstValueFrom(

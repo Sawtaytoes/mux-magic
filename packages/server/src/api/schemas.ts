@@ -230,6 +230,27 @@ export const fixIncorrectDefaultTracksRequestSchema =
       ),
   })
 
+export const renumberChaptersRequestSchema = z.object({
+  sourcePath: z
+    .string()
+    .min(1)
+    .describe(
+      "Directory containing media files or containing other directories of media files.",
+    ),
+  isRecursive: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Recursively looks in folders for media files.",
+    ),
+  isPaddingChapterNumbers: z
+    .boolean()
+    .default(true)
+    .describe(
+      "Zero-pad chapter numbers (default true) — produces `Chapter 01..N` (width ≥ 2). Set false for `Chapter 1..N`.",
+    ),
+})
+
 export const hasBetterAudioRequestSchema = z.object({
   sourcePath: z
     .string()
