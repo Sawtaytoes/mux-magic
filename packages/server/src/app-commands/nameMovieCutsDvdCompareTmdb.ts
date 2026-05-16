@@ -2,6 +2,7 @@ import { basename } from "node:path"
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
+  logInfo,
 } from "@mux-magic/tools"
 import {
   concatMap,
@@ -66,14 +67,14 @@ export const nameMovieCutsDvdCompareTmdb = ({
     searchTerm,
     url,
   }).pipe(
-    tap(() => console.log("Loading DVDCompare page…")),
+    tap(() => logInfo("LOADING", "DVDCompare page")),
     concatMap((resolvedUrl) =>
       searchDvdCompare({ url: resolvedUrl }),
     ),
     concatMap((scrape) =>
       parseSpecialFeatures(scrape.extras).pipe(
         tap(({ cuts }) =>
-          console.log(`Parsed ${cuts.length} cuts`),
+          logInfo("PARSED CUTS", String(cuts.length)),
         ),
         mergeMap(({ cuts }) =>
           (scrape.filmTitle
@@ -106,8 +107,10 @@ export const nameMovieCutsDvdCompareTmdb = ({
               ),
             ),
             tap((timecode) =>
-              console.log(
-                `  ${fileInfo.filename}: ${timecode}`,
+              logInfo(
+                "TIMECODE",
+                fileInfo.filename,
+                timecode,
               ),
             ),
             concatMap(

@@ -1,6 +1,7 @@
 import type { NameMovieCutsResult } from "@mux-magic/server/src/app-commands/nameMovieCutsDvdCompareTmdb.events.js"
 import { nameMovieCutsDvdCompareTmdb } from "@mux-magic/server/src/app-commands/nameMovieCutsDvdCompareTmdb.js"
 import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import { logInfo } from "@mux-magic/tools"
 import type {
   Argv,
   CommandBuilder,
@@ -75,19 +76,24 @@ export const nameMovieCutsDvdCompareTmdbCommand: CommandModule<
       next: (event: NameMovieCutsResult) => {
         if ("skippedFilename" in event) {
           skippedCount += 1
-          console.log(
-            `[SKIPPED] ${event.skippedFilename} (no matching cut found)`,
+          logInfo(
+            "SKIPPED",
+            event.skippedFilename,
+            "no matching cut found",
           )
           return
         }
         renamedCount += 1
-        console.log(
-          `${event.oldName} → ${event.destinationPath}`,
+        logInfo(
+          "RENAMED",
+          event.oldName,
+          event.destinationPath,
         )
       },
       complete: () => {
-        console.log(
-          `Done: ${renamedCount} renamed, ${skippedCount} skipped.`,
+        logInfo(
+          "DONE",
+          `${renamedCount} renamed, ${skippedCount} skipped`,
         )
         cliObserver.complete()
       },
