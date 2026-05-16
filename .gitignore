@@ -41,6 +41,10 @@ test-results/
 # full repo checkout — never meant to be committed to the parent).
 .claude/worktrees/
 
+# Per-session runtime lock written by the /schedule + /loop machinery;
+# holds a live PID and is replaced on every session start.
+.claude/scheduled_tasks.lock
+
 *.log
 
 # Local copy of Biome JSON schema (avoids IDE untrusted-URL warning)
