@@ -64,15 +64,23 @@ describe("buildSequenceObject", () => {
     })
   })
 
-  test("includes a tc threadCount entry when threadCount is provided", () => {
+  test("emits a tc threadCount entry when one lives in the variables array", () => {
+    // Worker 28: threadCount is now a Variable in variablesAtom (singleton,
+    // canonical id "tc"). It flows through the `paths` arg like every other
+    // type — there is no longer a separate threadCount param on the encoder.
+    const threadCountVariable: Variable = {
+      id: "tc",
+      label: "",
+      value: "4",
+      type: "threadCount",
+    }
     const result = buildSequenceObject(
       [],
-      [],
+      [threadCountVariable],
       FIXTURE_COMMANDS_BUNDLE_A,
-      "4",
     )
     expect(result.variables).toEqual({
-      tc: { type: "threadCount", value: "4" },
+      tc: { label: "", value: "4", type: "threadCount" },
     })
   })
 

@@ -42,7 +42,6 @@ import {
   setParamAtom,
 } from "../state/stepAtoms"
 import { stepsAtom } from "../state/stepsAtom"
-import { threadCountAtom } from "../state/threadCountAtom"
 import { variablesAtom } from "../state/variablesAtom"
 import type { Group, Step, StepLink } from "../types"
 import { findFirstChangedStepId } from "../utils/diffSteps"
@@ -55,14 +54,14 @@ const DEFAULT_BASE_PATH = {
   type: "path" as const,
 }
 
-// History snapshots cover every variable type so undo/redo doesn't drop
-// dvdCompareId (or future types) the way reading pathsAtom would.
+// History snapshots cover every variable type (path, dvdCompareId, threadCount,
+// future types) by snapshotting variablesAtom directly — reading pathsAtom would
+// silently drop non-path types.
 const captureSnapshot = (
   store: ReturnType<typeof useStore>,
 ): Snapshot => ({
   steps: store.get(stepsAtom),
   paths: store.get(variablesAtom),
-  threadCount: store.get(threadCountAtom),
 })
 
 const applySnapshot = (
@@ -71,7 +70,6 @@ const applySnapshot = (
 ) => {
   store.set(stepsAtom, snapshot.steps)
   store.set(variablesAtom, snapshot.paths)
-  store.set(threadCountAtom, snapshot.threadCount)
 }
 
 export const useBuilderActions = () => {
@@ -288,17 +286,15 @@ export const useBuilderActions = () => {
     pushHistory()
     store.set(stepsAtom, [])
     store.set(pathsAtom, [DEFAULT_BASE_PATH])
-    store.set(threadCountAtom, null)
   }, [store, pushHistory])
 
   const copyYaml = useCallback(async () => {
     const yaml = toYamlStr(
       store.get(stepsAtom),
-      // All variables (path + dvdCompareId + future types); pathsAtom would
-      // silently drop non-path types from the emitted YAML.
+      // All variables (path + dvdCompareId + threadCount + future types);
+      // pathsAtom would silently drop non-path types from the emitted YAML.
       store.get(variablesAtom),
       store.get(commandsAtom),
-      store.get(threadCountAtom),
     )
     await navigator.clipboard.writeText(yaml)
   }, [store])
@@ -309,7 +305,6 @@ export const useBuilderActions = () => {
       store.get(stepsAtom),
       store.get(variablesAtom),
       store.get(commandsAtom),
-      store.get(threadCountAtom),
     )
     store.set(runningAtom, true)
     store.set(sequenceRunModalAtom, {
@@ -593,12 +588,7 @@ export const useBuilderActions = () => {
 
       if (!foundGroup) return
 
-      const yaml = toYamlStr(
-        [foundGroup],
-        paths,
-        commands,
-        store.get(threadCountAtom),
-      )
+      const yaml = toYamlStr([foundGroup], paths, commands)
       store.set(runningAtom, true)
       store.set(sequenceRunModalAtom, {
         mode: "open",

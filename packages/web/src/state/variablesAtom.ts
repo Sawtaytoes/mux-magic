@@ -1,4 +1,5 @@
 import { atom } from "jotai"
+import { getVariableTypeDefinition } from "../components/VariableCard/registry"
 import {
   flattenSteps,
   isGroup,
@@ -26,15 +27,38 @@ export const addVariableAtom = atom(
       value?: string
     },
   ) => {
-    set(variablesAtom, (variables) => [
-      ...variables,
-      {
-        id: `${args.type}Variable_${Math.random().toString(36).slice(2, 8)}`,
+    set(variablesAtom, (variables) => {
+      const definition = getVariableTypeDefinition(
+        args.type,
+      )
+      // Singleton enforcement: refuse to add a second variable of a
+      // cardinality:"singleton" type. TypePicker already filters such
+      // types out of the picker once one exists, so this guard only
+      // fires on programmatic mis-adds (e.g. a paste that fabricated
+      // a second threadCount). Returning `variables` unchanged is
+      // intentional — silently dropping the duplicate matches how the
+      // YAML mergeVariables() behaves when both blocks supply the same id.
+      if (
+        definition?.cardinality === "singleton" &&
+        variables.some(
+          (variable) => variable.type === args.type,
+        )
+      ) {
+        return variables
+      }
+      // Canonical id takes precedence for singleton types whose on-disk
+      // YAML envelope expects a fixed slot (threadCount → "tc"). Other
+      // types get a random suffix so multiple instances coexist.
+      const id =
+        definition?.canonicalId ??
+        `${args.type}Variable_${Math.random().toString(36).slice(2, 8)}`
+      return variables.concat({
+        id,
         label: args.label ?? "",
         value: args.value ?? "",
         type: args.type,
-      },
-    ])
+      })
+    })
   },
 )
 

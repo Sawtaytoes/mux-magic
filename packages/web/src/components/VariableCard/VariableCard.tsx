@@ -12,6 +12,7 @@ import {
   variablesAtom,
 } from "../../state/variablesAtom"
 import type { Variable } from "../../types"
+import { ThreadCountVariableCard } from "../ThreadCountVariableCard/ThreadCountVariableCard"
 import { DvdCompareIdInput } from "./DvdCompareIdInput"
 import { PathValueInput } from "./PathValueInput"
 
@@ -127,12 +128,16 @@ export const VariableCard = ({
         <span className="text-xs text-slate-600 font-mono shrink-0">
           {variable.type} variable
         </span>
-        {!isFirst && (
+        {/* The seeded basePath (first path) is undeletable so a fresh
+            sequence always has somewhere to write the build root. Any
+            other variable — additional paths, dvdCompareId entries, the
+            singleton threadCount — uses the standard remove flow. */}
+        {!(isFirst && variable.type === "path") && (
           <button
             type="button"
             onClick={() => remove(variable.id)}
-            title="Remove path variable"
-            aria-label="Remove path variable"
+            title={`Remove ${variable.type} variable`}
+            aria-label={`Remove ${variable.type} variable`}
             className="text-xs text-slate-500 hover:text-red-400 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700"
           >
             ✕
@@ -151,6 +156,14 @@ export const VariableCard = ({
       {variable.type === "dvdCompareId" && (
         <DvdCompareIdInput
           variable={variable as Variable<"dvdCompareId">}
+          onValueChange={(value) =>
+            setValue({ variableId: variable.id, value })
+          }
+        />
+      )}
+      {variable.type === "threadCount" && (
+        <ThreadCountVariableCard
+          variable={variable as Variable<"threadCount">}
           onValueChange={(value) =>
             setValue({ variableId: variable.id, value })
           }

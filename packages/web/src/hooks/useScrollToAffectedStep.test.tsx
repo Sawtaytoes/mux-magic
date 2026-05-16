@@ -150,7 +150,6 @@ describe("useScrollToAffectedStep", () => {
       {
         steps: allSteps,
         paths: [],
-        threadCount: null,
       },
     ])
     store.set(canUndoAtom, true)
@@ -180,7 +179,6 @@ describe("useScrollToAffectedStep", () => {
       {
         steps: allSteps,
         paths: [],
-        threadCount: null,
       },
     ])
     store.set(canUndoAtom, true)
@@ -216,7 +214,6 @@ describe("useScrollToAffectedStep", () => {
       {
         steps: [],
         paths: [],
-        threadCount: null,
       },
     ])
     store.set(canUndoAtom, true)
@@ -539,7 +536,6 @@ describe("useScrollToAffectedStep", () => {
       {
         steps: allSteps,
         paths: [],
-        threadCount: null,
       },
     ])
     store.set(canRedoAtom, true)

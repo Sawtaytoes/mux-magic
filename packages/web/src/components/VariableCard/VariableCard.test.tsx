@@ -155,4 +155,32 @@ describe("VariableCard", () => {
       screen.queryByTitle(/browse|pick a folder/i),
     ).toBeNull()
   })
+
+  test("renders a number input when type is threadCount", () => {
+    // The /system/threads fetch happens inside ThreadCountVariableCard
+    // (worker 28 folded the threadCount side-channel into variablesAtom).
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            maxThreads: 8,
+            defaultThreadCount: 2,
+            totalCpus: 8,
+          }),
+      }),
+    )
+    const variable: Variable = {
+      id: "tc",
+      label: "Max threads (per job)",
+      value: "4",
+      type: "threadCount",
+    }
+    renderCard(variable)
+    expect(
+      screen.getByText("threadCount variable"),
+    ).toBeVisible()
+    expect(screen.getByRole("spinbutton")).toHaveValue(4)
+  })
 })

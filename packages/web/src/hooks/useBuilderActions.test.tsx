@@ -70,7 +70,6 @@ const renderWithStore = (
 const emptySnapshot: Snapshot = {
   steps: [],
   paths: [],
-  threadCount: null,
 }
 
 const seedTestPath = (

@@ -85,6 +85,33 @@ test.describe("Edit Variables modal", () => {
     ).toBeVisible()
   })
 
+  test("Add Variable → Max threads adds a threadCount singleton and hides itself", async ({
+    page,
+  }) => {
+    await openVariablesModal(page)
+    const dialog = page.getByRole("dialog")
+    await dialog
+      .getByRole("button", { name: /add variable/i })
+      .click()
+    await dialog
+      .getByRole("button", { name: /max threads/i })
+      .click()
+    // The card renders the numeric thread-count input.
+    await expect(
+      dialog.getByText("threadCount variable"),
+    ).toBeVisible()
+    await expect(
+      dialog.getByRole("spinbutton"),
+    ).toBeVisible()
+    // Re-open the picker: the singleton entry must no longer appear.
+    await dialog
+      .getByRole("button", { name: /add variable/i })
+      .click()
+    await expect(
+      dialog.getByRole("button", { name: /max threads/i }),
+    ).toHaveCount(0)
+  })
+
   test("Add Variable → DVD Compare ID creates a dvdCompareId variable", async ({
     page,
   }) => {
@@ -220,6 +247,77 @@ test.describe("Variable YAML round-trip", () => {
         .getByRole("dialog")
         .locator("input[value='Media Root']"),
     ).toBeVisible()
+  })
+
+  test("threadCount variable survives YAML copy-reload", async ({
+    page,
+  }) => {
+    await openVariablesModal(page)
+    const dialog = page.getByRole("dialog")
+    await dialog
+      .getByRole("button", { name: /add variable/i })
+      .click()
+    await dialog
+      .getByRole("button", { name: /max threads/i })
+      .click()
+    await dialog.getByRole("spinbutton").fill("4")
+
+    await dialog
+      .getByRole("button", { name: /close/i })
+      .click()
+    await expect(
+      page.getByRole("dialog", { name: /edit variables/i }),
+    ).toBeHidden()
+
+    // Copy YAML.
+    await page
+      .getByRole("button", { name: "Sequence actions" })
+      .click()
+    await page
+      .getByRole("button", { name: "View YAML" })
+      .click()
+    const yamlModal = page.locator("#yaml-modal")
+    await expect(yamlModal).toBeVisible()
+    const yamlText = await yamlModal
+      .locator("#yaml-out")
+      .innerText()
+    await page.keyboard.press("Escape")
+
+    // The on-disk envelope worker 11 introduced: `tc: { type: threadCount, value: '4' }`.
+    expect(yamlText).toContain("tc:")
+    expect(yamlText).toContain("threadCount")
+    expect(yamlText).toMatch(/value: ['"]?4['"]?/)
+
+    // Reload via LoadModal paste.
+    await page
+      .getByRole("button", { name: "Sequence actions" })
+      .click()
+    await page.locator("#load-btn").click()
+    await page.evaluate((text: string) => {
+      const dt = new DataTransfer()
+      dt.setData("text/plain", text)
+      document.dispatchEvent(
+        new ClipboardEvent("paste", {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: dt,
+        }),
+      )
+    }, yamlText)
+    await expect(
+      page.getByText(/Paste your saved sequence YAML/),
+    ).toBeHidden()
+
+    // Re-open modal: the threadCount card is present with the value preserved.
+    await openVariablesModal(page)
+    await expect(
+      page
+        .getByRole("dialog")
+        .getByText("threadCount variable"),
+    ).toBeVisible()
+    await expect(
+      page.getByRole("dialog").getByRole("spinbutton"),
+    ).toHaveValue("4")
   })
 
   test("dvdCompareId variable survives YAML copy-reload", async ({

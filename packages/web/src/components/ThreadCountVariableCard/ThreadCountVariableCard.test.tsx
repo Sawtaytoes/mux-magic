@@ -4,7 +4,6 @@ import {
   screen,
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { createStore, Provider } from "jotai"
 import {
   afterEach,
   describe,
@@ -12,7 +11,7 @@ import {
   test,
   vi,
 } from "vitest"
-import { threadCountAtom } from "../../state/threadCountAtom"
+import type { Variable } from "../../types"
 import { ThreadCountVariableCard } from "./ThreadCountVariableCard"
 
 const THREADS_RESPONSE = {
@@ -26,7 +25,16 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-const renderCard = (initialValue: string | null = null) => {
+const makeVariable = (
+  value: string,
+): Variable<"threadCount"> => ({
+  id: "tc",
+  label: "Max threads (per job)",
+  value,
+  type: "threadCount",
+})
+
+const renderCard = (initialValue = "") => {
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue({
@@ -34,24 +42,17 @@ const renderCard = (initialValue: string | null = null) => {
       json: () => Promise.resolve(THREADS_RESPONSE),
     }),
   )
-  const store = createStore()
-  store.set(threadCountAtom, initialValue)
+  const onValueChange = vi.fn<(value: string) => void>()
   render(
-    <Provider store={store}>
-      <ThreadCountVariableCard />
-    </Provider>,
+    <ThreadCountVariableCard
+      variable={makeVariable(initialValue)}
+      onValueChange={onValueChange}
+    />,
   )
-  return store
+  return onValueChange
 }
 
 describe("ThreadCountVariableCard", () => {
-  test('renders "thread count variable" type label', () => {
-    renderCard()
-    expect(
-      screen.getByText(/thread count variable/i),
-    ).toBeInTheDocument()
-  })
-
   test("renders a number input", () => {
     renderCard()
     expect(
@@ -59,7 +60,7 @@ describe("ThreadCountVariableCard", () => {
     ).toBeInTheDocument()
   })
 
-  test("shows current numeric value in input", () => {
+  test("reflects the variable's value", () => {
     renderCard("4")
     expect(screen.getByRole("spinbutton")).toHaveValue(4)
   })
@@ -81,43 +82,19 @@ describe("ThreadCountVariableCard", () => {
     )
   })
 
-  test("no clear button when value is null", () => {
-    renderCard(null)
-    expect(
-      screen.queryByTitle(/clear thread count/i),
-    ).toBeNull()
-  })
-
-  test("shows clear button when value is set", () => {
-    renderCard("4")
-    expect(
-      screen.getByTitle(/clear thread count/i),
-    ).toBeInTheDocument()
-  })
-
-  test("clears atom when clear button clicked", async () => {
+  test("calls onValueChange when input value changes", async () => {
     const user = userEvent.setup()
-    const store = renderCard("4")
-    await user.click(
-      screen.getByTitle(/clear thread count/i),
-    )
-    expect(store.get(threadCountAtom)).toBeNull()
-  })
-
-  test("updates atom when input value changes", async () => {
-    const user = userEvent.setup()
-    const store = renderCard("4")
+    const onValueChange = renderCard("")
     const input = screen.getByRole("spinbutton")
-    await user.clear(input)
     await user.type(input, "6")
-    expect(store.get(threadCountAtom)).toBe("6")
+    expect(onValueChange).toHaveBeenCalledWith("6")
   })
 
-  test("sets atom to null when input is cleared", async () => {
+  test("passes empty string when the input is cleared", async () => {
     const user = userEvent.setup()
-    const store = renderCard("4")
+    const onValueChange = renderCard("4")
     const input = screen.getByRole("spinbutton")
     await user.clear(input)
-    expect(store.get(threadCountAtom)).toBeNull()
+    expect(onValueChange).toHaveBeenLastCalledWith("")
   })
 })

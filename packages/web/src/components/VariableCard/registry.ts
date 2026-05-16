@@ -1,5 +1,6 @@
 import type { JSX } from "react"
 import { DVD_COMPARE_ID_VARIABLE_DEFINITION } from "../../state/variableTypes/dvdCompareId"
+import { THREAD_COUNT_VARIABLE_DEFINITION } from "../../state/variableTypes/threadCount"
 import type { Variable, VariableType } from "../../types"
 
 export type VariableTypeDefinition<
@@ -18,6 +19,13 @@ export type VariableTypeDefinition<
     onChange: (value: string) => void,
   ) => JSX.Element
   isLinkable: boolean
+  // When the type is singleton and the on-disk YAML envelope expects a
+  // specific id (e.g. `tc` for threadCount), the registration declares it
+  // here so addVariableAtom can mint the canonical id deterministically
+  // instead of a random `${type}Variable_${rand}` slug. Round-tripping a
+  // template through the canonical id is what keeps already-saved YAML
+  // loading unchanged.
+  canonicalId?: string
 }
 
 const registry = new Map<
@@ -47,7 +55,7 @@ export const listVariableTypes = (): Array<
 
 // ─── Register built-in types ──────────────────────────────────────────────────
 
-// The path type is the baseline; workers 11 and 35 register additional types.
+// The path type is the baseline; workers 28 and 35 register additional types.
 // renderValueInput is handled by VariableCard dispatching on type — the registry
 // entry here is for cardinality, isLinkable, and metadata only. A full
 // renderValueInput is wired in VariableCard.tsx.
@@ -68,3 +76,8 @@ registerVariableType({
 // `src/state/variableTypes/`, registered here so the registry stays the
 // single bootstrap point.
 registerVariableType(DVD_COMPARE_ID_VARIABLE_DEFINITION)
+
+// Worker 28: threadCount. Singleton; canonicalId "tc" preserves the on-disk
+// YAML envelope worker 11 introduced. The input is a numeric field rendered
+// by VariableCard.tsx dispatching on type.
+registerVariableType(THREAD_COUNT_VARIABLE_DEFINITION)

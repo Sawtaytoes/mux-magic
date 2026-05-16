@@ -86,6 +86,32 @@ describe("variablesAtom", () => {
     store.set(removeVariableAtom, variable.id)
     expect(store.get(variablesAtom)).toHaveLength(1)
   })
+
+  test('addVariableAtom uses canonical id "tc" for threadCount', () => {
+    const store = createStore()
+    store.set(addVariableAtom, { type: "threadCount" })
+    const variables = store.get(variablesAtom)
+    expect(variables).toHaveLength(1)
+    expect(variables[0].id).toBe("tc")
+    expect(variables[0].type).toBe("threadCount")
+  })
+
+  test("addVariableAtom rejects a duplicate singleton (threadCount)", () => {
+    const store = createStore()
+    store.set(addVariableAtom, { type: "threadCount" })
+    store.set(addVariableAtom, { type: "threadCount" })
+    // Singleton guard: only one threadCount survives. TypePicker normally
+    // prevents this; the atom-level guard catches programmatic duplicates
+    // (e.g. a paste that fabricated a second tc entry).
+    expect(store.get(variablesAtom)).toHaveLength(1)
+  })
+
+  test("addVariableAtom allows multiple variables of a multi-cardinality type", () => {
+    const store = createStore()
+    store.set(addVariableAtom, { type: "path" })
+    store.set(addVariableAtom, { type: "path" })
+    expect(store.get(variablesAtom)).toHaveLength(2)
+  })
 })
 
 describe("pathsAtom back-compat alias", () => {

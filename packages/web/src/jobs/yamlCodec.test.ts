@@ -297,6 +297,39 @@ describe("toYamlStr — variables: block output", () => {
     expect(variablesObj.basePath?.value).toBe("/mnt/media")
   })
 
+  test("round-trips a threadCount variable through the unified variables block", () => {
+    // Worker 28 folded threadCount into variablesAtom. The on-disk envelope
+    // is still `variables: { tc: { type: "threadCount", value: "<N>" } }`,
+    // but it flows through the standard `paths` array (rather than a side-
+    // channel param) on both write and read.
+    const threadCountVariable: Variable = {
+      id: "tc",
+      label: "Max threads (per job)",
+      value: "4",
+      type: "threadCount",
+    }
+    const yamlStr = toYamlStr(
+      [],
+      [threadCountVariable],
+      MAKE_DIR_COMMAND,
+    )
+    expect(yamlStr).toContain("tc:")
+    expect(yamlStr).toContain("type: threadCount")
+    expect(yamlStr).toContain("value: '4'")
+
+    const reloaded = loadYamlFromText(
+      yamlStr,
+      MAKE_DIR_COMMAND,
+      [],
+    )
+    const threadCountReloaded = reloaded.paths.find(
+      (variable) => variable.type === "threadCount",
+    )
+    expect(threadCountReloaded).toBeDefined()
+    expect(threadCountReloaded?.id).toBe("tc")
+    expect(threadCountReloaded?.value).toBe("4")
+  })
+
   test("round-trips a dvdCompareId variable with type preserved", () => {
     const dvdCompareIdVariable: Variable = {
       id: "dvdCompareIdVariable_xyz",

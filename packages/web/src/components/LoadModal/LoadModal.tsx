@@ -9,7 +9,6 @@ import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
-import { threadCountAtom } from "../../state/threadCountAtom"
 import { variablesAtom } from "../../state/variablesAtom"
 
 export const LoadModal = () => {
@@ -19,10 +18,9 @@ export const LoadModal = () => {
   )
   const setSteps = useSetAtom(stepsAtom)
   // Write to variablesAtom (not pathsAtom): result.paths can include any
-  // variable type (path, dvdCompareId, …). Writing through pathsAtom would
-  // drop non-path types on every YAML load.
+  // variable type (path, dvdCompareId, threadCount, …). Writing through
+  // pathsAtom would drop non-path types on every YAML load.
   const setVariables = useSetAtom(variablesAtom)
-  const setThreadCount = useSetAtom(threadCountAtom)
   const currentPaths = useAtomValue(pathsAtom)
   const commands = useAtomValue(commandsAtom)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +44,6 @@ export const LoadModal = () => {
         )
         setSteps(result.steps)
         setVariables(result.paths)
-        setThreadCount(result.threadCount)
         setIsOpen(false)
         return true
       } catch (err) {
@@ -65,7 +62,6 @@ export const LoadModal = () => {
       currentPaths,
       setSteps,
       setVariables,
-      setThreadCount,
       setIsOpen,
     ],
   )

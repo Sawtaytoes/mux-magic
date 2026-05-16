@@ -220,8 +220,7 @@ const computePairedDimension = ({
   dimension: "width" | "height"
   value: number
 }): { width: number; height: number } => {
-  const hasUsableRatio =
-    rawRefWidth > 0 && rawRefHeight > 0
+  const hasUsableRatio = rawRefWidth > 0 && rawRefHeight > 0
   const refWidth = hasUsableRatio
     ? rawRefWidth
     : FALLBACK_RATIO_WIDTH

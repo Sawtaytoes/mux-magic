@@ -135,4 +135,51 @@ describe("VariablesPanel", () => {
     )
     expect(removeButtons).toHaveLength(1)
   })
+
+  test('type picker shows "Max threads (per job)" for threadCount', async () => {
+    const user = userEvent.setup()
+    renderPanel([])
+    await user.click(
+      screen.getByRole("button", { name: /add variable/i }),
+    )
+    expect(
+      screen.getByRole("button", { name: /max threads/i }),
+    ).toBeVisible()
+  })
+
+  test('picking "Max threads (per job)" adds a threadCount variable with id "tc"', async () => {
+    const user = userEvent.setup()
+    const store = renderPanel([])
+    await user.click(
+      screen.getByRole("button", { name: /add variable/i }),
+    )
+    await user.click(
+      screen.getByRole("button", { name: /max threads/i }),
+    )
+    const variables = store.get(variablesAtom)
+    expect(variables).toHaveLength(1)
+    expect(variables[0].type).toBe("threadCount")
+    // Canonical id keeps the on-disk YAML envelope stable (worker 11 used `tc`).
+    expect(variables[0].id).toBe("tc")
+  })
+
+  test("type picker hides Max threads after one is added (singleton)", async () => {
+    const user = userEvent.setup()
+    renderPanel([
+      {
+        id: "tc",
+        label: "",
+        value: "4",
+        type: "threadCount",
+      },
+    ])
+    await user.click(
+      screen.getByRole("button", { name: /add variable/i }),
+    )
+    expect(
+      screen.queryByRole("button", {
+        name: /max threads/i,
+      }),
+    ).toBeNull()
+  })
 })

@@ -3,10 +3,9 @@ import type { SequenceItem, Variable } from "../types"
 
 export type Snapshot = {
   steps: SequenceItem[]
-  // Holds every variable type (path, dvdCompareId, …); the field name is
-  // historical from when only path variables existed.
+  // Holds every variable type (path, dvdCompareId, threadCount, …); the
+  // field name is historical from when only path variables existed.
   paths: Variable[]
-  threadCount: string | null
 }
 
 export const undoStackAtom = atom<Snapshot[]>([])

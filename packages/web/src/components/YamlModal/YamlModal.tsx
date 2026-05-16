@@ -5,24 +5,23 @@ import { toYamlStr } from "../../jobs/yamlCodec"
 import { Modal } from "../../primitives/Modal/Modal"
 import { commandsAtom } from "../../state/commandsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
-import { threadCountAtom } from "../../state/threadCountAtom"
 import { variablesAtom } from "../../state/variablesAtom"
 
 export const YamlModal = () => {
   const [isOpen, setIsOpen] = useAtom(yamlModalOpenAtom)
   const steps = useAtomValue(stepsAtom)
   // Read variablesAtom (all types) so the emitted YAML includes non-path
-  // variables like dvdCompareId. Reading pathsAtom would silently drop them.
+  // variables like dvdCompareId and threadCount. Reading pathsAtom would
+  // silently drop them.
   const paths = useAtomValue(variablesAtom)
   const commands = useAtomValue(commandsAtom)
-  const threadCount = useAtomValue(threadCountAtom)
   const [copyLabel, setCopyLabel] = useState("Copy")
 
   const close = () => setIsOpen(false)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(
-      toYamlStr(steps, paths, commands, threadCount),
+      toYamlStr(steps, paths, commands),
     )
     setCopyLabel("Copied!")
     setTimeout(() => setCopyLabel("Copy"), 2000)
@@ -63,7 +62,7 @@ export const YamlModal = () => {
           id="yaml-out"
           className="flex-1 overflow-auto p-4 text-xs text-emerald-400 font-mono leading-relaxed whitespace-pre"
         >
-          {toYamlStr(steps, paths, commands, threadCount)}
+          {toYamlStr(steps, paths, commands)}
         </pre>
       </div>
     </Modal>

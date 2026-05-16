@@ -34,9 +34,13 @@ export type Step = {
   isCollapsed: boolean
 }
 
-// VariableType is a discriminator union. Workers 11 and 35 register additional
-// types ("threadCount", "dvdCompareId") — this union grows as they land.
-export type VariableType = "path" | "dvdCompareId"
+// VariableType is a discriminator union. Workers 28 and 35 added "threadCount"
+// and "dvdCompareId" alongside the original "path"; this union grows as new
+// Variable types land.
+export type VariableType =
+  | "path"
+  | "dvdCompareId"
+  | "threadCount"
 
 export type Variable<
   T extends VariableType = VariableType,
