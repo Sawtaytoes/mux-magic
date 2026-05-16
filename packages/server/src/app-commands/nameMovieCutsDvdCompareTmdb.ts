@@ -23,11 +23,11 @@ import { getMediaInfo } from "../tools/getMediaInfo.js"
 import type { TimecodeDeviation } from "../tools/getSpecialFeatureFromTimecode.js"
 import { parseSpecialFeatures } from "../tools/parseSpecialFeatures.js"
 import { searchDvdCompare } from "../tools/searchDvdCompare.js"
+import type { NameMovieCutsResult } from "./nameMovieCutsDvdCompareTmdb.events.js"
 import { moveFileToEditionFolder } from "./nameSpecialFeaturesDvdCompareTmdb.editions.js"
 import { buildMovieFeatureName } from "./nameSpecialFeaturesDvdCompareTmdb.filename.js"
 import { resolveUrl } from "./nameSpecialFeaturesDvdCompareTmdb.resolveUrl.js"
 import { findMatchingCut } from "./nameSpecialFeaturesDvdCompareTmdb.timecode.js"
-import type { NameMovieCutsResult } from "./nameMovieCutsDvdCompareTmdb.events.js"
 
 // Narrow movie-cuts sibling of `nameSpecialFeaturesDvdCompareTmdb`.
 // Inputs: a folder of main-feature movie rips (e.g. Movie.mkv,
@@ -114,6 +114,14 @@ export const nameMovieCutsDvdCompareTmdb = ({
               (
                 timecode,
               ): Observable<NameMovieCutsResult> => {
+                // `fileInfo.filename` is the basename WITHOUT extension
+                // (it goes through `getLastItemInFilePath`'s `basename(_,
+                // extname)` strip). For event emission we want the full
+                // on-disk name including the extension — that's the
+                // string a human sees in their file explorer.
+                const originalFilename = basename(
+                  fileInfo.fullPath,
+                )
                 const matchedCut = findMatchingCut(
                   cuts,
                   timecode,
@@ -121,14 +129,15 @@ export const nameMovieCutsDvdCompareTmdb = ({
                 )
                 if (matchedCut == null) {
                   return of<NameMovieCutsResult>({
-                    skippedFilename: fileInfo.filename,
+                    skippedFilename: originalFilename,
                     reason: "no_cut_match",
                   })
                 }
-                const renamedBaseName = buildMovieFeatureName(
-                  movie,
-                  matchedCut.name,
-                )
+                const renamedBaseName =
+                  buildMovieFeatureName(
+                    movie,
+                    matchedCut.name,
+                  )
                 return fileInfo
                   .renameFile(renamedBaseName)
                   .pipe(
@@ -144,7 +153,7 @@ export const nameMovieCutsDvdCompareTmdb = ({
                             (
                               destinationPath,
                             ): NameMovieCutsResult => ({
-                              oldName: fileInfo.filename,
+                              oldName: originalFilename,
                               newName: basename(newPath),
                               destinationPath:
                                 destinationPath ?? newPath,

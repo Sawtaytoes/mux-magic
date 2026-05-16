@@ -9,6 +9,7 @@ import {
   test,
   vi,
 } from "vitest"
+import type { MediaInfo } from "../tools/getMediaInfo.js"
 
 // External dependencies are mocked at the module boundary so the test
 // drives the real rxjs pipeline against memfs. Everything past the
@@ -46,17 +47,22 @@ const { nameMovieCutsDvdCompareTmdb } = await import(
 
 // Build a fake MediaInfo whose only `General` track carries the given
 // duration in seconds — matches the shape `getFileDuration` actually
-// reads from in the production path.
-const buildFakeMediaInfo = (durationInSeconds: number) => ({
-  media: {
-    track: [
-      {
-        "@type": "General",
-        Duration: String(durationInSeconds),
-      },
-    ],
-  },
-})
+// reads from in the production path. Cast through `unknown` because
+// the real MediaInfo type has many more fields than `getFileDuration`
+// reads; populating all of them would just be noise for this test.
+const buildFakeMediaInfo = (
+  durationInSeconds: number,
+): MediaInfo =>
+  ({
+    media: {
+      track: [
+        {
+          "@type": "General",
+          Duration: String(durationInSeconds),
+        },
+      ],
+    },
+  }) as unknown as MediaInfo
 
 describe(nameMovieCutsDvdCompareTmdb.name, () => {
   beforeEach(() => {
@@ -64,7 +70,8 @@ describe(nameMovieCutsDvdCompareTmdb.name, () => {
 
     vi.mocked(searchDvdCompare).mockReturnValue(
       of({
-        extras: "raw-extras-string-ignored-by-mocked-parser",
+        extras:
+          "raw-extras-string-ignored-by-mocked-parser",
         filmTitle: {
           baseTitle: "Dragon Lord",
           id: 12345,
@@ -78,7 +85,10 @@ describe(nameMovieCutsDvdCompareTmdb.name, () => {
       of({
         extras: [],
         cuts: [
-          { name: "Hong Kong Version", timecode: "1:36:06" },
+          {
+            name: "Hong Kong Version",
+            timecode: "1:36:06",
+          },
           { name: "Extended Version", timecode: "1:43:02" },
         ],
         possibleNames: [],
@@ -90,17 +100,20 @@ describe(nameMovieCutsDvdCompareTmdb.name, () => {
     )
 
     // Each fixture's duration is set so two files match cuts and one
-    // does not. `5800s = 1:36:40` is within the cut helper's 15s
-    // built-in floor of `1:36:06` (Hong Kong Version). `6200s = 1:43:20`
-    // is within the floor of `1:43:02` (Extended Version). `1800s =
-    // 0:30:00` is nowhere near a listed cut.
-    vi.mocked(getMediaInfo).mockImplementation((filePath) => {
-      if (filePath.includes("hong-kong"))
-        return of(buildFakeMediaInfo(5800))
-      if (filePath.includes("extended"))
-        return of(buildFakeMediaInfo(6200))
-      return of(buildFakeMediaInfo(1800))
-    })
+    // does not. `findMatchingCut` has a 15-second built-in floor for
+    // movie-cut matching. Hong Kong cut is 1:36:06 (5766s) so 5770s
+    // (1:36:10) is 4s past — match. Extended cut is 1:43:02 (6182s) so
+    // 6180s (1:43:00) is 2s before — match. 1800s (0:30:00) is nowhere
+    // near a listed cut.
+    vi.mocked(getMediaInfo).mockImplementation(
+      (filePath) => {
+        if (filePath.includes("hong-kong"))
+          return of(buildFakeMediaInfo(5770))
+        if (filePath.includes("extended"))
+          return of(buildFakeMediaInfo(6180))
+        return of(buildFakeMediaInfo(1800))
+      },
+    )
   })
 
   test("emits rename+move events for files matching cuts and a skip event for the unmatched file", async () => {
@@ -132,12 +145,12 @@ describe(nameMovieCutsDvdCompareTmdb.name, () => {
     ])
 
     // Filenames carry the canonicalized title + year + edition tag.
-    expect(renames.map((result) => result.newName).sort()).toEqual(
-      [
-        "Dragon Lord (1982) {edition-Extended Version}.mkv",
-        "Dragon Lord (1982) {edition-Hong Kong Version}.mkv",
-      ],
-    )
+    expect(
+      renames.map((result) => result.newName).sort(),
+    ).toEqual([
+      "Dragon Lord (1982) {edition-Extended Version}.mkv",
+      "Dragon Lord (1982) {edition-Hong Kong Version}.mkv",
+    ])
 
     // Each rename's destination is the Plex edition-folder layout:
     //   <sourceParent>/<Title (Year)>/<Title (Year) {edition-<Cut>}>/<file>

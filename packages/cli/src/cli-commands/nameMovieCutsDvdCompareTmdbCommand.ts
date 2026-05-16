@@ -53,8 +53,7 @@ export const nameMovieCutsDvdCompareTmdbCommand: CommandModule<
   Record<string, unknown>,
   Args
 > = {
-  command:
-    "nameMovieCutsDvdCompareTmdb <sourcePath> <url>",
+  command: "nameMovieCutsDvdCompareTmdb <sourcePath> <url>",
   describe:
     "Rename movie-cut files matching a DVDCompare release and organize them into Plex edition folders. Files with no matching cut are skipped.",
 
