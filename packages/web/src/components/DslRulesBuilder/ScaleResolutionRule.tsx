@@ -1,16 +1,16 @@
 import { AspectLockButton } from "./AspectLockButton"
 import { DimensionInput } from "./DimensionInput"
 import {
-  setScaleResolutionAspectLock,
+  readIsAspectLinked,
+  setScaleResolutionAspectLink,
   setScaleResolutionDimension,
-  setScaleResolutionDimensionPaired,
   setScaleResolutionFlag,
+  setScaleResolutionToDimensionLinked,
 } from "./ruleMutations"
 import type {
   DslRule,
   OpenDetailsKeys,
   PredicatesMap,
-  ScaleResolutionGroup,
   ScaleResolutionRule as ScaleResolutionRuleType,
 } from "./types"
 import { WhenBuilder } from "./WhenBuilder"
@@ -30,15 +30,6 @@ type ScaleResolutionRuleProps = {
   onCommitRules: (nextRules: DslRule[]) => void
 }
 
-// Default-on lock: undefined flag ≡ locked.
-const isGroupLocked = (
-  rule: ScaleResolutionRuleType,
-  group: ScaleResolutionGroup,
-): boolean =>
-  group === "from"
-    ? rule.isFromAspectLocked !== false
-    : rule.isToAspectLocked !== false
-
 const commitDimensionFor = ({
   rules,
   ruleIndex,
@@ -51,17 +42,46 @@ const commitDimensionFor = ({
   rules: DslRule[]
   ruleIndex: number
   rule: ScaleResolutionRuleType
-  group: ScaleResolutionGroup
+  group: "from" | "to"
   dimension: "width" | "height"
   value: number
   onCommitRules: (nextRules: DslRule[]) => void
 }) => {
-  const mutate = isGroupLocked(rule, group)
-    ? setScaleResolutionDimensionPaired
-    : setScaleResolutionDimension
-  onCommitRules(
-    mutate({ rules, ruleIndex, group, dimension, value }),
-  )
+  if (group === "from") {
+    // from.* edits are always free — the user is redefining the source aspect
+    onCommitRules(
+      setScaleResolutionDimension({
+        rules,
+        ruleIndex,
+        group,
+        dimension,
+        value,
+      }),
+    )
+    return
+  }
+  // to.* edits: constrained when linked, free when unlinked
+  const isLinked = readIsAspectLinked(rule)
+  if (isLinked) {
+    onCommitRules(
+      setScaleResolutionToDimensionLinked({
+        rules,
+        ruleIndex,
+        dimension,
+        value,
+      }),
+    )
+  } else {
+    onCommitRules(
+      setScaleResolutionDimension({
+        rules,
+        ruleIndex,
+        group,
+        dimension,
+        value,
+      }),
+    )
+  }
 }
 
 export const ScaleResolutionRuleBody = ({
@@ -75,31 +95,16 @@ export const ScaleResolutionRuleBody = ({
   onToggleDetails,
   onCommitRules,
 }: ScaleResolutionRuleProps) => {
-  const isFromLocked = isGroupLocked(rule, "from")
-  const isToLocked = isGroupLocked(rule, "to")
+  const isLinked = readIsAspectLinked(rule)
   return (
     <div className="mt-2">
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-        <div>
-          <div className="flex items-center gap-1.5 mb-1">
+      <div className="flex items-start gap-2">
+        {/* from cluster */}
+        <div className="flex-1">
+          <div className="mb-1">
             <span className="text-xs uppercase tracking-wide text-slate-500">
               from
             </span>
-            <AspectLockButton
-              isLocked={isFromLocked}
-              isReadOnly={isReadOnly}
-              ariaLabel="From aspect ratio lock"
-              onToggle={(isNextLocked) => {
-                onCommitRules(
-                  setScaleResolutionAspectLock({
-                    rules,
-                    ruleIndex,
-                    group: "from",
-                    isLocked: isNextLocked,
-                  }),
-                )
-              }}
-            />
           </div>
           <DimensionInput
             id={`srr-from-width-${ruleIndex}`}
@@ -139,26 +144,34 @@ export const ScaleResolutionRuleBody = ({
             />
           </div>
         </div>
-        <div>
-          <div className="flex items-center gap-1.5 mb-1">
+
+        {/* single cross-group link button */}
+        <div
+          className="flex flex-col items-center justify-center pt-5 gap-1"
+          data-testid="aspect-link-divider"
+        >
+          <AspectLockButton
+            isLocked={isLinked}
+            isReadOnly={isReadOnly}
+            ariaLabel="Aspect ratio link"
+            onToggle={(isNextLinked) => {
+              onCommitRules(
+                setScaleResolutionAspectLink({
+                  rules,
+                  ruleIndex,
+                  isLinked: isNextLinked,
+                }),
+              )
+            }}
+          />
+        </div>
+
+        {/* to cluster */}
+        <div className="flex-1">
+          <div className="mb-1">
             <span className="text-xs uppercase tracking-wide text-slate-500">
               to
             </span>
-            <AspectLockButton
-              isLocked={isToLocked}
-              isReadOnly={isReadOnly}
-              ariaLabel="To aspect ratio lock"
-              onToggle={(isNextLocked) => {
-                onCommitRules(
-                  setScaleResolutionAspectLock({
-                    rules,
-                    ruleIndex,
-                    group: "to",
-                    isLocked: isNextLocked,
-                  }),
-                )
-              }}
-            />
           </div>
           <DimensionInput
             id={`srr-to-width-${ruleIndex}`}

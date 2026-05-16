@@ -87,7 +87,8 @@ export const AllRuleKinds: Story = {
   },
 }
 
-export const ScaleResolutionLocked: Story = {
+// Linked state: single chain icon between from/to, default-on (no flag needed).
+export const ScaleResolutionLinked: Story = {
   args: {
     step: {
       ...baseStep,
@@ -104,7 +105,8 @@ export const ScaleResolutionLocked: Story = {
   },
 }
 
-export const ScaleResolutionFromUnlocked: Story = {
+// Unlinked state: single chain icon shown as broken; all four fields edit freely.
+export const ScaleResolutionUnlinked: Story = {
   args: {
     step: {
       ...baseStep,
@@ -114,26 +116,7 @@ export const ScaleResolutionFromUnlocked: Story = {
             type: "scaleResolution",
             from: { width: 1920, height: 1080 },
             to: { width: 1280, height: 720 },
-            isFromAspectLocked: false,
-          },
-        ],
-      },
-    },
-  },
-}
-
-export const ScaleResolutionBothUnlocked: Story = {
-  args: {
-    step: {
-      ...baseStep,
-      params: {
-        rules: [
-          {
-            type: "scaleResolution",
-            from: { width: 1920, height: 1080 },
-            to: { width: 1280, height: 720 },
-            isFromAspectLocked: false,
-            isToAspectLocked: false,
+            isAspectLinked: false,
           },
         ],
       },

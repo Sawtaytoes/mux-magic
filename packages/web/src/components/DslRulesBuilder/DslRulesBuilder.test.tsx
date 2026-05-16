@@ -18,10 +18,11 @@ import {
   addRule,
   changeRuleType,
   moveRule,
+  readIsAspectLinked,
   removeRule,
-  setScaleResolutionAspectLock,
+  setScaleResolutionAspectLink,
   setScaleResolutionDimension,
-  setScaleResolutionDimensionPaired,
+  setScaleResolutionToDimensionLinked,
   setScriptInfoField,
 } from "./ruleMutations"
 import {
@@ -182,180 +183,226 @@ describe("setScaleResolutionDimension", () => {
   })
 })
 
-describe("setScaleResolutionAspectLock", () => {
-  it("marks the from group unlocked by writing isFromAspectLocked=false", () => {
-    const rules: DslRule[] = [
-      {
-        type: "scaleResolution",
-        from: { width: 1920, height: 1080 },
-        to: { width: 1280, height: 720 },
-      },
-    ]
-    const result = setScaleResolutionAspectLock({
-      rules,
-      ruleIndex: 0,
-      group: "from",
-      isLocked: false,
-    })
-    expect(
-      (result[0] as { isFromAspectLocked?: boolean })
-        .isFromAspectLocked,
-    ).toBe(false)
+// ─── readIsAspectLinked + legacy migration ────────────────────────────────────
+
+describe("readIsAspectLinked", () => {
+  it("returns true when no flags are set (default-on)", () => {
+    const rule = {
+      type: "scaleResolution" as const,
+      from: { width: 1920, height: 1080 },
+      to: { width: 1280, height: 720 },
+    }
+    expect(readIsAspectLinked(rule)).toBe(true)
   })
 
-  it("relocking the from group deletes the explicit unlocked flag (default is locked)", () => {
+  it("returns false when isAspectLinked is false", () => {
+    const rule = {
+      type: "scaleResolution" as const,
+      from: { width: 1920, height: 1080 },
+      to: { width: 1280, height: 720 },
+      isAspectLinked: false,
+    }
+    expect(readIsAspectLinked(rule)).toBe(false)
+  })
+
+  it("returns false when legacy isFromAspectLocked is false", () => {
+    const rule = {
+      type: "scaleResolution" as const,
+      from: { width: 1920, height: 1080 },
+      to: { width: 1280, height: 720 },
+      isFromAspectLocked: false,
+    }
+    expect(readIsAspectLinked(rule)).toBe(false)
+  })
+
+  it("returns false when legacy isToAspectLocked is false", () => {
+    const rule = {
+      type: "scaleResolution" as const,
+      from: { width: 1920, height: 1080 },
+      to: { width: 1280, height: 720 },
+      isToAspectLocked: false,
+    }
+    expect(readIsAspectLinked(rule)).toBe(false)
+  })
+})
+
+// ─── setScaleResolutionAspectLink ─────────────────────────────────────────────
+
+describe("setScaleResolutionAspectLink", () => {
+  it("marks unlinked by writing isAspectLinked=false and drops legacy keys", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
         from: { width: 1920, height: 1080 },
         to: { width: 1280, height: 720 },
         isFromAspectLocked: false,
+        isToAspectLocked: false,
       },
     ]
-    const result = setScaleResolutionAspectLock({
+    const result = setScaleResolutionAspectLink({
       rules,
       ruleIndex: 0,
-      group: "from",
-      isLocked: true,
+      isLinked: false,
     })
+    const updated = result[0] as Record<string, unknown>
+    expect(updated.isAspectLinked).toBe(false)
     expect(
-      Object.hasOwn(
-        result[0] as Record<string, unknown>,
-        "isFromAspectLocked",
-      ),
+      Object.hasOwn(updated, "isFromAspectLocked"),
     ).toBe(false)
+    expect(Object.hasOwn(updated, "isToAspectLocked")).toBe(
+      false,
+    )
   })
 
-  it("toggles the to group independently of the from group", () => {
+  it("relinking deletes isAspectLinked key (default-on omission) and drops legacy keys", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
         from: { width: 1920, height: 1080 },
         to: { width: 1280, height: 720 },
+        isAspectLinked: false,
+        isFromAspectLocked: false,
       },
     ]
-    const result = setScaleResolutionAspectLock({
+    const result = setScaleResolutionAspectLink({
       rules,
       ruleIndex: 0,
-      group: "to",
-      isLocked: false,
+      isLinked: true,
     })
-    const updated = result[0] as {
-      isFromAspectLocked?: boolean
-      isToAspectLocked?: boolean
-    }
-    expect(updated.isToAspectLocked).toBe(false)
-    expect(updated.isFromAspectLocked).toBeUndefined()
+    const updated = result[0] as Record<string, unknown>
+    expect(Object.hasOwn(updated, "isAspectLinked")).toBe(
+      false,
+    )
+    expect(
+      Object.hasOwn(updated, "isFromAspectLocked"),
+    ).toBe(false)
   })
 })
 
-describe("setScaleResolutionDimensionPaired", () => {
-  it("preserves ratio when editing from.width with existing 800x600 (4:3)", () => {
+// ─── setScaleResolutionToDimensionLinked ──────────────────────────────────────
+
+describe("setScaleResolutionToDimensionLinked", () => {
+  it("preserves from aspect (2.4:1) when editing to.width — not to's own prior ratio", () => {
+    // This is the regression test: from is 1920×800 (2.4:1), to is 1280×720 (16:9).
+    // Editing to.width=3840 while linked should give to.height=1600 (from's 2.4:1),
+    // NOT 2160 (to's own 16:9).
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
-        from: { width: 800, height: 600 },
+        from: { width: 1920, height: 800 },
+        to: { width: 1280, height: 720 },
+      },
+    ]
+    const result = setScaleResolutionToDimensionLinked({
+      rules,
+      ruleIndex: 0,
+      dimension: "width",
+      value: 3840,
+    })
+    const updated = result[0] as {
+      to: { width: number; height: number }
+      from: { width: number; height: number }
+    }
+    expect(updated.to.width).toBe(3840)
+    expect(updated.to.height).toBe(1600)
+    // from must be untouched
+    expect(updated.from.width).toBe(1920)
+    expect(updated.from.height).toBe(800)
+  })
+
+  it("preserves from aspect when editing to.height", () => {
+    // from is 1920×800 (2.4:1); editing to.height=800 → to.width=1920
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 1920, height: 800 },
+        to: { width: 1280, height: 720 },
+      },
+    ]
+    const result = setScaleResolutionToDimensionLinked({
+      rules,
+      ruleIndex: 0,
+      dimension: "height",
+      value: 800,
+    })
+    const updated = result[0] as {
+      to: { width: number; height: number }
+    }
+    expect(updated.to.height).toBe(800)
+    expect(updated.to.width).toBe(1920)
+  })
+
+  it("falls back to 16:9 when from dims are 0x0", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 0, height: 0 },
         to: { width: 0, height: 0 },
       },
     ]
-    const result = setScaleResolutionDimensionPaired({
+    const result = setScaleResolutionToDimensionLinked({
       rules,
       ruleIndex: 0,
-      group: "from",
       dimension: "width",
       value: 1920,
     })
     const updated = result[0] as {
-      from: { width: number; height: number }
+      to: { width: number; height: number }
     }
-    expect(updated.from.width).toBe(1920)
-    expect(updated.from.height).toBe(1440)
+    expect(updated.to.width).toBe(1920)
+    expect(updated.to.height).toBe(1080)
   })
 
-  it("preserves ratio when editing from.height with existing 1920x1080 (16:9)", () => {
+  it("strips legacy aspect keys on write", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
         from: { width: 1920, height: 1080 },
-        to: { width: 0, height: 0 },
+        to: { width: 1280, height: 720 },
+        isFromAspectLocked: false,
+        isToAspectLocked: false,
       },
     ]
-    const result = setScaleResolutionDimensionPaired({
+    const result = setScaleResolutionToDimensionLinked({
       rules,
       ruleIndex: 0,
-      group: "from",
-      dimension: "height",
-      value: 540,
-    })
-    const updated = result[0] as {
-      from: { width: number; height: number }
-    }
-    expect(updated.from.height).toBe(540)
-    expect(updated.from.width).toBe(960)
-  })
-
-  it("falls back to 16:9 when existing dimensions are 0x0", () => {
-    const rules: DslRule[] = [
-      {
-        type: "scaleResolution",
-        from: { width: 0, height: 0 },
-        to: { width: 0, height: 0 },
-      },
-    ]
-    const result = setScaleResolutionDimensionPaired({
-      rules,
-      ruleIndex: 0,
-      group: "from",
       dimension: "width",
-      value: 1920,
+      value: 3840,
     })
-    const updated = result[0] as {
-      from: { width: number; height: number }
-    }
-    expect(updated.from.width).toBe(1920)
-    expect(updated.from.height).toBe(1080)
+    const updated = result[0] as Record<string, unknown>
+    expect(
+      Object.hasOwn(updated, "isFromAspectLocked"),
+    ).toBe(false)
+    expect(Object.hasOwn(updated, "isToAspectLocked")).toBe(
+      false,
+    )
   })
+})
 
-  it("falls back to 16:9 when editing height with 0x0 existing dimensions", () => {
+// ─── from.* edit while linked — must be free (no to.* side-effects) ──────────
+
+describe("setScaleResolutionDimension for from group", () => {
+  it("editing from.width while linked does NOT touch to.*", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
-        from: { width: 0, height: 0 },
-        to: { width: 0, height: 0 },
-      },
-    ]
-    const result = setScaleResolutionDimensionPaired({
-      rules,
-      ruleIndex: 0,
-      group: "to",
-      dimension: "height",
-      value: 1080,
-    })
-    const updated = result[0] as {
-      to: { width: number; height: number }
-    }
-    expect(updated.to.height).toBe(1080)
-    expect(updated.to.width).toBe(1920)
-  })
-
-  it("does not mutate the other group", () => {
-    const rules: DslRule[] = [
-      {
-        type: "scaleResolution",
-        from: { width: 800, height: 600 },
+        from: { width: 1920, height: 1080 },
         to: { width: 1280, height: 720 },
       },
     ]
-    const result = setScaleResolutionDimensionPaired({
+    const result = setScaleResolutionDimension({
       rules,
       ruleIndex: 0,
       group: "from",
       dimension: "width",
-      value: 1600,
+      value: 3840,
     })
     const updated = result[0] as {
+      from: { width: number; height: number }
       to: { width: number; height: number }
     }
+    expect(updated.from.width).toBe(3840)
+    // to must be untouched
     expect(updated.to.width).toBe(1280)
     expect(updated.to.height).toBe(720)
   })
@@ -526,7 +573,7 @@ describe("DslRulesBuilder render", () => {
     ).toBeInTheDocument()
   })
 
-  it("renders aspect-lock chain buttons for both groups, locked by default", () => {
+  it("renders exactly one aspect link button (linked by default)", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
@@ -539,17 +586,40 @@ describe("DslRulesBuilder render", () => {
         <DslRulesBuilder step={createStep({ rules })} />
       </Provider>,
     )
-    const fromLock = screen.getByRole("button", {
-      name: /from aspect ratio lock/i,
+    const linkButtons = screen.getAllByRole("button", {
+      name: /aspect/i,
     })
-    const toLock = screen.getByRole("button", {
-      name: /to aspect ratio lock/i,
-    })
-    expect(fromLock).toHaveAttribute("aria-pressed", "true")
-    expect(toLock).toHaveAttribute("aria-pressed", "true")
+    expect(linkButtons).toHaveLength(1)
+    expect(linkButtons[0]).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    )
   })
 
-  it("reflects unlocked state when isFromAspectLocked is false", () => {
+  it("reflects unlinked state when isAspectLinked is false", () => {
+    const rules: DslRule[] = [
+      {
+        type: "scaleResolution",
+        from: { width: 1920, height: 1080 },
+        to: { width: 1280, height: 720 },
+        isAspectLinked: false,
+      },
+    ]
+    render(
+      <Provider>
+        <DslRulesBuilder step={createStep({ rules })} />
+      </Provider>,
+    )
+    const linkButton = screen.getByRole("button", {
+      name: /aspect/i,
+    })
+    expect(linkButton).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    )
+  })
+
+  it("reflects unlinked state when legacy isFromAspectLocked is false", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
@@ -563,16 +633,12 @@ describe("DslRulesBuilder render", () => {
         <DslRulesBuilder step={createStep({ rules })} />
       </Provider>,
     )
-    const fromLock = screen.getByRole("button", {
-      name: /from aspect ratio lock/i,
+    const linkButton = screen.getByRole("button", {
+      name: /aspect/i,
     })
-    const toLock = screen.getByRole("button", {
-      name: /to aspect ratio lock/i,
-    })
-    expect(fromLock).toHaveAttribute(
+    expect(linkButton).toHaveAttribute(
       "aria-pressed",
       "false",
     )
-    expect(toLock).toHaveAttribute("aria-pressed", "true")
   })
 })
