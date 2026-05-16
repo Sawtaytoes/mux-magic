@@ -5,15 +5,15 @@ import {
   getPlatform,
 } from "./currentEnvironment.js"
 import {
-  assertNotDriveRelative,
   PathSafetyError,
   validateReadablePath,
+  validateWindowsAbsolutePath,
 } from "./pathSafety.js"
 
-describe("assertNotDriveRelative", () => {
+describe("validateWindowsAbsolutePath", () => {
   test("throws PathSafetyError on win32 for a drive-relative POSIX-style path", () => {
     expect(() =>
-      assertNotDriveRelative({
+      validateWindowsAbsolutePath({
         cwd: "D:\\Projects\\Personal\\mux-magic",
         path: "/work",
         platform: "win32",
@@ -23,13 +23,13 @@ describe("assertNotDriveRelative", () => {
 
   test("error message names both the input path and the inferred CWD drive", () => {
     try {
-      assertNotDriveRelative({
+      validateWindowsAbsolutePath({
         cwd: "D:\\Projects\\Personal\\mux-magic",
         path: "/work",
         platform: "win32",
       })
       expect.unreachable(
-        "assertNotDriveRelative should have thrown for /work on win32",
+        "validateWindowsAbsolutePath should have thrown for /work on win32",
       )
     } catch (caughtError) {
       const errorMessage = (caughtError as PathSafetyError)
@@ -41,7 +41,7 @@ describe("assertNotDriveRelative", () => {
 
   test("does not throw on win32 for a fully qualified drive path", () => {
     expect(() =>
-      assertNotDriveRelative({
+      validateWindowsAbsolutePath({
         cwd: "D:\\projects",
         path: "C:\\work",
         platform: "win32",
@@ -51,7 +51,7 @@ describe("assertNotDriveRelative", () => {
 
   test("does not throw on win32 for a UNC share path", () => {
     expect(() =>
-      assertNotDriveRelative({
+      validateWindowsAbsolutePath({
         cwd: "D:\\projects",
         path: "\\\\server\\share\\dir",
         platform: "win32",
@@ -61,7 +61,7 @@ describe("assertNotDriveRelative", () => {
 
   test("does not throw on linux for a POSIX-style path", () => {
     expect(() =>
-      assertNotDriveRelative({
+      validateWindowsAbsolutePath({
         cwd: "/home/dev/mux-magic",
         path: "/work",
         platform: "linux",
@@ -71,7 +71,7 @@ describe("assertNotDriveRelative", () => {
 
   test("does not throw on darwin for a POSIX-style path", () => {
     expect(() =>
-      assertNotDriveRelative({
+      validateWindowsAbsolutePath({
         cwd: "/Users/dev/mux-magic",
         path: "/work",
         platform: "darwin",

@@ -31,15 +31,19 @@ export class PathSafetyError extends Error {
   }
 }
 
-// Platform-injectable guard that rejects POSIX-style paths on Windows
-// (`/work`, `/home/foo`). Node's `isAbsolute` returns `true` for these on
-// win32, but at the syscall layer they're drive-relative — `fs.mkdirSync("/work")`
-// silently anchors to whatever drive the dev server is running from. The
-// detection uses `win32.parse(p).root === "/"` (drive-qualified roots are
-// `"C:\\"`, UNC roots are `"\\\\server\\share\\"`, neither match). Using
-// `win32.parse` instead of `path.parse` keeps the helper testable on Linux
-// CI without monkey-patching the runner's actual `process.platform`.
-export const assertNotDriveRelative = ({
+// Platform-injectable check that requires a fully qualified path on
+// Windows — either drive-qualified (`C:\…`) or a UNC share
+// (`\\\\server\\share\\…`). Bare POSIX-style paths (`/work`, `/home/foo`)
+// are rejected because Node's `isAbsolute` returns `true` for them on
+// win32, but at the syscall layer they're drive-relative —
+// `fs.mkdirSync("/work")` silently anchors to whatever drive the dev
+// server is running from. The detection uses `win32.parse(p).root ===
+// "/"` (drive-qualified roots are `"C:\\"`, UNC roots are
+// `"\\\\server\\share\\"`, neither match). Using `win32.parse` instead
+// of `path.parse` keeps the helper testable on Linux CI without
+// monkey-patching the runner's actual `process.platform`. No-op on
+// non-Windows platforms — POSIX absolute paths stay legitimate there.
+export const validateWindowsAbsolutePath = ({
   cwd,
   path,
   platform,
@@ -75,7 +79,7 @@ export const validateReadablePath = (
       `Path must be absolute: ${path}`,
     )
   }
-  assertNotDriveRelative({
+  validateWindowsAbsolutePath({
     cwd: getCwd(),
     path,
     platform: getPlatform(),
