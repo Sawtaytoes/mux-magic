@@ -36,11 +36,11 @@ import { SaveTemplateModal } from "./SaveTemplateModal"
 //
 // Loading a template snapshots the current sequence into
 // templateLoadUndoAtom before replacing it, so the undo-toast (rendered
-// below) can restore prior state. Loading also clears ?seq= from the
-// URL — the URL query string remains the "share this instance"
-// mechanism, but the server-backed template is now the canonical
-// re-usable form, so the live URL should not carry stale instance
-// state once a named template has been applied.
+// below) can restore prior state. Loading also clears ?seqJson= and the
+// legacy ?seq= from the URL — the URL query string remains the "share
+// this instance" mechanism, but the server-backed template is now the
+// canonical re-usable form, so the live URL should not carry stale
+// instance state once a named template has been applied.
 export const SavedTemplatesPanel = () => {
   const store = useStore()
   const templates = useAtomValue(templatesAtom)
@@ -143,10 +143,13 @@ export const SavedTemplatesPanel = () => {
       )
       setSelectedTemplateId(id)
 
-      // Clear ?seq= — the server-backed template is now the source
-      // of truth for what's on screen.
+      // Clear both URL params — the server-backed template is now
+      // the source of truth. The live writer in BuilderPage will rewrite
+      // ?seqJson= on the next atom change anyway, but clearing here keeps
+      // a forwarded mid-load URL from carrying stale state.
       const url = new URL(window.location.href)
       url.searchParams.delete("seq")
+      url.searchParams.delete("seqJson")
       window.history.replaceState({}, "", url.toString())
     } catch (error) {
       surfaceActionError(error)

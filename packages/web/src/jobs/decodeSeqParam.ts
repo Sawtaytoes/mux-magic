@@ -1,3 +1,9 @@
+// LEGACY-ONLY (worker 43+). Kept for backward decoding of `?seq=` URLs that
+// were produced before the switch to ?seqJson= (base64url + minified JSON).
+// The BuilderPage reader still calls this as a fall-back when ?seqJson= is
+// absent, so old shared URLs keep loading. New code MUST use the
+// ?seqJson= decoder (decodeSeqJsonParam.ts).
+//
 // Decodes the `?seq=` query parameter that the builder uses for shareable URLs.
 //
 // The encoder (buildBuilderUrl.ts) wraps the payload in:

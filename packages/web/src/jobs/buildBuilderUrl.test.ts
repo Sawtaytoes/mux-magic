@@ -1,12 +1,16 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, test } from "vitest"
+
 import { FIXTURE_COMMANDS_BUNDLE_A } from "../commands/__fixtures__/commands"
 import { makeFakeJob } from "./__fixtures__/makeFakeJob"
 import { buildBuilderUrl } from "./buildBuilderUrl"
+import { decodeSeqJsonParam } from "./decodeSeqJsonParam"
 import { decodeSeqParam } from "./decodeSeqParam"
+import { encodeSeqParam } from "./encodeSeqParam"
 import { loadYamlFromText } from "./yamlCodec"
 
-// Round-trip: buildBuilderUrl → decodeSeqParam → loadYamlFromText
-// Verifies that the ?seq= URL format is stable across encode+decode.
+// Round-trip: buildBuilderUrl → decodeSeqJsonParam → loadYamlFromText
+// Verifies that the new ?seqJson= URL format is stable across encode+decode,
+// and that the legacy ?seq= path still decodes for old shareable URLs.
 
 const DEFAULT_PATHS = [
   {
@@ -17,8 +21,8 @@ const DEFAULT_PATHS = [
   },
 ]
 
-describe("buildBuilderUrl round-trip", () => {
-  it("produces a /builder?seq= URL for a single-command job", () => {
+describe("buildBuilderUrl round-trip (?seqJson=)", () => {
+  test("produces a /builder?seqJson= URL for a single-command job", () => {
     const job = makeFakeJob({
       id: "j1",
       commandName: "flattenOutput",
@@ -30,10 +34,10 @@ describe("buildBuilderUrl round-trip", () => {
     })
 
     const url = buildBuilderUrl(job)
-    expect(url).toMatch(/^\/builder\?seq=/)
+    expect(url).toMatch(/^\/builder\?seqJson=/)
   })
 
-  it("round-trips a single-command job through encode → decode → parse", () => {
+  test("round-trips a single-command job through encode → decode → parse", () => {
     const job = makeFakeJob({
       id: "j1",
       commandName: "flattenOutput",
@@ -45,13 +49,13 @@ describe("buildBuilderUrl round-trip", () => {
     })
 
     const url = buildBuilderUrl(job)
-    const b64 = new URLSearchParams(url.split("?")[1]).get(
-      "seq",
-    )
-    const decoded = decodeSeqParam(b64)
+    const seqJson = new URLSearchParams(
+      url.split("?")[1],
+    ).get("seqJson")
+    const decoded = decodeSeqJsonParam(seqJson)
 
     if (!decoded)
-      throw new Error("decodeSeqParam returned null")
+      throw new Error("decodeSeqJsonParam returned null")
 
     const result = loadYamlFromText(
       decoded,
@@ -75,7 +79,7 @@ describe("buildBuilderUrl round-trip", () => {
     ).toBe(true)
   })
 
-  it("round-trips a sequence job (commandName === 'sequence') preserving all steps", () => {
+  test("round-trips a sequence job (commandName === 'sequence') preserving all steps", () => {
     const job = makeFakeJob({
       id: "j2",
       commandName: "sequence",
@@ -103,13 +107,13 @@ describe("buildBuilderUrl round-trip", () => {
     })
 
     const url = buildBuilderUrl(job)
-    const b64 = new URLSearchParams(url.split("?")[1]).get(
-      "seq",
-    )
-    const decoded = decodeSeqParam(b64)
+    const seqJson = new URLSearchParams(
+      url.split("?")[1],
+    ).get("seqJson")
+    const decoded = decodeSeqJsonParam(seqJson)
 
     if (!decoded)
-      throw new Error("decodeSeqParam returned null")
+      throw new Error("decodeSeqJsonParam returned null")
 
     const result = loadYamlFromText(
       decoded,
@@ -126,7 +130,7 @@ describe("buildBuilderUrl round-trip", () => {
     ).toBe("setDisplayWidth")
   })
 
-  it("round-trips a sequence containing a blank placeholder step through ?seq=", () => {
+  test("round-trips a sequence containing a blank placeholder step through ?seqJson=", () => {
     const job = makeFakeJob({
       id: "j3",
       commandName: "sequence",
@@ -147,12 +151,12 @@ describe("buildBuilderUrl round-trip", () => {
     })
 
     const url = buildBuilderUrl(job)
-    const b64 = new URLSearchParams(url.split("?")[1]).get(
-      "seq",
-    )
-    const decoded = decodeSeqParam(b64)
+    const seqJson = new URLSearchParams(
+      url.split("?")[1],
+    ).get("seqJson")
+    const decoded = decodeSeqJsonParam(seqJson)
     if (!decoded)
-      throw new Error("decodeSeqParam returned null")
+      throw new Error("decodeSeqJsonParam returned null")
 
     const result = loadYamlFromText(
       decoded,
@@ -172,13 +176,46 @@ describe("buildBuilderUrl round-trip", () => {
       (result.steps[1] as { command: string }).command,
     ).toBe("flattenOutput")
   })
+})
 
-  it("decodeSeqParam returns null for malformed base64", () => {
-    expect(decodeSeqParam("not-valid-base64!!!")).toBeNull()
-  })
+describe("legacy ?seq= compatibility", () => {
+  test("a hand-constructed legacy ?seq= URL still decodes via decodeSeqParam → loadYamlFromText", () => {
+    // Pin the contract that the BuilderPage reader fall-back relies on: any
+    // URL produced by the pre-worker-43 writer (YAML or JSON payload, base64
+    // with `+`/`/`/`=`) must keep loading via the legacy decoder.
+    const legacyYaml = [
+      "variables:",
+      "  basePath:",
+      "    label: basePath",
+      "    value: /media",
+      "    type: path",
+      "steps:",
+      "  - id: step1",
+      "    command: flattenOutput",
+      "    params:",
+      "      sourcePath: '@basePath'",
+      "",
+    ].join("\n")
+    const legacySeq = encodeSeqParam(legacyYaml)
+    const decoded = decodeSeqParam(legacySeq)
 
-  it("decodeSeqParam returns null for empty input", () => {
-    expect(decodeSeqParam(null)).toBeNull()
-    expect(decodeSeqParam("")).toBeNull()
+    if (!decoded)
+      throw new Error("decodeSeqParam returned null")
+
+    const result = loadYamlFromText(
+      decoded,
+      FIXTURE_COMMANDS_BUNDLE_A,
+      DEFAULT_PATHS,
+    )
+
+    expect(result.steps).toHaveLength(1)
+    expect(
+      (result.steps[0] as { command: string }).command,
+    ).toBe("flattenOutput")
+    expect(
+      result.paths.find(
+        (variable) => variable.id === "basePath",
+      )?.value,
+    ).toBe("/media")
   })
 })

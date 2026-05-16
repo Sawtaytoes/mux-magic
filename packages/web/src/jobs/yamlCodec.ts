@@ -30,7 +30,7 @@ const buildParamsForStep = (
 // Blank steps (command: "") are persisted explicitly so undo/redo,
 // paste, and `?seq=` round-trips don't silently drop them. The
 // runner side-channels them as no-ops; see sequenceRunner.ts.
-const stepToYaml = (step: Step, commands: Commands) => ({
+const stepToObject = (step: Step, commands: Commands) => ({
   id: step.id,
   ...(step.alias ? { alias: step.alias } : {}),
   command: step.command,
@@ -40,29 +40,36 @@ const stepToYaml = (step: Step, commands: Commands) => ({
   ...(step.isCollapsed ? { isCollapsed: true } : {}),
 })
 
-const groupToYaml = (group: Group, commands: Commands) => ({
+const groupToObject = (
+  group: Group,
+  commands: Commands,
+) => ({
   kind: "group" as const,
   ...(group.id ? { id: group.id } : {}),
   ...(group.label ? { label: group.label } : {}),
   ...(group.isParallel ? { isParallel: true } : {}),
   ...(group.isCollapsed ? { isCollapsed: true } : {}),
   steps: group.steps.map((step) =>
-    stepToYaml(step, commands),
+    stepToObject(step, commands),
   ),
 })
 
-export const toYamlStr = (
+export type SequenceObject = {
+  variables?: Record<string, unknown>
+  steps: unknown[]
+}
+
+// Builds the canonical { variables, steps } object that loadYamlFromText
+// reads back. Pure shape — no YAML or JSON involvement. Both toYamlStr
+// (YAML clipboard / save flow) and encodeSeqJsonParam (the live ?seqJson=
+// URL writer) round-trip through this so the loader sees identical input
+// regardless of which encoder produced the URL.
+export const buildSequenceObject = (
   steps: SequenceItem[],
   paths: Variable[],
   commands: Commands,
   threadCount?: string | null,
-): string => {
-  const hasSomething =
-    steps.length > 0 ||
-    paths.some((variable) => variable.value)
-
-  if (!hasSomething) return "# No steps yet"
-
+): SequenceObject => {
   const variablesObj = {
     ...Object.fromEntries(
       paths.map((variable) => [
@@ -79,17 +86,37 @@ export const toYamlStr = (
       : {}),
   }
 
+  return {
+    ...(Object.keys(variablesObj).length > 0
+      ? { variables: variablesObj }
+      : {}),
+    steps: steps.map((item) =>
+      isGroup(item)
+        ? groupToObject(item, commands)
+        : stepToObject(item, commands),
+    ),
+  }
+}
+
+export const toYamlStr = (
+  steps: SequenceItem[],
+  paths: Variable[],
+  commands: Commands,
+  threadCount?: string | null,
+): string => {
+  const hasSomething =
+    steps.length > 0 ||
+    paths.some((variable) => variable.value)
+
+  if (!hasSomething) return "# No steps yet"
+
   return dump(
-    {
-      ...(Object.keys(variablesObj).length > 0
-        ? { variables: variablesObj }
-        : {}),
-      steps: steps.map((item) =>
-        isGroup(item)
-          ? groupToYaml(item, commands)
-          : stepToYaml(item, commands),
-      ),
-    },
+    buildSequenceObject(
+      steps,
+      paths,
+      commands,
+      threadCount,
+    ),
     { lineWidth: -1, flowLevel: 3, indent: 2 },
   )
 }

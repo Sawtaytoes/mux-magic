@@ -1,17 +1,16 @@
-import type { Job } from "../jobs/types"
+import { encodeSeqJsonParam } from "./encodeSeqJsonParam"
+import type { Job } from "./types"
 
-// Format decision (W5A): keep JSON rather than switching to YAML.
-// JSON is ~20% smaller than the YAML equivalent (no indentation / key repetition).
-// The ?seq= reader (BuilderPage.tsx) accepts both formats because JSON is valid YAML,
-// so old share-URLs created by the legacy vanilla builder still load correctly.
+// Format: minified JSON + base64url under `?seqJson=`. Worker 43 swapped
+// the encoding from `btoa(unescape(encodeURIComponent(JSON.stringify(...))))`
+// (with `+` and `/` then needing URL-escape) to base64url, which is a few
+// bytes shorter and avoids the `encodeURIComponent` step entirely. JSON is
+// valid YAML, so the BuilderPage reader still feeds the decoded payload
+// straight into `loadYamlFromText`.
 const encodeSequenceAsUrl = (
   sequenceBody: unknown,
-): string => {
-  const json = JSON.stringify(sequenceBody)
-  // unescape+encodeURIComponent converts Unicode to Latin-1 bytes for btoa.
-  const b64 = btoa(unescape(encodeURIComponent(json)))
-  return `/builder?seq=${b64}`
-}
+): string =>
+  `/builder?seqJson=${encodeSeqJsonParam(JSON.stringify(sequenceBody))}`
 
 export const buildBuilderUrl = (job: Job): string => {
   if (

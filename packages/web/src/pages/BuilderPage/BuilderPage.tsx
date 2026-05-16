@@ -19,11 +19,12 @@ import { VariablesSidebar } from "../../components/VariablesSidebar/VariablesSid
 import { YamlModal } from "../../components/YamlModal/YamlModal"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
 import { usePageTitle } from "../../hooks/usePageTitle"
+import { decodeSeqJsonParam } from "../../jobs/decodeSeqJsonParam"
 import { decodeSeqParam } from "../../jobs/decodeSeqParam"
-import { encodeSeqParam } from "../../jobs/encodeSeqParam"
+import { encodeSeqJsonParam } from "../../jobs/encodeSeqJsonParam"
 import {
+  buildSequenceObject,
   loadYamlFromText,
-  toYamlStr,
 } from "../../jobs/yamlCodec"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
@@ -38,11 +39,12 @@ export const BuilderPage = () => {
   useBuilderKeyboard()
   useHydrateAtoms([[commandsAtom, COMMANDS]])
 
-  // Hydrate atoms from ?seq= query param on mount. Restores the legacy
-  // shareable-URL flow: copy a URL with a base64-encoded YAML body and
-  // anyone who opens it gets the same sequence pre-loaded. Both legacy
-  // YAML payloads and the current React JSON payload (buildBuilderUrl)
-  // parse through loadYamlFromText cleanly because JSON is valid YAML.
+  // Hydrate atoms from the URL on mount. Two formats are accepted:
+  //   - ?seqJson= (worker 43+): minified JSON in base64url, no padding
+  //   - ?seq=     (legacy):     YAML or JSON in standard base64
+  // ?seqJson= wins when both are present so a forwarded share URL doesn't
+  // race itself. Both decoded payloads feed loadYamlFromText cleanly
+  // because JSON is valid YAML.
   //
   // Reading atom values via `store.get(...)` inside the effect (rather
   // than `useAtomValue` at the component top level) keeps the effect's
@@ -54,7 +56,9 @@ export const BuilderPage = () => {
     const params = new URLSearchParams(
       window.location.search,
     )
-    const decoded = decodeSeqParam(params.get("seq"))
+    const decoded =
+      decodeSeqJsonParam(params.get("seqJson")) ??
+      decodeSeqParam(params.get("seq"))
     if (!decoded) return
 
     try {
@@ -68,35 +72,42 @@ export const BuilderPage = () => {
       // (worker 35: dvdCompareId, future TMDB/AniDB).
       store.set(variablesAtom, result.paths)
 
-      // Intentionally NOT stripping ?seq= from the URL. Earlier code did so
-      // (to prevent refresh from clobbering edits) but that caused a worse
-      // regression: refresh removed both the query string AND the loaded
-      // YAML, leaving an empty builder. The acceptable trade-off here is
-      // "refresh re-loads original URL state and discards post-load edits"
-      // — still better than "refresh loses everything." The right long-term
-      // fix is live URL syncing (encode current state into ?seq= on every
-      // atom change) which is its own scoped feature.
+      // Intentionally NOT stripping the query param from the URL. Earlier
+      // code did so (to prevent refresh from clobbering edits) but that
+      // caused a worse regression: refresh removed both the query string
+      // AND the loaded YAML, leaving an empty builder. The acceptable
+      // trade-off is "refresh re-loads original URL state and discards
+      // post-load edits" — still better than "refresh loses everything."
+      // Live URL syncing in the writer effect below makes that trade-off
+      // moot in practice.
     } catch (error) {
-      // Invalid YAML shouldn't crash the page — the user can paste a
+      // Invalid payload shouldn't crash the page — the user can paste a
       // corrected version via LoadModal. Surface in console for debugging.
       console.error(
-        "Failed to load sequence from ?seq= URL parameter:",
+        "Failed to load sequence from URL parameter:",
         error,
       )
     }
   }, [store])
 
   // Live URL syncing: on every change to steps / paths, synchronously
-  // re-encode the current YAML into ?seq= and replace the URL. Writing
-  // synchronously (no setTimeout debounce) is the only race-free way to
-  // guarantee the URL reflects the latest keystroke when the user
+  // re-encode the current sequence into ?seqJson= and replace the URL.
+  // Writing synchronously (no setTimeout debounce) is the only race-free
+  // way to guarantee the URL reflects the latest keystroke when the user
   // refreshes immediately after typing. Earlier versions used a 250ms
   // debounce + beforeunload/pagehide flush, but that combination still
   // dropped values when the user hit F5 inside the debounce window —
   // beforeunload fired before the React commit / setTimeout queue had a
   // pending write to flush.
   //
-  // toYamlStr + history.replaceState are microsecond-scale operations
+  // Worker 43 swapped the encoding: minified JSON + base64url under
+  // ?seqJson= replaces YAML + standard base64 under ?seq=. JSON is ~20%
+  // smaller than the equivalent YAML and base64url drops `=` padding plus
+  // the `+`/`/` chars that `encodeURIComponent` had to escape. ?seq= is
+  // also cleared so a stale legacy param can't shadow the new one. The
+  // mount-time reader prefers ?seqJson= so dispatch stays unambiguous.
+  //
+  // JSON.stringify + history.replaceState are microsecond-scale operations
   // (sub-1ms even for ~100-step sequences), so doing them per keystroke
   // is fine. Uses `store.sub` rather than `useAtomValue` so BuilderPage
   // itself doesn't re-render on every atom change.
@@ -112,7 +123,7 @@ export const BuilderPage = () => {
         return
       }
       const steps = store.get(stepsAtom)
-      // ?seq= captures all variable types (path + dvdCompareId + future)
+      // ?seqJson= captures all variable types (path + dvdCompareId + future)
       // so URL sharing round-trips a complete sequence.
       const paths = store.get(variablesAtom)
       const hasContent =
@@ -120,11 +131,20 @@ export const BuilderPage = () => {
         paths.some((variable) => variable.value)
       const url = new URL(window.location.href)
       if (hasContent) {
-        const yaml = toYamlStr(steps, paths, commands)
-        url.searchParams.set("seq", encodeSeqParam(yaml))
+        const json = JSON.stringify(
+          buildSequenceObject(steps, paths, commands),
+        )
+        url.searchParams.set(
+          "seqJson",
+          encodeSeqJsonParam(json),
+        )
       } else {
-        url.searchParams.delete("seq")
+        url.searchParams.delete("seqJson")
       }
+      // Always clear any legacy ?seq= so it can't shadow ?seqJson= on
+      // refresh. Safe to call unconditionally — delete on a missing key
+      // is a no-op.
+      url.searchParams.delete("seq")
       window.history.replaceState({}, "", url.toString())
     }
 
