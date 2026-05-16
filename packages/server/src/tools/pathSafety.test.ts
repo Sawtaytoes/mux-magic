@@ -1,3 +1,5 @@
+import { sep } from "node:path"
+
 import { describe, expect, test } from "vitest"
 
 import {
@@ -5,12 +7,19 @@ import {
   validateReadablePath,
 } from "./pathSafety.js"
 
+// Branch on the path module's `sep` (resolved at import time per the host
+// OS) rather than `process.platform` — the test setup pins
+// `process.platform` to "linux" so the `assertNotDriveRelative` guard
+// stays inert against POSIX memfs fixtures, but `path.normalize` keeps
+// its host-OS behavior, so the platform-specific *input* the test feeds
+// in has to match the path module's flavor.
+const isWindowsPathModule = sep === "\\"
+
 describe(validateReadablePath.name, () => {
   test("returns the normalized path for a valid absolute path", () => {
-    const input =
-      process.platform === "win32"
-        ? "C:\\Users\\foo"
-        : "/home/foo"
+    const input = isWindowsPathModule
+      ? "C:\\Users\\foo"
+      : "/home/foo"
     expect(validateReadablePath(input)).toBe(input)
   })
 
@@ -28,10 +37,9 @@ describe(validateReadablePath.name, () => {
 
   test("collapses traversal in well-formed inputs without throwing", () => {
     // Node's path.normalize collapses these — they pass.
-    const input =
-      process.platform === "win32"
-        ? "C:\\Users\\..\\..\\..\\Windows"
-        : "/home/foo/../../../etc"
+    const input = isWindowsPathModule
+      ? "C:\\Users\\..\\..\\..\\Windows"
+      : "/home/foo/../../../etc"
     expect(validateReadablePath(input)).not.toContain("..")
   })
 })

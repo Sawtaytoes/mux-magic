@@ -18,6 +18,10 @@ import {
   isFakeRequest,
 } from "../../fake-data/index.js"
 import {
+  PathSafetyError,
+  validateReadablePath,
+} from "../../tools/pathSafety.js"
+import {
   lookupAnidbById,
   pickAnidbSeriesName,
   searchAnidb,
@@ -722,6 +726,25 @@ queryRoutes.openapi(
       return context.json(fakeListDirectoryEntries(), 200)
     }
     const body = context.req.valid("json")
+    // Gate at the API boundary so drive-relative paths on Windows
+    // (`/home`, `/work`) get rejected with a useful message instead
+    // of silently anchoring to the dev server's CWD drive and
+    // producing an ENOENT log line.
+    try {
+      validateReadablePath(body.path)
+    } catch (error) {
+      if (error instanceof PathSafetyError) {
+        return context.json(
+          {
+            entries: [],
+            separator: pathSeparator,
+            error: error.message,
+          },
+          200,
+        )
+      }
+      throw error
+    }
     try {
       const result = await lastValueFrom(
         listDirectoryEntries(body.path),

@@ -1,4 +1,14 @@
-import { isAbsolute, normalize, sep } from "node:path"
+import {
+  isAbsolute,
+  normalize,
+  sep,
+  win32,
+} from "node:path"
+
+import {
+  getCwd,
+  getPlatform,
+} from "./currentEnvironment.js"
 
 // Path-safety helper shared across the file-explorer endpoints
 // (list / stream / delete). The endpoints accept arbitrary paths from
@@ -21,6 +31,41 @@ export class PathSafetyError extends Error {
   }
 }
 
+// Platform-injectable check that requires a fully qualified path on
+// Windows — either drive-qualified (`C:\…`) or a UNC share
+// (`\\\\server\\share\\…`). Bare POSIX-style paths (`/work`, `/home/foo`)
+// are rejected because Node's `isAbsolute` returns `true` for them on
+// win32, but at the syscall layer they're drive-relative —
+// `fs.mkdirSync("/work")` silently anchors to whatever drive the dev
+// server is running from. The detection uses `win32.parse(p).root ===
+// "/"` (drive-qualified roots are `"C:\\"`, UNC roots are
+// `"\\\\server\\share\\"`, neither match). Using `win32.parse` instead
+// of `path.parse` keeps the helper testable on Linux CI without
+// monkey-patching the runner's actual `process.platform`. No-op on
+// non-Windows platforms — POSIX absolute paths stay legitimate there.
+export const validateWindowsAbsolutePath = ({
+  cwd,
+  path,
+  platform,
+}: {
+  cwd: string
+  path: string
+  platform: NodeJS.Platform
+}) => {
+  if (
+    platform === "win32" &&
+    win32.parse(path).root === "/"
+  ) {
+    const cwdDriveRoot = win32
+      .parse(cwd)
+      .root.replace(/[\\/]+$/, "")
+    const suggestedPath = `${cwdDriveRoot}${path.replace(/\//g, "\\")}`
+    throw new PathSafetyError(
+      `Path "${path}" is drive-relative on Windows — it would silently anchor to "${cwdDriveRoot}" (the dev server's current drive). Use a fully qualified path like "${suggestedPath}" or a UNC share like "\\\\server\\share\\path".`,
+    )
+  }
+}
+
 // Returns the path normalized and validated. Throws PathSafetyError on
 // anything that's not an absolute, traversal-free path.
 export const validateReadablePath = (
@@ -34,6 +79,11 @@ export const validateReadablePath = (
       `Path must be absolute: ${path}`,
     )
   }
+  validateWindowsAbsolutePath({
+    cwd: getCwd(),
+    path,
+    platform: getPlatform(),
+  })
   const normalized = normalize(path)
   // After normalize, a leading `..` (or one mid-path that survives) means
   // the input had traversal that bubbled past the root. Belt-and-braces
