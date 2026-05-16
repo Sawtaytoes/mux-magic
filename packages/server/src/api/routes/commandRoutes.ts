@@ -45,6 +45,7 @@ import { modifySubtitleMetadata } from "../../app-commands/modifySubtitleMetadat
 import { moveFiles } from "../../app-commands/moveFiles.js"
 import { nameAnimeEpisodes } from "../../app-commands/nameAnimeEpisodes.js"
 import { nameAnimeEpisodesAniDB } from "../../app-commands/nameAnimeEpisodesAniDB.js"
+import { nameMovieCutsDvdCompareTmdb } from "../../app-commands/nameMovieCutsDvdCompareTmdb.js"
 import { nameSpecialFeaturesDvdCompareTmdb } from "../../app-commands/nameSpecialFeaturesDvdCompareTmdb.js"
 import { nameTvShowEpisodes } from "../../app-commands/nameTvShowEpisodes.js"
 import { remuxToMkv } from "../../app-commands/remuxToMkv.js"
@@ -142,6 +143,7 @@ export const commandNames = [
   "moveFiles",
   "nameAnimeEpisodes",
   "nameAnimeEpisodesAniDB",
+  "nameMovieCutsDvdCompareTmdb",
   "nameSpecialFeaturesDvdCompareTmdb",
   "nameTvShowEpisodes",
   "remuxToMkv",
@@ -509,6 +511,23 @@ export const commandConfigs: Record<
     schema: schemas.nameAnimeEpisodesAniDBRequestSchema,
     summary:
       "Rename anime episode files using AniDB metadata (regular, specials with length-matched picker, or type=6 alternates)",
+    tags: ["Naming Operations"],
+  },
+  nameMovieCutsDvdCompareTmdb: {
+    getObservable: (body) =>
+      nameMovieCutsDvdCompareTmdb({
+        dvdCompareId: body.dvdCompareId,
+        dvdCompareReleaseHash: body.dvdCompareReleaseHash,
+        fixedOffset: body.fixedOffset,
+        searchTerm: body.searchTerm,
+        sourcePath: body.sourcePath,
+        timecodePaddingAmount: body.timecodePadding,
+        url: body.url,
+      }),
+    schema:
+      schemas.nameMovieCutsDvdCompareTmdbRequestSchema,
+    summary:
+      "Rename main-feature movie cuts (Director's Cut, Theatrical, etc.) and move into Plex edition-folder layout. Skips any file whose duration doesn't match a DVDCompare cut.",
     tags: ["Naming Operations"],
   },
   nameSpecialFeaturesDvdCompareTmdb: {

@@ -38,6 +38,7 @@ import {
   moveFilesRequestSchema,
   nameAnimeEpisodesAniDBRequestSchema,
   nameAnimeEpisodesRequestSchema,
+  nameMovieCutsDvdCompareTmdbRequestSchema,
   nameSpecialFeaturesDvdCompareTmdbRequestSchema,
   nameTvShowEpisodesRequestSchema,
   remuxToMkvRequestSchema,
@@ -980,6 +981,61 @@ export const COMMANDS: Commands = {
             },
           ],
         }),
+      ],
+    }
+  })(),
+  nameMovieCutsDvdCompareTmdb: (() => {
+    const field = fieldBuilder(
+      nameMovieCutsDvdCompareTmdbRequestSchema,
+    )
+    return {
+      summary:
+        "Rename main-feature movie cuts (Director's Cut, Theatrical, etc.) using DVDCompare timecodes and organize into Plex edition folders. Files with no matching cut are skipped — never renamed with a guess.",
+      tag: "Naming Operations",
+      outputFolderName: null,
+      // Auto-resolved TMDB match (set by resolveTmdbForStep when the user
+      // picks a DVDCompare release). Persisted in YAML so a shared seq
+      // URL keeps pointing at the same matched film across reloads.
+      persistedKeys: ["tmdbId", "tmdbName"],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        // Mirrors the existing NSF field — `numberWithLookup` +
+        // `lookupType: "dvdcompare"` makes it linkable to a
+        // `dvdCompareId` Variable from worker 35's registry.
+        field("dvdCompareId", {
+          type: "numberWithLookup",
+          lookupType: "dvdcompare",
+          label: "DVDCompare Film ID",
+          placeholder: "12345",
+          isRequired: true,
+          companionNameField: "dvdCompareName",
+          hasIncrementButtons: false,
+        }),
+        // Schema has no default for `dvdCompareReleaseHash`. UI defaults
+        // to 1 (the first release option) — matches NSF.
+        field("dvdCompareReleaseHash", {
+          type: "number",
+          label: "Release Hash",
+          default: 1,
+          companionNameField: "dvdCompareReleaseLabel",
+        }),
+        field("fixedOffset", {
+          type: "number",
+          label: "Fixed Offset (s)",
+        }),
+        field("timecodePadding", {
+          type: "number",
+          label: "Timecode Padding (s)",
+        }),
+      ],
+      groups: [
+        {
+          fields: ["timecodePadding", "fixedOffset"],
+          layout: "field-group-two-col",
+        },
       ],
     }
   })(),

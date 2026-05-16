@@ -33,6 +33,7 @@ import { modifySubtitleMetadataCommand } from "./cli-commands/modifySubtitleMeta
 import { moveFilesCommand } from "./cli-commands/moveFilesCommand.js"
 import { nameAnimeEpisodesAniDBCommand } from "./cli-commands/nameAnimeEpisodesAniDBCommand.js"
 import { nameAnimeEpisodesCommand } from "./cli-commands/nameAnimeEpisodesCommand.js"
+import { nameMovieCutsDvdCompareTmdbCommand } from "./cli-commands/nameMovieCutsDvdCompareTmdbCommand.js"
 import { nameSpecialFeaturesDvdCompareTmdbCommand } from "./cli-commands/nameSpecialFeaturesDvdCompareTmdbCommand.js"
 import { nameTvShowEpisodesCommand } from "./cli-commands/nameTvShowEpisodesCommand.js"
 import { remuxToMkvCommand } from "./cli-commands/remuxToMkvCommand.js"
@@ -83,6 +84,7 @@ yargs(hideBin(process.argv))
   .command(moveFilesCommand)
   .command(nameAnimeEpisodesCommand)
   .command(nameAnimeEpisodesAniDBCommand)
+  .command(nameMovieCutsDvdCompareTmdbCommand)
   .command(nameSpecialFeaturesDvdCompareTmdbCommand)
   .command(nameTvShowEpisodesCommand)
   .command(remuxToMkvCommand)
