@@ -69,6 +69,14 @@ window.commandDescriptions = {
       "isRecursive": "Recursively looks in folders for media files."
     }
   },
+  "renumberChapters": {
+    "summary": "Renames `Chapter NN`-style chapter names so the numbers are sequential 1..N via a metadata-only mkvmerge remux; preserves timecodes and non-numbered names (`Opening`, `Eyecatch`, etc.); skips files with no numbered chapters and files already sequential; safe to run repeatedly.",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files.",
+      "isPaddingChapterNumbers": "Zero-pad chapter numbers (default true) — produces `Chapter 01..N` (width ≥ 2). Disable for unpadded `Chapter 1..N`."
+    }
+  },
   "getAudioOffsets": {
     "summary": "Calculate audio synchronization offsets between files",
     "fields": {

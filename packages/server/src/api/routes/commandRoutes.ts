@@ -51,6 +51,7 @@ import { nameTvShowEpisodes } from "../../app-commands/nameTvShowEpisodes.js"
 import { remuxToMkv } from "../../app-commands/remuxToMkv.js"
 import { renameDemos } from "../../app-commands/renameDemos.js"
 import { renameMovieClipDownloads } from "../../app-commands/renameMovieClipDownloads.js"
+import { renumberChapters } from "../../app-commands/renumberChapters.js"
 import {
   reorderTracks,
   reorderTracksDefaultProps,
@@ -147,6 +148,7 @@ export const commandNames = [
   "nameSpecialFeaturesDvdCompareTmdb",
   "nameTvShowEpisodes",
   "remuxToMkv",
+  "renumberChapters",
   "renameDemos",
   "renameMovieClipDownloads",
   "reorderTracks",
@@ -577,6 +579,19 @@ export const commandConfigs: Record<
     summary:
       "Pass-through container remux of every matching file into an .mkv sibling using mkvmerge",
     tags: ["File Operations"],
+  },
+  renumberChapters: {
+    getObservable: (body) =>
+      renumberChapters({
+        isPaddingChapterNumbers:
+          body.isPaddingChapterNumbers,
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+      }),
+    schema: schemas.renumberChaptersRequestSchema,
+    summary:
+      "Renumber `Chapter NN`-style chapter names sequentially via a metadata-only mkvmerge remux (preserves timecodes, UIDs, custom-named chapters)",
+    tags: ["Track Operations"],
   },
   renameDemos: {
     getObservable: (body) =>

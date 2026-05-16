@@ -39,6 +39,7 @@ import { nameTvShowEpisodesCommand } from "./cli-commands/nameTvShowEpisodesComm
 import { remuxToMkvCommand } from "./cli-commands/remuxToMkvCommand.js"
 import { renameDemosCommand } from "./cli-commands/renameDemosCommand.js"
 import { renameMovieClipDownloadsCommand } from "./cli-commands/renameMovieClipDownloadsCommand.js"
+import { renumberChaptersCommand } from "./cli-commands/renumberChaptersCommand.js"
 import { reorderTracksCommand } from "./cli-commands/reorderTracksCommand.js"
 import { replaceAttachmentsCommand } from "./cli-commands/replaceAttachmentsCommand.js"
 import { replaceFlacWithPcmAudioCommand } from "./cli-commands/replaceFlacWithPcmAudioCommand.js"
@@ -89,6 +90,7 @@ yargs(hideBin(process.argv))
   .command(nameTvShowEpisodesCommand)
   .command(remuxToMkvCommand)
   .command(renameDemosCommand)
+  .command(renumberChaptersCommand)
   .command(renameMovieClipDownloadsCommand)
   .command(reorderTracksCommand)
   .command(replaceAttachmentsCommand)
