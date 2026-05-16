@@ -7,6 +7,40 @@
 3. **Keep tests in sync with code changes.** When you change behavior, update the tests that assert the old behavior. Leaving a test that no longer matches the current intent (even if it still passes) is misleading; leaving a test that fails is a blocker. Tests are documentation — they must describe what the code *actually does now*, not what it used to do.
 4. **Verify Playwright tests pass before reporting a fix.** After writing an e2e test, run it (`yarn dlx playwright test e2e/builder.spec.ts --grep "<test name>"`) and confirm it passes. Merge conflicts, module refactors, and missed sub-file updates can silently break tests that look logically correct — observed test output is the only reliable signal. Never report a UI fix as done without a passing test run.
 
+## Pre-merge gate (run in order)
+
+1. `yarn lint` — auto-fix formatting (biome + eslint); re-stage changed files
+2. `yarn typecheck` — full monorepo type check
+3. `yarn test` — unit + integration (vitest)
+4. `yarn e2e` — Playwright end-to-end (using your own `PORT` / `WEB_PORT`, see [worker-port-protocol.md](worker-port-protocol.md))
+5. `yarn lint` — **re-run last** so Biome catches any formatting touched by typecheck/test/e2e fixes
+
+## Forbidden test styles
+
+- **No snapshot tests.** Never use `toMatchSnapshot`, `toMatchInlineSnapshot`. Spell expected values out inline: `expect(x).toBe("literal string")` or `expect(x).toEqual({ explicit: "object" })`. Reason: snapshot diffs hide intent and get rubber-stamped during auto-update.
+- **No screenshot / visual regression tests.** Never use Playwright `toHaveScreenshot`, Percy, Chromatic, or Storybook screenshot addons. There is no VRT platform in this repo. Visual verification is manual via Storybook and the dev server.
+- **Use `test()`, not `it()`.** `it` and `test` are aliases; this repo uses `test` for consistency. Import `test` (not `it`) from `vitest`.
+
+## When changing component HTML structure
+
+When you change a component's HTML structure (e.g. replacing `<details>` / `<summary>` with `<button>`, swapping element types, renaming `data-*` attributes): grep `e2e/` for the old element type, attribute name, or selector and update every matching Playwright locator.
+
+## Test interaction conventions
+
+See [test-interactions.md](test-interactions.md) for `user-event` vs `fireEvent`, controlled-input races, `.toBeVisible()` vs `.toBeInTheDocument()`, positive operations, and test-assertion style.
+
+## Test coverage discipline
+
+For any functionality change, tests must match the change scope:
+
+- **Adding new functionality:** write tests covering the new behavior. Unit for logic; component/integration for UI; e2e if the feature spans more than one route or has cross-component interactions.
+- **Updating existing functionality:** add tests for the new behavior OR update existing tests. Don't leave tests asserting old behavior that the change has invalidated.
+- **e2e tests are valuable where they make sense.** Particularly: full sequence runs, modal flows that span open → action → close, undo/redo, drag-and-drop. Less valuable for pure-presentation changes.
+
+This is in addition to the existing TDD-failing-test-first convention. TDD catches bugs (write the test that proves the bug, then fix); the discipline above catches missing coverage (new feature without tests, or refactor that left tests asserting dead code).
+
+**Why:** manual testing is the user's compensation when automated coverage is thin. Tests that match change scope keep that out-of-pocket cost low.
+
 ## Unit Tests (vitest)
 
 - Framework: vitest. Run with `yarn test`.

@@ -175,3 +175,13 @@ import { pathsAtom } from "./state/pathsAtom"
 The single allowed barrel in the entire repo is `packages/shared/src/index.ts`. It exists because `@mux-magic/shared` is published to npm and external consumers need a stable import surface — without that one barrel, every consumer would have to know the package's internal file layout. Inside the monorepo, no such barrier exists; full paths keep imports honest, make dead code visible to bundlers, and prevent the "import the whole folder to get one thing" pattern that hides accidental coupling.
 
 Enforced by `import-x/no-barrel-files` in `eslint.config.js`.
+
+## Indentation
+
+Biome enforces 2-space indentation everywhere. Never use tabs.
+
+Run `yarn biome format --write <file>` on every file you create or modify, then `git add` the result. Do not rely on your editor's auto-conversion — verify the committed bytes with `git show HEAD:<path> | cat -A` and confirm no `^I` (tab) characters appear. CI runs on Linux where editor-level tab→space conversion does not happen.
+
+## Windows-specific: PowerShell UTF-8
+
+If you're working on Windows, see [powershell-windows.md](powershell-windows.md) for the two UTF-8 traps (file IO and console IO) that will corrupt source files containing box-drawing characters, emoji, or non-ASCII text if you bulk-edit through `Get-Content` / `Set-Content`.

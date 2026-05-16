@@ -41,3 +41,15 @@ If a single file legitimately touches two unrelated concerns (e.g. a feature cha
 Natural commit points: a todo item flips to completed, a phase of a Plan-mode plan finishes, tests pass for a self-contained change, a refactor wraps up before the next one starts.
 
 Push rule depends on which role you are — see `Multi-Agent Workflow` above. Primary: never push without explicit instruction. Worker: push every commit to your feature branch; only merge to `master` when told.
+
+## Worker Addressing
+
+The Mux-Magic huge revamp uses sequential 2-hex worker IDs (`01`–`35`+) with the manifest table at [docs/workers/MANIFEST.md](../workers/MANIFEST.md). Each worker has a corresponding prompt file at `docs/workers/<id>_<slug>.md`. Workers update their own row in the manifest when they start (`in-progress`) and finish (`done`); IDs are never renumbered.
+
+## Worker Port / PID Protocol
+
+See [worker-port-protocol.md](worker-port-protocol.md) — how to pick random ports and tear down only your own PIDs so parallel workers don't collide.
+
+## npm Publishing
+
+See [npm-publishing.md](npm-publishing.md) — only `@mux-magic/tools` is published; uses the `shared-v<X.Y.Z>` tag pattern.
