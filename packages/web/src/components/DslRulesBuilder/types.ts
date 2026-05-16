@@ -146,15 +146,23 @@ export type SetScriptInfoRule = {
   when?: WhenMap
 }
 
-// `isFromAspectLocked` / `isToAspectLocked`: undefined ≡ locked (default).
-// We only write `false` (unlocked) explicitly; relocking deletes the key
-// so the lock-default leaves YAML round-trip clean for the common case.
+// `isAspectLinked`: undefined ≡ linked (default).
+// We only write `false` (unlinked) explicitly; relinking deletes the key
+// so the link-default leaves YAML round-trip clean for the common case.
+//
+// `isFromAspectLocked` / `isToAspectLocked` are the legacy per-side flags
+// from worker 0c. Either being `false` reads as unlinked. New writes drop
+// both legacy keys via `readIsAspectLinked` + the mutation helpers in
+// `ruleMutations.ts`. They stay in the type so saved YAML still parses.
 export type ScaleResolutionRule = {
   type: "scaleResolution"
   from: Resolution
   to: Resolution
   hasScaledBorderAndShadow?: boolean
+  isAspectLinked?: boolean
+  /** @deprecated worker 0c → 46 migration. Read-only; new writes drop this key. */
   isFromAspectLocked?: boolean
+  /** @deprecated worker 0c → 46 migration. Read-only; new writes drop this key. */
   isToAspectLocked?: boolean
   when?: WhenMap
 }

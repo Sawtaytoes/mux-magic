@@ -5,22 +5,35 @@ import {
   type PredicatesMap,
   RULE_TYPES,
   type RuleType,
-  type ScaleResolutionGroup,
   type ScaleResolutionRule,
   type SetScriptInfoRule,
   type SetStyleFieldsRule,
 } from "./types"
 
-const ASPECT_LOCK_FLAG_BY_GROUP = {
-  from: "isFromAspectLocked",
-  to: "isToAspectLocked",
-} as const satisfies Record<
-  ScaleResolutionGroup,
-  "isFromAspectLocked" | "isToAspectLocked"
->
-
 const FALLBACK_RATIO_WIDTH = 16
 const FALLBACK_RATIO_HEIGHT = 9
+
+// Worker 0c shipped two per-side flags (`isFromAspectLocked` /
+// `isToAspectLocked`). Worker 46 replaces them with a single cross-group
+// `isAspectLinked`. Either legacy key being `false` (or the new key being
+// `false`) reads as unlinked.
+export const readIsAspectLinked = (
+  rule: ScaleResolutionRule,
+): boolean => {
+  if (rule.isAspectLinked === false) return false
+  if (rule.isFromAspectLocked === false) return false
+  if (rule.isToAspectLocked === false) return false
+  return true
+}
+
+const stripLegacyAspectKeys = (
+  rule: ScaleResolutionRule,
+): ScaleResolutionRule => {
+  const nextRule = { ...rule }
+  delete nextRule.isFromAspectLocked
+  delete nextRule.isToAspectLocked
+  return nextRule
+}
 
 export const updateRuleAt = ({
   rules,
@@ -171,52 +184,49 @@ export const setScaleResolutionDimension = ({
     },
   })
 
-export const setScaleResolutionAspectLock = ({
+export const setScaleResolutionAspectLink = ({
   rules,
   ruleIndex,
-  group,
-  isLocked,
+  isLinked,
 }: {
   rules: DslRule[]
   ruleIndex: number
-  group: ScaleResolutionGroup
-  isLocked: boolean
+  isLinked: boolean
 }): DslRule[] =>
   updateRuleAt({
     rules,
     ruleIndex,
     updater: (rule) => {
-      const flagKey = ASPECT_LOCK_FLAG_BY_GROUP[group]
-      const nextRule = {
-        ...(rule as ScaleResolutionRule),
-      } as ScaleResolutionRule
-      if (isLocked) {
-        delete nextRule[flagKey]
+      const nextRule = stripLegacyAspectKeys(
+        rule as ScaleResolutionRule,
+      )
+      if (isLinked) {
+        delete nextRule.isAspectLinked
       } else {
-        nextRule[flagKey] = false
+        nextRule.isAspectLinked = false
       }
       return nextRule
     },
   })
 
 const computePairedDimension = ({
-  currentWidth,
-  currentHeight,
+  refWidth: rawRefWidth,
+  refHeight: rawRefHeight,
   dimension,
   value,
 }: {
-  currentWidth: number
-  currentHeight: number
+  refWidth: number
+  refHeight: number
   dimension: "width" | "height"
   value: number
 }): { width: number; height: number } => {
   const hasUsableRatio =
-    currentWidth > 0 && currentHeight > 0
+    rawRefWidth > 0 && rawRefHeight > 0
   const refWidth = hasUsableRatio
-    ? currentWidth
+    ? rawRefWidth
     : FALLBACK_RATIO_WIDTH
   const refHeight = hasUsableRatio
-    ? currentHeight
+    ? rawRefHeight
     : FALLBACK_RATIO_HEIGHT
   if (dimension === "width") {
     return {
@@ -230,16 +240,18 @@ const computePairedDimension = ({
   }
 }
 
-export const setScaleResolutionDimensionPaired = ({
+// Linked-write helper: editing one of `to.width` / `to.height` rewrites the
+// whole `to` pair so it preserves `from`'s aspect ratio. The `from` group
+// stays the source of truth; `from.*` edits should go through the free
+// `setScaleResolutionDimension` helper.
+export const setScaleResolutionToDimensionLinked = ({
   rules,
   ruleIndex,
-  group,
   dimension,
   value,
 }: {
   rules: DslRule[]
   ruleIndex: number
-  group: ScaleResolutionGroup
   dimension: "width" | "height"
   value: number
 }): DslRule[] =>
@@ -248,18 +260,18 @@ export const setScaleResolutionDimensionPaired = ({
     ruleIndex,
     updater: (rule) => {
       const scaleRule = rule as ScaleResolutionRule
-      const groupValue = isPlainObject(scaleRule[group])
-        ? scaleRule[group]
+      const fromValue = isPlainObject(scaleRule.from)
+        ? scaleRule.from
         : { width: 0, height: 0 }
       const paired = computePairedDimension({
-        currentWidth: groupValue.width ?? 0,
-        currentHeight: groupValue.height ?? 0,
+        refWidth: fromValue.width ?? 0,
+        refHeight: fromValue.height ?? 0,
         dimension,
         value,
       })
       return {
-        ...scaleRule,
-        [group]: paired,
+        ...stripLegacyAspectKeys(scaleRule),
+        to: paired,
       }
     },
   })
