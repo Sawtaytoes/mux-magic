@@ -19,7 +19,7 @@ Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typechec
 
 Replace the negative-only probe with a **positive container signal**:
 
-1. **Build-time env var (primary).** Set `MUX_MAGIC_CONTAINER=1` in the [Dockerfile](../../Dockerfile) (`ENV MUX_MAGIC_CONTAINER=1` alongside the existing `ENV NODE_ENV=production`). The route trusts this var: if `process.env.MUX_MAGIC_CONTAINER === "1"`, the answer is `true` and we don't probe the filesystem at all.
+1. **Build-time env var (primary).** Set `IS_CONTAINERIZED=true` in the [Dockerfile](../../Dockerfile) (`ENV IS_CONTAINERIZED=true` alongside the existing `ENV NODE_ENV=production`). The route trusts this var: if `process.env.IS_CONTAINERIZED === "true"`, the answer is `true` and we don't probe the filesystem at all. (Comparison is case-sensitive against the literal string `"true"`; anything else — unset, `"false"`, `"1"`, garbage — falls through to the next signal.)
 2. **`/proc/1/cgroup` substring check (fallback for Linux containers built outside this Dockerfile).** Read the file with `readFileSync` inside a try/catch; treat absence as "not a container". Match any of the substrings `docker`, `containerd`, `kubepods` in the contents. This catches containers built from other base images that didn't get our `MUX_MAGIC_CONTAINER` env baked in.
 3. **Everything else returns `false`.** Drop the `existsSync("/.dockerenv")` check entirely — it's the source of the bug.
 
@@ -32,7 +32,9 @@ Replace the negative-only probe with a **positive container signal**:
 ## Tests (per test-coverage discipline)
 
 - Unit test for an extracted `detectIsContainerized` helper:
-  - Env var set to `"1"` → `true` (regardless of filesystem).
+  - Env var set to `"true"` → `true` (regardless of filesystem).
+  - Env var set to `"false"` → falls through to the cgroup fallback (don't short-circuit on the negative).
+  - Env var set to `"1"` (wrong shape) → falls through; only the literal `"true"` short-circuits.
   - Env var unset, `/proc/1/cgroup` reads as `"… docker …"` → `true` (mock the reader).
   - Env var unset, `/proc/1/cgroup` reads as `"0::/init.scope"` (host systemd) → `false`.
   - Env var unset, `/proc/1/cgroup` read throws (e.g., ENOENT on Windows) → `false`.
@@ -44,14 +46,14 @@ Extract the detection into a small pure helper (taking the env-getter + cgroup-r
 
 1. **Red.** Add `versionRoutes.detectIsContainerized.test.ts` next to `versionRoutes.ts` covering the cases above. Commit `test(server): failing tests for positive container detection`.
 2. **Green.** Extract `detectIsContainerized` (pure, injectable) + replace the `existsSync("/.dockerenv")` line with a call to it. Commit.
-3. **Dockerfile.** Add `ENV MUX_MAGIC_CONTAINER=1` alongside the existing env vars. Commit `feat(docker): stamp positive container signal for /version`.
+3. **Dockerfile.** Add `ENV IS_CONTAINERIZED=true` alongside the existing env vars. Commit `feat(docker): stamp positive container signal for /version`.
 4. **Manifest.** Dedicated `chore(manifest):` flip commits.
 
 ## Files
 
 - [packages/server/src/api/routes/versionRoutes.ts](../../packages/server/src/api/routes/versionRoutes.ts) — extract `detectIsContainerized`; drop `existsSync("/.dockerenv")`; update the schema `.describe(...)`.
 - `packages/server/src/api/routes/versionRoutes.detectIsContainerized.test.ts` — new.
-- [Dockerfile](../../Dockerfile) — add `ENV MUX_MAGIC_CONTAINER=1`.
+- [Dockerfile](../../Dockerfile) — add `ENV IS_CONTAINERIZED=true`.
 
 ## Out of scope
 
