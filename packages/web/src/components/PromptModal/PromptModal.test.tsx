@@ -19,6 +19,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+import { apiBase } from "../../apiBase"
 import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import { PromptModal } from "./PromptModal"
 
@@ -98,7 +99,7 @@ describe("PromptModal", () => {
     )
     expect(store.get(promptModalAtom)).toBeNull()
     expect(fetchSpy).toHaveBeenCalledWith(
-      "/jobs/job-42/input",
+      `${apiBase}/jobs/job-42/input`,
       expect.objectContaining({ method: "POST" }),
     )
     fetchSpy.mockRestore()

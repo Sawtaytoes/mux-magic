@@ -7,6 +7,7 @@ import {
   test,
   vi,
 } from "vitest"
+import { apiBase } from "../apiBase"
 import { COMMANDS } from "../commands/commands"
 import { sequenceRunModalAtom } from "../components/SequenceRunModal/sequenceRunModalAtom"
 import {
@@ -73,7 +74,7 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/jobs/job_abc",
+        `${apiBase}/jobs/job_abc`,
         { method: "DELETE" },
       )
     })
@@ -123,7 +124,7 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/commands/ffmpegTranscode",
+        `${apiBase}/commands/ffmpegTranscode`,
         expect.objectContaining({ method: "POST" }),
       )
       // Defensive: must NOT call /sequences/run (the old umbrella path).
@@ -132,7 +133,7 @@ describe("runOrStopStepAtom", () => {
         .mock.calls.map((call) => call[0] as string)
       expect(
         calls.some((url) =>
-          url.startsWith("/sequences/run"),
+          url.startsWith(`${apiBase}/sequences/run`),
         ),
       ).toBe(false)
     })
@@ -236,7 +237,7 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "inner_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/commands/ffmpegTranscode",
+        `${apiBase}/commands/ffmpegTranscode`,
         expect.objectContaining({ method: "POST" }),
       )
     })
@@ -255,7 +256,9 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       const fetchCall = vi.mocked(fetch).mock.calls[0]
-      expect(fetchCall?.[0]).toBe("/commands/keepLanguages")
+      expect(fetchCall?.[0]).toBe(
+        `${apiBase}/commands/keepLanguages`,
+      )
       const body = JSON.parse(
         (fetchCall?.[1] as RequestInit).body as string,
       )
@@ -310,7 +313,7 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/commands/ffmpegTranscode",
+        `${apiBase}/commands/ffmpegTranscode`,
         expect.objectContaining({ method: "POST" }),
       )
     })
@@ -324,7 +327,7 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/commands/ffmpegTranscode?fake=success",
+        `${apiBase}/commands/ffmpegTranscode?fake=success`,
         expect.objectContaining({ method: "POST" }),
       )
     })
@@ -338,7 +341,7 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/commands/ffmpegTranscode?fake=failure",
+        `${apiBase}/commands/ffmpegTranscode?fake=failure`,
         expect.objectContaining({ method: "POST" }),
       )
     })
@@ -352,7 +355,7 @@ describe("runOrStopStepAtom", () => {
       await store.set(runOrStopStepAtom, "step_1")
 
       expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-        "/commands/ffmpegTranscode",
+        `${apiBase}/commands/ffmpegTranscode`,
         expect.objectContaining({ method: "POST" }),
       )
     })

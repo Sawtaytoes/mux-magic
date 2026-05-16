@@ -1,5 +1,6 @@
 import { createStore } from "jotai"
 import { afterEach, describe, expect, test } from "vitest"
+import { apiBase } from "../apiBase"
 import {
   buildRunFetchUrl,
   dryRunAtom,
@@ -13,7 +14,7 @@ describe("buildRunFetchUrl — Dry-Run query forwarding", () => {
         isDryRun: false,
         isFailureMode: false,
       }),
-    ).toBe("/sequences/run")
+    ).toBe(`${apiBase}/sequences/run`)
   })
 
   test("returns URL unchanged when dry-run is off, even if failureMode is true (defensive)", () => {
@@ -22,7 +23,7 @@ describe("buildRunFetchUrl — Dry-Run query forwarding", () => {
         isDryRun: false,
         isFailureMode: true,
       }),
-    ).toBe("/sequences/run")
+    ).toBe(`${apiBase}/sequences/run`)
   })
 
   test("appends ?fake=success when dry-run is on and failureMode is off", () => {
@@ -31,7 +32,7 @@ describe("buildRunFetchUrl — Dry-Run query forwarding", () => {
         isDryRun: true,
         isFailureMode: false,
       }),
-    ).toBe("/sequences/run?fake=success")
+    ).toBe(`${apiBase}/sequences/run?fake=success`)
   })
 
   test("appends ?fake=failure when dry-run AND failureMode are both on", () => {
@@ -40,7 +41,7 @@ describe("buildRunFetchUrl — Dry-Run query forwarding", () => {
         isDryRun: true,
         isFailureMode: true,
       }),
-    ).toBe("/sequences/run?fake=failure")
+    ).toBe(`${apiBase}/sequences/run?fake=failure`)
   })
 
   test("uses & not ? when baseUrl already has a query string", () => {
@@ -49,7 +50,7 @@ describe("buildRunFetchUrl — Dry-Run query forwarding", () => {
         isDryRun: true,
         isFailureMode: false,
       }),
-    ).toBe("/commands/foo?bar=baz&fake=success")
+    ).toBe(`${apiBase}/commands/foo?bar=baz&fake=success`)
   })
 
   test("works for the /commands/:name endpoint shape", () => {
@@ -58,7 +59,7 @@ describe("buildRunFetchUrl — Dry-Run query forwarding", () => {
         isDryRun: true,
         isFailureMode: false,
       }),
-    ).toBe("/commands/deleteFolder?fake=success")
+    ).toBe(`${apiBase}/commands/deleteFolder?fake=success`)
   })
 
   test("works for the /commands/:name endpoint shape with failure mode", () => {
@@ -67,7 +68,7 @@ describe("buildRunFetchUrl — Dry-Run query forwarding", () => {
         isDryRun: true,
         isFailureMode: true,
       }),
-    ).toBe("/commands/deleteFolder?fake=failure")
+    ).toBe(`${apiBase}/commands/deleteFolder?fake=failure`)
   })
 })
 

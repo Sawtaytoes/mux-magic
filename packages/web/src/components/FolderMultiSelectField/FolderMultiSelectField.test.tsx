@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import { Provider } from "jotai"
-import { describe, expect, it } from "vitest"
+import { describe, expect, test } from "vitest"
 
 import { FIXTURE_COMMANDS_BUNDLE_D } from "../../commands/__fixtures__/commands"
 import type { Step } from "../../types"
@@ -24,7 +24,7 @@ describe("FolderMultiSelectField", () => {
   const field =
     FIXTURE_COMMANDS_BUNDLE_D.storeAspectRatioData.fields[1]
 
-  it("renders empty state", () => {
+  test("renders empty state", () => {
     const step = createTestStep()
     render(
       <Provider>
@@ -35,7 +35,7 @@ describe("FolderMultiSelectField", () => {
     expect(browseButton).toBeInTheDocument()
   })
 
-  it("shows folder tags when folders are present", () => {
+  test("shows folder tags when folders are present", () => {
     const step = createTestStep({
       params: {
         sourcePath: "/home/user",
@@ -51,7 +51,7 @@ describe("FolderMultiSelectField", () => {
     expect(screen.getByText(/folder2/)).toBeInTheDocument()
   })
 
-  it("displays remove buttons for each folder", () => {
+  test("displays remove buttons for each folder", () => {
     const step = createTestStep({
       params: { folders: ["folder1"] },
     })
@@ -64,7 +64,7 @@ describe("FolderMultiSelectField", () => {
     expect(removeButtons.length).toBeGreaterThan(0)
   })
 
-  it("shows browse button", () => {
+  test("shows browse button", () => {
     const step = createTestStep()
     render(
       <Provider>

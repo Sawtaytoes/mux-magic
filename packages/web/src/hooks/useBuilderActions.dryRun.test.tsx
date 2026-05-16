@@ -9,6 +9,7 @@ import {
   test,
   vi,
 } from "vitest"
+import { apiBase } from "../apiBase"
 import { COMMANDS } from "../commands/commands"
 import { commandsAtom } from "../state/commandsAtom"
 import {
@@ -103,7 +104,7 @@ describe("useBuilderActions.runViaApi — dry-run forwarding", () => {
     await result.current.runViaApi()
 
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "/sequences/run",
+      `${apiBase}/sequences/run`,
       expect.objectContaining({ method: "POST" }),
     )
   })
@@ -122,7 +123,7 @@ describe("useBuilderActions.runViaApi — dry-run forwarding", () => {
     await result.current.runViaApi()
 
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "/sequences/run?fake=success",
+      `${apiBase}/sequences/run?fake=success`,
       expect.objectContaining({ method: "POST" }),
     )
   })
@@ -141,7 +142,7 @@ describe("useBuilderActions.runViaApi — dry-run forwarding", () => {
     await result.current.runViaApi()
 
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "/sequences/run?fake=failure",
+      `${apiBase}/sequences/run?fake=failure`,
       expect.objectContaining({ method: "POST" }),
     )
   })
@@ -160,7 +161,7 @@ describe("useBuilderActions.runViaApi — dry-run forwarding", () => {
     await result.current.runViaApi()
 
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "/sequences/run",
+      `${apiBase}/sequences/run`,
       expect.objectContaining({ method: "POST" }),
     )
   })
@@ -196,7 +197,7 @@ describe("useBuilderActions.runGroup — dry-run forwarding", () => {
     await result.current.runGroup("group_1")
 
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "/sequences/run",
+      `${apiBase}/sequences/run`,
       expect.objectContaining({ method: "POST" }),
     )
   })
@@ -215,7 +216,7 @@ describe("useBuilderActions.runGroup — dry-run forwarding", () => {
     await result.current.runGroup("group_1")
 
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "/sequences/run?fake=success",
+      `${apiBase}/sequences/run?fake=success`,
       expect.objectContaining({ method: "POST" }),
     )
   })
@@ -234,7 +235,7 @@ describe("useBuilderActions.runGroup — dry-run forwarding", () => {
     await result.current.runGroup("group_1")
 
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "/sequences/run?fake=failure",
+      `${apiBase}/sequences/run?fake=failure`,
       expect.objectContaining({ method: "POST" }),
     )
   })

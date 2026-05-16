@@ -13,6 +13,7 @@ import {
   test,
   vi,
 } from "vitest"
+import { apiBase } from "../../apiBase"
 import { makeFakeJob } from "../../jobs/__fixtures__/makeFakeJob"
 import type { Job } from "../../jobs/types"
 import { jobsAtom } from "../../state/jobsAtom"
@@ -221,7 +222,7 @@ describe("JobCard cancel button", () => {
     await user.click(cancelButtons[0])
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      "/jobs/job-2",
+      `${apiBase}/jobs/job-2`,
       {
         method: "DELETE",
       },
