@@ -38,11 +38,12 @@ const buildChaptersXml = (
   )
 }
 
-const extractChapterNames = (xml: string) => (
+const extractChapterNames = (xml: string) =>
   Array.from(
-    xml.matchAll(/<ChapterString>([^<]*)<\/ChapterString>/g),
+    xml.matchAll(
+      /<ChapterString>([^<]*)<\/ChapterString>/g,
+    ),
   ).map((match) => match[1])
-)
 
 describe("renumberChapterXml", () => {
   test("split-source case: 3 atoms named Chapter 08/09/10 → renumbered to 01/02/03", () => {

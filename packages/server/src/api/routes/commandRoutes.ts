@@ -49,9 +49,9 @@ import { nameMovieCutsDvdCompareTmdb } from "../../app-commands/nameMovieCutsDvd
 import { nameSpecialFeaturesDvdCompareTmdb } from "../../app-commands/nameSpecialFeaturesDvdCompareTmdb.js"
 import { nameTvShowEpisodes } from "../../app-commands/nameTvShowEpisodes.js"
 import { remuxToMkv } from "../../app-commands/remuxToMkv.js"
-import { renumberChapters } from "../../app-commands/renumberChapters.js"
 import { renameDemos } from "../../app-commands/renameDemos.js"
 import { renameMovieClipDownloads } from "../../app-commands/renameMovieClipDownloads.js"
+import { renumberChapters } from "../../app-commands/renumberChapters.js"
 import {
   reorderTracks,
   reorderTracksDefaultProps,

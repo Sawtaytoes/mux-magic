@@ -2,7 +2,12 @@ import { stat } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { vol } from "memfs"
-import { firstValueFrom, of, throwError, toArray } from "rxjs"
+import {
+  firstValueFrom,
+  of,
+  throwError,
+  toArray,
+} from "rxjs"
 import {
   beforeEach,
   describe,
@@ -193,13 +198,7 @@ describe("renumberChapters", () => {
       "/work/episode.mkv": "source-mkv-bytes",
     })
     vi.mocked(runMkvExtractStdOut).mockReturnValue(
-      of(
-        buildChaptersXml([
-          "Opening",
-          "Part A",
-          "Ending",
-        ]),
-      ),
+      of(buildChaptersXml(["Opening", "Part A", "Ending"])),
     )
 
     const emissions = await firstValueFrom(
@@ -258,12 +257,7 @@ describe("renumberChapters", () => {
       "/work/episode.mkv": "source-mkv-bytes",
     })
     vi.mocked(runMkvExtractStdOut).mockReturnValue(
-      of(
-        buildChaptersXml([
-          "Chapter 01",
-          "Chapter 02",
-        ]),
-      ),
+      of(buildChaptersXml(["Chapter 01", "Chapter 02"])),
     )
 
     await firstValueFrom(
@@ -283,12 +277,7 @@ describe("renumberChapters", () => {
       "/work/episode.mkv": "source-mkv-bytes",
     })
     vi.mocked(runMkvExtractStdOut).mockReturnValue(
-      of(
-        buildChaptersXml([
-          "Chapter 08",
-          "Chapter 09",
-        ]),
-      ),
+      of(buildChaptersXml(["Chapter 08", "Chapter 09"])),
     )
     stubWriteChaptersMkvMergeWritingFile()
 
@@ -349,10 +338,7 @@ describe("renumberChapters", () => {
           )
         }
         return of(
-          buildChaptersXml([
-            "Chapter 05",
-            "Chapter 06",
-          ]),
+          buildChaptersXml(["Chapter 05", "Chapter 06"]),
         )
       },
     )

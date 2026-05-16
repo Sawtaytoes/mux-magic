@@ -32,14 +32,13 @@ const padChapterNumber = ({
   isPaddingChapterNumbers: boolean
   totalCount: number
   value: number
-}) => (
+}) =>
   isPaddingChapterNumbers
     ? String(value).padStart(
         Math.max(2, String(totalCount).length),
         "0",
       )
     : String(value)
-)
 
 const extractFirstChapterString = (
   atomXml: string,
@@ -85,7 +84,7 @@ const computeStatus = ({
   matchedCount: number
   renamedCount: number
   totalCount: number
-}): RenumberChapterXmlStatus => (
+}): RenumberChapterXmlStatus =>
   totalCount === 0
     ? "no-chapters"
     : matchedCount < totalCount
@@ -93,7 +92,6 @@ const computeStatus = ({
       : renamedCount === 0
         ? "already-sequential"
         : "renumbered"
-)
 
 export const renumberChapterXml = ({
   isPaddingChapterNumbers,
@@ -111,14 +109,15 @@ export const renumberChapterXml = ({
     (name) =>
       name !== null && CHAPTER_NAME_PATTERN.test(name),
   ).length
-  const newNames = atomMatches.map((_atomMatch, atomIndex) =>
-    "Chapter ".concat(
-      padChapterNumber({
-        isPaddingChapterNumbers,
-        totalCount,
-        value: atomIndex + 1,
-      }),
-    ),
+  const newNames = atomMatches.map(
+    (_atomMatch, atomIndex) =>
+      "Chapter ".concat(
+        padChapterNumber({
+          isPaddingChapterNumbers,
+          totalCount,
+          value: atomIndex + 1,
+        }),
+      ),
   )
   const renamedCount = newNames.filter(
     (newName, atomIndex) =>

@@ -106,6 +106,4 @@ export const writeChaptersMkvMerge = ({
       if (tracker !== null) tracker.finish()
       treeKillTeardown()
     }
-  }).pipe(
-    logAndSwallowPipelineError(writeChaptersMkvMerge),
-  )
+  }).pipe(logAndSwallowPipelineError(writeChaptersMkvMerge))

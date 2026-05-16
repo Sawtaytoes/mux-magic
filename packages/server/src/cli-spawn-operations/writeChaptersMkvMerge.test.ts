@@ -1,5 +1,9 @@
 import { EventEmitter } from "node:events"
-import { firstValueFrom, lastValueFrom, toArray } from "rxjs"
+import {
+  firstValueFrom,
+  lastValueFrom,
+  toArray,
+} from "rxjs"
 import {
   beforeEach,
   describe,
@@ -23,17 +27,15 @@ class FakeChildProcess extends EventEmitter {
 const spawnRecords: SpawnRecord[] = []
 
 vi.mock("node:child_process", () => ({
-  spawn: vi.fn(
-    (command: string, args: string[]) => {
-      const fakeProcess = new FakeChildProcess()
-      spawnRecords.push({
-        args,
-        command,
-        process: fakeProcess,
-      })
-      return fakeProcess
-    },
-  ),
+  spawn: vi.fn((command: string, args: string[]) => {
+    const fakeProcess = new FakeChildProcess()
+    spawnRecords.push({
+      args,
+      command,
+      process: fakeProcess,
+    })
+    return fakeProcess
+  }),
 }))
 
 const { writeChaptersMkvMerge } = await import(

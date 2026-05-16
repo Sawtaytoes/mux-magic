@@ -16,10 +16,9 @@ import {
   catchError,
   defer,
   EMPTY,
-  from,
   map,
   mergeMap,
-  Observable,
+  type Observable,
   of,
   toArray,
 } from "rxjs"
@@ -112,26 +111,26 @@ const performRemux = ({
     const tempOutputPath = `${filePath}.renumbered.${randomSuffix}.mkv`
     await writeFile(tempXmlPath, xmlResult.xml, "utf8")
     try {
-      await new Promise<string>((resolvePromise, reject) => {
-        writeChaptersMkvMerge({
-          chaptersXmlPath: tempXmlPath,
-          inputFilePath: filePath,
-          outputFilePath: tempOutputPath,
-        }).subscribe({
-          next: resolvePromise,
-          error: reject,
-          complete: () => resolvePromise(tempOutputPath),
-        })
-      })
+      await new Promise<string>(
+        (resolvePromise, reject) => {
+          writeChaptersMkvMerge({
+            chaptersXmlPath: tempXmlPath,
+            inputFilePath: filePath,
+            outputFilePath: tempOutputPath,
+          }).subscribe({
+            next: resolvePromise,
+            error: reject,
+            complete: () => resolvePromise(tempOutputPath),
+          })
+        },
+      )
       await replaceOriginal({
         destinationPath: filePath,
         tempPath: tempOutputPath,
       })
     } finally {
       // Best-effort temp-xml cleanup — leftover XML in /tmp is harmless.
-      await rm(tempXmlPath, { force: true }).catch(
-        () => {},
-      )
+      await rm(tempXmlPath, { force: true }).catch(() => {})
     }
     // Suppress unused-var warning while preserving the binding for
     // future caller refactors that may want to switch padding behavior
@@ -191,7 +190,7 @@ const processFile = ({
       })
     }),
     catchError((error) => {
-      logError(processFile, error)
+      logError("renumberChapters", error)
       return EMPTY
     }),
   )
