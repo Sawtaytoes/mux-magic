@@ -22,10 +22,11 @@ vi.mock("node:fs/promises")
 // `afterEach`. Tools that read `os.platform()` (`isNetworkPath`,
 // `openInExternalApp`, `appPaths`) are unaffected — they go through
 // `node:os`, not `process`.
-const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(
-  process,
-  "platform",
-) as PropertyDescriptor
+const originalPlatformDescriptor =
+  Object.getOwnPropertyDescriptor(
+    process,
+    "platform",
+  ) as PropertyDescriptor
 
 // Initialize the global Task scheduler with unbounded concurrency for
 // tests — they don't care about concurrency caps, they just need the

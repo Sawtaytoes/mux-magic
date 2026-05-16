@@ -9,10 +9,11 @@ import {
 // `process.platform` is a value property, not a getter, so stubbing it
 // requires `Object.defineProperty`. Capturing the original descriptor at
 // module load lets each integration test restore it deterministically.
-const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(
-  process,
-  "platform",
-) as PropertyDescriptor
+const originalPlatformDescriptor =
+  Object.getOwnPropertyDescriptor(
+    process,
+    "platform",
+  ) as PropertyDescriptor
 
 const stubPlatform = (platform: NodeJS.Platform) => {
   Object.defineProperty(process, "platform", {
@@ -43,7 +44,8 @@ describe("assertNotDriveRelative", () => {
         "assertNotDriveRelative should have thrown for /work on win32",
       )
     } catch (caughtError) {
-      const errorMessage = (caughtError as PathSafetyError).message
+      const errorMessage = (caughtError as PathSafetyError)
+        .message
       expect(errorMessage).toContain("/work")
       expect(errorMessage).toContain("D:")
     }
@@ -108,6 +110,8 @@ describe("validateReadablePath drive-relative integration", () => {
 
   test("accepts /work on linux (no platform-specific check)", () => {
     stubPlatform("linux")
-    expect(() => validateReadablePath("/work")).not.toThrow()
+    expect(() =>
+      validateReadablePath("/work"),
+    ).not.toThrow()
   })
 })

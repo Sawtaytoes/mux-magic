@@ -1,4 +1,9 @@
-import { isAbsolute, normalize, sep, win32 } from "node:path"
+import {
+  isAbsolute,
+  normalize,
+  sep,
+  win32,
+} from "node:path"
 
 // Path-safety helper shared across the file-explorer endpoints
 // (list / stream / delete). The endpoints accept arbitrary paths from
@@ -39,8 +44,8 @@ export const assertNotDriveRelative = ({
   platform: NodeJS.Platform
 }) => {
   if (
-    platform === "win32"
-    && win32.parse(path).root === "/"
+    platform === "win32" &&
+    win32.parse(path).root === "/"
   ) {
     const cwdDriveRoot = win32
       .parse(cwd)
