@@ -1,5 +1,4 @@
 import { EventEmitter } from "node:events"
-import { captureConsoleMessage } from "@mux-magic/tools"
 import { firstValueFrom, lastValueFrom, toArray } from "rxjs"
 import {
   beforeEach,
@@ -109,37 +108,37 @@ describe("writeChaptersMkvMerge", () => {
   })
 
   test("logs an error containing exit code + buffered stderr text on non-zero exit (matches runMkvMerge swallow behavior)", async () => {
-    const captured = await captureConsoleMessage(
-      "error",
-      async (consoleSpy) => {
-        const emissionsPromise = lastValueFrom(
-          writeChaptersMkvMerge({
-            chaptersXmlPath: "/tmp/chapters.xml",
-            inputFilePath: "/media/input.mkv",
-            outputFilePath: "/media/output.renumbered.mkv",
-          }).pipe(toArray()),
-        )
-        await driveProcess({
-          exitCode: 2,
-          stderrChunks: [
-            "mkvmerge error: ",
-            "the source file is corrupt",
-          ],
-        })
-        const emissions = await emissionsPromise
-        return { consoleSpy, emissions }
-      },
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {})
+
+    const emissionsPromise = lastValueFrom(
+      writeChaptersMkvMerge({
+        chaptersXmlPath: "/tmp/chapters.xml",
+        inputFilePath: "/media/input.mkv",
+        outputFilePath: "/media/output.renumbered.mkv",
+      }).pipe(toArray()),
     )
+    await driveProcess({
+      exitCode: 2,
+      stderrChunks: [
+        "mkvmerge error: ",
+        "the source file is corrupt",
+      ],
+    })
+    const emissions = await emissionsPromise
 
     // logAndSwallowPipelineError swallows the error into EMPTY — verify
-    // the underlying Error message (joined stderr included) was logged.
-    expect(captured.emissions).toEqual([])
-    const loggedArgs = captured.consoleSpy.mock.calls.flat()
+    // the underlying Error (joined stderr included) was logged.
+    expect(emissions).toEqual([])
+    const loggedArgs = consoleErrorSpy.mock.calls.flat()
     const loggedError = loggedArgs.find(
       (argument) => argument instanceof Error,
     ) as Error | undefined
     expect(loggedError?.message).toMatch(
       /exited with code 2.*mkvmerge error: the source file is corrupt/,
     )
+
+    consoleErrorSpy.mockRestore()
   })
 })
