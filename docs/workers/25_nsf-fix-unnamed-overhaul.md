@@ -4,8 +4,10 @@
 **Branch:** `feat/mux-magic-revamp/25-nsf-fix-unnamed-overhaul`
 **Worktree:** `.claude/worktrees/25_nsf-fix-unnamed-overhaul/`
 **Phase:** 3 (Name Special Features overhaul)
-**Depends on:** 22 (rename), 3a (NSF pipeline split — gives a clean `unnamed/` module to work in)
+**Depends on:** 22 (rename) ✅, 3a (NSF pipeline split) ✅, **58 (NSF restoration sweep)** — 25 *upgrades* the modal 58 brings back; 58 must land first.
 **Parallel with:** 26 (different module), 27 (different module), 23, 34 (different commands)
+
+> **Pre-history note (2026-05-16):** A previous exploration discovered the modal this worker was originally written to "extend" doesn't exist in the React app. It was built in vanilla JS by commit `a7fef431` (2026-05-08), then deleted by commit `28534ec5` (2026-05-10) when the legacy `packages/web/public/builder/` tree was removed on the false assumption the React app had equivalents. Worker [58](58_promptmodal-cancel-and-play-fix.md) is the restoration sweep (PromptModal fixes + Smart Match port + fake-mode prompts); **this worker (25) builds on 58's restored modal and adds the upgrades below**. Don't start 25 until 58 has merged — the changes overlap on `UnnamedFileCandidate`, `buildUnnamedFileCandidates`, the result-card trigger button, and the modal component itself.
 
 ---
 
