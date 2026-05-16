@@ -8,7 +8,7 @@ import { expect, test } from "@playwright/test"
 const isWindows = platform() === "win32"
 const localFfmpegPath = resolve(
   import.meta.dirname,
-  "../packages/server/assets.downloaded/ffmpeg/bin/ffmpeg.exe",
+  "../apps.downloaded/ffmpeg/bin/ffmpeg.exe",
 )
 const ffmpegPath =
   isWindows && existsSync(localFfmpegPath)

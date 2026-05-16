@@ -1,5 +1,16 @@
+import { dirname, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 import { vol } from "memfs"
 import { describe, expect, test, vi } from "vitest"
+
+const repoRoot = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../../..",
+)
+const bundledMediaInfoPath = resolve(
+  repoRoot,
+  "apps.downloaded/mediainfo/MediaInfo.exe",
+)
 
 describe("mediaInfoPath", () => {
   test("respects MEDIAINFO_PATH environment variable when set", async () => {
@@ -27,13 +38,13 @@ describe("mediaInfoPath", () => {
     delete process.env.MEDIAINFO_PATH
     if (process.platform === "win32") {
       vol.fromJSON({
-        "assets.downloaded/mediainfo/MediaInfo.exe": "",
+        [bundledMediaInfoPath]: "",
       })
     }
     const { mediaInfoPath } = await import("./appPaths.js")
     const expected =
       process.platform === "win32"
-        ? "assets.downloaded/mediainfo/MediaInfo.exe"
+        ? bundledMediaInfoPath
         : "mediainfo"
     expect(mediaInfoPath).toBe(expected)
   })

@@ -1,4 +1,5 @@
 .venv/
+.config/
 apps.generated/
 assets/
 node_modules/
