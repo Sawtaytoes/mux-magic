@@ -13,132 +13,217 @@ Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typechec
 
 ## Your Mission
 
-Rewire sequence execution so **each file flows through the full sequence independently** rather than the current step-by-step batch model. Today, step B waits for step A to finish ALL files; new model is rxjs composition where file 1 hits step 3 while file 2 is still on step 1.
+Rewrite the sequence runner AND every command handler so each file streams through the full sequence independently — file 1 hits step 3 while file 2 is still on step 1. The folder-level handler contract (`{ sourcePath, … } → Observable<unknown>`) goes away. Every command becomes an **rxjs operator** over `Observable<FileContext>`. The runner becomes a single `reduce → mergeMap` chain. Folder-level callers (single-step HTTP routes, CLI invocations) reach the new contract via a generic `wrapAsSourcePath` adapter.
 
-This is **the biggest architectural shift in the plan**. Opus rating reflects the failure-mode severity: "looks right, drops files silently" or "looks right, deadlocks under back-pressure" are the kinds of bugs that emerge here.
+This is **the biggest architectural shift in the plan**. The wide blast radius is intentional — it eliminates the fork between "solo command" and "pipelined sequence" code paths so users never have to think about pipelining boundaries.
+
+> **Design history — read this before planning.** Three architectural shapes were considered, each captured as a code sketch:
+>
+> - [shape1-coexist-perfile.ts](38-sketches/shape1-coexist-perfile.ts) — every command has TWO functions (folder + per-file), runner forks. Rejected: permanent dual maintenance.
+> - [shape2-implicit-source.ts](38-sketches/shape2-implicit-source.ts) — every command has ONE per-file contract, runner has ONE code path. **CHOSEN.** The sketch shows the per-file-handler variant; the refined model in this worker doc uses an **operator** contract (handler takes the upstream Observable + params, returns downstream) so stream-breakers fit the same signature.
+> - [shape3-foreachfiles.ts](38-sketches/shape3-foreachfiles.ts) — opt-in `forEachFiles` group kind. Rejected: forces users to manage pipelining boundaries.
 
 ### Today's model (read first)
 
 Per the exploration of [sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) and a representative command like [copyFiles.ts](../../packages/server/src/app-commands/copyFiles.ts):
 
-- Sequence runner: outer `await runOneStep(step)` loop. Each step's promise resolves only when its inner Observable completes — i.e., after every file has been processed.
-- Command handler (`copyFiles`): receives a `getFilesAtDepth` Observable, calls `.pipe(toArray())` to materialize the full file list, then `concatMap`s over the array running per-file Tasks via the global scheduler.
-- Parallel groups: use `forkJoin` with fail-fast semantics.
+- Sequence runner: outer `await runOneStep(step)` loop at [sequenceRunner.ts:668](../../packages/server/src/api/sequenceRunner.ts#L668). Each step's promise resolves only when its inner Observable completes — i.e., after every file has been processed.
+- Command handler (`copyFiles`): receives a `getFiles`/`getFilesAtDepth` Observable, calls `.pipe(toArray())` to materialize the full file list, then iterates with `concatMap` + `runTasks` for per-file work.
+- Parallel groups: `Promise.all` with first-failure broadcast cancellation ([sequenceRunner.ts:486-608](../../packages/server/src/api/sequenceRunner.ts#L486-L608)).
 
-The net effect: per-step parallelism (across files via the scheduler) exists, but the **step boundary serializes**. A sequence with steps A → B → C and 100 files spends `time(A) + time(B) + time(C)` per file as a serial pipeline of batches.
+Net effect: per-step parallelism exists (via the task scheduler) but the **step boundary serializes**. A 3-step × 100-file sequence runs as three back-to-back batches.
 
-### New model
+### New model — Shape 2 with operator handlers
 
-Compose steps as observable transforms; the outer "loop" is `mergeMap` (or `concatMap` where ordering matters), not `await`:
+Every command handler is an **rxjs operator over `Observable<FileContext>`**:
 
 ```ts
-// Pseudocode for the new sequenceRunner
-const runSequence = (sequence, files$) =>
-  sequence.steps.reduce(
-    (pipeline$, step) =>
-      pipeline$.pipe(
-        mergeMap((fileContext) => runStepForFile(step, fileContext))
+type FileContext = {
+  fullPath: string                       // current path as the file moves through the chain
+  metadata: Record<string, unknown>      // free-form bag (e.g. originalSource for cleanup steps)
+}
+
+type CommandHandler<Params> = (
+  params: Params,
+  upstream$: Observable<FileContext>,
+) => Observable<FileContext>
+```
+
+Per-file handler (most commands) — `mergeMap` internally so files race:
+
+```ts
+export const copyFiles: CommandHandler<{ destinationPath: string }> = (
+  { destinationPath },
+  upstream$,
+) =>
+  upstream$.pipe(
+    mergeMap((fileContext) =>
+      copyOneFile(fileContext.fullPath, destinationPath).pipe(
+        map((newPath) => ({
+          fullPath: newPath,
+          metadata: {
+            ...fileContext.metadata,
+            originalSource: fileContext.fullPath,
+          },
+        })),
       ),
-    files$
+    ),
   )
 ```
 
-Now file 1 leaves step A's mergeMap and enters step B before step A is done with file 2. The full file list never gets materialized to an array.
+Stream-breaker (full-set commands) — `toArray()` internally, same signature:
 
-### Implementation scope
+```ts
+export const nameTvShowEpisodes: CommandHandler<NameParams> = (
+  params,
+  upstream$,
+) =>
+  upstream$.pipe(
+    toArray(),
+    mergeMap((allFiles) => /* compute episode order across the set */),
+    // emit each rename as an individual FileContext
+  )
+```
 
-#### 1. Rewrite `sequenceRunner.ts`
+The sequence runner is a single `reduce → mergeMap`. Per the user's "user has the choice at any stage to use the file context or define a source path" requirement, each step has an OPTIONAL `sourcePath` — when set, the step starts a fresh stream; when omitted, it inherits upstream:
 
-- Replace the `await runOneStep` loop with `reduce` over steps + `mergeMap` composition (or whatever rxjs operator chain fits — `concatMap` if ordering across files must be preserved within a step).
-- Preserve fail-fast for parallel groups.
-- Preserve the per-step `JobStatus` transitions (running → completed/failed/skipped); now multiple step-level statuses are concurrent across in-flight files.
-- The structured logging from worker 28 should give you trace IDs to follow individual files through the pipeline — leverage this heavily for debugging.
+```ts
+const runSequence = (body: SequenceBody): Observable<FileContext> =>
+  body.steps.reduce<Observable<FileContext>>((upstream$, step) => {
+    const stepUpstream$ = step.sourcePath
+      ? getFilesAtDepth({ sourcePath: step.sourcePath, depth: step.depth ?? 0 })
+      : upstream$
+    return commands[step.command](step.params, stepUpstream$)
+  }, EMPTY)
+```
 
-#### 2. Update every command handler to be observable-composable
+Validation rejects sequences whose first step has no `sourcePath` (upstream is `EMPTY` — nothing would flow). No `forEachFiles` group construct. No flag. One code path.
 
-Today each command handler returns an Observable but materializes early via `toArray()` or similar. Audit each handler and drop the materialization where possible:
+### Folder-level callers — the `wrapAsSourcePath` adapter
 
-- **`copyFiles`** ([copyFiles.ts](../../packages/server/src/app-commands/copyFiles.ts)) — drop `toArray()` at line ~49; let `getFilesAtDepth`'s stream flow directly into the per-file copy `runTasks`. Be careful: the pre-calculated total size for progress display might depend on `toArray` — if so, emit progress per-file instead (`bytesProcessed / totalBytesSeenSoFar`) or pre-scan separately if total-bytes accuracy is required.
-- **Other handlers** under [packages/server/src/app-commands/](../../packages/server/src/app-commands/) — audit each. Most should be similar in shape.
-- Handlers that genuinely need full-set knowledge (e.g., to deduplicate or sort) can still call `toArray()` but become **stream-breakers**: they materialize internally and emit a single batch downstream. Document each stream-breaker in the PR description.
+HTTP routes for direct command invocation, CLI one-offs, scripts that want "give this command a sourcePath and get results back" — they reach the new contract through a generic wrapper that lives alongside `getFilesAtDepth`:
 
-#### 3. Update `getFilesAtDepth` callers
+```ts
+export const wrapAsSourcePath = <Params>(handler: CommandHandler<Params>) =>
+  ({
+    sourcePath,
+    depth = 0,
+    ...params
+  }: Params & { sourcePath: string; depth?: number }): Observable<FileContext> =>
+    handler(
+      params as Params,
+      getFilesAtDepth({ sourcePath, depth }),
+    )
+```
 
-Today's [getFilesAtDepth.ts](../../packages/server/src/tools/getFilesAtDepth.ts) already returns a streaming Observable — good. But callers that immediately `toArray()` lose the streaming benefit. Audit and remove unnecessary materialization.
+Every route under [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) that today calls `command.getObservable({ sourcePath, ...params })` switches to `wrapAsSourcePath(command.handler)({ sourcePath, ...params })`. Behavior preserved; contract unified.
 
-If any caller uses `.subscribe` to count files first (e.g., for progress total), consider replacing with a `share()` + parallel-count strategy, or accept that the total updates as files are discovered.
+### Stream-breakers (the full-set-knowledge case)
 
-#### 4. Per-file progress reporting
+These commands genuinely need to see every file before they can act. They internally `toArray()` and re-emit. Same operator signature.
 
-Today's progress is per-step (e.g., "step 3 of 5: 23/47 files done"). New model: progress should reflect per-file pipeline position (e.g., "file 23 on step 3; file 47 on step 1; total 100 in flight").
+- **`nameTvShowEpisodes`, `nameAnimeEpisodes`, `nameAnimeEpisodesAniDB`** — **order-dependent.** Episode numbers are assigned by sort order across the full set; file 1 of 100 can't be named "episode 1" until every file is in hand to confirm there isn't a missing earlier one.
+- **`nameSpecialFeaturesDvdCompareTmdb`, `nameMovieCutsDvdCompareTmdb`** — **duplicate-aware.** A candidate match for a special feature isn't decided until every candidate is in hand so the disambiguation logic can compare ([per the user: "nameSpecialFeatures has to deal with duplicates intelligently, and that's why it can't finish until all files are there"](https://example/design-discussion)).
+- **Likely also** `renameDemos`, `renameMovieClipDownloads`, `renumberChapters` — confirm per-handler during the rewrite based on each command's actual semantics.
 
-UI implications:
-- The Jobs screen shows job-level progress today. Either:
-  - **A. Aggregate the new per-file progress back to a job-level number** (e.g., `sum of files * steps that completed / total files * total steps`). Simpler; preserves today's UX. Recommended.
-  - **B. Show per-file rows in the Jobs screen.** Bigger UX change; out of scope for this worker unless trivial to add.
+Stream-breakers HALT cross-step concurrency at their position in the chain — by definition, they have to wait for the full upstream before downstream sees anything. That's the correct semantics for these commands and explicitly fine per the user. UI should indicate "buffering N files" while the toArray fills, then resume normal progress for downstream steps.
 
-Pick A unless adding B is mechanical.
+### UI: per-step source mode
+
+In the Builder UI ([packages/web/src/pages/BuilderPage/](../../packages/web/src/pages/BuilderPage/) + [StepCard.tsx](../../packages/web/src/components/StepCard/StepCard.tsx)), every step gets a **source mode** picker (default: "inherit upstream"):
+
+- **Inherit upstream** — step has no `sourcePath`; runner threads upstream `FileContext$` into the handler.
+- **Define source path** — step has its own `sourcePath` (+ optional depth); runner discards upstream and gives the handler a fresh `getFilesAtDepth(...)`.
+
+The first step in any sequence forces "Define source path" mode (there is no upstream). The picker is the user-facing concrete of the "wrap it in a sourcePath reader" affordance — it's the same `wrapAsSourcePath` adapter, surfaced as a step-level toggle instead of a separate code path.
+
+### Per-file progress reporting
+
+- Progress is per-file pipeline position across the whole sequence. Aggregate to a single job-level number for the Jobs screen — `(sum of (file × steps_completed)) / (total_files × total_steps)`. Same UX surface as today; the math changes.
+- Stream-breaker steps emit a "buffering N files" indicator while their toArray fills.
 
 ### Out of scope
 
-- Per-step thread caps (worker 11 only does per-sequence; per-step would be a follow-up worker).
+- Per-step thread caps (worker 11 only does per-sequence; per-step would be a follow-up).
 - File-level retry on partial pipeline failures (today: job-level retry only; per-file retry is a future worker).
 - Reordering files based on pipeline pressure (each step runs at its natural rate; no priority queue).
-- Changing the `JobStatus` enum (still `pending`/`running`/`completed`/`failed`/`paused`/`skipped`).
+- Changing the `JobStatus` enum.
 
 ### Risk areas — investigate carefully
 
-1. **Back-pressure between steps with very different per-file times.** If step A is fast (e.g., probe metadata) and step B is slow (e.g., transcode), `mergeMap` will queue up an unbounded backlog at step B's input. Use `mergeMap(concurrent)` with a concurrency parameter, OR explicit buffering with backpressure — pick based on what rxjs operators give you cleanly.
-2. **Failure semantics.** Today: step A failure cancels step B. New: file 1 failing at step A shouldn't prevent file 2 from continuing. But a CATASTROPHIC error (e.g., disk full) should fail the whole job. Define and test both cases.
-3. **Parallel-group fail-fast.** Existing `forkJoin` fail-fast must still work — when one parallel group's branch fails, sibling branches cancel.
-4. **Observable cleanup on cancellation.** Mid-pipeline cancellation must clean up in-flight files in all steps. Use `takeUntil(cancelSignal$)` or similar.
-5. **Test fixtures.** The new model changes timing characteristics — existing tests that depend on serial step completion may need updates.
+1. **Wide blast radius.** ~50 command handlers rewritten, every test fixture rewritten, sequence YAML codec updated, every HTTP route under `commandRoutes.ts` switched to `wrapAsSourcePath`. This is a multi-commit refactor. Land the new runner + adapter + 2-3 migrated handlers first; migrate the rest in batches behind passing tests.
+2. **Back-pressure between fast and slow steps.** If step A is fast (probe metadata) and step B is slow (transcode), unbounded `mergeMap` queues backlog at B's input. Use `mergeMap(handler, concurrency)` capped at the job's threadCount.
+3. **Failure isolation.** File 1 failing at step A shouldn't prevent file 2 from continuing. But a CATASTROPHIC error (disk full, handler throws synchronously) should fail the whole job.
+4. **Cancellation cleanup.** Mid-pipeline cancellation must clean up in-flight per-file work at every step. Use `takeUntil(cancelSignal$)` or similar; verify the abort signal reaches per-file Tasks.
+5. **Migration of existing direct-command HTTP routes.** Today's `/api/commands/:name` endpoints (or whatever shape they're in) call handlers with `{ sourcePath, ...params }`. After the rewrite they go through `wrapAsSourcePath`. Test each route's behavior is preserved.
+6. **Stream-breaker UI semantics.** Downstream steps appear "queued" while a stream-breaker buffers. Make this legible — the UI should show "Step N waiting on Step M (buffering N files)".
+7. **Parallel/serial group semantics.** Today's `kind: "group"` items (parallel/serial sub-lists) — decide whether they survive the rewrite or fold into the new model. Parallel groups today rely on independent step-level observables; in Shape 2 they become parallel branches of the upstream stream. Preserve external behavior; internal mechanism may change.
+8. **Validation up-front.** Reject sequences where step 1 has no `sourcePath` at parse time, not runtime.
 
 ## Tests (per test-coverage discipline)
 
-This worker's tests are the safety net for a high-risk refactor:
+The safety net for the highest-risk worker in the plan. Stream-breaker correctness is the easiest place for silent bugs to hide.
 
-- **Unit:** `sequenceRunner` composes 2-step sequence; emits per-file events showing file 1 on step 2 before file 2 on step 1 (fake handlers with controllable timing).
-- **Unit:** failure of file 1 at step A doesn't block file 2 from continuing.
-- **Unit:** catastrophic failure (handler throws) fails the whole job and cancels in-flight files.
-- **Unit:** parallel-group fail-fast still works.
-- **Unit:** cancellation cleans up all in-flight files across steps.
-- **Integration:** real command handlers (`copyFiles`, etc.) work in the new streaming model — files actually copy correctly, no dropped or duplicated files.
+- **Unit:** runner composes 2 per-file handlers; file 1 reaches step 2 before file 2 reaches step 1 (fake handlers with controllable timing).
+- **Unit:** stream-breaker handler correctly buffers upstream via `toArray()`, processes the full set, emits each result downstream.
+- **Unit:** per-step `sourcePath` override discards upstream and starts a fresh stream.
+- **Unit:** file 1 failing at step A doesn't block file 2 from continuing through both steps.
+- **Unit:** catastrophic failure (handler throws synchronously) fails the whole job and cancels in-flight per-file work.
+- **Unit:** `wrapAsSourcePath` adapter exposes folder-level interface and threads `getFilesAtDepth` into the operator handler.
+- **Unit:** validation rejects a sequence whose first step has no `sourcePath`.
+- **Unit:** existing parallel-group fail-fast semantics preserved (or migration equivalent documented in PR).
+- **Unit:** cancellation cleans up in-flight files across all step positions.
+- **Integration:** every migrated handler's external behavior is preserved (one test per handler — these are the regression nets for the rewrite).
+- **Integration:** every direct-command HTTP route still returns the same shape via `wrapAsSourcePath`.
 - **Integration:** progress aggregation is monotonic and reaches 100%.
-- **e2e:** a 3-step sequence with 5 files completes; total wall-clock is shorter than the serial baseline (this is the proof that pipelining actually overlaps).
-- **e2e:** combined with worker 11's per-job thread budget — a job with `threadCount: 8` actually uses up to 8 in-flight tasks across all steps (not just within one step).
+- **e2e:** 3-step sequence with 5 files completes; wall-clock < serial baseline (proof of overlap).
+- **e2e:** worker-11 per-job thread budget hits its ceiling across all steps (not just within one step).
+- **e2e:** sequence containing a stream-breaker mid-chain — downstream waits, then resumes correctly.
 
 ## TDD steps
 
-1. Write all failing tests above. Commit each as `test(...): failing test for <case>`.
-2. Sketch the new `sequenceRunner` skeleton with fake handlers; get unit tests passing.
-3. Migrate `copyFiles` handler.
-4. Migrate remaining handlers one at a time; integration tests pass per handler.
-5. Wire progress aggregation.
-6. Run full e2e suite.
+1. Write failing tests for the runner shape, stream-breaker pattern, per-step source override, `wrapAsSourcePath` adapter. Commit each as `test(...): failing test for <case>`.
+2. Build the new runner skeleton + `wrapAsSourcePath` adapter; get unit tests passing.
+3. Migrate `copyFiles` (per-file) — integration test passes.
+4. Migrate `mergeTracks`, `extractSubtitles`, other per-file commands in small batches.
+5. Migrate stream-breakers (`nameTvShowEpisodes`, `nameAnimeEpisodes*`, `nameSpecialFeaturesDvdCompareTmdb`, etc.) — these need care; one at a time with full integration coverage.
+6. Switch every direct-command HTTP route to `wrapAsSourcePath`.
+7. Update sequence YAML codec + Builder UI: per-step source-mode picker; validation for first-step `sourcePath`.
+8. Wire progress aggregation.
+9. Run full e2e suite.
 
 ## Files
 
-- [packages/server/src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) — primary rewrite
-- All `packages/server/src/app-commands/*.ts` — audit each; drop unnecessary `toArray()`s
-- [packages/server/src/tools/getFilesAtDepth.ts](../../packages/server/src/tools/getFilesAtDepth.ts) — keep streaming; verify no caller forces materialization
+- [packages/server/src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) — full rewrite to single `reduce → mergeMap` chain
+- [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) — `CommandConfig` shape changes; every route switches to `wrapAsSourcePath`
+- `packages/tools/src/wrapAsSourcePath.ts` (new) — the generic folder-level adapter; exported from `@mux-magic/tools`
+- `packages/tools/src/FileContext.ts` (new) — shared `FileContext` type and helpers
+- **All** `packages/server/src/app-commands/*.ts` — every handler rewritten to operator signature
+- **All** `packages/server/src/app-commands/*.test.ts` — every test fixture rewritten
 - [packages/server/src/api/jobStore.ts](../../packages/server/src/api/jobStore.ts) — progress aggregation
-- Possibly: [packages/web/src/components/JobCard/JobCard.tsx](../../packages/web/src/components/JobCard/JobCard.tsx) — UI progress display tweaks
-- Tests for all of the above
+- [packages/web/src/jobs/yamlCodec.ts](../../packages/web/src/jobs/yamlCodec.ts) — per-step `sourcePath` encode/decode (likely already supported via worker 24, verify)
+- [packages/web/src/pages/BuilderPage/](../../packages/web/src/pages/BuilderPage/) + [packages/web/src/components/StepCard/StepCard.tsx](../../packages/web/src/components/StepCard/StepCard.tsx) — per-step source-mode picker
+- [packages/web/src/state/groupAtoms.ts](../../packages/web/src/state/groupAtoms.ts) — review whether existing group kinds need migration
+- [docs/workers/38-sketches/](38-sketches/) — design artifacts (chosen shape + rejected alternatives)
 
 ## Verification checklist
 
-- [ ] Workers 20, 21, 28 ✅ merged before starting
+- [ ] Workers 20, 21, 41 ✅ merged before starting
 - [ ] Worktree created
 - [ ] Manifest row → `in-progress`
 - [ ] Failing tests committed first (covering each risk area)
-- [ ] `sequenceRunner.ts` composes via observable operators (no `await runOneStep` loop)
-- [ ] All command handlers audited; `toArray()` calls justified or removed
-- [ ] Stream-breakers (handlers that legitimately must materialize) documented in PR
+- [ ] `CommandHandler` operator type defined; `FileContext` type exported from `@mux-magic/tools`
+- [ ] `wrapAsSourcePath` adapter implemented and tested
+- [ ] Sequence runner reduced to single `reduce → mergeMap` chain (no fork between solo and pipelined paths)
+- [ ] Per-step `sourcePath` override implemented; first-step validation rejects missing source
+- [ ] Every command handler migrated to operator signature
+- [ ] Every command handler's external behavior preserved (integration test per handler)
+- [ ] Stream-breakers identified, marked, and verified (named commands: `nameTvShowEpisodes`, `nameAnimeEpisodes*`, `nameSpecialFeaturesDvdCompareTmdb`, `nameMovieCutsDvdCompareTmdb`, plus any others surfaced during rewrite)
+- [ ] Every direct-command HTTP route switched to `wrapAsSourcePath`
+- [ ] UI per-step source-mode picker wired (inherit upstream vs define `sourcePath`)
 - [ ] Per-file failure isolation works (file 1 fails, file 2 continues)
-- [ ] Catastrophic failure still terminates the job
-- [ ] Parallel-group fail-fast still works
-- [ ] Cancellation cleans up in-flight files
+- [ ] Catastrophic failure terminates the job
+- [ ] Cancellation cleans up in-flight per-file work
 - [ ] Progress aggregation monotonic; reaches 100%
 - [ ] e2e proves overlap: wall-clock for 3-step + 5-file sequence < serial baseline
 - [ ] e2e proves worker-11 thread budget hits its ceiling across steps
@@ -150,8 +235,9 @@ This worker's tests are the safety net for a high-risk refactor:
 
 Per the plan's model-recommendation confidence table: this worker is in the "Low — model uncertain" bucket. Opus is chosen because:
 
-1. Failure modes are subtle (silent drops, deadlocks) and the AI can't reliably catch them via test-pass alone.
+1. Failure modes are subtle (silent drops, deadlocks, stream-breaker buffer leaks) and the AI can't reliably catch them via test-pass alone.
 2. rxjs composition has many sharp edges; "looks right, drops messages" is common.
-3. The downstream value (multiplies worker 11's thread budget; enables future per-file UX) is high enough to justify the Opus cost.
+3. The wide blast radius (~50 handlers + every test + every direct-command route) demands consistent migration discipline.
+4. The downstream value (multiplies worker 11's thread budget across every sequence; enables future per-file UX; unifies the solo-command and sequence code paths) is high enough to justify the Opus cost.
 
-If the user prefers Sonnet/High here, budget time for a careful second pass with extra integration tests targeting the risk areas.
+The original "biggest architectural shift in the plan" rating stands — if anything strengthened, because Shape 2 was chosen over the smaller-blast-radius Shape 3.

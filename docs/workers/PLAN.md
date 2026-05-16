@@ -334,14 +334,29 @@ Implementation: tag each task with its `jobId` at submission. The scheduler trac
 
 **Today:** sequence runner does `await runStep(stepA, allFiles); await runStep(stepB, allFiles);`. Each step's command handler typically calls `.pipe(toArray())` on the file Observable, materializing the whole set before processing. Step B doesn't start until step A is done with ALL files.
 
-**New:** sequence runner composes steps with rxjs streaming. File 1 leaves step A's `mergeMap` and enters step B before step A is done with file 2. The full file list never gets materialized to an array.
+**New (Shape 2 chosen after review):** every command handler becomes an **rxjs operator** over `Observable<FileContext>` — takes upstream + params, returns downstream. The sequence runner is one `reduce → mergeMap` chain with no fork between "solo command" and "pipelined sequence" code paths. Each step has an optional `sourcePath`: when set, the step starts a fresh stream (via `getFilesAtDepth`); when omitted, it inherits upstream. The first step in any sequence must declare a `sourcePath` (validation up-front). Folder-level callers (single-step HTTP routes, CLI one-offs) reach the new contract through a generic `wrapAsSourcePath` adapter that bridges `{ sourcePath, …params } → Observable<FileContext>` to the operator handler.
 
-**Implementation scope:**
+Users never have to think about pipelining boundaries — there ARE no boundaries to think about, just commands and a source.
 
-- Rewrite `sequenceRunner.ts` to compose steps as observable transforms (not `await runStep` loops).
-- Update every command handler that currently `toArray()`s the file list. Most can drop the `toArray()` and let rxjs back-pressure handle ordering.
-- Update `getFilesAtDepth` callers if they rely on full-set knowledge (e.g. pre-calculating total size for progress).
+**Stream-breakers** — commands that genuinely need the full file set internally `toArray()` upstream before processing, then re-emit per file. Same operator signature; just different internal shape. The named full-set commands are:
+
+- `nameTvShowEpisodes`, `nameAnimeEpisodes`, `nameAnimeEpisodesAniDB` — order-dependent (episode numbers assigned by sort order across the full set).
+- `nameSpecialFeaturesDvdCompareTmdb`, `nameMovieCutsDvdCompareTmdb` — duplicate-aware (disambiguation requires every candidate in hand).
+- Likely `renameDemos`, `renameMovieClipDownloads`, `renumberChapters` — verify per-handler during rewrite.
+
+Stream-breakers HALT cross-step concurrency at their position. That's the correct semantics; UI shows "buffering N files" while their toArray fills.
+
+**Implementation scope (wide — this is the biggest architectural shift in the plan):**
+
+- New `CommandHandler<Params> = (params, upstream$) => Observable<FileContext>` contract; `FileContext` type and `wrapAsSourcePath` adapter exported from `@mux-magic/tools`.
+- Sequence runner rewritten to single `reduce → mergeMap`; per-step optional `sourcePath` override; first-step validation.
+- Every command handler in `packages/server/src/app-commands/*.ts` rewritten to operator signature (~50 handlers).
+- Every command-handler test fixture rewritten.
+- Every direct-command HTTP route under `commandRoutes.ts` switched to `wrapAsSourcePath`.
+- Builder UI gets a per-step source-mode picker (inherit upstream vs define `sourcePath`).
 - Multiplies the value of worker 11's per-job thread budget — without pipelining, a 32-thread job that only has 4 files spends most of the budget idle.
+
+See [workers/38_per-file-pipelining.md](38_per-file-pipelining.md) for the full design including the rejected alternatives ([shape1](38-sketches/shape1-coexist-perfile.ts) — two coexisting contracts per command, [shape3](38-sketches/shape3-foreachfiles.ts) — opt-in `forEachFiles` group kind that would have forced users to manage pipelining boundaries).
 
 **Out-of-scope for worker 38** but might emerge later:
 
