@@ -8,7 +8,9 @@ declare global {
     // Registered by FileExplorerModal on mount; called by PromptModal video rows.
     openVideoModal?: (absolutePath: string) => void
     // Injected into index.html by the Hono web server at request time (see
-    // packages/web/src/server.ts). Set via REMOTE_SERVER_URL env var.
+    // packages/web/src/server.ts) when REMOTE_SERVER_URL is set. When this
+    // is not present (e.g. `vite dev`), apiBase.ts defaults to
+    // http://localhost:3000 — see packages/web/src/apiBase.ts.
     __API_BASE__?: string
   }
 }
