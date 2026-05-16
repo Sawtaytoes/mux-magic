@@ -13,14 +13,48 @@ Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typechec
 
 ## Context
 
-Two real-world patterns produce MKVs whose internal chapter numbering doesn't match the chapter index inside the file:
+This command exists because two real-world patterns produce MKVs whose chapter names don't match the chapter index inside the file. The command handles **three** input shapes; it acts on two of them and deliberately leaves the third alone.
 
-1. **Split-source files.** An anime BD source ships a single 24-min file with 9 chapters; a release group splits it into three episodes, each carrying a slice of the original chapter list. Episode 2's chapters are numbered `8/9/10` inside the file even though they should be `1/2/3` for that episode standalone.
-2. **Multi-disc joins.** Three discs were merged into one collection file. Each disc had chapters `1..30`; the merged file now has the sequence `1..30, 1..30, 1..30` instead of `1..90`. Players list them as duplicates and skip-to-chapter UX breaks.
+### Scenario 1 — split-source files (chapters don't start at 1)
 
-Renumbering means "rewrite chapter timestamps and names so the index is sequential `1..N`, preserving timecodes and (where present) chapter titles". This is metadata-only — no re-encode, no track touch. The natural tool is `mkvmerge`'s round-trip via `--chapters chapters.xml`: extract chapters as XML, rewrite the numbering, remux with the rewritten XML.
+An anime BD source ships a single 24-min file with 9 chapters; a release group splits it into three episodes, each carrying a slice of the original chapter list. Episode 2's chapters are numbered `Chapter 04`/`Chapter 05`/`Chapter 06` inside the file even though they should be `Chapter 01`/`Chapter 02`/`Chapter 03` for that episode standalone.
 
-**Why not `mkvpropedit`?** `mkvpropedit --edit chapter:N ...` can rename a chapter but its model is "this one named field" — it cannot restructure chapter UIDs or reorder/renumber atoms wholesale. The renumber operation has to round-trip the chapter XML through `mkvmerge`. This is also why we need a new spawn op — none of the existing ones cover the `--chapters chapters.xml -o output input` shape end-to-end.
+```text
+Before:  Chapter 04   Chapter 05   Chapter 06
+After:   Chapter 01   Chapter 02   Chapter 03
+```
+
+Status: `renumbered`. Timecodes untouched.
+
+### Scenario 2 — combined-source files (chapters reset partway through)
+
+Multiple discs or episodes were merged into one file. Each source contributed its own `Chapter 01..N` sequence, so the merged file has restarting runs (e.g. `1,2,3, 1,2,3` instead of `1..6`). Players list duplicate chapter names and skip-to-chapter UX breaks.
+
+```text
+Before:  Chapter 01   Chapter 02   Chapter 03   Chapter 01   Chapter 02   Chapter 03
+After:   Chapter 01   Chapter 02   Chapter 03   Chapter 04   Chapter 05   Chapter 06
+```
+
+Status: `renumbered`. Timecodes untouched. The first three names happened to already be correct; only the trailing three changed, but the file is still rewritten as a single round-trip.
+
+### Scenario 3 — mixed named/numbered chapters (skip, do nothing)
+
+A file whose chapters mix `Chapter NN` names with custom names like `Opening`, `Eyecatch`, `Part A`:
+
+```text
+Input:   Chapter 05   Opening   Chapter 07   Eyecatch   Chapter 09
+Output:  (file is not modified)
+```
+
+Status: `skipped`, `reason: "mixed-chapter-names"`.
+
+**Why we skip rather than guess:** without an example of the source's intended numbering, we can't accurately tell what the user wants. Should `Opening` count as a chapter for numbering purposes? Should it be `Chapter 01, Opening, Chapter 02, Eyecatch, Chapter 03` (renumber matches among themselves) or `Chapter 01, Opening, Chapter 02, Eyecatch, Chapter 03` (renumber by position, ignoring custom names) or something else entirely? The two strategies happen to coincide in that example but diverge as soon as a custom name lands between non-adjacent numbered chapters. There's no signal inside the file that tells us which intent applies — different release groups use different conventions, and the same file might have been hand-edited. Doing nothing is the only safe answer; the user can rename chapters manually in MKVToolNix GUI if they want.
+
+### How the command implements this
+
+Renumbering is **name-only**. Timecodes are preserved verbatim, `<ChapterUID>` values are preserved verbatim — this command never touches start/end times, UIDs, languages, or flags. It's metadata-only — no re-encode, no track touch. The natural tool is `mkvmerge`'s round-trip via `--chapters chapters.xml`: extract chapters as XML, rewrite the numeric portion of `Chapter NN` names in atom order, remux with the rewritten XML. Scenarios 1 and 2 use this path; scenario 3 never reaches it.
+
+**Why not `mkvpropedit`?** `mkvpropedit --edit chapter:N --set ChapString=...` could rename a single chapter, but the renumber operation needs to rewrite N chapter names atomically and consistently across the file. One XML rewrite + one remux is simpler to reason about than N pinpoint edits whose ordering depends on atom indexing. This is also why we need a new spawn op — none of the existing ones cover the `--chapters chapters.xml -o output input` shape end-to-end.
 
 ## Your Mission
 
@@ -42,11 +76,11 @@ This is a thin wrapper around `mkvmerge`; functionally it's a `runMkvMerge` invo
 
 Pure helper: `packages/server/src/tools/renumberChapterXml.ts`. Takes the chapter XML string `mkvextract chapters input.mkv` produces, returns the rewritten XML string. The rewriter:
 
-- Walks `<ChapterAtom>` elements top-to-bottom and replaces each one's chapter-number annotation with the 1-based sequential index. The MKV chapter XML schema doesn't have a single "chapter number" field — players typically derive the display index from atom order, but chapter **names** like `"Chapter 08"` and `"Chapter 09"` are what the user actually sees and what makes the bug visible. So the rewriter:
-  - Detects chapter names that match `/^Chapter\s+\d+$/i` and renumbers them to `Chapter 01`, `Chapter 02`, … (zero-padded to the width of the total count).
-  - Leaves non-matching chapter names untouched (preserve "Opening", "Eyecatch", etc.).
-  - Optionally regenerates each atom's `<ChapterUID>` to a fresh random UInt64 when the input has duplicates (the multi-disc-join case — `1..30` repeated three times produces colliding UIDs).
-- Returns `{ xml, renamedCount, regeneratedUidCount }` so the app-command can emit a structured result the UI/CLI can show.
+- Walks `<ChapterAtom>` elements top-to-bottom. The MKV chapter XML schema doesn't have a single "chapter number" field — players derive the display index from atom order, but chapter **names** like `"Chapter 08"` and `"Chapter 09"` are what the user actually sees and what makes the bug visible. So the rewriter:
+  - First inspects every atom's chapter name. If **every** atom matches `/^Chapter\s+\d+$/i`, the rewriter renumbers them to `Chapter 01`, `Chapter 02`, … (zero-padded to the width of the total atom count) in atom order.
+  - If **any** atom has a name that doesn't match the pattern, the rewriter bails out early and signals "mixed" — the caller treats the file as not-ours and skips it. This is the simple all-or-nothing rule: we only renumber files whose chapters are uniformly `Chapter NN`.
+  - Never edits `<ChapterTimeStart>` / `<ChapterTimeEnd>` / `<ChapterUID>` / language / flags. Renaming is the entire mutation surface.
+- Returns `{ xml, renamedCount, status }` where `status` is one of `"renumbered"` (all atoms matched and at least one was renamed), `"already-sequential"` (all atoms matched and the numbers were already `01..N`), or `"mixed"` (at least one atom didn't match — caller skips the file). `renamedCount` is meaningful only when `status === "renumbered"`.
 
 Use a tolerant XML approach — the existing repo doesn't pull a heavyweight XML lib for one round-trip. A regex pass over `<ChapterAtom>...</ChapterAtom>` blocks is sufficient given the narrow schema mkvmerge emits. Cover edge cases in tests rather than reaching for `xml2js`.
 
@@ -60,7 +94,6 @@ Signature:
 renumberChapters({
   isRecursive: boolean,
   isPaddingChapterNumbers: boolean, // defaults true
-  regenerateUidsOnCollision: boolean, // defaults true; covers the multi-disc case
   sourcePath: string,
 })
 ```
@@ -70,11 +103,12 @@ Per-file pipeline:
 1. `mkvextract chapters <file>` via [runMkvExtractStdOut](../../packages/server/src/cli-spawn-operations/runMkvExtractStdOut.ts) — captures the chapter XML as a string.
 2. If the file has no chapters (`mkvextract` returns empty/no chapters block), emit `{ filePath, action: "skipped", reason: "no-chapters" }` and continue.
 3. Run the chapter XML through `renumberChapterXml`.
-4. If `renamedCount === 0 && regeneratedUidCount === 0`, emit `{ action: "already-sequential" }` and skip the write — no point spawning mkvmerge to produce a byte-identical output.
-5. Write the rewritten XML to a temp file (`<file>.chapters.<rand>.xml` under the OS temp dir; clean up on completion/error).
-6. Invoke `writeChaptersMkvMerge` with the temp XML, writing to `<file>.renumbered.mkv`.
-7. Atomically replace the original via `fs.rename` (cross-device fallback: copy + unlink, same shape `aclSafeCopyFile` already handles elsewhere).
-8. Emit `{ filePath, action: "renumbered", renamedCount, regeneratedUidCount }`.
+4. If `status === "mixed"`, emit `{ action: "skipped", reason: "mixed-chapter-names" }` and continue — the file has at least one chapter name that isn't `Chapter NN`, so this command leaves it alone entirely.
+5. If `status === "already-sequential"`, emit `{ action: "already-sequential" }` and skip the write — no point spawning mkvmerge to produce a byte-identical output.
+6. Write the rewritten XML to a temp file (`<file>.chapters.<rand>.xml` under the OS temp dir; clean up on completion/error).
+7. Invoke `writeChaptersMkvMerge` with the temp XML, writing to `<file>.renumbered.mkv`.
+8. Atomically replace the original via `fs.rename` (cross-device fallback: copy + unlink, same shape `aclSafeCopyFile` already handles elsewhere).
+9. Emit `{ filePath, action: "renumbered", renamedCount }`.
 
 Use [filterIsVideoFile](../../packages/server/src/tools/filterIsVideoFile.js) before processing so non-video files in the directory don't blow up `mkvextract`.
 
@@ -85,7 +119,6 @@ New file: `packages/cli/src/cli-commands/renumberChaptersCommand.ts`. Pattern-ma
 - `--source-path <path>` (required, "Source Path" — note worker 24 has codified the naming).
 - `--recursive` / `--no-recursive` (default `false`).
 - `--pad-chapter-numbers` / `--no-pad-chapter-numbers` (default `true`).
-- `--regenerate-uids-on-collision` / `--no-regenerate-uids-on-collision` (default `true`).
 
 ### 5. Web command surface
 
@@ -96,21 +129,25 @@ Register the command in [packages/server/src/api/schemas.ts](../../packages/serv
 
 Mirror an existing fixture pair (e.g. `fixIncorrectDefaultTracks.input.json` / `.yaml`) for shape.
 
-Add a one-paragraph description to [packages/web/public/command-descriptions.js](../../packages/web/public/command-descriptions.js) so the command-picker tooltip explains "renumbers MKV chapters sequentially via a metadata-only mkvmerge remux; safe to run repeatedly; skips files whose chapter list is already sequential".
+Add a one-paragraph description to [packages/web/public/command-descriptions.js](../../packages/web/public/command-descriptions.js) so the command-picker tooltip explains "renames `Chapter NN`-style chapter names so the numbers are sequential `1..N` via a metadata-only mkvmerge remux; preserves timecodes and non-numbered names (`Opening`, `Eyecatch`, etc.); skips files with no numbered chapters and files already sequential; safe to run repeatedly".
 
 ## Tests (per test-coverage discipline)
 
 - **`renumberChapterXml` (pure):**
-  - Input: 3 atoms named `Chapter 08`, `Chapter 09`, `Chapter 10` → output names `Chapter 01`, `Chapter 02`, `Chapter 03`; `renamedCount === 3`.
-  - Input: mixed names (`Chapter 01`, `Opening`, `Chapter 03`) → only the `Chapter NN` ones get renumbered; `Opening` is preserved verbatim.
-  - Input: `ChapterUID` duplicates → with `regenerateUidsOnCollision: true`, each duplicate gets a unique fresh UInt64; with `false`, UIDs are left alone.
-  - Input: already-sequential `Chapter 01..03` → `renamedCount === 0` (idempotent: round-trip-safe; the command should detect this and skip the remux).
+  - **Split-source case:** 3 atoms named `Chapter 08`, `Chapter 09`, `Chapter 10` → output names `Chapter 01`, `Chapter 02`, `Chapter 03`; `status === "renumbered"`, `renamedCount === 3`.
+  - **Combined-source case:** 6 atoms named `Chapter 01, Chapter 02, Chapter 03, Chapter 01, Chapter 02, Chapter 03` → output `Chapter 01..06`; `status === "renumbered"`, `renamedCount === 3` (the first three atoms didn't need a name change).
+  - **Mixed case:** any atom with a non-`Chapter NN` name (e.g. `Chapter 01`, `Opening`, `Chapter 03`) → `status === "mixed"`, XML returned unchanged. The app-command treats this as a skip.
+  - **All-custom case:** every atom is a custom name (e.g. all `Opening`/`Ending`/`Part A`) → `status === "mixed"`, XML unchanged.
+  - **Already-sequential case:** atoms named `Chapter 01..03` → `status === "already-sequential"`, `renamedCount === 0` (idempotent: round-trip-safe; the command skips the remux).
+  - Timecodes are never modified: snapshot test that `<ChapterTimeStart>` / `<ChapterTimeEnd>` substrings come through byte-identical when `status === "renumbered"`.
+  - `<ChapterUID>` values are never modified — even when the input has duplicates (multi-disc-join case). Snapshot/equality test asserts UIDs round-trip verbatim.
   - Zero-padding width: 12 atoms → `Chapter 01..12`; 100 atoms → `Chapter 001..100`.
 - **`writeChaptersMkvMerge` (spawn-op):** mock `child_process.spawn` (use the same approach the repo's other spawn-op tests use; check `runMkvMerge.test.ts` if present) and assert the args list contains `--chapters <xml>`, `-o <output>`, `<input>` in that order. Verify stderr buffering + non-zero-exit error message shape mirrors `runMkvMerge`.
 - **`renumberChapters` app-command (integration with the spawn-op mocked):**
   - File with `Chapter 08/09/10` → emits one `renumbered` result, calls `writeChaptersMkvMerge` exactly once.
   - File with already-sequential chapters → emits `already-sequential`, **does not** call `writeChaptersMkvMerge`.
   - File with no chapters → emits `skipped` with `reason: "no-chapters"`.
+  - File whose chapters are all custom names (no `Chapter NN` matches) → emits `skipped` with `reason: "no-numbered-chapters"`, **does not** call `writeChaptersMkvMerge`.
   - Cross-device rename failure → falls back to copy+unlink without losing the file.
 - **Schema validation:** the new command name is accepted by `sequenceRoutes`'s command-name enum; invalid `sourcePath` (empty string) is rejected.
 
@@ -150,10 +187,12 @@ Add a one-paragraph description to [packages/web/public/command-descriptions.js]
 
 ## Out of scope
 
-- Editing chapter **timestamps** (start/end times). Renumbering is index-only; the round-trip preserves timecodes.
+- Editing chapter **timestamps** (start/end times). Renumbering is name-only; the round-trip preserves timecodes verbatim.
+- Editing `<ChapterUID>` values. Even when a multi-disc-join produces duplicate UIDs, this command leaves them alone — UID dedup is a separate concern and is not in scope here.
+- Renaming non-`Chapter NN` chapter names (e.g. localising `Opening`/`Ending`, normalising `Part A`/`Part B`). The rewriter is conservative on purpose.
+- Files whose chapters are **entirely** custom names with no `Chapter NN` matches: the command skips them rather than imposing a `Chapter 01..N` naming scheme on a file that deliberately used custom names.
 - Trimming trailing credit chapters — that's worker `4e` (`detect-trailing-credit-chapters`).
 - Splitting an already-merged multi-disc file back into per-disc chunks — that's a separate split-by-chapter command and is not in scope here.
-- Renaming non-`Chapter NN` chapter names (e.g. localising "Opening" / "Ending"). The rewriter is conservative on purpose.
 - A bulk "renumber + trim credits + rename" macro — compose `4d` + `4e` (when it lands) at the sequence level.
 
 ## Verification checklist
@@ -163,6 +202,7 @@ Add a one-paragraph description to [packages/web/public/command-descriptions.js]
 - [ ] The new command appears in the web command picker with the description text
 - [ ] Manual smoke: run the command against a `Chapter 08/09/10` test MKV; verify chapters list as `Chapter 01/02/03` in MKVToolNix GUI afterwards and that the file's size is within a few KB of the original (no re-encode)
 - [ ] Manual smoke: run against a file with already-sequential chapters; verify `already-sequential` result and that `mkvmerge` was **not** invoked (check job log)
+- [ ] Manual smoke: run against a file whose chapters are all custom names (e.g. `Opening`/`Part A`/`Ending`); verify `skipped` with `reason: "no-numbered-chapters"` and that `mkvmerge` was **not** invoked
 - [ ] Standard gate clean (`lint → typecheck → test → e2e → lint`)
 - [ ] PR opened against `feat/mux-magic-revamp`
 - [ ] [docs/workers/MANIFEST.md](MANIFEST.md) row updated to `done`
