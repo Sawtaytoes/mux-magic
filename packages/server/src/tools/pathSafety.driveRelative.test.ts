@@ -1,26 +1,14 @@
-import { afterEach, describe, expect, test } from "vitest"
+import { describe, expect, test, vi } from "vitest"
 
+import {
+  getCwd,
+  getPlatform,
+} from "./currentEnvironment.js"
 import {
   assertNotDriveRelative,
   PathSafetyError,
   validateReadablePath,
 } from "./pathSafety.js"
-
-// `process.platform` is a value property, not a getter, so stubbing it
-// requires `Object.defineProperty`. Capturing the original descriptor at
-// module load lets each integration test restore it deterministically.
-const originalPlatformDescriptor =
-  Object.getOwnPropertyDescriptor(
-    process,
-    "platform",
-  ) as PropertyDescriptor
-
-const stubPlatform = (platform: NodeJS.Platform) => {
-  Object.defineProperty(process, "platform", {
-    configurable: true,
-    value: platform,
-  })
-}
 
 describe("assertNotDriveRelative", () => {
   test("throws PathSafetyError on win32 for a drive-relative POSIX-style path", () => {
@@ -92,24 +80,24 @@ describe("assertNotDriveRelative", () => {
   })
 })
 
+// `currentEnvironment` is mocked globally in `vitest.setup.ts` to make
+// `getPlatform()` return "linux" so the rest of the server suite (which
+// passes POSIX fixtures through `validateReadablePath`) keeps working on
+// any host. Here we override the mock per-test to exercise the win32
+// branch through the real `validateReadablePath` wrapper.
 describe("validateReadablePath drive-relative integration", () => {
-  afterEach(() => {
-    Object.defineProperty(
-      process,
-      "platform",
-      originalPlatformDescriptor,
-    )
-  })
-
   test("rejects /work on win32 with a drive-relative error", () => {
-    stubPlatform("win32")
+    vi.mocked(getPlatform).mockReturnValueOnce("win32")
+    vi.mocked(getCwd).mockReturnValueOnce(
+      "D:\\Projects\\Personal\\mux-magic",
+    )
     expect(() => validateReadablePath("/work")).toThrow(
       /drive-relative/,
     )
   })
 
   test("accepts /work on linux (no platform-specific check)", () => {
-    stubPlatform("linux")
+    vi.mocked(getPlatform).mockReturnValueOnce("linux")
     expect(() =>
       validateReadablePath("/work"),
     ).not.toThrow()

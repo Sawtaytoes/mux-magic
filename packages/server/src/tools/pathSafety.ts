@@ -5,6 +5,11 @@ import {
   win32,
 } from "node:path"
 
+import {
+  getCwd,
+  getPlatform,
+} from "./currentEnvironment.js"
+
 // Path-safety helper shared across the file-explorer endpoints
 // (list / stream / delete). The endpoints accept arbitrary paths from
 // the client, so every path that crosses an API boundary needs:
@@ -71,9 +76,9 @@ export const validateReadablePath = (
     )
   }
   assertNotDriveRelative({
-    cwd: process.cwd(),
+    cwd: getCwd(),
     path,
-    platform: process.platform,
+    platform: getPlatform(),
   })
   const normalized = normalize(path)
   // After normalize, a leading `..` (or one mid-path that survives) means
