@@ -5,5 +5,6 @@ export default defineConfig({
     name: "cli",
     include: ["src/**/*.test.ts"],
     exclude: ["**/node_modules/**", "**/dist/**"],
+    setupFiles: ["./vitest.setup.ts"],
   },
 })
