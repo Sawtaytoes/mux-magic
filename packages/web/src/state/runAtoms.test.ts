@@ -205,9 +205,101 @@ describe("runOrStopStepAtom", () => {
 
       const updated = store.get(stepsAtom)[0] as Step
       expect(updated.status).toBe("failed")
+      expect(updated.error).toBe("Network error")
       expect(store.get(sequenceRunModalAtom).mode).toBe(
         "closed",
       )
+      expect(store.get(runningAtom)).toBe(false)
+    })
+
+    test("surfaces server validation message on 400 response (no opaque 'failed')", async () => {
+      // Mirrors the @hono/zod-openapi 400 body shape so the
+      // extraction helper has something realistic to parse.
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 400,
+          json: () =>
+            Promise.resolve({
+              success: false,
+              error: {
+                name: "ZodError",
+                issues: [
+                  {
+                    code: "invalid_type",
+                    expected: "string",
+                    received: "object",
+                    path: ["sourcePath"],
+                    message:
+                      "Expected string, received object",
+                  },
+                ],
+              },
+            }),
+        }),
+      )
+      const step = makeStep()
+      const store = makeStore(step)
+
+      await store.set(runOrStopStepAtom, "step_1")
+
+      const updated = store.get(stepsAtom)[0] as Step
+      expect(updated.status).toBe("failed")
+      expect(updated.error).toBe(
+        "sourcePath: Expected string, received object",
+      )
+      expect(store.get(runningAtom)).toBe(false)
+    })
+
+    test("falls back to 'Request failed' when 400 body is non-JSON", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 400,
+          json: () => Promise.reject(new Error("not json")),
+        }),
+      )
+      const step = makeStep()
+      const store = makeStore(step)
+
+      await store.set(runOrStopStepAtom, "step_1")
+
+      const updated = store.get(stepsAtom)[0] as Step
+      expect(updated.status).toBe("failed")
+      expect(updated.error).toBe("Request failed")
+    })
+
+    test("blocks single-step run pre-flight when a field still carries a linkedTo reference — fetch never called", async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ jobId: "job_new" }),
+      })
+      vi.stubGlobal("fetch", fetchSpy)
+      const step = makeStep({
+        command: "keepLanguages",
+        links: {
+          sourcePath: {
+            linkedTo: "step5_2",
+            output: "folder",
+          },
+        },
+      })
+      const store = makeStore(step)
+
+      await store.set(runOrStopStepAtom, "step_1")
+
+      expect(fetchSpy).not.toHaveBeenCalled()
+      const updated = store.get(stepsAtom)[0] as Step
+      expect(updated.status).toBe("failed")
+      expect(updated.error).toMatch(
+        /sourcePath is linked to step5_2/,
+      )
+      expect(updated.error).toMatch(
+        /run the whole sequence/i,
+      )
+      // runningAtom must not stay true after the preflight bail.
       expect(store.get(runningAtom)).toBe(false)
     })
 

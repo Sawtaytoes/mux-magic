@@ -5,6 +5,7 @@
 import { useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef } from "react"
 import { apiBase } from "../apiBase"
+import { promptModalAtom } from "../components/PromptModal/promptModalAtom"
 import { mergeProgress } from "../jobs/mergeProgress"
 import type { LogEntry } from "../state/logsByJobIdAtom"
 import { logsByJobIdAtom } from "../state/logsByJobIdAtom"
@@ -25,6 +26,7 @@ export const useLogStream = (
 ) => {
   const setLogs = useSetAtom(logsByJobIdAtom)
   const setProgress = useSetAtom(progressByJobIdAtom)
+  const setPromptData = useSetAtom(promptModalAtom)
   const esRef = useRef<EventSource | null>(null)
   const lastLogIndexRef = useRef<number | undefined>(
     undefined,
@@ -76,6 +78,20 @@ export const useLogStream = (
           next.set(jobId, [...entries, entry])
           return next
         })
+      } else if ("type" in data && data.type === "prompt") {
+        // Interactive prompt emitted by the command (e.g. "pick a category
+        // for this special-feature file"). The pipeline is suspended on
+        // the server until the user POSTs back to /jobs/:id/input — wiring
+        // promptModalAtom here is what surfaces the picker. Without this
+        // branch the event silently fell through and the job sat blocked.
+        setPromptData({
+          jobId,
+          promptId: data.promptId,
+          message: data.message,
+          options: data.options,
+          filePath: data.filePath,
+          filePaths: data.filePaths,
+        })
       } else if (
         "type" in data &&
         data.type === "progress"
@@ -104,6 +120,15 @@ export const useLogStream = (
       } else if ("isDone" in data && data.isDone) {
         es.close()
         esRef.current = null
+        // If the job ended while a prompt was open (e.g. user cancelled
+        // mid-prompt, or the pipeline errored before the user answered),
+        // close the modal so the user isn't left with a picker that would
+        // POST input back to a terminal job. The atom is global, so we
+        // only clear it when it actually belongs to THIS job — otherwise
+        // a finished job could wipe a prompt opened by a concurrent one.
+        setPromptData((prev) =>
+          prev && prev.jobId === jobId ? null : prev,
+        )
         onDoneRef.current?.(data)
       }
     }
@@ -116,7 +141,7 @@ export const useLogStream = (
         esRef.current = null
       }
     }
-  }, [jobId, setLogs, setProgress])
+  }, [jobId, setLogs, setProgress, setPromptData])
 
   useEffect(
     () => () => {

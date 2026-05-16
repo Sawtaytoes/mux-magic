@@ -9,6 +9,7 @@ import {
   test,
   vi,
 } from "vitest"
+import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
 import { SequenceRunModal } from "./SequenceRunModal"
@@ -175,5 +176,59 @@ describe("SequenceRunModal — dry-run error propagation for sequence-builder ca
     expect(step?.error).toBe(
       "subtitle-metadata dry-run failure",
     )
+  })
+})
+
+describe("SequenceRunModal — prompt routing (umbrella SSE)", () => {
+  beforeEach(() => {
+    capturedOnMessage = undefined
+  })
+
+  test("a 'prompt' event on the umbrella stream sets promptModalAtom with the umbrella's jobId", () => {
+    const store = createStore()
+    store.set(stepsAtom, [
+      makeStep({ id: "step-1", command: "mergeTracks" }),
+    ])
+    openModal(store, "step-1")
+    renderWithStore(store)
+
+    capturedOnMessage?.({
+      type: "prompt",
+      promptId: "p_xyz",
+      message: "Pick a file",
+      options: [{ index: -1, label: "Skip" }],
+      filePath: "C:\\videos\\foo.mkv",
+    })
+
+    const promptData = store.get(promptModalAtom)
+    expect(promptData).not.toBeNull()
+    // Modal carries the umbrella job id; PromptModal POSTs to
+    // /jobs/<umbrella>/input and the runner forwards by promptId to the
+    // suspended child observable.
+    expect(promptData?.jobId).toBe("job-umbrella")
+    expect(promptData?.promptId).toBe("p_xyz")
+    expect(promptData?.message).toBe("Pick a file")
+  })
+
+  test("clears the prompt modal when the umbrella's 'isDone' arrives (cancel mid-prompt)", () => {
+    const store = createStore()
+    store.set(promptModalAtom, {
+      jobId: "job-umbrella",
+      promptId: "stale",
+      message: "Mid-prompt cancel",
+      options: [{ index: -1, label: "Skip" }],
+    })
+    store.set(stepsAtom, [
+      makeStep({ id: "step-1", command: "mergeTracks" }),
+    ])
+    openModal(store, "step-1")
+    renderWithStore(store)
+
+    capturedOnMessage?.({
+      isDone: true,
+      status: "cancelled",
+    })
+
+    expect(store.get(promptModalAtom)).toBeNull()
   })
 })

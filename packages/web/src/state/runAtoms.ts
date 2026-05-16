@@ -56,6 +56,64 @@ const resolveParams = (
   )
 }
 
+// A single-step run hits /commands/:name which expects already-resolved
+// scalars. `linkedTo` references belong to /sequences/run — they point at
+// another step's runtime output, which doesn't exist outside a sequence
+// run. Detect them client-side so the user gets a directive message
+// (change the field, or run the whole sequence) instead of an opaque
+// 400/ZodError surfacing through the validation path.
+const findUnresolvableLink = (
+  params: Record<string, unknown>,
+): { field: string; targetStepId: string } | null => {
+  const entry = Object.entries(params).find(
+    ([, value]) =>
+      value !== null &&
+      typeof value === "object" &&
+      typeof (value as { linkedTo?: unknown }).linkedTo ===
+        "string",
+  )
+  if (!entry) return null
+  const [field, value] = entry
+  return {
+    field,
+    targetStepId: (value as { linkedTo: string }).linkedTo,
+  }
+}
+
+// @hono/zod-openapi ships validation failures as
+//   { success: false, error: { issues: [{ path, message, ... }], name: 'ZodError' } }
+// Other routes return the simpler `{ error: string }` shape. Pick the
+// most specific human-readable message available; "Request failed"
+// is the last-resort fallback so the UI always has *something* to show.
+const extractRequestErrorMessage = (
+  body: unknown,
+): string => {
+  if (body && typeof body === "object") {
+    const bodyRecord = body as Record<string, unknown>
+    const innerError = bodyRecord.error
+    if (innerError && typeof innerError === "object") {
+      const issues = (innerError as { issues?: unknown })
+        .issues
+      if (Array.isArray(issues) && issues.length > 0) {
+        const issue = issues[0] as {
+          message?: unknown
+          path?: unknown
+        }
+        const path = Array.isArray(issue.path)
+          ? issue.path.join(".")
+          : ""
+        const message =
+          typeof issue.message === "string"
+            ? issue.message
+            : "Invalid value"
+        return path ? `${path}: ${message}` : message
+      }
+    }
+    if (typeof innerError === "string") return innerError
+  }
+  return "Request failed"
+}
+
 const findStep = (
   items: SequenceItem[],
   stepId: string,
@@ -117,8 +175,28 @@ export const runOrStopStepAtom = atom(
       paths,
     )
 
+    // Single-step preflight: /commands/:name can't resolve a linkedTo
+    // reference because there's no prior step to read outputs from.
+    // Surface the explicit "change the field or run the whole sequence"
+    // choice the user needs to make rather than letting a Zod ValidationError
+    // come back as an opaque "failed" status.
+    const unresolvableLink =
+      findUnresolvableLink(resolvedParams)
+    if (unresolvableLink) {
+      set(setStepRunStatusAtom, {
+        stepId,
+        status: "failed",
+        error: `${unresolvableLink.field} is linked to ${unresolvableLink.targetStepId}'s output, which only resolves during a full sequence run. Change ${unresolvableLink.field} to a concrete path, or run the whole sequence.`,
+      })
+      return
+    }
+
     set(runningAtom, true)
-    set(setStepRunStatusAtom, { stepId, status: "running" })
+    set(setStepRunStatusAtom, {
+      stepId,
+      status: "running",
+      error: null,
+    })
 
     // B4 fix: single-step runs hit /commands/:name (creates one flat
     // job) instead of /sequences/run (creates umbrella + child). The
@@ -139,9 +217,13 @@ export const runOrStopStepAtom = atom(
         body: JSON.stringify(resolvedParams),
       })
       if (!response.ok) {
+        const errorBody = await response
+          .json()
+          .catch(() => null)
         set(setStepRunStatusAtom, {
           stepId,
           status: "failed",
+          error: extractRequestErrorMessage(errorBody),
         })
         set(runningAtom, false)
         return
@@ -157,10 +239,14 @@ export const runOrStopStepAtom = atom(
       // StepRunProgress (one EventSource per running step). Opening one
       // here too would double the /jobs/:id/logs subscriptions and the
       // browser would replay buffered events to both clients.
-    } catch {
+    } catch (error) {
       set(setStepRunStatusAtom, {
         stepId,
         status: "failed",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Network error",
       })
       set(runningAtom, false)
     }

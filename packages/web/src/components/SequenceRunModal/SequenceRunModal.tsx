@@ -33,7 +33,7 @@ export const SequenceRunModal = () => {
   const [modalState, setModalState] = useAtom(
     sequenceRunModalAtom,
   )
-  const _setPromptData = useSetAtom(promptModalAtom)
+  const setPromptData = useSetAtom(promptModalAtom)
   const setRunning = useSetAtom(runningAtom)
   const setStepRunStatus = useSetAtom(setStepRunStatusAtom)
 
@@ -125,6 +125,26 @@ export const SequenceRunModal = () => {
         }
         return
       }
+      if ("type" in data && data.type === "prompt") {
+        // Sequence-level prompt event (also routed up from a child step
+        // via the umbrella SSE on the parent). Without this branch the
+        // pipeline blocks server-side and the UI just shows logs/keepalives.
+        // jobId on the modal payload is the umbrella's — PromptModal
+        // submits to /jobs/<umbrella>/input, which the job runner routes
+        // to the correct waiting child observable by promptId.
+        const promptJobId = jobId
+        if (promptJobId) {
+          setPromptData({
+            jobId: promptJobId,
+            promptId: data.promptId,
+            message: data.message,
+            options: data.options,
+            filePath: data.filePath,
+            filePaths: data.filePaths,
+          })
+        }
+        return
+      }
       if ("line" in data) {
         setLogs((prev) => [...prev, data.line])
         return
@@ -136,11 +156,27 @@ export const SequenceRunModal = () => {
             ? { ...prev, activeChildren: [] }
             : prev,
         )
+        // Same stale-modal guard as useLogStream: clear the prompt if it
+        // still belongs to the job that just terminated.
+        const finishedJobId = jobId
+        if (finishedJobId) {
+          setPromptData((prev) =>
+            prev && prev.jobId === finishedJobId
+              ? null
+              : prev,
+          )
+        }
         setIsSeqDone(true)
         setRunning(false)
       }
     },
-    [setRunning, setStepRunStatus, setModalState],
+    [
+      jobId,
+      setRunning,
+      setStepRunStatus,
+      setModalState,
+      setPromptData,
+    ],
   )
 
   const handleParentDisconnected = useCallback(() => {
