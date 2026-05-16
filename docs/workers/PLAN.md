@@ -354,7 +354,7 @@ Every worker prompt file follows this structure. When a worker is spawned, paste
 # Worker <ID> — <Title>
 
 **Model:** <model> · **Thinking:** <ON|OFF> · **Effort:** <Low|Medium|High>
-**Branch:** `feat/mux-magic-revamp/<id>-<short-slug>`
+**Branch:** `worker-<id>-<short-slug>` *(do **not** use `feat/mux-magic-revamp/<id>-<slug>` — Git refuses to create a ref inside a directory occupied by an existing ref, and the integration branch `feat/mux-magic-revamp` owns that namespace)*
 **Worktree:** `.claude/worktrees/<id>_<slug>/`
 **Phase:** <N>
 **Depends on:** <comma-separated IDs or "none">

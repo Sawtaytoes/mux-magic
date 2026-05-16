@@ -1,7 +1,7 @@
 # Worker 46 — scale-resolution-aspect-link-fix
 
 **Model:** Sonnet · **Thinking:** ON · **Effort:** Medium
-**Branch:** `feat/mux-magic-revamp/46-scale-resolution-aspect-link-fix`
+**Branch:** `worker-46-scale-resolution-aspect-link-fix` *(already created during the WIP commit `27bfa377`)*
 **Worktree:** `.claude/worktrees/46_scale-resolution-aspect-link-fix/`
 **Phase:** Bug-fix follow-up to worker 0c (Phase 1B web)
 **Depends on:** 0c (introduced the per-side lock design that this corrects)
