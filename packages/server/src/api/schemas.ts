@@ -1045,6 +1045,57 @@ export const nameSpecialFeaturesDvdCompareTmdbRequestSchema =
       ),
   })
 
+// Movie-cuts sibling of nameSpecialFeaturesDvdCompareTmdb. Intentionally
+// narrower — no special-features, no unnamed-file fallback, no duplicate
+// or on-disk-collision flags. The default `timecodePadding` is 15 (the
+// same floor `findMatchingCut` enforces internally) so the schema matches
+// the runtime behavior at face value; the existing NSF command keeps a
+// default of 2 because its extras matcher uses a tighter window.
+export const nameMovieCutsDvdCompareTmdbRequestSchema =
+  z.object({
+    sourcePath: z
+      .string()
+      .describe(
+        "Directory containing movie cut files (e.g. Movie.mkv, Movie.Directors.Cut.mkv).",
+      ),
+    url: z
+      .string()
+      .optional()
+      .describe(
+        "DVDCompare.net URL including the chosen release's hash tag.",
+      ),
+    dvdCompareId: z
+      .number()
+      .optional()
+      .describe(
+        "DVDCompare film ID — when provided, constructs URL directly and bypasses search.",
+      ),
+    dvdCompareReleaseHash: z
+      .number()
+      .optional()
+      .describe(
+        "Release hash (URL fragment #) on the DVDCompare page. Defaults to 1 (the first release option).",
+      ),
+    searchTerm: z
+      .string()
+      .optional()
+      .describe(
+        "Title to search on DVDCompare.net (used when no url or dvdCompareId).",
+      ),
+    fixedOffset: z
+      .number()
+      .default(0)
+      .describe(
+        "Constant offset (in seconds) subtracted from each file's duration before matching.",
+      ),
+    timecodePadding: z
+      .number()
+      .default(15)
+      .describe(
+        "Seconds of slack when matching a file's duration against a cut's listed timecode. Defaults to 15 — the floor used by the cut matcher to accommodate typical rip-vs-DVDCompare drift on main features.",
+      ),
+  })
+
 export const nameTvShowEpisodesRequestSchema = z.object({
   sourcePath: z
     .string()
