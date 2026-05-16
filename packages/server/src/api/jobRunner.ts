@@ -1,4 +1,5 @@
 import {
+  logInfo,
   registerJobClaim,
   unregisterJobClaim,
 } from "@mux-magic/tools"
@@ -105,8 +106,8 @@ export const runJob = (
 
             if (!job) return
 
-            console.log(
-              `[emission/${job.commandName}]`,
+            logInfo(
+              "EMISSION ".concat(job.commandName),
               JSON.stringify(value),
             )
 

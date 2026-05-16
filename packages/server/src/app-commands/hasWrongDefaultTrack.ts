@@ -1,8 +1,8 @@
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
+  logInfo,
 } from "@mux-magic/tools"
-import colors from "ansi-colors"
 import {
   concatAll,
   concatMap,
@@ -52,14 +52,14 @@ export const hasWrongDefaultTrack = ({
             ),
             toArray(),
             tap((trackGroups) => {
-              console.info(
+              logInfo(
+                "WRONG DEFAULT TRACK",
                 fileInfo.fullPath,
-                "\n",
-                colors.bold.cyan("Wrong Default Track:"),
-                trackGroups
-                  .map(({ type }) => type)
-                  .join(", "),
-                "\n",
+                "Wrong Default Track: ".concat(
+                  trackGroups
+                    .map(({ type }) => type)
+                    .join(", "),
+                ),
               )
             }),
           ),

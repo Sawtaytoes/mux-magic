@@ -1,4 +1,7 @@
-import { logAndSwallowPipelineError } from "@mux-magic/tools"
+import {
+  logAndSwallowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { from, type Observable } from "rxjs"
 import {
   gotoPage,
@@ -257,8 +260,9 @@ export const listDvdCompareReleases = (
       )
 
       if (releases.length === 0) {
-        console.info(
-          "[listDvdCompareReleases] no releases parsed",
+        logInfo(
+          "DVDCOMPARE RELEASES",
+          "no releases parsed",
           JSON.stringify({
             url,
             httpStatus: debug.httpStatus,

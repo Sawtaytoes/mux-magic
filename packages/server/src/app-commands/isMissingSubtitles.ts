@@ -1,6 +1,7 @@
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
+  logInfo,
 } from "@mux-magic/tools"
 import { concatMap, filter, map, tap } from "rxjs"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
@@ -34,7 +35,7 @@ export const isMissingSubtitles = ({
               track["@type"] === "Text",
           ),
           tap(() => {
-            console.info(fileInfo.filename)
+            logInfo("NO SUBTITLES", fileInfo.filename)
           }),
         ),
       { concurrency: Infinity },

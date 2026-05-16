@@ -1,6 +1,7 @@
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
+  logInfo,
 } from "@mux-magic/tools"
 import { EMPTY, filter, map, mergeMap, of, tap } from "rxjs"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
@@ -33,7 +34,10 @@ export const hasImaxEnhancedAudio = ({
             }) => additionalFeatures === "XLL X IMAX",
           ),
           tap(() => {
-            console.info(fileInfo.filename)
+            logInfo(
+              "IMAX ENHANCED AUDIO",
+              fileInfo.filename,
+            )
           }),
         ),
       { concurrency: Infinity },

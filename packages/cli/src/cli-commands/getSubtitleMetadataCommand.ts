@@ -1,4 +1,5 @@
 import { getSubtitleMetadata } from "@mux-magic/server/src/app-commands/getSubtitleMetadata.js"
+import { logError } from "@mux-magic/tools"
 import type {
   Argv,
   CommandBuilder,
@@ -63,7 +64,7 @@ export const getSubtitleMetadataCommand: CommandModule<
         )
       },
       error: (err) => {
-        console.error(err)
+        logError("GET SUBTITLE METADATA", err)
         process.exit(1)
       },
       complete: () => {

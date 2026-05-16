@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process"
 import readline from "node:readline"
+import { logError } from "@mux-magic/tools"
 import {
   fromEvent,
   Observable,
@@ -52,7 +53,8 @@ export const runReadlineFfmpeg = ({
 
     childProcess.on("close", (code) => {
       if (code !== 0) {
-        console.error(
+        logError(
+          "FFMPEG",
           `Child process exited with code ${code}`,
         )
       }

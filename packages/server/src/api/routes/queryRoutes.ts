@@ -1,7 +1,10 @@
 import { sep as pathSeparator } from "node:path"
 
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
-import { listDirectoryEntries } from "@mux-magic/tools"
+import {
+  listDirectoryEntries,
+  logError,
+} from "@mux-magic/tools"
 import { lastValueFrom } from "rxjs"
 import { getSubtitleMetadata } from "../../app-commands/getSubtitleMetadata.js"
 import {
@@ -151,7 +154,7 @@ queryRoutes.openapi(
       return context.json({ results, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
-      console.error("[searchMal]", message)
+      logError("SEARCH MAL", message)
       return context.json(
         { results: [], error: message },
         200,
@@ -200,7 +203,7 @@ queryRoutes.openapi(
       return context.json({ results, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
-      console.error("[searchAnidb]", message)
+      logError("SEARCH ANIDB", message)
       return context.json(
         { results: [], error: message },
         200,
@@ -257,7 +260,7 @@ queryRoutes.openapi(
       return context.json({ name: name || null }, 200)
     } catch (err) {
       const message = messageFromError(err)
-      console.error("[lookupAnidb]", message)
+      logError("LOOKUP ANIDB", message)
       return context.json({ name: null }, 200)
     }
   },
@@ -303,7 +306,7 @@ queryRoutes.openapi(
       return context.json({ results, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
-      console.error("[searchTvdb]", message)
+      logError("SEARCH TVDB", message)
       return context.json(
         { results: [], error: message },
         200,
@@ -352,7 +355,7 @@ queryRoutes.openapi(
       return context.json({ results, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
-      console.error("[searchMovieDb]", message)
+      logError("SEARCH MOVIEDB", message)
       return context.json(
         { results: [], error: message },
         200,
@@ -408,7 +411,7 @@ queryRoutes.openapi(
       )
     } catch (err) {
       const message = messageFromError(err)
-      console.error("[searchDvdCompare]", message)
+      logError("SEARCH DVDCOMPARE", message)
       return context.json(
         {
           isDirectListing: false,
@@ -463,7 +466,7 @@ queryRoutes.openapi(
       return context.json({ ...result, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
-      console.error("[listDvdCompareReleases]", message)
+      logError("LIST DVDCOMPARE RELEASES", message)
       return context.json(
         { releases: [], error: message },
         200,
@@ -752,7 +755,7 @@ queryRoutes.openapi(
       return context.json({ ...result, error: null }, 200)
     } catch (err) {
       const message = messageFromError(err)
-      console.error("[listDirectoryEntries]", message)
+      logError("LIST DIRECTORY ENTRIES", message)
       // Fall back to the OS native separator even on error so the client
       // can still build sensible paths if it retries.
       return context.json(

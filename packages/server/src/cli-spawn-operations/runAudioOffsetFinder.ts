@@ -2,6 +2,7 @@ import { spawn } from "node:child_process"
 import { EOL } from "node:os"
 import {
   logAndSwallowPipelineError,
+  logInfo,
   logWarning,
 } from "@mux-magic/tools"
 import { Observable } from "rxjs"
@@ -37,9 +38,9 @@ export const runAudioOffsetFinder = ({
       destinationFilePath,
     ]
 
-    console.info(
-      [audioOffsetFinderPath].concat(commandArgs),
-      "\n",
+    logInfo(
+      "AUDIO OFFSET FINDER",
+      [audioOffsetFinderPath].concat(commandArgs).join(" "),
     )
 
     const childProcess = spawn(
@@ -61,7 +62,7 @@ export const runAudioOffsetFinder = ({
     const stderrChunks: string[] = []
 
     childProcess.stdout.on("data", (data) => {
-      console.info(data.toString())
+      logInfo("AUDIO OFFSET FINDER", data.toString())
 
       appendOutputData(data.toString())
     })
@@ -69,7 +70,7 @@ export const runAudioOffsetFinder = ({
     childProcess.stderr.on("data", (chunk) => {
       const text = chunk.toString()
       stderrChunks.push(text)
-      console.info(text)
+      logInfo("AUDIO OFFSET FINDER", text)
     })
 
     childProcess.on("close", (code) => {

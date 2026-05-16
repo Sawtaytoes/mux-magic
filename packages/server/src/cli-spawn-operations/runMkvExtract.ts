@@ -2,6 +2,7 @@ import { spawn } from "node:child_process"
 import { unlink } from "node:fs/promises"
 import {
   logAndSwallowPipelineError,
+  logInfo,
   logWarning,
 } from "@mux-magic/tools"
 import colors from "ansi-colors"
@@ -47,7 +48,10 @@ export const runMkvExtract = ({
 
     const commandArgs = args
 
-    console.info([mkvExtractPath].concat(commandArgs), "\n")
+    logInfo(
+      "MKVEXTRACT",
+      [mkvExtractPath].concat(commandArgs).join(" "),
+    )
 
     const childProcess = spawn(mkvExtractPath, commandArgs)
 
@@ -81,7 +85,7 @@ export const runMkvExtract = ({
           }
         }
       } else {
-        console.info(data.toString())
+        logInfo("MKVEXTRACT", data.toString())
       }
     })
 
@@ -92,7 +96,7 @@ export const runMkvExtract = ({
       // mkvextract is doing, but don't fail the observable on it —
       // mkvextract reports normal progress (e.g. 'Extracting track N
       // with the CodecID S_HDMV/PGS to the file …') on stderr.
-      console.info(text)
+      logInfo("MKVEXTRACT", text)
     })
 
     childProcess.on("close", (code) => {

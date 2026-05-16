@@ -1,6 +1,7 @@
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
+  logInfo,
   naturalSort,
 } from "@mux-magic/tools"
 import chalk from "chalk"
@@ -96,9 +97,10 @@ export const hasBetterVersion = ({
         .join("\n\n"),
     })),
     tap(({ matchingSections, movieNameWithYear }) => {
-      console.info(
-        chalk.green(movieNameWithYear),
-        `\n\n${matchingSections}\n\n`,
+      logInfo(
+        "BETTER VERSION",
+        movieNameWithYear,
+        matchingSections,
       )
     }),
     logAndRethrowPipelineError(hasBetterVersion),

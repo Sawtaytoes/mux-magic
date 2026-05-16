@@ -215,11 +215,22 @@ export const mergeTracks = ({
                                 mediaFileChapterTimestamp -
                                 subtitlesChapterTimestamp
 
-                              console.info({
-                                mediaFileChapterTimestamp,
-                                subtitlesChapterTimestamp,
-                                offsetInMilliseconds,
-                              })
+                              logInfo(
+                                "CHAPTER OFFSET",
+                                "mediaFileChapterTimestamp=".concat(
+                                  String(
+                                    mediaFileChapterTimestamp,
+                                  ),
+                                  " subtitlesChapterTimestamp=",
+                                  String(
+                                    subtitlesChapterTimestamp,
+                                  ),
+                                  " offsetInMilliseconds=",
+                                  String(
+                                    offsetInMilliseconds,
+                                  ),
+                                ),
+                              )
 
                               return offsetInMilliseconds ===
                                 0

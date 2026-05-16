@@ -1,6 +1,7 @@
 import type { NameSpecialFeaturesResult } from "@mux-magic/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.events.js"
 import { nameSpecialFeaturesDvdCompareTmdb } from "@mux-magic/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.js"
 import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import { logInfo, logWarning } from "@mux-magic/tools"
 import type {
   Argv,
   CommandBuilder,
@@ -98,50 +99,58 @@ export const nameSpecialFeaturesDvdCompareTmdbCommand: CommandModule<
     }).subscribe({
       next: (event: NameSpecialFeaturesResult) => {
         if ("unrenamedFilenames" in event) {
-          console.log(
+          logInfo(
+            "SUMMARY",
             `Renamed ${renamedCount}. Files not renamed: ${event.unrenamedFilenames.length}.`,
           )
           if (event.unrenamedFilenames.length > 0) {
-            console.log("Files not renamed:")
-            event.unrenamedFilenames.forEach((filename) => {
-              console.log(`  • ${filename}`)
-            })
+            logInfo(
+              "FILES NOT RENAMED",
+              "Files not renamed",
+              event.unrenamedFilenames.map(
+                (filename) => `  • ${filename}`,
+              ),
+            )
           }
           if (
             event.unnamedFileCandidates &&
             event.unnamedFileCandidates.length > 0
           ) {
-            console.log(
-              "Possible candidate associations for unnamed files:",
-            )
-            event.unnamedFileCandidates.forEach(
-              ({ filename, candidates }) => {
-                console.log(`  • ${filename}`)
-                candidates
-                  .slice(0, 3)
-                  .forEach((candidate) => {
-                    console.log(`      - ${candidate}`)
-                  })
-              },
+            logInfo(
+              "UNNAMED FILE CANDIDATES",
+              "Possible candidate associations for unnamed files",
+              event.unnamedFileCandidates.flatMap(
+                ({ filename, candidates }) =>
+                  [`  • ${filename}`].concat(
+                    candidates
+                      .slice(0, 3)
+                      .map(
+                        (candidate) =>
+                          `      - ${candidate}`,
+                      ),
+                  ),
+              ),
             )
           }
           return
         }
         if ("hasCollision" in event) {
-          console.warn(
-            `[REVIEW NEEDED] "${event.filename}" → "${event.targetFilename}" already exists. ` +
-              "Pass --non-interactive to auto-suffix instead.",
+          logWarning(
+            "REVIEW NEEDED",
+            `"${event.filename}" → "${event.targetFilename}" already exists. Pass --non-interactive to auto-suffix instead.`,
           )
           return
         }
         if ("hasMovedToEditionFolder" in event) {
-          console.log(
-            `Moved to edition folder: ${event.filename} → ${event.destinationPath}`,
+          logInfo(
+            "MOVED TO EDITION FOLDER",
+            event.filename,
+            event.destinationPath,
           )
           return
         }
         renamedCount += 1
-        console.log(`${event.oldName} → ${event.newName}`)
+        logInfo("RENAMED", event.oldName, event.newName)
       },
       complete: cliObserver.complete,
       error: cliObserver.error,

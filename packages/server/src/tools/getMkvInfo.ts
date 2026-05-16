@@ -1,5 +1,8 @@
 import { spawn } from "node:child_process"
-import { logAndSwallowPipelineError } from "@mux-magic/tools"
+import {
+  logAndSwallowPipelineError,
+  logInfo,
+} from "@mux-magic/tools"
 import { map, Observable } from "rxjs"
 import { treeKillOnUnsubscribe } from "../cli-spawn-operations/treeKillChild.js"
 import { mkvMergePath } from "./appPaths.js"
@@ -89,7 +92,10 @@ export const getMkvInfo = (
       `${filePath}`,
     ]
 
-    console.info([mkvMergePath].concat(commandArgs), "\n")
+    logInfo(
+      "MKVMERGE IDENTIFY",
+      [mkvMergePath].concat(commandArgs).join(" "),
+    )
 
     const childProcess = spawn(mkvMergePath, commandArgs)
 
@@ -110,7 +116,7 @@ export const getMkvInfo = (
     childProcess.stderr.on("data", (chunk) => {
       const text = chunk.toString()
       stderrChunks.push(text)
-      console.info(text)
+      logInfo("MKVMERGE IDENTIFY", text)
     })
 
     childProcess.on("close", (code) => {

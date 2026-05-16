@@ -3,6 +3,7 @@ import "@mux-magic/server/src/loadEnv.js"
 // scheduler is initialized at concurrency=1 before module bodies run.
 import "./tools/initTaskSchedulerCli.js"
 
+import { logError } from "@mux-magic/tools"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 
@@ -51,7 +52,7 @@ import { storeAspectRatioDataCommand } from "./cli-commands/storeAspectRatioData
 console.time("Command Runtime")
 
 process.on("uncaughtException", (exception) => {
-  console.error(exception)
+  logError("UNCAUGHT", exception)
 })
 
 yargs(hideBin(process.argv))

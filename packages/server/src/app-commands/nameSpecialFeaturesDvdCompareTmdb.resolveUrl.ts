@@ -1,3 +1,4 @@
+import { logInfo } from "@mux-magic/tools"
 import {
   map,
   type Observable,
@@ -52,9 +53,9 @@ export const resolveUrl = ({
             throw new Error(
               "DVDCompare returned no results.",
             )
-          console.log(
-            `DVDCompare search landed on a film page directly (fid=${result.id}). ` +
-              "Auto-selecting listing ID; use dvdCompareReleaseHash to choose a release.",
+          logInfo(
+            "DVDCOMPARE DIRECT LISTING",
+            `Search landed on a film page directly (fid=${result.id}). Auto-selecting listing ID; use dvdCompareReleaseHash to choose a release.`,
           )
           return of(
             `${DVDCOMPARE_FILM_BASE}${result.id}#${hash}`,

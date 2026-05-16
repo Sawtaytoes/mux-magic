@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { Readable } from "node:stream"
 
 import { OpenAPIHono } from "@hono/zod-openapi"
+import { logWarning } from "@mux-magic/tools"
 import {
   firstValueFrom,
   mergeMap,
@@ -294,10 +295,7 @@ streamQueue$
           )
 
           childProcess.stderr.on("data", (data) => {
-            console.warn(
-              "[transcode/audio] ffmpeg stderr:",
-              data.toString(),
-            )
+            logWarning("TRANSCODE AUDIO", data.toString())
           })
 
           const stream = Readable.toWeb(

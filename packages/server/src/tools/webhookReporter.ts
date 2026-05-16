@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto"
 
-import { getLoggingContext } from "@mux-magic/tools"
+import {
+  getLoggingContext,
+  logWarning,
+} from "@mux-magic/tools"
 
 import { queueErrorForDelivery } from "../api/jobErrorDeliveryQueue.js"
 import {
@@ -20,13 +23,15 @@ const postWebhook = async (
     })
 
     if (!response.ok) {
-      console.warn(
-        `[webhookReporter] POST ${url} returned ${response.status} — ignoring`,
+      logWarning(
+        "WEBHOOK",
+        `POST ${url} returned ${response.status} — ignoring`,
       )
     }
   } catch (error) {
-    console.warn(
-      `[webhookReporter] POST ${url} failed: ${String(error)} — ignoring`,
+    logWarning(
+      "WEBHOOK",
+      `POST ${url} failed: ${String(error)} — ignoring`,
     )
   }
 }

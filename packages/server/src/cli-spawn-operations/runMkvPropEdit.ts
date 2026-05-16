@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process"
 import {
   logAndSwallowPipelineError,
+  logInfo,
   logWarning,
 } from "@mux-magic/tools"
 import { Observable } from "rxjs"
@@ -18,9 +19,9 @@ export const runMkvPropEdit = ({
   new Observable<string>((observer) => {
     const commandArgs = [filePath, ...args]
 
-    console.info(
-      [mkvPropEditPath].concat(commandArgs),
-      "\n",
+    logInfo(
+      "MKVPROPEDIT",
+      [mkvPropEditPath].concat(commandArgs).join(" "),
     )
 
     const childProcess = spawn(mkvPropEditPath, commandArgs)
@@ -33,13 +34,13 @@ export const runMkvPropEdit = ({
     const stderrChunks: string[] = []
 
     childProcess.stdout.on("data", (data) => {
-      console.info(data.toString())
+      logInfo("MKVPROPEDIT", data.toString())
     })
 
     childProcess.stderr.on("data", (chunk) => {
       const text = chunk.toString()
       stderrChunks.push(text)
-      console.info(text)
+      logInfo("MKVPROPEDIT", text)
     })
 
     childProcess.on("close", (code) => {

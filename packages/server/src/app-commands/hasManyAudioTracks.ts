@@ -1,6 +1,7 @@
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
+  logInfo,
 } from "@mux-magic/tools"
 import {
   concatMap,
@@ -38,7 +39,11 @@ export const hasManyAudioTracks = ({
           count(),
           filter((count) => count > 2),
           tap((count) => {
-            console.info(count, fileInfo.fullPath)
+            logInfo(
+              "MANY AUDIO TRACKS",
+              String(count),
+              fileInfo.fullPath,
+            )
           }),
         ),
       { concurrency: Infinity },

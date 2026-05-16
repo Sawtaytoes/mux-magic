@@ -3,6 +3,7 @@ import { unlink } from "node:fs/promises"
 import { extname } from "node:path"
 import {
   logAndSwallowPipelineError,
+  logInfo,
   logWarning,
 } from "@mux-magic/tools"
 import colors from "ansi-colors"
@@ -162,9 +163,9 @@ export const runFfmpeg = ({
             outputFilePath,
           ].filter(Boolean)
 
-          console.info(
-            [ffmpegPath].concat(commandArgs),
-            "\n",
+          logInfo(
+            "FFMPEG",
+            [ffmpegPath].concat(commandArgs).join(" "),
           )
 
           const childProcess = spawn(
@@ -181,7 +182,7 @@ export const runFfmpeg = ({
           let hasStarted = false
 
           childProcess.stdout.on("data", (data) => {
-            console.info(data.toString())
+            logInfo("FFMPEG", data.toString())
           })
 
           childProcess.stderr.on("data", (data) => {
@@ -221,7 +222,7 @@ export const runFfmpeg = ({
                 )
               }
             } else {
-              console.info(data.toString())
+              logInfo("FFMPEG", data.toString())
             }
           })
 

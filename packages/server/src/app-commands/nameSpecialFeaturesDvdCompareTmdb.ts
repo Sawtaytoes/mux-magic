@@ -3,6 +3,8 @@ import { basename, extname, join } from "node:path"
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
+  logInfo,
+  logWarning,
 } from "@mux-magic/tools"
 import {
   concat,
@@ -110,14 +112,14 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
     url,
   })
     .pipe(
-      tap(() => console.log("Loading DVDCompare page…")),
+      tap(() => logInfo("LOADING", "DVDCompare page")),
       concatMap((resolvedUrl) =>
         searchDvdCompare({ url: resolvedUrl }),
       ),
       tap((scrape) =>
-        console.log(
-          `Scraped extras text: ${scrape.extras.length} chars, ` +
-            `${scrape.extras.split("\n").filter(Boolean).length} non-empty lines`,
+        logInfo(
+          "SCRAPED EXTRAS",
+          `${scrape.extras.length} chars, ${scrape.extras.split("\n").filter(Boolean).length} non-empty lines`,
         ),
       ),
       // Resolve everything that depends on the scrape result (parsed
@@ -131,10 +133,9 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
             const childTimecodedExtras = extras
               .flatMap((entry) => entry.children ?? [])
               .filter((child) => child.timecode).length
-            console.log(
-              `Parsed ${extras.length} extras ` +
-                `(${timecodedExtras + childTimecodedExtras} with timecodes), ` +
-                `${cuts.length} cuts, ${possibleNames.length} untimed suggestions`,
+            logInfo(
+              "PARSED EXTRAS",
+              `${extras.length} extras (${timecodedExtras + childTimecodedExtras} with timecodes), ${cuts.length} cuts, ${possibleNames.length} untimed suggestions`,
             )
           }),
           mergeMap(({ extras, cuts, possibleNames }) =>
@@ -159,9 +160,9 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
     )
     .pipe(
       tap(() =>
-        console.log(
-          `Reading file metadata… (padding=${timecodePaddingAmount ?? 0}, ` +
-            `offset=${fixedOffset ?? 0})`,
+        logInfo(
+          "READING FILE METADATA",
+          `padding=${timecodePaddingAmount ?? 0}, offset=${fixedOffset ?? 0}`,
         ),
       ),
       concatMap(
@@ -185,8 +186,10 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                     ),
                 })),
                 tap(({ timecode }) =>
-                  console.log(
-                    `  ${fileInfo.filename}: ${timecode}`,
+                  logInfo(
+                    "TIMECODE",
+                    fileInfo.filename,
+                    timecode,
                   ),
                 ),
               ),
@@ -286,23 +289,26 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                 })
 
               if (unnamedFileCandidates.length > 0) {
-                console.log(
-                  "Unnamed files with DVDCompare candidate associations:",
-                )
-                unnamedFileCandidates.forEach(
-                  ({ filename, candidates }) => {
-                    console.log(`  • ${filename}`)
-                    candidates
-                      .slice(0, 3)
-                      .forEach((candidate) => {
-                        console.log(`      - ${candidate}`)
-                      })
-                  },
+                logInfo(
+                  "UNNAMED FILES",
+                  "Unnamed files with DVDCompare candidate associations",
+                  unnamedFileCandidates.flatMap(
+                    ({ filename, candidates }) =>
+                      [`  • ${filename}`].concat(
+                        candidates
+                          .slice(0, 3)
+                          .map(
+                            (candidate) =>
+                              `      - ${candidate}`,
+                          ),
+                      ),
+                  ),
                 )
               }
 
-              console.log(
-                `Renaming matched files (${renames.length} of ${matches.length})…`,
+              logInfo(
+                "RENAMING",
+                `Renaming matched files (${renames.length} of ${matches.length})`,
               )
 
               // Reorder so renames-into-another-file's-current-name happen
@@ -445,9 +451,9 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                                     return EMPTY
                                   }
                                   if (isCollision) {
-                                    console.warn(
-                                      `Collision: "${resolvedName}" already exists. ` +
-                                        `Emitting review-needed event (pass --non-interactive to auto-suffix).`,
+                                    logWarning(
+                                      "COLLISION",
+                                      `"${resolvedName}" already exists. Emitting review-needed event (pass --non-interactive to auto-suffix).`,
                                     )
                                     return of<NameSpecialFeaturesResult>(
                                       {
@@ -528,8 +534,9 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                                                     null
                                                   )
                                                     return renamedResult
-                                                  console.log(
-                                                    `Moved to edition folder: ${destPath}`,
+                                                  logInfo(
+                                                    "MOVED TO EDITION FOLDER",
+                                                    destPath,
                                                   )
                                                   return {
                                                     hasMovedToEditionFolder: true,

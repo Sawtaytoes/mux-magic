@@ -1,3 +1,5 @@
+import { logWarning } from "@mux-magic/tools"
+
 export const formatResolutionName = ({
   height,
   width,
@@ -92,11 +94,10 @@ export const formatResolutionName = ({
     )
   }
 
-  console.log("Unknown Resolution:", {
-    height,
-    width,
-    dar: Number(width) / Number(height),
-  })
+  logWarning(
+    "UNKNOWN RESOLUTION",
+    `height=${height} width=${width} dar=${(Number(width) / Number(height)).toFixed(4)}`,
+  )
 
   return width.concat("x", height)
 }

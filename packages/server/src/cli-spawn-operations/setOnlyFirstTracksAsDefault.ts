@@ -1,4 +1,4 @@
-import colors from "ansi-colors"
+import { logInfo } from "@mux-magic/tools"
 import {
   combineLatest,
   concatMap,
@@ -128,23 +128,19 @@ export const setOnlyFirstTracksAsDefault = ({
             }).pipe(
               tap(() => {
                 if (wrongDefaultTracks.length > 0) {
-                  console.info(
-                    colors.bold.green(
-                      "[WRONG DEFAULT TRACKS]",
-                    ),
-                    "\n",
+                  logInfo(
+                    "WRONG DEFAULT TRACKS",
                     filePath,
-                    "\n",
-                    colors.bold.cyan("Track IDs:"),
-                    wrongDefaultTracks.map(
-                      ({ properties, type }) =>
-                        type.concat(
-                          " ",
-                          String(properties.number),
-                        ),
+                    "Track IDs: ".concat(
+                      wrongDefaultTracks
+                        .map(({ properties, type }) =>
+                          type.concat(
+                            " ",
+                            String(properties.number),
+                          ),
+                        )
+                        .join(", "),
                     ),
-                    "\n",
-                    "\n",
                   )
                 }
               }),

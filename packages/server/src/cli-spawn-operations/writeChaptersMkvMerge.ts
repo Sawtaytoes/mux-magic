@@ -2,6 +2,7 @@ import { spawn } from "node:child_process"
 import { unlink } from "node:fs/promises"
 import {
   logAndSwallowPipelineError,
+  logInfo,
   logWarning,
 } from "@mux-magic/tools"
 import { Observable } from "rxjs"
@@ -45,7 +46,10 @@ export const writeChaptersMkvMerge = ({
       inputFilePath,
     ]
 
-    console.info([mkvMergePath].concat(commandArgs), "\n")
+    logInfo(
+      "MKVMERGE",
+      [mkvMergePath].concat(commandArgs).join(" "),
+    )
 
     const childProcess = spawn(mkvMergePath, commandArgs)
 
@@ -59,7 +63,7 @@ export const writeChaptersMkvMerge = ({
     childProcess.stderr.on("data", (chunk) => {
       const text = chunk.toString()
       stderrChunks.push(text)
-      console.info(text)
+      logInfo("MKVMERGE", text)
     })
 
     childProcess.on("close", (code) => {

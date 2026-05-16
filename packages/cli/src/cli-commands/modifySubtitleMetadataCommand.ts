@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs"
 import { modifySubtitleMetadata } from "@mux-magic/server/src/app-commands/modifySubtitleMetadata.js"
 import type { AssModificationRule } from "@mux-magic/server/src/tools/assTypes.js"
 import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import { logError } from "@mux-magic/tools"
 import type {
   Argv,
   CommandBuilder,
@@ -67,7 +68,10 @@ export const modifySubtitleMetadataCommand: CommandModule<
     ) as AssModificationRule[]
 
     if (!Array.isArray(rules)) {
-      console.error("Rules file must contain a JSON array.")
+      logError(
+        "MODIFY SUBTITLE METADATA",
+        "Rules file must contain a JSON array.",
+      )
       process.exit(1)
     }
 

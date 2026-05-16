@@ -1,8 +1,8 @@
 import { spawn } from "node:child_process"
 import { createWriteStream } from "node:fs"
 import { tmpdir } from "node:os"
+import { logWarning } from "@mux-magic/tools"
 import { Observable } from "rxjs"
-
 import { ffmpegPath as defaultFfmpegPath } from "../tools/appPaths.js"
 import {
   type TranscodeCacheKey,
@@ -124,10 +124,7 @@ export const runFfmpegAudioTranscode = ({
     // misconfigured stream selector ("0:a:5" on a 2-track file) surfaces
     // immediately rather than silently producing an empty output.
     childProcess.stderr.on("data", (data) => {
-      console.warn(
-        "[runFfmpegAudioTranscode] ffmpeg stderr:",
-        data.toString(),
-      )
+      logWarning("FFMPEG TRANSCODE", data.toString())
     })
 
     let hasSettled = false

@@ -2,6 +2,7 @@ import { basename, dirname, join } from "node:path"
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
+  logInfo,
 } from "@mux-magic/tools"
 import {
   groupBy,
@@ -52,7 +53,10 @@ export const hasDuplicateMusicFiles = ({
       groupObservable.pipe(take(1)),
     ),
     tap((directoryWithDuplicates) => {
-      console.info(directoryWithDuplicates)
+      logInfo(
+        "DUPLICATE MUSIC FILES",
+        directoryWithDuplicates,
+      )
     }),
     logAndRethrowPipelineError(hasDuplicateMusicFiles),
   )
