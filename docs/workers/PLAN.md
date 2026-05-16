@@ -110,7 +110,7 @@ No intermediate master merges.
 | 1B | Improvements (parallel fan-out with Variables foundation sub-chain) | 08–1f + 36, 37 + 46 (26 workers; 36 → 37 serial sub-chain blocks 11+35+37; 46 is a follow-up bug-fix on 0c) | No |
 | 2 | CLI package extraction | 20 → 21 | No |
 | 3 | Name Special Features overhaul | 22–27 + 34, 35 + 49 (8 workers) | No |
-| 4 | Server infrastructure + per-file pipelining | 41, 2a, 2b, 2c + 38 + 3b + 3c + 3e + 40 + 47 + 53 + 54 + 55 (13 workers; original `28` slot moved to a Phase 1B cleanup, structured-logging relocated to `41`; 53 fixes a `/version` containerization false-positive; 54 sweeps bare console calls onto structured logging; 55 closes a Windows drive-relative-path foot-gun in `pathSafety.ts`) | No |
+| 4 | Server infrastructure + per-file pipelining | 41, 2a, 2b, 2c + 38 + 3b + 3c + 3e + 40 + 47 + 53 + 54 + 55 + 56 (14 workers; original `28` slot moved to a Phase 1B cleanup, structured-logging relocated to `41`; 53 fixes a `/version` containerization false-positive; 54 sweeps bare console calls onto structured logging; 55 closes a Windows drive-relative-path foot-gun in `pathSafety.ts`; 56 sweeps `it(` → `test(` across all unit tests and adds an ESLint rule to keep it that way) | No |
 | 5 | HA + advanced features | 2e–32 + 42, 43 + 48, 4a–4f, 50–52 | No |
 | 6 | Final consolidation | 33 | **YES** |
 
@@ -228,6 +228,7 @@ No intermediate master merges.
         │     40 file-organization-commands      │       │
         │     47 version-iscontainerized-fix     │       │
         │     55 windows-drive-relative-guard    │       │
+        │     56 test-not-it-sweep-and-guard     │       │
         └─────────────────┬──────────────────────┘       │
                           │                              │
                           ▼                              │
