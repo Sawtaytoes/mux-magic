@@ -45,6 +45,14 @@ const mockCommands = {
     summary: "Add subtitles",
     fields: [],
   },
+  // Exercises the "Flow Control" tag — a regression here would mean the
+  // picker's tag list drifted out of sync with commands.ts (the bug that
+  // briefly hid `exitIfEmpty` from the picker).
+  exitIfEmpty: {
+    tag: "Flow Control",
+    summary: "Exit if folder is empty",
+    fields: [],
+  },
 }
 
 const renderPicker = (isOpen = false) => {
@@ -125,6 +133,26 @@ describe("CommandPicker filtering", () => {
     expect(
       screen.getAllByText("addSubtitles").length,
     ).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText("exitIfEmpty").length,
+    ).toBeGreaterThan(0)
+  })
+
+  test("includes Flow Control commands (TAG_ORDER must list every tag in commands.ts)", async () => {
+    const user = userEvent.setup()
+    renderPicker(true)
+
+    await user.type(
+      screen.getByPlaceholderText(/search commands/i),
+      "exit",
+    )
+
+    expect(
+      screen.getAllByText("exitIfEmpty").length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.queryByText(/no commands match/i),
+    ).toBeNull()
   })
 
   test("filters commands by query", async () => {
