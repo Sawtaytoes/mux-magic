@@ -1,6 +1,6 @@
 {
   "name": "@mux-magic/tools",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Reusable utilities (file system, logging, rxjs operators) shared between @mux-magic/server and sibling tools like Gallery-Downloader.",
   "main": "./src/index.ts",
