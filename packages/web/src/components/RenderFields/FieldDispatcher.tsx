@@ -11,6 +11,7 @@ import { NumberArrayField } from "../NumberArrayField/NumberArrayField"
 import { NumberField } from "../NumberField/NumberField"
 import { NumberWithLookupField } from "../NumberWithLookupField/NumberWithLookupField"
 import { PathField } from "../PathField/PathField"
+import { RegexWithFlagsField } from "../RegexWithFlagsField/RegexWithFlagsField"
 import { RenameRegexField } from "../RenameRegexField/RenameRegexField"
 import { StringArrayField } from "../StringArrayField/StringArrayField"
 import { StringField } from "../StringField/StringField"
@@ -73,6 +74,10 @@ export const FieldDispatcher = ({
       )
     case "renameRegex":
       return <RenameRegexField field={field} step={step} />
+    case "regexWithFlags":
+      return (
+        <RegexWithFlagsField field={field} step={step} />
+      )
     default:
       return (
         <TodoField

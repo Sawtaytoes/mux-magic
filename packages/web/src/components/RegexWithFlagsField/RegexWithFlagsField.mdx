@@ -1,0 +1,47 @@
+{/* RegexWithFlagsField.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as RegexWithFlagsFieldStories from "./RegexWithFlagsField.stories";
+
+<Meta of={RegexWithFlagsFieldStories} />
+
+# RegexWithFlagsField
+
+The filter-only sibling of `RenameRegexField`. Drives `fileFilterRegex` and `folderFilterRegex` on the `copyFiles` / `moveFiles` cards. Compared to `RenameRegexField` it drops the `replacement` input and the live-preview "predicted output" line — filters match/no-match, they don't transform — but keeps the flags input, the sample tester, and the slash-form display toggle.
+
+Worker 65 promoted both filter fields from `type: "string"` (worker 63) to `type: "regexWithFlags"`. Legacy YAML with a bare-string value is still accepted; the component reads it as `pattern` with empty flags + sample.
+
+## Behaviour
+
+- **Read** — `step.params[field.name]` is interpreted as either a bare string (legacy worker 63 shape) or `{ pattern, flags?, sample? }`. Missing keys collapse to `""`.
+- **Write — minimal wire shape** — when flags + sample are both empty the component writes the **bare string** so legacy templates round-trip unchanged. With either set it promotes to the object. When everything is blank it writes `undefined` so `buildParams` strips the field.
+- **Live tester** — typing into "Test against (optional)" runs `new RegExp(pattern, flags).exec(sample)` and shows Match (green) or No match (red) + the captured groups. No predicted-output line — filters don't transform.
+- **Slash-form toggle** — same as `RenameRegexField`; presentation-only.
+- **Flag validation** — invalid flag chars mark the input `aria-invalid` with an inline tooltip.
+
+## Props
+
+| Prop | Type | Notes |
+|------|------|-------|
+| `step` | `Step` | Source of `params[field.name]` |
+| `field` | `CommandField` | `{ name, type: "regexWithFlags", label?, placeholder? }` |
+
+## Empty
+
+<Canvas of={RegexWithFlagsFieldStories.Empty} />
+
+## Legacy bare-string value (worker 63 wire format)
+
+<Canvas of={RegexWithFlagsFieldStories.LegacyBareString} />
+
+## Flags + matching sample (Match + groups)
+
+<Canvas of={RegexWithFlagsFieldStories.WithFlagsAndMatchingSample} />
+
+## Sample doesn't match
+
+<Canvas of={RegexWithFlagsFieldStories.WithNoMatchSample} />
+
+## Invalid flag character (`z`)
+
+<Canvas of={RegexWithFlagsFieldStories.InvalidFlag} />

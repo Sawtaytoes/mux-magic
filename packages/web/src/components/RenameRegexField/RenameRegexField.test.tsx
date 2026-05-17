@@ -102,6 +102,92 @@ describe("RenameRegexField", () => {
     })
   })
 
+  test("typing flags promotes the wire shape to the 4-key object", async () => {
+    const user = userEvent.setup()
+    const store = renderField({
+      ...baseStep,
+      params: {
+        renameRegex: { pattern: "foo", replacement: "bar" },
+      },
+    })
+    await user.type(screen.getByLabelText("Flags"), "i")
+    const updated = store.get(stepsAtom)[0] as Step
+    expect(updated.params.renameRegex).toEqual({
+      pattern: "foo",
+      replacement: "bar",
+      flags: "i",
+    })
+  })
+
+  test("sample-driven live preview renders Match badge + predicted output + captured groups", async () => {
+    const user = userEvent.setup()
+    renderField({
+      ...baseStep,
+      params: {
+        renameRegex: {
+          pattern: "^(.+)-(\\d+)\\.mkv$",
+          replacement: "$1 ep$2.mkv",
+        },
+      },
+    })
+    await user.type(
+      screen.getByLabelText("Test against (optional)"),
+      "show-01.mkv",
+    )
+    expect(screen.getByText("Match")).toBeVisible()
+    expect(screen.getByText("show ep01.mkv")).toBeVisible()
+    // Numeric capture groups echo back inline
+    expect(screen.getByText(/"show"/)).toBeVisible()
+    expect(screen.getByText(/"01"/)).toBeVisible()
+  })
+
+  test("non-matching sample renders the No match badge", async () => {
+    const user = userEvent.setup()
+    renderField({
+      ...baseStep,
+      params: {
+        renameRegex: {
+          pattern: "^foo$",
+          replacement: "bar",
+        },
+      },
+    })
+    await user.type(
+      screen.getByLabelText("Test against (optional)"),
+      "baz",
+    )
+    expect(screen.getByText("No match")).toBeVisible()
+  })
+
+  test("slash-form toggle flips display without changing the underlying value", async () => {
+    const user = userEvent.setup()
+    const store = renderField({
+      ...baseStep,
+      params: {
+        renameRegex: {
+          pattern: "foo",
+          replacement: "bar",
+          flags: "i",
+        },
+      },
+    })
+    await user.click(
+      screen.getByRole("button", {
+        name: /toggle slash-form/i,
+      }),
+    )
+    const slashInput = screen.getByLabelText(
+      "Pattern + flags",
+    ) as HTMLInputElement
+    expect(slashInput.value).toBe("/foo/i")
+    const updated = store.get(stepsAtom)[0] as Step
+    expect(updated.params.renameRegex).toEqual({
+      pattern: "foo",
+      replacement: "bar",
+      flags: "i",
+    })
+  })
+
   test("clearing both fields writes undefined so buildParams omits the key", async () => {
     const user = userEvent.setup()
     const store = renderField({

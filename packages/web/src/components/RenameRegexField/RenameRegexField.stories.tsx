@@ -13,6 +13,13 @@ const baseStep: Step = {
   isCollapsed: false,
 }
 
+const baseField = {
+  name: "renameRegex" as const,
+  type: "renameRegex" as const,
+  label: "Rename Regex",
+  isRequired: false,
+}
+
 const meta: Meta<typeof RenameRegexField> = {
   title: "Fields/RenameRegexField",
   component: RenameRegexField,
@@ -26,15 +33,7 @@ export default meta
 type Story = StoryObj<typeof RenameRegexField>
 
 export const Empty: Story = {
-  args: {
-    step: baseStep,
-    field: {
-      name: "renameRegex",
-      type: "renameRegex",
-      label: "Rename Regex",
-      isRequired: false,
-    },
-  },
+  args: { step: baseStep, field: baseField },
 }
 
 export const PartiallyFilled: Story = {
@@ -45,12 +44,7 @@ export const PartiallyFilled: Story = {
         renameRegex: { pattern: "^(.+)\\.mkv$" },
       },
     },
-    field: {
-      name: "renameRegex",
-      type: "renameRegex",
-      label: "Rename Regex",
-      isRequired: false,
-    },
+    field: baseField,
   },
 }
 
@@ -65,11 +59,39 @@ export const FullyFilled: Story = {
         },
       },
     },
-    field: {
-      name: "renameRegex",
-      type: "renameRegex",
-      label: "Rename Regex",
-      isRequired: false,
+    field: baseField,
+  },
+}
+
+export const WithFlagsAndSampleMatch: Story = {
+  args: {
+    step: {
+      ...baseStep,
+      params: {
+        renameRegex: {
+          pattern: "^(?<title>.+?)-(?<episode>\\d+)\\.mkv$",
+          replacement: "$<title> ep$<episode>.mkv",
+          flags: "i",
+          sample: "MY-SHOW-01.MKV",
+        },
+      },
     },
+    field: baseField,
+  },
+}
+
+export const WithSampleNoMatch: Story = {
+  args: {
+    step: {
+      ...baseStep,
+      params: {
+        renameRegex: {
+          pattern: "^foo$",
+          replacement: "bar",
+          sample: "baz.mkv",
+        },
+      },
+    },
+    field: baseField,
   },
 }

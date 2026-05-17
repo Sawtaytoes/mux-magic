@@ -16,6 +16,11 @@ import {
   of,
   toArray,
 } from "rxjs"
+import {
+  compileFilterRegex,
+  compileRegexValue,
+  type RegexFilterInput,
+} from "./copyFiles.js"
 
 export type RenameRecord = {
   source: string
@@ -39,13 +44,23 @@ export const renameFiles = ({
   renameRegex,
   sourcePath,
 }: {
-  fileFilterRegex?: string
+  fileFilterRegex?: RegexFilterInput
   isRecursive?: boolean
   recursiveDepth?: number
   renameRegex: RenameRegex
   sourcePath: string
-}): Observable<RenameRecord> =>
-  new Observable<RenameRecord>((subscriber) => {
+}): Observable<RenameRecord> => {
+  // Pre-validate every regex once, synchronously, before the Observable
+  // is constructed. See copyFiles.ts for the same shape — a bad pattern
+  // or flag surfaces as a clear sync throw at the call site instead of
+  // as a per-file SyntaxError mid-batch.
+  const fileFilterCompiled = compileFilterRegex(
+    fileFilterRegex,
+    "fileFilterRegex",
+  )
+  compileRegexValue(renameRegex, "renameRegex")
+
+  return new Observable<RenameRecord>((subscriber) => {
     const abortController = new AbortController()
 
     const innerSubscription = getFilesAtDepth({
@@ -56,10 +71,10 @@ export const renameFiles = ({
         toArray(),
         concatMap((files) => {
           const matchedFiles =
-            fileFilterRegex == null
+            fileFilterCompiled === undefined
               ? files
               : files.filter((file) =>
-                  new RegExp(fileFilterRegex).test(
+                  fileFilterCompiled.test(
                     file.filename.concat(
                       extname(file.fullPath),
                     ),
@@ -174,3 +189,4 @@ export const renameFiles = ({
       innerSubscription.unsubscribe()
     }
   })
+}

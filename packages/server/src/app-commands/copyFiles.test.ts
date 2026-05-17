@@ -111,6 +111,64 @@ describe(copyFiles.name, () => {
       ).toBe(true)
     })
 
+    test('matches case-insensitively when flags: "i" is set on the object form', async () => {
+      vol.fromJSON({
+        "/src/EPISODE-01.MKV": "ep1",
+        "/src/episode-02.mkv": "ep2",
+        "/src/readme.txt": "notes",
+      })
+
+      const results = await firstValueFrom(
+        copyFiles({
+          sourcePath: "/src",
+          destinationPath: "/dst",
+          fileFilterRegex: {
+            pattern: "\\.mkv$",
+            flags: "i",
+          },
+        }).pipe(toArray()),
+      )
+
+      expect(results).toHaveLength(2)
+      expect(vol.existsSync("/dst/EPISODE-01.MKV")).toBe(
+        true,
+      )
+      expect(vol.existsSync("/dst/episode-02.mkv")).toBe(
+        true,
+      )
+    })
+
+    test("legacy bare-string filter is still accepted", async () => {
+      vol.fromJSON({
+        "/src/a.mkv": "a",
+        "/src/b.txt": "b",
+      })
+
+      const results = await firstValueFrom(
+        copyFiles({
+          sourcePath: "/src",
+          destinationPath: "/dst",
+          fileFilterRegex: "\\.mkv$",
+        }).pipe(toArray()),
+      )
+
+      expect(results).toHaveLength(1)
+      expect(vol.existsSync("/dst/a.mkv")).toBe(true)
+      expect(vol.existsSync("/dst/b.txt")).toBe(false)
+    })
+
+    test("invalid pattern throws synchronously with field-name + pattern in the message", () => {
+      vol.fromJSON({ "/src/a.mkv": "a" })
+
+      expect(() =>
+        copyFiles({
+          sourcePath: "/src",
+          destinationPath: "/dst",
+          fileFilterRegex: { pattern: "(unclosed" },
+        }).subscribe(),
+      ).toThrow(/fileFilterRegex.*\(unclosed/)
+    })
+
     test("emits nothing when no files match the regex", async () => {
       vol.fromJSON({
         "/src/show.txt": "notes",
@@ -172,6 +230,35 @@ describe(copyFiles.name, () => {
         true,
       )
       expect(vol.existsSync("/dst/My Show - 02.mkv")).toBe(
+        true,
+      )
+    })
+  })
+
+  describe("renameRegex flags", () => {
+    test('case-insensitive rename via flags: "i" rewrites mixed-case input', async () => {
+      vol.fromJSON({
+        "/src/EPISODE-01.MKV": "ep1",
+        "/src/episode-02.mkv": "ep2",
+      })
+
+      const results = await firstValueFrom(
+        copyFiles({
+          sourcePath: "/src",
+          destinationPath: "/dst",
+          renameRegex: {
+            pattern: "episode-(\\d+)\\.mkv",
+            flags: "i",
+            replacement: "Show - $1.mkv",
+          },
+        }).pipe(toArray()),
+      )
+
+      expect(results).toHaveLength(2)
+      expect(vol.existsSync("/dst/Show - 01.mkv")).toBe(
+        true,
+      )
+      expect(vol.existsSync("/dst/Show - 02.mkv")).toBe(
         true,
       )
     })

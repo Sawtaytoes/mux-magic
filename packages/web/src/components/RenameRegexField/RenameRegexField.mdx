@@ -7,16 +7,15 @@ import * as RenameRegexFieldStories from "./RenameRegexField.stories";
 
 # RenameRegexField
 
-A two-input editor for the nested-object `renameRegex: { pattern, replacement }` field used by the `copyFiles` and `moveFiles` commands. The server applies the pair as `name.replace(new RegExp(pattern), replacement)` against each copied/moved entry's basename.
-
-This is the lone field component that owns a **nested object** value (mirrors `SubtitleRulesField` at smaller scale). It writes the whole object back atomically so `buildParams` and the YAML codec see the exact wire shape the schema declares — no special-case in `buildParams`.
+A four-input editor (pattern + flags + replacement + sample) for the nested-object `renameRegex` field used by the `copyFiles` and `moveFiles` commands. The server applies the pair as `name.replace(new RegExp(pattern, flags), replacement)` against each copied/moved entry's basename. Worker 65 extended worker 63's two-input editor with the `flags` knob, an optional `sample` field that drives a client-side live tester, and a slash-form display toggle for users who prefer `/pattern/flags`.
 
 ## Behaviour
 
-- **Read** — `step.params.renameRegex` is interpreted as `{ pattern, replacement }`. Missing keys collapse to `""`.
-- **Write** — every keystroke on either input refreshes the **full object** via `setParam`. The two values are read from input refs at write time, so the "other" field's most recent DOM value flows through even before the parent re-renders.
-- **Empty collapse** — when *both* inputs are blank the component writes `undefined`. `buildParams` then strips the key entirely (matching the existing "empty value → omit" rule), so a never-touched regex round-trips through YAML as the absent field the schema marks `.optional()`.
-- **Uncontrolled inputs** — same `defaultValue` strategy `StringField` and `BooleanField` use. External param mutations (e.g. loading a YAML) reflow via React's key/remount path, not by re-applying `defaultValue`.
+- **Read** — `step.params.renameRegex` is interpreted as `{ pattern, replacement, flags?, sample? }`. Missing keys collapse to `""`.
+- **Write — minimal wire shape** — when `flags` and `sample` are both empty the component emits the legacy 2-key `{ pattern, replacement }` so YAML diffs stay small for users who never touch the new fields. With either set it promotes to the 4-key object. When *every* field is blank it writes `undefined` so `buildParams` strips the key entirely.
+- **Live tester** — typing into "Test against (optional)" runs `new RegExp(pattern, flags).exec(sample)` and shows a Match / No match badge plus the predicted output filename and any captured groups. Pure client-side; no server round-trip.
+- **Slash-form toggle** — "Show as /…/" flips presentation between the separate pattern + flags inputs and a single `/pattern/flags` JS-regex-literal input. The underlying schema stays the separated pair.
+- **Flag validation** — typing an unknown flag char marks the input `aria-invalid` and surfaces an inline tooltip listing the offending chars (no exceptions).
 
 ## Props
 
@@ -29,10 +28,18 @@ This is the lone field component that owns a **nested object** value (mirrors `S
 
 <Canvas of={RenameRegexFieldStories.Empty} />
 
-## Partially filled
+## Partially filled (pattern only)
 
 <Canvas of={RenameRegexFieldStories.PartiallyFilled} />
 
-## Fully filled
+## Fully filled (legacy 2-key shape)
 
 <Canvas of={RenameRegexFieldStories.FullyFilled} />
+
+## With flags + sample (live Match badge + groups)
+
+<Canvas of={RenameRegexFieldStories.WithFlagsAndSampleMatch} />
+
+## Sample doesn't match
+
+<Canvas of={RenameRegexFieldStories.WithSampleNoMatch} />
