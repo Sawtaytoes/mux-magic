@@ -43,7 +43,7 @@ export const runningAtom = atom<boolean>(false)
 // require the source step's runtime output, which we don't keep around
 // for single-step runs — those still surface a directive error.
 
-const stripTrailingSlash = (path: string): string =>
+const stripTrailingSlash = (path: string) =>
   path.replace(/[\\/]$/u, "")
 
 // Resolve a step's `field` scalar to a literal string. Handles the
@@ -57,7 +57,7 @@ const resolveScalarField = (
   items: SequenceItem[],
   commands: Commands,
   visiting: Set<string>,
-): string | null => {
+) => {
   const link = step.links?.[field]
   if (typeof link === "string") {
     const variable = paths.find((p) => p.id === link)
@@ -86,6 +86,8 @@ const resolveScalarField = (
 // parentOfSource → outputFolderName → destinationPath →
 // destinationFilesPath → sourcePath. Returns null when the chain can't
 // be resolved (unknown step, unknown command, cycle).
+// Explicit return type breaks the mutual-recursion inference cycle with
+// resolveScalarField. Without it TS can't infer either one (TS7023).
 const resolveFolderOutput = (
   targetStepId: string,
   paths: PathVariable[],
@@ -141,17 +143,12 @@ const resolveFolderOutput = (
   return stripped
 }
 
-type ResolveResult = {
-  resolved: Record<string, unknown>
-  errors: string[]
-}
-
 const resolveParams = (
   params: Record<string, unknown>,
   paths: PathVariable[],
   items: SequenceItem[],
   commands: Commands,
-): ResolveResult => {
+) => {
   const errors: string[] = []
   const resolved: Record<string, unknown> = {}
 
