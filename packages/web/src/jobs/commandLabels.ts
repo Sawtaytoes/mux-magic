@@ -11,6 +11,9 @@ const commandLabels: Record<string, string> = {
   splitChapters: "Split Chapters",
   remuxToMkv: "Remux to MKV",
 
+  // Flow Control
+  exitIfEmpty: "Exit If Empty",
+
   // Audio Operations
   getAudioOffsets: "Get Audio Offsets",
   replaceFlacWithPcmAudio: "Replace FLAC with PCM Audio",
