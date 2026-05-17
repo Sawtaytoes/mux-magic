@@ -21,6 +21,7 @@ import {
   deleteCopiedOriginalsRequestSchema,
   deleteFilesByExtensionRequestSchema,
   deleteFolderRequestSchema,
+  exitIfEmptyRequestSchema,
   extractSubtitlesRequestSchema,
   fixIncorrectDefaultTracksRequestSchema,
   flattenOutputRequestSchema,
@@ -415,6 +416,22 @@ export const COMMANDS: Commands = {
           fields: ["isRecursive", "recursiveDepth"],
           layout: "field-group-check-fill",
         },
+      ],
+    }
+  })(),
+  // Flow Control
+  exitIfEmpty: (() => {
+    const field = fieldBuilder(exitIfEmptyRequestSchema)
+    return {
+      summary:
+        "Exit the umbrella sequence cleanly (status: exited) if sourcePath does not exist or contains zero entries. No-op if the folder has any contents.",
+      tag: "Flow Control",
+      outputFolderName: null,
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
       ],
     }
   })(),
@@ -1470,6 +1487,7 @@ export const COMMANDS: Commands = {
 
 export const TAG_ORDER = [
   "File Operations",
+  "Flow Control",
   "Audio Operations",
   "Track Operations",
   "Subtitle Operations",
