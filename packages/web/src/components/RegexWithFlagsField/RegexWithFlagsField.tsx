@@ -56,7 +56,11 @@ const serializeForWrite = (
 ):
   | undefined
   | string
-  | { pattern: string; flags?: string; sample?: string } => {
+  | {
+      pattern: string
+      flags?: string
+      sample?: string
+    } => {
   const { pattern, flags, sample } = value
   if (pattern === "" && flags === "" && sample === "") {
     return undefined

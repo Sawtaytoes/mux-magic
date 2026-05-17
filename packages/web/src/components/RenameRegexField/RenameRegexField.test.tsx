@@ -135,9 +135,7 @@ describe("RenameRegexField", () => {
       "show-01.mkv",
     )
     expect(screen.getByText("Match")).toBeVisible()
-    expect(
-      screen.getByText("show ep01.mkv"),
-    ).toBeVisible()
+    expect(screen.getByText("show ep01.mkv")).toBeVisible()
     // Numeric capture groups echo back inline
     expect(screen.getByText(/"show"/)).toBeVisible()
     expect(screen.getByText(/"01"/)).toBeVisible()

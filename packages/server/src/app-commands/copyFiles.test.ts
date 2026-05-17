@@ -122,13 +122,20 @@ describe(copyFiles.name, () => {
         copyFiles({
           sourcePath: "/src",
           destinationPath: "/dst",
-          fileFilterRegex: { pattern: "\\.mkv$", flags: "i" },
+          fileFilterRegex: {
+            pattern: "\\.mkv$",
+            flags: "i",
+          },
         }).pipe(toArray()),
       )
 
       expect(results).toHaveLength(2)
-      expect(vol.existsSync("/dst/EPISODE-01.MKV")).toBe(true)
-      expect(vol.existsSync("/dst/episode-02.mkv")).toBe(true)
+      expect(vol.existsSync("/dst/EPISODE-01.MKV")).toBe(
+        true,
+      )
+      expect(vol.existsSync("/dst/episode-02.mkv")).toBe(
+        true,
+      )
     })
 
     test("legacy bare-string filter is still accepted", async () => {
@@ -248,8 +255,12 @@ describe(copyFiles.name, () => {
       )
 
       expect(results).toHaveLength(2)
-      expect(vol.existsSync("/dst/Show - 01.mkv")).toBe(true)
-      expect(vol.existsSync("/dst/Show - 02.mkv")).toBe(true)
+      expect(vol.existsSync("/dst/Show - 01.mkv")).toBe(
+        true,
+      )
+      expect(vol.existsSync("/dst/Show - 02.mkv")).toBe(
+        true,
+      )
     })
   })
 

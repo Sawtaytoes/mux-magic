@@ -25,17 +25,13 @@ type RenameRegexFieldProps = {
 
 const readValue = (raw: unknown): RenameRegexValue => {
   if (raw && typeof raw === "object") {
-    const {
-      pattern,
-      flags,
-      replacement,
-      sample,
-    } = raw as Partial<{
-      pattern: unknown
-      flags: unknown
-      replacement: unknown
-      sample: unknown
-    }>
+    const { pattern, flags, replacement, sample } =
+      raw as Partial<{
+        pattern: unknown
+        flags: unknown
+        replacement: unknown
+        sample: unknown
+      }>
     return {
       pattern: typeof pattern === "string" ? pattern : "",
       flags: typeof flags === "string" ? flags : "",
@@ -44,7 +40,12 @@ const readValue = (raw: unknown): RenameRegexValue => {
       sample: typeof sample === "string" ? sample : "",
     }
   }
-  return { pattern: "", flags: "", replacement: "", sample: "" }
+  return {
+    pattern: "",
+    flags: "",
+    replacement: "",
+    sample: "",
+  }
 }
 
 // Emits the MINIMAL on-wire shape: when flags + sample are both empty
@@ -63,12 +64,7 @@ const serializeForWrite = (
       flags?: string
       sample?: string
     } => {
-  const {
-    pattern,
-    flags,
-    replacement,
-    sample,
-  } = value
+  const { pattern, flags, replacement, sample } = value
   const isFullyEmpty =
     pattern === "" &&
     flags === "" &&

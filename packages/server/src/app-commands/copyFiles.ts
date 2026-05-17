@@ -53,7 +53,9 @@ export const normalizeRegexFilter = (
   input: RegexFilterInput | undefined,
 ): RegexFilterValue | undefined => {
   if (input === undefined) return undefined
-  return typeof input === "string" ? { pattern: input } : input
+  return typeof input === "string"
+    ? { pattern: input }
+    : input
 }
 
 // Validate at handler-start time (not per-file) so an invalid pattern or
@@ -71,7 +73,9 @@ export const compileRegexValue = (
       : ""
     throw new Error(
       `Invalid regex on ${fieldLabel}: /${value.pattern}/${flagsSuffix} — ${
-        cause instanceof Error ? cause.message : String(cause)
+        cause instanceof Error
+          ? cause.message
+          : String(cause)
       }`,
     )
   }

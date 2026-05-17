@@ -41,7 +41,10 @@ export const safeBuildRegex = (
     }
   }
   try {
-    return { regex: new RegExp(pattern, flags), error: null }
+    return {
+      regex: new RegExp(pattern, flags),
+      error: null,
+    }
   } catch (cause) {
     return {
       regex: null,
@@ -60,8 +63,7 @@ export const safeBuildRegex = (
 export const formatSlashLiteral = (
   pattern: string,
   flags: string,
-): string =>
-  `/${pattern.replace(/\//g, "\\/")}/${flags}`
+): string => `/${pattern.replace(/\//g, "\\/")}/${flags}`
 
 // Inverse of formatSlashLiteral — splits the user's edits to the slash
 // literal back into `{ pattern, flags }`. Tolerates a missing leading
@@ -73,29 +75,20 @@ export const parseSlashLiteral = (
   const body = trimmed.startsWith("/")
     ? trimmed.slice(1)
     : trimmed
-  // Find the LAST unescaped `/`. Reduce char-by-char so we don't get
-  // confused by escaped `\/` inside the pattern. `isSkipNext` skips the
-  // character immediately after a backslash (the escape).
-  const { lastDelimiterIndex } = Array.from(body).reduce<{
-    lastDelimiterIndex: number
-    isSkipNext: boolean
-  }>(
-    (state, char, index) => {
-      if (state.isSkipNext) {
-        return { ...state, isSkipNext: false }
-      }
-      if (char === "\\") {
-        return { ...state, isSkipNext: true }
-      }
-      if (char === "/") {
-        return { ...state, lastDelimiterIndex: index }
-      }
-      return state
-    },
-    { lastDelimiterIndex: -1, isSkipNext: false },
-  )
+  // Find the LAST unescaped `/`. Match either an escape sequence
+  // (backslash + any one char, consumed as a unit) or a single `/`, then
+  // keep only the matches that are bare slashes — those are the
+  // unescaped delimiters. The last such match wins.
+  const tokens = Array.from(body.matchAll(/\\.|\//g))
+  const lastDelimiter = tokens
+    .filter((match) => match[0] === "/")
+    .at(-1)
+  const lastDelimiterIndex = lastDelimiter?.index ?? -1
   if (lastDelimiterIndex === -1) {
-    return { pattern: body.replace(/\\\//g, "/"), flags: "" }
+    return {
+      pattern: body.replace(/\\\//g, "/"),
+      flags: "",
+    }
   }
   return {
     pattern: body
@@ -105,6 +98,7 @@ export const parseSlashLiteral = (
   }
 }
 
+// eslint-disable-next-line no-restricted-syntax -- web-only union for the live regex tester component; not an API response shape
 export type LivePreviewResult =
   | { state: "empty" }
   | { state: "invalid"; message: string }
@@ -136,7 +130,8 @@ export const runLivePreview = ({
 }): LivePreviewResult => {
   if (sample === "") return { state: "empty" }
   const { regex, error } = safeBuildRegex(pattern, flags)
-  if (error !== null) return { state: "invalid", message: error }
+  if (error !== null)
+    return { state: "invalid", message: error }
   if (regex === null) return { state: "empty" }
   const match = regex.exec(sample)
   const compiledPattern = formatSlashLiteral(pattern, flags)
@@ -150,14 +145,17 @@ export const runLivePreview = ({
     replacement === undefined
       ? null
       : sample.replace(regex, replacement)
-  const numericGroups = match.slice(1).map((value, index) => ({
-    name: String(index + 1),
-    value: value ?? "",
-  }))
+  const numericGroups = match
+    .slice(1)
+    .map((value, index) => ({
+      name: String(index + 1),
+      value: value ?? "",
+    }))
   const namedGroups = match.groups
-    ? Object.entries(match.groups).map(
-        ([name, value]) => ({ name, value: value ?? "" }),
-      )
+    ? Object.entries(match.groups).map(([name, value]) => ({
+        name,
+        value: value ?? "",
+      }))
     : []
   return {
     state: "match",
