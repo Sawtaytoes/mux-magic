@@ -49,13 +49,55 @@ export const makeDirectoryRequestSchema = z.object({
     ),
 })
 
-export const renameRegexSchema = z
-  .object({
-    pattern: z
-      .string()
-      .describe(
-        "Regular expression pattern applied to each filename (or folder name).",
-      ),
+// Regex `flags` constraint — the JS `RegExp` constructor accepts any
+// subset of g/i/m/s/u/y. We deliberately reject `d` (hasIndices) since
+// the engine surfaces capture-group offsets the live-preview UI doesn't
+// use, and rejecting unknown chars at schema-validation time gives the
+// user a clearer error than the deep `SyntaxError` that `new RegExp`
+// would otherwise throw mid-job.
+const regexFlagsPattern = /^[gimsuy]*$/
+
+// New canonical shape for `fileFilterRegex` / `folderFilterRegex`. The
+// optional `flags` plumbs into `new RegExp(pattern, flags)`, and the
+// optional `sample` is documentation persisted from the UI's live tester
+// — the runtime ignores it.
+const regexFilterValueSchema = z.object({
+  pattern: z
+    .string()
+    .describe("Regular expression pattern."),
+  flags: z
+    .string()
+    .regex(
+      regexFlagsPattern,
+      "Flags must be a subset of g/i/m/s/u/y",
+    )
+    .optional()
+    .describe(
+      'Optional regex flags (e.g. "i" for case-insensitive).',
+    ),
+  sample: z
+    .string()
+    .optional()
+    .describe(
+      "Optional sample filename used by the UI's live-match preview. Persisted in the template as documentation; ignored at runtime.",
+    ),
+})
+
+// String-form (legacy worker 63 wire format) is accepted and promoted to
+// the object form before validation. Lets existing YAML / `?seqJson=`
+// templates keep parsing without modification.
+const regexFilterFieldSchema = z.preprocess(
+  (raw) =>
+    typeof raw === "string" ? { pattern: raw } : raw,
+  regexFilterValueSchema,
+)
+
+// Same shape as `regexFilterValueSchema` plus `replacement`. The legacy
+// 2-key `{ pattern, replacement }` form already satisfies this schema
+// because `flags` and `sample` are optional — no preprocessing needed.
+// Exported so worker 66's `renameFiles` command schema can reuse it.
+export const renameRegexSchema = regexFilterValueSchema
+  .extend({
     replacement: z
       .string()
       .describe(
@@ -76,17 +118,15 @@ export const copyFilesRequestSchema = z.object({
     .describe(
       "Directory to copy files into. Created if it does not already exist.",
     ),
-  fileFilterRegex: z
-    .string()
+  fileFilterRegex: regexFilterFieldSchema
     .optional()
     .describe(
-      "If set, only files whose names match this regular expression are copied.",
+      "If set, only files whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
     ),
-  folderFilterRegex: z
-    .string()
+  folderFilterRegex: regexFilterFieldSchema
     .optional()
     .describe(
-      "If set (and includeFolders is true), only folders whose names match this regular expression are copied.",
+      "If set (and includeFolders is true), only folders whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
     ),
   includeFolders: z
     .boolean()
@@ -123,11 +163,10 @@ export const moveFilesRequestSchema = z.object({
     .describe(
       "Directory to move files into. Created if it does not already exist.",
     ),
-  fileFilterRegex: z
-    .string()
+  fileFilterRegex: regexFilterFieldSchema
     .optional()
     .describe(
-      "If set, only files whose names match this regular expression are moved.",
+      "If set, only files whose names match this regular expression are moved. Bare strings are accepted for back-compat with pre-flags templates.",
     ),
   renameRegex: renameRegexSchema.optional(),
 })
@@ -150,11 +189,10 @@ export const renameFilesRequestSchema = z.object({
     .describe(
       "Maximum recursion depth when --isRecursive is set (0 = default depth of 1; mirrors deleteFilesByExtension).",
     ),
-  fileFilterRegex: z
-    .string()
+  fileFilterRegex: regexFilterFieldSchema
     .optional()
     .describe(
-      "If set, only files whose names match this regular expression are renamed.",
+      "If set, only files whose names match this regular expression are renamed. Bare strings are accepted for back-compat with pre-flags templates.",
     ),
   renameRegex: renameRegexSchema.describe(
     "Required. Applied to each matched filename (including extension) via String.replace.",

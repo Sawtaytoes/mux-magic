@@ -8,112 +8,99 @@ import {
   parseSlashLiteral,
   runLivePreview,
   validateRegexFlags,
-} from "./RegexFieldHelpers"
-import { RegexLivePreview } from "./RegexLivePreview"
+} from "../RenameRegexField/RegexFieldHelpers"
+import { RegexLivePreview } from "../RenameRegexField/RegexLivePreview"
 
-type RenameRegexValue = {
+// Filter-only regex value: `pattern + flags? + sample?`. No `replacement`
+// — filters match/no-match, they don't transform. Used by `copyFiles` /
+// `moveFiles` for `fileFilterRegex` / `folderFilterRegex`.
+type RegexFilterValue = {
   pattern: string
   flags: string
-  replacement: string
   sample: string
 }
 
-type RenameRegexFieldProps = {
+type RegexWithFlagsFieldProps = {
   field: CommandField
   step: Step
 }
 
-const readValue = (raw: unknown): RenameRegexValue => {
+// Worker 63 stored these fields as bare strings. Worker 65 promotes them
+// to `{ pattern, flags?, sample? }` but accepts the legacy string shape
+// transparently so existing YAML / `?seqJson=` templates keep loading.
+const readValue = (raw: unknown): RegexFilterValue => {
+  if (typeof raw === "string") {
+    return { pattern: raw, flags: "", sample: "" }
+  }
   if (raw && typeof raw === "object") {
-    const { pattern, flags, replacement, sample } =
-      raw as Partial<{
-        pattern: unknown
-        flags: unknown
-        replacement: unknown
-        sample: unknown
-      }>
+    const { pattern, flags, sample } = raw as Partial<{
+      pattern: unknown
+      flags: unknown
+      sample: unknown
+    }>
     return {
       pattern: typeof pattern === "string" ? pattern : "",
       flags: typeof flags === "string" ? flags : "",
-      replacement:
-        typeof replacement === "string" ? replacement : "",
       sample: typeof sample === "string" ? sample : "",
     }
   }
-  return {
-    pattern: "",
-    flags: "",
-    replacement: "",
-    sample: "",
-  }
+  return { pattern: "", flags: "", sample: "" }
 }
 
-// Emits the MINIMAL on-wire shape: when flags + sample are both empty
-// we write the legacy 2-key `{ pattern, replacement }` so the schema and
-// YAML round-trip unchanged for users who never use the new fields. With
-// either set we promote to the full 4-key shape. When pattern +
-// replacement are also empty we write `undefined` so buildParams omits
-// the key entirely.
+// Emits the MINIMAL on-wire shape: bare string when flags + sample are
+// empty (legacy worker 63 format); promoted object otherwise. When the
+// pattern itself is empty too we write `undefined` so buildParams omits
+// the field.
 const serializeForWrite = (
-  value: RenameRegexValue,
+  value: RegexFilterValue,
 ):
   | undefined
+  | string
   | {
       pattern: string
-      replacement: string
       flags?: string
       sample?: string
     } => {
-  const { pattern, flags, replacement, sample } = value
-  const isFullyEmpty =
-    pattern === "" &&
-    flags === "" &&
-    replacement === "" &&
-    sample === ""
-  if (isFullyEmpty) return undefined
-  const isLegacyShape = flags === "" && sample === ""
-  return isLegacyShape
-    ? { pattern, replacement }
-    : {
-        pattern,
-        replacement,
-        ...(flags !== "" ? { flags } : {}),
-        ...(sample !== "" ? { sample } : {}),
-      }
+  const { pattern, flags, sample } = value
+  if (pattern === "" && flags === "" && sample === "") {
+    return undefined
+  }
+  if (flags === "" && sample === "") {
+    return pattern
+  }
+  return {
+    pattern,
+    ...(flags !== "" ? { flags } : {}),
+    ...(sample !== "" ? { sample } : {}),
+  }
 }
 
 type DisplayMode = "plain" | "slash"
 
-export const RenameRegexField = ({
+export const RegexWithFlagsField = ({
   field,
   step,
-}: RenameRegexFieldProps) => {
+}: RegexWithFlagsFieldProps) => {
   const { setParam } = useBuilderActions()
-  const initialValue = readValue(step.params[field.name])
+  const initial = readValue(step.params[field.name])
   const [value, setValue] =
-    useState<RenameRegexValue>(initialValue)
+    useState<RegexFilterValue>(initial)
   const [displayMode, setDisplayMode] =
     useState<DisplayMode>("plain")
 
   const patternId = useId()
   const flagsId = useId()
   const slashId = useId()
-  const replacementId = useId()
   const sampleId = useId()
-
   const flagValidation = validateRegexFlags(value.flags)
 
-  const writeBack = (nextValue: RenameRegexValue) => {
-    setValue(nextValue)
-    setParam(
-      step.id,
-      field.name,
-      serializeForWrite(nextValue),
-    )
+  const writeBack = (next: RegexFilterValue) => {
+    setValue(next)
+    setParam(step.id, field.name, serializeForWrite(next))
   }
 
   const onChangeField =
-    (key: keyof RenameRegexValue) =>
+    (key: keyof RegexFilterValue) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
       writeBack({ ...value, [key]: event.target.value })
     }
@@ -132,7 +119,6 @@ export const RenameRegexField = ({
   const livePreview = runLivePreview({
     pattern: value.pattern,
     flags: value.flags,
-    replacement: value.replacement,
     sample: value.sample,
   })
 
@@ -173,7 +159,7 @@ export const RenameRegexField = ({
               value.flags,
             )}
             onChange={onChangeSlash}
-            placeholder="/^(.+)\\.mkv$/i"
+            placeholder={field.placeholder ?? "/\\.mkv$/i"}
             className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
           />
         </div>
@@ -191,7 +177,7 @@ export const RenameRegexField = ({
               type="text"
               value={value.pattern}
               onChange={onChangeField("pattern")}
-              placeholder="^(.+)\\.mkv$"
+              placeholder={field.placeholder ?? "\\.mkv$"}
               className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
             />
           </div>
@@ -225,22 +211,6 @@ export const RenameRegexField = ({
       )}
       <div className="mt-2">
         <label
-          htmlFor={replacementId}
-          className="block text-[10px] text-slate-400 mb-0.5"
-        >
-          Replacement
-        </label>
-        <input
-          id={replacementId}
-          type="text"
-          value={value.replacement}
-          onChange={onChangeField("replacement")}
-          placeholder="$1.mp4"
-          className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
-        />
-      </div>
-      <div className="mt-2">
-        <label
           htmlFor={sampleId}
           className="block text-[10px] text-slate-400 mb-0.5"
         >
@@ -251,19 +221,14 @@ export const RenameRegexField = ({
           type="text"
           value={value.sample}
           onChange={onChangeField("sample")}
-          placeholder="[Group] My Show - 01 [BD 1080p].mkv"
+          placeholder="example-filename.mkv"
           className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
         />
         <RegexLivePreview
           result={livePreview}
-          hasOutput={true}
+          hasOutput={false}
         />
       </div>
-      <small className="block text-[10px] text-slate-500 mt-1">
-        {
-          "Applied to each entry's filename (or folder name) via String.replace. Capture groups $1, $2, … and $<name> are available in the replacement."
-        }
-      </small>
     </div>
   )
 }

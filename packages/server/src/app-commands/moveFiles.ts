@@ -23,6 +23,11 @@ import {
 } from "rxjs"
 import { getActiveJobId } from "../api/logCapture.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
+import {
+  compileFilterRegex,
+  compileRegexValue,
+  type RegexFilterInput,
+} from "./copyFiles.js"
 
 type MoveRecord = {
   source: string
@@ -45,11 +50,23 @@ export const moveFiles = ({
   sourcePath,
 }: {
   destinationPath: string
-  fileFilterRegex?: string
+  fileFilterRegex?: RegexFilterInput
   renameRegex?: RenameRegex
   sourcePath: string
-}): Observable<MoveRecord> =>
-  new Observable<MoveRecord>((subscriber) => {
+}): Observable<MoveRecord> => {
+  // Pre-validate at handler start (synchronously, outside the Observable
+  // ctor) so a bad pattern/flag surfaces named & explained at the call
+  // site, not as an unhandled rxjs error notification or per-file
+  // SyntaxError mid-job. See copyFiles.ts for the same shape.
+  const fileFilterCompiled = compileFilterRegex(
+    fileFilterRegex,
+    "fileFilterRegex",
+  )
+  if (renameRegex !== undefined) {
+    compileRegexValue(renameRegex, "renameRegex")
+  }
+
+  return new Observable<MoveRecord>((subscriber) => {
     const abortController = new AbortController()
 
     const innerSubscription = getFiles({ sourcePath })
@@ -62,10 +79,10 @@ export const moveFiles = ({
         concatMap((allFiles) =>
           defer(async () => {
             const files =
-              fileFilterRegex == null
+              fileFilterCompiled === undefined
                 ? allFiles
                 : allFiles.filter((file) =>
-                    new RegExp(fileFilterRegex).test(
+                    fileFilterCompiled.test(
                       file.filename.concat(
                         extname(file.fullPath),
                       ),
@@ -203,3 +220,4 @@ export const moveFiles = ({
       innerSubscription.unsubscribe()
     }
   })
+}

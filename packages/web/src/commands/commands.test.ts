@@ -38,7 +38,10 @@ describe("copyFiles regex / folder fields are surfaced (worker 63)", () => {
 
   test("fileFilterRegex is a string field", () => {
     const field = fieldByName("fileFilterRegex")
-    expect(field?.type).toBe("string")
+    // Worker 65 promoted filter fields to the regex+flags+sample field
+    // type. Worker 63 used `string`; the legacy bare-string wire format
+    // is still accepted by both schema and component.
+    expect(field?.type).toBe("regexWithFlags")
   })
 
   test("includeFolders is a boolean field", () => {
@@ -46,9 +49,9 @@ describe("copyFiles regex / folder fields are surfaced (worker 63)", () => {
     expect(field?.type).toBe("boolean")
   })
 
-  test("folderFilterRegex is a string field gated by includeFolders", () => {
+  test("folderFilterRegex is a regexWithFlags field gated by includeFolders", () => {
     const field = fieldByName("folderFilterRegex")
-    expect(field?.type).toBe("string")
+    expect(field?.type).toBe("regexWithFlags")
     expect(field?.visibleWhen).toEqual({
       fieldName: "includeFolders",
       value: true,
@@ -66,9 +69,9 @@ describe("moveFiles regex fields are surfaced (worker 63)", () => {
   const fieldByName = (name: string) =>
     fields.find((field) => field.name === name)
 
-  test("fileFilterRegex is a string field", () => {
+  test("fileFilterRegex is a regexWithFlags field", () => {
     const field = fieldByName("fileFilterRegex")
-    expect(field?.type).toBe("string")
+    expect(field?.type).toBe("regexWithFlags")
   })
 
   test("renameRegex uses the dedicated nested-object field type", () => {

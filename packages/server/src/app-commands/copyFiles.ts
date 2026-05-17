@@ -34,8 +34,68 @@ export type CopyRecord = {
 
 // Re-exported so existing imports `from "./copyFiles.js"` (notably the
 // sibling `moveFiles.ts` and any downstream callers) keep compiling
-// after the type moved to `@mux-magic/tools`.
+// after the type moved to `@mux-magic/tools` in worker 66.
 export type { RenameRegex } from "@mux-magic/tools"
+
+// Object-form regex input shared by `fileFilterRegex` / `folderFilterRegex`
+// (without `replacement`) and the worker-66-canonical `RenameRegex`
+// (with it). `flags` plumbs into `new RegExp(pattern, flags)`; `sample`
+// is UI-only documentation the runtime ignores.
+export type RegexFilterValue = {
+  pattern: string
+  flags?: string
+  sample?: string
+}
+
+// Pre-flags wire format was a bare string for filters and a 2-key object
+// for rename. Both are still accepted at the handler boundary so direct
+// callers (CLI, tests, parity fixtures) don't have to rewrite anything.
+export type RegexFilterInput = string | RegexFilterValue
+
+export const normalizeRegexFilter = (
+  input: RegexFilterInput | undefined,
+): RegexFilterValue | undefined => {
+  if (input === undefined) return undefined
+  return typeof input === "string"
+    ? { pattern: input }
+    : input
+}
+
+// Validate at handler-start time (not per-file) so an invalid pattern or
+// flag set surfaces with the user's actual values in the error message,
+// instead of as a generic `SyntaxError` mid-job.
+export const compileRegexValue = (
+  value: { pattern: string; flags?: string },
+  fieldLabel: string,
+): RegExp => {
+  try {
+    return new RegExp(value.pattern, value.flags)
+  } catch (cause) {
+    const flagsSuffix = value.flags
+      ? ` (flags: "${value.flags}")`
+      : ""
+    throw new Error(
+      `Invalid regex on ${fieldLabel}: /${value.pattern}/${flagsSuffix} — ${
+        cause instanceof Error
+          ? cause.message
+          : String(cause)
+      }`,
+    )
+  }
+}
+
+// Convenience for the common normalize-then-compile pair every handler
+// needs. Returns `undefined` when the input is missing so callers can use
+// `=== undefined` instead of guarding twice.
+export const compileFilterRegex = (
+  input: RegexFilterInput | undefined,
+  fieldLabel: string,
+): RegExp | undefined => {
+  const value = normalizeRegexFilter(input)
+  return value === undefined
+    ? undefined
+    : compileRegexValue(value, fieldLabel)
+}
 
 // Wraps the inner copy pipeline in an Observable whose teardown aborts
 // an internal AbortController. The signal threads into every per-file
@@ -53,13 +113,30 @@ export const copyFiles = ({
   sourcePath,
 }: {
   destinationPath: string
-  fileFilterRegex?: string
-  folderFilterRegex?: string
+  fileFilterRegex?: RegexFilterInput
+  folderFilterRegex?: RegexFilterInput
   isIncludingFolders?: boolean
   renameRegex?: RenameRegex
   sourcePath: string
-}): Observable<CopyRecord> =>
-  new Observable<CopyRecord>((subscriber) => {
+}): Observable<CopyRecord> => {
+  // Pre-validate every regex once, synchronously, before the Observable
+  // is even constructed. A bad pattern or flag surfaces as a sync throw
+  // from the call site (with the field name + pattern in the message)
+  // instead of as a per-file SyntaxError mid-job or an unhandled rxjs
+  // error notification.
+  const fileFilterCompiled = compileFilterRegex(
+    fileFilterRegex,
+    "fileFilterRegex",
+  )
+  const folderFilterCompiled = compileFilterRegex(
+    folderFilterRegex,
+    "folderFilterRegex",
+  )
+  if (renameRegex !== undefined) {
+    compileRegexValue(renameRegex, "renameRegex")
+  }
+
+  return new Observable<CopyRecord>((subscriber) => {
     const abortController = new AbortController()
 
     // File copy pipeline: uses getFiles() for the flat file listing so
@@ -68,17 +145,17 @@ export const copyFiles = ({
     // When includeFolders is true, files are only copied if fileFilterRegex
     // is explicitly set — otherwise the command operates in folder-only mode.
     const filesCopy$ =
-      isIncludingFolders && fileFilterRegex == null
+      isIncludingFolders && fileFilterCompiled === undefined
         ? EMPTY
         : getFiles({ sourcePath }).pipe(
             toArray(),
             concatMap((files) =>
               defer(async () => {
                 const filteredFiles =
-                  fileFilterRegex == null
+                  fileFilterCompiled === undefined
                     ? files
                     : files.filter((file) =>
-                        new RegExp(fileFilterRegex).test(
+                        fileFilterCompiled.test(
                           file.filename.concat(
                             extname(file.fullPath),
                           ),
@@ -199,10 +276,8 @@ export const copyFiles = ({
           filter((entry) => entry.isDirectory()),
           filter(
             (entry) =>
-              folderFilterRegex == null ||
-              new RegExp(folderFilterRegex).test(
-                entry.name,
-              ),
+              folderFilterCompiled === undefined ||
+              folderFilterCompiled.test(entry.name),
           ),
           concatMap((entry) => {
             const sourceFolderPath = join(
@@ -260,3 +335,4 @@ export const copyFiles = ({
       innerSubscription.unsubscribe()
     }
   })
+}

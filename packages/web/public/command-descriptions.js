@@ -31,20 +31,10 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory to copy files from.",
       "destinationPath": "Directory to copy files into. Created if it does not already exist.",
-      "fileFilterRegex": "If set, only files whose names match this regular expression are copied.",
-      "folderFilterRegex": "If set (and includeFolders is true), only folders whose names match this regular expression are copied.",
+      "fileFilterRegex": "If set, only files whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
+      "folderFilterRegex": "If set (and includeFolders is true), only folders whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
       "includeFolders": "When true, top-level subdirectories matching folderFilterRegex are copied as units (recursively). Files are only copied if fileFilterRegex is also set.",
-      "renameRegex": "Optional regex-based rename applied to each copied entry's name at the destination."
-    }
-  },
-  "renameFiles": {
-    "summary": "Rename files in place via regex (no copy, no move). Pre-flight halts the run if two files would map to the same target name.",
-    "fields": {
-      "sourcePath": "Directory containing files to rename.",
-      "isRecursive": "Recursively descend into subdirectories. Default false.",
-      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 1; mirrors deleteFilesByExtension).",
-      "fileFilterRegex": "If set, only files whose names match this regular expression are renamed.",
-      "renameRegex": "Required. Applied to each matched filename (including extension) via String.replace."
+      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place."
     }
   },
   "flattenOutput": {
@@ -79,14 +69,6 @@ window.commandDescriptions = {
       "isRecursive": "Recursively looks in folders for media files."
     }
   },
-  "renumberChapters": {
-    "summary": "Renames `Chapter NN`-style chapter names so the numbers are sequential 1..N via a metadata-only mkvmerge remux; preserves timecodes and non-numbered names (`Opening`, `Eyecatch`, etc.); skips files with no numbered chapters and files already sequential; safe to run repeatedly.",
-    "fields": {
-      "sourcePath": "Directory containing media files or containing other directories of media files.",
-      "isRecursive": "Recursively looks in folders for media files.",
-      "isPaddingChapterNumbers": "Zero-pad chapter numbers (default true) — produces `Chapter 01..N` (width ≥ 2). Disable for unpadded `Chapter 1..N`."
-    }
-  },
   "getAudioOffsets": {
     "summary": "Calculate audio synchronization offsets between files",
     "fields": {
@@ -99,7 +81,7 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory containing media files or containing other directories of media files.",
       "isRecursive": "Recursively looks in folders for media files.",
-      "recursiveDepth": "How many deep of child directories to follow (2 or 3) when using isRecursive."
+      "recursiveDepth": "How many levels of child directories to follow when using isRecursive (0 = use default depth of 1)."
     }
   },
   "hasBetterVersion": {
@@ -107,7 +89,7 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory containing media files or containing other directories of media files.",
       "isRecursive": "Recursively looks in folders for media files.",
-      "recursiveDepth": "How many deep of child directories to follow (2 or 3) when using isRecursive."
+      "recursiveDepth": "How many levels of child directories to follow when using isRecursive (0 = use default depth of 1)."
     }
   },
   "hasDuplicateMusicFiles": {
@@ -115,7 +97,7 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory containing music files or containing other directories of music files.",
       "isRecursive": "Recursively looks in folders for music files.",
-      "recursiveDepth": "How many deep of child directories to follow (2 or 3) when using isRecursive."
+      "recursiveDepth": "How many levels of child directories to follow when using isRecursive (0 = use default depth of 1)."
     }
   },
   "hasImaxEnhancedAudio": {
@@ -137,7 +119,7 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory containing media files or containing other directories of media files.",
       "isRecursive": "Recursively looks in folders for media files.",
-      "recursiveDepth": "How many deep of child directories to follow (2 or 3) when using isRecursive."
+      "recursiveDepth": "How many levels of child directories to follow when using isRecursive (0 = use default depth of 1)."
     }
   },
   "hasWrongDefaultTrack": {
@@ -159,7 +141,7 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory to search for files to delete.",
       "isRecursive": "Recursively search subdirectories for matching files.",
-      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 2)."
+      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 1)."
     }
   },
   "deleteFolder": {
@@ -174,7 +156,7 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory containing .ass subtitle files to modify.",
       "isRecursive": "Recursively search subdirectories for .ass files.",
-      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 2).",
+      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 1).",
       "hasDefaultRules": "When true, the command runs the in-tree default-rules heuristic (`buildDefaultSubtitleModificationRules`) against the .ass files at `sourcePath` and PREPENDS the computed rules to `rules`. Defaults run first, user rules run after, so user rules can override. The heuristic emits: `setScriptInfo ScriptType=v4.00+`, `setScriptInfo YCbCr Matrix=TV.709` (when any file has TV.601 outside SD-DVD 640x480), `setStyleFields MarginV=round(PlayResY/1080*90)`, optional `MarginL/R=round(200/1920*PlayResX)` when narrow margins are detected on non-ignored styles, with `ignoredStyleNamesRegexString=\"signs?|op|ed|opening|ending\"`. See docs/dsl/subtitle-rules.md `Default rules toggle` for the full table.",
       "predicates": "Optional named-predicate map. Keys are predicate names; values are flat string-equality key→value maps. Referenced from rule `when:` clauses via `{ $ref: <name> }` inside `matches:` or `excludes:`. See docs/dsl/subtitle-rules.md Named predicates.",
       "rules": "Ordered list of DSL modification rules to apply to each .ass file. Empty when only relying on `hasDefaultRules: true` for the rule set."
@@ -218,8 +200,18 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory to move files from. Deleted after all files are copied.",
       "destinationPath": "Directory to move files into. Created if it does not already exist.",
-      "fileFilterRegex": "If set, only files whose names match this regular expression are moved.",
-      "renameRegex": "Optional regex-based rename applied to each copied entry's name at the destination."
+      "fileFilterRegex": "If set, only files whose names match this regular expression are moved. Bare strings are accepted for back-compat with pre-flags templates.",
+      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place."
+    }
+  },
+  "renameFiles": {
+    "summary": "Rename files in place via regex (no copy, no move). Pre-flight halts the run if two files would map to the same target name.",
+    "fields": {
+      "sourcePath": "Directory containing files to rename.",
+      "isRecursive": "Recursively descend into subdirectories. Default false.",
+      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 1; mirrors deleteFilesByExtension).",
+      "fileFilterRegex": "If set, only files whose names match this regular expression are renamed. Bare strings are accepted for back-compat with pre-flags templates.",
+      "renameRegex": "Required. Applied to each matched filename (including extension) via String.replace."
     }
   },
   "deleteCopiedOriginals": {
@@ -245,6 +237,18 @@ window.commandDescriptions = {
       "seasonNumber": "Season number for the output filename (Plex-style sNNeNN). Ignored when --episodeType=specials.",
       "anidbId": "AniDB anime id (aid). When provided, skips the interactive search.",
       "episodeType": "Which AniDB episode types to rename. Each non-regular sub-type is run separately: specials (S), credits (C, OP/ED), trailers (T), parodies (P) all run the length-matched per-file picker and emit Plex's s00eNN. Others (type=6 alts) and regular are index-paired with a duration sanity-check warning."
+    }
+  },
+  "nameMovieCutsDvdCompareTmdb": {
+    "summary": "Rename main-feature movie cuts (Director's Cut, Theatrical, etc.) and move into Plex edition-folder layout. Skips any file whose duration doesn't match a DVDCompare cut.",
+    "fields": {
+      "sourcePath": "Directory containing movie cut files (e.g. Movie.mkv, Movie.Directors.Cut.mkv).",
+      "url": "DVDCompare.net URL including the chosen release's hash tag.",
+      "dvdCompareId": "DVDCompare film ID — when provided, constructs URL directly and bypasses search.",
+      "dvdCompareReleaseHash": "Release hash (URL fragment #) on the DVDCompare page. Defaults to 1 (the first release option).",
+      "searchTerm": "Title to search on DVDCompare.net (used when no url or dvdCompareId).",
+      "fixedOffset": "Constant offset (in seconds) subtracted from each file's duration before matching.",
+      "timecodePadding": "Seconds of slack when matching a file's duration against a cut's listed timecode. Defaults to 15 — the floor used by the cut matcher to accommodate typical rip-vs-DVDCompare drift on main features."
     }
   },
   "nameSpecialFeaturesDvdCompareTmdb": {
@@ -276,8 +280,16 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory containing files to remux.",
       "isRecursive": "Recursively scan subdirectories.",
-      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 2).",
+      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 1).",
       "isSourceDeletedOnSuccess": "Delete each source file after its remux completes successfully."
+    }
+  },
+  "renumberChapters": {
+    "summary": "Renumber `Chapter NN`-style chapter names sequentially via a metadata-only mkvmerge remux (preserves timecodes, UIDs, custom-named chapters)",
+    "fields": {
+      "sourcePath": "Directory containing media files or containing other directories of media files.",
+      "isRecursive": "Recursively looks in folders for media files.",
+      "isPaddingChapterNumbers": "Zero-pad chapter numbers (default true) — produces `Chapter 01..N` (width ≥ 2). Set false for `Chapter 1..N`."
     }
   },
   "renameDemos": {
@@ -337,7 +349,7 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory where video files are located.",
       "isRecursive": "Recursively looks in folders for media files.",
-      "recursiveDepth": "How many deep of child directories to follow (2 or 3) when using isRecursive.",
+      "recursiveDepth": "How many levels of child directories to follow when using isRecursive (0 = use default depth of 1).",
       "displayWidth": "Display width of the video file. For DVDs, they're all 3:2, but you can set them to the proper 4:3 or 16:9 aspect ratio with anamorphic (non-square) pixels using this value."
     }
   },
