@@ -20,6 +20,7 @@ import type {
   StepLink,
 } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { parentPathFromInput } from "../PathPicker/parentPathFromInput"
 
 type PathFieldProps = {
   field: CommandField
@@ -184,17 +185,8 @@ export const PathField = ({
             currentInput &&
             /^([/\\]|[A-Za-z]:[/\\])/.test(rawValue)
           ) {
-            const lastSep = Math.max(
-              rawValue.lastIndexOf("/"),
-              rawValue.lastIndexOf("\\"),
-            )
-            const parentPath =
-              lastSep <= 0
-                ? rawValue
-                : rawValue.slice(0, lastSep) || "/"
-            const query = /[/\\]$/.test(rawValue)
-              ? ""
-              : rawValue.slice(lastSep + 1)
+            const { parentPath, query } =
+              parentPathFromInput(rawValue)
             const pickerTarget =
               typeof link === "string"
                 ? ({
