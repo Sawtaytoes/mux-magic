@@ -307,4 +307,52 @@ describe("logMessage mode-awareness", () => {
       msg: "boom",
     })
   })
+
+  test('"api" mode also writes errors to stderr so global error paths (crash handler, boot failures) are never silenced when no sink consumes the record', () => {
+    __resetLogSinksForTests()
+    setLoggingMode("api")
+
+    const writes: string[] = []
+    const originalWrite = process.stderr.write.bind(
+      process.stderr,
+    )
+    process.stderr.write = ((chunk: unknown) => {
+      writes.push(String(chunk))
+      return true
+    }) as typeof process.stderr.write
+
+    try {
+      logError("CRASH", "uncaughtException: oops")
+    } finally {
+      process.stderr.write = originalWrite
+      __resetLoggingModeForTests()
+    }
+
+    expect(writes.join("")).toContain(
+      "[CRASH] uncaughtException: oops",
+    )
+  })
+
+  test('"api" mode does NOT write logInfo to stderr (only errors fall through)', () => {
+    __resetLogSinksForTests()
+    setLoggingMode("api")
+
+    const writes: string[] = []
+    const originalWrite = process.stderr.write.bind(
+      process.stderr,
+    )
+    process.stderr.write = ((chunk: unknown) => {
+      writes.push(String(chunk))
+      return true
+    }) as typeof process.stderr.write
+
+    try {
+      logInfo("SEQUENCE", "Step started.")
+    } finally {
+      process.stderr.write = originalWrite
+      __resetLoggingModeForTests()
+    }
+
+    expect(writes).toHaveLength(0)
+  })
 })

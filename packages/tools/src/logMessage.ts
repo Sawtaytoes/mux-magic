@@ -101,15 +101,19 @@ export const createLogMessage =
     const mode = getLoggingMode()
     const messageArray = message || content
 
+    const structuredMsg =
+      mode === "api" || mode === "cli-debug"
+        ? (messageArray as readonly unknown[])
+            .map((part) =>
+              typeof part === "string"
+                ? part
+                : String(part),
+            )
+            .join(" ")
+            .trim()
+        : ""
+
     if (mode === "api" || mode === "cli-debug") {
-      const structuredMsg = (
-        messageArray as readonly unknown[]
-      )
-        .map((part) =>
-          typeof part === "string" ? part : String(part),
-        )
-        .join(" ")
-        .trim()
       const structuredLevel: LogLevel =
         logType === "log" ? "info" : logType
       getLogger()[structuredLevel](structuredMsg, {
@@ -118,6 +122,17 @@ export const createLogMessage =
     }
 
     if (mode === "api") {
+      // Errors must never be swallowed: in api mode the structured record
+      // is the primary channel (job-log SSE), but a record without a
+      // jobId is dropped by the server's bridge sink. Boot errors, the
+      // crash handler's CRASH log, and other global error paths must
+      // still reach the container's stderr. Skip the chalk path (the
+      // structured record is the human-readable one for api consumers).
+      if (logType === "error") {
+        process.stderr.write(
+          `[${title}] ${structuredMsg}\n`,
+        )
+      }
       return
     }
 

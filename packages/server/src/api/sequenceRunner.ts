@@ -451,7 +451,13 @@ export const runSequenceJob = (
   }
 
   // Kick the loop off without awaiting — the route handler treats this
-  // as fire-and-forget.
+  // as fire-and-forget. The `.catch` is the safety net: any throw from
+  // a step that escapes the per-step try/catch (or from helper code
+  // outside the step loop) must fail this umbrella job, not bubble to
+  // the global `unhandledRejection` handler and take the API process
+  // down. Worker 65-era sequence runs against invalid `sourcePath`
+  // values (e.g. Windows paths in a Linux container) were the
+  // motivating regression.
   void withJobContext(jobId, async () => {
     for (
       let itemIndex = 0;
@@ -694,5 +700,18 @@ export const runSequenceJob = (
       `Completed all ${flatSteps.length} step(s).`,
     )
     finalize("completed")
+  }).catch((error: unknown) => {
+    const message =
+      error instanceof Error ? error.message : String(error)
+    logError(
+      "SEQUENCE",
+      `Umbrella job ${jobId} crashed: ${message}`,
+    )
+    const umbrella = getJob(jobId)
+    if (umbrella?.status === "running") {
+      updateJob(jobId, { error: message })
+      markRemainingSkippedFromFlatIndex(0)
+      finalize("failed")
+    }
   })
 }
