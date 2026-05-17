@@ -9,35 +9,40 @@ import * as PromptModalStories from "./PromptModal.stories";
 
 A multiple-choice modal that pauses a running job to ask the user something — usually "which of these candidate files should I use?". Fired by the server when a step's logic encounters ambiguity; the user's pick is POSTed back to `/jobs/<id>/input` so the worker can resume.
 
-Options are sorted with the convention: `1..9` first (in numeric order, with `0` placed at the end of digits), then negative-indexed sentinel options (`-1` skip, `-2` cancel) at the bottom.
+A persistent **paused-pipeline header** sits above the options so the user always knows the running job is suspended waiting on them. The bottom action bar carries two visually distinct controls: a red **Cancel job** (DELETE `/jobs/:id`) and a subdued **Close (job stays running)** that just dismisses the modal — the SSE `isDone` flow in `useLogStream` clears the prompt atom server-side when a job actually terminates, so closing the modal locally never leaves stale state behind.
+
+Options are sorted with the convention: `1..9` first (in numeric order, with `0` placed at the end of digits), then negative-indexed sentinel options (`-1` skip, etc.) at the bottom.
 
 ## Behaviour
 
 - **Open** → `promptModalAtom` set with `{ jobId, promptId, message, options, filePaths? }`.
 - **Pick** → calls `submitPromptChoice(jobId, promptId, selectedIndex)` (POSTs `{ promptId, selectedIndex }`) then closes.
-- **Per-row Play button** → if a `filePaths` entry matches an option's `index`, that row gets a green **▶ Play** button on the right that calls `window.openVideoModal(rowFilePath)` without picking the option.
-- **Top-level Play button** → if `promptData.filePath` is set (single-file context), shows a Play button above the option list.
+- **Per-row Play button** → if a `filePaths` entry matches an option's `index`, that row gets a green **▶ Play** button on the right that sets `videoPreviewModalAtom` (the standalone overlay handles playback) without picking the option.
+- **Top-level Play button** → if `promptData.filePath` is set (single-file context), shows a Play button above the option list that also sets `videoPreviewModalAtom`.
+- **Cancel job** → fires `DELETE /jobs/:id`, clears the prompt atom. The corresponding sequence step transitions to `cancelled` via the SSE-done flow.
+- **Close (job stays running)** → clears the prompt atom only. No fetch. The pipeline keeps waiting for input until the user re-opens the modal or sends another POST.
 - **Keyboard**:
-  - Digit keys (`0-9`) → if any option has matching `index`, picks it instantly.
+  - Digit keys (`0-9`) → picks the option with matching `index`.
   - `Space` → picks the skip option (`index === -1`) if present.
-  - `Escape` or `-` → picks the cancel option (`index === -2`) if present, else falls back to skip.
-- **Backdrop click** → closes without submitting (no input written back to the server).
+  - `Escape` → closes the modal WITHOUT submitting/cancelling. Universal modal UX — never lose a long-running job to an accidental Esc.
+  - `Ctrl+C` / `Cmd+C` → destructive Cancel job. Suppressed when there is an active text selection on the page, so the user can still copy the prompt message normally.
+- **Backdrop click** → closes without submitting (same semantics as the Close button).
 
 ## Atom wiring
 
 | Atom | Role |
 |------|------|
 | `promptModalAtom` | The full prompt payload. `null` ⇒ closed |
+| `videoPreviewModalAtom` | Set by the Play buttons to open the standalone `VideoPreviewModal` overlay |
 
-## Server endpoint
+## Server endpoints
 
-`POST /jobs/<jobId>/input` with `{ promptId, selectedIndex }`. Negative indices have semantic meaning: `-1` = skip, `-2` = cancel.
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /jobs/<jobId>/input` body `{ promptId, selectedIndex }` | User picked an option |
+| `DELETE /jobs/<jobId>` | Cancel job button — terminates the running job |
 
-## Window globals consumed
-
-| Global | Role |
-|--------|------|
-| `window.openVideoModal` | Plays a candidate file in the embedded video modal (provided by `FileExplorerModal`) |
+Negative `selectedIndex` values have semantic meaning to the server: `-1` = skip this step. (The legacy `-2` = cancel option is now handled by the dedicated Cancel job button rather than by submitting `-2` to `/input`.)
 
 ## Default
 

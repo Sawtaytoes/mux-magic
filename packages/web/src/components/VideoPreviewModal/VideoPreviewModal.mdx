@@ -1,0 +1,36 @@
+{/* VideoPreviewModal.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as VideoPreviewModalStories from "./VideoPreviewModal.stories";
+
+<Meta of={VideoPreviewModalStories} />
+
+# VideoPreviewModal
+
+Standalone, atom-driven host for the `FileVideoPlayer` overlay. Any component that needs to preview a file in-browser writes a path into `videoPreviewModalAtom` — there is no caller coupling, no `window` global, no parent-modal lifecycle dependency.
+
+Before worker 58, the video sub-modal only existed inside `FileExplorerModal`, with `window.openVideoModal` registered in a `useEffect`. That meant the `▶ Play` button in `PromptModal` silently no-opped whenever the file explorer wasn't open (the common case for an NSF interactive prompt).
+
+## Behaviour
+
+- **Open** → set `videoPreviewModalAtom` to `{ path }`. The modal renders the `FileVideoPlayer` with that path.
+- **Close** → atom cleared (either by user action via the player's close button / Escape, or programmatically by setting the atom to `null`).
+- **Independent lifecycle** → renders iff the atom is non-null. Mounted once at app top-level (see `BuilderPage`).
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `videoPreviewModalAtom` | `{ path } \| null` — visibility + which file to play |
+
+## Call sites
+
+| Caller | When it sets the atom |
+|--------|------------------------|
+| `PromptModal` top-level Play button | `promptData.filePath` is set (single-file prompt context) |
+| `PromptModal` per-row Play button | A `filePaths` entry matches an option's `index` |
+| `FileExplorerModal` row click | User clicks a video file row in the listing |
+
+## Default
+
+<Canvas of={VideoPreviewModalStories.Default} />
