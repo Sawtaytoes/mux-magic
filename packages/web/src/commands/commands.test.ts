@@ -30,3 +30,54 @@ describe("COMMANDS field descriptions (regression guard)", () => {
     )
   })
 })
+
+describe("copyFiles regex / folder fields are surfaced (worker 63)", () => {
+  const fields = COMMANDS.copyFiles.fields
+  const fieldByName = (name: string) =>
+    fields.find((field) => field.name === name)
+
+  test("fileFilterRegex is a string field", () => {
+    const field = fieldByName("fileFilterRegex")
+    expect(field?.type).toBe("string")
+  })
+
+  test("includeFolders is a boolean field", () => {
+    const field = fieldByName("includeFolders")
+    expect(field?.type).toBe("boolean")
+  })
+
+  test("folderFilterRegex is a string field gated by includeFolders", () => {
+    const field = fieldByName("folderFilterRegex")
+    expect(field?.type).toBe("string")
+    expect(field?.visibleWhen).toEqual({
+      fieldName: "includeFolders",
+      value: true,
+    })
+  })
+
+  test("renameRegex uses the dedicated nested-object field type", () => {
+    const field = fieldByName("renameRegex")
+    expect(field?.type).toBe("renameRegex")
+  })
+})
+
+describe("moveFiles regex fields are surfaced (worker 63)", () => {
+  const fields = COMMANDS.moveFiles.fields
+  const fieldByName = (name: string) =>
+    fields.find((field) => field.name === name)
+
+  test("fileFilterRegex is a string field", () => {
+    const field = fieldByName("fileFilterRegex")
+    expect(field?.type).toBe("string")
+  })
+
+  test("renameRegex uses the dedicated nested-object field type", () => {
+    const field = fieldByName("renameRegex")
+    expect(field?.type).toBe("renameRegex")
+  })
+
+  test("does not surface folder-only fields", () => {
+    expect(fieldByName("folderFilterRegex")).toBeUndefined()
+    expect(fieldByName("includeFolders")).toBeUndefined()
+  })
+})
