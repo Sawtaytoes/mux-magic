@@ -1557,5 +1557,113 @@ describe("POST /sequences/run — groups", () => {
         expect(child.status).toBe("completed")
       })
     })
+
+    // Regression test for the original prod outage: in HA's anime-sync
+    // sequence, the second step (`keepLanguages` in real life,
+    // `deleteFolder` here as a stand-in — both ENOENT on a missing
+    // sourcePath) was tanking the umbrella job to `failed` every hour.
+    // With `exitIfEmpty` placed before it, the would-be-failing step
+    // must never run; the umbrella becomes `exited`, not `failed`; no
+    // ENOENT lands in the umbrella's error field.
+    test("short-circuits a sequence whose next step would have ENOENT'd on the missing path", async () => {
+      const response = await post("/sequences/run", {
+        paths: { workDir: { value: "/no-such-work-folder" } },
+        steps: [
+          {
+            id: "guard",
+            command: "exitIfEmpty",
+            params: { sourcePath: "@workDir" },
+          },
+          {
+            id: "wouldHaveFailed",
+            command: "deleteFolder",
+            params: {
+              sourcePath: "@workDir",
+              confirm: true,
+            },
+          },
+        ],
+      })
+      const { jobId } = (await response.json()) as {
+        jobId: string
+      }
+      await flushAfter(60)
+
+      const umbrella = getJob(jobId)
+      expect(umbrella?.status).toBe("exited")
+      expect(umbrella?.error).toBeNull()
+
+      const children = getChildJobs(jobId)
+      const wouldHaveFailedChild = children.find(
+        (child) => child.stepId === "wouldHaveFailed",
+      )
+      // The whole point of the guard — this step must not have run,
+      // and must carry the `exited` cascade status (not `failed`,
+      // which is what we'd see without the guard, and not `skipped`,
+      // which would have implied an earlier failure).
+      expect(wouldHaveFailedChild?.status).toBe("exited")
+      expect(wouldHaveFailedChild?.error).toBeNull()
+    })
+
+    // The runner has three loop branches (plain top-level step, serial
+    // group, parallel group). The earlier `exitIfEmpty` tests only
+    // directly exercised the plain-step branch — this test pins the
+    // serial-group branch so a future runner refactor can't quietly
+    // break it for users who organize their YAML into groups.
+    test("inside a serial group, finalizes the umbrella as `exited` and cascades to items after the group", async () => {
+      const response = await post("/sequences/run", {
+        paths: { workDir: { value: "/no-such-folder" } },
+        steps: [
+          {
+            kind: "group",
+            id: "preflight",
+            isParallel: false,
+            steps: [
+              {
+                id: "guard",
+                command: "exitIfEmpty",
+                params: { sourcePath: "@workDir" },
+              },
+              {
+                id: "wouldRunInGroup",
+                command: "makeDirectory",
+                params: { sourcePath: "@workDir" },
+              },
+            ],
+          },
+          {
+            id: "afterGroup",
+            command: "makeDirectory",
+            params: { sourcePath: "@workDir" },
+          },
+        ],
+      })
+      const { jobId } = (await response.json()) as {
+        jobId: string
+      }
+      await flushAfter(60)
+
+      const umbrella = getJob(jobId)
+      expect(umbrella?.status).toBe("exited")
+      expect(umbrella?.error).toBeNull()
+
+      const children = getChildJobs(jobId)
+      const guardChild = children.find(
+        (child) => child.stepId === "guard",
+      )
+      const inGroupChild = children.find(
+        (child) => child.stepId === "wouldRunInGroup",
+      )
+      const afterGroupChild = children.find(
+        (child) => child.stepId === "afterGroup",
+      )
+
+      // Guard ran successfully (the step did its job).
+      expect(guardChild?.status).toBe("completed")
+      // Sibling inside the same group never ran by design.
+      expect(inGroupChild?.status).toBe("exited")
+      // Outer step after the group also cascades.
+      expect(afterGroupChild?.status).toBe("exited")
+    })
   })
 })
