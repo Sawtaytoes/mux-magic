@@ -7,6 +7,7 @@ const commandLabels: Record<string, string> = {
   replaceAttachments: "Replace Attachments",
   deleteFilesByExtension: "Delete Files by Extension",
   deleteFolder: "Delete Folder",
+  deleteCopiedOriginals: "Delete Copied Originals",
   splitChapters: "Split Chapters",
   remuxToMkv: "Remux to MKV",
 

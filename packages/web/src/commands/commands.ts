@@ -18,6 +18,7 @@ import {
   changeTrackLanguagesRequestSchema,
   copyFilesRequestSchema,
   copyOutSubtitlesRequestSchema,
+  deleteCopiedOriginalsRequestSchema,
   deleteFilesByExtensionRequestSchema,
   deleteFolderRequestSchema,
   extractSubtitlesRequestSchema,
@@ -292,6 +293,31 @@ export const COMMANDS: Commands = {
             "Confirm: I understand this will recursively delete the folder",
           description:
             "Required: check this to acknowledge this is destructive. Without it the command refuses to run.",
+        }),
+      ],
+    }
+  })(),
+  // Intended for the copy-then-cleanup pattern: a prior `copyFiles` /
+  // `moveFiles` step exposes `copiedSourcePaths` via `extractOutputs`, and
+  // this step deletes those exact captured paths. The picker entry lets
+  // users place the step; wiring `pathsToDelete` to the upstream output is
+  // currently done by editing the YAML (`{linkedTo: <stepId>, output:
+  // copiedSourcePaths}`) since LinkPicker only resolves `output: folder`.
+  deleteCopiedOriginals: (() => {
+    const field = fieldBuilder(
+      deleteCopiedOriginalsRequestSchema,
+    )
+    return {
+      summary:
+        "Delete the original source paths captured by a prior copyFiles/moveFiles step (wire pathsToDelete from that step's copiedSourcePaths output). No-op when the list is empty.",
+      tag: "File Operations",
+      outputFolderName: null,
+      fields: [
+        field("pathsToDelete", {
+          type: "stringArray",
+          label: "Paths to Delete",
+          placeholder:
+            "Link from a prior copyFiles step's copiedSourcePaths output",
         }),
       ],
     }
