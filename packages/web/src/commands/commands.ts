@@ -986,8 +986,7 @@ export const COMMANDS: Commands = {
     )
     return {
       summary:
-        "Rename anime episode files using AniDB metadata (better OVA/special coverage than MAL)",
-      note: "Specials / Credits / Trailers / Parodies each run an interactive length-matched per-file picker — answer the prompts in the job log. Space skips the current file; Esc cancels the loop and applies any matches confirmed so far. Regular and Others are index-paired with a duration sanity-check warning when the file and AniDB lengths diverge by >2m. If AniDB lists both a 'Complete' and 'Part N' form, you'll be asked which one your files match. Episode-range selection is still planned — see README §AniDB command notes.",
+        "Rename anime episode files using AniDB metadata (better OVA/special coverage than MAL). Specials / Credits / Trailers / Parodies prompt per-file in the job log (Space skips, Esc cancels). Regular and Others are index-paired and flag >2m duration mismatches.",
       tag: "Naming Operations",
       outputFolderName: null,
       fields: [
