@@ -6,7 +6,6 @@ import { addDocRoutes } from "./routes/docRoutes.js"
 import { errorRoutes } from "./routes/errorRoutes.js"
 import { featuresRoutes } from "./routes/featuresRoutes.js"
 import { fileRoutes } from "./routes/fileRoutes.js"
-import { haTriggerRoutes } from "./routes/haTriggerRoutes.js"
 import { inputRoutes } from "./routes/inputRoutes.js"
 import { jobRoutes } from "./routes/jobRoutes.js"
 import { logsRoutes } from "./routes/logRoutes.js"
@@ -48,7 +47,6 @@ app.route("/", inputRoutes)
 app.route("/", commandRoutes)
 app.route("/", queryRoutes)
 app.route("/", sequenceRoutes)
-app.route("/", haTriggerRoutes)
 app.route("/", fileRoutes)
 app.route("/", serverIdRoutes)
 app.route("/", systemRoutes)
