@@ -153,7 +153,11 @@ export const SequenceRunModal = () => {
         setStatus(data.status)
         setModalState((prev) =>
           prev.mode !== "closed"
-            ? { ...prev, activeChildren: [] }
+            ? {
+                ...prev,
+                status: data.status,
+                activeChildren: [],
+              }
             : prev,
         )
         // Same stale-modal guard as useLogStream: clear the prompt if it
