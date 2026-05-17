@@ -1,0 +1,127 @@
+# Worker 6a — storybook-vrt-setup
+
+**Model:** Sonnet · **Thinking:** ON · **Effort:** Medium
+**Branch:** `feat/mux-magic-revamp/6a-storybook-vrt-setup`
+**Worktree:** `.claude/worktrees/6a_storybook-vrt-setup/`
+**Phase:** 4
+**Depends on:** 01 (done)
+**Parallel with:** any worker that doesn't touch [packages/web/.storybook/](../../packages/web/.storybook/), [packages/web/vitest.config.ts](../../packages/web/vitest.config.ts), [packages/web/package.json](../../packages/web/package.json), or `**/*.stories.tsx` files. Worker 69 changes some commands.ts schemas — coordinate if both land at once.
+
+## Universal Rules (TL;DR)
+
+Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typecheck → test → e2e → lint`. TDD: failing test first. Yarn only. See [AGENTS.md](../../AGENTS.md).
+
+## Context
+
+Recent work added comprehensive Storybook coverage for the two most-touched composite components in the builder UI:
+
+- [StepCard.interactive.stories.tsx](../../packages/web/src/components/StepCard/StepCard.interactive.stories.tsx) — generic state variants (Blank, Idle, Pending, Running, Completed, CompletedNoResults, Failed, Cancelled, Skipped, Exited, Collapsed, InASequence). Titled `Components/StepCard/States/*`.
+- `StepCard.<commandName>.stories.tsx` × 41 — one file per command in the live registry, titled `Components/StepCard/Commands/<Tag>/<commandName>/*`, each with usage-variant stories (default + linked path + chained source + regex with sample + toggle-revealed fields + multi-value language lists + …). Total ~140 stories.
+- [GroupCard.interactive.stories.tsx](../../packages/web/src/components/GroupCard/GroupCard.interactive.stories.tsx) — group-card states wired through a `LiveGroupCard` wrapper so buttons actually mutate `stepsAtom`.
+- Shared infrastructure in [StepCard.storyHelpers.tsx](../../packages/web/src/components/StepCard/StepCard.storyHelpers.tsx) (`InteractiveStoryProvider`, `LiveStepCard`, `makeStory`, `renderSolo`) means new commands cost ~25 lines of story file each.
+
+Each story is a single-card render against the real `COMMANDS` registry seeded into `commandsAtom`, inside a real `DndContext` + `SortableContext`. That means every story is a pixel-stable snapshot of one card configuration — exactly the shape a visual regression test needs.
+
+Today there's no automated check that a stray Tailwind change, a CSS variable rename, or a refactor in `RenderFields` doesn't silently distort the per-command card layouts. `yarn e2e` catches behavior regressions and `yarn test` catches DOM-tree regressions, but visual drift (spacing, color, alignment, conditional field appearance) is unmonitored — the user notices in the browser. With ~140 stories covering every command's typical and edge-case configurations, a snapshot-per-story workflow becomes a fast feedback loop for the UI surface that's hardest to test otherwise.
+
+User's exact ask (in conversation): *"It would be nice to load VRTs now via Storybook. Let's make a separate worker to handle that now that we have good stories. That way, I can verify certain changes at a component level."*
+
+This worker stands up that VRT loop end-to-end.
+
+## Your Mission
+
+Add visual regression testing across every Storybook story (`StepCard` Commands + States, `GroupCard`, plus existing component stories) so a single command captures fresh screenshots and diffs them against committed baselines. Wire it into the pre-merge gate.
+
+### Stack choice
+
+The Storybook setup is already aligned with the simplest path:
+
+- [.storybook/main.ts](../../packages/web/.storybook/main.ts) registers `@storybook/addon-vitest` (the modern Storybook 8.x story runner that executes stories as vitest browser tests).
+- Memory rule [reference_vitest_real_chromium.md](../../) documents that `packages/web` vitest already uses `@vitest/browser-playwright` with real Chromium — no jsdom polyfills.
+- That means Playwright is already in-process and can call `page.screenshot()` / `expect(page).toHaveScreenshot()` from inside a vitest test.
+
+**Recommended stack:** Playwright's built-in `toHaveScreenshot` assertion executed from a vitest browser test that iterates over Storybook's index of stories. No new framework (Chromatic / Loki / Storyshots) needed; baselines live in-repo alongside the stories. Pixel-diff threshold + Storybook story-id stability give a deterministic check.
+
+**Alternative considered, rejected:** Chromatic — hosted, paid, sends snapshots to a third-party UI. The user runs this locally and self-hosts everything else in the stack; sending every PR's UI screenshots to an external service is a poor fit. Document the rejection in the worker's writeup so future contributors don't propose it again without new information.
+
+### Concrete deliverables
+
+**1. VRT test harness — [packages/web/src/__vrt__/stories.vrt.test.ts](../../packages/web/src/__vrt__/stories.vrt.test.ts)**
+
+Single vitest browser test file that:
+
+- Reads Storybook's `index.json` (the static index generated by `storybook build` / served by the dev server) to enumerate every story id.
+- For each id, navigates the in-test browser page to `iframe.html?id=<storyId>&viewMode=story`, waits for the story's root element to render (poll for `#storybook-root > *`), then calls `expect(page).toHaveScreenshot({ name: <storyId>.png, maxDiffPixelRatio: 0.02 })`.
+- Baselines land in `packages/web/src/__vrt__/__screenshots__/<storyId>.png`. Committed.
+- Failures generate a `<storyId>-actual.png` and a `<storyId>-diff.png` next to the baseline.
+
+The harness must NOT enumerate stories manually — read the index so newly added stories get covered automatically the first time the test runs.
+
+**2. Two yarn scripts — [packages/web/package.json](../../packages/web/package.json)**
+
+```jsonc
+"vrt": "vitest run --project=vrt",                  // diff against baselines
+"vrt:update": "vitest run --project=vrt -u",        // accept new baselines
+```
+
+A separate vitest *project* (configured in [packages/web/vitest.config.ts](../../packages/web/vitest.config.ts)) so the VRT suite is opt-in and doesn't run on every `yarn test`. The default `yarn test` should stay fast; VRT runs as its own gate.
+
+**3. Storybook build prerequisite**
+
+VRT requires a built Storybook to scrape stories deterministically. Either:
+
+- (a) Run `storybook build` into `storybook-static/` and have the VRT test serve from that directory via vite's preview server (faster, deterministic), OR
+- (b) Spawn the Storybook dev server on a random port from inside the test setup and shut it down on teardown (slower startup, no build artifact).
+
+Pick (a) — matches the existing pre-merge gate's "build first" pattern from [feedback_test_failures_environmental.md](../../) (`build web/dist first then re-run`), and the static index.json is already the right enumeration source.
+
+**4. Pre-merge gate integration**
+
+Add `vrt` to the gate chain in [AGENTS.md](../../AGENTS.md) workflow docs so the standard pre-merge sequence becomes:
+
+```
+yarn lint → typecheck → test → e2e → vrt → lint
+```
+
+VRT runs after `e2e` because both need a build artifact and `e2e` already proves the build is healthy.
+
+**5. Baseline commit**
+
+The first run on this branch generates ~150 PNGs (140 StepCard + ~10 GroupCard/States/other). Commit them in a separate `chore(web): seed VRT baselines` commit so the diff stays reviewable. Subsequent PRs touching UI will produce small follow-up commits of accepted-baseline updates — that's the intended flow.
+
+**6. CI consideration — out of scope but documented**
+
+The user runs CI manually today; no GH Actions changes required by this worker. Add a one-paragraph note to the worker's writeup explaining that font rendering on Linux CI runners differs from local macOS/Windows Chromium, so when CI lands later the VRT step will likely need a Docker base image pin (matching local Chromium build) or a `--update-snapshots` reseed step. Don't try to solve this prematurely.
+
+### Story selection / skip list
+
+A small number of stories are *intentionally* unstable for VRT:
+
+- `Components/StepCard/States/Running` — uses `animate-pulse` Tailwind class on the StatusBadge ([StatusBadge.tsx:7](../../packages/web/src/components/StatusBadge/StatusBadge.tsx#L7)). Either freeze CSS animations via `prefers-reduced-motion: reduce` in the VRT preview, OR add a `parameters: { vrt: { skip: true } }` per story and have the harness honor it. Pick the preview-level CSS freeze if it works — keeps stories themselves clean and removes the per-story opt-out maintenance.
+- `Components/StepCard/Commands/.../In*Sequence` (when added) and `Components/GroupCard/Interactive/InASequenceMultipleGroups` — rendered inside a `DndContext` whose internal id generation may drift across runs. If diffs appear from random ids, mock `crypto.randomUUID` in the VRT preview decorator.
+
+### Out of scope
+
+- Interaction tests (already covered by `*.interactive.test.tsx` files).
+- Per-story behavior assertions — the only assertion is the screenshot diff.
+- Cross-browser coverage. Chromium only; Firefox/WebKit VRT is a future worker.
+- Responsive viewport variants. Single default viewport (1280×720) for v1; multi-viewport coverage is a follow-up if needed.
+
+## Acceptance criteria
+
+- [ ] `yarn vrt` runs to completion locally and produces `PASS` for every story.
+- [ ] Intentionally breaking one CSS color in a `StepCard` field component produces a `FAIL` with a readable `<storyId>-diff.png` highlighting the changed pixels.
+- [ ] `yarn vrt:update` regenerates baselines and the diff is committable (PNGs are deterministic across reruns on the same machine).
+- [ ] A new story added to any `StepCard.*.stories.tsx` file is automatically captured on the next `yarn vrt:update` — no manual enumeration.
+- [ ] [AGENTS.md](../../AGENTS.md) gate documentation updated; pre-merge command sequence includes `vrt`.
+- [ ] Worker's PR description includes a screenshot of the diff UI for at least one intentionally-broken story (proves the failure-mode path works).
+
+## Discovery questions to ask the user before starting
+
+1. **Viewport size.** Default to 1280×720, or match the typical builder card width (~640px)? Card-width matches reality better but loses the multi-card sequence stories' point.
+2. **Baseline storage.** Commit PNGs in-repo (simple, fast, makes diffs visible in PRs) or use Git LFS (smaller clone, slightly more setup)? In-repo recommended unless the baselines climb past ~50MB.
+3. **Animation handling.** Confirm the `prefers-reduced-motion` preview-level freeze is acceptable, or do you want each animated story explicitly skipped?
+
+## Done flip
+
+When merged into `feat/mux-magic-revamp`, flip this row in [MANIFEST.md](MANIFEST.md) to `done`.

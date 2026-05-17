@@ -1,59 +1,20 @@
-import {
-  DndContext,
-  DragOverlay,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core"
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
+// Generic StepCard state-variant stories. Per-command usage variants
+// live in StepCard.<commandName>.stories.tsx files under the same
+// directory — those are titled `Components/StepCard/Commands/<name>`.
+// This file owns `Components/StepCard/States/*` so the two axes are
+// never tangled in the Storybook sidebar.
+
 import type { Meta, StoryObj } from "@storybook/react"
-import { createStore, Provider } from "jotai"
-import { FIXTURE_COMMANDS } from "../../commands/__fixtures__/commands"
-import { commandsAtom } from "../../state/commandsAtom"
-import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
 import { StepCard } from "./StepCard"
-
-const InteractiveStoryProvider = ({
-  children,
-  steps,
-}: {
-  children: React.ReactNode
-  steps: Step[]
-}) => {
-  const store = createStore()
-  store.set(stepsAtom, steps)
-  store.set(commandsAtom, FIXTURE_COMMANDS)
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  )
-
-  return (
-    <Provider store={store}>
-      <DndContext sensors={sensors}>
-        <SortableContext
-          items={steps.map((step) => step.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          {children}
-        </SortableContext>
-        <DragOverlay />
-      </DndContext>
-    </Provider>
-  )
-}
+import {
+  InteractiveStoryProvider,
+  LiveStepCard,
+  makeStory,
+} from "./StepCard.storyHelpers"
 
 const meta: Meta<typeof StepCard> = {
-  title: "Components/StepCard/Interactive",
+  title: "Components/StepCard/States",
   component: StepCard,
   parameters: {
     layout: "padded",
@@ -64,9 +25,11 @@ const meta: Meta<typeof StepCard> = {
 export default meta
 type Story = StoryObj<typeof StepCard>
 
-// keepLanguages — LanguageCodesField example
-const keepLanguagesStep: Step = {
-  id: "step_keep_lang",
+// Reference step used by every state variant. `keepLanguages` has
+// enough field surface to make the body interesting without crowding
+// the state-specific affordances (status badge, run progress, errors).
+const referenceStep: Step = {
+  id: "step_states_reference",
   alias: "Filter Languages",
   command: "keepLanguages",
   params: {
@@ -79,89 +42,9 @@ const keepLanguagesStep: Step = {
   isCollapsed: false,
 }
 
-export const WithKeepLanguagesCommand: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider steps={[keepLanguagesStep]}>
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    step: keepLanguagesStep,
-    index: 0,
-    isFirst: true,
-    isLast: false,
-  },
-}
-
-// copyFiles — PathField + NumericField example
-const copyFilesStep: Step = {
-  id: "step_copy_files",
-  alias: "Copy Output",
-  command: "copyFiles",
-  params: {
-    sourcePath: "/mnt/chained",
-    destinationPath: "/mnt/archive",
-  },
-  links: {},
-  status: null,
-  error: null,
-  isCollapsed: false,
-}
-
-export const WithCopyFilesCommand: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider steps={[copyFilesStep]}>
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    step: copyFilesStep,
-    index: 1,
-    isFirst: false,
-    isLast: false,
-  },
-}
-
-// modifySubtitleMetadata — SubtitleRulesField example
-const modifySubtitlesStep: Step = {
-  id: "step_modify_subs",
-  alias: "Apply Subtitle Rules",
-  command: "modifySubtitleMetadata",
-  params: {
-    sourcePath: "/mnt/subtitles",
-    rules: [],
-  },
-  links: {},
-  status: null,
-  error: null,
-  isCollapsed: false,
-}
-
-export const WithModifySubtitleMetadataCommand: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider
-        steps={[modifySubtitlesStep]}
-      >
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    step: modifySubtitlesStep,
-    index: 2,
-    isFirst: false,
-    isLast: false,
-  },
-}
-
-// Blank step — no command selected
-const blankStep: Step = {
-  id: "step_blank",
+// Blank step — no command selected; shows the command-picker affordance.
+export const Blank: Story = makeStory({
+  id: "step_states_blank",
   alias: "",
   command: "",
   params: {},
@@ -169,143 +52,126 @@ const blankStep: Step = {
   status: null,
   error: null,
   isCollapsed: false,
-}
+})
 
-export const BlankStep: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider steps={[blankStep]}>
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    step: blankStep,
-    index: 0,
-    isFirst: true,
-    isLast: true,
-  },
-}
+export const Idle: Story = makeStory(referenceStep)
 
-// Running state
-const runningStep: Step = {
-  ...keepLanguagesStep,
-  id: "step_running",
+export const Pending: Story = makeStory({
+  ...referenceStep,
+  id: "step_states_pending",
+  alias: "Queued",
+  status: "pending",
+})
+
+export const Running: Story = makeStory({
+  ...referenceStep,
+  id: "step_states_running",
   alias: "Processing...",
   status: "running",
-  jobId: "job_123",
-}
+  jobId: "job_demo",
+})
 
-export const RunningState: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider steps={[runningStep]}>
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    step: runningStep,
-    index: 0,
-    isFirst: true,
-    isLast: true,
-  },
-}
-
-// Success state
-const successStep: Step = {
-  ...keepLanguagesStep,
-  id: "step_success",
+// StatusBadge map: `status: "completed"` paints the green "completed"
+// pill (StatusBadge.tsx line 8). `"success"` produces no badge — the
+// runtime never writes it.
+export const Completed: Story = makeStory({
+  ...referenceStep,
+  id: "step_states_completed",
   alias: "Completed",
-  status: "success",
-}
+  status: "completed",
+})
 
-export const SuccessState: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider steps={[successStep]}>
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    step: successStep,
-    index: 0,
-    isFirst: true,
-    isLast: true,
-  },
-}
+// Info callout — StepCard.tsx:358-363 renders the "No items reported"
+// notice only when status === "completed" AND hasResults === false.
+// This is the success-with-no-work-to-do shape (e.g. a filter step
+// matched zero files).
+export const CompletedNoResults: Story = makeStory({
+  ...referenceStep,
+  id: "step_states_completed_empty",
+  alias: "Completed (No Items)",
+  status: "completed",
+  hasResults: false,
+})
 
-// Error state
-const errorStep: Step = {
-  ...keepLanguagesStep,
-  id: "step_error",
+// StatusBadge map: `status: "failed"` paints the red "failed" pill. The
+// `error` string appears below as the red callout.
+export const Failed: Story = makeStory({
+  ...referenceStep,
+  id: "step_states_failed",
   alias: "Failed",
+  status: "failed",
   error: "FFmpeg exited with code 1: Invalid audio codec",
-}
+})
 
-export const ErrorState: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider steps={[errorStep]}>
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    step: errorStep,
-    index: 0,
-    isFirst: true,
-    isLast: true,
-  },
-}
+export const Cancelled: Story = makeStory({
+  ...referenceStep,
+  id: "step_states_cancelled",
+  alias: "Cancelled",
+  status: "cancelled",
+})
 
-// Collapsed state
-const collapsedStep: Step = {
-  ...keepLanguagesStep,
-  id: "step_collapsed",
+export const Skipped: Story = makeStory({
+  ...referenceStep,
+  id: "step_states_skipped",
+  alias: "Skipped",
+  status: "skipped",
+})
+
+// Planned early-exit (exitIfEmpty etc.) — distinct indigo "exited" pill
+// in StatusBadge.tsx:16 so it reads as "informational terminal" rather
+// than success/fail/skip.
+export const Exited: Story = makeStory({
+  ...referenceStep,
+  id: "step_states_exited",
+  alias: "Exited Early",
+  status: "exited",
+})
+
+export const Collapsed: Story = makeStory({
+  ...referenceStep,
+  id: "step_states_collapsed",
   alias: "Hidden Fields",
   isCollapsed: true,
-}
+})
 
-export const CollapsedState: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider steps={[collapsedStep]}>
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    step: collapsedStep,
-    index: 0,
-    isFirst: true,
-    isLast: true,
-  },
-}
-
-// Multi-step with dragging enabled
+// Multi-step layout — exercises move-up/move-down and drag-reorder
+// against a real DndContext + SortableContext.
 export const InASequence: Story = {
-  decorators: [
-    (Story) => {
-      const steps = [
-        keepLanguagesStep,
-        { ...copyFilesStep, id: "step_copy_2" },
-        { ...modifySubtitlesStep, id: "step_modify_2" },
-      ]
-      return (
-        <InteractiveStoryProvider steps={steps}>
-          <div className="space-y-2">
-            <Story />
-          </div>
-        </InteractiveStoryProvider>
-      )
-    },
-  ],
-  args: {
-    step: keepLanguagesStep,
-    index: 0,
-    isFirst: true,
-    isLast: false,
+  render: () => {
+    const steps: Step[] = [
+      { ...referenceStep, id: "step_seq_1" },
+      {
+        ...referenceStep,
+        id: "step_seq_2",
+        alias: "Tag Audio Language",
+        command: "changeTrackLanguages",
+        params: {
+          sourcePath: "/mnt/input/series",
+          audioLanguage: "eng",
+        },
+      },
+      {
+        ...referenceStep,
+        id: "step_seq_3",
+        alias: "Create Output Folder",
+        command: "makeDirectory",
+        params: { sourcePath: "/mnt/output" },
+      },
+    ]
+    return (
+      <InteractiveStoryProvider steps={steps}>
+        <div className="space-y-2">
+          {steps.map((step, idx) => (
+            <LiveStepCard
+              key={step.id}
+              stepId={step.id}
+              index={idx}
+              isFirst={idx === 0}
+              isLast={idx === steps.length - 1}
+            />
+          ))}
+        </div>
+      </InteractiveStoryProvider>
+    )
   },
 }
