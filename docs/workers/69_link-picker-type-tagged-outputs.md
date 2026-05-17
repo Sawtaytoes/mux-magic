@@ -1,8 +1,8 @@
-# Worker 64 — link-picker-type-tagged-outputs
+# Worker 69 — link-picker-type-tagged-outputs
 
 **Model:** Sonnet · **Thinking:** ON · **Effort:** Medium
-**Branch:** `feat/mux-magic-revamp/64-link-picker-type-tagged-outputs`
-**Worktree:** `.claude/worktrees/64_link-picker-type-tagged-outputs/`
+**Branch:** `feat/mux-magic-revamp/69-link-picker-type-tagged-outputs`
+**Worktree:** `.claude/worktrees/69_link-picker-type-tagged-outputs/`
 **Phase:** 4
 **Depends on:** 01 (done)
 **Parallel with:** any worker that doesn't touch [packages/web/src/components/LinkPicker/LinkPicker.tsx](../../packages/web/src/components/LinkPicker/LinkPicker.tsx), [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts), [packages/web/src/commands/types.ts](../../packages/web/src/commands/types.ts), or the server-side `extractOutputs` declarations in [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts).
@@ -87,8 +87,8 @@ Exactly one call site: `deleteCopiedOriginals.pathsToDelete` in [commands.ts](..
 
 ## Worker checkout & commit
 
-1. Flip MANIFEST row 64 → `in-progress` before any code.
-2. Worktree `.claude/worktrees/64_link-picker-type-tagged-outputs/`, branch as named above.
+1. Flip MANIFEST row 69 → `in-progress` before any code.
+2. Worktree `.claude/worktrees/69_link-picker-type-tagged-outputs/`, branch as named above.
 3. TDD: write the new LinkPicker tests first (they should fail because filtering still uses `acceptedOutputs`). Then ship the refactor.
 4. Standard pre-merge gate.
-5. Flip MANIFEST row 64 → `done` after merge — see [feedback_workers_flip_own_done.md] in agent memory.
+5. Flip MANIFEST row 69 → `done` after merge — see [feedback_workers_flip_own_done.md] in agent memory.
