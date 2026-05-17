@@ -113,7 +113,6 @@ Future prompts touching code in `packages/web/` or `packages/server/` must produ
 - Three reporters: `reportJobStarted`, `reportJobCompleted`, `reportJobFailed`.
 - Each is fire-and-forget; 4xx/5xx/network failures `console.warn` and resolve cleanly.
 - Wired in `jobRunner.ts` at the running/completed/failed transitions.
-- Inbound HA-trigger route lives at `packages/server/src/api/routes/haTriggerRoutes.ts` — `X-HA-Token` validated when `HA_TRIGGER_TOKEN` env var is set.
 
 ### 3.6 Track ownership (from manifest)
 
