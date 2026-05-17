@@ -36,6 +36,49 @@ const postWebhook = async (
   }
 }
 
+// Crash-path webhook. Called from `process.on("uncaughtException" |
+// "unhandledRejection")` in `server.ts` right before `process.exit(1)`.
+// Uses its own fetch (not `postWebhook`) because:
+//   - the process is about to die: a 5s AbortController cap stops a dead
+//     receiver from extending the restart by Node's default DNS/TCP
+//     timeouts (~75s+ on Linux),
+//   - failures here can't be logged through the normal sink — best-effort
+//     `console.error` is the floor.
+export const reportProcessCrashed = async ({
+  reason,
+  source,
+  stack,
+}: {
+  reason: string
+  source: "uncaughtException" | "unhandledRejection"
+  stack: string | null
+}): Promise<void> => {
+  const url = process.env.WEBHOOK_PROCESS_CRASHED_URL
+  if (!url) return
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 5000)
+  try {
+    await fetch(url, {
+      body: JSON.stringify({
+        occurredAt: new Date().toISOString(),
+        reason,
+        source,
+        stack,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+      signal: controller.signal,
+    })
+  } catch (error) {
+    console.error(
+      `[WEBHOOK] Crash webhook POST failed: ${String(error)}`,
+    )
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export const reportJobStarted = async ({
   commandName,
   jobId,
