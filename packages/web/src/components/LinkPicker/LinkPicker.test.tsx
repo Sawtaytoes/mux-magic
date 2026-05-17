@@ -280,12 +280,91 @@ describe("LinkPicker named outputs", () => {
     renderWithNamedOutputs()
     expect(
       screen.getByText("Step 1: Copy Files"),
-    ).toBeInTheDocument()
+    ).toBeVisible()
     expect(
       screen.getByText(
         /Step 1: Copy Files → Copied source paths/,
       ),
-    ).toBeInTheDocument()
+    ).toBeVisible()
+  })
+
+  test("acceptedOutputs whitelist hides folder rows and path variables", () => {
+    const store = createStore()
+    const commands: Commands = {
+      copyFiles: {
+        summary: "Copy files",
+        tag: "File Operations",
+        outputFolderName: "COPY-OUTPUT",
+        outputs: [
+          {
+            name: "copiedSourcePaths",
+            label: "Copied source paths",
+          },
+        ],
+        fields: [
+          {
+            name: "sourcePath",
+            type: "path",
+            label: "Source Path",
+            isRequired: true,
+          },
+        ],
+      },
+      deleteCopiedOriginals: {
+        summary: "Delete originals",
+        tag: "File Operations",
+        outputFolderName: null,
+        fields: [
+          {
+            name: "pathsToDelete",
+            type: "stringArray",
+            label: "Paths to Delete",
+            isRequired: true,
+            acceptedOutputs: ["copiedSourcePaths"],
+          },
+        ],
+      },
+    }
+    store.set(stepsAtom, [
+      makeStep("step-1", "copyFiles"),
+      makeStep("step-2", "deleteCopiedOriginals"),
+    ])
+    store.set(pathsAtom, [
+      makePath(
+        "basePath",
+        "Base Path",
+        "/home/user/videos",
+      ),
+    ])
+    store.set(commandsAtom, commands)
+    store.set(linkPickerStateAtom, {
+      anchor: {
+        stepId: "step-2",
+        fieldName: "pathsToDelete",
+      },
+      triggerRect: TRIGGER_RECT,
+    })
+
+    render(
+      <Provider store={store}>
+        <LinkPicker />
+      </Provider>,
+    )
+
+    expect(screen.queryByText("Base Path")).toBeNull()
+    expect(
+      screen.queryByText("Step 1: Copy Files"),
+    ).toBeNull()
+    expect(
+      screen.getByText(
+        /Step 1: Copy Files → Copied source paths/,
+      ),
+    ).toBeVisible()
+    expect(
+      screen.queryByText(
+        /type a path directly into the field/,
+      ),
+    ).toBeNull()
   })
 
   test("clicking the named-output row writes that output name to the link", async () => {
