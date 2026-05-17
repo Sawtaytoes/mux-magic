@@ -1,0 +1,38 @@
+{/* RenameRegexField.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as RenameRegexFieldStories from "./RenameRegexField.stories";
+
+<Meta of={RenameRegexFieldStories} />
+
+# RenameRegexField
+
+A two-input editor for the nested-object `renameRegex: { pattern, replacement }` field used by the `copyFiles` and `moveFiles` commands. The server applies the pair as `name.replace(new RegExp(pattern), replacement)` against each copied/moved entry's basename.
+
+This is the lone field component that owns a **nested object** value (mirrors `SubtitleRulesField` at smaller scale). It writes the whole object back atomically so `buildParams` and the YAML codec see the exact wire shape the schema declares — no special-case in `buildParams`.
+
+## Behaviour
+
+- **Read** — `step.params.renameRegex` is interpreted as `{ pattern, replacement }`. Missing keys collapse to `""`.
+- **Write** — every keystroke on either input refreshes the **full object** via `setParam`. The two values are read from input refs at write time, so the "other" field's most recent DOM value flows through even before the parent re-renders.
+- **Empty collapse** — when *both* inputs are blank the component writes `undefined`. `buildParams` then strips the key entirely (matching the existing "empty value → omit" rule), so a never-touched regex round-trips through YAML as the absent field the schema marks `.optional()`.
+- **Uncontrolled inputs** — same `defaultValue` strategy `StringField` and `BooleanField` use. External param mutations (e.g. loading a YAML) reflow via React's key/remount path, not by re-applying `defaultValue`.
+
+## Props
+
+| Prop | Type | Notes |
+|------|------|-------|
+| `step` | `Step` | Source of `params.renameRegex` and `command` (passed to `FieldLabel`) |
+| `field` | `CommandField` | `{ name: "renameRegex", type: "renameRegex", label?, isRequired? }` |
+
+## Empty
+
+<Canvas of={RenameRegexFieldStories.Empty} />
+
+## Partially filled
+
+<Canvas of={RenameRegexFieldStories.PartiallyFilled} />
+
+## Fully filled
+
+<Canvas of={RenameRegexFieldStories.FullyFilled} />

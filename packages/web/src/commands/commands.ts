@@ -88,6 +88,32 @@ export const COMMANDS: Commands = {
           type: "path",
           label: "Destination Path",
         }),
+        field("fileFilterRegex", {
+          type: "string",
+          label: "File Filter Regex",
+          placeholder: "\\.mkv$",
+        }),
+        field("includeFolders", {
+          type: "boolean",
+          label: "Include Folders",
+        }),
+        // Mirrors the server-side opt-in: folderFilterRegex is only
+        // honored when includeFolders is true (see copyFiles.ts:80-81),
+        // so the UI hides the input until the toggle is flipped.
+        field("folderFilterRegex", {
+          type: "string",
+          label: "Folder Filter Regex",
+          placeholder: "^Season\\s\\d+",
+          visibleWhen: {
+            fieldName: "includeFolders",
+            value: true,
+          },
+        }),
+        field("renameRegex", {
+          type: "renameRegex",
+          label: "Rename Regex",
+          isRequired: false,
+        }),
       ],
     }
   })(),
@@ -128,6 +154,16 @@ export const COMMANDS: Commands = {
         field("destinationPath", {
           type: "path",
           label: "Destination Path",
+        }),
+        field("fileFilterRegex", {
+          type: "string",
+          label: "File Filter Regex",
+          placeholder: "\\.mkv$",
+        }),
+        field("renameRegex", {
+          type: "renameRegex",
+          label: "Rename Regex",
+          isRequired: false,
         }),
       ],
     }
