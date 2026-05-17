@@ -2,6 +2,7 @@ import { useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
 import { pathPickerStateAtom } from "../../state/pickerAtoms"
 import type { Variable } from "../../types"
+import { parentPathFromInput } from "../PathPicker/parentPathFromInput"
 
 export const PathValueInput = ({
   variable,
@@ -36,17 +37,8 @@ export const PathValueInput = ({
       currentInput &&
       /^([/\\]|[A-Za-z]:[/\\])/.test(rawValue)
     ) {
-      const lastSep = Math.max(
-        rawValue.lastIndexOf("/"),
-        rawValue.lastIndexOf("\\"),
-      )
-      const parentPath =
-        lastSep <= 0
-          ? rawValue
-          : rawValue.slice(0, lastSep) || "/"
-      const query = /[/\\]$/.test(rawValue)
-        ? ""
-        : rawValue.slice(lastSep + 1)
+      const { parentPath, query } =
+        parentPathFromInput(rawValue)
       debounceTimerRef.current = setTimeout(() => {
         const rect = currentInput.getBoundingClientRect()
         setPathPickerState({
