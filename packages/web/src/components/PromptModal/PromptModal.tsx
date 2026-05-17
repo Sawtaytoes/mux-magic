@@ -1,8 +1,9 @@
-import { useAtom } from "jotai"
+import { useAtom, useSetAtom } from "jotai"
 import { useEffect, useRef } from "react"
 import { apiBase } from "../../apiBase"
 import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import type { PromptOption } from "../../components/PromptModal/types"
+import { videoPreviewModalAtom } from "../../components/VideoPreviewModal/videoPreviewModalAtom"
 
 const submitPromptChoice = async (
   jobId: string,
@@ -20,10 +21,20 @@ const submitPromptChoice = async (
   }
 }
 
+const cancelJob = async (jobId: string) => {
+  try {
+    await fetch(`${apiBase}/jobs/${jobId}`, {
+      method: "DELETE",
+    })
+  } catch (error) {
+    console.error("Failed to cancel job", error)
+  }
+}
+
 const sortOptions = (
   options: PromptOption[],
 ): PromptOption[] =>
-  [...options].sort((optionA, optionB) => {
+  options.toSorted((optionA, optionB) => {
     const isSkipA = optionA.index < 0
     const isSkipB = optionB.index < 0
     if (isSkipA && isSkipB) return 0
@@ -34,12 +45,26 @@ const sortOptions = (
     return rankA - rankB
   })
 
+const hasActiveTextSelection = (): boolean => {
+  const selection = window.getSelection()
+  return (
+    selection !== null && selection.toString().length > 0
+  )
+}
+
+const kbdChipClass =
+  "text-[10px] font-mono bg-slate-700 text-slate-200 px-1.5 py-0.5 rounded"
+
 export const PromptModal = () => {
   const [promptData, setPromptData] =
     useAtom(promptModalAtom)
+  const setVideoPreview = useSetAtom(videoPreviewModalAtom)
   const promptDataRef = useRef(promptData)
   promptDataRef.current = promptData
 
+  // Closing the modal does NOT cancel the running job — the pipeline
+  // stays suspended on the server until the user either picks an option
+  // (POST /jobs/:id/input) or explicitly cancels (DELETE /jobs/:id).
   const close = () => setPromptData(null)
 
   const pick = async (selectedIndex: number) => {
@@ -52,7 +77,21 @@ export const PromptModal = () => {
     )
   }
 
-  // Keyboard shortcuts: digits select options; Space/Escape skip or cancel.
+  const handleCancelJob = async () => {
+    if (!promptData) return
+    const { jobId } = promptData
+    close()
+    await cancelJob(jobId)
+  }
+
+  // Keyboard shortcuts:
+  //   digits 0..9 — pick that option if it exists
+  //   Space      — pick `-1` Skip if present
+  //   Escape     — close the modal WITHOUT submitting/cancelling
+  //                (universal UX — don't lose a job to an accidental Esc)
+  //   Ctrl/Cmd+C — destructive Cancel job (DELETE /jobs/:id)
+  //                guarded by an active-text-selection check so the user
+  //                can still copy the prompt message normally
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const current = promptDataRef.current
@@ -73,6 +112,7 @@ export const PromptModal = () => {
         }
         return
       }
+
       if (event.key === " " || event.key === "Spacebar") {
         const skipOption = current.options.find(
           (option) => option.index === -1,
@@ -88,32 +128,21 @@ export const PromptModal = () => {
         }
         return
       }
-      if (event.key === "Escape" || event.key === "-") {
-        const cancelOption = current.options.find(
-          (option) => option.index === -2,
-        )
-        if (cancelOption) {
-          event.preventDefault()
-          void submitPromptChoice(
-            current.jobId,
-            current.promptId,
-            -2,
-          )
-          setPromptData(null)
-          return
-        }
-        const skipOption = current.options.find(
-          (option) => option.index === -1,
-        )
-        if (skipOption) {
-          event.preventDefault()
-          void submitPromptChoice(
-            current.jobId,
-            current.promptId,
-            -1,
-          )
-          setPromptData(null)
-        }
+
+      if (event.key === "Escape") {
+        event.preventDefault()
+        setPromptData(null)
+        return
+      }
+
+      const isCancelChord =
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "c"
+      if (isCancelChord && !hasActiveTextSelection()) {
+        event.preventDefault()
+        const { jobId } = current
+        setPromptData(null)
+        void cancelJob(jobId)
       }
     }
 
@@ -139,9 +168,6 @@ export const PromptModal = () => {
       onClick={(event) => {
         if (event.target === event.currentTarget) close()
       }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") close()
-      }}
     >
       <div
         role="dialog"
@@ -149,6 +175,13 @@ export const PromptModal = () => {
         aria-labelledby="prompt-message"
         className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 p-5 flex flex-col gap-4"
       >
+        <p
+          id="prompt-paused-banner"
+          className="text-xs text-amber-300 bg-amber-900/30 border border-amber-700/50 rounded px-2 py-1.5"
+        >
+          ⏸ The pipeline is paused waiting for your choice.
+        </p>
+
         <p
           id="prompt-message"
           className="text-slate-100 text-sm leading-relaxed"
@@ -162,14 +195,9 @@ export const PromptModal = () => {
               type="button"
               className="text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-medium leading-none"
               onClick={() => {
-                if (
-                  typeof window.openVideoModal ===
-                  "function"
-                ) {
-                  window.openVideoModal(
-                    promptData.filePath ?? "",
-                  )
-                }
+                setVideoPreview({
+                  path: promptData.filePath ?? "",
+                })
               }}
             >
               ▶ Play
@@ -213,12 +241,7 @@ export const PromptModal = () => {
                     onClick={(event) => {
                       event.preventDefault()
                       event.stopPropagation()
-                      if (
-                        typeof window.openVideoModal ===
-                        "function"
-                      ) {
-                        window.openVideoModal(rowFilePath)
-                      }
+                      setVideoPreview({ path: rowFilePath })
                     }}
                   >
                     ▶ Play
@@ -243,6 +266,54 @@ export const PromptModal = () => {
               </button>
             )
           })}
+        </div>
+
+        <div
+          id="prompt-keyboard-hints"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-400"
+        >
+          <span className="flex items-center gap-1">
+            <kbd className={kbdChipClass}>0-9</kbd>Pick
+            option
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className={kbdChipClass}>Space</kbd>Skip
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className={kbdChipClass}>Esc</kbd>Close
+            (pipeline waits)
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className={kbdChipClass}>Ctrl+C</kbd>Cancel
+            job
+          </span>
+        </div>
+
+        <div
+          id="prompt-action-bar"
+          className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-700"
+        >
+          <button
+            type="button"
+            id="prompt-cancel-job"
+            className="text-xs bg-red-700 hover:bg-red-600 text-white px-3 py-1.5 rounded font-medium"
+            title="Cancel the running job (DELETE /jobs/:id)"
+            onClick={() => void handleCancelJob()}
+          >
+            Cancel job
+          </button>
+          <button
+            type="button"
+            id="prompt-close"
+            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded font-medium"
+            title="Close this modal; the job will keep waiting for input"
+            onClick={close}
+          >
+            Close (job stays running)
+          </button>
+          <span className="text-[10px] text-slate-400">
+            The pipeline will keep waiting for input.
+          </span>
         </div>
       </div>
     </div>

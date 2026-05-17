@@ -3,8 +3,14 @@ import type { PossibleName } from "../tools/parseSpecialFeatures.js"
 // A candidate association for an unnamed file — used in the follow-up
 // association report when files remain unnamed after the main pass and
 // there are untimed DVDCompare entries that could match them.
+//
+// `durationSeconds` carries the per-file runtime so the Smart Match modal
+// (worker 58 / Part B) can rank candidates by duration proximity without
+// re-probing /files/list at render time. Null when mediainfo couldn't
+// resolve a duration for this file.
 export type UnnamedFileCandidate = {
   filename: string
+  durationSeconds: number | null
   candidates: string[]
 }
 

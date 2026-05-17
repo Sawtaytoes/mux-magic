@@ -3,7 +3,7 @@
   DeleteModeResponse,
   ListFilesResponse,
 } from "@mux-magic/server/api-types"
-import { useAtom } from "jotai"
+import { useAtom, useSetAtom } from "jotai"
 import {
   useCallback,
   useEffect,
@@ -17,7 +17,7 @@ import type {
   SortColumn,
   SortDirection,
 } from "../../components/FileExplorerModal/types"
-import { FileVideoPlayer } from "../FileVideoPlayer/FileVideoPlayer"
+import { videoPreviewModalAtom } from "../../components/VideoPreviewModal/videoPreviewModalAtom"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -192,9 +192,7 @@ export const FileExplorerModal = () => {
     useState<SortDirection>("asc")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [videoPath, setVideoPath] = useState<string | null>(
-    null,
-  )
+  const setVideoPreview = useSetAtom(videoPreviewModalAtom)
 
   // Open/navigate logic: when explorerState changes, reset and load new path.
   useEffect(() => {
@@ -388,29 +386,18 @@ export const FileExplorerModal = () => {
 
   const close = useCallback(() => {
     setExplorerState(null)
-    setVideoPath(null)
   }, [setExplorerState])
 
-  // Expose openVideoModal on window for legacy result cards that call it.
-  useEffect(() => {
-    window.openVideoModal = (absolutePath: string) => {
-      setVideoPath(absolutePath)
-    }
-    return () => {
-      delete window.openVideoModal
-    }
-  }, [])
-
-  // ESC: close video sub-modal first, then explorer.
+  // ESC: close the explorer when open. Video preview owns its own Escape
+  // (see VideoPreviewModal / FileVideoPlayer), and runs at z-[60] so its
+  // backdrop sits above this explorer — clicking outside it lets that
+  // Escape fire before this one.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return
+      if (!explorerState) return
       event.preventDefault()
-      if (videoPath) {
-        setVideoPath(null)
-      } else if (explorerState) {
-        close()
-      }
+      close()
     }
     document.addEventListener("keydown", handleKeyDown, {
       capture: true,
@@ -421,7 +408,7 @@ export const FileExplorerModal = () => {
         handleKeyDown,
         { capture: true },
       )
-  }, [videoPath, explorerState, close])
+  }, [explorerState, close])
 
   if (!explorerState) return null
 
@@ -442,337 +429,325 @@ export const FileExplorerModal = () => {
       : "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-rose-900/50 text-rose-300 border border-rose-700/50"
 
   return (
-    <>
-      <div
-        role="none"
-        id="file-explorer-modal"
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) close()
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") close()
-        }}
-      >
-        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col overflow-hidden max-h-[90dvh]">
-          {/* Title bar */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700 shrink-0 flex-wrap">
-            {/* Breadcrumb */}
-            <div
-              id="file-explorer-breadcrumb"
-              className="flex items-center gap-1 text-xs font-mono flex-1 min-w-0 overflow-hidden"
-            >
-              {breadcrumbSegments.map((seg, idx) => {
-                const isLast =
-                  idx === breadcrumbSegments.length - 1
-                return isLast ? (
-                  <span
-                    key={seg.target}
-                    className="text-slate-200 truncate"
+    <div
+      role="none"
+      id="file-explorer-modal"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) close()
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") close()
+      }}
+    >
+      <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col overflow-hidden max-h-[90dvh]">
+        {/* Title bar */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700 shrink-0 flex-wrap">
+          {/* Breadcrumb */}
+          <div
+            id="file-explorer-breadcrumb"
+            className="flex items-center gap-1 text-xs font-mono flex-1 min-w-0 overflow-hidden"
+          >
+            {breadcrumbSegments.map((seg, idx) => {
+              const isLast =
+                idx === breadcrumbSegments.length - 1
+              return isLast ? (
+                <span
+                  key={seg.target}
+                  className="text-slate-200 truncate"
+                >
+                  {seg.label}
+                </span>
+              ) : (
+                <span
+                  key={seg.target}
+                  className="flex items-center gap-1 shrink-0"
+                >
+                  <button
+                    type="button"
+                    className="text-blue-300 hover:text-blue-200 underline-offset-2 hover:underline truncate"
+                    title={`Navigate to ${seg.target}`}
+                    onClick={() => navigateTo(seg.target)}
                   >
                     {seg.label}
-                  </span>
-                ) : (
-                  <span
-                    key={seg.target}
-                    className="flex items-center gap-1 shrink-0"
-                  >
-                    <button
-                      type="button"
-                      className="text-blue-300 hover:text-blue-200 underline-offset-2 hover:underline truncate"
-                      title={`Navigate to ${seg.target}`}
-                      onClick={() => navigateTo(seg.target)}
-                    >
-                      {seg.label}
-                    </button>
-                    {seg.label !== separator && (
-                      <span className="text-slate-500">
-                        {separator}
-                      </span>
-                    )}
-                  </span>
-                )
-              })}
-            </div>
+                  </button>
+                  {seg.label !== separator && (
+                    <span className="text-slate-500">
+                      {separator}
+                    </span>
+                  )}
+                </span>
+              )
+            })}
+          </div>
 
+          <span
+            id="file-explorer-mode-badge"
+            className={deleteModeClass}
+            title={
+              deleteMode === "permanent"
+                ? (deleteModeReason ??
+                  "Deletes are permanent — no recovery")
+                : "Deletes go to the OS Recycle Bin"
+            }
+          >
+            {deleteModeLabel}
+          </span>
+
+          {isPicker && (
             <span
-              id="file-explorer-mode-badge"
-              className={deleteModeClass}
-              title={
-                deleteMode === "permanent"
-                  ? (deleteModeReason ??
-                    "Deletes are permanent — no recovery")
-                  : "Deletes go to the OS Recycle Bin"
-              }
+              id="file-explorer-picker-badge"
+              className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-blue-900/50 text-blue-300 border border-blue-700/50"
             >
-              {deleteModeLabel}
+              PICKER
             </span>
+          )}
 
-            {isPicker && (
-              <span
-                id="file-explorer-picker-badge"
-                className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-blue-900/50 text-blue-300 border border-blue-700/50"
-              >
-                PICKER
-              </span>
-            )}
-
-            {isPicker && (
-              <button
-                type="button"
-                id="file-explorer-pick-btn"
-                onClick={handleConfirmPick}
-                className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded font-medium"
-              >
-                📌 Use this folder
-              </button>
-            )}
-
+          {isPicker && (
             <button
               type="button"
-              onClick={close}
-              className="text-slate-400 hover:text-white text-base leading-none ml-1"
-              title="Close"
+              id="file-explorer-pick-btn"
+              onClick={handleConfirmPick}
+              className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded font-medium"
             >
-              ✕
+              📌 Use this folder
             </button>
-          </div>
+          )}
 
-          {/* Body */}
-          <div
-            id="file-explorer-body"
-            className="flex-1 overflow-y-auto min-h-0"
+          <button
+            type="button"
+            onClick={close}
+            className="text-slate-400 hover:text-white text-base leading-none ml-1"
+            title="Close"
           >
-            {isLoading && (
-              <p className="text-slate-500 text-sm py-4 text-center">
-                Loading…
-              </p>
-            )}
-            {!isLoading && error && (
-              <p className="text-rose-400 text-sm py-4 px-3">
-                {error}
-              </p>
-            )}
-            {!isLoading &&
-              !error &&
-              sortedEntries.length === 0 && (
-                <p className="text-slate-500 text-sm py-4 text-center">
-                  Folder is empty.
-                </p>
-              )}
-            {!isLoading &&
-              !error &&
-              sortedEntries.length > 0 && (
-                <div className="px-3 py-2">
-                  <table className="w-full text-sm">
-                    <thead className="text-[10px] uppercase tracking-wider text-slate-300 sticky top-0 bg-slate-800 z-10 shadow-sm">
-                      <tr>
-                        <th className="py-2 px-2 text-left w-6">
-                          <input
-                            type="checkbox"
-                            title="Select all files"
-                            onChange={(event) =>
-                              selectAll(
-                                event.target.checked,
-                              )
-                            }
-                            checked={
-                              selected.size > 0 &&
-                              entries
-                                .filter(
-                                  (entry) => entry.isFile,
-                                )
-                                .every((entry) =>
-                                  selected.has(entry.name),
-                                )
-                            }
-                          />
-                        </th>
-                        {(
-                          [
-                            {
-                              col: "name" as const,
-                              label: "Name",
-                              align: "text-left",
-                            },
-                            {
-                              col: "duration" as const,
-                              label: "Duration",
-                              align: "text-right",
-                            },
-                            {
-                              col: "size" as const,
-                              label: "Size",
-                              align: "text-right",
-                            },
-                            {
-                              col: "mtime" as const,
-                              label: "Modified",
-                              align: "text-left",
-                            },
-                          ] as const
-                        ).map(({ col, label, align }) => (
-                          <th
-                            key={col}
-                            className={`py-2 px-2 ${align} cursor-pointer hover:text-white select-none`}
-                            onClick={() => toggleSort(col)}
-                            title={`Sort by ${label.toLowerCase()}`}
-                          >
-                            {label}
-                            {sortIndicator(col)}
-                          </th>
-                        ))}
-                        <th className="py-2 px-2 w-8" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedEntries.map((entry) => {
-                        const isVideo =
-                          entry.isFile &&
-                          isVideoFile(entry.name)
-                        const icon = entry.isDirectory
-                          ? "📁"
-                          : isVideo
-                            ? "🎬"
-                            : "📄"
+            ✕
+          </button>
+        </div>
 
-                        return (
-                          <tr
-                            key={entry.name}
-                            className="border-b border-slate-800 hover:bg-slate-800/30"
-                          >
-                            <td className="py-1 px-2">
-                              <input
-                                type="checkbox"
-                                disabled={entry.isDirectory}
-                                title={
-                                  entry.isDirectory
-                                    ? "Directories not deletable from this UI"
-                                    : undefined
-                                }
-                                checked={selected.has(
+        {/* Body */}
+        <div
+          id="file-explorer-body"
+          className="flex-1 overflow-y-auto min-h-0"
+        >
+          {isLoading && (
+            <p className="text-slate-500 text-sm py-4 text-center">
+              Loading…
+            </p>
+          )}
+          {!isLoading && error && (
+            <p className="text-rose-400 text-sm py-4 px-3">
+              {error}
+            </p>
+          )}
+          {!isLoading &&
+            !error &&
+            sortedEntries.length === 0 && (
+              <p className="text-slate-500 text-sm py-4 text-center">
+                Folder is empty.
+              </p>
+            )}
+          {!isLoading &&
+            !error &&
+            sortedEntries.length > 0 && (
+              <div className="px-3 py-2">
+                <table className="w-full text-sm">
+                  <thead className="text-[10px] uppercase tracking-wider text-slate-300 sticky top-0 bg-slate-800 z-10 shadow-sm">
+                    <tr>
+                      <th className="py-2 px-2 text-left w-6">
+                        <input
+                          type="checkbox"
+                          title="Select all files"
+                          onChange={(event) =>
+                            selectAll(event.target.checked)
+                          }
+                          checked={
+                            selected.size > 0 &&
+                            entries
+                              .filter(
+                                (entry) => entry.isFile,
+                              )
+                              .every((entry) =>
+                                selected.has(entry.name),
+                              )
+                          }
+                        />
+                      </th>
+                      {(
+                        [
+                          {
+                            col: "name" as const,
+                            label: "Name",
+                            align: "text-left",
+                          },
+                          {
+                            col: "duration" as const,
+                            label: "Duration",
+                            align: "text-right",
+                          },
+                          {
+                            col: "size" as const,
+                            label: "Size",
+                            align: "text-right",
+                          },
+                          {
+                            col: "mtime" as const,
+                            label: "Modified",
+                            align: "text-left",
+                          },
+                        ] as const
+                      ).map(({ col, label, align }) => (
+                        <th
+                          key={col}
+                          className={`py-2 px-2 ${align} cursor-pointer hover:text-white select-none`}
+                          onClick={() => toggleSort(col)}
+                          title={`Sort by ${label.toLowerCase()}`}
+                        >
+                          {label}
+                          {sortIndicator(col)}
+                        </th>
+                      ))}
+                      <th className="py-2 px-2 w-8" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedEntries.map((entry) => {
+                      const isVideo =
+                        entry.isFile &&
+                        isVideoFile(entry.name)
+                      const icon = entry.isDirectory
+                        ? "📁"
+                        : isVideo
+                          ? "🎬"
+                          : "📄"
+
+                      return (
+                        <tr
+                          key={entry.name}
+                          className="border-b border-slate-800 hover:bg-slate-800/30"
+                        >
+                          <td className="py-1 px-2">
+                            <input
+                              type="checkbox"
+                              disabled={entry.isDirectory}
+                              title={
+                                entry.isDirectory
+                                  ? "Directories not deletable from this UI"
+                                  : undefined
+                              }
+                              checked={selected.has(
+                                entry.name,
+                              )}
+                              onChange={(event) =>
+                                toggleSelected(
                                   entry.name,
-                                )}
-                                onChange={(event) =>
-                                  toggleSelected(
-                                    entry.name,
-                                    event.target.checked,
+                                  event.target.checked,
+                                )
+                              }
+                            />
+                          </td>
+                          <td className="py-1 px-2 break-all">
+                            {entry.isDirectory ? (
+                              <button
+                                type="button"
+                                className="fe-name fe-dir text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
+                                title="Open this folder"
+                                onClick={() =>
+                                  navigateTo(
+                                    joinPath(
+                                      currentPath,
+                                      entry.name,
+                                      separator,
+                                    ),
                                   )
                                 }
-                              />
-                            </td>
-                            <td className="py-1 px-2 break-all">
-                              {entry.isDirectory ? (
-                                <button
-                                  type="button"
-                                  className="fe-name fe-dir text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
-                                  title="Open this folder"
-                                  onClick={() =>
-                                    navigateTo(
-                                      joinPath(
-                                        currentPath,
-                                        entry.name,
-                                        separator,
-                                      ),
-                                    )
-                                  }
-                                >
-                                  {icon} {entry.name}
-                                </button>
-                              ) : isVideo ? (
-                                <button
-                                  type="button"
-                                  className="fe-name fe-file text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
-                                  title="Play in browser"
-                                  onClick={() =>
-                                    setVideoPath(
-                                      joinPath(
-                                        currentPath,
-                                        entry.name,
-                                        separator,
-                                      ),
-                                    )
-                                  }
-                                >
-                                  {icon} {entry.name}
-                                </button>
-                              ) : (
-                                <span className="text-slate-400">
-                                  {icon} {entry.name}
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-1 px-2 text-right text-slate-300 font-mono text-xs whitespace-nowrap">
-                              {entry.duration ?? "—"}
-                            </td>
-                            <td className="py-1 px-2 text-right text-slate-400 font-mono text-xs whitespace-nowrap">
-                              {entry.isDirectory
-                                ? "—"
-                                : formatSize(entry.size)}
-                            </td>
-                            <td className="py-1 px-2 text-slate-400 font-mono text-xs whitespace-nowrap">
-                              {formatMtime(entry.mtime)}
-                            </td>
-                            <td className="py-1 px-2 text-center">
-                              {entry.isFile ? (
-                                <button
-                                  type="button"
-                                  className="fe-copy text-slate-400 hover:text-slate-200"
-                                  title="Copy absolute path"
-                                  onClick={() =>
-                                    void copyPath(
+                              >
+                                {icon} {entry.name}
+                              </button>
+                            ) : isVideo ? (
+                              <button
+                                type="button"
+                                className="fe-name fe-file text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
+                                title="Play in browser"
+                                onClick={() =>
+                                  setVideoPreview({
+                                    path: joinPath(
+                                      currentPath,
                                       entry.name,
-                                    )
-                                  }
-                                >
-                                  📋
-                                </button>
-                              ) : (
-                                <span className="text-slate-700">
-                                  —
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-          </div>
-
-          {/* Footer — hidden in picker mode */}
-          {!isPicker && (
-            <div
-              id="file-explorer-footer"
-              className="flex items-center gap-3 px-4 py-2 border-t border-slate-700 shrink-0"
-            >
-              <span
-                id="file-explorer-selection-count"
-                className="text-xs text-slate-400"
-              >
-                {selected.size} selected
-              </span>
-              <button
-                type="button"
-                id="file-explorer-delete-btn"
-                disabled={selected.size === 0}
-                onClick={() => void confirmDelete()}
-                className="text-xs bg-rose-700 hover:bg-rose-600 disabled:opacity-40 text-white px-3 py-1 rounded font-medium ml-auto"
-              >
-                Delete selected
-              </button>
-            </div>
-          )}
+                                      separator,
+                                    ),
+                                  })
+                                }
+                              >
+                                {icon} {entry.name}
+                              </button>
+                            ) : (
+                              <span className="text-slate-400">
+                                {icon} {entry.name}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-1 px-2 text-right text-slate-300 font-mono text-xs whitespace-nowrap">
+                            {entry.duration ?? "—"}
+                          </td>
+                          <td className="py-1 px-2 text-right text-slate-400 font-mono text-xs whitespace-nowrap">
+                            {entry.isDirectory
+                              ? "—"
+                              : formatSize(entry.size)}
+                          </td>
+                          <td className="py-1 px-2 text-slate-400 font-mono text-xs whitespace-nowrap">
+                            {formatMtime(entry.mtime)}
+                          </td>
+                          <td className="py-1 px-2 text-center">
+                            {entry.isFile ? (
+                              <button
+                                type="button"
+                                className="fe-copy text-slate-400 hover:text-slate-200"
+                                title="Copy absolute path"
+                                onClick={() =>
+                                  void copyPath(entry.name)
+                                }
+                              >
+                                📋
+                              </button>
+                            ) : (
+                              <span className="text-slate-700">
+                                —
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
         </div>
-      </div>
 
-      {/* Video sub-modal */}
-      <FileVideoPlayer
-        path={videoPath}
-        onClose={() => setVideoPath(null)}
-      />
-    </>
+        {/* Footer — hidden in picker mode */}
+        {!isPicker && (
+          <div
+            id="file-explorer-footer"
+            className="flex items-center gap-3 px-4 py-2 border-t border-slate-700 shrink-0"
+          >
+            <span
+              id="file-explorer-selection-count"
+              className="text-xs text-slate-400"
+            >
+              {selected.size} selected
+            </span>
+            <button
+              type="button"
+              id="file-explorer-delete-btn"
+              disabled={selected.size === 0}
+              onClick={() => void confirmDelete()}
+              className="text-xs bg-rose-700 hover:bg-rose-600 disabled:opacity-40 text-white px-3 py-1 rounded font-medium ml-auto"
+            >
+              Delete selected
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
