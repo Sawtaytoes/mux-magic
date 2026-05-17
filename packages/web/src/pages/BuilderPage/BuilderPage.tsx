@@ -16,6 +16,7 @@ import { PathPicker } from "../../components/PathPicker/PathPicker"
 import { PromptModal } from "../../components/PromptModal/PromptModal"
 import { SequenceRunModal } from "../../components/SequenceRunModal/SequenceRunModal"
 import { VariablesSidebar } from "../../components/VariablesSidebar/VariablesSidebar"
+import { VideoPreviewModal } from "../../components/VideoPreviewModal/VideoPreviewModal"
 import { YamlModal } from "../../components/YamlModal/YamlModal"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
 import { usePageTitle } from "../../hooks/usePageTitle"
@@ -186,6 +187,7 @@ export const BuilderPage = () => {
       <SequenceRunModal />
       <LookupModal />
       <FileExplorerModal />
+      <VideoPreviewModal />
 
       {/* Pickers — render via createPortal into document.body */}
       <CommandPicker />

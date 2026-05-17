@@ -5,8 +5,6 @@ declare global {
       commandName: string
       fieldName: string
     }) => string
-    // Registered by FileExplorerModal on mount; called by PromptModal video rows.
-    openVideoModal?: (absolutePath: string) => void
     // Injected into index.html by the Hono web server at request time (see
     // packages/web/src/server.ts) when REMOTE_SERVER_URL is set. When this
     // is not present (e.g. `vite dev`), apiBase.ts defaults to

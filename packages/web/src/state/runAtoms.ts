@@ -60,7 +60,9 @@ const resolveScalarField = (
 ) => {
   const link = step.links?.[field]
   if (typeof link === "string") {
-    const variable = paths.find((p) => p.id === link)
+    const variable = paths.find(
+      (pathVariable) => pathVariable.id === link,
+    )
     return variable?.value ?? null
   }
   if (
