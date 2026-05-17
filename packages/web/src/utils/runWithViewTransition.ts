@@ -25,19 +25,27 @@ import { flushSync } from "react-dom"
 export const runWithViewTransition = (
   fn: () => void,
 ): Promise<void> => {
-  if (document.startViewTransition) {
-    const transition = document.startViewTransition(() => {
-      flushSync(fn)
-    })
-    // All three ViewTransition promises reject with AbortError when a
-    // transition is skipped (e.g. another transition starts first). Silently
-    // catch each one so they don't surface as unhandled rejections in CI.
-    transition?.ready?.catch(() => {})
-    transition?.updateCallbackDone?.catch(() => {})
-    return (
-      transition?.finished ?? Promise.resolve()
-    ).catch(() => {})
+  // Skip the View Transitions path when the document isn't visible — some
+  // Chromium contexts (notably vitest's browser-harness iframe under
+  // headless CI) drop the update callback when visibility is "hidden", and
+  // state correctness here must not depend on the animation running. Apply
+  // directly in that case.
+  if (
+    !document.startViewTransition ||
+    document.visibilityState === "hidden"
+  ) {
+    fn()
+    return Promise.resolve()
   }
-  fn()
-  return Promise.resolve()
+  const transition = document.startViewTransition(() => {
+    flushSync(fn)
+  })
+  // All three ViewTransition promises reject with AbortError when a
+  // transition is skipped (e.g. another transition starts first). Silently
+  // catch each one so they don't surface as unhandled rejections in CI.
+  transition?.ready?.catch(() => {})
+  transition?.updateCallbackDone?.catch(() => {})
+  return (transition?.finished ?? Promise.resolve()).catch(
+    () => {},
+  )
 }
