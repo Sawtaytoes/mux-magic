@@ -95,6 +95,7 @@ export default defineConfig(
       "**/public/**",
       "**/scripts/**",
       "**/storybook-static/**",
+      "docs/**",
       "examples/**",
       "packages/server/src/schema.generated/**",
       "packages/web/src/api/schema.generated.ts",
