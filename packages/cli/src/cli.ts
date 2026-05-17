@@ -40,6 +40,7 @@ import { nameSpecialFeaturesDvdCompareTmdbCommand } from "./cli-commands/nameSpe
 import { nameTvShowEpisodesCommand } from "./cli-commands/nameTvShowEpisodesCommand.js"
 import { remuxToMkvCommand } from "./cli-commands/remuxToMkvCommand.js"
 import { renameDemosCommand } from "./cli-commands/renameDemosCommand.js"
+import { renameFilesCommand } from "./cli-commands/renameFilesCommand.js"
 import { renameMovieClipDownloadsCommand } from "./cli-commands/renameMovieClipDownloadsCommand.js"
 import { renumberChaptersCommand } from "./cli-commands/renumberChaptersCommand.js"
 import { reorderTracksCommand } from "./cli-commands/reorderTracksCommand.js"
@@ -93,6 +94,7 @@ yargs(hideBin(process.argv))
   .command(nameTvShowEpisodesCommand)
   .command(remuxToMkvCommand)
   .command(renameDemosCommand)
+  .command(renameFilesCommand)
   .command(renumberChaptersCommand)
   .command(renameMovieClipDownloadsCommand)
   .command(reorderTracksCommand)
