@@ -49,7 +49,7 @@ export const makeDirectoryRequestSchema = z.object({
     ),
 })
 
-const renameRegexSchema = z
+export const renameRegexSchema = z
   .object({
     pattern: z
       .string()
@@ -63,7 +63,7 @@ const renameRegexSchema = z
       ),
   })
   .describe(
-    "Optional regex-based rename applied to each copied entry's name at the destination.",
+    "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
   )
 
 export const copyFilesRequestSchema = z.object({
@@ -130,6 +130,35 @@ export const moveFilesRequestSchema = z.object({
       "If set, only files whose names match this regular expression are moved.",
     ),
   renameRegex: renameRegexSchema.optional(),
+})
+
+export const renameFilesRequestSchema = z.object({
+  sourcePath: z
+    .string()
+    .describe("Directory containing files to rename."),
+  isRecursive: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Recursively descend into subdirectories. Default false.",
+    ),
+  recursiveDepth: z
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .describe(
+      "Maximum recursion depth when --isRecursive is set (0 = default depth of 1; mirrors deleteFilesByExtension).",
+    ),
+  fileFilterRegex: z
+    .string()
+    .optional()
+    .describe(
+      "If set, only files whose names match this regular expression are renamed.",
+    ),
+  renameRegex: renameRegexSchema.describe(
+    "Required. Applied to each matched filename (including extension) via String.replace.",
+  ),
 })
 
 export const deleteCopiedOriginalsRequestSchema = z.object({

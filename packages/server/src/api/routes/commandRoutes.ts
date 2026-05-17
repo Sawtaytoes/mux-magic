@@ -51,6 +51,10 @@ import { nameSpecialFeaturesDvdCompareTmdb } from "../../app-commands/nameSpecia
 import { nameTvShowEpisodes } from "../../app-commands/nameTvShowEpisodes.js"
 import { remuxToMkv } from "../../app-commands/remuxToMkv.js"
 import { renameDemos } from "../../app-commands/renameDemos.js"
+import {
+  type RenameRecord,
+  renameFiles,
+} from "../../app-commands/renameFiles.js"
 import { renameMovieClipDownloads } from "../../app-commands/renameMovieClipDownloads.js"
 import { renumberChapters } from "../../app-commands/renumberChapters.js"
 import {
@@ -144,6 +148,7 @@ export const commandNames = [
   "addSubtitles",
   "mergeTracks",
   "moveFiles",
+  "renameFiles",
   "nameAnimeEpisodes",
   "nameAnimeEpisodesAniDB",
   "nameMovieCutsDvdCompareTmdb",
@@ -499,6 +504,25 @@ export const commandConfigs: Record<
     schema: schemas.moveFilesRequestSchema,
     summary:
       "Move files from source to destination, with optional regex filtering and renaming",
+    tags: ["File Operations"],
+  },
+  renameFiles: {
+    getObservable: (body) =>
+      renameFiles({
+        fileFilterRegex: body.fileFilterRegex,
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        renameRegex: body.renameRegex,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      renamedPaths: (results as RenameRecord[]).map(
+        (record) => record.destination,
+      ),
+    }),
+    schema: schemas.renameFilesRequestSchema,
+    summary:
+      "Rename files in place via regex (no copy, no move). Pre-flight halts the run if two files would map to the same target name.",
     tags: ["File Operations"],
   },
   deleteCopiedOriginals: {

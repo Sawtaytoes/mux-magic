@@ -2,11 +2,13 @@ import { cp, readdir, stat } from "node:fs/promises"
 import { extname, join } from "node:path"
 import {
   aclSafeCopyFile,
+  applyRenameRegex,
   type CopyOptions,
   getFiles,
   logAndRethrowPipelineError,
   logInfo,
   makeDirectory,
+  type RenameRegex,
   runTasks,
 } from "@mux-magic/tools"
 import {
@@ -30,21 +32,10 @@ export type CopyRecord = {
   destination: string
 }
 
-export type RenameRegex = {
-  pattern: string
-  replacement: string
-}
-
-export const applyRenameRegex = (
-  name: string,
-  renameRegex: RenameRegex | undefined,
-): string =>
-  renameRegex
-    ? name.replace(
-        new RegExp(renameRegex.pattern),
-        renameRegex.replacement,
-      )
-    : name
+// Re-exported so existing imports `from "./copyFiles.js"` (notably the
+// sibling `moveFiles.ts` and any downstream callers) keep compiling
+// after the type moved to `@mux-magic/tools`.
+export type { RenameRegex } from "@mux-magic/tools"
 
 // Wraps the inner copy pipeline in an Observable whose teardown aborts
 // an internal AbortController. The signal threads into every per-file
