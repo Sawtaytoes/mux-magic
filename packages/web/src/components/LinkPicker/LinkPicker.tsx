@@ -55,6 +55,11 @@ type LinkItem = PathLinkItem | StepLinkItem
 // declared on the source command's `outputs` array contribute an extra
 // row each. That lets users wire e.g. `deleteCopiedOriginals.pathsToDelete`
 // to `copyFiles` → `Copied source paths` without hand-editing YAML.
+//
+// When the anchor field declares `acceptedOutputs`, both step-output
+// rows and path-variable rows are filtered to only what's type-
+// compatible: step rows whose output name is in the whitelist, and no
+// path variables at all (they're single-string scalars, not arrays).
 const buildItems = (
   anchor: LinkPickerAnchor,
   allSteps: SequenceItem[],
@@ -73,15 +78,25 @@ const buildItems = (
     flatOrder.find((entry) => entry.step.id === stepId)
       ?.step
 
-  const pathItems: LinkItem[] = paths.map(
-    (pathVariable) => ({
-      kind: "path",
-      value: `path:${pathVariable.id}`,
-      label: pathVariable.label || "(unnamed)",
-      detail: pathVariable.value || "",
-      pathVariableId: pathVariable.id,
-    }),
-  )
+  const anchorStep = flatOrder[currentIndex]?.step
+  const anchorField = anchorStep?.command
+    ? commands[anchorStep.command]?.fields.find(
+        (entry) => entry.name === anchor.fieldName,
+      )
+    : undefined
+  const acceptedOutputs = anchorField?.acceptedOutputs
+  const isOutputAccepted = (outputName: string) =>
+    !acceptedOutputs || acceptedOutputs.includes(outputName)
+
+  const pathItems: LinkItem[] = acceptedOutputs
+    ? []
+    : paths.map((pathVariable) => ({
+        kind: "path",
+        value: `path:${pathVariable.id}`,
+        label: pathVariable.label || "(unnamed)",
+        detail: pathVariable.value || "",
+        pathVariableId: pathVariable.id,
+      }))
 
   const stepItems: StepLinkItem[] = flatOrder
     .slice(0, currentIndex)
@@ -91,32 +106,37 @@ const buildItems = (
         return []
       }
       const stepLabel = `Step ${entry.flatIndex + 1}: ${getCommandLabel(previousStep.command)}`
-      const folderItem: StepLinkItem = {
-        kind: "step",
-        value: `step:${previousStep.id}:folder`,
-        label: stepLabel,
-        detail: stepOutput(
-          previousStep,
-          paths,
-          commands,
-          findStep,
-        ),
-        sourceStepId: previousStep.id,
-        outputName: "folder",
-      }
+      const folderItem: StepLinkItem | null =
+        isOutputAccepted("folder")
+          ? {
+              kind: "step",
+              value: `step:${previousStep.id}:folder`,
+              label: stepLabel,
+              detail: stepOutput(
+                previousStep,
+                paths,
+                commands,
+                findStep,
+              ),
+              sourceStepId: previousStep.id,
+              outputName: "folder",
+            }
+          : null
       const namedOutputs =
         commands[previousStep.command]?.outputs ?? []
-      const namedItems: StepLinkItem[] = namedOutputs.map(
-        (output) => ({
+      const namedItems: StepLinkItem[] = namedOutputs
+        .filter((output) => isOutputAccepted(output.name))
+        .map((output) => ({
           kind: "step",
           value: `step:${previousStep.id}:${output.name}`,
           label: `${stepLabel} → ${output.label ?? output.name}`,
           detail: output.name,
           sourceStepId: previousStep.id,
           outputName: output.name,
-        }),
-      )
-      return [folderItem].concat(namedItems)
+        }))
+      return folderItem
+        ? [folderItem].concat(namedItems)
+        : namedItems
     })
 
   return pathItems.concat(stepItems)
@@ -236,6 +256,22 @@ export const LinkPicker = () => {
         commands,
       )
     : []
+  const hasAcceptedOutputsWhitelist = (() => {
+    if (!pickerState) return false
+    const flat = flattenSteps(allSteps)
+    const anchorStep = flat.find(
+      (entry) =>
+        entry.step.id === pickerState.anchor.stepId,
+    )?.step
+    if (!anchorStep?.command) return false
+    const anchorField = commands[
+      anchorStep.command
+    ]?.fields.find(
+      (entry) =>
+        entry.name === pickerState.anchor.fieldName,
+    )
+    return Array.isArray(anchorField?.acceptedOutputs)
+  })()
   const queryLower = query.trim().toLowerCase()
   const filtered = queryLower
     ? allItems.filter((item) =>
@@ -401,11 +437,13 @@ export const LinkPicker = () => {
           })
         )}
       </div>
-      <div className="shrink-0 px-3 py-2 border-t border-slate-700 text-[11px] text-slate-500 italic">
-        {
-          "Don't see what you need? Close this and type a path directly into the field — it saves as a new path automatically."
-        }
-      </div>
+      {hasAcceptedOutputsWhitelist ? null : (
+        <div className="shrink-0 px-3 py-2 border-t border-slate-700 text-[11px] text-slate-500 italic">
+          {
+            "Don't see what you need? Close this and type a path directly into the field — it saves as a new path automatically."
+          }
+        </div>
+      )}
     </div>,
     document.body,
   )

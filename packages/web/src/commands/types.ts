@@ -32,6 +32,13 @@ export type CommandField = {
   min?: number
   max?: number
   hasIncrementButtons?: boolean
+  // When set, the link picker only shows step rows whose named output
+  // appears in this list, AND hides path-variable rows entirely. Use
+  // this on fields whose runtime type is incompatible with the default
+  // `folder` (single-path) output and with path variables — e.g.
+  // `deleteCopiedOriginals.pathsToDelete`, which is `string[]` and only
+  // makes sense when wired to `copyFiles.copiedSourcePaths`.
+  acceptedOutputs?: ReadonlyArray<string>
 }
 
 export type CommandDefinition = {

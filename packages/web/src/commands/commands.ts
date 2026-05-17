@@ -338,6 +338,11 @@ export const COMMANDS: Commands = {
           label: "Paths to Delete",
           placeholder:
             "Link from a prior copyFiles step's copiedSourcePaths output",
+          // Server schema is `string[]`. Folder (single path) and path
+          // variables (single string) are type-incompatible — narrow the
+          // link picker so users only see valid array sources. Update
+          // this list when new commands publish `string[]` outputs.
+          acceptedOutputs: ["copiedSourcePaths"],
         }),
       ],
     }

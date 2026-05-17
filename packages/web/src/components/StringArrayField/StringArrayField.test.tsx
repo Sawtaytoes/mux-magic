@@ -129,7 +129,7 @@ describe("StringArrayField", () => {
       screen.getByTitle(
         "Link to a path variable or step output",
       ),
-    ).toBeInTheDocument()
+    ).toBeVisible()
     expect(screen.getByText("— custom —")).toBeVisible()
   })
 

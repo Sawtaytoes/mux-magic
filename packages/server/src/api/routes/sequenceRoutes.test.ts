@@ -1567,7 +1567,9 @@ describe("POST /sequences/run — groups", () => {
     // ENOENT lands in the umbrella's error field.
     test("short-circuits a sequence whose next step would have ENOENT'd on the missing path", async () => {
       const response = await post("/sequences/run", {
-        paths: { workDir: { value: "/no-such-work-folder" } },
+        paths: {
+          workDir: { value: "/no-such-work-folder" },
+        },
         steps: [
           {
             id: "guard",
