@@ -12,12 +12,46 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import type { Meta, StoryObj } from "@storybook/react"
-import { createStore, Provider } from "jotai"
+import { createStore, Provider, useAtomValue } from "jotai"
 import { FIXTURE_COMMANDS } from "../../commands/__fixtures__/commands"
+import { isGroup } from "../../jobs/sequenceUtils"
 import { commandsAtom } from "../../state/commandsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Group, Step } from "../../types"
 import { GroupCard } from "./GroupCard"
+
+// Subscribes to stepsAtom and feeds the live Group to GroupCard so that
+// atom mutations (collapse, +Step, move, remove, paste-into) re-render
+// the card instead of leaving the original fixture frozen on screen.
+const LiveGroupCard = ({
+  groupId,
+  itemIndex,
+  startingFlatIndex,
+  isFirst,
+  isLast,
+}: {
+  groupId: string
+  itemIndex: number
+  startingFlatIndex: number
+  isFirst: boolean
+  isLast: boolean
+}) => {
+  const items = useAtomValue(stepsAtom)
+  const group = items.find(
+    (item): item is Group =>
+      isGroup(item) && item.id === groupId,
+  )
+  if (!group) return null
+  return (
+    <GroupCard
+      group={group}
+      itemIndex={itemIndex}
+      startingFlatIndex={startingFlatIndex}
+      isFirst={isFirst}
+      isLast={isLast}
+    />
+  )
+}
 
 const InteractiveStoryProvider = ({
   children,
@@ -104,20 +138,17 @@ const parallelGroup: Group = {
 }
 
 export const ParallelGroup: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider steps={[parallelGroup]}>
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    group: parallelGroup,
-    itemIndex: 0,
-    isFirst: true,
-    isLast: false,
-    startingFlatIndex: 0,
-  },
+  render: () => (
+    <InteractiveStoryProvider steps={[parallelGroup]}>
+      <LiveGroupCard
+        groupId={parallelGroup.id}
+        itemIndex={0}
+        startingFlatIndex={0}
+        isFirst={true}
+        isLast={false}
+      />
+    </InteractiveStoryProvider>
+  ),
 }
 
 // Sequential (serial) group with 3 steps
@@ -171,20 +202,17 @@ const sequentialGroup: Group = {
 }
 
 export const SequentialGroup: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider steps={[sequentialGroup]}>
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    group: sequentialGroup,
-    itemIndex: 0,
-    isFirst: true,
-    isLast: true,
-    startingFlatIndex: 0,
-  },
+  render: () => (
+    <InteractiveStoryProvider steps={[sequentialGroup]}>
+      <LiveGroupCard
+        groupId={sequentialGroup.id}
+        itemIndex={0}
+        startingFlatIndex={0}
+        isFirst={true}
+        isLast={true}
+      />
+    </InteractiveStoryProvider>
+  ),
 }
 
 // Collapsed parallel group
@@ -196,22 +224,19 @@ const collapsedParallelGroup: Group = {
 }
 
 export const CollapsedParallelGroup: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider
-        steps={[collapsedParallelGroup]}
-      >
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    group: collapsedParallelGroup,
-    itemIndex: 0,
-    isFirst: true,
-    isLast: true,
-    startingFlatIndex: 0,
-  },
+  render: () => (
+    <InteractiveStoryProvider
+      steps={[collapsedParallelGroup]}
+    >
+      <LiveGroupCard
+        groupId={collapsedParallelGroup.id}
+        itemIndex={0}
+        startingFlatIndex={0}
+        isFirst={true}
+        isLast={true}
+      />
+    </InteractiveStoryProvider>
+  ),
 }
 
 // Group with steps in various states
@@ -266,44 +291,45 @@ const mixedStatesGroup: Group = {
 }
 
 export const GroupWithMixedStates: Story = {
-  decorators: [
-    (Story) => (
-      <InteractiveStoryProvider steps={[mixedStatesGroup]}>
-        <Story />
-      </InteractiveStoryProvider>
-    ),
-  ],
-  args: {
-    group: mixedStatesGroup,
-    itemIndex: 0,
-    isFirst: true,
-    isLast: true,
-    startingFlatIndex: 0,
-  },
+  render: () => (
+    <InteractiveStoryProvider steps={[mixedStatesGroup]}>
+      <LiveGroupCard
+        groupId={mixedStatesGroup.id}
+        itemIndex={0}
+        startingFlatIndex={0}
+        isFirst={true}
+        isLast={true}
+      />
+    </InteractiveStoryProvider>
+  ),
 }
 
 // Multiple groups with dragging enabled
 export const InASequenceMultipleGroups: Story = {
-  decorators: [
-    (Story) => {
-      const steps: (Step | Group)[] = [
-        parallelGroup,
-        sequentialGroup,
-      ]
-      return (
-        <InteractiveStoryProvider steps={steps}>
-          <div className="space-y-2">
-            <Story />
-          </div>
-        </InteractiveStoryProvider>
-      )
-    },
-  ],
-  args: {
-    group: parallelGroup,
-    itemIndex: 0,
-    isFirst: true,
-    isLast: false,
-    startingFlatIndex: 0,
+  render: () => {
+    const steps: (Step | Group)[] = [
+      parallelGroup,
+      sequentialGroup,
+    ]
+    return (
+      <InteractiveStoryProvider steps={steps}>
+        <div className="space-y-2">
+          <LiveGroupCard
+            groupId={parallelGroup.id}
+            itemIndex={0}
+            startingFlatIndex={0}
+            isFirst={true}
+            isLast={false}
+          />
+          <LiveGroupCard
+            groupId={sequentialGroup.id}
+            itemIndex={1}
+            startingFlatIndex={parallelGroup.steps.length}
+            isFirst={false}
+            isLast={true}
+          />
+        </div>
+      </InteractiveStoryProvider>
+    )
   },
 }
