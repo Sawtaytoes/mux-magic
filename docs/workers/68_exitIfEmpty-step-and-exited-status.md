@@ -28,7 +28,7 @@ Add **two coupled additions**:
 - `sourcePath` does not exist (`readdir` rejects with `ENOENT`).
 - `sourcePath` exists but contains zero entries.
 
-Both emit `{ shouldExit: true, exitReason: "..." }`. Non-empty emits `{ shouldExit: false, exitReason: "" }`. Pointing at a file rather than a directory throws (caller error — fail honestly rather than paper over the mistake). Any other `fs` error (EACCES etc.) throws too — those are real failures, not "empty."
+Both emit `{ isExiting: true, exitReason: "..." }`. Non-empty emits `{ isExiting: false, exitReason: "" }`. Pointing at a file rather than a directory throws (caller error — fail honestly rather than paper over the mistake). Any other `fs` error (EACCES etc.) throws too — those are real failures, not "empty."
 
 Schema [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts) is one required field (`sourcePath: string`). Registration in [commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) under `commandNames` + `commandConfigs` with `extractOutputs` that lifts the emission's two fields onto the child job's `outputs` map. Tag: `"Flow Control"` — establishes a category for future siblings (`exitIfFileCountBelow`, generic `exitIf`).
 
@@ -36,15 +36,15 @@ Schema [packages/server/src/api/schemas.ts](../../packages/server/src/api/schema
 
 [packages/server/src/api/types.ts](../../packages/server/src/api/types.ts) — add `"exited"` to the union. Cascading semantics in the sequence runner:
 
-- The **triggering step** stays `completed` (it ran successfully — it just published `shouldExit: true`).
+- The **triggering step** stays `completed` (it ran successfully — it just published `isExiting: true`).
 - The **umbrella** finalizes as `exited`.
 - **Every later flat step** that was still `pending` cascades to `exited` (not `skipped` — these steps never ran *by design*, not because something earlier failed).
 
-The runner [sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) reads `outputs.shouldExit === true` in `runOneStep` and transmutes the completed outcome into a new `kind: "exited"` outcome. The item loop, serial-group loop, and parallel-group branch each call a new `finalizeFromExit(step, reason)` helper (symmetric to the existing `finalizeFromChildCancel`). `markRemainingTerminalFromFlatIndex(idx, status)` is the parameterized successor of `markRemainingSkippedFromFlatIndex` — same cascade walk, status now a parameter.
+The runner [sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) reads `outputs.isExiting === true` in `runOneStep` and transmutes the completed outcome into a new `kind: "exited"` outcome. The item loop, serial-group loop, and parallel-group branch each call a new `finalizeFromExit(step, reason)` helper (symmetric to the existing `finalizeFromChildCancel`). `markRemainingTerminalFromFlatIndex(idx, status)` is the parameterized successor of `markRemainingSkippedFromFlatIndex` — same cascade walk, status now a parameter.
 
 ### Reserved-output protocol
 
-The runner's check is *not* `command === "exitIfEmpty"`. It's `outputs.shouldExit === true`. Any future flow-control command publishing the same shape gets the same treatment for free — no runner changes needed. Document this as a reserved-key contract so a non-flow-control command can't accidentally publish `shouldExit` and end up short-circuiting a sequence.
+The runner's check is *not* `command === "exitIfEmpty"`. It's `outputs.isExiting === true`. Any future flow-control command publishing the same shape gets the same treatment for free — no runner changes needed. Document this as a reserved-key contract so a non-flow-control command can't accidentally publish `isExiting` and end up short-circuiting a sequence.
 
 ### Surface area touched
 

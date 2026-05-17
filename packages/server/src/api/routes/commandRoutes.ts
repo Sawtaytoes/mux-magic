@@ -424,17 +424,17 @@ export const commandConfigs: Record<
   exitIfEmpty: {
     getObservable: (body) =>
       exitIfEmpty({ sourcePath: body.sourcePath }),
-    // The runner reads `shouldExit` / `exitReason` off the child job's
+    // The runner reads `isExiting` / `exitReason` off the child job's
     // outputs to decide whether to short-circuit the umbrella sequence
     // with `status: "exited"`. The keys here are a reserved contract —
     // any future flow-control command (`exitIfFileCountBelow`, etc.)
     // can publish the same shape without touching the runner.
     extractOutputs: (results) => {
       const decision = results[0] as
-        | { shouldExit?: boolean; exitReason?: string }
+        | { isExiting?: boolean; exitReason?: string }
         | undefined
       return {
-        shouldExit: decision?.shouldExit === true,
+        isExiting: decision?.isExiting === true,
         exitReason:
           typeof decision?.exitReason === "string"
             ? decision.exitReason
