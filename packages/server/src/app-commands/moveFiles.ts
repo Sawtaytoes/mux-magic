@@ -2,11 +2,13 @@ import { rm, stat } from "node:fs/promises"
 import { extname, join } from "node:path"
 import {
   aclSafeCopyFile,
+  applyRenameRegex,
   type CopyOptions,
   getFiles,
   logAndRethrowPipelineError,
   logInfo,
   makeDirectory,
+  type RenameRegex,
   runTasks,
 } from "@mux-magic/tools"
 import {
@@ -22,11 +24,9 @@ import {
 import { getActiveJobId } from "../api/logCapture.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import {
-  applyRenameRegex,
   compileFilterRegex,
   compileRegexValue,
   type RegexFilterInput,
-  type RenameRegex,
 } from "./copyFiles.js"
 
 type MoveRecord = {

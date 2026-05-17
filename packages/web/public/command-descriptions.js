@@ -34,7 +34,7 @@ window.commandDescriptions = {
       "fileFilterRegex": "If set, only files whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
       "folderFilterRegex": "If set (and includeFolders is true), only folders whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
       "includeFolders": "When true, top-level subdirectories matching folderFilterRegex are copied as units (recursively). Files are only copied if fileFilterRegex is also set.",
-      "renameRegex": "Optional regex-based rename applied to each copied entry's name at the destination."
+      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place."
     }
   },
   "flattenOutput": {
@@ -201,7 +201,17 @@ window.commandDescriptions = {
       "sourcePath": "Directory to move files from. Deleted after all files are copied.",
       "destinationPath": "Directory to move files into. Created if it does not already exist.",
       "fileFilterRegex": "If set, only files whose names match this regular expression are moved. Bare strings are accepted for back-compat with pre-flags templates.",
-      "renameRegex": "Optional regex-based rename applied to each copied entry's name at the destination."
+      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place."
+    }
+  },
+  "renameFiles": {
+    "summary": "Rename files in place via regex (no copy, no move). Pre-flight halts the run if two files would map to the same target name.",
+    "fields": {
+      "sourcePath": "Directory containing files to rename.",
+      "isRecursive": "Recursively descend into subdirectories. Default false.",
+      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 1; mirrors deleteFilesByExtension).",
+      "fileFilterRegex": "If set, only files whose names match this regular expression are renamed. Bare strings are accepted for back-compat with pre-flags templates.",
+      "renameRegex": "Required. Applied to each matched filename (including extension) via String.replace."
     }
   },
   "deleteCopiedOriginals": {

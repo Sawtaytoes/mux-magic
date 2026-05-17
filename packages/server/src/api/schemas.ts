@@ -95,7 +95,8 @@ const regexFilterFieldSchema = z.preprocess(
 // Same shape as `regexFilterValueSchema` plus `replacement`. The legacy
 // 2-key `{ pattern, replacement }` form already satisfies this schema
 // because `flags` and `sample` are optional — no preprocessing needed.
-const renameRegexSchema = regexFilterValueSchema
+// Exported so worker 66's `renameFiles` command schema can reuse it.
+export const renameRegexSchema = regexFilterValueSchema
   .extend({
     replacement: z
       .string()
@@ -104,7 +105,7 @@ const renameRegexSchema = regexFilterValueSchema
       ),
   })
   .describe(
-    "Optional regex-based rename applied to each copied entry's name at the destination.",
+    "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
   )
 
 export const copyFilesRequestSchema = z.object({
@@ -168,6 +169,34 @@ export const moveFilesRequestSchema = z.object({
       "If set, only files whose names match this regular expression are moved. Bare strings are accepted for back-compat with pre-flags templates.",
     ),
   renameRegex: renameRegexSchema.optional(),
+})
+
+export const renameFilesRequestSchema = z.object({
+  sourcePath: z
+    .string()
+    .describe("Directory containing files to rename."),
+  isRecursive: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Recursively descend into subdirectories. Default false.",
+    ),
+  recursiveDepth: z
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .describe(
+      "Maximum recursion depth when --isRecursive is set (0 = default depth of 1; mirrors deleteFilesByExtension).",
+    ),
+  fileFilterRegex: regexFilterFieldSchema
+    .optional()
+    .describe(
+      "If set, only files whose names match this regular expression are renamed. Bare strings are accepted for back-compat with pre-flags templates.",
+    ),
+  renameRegex: renameRegexSchema.describe(
+    "Required. Applied to each matched filename (including extension) via String.replace.",
+  ),
 })
 
 export const deleteCopiedOriginalsRequestSchema = z.object({

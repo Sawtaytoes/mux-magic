@@ -44,6 +44,7 @@ import {
   nameTvShowEpisodesRequestSchema,
   remuxToMkvRequestSchema,
   renameDemosRequestSchema,
+  renameFilesRequestSchema,
   renameMovieClipDownloadsRequestSchema,
   reorderTracksRequestSchema,
   replaceAttachmentsRequestSchema,
@@ -136,6 +137,42 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label:
             "Also delete the source folder after copying",
+        }),
+      ],
+    }
+  })(),
+  renameFiles: (() => {
+    const field = fieldBuilder(renameFilesRequestSchema)
+    return {
+      summary:
+        "Rename files in place via regex (no copy, no move).",
+      tag: "File Operations",
+      outputFolderName: null,
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Recursive",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Depth",
+          visibleWhen: {
+            fieldName: "isRecursive",
+            value: true,
+          },
+        }),
+        field("fileFilterRegex", {
+          type: "regexWithFlags",
+          label: "File Filter Regex",
+          placeholder: "\\.mkv$",
+        }),
+        field("renameRegex", {
+          type: "renameRegex",
+          label: "Rename Regex",
         }),
       ],
     }

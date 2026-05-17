@@ -2,11 +2,13 @@ import { cp, readdir, stat } from "node:fs/promises"
 import { extname, join } from "node:path"
 import {
   aclSafeCopyFile,
+  applyRenameRegex,
   type CopyOptions,
   getFiles,
   logAndRethrowPipelineError,
   logInfo,
   makeDirectory,
+  type RenameRegex,
   runTasks,
 } from "@mux-magic/tools"
 import {
@@ -30,23 +32,24 @@ export type CopyRecord = {
   destination: string
 }
 
+// Re-exported so existing imports `from "./copyFiles.js"` (notably the
+// sibling `moveFiles.ts` and any downstream callers) keep compiling
+// after the type moved to `@mux-magic/tools` in worker 66.
+export type { RenameRegex } from "@mux-magic/tools"
+
 // Object-form regex input shared by `fileFilterRegex` / `folderFilterRegex`
-// (without `replacement`) and `renameRegex` (with it). `flags` plumbs
-// into `new RegExp(pattern, flags)`; `sample` is UI-only documentation
-// the runtime ignores.
+// (without `replacement`) and the worker-66-canonical `RenameRegex`
+// (with it). `flags` plumbs into `new RegExp(pattern, flags)`; `sample`
+// is UI-only documentation the runtime ignores.
 export type RegexFilterValue = {
   pattern: string
   flags?: string
   sample?: string
 }
 
-export type RenameRegex = RegexFilterValue & {
-  replacement: string
-}
-
 // Pre-flags wire format was a bare string for filters and a 2-key object
 // for rename. Both are still accepted at the handler boundary so direct
-// callers (CLI, tests) don't have to rewrite their fixtures.
+// callers (CLI, tests, parity fixtures) don't have to rewrite anything.
 export type RegexFilterInput = string | RegexFilterValue
 
 export const normalizeRegexFilter = (
@@ -62,7 +65,7 @@ export const normalizeRegexFilter = (
 // flag set surfaces with the user's actual values in the error message,
 // instead of as a generic `SyntaxError` mid-job.
 export const compileRegexValue = (
-  value: RegexFilterValue,
+  value: { pattern: string; flags?: string },
   fieldLabel: string,
 ): RegExp => {
   try {
@@ -93,17 +96,6 @@ export const compileFilterRegex = (
     ? undefined
     : compileRegexValue(value, fieldLabel)
 }
-
-export const applyRenameRegex = (
-  name: string,
-  renameRegex: RenameRegex | undefined,
-): string =>
-  renameRegex
-    ? name.replace(
-        new RegExp(renameRegex.pattern, renameRegex.flags),
-        renameRegex.replacement,
-      )
-    : name
 
 // Wraps the inner copy pipeline in an Observable whose teardown aborts
 // an internal AbortController. The signal threads into every per-file

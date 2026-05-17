@@ -14,6 +14,10 @@ export {
   type CopyProgressEvent,
 } from "./aclSafeCopyFile.js"
 export { addFolderNameBeforeFilename } from "./addFolderNameBeforeFilename.js"
+export {
+  applyRenameRegex,
+  type RenameRegex,
+} from "./applyRenameRegex.js"
 export { captureConsoleMessage } from "./captureConsoleMessage.js"
 export { captureLogMessage } from "./captureLogMessage.js"
 export { cleanupFilename } from "./cleanupFilename.js"
