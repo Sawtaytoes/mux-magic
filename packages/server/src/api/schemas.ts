@@ -53,7 +53,7 @@ export const exitIfEmptyRequestSchema = z.object({
   sourcePath: z
     .string()
     .describe(
-      "Directory path whose emptiness gates whether the sequence continues. The step emits `shouldExit: true` (causing the umbrella sequence job to end with status `exited`) when the path either does not exist or exists but contains zero entries. Otherwise emits `shouldExit: false` and the sequence continues.",
+      "Directory path whose emptiness gates whether the sequence continues. The step emits `isExiting: true` (causing the umbrella sequence job to end with status `exited`) when the path either does not exist or exists but contains zero entries. Otherwise emits `isExiting: false` and the sequence continues.",
     ),
 })
 

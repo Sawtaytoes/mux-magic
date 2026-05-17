@@ -130,7 +130,7 @@ type StepRunOutcome =
     }
   | { kind: "failed"; stepId: string; error: string }
   | { kind: "cancelled" }
-  // Emitted when a step's outputs carry `shouldExit: true` (today only
+  // Emitted when a step's outputs carry `isExiting: true` (today only
   // `exitIfEmpty`, but the runner has no per-command knowledge — any
   // command publishing the reserved key wins this treatment). The step
   // itself ran to completion; the sequence as a whole takes a planned
@@ -330,7 +330,7 @@ export const runSequenceJob = (
 
   // Symmetric to `finalizeFromChildCancel` but for the
   // `exitIfEmpty` (or any future flow-control command publishing
-  // `shouldExit: true`) path. The triggering step itself is already
+  // `isExiting: true`) path. The triggering step itself is already
   // `completed` — we just need to cascade `exited` over the remaining
   // pending children and finalize the umbrella as `exited`.
   const finalizeFromExit = (
@@ -477,12 +477,12 @@ export const runSequenceJob = (
     const outputs = finalChild?.outputs ?? null
 
     // Reserved-output protocol for flow-control commands (today only
-    // `exitIfEmpty`). When the step publishes `shouldExit: true`, the
+    // `exitIfEmpty`). When the step publishes `isExiting: true`, the
     // step itself ran cleanly — we just translate that into the
     // sequence-level `exited` outcome so the item loop can short-
     // circuit the umbrella. Any other command publishing the same key
     // gets the same treatment for free.
-    if (outputs !== null && outputs.shouldExit === true) {
+    if (outputs !== null && outputs.isExiting === true) {
       return {
         kind: "exited",
         stepId,

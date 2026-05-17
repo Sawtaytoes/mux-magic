@@ -4,14 +4,14 @@ import { defer, type Observable } from "rxjs"
 
 // Sentinel emitted by `exitIfEmpty`. The runner's `extractOutputs`
 // projector lifts these fields onto the child job's `outputs` map; the
-// item loop in `sequenceRunner` then inspects `outputs.shouldExit` to
+// item loop in `sequenceRunner` then inspects `outputs.isExiting` to
 // decide whether to short-circuit the umbrella job with `status:
 // "exited"`. Both fields are part of the reserved-key contract — any
 // future flow-control command (`exitIfFileCountBelow`, `exitIf`, …) that
 // wants the same behaviour just needs to publish them too; the runner
 // has no per-command knowledge.
 export type ExitDecision = {
-  shouldExit: boolean
+  isExiting: boolean
   exitReason: string
 }
 
@@ -56,7 +56,7 @@ export const exitIfEmpty = ({
           `${sourcePath} is empty — sequence will exit.`,
         )
         return {
-          shouldExit: true,
+          isExiting: true,
           exitReason: `sourcePath "${sourcePath}" is empty`,
         }
       }
@@ -64,7 +64,7 @@ export const exitIfEmpty = ({
         "EXIT-IF-EMPTY",
         `${sourcePath} contains ${entries.length} entr${entries.length === 1 ? "y" : "ies"} — sequence continues.`,
       )
-      return { shouldExit: false, exitReason: "" }
+      return { isExiting: false, exitReason: "" }
     } catch (error) {
       if (isEnoent(error)) {
         logInfo(
@@ -72,7 +72,7 @@ export const exitIfEmpty = ({
           `${sourcePath} does not exist — sequence will exit.`,
         )
         return {
-          shouldExit: true,
+          isExiting: true,
           exitReason: `sourcePath "${sourcePath}" does not exist`,
         }
       }
