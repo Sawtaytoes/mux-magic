@@ -53,14 +53,14 @@ const stripTrailingSlash = (path: string) =>
 const resolveScalarField = (
   step: Step,
   field: string,
-  paths: PathVariable[],
+  pathVariables: PathVariable[],
   items: SequenceItem[],
   commands: Commands,
   visiting: Set<string>,
 ) => {
   const link = step.links?.[field]
   if (typeof link === "string") {
-    const variable = paths.find(
+    const variable = pathVariables.find(
       (pathVariable) => pathVariable.id === link,
     )
     return variable?.value ?? null
@@ -73,7 +73,7 @@ const resolveScalarField = (
   ) {
     return resolveFolderOutput(
       (link as { linkedTo: string }).linkedTo,
-      paths,
+      pathVariables,
       items,
       commands,
       visiting,
@@ -92,7 +92,7 @@ const resolveScalarField = (
 // resolveScalarField. Without it TS can't infer either one (TS7023).
 const resolveFolderOutput = (
   targetStepId: string,
-  paths: PathVariable[],
+  pathVariables: PathVariable[],
   items: SequenceItem[],
   commands: Commands,
   visiting: Set<string>,
@@ -107,7 +107,7 @@ const resolveFolderOutput = (
   const source = resolveScalarField(
     target,
     "sourcePath",
-    paths,
+    pathVariables,
     items,
     commands,
     nextVisiting,
@@ -128,7 +128,7 @@ const resolveFolderOutput = (
     resolveScalarField(
       target,
       "destinationPath",
-      paths,
+      pathVariables,
       items,
       commands,
       nextVisiting,
@@ -136,7 +136,7 @@ const resolveFolderOutput = (
     resolveScalarField(
       target,
       "destinationFilesPath",
-      paths,
+      pathVariables,
       items,
       commands,
       nextVisiting,
@@ -147,7 +147,7 @@ const resolveFolderOutput = (
 
 const resolveParams = (
   params: Record<string, unknown>,
-  paths: PathVariable[],
+  pathVariables: PathVariable[],
   items: SequenceItem[],
   commands: Commands,
 ) => {
@@ -160,8 +160,8 @@ const resolveParams = (
       value.startsWith("@")
     ) {
       const variableId = value.slice(1)
-      const variable = paths.find(
-        (candidate) => candidate.id === variableId,
+      const variable = pathVariables.find(
+        (pathVariable) => pathVariable.id === variableId,
       )
       // Fall back to the raw `@id` string when the path var is
       // missing so the server's per-command validation surfaces a
@@ -193,7 +193,7 @@ const resolveParams = (
       }
       const folder = resolveFolderOutput(
         link.linkedTo,
-        paths,
+        pathVariables,
         items,
         commands,
         new Set(),
@@ -296,7 +296,7 @@ export const runOrStopStepAtom = atom(
     // Can't run a step with no command selected.
     if (!step.command) return
 
-    const paths = get(pathsAtom)
+    const pathVariables = get(pathsAtom)
     const commands = get(commandsAtom)
     const commandDefinition = commands[step.command]
     // Build the YAML-form params (folds step.links into @pathId
@@ -306,7 +306,12 @@ export const runOrStopStepAtom = atom(
       ? buildParams(step, commandDefinition)
       : step.params
     const { resolved: resolvedParams, errors } =
-      resolveParams(yamlFormParams, paths, items, commands)
+      resolveParams(
+        yamlFormParams,
+        pathVariables,
+        items,
+        commands,
+      )
 
     // Single-step preflight: resolveParams handles `@pathId` AND
     // folder-output `{linkedTo}` references the same way the server's
