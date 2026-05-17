@@ -184,6 +184,7 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                     convertDurationToDvdCompareTimecode(
                       duration,
                     ),
+                  durationSeconds: duration,
                 })),
                 tap(({ timecode }) =>
                   logInfo(
@@ -201,6 +202,7 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
               ({
                 fileInfo,
                 timecode,
+                durationSeconds,
               }): Observable<FileMatch> => {
                 const matchedCut = findMatchingCut(
                   cuts,
@@ -211,6 +213,7 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                   return of({
                     fileInfo,
                     timecode,
+                    durationSeconds,
                     kind: "cut",
                     cut: matchedCut,
                   })
@@ -218,6 +221,7 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                 const unmatchedFallback: FileMatch = {
                   fileInfo,
                   timecode,
+                  durationSeconds,
                   kind: "unmatched",
                 }
                 return getSpecialFeatureFromTimecode({
@@ -232,6 +236,7 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                     (renamedFilename): FileMatch => ({
                       fileInfo,
                       timecode,
+                      durationSeconds,
                       kind: "extra",
                       renamedFilename,
                     }),
@@ -260,14 +265,23 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
               // is a special feature DVDCompare lists without a timecode
               // (e.g. image galleries). Always emitted, even when empty,
               // so the formatter has a stable result shape.
-              const unrenamedFilenames = matches
-                .filter(
-                  (match) =>
-                    !renamedFullPaths.has(
-                      match.fileInfo.fullPath,
-                    ),
+              const leftoverMatches = matches.filter(
+                (match) =>
+                  !renamedFullPaths.has(
+                    match.fileInfo.fullPath,
+                  ),
+              )
+              const unrenamedFilenames =
+                leftoverMatches.map(
+                  (match) => match.fileInfo.filename,
                 )
-                .map((match) => match.fileInfo.filename)
+              const unrenamedFiles = leftoverMatches.map(
+                (match) => ({
+                  filename: match.fileInfo.filename,
+                  durationSeconds:
+                    match.durationSeconds ?? null,
+                }),
+              )
 
               // Only surface possibleNames suggestions when there's actually
               // a leftover file to identify. On the happy path the list is
@@ -282,10 +296,13 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
               // association report. Only populated when there are both
               // unnamed files AND untimed DVDCompare suggestions — the
               // common case where the user still has files that need a name.
+              // `unrenamedFiles` (worker 58 / Part B) carries
+              // `durationSeconds` per file so the web-side Smart Match
+              // modal can rank candidates by duration proximity.
               const unnamedFileCandidates =
                 buildUnnamedFileCandidates({
                   possibleNames: possibleNamesForSummary,
-                  unrenamedFilenames,
+                  unrenamedFiles,
                 })
 
               if (unnamedFileCandidates.length > 0) {
