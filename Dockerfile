@@ -48,6 +48,17 @@ RUN \
   corepack enable yarn && \
   yarn install
 
+# Stamp build identity into public/api/version.json so /version, the boot
+# banner, and the UI footer answer with real values instead of falling
+# back to gitSha:"dev"/buildTime:null. CI can pass --build-arg GIT_SHA=…
+# / BUILD_TIME=…; otherwise the script falls back to `git rev-parse HEAD`
+# against the copied .git and `new Date().toISOString()`.
+ARG GIT_SHA
+ARG BUILD_TIME
+ENV GIT_SHA=$GIT_SHA
+ENV BUILD_TIME=$BUILD_TIME
+RUN yarn build:version
+
 # Playwright Chromium binary + the matching apt-level system libs
 # (libnss3, libxkbcommon0, fonts, etc.). Has to run AFTER yarn install
 # so the playwright CLI is on disk; --with-deps invokes apt under the
