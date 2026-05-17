@@ -32,6 +32,38 @@ When working in a git worktree (created with `EnterWorktree`):
 
 The user will review changes by examining the PR and testing the running server, then explicitly ask you to merge when ready.
 
+## Explaining Behavior Changes to the User
+
+When you finish a non-trivial change — a bug fix, a behavior change, a new code path — end the response with a **"In plain English what now happens"** section that traces the new behavior end-to-end using the user's *actual* values (file paths, IDs, command names from this conversation), not placeholders.
+
+Format: numbered steps, each step one short sentence. No type names, no module paths, no jotai/atom/zod/observable jargon. The reader is someone who knows the *product* (clicked ▶ on a step, picked a path variable, has a YAML file) but not the *code* (doesn't care which file holds the validation or what an atom is).
+
+Concrete example from a real session:
+
+> **In plain English what now happens with your YAML:**
+>
+> 1. You click ▶ on step2.
+> 2. The single-step runner sees `sourcePath: {linkedTo: step1, output: folder}`.
+> 3. It looks up step1, finds its source path resolves to `G:\Anime\Daemons of the Shadow Realm [anidb-19451]` (via `@pathVariable_icp58k`), and finds `extractSubtitles`' built-in `outputFolderName` is `EXTRACTED-SUBTITLES`.
+> 4. It glues them together → `G:\Anime\Daemons of the Shadow Realm [anidb-19451]/EXTRACTED-SUBTITLES`.
+> 5. POSTs that to `/commands/modifySubtitleMetadata`. Step runs.
+
+**Why this matters:** large stretches of this repo are being written by LLMs the user no longer reviews line-by-line. The user knows the product surface (the React builder, the YAML format, the commands) but not the current internals. A plain-English trace is how they *verify the LLM didn't do something insane* — if step 3 in your trace doesn't match what they'd expect, that's the catch point.
+
+**When to include it:**
+
+- Bug fixes where the new behavior visibly differs from the old.
+- Behavior changes the user will see in the UI or in YAML.
+- Changes to anything they triggered manually in this conversation.
+
+**When to skip:**
+
+- Pure refactors with no behavior change (say so explicitly instead).
+- Tests-only changes.
+- Doc-only changes.
+
+The product-jargon ("step2", "▶", "YAML", command names from `commands.ts`) is *welcome* — that's the vocabulary the user thinks in. The code-jargon (atom names, file paths, type names, framework terms) belongs in the technical summary above the trace, not in the trace itself.
+
 ## Commit Conventions
 
 Commit *as you go*, not at the end of the session. After each logical group of changes lands and tests pass, commit it — one phase at a time. Don't batch a multi-step task into a single end-of-session commit just because the work all happened in one conversation; the user reviews incrementally, and a single 10-file commit is much harder to read than three focused 3-file commits.
