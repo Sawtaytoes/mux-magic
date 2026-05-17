@@ -27,6 +27,7 @@ const STATUS_CLASSES: Record<JobStatus, string> = {
   failed: "bg-red-700 text-red-100",
   cancelled: "bg-slate-600 text-slate-100",
   skipped: "bg-slate-500 text-slate-100",
+  exited: "bg-indigo-700 text-indigo-100",
 }
 
 export const SequenceRunModal = () => {

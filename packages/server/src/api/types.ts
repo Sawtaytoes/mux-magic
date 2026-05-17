@@ -5,6 +5,14 @@ export type JobStatus =
   | "failed"
   | "cancelled"
   | "skipped"
+  // Terminal status meaning "the sequence reached a planned early-exit
+  // point and ran cleanly to that point." Distinct from `completed`
+  // (work finished), `failed` (something went wrong), `cancelled` (a
+  // human/system aborted it), and `skipped` (earlier failure cascaded
+  // past this step). Set on the umbrella sequence job by a step like
+  // `exitIfEmpty`, and cascaded to every later flat step that never
+  // ran by design.
+  | "exited"
 
 export type Job = {
   commandName: string

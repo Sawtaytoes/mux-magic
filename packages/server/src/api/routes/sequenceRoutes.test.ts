@@ -1443,4 +1443,118 @@ describe("POST /sequences/run — groups", () => {
       expect(vol.existsSync("/control-doomed")).toBe(false)
     })
   })
+
+  // ───────────────────────────────────────────────────────────────────
+  // exitIfEmpty — planned early-exit
+  //
+  // The user-visible contract: a sequence whose first interesting step
+  // ("did the copy bring anything in?") finds nothing should NOT mark the
+  // umbrella job as failed (the failure webhook fires on failed → HA
+  // pages on every no-files-to-process tick) and should NOT mark it as
+  // completed either (we didn't actually do the work). The new `exited`
+  // status is the honest answer; later flat steps cascade to `exited`
+  // too because they never ran by design, not because something failed.
+  // ───────────────────────────────────────────────────────────────────
+  describe("exitIfEmpty — planned early-exit", () => {
+    test("missing sourcePath → umbrella job becomes 'exited' and later steps cascade to 'exited' (not 'skipped' or 'failed')", async () => {
+      const response = await post("/sequences/run", {
+        paths: { workDir: { value: "/no-such-folder" } },
+        steps: [
+          {
+            id: "guard",
+            command: "exitIfEmpty",
+            params: { sourcePath: "@workDir" },
+          },
+          {
+            id: "wouldRun",
+            command: "makeDirectory",
+            params: { sourcePath: "@workDir" },
+          },
+        ],
+      })
+      const { jobId } = (await response.json()) as {
+        jobId: string
+      }
+      await flushAfter(60)
+
+      const umbrella = getJob(jobId)
+      expect(umbrella?.status).toBe("exited")
+      expect(umbrella?.error).toBeNull()
+
+      const children = getChildJobs(jobId)
+      const guardChild = children.find(
+        (child) => child.stepId === "guard",
+      )
+      const wouldRunChild = children.find(
+        (child) => child.stepId === "wouldRun",
+      )
+      // The guard step itself ran successfully — `completed` is honest.
+      // It's the SEQUENCE that exited, not the step.
+      expect(guardChild?.status).toBe("completed")
+      // The later step never ran by design — cascade is `exited`.
+      expect(wouldRunChild?.status).toBe("exited")
+    })
+
+    test("empty (but existing) sourcePath → same 'exited' cascade as missing", async () => {
+      vol.fromJSON({ "/empty-dir/.keep": "" })
+      vol.unlinkSync("/empty-dir/.keep")
+
+      const response = await post("/sequences/run", {
+        paths: { workDir: { value: "/empty-dir" } },
+        steps: [
+          {
+            id: "guard",
+            command: "exitIfEmpty",
+            params: { sourcePath: "@workDir" },
+          },
+          {
+            id: "wouldRun",
+            command: "makeDirectory",
+            params: { sourcePath: "@workDir" },
+          },
+        ],
+      })
+      const { jobId } = (await response.json()) as {
+        jobId: string
+      }
+      await flushAfter(60)
+
+      expect(getJob(jobId)?.status).toBe("exited")
+      const children = getChildJobs(jobId)
+      expect(
+        children.find((child) => child.stepId === "wouldRun")
+          ?.status,
+      ).toBe("exited")
+    })
+
+    test("non-empty sourcePath → guard is a no-op, sequence runs every step", async () => {
+      vol.fromJSON({ "/work/file.mkv": "data" })
+
+      const response = await post("/sequences/run", {
+        paths: { workDir: { value: "/work" } },
+        steps: [
+          {
+            id: "guard",
+            command: "exitIfEmpty",
+            params: { sourcePath: "@workDir" },
+          },
+          {
+            id: "alsoRuns",
+            command: "makeDirectory",
+            params: { sourcePath: "@workDir" },
+          },
+        ],
+      })
+      const { jobId } = (await response.json()) as {
+        jobId: string
+      }
+      await flushAfter(60)
+
+      expect(getJob(jobId)?.status).toBe("completed")
+      const children = getChildJobs(jobId)
+      children.forEach((child) => {
+        expect(child.status).toBe("completed")
+      })
+    })
+  })
 })

@@ -130,6 +130,22 @@ type StepRunOutcome =
     }
   | { kind: "failed"; stepId: string; error: string }
   | { kind: "cancelled" }
+  // Emitted when a step's outputs carry `shouldExit: true` (today only
+  // `exitIfEmpty`, but the runner has no per-command knowledge — any
+  // command publishing the reserved key wins this treatment). The step
+  // itself ran to completion; the sequence as a whole takes a planned
+  // exit at this point. The umbrella becomes `status: "exited"` and
+  // every later flat step cascades to the same status (not "skipped",
+  // which carries failure connotations — these steps never ran by
+  // design, not because something went wrong earlier).
+  | {
+      kind: "exited"
+      stepId: string
+      command: string
+      outputs: Record<string, unknown> | null
+      resolved: Record<string, unknown>
+      reason: string
+    }
 
 // Drives a sequence under a single umbrella job. Each step (whether at
 // the top level or inside a group) is a real, first-class child Job
@@ -231,13 +247,14 @@ export const runSequenceJob = (
     })
   })
 
-  const markChildSkippedIfPending = (
+  const markChildTerminalIfPending = (
     childId: string,
+    status: "skipped" | "exited",
   ): void => {
     if (getJob(childId)?.status === "pending") {
       updateJob(childId, {
         completedAt: new Date(),
-        status: "skipped",
+        status,
       })
       completeSubject(childId)
     }
@@ -246,15 +263,21 @@ export const runSequenceJob = (
   // Skip every still-pending child after a given flat-step index.
   // Used by both the outer item loop (after a serial failure) and by
   // parallel-group failure handling (to skip later outer items).
-  const markRemainingSkippedFromFlatIndex = (
+  // `status` distinguishes the two cascade flavours: `"skipped"` for
+  // post-failure / post-cancel propagation (something went wrong, the
+  // rest didn't run), `"exited"` for post-`exitIfEmpty` propagation
+  // (the sequence reached a planned exit point and the rest didn't run
+  // by design).
+  const markRemainingTerminalFromFlatIndex = (
     fromFlatIndex: number,
+    status: "skipped" | "exited",
   ): void => {
     for (
       let idx = fromFlatIndex;
       idx < childJobIds.length;
       idx += 1
     ) {
-      markChildSkippedIfPending(childJobIds[idx])
+      markChildTerminalIfPending(childJobIds[idx], status)
     }
   }
 
@@ -273,7 +296,7 @@ export const runSequenceJob = (
   }
 
   const finalize = (
-    status: "completed" | "failed" | "cancelled",
+    status: "completed" | "failed" | "cancelled" | "exited",
   ): void => {
     logRunSummary()
     updateJob(jobId, {
@@ -298,10 +321,33 @@ export const runSequenceJob = (
   ): void => {
     const umbrella = getJob(jobId)
     if (!umbrella || umbrella.status !== "running") return
-    markRemainingSkippedFromFlatIndex(
+    markRemainingTerminalFromFlatIndex(
       flatIndexAfter(lastStepInItem),
+      "skipped",
     )
     finalize("cancelled")
+  }
+
+  // Symmetric to `finalizeFromChildCancel` but for the
+  // `exitIfEmpty` (or any future flow-control command publishing
+  // `shouldExit: true`) path. The triggering step itself is already
+  // `completed` — we just need to cascade `exited` over the remaining
+  // pending children and finalize the umbrella as `exited`.
+  const finalizeFromExit = (
+    lastStepInItem: SequenceStep,
+    reason: string,
+  ): void => {
+    const umbrella = getJob(jobId)
+    if (!umbrella || umbrella.status !== "running") return
+    logInfo(
+      "SEQUENCE",
+      `Sequence exiting cleanly at step "${lastStepInItem.id ?? lastStepInItem.command}": ${reason}`,
+    )
+    markRemainingTerminalFromFlatIndex(
+      flatIndexAfter(lastStepInItem),
+      "exited",
+    )
+    finalize("exited")
   }
 
   // Run a single step end-to-end and return a structured outcome. The
@@ -429,6 +475,30 @@ export const runSequenceJob = (
     // a single-level array — the original in-line subscriber comment
     // about array-of-array still applies here.
     const outputs = finalChild?.outputs ?? null
+
+    // Reserved-output protocol for flow-control commands (today only
+    // `exitIfEmpty`). When the step publishes `shouldExit: true`, the
+    // step itself ran cleanly — we just translate that into the
+    // sequence-level `exited` outcome so the item loop can short-
+    // circuit the umbrella. Any other command publishing the same key
+    // gets the same treatment for free.
+    if (
+      outputs !== null &&
+      outputs.shouldExit === true
+    ) {
+      return {
+        kind: "exited",
+        stepId,
+        command: step.command,
+        outputs,
+        resolved,
+        reason:
+          typeof outputs.exitReason === "string"
+            ? outputs.exitReason
+            : "",
+      }
+    }
+
     return {
       kind: "completed",
       stepId,
@@ -552,10 +622,15 @@ export const runSequenceJob = (
           const innerOutcomes =
             await Promise.all(innerPromises)
 
-          // Apply outputs from every successful inner step into stepsById
-          // so steps after the parallel group can `linkedTo` any of them.
+          // Apply outputs from every step that ran to a clean terminal
+          // (`completed` OR `exited` — both ran their work fully) into
+          // stepsById so steps after the parallel group can `linkedTo`
+          // them. Failed / cancelled siblings have no outputs to apply.
           innerOutcomes.forEach((outcome) => {
-            if (outcome.kind === "completed") {
+            if (
+              outcome.kind === "completed" ||
+              outcome.kind === "exited"
+            ) {
               stepsById[outcome.stepId] = {
                 command: outcome.command,
                 outputs: outcome.outputs,
@@ -583,10 +658,11 @@ export const runSequenceJob = (
               `Group "${groupLabel}" (parallel): one or more inner steps failed; siblings cancelled.`,
             )
             updateJob(jobId, { error: firstFailure.error })
-            markRemainingSkippedFromFlatIndex(
+            markRemainingTerminalFromFlatIndex(
               flatIndexAfter(
                 item.steps[item.steps.length - 1],
               ),
+              "skipped",
             )
             finalize("failed")
             return
@@ -603,6 +679,26 @@ export const runSequenceJob = (
             )
             finalizeFromChildCancel(
               item.steps[item.steps.length - 1],
+            )
+            return
+          }
+
+          // Any inner step requesting a sequence exit wins — the
+          // umbrella exits at the group boundary. Take the first
+          // exited outcome's reason for the log line; the rest were
+          // independently arriving at the same conclusion.
+          const firstExit = innerOutcomes.find(
+            (
+              outcome,
+            ): outcome is Extract<
+              StepRunOutcome,
+              { kind: "exited" }
+            > => outcome.kind === "exited",
+          )
+          if (firstExit) {
+            finalizeFromExit(
+              item.steps[item.steps.length - 1],
+              firstExit.reason,
             )
             return
           }
@@ -638,12 +734,22 @@ export const runSequenceJob = (
             // after it. Passing the failed step itself (innerStep) means
             // flatIndexAfter returns the flat-index of the next pending
             // child, since the failed child is already in `failed`
-            // status (markChildSkippedIfPending only touches `pending`).
-            markRemainingSkippedFromFlatIndex(
+            // status (markChildTerminalIfPending only touches `pending`).
+            markRemainingTerminalFromFlatIndex(
               flatIndexAfter(innerStep),
+              "skipped",
             )
             hasGroupFailed = true
             break
+          }
+          if (innerOutcome.kind === "exited") {
+            stepsById[innerOutcome.stepId] = {
+              command: innerOutcome.command,
+              outputs: innerOutcome.outputs,
+              resolvedParams: innerOutcome.resolved,
+            }
+            finalizeFromExit(innerStep, innerOutcome.reason)
+            return
           }
           stepsById[innerOutcome.stepId] = {
             command: innerOutcome.command,
@@ -678,10 +784,20 @@ export const runSequenceJob = (
       }
       if (outcome.kind === "failed") {
         updateJob(jobId, { error: outcome.error })
-        markRemainingSkippedFromFlatIndex(
+        markRemainingTerminalFromFlatIndex(
           flatIndexAfter(item),
+          "skipped",
         )
         finalize("failed")
+        return
+      }
+      if (outcome.kind === "exited") {
+        stepsById[outcome.stepId] = {
+          command: outcome.command,
+          outputs: outcome.outputs,
+          resolvedParams: outcome.resolved,
+        }
+        finalizeFromExit(item, outcome.reason)
         return
       }
       stepsById[outcome.stepId] = {
@@ -710,7 +826,7 @@ export const runSequenceJob = (
     const umbrella = getJob(jobId)
     if (umbrella?.status === "running") {
       updateJob(jobId, { error: message })
-      markRemainingSkippedFromFlatIndex(0)
+      markRemainingTerminalFromFlatIndex(0, "skipped")
       finalize("failed")
     }
   })
