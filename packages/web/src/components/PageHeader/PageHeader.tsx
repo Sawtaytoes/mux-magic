@@ -86,6 +86,35 @@ export const PageHeader = () => {
   )
   const isBackgroundJobRunning =
     sequenceRunModal.mode === "background"
+  const backgroundJobStatus =
+    sequenceRunModal.mode === "background"
+      ? sequenceRunModal.status
+      : null
+  const isBackgroundJobActive =
+    backgroundJobStatus === "pending" ||
+    backgroundJobStatus === "running"
+  const backgroundBadgeLabel =
+    backgroundJobStatus === "completed"
+      ? "Sequence completed"
+      : backgroundJobStatus === "failed"
+        ? "Sequence failed"
+        : backgroundJobStatus === "cancelled"
+          ? "Sequence cancelled"
+          : backgroundJobStatus === "skipped"
+            ? "Sequence skipped"
+            : "1 background job"
+  const backgroundBadgeTitle = isBackgroundJobActive
+    ? "1 background job running — click to re-open"
+    : `${backgroundBadgeLabel} — click to re-open`
+  const backgroundBadgeClass =
+    backgroundJobStatus === "completed"
+      ? "bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-300 border-emerald-500/40"
+      : backgroundJobStatus === "failed"
+        ? "bg-red-500/20 hover:bg-red-500/35 text-red-300 border-red-500/40"
+        : backgroundJobStatus === "cancelled" ||
+            backgroundJobStatus === "skipped"
+          ? "bg-slate-500/20 hover:bg-slate-500/35 text-slate-300 border-slate-500/40"
+          : "bg-sky-500/20 hover:bg-sky-500/35 text-sky-400 border-sky-500/40"
   const setEditVariablesModalOpen = useSetAtom(
     editVariablesModalOpenAtom,
   )
@@ -194,10 +223,10 @@ export const PageHeader = () => {
                   : prev,
               )
             }
-            className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded active:scale-95 self-center transition-all border bg-sky-500/20 hover:bg-sky-500/35 text-sky-400 border-sky-500/40"
-            title="1 background job running — click to re-open"
+            className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded active:scale-95 self-center transition-all border ${backgroundBadgeClass}`}
+            title={backgroundBadgeTitle}
           >
-            1 background job
+            {backgroundBadgeLabel}
           </button>
         )}
 
