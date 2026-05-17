@@ -1,0 +1,69 @@
+{/* SmartMatchModal.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as SmartMatchModalStories from "./SmartMatchModal.stories";
+
+<Meta of={SmartMatchModalStories} />
+
+# SmartMatchModal
+
+Batch "Fix Unnamed" / Smart Match table modal for the `nameSpecialFeaturesDvdCompareTmdb` (NSF) command. Opens after an NSF run completes with leftover unnamed files AND at least one DVDCompare candidate. Each row is a leftover file paired with the highest-confidence candidate from the run's `possibleNames`; the user reviews, optionally overrides via dropdown, then clicks **Apply** to fire a batch of `POST /files/rename` calls.
+
+Worker 58 / Part B ported this modal from the v1.0.0 legacy `packages/web/public/builder/js/components/specials-mapping-modal.js` (added 2026-05-08 in `a7fef431`, deleted 2026-05-10 in `28534ec5` during the React conversion, never ported). The React port is intentionally leaner than the legacy: the ✏-custom-name input and Plex-suffix selector that legacy added as nice-to-haves are deferred to a follow-up.
+
+## Behaviour
+
+- **Open** → set `smartMatchModalAtom` to `{ jobId, stepId, sourcePath, unrenamedFiles, candidates }`. The modal opens; per-file ranked suggestions are computed via `smartMatchScoring.rankSuggestions`.
+- **Per-row include checkbox** → high-confidence rows (≥ `LOW_CONFIDENCE_THRESHOLD = 0.6`) are pre-checked; low-confidence rows are pre-unchecked so the user explicitly opts-in to a sketchy match.
+- **Per-row override dropdown** → lists every candidate in `name — XX%` form, ordered by confidence. Picking a different option swaps the rename target for that row.
+- **Per-row Play button** → opens the standalone `VideoPreviewModal` overlay for that file (does NOT commit any rename).
+- **Confidence badge** → green for ≥ 0.6, amber for below.
+- **Low-confidence row highlight** → yellow border + tinted background so the user can scan for "review me" rows at a glance.
+- **Apply** → sequentially POSTs `/files/rename` for each checked row. Successful rows transition to a green "Renamed" state; failed rows stay visible with the error inline. The modal closes automatically when every applied row succeeds; otherwise it stays open so the user can see what failed.
+- **Close** → atom cleared; the modal vanishes. Already-applied renames are not rolled back.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `smartMatchModalAtom` | `{ jobId, stepId, sourcePath, unrenamedFiles, candidates } \| null` — visibility + payload |
+| `videoPreviewModalAtom` | Set by the per-row Play button to open the standalone preview |
+
+## Scoring
+
+`smartMatchScoring.ts` (also worker 58, ported verbatim from `specials-fuzzy.js`) supplies:
+
+| Constant | Value | Role |
+|----------|-------|------|
+| `DURATION_PROXIMITY_TOLERANCE_SECONDS` | `90` | Delta beyond which duration proximity scores 0 |
+| `DURATION_WEIGHT` | `0.7` | Weight of duration vs filename when both signals are available |
+| `FILENAME_ONLY_SCORE_FACTOR` | `0.6` | Penalty applied when only filename overlap is available |
+| `LOW_CONFIDENCE_THRESHOLD` | `0.6` | Below this score: yellow row + opt-out by default |
+
+## Server endpoint
+
+`POST /files/rename` body `{ oldPath, newPath }` — single-file rename. The route at `packages/server/src/api/routes/fileRoutes.ts:359` validates both paths for absolute / no-traversal safety and aborts if `newPath` already exists (so the user can't silently overwrite by misclicking).
+
+## All high confidence
+
+Every row pre-checked. Apply fires N renames immediately.
+
+<Canvas of={SmartMatchModalStories.AllHighConfidence} />
+
+## Mixed confidence
+
+The common case: some files match a candidate's runtime exactly (high confidence), others only fuzz-match on filename (low confidence). Low rows are unchecked by default so the user opts in.
+
+<Canvas of={SmartMatchModalStories.Mixed} />
+
+## All low confidence
+
+Nothing is pre-checked. The user must explicitly review each row before Apply does anything.
+
+<Canvas of={SmartMatchModalStories.AllLowConfidence} />
+
+## Empty
+
+Defensive: if the trigger fires with an empty payload (no leftover files), the modal renders a focused "nothing to fix" message rather than an empty table.
+
+<Canvas of={SmartMatchModalStories.Empty} />

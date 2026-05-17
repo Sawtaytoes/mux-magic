@@ -58,9 +58,12 @@ test.beforeAll(() => {
   syntheticFmp4 = readFileSync(outPath)
 })
 
-// TODO: FileVideoPlayer is only mounted inside FileExplorerModal, not globally.
-// These tests need window.openVideoModal to be available without opening the
-// file explorer — requires mounting FileVideoPlayer at app root level first.
+// TODO: worker 58 lifted FileVideoPlayer into the standalone VideoPreviewModal
+// (mounted at app-root by BuilderPage) and removed `window.openVideoModal`,
+// so the original "no app-root mount" blocker is gone. Re-enabling this suite
+// now needs a Playwright-friendly way to set `videoPreviewModalAtom` — either
+// driving the UI via FileExplorerModal's row click / PromptModal's Play button,
+// or exposing a dev-only setter on window. Out of scope for worker 58.
 test.describe
   .skip("MSE video seek", () => {
     // Collect every browser console error so assertions can inspect them.

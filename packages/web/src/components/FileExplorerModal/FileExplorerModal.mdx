@@ -7,7 +7,7 @@ import * as FileExplorerModalStories from "./FileExplorerModal.stories";
 
 # FileExplorerModal
 
-A full-screen file browser modal with two modes: **browse** (default — view and delete files) and **picker** (when `pickerOnSelect` is set — confirm-folder mode used by `PathVariableCard`'s Browse flow). Includes an embedded `VideoModal` sub-component for in-browser playback of `.mkv`/`.mp4`/`.webm`/etc.
+A full-screen file browser modal with two modes: **browse** (default — view and delete files) and **picker** (when `pickerOnSelect` is set — confirm-folder mode used by `PathVariableCard`'s Browse flow). Clicking a video file row opens the standalone `VideoPreviewModal` (worker 58) — the player no longer lives inside this component, so playback works from any caller (e.g. `PromptModal`) regardless of whether the explorer is open.
 
 Sortable by name, duration, size, or modification time. Directories always sort first regardless of column. The delete-mode badge shows whether deletes go to the OS Recycle Bin or are permanent — derived from `/files/delete-mode` per current path (some paths can't trash, e.g., network shares).
 
@@ -19,15 +19,15 @@ Sortable by name, duration, size, or modification time. Directories always sort 
 - **Select files** → row checkbox (directories disabled). Header checkbox toggles all *files* (not directories — they can't be deleted from this UI).
 - **Delete** → `Delete selected` posts `DELETE /files` with the array of paths. Failure list is shown in a window.alert.
 - **Picker confirm** → `📌 Use this folder` calls `pickerOnSelect(currentPath)`, closes the modal, and forwards the result to whoever opened it (typically `PathVariableCard`).
-- **Video playback** → clicking a video file row opens the inner `VideoModal`. It probes `/files/audio-codec`; if the audio codec is unsupported in browsers (`ac-3`, `dts`, `truehd`, …) it streams via `/transcode/audio?codec=opus` instead of `/files/stream`.
-- **Esc** → closes the video sub-modal first if open, then the explorer.
-- **window.openVideoModal** → exposed globally so legacy result cards (e.g., from `LookupModal`) can pop the video player without owning the modal.
+- **Video playback** → clicking a video file row sets `videoPreviewModalAtom` — `VideoPreviewModal` (mounted at the app top level by `BuilderPage`) renders the `FileVideoPlayer` overlay. Audio-codec probing and the transcode fallback live in `FileVideoPlayer` itself.
+- **Esc** → closes the explorer. The video preview owns its own Escape handler (z-[60] overlay, sits above this modal).
 
 ## Atom wiring
 
 | Atom | Role |
 |------|------|
 | `fileExplorerAtom` | Visibility + initial path + picker callback. `null` ⇒ closed |
+| `videoPreviewModalAtom` | Set when the user clicks a video file row — opens the standalone preview overlay |
 
 ## Server endpoints
 
@@ -36,11 +36,6 @@ Sortable by name, duration, size, or modification time. Directories always sort 
 | `GET /files/list?path=&includeDuration=1` | Directory listing (with video duration probing) |
 | `GET /files/delete-mode?path=` | Reports `"trash"` vs `"permanent"` for the current path |
 | `DELETE /files` body `{ paths }` | Bulk delete |
-| `GET /files/stream?path=` | Direct video stream |
-| `GET /files/audio-codec?path=` | Probes audio codec to decide stream vs transcode |
-| `GET /transcode/audio?path=&codec=opus` | Transcoded stream when audio is browser-unsupported |
-| `POST /files/open-external` body `{ path }` | OS-level "open in default player" (hidden when the server is containerized) |
-| `GET /version` | Reports `isContainerized` so the external-open button can be hidden |
 
 ## Browse mode
 
