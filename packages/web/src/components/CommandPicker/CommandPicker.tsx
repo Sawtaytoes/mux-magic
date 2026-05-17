@@ -1,6 +1,11 @@
 import { useAtom, useAtomValue } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import { createPortal, flushSync } from "react-dom"
+// Single source of truth — the picker's tag ordering must match the
+// canonical list in commands.ts so new tags (e.g. "Flow Control") flow
+// through automatically. Previously a local copy of this list lived
+// here and silently dropped any command whose tag wasn't enumerated.
+import { TAG_ORDER } from "../../commands/commands"
 import type { Commands } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
@@ -13,17 +18,6 @@ import {
 } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { SequenceItem } from "../../types"
-
-const TAG_ORDER = [
-  "File Operations",
-  "Audio Operations",
-  "Track Operations",
-  "Subtitle Operations",
-  "Analysis",
-  "Naming Operations",
-  "Video Operations",
-  "Metadata Operations",
-]
 
 const PICKER_WIDTH = 340
 const PICKER_MAX_HEIGHT = 400
