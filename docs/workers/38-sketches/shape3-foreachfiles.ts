@@ -74,15 +74,25 @@ export const mergeTracksPerFile = ({
 // -----------------------------------------------------------------------------
 
 type CommandConfig = {
-  getObservable: (params: Record<string, unknown>) => Observable<unknown>
+  getObservable: (
+    params: Record<string, unknown>,
+  ) => Observable<unknown>
   getPerFileObservable?: (
-    params: Record<string, unknown> & { fileContext: FileContext },
+    params: Record<string, unknown> & {
+      fileContext: FileContext
+    },
   ) => Observable<FileContext>
 }
 
 const commandConfigs: Record<string, CommandConfig> = {
-  copyFiles: { getObservable: copyFiles, getPerFileObservable: copyFilesPerFile },
-  mergeTracks: { getObservable: () => new Observable(), getPerFileObservable: mergeTracksPerFile },
+  copyFiles: {
+    getObservable: copyFiles,
+    getPerFileObservable: copyFilesPerFile,
+  },
+  mergeTracks: {
+    getObservable: () => new Observable(),
+    getPerFileObservable: mergeTracksPerFile,
+  },
   // nameTvShowEpisodes lives at the folder level only — it never needs to
   // appear inside a forEachFiles group (it names every file in the folder
   // based on collective metadata).
@@ -125,8 +135,12 @@ declare const getFilesAtDepth: (input: {
   sourcePath: string
   depth: number
 }) => Observable<FileContext>
-declare const runOneStep: (step: SequenceStep) => Promise<unknown>
-declare const firstValueFrom: <T>(o: Observable<T>) => Promise<T>
+declare const runOneStep: (
+  step: SequenceStep,
+) => Promise<unknown>
+declare const firstValueFrom: <T>(
+  o: Observable<T>,
+) => Promise<T>
 
 const runSequence = async (items: SequenceItem[]) => {
   for (const item of items) {
@@ -141,7 +155,8 @@ const runSequence = async (items: SequenceItem[]) => {
         (upstream$: Observable<FileContext>, step) =>
           upstream$.pipe(
             mergeMap((fileContext) =>
-              commandConfigs[step.command].getPerFileObservable!({
+              commandConfigs[step.command]
+                .getPerFileObservable!({
                 ...step.params,
                 fileContext,
               }),
@@ -174,7 +189,13 @@ const runSequence = async (items: SequenceItem[]) => {
 
 const exampleSequence: SequenceItem[] = [
   // ordinary solo step — runs to completion, same as today
-  { command: "copyFiles", params: { sourcePath: "/seed", destinationPath: "/staging" } },
+  {
+    command: "copyFiles",
+    params: {
+      sourcePath: "/seed",
+      destinationPath: "/staging",
+    },
+  },
 
   // pipelined group — file 1 hits mergeTracks while file 2 is still on copyFiles
   {
@@ -182,13 +203,22 @@ const exampleSequence: SequenceItem[] = [
     sourcePath: "/staging",
     depth: 0,
     steps: [
-      { command: "copyFiles", params: { destinationPath: "/dest" } },
-      { command: "mergeTracks", params: { subtitlesPath: "/subs" } },
+      {
+        command: "copyFiles",
+        params: { destinationPath: "/dest" },
+      },
+      {
+        command: "mergeTracks",
+        params: { subtitlesPath: "/subs" },
+      },
     ],
   },
 
   // back to ordinary — runs after the pipelined group's last file finishes
-  { command: "nameTvShowEpisodes", params: { sourcePath: "/dest" } },
+  {
+    command: "nameTvShowEpisodes",
+    params: { sourcePath: "/dest" },
+  },
 ]
 
 // =============================================================================

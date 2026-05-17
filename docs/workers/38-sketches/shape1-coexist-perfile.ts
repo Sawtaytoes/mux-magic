@@ -72,7 +72,10 @@ export const copyFilesPerFile = ({
     // ... aclSafeCopyFile(fileContext.fullPath, destPath) ...
     subscriber.next({
       fullPath: `${destinationPath}/whatever.mkv`,
-      metadata: { ...fileContext.metadata, originalSource: fileContext.fullPath },
+      metadata: {
+        ...fileContext.metadata,
+        originalSource: fileContext.fullPath,
+      },
     })
     subscriber.complete()
   })
@@ -95,16 +98,26 @@ export const mergeTracksPerFile = ({
 // -----------------------------------------------------------------------------
 
 type CommandConfig = {
-  getObservable: (params: Record<string, unknown>) => Observable<unknown>
+  getObservable: (
+    params: Record<string, unknown>,
+  ) => Observable<unknown>
   // OPTIONAL — only present on commands the user wants pipelined.
   getPerFileObservable?: (
-    params: Record<string, unknown> & { fileContext: FileContext },
+    params: Record<string, unknown> & {
+      fileContext: FileContext
+    },
   ) => Observable<FileContext>
 }
 
 const commandConfigs: Record<string, CommandConfig> = {
-  copyFiles: { getObservable: copyFiles, getPerFileObservable: copyFilesPerFile },
-  mergeTracks: { getObservable: () => new Observable(), getPerFileObservable: mergeTracksPerFile },
+  copyFiles: {
+    getObservable: copyFiles,
+    getPerFileObservable: copyFilesPerFile,
+  },
+  mergeTracks: {
+    getObservable: () => new Observable(),
+    getPerFileObservable: mergeTracksPerFile,
+  },
   // some commands (naming, metadata-only checks) might NEVER ship a per-file
   // variant. Those steps can't appear inside a pipelined sequence.
 }
@@ -114,14 +127,18 @@ const commandConfigs: Record<string, CommandConfig> = {
 //    when the sequence opts in via `isPipelined: true`.
 // -----------------------------------------------------------------------------
 
-const runSequence = (sequence: any, filesSource$: Observable<FileContext>) => {
+const runSequence = (
+  sequence: any,
+  filesSource$: Observable<FileContext>,
+) => {
   if (sequence.isPipelined) {
     // PIPELINED PATH — every step must have getPerFileObservable
     return sequence.steps.reduce(
       (upstream$: Observable<FileContext>, step: any) =>
         upstream$.pipe(
           mergeMap((fileContext) =>
-            commandConfigs[step.command].getPerFileObservable!({
+            commandConfigs[step.command]
+              .getPerFileObservable!({
               ...step.params,
               fileContext,
             }),
@@ -143,8 +160,14 @@ const exampleSequence = {
   isPipelined: true, // <-- explicit opt-in per sequence
   pipelineSource: { sourcePath: "/source", depth: 0 },
   steps: [
-    { command: "copyFiles", params: { destinationPath: "/dest" } },
-    { command: "mergeTracks", params: { subtitlesPath: "/subs" } },
+    {
+      command: "copyFiles",
+      params: { destinationPath: "/dest" },
+    },
+    {
+      command: "mergeTracks",
+      params: { subtitlesPath: "/subs" },
+    },
   ],
 }
 

@@ -6,7 +6,7 @@ import {
 } from "./idAllocator"
 
 describe("makeStepId", () => {
-  test("returns an id matching `step_${4 base36 chars}`", () => {
+  test("returns an id matching `step_<4 base36 chars>`", () => {
     const id = makeStepId(new Set())
     expect(id).toMatch(/^step_[a-z0-9]{4}$/)
   })

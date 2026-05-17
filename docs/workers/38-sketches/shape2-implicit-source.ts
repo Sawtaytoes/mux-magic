@@ -42,7 +42,10 @@ export const copyFiles = ({
     // copy fileContext.fullPath → destinationPath/<basename>
     subscriber.next({
       fullPath: `${destinationPath}/whatever.mkv`,
-      metadata: { ...fileContext.metadata, originalSource: fileContext.fullPath },
+      metadata: {
+        ...fileContext.metadata,
+        originalSource: fileContext.fullPath,
+      },
     })
     subscriber.complete()
   })
@@ -79,14 +82,18 @@ export const hasDuplicateMusicFiles = ({
 type CommandConfig = {
   // No folder-level signature. Period.
   getPerFileObservable: (
-    params: Record<string, unknown> & { fileContext: FileContext },
+    params: Record<string, unknown> & {
+      fileContext: FileContext
+    },
   ) => Observable<FileContext>
 }
 
 const commandConfigs: Record<string, CommandConfig> = {
   copyFiles: { getPerFileObservable: copyFiles },
   mergeTracks: { getPerFileObservable: mergeTracks },
-  hasDuplicateMusicFiles: { getPerFileObservable: hasDuplicateMusicFiles },
+  hasDuplicateMusicFiles: {
+    getPerFileObservable: hasDuplicateMusicFiles,
+  },
 }
 
 // -----------------------------------------------------------------------------
@@ -96,7 +103,10 @@ const commandConfigs: Record<string, CommandConfig> = {
 
 type SequenceBody = {
   pipelineSource: { sourcePath: string; depth: number }
-  steps: Array<{ command: string; params: Record<string, unknown> }>
+  steps: Array<{
+    command: string
+    params: Record<string, unknown>
+  }>
 }
 
 // -----------------------------------------------------------------------------
@@ -109,17 +119,21 @@ declare const getFilesAtDepth: (input: {
   depth: number
 }) => Observable<FileContext>
 
-const runSequence = (body: SequenceBody): Observable<FileContext> => {
+const runSequence = (
+  body: SequenceBody,
+): Observable<FileContext> => {
   const files$ = getFilesAtDepth(body.pipelineSource)
 
   return body.steps.reduce(
     (upstream$, step) =>
       upstream$.pipe(
         mergeMap((fileContext) =>
-          commandConfigs[step.command].getPerFileObservable({
-            ...step.params,
-            fileContext,
-          }),
+          commandConfigs[step.command].getPerFileObservable(
+            {
+              ...step.params,
+              fileContext,
+            },
+          ),
         ),
       ),
     files$,
@@ -133,8 +147,14 @@ const runSequence = (body: SequenceBody): Observable<FileContext> => {
 const exampleSequence: SequenceBody = {
   pipelineSource: { sourcePath: "/source", depth: 0 }, // <-- required, not optional
   steps: [
-    { command: "copyFiles", params: { destinationPath: "/dest" } },
-    { command: "mergeTracks", params: { subtitlesPath: "/subs" } },
+    {
+      command: "copyFiles",
+      params: { destinationPath: "/dest" },
+    },
+    {
+      command: "mergeTracks",
+      params: { subtitlesPath: "/subs" },
+    },
   ],
 }
 
