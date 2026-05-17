@@ -216,6 +216,98 @@ describe("LinkPicker keyboard", () => {
   })
 })
 
+describe("LinkPicker named outputs", () => {
+  const renderWithNamedOutputs = () => {
+    const store = createStore()
+    const commands: Commands = {
+      copyFiles: {
+        summary: "Copy files",
+        tag: "File Operations",
+        outputFolderName: "COPY-OUTPUT",
+        outputs: [
+          {
+            name: "copiedSourcePaths",
+            label: "Copied source paths",
+          },
+        ],
+        fields: [
+          {
+            name: "sourcePath",
+            type: "path",
+            label: "Source Path",
+            isRequired: true,
+          },
+        ],
+      },
+      deleteCopiedOriginals: {
+        summary: "Delete originals",
+        tag: "File Operations",
+        outputFolderName: null,
+        fields: [
+          {
+            name: "pathsToDelete",
+            type: "stringArray",
+            label: "Paths to Delete",
+            isRequired: true,
+          },
+        ],
+      },
+    }
+    store.set(stepsAtom, [
+      makeStep("step-1", "copyFiles"),
+      makeStep("step-2", "deleteCopiedOriginals"),
+    ])
+    store.set(pathsAtom, [])
+    store.set(commandsAtom, commands)
+    store.set(linkPickerStateAtom, {
+      anchor: {
+        stepId: "step-2",
+        fieldName: "pathsToDelete",
+      },
+      triggerRect: TRIGGER_RECT,
+    })
+
+    render(
+      <Provider store={store}>
+        <LinkPicker />
+      </Provider>,
+    )
+
+    return store
+  }
+
+  test("renders one row per named output in addition to the folder row", () => {
+    renderWithNamedOutputs()
+    expect(
+      screen.getByText("Step 1: Copy Files"),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /Step 1: Copy Files → Copied source paths/,
+      ),
+    ).toBeInTheDocument()
+  })
+
+  test("clicking the named-output row writes that output name to the link", async () => {
+    const user = userEvent.setup()
+    const store = renderWithNamedOutputs()
+
+    await user.click(
+      screen.getByText(
+        /Step 1: Copy Files → Copied source paths/,
+      ),
+    )
+
+    const step2 = (store.get(stepsAtom) as Step[]).find(
+      (step) => step.id === "step-2",
+    )
+    expect(step2?.links.pathsToDelete).toEqual({
+      linkedTo: "step-1",
+      output: "copiedSourcePaths",
+    })
+  })
+})
+
 describe("LinkPicker step detail", () => {
   test("step item shows computed output path as detail when commands are loaded", () => {
     const store = createStore()
