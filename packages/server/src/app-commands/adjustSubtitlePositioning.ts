@@ -27,7 +27,7 @@ export const adjustSubtitlePositions = ({
   sourcePath: string
 }) =>
   getFilesAtDepth({
-    depth: isRecursive ? recursiveDepth || 2 : 0,
+    depth: isRecursive ? recursiveDepth || 1 : 0,
     sourcePath,
   }).pipe(
     filterIsSubtitlesFile(),

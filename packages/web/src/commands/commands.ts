@@ -178,13 +178,14 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 — the runtime sentinel for "use default
-        // depth of 2". UI shows that literally; if 2 is wanted instead,
-        // override `default` here.
+        // Schema default is 0 (sentinel for "fall back to server default
+        // of 1"). UI overrides to 1 so the depth input shows a useful
+        // value the moment the user checks isRecursive.
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
-          min: 0,
+          default: 1,
+          min: 1,
           visibleWhen: {
             fieldName: "isRecursive",
             value: true,
@@ -266,10 +267,14 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
+        // Schema default is 0 (sentinel for server default of 1); UI
+        // overrides to 1 so the depth input shows a useful value the
+        // moment the user checks isRecursive.
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
-          min: 0,
+          default: 1,
+          min: 1,
           visibleWhen: {
             fieldName: "isRecursive",
             value: true,
@@ -639,11 +644,14 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 — runtime sentinel for "use default depth of 2"
+        // Schema default is 0 (sentinel for server default of 1); UI
+        // overrides to 1 so the depth input shows a useful value the
+        // moment the user checks isRecursive.
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
-          min: 0,
+          default: 1,
+          min: 1,
           visibleWhen: {
             fieldName: "isRecursive",
             value: true,
@@ -697,11 +705,14 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 — runtime sentinel for "use default depth of 2"
+        // Schema default is 0 (sentinel for server default of 1); UI
+        // overrides to 1 so the depth input shows a useful value the
+        // moment the user checks isRecursive.
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
-          min: 0,
+          default: 1,
+          min: 1,
           visibleWhen: {
             fieldName: "isRecursive",
             value: true,
@@ -733,11 +744,14 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 — runtime sentinel for "use default depth of 2"
+        // Schema default is 0 (sentinel for server default of 1); UI
+        // overrides to 1 so the depth input shows a useful value the
+        // moment the user checks isRecursive.
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
-          min: 0,
+          default: 1,
+          min: 1,
           visibleWhen: {
             fieldName: "isRecursive",
             value: true,
@@ -769,11 +783,14 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 — runtime sentinel for "use default depth of 2"
+        // Schema default is 0 (sentinel for server default of 1); UI
+        // overrides to 1 so the depth input shows a useful value the
+        // moment the user checks isRecursive.
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
-          min: 0,
+          default: 1,
+          min: 1,
           visibleWhen: {
             fieldName: "isRecursive",
             value: true,
@@ -845,11 +862,14 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 — runtime sentinel for "use default depth of 2"
+        // Schema default is 0 (sentinel for server default of 1); UI
+        // overrides to 1 so the depth input shows a useful value the
+        // moment the user checks isRecursive.
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
-          min: 0,
+          default: 1,
+          min: 1,
           visibleWhen: {
             fieldName: "isRecursive",
             value: true,
@@ -1205,11 +1225,14 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        // Schema default is 0 — runtime sentinel for "use default depth of 2"
+        // Schema default is 0 (sentinel for server default of 1); UI
+        // overrides to 1 so the depth input shows a useful value the
+        // moment the user checks isRecursive.
         field("recursiveDepth", {
           type: "number",
           label: "Depth",
-          min: 0,
+          default: 1,
+          min: 1,
           visibleWhen: {
             fieldName: "isRecursive",
             value: true,
