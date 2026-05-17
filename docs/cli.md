@@ -31,7 +31,8 @@ yarn media <command> --help        # options for a specific command
 | `isMissingSubtitles` | `<sourcePath>` | List files and folders that have no subtitle tracks. |
 | `keepLanguages` | `<sourcePath>` | Remove all audio and subtitle tracks except the specified ISO 639-2 languages. |
 | `mergeOrderedChapters` | `<sourcePath> [introFilename] [outroFilename]` | Merge files that use ordered chapters with a shared intro/outro into self-contained files. Requires PCM audio (convert FLAC first). |
-| `mergeTracks` | `<subtitlesPath> <mediaFilesPath> [offsets...]` | Add subtitle tracks (and optionally chapters) from a matching directory into media files. |
+| `addSubtitles` | `<subtitlesPath> <sourcePath> [offsets...]` | Mux subtitle tracks (and optionally chapters) from a matching directory into media files. |
+| `mergeTracks` | `<subtitlesPath> <sourcePath> [offsets...]` | (DEPRECATED — alias of `addSubtitles`) Same behavior; emits a deprecation warning. |
 | `moveFiles` | `<sourcePath> <destinationPath>` | Copy all files to a destination then delete the source directory. Equivalent to `copyFiles` + delete. |
 | `nameAnimeEpisodes` | `<sourcePath> <searchTerm>` | Rename anime episode files using MyAnimeList metadata. |
 | `nameAnimeEpisodesAniDB` | `<sourcePath> <searchTerm>` | Rename episode files using titles from AniDB. Better OVA/special coverage than MAL. See [AniDB command notes](#anidb-command-notes). |

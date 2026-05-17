@@ -6,6 +6,10 @@ import {
 import { makeDirectory } from "@mux-magic/tools"
 import type { Context } from "hono"
 import type { Observable } from "rxjs"
+import {
+  addSubtitles,
+  addSubtitlesDefaultProps,
+} from "../../app-commands/addSubtitles.js"
 import { changeTrackLanguages } from "../../app-commands/changeTrackLanguages.js"
 import {
   type CopyRecord,
@@ -37,10 +41,7 @@ import {
   keepLanguages,
   keepLanguagesDefaultProps,
 } from "../../app-commands/keepLanguages.js"
-import {
-  mergeTracks,
-  mergeTracksDefaultProps,
-} from "../../app-commands/mergeTracks.js"
+import { mergeTracks } from "../../app-commands/mergeTracks.js"
 import { modifySubtitleMetadata } from "../../app-commands/modifySubtitleMetadata.js"
 import { moveFiles } from "../../app-commands/moveFiles.js"
 import { nameAnimeEpisodes } from "../../app-commands/nameAnimeEpisodes.js"
@@ -140,6 +141,7 @@ export const commandNames = [
   "deleteFolder",
   "modifySubtitleMetadata",
   "keepLanguages",
+  "addSubtitles",
   "mergeTracks",
   "moveFiles",
   "nameAnimeEpisodes",
@@ -444,7 +446,27 @@ export const commandConfigs: Record<
     summary: "Filter media tracks by language",
     tags: ["Track Operations"],
   },
+  addSubtitles: {
+    getObservable: (body) =>
+      addSubtitles({
+        globalOffsetInMilliseconds: body.globalOffset,
+        hasChapterSyncOffset: body.hasChapterSyncOffset,
+        hasChapters: body.includeChapters,
+        offsetsInMilliseconds: body.offsets,
+        sourcePath: body.sourcePath,
+        subtitlesPath: body.subtitlesPath,
+      }),
+    outputFolderName:
+      addSubtitlesDefaultProps.outputFolderName,
+    schema: schemas.addSubtitlesRequestSchema,
+    summary:
+      "Mux a folder of per-file subtitle directories into matching media files (preserves attachments and optional chapters.xml).",
+    tags: ["Subtitle Operations"],
+  },
   mergeTracks: {
+    // Deprecated alias for addSubtitles — getObservable points to the
+    // shim app-command which logs a deprecation warning then delegates.
+    isDeprecated: true,
     getObservable: (body) =>
       mergeTracks({
         globalOffsetInMilliseconds: body.globalOffset,
@@ -455,10 +477,11 @@ export const commandConfigs: Record<
         subtitlesPath: body.subtitlesPath,
       }),
     outputFolderName:
-      mergeTracksDefaultProps.outputFolderName,
+      addSubtitlesDefaultProps.outputFolderName,
     schema: schemas.mergeTracksRequestSchema,
-    summary: "Merge subtitle tracks into media files",
-    tags: ["Track Operations"],
+    summary:
+      "[DEPRECATED — use addSubtitles] Merge subtitle tracks into media files.",
+    tags: ["Subtitle Operations"],
   },
   moveFiles: {
     getObservable: (body) =>

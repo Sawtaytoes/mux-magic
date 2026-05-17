@@ -901,7 +901,7 @@ export const keepLanguagesRequestSchema = z.object({
     ),
 })
 
-export const mergeTracksRequestSchema = z.object({
+export const addSubtitlesRequestSchema = z.object({
   sourcePath: z
     .string()
     .describe(
@@ -935,6 +935,10 @@ export const mergeTracksRequestSchema = z.object({
       "Offsets (milliseconds, one per episode). Provide one offset per source file. The order must match the order of episodes selected above. Negative values shift the subtitle earlier; positive values shift it later. This field is only useful for manual runs; sequences and schedules should rely on auto-aligned tracks.",
     ),
 })
+
+/** @deprecated Renamed to {@link addSubtitlesRequestSchema}. Kept as an alias so existing callers don't break. */
+export const mergeTracksRequestSchema =
+  addSubtitlesRequestSchema
 
 export const nameAnimeEpisodesRequestSchema = z.object({
   sourcePath: z

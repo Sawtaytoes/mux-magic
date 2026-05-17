@@ -14,6 +14,7 @@
 // Commands not yet migrated keep their plain literal `fields` arrays.
 
 import {
+  addSubtitlesRequestSchema,
   changeTrackLanguagesRequestSchema,
   copyFilesRequestSchema,
   copyOutSubtitlesRequestSchema,
@@ -437,10 +438,48 @@ export const COMMANDS: Commands = {
       ],
     }
   })(),
+  addSubtitles: (() => {
+    const field = fieldBuilder(addSubtitlesRequestSchema)
+    return {
+      summary:
+        "Mux a folder of per-file subtitle directories into matching media files (preserves attachments and optional chapters.xml)",
+      tag: "Subtitle Operations",
+      outputFolderName: "SUBTITLED",
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        field("subtitlesPath", {
+          type: "path",
+          label: "Subtitles Path",
+        }),
+        field("hasChapterSyncOffset", {
+          type: "boolean",
+          label: "Chapter-Sync Offset",
+        }),
+        field("globalOffset", {
+          type: "number",
+          label: "Global Offset (ms)",
+        }),
+        field("includeChapters", {
+          type: "boolean",
+          label: "Include Chapters",
+        }),
+        field("offsets", {
+          type: "numberArray",
+          label: "Offsets (milliseconds, one per episode)",
+          placeholder: "0, -200, 150",
+        }),
+      ],
+    }
+  })(),
   mergeTracks: (() => {
     const field = fieldBuilder(mergeTracksRequestSchema)
     return {
-      summary: "Merge subtitle tracks into media files",
+      summary:
+        "[DEPRECATED — use addSubtitles] Merge subtitle tracks into media files",
+      note: "DEPRECATED: this command was renamed to 'addSubtitles'. Update your saved sequences — the old name will be removed in a future release.",
       tag: "Track Operations",
       outputFolderName: "SUBTITLED",
       fields: [

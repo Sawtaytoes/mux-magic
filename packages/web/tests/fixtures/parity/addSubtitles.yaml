@@ -4,5 +4,5 @@ paths:
     value: /fixture/media
 steps:
   - id: step-fixture
-    command: mergeTracks
+    command: addSubtitles
     params: {sourcePath: '@basePath', subtitlesPath: '@basePath', hasChapterSyncOffset: true, globalOffset: 100, includeChapters: true, offsets: [0, -200, 150]}

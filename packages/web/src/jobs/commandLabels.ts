@@ -18,11 +18,12 @@ const commandLabels: Record<string, string> = {
   changeTrackLanguages: "Change Track Languages",
   fixIncorrectDefaultTracks: "Fix Incorrect Default Tracks",
   keepLanguages: "Keep Languages",
-  mergeTracks: "Merge Tracks",
+  mergeTracks: "Add Subtitles (deprecated)",
   reorderTracks: "Reorder Tracks",
   replaceTracks: "Replace Tracks",
 
   // Subtitle Operations
+  addSubtitles: "Add Subtitles",
   extractSubtitles: "Extract Subtitles",
   copyOutSubtitles: "Extract Subtitles (deprecated)",
   isMissingSubtitles: "Check Missing Subtitles",

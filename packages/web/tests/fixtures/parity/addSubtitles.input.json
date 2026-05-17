@@ -8,12 +8,16 @@
   ],
   "step": {
     "id": "step-fixture",
-    "command": "mergeTracks",
+    "command": "addSubtitles",
     "params": {
       "hasChapterSyncOffset": true,
       "globalOffset": 100,
       "includeChapters": true,
-      "offsets": [0, -200, 150]
+      "offsets": [
+        0,
+        -200,
+        150
+      ]
     },
     "links": {
       "sourcePath": "basePath",

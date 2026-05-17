@@ -351,10 +351,10 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
       { sourcePath: "basePath" },
     ),
   },
-  mergeTracks: {
+  addSubtitles: {
     paths: BASE_PATHS,
     step: makeStep(
-      "mergeTracks",
+      "addSubtitles",
       {
         hasChapterSyncOffset: true,
         globalOffset: 100,

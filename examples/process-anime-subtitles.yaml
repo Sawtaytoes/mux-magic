@@ -18,7 +18,7 @@
 #   4. deleteFilesByExtension — strip non-.ass cruft from the extracted set
 #   5. modifySubtitleMetadata     — apply default-rules heuristic in place via
 #                                   `hasDefaultRules: true` (no-op if no .ass)
-#   6. mergeTracks       — re-merge the subtitles into the media files
+#   6. addSubtitles      — re-mux the subtitles back into the media files
 #   7. copyFiles         — copy the merged result up to the parent series folder
 #   8. deleteFolder      — clean up the work directory
 #
@@ -94,9 +94,9 @@ steps:
       rules: []
 
   - id: mergeBack
-    command: mergeTracks
+    command: addSubtitles
     params:
-      mediaFilesPath: '@workDir'
+      sourcePath: '@workDir'
       subtitlesPath:
         linkedTo: extractSubs
         output: folder

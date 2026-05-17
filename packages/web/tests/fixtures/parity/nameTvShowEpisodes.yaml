@@ -5,4 +5,4 @@ paths:
 steps:
   - id: step-fixture
     command: nameTvShowEpisodes
-    params: {sourcePath: '@basePath', tvdbId: 76703, tvdbName: One Piece, seasonNumber: 1}
+    params: {sourcePath: '@basePath', tvdbId: 76703, tvdbName: One Piece}

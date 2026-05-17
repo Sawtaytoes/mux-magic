@@ -68,7 +68,8 @@ All commands are started with `POST`. The body is JSON. `sourcePath` is required
 | `POST /jobs/hasWrongDefaultTrack` | `sourcePath` | `isRecursive` |
 | `POST /jobs/isMissingSubtitles` | `sourcePath` | `isRecursive` |
 | `POST /jobs/keepLanguages` | `sourcePath` | `audioLanguages[]`, `subtitlesLanguages[]`, `useFirstAudioLanguage`, `useFirstSubtitlesLanguage`, `isRecursive` |
-| `POST /jobs/mergeTracks` | `subtitlesPath`, `mediaFilesPath` | `offsets[]`, `hasChapterSyncOffset`, `globalOffset`, `includeChapters` |
+| `POST /jobs/addSubtitles` | `subtitlesPath`, `sourcePath` | `offsets[]`, `hasChapterSyncOffset`, `globalOffset`, `includeChapters` |
+| `POST /jobs/mergeTracks` | `subtitlesPath`, `sourcePath` | (DEPRECATED — alias of `addSubtitles`) `offsets[]`, `hasChapterSyncOffset`, `globalOffset`, `includeChapters` |
 | `POST /jobs/moveFiles` | `sourcePath`, `destinationPath` | — |
 | `POST /jobs/nameAnimeEpisodes` | `sourcePath`, `searchTerm` | `seasonNumber`, `malId` |
 | `POST /jobs/nameAnimeEpisodesAniDB` | `sourcePath` | `searchTerm`, `seasonNumber`, `anidbId` (see [AniDB command notes](cli.md#anidb-command-notes)) |
