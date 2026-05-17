@@ -8,6 +8,7 @@ import "./logBuildBanner.js"
 import { serve } from "@hono/node-server"
 import {
   initTaskScheduler,
+  logError,
   logInfo,
   setLoggingMode,
 } from "@mux-magic/tools"
@@ -20,7 +21,42 @@ import {
   installLogCapture,
 } from "./api/logCapture.js"
 import { API_PORT, MAX_THREADS } from "./tools/envVars.js"
+import { reportProcessCrashed } from "./tools/webhookReporter.js"
 
+// Node's docs are explicit: after `uncaughtException` the process is in
+// undefined state and MUST exit. We fire one best-effort webhook (capped
+// inside `reportProcessCrashed` so a dead receiver can't extend the
+// restart) and then `process.exit(1)` so the supervisor (docker, pm2,
+// systemd) brings up a fresh process. The `isExiting` latch guards
+// against a second crash inside the handler itself looping back through.
+const installCrashHandlers = (): void => {
+  let isExiting = false
+  const handle = (
+    source: "uncaughtException" | "unhandledRejection",
+    raw: unknown,
+  ): void => {
+    if (isExiting) return
+    isExiting = true
+    const err =
+      raw instanceof Error ? raw : new Error(String(raw))
+    logError("CRASH", `${source}: ${err.message}`)
+    void reportProcessCrashed({
+      reason: err.message,
+      source,
+      stack: err.stack ?? null,
+    }).finally(() => {
+      process.exit(1)
+    })
+  }
+  process.on("uncaughtException", (err) =>
+    handle("uncaughtException", err),
+  )
+  process.on("unhandledRejection", (reason) =>
+    handle("unhandledRejection", reason),
+  )
+}
+
+installCrashHandlers()
 installLogCapture()
 installLogBridge()
 // API mode: route `logInfo` / `logError` / `logWarning` through the
