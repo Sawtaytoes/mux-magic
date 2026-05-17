@@ -49,6 +49,14 @@ export const makeDirectoryRequestSchema = z.object({
     ),
 })
 
+export const exitIfEmptyRequestSchema = z.object({
+  sourcePath: z
+    .string()
+    .describe(
+      "Directory path whose emptiness gates whether the sequence continues. The step emits `shouldExit: true` (causing the umbrella sequence job to end with status `exited`) when the path either does not exist or exists but contains zero entries. Otherwise emits `shouldExit: false` and the sequence continues.",
+    ),
+})
+
 // Regex `flags` constraint — the JS `RegExp` constructor accepts any
 // subset of g/i/m/s/u/y. We deliberately reject `d` (hasIndices) since
 // the engine surfaces capture-group offsets the live-preview UI doesn't

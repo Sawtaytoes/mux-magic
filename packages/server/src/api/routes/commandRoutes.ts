@@ -19,6 +19,7 @@ import { copyOutSubtitles } from "../../app-commands/copyOutSubtitles.js"
 import { deleteCopiedOriginals } from "../../app-commands/deleteCopiedOriginals.js"
 import { deleteFilesByExtension } from "../../app-commands/deleteFilesByExtension.js"
 import { deleteFolder } from "../../app-commands/deleteFolder.js"
+import { exitIfEmpty } from "../../app-commands/exitIfEmpty.js"
 import {
   extractSubtitles,
   extractSubtitlesDefaultProps,
@@ -143,6 +144,7 @@ export const commandNames = [
   "deleteCopiedOriginals",
   "deleteFilesByExtension",
   "deleteFolder",
+  "exitIfEmpty",
   "modifySubtitleMetadata",
   "keepLanguages",
   "addSubtitles",
@@ -418,6 +420,31 @@ export const commandConfigs: Record<
     summary:
       "Recursively delete a folder (DESTRUCTIVE — requires confirm: true)",
     tags: ["File Operations"],
+  },
+  exitIfEmpty: {
+    getObservable: (body) =>
+      exitIfEmpty({ sourcePath: body.sourcePath }),
+    // The runner reads `shouldExit` / `exitReason` off the child job's
+    // outputs to decide whether to short-circuit the umbrella sequence
+    // with `status: "exited"`. The keys here are a reserved contract —
+    // any future flow-control command (`exitIfFileCountBelow`, etc.)
+    // can publish the same shape without touching the runner.
+    extractOutputs: (results) => {
+      const decision = results[0] as
+        | { shouldExit?: boolean; exitReason?: string }
+        | undefined
+      return {
+        shouldExit: decision?.shouldExit === true,
+        exitReason:
+          typeof decision?.exitReason === "string"
+            ? decision.exitReason
+            : "",
+      }
+    },
+    schema: schemas.exitIfEmptyRequestSchema,
+    summary:
+      "Exit the umbrella sequence cleanly (status: exited) if sourcePath does not exist or contains zero entries. No-op if the folder has any contents.",
+    tags: ["Flow Control"],
   },
   modifySubtitleMetadata: {
     getObservable: (body) =>

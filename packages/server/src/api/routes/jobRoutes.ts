@@ -23,9 +23,10 @@ const jobDetailSchema = z.object({
       "failed",
       "cancelled",
       "skipped",
+      "exited",
     ])
     .describe(
-      "Job status. `skipped` is set on sequence-step child jobs that never ran because an earlier step failed or the umbrella was cancelled before reaching them; distinct from `cancelled`, which means the job was actively running when it got interrupted.",
+      "Job status. `skipped` is set on sequence-step child jobs that never ran because an earlier step failed or the umbrella was cancelled before reaching them; distinct from `cancelled`, which means the job was actively running when it got interrupted. `exited` is set on the umbrella job and every later flat step when a flow-control step (e.g. `exitIfEmpty`) signals a planned early exit — distinct from both `completed` (the sequence ran every step) and `skipped` (the rest of the sequence didn't run due to a failure or cancellation).",
     ),
   params: z.unknown().describe("Command parameters"),
   results: z
