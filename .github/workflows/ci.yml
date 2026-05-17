@@ -6,7 +6,37 @@ env:
   PORT: 3000
 
 jobs:
+  check-prior-run:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$EVENT" != "push" ] || [ "$REF" != "refs/heads/master" ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          prior=$(gh api \
+            "repos/$GH_REPO/actions/workflows/ci.yml/runs?head_sha=$SHA&status=completed" \
+            --jq "[.workflow_runs[] | select(.conclusion == \"success\" and .id != $RUN_ID)] | length")
+          if [ "$prior" -gt 0 ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Found prior successful CI run for $SHA — skipping jobs (workflow still concludes success)."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
   lint:
+    needs: check-prior-run
+    if: needs.check-prior-run.outputs.skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -17,6 +47,8 @@ jobs:
       - run: yarn lint:eslint
 
   typecheck:
+    needs: check-prior-run
+    if: needs.check-prior-run.outputs.skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -26,6 +58,8 @@ jobs:
       - run: yarn typecheck
 
   unit-tests:
+    needs: check-prior-run
+    if: needs.check-prior-run.outputs.skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -36,6 +70,8 @@ jobs:
       - run: yarn test
 
   e2e:
+    needs: check-prior-run
+    if: needs.check-prior-run.outputs.skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
