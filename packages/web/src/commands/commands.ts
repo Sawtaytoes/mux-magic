@@ -81,6 +81,16 @@ export const COMMANDS: Commands = {
       summary: "Copy files from source to destination",
       tag: "File Operations",
       outputFolderName: null,
+      // Mirrors `extractOutputs` in commandRoutes.ts — the runtime
+      // freezes the exact source paths that were copied so a downstream
+      // `deleteCopiedOriginals` can clean them up race-safely. Listing it
+      // here makes the named output selectable from the link picker.
+      outputs: [
+        {
+          name: "copiedSourcePaths",
+          label: "Copied source paths",
+        },
+      ],
       fields: [
         field("sourcePath", {
           type: "path",
@@ -184,6 +194,16 @@ export const COMMANDS: Commands = {
       summary: "Move files from source to destination",
       tag: "File Operations",
       outputFolderName: null,
+      // Same runtime output as `copyFiles` — the move records each source
+      // path it touched so `deleteCopiedOriginals` (or another consumer)
+      // can chain off it. Move already removes the source, so wiring this
+      // is less common in practice, but it's published for symmetry.
+      outputs: [
+        {
+          name: "copiedSourcePaths",
+          label: "Copied source paths",
+        },
+      ],
       fields: [
         field("sourcePath", {
           type: "path",

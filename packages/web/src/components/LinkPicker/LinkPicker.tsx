@@ -45,10 +45,16 @@ type StepLinkItem = {
   label: string
   detail: string
   sourceStepId: string
+  outputName: string
 }
 
 type LinkItem = PathLinkItem | StepLinkItem
 
+// One row per (preceding step × output): every step always contributes a
+// `folder` row (the synthesized output folder), and any named outputs
+// declared on the source command's `outputs` array contribute an extra
+// row each. That lets users wire e.g. `deleteCopiedOriginals.pathsToDelete`
+// to `copyFiles` → `Copied source paths` without hand-editing YAML.
 const buildItems = (
   anchor: LinkPickerAnchor,
   allSteps: SequenceItem[],
@@ -67,38 +73,53 @@ const buildItems = (
     flatOrder.find((entry) => entry.step.id === stepId)
       ?.step
 
-  const items: LinkItem[] = []
-
-  paths.forEach((pathVariable) => {
-    items.push({
+  const pathItems: LinkItem[] = paths.map(
+    (pathVariable) => ({
       kind: "path",
       value: `path:${pathVariable.id}`,
       label: pathVariable.label || "(unnamed)",
       detail: pathVariable.value || "",
       pathVariableId: pathVariable.id,
-    })
-  })
+    }),
+  )
 
-  flatOrder.slice(0, currentIndex).forEach((entry) => {
-    const previousStep = entry.step
-    if (previousStep.command === null) {
-      return
-    }
-    items.push({
-      kind: "step",
-      value: `step:${previousStep.id}:folder`,
-      label: `Step ${entry.flatIndex + 1}: ${getCommandLabel(previousStep.command)}`,
-      detail: stepOutput(
-        previousStep,
-        paths,
-        commands,
-        findStep,
-      ),
-      sourceStepId: previousStep.id,
+  const stepItems: StepLinkItem[] = flatOrder
+    .slice(0, currentIndex)
+    .flatMap((entry) => {
+      const previousStep = entry.step
+      if (previousStep.command === null) {
+        return []
+      }
+      const stepLabel = `Step ${entry.flatIndex + 1}: ${getCommandLabel(previousStep.command)}`
+      const folderItem: StepLinkItem = {
+        kind: "step",
+        value: `step:${previousStep.id}:folder`,
+        label: stepLabel,
+        detail: stepOutput(
+          previousStep,
+          paths,
+          commands,
+          findStep,
+        ),
+        sourceStepId: previousStep.id,
+        outputName: "folder",
+      }
+      const namedOutputs =
+        commands[previousStep.command]?.outputs ?? []
+      const namedItems: StepLinkItem[] = namedOutputs.map(
+        (output) => ({
+          kind: "step",
+          value: `step:${previousStep.id}:${output.name}`,
+          label: `${stepLabel} → ${output.label ?? output.name}`,
+          detail: output.name,
+          sourceStepId: previousStep.id,
+          outputName: output.name,
+        }),
+      )
+      return [folderItem].concat(namedItems)
     })
-  })
 
-  return items
+  return pathItems.concat(stepItems)
 }
 
 const findInitialIndex = (
@@ -127,7 +148,8 @@ const findInitialIndex = (
     const idx = items.findIndex(
       (item) =>
         item.kind === "step" &&
-        item.sourceStepId === link.linkedTo,
+        item.sourceStepId === link.linkedTo &&
+        item.outputName === link.output,
     )
     return idx >= 0 ? idx : 0
   }
@@ -282,7 +304,7 @@ export const LinkPicker = () => {
     } else {
       setLink(anchor.stepId, anchor.fieldName, {
         linkedTo: item.sourceStepId,
-        output: "folder",
+        output: item.outputName,
       })
     }
   }
