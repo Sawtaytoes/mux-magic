@@ -29,14 +29,10 @@ describe(applyRenameRegex.name, () => {
 
   test("supports numbered capture groups", () => {
     expect(
-      applyRenameRegex(
-        "[Group] My Show - 01 [1080p].mkv",
-        {
-          pattern:
-            "^\\[.*?\\] (.+?) \\[.*?\\](\\.\\w+)$",
-          replacement: "$1$2",
-        },
-      ),
+      applyRenameRegex("[Group] My Show - 01 [1080p].mkv", {
+        pattern: "^\\[.*?\\] (.+?) \\[.*?\\](\\.\\w+)$",
+        replacement: "$1$2",
+      }),
     ).toBe("My Show - 01.mkv")
   })
 

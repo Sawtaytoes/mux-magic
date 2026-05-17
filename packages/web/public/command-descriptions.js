@@ -37,6 +37,16 @@ window.commandDescriptions = {
       "renameRegex": "Optional regex-based rename applied to each copied entry's name at the destination."
     }
   },
+  "renameFiles": {
+    "summary": "Rename files in place via regex (no copy, no move). Pre-flight halts the run if two files would map to the same target name.",
+    "fields": {
+      "sourcePath": "Directory containing files to rename.",
+      "isRecursive": "Recursively descend into subdirectories. Default false.",
+      "recursiveDepth": "Maximum recursion depth when --isRecursive is set (0 = default depth of 1; mirrors deleteFilesByExtension).",
+      "fileFilterRegex": "If set, only files whose names match this regular expression are renamed.",
+      "renameRegex": "Required. Applied to each matched filename (including extension) via String.replace."
+    }
+  },
   "flattenOutput": {
     "summary": "Flatten a chained step's output: copies the folder's contents up one level (deletes source only if requested)",
     "fields": {
