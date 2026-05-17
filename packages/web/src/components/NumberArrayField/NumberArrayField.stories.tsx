@@ -12,12 +12,12 @@ export default meta
 type Story = StoryObj<typeof NumberArrayField>
 
 const field =
-  FIXTURE_COMMANDS_BUNDLE_C.mergeTracks.fields[1]
+  FIXTURE_COMMANDS_BUNDLE_C.addSubtitles.fields[1]
 
 const mockStep: Step = {
   id: "step-1",
   alias: "",
-  command: "mergeTracks",
+  command: "addSubtitles",
   params: { offsets: [0, -200, 150] },
   links: {},
   status: null,

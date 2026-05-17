@@ -23,7 +23,7 @@ const makeStep = (
 ): Step => ({
   id: "step-1",
   alias: "",
-  command: "mergeTracks",
+  command: "addSubtitles",
   params,
   links: {},
   status: null,
@@ -61,13 +61,13 @@ afterEach(() => {
 
 describe("NumberArrayField", () => {
   const field: CommandField = FIXTURE_COMMANDS_BUNDLE_C
-    .mergeTracks.fields[1] as CommandField
+    .addSubtitles.fields[1] as CommandField
 
   it("displays empty string when value is undefined", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
-      command: "mergeTracks",
+      command: "addSubtitles",
       params: {},
       links: {},
       status: null,
@@ -84,7 +84,7 @@ describe("NumberArrayField", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
-      command: "mergeTracks",
+      command: "addSubtitles",
       params: { offsets: [0, -200, 150] },
       links: {},
       status: null,
@@ -101,7 +101,7 @@ describe("NumberArrayField", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
-      command: "mergeTracks",
+      command: "addSubtitles",
       params: { offsets: [100, -50] },
       links: {},
       status: null,
@@ -118,7 +118,7 @@ describe("NumberArrayField", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
-      command: "mergeTracks",
+      command: "addSubtitles",
       params: { offsets: [100, 50] },
       links: {},
       status: null,
@@ -140,7 +140,7 @@ describe("NumberArrayField", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
-      command: "mergeTracks",
+      command: "addSubtitles",
       params: {},
       links: {},
       status: null,
@@ -160,7 +160,7 @@ describe("NumberArrayField", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
-      command: "mergeTracks",
+      command: "addSubtitles",
       params: {},
       links: {},
       status: null,

@@ -913,7 +913,7 @@ describe("legacy field renames — read-time remapping", () => {
         },
       ],
     },
-    mergeTracks: {
+    addSubtitles: {
       fields: [
         {
           name: "sourcePath",
@@ -1001,7 +1001,7 @@ describe("legacy field renames — read-time remapping", () => {
 
   test.each([
     ["getAudioOffsets", "sourceFilesPath"],
-    ["mergeTracks", "mediaFilesPath"],
+    ["addSubtitles", "mediaFilesPath"],
     ["replaceAttachments", "sourceFilesPath"],
     ["replaceTracks", "sourceFilesPath"],
     ["deleteFolder", "folderPath"],
@@ -1023,7 +1023,7 @@ steps:
 
   test.each([
     ["getAudioOffsets", "sourceFilesPath"],
-    ["mergeTracks", "mediaFilesPath"],
+    ["addSubtitles", "mediaFilesPath"],
     ["replaceAttachments", "sourceFilesPath"],
     ["replaceTracks", "sourceFilesPath"],
     ["deleteFolder", "folderPath"],
@@ -1105,7 +1105,7 @@ steps:
 describe("legacy field renames — write path", () => {
   test("toYamlStr writes sourcePath, never the legacy field name", () => {
     const commands: Commands = {
-      mergeTracks: {
+      addSubtitles: {
         fields: [
           {
             name: "sourcePath",
@@ -1124,7 +1124,7 @@ describe("legacy field renames — write path", () => {
     }
     const step = makeStep({
       id: "step-mt",
-      command: "mergeTracks",
+      command: "addSubtitles",
       links: {
         sourcePath: "basePath",
         subtitlesPath: "basePath",
@@ -1137,5 +1137,56 @@ describe("legacy field renames — write path", () => {
     )
     expect(result).toContain("sourcePath: '@basePath'")
     expect(result).not.toContain("mediaFilesPath")
+  })
+})
+
+// ─── Command rename chain — mergeTracks → addSubtitles ───────────────────────
+// Verifies the two-stage migration: command-name shim (RENAMED_COMMANDS)
+// runs first, then field-name shim (legacyFieldRenames keyed by the new
+// canonical name) rewrites mediaFilesPath → sourcePath.
+
+describe("mergeTracks → addSubtitles rename + field rename chain", () => {
+  test("legacy command + legacy field migrates to canonical addSubtitles + sourcePath", () => {
+    const commandsWithRename: Commands = {
+      addSubtitles: {
+        fields: [
+          {
+            name: "sourcePath",
+            type: "path",
+            isRequired: true,
+            isLinkable: true,
+          },
+          {
+            name: "subtitlesPath",
+            type: "path",
+            isRequired: true,
+            isLinkable: true,
+          },
+        ],
+      },
+    }
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => {})
+    try {
+      const yamlText = `
+steps:
+  - command: mergeTracks
+    params:
+      mediaFilesPath: /old/style
+      subtitlesPath: /subs
+`
+      const result = loadYamlFromText(
+        yamlText,
+        commandsWithRename,
+        BASE_PATHS,
+      )
+      const step = result.steps[0] as Step
+      expect(step.command).toBe("addSubtitles")
+      expect(step.params.sourcePath).toBe("/old/style")
+      expect(step.params.mediaFilesPath).toBeUndefined()
+    } finally {
+      warnSpy.mockRestore()
+    }
   })
 })

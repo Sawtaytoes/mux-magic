@@ -93,10 +93,10 @@ describe("SequenceRunModal — dry-run error propagation for sequence-builder ca
     capturedOnMessage = undefined
   })
 
-  test("mergeTracks: step-finished error surfaces on the step atom", () => {
+  test("addSubtitles: step-finished error surfaces on the step atom", () => {
     const store = createStore()
     store.set(stepsAtom, [
-      makeStep({ id: "step-1", command: "mergeTracks" }),
+      makeStep({ id: "step-1", command: "addSubtitles" }),
     ])
     openModal(store, "step-1")
     renderWithStore(store)
@@ -187,7 +187,7 @@ describe("SequenceRunModal — prompt routing (umbrella SSE)", () => {
   test("a 'prompt' event on the umbrella stream sets promptModalAtom with the umbrella's jobId", () => {
     const store = createStore()
     store.set(stepsAtom, [
-      makeStep({ id: "step-1", command: "mergeTracks" }),
+      makeStep({ id: "step-1", command: "addSubtitles" }),
     ])
     openModal(store, "step-1")
     renderWithStore(store)
@@ -219,7 +219,7 @@ describe("SequenceRunModal — prompt routing (umbrella SSE)", () => {
       options: [{ index: -1, label: "Skip" }],
     })
     store.set(stepsAtom, [
-      makeStep({ id: "step-1", command: "mergeTracks" }),
+      makeStep({ id: "step-1", command: "addSubtitles" }),
     ])
     openModal(store, "step-1")
     renderWithStore(store)

@@ -181,8 +181,19 @@ window.commandDescriptions = {
       "useFirstSubtitlesLanguage": "The language of the first subtitles track is the only language kept for subtitles tracks."
     }
   },
+  "addSubtitles": {
+    "summary": "Mux a folder of per-file subtitle directories into matching media files (preserves attachments and optional chapters.xml).",
+    "fields": {
+      "sourcePath": "Directory with media files that need subtitles.",
+      "subtitlesPath": "Directory containing subdirectories with subtitle files and attachments/ that match the name of the media files in sourcePath.",
+      "hasChapterSyncOffset": "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the subtitles path. Falls back to globalOffset (or per-file offsets) when no chapters.xml is found.",
+      "globalOffset": "The offset in milliseconds to apply to all audio being transferred.",
+      "includeChapters": "Adds chapters along with other tracks.",
+      "offsets": "Offsets (milliseconds, one per episode). Provide one offset per source file. The order must match the order of episodes selected above. Negative values shift the subtitle earlier; positive values shift it later. This field is only useful for manual runs; sequences and schedules should rely on auto-aligned tracks."
+    }
+  },
   "mergeTracks": {
-    "summary": "Merge subtitle tracks into media files",
+    "summary": "[DEPRECATED — use addSubtitles] Merge subtitle tracks into media files.",
     "fields": {
       "sourcePath": "Directory with media files that need subtitles.",
       "subtitlesPath": "Directory containing subdirectories with subtitle files and attachments/ that match the name of the media files in sourcePath.",

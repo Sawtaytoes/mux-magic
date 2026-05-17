@@ -187,9 +187,10 @@ export const FIXTURE_COMMANDS_BUNDLE_C: Commands = {
       },
     ],
   },
-  mergeTracks: {
-    summary: "Merge subtitle tracks into media files",
-    tag: "Track Operations",
+  addSubtitles: {
+    summary:
+      "Mux a folder of per-file subtitle directories into matching media files",
+    tag: "Subtitle Operations",
     outputFolderName: "SUBTITLED",
     fields: [
       {

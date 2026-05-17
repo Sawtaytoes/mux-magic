@@ -5,4 +5,4 @@ paths:
 steps:
   - id: step-fixture
     command: storeAspectRatioData
-    params: {sourcePath: '@basePath', isRecursive: true, recursiveDepth: 2, outputPath: '@basePath', rootPath: fixture-string-rootPath, folders: [folder-a, folder-b], force: true}
+    params: {sourcePath: '@basePath', recursiveDepth: 2, outputPath: '@basePath', rootPath: fixture-string-rootPath, folders: [folder-a, folder-b], force: true}

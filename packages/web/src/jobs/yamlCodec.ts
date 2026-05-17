@@ -14,6 +14,9 @@ import { isGroup } from "./sequenceUtils"
 
 const RENAMED_COMMANDS: Record<string, string> = {
   nameSpecialFeatures: "nameSpecialFeaturesDvdCompareTmdb",
+  // `mergeTracks` only ever muxed in subtitles (with optional chapters);
+  // it never touched audio/video. Renamed to surface what it actually does.
+  mergeTracks: "addSubtitles",
 }
 
 // ─── Serializer ───────────────────────────────────────────────────────────────
@@ -128,7 +131,10 @@ const legacyFieldRenames: Record<
   Record<string, string>
 > = {
   getAudioOffsets: { sourcePath: "sourceFilesPath" },
-  mergeTracks: { sourcePath: "mediaFilesPath" },
+  // Keyed by the post-rename canonical name. Command-name rewrites in
+  // RENAMED_COMMANDS run first, so a legacy `command: mergeTracks` step
+  // becomes `addSubtitles` before this map is consulted.
+  addSubtitles: { sourcePath: "mediaFilesPath" },
   replaceAttachments: { sourcePath: "sourceFilesPath" },
   replaceTracks: { sourcePath: "sourceFilesPath" },
   deleteFolder: { sourcePath: "folderPath" },

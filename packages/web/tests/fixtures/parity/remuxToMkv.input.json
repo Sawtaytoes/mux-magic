@@ -10,7 +10,10 @@
     "id": "step-fixture",
     "command": "remuxToMkv",
     "params": {
-      "extensions": [".ts", ".m2ts"],
+      "extensions": [
+        ".ts",
+        ".m2ts"
+      ],
       "isRecursive": true,
       "recursiveDepth": 2,
       "isSourceDeletedOnSuccess": true

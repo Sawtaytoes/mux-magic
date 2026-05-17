@@ -10,7 +10,10 @@
     "id": "step-fixture",
     "command": "deleteFilesByExtension",
     "params": {
-      "extensions": [".srt", ".idx"],
+      "extensions": [
+        ".srt",
+        ".idx"
+      ],
       "isRecursive": true,
       "recursiveDepth": 2
     },

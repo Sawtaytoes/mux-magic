@@ -25,7 +25,7 @@ Cross-reference: the rule object schema (style names, replacement fields, font s
 - `copyOutSubtitles` — [`src/app-commands/copyOutSubtitles.ts`](../src/app-commands/copyOutSubtitles.ts)
 - `deleteFilesByExtension` — [`src/app-commands/deleteFilesByExtension.ts`](../src/app-commands/deleteFilesByExtension.ts)
 - `modifySubtitleMetadata` — [`src/app-commands/modifySubtitleMetadata.ts`](../src/app-commands/modifySubtitleMetadata.ts) (set `hasDefaultRules: true` to prepend the in-tree heuristic)
-- `mergeTracks` — [`src/app-commands/mergeTracks.ts`](../src/app-commands/mergeTracks.ts)
+- `addSubtitles` — [`src/app-commands/addSubtitles.ts`](../src/app-commands/addSubtitles.ts)
 - `deleteFolder` — [`src/app-commands/deleteFolder.ts`](../src/app-commands/deleteFolder.ts)
 
 **Source in media-sync:** `packages/sync-anime-and-manga/src/processAnimeSubtitles.ts`. media-sync builds the body programmatically as `MediaToolsSequenceBody` and POSTs JSON; the YAML below is the equivalent pasted into the builder.
@@ -87,10 +87,10 @@ steps:
       rules: []
 
   - id: mergeSubs
-    alias: Merge modified subtitles back into MKVs
-    command: mergeTracks
+    alias: Mux modified subtitles back into MKVs
+    command: addSubtitles
     params:
-      mediaFilesPath: '@workDir'
+      sourcePath: '@workDir'
       # subtitlesPath references extractSubs's folder, NOT applyRules's:
       # modifySubtitleMetadata mutates .ass files in place and has no
       # synthesized folder output, so {linkedTo: applyRules, output: folder}

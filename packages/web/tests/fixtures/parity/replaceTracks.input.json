@@ -13,10 +13,19 @@
       "hasChapterSyncOffset": true,
       "globalOffset": 100,
       "includeChapters": true,
-      "audioLanguages": ["eng"],
-      "subtitlesLanguages": ["eng"],
-      "videoLanguages": ["eng"],
-      "offsets": [0, 100]
+      "audioLanguages": [
+        "eng"
+      ],
+      "subtitlesLanguages": [
+        "eng"
+      ],
+      "videoLanguages": [
+        "eng"
+      ],
+      "offsets": [
+        0,
+        100
+      ]
     },
     "links": {
       "sourcePath": "basePath",

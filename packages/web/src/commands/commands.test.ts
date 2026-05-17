@@ -2,10 +2,10 @@ import { describe, expect, test } from "vitest"
 
 import { COMMANDS } from "./commands"
 
-describe("mergeTracks offsets field label", () => {
+describe("addSubtitles offsets field label", () => {
   test("offsets field has the per-episode label", () => {
-    const mergeTracksFields = COMMANDS.mergeTracks.fields
-    const offsetsField = mergeTracksFields.find(
+    const addSubtitlesFields = COMMANDS.addSubtitles.fields
+    const offsetsField = addSubtitlesFields.find(
       ({ name }) => name === "offsets",
     )
 

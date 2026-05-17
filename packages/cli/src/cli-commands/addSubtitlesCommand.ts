@@ -1,9 +1,4 @@
-// @deprecated — `mergeTracks` was renamed to `addSubtitles`. This shim
-// keeps the old CLI invocation working (with a deprecation warning)
-// so existing scripts don't break. Remove once those scripts have
-// migrated.
-
-import { mergeTracks } from "@mux-magic/server/src/app-commands/mergeTracks.js"
+import { addSubtitles } from "@mux-magic/server/src/app-commands/addSubtitles.js"
 import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
 import type {
   Argv,
@@ -17,8 +12,8 @@ type InferArgvOptions<T> =
 const builder = (yargs: Argv) =>
   yargs
     .example(
-      '$0 mergeTracks "G:\\Anime\\Code Geass Subs" "G:\\Anime\\Code Geass"',
-      "Deprecated: use 'addSubtitles'. Adds subtitles to all media files with a corresponding folder in the subs folder that shares the exact same name (minus the extension).",
+      '$0 addSubtitles "G:\\Anime\\Code Geass Subs" "G:\\Anime\\Code Geass"',
+      "Adds subtitles to all media files with a corresponding folder in the subs folder that shares the exact same name (minus the extension).",
     )
     .positional("subtitlesPath", {
       demandOption: true,
@@ -67,14 +62,14 @@ const builder = (yargs: Argv) =>
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const mergeTracksCommand: CommandModule<
+export const addSubtitlesCommand: CommandModule<
   Record<string, unknown>,
   Args
 > = {
   command:
-    "mergeTracks <subtitlesPath> <sourcePath> [offsets...]",
+    "addSubtitles <subtitlesPath> <sourcePath> [offsets...]",
   describe:
-    "[DEPRECATED — use 'addSubtitles'] Merge subtitles files with media files and only keep specified languages.",
+    "Mux a folder of per-file subtitle directories into matching media files (preserves attachments and optional chapters.xml).",
 
   builder: builder as CommandBuilder<
     Record<string, unknown>,
@@ -82,7 +77,7 @@ export const mergeTracksCommand: CommandModule<
   >,
 
   handler: (argv) => {
-    mergeTracks({
+    addSubtitles({
       globalOffsetInMilliseconds: argv.globalOffset,
       hasChapterSyncOffset: argv.hasChapterSyncOffset,
       hasChapters: argv.includeChapters,

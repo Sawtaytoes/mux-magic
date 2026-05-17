@@ -11,8 +11,13 @@
     "command": "keepLanguages",
     "params": {
       "isRecursive": true,
-      "audioLanguages": ["eng", "jpn"],
-      "subtitlesLanguages": ["eng"],
+      "audioLanguages": [
+        "eng",
+        "jpn"
+      ],
+      "subtitlesLanguages": [
+        "eng"
+      ],
       "useFirstAudioLanguage": true,
       "useFirstSubtitlesLanguage": true
     },

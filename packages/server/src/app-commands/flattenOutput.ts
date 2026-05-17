@@ -27,7 +27,7 @@ import { createProgressEmitter } from "../tools/progressEmitter.js"
 // preserved so the user can inspect intermediate state mid-sequence; pass
 // `deleteSourceFolder: true` to remove it once you trust the pipeline.
 //
-// Use case: chained operations like mergeTracks output to <work>/SUBTITLED.
+// Use case: chained operations like addSubtitles output to <work>/SUBTITLED.
 // Without this command, chaining another step that also has an outputFolderName
 // produces <work>/SUBTITLED/REORDERED, and so on — folder nesting accumulates.
 // Running flattenOutput between steps flattens the structure: <work> always

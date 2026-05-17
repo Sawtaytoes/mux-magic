@@ -98,9 +98,9 @@ describe("schema-driven command descriptions", () => {
     )
   })
 
-  test("mergeTracks offsets field has the per-episode label and help text", () => {
+  test("addSubtitles offsets field has the per-episode label and help text", () => {
     const offsetsDescription = getDescription(
-      schemas.mergeTracksRequestSchema.shape.offsets,
+      schemas.addSubtitlesRequestSchema.shape.offsets,
     )
 
     expect(offsetsDescription).toContain("one per episode")

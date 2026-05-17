@@ -73,7 +73,7 @@ export const MidEdit: Story = {
         {
           id: "step2",
           alias: "",
-          command: "mergeTracks",
+          command: "addSubtitles",
           params: { sourcePath: "@basePath" },
           links: { sourcePath: "basePath" },
           status: null,
@@ -94,7 +94,7 @@ export const MidEdit: Story = {
 }
 
 // ─── Full pipeline: multi-step sequence with group ───────────────────────────
-// Based on the nameAnimeEpisodes → modifySubtitleMetadata → mergeTracks chain
+// Based on the nameAnimeEpisodes → modifySubtitleMetadata → addSubtitles chain
 // from the parity fixtures. Closest thing to a real-world scenario in the UI.
 
 export const FullPipeline: Story = {
@@ -147,8 +147,8 @@ export const FullPipeline: Story = {
         },
         {
           id: "step4",
-          alias: "Merge tracks",
-          command: "mergeTracks",
+          alias: "Add subtitles",
+          command: "addSubtitles",
           params: { sourcePath: "@basePath" },
           links: { sourcePath: "basePath" },
           status: null,
@@ -197,7 +197,7 @@ export const StepRunning: Story = {
         {
           id: "step2",
           alias: "Completed step",
-          command: "mergeTracks",
+          command: "addSubtitles",
           params: { sourcePath: "@basePath" },
           links: { sourcePath: "basePath" },
           status: "completed",

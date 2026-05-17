@@ -24,6 +24,7 @@ describe("@mux-magic/cli --help", () => {
 
     const help = `${result.stdout}\n${result.stderr}`
     expect(help).toContain("changeTrackLanguages")
+    expect(help).toContain("addSubtitles")
     expect(help).toContain("mergeTracks")
     expect(help).toContain("nameAnimeEpisodes")
   })

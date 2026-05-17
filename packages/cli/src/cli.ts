@@ -7,6 +7,7 @@ import { logError } from "@mux-magic/tools"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 
+import { addSubtitlesCommand } from "./cli-commands/addSubtitlesCommand.js"
 import { changeTrackLanguagesCommand } from "./cli-commands/changeTrackLanguagesCommand.js"
 import { copyFilesCommand } from "./cli-commands/copyFilesCommand.js"
 import { copyOutSubtitlesCommand } from "./cli-commands/copyOutSubtitlesCommand.js"
@@ -81,6 +82,7 @@ yargs(hideBin(process.argv))
   .command(isMissingSubtitlesCommand)
   .command(modifySubtitleMetadataCommand)
   .command(keepLanguagesCommand)
+  .command(addSubtitlesCommand)
   .command(mergeOrderedChaptersCommand)
   .command(mergeTracksCommand)
   .command(moveFilesCommand)
