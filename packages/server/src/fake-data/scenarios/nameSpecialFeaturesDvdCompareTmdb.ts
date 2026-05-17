@@ -1,6 +1,7 @@
 import { logInfo } from "@mux-magic/tools"
 import {
   concat,
+  concatMap,
   ignoreElements,
   Observable,
   of,
@@ -8,14 +9,11 @@ import {
 } from "rxjs"
 import { emitJobEvent } from "../../api/jobStore.js"
 import { getActiveJobId } from "../../api/logCapture.js"
+import { getUserSearchInput } from "../../tools/getUserSearchInput.js"
 
-// Completes after `ms` without emitting any values — used as a sequenced
-// delay inside concat so each phase has realistic pacing.
 const pause = (ms: number): Observable<never> =>
   timer(ms).pipe(ignoreElements()) as Observable<never>
 
-// Runs a side-effectful function synchronously then immediately completes
-// without emitting. Used for log lines + progress ticks inside concat.
 const effect = (fn: () => void): Observable<never> =>
   new Observable<never>((sub) => {
     fn()
@@ -55,6 +53,28 @@ export const nameSpecialFeaturesDvdCompareTmdbScenario = (
     })
   }
 
+  // Phase 2 collision prompt — worker 58 / Part C: fire a real
+  // `type: "prompt"` SSE event via getUserSearchInput so the PromptModal
+  // opens in fake mode. Previously the collision was just an
+  // unprompted result event and the scenario auto-skipped; now the
+  // scenario actually pauses for the user's choice, mirroring how a
+  // real run would block. The user can dry-run the interactive UX
+  // (Play button, Cancel job, Close) without a real DVD rip.
+  const phaseTwoPrompt = getUserSearchInput({
+    message:
+      "MOVIE_t01.mkv would rename to 'Inception (2010) -featurette', but that file already exists on disk. What should happen?",
+    filePath: "/fake/disc/MOVIE_t01.mkv",
+    options: [
+      { index: 0, label: "Overwrite the existing file" },
+      {
+        index: 1,
+        label:
+          "Rename as 'Inception (2010) -featurette (2)'",
+      },
+      { index: -1, label: "Skip this file" },
+    ],
+  })
+
   return concat(
     // Phase 1 — scrape + parse
     effect(() => {
@@ -88,13 +108,32 @@ export const nameSpecialFeaturesDvdCompareTmdbScenario = (
     }),
     pause(300),
 
-    // Phase 2 — collision event (t01 target already exists on disk)
+    // Phase 2 — collision result + interactive prompt
     of<unknown>({
-      collision: true,
+      hasCollision: true,
       filename: "MOVIE_t01.mkv",
       targetFilename: "Inception (2010) -featurette",
     }),
-    pause(400),
+    phaseTwoPrompt.pipe(
+      concatMap((selectedIndex) =>
+        effect(() => {
+          if (selectedIndex === 0) {
+            logInfo(
+              label,
+              "User chose: overwrite MOVIE_t01.mkv → Inception (2010) -featurette",
+            )
+          } else if (selectedIndex === 1) {
+            logInfo(
+              label,
+              "User chose: rename as 'Inception (2010) -featurette (2)'",
+            )
+          } else {
+            logInfo(label, "User chose: skip MOVIE_t01.mkv")
+          }
+        }),
+      ),
+    ),
+    pause(200),
 
     // Phase 3 — successful renames
     effect(() => {
@@ -122,8 +161,10 @@ export const nameSpecialFeaturesDvdCompareTmdbScenario = (
     }),
     pause(400),
 
-    // Phase 4 — two files remain unmatched; auto-skip after a short pause
-    // so the sequence doesn't block waiting for user input.
+    // Phase 4 — two files remain unmatched. The summary emitted in
+    // Phase 5 now carries durationSeconds per file so the web-side
+    // Smart Match modal (worker 58 / Part B) can rank candidates by
+    // duration proximity.
     effect(() => {
       logInfo(
         label,
@@ -167,6 +208,7 @@ export const nameSpecialFeaturesDvdCompareTmdbScenario = (
       unnamedFileCandidates: [
         {
           filename: "MOVIE_t04.mkv",
+          durationSeconds: 760,
           candidates: [
             "Image Gallery (250 images)",
             "Director's Commentary",
@@ -175,6 +217,7 @@ export const nameSpecialFeaturesDvdCompareTmdbScenario = (
         },
         {
           filename: "MOVIE_t05.mkv",
+          durationSeconds: 48,
           candidates: [
             "Director's Commentary",
             "Image Gallery (250 images)",
