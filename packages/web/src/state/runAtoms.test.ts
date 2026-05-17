@@ -271,6 +271,117 @@ describe("runOrStopStepAtom", () => {
       expect(updated.error).toBe("Request failed")
     })
 
+    test("resolves {linkedTo, output: 'folder'} client-side using the source step's sourcePath + outputFolderName", async () => {
+      // Mirrors the real-world Daemons-of-the-Shadow-Realm YAML: step1
+      // extractSubtitles writes EXTRACTED-SUBTITLES under the base path,
+      // step2 modifySubtitleMetadata chains its sourcePath off that
+      // folder. Running step2 on its own should POST the synthesized
+      // path, NOT bail out with "run the whole sequence".
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ jobId: "job_new" }),
+      })
+      vi.stubGlobal("fetch", fetchSpy)
+      const store = createStore()
+      store.set(stepsAtom, [
+        makeStep({
+          id: "step1",
+          command: "extractSubtitles",
+          params: { isRecursive: false },
+          links: { sourcePath: "basePath" },
+        }),
+        makeStep({
+          id: "step2",
+          command: "modifySubtitleMetadata",
+          params: { isRecursive: true, recursiveDepth: 2 },
+          links: {
+            sourcePath: {
+              linkedTo: "step1",
+              output: "folder",
+            },
+          },
+        }),
+      ])
+      store.set(pathsAtom, [
+        {
+          id: "basePath",
+          label: "Base path",
+          value: "G:\\Anime\\Daemons",
+          type: "path" as const,
+        },
+      ])
+      store.set(commandsAtom, COMMANDS)
+
+      await store.set(runOrStopStepAtom, "step2")
+
+      expect(fetchSpy).toHaveBeenCalled()
+      const fetchCall = fetchSpy.mock.calls[0]
+      expect(fetchCall?.[0]).toBe(
+        `${apiBase}/commands/modifySubtitleMetadata`,
+      )
+      const body = JSON.parse(
+        (fetchCall?.[1] as RequestInit).body as string,
+      )
+      expect(body.sourcePath).toBe(
+        "G:\\Anime\\Daemons/EXTRACTED-SUBTITLES",
+      )
+      const updated = store.get(
+        stepsAtom,
+      )[1] as Step
+      expect(updated.status).toBe("running")
+    })
+
+    test("surfaces a directive error when a {linkedTo, output: <named>} reference can't be resolved client-side", async () => {
+      // Named runtime outputs (e.g. modifySubtitleMetadata's `rules`)
+      // genuinely require the source step to have run — single-step
+      // runs can't synthesize them. Should NOT POST; should bail with a
+      // message naming the field and the source step.
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ jobId: "job_new" }),
+      })
+      vi.stubGlobal("fetch", fetchSpy)
+      const store = createStore()
+      store.set(stepsAtom, [
+        makeStep({
+          id: "step1",
+          command: "modifySubtitleMetadata",
+          params: {},
+          links: { sourcePath: "basePath" },
+        }),
+        makeStep({
+          id: "step2",
+          command: "modifySubtitleMetadata",
+          params: {},
+          links: {
+            rules: {
+              linkedTo: "step1",
+              output: "rules",
+            },
+          },
+        }),
+      ])
+      store.set(pathsAtom, [
+        {
+          id: "basePath",
+          label: "Base path",
+          value: "G:\\Anime",
+          type: "path" as const,
+        },
+      ])
+      store.set(commandsAtom, COMMANDS)
+
+      await store.set(runOrStopStepAtom, "step2")
+
+      expect(fetchSpy).not.toHaveBeenCalled()
+      const updated = store.get(stepsAtom)[1] as Step
+      expect(updated.status).toBe("failed")
+      expect(updated.error).toMatch(/rules/)
+      expect(updated.error).toMatch(
+        /run the whole sequence/i,
+      )
+    })
+
     test("blocks single-step run pre-flight when a field still carries a linkedTo reference — fetch never called", async () => {
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: true,
