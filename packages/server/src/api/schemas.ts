@@ -267,7 +267,7 @@ export const hasBetterAudioRequestSchema = z.object({
     .number()
     .default(0)
     .describe(
-      "How many deep of child directories to follow (2 or 3) when using isRecursive.",
+      "How many levels of child directories to follow when using isRecursive (0 = use default depth of 1).",
     ),
 })
 
@@ -287,7 +287,7 @@ export const hasBetterVersionRequestSchema = z.object({
     .number()
     .default(0)
     .describe(
-      "How many deep of child directories to follow (2 or 3) when using isRecursive.",
+      "How many levels of child directories to follow when using isRecursive (0 = use default depth of 1).",
     ),
 })
 
@@ -308,7 +308,7 @@ export const hasDuplicateMusicFilesRequestSchema = z.object(
       .number()
       .default(0)
       .describe(
-        "How many deep of child directories to follow (2 or 3) when using isRecursive.",
+        "How many levels of child directories to follow when using isRecursive (0 = use default depth of 1).",
       ),
   },
 )
@@ -357,7 +357,7 @@ export const hasSurroundSoundRequestSchema = z.object({
     .number()
     .default(0)
     .describe(
-      "How many deep of child directories to follow (2 or 3) when using isRecursive.",
+      "How many levels of child directories to follow when using isRecursive (0 = use default depth of 1).",
     ),
 })
 
@@ -404,7 +404,7 @@ export const deleteFilesByExtensionRequestSchema = z.object(
       .number()
       .default(0)
       .describe(
-        "Maximum recursion depth when --isRecursive is set (0 = default depth of 2).",
+        "Maximum recursion depth when --isRecursive is set (0 = default depth of 1).",
       ),
     extensions: z
       .array(z.string())
@@ -446,7 +446,7 @@ export const remuxToMkvRequestSchema = z.object({
     .number()
     .default(0)
     .describe(
-      "Maximum recursion depth when --isRecursive is set (0 = default depth of 2).",
+      "Maximum recursion depth when --isRecursive is set (0 = default depth of 1).",
     ),
   isSourceDeletedOnSuccess: z
     .boolean()
@@ -832,7 +832,7 @@ export const modifySubtitleMetadataRequestSchema = z.object(
       .number()
       .default(0)
       .describe(
-        "Maximum recursion depth when --isRecursive is set (0 = default depth of 2).",
+        "Maximum recursion depth when --isRecursive is set (0 = default depth of 1).",
       ),
     hasDefaultRules: z
       .boolean()
@@ -1295,7 +1295,7 @@ export const setDisplayWidthRequestSchema = z.object({
     .number()
     .default(0)
     .describe(
-      "How many deep of child directories to follow (2 or 3) when using isRecursive.",
+      "How many levels of child directories to follow when using isRecursive (0 = use default depth of 1).",
     ),
   displayWidth: z
     .number()
@@ -1376,7 +1376,7 @@ export const getSubtitleMetadataRequestSchema = z.object({
     .number()
     .default(0)
     .describe(
-      "Maximum recursion depth when --isRecursive is set (0 = default depth of 2).",
+      "Maximum recursion depth when --isRecursive is set (0 = default depth of 1).",
     ),
 })
 
