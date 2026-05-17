@@ -304,12 +304,7 @@ export const runOrStopStepAtom = atom(
       ? buildParams(step, commandDefinition)
       : step.params
     const { resolved: resolvedParams, errors } =
-      resolveParams(
-        yamlFormParams,
-        paths,
-        items,
-        commands,
-      )
+      resolveParams(yamlFormParams, paths, items, commands)
 
     // Single-step preflight: resolveParams handles `@pathId` AND
     // folder-output `{linkedTo}` references the same way the server's

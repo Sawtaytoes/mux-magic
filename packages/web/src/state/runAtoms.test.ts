@@ -325,9 +325,7 @@ describe("runOrStopStepAtom", () => {
       expect(body.sourcePath).toBe(
         "G:\\Anime\\Daemons/EXTRACTED-SUBTITLES",
       )
-      const updated = store.get(
-        stepsAtom,
-      )[1] as Step
+      const updated = store.get(stepsAtom)[1] as Step
       expect(updated.status).toBe("running")
     })
 
