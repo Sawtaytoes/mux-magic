@@ -1,6 +1,6 @@
 import { readdir, stat } from "node:fs/promises"
 import { logInfo } from "@mux-magic/tools"
-import { defer, Observable } from "rxjs"
+import { defer, type Observable } from "rxjs"
 
 // Sentinel emitted by `exitIfEmpty`. The runner's `extractOutputs`
 // projector lifts these fields onto the child job's `outputs` map; the

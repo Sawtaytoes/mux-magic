@@ -1522,8 +1522,9 @@ describe("POST /sequences/run — groups", () => {
       expect(getJob(jobId)?.status).toBe("exited")
       const children = getChildJobs(jobId)
       expect(
-        children.find((child) => child.stepId === "wouldRun")
-          ?.status,
+        children.find(
+          (child) => child.stepId === "wouldRun",
+        )?.status,
       ).toBe("exited")
     })
 

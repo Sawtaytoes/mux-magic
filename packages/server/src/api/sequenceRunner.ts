@@ -482,10 +482,7 @@ export const runSequenceJob = (
     // sequence-level `exited` outcome so the item loop can short-
     // circuit the umbrella. Any other command publishing the same key
     // gets the same treatment for free.
-    if (
-      outputs !== null &&
-      outputs.shouldExit === true
-    ) {
+    if (outputs !== null && outputs.shouldExit === true) {
       return {
         kind: "exited",
         stepId,
