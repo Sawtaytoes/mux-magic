@@ -41,12 +41,19 @@ jobs:
       - name: Generate OpenAPI schemas
         run: yarn generate:schemas-ci
 
+      - name: Capture build time
+        id: meta
+        run: echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
       - name: Build Docker image
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
           push: true
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            BUILD_TIME=${{ steps.meta.outputs.build_time }}
           tags: |
             ghcr.io/sawtaytoes/mux-magic:latest
             ghcr.io/sawtaytoes/mux-magic:${{ github.sha }}
