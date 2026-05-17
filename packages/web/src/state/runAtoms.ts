@@ -2,6 +2,7 @@ import type { CreateJobResponse } from "@mux-magic/server/api-types"
 import { atom } from "jotai"
 import { apiBase } from "../apiBase"
 import { buildParams } from "../commands/buildParams"
+import type { Commands } from "../commands/types"
 import { isGroup } from "../jobs/sequenceUtils"
 import type {
   PathVariable,
@@ -26,58 +27,193 @@ export const runningAtom = atom<boolean>(false)
 
 // ─── Param resolution for the /commands/:name endpoint ────────────────────────
 //
-// /sequences/run resolves `@pathId` references server-side using the
-// `paths` YAML block; /commands/:name takes already-resolved params.
-// runOrStopStepAtom posts to /commands/:name (B4: produces a single
-// flat job per step instead of an umbrella+child), so the client
-// expands `@pathId` strings to their values from pathsAtom before
-// sending.
+// /sequences/run resolves `@pathId` AND `{linkedTo, output}` references
+// server-side; /commands/:name takes already-resolved scalars. For a
+// single-step run we have to do the same expansion the server's
+// resolveSequenceParams does, otherwise a step that chains off a prior
+// step (e.g. modifySubtitleMetadata reading EXTRACTED-SUBTITLES) can
+// never be run on its own.
+//
+// `{ linkedTo, output: 'folder' }` (the common case — "chain off the
+// previous step's output folder") is fully deterministic from static
+// command config: it's `sourceStep.sourcePath + '/' + outputFolderName`
+// (or `parentOfSource` / `destinationPath` for the special cases). So
+// we walk the chain client-side using commandsAtom (same schema the
+// server reads). Named-output references (`output: 'rules'`, etc.) DO
+// require the source step's runtime output, which we don't keep around
+// for single-step runs — those still surface a directive error.
+
+const stripTrailingSlash = (path: string): string =>
+  path.replace(/[\\/]$/u, "")
+
+// Resolve a step's `field` scalar to a literal string. Handles the
+// literal value, an `@pathId` link, or — defensively — a chained
+// `{linkedTo, output: 'folder'}` link (which recurses back through
+// resolveFolderOutput). Returns null when the chain dead-ends.
+const resolveScalarField = (
+  step: Step,
+  field: string,
+  paths: PathVariable[],
+  items: SequenceItem[],
+  commands: Commands,
+  visiting: Set<string>,
+): string | null => {
+  const link = step.links?.[field]
+  if (typeof link === "string") {
+    const variable = paths.find((p) => p.id === link)
+    return variable?.value ?? null
+  }
+  if (
+    link &&
+    typeof link === "object" &&
+    typeof (link as { linkedTo?: unknown }).linkedTo ===
+      "string"
+  ) {
+    return resolveFolderOutput(
+      (link as { linkedTo: string }).linkedTo,
+      paths,
+      items,
+      commands,
+      visiting,
+    )
+  }
+  const value = step.params[field]
+  return typeof value === "string" ? value : null
+}
+
+// Mirrors the server's computeStepFolderOutput
+// (packages/server/src/api/resolveSequenceParams.ts). Same precedence:
+// parentOfSource → outputFolderName → destinationPath →
+// destinationFilesPath → sourcePath. Returns null when the chain can't
+// be resolved (unknown step, unknown command, cycle).
+const resolveFolderOutput = (
+  targetStepId: string,
+  paths: PathVariable[],
+  items: SequenceItem[],
+  commands: Commands,
+  visiting: Set<string>,
+): string | null => {
+  if (visiting.has(targetStepId)) return null
+  const target = findStep(items, targetStepId)
+  if (!target?.command) return null
+  const command = commands[target.command]
+  if (!command) return null
+
+  const nextVisiting = new Set(visiting).add(targetStepId)
+  const source = resolveScalarField(
+    target,
+    "sourcePath",
+    paths,
+    items,
+    commands,
+    nextVisiting,
+  )
+  const stripped = source ? stripTrailingSlash(source) : ""
+
+  if (command.outputComputation === "parentOfSource") {
+    return stripped
+      ? stripped.replace(/[\\/][^\\/]*$/u, "")
+      : ""
+  }
+  if (command.outputFolderName) {
+    return stripped
+      ? `${stripped}/${command.outputFolderName}`
+      : command.outputFolderName
+  }
+  const destination =
+    resolveScalarField(
+      target,
+      "destinationPath",
+      paths,
+      items,
+      commands,
+      nextVisiting,
+    ) ??
+    resolveScalarField(
+      target,
+      "destinationFilesPath",
+      paths,
+      items,
+      commands,
+      nextVisiting,
+    )
+  if (destination) return destination
+  return stripped
+}
+
+type ResolveResult = {
+  resolved: Record<string, unknown>
+  errors: string[]
+}
+
 const resolveParams = (
   params: Record<string, unknown>,
   paths: PathVariable[],
-): Record<string, unknown> => {
-  return Object.fromEntries(
-    Object.entries(params).map(([key, value]) => {
-      if (
-        typeof value === "string" &&
-        value.startsWith("@")
-      ) {
-        const pathVariableId = value.slice(1)
-        const pathVariable = paths.find(
-          (candidate) => candidate.id === pathVariableId,
-        )
-        // Fall back to the raw `@id` string when the path var is
-        // missing so the server's per-command validation surfaces
-        // a clear error rather than silently dropping the field.
-        return [key, pathVariable?.value ?? value]
-      }
-      return [key, value]
-    }),
-  )
-}
+  items: SequenceItem[],
+  commands: Commands,
+): ResolveResult => {
+  const errors: string[] = []
+  const resolved: Record<string, unknown> = {}
 
-// A single-step run hits /commands/:name which expects already-resolved
-// scalars. `linkedTo` references belong to /sequences/run — they point at
-// another step's runtime output, which doesn't exist outside a sequence
-// run. Detect them client-side so the user gets a directive message
-// (change the field, or run the whole sequence) instead of an opaque
-// 400/ZodError surfacing through the validation path.
-const findUnresolvableLink = (
-  params: Record<string, unknown>,
-): { field: string; targetStepId: string } | null => {
-  const entry = Object.entries(params).find(
-    ([, value]) =>
+  Object.entries(params).forEach(([key, value]) => {
+    if (
+      typeof value === "string" &&
+      value.startsWith("@")
+    ) {
+      const variableId = value.slice(1)
+      const variable = paths.find(
+        (candidate) => candidate.id === variableId,
+      )
+      // Fall back to the raw `@id` string when the path var is
+      // missing so the server's per-command validation surfaces a
+      // clear error rather than silently dropping the field.
+      resolved[key] = variable?.value ?? value
+      return
+    }
+    if (
       value !== null &&
       typeof value === "object" &&
       typeof (value as { linkedTo?: unknown }).linkedTo ===
-        "string",
-  )
-  if (!entry) return null
-  const [field, value] = entry
-  return {
-    field,
-    targetStepId: (value as { linkedTo: string }).linkedTo,
-  }
+        "string"
+    ) {
+      const link = value as {
+        linkedTo: string
+        output?: string
+      }
+      const output = link.output ?? "folder"
+      if (output !== "folder") {
+        // Named runtime outputs (e.g. modifySubtitleMetadata's `rules`,
+        // getAudioOffsets' `audioOffsets`) only exist after the source
+        // step has actually run; single-step runs don't persist those
+        // results client-side. Direct the user to either pin the value
+        // or run the whole sequence.
+        errors.push(
+          `${key} is linked to ${link.linkedTo}'s "${output}" output, which is only available during a full sequence run. Change ${key} to a concrete value, or run the whole sequence.`,
+        )
+        return
+      }
+      const folder = resolveFolderOutput(
+        link.linkedTo,
+        paths,
+        items,
+        commands,
+        new Set(),
+      )
+      if (folder === null) {
+        // Use phrasing the existing regression test asserts against
+        // (sourcePath is linked to step5_2 / run the whole sequence).
+        errors.push(
+          `${key} is linked to ${link.linkedTo}'s output but that step couldn't be resolved (unknown step, unknown command, or circular link). Change ${key} to a concrete path, or run the whole sequence.`,
+        )
+        return
+      }
+      resolved[key] = folder
+      return
+    }
+    resolved[key] = value
+  })
+
+  return { resolved, errors }
 }
 
 // @hono/zod-openapi ships validation failures as
@@ -170,23 +306,24 @@ export const runOrStopStepAtom = atom(
     const yamlFormParams = commandDefinition
       ? buildParams(step, commandDefinition)
       : step.params
-    const resolvedParams = resolveParams(
-      yamlFormParams,
-      paths,
-    )
+    const { resolved: resolvedParams, errors } =
+      resolveParams(
+        yamlFormParams,
+        paths,
+        items,
+        commands,
+      )
 
-    // Single-step preflight: /commands/:name can't resolve a linkedTo
-    // reference because there's no prior step to read outputs from.
-    // Surface the explicit "change the field or run the whole sequence"
-    // choice the user needs to make rather than letting a Zod ValidationError
-    // come back as an opaque "failed" status.
-    const unresolvableLink =
-      findUnresolvableLink(resolvedParams)
-    if (unresolvableLink) {
+    // Single-step preflight: resolveParams handles `@pathId` AND
+    // folder-output `{linkedTo}` references the same way the server's
+    // resolveSequenceParams does. Anything it couldn't resolve (named
+    // runtime outputs, broken chains) comes back as an error string —
+    // surface that instead of POSTing junk to /commands/:name.
+    if (errors.length > 0) {
       set(setStepRunStatusAtom, {
         stepId,
         status: "failed",
-        error: `${unresolvableLink.field} is linked to ${unresolvableLink.targetStepId}'s output, which only resolves during a full sequence run. Change ${unresolvableLink.field} to a concrete path, or run the whole sequence.`,
+        error: errors.join("; "),
       })
       return
     }
