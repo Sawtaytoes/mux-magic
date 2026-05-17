@@ -89,7 +89,7 @@ export const COMMANDS: Commands = {
           label: "Destination Path",
         }),
         field("fileFilterRegex", {
-          type: "string",
+          type: "regexWithFlags",
           label: "File Filter Regex",
           placeholder: "\\.mkv$",
         }),
@@ -101,7 +101,7 @@ export const COMMANDS: Commands = {
         // honored when includeFolders is true (see copyFiles.ts:80-81),
         // so the UI hides the input until the toggle is flipped.
         field("folderFilterRegex", {
-          type: "string",
+          type: "regexWithFlags",
           label: "Folder Filter Regex",
           placeholder: "^Season\\s\\d+",
           visibleWhen: {
@@ -156,7 +156,7 @@ export const COMMANDS: Commands = {
           label: "Destination Path",
         }),
         field("fileFilterRegex", {
-          type: "string",
+          type: "regexWithFlags",
           label: "File Filter Regex",
           placeholder: "\\.mkv$",
         }),
