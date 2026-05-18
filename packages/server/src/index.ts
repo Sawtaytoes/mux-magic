@@ -24,7 +24,6 @@ import {
   setLoggingMode,
 } from "@mux-magic/tools"
 import { buildServer } from "./buildServer.js"
-import { startStorybookDev } from "./storybookDevProxy.js"
 import { wireViteMiddleware } from "./viteMiddleware.js"
 
 // Mirrors the crash-handler / log-bridge bootstrap from the legacy
@@ -121,23 +120,28 @@ const boot = async (): Promise<void> => {
   }
 
   // ── Development ──
-  // 1. Spawn Storybook on its internal port so the front-door can
-  //    proxy /storybook/* to it.
+  // 1. Start Storybook in-process via `buildDevStandalone` so the
+  //    front-door can proxy /storybook/* to it. No child process, no
+  //    shell, no signal forwarding — when this Node process dies,
+  //    Storybook's HTTP server dies with it.
   // 2. Build the Hono root in dev mode (no /* SPA branch — Vite owns it).
   // 3. Create http server BEFORE Vite so we can pass it to Vite as the
   //    HMR upgrade target. WebSocket upgrade rides the same port.
   // 4. Wire Vite middleware into the root.
   // 5. Attach root.fetch as the request listener and start listening.
+  //
+  // The proxy module is loaded via dynamic import so the prod bundle
+  // never tries to resolve `./storybookDevProxy.js` (the file is
+  // externalized by --external:@mux-magic/server/src/storybookDevProxy.js
+  // and its source isn't shipped to the runtime image).
   const storybookPort = pickStorybookPort()
+  const { startStorybookDev } = await import(
+    "./storybookDevProxy.js"
+  )
   const storybookHandle = await startStorybookDev({
     port: storybookPort,
     webPackageDir,
   })
-  const teardown = (): void => {
-    storybookHandle.child.kill()
-  }
-  process.on("SIGTERM", teardown)
-  process.on("SIGINT", teardown)
 
   const root = await buildServer({
     mode: "development",
