@@ -69,7 +69,10 @@ jobs:
       - run: corepack enable && yarn install --immutable
       - run: yarn install-playwright-browser
       - run: yarn build:tools
-      - run: yarn test
+      # `yarn test` is bare `vitest` so local dev gets watch mode; in CI we
+      # need run-once, because Vitest 4 browser mode doesn't reliably exit
+      # watch mode just from process.env.CI.
+      - run: yarn vitest run
 
   e2e:
     needs: check-prior-run
