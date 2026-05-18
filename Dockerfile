@@ -54,6 +54,14 @@ ARG BUILD_TIME
 ENV GIT_SHA=$GIT_SHA
 ENV BUILD_TIME=$BUILD_TIME
 
+# build:prod chains into tsx scripts (build:command-descriptions, etc.) that
+# import `@mux-magic/tools` via the bare specifier. tsx resolves that through
+# the package's "default" export (./dist/index.js) — it doesn't claim the
+# "source" condition that Vite/vitest use. Without this step `build:prod`
+# dies on the first tsx-loaded `import "@mux-magic/tools"` with
+# ERR_MODULE_NOT_FOUND.
+RUN yarn build:tools
+
 # Produces:
 #   - public/api/version.json                (build identity)
 #   - packages/web/public/command-descriptions.js (copied into the Vite build)
