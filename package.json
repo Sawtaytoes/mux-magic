@@ -9,7 +9,7 @@
   "scripts": {
     "build:command-descriptions": "yarn workspace @mux-magic/api build:command-descriptions",
     "build:prod": "yarn build:version && yarn build:command-descriptions && yarn build:web-static && yarn build:api-bundle && yarn build:web-server-bundle",
-    "build:api-bundle": "esbuild --format=esm --bundle --platform=node --sourcemap \"--banner:js=import{createRequire}from'node:module';const require=createRequire(import.meta.url);\" --external:./xhr-sync-worker.js \"--external:chromium-bidi/*\" --external:playwright --external:playwright-core --outfile=packages/api/dist/server.mjs packages/api/src/server.ts",
+    "build:api-bundle": "esbuild --format=esm --bundle --platform=node --sourcemap \"--banner:js=import{createRequire}from'node:module';const require=createRequire(import.meta.url);\" --external:./xhr-sync-worker.js \"--external:chromium-bidi/*\" --external:playwright --external:playwright-core --outfile=packages/api/dist/legacy-listener.mjs packages/api/src/legacy-listener.ts",
     "build:version": "node scripts/build-version.cjs",
     "build:web-server-bundle": "esbuild --format=esm --bundle --platform=node --sourcemap \"--banner:js=import{createRequire}from'node:module';const require=createRequire(import.meta.url);\" --outfile=packages/web/dist-server/server.mjs packages/web/src/server.ts",
     "build:web-static": "yarn workspace @mux-magic/web build",
