@@ -167,6 +167,7 @@ export default defineConfig(
     files: [
       "packages/web/**/__fixtures__/**/*.{ts,tsx}",
       "packages/web/**/*.stories.tsx",
+      "packages/web/**/*.storyHelpers.tsx",
     ],
     rules: {
       "react/no-multi-comp": "off",

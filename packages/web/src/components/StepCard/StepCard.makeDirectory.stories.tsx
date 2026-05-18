@@ -46,7 +46,10 @@ export const WithChainedFromPreviousStep = makeStory({
   id: "step_make_directory__chained",
   params: { sourcePath: "" },
   links: {
-    sourcePath: { linkedTo: "step_upstream", output: "folder" },
+    sourcePath: {
+      linkedTo: "step_upstream",
+      output: "folder",
+    },
   },
 })
 
