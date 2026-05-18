@@ -3,7 +3,7 @@ import {
   getLogger,
   type LogRecord,
   registerLogSink,
-} from "@mux-magic/tools/src/logging/logger.js"
+} from "@mux-magic/tools"
 import {
   afterEach,
   beforeEach,
