@@ -156,9 +156,15 @@ Current [playwright.config.ts](../../playwright.config.ts) spawns separate serve
 - Update any test that hardcodes `:4173` or `WEB_PORT`.
 - Worker 6a's VRT setup may need its Storybook base URL updated to `/storybook`; coordinate via PR comment if 6a is in flight.
 
-### Phase G — `createRequire` banner carry-forward (build script)
+### Phase G — `createRequire` banner + sourcemaps carry-forward (build script and CMD)
 
-Worker 6b adds a `--banner:js="import{createRequire}from'node:module';const require=createRequire(import.meta.url);"` flag to the server esbuild command, fixing a prod crash where CJS deps (notably `tree-kill`) call `require("child_process")` and esbuild's `__require` shim throws. When this worker rewrites the build script to produce the new `packages/server/dist/` front-door bundle, **carry the banner forward**. Without it, the new bundle re-introduces the same crash the moment a job cancellation triggers `treeKillChild`. Add a `yarn build:prod && node packages/server/dist/index.js && curl localhost:3000/api/version` smoke test step to the worker's manual-test checklist.
+Worker 6b lands three coordinated build/publish fixes that this worker MUST preserve when it rewrites the bundle command and the Dockerfile CMD:
+
+1. **`createRequire` banner** — `--banner:js="import{createRequire}from'node:module';const require=createRequire(import.meta.url);"` on the new server bundle. Without it the bundle re-introduces the `Dynamic require of "child_process"` crash the moment a job cancellation triggers `treeKillChild`.
+2. **External sourcemaps** — `--sourcemap` flag on the new bundle command. Produces `packages/server/dist/index.js.map` alongside `index.js`.
+3. **`--enable-source-maps` on the Node invocation** — the Dockerfile CMD becomes `["node", "--enable-source-maps", "packages/server/dist/index.js"]`. The dev script (`tsx watch packages/server/src/index.ts`) doesn't need the flag because tsx has its own sourcemap pathway.
+
+Add a `yarn build:prod && node --enable-source-maps packages/server/dist/index.js && curl localhost:3000/api/version` smoke test step to the worker's manual-test checklist.
 
 ### Phase H — Deployment checklist (user action, post-merge)
 
