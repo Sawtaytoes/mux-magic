@@ -6,9 +6,9 @@
   "exports": {
     "./*": "./*"
   },
-  "description": "Single-port Hono front-door for mux-magic. Owns the `serve()` call; mounts @mux-magic/api at /api, hosts the Vite SPA at / (middleware mode in dev, serveStatic in prod), and serves Storybook at /storybook. Replaces the previous two-process (API + tiny static file server) layout.",
+  "description": "Single-port Hono front-door for mux-magic. Owns the `serve()` call; mounts @mux-magic/api at /api and hosts the Vite SPA at / (middleware mode in dev, serveStatic in prod). Storybook is run side-by-side (separate port) via `yarn workspace @mux-magic/web storybook`. Replaces the previous two-process (API + tiny static file server) layout.",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx src/index.ts",
     "start": "tsx src/index.ts",
     "test": "vitest",
     "typecheck": "tsc --noEmit"

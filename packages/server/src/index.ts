@@ -75,22 +75,9 @@ const isBundleDist = moduleDir
 // lands on `<repo>/packages/web/...`.
 const webPackageDir = resolve(moduleDir, "..", "..", "web")
 const webDistDir = resolve(webPackageDir, "dist")
-const storybookDistDir = resolve(
-  webPackageDir,
-  "storybook-static",
-)
 
 const isProduction =
   process.env.NODE_ENV === "production" || isBundleDist
-
-const pickStorybookPort = (): number => {
-  const fromEnv = Number(
-    process.env.STORYBOOK_INTERNAL_PORT,
-  )
-  if (Number.isFinite(fromEnv) && fromEnv > 0)
-    return fromEnv
-  return 6006
-}
 
 const boot = async (): Promise<void> => {
   installCrashHandlers()
@@ -102,7 +89,6 @@ const boot = async (): Promise<void> => {
   if (isProduction) {
     const root = await buildServer({
       mode: "production",
-      storybookDistDir,
       webDistDir,
     })
     const httpServer = createHttpServer(
@@ -120,33 +106,29 @@ const boot = async (): Promise<void> => {
   }
 
   // ── Development ──
-  // 1. Start Storybook in-process via `buildDevStandalone` so the
-  //    front-door can proxy /storybook/* to it. No child process, no
-  //    shell, no signal forwarding — when this Node process dies,
-  //    Storybook's HTTP server dies with it.
-  // 2. Build the Hono root in dev mode (no /* SPA branch — Vite owns it).
-  // 3. Create http server BEFORE Vite so we can pass it to Vite as the
-  //    HMR upgrade target. WebSocket upgrade rides the same port.
-  // 4. Wire Vite middleware into the root.
-  // 5. Attach root.fetch as the request listener and start listening.
+  // Storybook is NOT booted by the front-door anymore. Running both
+  // Storybook (which spins up its own Vite instance) and the app's Vite
+  // middleware in the same Node process caused two compounding issues:
+  // (1) Storybook's preset-loader wrote temp files inside
+  //     packages/web/node_modules/.vite-temp/, and `tsx watch` treated
+  //     every unlink as a source change and restart-looped.
+  // (2) Each restart re-evaluated the Hono module graph mid-flight, so
+  //     the `root.route("/api", apiApp)` mount didn't always land in
+  //     order before requests started arriving — symptom: apiApp's
+  //     routes responded at `/` instead of `/api/`.
   //
-  // The proxy module is loaded via dynamic import so the prod bundle
-  // never tries to resolve `./storybookDevProxy.js` (the file is
-  // externalized by --external:@mux-magic/server/src/storybookDevProxy.js
-  // and its source isn't shipped to the runtime image).
-  const storybookPort = pickStorybookPort()
-  const { startStorybookDev } = await import(
-    "./storybookDevProxy.js"
-  )
-  const storybookHandle = await startStorybookDev({
-    port: storybookPort,
-    webPackageDir,
-  })
-
+  // Side-by-side fix: drop Storybook from the front-door's dev process
+  // entirely. The API + SPA stay on a single port (worker 29's win).
+  // Storybook runs separately via `yarn workspace @mux-magic/web
+  // storybook` when needed, on its own port (default 6006).
+  //
+  // Boot sequence:
+  // 1. Build the Hono root in dev mode (no /storybook routes registered).
+  // 2. Create http server.
+  // 3. Wire Vite middleware into the root for the SPA + HMR.
+  // 4. Attach root.fetch as the request listener and start listening.
   const root = await buildServer({
     mode: "development",
-    storybookDistDir,
-    storybookProxyTarget: storybookHandle.url,
     webDistDir,
   })
 
@@ -160,7 +142,6 @@ const boot = async (): Promise<void> => {
   httpServer.on("request", getRequestListener(root.fetch))
   httpServer.listen(API_PORT, () => {
     logInfo("MUX-MAGIC DEV SERVER LISTENING PORT", API_PORT)
-    logInfo("STORYBOOK INTERNAL PORT", storybookPort)
     loadJobErrorsFromDisk()
       .then(() => {
         resumePendingDeliveries()
