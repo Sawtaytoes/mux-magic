@@ -5,9 +5,6 @@ export default defineConfig({
     exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
     name: "core",
     include: ["src/**/*.test.ts"],
-    setupFiles: [
-      "./vitest.setup.ts",
-      "./src/__tests__/setup/msw-server.ts",
-    ],
+    setupFiles: ["./vitest.setup.ts"],
   },
 })
