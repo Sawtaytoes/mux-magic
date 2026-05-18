@@ -5,9 +5,11 @@ The API runs long-running commands as background **jobs** and streams their outp
 ## Start the server
 
 ```sh
-yarn server                                    # default port 3000
-PORT=8080 yarn server                          # custom port
+yarn dev                                       # default port 3000
+PORT=8080 yarn dev                             # custom port
 ```
+
+The API is mounted under `/api` (e.g. `http://localhost:3000/api/version`). Worker 29 collapsed the SPA + API onto one origin; all `curl` examples below include the `/api` prefix.
 
 ---
 
@@ -108,14 +110,14 @@ The transcode cache lives under `os.tmpdir()/media-tools-transcode-cache/` and i
 
 ```sh
 # Start the job
-curl -s -X POST http://localhost:3000/jobs/keepLanguages \
+curl -s -X POST http://localhost:3000/api/jobs/keepLanguages \
   -H "Content-Type: application/json" \
   -d '{"sourcePath":"/media/anime","audioLanguages":["jpn"],"subtitlesLanguages":["eng"],"isRecursive":true}' \
 | jq
 # → { "jobId": "abc-123", "logsUrl": "/jobs/abc-123/logs" }
 
 # Stream the output
-curl -s http://localhost:3000/jobs/abc-123/logs
+curl -s http://localhost:3000/api/jobs/abc-123/logs
 # data: {"line":"Processing file.mkv..."}
 # data: {"line":"Done."}
 # data: {"done":true,"status":"completed"}
@@ -262,7 +264,7 @@ The repo ships [`examples/process-anime-subtitles.yaml`](../examples/process-ani
 ### Minimal copy-paste example
 
 ```bash
-curl -X POST http://localhost:3000/sequences/run \
+curl -X POST http://localhost:3000/api/sequences/run \
   -H 'Content-Type: application/json' \
   -d '{
     "paths": {
@@ -290,4 +292,4 @@ curl -X POST http://localhost:3000/sequences/run \
   }'
 ```
 
-The response carries the job id; `curl -N http://localhost:3000/jobs/<jobId>/logs` tails the unified log stream.
+The response carries the job id; `curl -N http://localhost:3000/api/jobs/<jobId>/logs` tails the unified log stream.

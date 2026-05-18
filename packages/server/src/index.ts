@@ -61,6 +61,12 @@ const installCrashHandlers = (): void => {
 
 const moduleDir = dirname(fileURLToPath(import.meta.url))
 
+// Auto-detect prod when the bundle runs from packages/server/dist/.
+// Dev path lives at packages/server/src/. This means cross-platform
+// scripts don't need NODE_ENV=production-style shell prefixes which
+// don't work on plain PowerShell.
+const isBundleDist = moduleDir.replace(/\\/g, "/").endsWith("/dist")
+
 // Resolve static roots relative to the bundle, not cwd. The dev path
 // imports from packages/server/src/, so `moduleDir` is
 // `<repo>/packages/server/src`. The prod bundle lives at
@@ -70,7 +76,8 @@ const webPackageDir = resolve(moduleDir, "..", "..", "web")
 const webDistDir = resolve(webPackageDir, "dist")
 const storybookDistDir = resolve(webPackageDir, "storybook-static")
 
-const isProduction = process.env.NODE_ENV === "production"
+const isProduction =
+  process.env.NODE_ENV === "production" || isBundleDist
 
 const pickStorybookPort = (): number => {
   const fromEnv = Number(process.env.STORYBOOK_INTERNAL_PORT)

@@ -48,8 +48,7 @@ And then you can grab the YAML and share it around. It's also stored in the URL'
 ## Quick start with Docker
 
 ```sh
-docker run -d \
-  -p 4173:4173 \
+docker run -d --init \
   -p 3000:3000 \
   -e MAX_THREADS=2 \
   -e ANIDB_CACHE_FOLDER=/cache/anidb \
@@ -59,7 +58,7 @@ docker run -d \
   mux-magic
 ```
 
-The UI is available at `http://localhost:4173`. The API is at `http://localhost:3000`.
+The UI is available at `http://localhost:3000`. The API is mounted under `/api` at the same origin (so `http://localhost:3000/api/version`, `http://localhost:3000/api/docs`).
 
 ### Docker Compose
 
@@ -67,8 +66,8 @@ The UI is available at `http://localhost:4173`. The API is at `http://localhost:
 services:
   mux-magic:
     image: mux-magic
+    init: true
     ports:
-      - "4173:4173"
       - "3000:3000"
     environment:
       MAX_THREADS: 2
@@ -93,14 +92,14 @@ All environment variables are optional. Set them in `.env` or pass them to the c
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `3000` | Server port. |
+| `PORT` | `3000` | Single port for the SPA, the API (under `/api`), and Storybook (under `/storybook`). |
 | `MAX_THREADS` | CPU thread count | Concurrent thread limit for all commands. **Important for lower-end systems** — set to 2–4 to reduce memory/CPU usage. |
 | `DELETE_TO_TRASH` | `true` | Send deleted files to trash instead of permanent deletion. Set to `false` for immediate deletion. |
 | `MAX_TRANSCODE_CONCURRENCY` | `4` | Maximum number of concurrent audio transcode jobs (for browser audio playback fallback). Lower this on resource-constrained systems. |
 | `TRANSCODE_CACHE_MAX_BYTES` | `4294967296` (4 GB) | Maximum size of the transcode cache directory. Cache lives in `os.tmpdir()/media-tools-transcode-cache/`. |
 | `ANIDB_CACHE_FOLDER` | `./.cache/anidb` | Cache directory for AniDB metadata. **In Docker, set this to a mounted volume** so cache survives restarts (e.g., `/cache/anidb`). |
 | `TMDB_API_KEY` | — | The Movie Database API key for movie/TV metadata lookup. Get one free at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api). |
-| `REMOTE_SERVER_URL` | — | Public URL for remote-server links in API documentation. Only needed when the server is accessible from the internet. |
+| `PUBLIC_URL` | — | Public-facing base URL (e.g. `https://media.example.com`). Used for canonical absolute URLs in the OpenAPI / Scalar docs page. The SPA itself talks to the API via relative `/api`, so this is not needed unless you want pretty docs URLs. |
 | `MEDIA_TOOLS_FAKE_DATA` | — | Set to `true` or `1` to populate the UI with mock data (useful for development/screenshots). |
 
 ---

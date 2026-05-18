@@ -12,7 +12,7 @@
 1. `yarn lint` — auto-fix formatting (biome + eslint); re-stage changed files
 2. `yarn typecheck` — full monorepo type check
 3. `yarn test` — unit + integration (vitest)
-4. `yarn e2e` — Playwright end-to-end (using your own `PORT` / `WEB_PORT`, see [worker-port-protocol.md](worker-port-protocol.md))
+4. `yarn e2e` — Playwright end-to-end (using your own `PORT`, see [worker-port-protocol.md](worker-port-protocol.md))
 5. `yarn lint` — **re-run last** so Biome catches any formatting touched by typecheck/test/e2e fixes
 
 ## Forbidden test styles
@@ -77,21 +77,22 @@ Query routes that wrap filesystem / network calls return `{ ..., error: string |
 
 ### Server setup for e2e
 
-E2e tests need two servers: the API (port 3000) and the Vite web server (port 5173).
+E2e tests run against one front-door server on `PORT` (default 3000) that hosts /, /api, and /storybook in one process. Worker 29 collapsed the previous two-server layout.
 
-**Recommended local workflow:** start all dev servers once in a separate terminal, then run `yarn e2e` as many times as you like — Playwright reuses the already-running processes:
+**Recommended local workflow:** start the dev server once in a separate terminal, then run `yarn e2e` as many times as you like — Playwright reuses the already-running process:
 
 ```
 # terminal 1 — keep running
-yarn start        # starts API server, Vite web server, and Storybook concurrently
+yarn start        # = `yarn dev` = `yarn workspace @mux-magic/server dev`
+                  # tsx-watch on packages/server/src/index.ts; Vite middleware
+                  # serves the SPA, Storybook is spawned as a child and
+                  # proxied at /storybook/.
 
 # terminal 2
-yarn e2e          # attaches to the running servers; no cold-start penalty
+yarn e2e          # attaches to the running server; no cold-start penalty
 ```
 
-`yarn start` is shorthand for `concurrently "yarn dev:api-server" "yarn start:web" "yarn dev:storybook"`. The web server waits for the API to be ready on port 3000 before starting.
-
-**Without pre-running servers:** `yarn e2e` will auto-start `yarn prod:api-server` and `yarn prod:web-server` itself (via `playwright.config.ts` `webServer` entries), but this incurs a cold-start penalty on every run.
+**Without a pre-running server:** `yarn e2e` will auto-start `yarn prod:server` itself (via `playwright.config.ts` `webServer`), but this incurs a build + cold-start penalty on every run.
 
 **CI:** always starts fresh prod servers — never reuses an existing process.
 

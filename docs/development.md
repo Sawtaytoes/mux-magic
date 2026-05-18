@@ -21,9 +21,11 @@ Copy `.env.example` to `.env` and set any environment variables you need (e.g. `
 ## Start the server
 
 ```sh
-yarn server                # default port 3000
-PORT=8080 yarn server      # custom port
+yarn dev                   # single front-door on port 3000 (SPA + /api + /storybook)
+PORT=8080 yarn dev         # custom port
 ```
+
+The dev script (`yarn workspace @mux-magic/server dev`) spawns one process: Hono root that proxies `/api/*` in-process to the api sub-app, runs Vite in middleware mode at `/` for the SPA (HMR over the same port), and spawns a Storybook child that's reverse-proxied at `/storybook/*`.
 
 ---
 
@@ -41,7 +43,7 @@ Tests live next to their source files (`foo.ts` → `foo.test.ts`). The filesyst
 
 ## Regenerating screenshots
 
-Start the server (`yarn start-server`) then run `yarn screenshots`. This launches headless Chromium with `?mock=1` (MSW fake-data mode — no real files needed) and writes PNGs to `docs/images/`. Playwright Chromium must be installed first:
+Start the server (`yarn dev`) then run `yarn screenshots`. This launches headless Chromium with `?mock=1` (MSW fake-data mode — no real files needed) and writes PNGs to `docs/images/`. Playwright Chromium must be installed first:
 
 ```sh
 yarn install-playwright-browser
