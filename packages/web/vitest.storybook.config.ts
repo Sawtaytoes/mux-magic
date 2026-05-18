@@ -11,7 +11,6 @@ export default defineConfig({
   ],
   test: {
     name: "storybook",
-    setupFiles: ["./vitest.storybook.setup.ts"],
     browser: {
       enabled: true,
       provider: playwright(),
