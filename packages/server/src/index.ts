@@ -1,7 +1,10 @@
 import "@mux-magic/api/src/loadEnv.js"
 import "@mux-magic/api/src/logBuildBanner.js"
 
-import { createServer as createHttpServer } from "node:http"
+import {
+  createServer as createHttpServer,
+  type Server as HttpServer,
+} from "node:http"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { getRequestListener } from "@hono/node-server"
@@ -58,6 +61,28 @@ const installCrashHandlers = (): void => {
   )
 }
 
+// Graceful shutdown so `node --watch-path` (dev) and orchestrators
+// (prod) can restart cleanly without leaving the port bound. Without
+// this the next process boot fails with EADDRINUSE because Node's
+// default SIGTERM handler exits before `httpServer.close()` runs.
+const installShutdownHandlers = (
+  httpServer: HttpServer,
+): void => {
+  let isShuttingDown = false
+  const shutdown = (signal: "SIGTERM" | "SIGINT"): void => {
+    if (isShuttingDown) return
+    isShuttingDown = true
+    logInfo("SHUTDOWN", signal)
+    httpServer.close(() => {
+      process.exit(0)
+    })
+    // Fallback in case close() hangs on a stuck connection.
+    setTimeout(() => process.exit(0), 2000).unref()
+  }
+  process.on("SIGTERM", () => shutdown("SIGTERM"))
+  process.on("SIGINT", () => shutdown("SIGINT"))
+}
+
 const moduleDir = dirname(fileURLToPath(import.meta.url))
 
 // Auto-detect prod when the bundle runs from packages/server/dist/.
@@ -94,6 +119,7 @@ const boot = async (): Promise<void> => {
     const httpServer = createHttpServer(
       getRequestListener(root.fetch),
     )
+    installShutdownHandlers(httpServer)
     httpServer.listen(API_PORT, () => {
       logInfo("MUX-MAGIC SERVER LISTENING PORT", API_PORT)
       loadJobErrorsFromDisk()
@@ -140,6 +166,7 @@ const boot = async (): Promise<void> => {
   })
 
   httpServer.on("request", getRequestListener(root.fetch))
+  installShutdownHandlers(httpServer)
   httpServer.listen(API_PORT, () => {
     logInfo("MUX-MAGIC DEV SERVER LISTENING PORT", API_PORT)
     loadJobErrorsFromDisk()
