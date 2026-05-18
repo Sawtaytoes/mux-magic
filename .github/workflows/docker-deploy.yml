@@ -40,6 +40,15 @@ jobs:
       - name: Install dependencies
         run: corepack enable && yarn install --immutable
 
+      - name: Build @mux-magic/tools
+        # generate:schemas-ci runs under tsx, which resolves bare
+        # `@mux-magic/tools` imports via the package's "default" export
+        # (./dist/index.js) — tsx doesn't claim the "source" condition
+        # that Vite/vitest use. Without this step the next command dies
+        # with ERR_MODULE_NOT_FOUND on the first `import "@mux-magic/tools"`.
+        # Mirrors the unit-tests / e2e / typecheck jobs in ci.yml.
+        run: yarn build:tools
+
       - name: Generate OpenAPI schemas
         run: yarn generate:schemas-ci
 
