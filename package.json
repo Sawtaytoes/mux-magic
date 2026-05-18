@@ -9,7 +9,7 @@
   "scripts": {
     "build:command-descriptions": "yarn workspace @mux-magic/api build:command-descriptions",
     "build:prod": "yarn build:version && yarn build:command-descriptions && yarn build:web-static && yarn build:server-bundle",
-    "build:server-bundle": "esbuild --format=esm --bundle --platform=node --sourcemap \"--banner:js=import{createRequire}from'node:module';const require=createRequire(import.meta.url);\" --external:./xhr-sync-worker.js \"--external:chromium-bidi/*\" --external:playwright --external:playwright-core --external:vite --external:@mux-magic/server/src/storybookDevProxy.js --outfile=packages/server/dist/index.js packages/server/src/index.ts",
+    "build:server-bundle": "esbuild --format=esm --bundle --platform=node --sourcemap \"--banner:js=import{createRequire}from'node:module';const require=createRequire(import.meta.url);\" --external:./xhr-sync-worker.js \"--external:chromium-bidi/*\" --external:playwright --external:playwright-core --external:vite --outfile=packages/server/dist/index.js packages/server/src/index.ts",
     "build:version": "node scripts/build-version.cjs",
     "build:web-static": "yarn workspace @mux-magic/web build",
     "cli-app:build": "rimraf build/ && esbuild --format=cjs --minify --bundle --platform=node --external:./xhr-sync-worker.js \"--external:chromium-bidi/*\" --outfile=build/mux-magic.cjs packages/cli/src/cli.ts",

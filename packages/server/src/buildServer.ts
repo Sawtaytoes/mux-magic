@@ -6,10 +6,6 @@ import { Hono } from "hono"
 interface BuildServerOptions {
   mode: "development" | "production"
   webDistDir: string
-  storybookDistDir: string
-  // Set in dev mode — when present, /storybook/* is proxied to this URL
-  // (a child `storybook dev` process owned by the entry point).
-  storybookProxyTarget?: string
 }
 
 const HAS_EXTENSION_REGEX = /\.[^/]+$/
@@ -103,14 +99,15 @@ const serveFile = ({
 
 // Returns the assembled Hono root.
 //
-// In production: /api/*, /storybook/* (static), and /* (SPA from
-// packages/web/dist/) are all registered. The result is callable
-// directly: `root.fetch(req)`.
+// In production: /api/* and /* (SPA from packages/web/dist/) are
+// registered. The result is callable directly: `root.fetch(req)`.
 //
-// In development: /api/* and /storybook/* (proxy to a child
-// `storybook dev`) are registered, but /* is left for the caller —
+// In development: /api/* is registered, /* is left for the caller —
 // `wireViteMiddleware` adds it so Vite can serve the SPA in middleware
 // mode with HMR over the same port.
+//
+// Storybook is no longer handled here; run it separately via
+// `yarn workspace @mux-magic/web storybook` (default port 6006).
 export const buildServer = async (
   options: BuildServerOptions,
 ): Promise<Hono> => {
@@ -119,66 +116,7 @@ export const buildServer = async (
   // 1. /api/* — API sub-app mounted in-process. No proxy.
   root.route("/api", apiApp)
 
-  // 2. /storybook/* — proxy in dev, static in prod.
-  if (
-    options.mode === "development" &&
-    options.storybookProxyTarget
-  ) {
-    const proxyTarget =
-      options.storybookProxyTarget.replace(/\/+$/, "")
-    root.all("/storybook/*", async (context) => {
-      const requestUrl = new URL(context.req.url)
-      const upstream = `${proxyTarget}${requestUrl.pathname}${requestUrl.search}`
-      const forwardedHeaders = new Headers(
-        context.req.raw.headers,
-      )
-      forwardedHeaders.delete("host")
-      forwardedHeaders.delete("connection")
-      const body =
-        context.req.method === "GET" ||
-        context.req.method === "HEAD"
-          ? undefined
-          : await context.req.raw.arrayBuffer()
-      const upstreamResponse = await fetch(upstream, {
-        body,
-        headers: forwardedHeaders,
-        method: context.req.method,
-        redirect: "manual",
-      })
-      return new Response(upstreamResponse.body, {
-        headers: upstreamResponse.headers,
-        status: upstreamResponse.status,
-      })
-    })
-  } else {
-    root.get("/storybook", (context) =>
-      context.redirect("/storybook/"),
-    )
-    root.get("/storybook/*", async (context) => {
-      const requestUrl = new URL(context.req.url)
-      const stripped =
-        requestUrl.pathname.replace(
-          /^\/storybook\/?/,
-          "",
-        ) || ""
-      const target = HAS_EXTENSION_REGEX.test(stripped)
-        ? stripped
-        : "index.html"
-      const body = await readStaticFile({
-        rootDir: options.storybookDistDir,
-        relativePath: target,
-      })
-      if (!body) {
-        return context.notFound()
-      }
-      return serveFile({
-        body,
-        filePath: target,
-      })
-    })
-  }
-
-  // 3. /* — SPA. Dev mode defers to Vite (caller wires it later).
+  // 2. /* — SPA. Dev mode defers to Vite (caller wires it later).
   if (options.mode === "production") {
     root.use("*", async (context) => {
       const requestUrl = new URL(context.req.url)

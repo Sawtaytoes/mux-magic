@@ -21,11 +21,6 @@ const createDistFixture = (): string => {
     join(root, "web", "static.js"),
     "globalThis.staticAsset = true",
   )
-  mkdirSync(join(root, "storybook"), { recursive: true })
-  writeFileSync(
-    join(root, "storybook", "index.html"),
-    "<!doctype html><html><body>storybook</body></html>",
-  )
   return root
 }
 
@@ -34,7 +29,6 @@ describe("buildServer (prod mode)", () => {
     const fixtureRoot = createDistFixture()
     const root = await buildServer({
       mode: "production",
-      storybookDistDir: join(fixtureRoot, "storybook"),
       webDistDir: join(fixtureRoot, "web"),
     })
     const response = await root.fetch(
@@ -47,7 +41,6 @@ describe("buildServer (prod mode)", () => {
     const fixtureRoot = createDistFixture()
     const root = await buildServer({
       mode: "production",
-      storybookDistDir: join(fixtureRoot, "storybook"),
       webDistDir: join(fixtureRoot, "web"),
     })
     const response = await root.fetch(
@@ -62,7 +55,6 @@ describe("buildServer (prod mode)", () => {
     const fixtureRoot = createDistFixture()
     const root = await buildServer({
       mode: "production",
-      storybookDistDir: join(fixtureRoot, "storybook"),
       webDistDir: join(fixtureRoot, "web"),
     })
     const response = await root.fetch(
@@ -77,7 +69,6 @@ describe("buildServer (prod mode)", () => {
     const fixtureRoot = createDistFixture()
     const root = await buildServer({
       mode: "production",
-      storybookDistDir: join(fixtureRoot, "storybook"),
       webDistDir: join(fixtureRoot, "web"),
     })
     const response = await root.fetch(
@@ -90,7 +81,6 @@ describe("buildServer (prod mode)", () => {
     const fixtureRoot = createDistFixture()
     const root = await buildServer({
       mode: "production",
-      storybookDistDir: join(fixtureRoot, "storybook"),
       webDistDir: join(fixtureRoot, "web"),
     })
     const response = await root.fetch(
@@ -100,20 +90,5 @@ describe("buildServer (prod mode)", () => {
       "no-cache, no-store, must-revalidate",
     )
     expect(response.headers.get("Pragma")).toBe("no-cache")
-  })
-
-  test("serves Storybook static assets under /storybook", async () => {
-    const fixtureRoot = createDistFixture()
-    const root = await buildServer({
-      mode: "production",
-      storybookDistDir: join(fixtureRoot, "storybook"),
-      webDistDir: join(fixtureRoot, "web"),
-    })
-    const response = await root.fetch(
-      new Request("http://localhost/storybook/"),
-    )
-    const body = await response.text()
-    expect(response.status).toBe(200)
-    expect(body).toContain("storybook")
   })
 })
