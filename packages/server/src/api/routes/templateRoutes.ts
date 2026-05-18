@@ -1,9 +1,8 @@
 import { join } from "node:path"
 
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
+import { APP_DATA_DIR } from "@mux-magic/core/src/tools/appPaths.js"
 import { z } from "zod"
-
-import { APP_DATA_DIR } from "../../tools/appPaths.js"
 import {
   createTemplateStore,
   type TemplateStore,

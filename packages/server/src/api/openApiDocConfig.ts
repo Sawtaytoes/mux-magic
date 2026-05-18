@@ -1,4 +1,4 @@
-import { API_PORT } from "../tools/envVars.js"
+import { API_PORT } from "@mux-magic/core/src/tools/envVars.js"
 
 export const openApiDocs = {
   openapi: "3.1.0",

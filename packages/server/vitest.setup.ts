@@ -18,7 +18,7 @@ vi.mock("node:fs/promises")
 // `getPlatform` locally via `vi.mocked(getPlatform).mockReturnValue(...)`.
 // Tools that read `os.platform()` (`isNetworkPath`, `openInExternalApp`,
 // `appPaths`) are unaffected — they go through `node:os`, not this shim.
-vi.mock("./src/tools/currentEnvironment.js", () => ({
+vi.mock("@mux-magic/core/src/tools/currentEnvironment.js", () => ({
   getCwd: vi.fn(() => "/work"),
   getPlatform: vi.fn(() => "linux"),
 }))

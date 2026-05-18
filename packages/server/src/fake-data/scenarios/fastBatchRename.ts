@@ -1,7 +1,7 @@
+import { emitJobEvent } from "@mux-magic/core/src/api/jobStore.js"
+import { getActiveJobId } from "@mux-magic/core/src/api/logCapture.js"
 import { logInfo } from "@mux-magic/tools"
 import { Observable } from "rxjs"
-import { emitJobEvent } from "../../api/jobStore.js"
-import { getActiveJobId } from "../../api/logCapture.js"
 
 export type RenameItem = {
   source: string

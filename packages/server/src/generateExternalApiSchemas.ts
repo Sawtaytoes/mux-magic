@@ -1,8 +1,7 @@
 import "./loadEnv.js"
 import { writeFile } from "node:fs/promises"
+import { tvdbApiSchemaUrl } from "@mux-magic/core/src/tools/tvdbApi.js"
 import openapiTS, { astToString } from "openapi-typescript"
-
-import { tvdbApiSchemaUrl } from "./tools/tvdbApi.js"
 
 const generateExternalApiSchemas = () =>
   openapiTS(new URL(tvdbApiSchemaUrl))

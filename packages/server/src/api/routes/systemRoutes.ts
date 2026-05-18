@@ -1,12 +1,11 @@
 import { availableParallelism } from "node:os"
 
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
-import { z } from "zod"
-
 import {
   resolveDefaultThreadCount,
   resolveMaxThreads,
-} from "../../tools/resolveThreadEnvVars.js"
+} from "@mux-magic/core/src/tools/resolveThreadEnvVars.js"
+import { z } from "zod"
 
 const systemThreadsSchema = z.object({
   maxThreads: z

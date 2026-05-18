@@ -1,4 +1,4 @@
-import { getSubtitleMetadata } from "@mux-magic/server/src/app-commands/getSubtitleMetadata.js"
+import { getSubtitleMetadata } from "@mux-magic/core/src/app-commands/getSubtitleMetadata.js"
 import { logError } from "@mux-magic/tools"
 import type {
   Argv,

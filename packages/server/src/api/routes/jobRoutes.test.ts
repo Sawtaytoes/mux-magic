@@ -1,10 +1,9 @@
-import { afterEach, describe, expect, test } from "vitest"
-
 import {
   createJob,
   resetStore,
   updateJob,
-} from "../jobStore.js"
+} from "@mux-magic/core/src/api/jobStore.js"
+import { afterEach, describe, expect, test } from "vitest"
 import { jobRoutes } from "./jobRoutes.js"
 
 // Hono in-process testing: jobRoutes is just a Hono sub-app, so

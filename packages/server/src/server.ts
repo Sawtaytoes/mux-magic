@@ -6,6 +6,18 @@ import "./loadEnv.js"
 import "./logBuildBanner.js"
 
 import { serve } from "@hono/node-server"
+import { resumePendingDeliveries } from "@mux-magic/core/src/api/jobErrorDeliveryQueue.js"
+import { loadJobErrorsFromDisk } from "@mux-magic/core/src/api/jobErrorStore.js"
+import {
+  getActiveJobId,
+  installLogBridge,
+  installLogCapture,
+} from "@mux-magic/core/src/api/logCapture.js"
+import {
+  API_PORT,
+  MAX_THREADS,
+} from "@mux-magic/core/src/tools/envVars.js"
+import { reportProcessCrashed } from "@mux-magic/core/src/tools/webhookReporter.js"
 import {
   initTaskScheduler,
   logError,
@@ -13,15 +25,6 @@ import {
   setLoggingMode,
 } from "@mux-magic/tools"
 import { app } from "./api/hono-routes.js"
-import { resumePendingDeliveries } from "./api/jobErrorDeliveryQueue.js"
-import { loadJobErrorsFromDisk } from "./api/jobErrorStore.js"
-import {
-  getActiveJobId,
-  installLogBridge,
-  installLogCapture,
-} from "./api/logCapture.js"
-import { API_PORT, MAX_THREADS } from "./tools/envVars.js"
-import { reportProcessCrashed } from "./tools/webhookReporter.js"
 
 // Node's docs are explicit: after `uncaughtException` the process is in
 // undefined state and MUST exit. We fire one best-effort webhook (capped

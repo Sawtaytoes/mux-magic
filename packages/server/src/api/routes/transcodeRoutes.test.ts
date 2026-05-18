@@ -16,17 +16,17 @@ import {
 // slip lets a request through, the test never spawns ffmpeg.
 // Mock getMediaInfo so HEAD tests don't attempt to spawn MediaInfo.exe.
 vi.mock(
-  "../../cli-spawn-operations/runFfmpegAudioTranscode.js",
+  "@mux-magic/core/src/cli-spawn-operations/runFfmpegAudioTranscode.js",
   () => ({
     buildFfmpegArgs: vi.fn(() => []),
   }),
 )
 
-vi.mock("../../tools/transcodeTempStore.js", () => ({
+vi.mock("@mux-magic/core/src/tools/transcodeTempStore.js", () => ({
   mimeTypeForCodec: (_codec: string) => "video/mp4",
 }))
 
-vi.mock("../../tools/getMediaInfo.js", () => ({
+vi.mock("@mux-magic/core/src/tools/getMediaInfo.js", () => ({
   getMediaInfo: vi.fn(() => of({ media: { track: [] } })),
 }))
 

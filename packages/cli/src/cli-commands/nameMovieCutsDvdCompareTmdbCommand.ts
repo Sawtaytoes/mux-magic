@@ -1,6 +1,6 @@
-import type { NameMovieCutsResult } from "@mux-magic/server/src/app-commands/nameMovieCutsDvdCompareTmdb.events.js"
-import { nameMovieCutsDvdCompareTmdb } from "@mux-magic/server/src/app-commands/nameMovieCutsDvdCompareTmdb.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import type { NameMovieCutsResult } from "@mux-magic/core/src/app-commands/nameMovieCutsDvdCompareTmdb.events.js"
+import { nameMovieCutsDvdCompareTmdb } from "@mux-magic/core/src/app-commands/nameMovieCutsDvdCompareTmdb.js"
+import { subscribeCli } from "@mux-magic/core/src/tools/subscribeCli.js"
 import { logInfo } from "@mux-magic/tools"
 import type {
   Argv,

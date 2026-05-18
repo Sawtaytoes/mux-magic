@@ -1,4 +1,17 @@
 import { readFile } from "node:fs/promises"
+import type { JobEvent } from "@mux-magic/core/src/api/jobStore.js"
+import {
+  cancelJob,
+  getAllJobs,
+  getChildJobs,
+  getJob,
+  getSubject,
+  resetStore,
+} from "@mux-magic/core/src/api/jobStore.js"
+import {
+  installLogCapture,
+  uninstallLogCapture,
+} from "@mux-magic/core/src/api/logCapture.js"
 import { vol } from "memfs"
 import {
   afterAll,
@@ -8,19 +21,6 @@ import {
   expect,
   test,
 } from "vitest"
-import type { JobEvent } from "../jobStore.js"
-import {
-  cancelJob,
-  getAllJobs,
-  getChildJobs,
-  getJob,
-  getSubject,
-  resetStore,
-} from "../jobStore.js"
-import {
-  installLogCapture,
-  uninstallLogCapture,
-} from "../logCapture.js"
 import { sequenceRoutes } from "./sequenceRoutes.js"
 
 // Hono in-process testing: sequenceRoutes is just a Hono sub-app, so

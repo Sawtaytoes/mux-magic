@@ -3,90 +3,90 @@ import {
   OpenAPIHono,
   z,
 } from "@hono/zod-openapi"
-import { makeDirectory } from "@mux-magic/tools"
-import type { Context } from "hono"
-import type { Observable } from "rxjs"
+import { createJob } from "@mux-magic/core/src/api/jobStore.js"
 import {
   addSubtitles,
   addSubtitlesDefaultProps,
-} from "../../app-commands/addSubtitles.js"
-import { changeTrackLanguages } from "../../app-commands/changeTrackLanguages.js"
+} from "@mux-magic/core/src/app-commands/addSubtitles.js"
+import { changeTrackLanguages } from "@mux-magic/core/src/app-commands/changeTrackLanguages.js"
 import {
   type CopyRecord,
   copyFiles,
-} from "../../app-commands/copyFiles.js"
-import { copyOutSubtitles } from "../../app-commands/copyOutSubtitles.js"
-import { deleteCopiedOriginals } from "../../app-commands/deleteCopiedOriginals.js"
-import { deleteFilesByExtension } from "../../app-commands/deleteFilesByExtension.js"
-import { deleteFolder } from "../../app-commands/deleteFolder.js"
-import { exitIfEmpty } from "../../app-commands/exitIfEmpty.js"
+} from "@mux-magic/core/src/app-commands/copyFiles.js"
+import { copyOutSubtitles } from "@mux-magic/core/src/app-commands/copyOutSubtitles.js"
+import { deleteCopiedOriginals } from "@mux-magic/core/src/app-commands/deleteCopiedOriginals.js"
+import { deleteFilesByExtension } from "@mux-magic/core/src/app-commands/deleteFilesByExtension.js"
+import { deleteFolder } from "@mux-magic/core/src/app-commands/deleteFolder.js"
+import { exitIfEmpty } from "@mux-magic/core/src/app-commands/exitIfEmpty.js"
 import {
   extractSubtitles,
   extractSubtitlesDefaultProps,
-} from "../../app-commands/extractSubtitles.js"
-import { fixIncorrectDefaultTracks } from "../../app-commands/fixIncorrectDefaultTracks.js"
-import { flattenOutput } from "../../app-commands/flattenOutput.js"
+} from "@mux-magic/core/src/app-commands/extractSubtitles.js"
+import { fixIncorrectDefaultTracks } from "@mux-magic/core/src/app-commands/fixIncorrectDefaultTracks.js"
+import { flattenOutput } from "@mux-magic/core/src/app-commands/flattenOutput.js"
 import {
   getAudioOffsets,
   getAudioOffsetsDefaultProps,
-} from "../../app-commands/getAudioOffsets.js"
-import { hasBetterAudio } from "../../app-commands/hasBetterAudio.js"
-import { hasBetterVersion } from "../../app-commands/hasBetterVersion.js"
-import { hasDuplicateMusicFiles } from "../../app-commands/hasDuplicateMusicFiles.js"
-import { hasImaxEnhancedAudio } from "../../app-commands/hasImaxEnhancedAudio.js"
-import { hasManyAudioTracks } from "../../app-commands/hasManyAudioTracks.js"
-import { hasSurroundSound } from "../../app-commands/hasSurroundSound.js"
-import { hasWrongDefaultTrack } from "../../app-commands/hasWrongDefaultTrack.js"
-import { isMissingSubtitles } from "../../app-commands/isMissingSubtitles.js"
+} from "@mux-magic/core/src/app-commands/getAudioOffsets.js"
+import { hasBetterAudio } from "@mux-magic/core/src/app-commands/hasBetterAudio.js"
+import { hasBetterVersion } from "@mux-magic/core/src/app-commands/hasBetterVersion.js"
+import { hasDuplicateMusicFiles } from "@mux-magic/core/src/app-commands/hasDuplicateMusicFiles.js"
+import { hasImaxEnhancedAudio } from "@mux-magic/core/src/app-commands/hasImaxEnhancedAudio.js"
+import { hasManyAudioTracks } from "@mux-magic/core/src/app-commands/hasManyAudioTracks.js"
+import { hasSurroundSound } from "@mux-magic/core/src/app-commands/hasSurroundSound.js"
+import { hasWrongDefaultTrack } from "@mux-magic/core/src/app-commands/hasWrongDefaultTrack.js"
+import { isMissingSubtitles } from "@mux-magic/core/src/app-commands/isMissingSubtitles.js"
 import {
   keepLanguages,
   keepLanguagesDefaultProps,
-} from "../../app-commands/keepLanguages.js"
-import { mergeTracks } from "../../app-commands/mergeTracks.js"
-import { modifySubtitleMetadata } from "../../app-commands/modifySubtitleMetadata.js"
-import { moveFiles } from "../../app-commands/moveFiles.js"
-import { nameAnimeEpisodes } from "../../app-commands/nameAnimeEpisodes.js"
-import { nameAnimeEpisodesAniDB } from "../../app-commands/nameAnimeEpisodesAniDB.js"
-import { nameMovieCutsDvdCompareTmdb } from "../../app-commands/nameMovieCutsDvdCompareTmdb.js"
-import { nameSpecialFeaturesDvdCompareTmdb } from "../../app-commands/nameSpecialFeaturesDvdCompareTmdb.js"
-import { nameTvShowEpisodes } from "../../app-commands/nameTvShowEpisodes.js"
-import { remuxToMkv } from "../../app-commands/remuxToMkv.js"
-import { renameDemos } from "../../app-commands/renameDemos.js"
+} from "@mux-magic/core/src/app-commands/keepLanguages.js"
+import { mergeTracks } from "@mux-magic/core/src/app-commands/mergeTracks.js"
+import { modifySubtitleMetadata } from "@mux-magic/core/src/app-commands/modifySubtitleMetadata.js"
+import { moveFiles } from "@mux-magic/core/src/app-commands/moveFiles.js"
+import { nameAnimeEpisodes } from "@mux-magic/core/src/app-commands/nameAnimeEpisodes.js"
+import { nameAnimeEpisodesAniDB } from "@mux-magic/core/src/app-commands/nameAnimeEpisodesAniDB.js"
+import { nameMovieCutsDvdCompareTmdb } from "@mux-magic/core/src/app-commands/nameMovieCutsDvdCompareTmdb.js"
+import { nameSpecialFeaturesDvdCompareTmdb } from "@mux-magic/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.js"
+import { nameTvShowEpisodes } from "@mux-magic/core/src/app-commands/nameTvShowEpisodes.js"
+import { remuxToMkv } from "@mux-magic/core/src/app-commands/remuxToMkv.js"
+import { renameDemos } from "@mux-magic/core/src/app-commands/renameDemos.js"
 import {
   type RenameRecord,
   renameFiles,
-} from "../../app-commands/renameFiles.js"
-import { renameMovieClipDownloads } from "../../app-commands/renameMovieClipDownloads.js"
-import { renumberChapters } from "../../app-commands/renumberChapters.js"
+} from "@mux-magic/core/src/app-commands/renameFiles.js"
+import { renameMovieClipDownloads } from "@mux-magic/core/src/app-commands/renameMovieClipDownloads.js"
+import { renumberChapters } from "@mux-magic/core/src/app-commands/renumberChapters.js"
 import {
   reorderTracks,
   reorderTracksDefaultProps,
-} from "../../app-commands/reorderTracks.js"
+} from "@mux-magic/core/src/app-commands/reorderTracks.js"
 import {
   replaceAttachments,
   replaceAttachmentsDefaultProps,
-} from "../../app-commands/replaceAttachments.js"
+} from "@mux-magic/core/src/app-commands/replaceAttachments.js"
 import {
   replaceFlacWithPcmAudio,
   replaceFlacWithPcmAudioDefaultProps,
-} from "../../app-commands/replaceFlacWithPcmAudio.js"
+} from "@mux-magic/core/src/app-commands/replaceFlacWithPcmAudio.js"
 import {
   replaceTracks,
   replaceTracksDefaultProps,
-} from "../../app-commands/replaceTracks.js"
-import { setDisplayWidth } from "../../app-commands/setDisplayWidth.js"
+} from "@mux-magic/core/src/app-commands/replaceTracks.js"
+import { setDisplayWidth } from "@mux-magic/core/src/app-commands/setDisplayWidth.js"
 import {
   splitChapters,
   splitChaptersDefaultProps,
-} from "../../app-commands/splitChapters.js"
-import { storeAspectRatioData } from "../../app-commands/storeAspectRatioData.js"
+} from "@mux-magic/core/src/app-commands/splitChapters.js"
+import { storeAspectRatioData } from "@mux-magic/core/src/app-commands/storeAspectRatioData.js"
+import { makeDirectory } from "@mux-magic/tools"
+import type { Context } from "hono"
+import type { Observable } from "rxjs"
 import {
   getEffectiveCommandConfigs,
   getFakeScenario,
   isFakeRequest,
 } from "../../fake-data/index.js"
 import { runJob } from "../jobRunner.js"
-import { createJob } from "../jobStore.js"
 import * as schemas from "../schemas.js"
 
 const startCommandJob = ({
