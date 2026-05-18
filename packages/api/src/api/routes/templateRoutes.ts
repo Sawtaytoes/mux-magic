@@ -81,7 +81,7 @@ export const templateRoutes = new OpenAPIHono()
 templateRoutes.openapi(
   createRoute({
     method: "get",
-    path: "/api/templates",
+    path: "/templates",
     summary: "List saved sequence templates",
     description:
       "Returns the per-user library of saved sequence templates. Each entry includes only metadata; fetch the full body (including YAML) via GET /api/templates/:id.",
@@ -108,7 +108,7 @@ templateRoutes.openapi(
 templateRoutes.openapi(
   createRoute({
     method: "get",
-    path: "/api/templates/{id}",
+    path: "/templates/{id}",
     summary: "Fetch a single saved template by id",
     tags: ["Templates"],
     request: {
@@ -146,7 +146,7 @@ templateRoutes.openapi(
 templateRoutes.openapi(
   createRoute({
     method: "post",
-    path: "/api/templates",
+    path: "/templates",
     summary: "Save a new sequence template",
     description:
       "Server assigns the id (kebab-case of name with a -2/-3/... collision suffix). YAML is validated for structural shape before persistence; semantic command-name validation happens on the web side at apply time.",
@@ -200,7 +200,7 @@ templateRoutes.openapi(
 templateRoutes.openapi(
   createRoute({
     method: "put",
-    path: "/api/templates/{id}",
+    path: "/templates/{id}",
     summary: "Update a saved template",
     description:
       "Bumps updatedAt; createdAt + id are preserved. YAML body is required and re-validated.",
@@ -269,7 +269,7 @@ templateRoutes.openapi(
 templateRoutes.openapi(
   createRoute({
     method: "delete",
-    path: "/api/templates/{id}",
+    path: "/templates/{id}",
     summary: "Delete a saved template",
     tags: ["Templates"],
     request: {
