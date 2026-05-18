@@ -37,6 +37,9 @@ export const WithChainedSource = makeStory({
   id: "step_exit_if_empty__chained",
   params: { sourcePath: "" },
   links: {
-    sourcePath: { linkedTo: "step_upstream", output: "folder" },
+    sourcePath: {
+      linkedTo: "step_upstream",
+      output: "folder",
+    },
   },
 })

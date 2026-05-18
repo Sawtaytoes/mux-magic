@@ -12,8 +12,17 @@ const baseStep: Step = {
     destinationPath: "/mnt/archive",
     fileFilterRegex: { pattern: "", flags: "", sample: "" },
     includeFolders: false,
-    folderFilterRegex: { pattern: "", flags: "", sample: "" },
-    renameRegex: { pattern: "", flags: "", replacement: "", sample: "" },
+    folderFilterRegex: {
+      pattern: "",
+      flags: "",
+      sample: "",
+    },
+    renameRegex: {
+      pattern: "",
+      flags: "",
+      replacement: "",
+      sample: "",
+    },
   },
   links: {},
   status: null,
@@ -57,7 +66,11 @@ export const WithFileFilterButEmptySample = makeStory({
   id: "step_copy_files__file_filter_empty_sample",
   params: {
     ...baseStep.params,
-    fileFilterRegex: { pattern: "\\.mkv$", flags: "i", sample: "" },
+    fileFilterRegex: {
+      pattern: "\\.mkv$",
+      flags: "i",
+      sample: "",
+    },
   },
 })
 
@@ -116,6 +129,9 @@ export const WithChainedSource = makeStory({
   id: "step_copy_files__chained",
   params: { ...baseStep.params, sourcePath: "" },
   links: {
-    sourcePath: { linkedTo: "step_upstream", output: "folder" },
+    sourcePath: {
+      linkedTo: "step_upstream",
+      output: "folder",
+    },
   },
 })

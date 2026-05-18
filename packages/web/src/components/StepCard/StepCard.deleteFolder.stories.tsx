@@ -46,8 +46,15 @@ export const WithConfirmChecked = makeStory({
 export const WithChainedSource = makeStory({
   ...baseStep,
   id: "step_delete_folder__chained",
-  params: { ...baseStep.params, sourcePath: "", confirm: true },
+  params: {
+    ...baseStep.params,
+    sourcePath: "",
+    confirm: true,
+  },
   links: {
-    sourcePath: { linkedTo: "step_upstream", output: "folder" },
+    sourcePath: {
+      linkedTo: "step_upstream",
+      output: "folder",
+    },
   },
 })

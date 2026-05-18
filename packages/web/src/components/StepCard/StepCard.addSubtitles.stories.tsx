@@ -45,7 +45,10 @@ export const WithGlobalOffset = makeStory({
 export const WithPerFileOffsets = makeStory({
   ...baseStep,
   id: "step_add_subtitles__per_file_offsets",
-  params: { ...baseStep.params, offsets: [0, -200, 150, -50] },
+  params: {
+    ...baseStep.params,
+    offsets: [0, -200, 150, -50],
+  },
 })
 
 // Chapter-sync + include chapters — typical for season-pack subtitle

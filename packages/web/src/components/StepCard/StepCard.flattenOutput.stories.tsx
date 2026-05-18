@@ -49,6 +49,9 @@ export const WithChainedSource = makeStory({
   id: "step_flatten_output__chained",
   params: { ...baseStep.params, sourcePath: "" },
   links: {
-    sourcePath: { linkedTo: "step_upstream", output: "folder" },
+    sourcePath: {
+      linkedTo: "step_upstream",
+      output: "folder",
+    },
   },
 })

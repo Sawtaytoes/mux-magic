@@ -48,7 +48,10 @@ const shutdown = (exitCode) => {
   isShuttingDown = true
 
   children.forEach(({ proc }) => {
-    if (proc.exitCode === null && proc.signalCode === null) {
+    if (
+      proc.exitCode === null &&
+      proc.signalCode === null
+    ) {
       proc.kill("SIGTERM")
     }
   })
