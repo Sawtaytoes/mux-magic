@@ -31,16 +31,31 @@ const sendJson = (
   res.end(body)
 }
 
+// Tracks every open SSE response so Vitest can drain them on dev-server close.
+// Without this, lingering keep-alive sockets prevent Vite's httpServer.close()
+// from completing, and `yarn test` hangs after all suites finish.
+const activeSseResponses = new Set<ServerResponse>()
+
 // Keeps the SSE connection open and silent. The Jotai store in each story is
-// pre-seeded, so no events need to arrive for the UI to render correctly.
-const keepSseOpen = (res: ServerResponse): void => {
+// pre-seeded, so no events need to arrive for the UI to render correctly. We
+// MUST listen for the client disconnect and call res.end(), otherwise the Node
+// HTTP server keeps the socket "active" and Vite's shutdown blocks.
+const keepSseOpen = (
+  req: IncomingMessage,
+  res: ServerResponse,
+): void => {
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
     Connection: "keep-alive",
   })
-  // Don't call res.end() — let the EventSource connection stay open until the
-  // browser closes it when the test frame is torn down.
+  activeSseResponses.add(res)
+  const cleanup = () => {
+    activeSseResponses.delete(res)
+    if (!res.writableEnded) res.end()
+  }
+  req.on("close", cleanup)
+  res.on("close", cleanup)
 }
 
 // Reads the full request body as a UTF-8 string.
@@ -137,12 +152,12 @@ const routes: Route[] = [
   {
     method: "GET",
     path: "/jobs/stream",
-    handler: (_, res) => keepSseOpen(res),
+    handler: (req, res) => keepSseOpen(req, res),
   },
   {
     method: "GET",
     path: "/jobs/:jobId/logs",
-    handler: (_, res) => keepSseOpen(res),
+    handler: (req, res) => keepSseOpen(req, res),
   },
   // ── Lookup search endpoints (used by LookupModal stories) ───────────────────
   {
@@ -288,6 +303,15 @@ const routes: Route[] = [
 export const mockServerPlugin = (): Plugin => ({
   name: "storybook-mock-server",
   configureServer(server) {
+    // Force-end any SSE responses still open when Vite shuts down. Without
+    // this, lingering keep-alive sockets block Vite's httpServer.close() and
+    // `yarn test` hangs after every suite finishes.
+    server.httpServer?.on("close", () => {
+      for (const res of activeSseResponses) {
+        if (!res.writableEnded) res.end()
+      }
+      activeSseResponses.clear()
+    })
     server.middlewares.use(async (req, res, next) => {
       const method = (req.method ?? "GET").toUpperCase()
       // Worker 29 changed `apiBase` in the SPA to `/api`, so every
