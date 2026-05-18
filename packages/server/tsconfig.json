@@ -10,6 +10,7 @@
     "src/**/*",
     "vitest.config.ts",
     "../core/src/environment.d.ts",
+    "../core/src/mal-scraper.d.ts",
     "../core/src/reset.d.ts"
   ]
 }

@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
@@ -28,8 +28,8 @@ describe("buildServer (prod mode)", () => {
     const fixtureRoot = createDistFixture()
     const root = await buildServer({
       mode: "production",
-      webDistDir: join(fixtureRoot, "web"),
       storybookDistDir: join(fixtureRoot, "storybook"),
+      webDistDir: join(fixtureRoot, "web"),
     })
     const response = await root.fetch(
       new Request("http://localhost/api/version"),
@@ -41,8 +41,8 @@ describe("buildServer (prod mode)", () => {
     const fixtureRoot = createDistFixture()
     const root = await buildServer({
       mode: "production",
-      webDistDir: join(fixtureRoot, "web"),
       storybookDistDir: join(fixtureRoot, "storybook"),
+      webDistDir: join(fixtureRoot, "web"),
     })
     const response = await root.fetch(
       new Request("http://localhost/"),
@@ -56,8 +56,8 @@ describe("buildServer (prod mode)", () => {
     const fixtureRoot = createDistFixture()
     const root = await buildServer({
       mode: "production",
-      webDistDir: join(fixtureRoot, "web"),
       storybookDistDir: join(fixtureRoot, "storybook"),
+      webDistDir: join(fixtureRoot, "web"),
     })
     const response = await root.fetch(
       new Request("http://localhost/some/spa/route"),
@@ -71,8 +71,8 @@ describe("buildServer (prod mode)", () => {
     const fixtureRoot = createDistFixture()
     const root = await buildServer({
       mode: "production",
-      webDistDir: join(fixtureRoot, "web"),
       storybookDistDir: join(fixtureRoot, "storybook"),
+      webDistDir: join(fixtureRoot, "web"),
     })
     const response = await root.fetch(
       new Request("http://localhost/not-a-real-file.png"),
@@ -84,8 +84,8 @@ describe("buildServer (prod mode)", () => {
     const fixtureRoot = createDistFixture()
     const root = await buildServer({
       mode: "production",
-      webDistDir: join(fixtureRoot, "web"),
       storybookDistDir: join(fixtureRoot, "storybook"),
+      webDistDir: join(fixtureRoot, "web"),
     })
     const response = await root.fetch(
       new Request("http://localhost/"),
@@ -100,8 +100,8 @@ describe("buildServer (prod mode)", () => {
     const fixtureRoot = createDistFixture()
     const root = await buildServer({
       mode: "production",
-      webDistDir: join(fixtureRoot, "web"),
       storybookDistDir: join(fixtureRoot, "storybook"),
+      webDistDir: join(fixtureRoot, "web"),
     })
     const response = await root.fetch(
       new Request("http://localhost/storybook/"),

@@ -1,6 +1,5 @@
 import { readFile, stat } from "node:fs/promises"
 import { extname, join, normalize, sep } from "node:path"
-import type { Server } from "node:http"
 import { app as apiApp } from "@mux-magic/api/src/api/hono-routes.js"
 import { Hono } from "hono"
 
@@ -8,12 +7,9 @@ interface BuildServerOptions {
   mode: "development" | "production"
   webDistDir: string
   storybookDistDir: string
+  // Set in dev mode — when present, /storybook/* is proxied to this URL
+  // (a child `storybook dev` process owned by the entry point).
   storybookProxyTarget?: string
-}
-
-export interface BuildServerResult {
-  fetch: (request: Request) => Promise<Response>
-  attachUpgrade: (httpServer: Server) => void
 }
 
 const HAS_EXTENSION_REGEX = /\.[^/]+$/
@@ -105,17 +101,25 @@ const serveFile = ({
     },
   })
 
+// Returns the assembled Hono root.
+//
+// In production: /api/*, /storybook/* (static), and /* (SPA from
+// packages/web/dist/) are all registered. The result is callable
+// directly: `root.fetch(req)`.
+//
+// In development: /api/* and /storybook/* (proxy to a child
+// `storybook dev`) are registered, but /* is left for the caller —
+// `wireViteMiddleware` adds it so Vite can serve the SPA in middleware
+// mode with HMR over the same port.
 export const buildServer = async (
   options: BuildServerOptions,
-): Promise<BuildServerResult> => {
+): Promise<Hono> => {
   const root = new Hono()
 
-  // 1. /api/* — the API sub-app is mounted in-process; no proxy, no
-  // second TCP listener. The api package owns its own CORS middleware.
+  // 1. /api/* — API sub-app mounted in-process. No proxy.
   root.route("/api", apiApp)
 
-  // 2. /storybook/* — proxy to a `storybook dev` child in development,
-  // serveStatic of `packages/web/storybook-static/` in production.
+  // 2. /storybook/* — proxy in dev, static in prod.
   if (options.mode === "development" && options.storybookProxyTarget) {
     const proxyTarget = options.storybookProxyTarget.replace(
       /\/+$/,
@@ -124,7 +128,6 @@ export const buildServer = async (
     root.all("/storybook/*", async (c) => {
       const requestUrl = new URL(c.req.url)
       const upstream = `${proxyTarget}${requestUrl.pathname}${requestUrl.search}`
-      // Strip hop-by-hop headers that confuse upstreams.
       const forwardedHeaders = new Headers(c.req.raw.headers)
       forwardedHeaders.delete("host")
       forwardedHeaders.delete("connection")
@@ -149,11 +152,6 @@ export const buildServer = async (
       const requestUrl = new URL(c.req.url)
       const stripped =
         requestUrl.pathname.replace(/^\/storybook\/?/, "") || ""
-      // /storybook/  → index.html
-      // /storybook/foo.js → foo.js
-      // /storybook/some/route (no extension) → index.html (storybook
-      // is a multi-page static bundle whose index handles client-side
-      // routing too).
       const target = HAS_EXTENSION_REGEX.test(stripped)
         ? stripped
         : "index.html"
@@ -171,10 +169,7 @@ export const buildServer = async (
     })
   }
 
-  // 3. /* — the SPA. In development, Vite middleware is wired up by the
-  // entry-point (see `wireViteMiddleware` in src/viteMiddleware.ts). In
-  // production we read straight from the SPA bundle on disk with a
-  // standard extensionless-path → index.html fallback.
+  // 3. /* — SPA. Dev mode defers to Vite (caller wires it later).
   if (options.mode === "production") {
     root.use("*", async (c) => {
       const requestUrl = new URL(c.req.url)
@@ -196,10 +191,5 @@ export const buildServer = async (
     })
   }
 
-  return {
-    fetch: async (request) => root.fetch(request),
-    // Filled in by the entry point when dev Vite is wired up so HMR
-    // WebSocket upgrades reach Vite's connect-style middleware chain.
-    attachUpgrade: () => undefined,
-  }
+  return root
 }
