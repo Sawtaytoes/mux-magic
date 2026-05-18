@@ -7,9 +7,13 @@ import { openApiDocs } from "../openApiDocConfig.js"
 export const addDocRoutes = async (
   honoRoutes: OpenAPIHono,
 ) => {
-  const schemaUrl = process.env.REMOTE_SERVER_URL
-    ? `${process.env.REMOTE_SERVER_URL}/openapi.json`
-    : "/openapi.json"
+  // Worker 29 mounts this sub-app under /api/*, so the canonical
+  // schema URL is `${PUBLIC_URL}/api/openapi.json` (or, when
+  // PUBLIC_URL is unset, the relative form `/api/openapi.json` — the
+  // server is same-origin with the SPA).
+  const schemaUrl = process.env.PUBLIC_URL
+    ? `${process.env.PUBLIC_URL.replace(/\/+$/, "")}/api/openapi.json`
+    : "/api/openapi.json"
 
   honoRoutes.get("/", Scalar({ url: schemaUrl }))
 
