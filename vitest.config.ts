@@ -13,6 +13,7 @@ export default defineConfig({
     ],
     projects: [
       "packages/api/vitest.config.ts",
+      "packages/server/vitest.config.ts",
       "packages/tools/vitest.config.ts",
       "packages/web/vitest.config.ts",
       "packages/web/vitest.storybook.config.ts",
