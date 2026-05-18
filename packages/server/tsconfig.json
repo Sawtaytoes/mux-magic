@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true
+  },
+  "include": [
+    "src/**/*",
+    "vitest.config.ts",
+    "../core/src/environment.d.ts",
+    "../core/src/reset.d.ts"
+  ]
+}
