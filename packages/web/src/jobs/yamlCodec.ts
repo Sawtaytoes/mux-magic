@@ -160,8 +160,8 @@ export type LoadYamlResult = {
 const isGroupItem = (item: unknown): boolean =>
   Boolean(
     item &&
-    typeof item === "object" &&
-    (item as Record<string, unknown>).kind === "group"
+      typeof item === "object" &&
+      (item as Record<string, unknown>).kind === "group",
   )
 
 // Creates a bare step shell — params and links are empty; loadStepItem fills
