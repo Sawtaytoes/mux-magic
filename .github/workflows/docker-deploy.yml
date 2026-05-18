@@ -3,7 +3,9 @@ name: Docker Deploy
 on:
   workflow_run:
     workflows: ["CI"]
-    branches: [master]
+    branches:
+      - master
+      - "feat/**"
     types: [completed]
 
 concurrency:
@@ -45,6 +47,13 @@ jobs:
         id: meta
         run: echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
 
+      - name: Compute branch tag
+        id: tags
+        run: |
+          branch_tag="${{ github.event.workflow_run.head_branch }}"
+          branch_tag="${branch_tag//\//-}"
+          echo "branch_tag=${branch_tag}" >> $GITHUB_OUTPUT
+
       - name: Build Docker image
         uses: docker/build-push-action@v7
         with:
@@ -55,6 +64,6 @@ jobs:
             GIT_SHA=${{ github.sha }}
             BUILD_TIME=${{ steps.meta.outputs.build_time }}
           tags: |
-            ghcr.io/sawtaytoes/mux-magic:latest
             ghcr.io/sawtaytoes/mux-magic:${{ github.sha }}
-            ghcr.io/sawtaytoes/mux-magic:${{ github.ref_name }}
+            ghcr.io/sawtaytoes/mux-magic:${{ steps.tags.outputs.branch_tag }}
+            ${{ github.event.workflow_run.head_branch == 'master' && 'ghcr.io/sawtaytoes/mux-magic:latest' || '' }}
