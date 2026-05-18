@@ -169,7 +169,7 @@ export const unregisterJobClaim = (jobId: string): void => {
 
 // Init once at process startup. CLI passes 1 (sequential, equivalent to
 // the historical concatMap behavior). API passes Number(MAX_THREADS) ||
-// cpus().length. Idempotent on repeat calls with the same value; throws
+// availableParallelism(). Idempotent on repeat calls with the same value; throws
 // on conflicting re-init so a stray import path doesn't silently
 // downgrade concurrency.
 export const initTaskScheduler = (

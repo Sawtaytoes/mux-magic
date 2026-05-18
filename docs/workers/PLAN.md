@@ -307,7 +307,7 @@ Cardinality rules per type (singleton vs multi) live with the type registration.
 
 ### 5.B — Per-job thread budget (worker 11)
 
-**Today:** `taskScheduler.ts` uses rxjs `mergeAll(concurrency)` where `concurrency = MAX_THREADS` (env-var-driven, defaults to `os.cpus().length`). A single global pool; all jobs compete fairly.
+**Today:** `taskScheduler.ts` uses rxjs `mergeAll(concurrency)` where `concurrency = MAX_THREADS` (env-var-driven, defaults to `os.availableParallelism()`). A single global pool; all jobs compete fairly.
 
 **New:** two coupled constraints enforced on task admission:
 
@@ -318,7 +318,7 @@ Implementation: tag each task with its `jobId` at submission. The scheduler trac
 
 **Env vars:**
 
-- `MAX_THREADS` (existing) — system ceiling. If unset, defaults to `os.cpus().length`.
+- `MAX_THREADS` (existing) — system ceiling. If unset, defaults to `os.availableParallelism()`.
 - `DEFAULT_THREAD_COUNT` (NEW) — default per-job claim value. If `≤ 0`, treated as "use MAX_THREADS" (no per-job restriction). Default `2` (safe for most machines).
 
 **Effective default per-job claim:** `defaultThreadCount <= 0 ? maxThreads : min(maxThreads, defaultThreadCount)`.

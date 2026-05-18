@@ -213,7 +213,7 @@ For each: identify the **remote service** it talks to, and decide on a pool cap 
 | `dlsiteScrape` | 3 | DLsite product-page scrapes |
 | `pixivImageSet` | 4 | Pixiv per-IP rate-limit-bound image assembly |
 | `fakkuMetadata` | 2 | Fakku backend |
-| `archiveExtract` | (cpus().length) | Local CPU-bound work, no remote rate limit — pool cap = cpus, not 2 |
+| `archiveExtract` | (availableParallelism()) | Local CPU-bound work, no remote rate limit — pool cap = available parallelism, not 2 |
 
 The `archiveExtract` row deliberately uses a higher cap because the constraint is local CPU, not remote rate limit. The pattern generalizes: pool caps should reflect the bottleneck for that task type — remote rate limit for network-bound work, CPU count for compute-bound work, IO depth for disk-bound work.
 
@@ -226,15 +226,15 @@ import {
   initTaskScheduler,
   registerTaskPool,
 } from "@mux-magic/tools"
-import { cpus } from "node:os"
+import { availableParallelism } from "node:os"
 
-initTaskScheduler(Number(process.env.MAX_THREADS) || cpus().length)
+initTaskScheduler(Number(process.env.MAX_THREADS) || availableParallelism())
 registerTaskPool("imageDownload", 8)
 registerTaskPool("webtoonsChapterLookup", 2)
 registerTaskPool("dlsiteScrape", 3)
 registerTaskPool("pixivImageSet", 4)
 registerTaskPool("fakkuMetadata", 2)
-registerTaskPool("archiveExtract", cpus().length)
+registerTaskPool("archiveExtract", availableParallelism())
 ```
 
 Caps **should** be tunable via env vars (e.g., `WEBTOONS_PARALLEL=1`) so users can dial them down on slow networks without a rebuild. Document this in Gallery-Downloader's README.

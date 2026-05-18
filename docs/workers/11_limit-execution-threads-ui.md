@@ -25,7 +25,7 @@ This lets two concurrent jobs share the pool fairly (e.g. 4-thread + 8-thread jo
 
 Two env vars (both read at server boot):
 
-- **`MAX_THREADS`** (existing) — system ceiling. Defaults to `os.cpus().length` if unset. Stays as the upper bound.
+- **`MAX_THREADS`** (existing) — system ceiling. Defaults to `os.availableParallelism()` if unset. Stays as the upper bound.
 - **`DEFAULT_THREAD_COUNT`** (NEW) — default per-job claim value. **Default = 2** (safe for most machines). If `≤ 0`, treated as "no per-job restriction; use MAX_THREADS as default."
 
 ```ts
@@ -45,7 +45,7 @@ New endpoint **`GET /system/threads`**:
 type SystemThreadsResponse = {
   maxThreads: number          // resolved MAX_THREADS (ceiling)
   defaultThreadCount: number  // resolved DEFAULT_THREAD_COUNT (effective)
-  totalCpus: number           // os.cpus().length (informational)
+  totalCpus: number           // os.availableParallelism() (informational)
 }
 ```
 
