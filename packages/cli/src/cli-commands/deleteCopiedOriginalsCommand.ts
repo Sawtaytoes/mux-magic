@@ -1,5 +1,5 @@
-import { deleteCopiedOriginals } from "@mux-magic/server/src/app-commands/deleteCopiedOriginals.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import { deleteCopiedOriginals } from "@mux-magic/core/src/app-commands/deleteCopiedOriginals.js"
+import { subscribeCli } from "@mux-magic/core/src/tools/subscribeCli.js"
 import { toArray } from "rxjs"
 import type {
   Argv,

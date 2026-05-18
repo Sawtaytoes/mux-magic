@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Mux-Magic command-line interface (yargs adapters on top of @mux-magic/server's app-commands).",
+  "description": "Mux-Magic command-line interface (yargs adapters on top of @mux-magic/api's app-commands).",
   "scripts": {
     "cli": "tsx src/cli.ts",
     "test": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@mux-magic/server": "workspace:*",
+    "@mux-magic/api": "workspace:*",
     "@mux-magic/tools": "workspace:*",
     "chalk": "^5.6.2",
     "cli-progress": "^3.12.0",

@@ -65,7 +65,8 @@ ENV BUILD_TIME=$BUILD_TIME
 #   - public/api/version.json (build identity)
 #   - command-descriptions.js (tooltip text for the UI)
 #   - packages/web/dist/ (vite SPA build)
-#   - packages/server/dist/server.mjs (esbuild bundle of the API)
+#   - packages/api/dist/legacy-listener.mjs (esbuild bundle of the API listener;
+#     worker 29 replaces this with a packages/server/dist bundle)
 #   - packages/web/dist-server/server.mjs (esbuild bundle of the static-file server)
 RUN yarn build:prod
 

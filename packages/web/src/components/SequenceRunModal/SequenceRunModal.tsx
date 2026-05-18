@@ -1,7 +1,7 @@
 import type {
   JobLogsEvent,
   JobStatus,
-} from "@mux-magic/server/api-types"
+} from "@mux-magic/api/api-types"
 import { useAtom, useSetAtom } from "jotai"
 import {
   useCallback,

@@ -1,5 +1,5 @@
-import { storeAspectRatioData } from "@mux-magic/server/src/app-commands/storeAspectRatioData.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import { storeAspectRatioData } from "@mux-magic/core/src/app-commands/storeAspectRatioData.js"
+import { subscribeCli } from "@mux-magic/core/src/tools/subscribeCli.js"
 import type {
   Argv,
   CommandBuilder,

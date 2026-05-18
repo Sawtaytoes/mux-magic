@@ -7,7 +7,7 @@ import type {
   LookupRelease as ServerLookupRelease,
   LookupSearchResult as ServerLookupSearchResult,
   LookupType as ServerLookupType,
-} from "@mux-magic/server/api-types"
+} from "@mux-magic/api/api-types"
 import { describe, expect, test } from "vitest"
 import type {
   LookupRelease,

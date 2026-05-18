@@ -12,7 +12,7 @@ export default defineConfig({
       "e2e/**",
     ],
     projects: [
-      "packages/server/vitest.config.ts",
+      "packages/api/vitest.config.ts",
       "packages/tools/vitest.config.ts",
       "packages/web/vitest.config.ts",
       "packages/web/vitest.storybook.config.ts",

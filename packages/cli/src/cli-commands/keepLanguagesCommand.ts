@@ -1,9 +1,9 @@
-import { keepLanguages } from "@mux-magic/server/src/app-commands/keepLanguages.js"
+import { keepLanguages } from "@mux-magic/core/src/app-commands/keepLanguages.js"
 import {
   type Iso6392LanguageCode,
   iso6392LanguageCodes,
-} from "@mux-magic/server/src/tools/iso6392LanguageCodes.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+} from "@mux-magic/core/src/tools/iso6392LanguageCodes.js"
+import { subscribeCli } from "@mux-magic/core/src/tools/subscribeCli.js"
 import type {
   Argv,
   CommandBuilder,

@@ -1,5 +1,5 @@
 // Client-side mirror of the server's lookupDvdCompareFilm formatter
-// (packages/server/src/tools/searchDvdCompare.ts). Both sides must
+// (packages/api/src/tools/searchDvdCompare.ts). Both sides must
 // produce byte-identical strings for the same baseTitle/variant/year so
 // the picker selection and the typed-id reverse-lookup leave the same
 // companion text in params — otherwise a refresh / ID toggle silently

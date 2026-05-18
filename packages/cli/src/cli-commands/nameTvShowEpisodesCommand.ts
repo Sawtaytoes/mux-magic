@@ -1,5 +1,5 @@
-import { nameTvShowEpisodes } from "@mux-magic/server/src/app-commands/nameTvShowEpisodes.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import { nameTvShowEpisodes } from "@mux-magic/core/src/app-commands/nameTvShowEpisodes.js"
+import { subscribeCli } from "@mux-magic/core/src/tools/subscribeCli.js"
 import type {
   Argv,
   CommandBuilder,
