@@ -33,7 +33,7 @@ const parseJson = async <T>(
 export const fetchTemplateList = async (): Promise<
   TemplateListItem[]
 > => {
-  const response = await fetch(`${apiBase}/api/templates`)
+  const response = await fetch(`${apiBase}/templates`)
   const body = await parseJson<{
     templates: TemplateListItem[]
   }>(response)
@@ -44,7 +44,7 @@ export const fetchTemplate = async (
   id: string,
 ): Promise<StoredTemplate> => {
   const response = await fetch(
-    `${apiBase}/api/templates/${encodeURIComponent(id)}`,
+    `${apiBase}/templates/${encodeURIComponent(id)}`,
   )
   return parseJson<StoredTemplate>(response)
 }
@@ -54,7 +54,7 @@ export const createTemplate = async (input: {
   description?: string
   yaml: string
 }): Promise<StoredTemplate> => {
-  const response = await fetch(`${apiBase}/api/templates`, {
+  const response = await fetch(`${apiBase}/templates`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -71,7 +71,7 @@ export const updateTemplate = async (
   },
 ): Promise<StoredTemplate> => {
   const response = await fetch(
-    `${apiBase}/api/templates/${encodeURIComponent(id)}`,
+    `${apiBase}/templates/${encodeURIComponent(id)}`,
     {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -85,7 +85,7 @@ export const deleteTemplate = async (
   id: string,
 ): Promise<void> => {
   const response = await fetch(
-    `${apiBase}/api/templates/${encodeURIComponent(id)}`,
+    `${apiBase}/templates/${encodeURIComponent(id)}`,
     { method: "DELETE" },
   )
   if (!response.ok) {
