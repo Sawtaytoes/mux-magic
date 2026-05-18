@@ -1,18 +1,20 @@
 {
   "name": "@mux-magic/tools",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "description": "Reusable utilities (file system, logging, rxjs operators) shared between @mux-magic/server and sibling tools like Gallery-Downloader.",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./src/*": "./src/*"
   },
   "files": [
+    "dist",
     "src"
   ],
   "publishConfig": {
@@ -25,6 +27,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "prepack": "yarn build",
     "typecheck": "tsc --noEmit",
     "test": "vitest"
   },
