@@ -61,11 +61,16 @@ const installCrashHandlers = (): void => {
   )
 }
 
-// Graceful shutdown so `node --watch-path` (dev) and orchestrators
-// (prod) can restart cleanly without leaving the port bound. Without
-// this the next process boot fails with EADDRINUSE because Node's
-// default SIGTERM handler exits before `httpServer.close()` runs.
-const installShutdownHandlers = (
+// Dev-only graceful shutdown so `node --watch-path` can restart cleanly
+// without leaving port 3000 bound. The watcher sends SIGTERM to the old
+// child, then immediately spawns the replacement — without
+// `httpServer.close()` between them, the new child crashes on `listen()`
+// with EADDRINUSE because the OS hasn't released the port yet.
+//
+// NOT installed in prod. Prod is run-once: any unhandled crash exits
+// the process and Docker's restart policy takes over. No graceful-drain
+// machinery wanted in that path.
+const installDevShutdownHandlers = (
   httpServer: HttpServer,
 ): void => {
   let isShuttingDown = false
@@ -119,7 +124,6 @@ const boot = async (): Promise<void> => {
     const httpServer = createHttpServer(
       getRequestListener(root.fetch),
     )
-    installShutdownHandlers(httpServer)
     httpServer.listen(API_PORT, () => {
       logInfo("MUX-MAGIC SERVER LISTENING PORT", API_PORT)
       loadJobErrorsFromDisk()
@@ -166,7 +170,7 @@ const boot = async (): Promise<void> => {
   })
 
   httpServer.on("request", getRequestListener(root.fetch))
-  installShutdownHandlers(httpServer)
+  installDevShutdownHandlers(httpServer)
   httpServer.listen(API_PORT, () => {
     logInfo("MUX-MAGIC DEV SERVER LISTENING PORT", API_PORT)
     loadJobErrorsFromDisk()
