@@ -93,8 +93,3 @@ export {
   runTasksOrdered,
   unregisterJobClaim,
 } from "./taskScheduler.js"
-export {
-  getOperatorValue,
-  runPromiseScheduler,
-  runTestScheduler,
-} from "./test-runners.js"
