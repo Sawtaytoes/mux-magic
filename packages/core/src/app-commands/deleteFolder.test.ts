@@ -1,5 +1,5 @@
 import { stat } from "node:fs/promises"
-import { captureConsoleMessage } from "@mux-magic/tools"
+import { captureConsoleMessage } from "@mux-magic/tools/test-helpers"
 import { vol } from "memfs"
 import {
   firstValueFrom,

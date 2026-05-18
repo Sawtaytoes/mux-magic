@@ -18,8 +18,6 @@ export {
   applyRenameRegex,
   type RenameRegex,
 } from "./applyRenameRegex.js"
-export { captureConsoleMessage } from "./captureConsoleMessage.js"
-export { captureLogMessage } from "./captureLogMessage.js"
 export { cleanupFilename } from "./cleanupFilename.js"
 export {
   createRenameFileOrFolderObservable,

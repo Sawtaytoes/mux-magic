@@ -1,4 +1,4 @@
-import { captureConsoleMessage } from "@mux-magic/tools"
+import { captureConsoleMessage } from "@mux-magic/tools/test-helpers"
 import { firstValueFrom } from "rxjs"
 import {
   afterEach,

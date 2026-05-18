@@ -1,6 +1,6 @@
 {
   "name": "@mux-magic/tools",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "description": "Reusable utilities (file system, logging, rxjs operators) shared between @mux-magic/api and sibling tools like Gallery-Downloader.",
   "main": "./dist/index.js",
@@ -10,6 +10,11 @@
       "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./test-helpers": {
+      "source": "./src/test-helpers.ts",
+      "types": "./dist/test-helpers.d.ts",
+      "default": "./dist/test-helpers.js"
     },
     "./src/*": "./src/*"
   },
