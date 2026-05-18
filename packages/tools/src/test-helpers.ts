@@ -9,3 +9,8 @@
 // installed (it will be present in every test runtime).
 export { captureConsoleMessage } from "./captureConsoleMessage.js"
 export { captureLogMessage } from "./captureLogMessage.js"
+export {
+  getOperatorValue,
+  runPromiseScheduler,
+  runTestScheduler,
+} from "./test-runners.js"
