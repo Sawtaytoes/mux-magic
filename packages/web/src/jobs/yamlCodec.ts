@@ -158,7 +158,7 @@ export type LoadYamlResult = {
 }
 
 const isGroupItem = (item: unknown): boolean =>
-  !!(
+  Boolean(
     item &&
     typeof item === "object" &&
     (item as Record<string, unknown>).kind === "group"
