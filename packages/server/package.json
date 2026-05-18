@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "node --import tsx --watch-path=src --watch-path=../api/src --watch-path=../core/src --watch-path=../tools/src src/index.ts",
     "start": "tsx src/index.ts",
-    "test": "vitest",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

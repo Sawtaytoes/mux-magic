@@ -38,7 +38,7 @@
     "prod:server": "node --enable-source-maps packages/server/dist/index.js",
     "start": "yarn dev",
     "storybook": "yarn workspace @mux-magic/web storybook",
-    "test": "vitest",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit && yarn workspaces foreach -Ap run typecheck"
   },
   "type": "module",
