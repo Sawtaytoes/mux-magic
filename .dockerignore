@@ -1,5 +1,53 @@
-.venv/
-.config/
-apps.generated/
-assets/
-node_modules/
+# Build context exclusions — anything Docker doesn't need from the host.
+# Slims `COPY . .` in the builder stage and keeps node_modules / .git off
+# the image entirely. The builder reinstalls deps from yarn.lock and
+# rebuilds every artifact, so host-side outputs are pure noise.
+
+# Version control + IDE/agent state
+.git
+.github
+.gitignore
+.gitattributes
+.claude
+.vscode
+.idea
+
+# Installed deps — builder reinstalls fresh from yarn.lock
+node_modules
+**/node_modules
+
+# Build outputs — builder regenerates these from source
+**/dist
+**/dist-server
+**/storybook-static
+build
+.yarn/cache
+.yarn/install-state.gz
+
+# Test + screenshot artifacts
+playwright-report
+test-results
+coverage
+**/__screenshots__
+
+# Local runtime junk + caches the CLI/dev tools drop
+.venv
+.config
+apps.generated
+assets
+*.log
+*.tmp
+
+# Docs aren't needed at build time
+docs
+README.md
+
+# Env files — never bake secrets into images. Keep .env.example accessible
+# for any onboarding flow that copies it from inside the container.
+.env
+.env.*
+!.env.example
+
+# Docker artifacts shouldn't recurse into themselves
+Dockerfile.*
+.dockerignore
