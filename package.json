@@ -31,11 +31,12 @@
     "lint:eslint": "eslint .",
     "lint": "yarn lint:biome-format && yarn lint:eslint-format",
     "media": "yarn workspace @mux-magic/cli cli",
-    "predev": "yarn build:version && yarn build:command-descriptions",
     "prebuild": "yarn build:version && yarn build:command-descriptions",
+    "predev": "yarn build:version && yarn build:command-descriptions",
     "preserver": "node scripts/copy-assets-to-worktree.cjs && yarn build:version && yarn build:command-descriptions",
     "prod:server": "node --enable-source-maps packages/server/dist/index.js",
     "start": "yarn dev",
+    "storybook": "yarn workspace @mux-magic/web storybook",
     "test": "vitest",
     "typecheck": "tsc --noEmit && yarn workspaces foreach -Ap run typecheck"
   },
