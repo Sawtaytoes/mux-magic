@@ -55,6 +55,7 @@ jobs:
       - uses: actions/setup-node@v6
         with: { node-version: 24 }
       - run: corepack enable && yarn install --immutable
+      - run: yarn build:tools
       - run: yarn typecheck
 
   unit-tests:
@@ -67,6 +68,7 @@ jobs:
         with: { node-version: 24 }
       - run: corepack enable && yarn install --immutable
       - run: yarn install-playwright-browser
+      - run: yarn build:tools
       - run: yarn test
 
   e2e:
@@ -79,5 +81,6 @@ jobs:
         with: { node-version: 24 }
       - run: corepack enable && yarn install --immutable
       - run: yarn playwright install chromium --with-deps
+      - run: yarn build:tools
       - run: yarn build:web-static
       - run: yarn e2e
