@@ -1,11 +1,17 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
+import {
+  mkdirSync,
+  mkdtempSync,
+  writeFileSync,
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, test } from "vitest"
 import { buildServer } from "./buildServer.js"
 
 const createDistFixture = (): string => {
-  const root = mkdtempSync(join(tmpdir(), "mux-magic-server-test-"))
+  const root = mkdtempSync(
+    join(tmpdir(), "mux-magic-server-test-"),
+  )
   mkdirSync(join(root, "web"), { recursive: true })
   writeFileSync(
     join(root, "web", "index.html"),

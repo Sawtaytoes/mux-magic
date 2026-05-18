@@ -294,7 +294,8 @@ export const mockServerPlugin = (): Plugin => ({
       // story request now arrives here as `/api/...`. Strip the prefix
       // before matching so the route table can stay rooted at `/`.
       const rawUrl = req.url ?? "/"
-      const normalizedUrl = rawUrl.replace(/^\/api(?=\/|$)/, "") || "/"
+      const normalizedUrl =
+        rawUrl.replace(/^\/api(?=\/|$)/, "") || "/"
       for (const route of routes) {
         if (route.method !== method) continue
         const params = matchPath(route.path, normalizedUrl)

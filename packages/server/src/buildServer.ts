@@ -120,25 +120,29 @@ export const buildServer = async (
   root.route("/api", apiApp)
 
   // 2. /storybook/* — proxy in dev, static in prod.
-  if (options.mode === "development" && options.storybookProxyTarget) {
-    const proxyTarget = options.storybookProxyTarget.replace(
-      /\/+$/,
-      "",
-    )
-    root.all("/storybook/*", async (c) => {
-      const requestUrl = new URL(c.req.url)
+  if (
+    options.mode === "development" &&
+    options.storybookProxyTarget
+  ) {
+    const proxyTarget =
+      options.storybookProxyTarget.replace(/\/+$/, "")
+    root.all("/storybook/*", async (context) => {
+      const requestUrl = new URL(context.req.url)
       const upstream = `${proxyTarget}${requestUrl.pathname}${requestUrl.search}`
-      const forwardedHeaders = new Headers(c.req.raw.headers)
+      const forwardedHeaders = new Headers(
+        context.req.raw.headers,
+      )
       forwardedHeaders.delete("host")
       forwardedHeaders.delete("connection")
       const body =
-        c.req.method === "GET" || c.req.method === "HEAD"
+        context.req.method === "GET" ||
+        context.req.method === "HEAD"
           ? undefined
-          : await c.req.raw.arrayBuffer()
+          : await context.req.raw.arrayBuffer()
       const upstreamResponse = await fetch(upstream, {
         body,
         headers: forwardedHeaders,
-        method: c.req.method,
+        method: context.req.method,
         redirect: "manual",
       })
       return new Response(upstreamResponse.body, {
@@ -147,11 +151,16 @@ export const buildServer = async (
       })
     })
   } else {
-    root.get("/storybook", (c) => c.redirect("/storybook/"))
-    root.get("/storybook/*", async (c) => {
-      const requestUrl = new URL(c.req.url)
+    root.get("/storybook", (context) =>
+      context.redirect("/storybook/"),
+    )
+    root.get("/storybook/*", async (context) => {
+      const requestUrl = new URL(context.req.url)
       const stripped =
-        requestUrl.pathname.replace(/^\/storybook\/?/, "") || ""
+        requestUrl.pathname.replace(
+          /^\/storybook\/?/,
+          "",
+        ) || ""
       const target = HAS_EXTENSION_REGEX.test(stripped)
         ? stripped
         : "index.html"
@@ -160,7 +169,7 @@ export const buildServer = async (
         relativePath: target,
       })
       if (!body) {
-        return c.notFound()
+        return context.notFound()
       }
       return serveFile({
         body,
@@ -171,8 +180,8 @@ export const buildServer = async (
 
   // 3. /* — SPA. Dev mode defers to Vite (caller wires it later).
   if (options.mode === "production") {
-    root.use("*", async (c) => {
-      const requestUrl = new URL(c.req.url)
+    root.use("*", async (context) => {
+      const requestUrl = new URL(context.req.url)
       const path = requestUrl.pathname
       const target = HAS_EXTENSION_REGEX.test(path)
         ? path
@@ -182,7 +191,7 @@ export const buildServer = async (
         relativePath: target,
       })
       if (!body) {
-        return c.notFound()
+        return context.notFound()
       }
       return serveFile({
         body,

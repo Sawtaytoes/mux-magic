@@ -25,7 +25,9 @@ export const wireViteMiddleware = async ({
   webRoot,
   httpServer,
 }: WireViteOptions): Promise<ViteDevServer> => {
-  const { createServer: createViteServer } = await import("vite")
+  const { createServer: createViteServer } = await import(
+    "vite"
+  )
   const vite = await createViteServer({
     appType: "spa",
     configFile: `${webRoot}/vite.config.ts`,
@@ -36,11 +38,12 @@ export const wireViteMiddleware = async ({
     },
   })
 
-  root.use("*", async (c, next) => {
-    // @hono/node-server populates `incoming`/`outgoing` on `c.env`.
-    // Type as `unknown` first since the shape isn't part of Hono's
-    // public types — it's a node-server adapter contract.
-    const env = c.env as {
+  root.use("*", async (context, next) => {
+    // @hono/node-server populates `incoming`/`outgoing` on
+    // `context.env`. Type as `unknown` first since the shape isn't
+    // part of Hono's public types — it's a node-server adapter
+    // contract.
+    const env = context.env as {
       incoming?: Parameters<typeof vite.middlewares>[0]
       outgoing?: Parameters<typeof vite.middlewares>[1]
     }
@@ -50,19 +53,29 @@ export const wireViteMiddleware = async ({
       await next()
       return
     }
-    await new Promise<void>((resolve, reject) => {
-      vite.middlewares(incoming, outgoing, (err?: unknown) => {
-        if (err) {
-          reject(err instanceof Error ? err : new Error(String(err)))
-          return
-        }
-        resolve()
-      })
-    })
+    await new Promise<void>(
+      (resolveMiddleware, rejectMiddleware) => {
+        vite.middlewares(
+          incoming,
+          outgoing,
+          (err?: unknown) => {
+            if (err) {
+              rejectMiddleware(
+                err instanceof Error
+                  ? err
+                  : new Error(String(err)),
+              )
+              return
+            }
+            resolveMiddleware()
+          },
+        )
+      },
+    )
     if (outgoing.writableEnded) {
       // Mark the Hono context as finalized so the framework doesn't
       // try to emit a second response.
-      c.finalized = true
+      context.finalized = true
       return
     }
     await next()

@@ -1,4 +1,7 @@
-import { spawn, type ChildProcess } from "node:child_process"
+import {
+  type ChildProcess,
+  spawn,
+} from "node:child_process"
 import { setTimeout as delay } from "node:timers/promises"
 
 interface StartStorybookOptions {
@@ -44,7 +47,9 @@ export const startStorybookDev = async (
   )
   const isReachable = async (): Promise<boolean> => {
     try {
-      const response = await fetch(url, { redirect: "manual" })
+      const response = await fetch(url, {
+        redirect: "manual",
+      })
       return response.status < 500
     } catch {
       return false
@@ -52,16 +57,18 @@ export const startStorybookDev = async (
   }
   // Total budget ~30s. Poll every 500 ms.
   const totalAttempts = 60
-  const readyAttempts = Array.from({ length: totalAttempts })
-  const readinessResults = await readyAttempts.reduce<
+  const readyAttempts = Array.from({
+    length: totalAttempts,
+  })
+  const isStorybookReady = await readyAttempts.reduce<
     Promise<boolean>
   >(async (priorWait, _next) => {
-    const wasReady = await priorWait
-    if (wasReady) return true
+    const isReady = await priorWait
+    if (isReady) return true
     await delay(500)
     return isReachable()
   }, Promise.resolve(false))
-  if (!readinessResults) {
+  if (!isStorybookReady) {
     child.kill()
     throw new Error(
       `Storybook dev did not become reachable on ${url} within 30s`,
