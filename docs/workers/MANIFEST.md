@@ -25,7 +25,7 @@ This is the live tracking document for all workers in the Mux-Magic huge revamp.
 |---|---|
 | `tools` | `packages/tools/**` (renamed from `packages/shared/**` in worker 39), root configs, `.github/**`, top-level docs, `AGENTS.md` |
 | `web` | `packages/web/**` only |
-| `srv` | `packages/server/**` only |
+| `srv` | `packages/core/**` + `packages/api/**` (post-worker-2d split; abbreviation kept stable across the rename) |
 | `cli` | `packages/cli/**` (new package created in Phase 2) |
 | `cross` | `Gallery-Downloader` repo (formerly `Media-Sync`) + cross-repo coordination |
 | `infra` | CI, vitest configs, playwright config, ESLint/Biome configs |

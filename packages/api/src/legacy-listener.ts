@@ -1,8 +1,18 @@
+// LEGACY LISTENER BRIDGE
+// ──────────────────────
+// Temporary listener bridge between worker 2d (the core+api split) and
+// worker 29 (single-port front-door at packages/server/). Worker 29
+// introduces a new packages/server/ that owns the `serve()` call and
+// deletes this file. Do not extend this file — any new listener-side
+// concerns belong in worker 29's new packages/server/src/index.ts.
+//
+// `@mux-magic/api` exports the `app` Hono instance (see ./api/hono-routes.ts);
+// that is the supported entry point. This file exists only so prod
+// builds remain runnable between 2d and 29.
+
 import "./loadEnv.js"
 // Banner first — see `logBuildBanner.ts` for why this is a
-// side-effect-only import at the top of the file (so `yarn api-server`
-// gets the same boot banner as `yarn server` without going through
-// `start-servers.ts`).
+// side-effect-only import at the top of the file.
 import "./logBuildBanner.js"
 
 import { serve } from "@hono/node-server"

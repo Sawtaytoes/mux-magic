@@ -54,10 +54,10 @@ and calls `serve()`.
 ## Sequence Runner DSL
 
 External API consumers should read the **Sequence Runner** section of [MANIFEST.md](../../MANIFEST.md) — that's the source of truth for how `paths`, `'@pathId'`, `linkedTo`/`output`, and the `/sequences/run` endpoint compose. The implementation lives in:
-- [src/api/resolveSequenceParams.ts](../../packages/server/src/api/resolveSequenceParams.ts)
-- [src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts)
-- [src/api/routes/sequenceRoutes.ts](../../packages/server/src/api/routes/sequenceRoutes.ts)
-- [src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) — per-command `extractOutputs` / `outputFolderName` / `outputComputation` declarations
+- [src/api/resolveSequenceParams.ts](../../packages/api/src/api/resolveSequenceParams.ts)
+- [src/api/sequenceRunner.ts](../../packages/api/src/api/sequenceRunner.ts)
+- [src/api/routes/sequenceRoutes.ts](../../packages/api/src/api/routes/sequenceRoutes.ts)
+- [src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts) — per-command `extractOutputs` / `outputFolderName` / `outputComputation` declarations
 
 The canonical multi-step example is [examples/process-anime-subtitles.yaml](../../examples/process-anime-subtitles.yaml).
 
