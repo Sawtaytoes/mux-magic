@@ -11,7 +11,7 @@ import type { SequenceItem, Step } from "../../types"
 import { ProgressBar } from "../ProgressBar/ProgressBar"
 
 // Minimum shape of the NSF summary record. The full server type lives
-// at `packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.events.ts`
+// at `packages/api/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.events.ts`
 // — we only narrow the fields we actually read so unrelated server
 // changes don't ripple here.
 type NsfSummaryRecord = {

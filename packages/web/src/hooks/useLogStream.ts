@@ -1,7 +1,7 @@
 ﻿import type {
   JobLogDoneEvent,
   JobLogsEvent,
-} from "@mux-magic/server/api-types"
+} from "@mux-magic/api/api-types"
 import { useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef } from "react"
 import { apiBase } from "../apiBase"

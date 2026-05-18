@@ -22,13 +22,19 @@ vi.mock(
   }),
 )
 
-vi.mock("@mux-magic/core/src/tools/transcodeTempStore.js", () => ({
-  mimeTypeForCodec: (_codec: string) => "video/mp4",
-}))
+vi.mock(
+  "@mux-magic/core/src/tools/transcodeTempStore.js",
+  () => ({
+    mimeTypeForCodec: (_codec: string) => "video/mp4",
+  }),
+)
 
-vi.mock("@mux-magic/core/src/tools/getMediaInfo.js", () => ({
-  getMediaInfo: vi.fn(() => of({ media: { track: [] } })),
-}))
+vi.mock(
+  "@mux-magic/core/src/tools/getMediaInfo.js",
+  () => ({
+    getMediaInfo: vi.fn(() => of({ media: { track: [] } })),
+  }),
+)
 
 import { transcodeRoutes } from "./transcodeRoutes.js"
 

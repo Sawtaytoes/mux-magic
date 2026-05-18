@@ -7,7 +7,7 @@ const generateExternalApiSchemas = () =>
   openapiTS(new URL(tvdbApiSchemaUrl))
     .then((ast) =>
       writeFile(
-        "./packages/server/src/schema.generated/tvdbApiSchema.ts",
+        "./packages/api/src/schema.generated/tvdbApiSchema.ts",
         astToString(ast),
       ),
     )

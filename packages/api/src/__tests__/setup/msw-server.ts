@@ -6,7 +6,7 @@
 // at teardown.
 //
 // Phase 2 ships the harness only — there are no Node tests using MSW
-// yet, and `handlers` from packages/server/src/shared/msw-handlers.ts
+// yet, and `handlers` from packages/api/src/shared/msw-handlers.ts
 // is intentionally empty. The harness loads cleanly so adding the first
 // real test in a future phase is a one-file change.
 

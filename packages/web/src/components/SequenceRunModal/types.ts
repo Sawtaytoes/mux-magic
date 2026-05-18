@@ -1,4 +1,4 @@
-import type { JobStatus } from "@mux-magic/server/api-types"
+import type { JobStatus } from "@mux-magic/api/api-types"
 
 export type ActiveChild = {
   stepId: string

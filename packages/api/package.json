@@ -1,5 +1,5 @@
 {
-  "name": "@mux-magic/server",
+  "name": "@mux-magic/api",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     },
     "./*": "./*"
   },
-  "description": "Hono API server for batch media file operations.",
+  "description": "Hono API routes + OpenAPI config for mux-magic. Wraps @mux-magic/core with the HTTP layer; exports the `app` Hono instance. No listener — worker 29 reintroduces a packages/server/ front-door that owns the listener.",
   "scripts": {
     "build:command-descriptions": "tsx scripts/build-command-descriptions.ts",
     "dev:server": "tsx watch src/server.ts",

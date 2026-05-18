@@ -54,7 +54,7 @@ const IS_HAS_BOOLEAN_RULE = {
   filter: { regex: "^(__|_)", match: false },
 }
 
-// PR #74 aligned web types with @mux-magic/server/api-types. These selectors
+// PR #74 aligned web types with @mux-magic/api/api-types. These selectors
 // block re-introducing local copies of API-shape types in packages/web.
 //
 // Allowlist: add `// eslint-disable-next-line no-restricted-syntax -- <reason>`
@@ -73,13 +73,13 @@ const WEB_API_SHAPE_RULES = [
     selector:
       "TSTypeAliasDeclaration[id.name=/^[A-Z].*(Response|Request|Status|Result|Entry|Payload|Job|Schema)$/]",
     message:
-      "API-shape types must be imported from @mux-magic/server/api-types, not defined locally. See PR #74.",
+      "API-shape types must be imported from @mux-magic/api/api-types, not defined locally. See PR #74.",
   },
   {
     selector:
       "TSInterfaceDeclaration[id.name=/^[A-Z].*(Response|Request|Status|Result|Entry|Payload|Job|Schema)$/]",
     message:
-      "API-shape interfaces must be imported from @mux-magic/server/api-types, not defined locally. See PR #74.",
+      "API-shape interfaces must be imported from @mux-magic/api/api-types, not defined locally. See PR #74.",
   },
 ]
 

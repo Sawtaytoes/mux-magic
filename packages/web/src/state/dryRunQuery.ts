@@ -1,7 +1,7 @@
 // ─── Dry-Run query-string helper + atoms ──────────────────────────────────────
 //
 // The server detects "fake / dry-run" mode via a `?fake=...` query param
-// on the request URL (see packages/server/src/fake-data/index.ts:
+// on the request URL (see packages/api/src/fake-data/index.ts:
 // `isFakeRequest`, `getFakeScenario`). Both the atoms and every fetch
 // URL are driven by this single param:
 //
@@ -106,7 +106,7 @@ export const buildRunFetchUrl = (
   const baseUrl = `${apiBase}${path}`
   if (!inputs.isDryRun) return baseUrl
   // ?fake=success / ?fake=failure parallels the server scenario names
-  // (see packages/server/src/fake-data/scenarios/*). Avoids the older
+  // (see packages/api/src/fake-data/scenarios/*). Avoids the older
   // "?fake=1" alias which leaves readers guessing what 1 means.
   const fakeValue = inputs.isFailureMode
     ? "failure"
