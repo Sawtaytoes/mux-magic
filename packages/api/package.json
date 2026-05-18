@@ -22,7 +22,7 @@
     "generate:internal-api-schemas": "tsx src/generateInternalApiSchemas.ts",
     "generate:screenshots": "tsx scripts/screenshots.ts",
     "generate:seed-anidb-fixtures": "tsx scripts/seedAnidbFixtures.ts",
-    "test": "vitest",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

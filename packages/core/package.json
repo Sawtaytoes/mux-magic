@@ -8,7 +8,7 @@
   },
   "description": "Pure mux-magic domain logic — app-commands, tool helpers, CLI spawn operations, and types. No HTTP framework deps.",
   "scripts": {
-    "test": "vitest",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
