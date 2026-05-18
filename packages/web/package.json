@@ -17,7 +17,7 @@
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006 --config-dir .storybook",
     "test:storybook": "vitest run --config vitest.storybook.config.ts",
-    "test": "vitest run",
+    "test": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -6,7 +6,7 @@
   "description": "Mux-Magic command-line interface (yargs adapters on top of @mux-magic/api's app-commands).",
   "scripts": {
     "cli": "tsx src/cli.ts",
-    "test": "vitest run",
+    "test": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
