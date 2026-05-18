@@ -52,9 +52,9 @@ afterEach(() => {
   __setTemplateStoreForTests(null)
 })
 
-describe("GET /api/templates", () => {
+describe("GET /templates", () => {
   test("returns an empty list initially", async () => {
-    const response = await get("/api/templates")
+    const response = await get("/templates")
     expect(response.status).toBe(200)
     const body = (await response.json()) as {
       templates: unknown[]
@@ -63,9 +63,9 @@ describe("GET /api/templates", () => {
   })
 })
 
-describe("POST /api/templates", () => {
+describe("POST /templates", () => {
   test("creates a template, returns 201 with full body + slug id", async () => {
-    const response = await postJson("/api/templates", {
+    const response = await postJson("/templates", {
       name: "Movie Workflow",
       description: "First pass",
       yaml: SAMPLE_YAML,
@@ -87,11 +87,11 @@ describe("POST /api/templates", () => {
   })
 
   test("collision: second POST with same name gets a -2 suffix", async () => {
-    await postJson("/api/templates", {
+    await postJson("/templates", {
       name: "Movie Workflow",
       yaml: SAMPLE_YAML,
     })
-    const second = await postJson("/api/templates", {
+    const second = await postJson("/templates", {
       name: "Movie Workflow",
       yaml: SAMPLE_YAML,
     })
@@ -101,7 +101,7 @@ describe("POST /api/templates", () => {
   })
 
   test("rejects invalid YAML with 400 + error: invalid yaml + details", async () => {
-    const response = await postJson("/api/templates", {
+    const response = await postJson("/templates", {
       name: "Bad",
       yaml: "just a scalar",
     })
@@ -116,7 +116,7 @@ describe("POST /api/templates", () => {
   })
 
   test("rejects empty name via zod validation (400)", async () => {
-    const response = await postJson("/api/templates", {
+    const response = await postJson("/templates", {
       name: "",
       yaml: SAMPLE_YAML,
     })
@@ -124,9 +124,9 @@ describe("POST /api/templates", () => {
   })
 })
 
-describe("GET /api/templates/:id", () => {
+describe("GET /templates/:id", () => {
   test("returns 404 for an unknown id", async () => {
-    const response = await get("/api/templates/nope")
+    const response = await get("/templates/nope")
     expect(response.status).toBe(404)
     const body = (await response.json()) as {
       error: string
@@ -135,13 +135,11 @@ describe("GET /api/templates/:id", () => {
   })
 
   test("returns the full template after create", async () => {
-    await postJson("/api/templates", {
+    await postJson("/templates", {
       name: "Movie Workflow",
       yaml: SAMPLE_YAML,
     })
-    const response = await get(
-      "/api/templates/movie-workflow",
-    )
+    const response = await get("/templates/movie-workflow")
     expect(response.status).toBe(200)
     const body = (await response.json()) as {
       id: string
@@ -152,17 +150,17 @@ describe("GET /api/templates/:id", () => {
   })
 })
 
-describe("PUT /api/templates/:id", () => {
+describe("PUT /templates/:id", () => {
   test("updates name + description + yaml; bumps updatedAt", async () => {
     const created = (await (
-      await postJson("/api/templates", {
+      await postJson("/templates", {
         name: "Movie Workflow",
         yaml: SAMPLE_YAML,
       })
     ).json()) as { id: string; updatedAt: string }
     await new Promise((resolve) => setTimeout(resolve, 5))
     const response = await putJson(
-      `/api/templates/${created.id}`,
+      `/templates/${created.id}`,
       {
         name: "Renamed",
         description: "now described",
@@ -185,19 +183,19 @@ describe("PUT /api/templates/:id", () => {
   })
 
   test("returns 404 for an unknown id", async () => {
-    const response = await putJson("/api/templates/nope", {
+    const response = await putJson("/templates/nope", {
       yaml: SAMPLE_YAML,
     })
     expect(response.status).toBe(404)
   })
 
   test("rejects invalid YAML with 400", async () => {
-    await postJson("/api/templates", {
+    await postJson("/templates", {
       name: "Movie Workflow",
       yaml: SAMPLE_YAML,
     })
     const response = await putJson(
-      "/api/templates/movie-workflow",
+      "/templates/movie-workflow",
       { yaml: "scalar" },
     )
     expect(response.status).toBe(400)
@@ -208,24 +206,22 @@ describe("PUT /api/templates/:id", () => {
   })
 })
 
-describe("DELETE /api/templates/:id", () => {
+describe("DELETE /templates/:id", () => {
   test("returns 204 on success; second delete is 404", async () => {
-    await postJson("/api/templates", {
+    await postJson("/templates", {
       name: "Movie Workflow",
       yaml: SAMPLE_YAML,
     })
-    const first = await del("/api/templates/movie-workflow")
+    const first = await del("/templates/movie-workflow")
     expect(first.status).toBe(204)
-    const second = await del(
-      "/api/templates/movie-workflow",
-    )
+    const second = await del("/templates/movie-workflow")
     expect(second.status).toBe(404)
   })
 })
 
 describe("full round-trip", () => {
   test("POST → GET list → GET id → PUT → DELETE → GET id 404", async () => {
-    const create = await postJson("/api/templates", {
+    const create = await postJson("/templates", {
       name: "Movie Workflow",
       yaml: SAMPLE_YAML,
     })
@@ -233,24 +229,24 @@ describe("full round-trip", () => {
     const { id } = (await create.json()) as { id: string }
 
     const list = (await (
-      await get("/api/templates")
+      await get("/templates")
     ).json()) as { templates: { id: string }[] }
     expect(
       list.templates.map((template) => template.id),
     ).toContain(id)
 
-    const fetched = await get(`/api/templates/${id}`)
+    const fetched = await get(`/templates/${id}`)
     expect(fetched.status).toBe(200)
 
-    const updated = await putJson(`/api/templates/${id}`, {
+    const updated = await putJson(`/templates/${id}`, {
       yaml: "steps: []\n",
     })
     expect(updated.status).toBe(200)
 
-    const deleted = await del(`/api/templates/${id}`)
+    const deleted = await del(`/templates/${id}`)
     expect(deleted.status).toBe(204)
 
-    const after = await get(`/api/templates/${id}`)
+    const after = await get(`/templates/${id}`)
     expect(after.status).toBe(404)
   })
 })

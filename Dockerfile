@@ -8,7 +8,6 @@ ENV LC_ALL=en_US.UTF-8
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV WEB_PORT=4173
 
 RUN log() { echo "[$(date +"%Y-%m-%d %H:%M:%S")] $1"; };
 
@@ -58,16 +57,16 @@ ARG BUILD_TIME
 ENV GIT_SHA=$GIT_SHA
 ENV BUILD_TIME=$BUILD_TIME
 
-# Pre-build everything the runtime needs into static artifacts so the
-# container can boot with plain `node` instead of `yarn → corepack →
-# yarn workspace → tsx`. Drops ~800 MB of wrapper-process RSS at idle.
-# Includes:
+# Pre-build everything the runtime needs into a single esbuild bundle so
+# the container can boot with plain `node` instead of `yarn → corepack →
+# yarn workspace → tsx`. Worker 29 collapsed the two-process layout into
+# a single front-door at packages/server/, so build:prod produces:
 #   - public/api/version.json (build identity)
 #   - command-descriptions.js (tooltip text for the UI)
 #   - packages/web/dist/ (vite SPA build)
-#   - packages/api/dist/legacy-listener.mjs (esbuild bundle of the API listener;
-#     worker 29 replaces this with a packages/server/dist bundle)
-#   - packages/web/dist-server/server.mjs (esbuild bundle of the static-file server)
+#   - packages/server/dist/index.js (esbuild bundle of the front-door,
+#     with createRequire banner for tree-kill / child_process and
+#     external sourcemaps so prod stack traces resolve to .ts)
 RUN yarn build:prod
 
 # Playwright Chromium binary + the matching apt-level system libs
@@ -77,9 +76,10 @@ RUN yarn build:prod
 RUN yarn install-playwright-browser --with-deps chromium
 
 EXPOSE $PORT
-EXPOSE $WEB_PORT
 
-# Direct-spawn orchestrator: bypasses yarn/corepack/concurrently/tsx
-# entirely. The container holds 3 Node processes (orchestrator + API +
-# web) instead of ~18 in the wrapper tower. See scripts/start-prod.cjs.
-CMD ["node", "scripts/start-prod.cjs"]
+# Single process. Node is PID 1 in the container; Docker's signal handling
+# (use `docker run --init` or the orchestrator's `init: true` to install
+# a minimal init like tini) propagates SIGTERM/SIGINT directly to Node so
+# the previous start-prod.cjs orchestrator with its 5s SIGTERM ceiling is
+# no longer needed.
+CMD ["node", "--enable-source-maps", "packages/server/dist/index.js"]
