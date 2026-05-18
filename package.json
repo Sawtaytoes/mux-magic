@@ -9,9 +9,9 @@
   "scripts": {
     "build:command-descriptions": "yarn workspace @mux-magic/server build:command-descriptions",
     "build:prod": "yarn build:version && yarn build:command-descriptions && yarn build:web-static && yarn build:server-bundle && yarn build:web-server-bundle",
-    "build:server-bundle": "esbuild --format=esm --bundle --platform=node --external:./xhr-sync-worker.js \"--external:chromium-bidi/*\" --external:playwright --external:playwright-core --outfile=packages/server/dist/server.mjs packages/server/src/server.ts",
+    "build:server-bundle": "esbuild --format=esm --bundle --platform=node \"--banner:js=import{createRequire}from'node:module';const require=createRequire(import.meta.url);\" --external:./xhr-sync-worker.js \"--external:chromium-bidi/*\" --external:playwright --external:playwright-core --outfile=packages/server/dist/server.mjs packages/server/src/server.ts",
     "build:version": "node scripts/build-version.cjs",
-    "build:web-server-bundle": "esbuild --format=esm --bundle --platform=node --outfile=packages/web/dist-server/server.mjs packages/web/src/server.ts",
+    "build:web-server-bundle": "esbuild --format=esm --bundle --platform=node \"--banner:js=import{createRequire}from'node:module';const require=createRequire(import.meta.url);\" --outfile=packages/web/dist-server/server.mjs packages/web/src/server.ts",
     "build:web-static": "yarn workspace @mux-magic/web build",
     "cli-app:build": "rimraf build/ && esbuild --format=cjs --minify --bundle --platform=node --external:./xhr-sync-worker.js \"--external:chromium-bidi/*\" --outfile=build/mux-magic.cjs packages/cli/src/cli.ts",
     "cli-app:copy-assets": "rimraf dist/assets && mkdir 'dist/assets' && npx cpx2 'assets/**/*' dist/assets/",
