@@ -1,3 +1,11 @@
+import {
+  getJob,
+  resetStore,
+} from "@mux-magic/core/src/api/jobStore.js"
+import {
+  installLogCapture,
+  uninstallLogCapture,
+} from "@mux-magic/core/src/api/logCapture.js"
 import { vol } from "memfs"
 import {
   afterAll,
@@ -7,11 +15,6 @@ import {
   expect,
   test,
 } from "vitest"
-import { getJob, resetStore } from "../jobStore.js"
-import {
-  installLogCapture,
-  uninstallLogCapture,
-} from "../logCapture.js"
 import { commandRoutes } from "./commandRoutes.js"
 
 // ─── L3 server-side guard for /commands/:name dry-run safety ────────────────

@@ -5,6 +5,19 @@ import { extname } from "node:path"
 import { Readable } from "node:stream"
 
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
+import {
+  deleteFiles,
+  getDeleteMode,
+  getEffectiveDeleteMode,
+} from "@mux-magic/core/src/tools/deleteFiles.js"
+import { getMediaInfo } from "@mux-magic/core/src/tools/getMediaInfo.js"
+import { isNetworkPath } from "@mux-magic/core/src/tools/isNetworkPath.js"
+import { listFilesWithMetadata } from "@mux-magic/core/src/tools/listFilesWithMetadata.js"
+import { openInExternalApp } from "@mux-magic/core/src/tools/openInExternalApp.js"
+import {
+  PathSafetyError,
+  validateReadablePath,
+} from "@mux-magic/core/src/tools/pathSafety.js"
 import { renameFileOrFolder } from "@mux-magic/tools"
 import { firstValueFrom, lastValueFrom } from "rxjs"
 import {
@@ -15,19 +28,6 @@ import {
   getFakeScenario,
   isFakeRequest,
 } from "../../fake-data/index.js"
-import {
-  deleteFiles,
-  getDeleteMode,
-  getEffectiveDeleteMode,
-} from "../../tools/deleteFiles.js"
-import { getMediaInfo } from "../../tools/getMediaInfo.js"
-import { isNetworkPath } from "../../tools/isNetworkPath.js"
-import { listFilesWithMetadata } from "../../tools/listFilesWithMetadata.js"
-import { openInExternalApp } from "../../tools/openInExternalApp.js"
-import {
-  PathSafetyError,
-  validateReadablePath,
-} from "../../tools/pathSafety.js"
 import * as schemas from "../schemas.js"
 
 export const fileRoutes = new OpenAPIHono()

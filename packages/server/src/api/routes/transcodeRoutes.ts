@@ -3,6 +3,18 @@ import { tmpdir } from "node:os"
 import { Readable } from "node:stream"
 
 import { OpenAPIHono } from "@hono/zod-openapi"
+import { buildFfmpegArgs } from "@mux-magic/core/src/cli-spawn-operations/runFfmpegAudioTranscode.js"
+import { ffmpegPath } from "@mux-magic/core/src/tools/appPaths.js"
+import { getMediaInfo } from "@mux-magic/core/src/tools/getMediaInfo.js"
+import {
+  PathSafetyError,
+  validateReadablePath,
+} from "@mux-magic/core/src/tools/pathSafety.js"
+import {
+  mimeTypeForCodec,
+  type TranscodeCacheKey,
+  type TranscodeCodec,
+} from "@mux-magic/core/src/tools/transcodeTempStore.js"
 import { logWarning } from "@mux-magic/tools"
 import {
   firstValueFrom,
@@ -10,19 +22,6 @@ import {
   Observable,
   Subject,
 } from "rxjs"
-
-import { buildFfmpegArgs } from "../../cli-spawn-operations/runFfmpegAudioTranscode.js"
-import { ffmpegPath } from "../../tools/appPaths.js"
-import { getMediaInfo } from "../../tools/getMediaInfo.js"
-import {
-  PathSafetyError,
-  validateReadablePath,
-} from "../../tools/pathSafety.js"
-import {
-  mimeTypeForCodec,
-  type TranscodeCacheKey,
-  type TranscodeCodec,
-} from "../../tools/transcodeTempStore.js"
 
 // Browser-safe audio playback endpoint. Pairs with the file-explorer
 // modal's auto-swap (when the source's audio codec isn't decodable in

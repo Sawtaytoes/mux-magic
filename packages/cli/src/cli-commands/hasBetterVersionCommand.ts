@@ -1,5 +1,5 @@
-import { hasBetterVersion } from "@mux-magic/server/src/app-commands/hasBetterVersion.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import { hasBetterVersion } from "@mux-magic/core/src/app-commands/hasBetterVersion.js"
+import { subscribeCli } from "@mux-magic/core/src/tools/subscribeCli.js"
 import type {
   Argv,
   CommandBuilder,

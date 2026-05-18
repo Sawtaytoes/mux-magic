@@ -1,5 +1,5 @@
-import { replaceAttachments } from "@mux-magic/server/src/app-commands/replaceAttachments.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+import { replaceAttachments } from "@mux-magic/core/src/app-commands/replaceAttachments.js"
+import { subscribeCli } from "@mux-magic/core/src/tools/subscribeCli.js"
 import type {
   Argv,
   CommandBuilder,

@@ -2,8 +2,8 @@ import {
   FALLBACK_INTRO_FILENAME,
   FALLBACK_OUTRO_FILENAME,
   mergeOrderedChapters,
-} from "@mux-magic/server/src/app-commands/mergeOrderedChapters.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+} from "@mux-magic/core/src/app-commands/mergeOrderedChapters.js"
+import { subscribeCli } from "@mux-magic/core/src/tools/subscribeCli.js"
 import type {
   Argv,
   CommandBuilder,

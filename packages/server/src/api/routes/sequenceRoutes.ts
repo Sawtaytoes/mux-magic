@@ -3,13 +3,12 @@ import {
   OpenAPIHono,
   z,
 } from "@hono/zod-openapi"
+import { createJob } from "@mux-magic/core/src/api/jobStore.js"
 import yaml from "js-yaml"
-
 import {
   getFakeScenario,
   isFakeRequest,
 } from "../../fake-data/index.js"
-import { createJob } from "../jobStore.js"
 import {
   runSequenceJob,
   type SequenceBody,

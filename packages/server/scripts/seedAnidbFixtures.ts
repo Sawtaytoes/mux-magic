@@ -19,11 +19,10 @@
 import { copyFile, mkdir } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-
+import { loadAnimeIndex } from "@mux-magic/core/src/tools/animeOfflineDatabase.js"
+import { getAnidbCacheDir } from "@mux-magic/core/src/tools/getAnidbCacheDir.js"
+import { lookupAnidbById } from "@mux-magic/core/src/tools/searchAnidb.js"
 import { firstValueFrom } from "rxjs"
-import { loadAnimeIndex } from "../src/tools/animeOfflineDatabase.js"
-import { getAnidbCacheDir } from "../src/tools/getAnidbCacheDir.js"
-import { lookupAnidbById } from "../src/tools/searchAnidb.js"
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const FIXTURES_DIR = join(

@@ -1,3 +1,10 @@
+import {
+  cancelJob,
+  createJob,
+  getJob,
+  resetStore,
+} from "@mux-magic/core/src/api/jobStore.js"
+import * as webhookReporter from "@mux-magic/core/src/tools/webhookReporter.js"
 import { logAndRethrowPipelineError } from "@mux-magic/tools"
 import { of, Subject, throwError } from "rxjs"
 import {
@@ -7,14 +14,7 @@ import {
   test,
   vi,
 } from "vitest"
-import * as webhookReporter from "../tools/webhookReporter.js"
 import { runJob } from "./jobRunner.js"
-import {
-  cancelJob,
-  createJob,
-  getJob,
-  resetStore,
-} from "./jobStore.js"
 
 // runJob is async in effect (RxJS subscriptions resolve on the microtask queue).
 const flushMicrotasks = () =>

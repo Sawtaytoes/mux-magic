@@ -1,12 +1,39 @@
 import { sep as pathSeparator } from "node:path"
 
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
+import { getSubtitleMetadata } from "@mux-magic/core/src/app-commands/getSubtitleMetadata.js"
+import {
+  PathSafetyError,
+  validateReadablePath,
+} from "@mux-magic/core/src/tools/pathSafety.js"
+import {
+  lookupAnidbById,
+  pickAnidbSeriesName,
+  searchAnidb,
+} from "@mux-magic/core/src/tools/searchAnidb.js"
+import {
+  findDvdCompareResults,
+  listDvdCompareReleases,
+  lookupDvdCompareFilm,
+  lookupDvdCompareRelease,
+} from "@mux-magic/core/src/tools/searchDvdCompare.js"
+import {
+  lookupMalById,
+  searchMal,
+} from "@mux-magic/core/src/tools/searchMal.js"
+import {
+  lookupMovieDbById,
+  searchMovieDb,
+} from "@mux-magic/core/src/tools/searchMovieDb.js"
+import {
+  lookupTvdbById,
+  searchTvdb,
+} from "@mux-magic/core/src/tools/searchTvdb.js"
 import {
   listDirectoryEntries,
   logError,
 } from "@mux-magic/tools"
 import { lastValueFrom } from "rxjs"
-import { getSubtitleMetadata } from "../../app-commands/getSubtitleMetadata.js"
 import {
   fakeGetSubtitleMetadata,
   fakeLabelLookup,
@@ -20,33 +47,6 @@ import {
   fakeSearchTvdb,
   isFakeRequest,
 } from "../../fake-data/index.js"
-import {
-  PathSafetyError,
-  validateReadablePath,
-} from "../../tools/pathSafety.js"
-import {
-  lookupAnidbById,
-  pickAnidbSeriesName,
-  searchAnidb,
-} from "../../tools/searchAnidb.js"
-import {
-  findDvdCompareResults,
-  listDvdCompareReleases,
-  lookupDvdCompareFilm,
-  lookupDvdCompareRelease,
-} from "../../tools/searchDvdCompare.js"
-import {
-  lookupMalById,
-  searchMal,
-} from "../../tools/searchMal.js"
-import {
-  lookupMovieDbById,
-  searchMovieDb,
-} from "../../tools/searchMovieDb.js"
-import {
-  lookupTvdbById,
-  searchTvdb,
-} from "../../tools/searchTvdb.js"
 import * as schemas from "../schemas.js"
 
 export const queryRoutes = new OpenAPIHono()

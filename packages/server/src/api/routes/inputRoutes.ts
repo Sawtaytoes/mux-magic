@@ -3,9 +3,8 @@ import {
   OpenAPIHono,
   z,
 } from "@hono/zod-openapi"
-
+import { resolvePrompt } from "@mux-magic/core/src/api/promptStore.js"
 import { isFakeRequest } from "../../fake-data/index.js"
-import { resolvePrompt } from "../promptStore.js"
 import { jobNotFoundSchema } from "../schemas.js"
 
 export const inputRoutes = new OpenAPIHono()

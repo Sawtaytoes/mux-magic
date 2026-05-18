@@ -1,3 +1,4 @@
+import { withJobContext } from "@mux-magic/core/src/api/logCapture.js"
 import {
   afterEach,
   describe,
@@ -5,8 +6,6 @@ import {
   test,
   vi,
 } from "vitest"
-
-import { withJobContext } from "../api/logCapture.js"
 import { commandNames } from "../api/routes/commandRoutes.js"
 import {
   getEffectiveCommandConfigs,

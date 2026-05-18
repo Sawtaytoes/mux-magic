@@ -1,5 +1,15 @@
 import { mkdir } from "node:fs/promises"
-
+import {
+  __resetDeliveryDepsForTests,
+  __setDeliveryDepsForTests,
+  cancelAllScheduledDeliveriesForTests,
+} from "@mux-magic/core/src/api/jobErrorDeliveryQueue.js"
+import {
+  __resetJobErrorStoreForTests,
+  addJobError,
+  getJobError,
+  type PersistedJobError,
+} from "@mux-magic/core/src/api/jobErrorStore.js"
 import {
   afterEach,
   beforeEach,
@@ -8,18 +18,6 @@ import {
   test,
   vi,
 } from "vitest"
-
-import {
-  __resetDeliveryDepsForTests,
-  __setDeliveryDepsForTests,
-  cancelAllScheduledDeliveriesForTests,
-} from "../jobErrorDeliveryQueue.js"
-import {
-  __resetJobErrorStoreForTests,
-  addJobError,
-  getJobError,
-  type PersistedJobError,
-} from "../jobErrorStore.js"
 import { errorRoutes } from "./errorRoutes.js"
 
 const storePath = "/test-error-routes/job-errors.json"

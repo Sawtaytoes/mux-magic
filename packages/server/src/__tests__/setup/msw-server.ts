@@ -10,10 +10,9 @@
 // is intentionally empty. The harness loads cleanly so adding the first
 // real test in a future phase is a one-file change.
 
+import { handlers } from "@mux-magic/core/src/shared/msw-handlers.js"
 import { setupServer } from "msw/node"
 import { afterAll, afterEach, beforeAll } from "vitest"
-
-import { handlers } from "../../shared/msw-handlers.js"
 
 export const server = setupServer(...handlers)
 

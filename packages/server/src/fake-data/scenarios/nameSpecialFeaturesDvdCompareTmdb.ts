@@ -1,3 +1,6 @@
+import { emitJobEvent } from "@mux-magic/core/src/api/jobStore.js"
+import { getActiveJobId } from "@mux-magic/core/src/api/logCapture.js"
+import { getUserSearchInput } from "@mux-magic/core/src/tools/getUserSearchInput.js"
 import { logInfo } from "@mux-magic/tools"
 import {
   concat,
@@ -7,9 +10,6 @@ import {
   of,
   timer,
 } from "rxjs"
-import { emitJobEvent } from "../../api/jobStore.js"
-import { getActiveJobId } from "../../api/logCapture.js"
-import { getUserSearchInput } from "../../tools/getUserSearchInput.js"
 
 const pause = (ms: number): Observable<never> =>
   timer(ms).pipe(ignoreElements()) as Observable<never>

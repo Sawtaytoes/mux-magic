@@ -15,11 +15,11 @@ import {
 // Mock getMediaInfo BEFORE importing the route module so the route's
 // `import { getMediaInfo }` resolves to our mock. Hoisted by vitest, so
 // this affects every test in this file regardless of declaration order.
-vi.mock("../../tools/getMediaInfo.js", () => ({
+vi.mock("@mux-magic/core/src/tools/getMediaInfo.js", () => ({
   getMediaInfo: vi.fn(),
 }))
 
-import { getMediaInfo } from "../../tools/getMediaInfo.js"
+import { getMediaInfo } from "@mux-magic/core/src/tools/getMediaInfo.js"
 import { fileRoutes } from "./fileRoutes.js"
 
 // Hono in-process tests for the file routes. Filesystem ops are routed

@@ -1,9 +1,9 @@
-import { replaceTracks } from "@mux-magic/server/src/app-commands/replaceTracks.js"
+import { replaceTracks } from "@mux-magic/core/src/app-commands/replaceTracks.js"
 import {
   type Iso6392LanguageCode,
   iso6392LanguageCodes,
-} from "@mux-magic/server/src/tools/iso6392LanguageCodes.js"
-import { subscribeCli } from "@mux-magic/server/src/tools/subscribeCli.js"
+} from "@mux-magic/core/src/tools/iso6392LanguageCodes.js"
+import { subscribeCli } from "@mux-magic/core/src/tools/subscribeCli.js"
 import type {
   Argv,
   CommandBuilder,

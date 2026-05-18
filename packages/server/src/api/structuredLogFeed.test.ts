@@ -1,3 +1,10 @@
+import * as jobStore from "@mux-magic/core/src/api/jobStore.js"
+import {
+  installLogBridge,
+  installLogCapture,
+  uninstallLogBridge,
+  uninstallLogCapture,
+} from "@mux-magic/core/src/api/logCapture.js"
 import {
   __resetLoggingModeForTests,
   __resetLogSinksForTests,
@@ -14,15 +21,7 @@ import {
   expect,
   test,
 } from "vitest"
-
 import { app } from "./hono-routes.js"
-import * as jobStore from "./jobStore.js"
-import {
-  installLogBridge,
-  installLogCapture,
-  uninstallLogBridge,
-  uninstallLogCapture,
-} from "./logCapture.js"
 import { sequenceRoutes } from "./routes/sequenceRoutes.js"
 
 // Mirror server.ts boot: install the console patch AND the structured-
