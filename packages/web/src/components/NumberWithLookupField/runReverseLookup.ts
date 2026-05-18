@@ -15,7 +15,7 @@ import type {
   LookupTvdbRequest,
   NameLookupResponse,
   SearchMovieDbResponse,
-} from "@mux-magic/server/api-types"
+} from "@mux-magic/api/api-types"
 import { apiBase } from "../../apiBase"
 import type { LookupType } from "../LookupModal/types"
 

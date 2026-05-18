@@ -13,7 +13,7 @@ import {
 //
 // Ports come from process.env (shell / CI workflow) first, falling back
 // to .env if present, then to the same defaults as
-// packages/server/src/tools/envVars.ts. Node's loadEnvFile won't
+// packages/api/src/tools/envVars.ts. Node's loadEnvFile won't
 // overwrite a process.env value that's already set, so shell wins.
 //
 // To run interactively: `yarn e2e:ui`. CI / one-shot: `yarn e2e`.

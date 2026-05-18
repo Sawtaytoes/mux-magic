@@ -6,7 +6,7 @@
 //   - lookupModalAtom (post-uiAtoms split)
 //
 // Canonical data shapes (LookupSearchResult, LookupType, LookupRelease) live
-// on the server via @mux-magic/server/api-types — re-exported here so
+// on the server via @mux-magic/api/api-types — re-exported here so
 // component imports stay path-stable. Web-side synthesis types (LookupVariant,
 // LookupGroup) and UI state shapes (LookupStage, LookupState) stay local.
 
@@ -14,7 +14,7 @@ import type {
   LookupRelease,
   LookupSearchResult,
   LookupType,
-} from "@mux-magic/server/api-types"
+} from "@mux-magic/api/api-types"
 
 export type {
   LookupRelease,

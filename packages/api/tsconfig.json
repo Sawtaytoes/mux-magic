@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true
+  },
+  "include": [
+    "src/**/*",
+    "scripts/**/*",
+    "vitest.config.ts",
+    "vitest.setup.ts",
+    "../core/src/environment.d.ts",
+    "../core/src/mal-scraper.d.ts",
+    "../core/src/reset.d.ts"
+  ]
+}

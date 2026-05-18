@@ -42,7 +42,7 @@ Worker 58 / Part B ported this modal from the v1.0.0 legacy `packages/web/public
 
 ## Server endpoint
 
-`POST /files/rename` body `{ oldPath, newPath }` — single-file rename. The route at `packages/server/src/api/routes/fileRoutes.ts:359` validates both paths for absolute / no-traversal safety and aborts if `newPath` already exists (so the user can't silently overwrite by misclicking).
+`POST /files/rename` body `{ oldPath, newPath }` — single-file rename. The route at `packages/api/src/api/routes/fileRoutes.ts:359` validates both paths for absolute / no-traversal safety and aborts if `newPath` already exists (so the user can't silently overwrite by misclicking).
 
 ## All high confidence
 

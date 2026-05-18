@@ -1,0 +1,37 @@
+{
+  "name": "@mux-magic/core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./*"
+  },
+  "description": "Pure mux-magic domain logic — app-commands, tool helpers, CLI spawn operations, and types. No HTTP framework deps.",
+  "scripts": {
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mux-magic/tools": "workspace:*",
+    "ansi-colors": "^4.1.3",
+    "chalk": "^5.6.2",
+    "cli-progress": "^3.12.0",
+    "fast-xml-parser": "^5.7.3",
+    "jsdom": "^29.1.1",
+    "mal-scraper": "patch:mal-scraper@npm%3A2.13.2#~/.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch",
+    "memfs": "^4.57.2",
+    "openapi-fetch": "^0.17.0",
+    "rxjs": "^7.8.2",
+    "trash": "^10.1.1",
+    "tree-kill": "^1.2.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/cli-progress": "^3.11.6",
+    "@types/jsdom": "^28.0.1",
+    "msw": "^2.14.5",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  }
+}
