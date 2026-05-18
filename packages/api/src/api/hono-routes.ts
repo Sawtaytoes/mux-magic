@@ -19,12 +19,13 @@ import { versionRoutes } from "./routes/versionRoutes.js"
 
 export const app = new OpenAPIHono()
 
-// CORS: mux-magic is a single-user local tool. The web UI and api can
-// run in the same process or as two processes on adjacent ports; in
-// either case requests are local. An `*` allow-list keeps the local
-// flow working when `window.__API_BASE__` injects an absolute api URL
-// (e.g. when serving the SPA from a sibling host). Tighten this if the
-// deployment posture ever changes to a public surface.
+// CORS: mux-magic is a single-user local tool. After worker 29 the SPA
+// and the API are same-origin (one Hono front-door, /api/* mounts this
+// sub-app), so CORS is effectively a no-op in normal use. The reflect-
+// origin allow-list stays as a safety net for direct-API consumers
+// (curl, Home Assistant, openapi clients on other hosts) that hit /api
+// across origins. Tighten if the deployment posture ever changes to a
+// multi-tenant public surface.
 app.use(
   "*",
   cors({

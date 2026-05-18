@@ -1,11 +1,8 @@
-// API base URL for all fetch calls. Always absolute so dev and prod
-// behave the same — no Vite proxy, no same-origin assumption.
-//
-// Resolution order:
-// 1. `window.__API_BASE__` — injected by packages/web/src/server.ts at
-//    request time when REMOTE_SERVER_URL is set in the web server's env
-//    (and by Playwright's webServer config during e2e).
-// 2. `http://localhost:3000` — the Hono API server's default port. Used
-//    by `vite dev` where no server injects the global.
-export const apiBase: string =
-  window.__API_BASE__ ?? "http://localhost:3000"
+// Relative API base for every fetch in the web app. The front-door
+// server (packages/server/, worker 29) hosts the SPA and the API on
+// the same origin, so this is always relative — there is no longer a
+// `window.__API_BASE__` injection step and no localhost fallback. If a
+// future deployment needs to point the SPA at a different API host,
+// re-introduce a build-time env var injection in the Vite config
+// rather than reviving runtime HTML mutation.
+export const apiBase = "/api"

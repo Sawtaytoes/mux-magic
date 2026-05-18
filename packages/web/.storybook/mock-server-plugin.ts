@@ -290,9 +290,15 @@ export const mockServerPlugin = (): Plugin => ({
   configureServer(server) {
     server.middlewares.use(async (req, res, next) => {
       const method = (req.method ?? "GET").toUpperCase()
+      // Worker 29 changed `apiBase` in the SPA to `/api`, so every
+      // story request now arrives here as `/api/...`. Strip the prefix
+      // before matching so the route table can stay rooted at `/`.
+      const rawUrl = req.url ?? "/"
+      const normalizedUrl =
+        rawUrl.replace(/^\/api(?=\/|$)/, "") || "/"
       for (const route of routes) {
         if (route.method !== method) continue
-        const params = matchPath(route.path, req.url ?? "/")
+        const params = matchPath(route.path, normalizedUrl)
         if (params === null) continue
         try {
           await route.handler(req, res, params)

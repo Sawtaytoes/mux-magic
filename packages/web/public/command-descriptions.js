@@ -151,6 +151,12 @@ window.commandDescriptions = {
       "confirm": "Required: pass --confirm to acknowledge this is destructive. Without it the command refuses to run."
     }
   },
+  "exitIfEmpty": {
+    "summary": "Exit the umbrella sequence cleanly (status: exited) if sourcePath does not exist or contains zero entries. No-op if the folder has any contents.",
+    "fields": {
+      "sourcePath": "Directory path whose emptiness gates whether the sequence continues. The step emits `isExiting: true` (causing the umbrella sequence job to end with status `exited`) when the path either does not exist or exists but contains zero entries. Otherwise emits `isExiting: false` and the sequence continues."
+    }
+  },
   "modifySubtitleMetadata": {
     "summary": "Apply DSL-driven modifications to ASS subtitle metadata. Set hasDefaultRules:true to prepend the in-tree default-rules heuristic.",
     "fields": {

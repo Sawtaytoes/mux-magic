@@ -1,0 +1,30 @@
+{
+  "name": "@mux-magic/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./*"
+  },
+  "description": "Single-port Hono front-door for mux-magic. Owns the `serve()` call; mounts @mux-magic/api at /api, hosts the Vite SPA at / (middleware mode in dev, serveStatic in prod), and serves Storybook at /storybook. Replaces the previous two-process (API + tiny static file server) layout.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.2",
+    "@mux-magic/api": "workspace:*",
+    "@mux-magic/core": "workspace:*",
+    "@mux-magic/tools": "workspace:*",
+    "@mux-magic/web": "workspace:*",
+    "hono": "^4.12.18",
+    "vite": "^8.0.11"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  }
+}
