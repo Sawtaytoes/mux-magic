@@ -1,4 +1,4 @@
-import { cpus } from "node:os"
+import { availableParallelism } from "node:os"
 
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import { z } from "zod"
@@ -14,7 +14,7 @@ const systemThreadsSchema = z.object({
     .int()
     .positive()
     .describe(
-      "Resolved MAX_THREADS — the hard ceiling on concurrent task slots across all jobs. Defaults to os.cpus().length when MAX_THREADS is unset or zero.",
+      "Resolved MAX_THREADS — the hard ceiling on concurrent task slots across all jobs. Defaults to os.availableParallelism() when MAX_THREADS is unset or zero.",
     ),
   defaultThreadCount: z
     .number()
@@ -28,7 +28,7 @@ const systemThreadsSchema = z.object({
     .int()
     .positive()
     .describe(
-      "os.cpus().length — informational; the raw CPU count that maxThreads defaults to when MAX_THREADS is unset.",
+      "os.availableParallelism() — informational; the parallelism the OS reports as available to this process (honors cgroup/CPU-affinity limits), which maxThreads defaults to when MAX_THREADS is unset.",
     ),
 })
 
@@ -58,7 +58,7 @@ systemRoutes.openapi(
       {
         maxThreads: resolveMaxThreads(),
         defaultThreadCount: resolveDefaultThreadCount(),
-        totalCpus: cpus().length,
+        totalCpus: availableParallelism(),
       },
       200,
     ),

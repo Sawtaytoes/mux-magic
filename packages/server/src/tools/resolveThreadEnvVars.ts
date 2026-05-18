@@ -1,7 +1,7 @@
-import { cpus } from "node:os"
+import { availableParallelism } from "node:os"
 
 export const resolveMaxThreads = (): number =>
-  Number(process.env.MAX_THREADS) || cpus().length
+  Number(process.env.MAX_THREADS) || availableParallelism()
 
 export const resolveDefaultThreadCount = (): number => {
   const raw = Number(process.env.DEFAULT_THREAD_COUNT ?? 2)

@@ -1,4 +1,4 @@
-import { cpus } from "node:os"
+import { availableParallelism } from "node:os"
 import {
   afterEach,
   beforeEach,
@@ -44,13 +44,13 @@ describe("resolveMaxThreads", () => {
     expect(resolveMaxThreads()).toBe(6)
   })
 
-  test("falls back to os.cpus().length when MAX_THREADS is unset", () => {
-    expect(resolveMaxThreads()).toBe(cpus().length)
+  test("falls back to os.availableParallelism() when MAX_THREADS is unset", () => {
+    expect(resolveMaxThreads()).toBe(availableParallelism())
   })
 
-  test("falls back to os.cpus().length when MAX_THREADS is 0", () => {
+  test("falls back to os.availableParallelism() when MAX_THREADS is 0", () => {
     process.env.MAX_THREADS = "0"
-    expect(resolveMaxThreads()).toBe(cpus().length)
+    expect(resolveMaxThreads()).toBe(availableParallelism())
   })
 })
 

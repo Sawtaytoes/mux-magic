@@ -1,4 +1,4 @@
-import { cpus } from "node:os"
+import { availableParallelism } from "node:os"
 import {
   afterEach,
   beforeEach,
@@ -48,7 +48,7 @@ describe("GET /system/threads", () => {
     expect(typeof body.maxThreads).toBe("number")
     expect(typeof body.defaultThreadCount).toBe("number")
     expect(typeof body.totalCpus).toBe("number")
-    expect(body.totalCpus).toBe(cpus().length)
+    expect(body.totalCpus).toBe(availableParallelism())
   })
 
   test("maxThreads respects MAX_THREADS env var", async () => {

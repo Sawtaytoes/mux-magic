@@ -56,7 +56,7 @@ export type CopyOptions = {
  * parent directory must already exist; callers are expected to
  * `mkdir`-recursive first (the underlying `createWriteStream` rejects
  * with ENOENT otherwise). Callers needing recursive copy should
- * compose with `readFilesAtDepth` and RxJS `mergeAll(cpus().length)`
+ * compose with `readFilesAtDepth` and RxJS `mergeAll(availableParallelism())`
  * the same way `syncAnimeDownloads` and `syncMangaFolders` already
  * do — that gives per-file concurrency control, observable progress,
  * and cancellation that a sequential walker cannot.
