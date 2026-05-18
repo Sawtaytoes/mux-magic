@@ -1,6 +1,6 @@
 import { stat } from "node:fs/promises"
 import { join } from "node:path"
-import { captureConsoleMessage } from "@mux-magic/tools"
+import { captureConsoleMessage } from "@mux-magic/tools/test-helpers"
 import { vol } from "memfs"
 import { firstValueFrom, of, toArray } from "rxjs"
 import {

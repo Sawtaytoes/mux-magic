@@ -1,5 +1,5 @@
 import { sep as nativePathSeparator } from "node:path"
-import { captureConsoleMessage } from "@mux-magic/tools"
+import { captureConsoleMessage } from "@mux-magic/tools/test-helpers"
 import { vol } from "memfs"
 import {
   afterEach,

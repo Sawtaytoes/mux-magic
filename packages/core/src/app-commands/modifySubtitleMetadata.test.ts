@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
-import { captureConsoleMessage } from "@mux-magic/tools"
+import { captureConsoleMessage } from "@mux-magic/tools/test-helpers"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
