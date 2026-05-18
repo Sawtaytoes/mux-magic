@@ -57,7 +57,17 @@ ARG GIT_SHA
 ARG BUILD_TIME
 ENV GIT_SHA=$GIT_SHA
 ENV BUILD_TIME=$BUILD_TIME
-RUN yarn build:version
+
+# Pre-build everything the runtime needs into static artifacts so the
+# container can boot with plain `node` instead of `yarn → corepack →
+# yarn workspace → tsx`. Drops ~800 MB of wrapper-process RSS at idle.
+# Includes:
+#   - public/api/version.json (build identity)
+#   - command-descriptions.js (tooltip text for the UI)
+#   - packages/web/dist/ (vite SPA build)
+#   - packages/server/dist/server.mjs (esbuild bundle of the API)
+#   - packages/web/dist-server/server.mjs (esbuild bundle of the static-file server)
+RUN yarn build:prod
 
 # Playwright Chromium binary + the matching apt-level system libs
 # (libnss3, libxkbcommon0, fonts, etc.). Has to run AFTER yarn install
@@ -68,4 +78,7 @@ RUN yarn install-playwright-browser --with-deps chromium
 EXPOSE $PORT
 EXPOSE $WEB_PORT
 
-CMD ["yarn", "prod:servers"]
+# Direct-spawn orchestrator: bypasses yarn/corepack/concurrently/tsx
+# entirely. The container holds 3 Node processes (orchestrator + API +
+# web) instead of ~18 in the wrapper tower. See scripts/start-prod.cjs.
+CMD ["node", "scripts/start-prod.cjs"]
