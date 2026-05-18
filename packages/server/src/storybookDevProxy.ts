@@ -1,8 +1,4 @@
-import {
-  type ChildProcess,
-  spawn,
-} from "node:child_process"
-import { setTimeout as delay } from "node:timers/promises"
+import { join } from "node:path"
 
 interface StartStorybookOptions {
   port: number
@@ -10,69 +6,47 @@ interface StartStorybookOptions {
 }
 
 export interface StorybookHandle {
-  child: ChildProcess
   url: string
 }
 
-// Spawns `storybook dev` on an internal port. Uses `--no-open` so the
-// browser doesn't pop up (we want the front-door's port to be the URL
-// the user visits) and `--base /storybook/` so Storybook's own asset
-// URLs carry the prefix the front-door mounts it under. The returned
-// handle's `url` is what the front-door proxies to at /storybook/*.
+// Starts Storybook's dev server in-process via the programmatic API
+// exposed by `storybook/internal/core-server`. Replaces the prior
+// `spawn("yarn", ["storybook", "dev", ...])` implementation, which broke
+// after Storybook 10.x tightened its argv parser (the script alias
+// `storybook dev -p 6006 …` already supplied a `dev` subcommand, and
+// appending `dev` again triggered "too many arguments for 'dev'").
 //
-// Wait-for-ready: poll Storybook's port until it answers. ~30s max.
+// Architectural shape: Storybook listens on its own loopback port; the
+// front-door's Hono root proxies /storybook/* to that port (see
+// buildServer.ts). The proxy survives because preserving the existing
+// header-strip / WebSocket-upgrade behavior matters more than collapsing
+// the loopback hop.
+//
+// `storybook/internal/core-server` is dev-only and not in the prod
+// bundle's external set — it's pulled in via dynamic import so the
+// module-load doesn't reach Storybook unless we're actually starting it.
 export const startStorybookDev = async (
   options: StartStorybookOptions,
 ): Promise<StorybookHandle> => {
-  const url = `http://127.0.0.1:${options.port}`
-  const child = spawn(
-    "yarn",
-    [
-      "storybook",
-      "dev",
-      "-p",
-      String(options.port),
-      "--no-open",
-      "--ci",
-    ],
-    {
-      cwd: options.webPackageDir,
-      env: {
-        ...process.env,
-        STORYBOOK_BASE_PATH: "/storybook/",
-      },
-      shell: process.platform === "win32",
-      stdio: ["ignore", "inherit", "inherit"],
-    },
+  // Storybook reads STORYBOOK_BASE_PATH at preset-load time to prefix
+  // its asset URLs with /storybook/, matching the path the front-door
+  // mounts it under. Setting the env var on process.env is OK in this
+  // single-process boot — no other code reads it.
+  process.env.STORYBOOK_BASE_PATH = "/storybook/"
+
+  const { buildDevStandalone } = await import(
+    "storybook/internal/core-server"
   )
-  const isReachable = async (): Promise<boolean> => {
-    try {
-      const response = await fetch(url, {
-        redirect: "manual",
-      })
-      return response.status < 500
-    } catch {
-      return false
-    }
-  }
-  // Total budget ~30s. Poll every 500 ms.
-  const totalAttempts = 60
-  const readyAttempts = Array.from({
-    length: totalAttempts,
+
+  const result = await buildDevStandalone({
+    ci: true,
+    configDir: join(options.webPackageDir, ".storybook"),
+    disableTelemetry: true,
+    host: "127.0.0.1",
+    open: false,
+    port: options.port,
+    quiet: false,
   })
-  const isStorybookReady = await readyAttempts.reduce<
-    Promise<boolean>
-  >(async (priorWait, _next) => {
-    const isReady = await priorWait
-    if (isReady) return true
-    await delay(500)
-    return isReachable()
-  }, Promise.resolve(false))
-  if (!isStorybookReady) {
-    child.kill()
-    throw new Error(
-      `Storybook dev did not become reachable on ${url} within 30s`,
-    )
-  }
-  return { child, url }
+
+  return { url: result.address }
 }
