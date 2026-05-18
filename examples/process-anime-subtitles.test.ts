@@ -3,8 +3,8 @@ import { fileURLToPath } from "node:url"
 import {
   resolveSequenceParams,
   type StepRuntimeRecord,
-} from "@mux-magic/server/src/api/resolveSequenceParams.js"
-import { commandConfigs } from "@mux-magic/server/src/api/routes/commandRoutes.js"
+} from "@mux-magic/api/src/api/resolveSequenceParams.js"
+import { commandConfigs } from "@mux-magic/api/src/api/routes/commandRoutes.js"
 import yaml from "js-yaml"
 import { describe, expect, test } from "vitest"
 

@@ -20,10 +20,7 @@ const repoRoot = path.resolve(__dirname, "..")
 
 const apiProc = spawn(
   process.execPath,
-  [
-    "--enable-source-maps",
-    "packages/server/dist/server.mjs",
-  ],
+  ["--enable-source-maps", "packages/api/dist/server.mjs"],
   { cwd: repoRoot, stdio: "inherit" },
 )
 

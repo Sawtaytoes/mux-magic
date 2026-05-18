@@ -1,6 +1,6 @@
 declare global {
   interface Window {
-    // Populated by packages/server/scripts/build-command-descriptions.ts at build time.
+    // Populated by packages/api/scripts/build-command-descriptions.ts at build time.
     getCommandFieldDescription?: (args: {
       commandName: string
       fieldName: string

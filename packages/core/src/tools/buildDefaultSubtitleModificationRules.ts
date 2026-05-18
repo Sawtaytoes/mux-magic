@@ -1,8 +1,7 @@
-// Type-only cross-package import: the schema itself lives in the HTTP package
-// (built with @hono/zod-openapi, which core deliberately does not pull in).
+// Type-only cross-package import: the schema lives in @mux-magic/api (built
+// with @hono/zod-openapi, which core deliberately does not pull in).
 // `import type` erases at compile time so no Hono runtime leaks into core.
-// Phase B will rewrite this from @mux-magic/server to @mux-magic/api.
-import type { assModificationRuleSchema } from "@mux-magic/server/src/api/schemas.js"
+import type { assModificationRuleSchema } from "@mux-magic/api/src/api/schemas.js"
 import type { z } from "zod"
 import type { SubtitleFileMetadata } from "../app-commands/getSubtitleMetadata.js"
 

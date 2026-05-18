@@ -1,4 +1,4 @@
-import type { JobLogsEvent } from "@mux-magic/server/api-types"
+import type { JobLogsEvent } from "@mux-magic/api/api-types"
 import { cleanup, render } from "@testing-library/react"
 import { createStore, Provider } from "jotai"
 import {

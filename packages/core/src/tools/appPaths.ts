@@ -8,7 +8,7 @@ const isWindows = platform() === "win32"
 // Anchor bundled-binary lookups to the repo root rather than process.cwd().
 // CLI commands are routinely invoked from arbitrary media folders, so a
 // cwd-relative path would always miss the bundle and silently fall back to
-// PATH. From packages/server/src/tools/appPaths.ts the repo root is four
+// PATH. From packages/api/src/tools/appPaths.ts the repo root is four
 // levels up.
 const repoRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),

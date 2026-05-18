@@ -6,7 +6,7 @@
   SearchMalResponse,
   SearchMovieDbResponse,
   SearchTvdbResponse,
-} from "@mux-magic/server/api-types"
+} from "@mux-magic/api/api-types"
 import { useEffect, useRef } from "react"
 import { apiBase } from "../../apiBase"
 import type {

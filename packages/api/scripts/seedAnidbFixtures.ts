@@ -7,11 +7,11 @@
 //   1. Triggers loadAnimeIndex() once  → downloads the manami dataset to
 //      <ANIDB_CACHE_FOLDER>/manami/ if it isn't fresh. The dataset itself
 //      isn't copied into committed fixtures (it's 60+ MB and weekly-rotating);
-//      the test fixture under packages/server/src/tools/__fixtures__/manami/
+//      the test fixture under packages/api/src/tools/__fixtures__/manami/
 //      is a small hand-crafted JSON with the same shape.
 //   2. Calls lookupAnidbById() for two aids → populates
 //      <ANIDB_CACHE_FOLDER>/anime/<aid>.xml from the AniDB HTTP API.
-//   3. Copies the cached XML into packages/server/src/tools/__fixtures__/anidb/anime/
+//   3. Copies the cached XML into packages/api/src/tools/__fixtures__/anidb/anime/
 //      so unit tests load real shapes without making network requests.
 //
 // Re-run when AniDB changes a response shape, or to refresh a stale cache.

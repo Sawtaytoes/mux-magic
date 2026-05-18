@@ -1,4 +1,4 @@
-import type { CreateJobResponse } from "@mux-magic/server/api-types"
+import type { CreateJobResponse } from "@mux-magic/api/api-types"
 import { atom } from "jotai"
 import { apiBase } from "../apiBase"
 import { buildParams } from "../commands/buildParams"
@@ -84,7 +84,7 @@ const resolveScalarField = (
 }
 
 // Mirrors the server's computeStepFolderOutput
-// (packages/server/src/api/resolveSequenceParams.ts). Same precedence:
+// (packages/api/src/api/resolveSequenceParams.ts). Same precedence:
 // parentOfSource → outputFolderName → destinationPath →
 // destinationFilesPath → sourcePath. Returns null when the chain can't
 // be resolved (unknown step, unknown command, cycle).
