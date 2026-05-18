@@ -20,7 +20,7 @@ const repoRoot = path.resolve(__dirname, "..")
 
 const apiProc = spawn(
   process.execPath,
-  ["packages/server/dist/server.mjs"],
+  ["--enable-source-maps", "packages/server/dist/server.mjs"],
   { cwd: repoRoot, stdio: "inherit" },
 )
 
@@ -29,7 +29,7 @@ const apiProc = spawn(
 // avoid threading a config flag through just for this.
 const webProc = spawn(
   process.execPath,
-  ["dist-server/server.mjs"],
+  ["--enable-source-maps", "dist-server/server.mjs"],
   {
     cwd: path.join(repoRoot, "packages/web"),
     stdio: "inherit",
