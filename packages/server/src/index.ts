@@ -65,7 +65,9 @@ const moduleDir = dirname(fileURLToPath(import.meta.url))
 // Dev path lives at packages/server/src/. This means cross-platform
 // scripts don't need NODE_ENV=production-style shell prefixes which
 // don't work on plain PowerShell.
-const isBundleDist = moduleDir.replace(/\\/g, "/").endsWith("/dist")
+const isBundleDist = moduleDir
+  .replace(/\\/g, "/")
+  .endsWith("/dist")
 
 // Resolve static roots relative to the bundle, not cwd. The dev path
 // imports from packages/server/src/, so `moduleDir` is
@@ -74,14 +76,20 @@ const isBundleDist = moduleDir.replace(/\\/g, "/").endsWith("/dist")
 // lands on `<repo>/packages/web/...`.
 const webPackageDir = resolve(moduleDir, "..", "..", "web")
 const webDistDir = resolve(webPackageDir, "dist")
-const storybookDistDir = resolve(webPackageDir, "storybook-static")
+const storybookDistDir = resolve(
+  webPackageDir,
+  "storybook-static",
+)
 
 const isProduction =
   process.env.NODE_ENV === "production" || isBundleDist
 
 const pickStorybookPort = (): number => {
-  const fromEnv = Number(process.env.STORYBOOK_INTERNAL_PORT)
-  if (Number.isFinite(fromEnv) && fromEnv > 0) return fromEnv
+  const fromEnv = Number(
+    process.env.STORYBOOK_INTERNAL_PORT,
+  )
+  if (Number.isFinite(fromEnv) && fromEnv > 0)
+    return fromEnv
   return 6006
 }
 
