@@ -258,7 +258,9 @@ export const StepCard = ({
             <StatusBadge status="paused" />
           </button>
         ) : (
-          step.status && <StatusBadge status={step.status} />
+          step.status && (
+            <StatusBadge status={step.status} />
+          )
         )}
         {step.command && (
           <button

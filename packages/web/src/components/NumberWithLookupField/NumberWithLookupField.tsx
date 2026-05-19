@@ -63,9 +63,8 @@ export const NumberWithLookupField = ({
   const link = step.links?.[field.name]
   const linkedVariableValue =
     typeof link === "string"
-      ? variables.find(
-          (variable) => variable.id === link,
-        )?.value
+      ? variables.find((variable) => variable.id === link)
+          ?.value
       : undefined
   const resolvedValue: number | undefined = (() => {
     if (typeof link === "string") {
@@ -119,7 +118,8 @@ export const NumberWithLookupField = ({
   // Same link-awareness rule as the primary read above: when the sibling
   // is linked to a variable, its value lives there, not in params.
   const siblingDvdCompareId = (() => {
-    if (field.name !== "dvdCompareReleaseHash") return undefined
+    if (field.name !== "dvdCompareReleaseHash")
+      return undefined
     const siblingLink = step.links?.dvdCompareId
     if (typeof siblingLink === "string") {
       const linked = variables.find(

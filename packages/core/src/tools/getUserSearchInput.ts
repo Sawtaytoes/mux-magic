@@ -24,6 +24,11 @@ export const getUserSearchInput = (params: {
   // of `filePath` — `filePath` is for "preview the file being picked
   // FOR", while `filePaths` is for "preview the file each option IS".
   filePaths?: Array<{ index: number; path: string }>
+  // Forwarded to the SSE PromptEvent so the Builder's prompt modal can
+  // render a smaller caption under the headline `message`. Used by the
+  // special-features picker to show the on-disk filename below the
+  // proposed title the user is deciding on.
+  subtitle?: string
 }) =>
   new Observable<number>((observer) => {
     const jobId = getActiveJobId()
@@ -38,6 +43,7 @@ export const getUserSearchInput = (params: {
         type: "prompt",
         filePath: params.filePath,
         filePaths: params.filePaths,
+        subtitle: params.subtitle,
       })
 
       let isResolved = false
@@ -61,6 +67,9 @@ export const getUserSearchInput = (params: {
     }
 
     process.stdout.write(`${params.message}\n`)
+    if (params.subtitle) {
+      process.stdout.write(`${params.subtitle}\n`)
+    }
 
     params.options.forEach((option) => {
       process.stdout.write(

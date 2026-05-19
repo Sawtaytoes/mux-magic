@@ -73,6 +73,12 @@ export type PromptEvent = {
   options: PromptOption[]
   promptId: string
   type: "prompt"
+  // Optional small-text caption rendered below `message`. Use it to
+  // surface a secondary identifier (e.g. the on-disk filename) when
+  // `message` is the primary thing the user is deciding about (e.g.
+  // a proposed new title). Keeps the title visually distinct from
+  // the file context.
+  subtitle?: string
   // Optional absolute file path that this prompt is "about" — when set,
   // the Builder's prompt modal renders a ▶ Play button that streams the
   // file via /files/stream and opens the existing video sub-modal so the
