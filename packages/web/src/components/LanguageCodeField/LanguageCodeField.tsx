@@ -5,7 +5,7 @@ import { buildOrderedLanguageOptions } from "../../data/orderLanguageOptions"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
-import { LanguageDropdown } from "../LanguageDropdown/LanguageDropdown"
+import { PortalDropdown } from "../PortalDropdown/PortalDropdown"
 import { TagInputBase } from "../TagInputBase/TagInputBase"
 
 type LanguageCodeFieldProps = {
@@ -90,11 +90,21 @@ export const LanguageCodeField = ({
             setTimeout(() => setIsOpen(false), 150),
         }}
       />
-      <LanguageDropdown
+      <PortalDropdown
         anchorRef={inputRef}
         isOpen={isOpen}
-        options={visibleOptions}
-        onSelect={selectCode}
+        items={visibleOptions.map(({ code, name }) => ({
+          key: code,
+          onSelect: () => selectCode(code),
+          content: (
+            <>
+              <span className="text-xs">{name}</span>
+              <span className="font-mono text-slate-400 text-xs">
+                {code}
+              </span>
+            </>
+          ),
+        }))}
       />
     </div>
   )
