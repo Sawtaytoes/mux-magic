@@ -23,11 +23,22 @@ export const buildUnnamedFileCandidates = ({
   possibleNames: PossibleName[]
   unrenamedFiles: UnrenamedFile[]
 }): UnnamedFileCandidate[] => {
-  if (
-    unrenamedFiles.length === 0 ||
-    possibleNames.length === 0
-  ) {
+  if (unrenamedFiles.length === 0) {
     return []
+  }
+  // No DVDCompare candidates means there's nothing to rank — but the
+  // leftover files still need a UI surface so the user can rename them
+  // manually. Emit one entry per file with an empty candidates list so
+  // the Smart Match modal opens with the filenames visible even when
+  // every DVDCompare extra had a timecode (no untimed `possibleNames`).
+  if (possibleNames.length === 0) {
+    return unrenamedFiles.map(
+      ({ filename, durationSeconds }) => ({
+        filename,
+        durationSeconds,
+        candidates: [],
+      }),
+    )
   }
 
   return unrenamedFiles.map(

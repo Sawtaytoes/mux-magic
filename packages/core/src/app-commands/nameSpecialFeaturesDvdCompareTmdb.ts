@@ -293,12 +293,13 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                   : []
 
               // Build per-file candidate associations for the follow-up
-              // association report. Only populated when there are both
-              // unnamed files AND untimed DVDCompare suggestions — the
-              // common case where the user still has files that need a name.
-              // `unrenamedFiles` (worker 58 / Part B) carries
-              // `durationSeconds` per file so the web-side Smart Match
-              // modal can rank candidates by duration proximity.
+              // association report. Populated whenever there are leftover
+              // files; entries carry an empty `candidates` array when
+              // DVDCompare had no untimed suggestions so the web-side
+              // Smart Match modal can still surface the leftover filenames
+              // for manual rename. `unrenamedFiles` (worker 58 / Part B)
+              // carries `durationSeconds` per file so the modal can rank
+              // candidates by duration proximity when candidates exist.
               const unnamedFileCandidates =
                 buildUnnamedFileCandidates({
                   possibleNames: possibleNamesForSummary,
@@ -411,11 +412,18 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                               )
                               // Self-rename: file already lives at the target path
                               // (common when re-running after a prior successful run).
-                              // Skip silently rather than emitting a collision event.
+                              // Skip the rename but log it so the user can see why a
+                              // prompt-answered file produced no rename event —
+                              // previously this was completely silent and read as
+                              // "execution failed."
                               if (
                                 fileInfo.fullPath ===
                                 desiredPath
                               ) {
+                                logInfo(
+                                  "ALREADY NAMED",
+                                  `"${fileInfo.filename}" is already at its target name — nothing to do.`,
+                                )
                                 return {
                                   resolvedName: finalName,
                                   isCollision: false,

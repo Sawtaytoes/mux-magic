@@ -13,7 +13,11 @@ describe(buildUnnamedFileCandidates.name, () => {
     ).toEqual([])
   })
 
-  test("returns empty when there are no possible-name suggestions", () => {
+  test("emits empty-candidate entries when there are unrenamed files but no possible-name suggestions", () => {
+    // Leftover files still need a UI surface even when DVDCompare has
+    // no untimed extras to rank — the Smart Match modal renders them
+    // as free-text rename rows. This is the every-extra-has-a-timecode
+    // case (e.g. the Shrek 2 DVDCompare page).
     expect(
       buildUnnamedFileCandidates({
         possibleNames: [],
@@ -24,7 +28,13 @@ describe(buildUnnamedFileCandidates.name, () => {
           },
         ],
       }),
-    ).toEqual([])
+    ).toEqual([
+      {
+        filename: "MOVIE_t23.mkv",
+        durationSeconds: 600,
+        candidates: [],
+      },
+    ])
   })
 
   test("returns a candidate list for each unnamed file when both lists are non-empty", () => {
