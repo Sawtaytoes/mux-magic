@@ -147,6 +147,14 @@ const discHeaderRegex =
 export type PossibleName = {
   name: string
   timecode?: string
+  // Name of the DVDCompare parent entry this child sits under, when
+  // the source page nested it (e.g. "Shrek, Rattle & Roll:" containing
+  // three indented music videos). Lets the Smart Match dropdown render
+  // the parent-child grouping visually so the user can tell that
+  // "Accidentally in Love" belongs under "Shrek, Rattle & Roll" — same
+  // hierarchy the DVDCompare page itself shows. Undefined for
+  // top-level entries.
+  parentName?: string
 }
 
 // Lines from the raw DVDCompare extras text that have no timecode — the
@@ -197,6 +205,7 @@ export const flattenExtrasAsPossibleNames = (
       (extra.children ?? []).map((child) => ({
         name: child.text,
         timecode: child.timecode,
+        parentName: extra.text,
       })),
     ),
   )
