@@ -5,7 +5,7 @@ import { buildOrderedLanguageOptions } from "../../data/orderLanguageOptions"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
-import { LanguageDropdown } from "../LanguageDropdown/LanguageDropdown"
+import { PortalDropdown } from "../PortalDropdown/PortalDropdown"
 import { TagInputBase } from "../TagInputBase/TagInputBase"
 
 type LanguageCodesFieldProps = {
@@ -62,6 +62,19 @@ export const LanguageCodesField = ({
     title: `Remove ${code}`,
   }))
 
+  const items = visibleOptions.map(({ code, name }) => ({
+    key: code,
+    onSelect: () => addCode(code),
+    content: (
+      <>
+        <span className="text-xs">{name}</span>
+        <span className="font-mono text-slate-400 text-xs">
+          {code}
+        </span>
+      </>
+    ),
+  }))
+
   return (
     <div>
       <FieldLabel command={step.command} field={field} />
@@ -84,11 +97,10 @@ export const LanguageCodesField = ({
             setTimeout(() => setIsOpen(false), 150),
         }}
       />
-      <LanguageDropdown
+      <PortalDropdown
         anchorRef={inputRef}
         isOpen={isOpen}
-        options={visibleOptions}
-        onSelect={addCode}
+        items={items}
       />
     </div>
   )

@@ -3,8 +3,8 @@ import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { PortalDropdown } from "../PortalDropdown/PortalDropdown"
 import { TagInputBase } from "../TagInputBase/TagInputBase"
-import { SubtitleTypesDropdown } from "./SubtitleTypesDropdown"
 import { SUBTITLE_TYPE_OPTIONS } from "./SubtitleTypesField.options"
 
 type SubtitleTypesFieldProps = {
@@ -67,6 +67,24 @@ export const SubtitleTypesField = ({
     title: `Remove ${value}`,
   }))
 
+  const items = visibleOptions.map((option) => ({
+    key: `${option.value}-${option.codec}`,
+    onSelect: () => addValue(option.value),
+    content: (
+      <>
+        <span className="text-xs">
+          {option.value}
+          <span className="text-slate-400 ml-1">
+            — {option.description}
+          </span>
+        </span>
+        <span className="font-mono text-slate-400 text-xs">
+          {option.codec}
+        </span>
+      </>
+    ),
+  }))
+
   return (
     <div>
       <FieldLabel command={step.command} field={field} />
@@ -89,11 +107,10 @@ export const SubtitleTypesField = ({
             setTimeout(() => setIsOpen(false), 150),
         }}
       />
-      <SubtitleTypesDropdown
+      <PortalDropdown
         anchorRef={inputRef}
         isOpen={isOpen}
-        options={visibleOptions}
-        onSelect={addValue}
+        items={items}
       />
     </div>
   )
