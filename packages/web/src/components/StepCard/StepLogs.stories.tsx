@@ -56,8 +56,8 @@ const realisticNsfLogs = [
   "[01:20:05.109] [TIMECODE] Shrek 2-SF_01_SpotlightPussInBoots_t46 10:43",
   "[01:20:05.112] [TIMECODE] Shrek the Musical I Know It's Today -short 5:38",
   "[01:20:10.821] [RENAMING] Renaming matched files (4 of 7)",
-  "[01:20:10.821] [ALREADY NAMED] \"These Boots Are Made for Walking Music Video by Puss in Boots -short\" is already at its target name — nothing to do.",
-  "[01:20:10.821] [ALREADY NAMED] \"Shrek the Musical I Know It's Today -short\" is already at its target name — nothing to do.",
+  '[01:20:10.821] [ALREADY NAMED] "These Boots Are Made for Walking Music Video by Puss in Boots -short" is already at its target name — nothing to do.',
+  '[01:20:10.821] [ALREADY NAMED] "Shrek the Musical I Know It\'s Today -short" is already at its target name — nothing to do.',
 ]
 
 // Default state — logs present but the body is collapsed so the card

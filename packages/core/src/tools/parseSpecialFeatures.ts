@@ -199,9 +199,7 @@ export const flattenExtrasAsPossibleNames = (
   extras: SpecialFeature[],
 ): PossibleName[] =>
   extras.flatMap((extra) =>
-    [
-      { name: extra.text, timecode: extra.timecode },
-    ].concat(
+    [{ name: extra.text, timecode: extra.timecode }].concat(
       (extra.children ?? []).map((child) => ({
         name: child.text,
         timecode: child.timecode,

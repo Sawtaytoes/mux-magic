@@ -43,14 +43,11 @@ export const StepLogs = ({ jobId }: Props) => {
   }
 
   return (
-    <div
-      data-step-logs
-      className="flex flex-col gap-1"
-    >
+    <div data-step-logs className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => setIsExpanded((prev) => !prev)}
+          onClick={() => setIsExpanded((isPrev) => !isPrev)}
           aria-expanded={isExpanded}
           className="text-[10px] text-slate-400 hover:text-slate-200 font-mono"
         >

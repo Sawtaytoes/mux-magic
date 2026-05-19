@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
 import { useState } from "react"
-import type { NsfRenamePair, NsfSummaryRecord } from "./findNsfResults"
+import type {
+  NsfRenamePair,
+  NsfSummaryRecord,
+} from "./findNsfResults"
 import { NsfRunResults } from "./NsfRunResults"
 
 const STEP_ID = "step-3"
@@ -69,7 +72,9 @@ const exampleSummary: NsfSummaryRecord = {
     {
       name: "Audio Commentary by Producer Aron Warner and Editor Mike Andrews",
     },
-    { name: "\"Shrek's Interactive Journey: II\" Photo Gallery" },
+    {
+      name: '"Shrek\'s Interactive Journey: II" Photo Gallery',
+    },
   ],
   unnamedFileCandidates: [
     {
@@ -131,7 +136,8 @@ export const LeftoversWithNoCandidates: Story = {
       possibleNames: [],
       unnamedFileCandidates: [
         {
-          filename: "Shrek 2-SF_01_SpotlightPussInBoots_t46",
+          filename:
+            "Shrek 2-SF_01_SpotlightPussInBoots_t46",
           durationSeconds: 643,
           candidates: [],
         },
