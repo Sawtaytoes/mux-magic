@@ -17,7 +17,20 @@ import type { CommandConfig } from "./routes/commandRoutes.js"
 export type SequencePath = {
   label?: string
   value: string
+  // Variable type from the YAML envelope ("path", "dvdCompareId",
+  // "threadCount", ...). When the type appears in NUMERIC_VARIABLE_TYPES
+  // the resolver coerces .value to a number — variables always serialize
+  // as strings, but the receiving command schema is z.number() for the
+  // numeric types. Mirror of the client-side runtimeValueType field on
+  // VariableTypeDefinition; keep this set in sync when adding a new
+  // numeric variable type.
+  type?: string
 }
+
+const NUMERIC_VARIABLE_TYPES = new Set<string>([
+  "dvdCompareId",
+  "threadCount",
+])
 
 export type StepRuntimeRecord = {
   command: string
@@ -134,6 +147,21 @@ export const resolveSequenceParams = ({
         errors.push(
           `Unknown path variable "${pathId}" referenced by param "${key}".`,
         )
+        return
+      }
+      // Numeric variable types are stored as strings in the YAML
+      // envelope but their target field is z.number(). Coerce here so
+      // the value satisfies the schema. NaN (e.g. a dvdCompareId slug
+      // that isn't all digits) falls through as the raw string so
+      // zod's error names the offending value rather than reporting NaN.
+      if (
+        path.type &&
+        NUMERIC_VARIABLE_TYPES.has(path.type)
+      ) {
+        const coerced = Number(path.value)
+        resolved[key] = Number.isFinite(coerced)
+          ? coerced
+          : path.value
         return
       }
       resolved[key] = path.value

@@ -26,6 +26,13 @@ export type VariableTypeDefinition<
   // template through the canonical id is what keeps already-saved YAML
   // loading unchanged.
   canonicalId?: string
+  // Variables always store `.value` as a string. When a step field linked
+  // to this variable expects a number (e.g. dvdCompareId / threadCount,
+  // both backed by `z.number()` schemas), the @-resolver coerces with
+  // Number(value). Omit (or "string") for path-typed variables where the
+  // raw string IS the runtime value. Mirrored server-side by the small
+  // numeric-types set in resolveSequenceParams.ts.
+  runtimeValueType?: "string" | "number"
 }
 
 const registry = new Map<

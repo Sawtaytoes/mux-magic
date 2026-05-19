@@ -13,6 +13,7 @@ export const DVD_COMPARE_ID_VARIABLE_DEFINITION: VariableTypeDefinition<"dvdComp
     label: "DVD Compare ID",
     cardinality: "multi",
     isLinkable: true,
+    runtimeValueType: "number",
     defaultValue: () => "",
     validate: (value) => {
       const trimmed = value.trim()

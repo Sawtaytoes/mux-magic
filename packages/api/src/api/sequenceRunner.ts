@@ -191,13 +191,15 @@ export const runSequenceJob = (
     options.globalScenario,
   )
 
+  // Every variable type goes into pathsById — the resolver dispatches on
+  // `.type` to decide whether to coerce (numeric types like dvdCompareId /
+  // threadCount serialize as strings but their target field is z.number()).
+  // Worker 35's dvdCompareId variable broke when this filter was
+  // `type === "path"`: the @-reference fell through unresolved and the
+  // command schema rejected the literal `@id` string.
   const pathsById: Record<string, SequencePath> = {
     ...body.paths,
-    ...Object.fromEntries(
-      Object.entries(body.variables ?? {}).filter(
-        ([, variable]) => variable.type === "path",
-      ),
-    ),
+    ...(body.variables ?? {}),
   }
   const stepsById: Record<string, StepRuntimeRecord> = {}
 

@@ -3,21 +3,18 @@ import { atom } from "jotai"
 import { apiBase } from "../apiBase"
 import { buildParams } from "../commands/buildParams"
 import type { Commands } from "../commands/types"
+import { getVariableTypeDefinition } from "../components/VariableCard/registry"
 import { isGroup } from "../jobs/sequenceUtils"
-import type {
-  PathVariable,
-  SequenceItem,
-  Step,
-} from "../types"
+import type { SequenceItem, Step, Variable } from "../types"
 import { commandsAtom } from "./commandsAtom"
 import {
   buildRunFetchUrl,
   dryRunAtom,
   failureModeAtom,
 } from "./dryRunQuery"
-import { pathsAtom } from "./pathsAtom"
 import { setStepRunStatusAtom } from "./stepAtoms"
 import { stepsAtom } from "./stepsAtom"
+import { variablesAtom } from "./variablesAtom"
 
 // True while ANY run (single step, group, or full sequence) is in
 // flight. runOrStopStepAtom (this file) writes it; runViaApi and
@@ -53,14 +50,14 @@ const stripTrailingSlash = (path: string) =>
 const resolveScalarField = (
   step: Step,
   field: string,
-  pathVariables: PathVariable[],
+  variables: Variable[],
   items: SequenceItem[],
   commands: Commands,
   visiting: Set<string>,
 ) => {
   const link = step.links?.[field]
   if (typeof link === "string") {
-    const variable = pathVariables.find(
+    const variable = variables.find(
       (pathVariable) => pathVariable.id === link,
     )
     return variable?.value ?? null
@@ -73,7 +70,7 @@ const resolveScalarField = (
   ) {
     return resolveFolderOutput(
       (link as { linkedTo: string }).linkedTo,
-      pathVariables,
+      variables,
       items,
       commands,
       visiting,
@@ -92,7 +89,7 @@ const resolveScalarField = (
 // resolveScalarField. Without it TS can't infer either one (TS7023).
 const resolveFolderOutput = (
   targetStepId: string,
-  pathVariables: PathVariable[],
+  variables: Variable[],
   items: SequenceItem[],
   commands: Commands,
   visiting: Set<string>,
@@ -107,7 +104,7 @@ const resolveFolderOutput = (
   const source = resolveScalarField(
     target,
     "sourcePath",
-    pathVariables,
+    variables,
     items,
     commands,
     nextVisiting,
@@ -128,7 +125,7 @@ const resolveFolderOutput = (
     resolveScalarField(
       target,
       "destinationPath",
-      pathVariables,
+      variables,
       items,
       commands,
       nextVisiting,
@@ -136,7 +133,7 @@ const resolveFolderOutput = (
     resolveScalarField(
       target,
       "destinationFilesPath",
-      pathVariables,
+      variables,
       items,
       commands,
       nextVisiting,
@@ -147,7 +144,7 @@ const resolveFolderOutput = (
 
 const resolveParams = (
   params: Record<string, unknown>,
-  pathVariables: PathVariable[],
+  variables: Variable[],
   items: SequenceItem[],
   commands: Commands,
 ) => {
@@ -160,13 +157,34 @@ const resolveParams = (
       value.startsWith("@")
     ) {
       const variableId = value.slice(1)
-      const variable = pathVariables.find(
-        (pathVariable) => pathVariable.id === variableId,
+      const variable = variables.find(
+        (candidate) => candidate.id === variableId,
       )
-      // Fall back to the raw `@id` string when the path var is
+      // Fall back to the raw `@id` string when the variable is
       // missing so the server's per-command validation surfaces a
       // clear error rather than silently dropping the field.
-      resolved[key] = variable?.value ?? value
+      if (!variable) {
+        resolved[key] = value
+        return
+      }
+      // Variables always store .value as a string. Numeric types
+      // (dvdCompareId, threadCount) declare runtimeValueType: "number"
+      // so the @-resolver coerces here — otherwise the request hits
+      // zod with a string and trips an "expected number" error. NaN
+      // (e.g. a dvdCompareId slug like "spider-man-2002") falls
+      // through as the raw string so zod's error names the offending
+      // value rather than reporting NaN.
+      const definition = getVariableTypeDefinition(
+        variable.type,
+      )
+      if (definition?.runtimeValueType === "number") {
+        const coerced = Number(variable.value)
+        resolved[key] = Number.isFinite(coerced)
+          ? coerced
+          : variable.value
+        return
+      }
+      resolved[key] = variable.value
       return
     }
     if (
@@ -193,7 +211,7 @@ const resolveParams = (
       }
       const folder = resolveFolderOutput(
         link.linkedTo,
-        pathVariables,
+        variables,
         items,
         commands,
         new Set(),
@@ -296,7 +314,7 @@ export const runOrStopStepAtom = atom(
     // Can't run a step with no command selected.
     if (!step.command) return
 
-    const pathVariables = get(pathsAtom)
+    const variables = get(variablesAtom)
     const commands = get(commandsAtom)
     const commandDefinition = commands[step.command]
     // Build the YAML-form params (folds step.links into @pathId
@@ -308,7 +326,7 @@ export const runOrStopStepAtom = atom(
     const { resolved: resolvedParams, errors } =
       resolveParams(
         yamlFormParams,
-        pathVariables,
+        variables,
         items,
         commands,
       )
