@@ -454,7 +454,11 @@ export const SmartMatchModal = () => {
                                 key={scored.candidate.name}
                                 value={scored.candidate.name}
                               >
-                                {scored.candidate.name} —{" "}
+                                {scored.candidate.name}
+                                {scored.candidate.timecode
+                                  ? ` (${scored.candidate.timecode})`
+                                  : ""}{" "}
+                                —{" "}
                                 {formatConfidence(
                                   scored.confidence,
                                 )}

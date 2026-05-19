@@ -180,6 +180,27 @@ export const parseUntimedSuggestions = (
     .filter(Boolean)
     .map((name) => ({ name, timecode: undefined }))
 
+// Flattens the structured `extras` tree (top-level + children) into a
+// flat `PossibleName[]` keeping each entry's timecode when DVDCompare
+// published one. Used to seed the smart-match suggestion pool with
+// runtimed candidates that the strict timecode matcher rejected as
+// out-of-tolerance — without this the dropdown only had untimed
+// entries (audio commentaries, image galleries) and couldn't show
+// runtimes for the user to compare against the file's duration.
+export const flattenExtrasAsPossibleNames = (
+  extras: SpecialFeature[],
+): PossibleName[] =>
+  extras.flatMap((extra) =>
+    [
+      { name: extra.text, timecode: extra.timecode },
+    ].concat(
+      (extra.children ?? []).map((child) => ({
+        name: child.text,
+        timecode: child.timecode,
+      })),
+    ),
+  )
+
 export const parseSpecialFeatures = (
   specialFeatureText: string,
 ): Observable<{

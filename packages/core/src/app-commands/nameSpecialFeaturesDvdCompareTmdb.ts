@@ -34,7 +34,10 @@ import {
   getSpecialFeatureFromTimecode,
   type TimecodeDeviation,
 } from "../tools/getSpecialFeatureFromTimecode.js"
-import { parseSpecialFeatures } from "../tools/parseSpecialFeatures.js"
+import {
+  flattenExtrasAsPossibleNames,
+  parseSpecialFeatures,
+} from "../tools/parseSpecialFeatures.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { searchDvdCompare } from "../tools/searchDvdCompare.js"
 import { buildUnnamedFileCandidates } from "./nameSpecialFeaturesDvdCompareTmdb.buildUnnamedFileCandidates.js"
@@ -283,13 +286,24 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                 }),
               )
 
-              // Only surface possibleNames suggestions when there's actually
-              // a leftover file to identify. On the happy path the list is
-              // noise — every file matched, so the user doesn't need a
-              // sidebar of untimed extras to choose from.
+              // Surface DVDCompare suggestions when leftover files exist.
+              // Includes BOTH untimed entries (audio commentaries, image
+              // galleries — the natural smart-match pool) AND timed extras
+              // (featurettes / music videos / etc.) so the user can see
+              // runtimes in the Smart Match dropdown and compare against
+              // the file's measured duration. The timed entries got
+              // rejected by the strict timecode matcher (out of tolerance),
+              // but are often the actual right answer — especially when
+              // DVDCompare's published runtime is slightly off from the
+              // disc-rip duration. On the happy path (no leftovers) the
+              // list is suppressed because it's just noise.
               const possibleNamesForSummary =
                 unrenamedFilenames.length > 0
-                  ? possibleNames
+                  ? possibleNames.concat(
+                      flattenExtrasAsPossibleNames(
+                        specialFeatures,
+                      ),
+                    )
                   : []
 
               // Build per-file candidate associations for the follow-up
