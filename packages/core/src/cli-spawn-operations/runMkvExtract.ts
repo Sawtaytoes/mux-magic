@@ -28,14 +28,19 @@ const progressRegex = /Progress: (\d+)%/
 
 export const runMkvExtract = ({
   args,
-  outputFilePath,
+  outputFilePaths,
 }: {
   args: string[]
-  outputFilePath: string
+  outputFilePaths: ReadonlyArray<string>
 }): Observable<string> =>
   new Observable<string>((observer) => {
     // Bind a per-file progress emitter to the active job (if any).
     // See runMkvMerge.ts for the design rationale — same shape here.
+    // When a single spawn extracts multiple tracks (batched-subtitles
+    // path), the primary tracker target is the first output path so
+    // today's one-file-one-bar granularity is preserved. The mkvextract
+    // spawn is still per source file.
+    const primaryOutputFilePath = outputFilePaths[0] ?? ""
     const jobId = getActiveJobId()
     const emitter =
       jobId !== undefined
@@ -43,7 +48,7 @@ export const runMkvExtract = ({
         : null
     const tracker =
       emitter !== null
-        ? emitter.startFile(outputFilePath)
+        ? emitter.startFile(primaryOutputFilePath)
         : null
 
     const commandArgs = args
@@ -101,7 +106,14 @@ export const runMkvExtract = ({
 
     childProcess.on("close", (code) => {
       if (code === null) {
-        unlink(outputFilePath).then(() => {
+        // On user-cancel, unlink every partially-written output the
+        // batched spawn was working on. Swallow missing-file errors —
+        // a mid-stream cancel often races with file creation.
+        Promise.all(
+          outputFilePaths.map((outputFilePath) =>
+            unlink(outputFilePath).catch(() => undefined),
+          ),
+        ).then(() => {
           logWarning(
             "mkvextract",
             "Process canceled by user.",
@@ -121,7 +133,9 @@ export const runMkvExtract = ({
       if (tracker !== null) tracker.finish()
 
       if (code === 0) {
-        observer.next(outputFilePath)
+        outputFilePaths.forEach((outputFilePath) => {
+          observer.next(outputFilePath)
+        })
         observer.complete()
         return
       }

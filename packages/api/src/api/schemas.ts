@@ -1,6 +1,7 @@
 import { z } from "@hono/zod-openapi"
 
 import { iso6392LanguageCodes } from "@mux-magic/core/src/tools/iso6392LanguageCodes.js"
+import { subtitleTypeExtensions } from "@mux-magic/core/src/tools/subtitleTypes.js"
 
 // Shared response schemas
 export const createJobResponseSchema = (
@@ -227,11 +228,23 @@ export const extractSubtitlesRequestSchema = z.object({
     .describe(
       "Recursively looks in folders for media files.",
     ),
-  subtitlesLanguage: z
-    .enum(iso6392LanguageCodes)
-    .optional()
+  subtitlesLanguages: z
+    .array(z.enum(iso6392LanguageCodes))
+    .default([])
     .describe(
-      "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
+      "ISO-639-2 codes of subtitle tracks to extract. Leave empty to extract every language.",
+    ),
+  typesMode: z
+    .enum(["none", "include", "exclude"])
+    .default("none")
+    .describe(
+      "How to apply subtitleTypes: 'none' ignores the list (all types extracted), 'include' keeps only listed types, 'exclude' skips listed types. With 'include' and an empty subtitleTypes list, no tracks match — the command extracts nothing.",
+    ),
+  subtitleTypes: z
+    .array(z.enum(subtitleTypeExtensions))
+    .default([])
+    .describe(
+      "File extensions of subtitle formats to filter on (ass/srt/sup/sub). Ignored when typesMode is 'none'. 'sup' covers both PGS and TextST codecs.",
     ),
   folders: z
     .array(z.string())

@@ -265,7 +265,9 @@ export const commandConfigs: Record<
       copyOutSubtitles({
         isRecursive: body.isRecursive,
         sourcePath: body.sourcePath,
-        subtitlesLanguage: body.subtitlesLanguage,
+        subtitleTypes: body.subtitleTypes,
+        subtitlesLanguages: body.subtitlesLanguages,
+        typesMode: body.typesMode,
       }),
     outputFolderName:
       extractSubtitlesDefaultProps.outputFolderName,
@@ -279,7 +281,9 @@ export const commandConfigs: Record<
       extractSubtitles({
         isRecursive: body.isRecursive,
         sourcePath: body.sourcePath,
-        subtitlesLanguage: body.subtitlesLanguage,
+        subtitleTypes: body.subtitleTypes,
+        subtitlesLanguages: body.subtitlesLanguages,
+        typesMode: body.typesMode,
       }),
     outputFolderName:
       extractSubtitlesDefaultProps.outputFolderName,

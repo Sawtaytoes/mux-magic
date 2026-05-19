@@ -404,7 +404,12 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
     paths: BASE_PATHS,
     step: makeStep(
       "extractSubtitles",
-      { isRecursive: true, subtitlesLanguage: "eng" },
+      {
+        isRecursive: true,
+        subtitlesLanguages: ["eng", "jpn"],
+        typesMode: "exclude",
+        subtitleTypes: ["sup"],
+      },
       { sourcePath: "basePath" },
     ),
   },
@@ -412,7 +417,12 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
     paths: BASE_PATHS,
     step: makeStep(
       "copyOutSubtitles",
-      { isRecursive: true, subtitlesLanguage: "eng" },
+      {
+        isRecursive: true,
+        subtitlesLanguages: ["eng", "jpn"],
+        typesMode: "exclude",
+        subtitleTypes: ["sup"],
+      },
       { sourcePath: "basePath" },
     ),
   },

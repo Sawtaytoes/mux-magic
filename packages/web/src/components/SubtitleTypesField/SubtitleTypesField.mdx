@@ -1,0 +1,26 @@
+import { Canvas, Controls, Meta } from "@storybook/blocks"
+import * as Stories from "./SubtitleTypesField.stories"
+
+<Meta of={Stories} />
+
+# SubtitleTypesField
+
+Filterable autocomplete tag field for subtitle format extensions. Used by `extractSubtitles` (and the deprecated `copyOutSubtitles` alias) to drive the `typesMode` + `subtitleTypes` filter.
+
+## Behavior
+
+- The dropdown lists one row per **codec** (`S_TEXT/ASS`, `S_HDMV/PGS`, …). Each row shows the file extension on the first line and the codec id on the second.
+- `sup` appears twice in the dropdown because both `S_HDMV/PGS` (bitmap) and `S_HDMV/TEXTST` (bitmap + text) extract to a `.sup` file. Selecting either row writes the single string `"sup"` into the step params; both rows disappear from the dropdown after selection.
+- The filter input matches against the extension, codec id, **or** the human description — all case-insensitive substring matches.
+- Selected extensions render as removable monospaced tag chips.
+
+## Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `step` | `Step` | The builder step that owns this field. |
+| `field` | `CommandField` | Field metadata from the command definition (`type: "subtitleTypes"`). |
+
+<Canvas of={Stories.Empty} />
+<Canvas of={Stories.OneTag} />
+<Canvas of={Stories.ManyTags} />

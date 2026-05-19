@@ -36,7 +36,10 @@ export const Default = makeStory(baseStep)
 export const WithLanguageFilter = makeStory({
   ...baseStep,
   id: "step_copy_out_subtitles__lang",
-  params: { ...baseStep.params, subtitlesLanguage: "eng" },
+  params: {
+    ...baseStep.params,
+    subtitlesLanguages: ["eng"],
+  },
 })
 
 export const WithRecursive = makeStory({

@@ -5,4 +5,4 @@ paths:
 steps:
   - id: step-fixture
     command: extractSubtitles
-    params: {sourcePath: '@basePath', isRecursive: true, subtitlesLanguage: eng}
+    params: {sourcePath: '@basePath', isRecursive: true, subtitlesLanguages: [eng, jpn], typesMode: exclude, subtitleTypes: [sup]}

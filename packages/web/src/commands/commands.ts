@@ -752,9 +752,25 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        field("subtitlesLanguage", {
-          type: "languageCode",
-          label: "Subtitles Language",
+        field("subtitlesLanguages", {
+          type: "languageCodes",
+          label: "Subtitles Languages",
+          placeholder: "eng",
+        }),
+        field("typesMode", {
+          type: "enum",
+          label: "Types Mode",
+          options: [
+            { value: "none", label: "None" },
+            { value: "include", label: "Include" },
+            { value: "exclude", label: "Exclude" },
+          ],
+        }),
+        field("subtitleTypes", {
+          type: "subtitleTypes",
+          label: "Subtitle Types",
+          description:
+            "File extensions of subtitle formats. Ignored when Types Mode is None. 'sup' covers both PGS and TextST codecs.",
         }),
       ],
     }
@@ -778,9 +794,25 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
-        field("subtitlesLanguage", {
-          type: "languageCode",
-          label: "Subtitles Language",
+        field("subtitlesLanguages", {
+          type: "languageCodes",
+          label: "Subtitles Languages",
+          placeholder: "eng",
+        }),
+        field("typesMode", {
+          type: "enum",
+          label: "Types Mode",
+          options: [
+            { value: "none", label: "None" },
+            { value: "include", label: "Include" },
+            { value: "exclude", label: "Exclude" },
+          ],
+        }),
+        field("subtitleTypes", {
+          type: "subtitleTypes",
+          label: "Subtitle Types",
+          description:
+            "File extensions of subtitle formats. Ignored when Types Mode is None. 'sup' covers both PGS and TextST codecs.",
         }),
       ],
     }

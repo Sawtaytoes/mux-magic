@@ -40,7 +40,7 @@ export const extractFlacAudio = ({
           filePath,
           `${trackId}:${outputFilePath}`,
         ],
-        outputFilePath,
+        outputFilePaths: [outputFilePath],
       }).pipe(map(() => outputFilePath)),
     ),
   )
