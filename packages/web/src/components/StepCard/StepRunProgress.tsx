@@ -15,9 +15,11 @@ import type { SequenceItem, Step } from "../../types"
 import {
   findNsfRenamePairs,
   findNsfSummary,
+  mergeAppliedRenamesIntoNsfResults,
   type NsfRenamePair,
   type NsfSummaryRecord,
 } from "../NsfRunResults/findNsfResults"
+import { appliedSmartMatchRenamesByJobIdAtom } from "../SmartMatchModal/appliedSmartMatchRenamesAtom"
 import { StepRunProgressView } from "./StepRunProgressView"
 
 // Per-step run display rendered directly on StepCard. Active while the
@@ -84,6 +86,9 @@ export const StepRunProgress = ({
   const steps = useAtomValue(stepsAtom)
   const variables = useAtomValue(variablesAtom)
   const commands = useAtomValue(commandsAtom)
+  const appliedRenamesByJobId = useAtomValue(
+    appliedSmartMatchRenamesByJobIdAtom,
+  )
   const setStepRunStatus = useSetAtom(setStepRunStatusAtom)
   const setRunning = useSetAtom(runningAtom)
 
@@ -150,6 +155,18 @@ export const StepRunProgress = ({
 
   const isRunning = status === "running"
 
+  // Fold any SmartMatch-applied renames into the displayed view so
+  // the card reflects rename operations the user just performed in
+  // the modal — without this the post-Apply state would still show
+  // pre-rename counts and re-listing in "Files not renamed:".
+  const appliedRenames =
+    appliedRenamesByJobId.get(jobId) ?? []
+  const merged = mergeAppliedRenamesIntoNsfResults({
+    summary,
+    renamePairs,
+    appliedRenames,
+  })
+
   return (
     <StepRunProgressView
       jobId={jobId}
@@ -157,8 +174,8 @@ export const StepRunProgress = ({
       isRunning={isRunning}
       snap={snap}
       sourcePath={sourcePath}
-      renamePairs={renamePairs}
-      summary={summary}
+      renamePairs={merged.renamePairs}
+      summary={merged.summary}
     />
   )
 }

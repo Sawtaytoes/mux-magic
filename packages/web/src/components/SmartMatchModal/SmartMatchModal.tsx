@@ -2,6 +2,7 @@ import { useAtom, useSetAtom } from "jotai"
 import { useMemo, useState } from "react"
 import { apiBase } from "../../apiBase"
 import { videoPreviewModalAtom } from "../../components/VideoPreviewModal/videoPreviewModalAtom"
+import { appliedSmartMatchRenamesByJobIdAtom } from "./appliedSmartMatchRenamesAtom"
 import { RenameTargetPicker } from "./RenameTargetPicker"
 import { smartMatchModalAtom } from "./smartMatchModalAtom"
 import {
@@ -97,6 +98,9 @@ const buildInitialRows = (
 export const SmartMatchModal = () => {
   const [state, setState] = useAtom(smartMatchModalAtom)
   const setVideoPreview = useSetAtom(videoPreviewModalAtom)
+  const setAppliedRenames = useSetAtom(
+    appliedSmartMatchRenamesByJobIdAtom,
+  )
 
   const suggestions = useMemo<FileSuggestion[]>(
     () =>
@@ -168,6 +172,13 @@ export const SmartMatchModal = () => {
         )
         return {
           filename: suggestion.filename,
+          // Stem of the typed/picked rename target (no extension).
+          // Used after the POST succeeds to record an
+          // `{oldName, newName}` pair in
+          // `appliedSmartMatchRenamesByJobIdAtom` — same shape NSF
+          // emits on its own renames, so the step card can merge the
+          // two streams without special-casing.
+          newName: desiredBase,
           oldPath: joinPath(
             state.sourcePath,
             `${suggestion.filename}${suggestion.extension}`,
@@ -232,6 +243,31 @@ export const SmartMatchModal = () => {
 
     setRows(finalRows)
     setIsApplying(false)
+
+    // Bubble successful renames out to the step card so the emerald
+    // "old → new" list grows, "Files not renamed:" shrinks, and a
+    // re-open of Smart Match doesn't re-list the same files. Keyed by
+    // the current jobId so multiple in-flight NSF runs don't trample
+    // each other's applied state.
+    const successfulRenames = plans
+      .filter(
+        (plan) => finalRows.get(plan.filename)?.isApplied,
+      )
+      .map((plan) => ({
+        oldName: plan.filename,
+        newName: plan.newName,
+      }))
+    if (successfulRenames.length > 0) {
+      setAppliedRenames((prev) => {
+        const next = new Map(prev)
+        const existing = next.get(state.jobId) ?? []
+        next.set(
+          state.jobId,
+          existing.concat(successfulRenames),
+        )
+        return next
+      })
+    }
 
     // Close the modal only when every applied row succeeded. Failed
     // rows stay visible with their inline error so the user can react.
