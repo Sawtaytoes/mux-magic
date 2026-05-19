@@ -54,6 +54,7 @@ export const NsfRunResults = ({
       unrenamedFiles: summary.unnamedFileCandidates.map(
         (entry) => ({
           filename: entry.filename,
+          extension: entry.extension ?? "",
           durationSeconds: entry.durationSeconds,
         }),
       ),

@@ -13,6 +13,11 @@ import { stripExtension } from "./nameSpecialFeaturesDvdCompareTmdb.filename.js"
 // ranking server-side.
 export type UnrenamedFile = {
   filename: string
+  // File extension including the dot (e.g. ".mkv"). See
+  // `UnnamedFileCandidate.extension` for rationale — the Smart Match
+  // modal needs the extension to build the on-disk path for the
+  // rename POST without it the rename fails ENOENT.
+  extension: string
   durationSeconds: number | null
 }
 
@@ -33,8 +38,9 @@ export const buildUnnamedFileCandidates = ({
   // every DVDCompare extra had a timecode (no untimed `possibleNames`).
   if (possibleNames.length === 0) {
     return unrenamedFiles.map(
-      ({ filename, durationSeconds }) => ({
+      ({ filename, extension, durationSeconds }) => ({
         filename,
+        extension,
         durationSeconds,
         candidates: [],
       }),
@@ -42,7 +48,7 @@ export const buildUnnamedFileCandidates = ({
   }
 
   return unrenamedFiles.map(
-    ({ filename, durationSeconds }) => {
+    ({ filename, extension, durationSeconds }) => {
       const stem = stripExtension(filename).toLowerCase()
       const stemWords = new Set(
         stem.split(/[\W_]+/).filter(Boolean),
@@ -67,6 +73,7 @@ export const buildUnnamedFileCandidates = ({
 
       return {
         filename,
+        extension,
         durationSeconds,
         candidates: ranked.map(
           (entry) => entry.candidate.name,

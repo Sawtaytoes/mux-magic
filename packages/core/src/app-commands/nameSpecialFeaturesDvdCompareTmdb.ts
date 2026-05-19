@@ -281,6 +281,13 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
               const unrenamedFiles = leftoverMatches.map(
                 (match) => ({
                   filename: match.fileInfo.filename,
+                  // FileInfo.filename is extension-stripped via
+                  // `getLastItemInFilePath` (basename(path, extname(path))).
+                  // Recover the extension from the full path so the
+                  // Smart Match modal can rebuild the correct on-disk
+                  // oldPath/newPath for the rename POST — without this
+                  // the rename fails ENOENT.
+                  extension: extname(match.fileInfo.fullPath),
                   durationSeconds:
                     match.durationSeconds ?? null,
                 }),

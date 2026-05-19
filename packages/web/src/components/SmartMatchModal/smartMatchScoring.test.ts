@@ -217,11 +217,13 @@ describe(rankSuggestions.name, () => {
       ],
       unrenamedFiles: [
         {
-          filename: "BONUS_1.mkv",
+          filename: "BONUS_1",
+          extension: ".mkv",
           durationSeconds: 5395,
         },
         {
-          filename: "BONUS_2.mkv",
+          filename: "BONUS_2",
+          extension: ".mkv",
           durationSeconds: 151,
         },
       ],
@@ -243,7 +245,8 @@ describe(rankSuggestions.name, () => {
       ],
       unrenamedFiles: [
         {
-          filename: "image-gallery.mkv",
+          filename: "image-gallery",
+          extension: ".mkv",
           durationSeconds: null,
         },
       ],
