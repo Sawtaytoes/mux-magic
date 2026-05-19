@@ -6,7 +6,7 @@ import { z } from "zod"
 // without requiring a code change.
 
 const featuresSchema = z.object({
-  experimentalFfmpegTranscoding: z
+  isExperimentalFfmpegTranscodingEnabled: z
     .boolean()
     .describe(
       "When true, the video player uses the MSE + ffmpeg transcode path for " +
@@ -40,7 +40,7 @@ featuresRoutes.openapi(
   (context) =>
     context.json(
       {
-        experimentalFfmpegTranscoding:
+        isExperimentalFfmpegTranscodingEnabled:
           process.env.EXPERIMENTAL_FFMPEG_TRANSCODING ===
           "true",
       },

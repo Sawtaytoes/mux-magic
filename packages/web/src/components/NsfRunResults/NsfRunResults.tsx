@@ -97,10 +97,7 @@ export const NsfRunResults = ({
               >
                 {pair.oldName}
               </span>
-              <span
-                aria-hidden
-                className="text-slate-500"
-              >
+              <span aria-hidden className="text-slate-500">
                 →
               </span>
               <span

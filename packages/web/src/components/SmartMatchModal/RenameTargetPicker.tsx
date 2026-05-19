@@ -53,7 +53,7 @@ export const RenameTargetPicker = ({
 
   const toggle = () => {
     if (isDisabled) return
-    setIsOpen((prev) => !prev)
+    setIsOpen((isPrev) => !isPrev)
   }
 
   // setTimeout dance is the same trick as LanguageCodeField — without

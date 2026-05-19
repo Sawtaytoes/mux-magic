@@ -1,7 +1,7 @@
 import type { ProgressSnapshot } from "../../jobs/types"
-import {
-  type NsfRenamePair,
-  type NsfSummaryRecord,
+import type {
+  NsfRenamePair,
+  NsfSummaryRecord,
 } from "../NsfRunResults/findNsfResults"
 import { NsfRunResults } from "../NsfRunResults/NsfRunResults"
 import { ProgressBar } from "../ProgressBar/ProgressBar"

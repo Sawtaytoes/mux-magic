@@ -342,7 +342,9 @@ export const getSpecialFeatureFromTimecode = ({
         if (parentType === "unknown") {
           return getUserSearchInput({
             message: text,
-            subtitle: filePath ? basename(filePath) : filename,
+            subtitle: filePath
+              ? basename(filePath)
+              : filename,
             filePath,
             options: [
               ...specialFeatureTypes.map(

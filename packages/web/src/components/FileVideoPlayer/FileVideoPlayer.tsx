@@ -79,10 +79,11 @@ export const FileVideoPlayer = ({
       .then((resp) => resp.json())
       .then(
         (data: {
-          experimentalFfmpegTranscoding?: boolean
+          isExperimentalFfmpegTranscodingEnabled?: boolean
         }) => {
           setIsFfmpegTranscodeEnabled(
-            data.experimentalFfmpegTranscoding === true,
+            data.isExperimentalFfmpegTranscodingEnabled ===
+              true,
           )
         },
       )

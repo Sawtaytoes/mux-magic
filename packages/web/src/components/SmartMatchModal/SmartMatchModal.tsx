@@ -459,8 +459,8 @@ export const SmartMatchModal = () => {
                       )}
                     </td>
                     <td className="px-2 py-1.5 align-top">
-                      {suggestion.rankedCandidates.length ===
-                      0 ? (
+                      {suggestion.rankedCandidates
+                        .length === 0 ? (
                         <input
                           type="text"
                           aria-label={`Rename target for ${suggestion.filename}`}

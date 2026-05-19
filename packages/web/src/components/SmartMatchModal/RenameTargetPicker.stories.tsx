@@ -153,8 +153,7 @@ const mixedCandidates: ScoredCandidate[] = [
 export const HighConfidencePreselected: Story = {
   args: {
     candidates: mixedCandidates,
-    initialName:
-      "Spotlight on Puss in Boots Featurette",
+    initialName: "Spotlight on Puss in Boots Featurette",
     isDisabled: false,
   },
   render: (args) => <PickerHost {...args} />,
@@ -198,8 +197,7 @@ export const EmptySelection: Story = {
 export const Disabled: Story = {
   args: {
     candidates: mixedCandidates,
-    initialName:
-      "Spotlight on Puss in Boots Featurette",
+    initialName: "Spotlight on Puss in Boots Featurette",
     isDisabled: true,
   },
   render: (args) => <PickerHost {...args} />,
@@ -248,8 +246,7 @@ export const SingleCandidate: Story = {
         filenameScore: 0.8,
       },
     ],
-    initialName:
-      "Spotlight on Puss in Boots Featurette",
+    initialName: "Spotlight on Puss in Boots Featurette",
     isDisabled: false,
   },
   render: (args) => <PickerHost {...args} />,

@@ -78,9 +78,7 @@ const sampleSummary: NsfSummaryRecord = {
     {
       filename: "Shrek 2-SF_01_SpotlightPussInBoots_t46",
       durationSeconds: 643,
-      candidates: [
-        "Spotlight on Puss in Boots Featurette",
-      ],
+      candidates: ["Spotlight on Puss in Boots Featurette"],
     },
     {
       filename: "Shrek 2-SF_03_FarAwayIdol_t48",
@@ -205,8 +203,7 @@ export const DoneAfterSmartMatchApply: Story = {
       possibleNames: sampleSummary.possibleNames,
       unnamedFileCandidates: [
         {
-          filename:
-            "Shrek 2-SF_04_MV_01_Accidentally_t49",
+          filename: "Shrek 2-SF_04_MV_01_Accidentally_t49",
           durationSeconds: 188,
           candidates: [
             "Accidentally in Love Music Video by Counting Crows",

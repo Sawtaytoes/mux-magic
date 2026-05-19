@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest"
 import {
+  mergeAppliedRenamesIntoNsfResults,
   type NsfRenamePair,
   type NsfSummaryRecord,
-  mergeAppliedRenamesIntoNsfResults,
 } from "./findNsfResults"
 
 const sampleRename: NsfRenamePair = {

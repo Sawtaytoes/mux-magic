@@ -287,7 +287,9 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                   // Smart Match modal can rebuild the correct on-disk
                   // oldPath/newPath for the rename POST — without this
                   // the rename fails ENOENT.
-                  extension: extname(match.fileInfo.fullPath),
+                  extension: extname(
+                    match.fileInfo.fullPath,
+                  ),
                   durationSeconds:
                     match.durationSeconds ?? null,
                 }),
