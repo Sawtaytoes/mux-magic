@@ -412,34 +412,57 @@ export const SmartMatchModal = () => {
                       )}
                     </td>
                     <td className="px-2 py-1.5 align-top">
-                      <select
-                        aria-label={`Rename target for ${suggestion.filename}`}
-                        value={row.selectedCandidateName}
-                        disabled={
-                          row.isApplied || isApplying
-                        }
-                        onChange={(event) =>
-                          updateRow(suggestion.filename, {
-                            selectedCandidateName:
-                              event.target.value,
-                          })
-                        }
-                        className="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500"
-                      >
-                        {suggestion.rankedCandidates.map(
-                          (scored) => (
-                            <option
-                              key={scored.candidate.name}
-                              value={scored.candidate.name}
-                            >
-                              {scored.candidate.name} —{" "}
-                              {formatConfidence(
-                                scored.confidence,
-                              )}
-                            </option>
-                          ),
-                        )}
-                      </select>
+                      {suggestion.rankedCandidates.length ===
+                      0 ? (
+                        <input
+                          type="text"
+                          aria-label={`Rename target for ${suggestion.filename}`}
+                          placeholder="Type a new name…"
+                          value={row.selectedCandidateName}
+                          disabled={
+                            row.isApplied || isApplying
+                          }
+                          onChange={(event) =>
+                            updateRow(suggestion.filename, {
+                              selectedCandidateName:
+                                event.target.value,
+                              isIncluded:
+                                event.target.value.trim()
+                                  .length > 0,
+                            })
+                          }
+                          className="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500"
+                        />
+                      ) : (
+                        <select
+                          aria-label={`Rename target for ${suggestion.filename}`}
+                          value={row.selectedCandidateName}
+                          disabled={
+                            row.isApplied || isApplying
+                          }
+                          onChange={(event) =>
+                            updateRow(suggestion.filename, {
+                              selectedCandidateName:
+                                event.target.value,
+                            })
+                          }
+                          className="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500"
+                        >
+                          {suggestion.rankedCandidates.map(
+                            (scored) => (
+                              <option
+                                key={scored.candidate.name}
+                                value={scored.candidate.name}
+                              >
+                                {scored.candidate.name} —{" "}
+                                {formatConfidence(
+                                  scored.confidence,
+                                )}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      )}
                     </td>
                     <td className="px-2 py-1.5 align-top text-center">
                       <span

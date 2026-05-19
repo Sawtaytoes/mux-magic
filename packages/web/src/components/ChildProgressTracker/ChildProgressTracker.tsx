@@ -1,13 +1,21 @@
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useState } from "react"
+import { getLinkedValue } from "../../commands/links"
 import { smartMatchModalAtom } from "../../components/SmartMatchModal/smartMatchModalAtom"
 import {
   type LogStreamDonePayload,
   useLogStream,
 } from "../../hooks/useLogStream"
+import { commandsAtom } from "../../state/commandsAtom"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { SequenceItem, Step } from "../../types"
+import { variablesAtom } from "../../state/variablesAtom"
+import type { Commands } from "../../commands/types"
+import type {
+  SequenceItem,
+  Step,
+  Variable,
+} from "../../types"
 import { ProgressBar } from "../ProgressBar/ProgressBar"
 
 // Minimum shape of the NSF summary record. The full server type lives
@@ -61,10 +69,32 @@ const findStepById = (
   return result ?? null
 }
 
+// Resolves the step's `sourcePath` value. The literal-string-in-params
+// case is the simple path (typed directly into the field). When the user
+// links the field to a top-level path variable (very common because
+// `sourcePath` is the canonical primary-input field per worker 24),
+// `params.sourcePath` is empty and the actual value lives in
+// `step.links.sourcePath` pointing at a variable id — `getLinkedValue`
+// dereferences that and returns the variable's value. Without this
+// dereference the Smart Match button never appeared on sequences that
+// linked sourcePath to a shared variable.
 const resolveSourcePath = (
   step: Step | null,
+  variables: Variable[],
+  commands: Commands,
+  findStep: (id: string) => Step | undefined,
 ): string | null => {
   if (!step) return null
+  const linked = getLinkedValue(
+    step,
+    "sourcePath",
+    variables,
+    commands,
+    findStep,
+  )
+  if (typeof linked === "string" && linked.length > 0) {
+    return linked
+  }
   const raw = step.params.sourcePath
   if (typeof raw === "string" && raw.length > 0) {
     return raw
@@ -83,6 +113,8 @@ export const ChildProgressTracker = ({
 }: ChildProgressTrackerProps) => {
   const progressByJobId = useAtomValue(progressByJobIdAtom)
   const steps = useAtomValue(stepsAtom)
+  const variables = useAtomValue(variablesAtom)
+  const commands = useAtomValue(commandsAtom)
   const setSmartMatch = useSetAtom(smartMatchModalAtom)
 
   const [nsfSummary, setNsfSummary] =
@@ -105,13 +137,24 @@ export const ChildProgressTracker = ({
   const snap = progressByJobId.get(jobId) ?? {}
 
   const step = findStepById(steps, stepId)
-  const sourcePath = resolveSourcePath(step)
+  const findStep = (id: string): Step | undefined =>
+    findStepById(steps, id) ?? undefined
+  const sourcePath = resolveSourcePath(
+    step,
+    variables,
+    commands,
+    findStep,
+  )
 
+  // Open Smart Match whenever leftover files exist — even with zero
+  // DVDCompare candidates. Without candidates the modal still surfaces
+  // the leftover filenames so the user can manually rename them; gating
+  // on possibleNames.length > 0 previously hid the UI entirely when every
+  // DVDCompare extra had a timecode, leaving leftover files invisible.
   const hasSmartMatchCandidates =
     nsfSummary !== null &&
     nsfSummary.unnamedFileCandidates !== undefined &&
     nsfSummary.unnamedFileCandidates.length > 0 &&
-    nsfSummary.possibleNames.length > 0 &&
     sourcePath !== null
 
   const openSmartMatch = () => {

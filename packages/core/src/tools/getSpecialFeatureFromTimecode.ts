@@ -239,7 +239,7 @@ export const getSpecialFeatureFromTimecode = ({
 } & TimecodeDeviation): Observable<string> =>
   of(null).pipe(
     mergeMap(() => {
-      const matchingExtras = specialFeatures
+      const rawMatchingExtras = specialFeatures
         .filter(
           ({ timecode: specialFeatureTimecode }) =>
             specialFeatureTimecode &&
@@ -276,6 +276,20 @@ export const getSpecialFeatureFromTimecode = ({
                 ),
             ),
         )
+      // Dedupe by (text, timecode). DVDCompare parsing can surface the
+      // same line twice — once as a top-level extra and once as a child
+      // of an untimed parent (or two children with identical text/time).
+      // Without this pass the disambiguation prompt would show two rows
+      // with the exact same label, forcing the user to "pick" between
+      // indistinguishable options.
+      const matchingExtras = rawMatchingExtras.filter(
+        (extra, index, all) =>
+          all.findIndex(
+            (other) =>
+              other.text === extra.text &&
+              other.timecode === extra.timecode,
+          ) === index,
+      )
 
       if (matchingExtras.length > 1) {
         return getUserSearchInput({
