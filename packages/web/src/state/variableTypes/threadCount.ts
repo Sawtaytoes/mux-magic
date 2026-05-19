@@ -16,6 +16,7 @@ export const THREAD_COUNT_VARIABLE_DEFINITION: VariableTypeDefinition<"threadCou
     cardinality: "singleton",
     isLinkable: false,
     canonicalId: "tc",
+    runtimeValueType: "number",
     defaultValue: () => "",
     renderValueInput: () => {
       throw new Error(

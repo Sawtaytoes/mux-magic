@@ -48,6 +48,45 @@ describe(resolveSequenceParams.name, () => {
     expect(errors).toEqual([])
   })
 
+  test("coerces a numeric-typed variable's string .value to Number on @id resolution", () => {
+    // dvdCompareId variables serialize as `value: '68856'` (variables
+    // always store strings) but the nameSpecialFeaturesDvdCompareTmdb
+    // schema declares `dvdCompareId: z.number()`. The resolver must
+    // coerce so the request body satisfies the schema.
+    const { resolved, errors } = resolveSequenceParams({
+      rawParams: { dvdCompareId: "@dvd1" },
+      pathsById: {
+        dvd1: { value: "68856", type: "dvdCompareId" },
+      },
+      stepsById: {},
+      commandConfigsByName: {},
+    })
+    expect(resolved).toEqual({ dvdCompareId: 68856 })
+    expect(errors).toEqual([])
+  })
+
+  test("falls back to the raw string when a numeric-typed variable's value isn't numeric", () => {
+    // Worker 35's validator allows DVD Compare slugs ("spider-man-2002")
+    // alongside numeric IDs. The downstream schema is z.number(), so
+    // such a value will fail validation anyway — but passing through the
+    // raw string makes zod's error name the actual offender instead of
+    // reporting NaN.
+    const { resolved } = resolveSequenceParams({
+      rawParams: { dvdCompareId: "@dvd1" },
+      pathsById: {
+        dvd1: {
+          value: "spider-man-2002",
+          type: "dvdCompareId",
+        },
+      },
+      stepsById: {},
+      commandConfigsByName: {},
+    })
+    expect(resolved).toEqual({
+      dvdCompareId: "spider-man-2002",
+    })
+  })
+
   test("resolves @pathId references against the paths table", () => {
     const { resolved, errors } = resolveSequenceParams({
       rawParams: {
