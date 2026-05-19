@@ -16,6 +16,7 @@ import { RenameRegexField } from "../RenameRegexField/RenameRegexField"
 import { StringArrayField } from "../StringArrayField/StringArrayField"
 import { StringField } from "../StringField/StringField"
 import { SubtitleRulesField } from "../SubtitleRulesField/SubtitleRulesField"
+import { SubtitleTypesField } from "../SubtitleTypesField/SubtitleTypesField"
 import { TodoField } from "./TodoField"
 
 type FieldDispatcherProps = {
@@ -71,6 +72,10 @@ export const FieldDispatcher = ({
     case "subtitleRules":
       return (
         <SubtitleRulesField field={field} step={step} />
+      )
+    case "subtitleTypes":
+      return (
+        <SubtitleTypesField field={field} step={step} />
       )
     case "renameRegex":
       return <RenameRegexField field={field} step={step} />

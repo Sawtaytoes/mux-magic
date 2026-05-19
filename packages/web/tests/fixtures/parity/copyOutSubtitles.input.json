@@ -11,7 +11,9 @@
     "command": "copyOutSubtitles",
     "params": {
       "isRecursive": true,
-      "subtitlesLanguage": "eng"
+      "subtitlesLanguages": ["eng", "jpn"],
+      "typesMode": "exclude",
+      "subtitleTypes": ["sup"]
     },
     "links": {
       "sourcePath": "basePath"

@@ -4,6 +4,7 @@ import {
   iso6392LanguageCodes,
 } from "@mux-magic/core/src/tools/iso6392LanguageCodes.js"
 import { subscribeCli } from "@mux-magic/core/src/tools/subscribeCli.js"
+import { subtitleTypeExtensions } from "@mux-magic/core/src/tools/subtitleTypes.js"
 import type {
   Argv,
   CommandBuilder,
@@ -13,11 +14,20 @@ import type {
 type InferArgvOptions<T> =
   T extends Argv<infer U> ? U : never
 
+const typesModeChoices = [
+  "none",
+  "include",
+  "exclude",
+] as const
+
 const builder = (yargs: Argv) =>
   yargs
     .example(
-      '$0 extractSubtitles "~/anime/Zegapain" -r',
-      "Recursively looks through all folders in '~/anime/Zegapain' and copies out subtitles tracks into a separate folder.",
+      '$0 extractSubtitles "~/anime/Zegapain" -r --subtitlesLanguages eng jpn --typesMode exclude --subtitleTypes sup',
+      "Recursively extract every subtitle track in eng/jpn across the folder, but skip image-format (.sup) tracks.",
+    )
+    .epilog(
+      "Migration: --subtitlesLanguage (singular) was renamed to --subtitlesLanguages (array). Pass space-separated codes: --subtitlesLanguages eng jpn.",
     )
     .positional("sourcePath", {
       demandOption: true,
@@ -34,13 +44,30 @@ const builder = (yargs: Argv) =>
       nargs: 0,
       type: "boolean",
     })
-    .option("subtitlesLanguage", {
-      alias: "subs-lang",
+    .option("subtitlesLanguages", {
+      alias: "subs-langs",
+      array: true,
       choices: iso6392LanguageCodes,
-      default:
-        "eng" satisfies Iso6392LanguageCode as Iso6392LanguageCode,
+      default: [] as ReadonlyArray<Iso6392LanguageCode>,
       describe:
-        "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed",
+        "ISO-639-2 codes of subtitle tracks to extract. Empty = all languages.",
+      type: "string",
+    })
+    .option("typesMode", {
+      choices: typesModeChoices,
+      default: "none" as (typeof typesModeChoices)[number],
+      describe:
+        "How to apply --subtitleTypes: 'none' ignores the list (extract all types), 'include' keeps only listed types, 'exclude' skips listed types.",
+      type: "string",
+    })
+    .option("subtitleTypes", {
+      array: true,
+      choices: subtitleTypeExtensions,
+      default: [] as ReadonlyArray<
+        (typeof subtitleTypeExtensions)[number]
+      >,
+      describe:
+        "Subtitle format extensions (ass/srt/sup/sub) the type filter operates on. Ignored when --typesMode is 'none'.",
       type: "string",
     })
 
@@ -63,8 +90,10 @@ export const extractSubtitlesCommand: CommandModule<
     extractSubtitles({
       isRecursive: argv.isRecursive,
       sourcePath: argv.sourcePath,
-      subtitlesLanguage:
-        argv.subtitlesLanguage as Iso6392LanguageCode,
+      subtitleTypes: argv.subtitleTypes,
+      subtitlesLanguages:
+        argv.subtitlesLanguages as ReadonlyArray<Iso6392LanguageCode>,
+      typesMode: argv.typesMode,
     }).subscribe(subscribeCli())
   },
 }
