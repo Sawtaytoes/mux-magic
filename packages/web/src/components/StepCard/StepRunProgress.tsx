@@ -18,9 +18,7 @@ import {
   type NsfRenamePair,
   type NsfSummaryRecord,
 } from "../NsfRunResults/findNsfResults"
-import { NsfRunResults } from "../NsfRunResults/NsfRunResults"
-import { ProgressBar } from "../ProgressBar/ProgressBar"
-import { StepLogs } from "./StepLogs"
+import { StepRunProgressView } from "./StepRunProgressView"
 
 // Per-step run display rendered directly on StepCard. Active while the
 // step is running (progress bar) AND after it finishes (NSF rename
@@ -153,16 +151,14 @@ export const StepRunProgress = ({
   const isRunning = status === "running"
 
   return (
-    <div className="px-3 py-2 border-b border-slate-700 bg-slate-900/60 flex flex-col gap-2">
-      {isRunning && <ProgressBar snapshot={snap} />}
-      <NsfRunResults
-        jobId={jobId}
-        stepId={stepId}
-        sourcePath={sourcePath}
-        renamePairs={renamePairs}
-        summary={summary}
-      />
-      <StepLogs jobId={jobId} />
-    </div>
+    <StepRunProgressView
+      jobId={jobId}
+      stepId={stepId}
+      isRunning={isRunning}
+      snap={snap}
+      sourcePath={sourcePath}
+      renamePairs={renamePairs}
+      summary={summary}
+    />
   )
 }

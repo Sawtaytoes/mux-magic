@@ -91,6 +91,73 @@ const allLowConfidencePayload: SmartMatchModalState = {
   ],
 }
 
+// Mirrors the actual shape an NSF run on Shrek 2 (UHD Blu-ray) yields:
+// 3 leftover files paired against a candidate pool that includes both
+// timed extras (featurettes / music videos rejected as out of
+// tolerance) and untimed entries (audio commentaries, photo gallery,
+// jukebox). Use this story to test the styled RenameTargetPicker
+// without a real DVDCompare scrape or job run.
+const shrek2BluRayPayload: SmartMatchModalState = {
+  jobId: "job-shrek2",
+  stepId: "step-1",
+  sourcePath: "G:\\Disc-Rips\\Shrek 2 - 4K",
+  unrenamedFiles: [
+    {
+      filename: "Shrek 2-SF_01_SpotlightPussInBoots_t46",
+      durationSeconds: 643,
+    },
+    {
+      filename: "Shrek 2-SF_04_MV_01_Accidentally_t49",
+      durationSeconds: 188,
+    },
+    {
+      filename: "Shrek 2-SF_03_FarAwayIdol_t48",
+      durationSeconds: 536,
+    },
+  ],
+  candidates: [
+    {
+      name: "Spotlight on Puss in Boots Featurette",
+      timecode: "10:46",
+    },
+    {
+      name: "Far Far Away Idol",
+      timecode: "5:53",
+    },
+    {
+      name: "Shrek, Rattle & Roll",
+    },
+    {
+      name: "Accidentally in Love Music Video by Counting Crows",
+      timecode: "3:22",
+      parentName: "Shrek, Rattle & Roll",
+    },
+    {
+      name: "These Boots Are Made for Walking Music Video by Puss in Boots",
+      timecode: "2:17",
+      parentName: "Shrek, Rattle & Roll",
+    },
+    {
+      name: 'Shrek the Musical "I Know It\'s Today"',
+      timecode: "5:36",
+      parentName: "Shrek, Rattle & Roll",
+    },
+    {
+      name: '"Shrek\'s Interactive Journey: II" Photo Gallery',
+    },
+    {
+      name: "DreamWorks Animation Jukebox: Kung Fu Panda 2, Megamind, The Penguins of Madagascar, Shrek the Musical, and Kung Fu Panda World (video game)",
+    },
+    {
+      name: "Audio Commentary by Directors Kelly Asbury and Conrad Vernon",
+    },
+    {
+      name: "Audio Commentary by Producer Aron Warner and Editor Mike Andrews",
+    },
+    { name: "* The Film" },
+  ],
+}
+
 const emptyPayload: SmartMatchModalState = {
   jobId: "job-empty",
   stepId: "step-1",
@@ -165,6 +232,24 @@ export const Empty: Story = {
   render: () => (
     <>
       <ReOpenButton initialState={emptyPayload} />
+      <SmartMatchModal />
+    </>
+  ),
+}
+
+// Real-world disc shape (Shrek 2 UHD Blu-ray). The pool mixes timed
+// candidates (Spotlight on Puss in Boots at 10:46, Far Far Away Idol
+// at 5:53, Accidentally in Love at 3:22) with untimed entries (audio
+// commentaries, photo gallery, jukebox, * The Film). Best story for
+// validating the styled RenameTargetPicker's two-row option layout —
+// each candidate's optional timecode chip is visible alongside the
+// confidence chip, ranked by duration proximity to the file's
+// runtime.
+export const Shrek2BluRayDiscShape: Story = {
+  parameters: { initialState: shrek2BluRayPayload },
+  render: () => (
+    <>
+      <ReOpenButton initialState={shrek2BluRayPayload} />
       <SmartMatchModal />
     </>
   ),

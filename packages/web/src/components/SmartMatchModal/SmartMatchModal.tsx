@@ -2,6 +2,7 @@ import { useAtom, useSetAtom } from "jotai"
 import { useMemo, useState } from "react"
 import { apiBase } from "../../apiBase"
 import { videoPreviewModalAtom } from "../../components/VideoPreviewModal/videoPreviewModalAtom"
+import { RenameTargetPicker } from "./RenameTargetPicker"
 import { smartMatchModalAtom } from "./smartMatchModalAtom"
 import {
   type FileSuggestion,
@@ -434,38 +435,23 @@ export const SmartMatchModal = () => {
                           className="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500"
                         />
                       ) : (
-                        <select
-                          aria-label={`Rename target for ${suggestion.filename}`}
-                          value={row.selectedCandidateName}
-                          disabled={
-                            row.isApplied || isApplying
+                        <RenameTargetPicker
+                          candidates={
+                            suggestion.rankedCandidates
                           }
-                          onChange={(event) =>
+                          selectedName={
+                            row.selectedCandidateName
+                          }
+                          onSelect={(name) =>
                             updateRow(suggestion.filename, {
-                              selectedCandidateName:
-                                event.target.value,
+                              selectedCandidateName: name,
                             })
                           }
-                          className="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500"
-                        >
-                          {suggestion.rankedCandidates.map(
-                            (scored) => (
-                              <option
-                                key={scored.candidate.name}
-                                value={scored.candidate.name}
-                              >
-                                {scored.candidate.name}
-                                {scored.candidate.timecode
-                                  ? ` (${scored.candidate.timecode})`
-                                  : ""}{" "}
-                                —{" "}
-                                {formatConfidence(
-                                  scored.confidence,
-                                )}
-                              </option>
-                            ),
-                          )}
-                        </select>
+                          isDisabled={
+                            row.isApplied || isApplying
+                          }
+                          ariaLabel={`Rename target for ${suggestion.filename}`}
+                        />
                       )}
                     </td>
                     <td className="px-2 py-1.5 align-top text-center">

@@ -31,6 +31,13 @@ export const LOW_CONFIDENCE_THRESHOLD = 0.6
 export type Candidate = {
   name: string
   timecode?: string
+  // Name of the DVDCompare parent entry this candidate sits under, when
+  // the source page nested it (e.g. "Shrek, Rattle & Roll:" containing
+  // three indented music videos). Drives the Smart Match dropdown's
+  // hierarchy display so the user can see that this candidate is a
+  // child of an enclosing parent and reason about duplicates more
+  // easily. Undefined for top-level entries.
+  parentName?: string
 }
 
 export type UnrenamedFile = {
