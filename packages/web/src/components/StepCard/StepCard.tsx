@@ -9,6 +9,7 @@ import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
 } from "../../components/CommandHelpModal/commandHelpAtoms"
+import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
@@ -56,8 +57,28 @@ export const StepCard = ({
   const updateAlias = useSetAtom(updateStepAliasAtom)
   const runOrStopStep = useSetAtom(runOrStopStepAtom)
   const isGloballyRunning = useAtomValue(runningAtom)
+  const promptData = useAtomValue(promptModalAtom)
+  const setPromptData = useSetAtom(promptModalAtom)
   const isThisStepRunning =
     step.status === "running" && step.jobId
+  // Server-side the job is still "running" while suspended at a
+  // prompt — but for the user, "paused" is the truthful word. Derive
+  // it here so neither step.status nor the runner need a new field;
+  // the prompt atom is the source of truth. Match on jobId because a
+  // sequence's steps share an umbrella jobId — only the currently
+  // running step among them is the one that issued the prompt.
+  const isPausedForPrompt = Boolean(
+    isThisStepRunning &&
+      promptData &&
+      promptData.jobId === step.jobId,
+  )
+  const resumePrompt = () => {
+    setPromptData((prev) =>
+      prev && prev.jobId === step.jobId
+        ? { ...prev, isMinimized: false }
+        : prev,
+    )
+  }
   const isRunDisabled =
     !step.command ||
     (isGloballyRunning && !isThisStepRunning)
@@ -223,8 +244,21 @@ export const StepCard = ({
           </span>
           <span className="text-slate-400 shrink-0">▾</span>
         </button>
-        {step.status && (
-          <StatusBadge status={step.status} />
+        {isPausedForPrompt ? (
+          // Clickable to reopen the minimized PromptModal. When the
+          // modal isn't minimized the click is harmless — resumePrompt
+          // sets isMinimized=false on a prompt that's already visible.
+          <button
+            type="button"
+            onClick={resumePrompt}
+            title="Resume — reopen the prompt for this step"
+            aria-label="Resume — reopen the prompt for this step"
+            className="cursor-pointer"
+          >
+            <StatusBadge status="paused" />
+          </button>
+        ) : (
+          step.status && <StatusBadge status={step.status} />
         )}
         {step.command && (
           <button

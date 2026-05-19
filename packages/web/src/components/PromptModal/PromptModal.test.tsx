@@ -64,7 +64,10 @@ describe("PromptModal", () => {
     ).toBeInTheDocument()
   })
 
-  test("closes the modal when backdrop is clicked", async () => {
+  test("minimizes the modal when backdrop is clicked (job stays suspended)", async () => {
+    // Backdrop-click is a dismissal, not an answer — the server is
+    // still waiting for input, so the prompt data must stick around
+    // (isMinimized=true) so StepCard's "paused" badge can reopen it.
     const user = userEvent.setup()
     const store = createStore()
     store.set(promptModalAtom, {
@@ -79,7 +82,12 @@ describe("PromptModal", () => {
         .parentElement as HTMLElement,
     )
     await waitFor(() =>
-      expect(store.get(promptModalAtom)).toBeNull(),
+      expect(store.get(promptModalAtom)).toEqual(
+        expect.objectContaining({
+          jobId: "job-1",
+          isMinimized: true,
+        }),
+      ),
     )
   })
 
@@ -172,7 +180,10 @@ describe("PromptModal", () => {
     expect(store.get(promptModalAtom)).toBeNull()
   })
 
-  test("Close (job stays running) clears the atom without firing any fetch", async () => {
+  test("Close (job stays running) minimizes the atom without firing any fetch", async () => {
+    // "Close" no longer means "wipe the prompt" — it means "hide the
+    // modal but keep the prompt alive so StepCard can reopen it".
+    // The fetch assertion stays: closing must NEVER answer or cancel.
     const user = userEvent.setup()
     const fetchSpy = vi.spyOn(globalThis, "fetch")
     const store = createStore()
@@ -188,11 +199,29 @@ describe("PromptModal", () => {
         name: /Close \(job stays running\)/,
       }),
     )
-    expect(store.get(promptModalAtom)).toBeNull()
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(store.get(promptModalAtom)).toEqual(
+      expect.objectContaining({
+        jobId: "job-close",
+        isMinimized: true,
+      }),
+    )
+    // Closing must not answer (/input) or cancel (DELETE /jobs/:id).
+    // The /version probe fired by mount is a separate, idempotent
+    // capability check — excluded explicitly so its presence doesn't
+    // wash out the meaningful assertion.
+    const answerOrCancelCalls = fetchSpy.mock.calls.filter(
+      ([url]) =>
+        typeof url === "string" &&
+        (url.includes("/input") || url.includes("/jobs/")),
+    )
+    expect(answerOrCancelCalls).toEqual([])
   })
 
-  test("Escape closes the modal without submitting or DELETEing", async () => {
+  test("Escape minimizes the modal without submitting or DELETEing", async () => {
+    // Escape is the universal "I'm not ready to answer yet" dismissal.
+    // Same minimization contract as the backdrop click and Close button:
+    // the prompt stays in the atom so the user can reopen it from
+    // StepCard, and no fetch fires.
     const user = userEvent.setup()
     const fetchSpy = vi.spyOn(globalThis, "fetch")
     const store = createStore()
@@ -208,8 +237,20 @@ describe("PromptModal", () => {
     })
     renderWithStore(store)
     await user.keyboard("{Escape}")
-    expect(store.get(promptModalAtom)).toBeNull()
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(store.get(promptModalAtom)).toEqual(
+      expect.objectContaining({
+        jobId: "job-esc",
+        isMinimized: true,
+      }),
+    )
+    // Same intent-filter as the Close test: ignore the mount-time
+    // /version probe, just assert no answer/cancel call leaked out.
+    const answerOrCancelCalls = fetchSpy.mock.calls.filter(
+      ([url]) =>
+        typeof url === "string" &&
+        (url.includes("/input") || url.includes("/jobs/")),
+    )
+    expect(answerOrCancelCalls).toEqual([])
   })
 
   test("Ctrl+C fires Cancel job (DELETE) and clears the atom", async () => {
@@ -251,6 +292,15 @@ describe("PromptModal", () => {
     renderWithStore(store)
     await user.keyboard("{Control>}c{/Control}")
     expect(store.get(promptModalAtom)).not.toBeNull()
-    expect(fetchSpy).not.toHaveBeenCalled()
+    // The suppression assertion is "no DELETE leaked through to the
+    // jobs API" — the mount-time /version probe is unrelated.
+    const cancelCalls = fetchSpy.mock.calls.filter(
+      ([url, init]) =>
+        typeof url === "string" &&
+        url.includes("/jobs/") &&
+        (init as RequestInit | undefined)?.method ===
+          "DELETE",
+    )
+    expect(cancelCalls).toEqual([])
   })
 })

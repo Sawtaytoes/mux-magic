@@ -1,4 +1,4 @@
-import { useSetAtom, useStore } from "jotai"
+import { useAtomValue, useSetAtom, useStore } from "jotai"
 import { useEffect, useRef } from "react"
 
 import { LOOKUP_LINKS } from "../../commands/lookupLinks"
@@ -7,6 +7,7 @@ import { lookupModalAtom } from "../../components/LookupModal/lookupModalAtom"
 import type { LookupType } from "../../components/LookupModal/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { setParamAtom } from "../../state/stepAtoms"
+import { variablesAtom } from "../../state/variablesAtom"
 import type { Step } from "../../types"
 import { parseDvdCompareDisplayName } from "../../utils/parseDvdCompareDisplayName"
 import { FieldLabel } from "../FieldLabel/FieldLabel"
@@ -43,22 +44,45 @@ export const NumberWithLookupField = ({
   field,
   step,
 }: NumberWithLookupFieldProps) => {
-  const { setParam } = useBuilderActions()
+  const { setLinkedOrParamValue } = useBuilderActions()
   const setLookupModal = useSetAtom(lookupModalAtom)
   const store = useStore()
+  const variables = useAtomValue(variablesAtom)
 
+  // Link-aware read. When the field is linked to a variable
+  // (e.g. nameSpecialFeaturesDvdCompareTmdb auto-links dvdCompareId in
+  // changeCommandAtom → ensureDvdCompareIdVariable), buildParams emits
+  // `@<varId>` in the serialized params, so the variable's `value` is
+  // the source of truth — not `step.params[field.name]`. Falling back to
+  // params for the unlinked case keeps non-linkable numeric fields
+  // (e.g. tmdbId) and pre-link YAML loads working unchanged.
   // Defensive read: if a stale NaN ever slipped into params (older
   // builds before parseNumericInputValue, or a programmatic write that
   // bypassed the guard), surface it as an empty input rather than the
   // literal string "NaN".
-  const storedValue = step.params[field.name] as
-    | number
-    | undefined
+  const link = step.links?.[field.name]
+  const linkedVariableValue =
+    typeof link === "string"
+      ? variables.find(
+          (variable) => variable.id === link,
+        )?.value
+      : undefined
+  const resolvedValue: number | undefined = (() => {
+    if (typeof link === "string") {
+      if (!linkedVariableValue) return undefined
+      const parsed = Number(linkedVariableValue)
+      return Number.isFinite(parsed) ? parsed : undefined
+    }
+    const fromParams = step.params[field.name] as
+      | number
+      | undefined
+    return typeof fromParams === "number" &&
+      Number.isFinite(fromParams)
+      ? fromParams
+      : undefined
+  })()
   const rawValue =
-    typeof storedValue === "number" &&
-    Number.isFinite(storedValue)
-      ? storedValue
-      : ""
+    resolvedValue === undefined ? "" : resolvedValue
   const companionName = field.companionNameField
     ? ((step.params[field.companionNameField] as
         | string
@@ -92,10 +116,21 @@ export const NumberWithLookupField = ({
   const requestTokenRef = useRef<string | null>(null)
 
   // Sibling dvdCompareId is needed to look up release labels by hash.
-  const siblingDvdCompareId =
-    field.name === "dvdCompareReleaseHash"
-      ? (step.params.dvdCompareId as number | undefined)
-      : undefined
+  // Same link-awareness rule as the primary read above: when the sibling
+  // is linked to a variable, its value lives there, not in params.
+  const siblingDvdCompareId = (() => {
+    if (field.name !== "dvdCompareReleaseHash") return undefined
+    const siblingLink = step.links?.dvdCompareId
+    if (typeof siblingLink === "string") {
+      const linked = variables.find(
+        (variable) => variable.id === siblingLink,
+      )?.value
+      if (!linked) return undefined
+      const parsed = Number(linked)
+      return Number.isFinite(parsed) ? parsed : undefined
+    }
+    return step.params.dvdCompareId as number | undefined
+  })()
 
   useEffect(() => {
     if (debounceTimerRef.current) {
@@ -190,7 +225,7 @@ export const NumberWithLookupField = ({
   const handleIdChange = (
     nextValue: number | undefined,
   ) => {
-    setParam(step.id, field.name, nextValue)
+    setLinkedOrParamValue(step.id, field.name, nextValue)
     if (field.companionNameField) {
       store.set(setParamAtom, {
         stepId: step.id,

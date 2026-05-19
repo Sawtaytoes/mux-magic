@@ -17,12 +17,17 @@ import type { LookupState } from "../LookupModal/types"
 import { LookupReleaseStage } from "./LookupReleaseStage"
 
 const setParamMock = vi.fn()
+const setLinkedOrParamValueMock = vi.fn()
 vi.mock("../../hooks/useBuilderActions", () => ({
-  useBuilderActions: () => ({ setParam: setParamMock }),
+  useBuilderActions: () => ({
+    setParam: setParamMock,
+    setLinkedOrParamValue: setLinkedOrParamValueMock,
+  }),
 }))
 
 beforeEach(() => {
   setParamMock.mockClear()
+  setLinkedOrParamValueMock.mockClear()
 })
 
 afterEach(() => {
@@ -127,10 +132,15 @@ describe("LookupReleaseStage", () => {
       ),
     )
 
-    // Confirm all four setParam writes happened with the right field names + primitive values.
-    const writes = setParamMock.mock.calls.map(
-      ([, name, value]) => ({ name, value }),
-    )
+    // Confirm all four writes happened with the right field names +
+    // primitive values. The primary id now routes through the
+    // link-aware writer (so an auto-linked dvdCompareId variable picks
+    // up the value instead of being shadowed); the other three writes
+    // are companion fields and stay on setParam.
+    const writes = [
+      ...setLinkedOrParamValueMock.mock.calls,
+      ...setParamMock.mock.calls,
+    ].map(([, name, value]) => ({ name, value }))
     expect(writes).toEqual(
       expect.arrayContaining([
         { name: "dvdCompareId", value: 74759 },
