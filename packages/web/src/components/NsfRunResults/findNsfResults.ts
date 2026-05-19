@@ -72,3 +72,51 @@ export const findNsfRenamePairs = (
   if (!results) return []
   return results.filter(isNsfRenamePair)
 }
+
+// Folds SmartMatch-applied renames into the SSE-derived NSF results so
+// the step card's display reflects renames the user just made via the
+// modal. Specifically:
+//   • Concats `appliedRenames` onto `renamePairs` so the emerald
+//     "old → new" list grows immediately on Apply.
+//   • Strips renamed entries from `summary.unrenamedFilenames` and
+//     `summary.unnamedFileCandidates` so the "Files not renamed:"
+//     block shrinks and a re-open of Smart Match doesn't re-list the
+//     same files.
+// Match key is the stem (oldName / filename) — both NSF and SmartMatch
+// use extension-stripped names, so a direct string compare is enough.
+export const mergeAppliedRenamesIntoNsfResults = ({
+  summary,
+  renamePairs,
+  appliedRenames,
+}: {
+  summary: NsfSummaryRecord | null
+  renamePairs: NsfRenamePair[]
+  appliedRenames: NsfRenamePair[]
+}): {
+  summary: NsfSummaryRecord | null
+  renamePairs: NsfRenamePair[]
+} => {
+  if (appliedRenames.length === 0) {
+    return { summary, renamePairs }
+  }
+  const appliedOldNames = new Set(
+    appliedRenames.map((pair) => pair.oldName),
+  )
+  const mergedPairs = renamePairs.concat(appliedRenames)
+  if (summary === null) {
+    return { summary, renamePairs: mergedPairs }
+  }
+  return {
+    summary: {
+      ...summary,
+      unrenamedFilenames: summary.unrenamedFilenames.filter(
+        (name) => !appliedOldNames.has(name),
+      ),
+      unnamedFileCandidates:
+        summary.unnamedFileCandidates?.filter(
+          (entry) => !appliedOldNames.has(entry.filename),
+        ),
+    },
+    renamePairs: mergedPairs,
+  }
+}

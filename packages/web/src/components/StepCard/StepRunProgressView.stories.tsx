@@ -175,6 +175,49 @@ export const DoneNothingChanged: Story = {
   decorators: [withLogs(sampleLogLines)],
 }
 
+// After the user clicked Apply in Smart Match for two of the three
+// leftover files. The rename-pairs list grew to include both
+// SmartMatch-applied renames (Spotlight on Puss in Boots + Far Far
+// Away Idol) and the original NSF rename. The "Files not renamed:"
+// block shrank to the single remaining file. The Fix Unnamed button
+// would still show because that one file is still unrenamed. This is
+// the state the user reported missing — verifies the
+// `mergeAppliedRenamesIntoNsfResults` round-trip end-to-end at the
+// presentation layer (the host components do the actual atom read +
+// merge before passing props down).
+export const DoneAfterSmartMatchApply: Story = {
+  args: {
+    isRunning: false,
+    renamePairs: sampleRenames.concat([
+      {
+        oldName: "Shrek 2-SF_01_SpotlightPussInBoots_t46",
+        newName: "Spotlight on Puss in Boots Featurette",
+      },
+      {
+        oldName: "Shrek 2-SF_03_FarAwayIdol_t48",
+        newName: "Far Far Away Idol",
+      },
+    ]),
+    summary: {
+      unrenamedFilenames: [
+        "Shrek 2-SF_04_MV_01_Accidentally_t49",
+      ],
+      possibleNames: sampleSummary.possibleNames,
+      unnamedFileCandidates: [
+        {
+          filename:
+            "Shrek 2-SF_04_MV_01_Accidentally_t49",
+          durationSeconds: 188,
+          candidates: [
+            "Accidentally in Love Music Video by Counting Crows",
+          ],
+        },
+      ],
+    },
+  },
+  decorators: [withLogs(sampleLogLines)],
+}
+
 // No NSF results at all — non-NSF command that produced log output
 // but no oldName/newName emissions or summary. The View collapses to
 // just the StepLogs block.

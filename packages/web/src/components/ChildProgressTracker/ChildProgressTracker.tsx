@@ -18,11 +18,13 @@ import type {
 import {
   findNsfRenamePairs,
   findNsfSummary,
+  mergeAppliedRenamesIntoNsfResults,
   type NsfRenamePair,
   type NsfSummaryRecord,
 } from "../NsfRunResults/findNsfResults"
 import { NsfRunResults } from "../NsfRunResults/NsfRunResults"
 import { ProgressBar } from "../ProgressBar/ProgressBar"
+import { appliedSmartMatchRenamesByJobIdAtom } from "../SmartMatchModal/appliedSmartMatchRenamesAtom"
 
 const findStepById = (
   items: SequenceItem[],
@@ -82,6 +84,9 @@ export const ChildProgressTracker = ({
   const steps = useAtomValue(stepsAtom)
   const variables = useAtomValue(variablesAtom)
   const commands = useAtomValue(commandsAtom)
+  const appliedRenamesByJobId = useAtomValue(
+    appliedSmartMatchRenamesByJobIdAtom,
+  )
 
   const [summary, setSummary] =
     useState<NsfSummaryRecord | null>(null)
@@ -125,6 +130,16 @@ export const ChildProgressTracker = ({
     findStep,
   )
 
+  // See StepRunProgress for the rationale on merging SmartMatch
+  // applied renames into the displayed view.
+  const appliedRenames =
+    appliedRenamesByJobId.get(jobId) ?? []
+  const merged = mergeAppliedRenamesIntoNsfResults({
+    summary,
+    renamePairs,
+    appliedRenames,
+  })
+
   return (
     <div
       id="api-run-progress-host"
@@ -141,8 +156,8 @@ export const ChildProgressTracker = ({
         jobId={jobId}
         stepId={stepId}
         sourcePath={sourcePath}
-        renamePairs={renamePairs}
-        summary={summary}
+        renamePairs={merged.renamePairs}
+        summary={merged.summary}
       />
     </div>
   )
