@@ -55,6 +55,36 @@ const findNsfSummary = (
   return match ?? null
 }
 
+// Per-rename emission shape from the NSF pipeline. Stream order:
+// one of these per actually-renamed file, then the trailing summary
+// record (NsfSummaryRecord). The legacy v1 builder rendered each pair
+// as a single "old → new" line under the step card — restoring that
+// here in the React port so the user sees what actually changed
+// without having to scan the raw log lines.
+type NsfRenamePair = {
+  oldName: string
+  newName: string
+}
+
+const isNsfRenamePair = (
+  entry: unknown,
+): entry is NsfRenamePair => {
+  if (typeof entry !== "object" || entry === null)
+    return false
+  const candidate = entry as Record<string, unknown>
+  return (
+    typeof candidate.oldName === "string" &&
+    typeof candidate.newName === "string"
+  )
+}
+
+const findNsfRenamePairs = (
+  results: unknown[] | undefined,
+): NsfRenamePair[] => {
+  if (!results) return []
+  return results.filter(isNsfRenamePair)
+}
+
 const findStepById = (
   items: SequenceItem[],
   stepId: string,
@@ -119,11 +149,15 @@ export const ChildProgressTracker = ({
 
   const [nsfSummary, setNsfSummary] =
     useState<NsfSummaryRecord | null>(null)
+  const [renamePairs, setRenamePairs] = useState<
+    NsfRenamePair[]
+  >([])
 
   const handleDone = useCallback(
     (payload: LogStreamDonePayload) => {
       const summary = findNsfSummary(payload.results)
       setNsfSummary(summary)
+      setRenamePairs(findNsfRenamePairs(payload.results))
     },
     [],
   )
@@ -187,6 +221,48 @@ export const ChildProgressTracker = ({
         Step {stepId}
       </p>
       <ProgressBar snapshot={snap} />
+      {nsfSummary && (
+        <p
+          id="api-run-rename-counts"
+          className="text-xs text-slate-300 mt-2"
+        >
+          Renamed {renamePairs.length}. Files not renamed:{" "}
+          {nsfSummary.unrenamedFilenames.length}.
+        </p>
+      )}
+      {renamePairs.length > 0 && (
+        <div
+          id="api-run-rename-list"
+          className="mt-2 max-h-40 overflow-y-auto text-emerald-300 font-mono text-xs wrap-break-word"
+        >
+          {renamePairs.map((pair) => (
+            <div
+              key={`${pair.oldName}-${pair.newName}`}
+              data-rename-pair
+            >
+              {pair.oldName} → {pair.newName}
+            </div>
+          ))}
+        </div>
+      )}
+      {nsfSummary &&
+        nsfSummary.unrenamedFilenames.length > 0 && (
+          <div
+            id="api-run-unrenamed-list"
+            className="mt-2 bg-yellow-900/30 border border-yellow-700 text-yellow-100 rounded px-2 py-1.5 text-xs"
+          >
+            <p className="font-medium mb-1">
+              Files not renamed:
+            </p>
+            <div className="font-mono wrap-break-word">
+              {nsfSummary.unrenamedFilenames.map(
+                (filename) => (
+                  <div key={filename}>{filename}</div>
+                ),
+              )}
+            </div>
+          </div>
+        )}
       {hasSmartMatchCandidates && (
         <div className="mt-2 flex justify-end">
           <button
@@ -196,7 +272,7 @@ export const ChildProgressTracker = ({
             className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded font-medium"
             title="Review and rename leftover files that didn't match by timecode"
           >
-            Smart Match…
+            ✨ Fix Unnamed
           </button>
         </div>
       )}
