@@ -362,10 +362,11 @@ export const StepCard = ({
           </button>
         </div>
       </div>
-      {step.status === "running" && step.jobId && (
+      {step.jobId && (
         <StepRunProgress
           stepId={step.id}
           jobId={step.jobId}
+          status={step.status}
         />
       )}
       {!step.isCollapsed && (
