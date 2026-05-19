@@ -19,6 +19,11 @@ export type NsfSummaryRecord = {
   }>
   unnamedFileCandidates?: Array<{
     filename: string
+    // File extension including the dot (e.g. ".mkv"). Optional in the
+    // narrowed type because old summary records emitted before the
+    // server propagated it don't include the field. Modal callers
+    // fall back to "" when undefined.
+    extension?: string
     durationSeconds: number | null
     candidates: string[]
   }>

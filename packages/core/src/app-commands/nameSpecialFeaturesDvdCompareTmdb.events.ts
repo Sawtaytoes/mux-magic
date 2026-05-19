@@ -10,6 +10,13 @@ import type { PossibleName } from "../tools/parseSpecialFeatures.js"
 // resolve a duration for this file.
 export type UnnamedFileCandidate = {
   filename: string
+  // File extension including the dot (e.g. ".mkv"). Empty string when
+  // the file has none. Needed because `filename` is already
+  // extension-stripped at the FileInfo level (see
+  // `getLastItemInFilePath` in `@mux-magic/tools`); without this slot
+  // the Smart Match modal can't reconstruct the on-disk path for
+  // `oldPath`/`newPath` and the rename fails with ENOENT.
+  extension: string
   durationSeconds: number | null
   candidates: string[]
 }

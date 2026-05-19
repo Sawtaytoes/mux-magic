@@ -23,14 +23,16 @@ describe(buildUnnamedFileCandidates.name, () => {
         possibleNames: [],
         unrenamedFiles: [
           {
-            filename: "MOVIE_t23.mkv",
+            filename: "MOVIE_t23",
+            extension: ".mkv",
             durationSeconds: 600,
           },
         ],
       }),
     ).toEqual([
       {
-        filename: "MOVIE_t23.mkv",
+        filename: "MOVIE_t23",
+        extension: ".mkv",
         durationSeconds: 600,
         candidates: [],
       },
@@ -44,13 +46,15 @@ describe(buildUnnamedFileCandidates.name, () => {
       ],
       unrenamedFiles: [
         {
-          filename: "MOVIE_t23.mkv",
+          filename: "MOVIE_t23",
+          extension: ".mkv",
           durationSeconds: 600,
         },
       ],
     })
     expect(result).toHaveLength(1)
-    expect(result[0].filename).toBe("MOVIE_t23.mkv")
+    expect(result[0].filename).toBe("MOVIE_t23")
+    expect(result[0].extension).toBe(".mkv")
     expect(result[0].durationSeconds).toBe(600)
     expect(result[0].candidates).toEqual(["Image Gallery"])
   })
@@ -62,11 +66,13 @@ describe(buildUnnamedFileCandidates.name, () => {
       ],
       unrenamedFiles: [
         {
-          filename: "BONUS_1.mkv",
+          filename: "BONUS_1",
+          extension: ".mkv",
           durationSeconds: 150,
         },
         {
-          filename: "BONUS_2.mkv",
+          filename: "BONUS_2",
+          extension: ".mkv",
           durationSeconds: null,
         },
       ],
@@ -90,7 +96,8 @@ describe(buildUnnamedFileCandidates.name, () => {
       ],
       unrenamedFiles: [
         {
-          filename: "image-gallery-extra.mkv",
+          filename: "image-gallery-extra",
+          extension: ".mkv",
           durationSeconds: 30,
         },
       ],
@@ -108,11 +115,13 @@ describe(buildUnnamedFileCandidates.name, () => {
       ],
       unrenamedFiles: [
         {
-          filename: "MOVIE_t01.mkv",
+          filename: "MOVIE_t01",
+          extension: ".mkv",
           durationSeconds: 120,
         },
         {
-          filename: "MOVIE_t02.mkv",
+          filename: "MOVIE_t02",
+          extension: ".mkv",
           durationSeconds: 240,
         },
       ],
@@ -130,7 +139,8 @@ describe(buildUnnamedFileCandidates.name, () => {
       ],
       unrenamedFiles: [
         {
-          filename: "BONUS_1.mkv",
+          filename: "BONUS_1",
+          extension: ".mkv",
           durationSeconds: 150,
         },
       ],

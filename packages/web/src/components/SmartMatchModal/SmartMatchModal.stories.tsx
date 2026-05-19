@@ -32,11 +32,13 @@ const allHighConfidencePayload: SmartMatchModalState = {
   sourcePath: "/movies/Demo",
   unrenamedFiles: [
     {
-      filename: "BONUS_1.mkv",
+      filename: "BONUS_1",
+      extension: ".mkv",
       durationSeconds: 5400,
     },
     {
-      filename: "BONUS_2.mkv",
+      filename: "BONUS_2",
+      extension: ".mkv",
       durationSeconds: 150,
     },
   ],
@@ -52,15 +54,18 @@ const mixedConfidencePayload: SmartMatchModalState = {
   sourcePath: "/movies/Demo",
   unrenamedFiles: [
     {
-      filename: "BONUS_1.mkv",
+      filename: "BONUS_1",
+      extension: ".mkv",
       durationSeconds: 5400,
     },
     {
-      filename: "image-gallery-disc1.mkv",
+      filename: "image-gallery-disc1",
+      extension: ".mkv",
       durationSeconds: 30,
     },
     {
-      filename: "MOVIE_t99.mkv",
+      filename: "MOVIE_t99",
+      extension: ".mkv",
       durationSeconds: 45,
     },
   ],
@@ -77,11 +82,13 @@ const allLowConfidencePayload: SmartMatchModalState = {
   sourcePath: "/movies/Demo",
   unrenamedFiles: [
     {
-      filename: "MOVIE_t99.mkv",
+      filename: "MOVIE_t99",
+      extension: ".mkv",
       durationSeconds: 45,
     },
     {
-      filename: "MOVIE_t100.mkv",
+      filename: "MOVIE_t100",
+      extension: ".mkv",
       durationSeconds: 60,
     },
   ],
@@ -104,14 +111,17 @@ const shrek2BluRayPayload: SmartMatchModalState = {
   unrenamedFiles: [
     {
       filename: "Shrek 2-SF_01_SpotlightPussInBoots_t46",
+      extension: ".mkv",
       durationSeconds: 643,
     },
     {
       filename: "Shrek 2-SF_04_MV_01_Accidentally_t49",
+      extension: ".mkv",
       durationSeconds: 188,
     },
     {
       filename: "Shrek 2-SF_03_FarAwayIdol_t48",
+      extension: ".mkv",
       durationSeconds: 536,
     },
   ],

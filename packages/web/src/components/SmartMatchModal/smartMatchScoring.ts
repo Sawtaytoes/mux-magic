@@ -42,6 +42,13 @@ export type Candidate = {
 
 export type UnrenamedFile = {
   filename: string
+  // File extension including the dot (e.g. ".mkv"). Empty string if
+  // the file has no extension. Needed at modal-render time to build
+  // the correct on-disk paths in oldPath/newPath — the server-side
+  // `filename` is already extension-stripped by `FileInfo`'s
+  // `getLastItemInFilePath`, so without this slot the rename POST
+  // hits ENOENT.
+  extension: string
   durationSeconds: number | null
 }
 
@@ -54,6 +61,11 @@ export type ScoredCandidate = {
 
 export type FileSuggestion = {
   filename: string
+  // File extension including the dot (e.g. ".mkv"). Carried alongside
+  // the stem so the modal can rebuild the on-disk path for the
+  // rename POST without re-deriving from a stem that has no
+  // extension to begin with (see UnrenamedFile.extension).
+  extension: string
   durationSeconds: number | null
   rankedCandidates: ScoredCandidate[]
 }
@@ -228,12 +240,15 @@ export const rankSuggestions = ({
   candidates: Candidate[]
   unrenamedFiles: UnrenamedFile[]
 }): FileSuggestion[] =>
-  unrenamedFiles.map(({ filename, durationSeconds }) => ({
-    filename,
-    durationSeconds,
-    rankedCandidates: rankCandidatesForFile({
-      fileDurationSeconds: durationSeconds,
+  unrenamedFiles.map(
+    ({ filename, extension, durationSeconds }) => ({
       filename,
-      candidates,
+      extension,
+      durationSeconds,
+      rankedCandidates: rankCandidatesForFile({
+        fileDurationSeconds: durationSeconds,
+        filename,
+        candidates,
+      }),
     }),
-  }))
+  )

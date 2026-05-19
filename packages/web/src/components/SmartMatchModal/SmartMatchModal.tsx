@@ -28,18 +28,21 @@ const joinPath = (
   return `${trimmed}${separator}${filename}`
 }
 
-const extensionOf = (filename: string): string => {
-  const match = filename.match(/\.[^.\\/]+$/)
-  return match ? match[0] : ""
-}
-
+// Append the file's extension to `desiredName` unless the user
+// already typed one. The extension comes from the server-side
+// `UnrenamedFile.extension` field (e.g. ".mkv") — the FileInfo
+// `filename` itself is extension-stripped upstream by
+// `getLastItemInFilePath`, so we can't recover the extension from
+// the filename alone. Empty `extension` (when the file has none) is
+// a no-op.
 const ensureExtension = (
   desiredName: string,
-  originalFilename: string,
+  extension: string,
 ): string => {
-  const extension = extensionOf(originalFilename)
+  if (extension.length === 0) {
+    return desiredName
+  }
   if (
-    extension.length > 0 &&
     desiredName
       .toLowerCase()
       .endsWith(extension.toLowerCase())
@@ -152,15 +155,22 @@ export const SmartMatchModal = () => {
         if (!row?.isIncluded || row.isApplied) return null
         const desiredBase = row.selectedCandidateName.trim()
         if (desiredBase.length === 0) return null
+        // Both sides must include the file's extension. The server's
+        // FileInfo.filename is extension-stripped (e.g.
+        // "Shrek 2-SF_03_FarAwayIdol_t48" with no ".mkv"); appending
+        // `suggestion.extension` restores the on-disk path. Without
+        // this the rename POST hits ENOENT because the file at
+        // `<sourcePath>\<stem>` doesn't exist — only `<stem>.mkv`
+        // does.
         const finalName = ensureExtension(
           desiredBase,
-          suggestion.filename,
+          suggestion.extension,
         )
         return {
           filename: suggestion.filename,
           oldPath: joinPath(
             state.sourcePath,
-            suggestion.filename,
+            `${suggestion.filename}${suggestion.extension}`,
           ),
           newPath: joinPath(state.sourcePath, finalName),
         }
@@ -384,7 +394,7 @@ export const SmartMatchModal = () => {
                           setVideoPreview({
                             path: joinPath(
                               state.sourcePath,
-                              suggestion.filename,
+                              `${suggestion.filename}${suggestion.extension}`,
                             ),
                           })
                         }

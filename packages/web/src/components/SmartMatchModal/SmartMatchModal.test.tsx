@@ -38,11 +38,13 @@ const mixedPayload = {
   sourcePath: "/movies/Demo",
   unrenamedFiles: [
     {
-      filename: "BONUS_1.mkv",
+      filename: "BONUS_1",
+      extension: ".mkv",
       durationSeconds: 5400,
     },
     {
-      filename: "MOVIE_t99.mkv",
+      filename: "MOVIE_t99",
+      extension: ".mkv",
       durationSeconds: 30,
     },
   ],
@@ -72,12 +74,12 @@ describe("SmartMatchModal", () => {
     ).toBeInTheDocument()
     expect(
       document.querySelector(
-        '[data-smart-match-row="BONUS_1.mkv"]',
+        '[data-smart-match-row="BONUS_1"]',
       ),
     ).not.toBeNull()
     expect(
       document.querySelector(
-        '[data-smart-match-row="MOVIE_t99.mkv"]',
+        '[data-smart-match-row="MOVIE_t99"]',
       ),
     ).not.toBeNull()
   })
@@ -86,13 +88,13 @@ describe("SmartMatchModal", () => {
     const store = createStore()
     store.set(smartMatchModalAtom, mixedPayload)
     renderWithStore(store)
-    // BONUS_1.mkv matches Theatrical Cut exactly on duration → high confidence.
+    // BONUS_1 matches Theatrical Cut exactly on duration → high confidence.
     const includeBonus1 = screen.getByLabelText(
-      "Include BONUS_1.mkv",
+      "Include BONUS_1",
     ) as HTMLInputElement
-    // MOVIE_t99.mkv only has a filename-fuzz path, multiplied by FILENAME_ONLY_SCORE_FACTOR → low confidence.
+    // MOVIE_t99 only has a filename-fuzz path, multiplied by FILENAME_ONLY_SCORE_FACTOR → low confidence.
     const includeMovieT99 = screen.getByLabelText(
-      "Include MOVIE_t99.mkv",
+      "Include MOVIE_t99",
     ) as HTMLInputElement
     expect(includeBonus1.checked).toBe(true)
     expect(includeMovieT99.checked).toBe(false)
