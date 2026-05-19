@@ -2,7 +2,10 @@
 import { useStore } from "jotai"
 import { useCallback } from "react"
 import { sequenceRunModalAtom } from "../components/SequenceRunModal/sequenceRunModalAtom"
-import { findStepById, isGroup } from "../jobs/sequenceUtils"
+import {
+  findStepById,
+  isGroup,
+} from "../jobs/sequenceUtils"
 import { toYamlStr } from "../jobs/yamlCodec"
 import { commandsAtom } from "../state/commandsAtom"
 import { dragReorderAtom } from "../state/dragAtoms"

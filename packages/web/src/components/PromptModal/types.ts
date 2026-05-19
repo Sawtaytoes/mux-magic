@@ -17,6 +17,10 @@ export type PromptData = {
   jobId: string
   promptId: string
   message: string
+  // Smaller caption rendered below `message`. Used to surface the
+  // on-disk filename when `message` is a proposed new title — keeps
+  // the headline distinct from the file context.
+  subtitle?: string
   filePath?: string
   filePaths?: PromptFilePath[]
   options: PromptOption[]

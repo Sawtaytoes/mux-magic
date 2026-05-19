@@ -264,12 +264,26 @@ export const PromptModal = () => {
           ⏸ The pipeline is paused waiting for your choice.
         </p>
 
-        <p
-          id="prompt-message"
-          className="text-slate-100 text-sm leading-relaxed"
-        >
-          {promptData.message}
-        </p>
+        <div className="flex flex-col gap-1">
+          <p
+            id="prompt-message"
+            className={
+              promptData.subtitle
+                ? "text-slate-100 text-lg font-semibold leading-snug"
+                : "text-slate-100 text-sm leading-relaxed"
+            }
+          >
+            {promptData.message}
+          </p>
+          {promptData.subtitle && (
+            <p
+              id="prompt-subtitle"
+              className="text-slate-400 text-xs leading-snug break-all"
+            >
+              {promptData.subtitle}
+            </p>
+          )}
+        </div>
 
         {promptData.filePath && (
           <div id="prompt-preview" className="flex gap-2">

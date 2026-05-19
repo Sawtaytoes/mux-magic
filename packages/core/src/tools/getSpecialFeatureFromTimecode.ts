@@ -1,3 +1,4 @@
+import { basename } from "node:path"
 import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import {
   EMPTY,
@@ -326,7 +327,8 @@ export const getSpecialFeatureFromTimecode = ({
       if (type === "unknown") {
         if (parentType === "unknown") {
           return getUserSearchInput({
-            message: `${filename}\n${text}`,
+            message: text,
+            subtitle: filePath ? basename(filePath) : filename,
             filePath,
             options: [
               ...specialFeatureTypes.map(

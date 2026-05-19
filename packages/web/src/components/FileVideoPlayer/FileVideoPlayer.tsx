@@ -37,8 +37,10 @@ export const FileVideoPlayer = ({
   // race where setupPlayback runs once with a stale `false`, points
   // <video>.src at /files/stream, then re-runs to the transcode URL —
   // a visible flicker / double-load on first open.
-  const [isFfmpegTranscodeEnabled, setIsFfmpegTranscodeEnabled] =
-    useState<boolean | null>(null)
+  const [
+    isFfmpegTranscodeEnabled,
+    setIsFfmpegTranscodeEnabled,
+  ] = useState<boolean | null>(null)
   const [copyLabel, setCopyLabel] = useState("📋 Copy path")
   const [openLabel, setOpenLabel] = useState(
     "⬡ Open in player",
@@ -76,7 +78,9 @@ export const FileVideoPlayer = ({
     fetch(`${apiBase}/features`, { cache: "no-store" })
       .then((resp) => resp.json())
       .then(
-        (data: { experimentalFfmpegTranscoding?: boolean }) => {
+        (data: {
+          experimentalFfmpegTranscoding?: boolean
+        }) => {
           setIsFfmpegTranscodeEnabled(
             data.experimentalFfmpegTranscoding === true,
           )
