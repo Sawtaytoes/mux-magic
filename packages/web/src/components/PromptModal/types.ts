@@ -20,4 +20,11 @@ export type PromptData = {
   filePath?: string
   filePaths?: PromptFilePath[]
   options: PromptOption[]
+  // Closing the modal does NOT cancel the job — the server stays
+  // suspended waiting for input. Setting `isMinimized: true` instead
+  // of clearing the atom keeps the prompt data around so the StepCard
+  // can surface a "paused" affordance and re-open the modal. A new
+  // prompt event in useLogStream.ts overwrites the whole atom, so
+  // isMinimized resets to undefined (falsy → visible) automatically.
+  isMinimized?: boolean
 }

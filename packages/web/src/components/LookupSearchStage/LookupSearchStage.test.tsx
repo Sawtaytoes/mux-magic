@@ -18,8 +18,12 @@ import type { LookupState } from "../LookupModal/types"
 import { LookupSearchStage } from "./LookupSearchStage"
 
 const setParamMock = vi.fn()
+const setLinkedOrParamValueMock = vi.fn()
 vi.mock("../../hooks/useBuilderActions", () => ({
-  useBuilderActions: () => ({ setParam: setParamMock }),
+  useBuilderActions: () => ({
+    setParam: setParamMock,
+    setLinkedOrParamValue: setLinkedOrParamValueMock,
+  }),
 }))
 
 const originalFetch = globalThis.fetch
@@ -27,6 +31,7 @@ const originalFetch = globalThis.fetch
 beforeEach(() => {
   globalThis.fetch = vi.fn()
   setParamMock.mockClear()
+  setLinkedOrParamValueMock.mockClear()
 })
 
 afterEach(() => {
@@ -184,10 +189,17 @@ describe("LookupSearchStage — DVDCompare flow", () => {
       screen.getByText("Neon Genesis Evangelion"),
     )
 
+    // The primary id flows through setLinkedOrParamValue (link-aware
+    // writer); the companion display name still uses setParam. Both
+    // must never receive an object.
     await waitFor(() =>
-      expect(setParamMock).toHaveBeenCalled(),
+      expect(setLinkedOrParamValueMock).toHaveBeenCalled(),
     )
-    for (const call of setParamMock.mock.calls) {
+    const allCalls = [
+      ...setLinkedOrParamValueMock.mock.calls,
+      ...setParamMock.mock.calls,
+    ]
+    for (const call of allCalls) {
       const value = call[2]
       expect(
         typeof value === "object" && value !== null,

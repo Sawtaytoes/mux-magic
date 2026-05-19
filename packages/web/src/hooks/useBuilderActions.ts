@@ -2,7 +2,7 @@
 import { useStore } from "jotai"
 import { useCallback } from "react"
 import { sequenceRunModalAtom } from "../components/SequenceRunModal/sequenceRunModalAtom"
-import { isGroup } from "../jobs/sequenceUtils"
+import { findStepById, isGroup } from "../jobs/sequenceUtils"
 import { toYamlStr } from "../jobs/yamlCodec"
 import { commandsAtom } from "../state/commandsAtom"
 import { dragReorderAtom } from "../state/dragAtoms"
@@ -42,7 +42,10 @@ import {
   setParamAtom,
 } from "../state/stepAtoms"
 import { stepsAtom } from "../state/stepsAtom"
-import { variablesAtom } from "../state/variablesAtom"
+import {
+  setVariableValueAtom,
+  variablesAtom,
+} from "../state/variablesAtom"
 import type { Group, Step, StepLink } from "../types"
 import { findFirstChangedStepId } from "../utils/diffSteps"
 import { runWithViewTransition } from "../utils/runWithViewTransition"
@@ -151,6 +154,39 @@ export const useBuilderActions = () => {
     (stepId: string, fieldName: string, value: unknown) => {
       pushHistory()
       store.set(setParamAtom, { stepId, fieldName, value })
+    },
+    [store, pushHistory],
+  )
+
+  // Link-aware writer for primary-input fields (the field that owns a
+  // `step.links[fieldName]` entry — sourcePath, dvdCompareId, etc.). If the
+  // field is currently linked to a variable, the typed/picked value flows
+  // into that variable's `value`; otherwise it goes to `step.params`. This
+  // mirrors the rule buildParams uses for serialization — see
+  // packages/web/src/commands/buildParams.ts:17-23 — so what the user
+  // sees in the field always matches what the YAML emits.
+  const setLinkedOrParamValue = useCallback(
+    (stepId: string, fieldName: string, value: unknown) => {
+      pushHistory()
+      const items = store.get(stepsAtom)
+      const step = findStepById(items, stepId)
+      const link = step?.links?.[fieldName]
+      if (typeof link === "string") {
+        const stringValue =
+          value === undefined || value === null
+            ? ""
+            : String(value)
+        store.set(setVariableValueAtom, {
+          variableId: link,
+          value: stringValue,
+        })
+      } else {
+        store.set(setParamAtom, {
+          stepId,
+          fieldName,
+          value,
+        })
+      }
     },
     [store, pushHistory],
   )
@@ -664,6 +700,7 @@ export const useBuilderActions = () => {
     runViaApi,
     setAllCollapsed,
     setLink,
+    setLinkedOrParamValue,
     setParam,
     setPathValue,
     startNew,

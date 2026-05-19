@@ -32,6 +32,13 @@ export const FileVideoPlayer = ({
     useState(false)
   const [isContainerized, setIsContainerized] =
     useState(false)
+  // null = features not loaded yet → playback effect waits before
+  // deciding which URL to use. Defaulting unloaded → null avoids the
+  // race where setupPlayback runs once with a stale `false`, points
+  // <video>.src at /files/stream, then re-runs to the transcode URL —
+  // a visible flicker / double-load on first open.
+  const [isFfmpegTranscodeEnabled, setIsFfmpegTranscodeEnabled] =
+    useState<boolean | null>(null)
   const [copyLabel, setCopyLabel] = useState("📋 Copy path")
   const [openLabel, setOpenLabel] = useState(
     "⬡ Open in player",
@@ -61,48 +68,75 @@ export const FileVideoPlayer = ({
         setIsContainerized(data.isContainerized === true)
       })
       .catch(() => {})
+    // Mirror the server-side default (false) on /features fetch failure
+    // so a flaky probe never accidentally turns the experimental
+    // transcode path on for the user. The flag's docstring in
+    // featuresRoutes.ts explicitly calls out the seek / InvalidStateError
+    // bugs that gate it.
+    fetch(`${apiBase}/features`, { cache: "no-store" })
+      .then((resp) => resp.json())
+      .then(
+        (data: { experimentalFfmpegTranscoding?: boolean }) => {
+          setIsFfmpegTranscodeEnabled(
+            data.experimentalFfmpegTranscoding === true,
+          )
+        },
+      )
+      .catch(() => setIsFfmpegTranscodeEnabled(false))
   }, [])
 
   useEffect(() => {
     if (!path || !playerRef.current) return
+    // Wait for /features to land before deciding /files/stream vs
+    // /transcode/audio. See the state declaration above for why null
+    // matters here (avoids a first-render flicker).
+    if (isFfmpegTranscodeEnabled === null) return
     const player = playerRef.current
     clearMse()
     player.pause()
     player.src = ""
 
     const setupPlayback = async () => {
-      let audioFormat: string | null = null
-      try {
-        const resp = await fetch(
-          `${apiBase}/files/audio-codec?${new URLSearchParams({ path })}`,
-          {
-            cache: "no-store",
-            signal: AbortSignal.timeout(30_000),
-          },
-        )
-        if (resp.ok) {
-          const data = (await resp.json()) as {
-            audioFormat?: string
+      // The audio-codec probe is only meaningful when the transcode
+      // path is reachable — when the flag is off, the answer always
+      // routes to /files/stream regardless, so skip the round-trip.
+      let isNeedingTranscode = false
+      if (isFfmpegTranscodeEnabled) {
+        let audioFormat: string | null = null
+        try {
+          const resp = await fetch(
+            `${apiBase}/files/audio-codec?${new URLSearchParams({ path })}`,
+            {
+              cache: "no-store",
+              signal: AbortSignal.timeout(30_000),
+            },
+          )
+          if (resp.ok) {
+            const data = (await resp.json()) as {
+              audioFormat?: string
+            }
+            audioFormat = data.audioFormat ?? null
           }
-          audioFormat = data.audioFormat ?? null
+        } catch {
+          // Leave null — will use direct stream.
         }
-      } catch {
-        // Leave null — will use direct stream.
+        isNeedingTranscode =
+          typeof audioFormat === "string" &&
+          audioFormat.length > 0 &&
+          BROWSER_UNSUPPORTED_AUDIO.has(
+            audioFormat.toLowerCase(),
+          )
       }
 
-      const isNeedingTranscode =
-        typeof audioFormat === "string" &&
-        audioFormat.length > 0 &&
-        BROWSER_UNSUPPORTED_AUDIO.has(
-          audioFormat.toLowerCase(),
-        )
-
-      let playbackUrl: string
-      if (isNeedingTranscode) {
-        playbackUrl = `${apiBase}/transcode/audio?${new URLSearchParams({ path, codec: "opus" })}`
-      } else {
-        playbackUrl = `${apiBase}/files/stream?${new URLSearchParams({ path })}`
-      }
+      // /files/stream is a seekable HTTP-Range route over the raw file
+      // (see packages/api/src/api/routes/fileRoutes.ts:458-556); the
+      // browser learns the real duration immediately and can scrub.
+      // /transcode/audio is a live fMP4 mux from ffmpeg's stdout — only
+      // valid when the MSE client is driving it, which is the
+      // experimental path the flag protects.
+      const playbackUrl = isNeedingTranscode
+        ? `${apiBase}/transcode/audio?${new URLSearchParams({ path, codec: "opus" })}`
+        : `${apiBase}/files/stream?${new URLSearchParams({ path })}`
 
       setIsStatusVisible(isNeedingTranscode)
       player.addEventListener(
@@ -117,7 +151,7 @@ export const FileVideoPlayer = ({
     }
 
     void setupPlayback()
-  }, [path, clearMse])
+  }, [path, clearMse, isFfmpegTranscodeEnabled])
 
   const handleCopyPath = async () => {
     if (!path) return

@@ -209,7 +209,8 @@ export const LookupSearchStage = ({
   onUpdate,
   onClose,
 }: LookupSearchStageProps) => {
-  const { setParam } = useBuilderActions()
+  const { setLinkedOrParamValue, setParam } =
+    useBuilderActions()
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -452,7 +453,13 @@ export const LookupSearchStage = ({
                     // an object, which would render as "[object Object]"
                     // in NumberWithLookupField (it casts the value as
                     // `number | undefined`).
-                    setParam(
+                    // Route the primary id through the link-aware writer
+                    // so when the field is bound to a variable (auto-link
+                    // on nameSpecialFeaturesDvdCompareTmdb's dvdCompareId,
+                    // or a manual link), the picked value lands in the
+                    // variable's `value` instead of being shadowed by
+                    // step.params and dropped at YAML serialization.
+                    setLinkedOrParamValue(
                       state.stepId,
                       state.fieldName,
                       id,

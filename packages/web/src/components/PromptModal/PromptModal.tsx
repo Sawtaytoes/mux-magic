@@ -1,9 +1,16 @@
 import { useAtom, useSetAtom } from "jotai"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { apiBase } from "../../apiBase"
 import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import type { PromptOption } from "../../components/PromptModal/types"
 import { videoPreviewModalAtom } from "../../components/VideoPreviewModal/videoPreviewModalAtom"
+
+// Top-level Play button uses a fixed key in the label map, since
+// there's no path-distinct row id to peg it to. The per-row buttons
+// key by file path (one per option index, guaranteed unique within
+// a prompt). Choosing a literal that can never collide with a real
+// path keeps the lookup simple.
+const TOP_LEVEL_OPEN_KEY = "__top__"
 
 const submitPromptChoice = async (
   jobId: string,
@@ -61,15 +68,85 @@ export const PromptModal = () => {
   const setVideoPreview = useSetAtom(videoPreviewModalAtom)
   const promptDataRef = useRef(promptData)
   promptDataRef.current = promptData
+  // Mirror FileVideoPlayer's pattern: probe /version on mount to
+  // decide whether host-side "Open in Local Player" is reachable.
+  // PromptModal is mounted unconditionally at BuilderPage so this
+  // fires once for the page lifetime, not once per prompt.
+  // (If this ends up shared with more modals, lift to an atom; for
+  // now duplicating with FileVideoPlayer is cheaper than the abstraction.)
+  const [isContainerized, setIsContainerized] =
+    useState(false)
+  // Per-button label so the "Launching…/Launched/Failed" feedback is
+  // scoped to the button the user actually clicked, not blasted across
+  // every Open-in-Player button in the row list.
+  const [openLabels, setOpenLabels] = useState<
+    Record<string, string>
+  >({})
 
-  // Closing the modal does NOT cancel the running job — the pipeline
-  // stays suspended on the server until the user either picks an option
-  // (POST /jobs/:id/input) or explicitly cancels (DELETE /jobs/:id).
-  const close = () => setPromptData(null)
+  useEffect(() => {
+    fetch(`${apiBase}/version`, { cache: "no-store" })
+      .then((resp) => resp.json())
+      .then((data: { isContainerized?: boolean }) => {
+        setIsContainerized(data.isContainerized === true)
+      })
+      .catch(() => {})
+  }, [])
+
+  const openInLocalPlayer = async (
+    key: string,
+    path: string,
+  ) => {
+    setOpenLabels((prev) => ({
+      ...prev,
+      [key]: "⏳ Launching…",
+    }))
+    try {
+      const resp = await fetch(
+        `${apiBase}/files/open-external`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path }),
+        },
+      )
+      const data = (await resp.json()) as {
+        isOk: boolean
+        error?: string
+      }
+      setOpenLabels((prev) => ({
+        ...prev,
+        [key]: data.isOk ? "✓ Launched" : "✗ Failed",
+      }))
+    } catch {
+      setOpenLabels((prev) => ({
+        ...prev,
+        [key]: "✗ Failed",
+      }))
+    }
+    setTimeout(() => {
+      setOpenLabels((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+    }, 1500)
+  }
+
+  // Two distinct exits:
+  //   • `dismiss()` — user closed the modal without answering. Pipeline
+  //     stays suspended; promptData stays alive with isMinimized=true
+  //     so StepCard can render a clickable "paused" badge to reopen.
+  //   • `clear()`   — user picked an option or cancelled the job. The
+  //     prompt is genuinely gone; wipe the atom outright.
+  const dismiss = () =>
+    setPromptData((prev) =>
+      prev ? { ...prev, isMinimized: true } : prev,
+    )
+  const clear = () => setPromptData(null)
 
   const pick = async (selectedIndex: number) => {
     if (!promptData) return
-    close()
+    clear()
     await submitPromptChoice(
       promptData.jobId,
       promptData.promptId,
@@ -80,7 +157,7 @@ export const PromptModal = () => {
   const handleCancelJob = async () => {
     if (!promptData) return
     const { jobId } = promptData
-    close()
+    clear()
     await cancelJob(jobId)
   }
 
@@ -131,7 +208,12 @@ export const PromptModal = () => {
 
       if (event.key === "Escape") {
         event.preventDefault()
-        setPromptData(null)
+        // Minimize, don't clear — Escape is a dismissal, the job is
+        // still waiting for input. StepCard reopens via its paused
+        // badge once the user knows where to look.
+        setPromptData((prev) =>
+          prev ? { ...prev, isMinimized: true } : prev,
+        )
         return
       }
 
@@ -151,7 +233,7 @@ export const PromptModal = () => {
       document.removeEventListener("keydown", handleKeyDown)
   }, [setPromptData])
 
-  if (!promptData) return null
+  if (!promptData || promptData.isMinimized) return null
 
   const sortedOptions = sortOptions(promptData.options)
   const filePathsByIndex = new Map(
@@ -166,7 +248,7 @@ export const PromptModal = () => {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       role="none"
       onClick={(event) => {
-        if (event.target === event.currentTarget) close()
+        if (event.target === event.currentTarget) dismiss()
       }}
     >
       <div
@@ -202,6 +284,22 @@ export const PromptModal = () => {
             >
               ▶ Play
             </button>
+            {!isContainerized && promptData.filePath && (
+              <button
+                type="button"
+                className="text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-0.5 rounded font-medium leading-none border border-slate-600"
+                title="Open this file in the OS default media player"
+                onClick={() =>
+                  void openInLocalPlayer(
+                    TOP_LEVEL_OPEN_KEY,
+                    promptData.filePath ?? "",
+                  )
+                }
+              >
+                {openLabels[TOP_LEVEL_OPEN_KEY] ??
+                  "⬡ Open in Local Player"}
+              </button>
+            )}
           </div>
         )}
 
@@ -221,6 +319,12 @@ export const PromptModal = () => {
               ) : null
 
             if (rowFilePath) {
+              // The right-most button owns rounded-r-lg. When the host
+              // can launch an external player we tack a third button on
+              // the end and shift the rounding to it; otherwise Play
+              // stays right-most.
+              const isShowingOpenInLocalPlayer =
+                !isContainerized
               return (
                 <div
                   key={option.index}
@@ -236,7 +340,7 @@ export const PromptModal = () => {
                   </button>
                   <button
                     type="button"
-                    className="shrink-0 text-xs px-3 rounded-r-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium"
+                    className={`shrink-0 text-xs px-3 bg-emerald-700 hover:bg-emerald-600 text-white font-medium${isShowingOpenInLocalPlayer ? "" : " rounded-r-lg"}`}
                     title="Preview this file before picking"
                     onClick={(event) => {
                       event.preventDefault()
@@ -246,6 +350,24 @@ export const PromptModal = () => {
                   >
                     ▶ Play
                   </button>
+                  {isShowingOpenInLocalPlayer && (
+                    <button
+                      type="button"
+                      className="shrink-0 text-xs px-3 rounded-r-lg bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium border-l border-slate-600"
+                      title="Open this file in the OS default media player"
+                      onClick={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        void openInLocalPlayer(
+                          rowFilePath,
+                          rowFilePath,
+                        )
+                      }}
+                    >
+                      {openLabels[rowFilePath] ??
+                        "⬡ Open in Local Player"}
+                    </button>
+                  )}
                 </div>
               )
             }
@@ -307,7 +429,7 @@ export const PromptModal = () => {
             id="prompt-close"
             className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded font-medium"
             title="Close this modal; the job will keep waiting for input"
-            onClick={close}
+            onClick={dismiss}
           >
             Close (job stays running)
           </button>

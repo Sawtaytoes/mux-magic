@@ -11,7 +11,8 @@ export const LookupReleaseStage = ({
   state,
   onClose,
 }: LookupReleaseStageProps) => {
-  const { setParam } = useBuilderActions()
+  const { setLinkedOrParamValue, setParam } =
+    useBuilderActions()
   if (state.isLoading) {
     return (
       <p className="text-slate-500 text-sm text-center py-4">
@@ -61,7 +62,16 @@ export const LookupReleaseStage = ({
               ? Number(state.selectedFid)
               : undefined
             if (fid !== undefined && !Number.isNaN(fid)) {
-              setParam(state.stepId, state.fieldName, fid)
+              // Route the primary id through the link-aware writer so a
+              // dvdcompare release pick on an auto-linked
+              // nameSpecialFeaturesDvdCompareTmdb card flows into the
+              // dvdCompareId variable rather than being trapped in
+              // step.params (where buildParams ignores it).
+              setLinkedOrParamValue(
+                state.stepId,
+                state.fieldName,
+                fid,
+              )
             }
             if (
               state.companionNameField &&
