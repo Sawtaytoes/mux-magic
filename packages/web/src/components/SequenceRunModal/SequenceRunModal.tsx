@@ -105,18 +105,18 @@ export const SequenceRunModal = () => {
       if ("type" in data && data.type === "step-finished") {
         if (data.stepId) {
           const finishedStepId = data.stepId
-          setModalState((prev) =>
-            prev.mode !== "closed"
-              ? {
-                  ...prev,
-                  activeChildren:
-                    prev.activeChildren.filter(
-                      (child) =>
-                        child.stepId !== finishedStepId,
-                    ),
-                }
-              : prev,
-          )
+          // NOTE: deliberately NOT removing this child from
+          // `activeChildren` on step-finished. The child's own
+          // `isDone` event fires on a separate SSE stream
+          // (/jobs/<childId>/logs) AFTER step-finished arrives on
+          // the umbrella stream; if we unmount ChildProgressTracker
+          // here, useLogStream's cleanup closes the child EventSource
+          // before isDone is received, which means handleDone never
+          // fires — the NSF summary (rename pairs, leftover files,
+          // smart-match payload) is lost. Keep the tracker mounted
+          // so it can render its post-completion report (rename list,
+          // unrenamed files, Fix Unnamed button). The whole list is
+          // cleared when the umbrella job hits isDone (below).
           setStepRunStatus({
             stepId: finishedStepId,
             status: data.status,
