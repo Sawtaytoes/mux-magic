@@ -190,11 +190,9 @@ test.describe("LoadModal — builder round-trip", () => {
     ).toBeHidden()
 
     // The loaded step card should appear.
-    await expect(page.locator('[id^="step-"]')).toHaveCount(
-      1,
-    )
+    await expect(page.locator(".step-card")).toHaveCount(1)
     await expect(
-      page.locator('[id^="step-"]').first(),
+      page.locator(".step-card").first(),
     ).toContainText("Make Directory")
   })
 
@@ -228,11 +226,9 @@ test.describe("LoadModal — builder round-trip", () => {
     await pasteText(page, yamlText)
 
     // Same step should reappear.
-    await expect(page.locator('[id^="step-"]')).toHaveCount(
-      1,
-    )
+    await expect(page.locator(".step-card")).toHaveCount(1)
     await expect(
-      page.locator('[id^="step-"]').first(),
+      page.locator(".step-card").first(),
     ).toContainText("Make Directory")
   })
 
