@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/57_auto-mock-cli-spawn-operations/`
 **Phase:** infra
 **Depends on:** —
-**Parallel with:** any worker that doesn't add new tests under [packages/server/src/app-commands/](../../packages/server/src/app-commands/) — those touch the same setup file.
+**Parallel with:** any worker that doesn't add new tests under [packages/core/src/app-commands/](../../packages/core/src/app-commands/) — those touch the same setup file.
 
 ## Universal Rules (TL;DR)
 
@@ -28,7 +28,7 @@ const { runMkvExtractStdOut } = await import("../cli-spawn-operations/runMkvExtr
 const { writeChaptersMkvMerge } = await import("../cli-spawn-operations/writeChaptersMkvMerge.js")
 ```
 
-That's a copy-paste contract: **"any module under `packages/server/src/cli-spawn-operations/` must be stubbed in tests"** — for the same reason `node:fs` is already auto-mocked to `memfs` in [vitest.setup.ts](../../packages/server/vitest.setup.ts): spawn-ops wrap 3rd-party executables (`mkvextract`, `mkvmerge`, `mkvpropedit`, `ffmpeg`, `fpcalc`) that aren't installed in CI, hit real disk, and produce output we can't construct deterministically from `vol.fromJSON`.
+That's a copy-paste contract: **"any module under `packages/core/src/cli-spawn-operations/` must be stubbed in tests"** — for the same reason `node:fs` is already auto-mocked to `memfs` in [vitest.setup.ts](../../packages/core/vitest.setup.ts): spawn-ops wrap 3rd-party executables (`mkvextract`, `mkvmerge`, `mkvpropedit`, `ffmpeg`, `fpcalc`) that aren't installed in CI, hit real disk, and produce output we can't construct deterministically from `vol.fromJSON`.
 
 The problem with the per-test pattern:
 
@@ -38,7 +38,7 @@ The problem with the per-test pattern:
 
 ## Your Mission
 
-Lift the per-test mocking into [packages/server/vitest.setup.ts](../../packages/server/vitest.setup.ts), paralleling the existing memfs auto-mock. After this lands, individual tests just call `vi.mocked(runMkvExtractStdOut).mockReturnValue(...)` without any `vi.mock(...)` calls.
+Lift the per-test mocking into [packages/core/vitest.setup.ts](../../packages/core/vitest.setup.ts), paralleling the existing memfs auto-mock. After this lands, individual tests just call `vi.mocked(runMkvExtractStdOut).mockReturnValue(...)` without any `vi.mock(...)` calls.
 
 ### 1. Auto-mock setup
 
@@ -68,26 +68,26 @@ vi.mock("./src/cli-spawn-operations/runMkvExtractStdOut.js", () => ({
 
 If vitest supports a directory-glob form, prefer that over the explicit list — easier to maintain. Otherwise the explicit list is fine and can be regenerated from a `Glob` if it ever drifts.
 
-**Edge case:** some spawn-ops export both a function AND a `*DefaultProps` object literal (e.g. `reorderTracksFfmpeg.ts`). The mock factory must preserve the default-props export shape so app-command imports keep working at module-eval time. Check [reorderTracks.test.ts](../../packages/server/src/app-commands/reorderTracks.test.ts) for the current shape.
+**Edge case:** some spawn-ops export both a function AND a `*DefaultProps` object literal (e.g. `reorderTracksFfmpeg.ts`). The mock factory must preserve the default-props export shape so app-command imports keep working at module-eval time. Check [reorderTracks.test.ts](../../packages/core/src/app-commands/reorderTracks.test.ts) for the current shape.
 
 ### 2. Refactor existing tests
 
 Remove the per-test `vi.mock("../cli-spawn-operations/...")` calls from every app-command test that has them. Keep the `vi.mocked(...).mockReturnValue(...)` / `.mockImplementation(...)` calls — those still drive per-test behavior. Audit:
 
 ```
-packages/server/src/app-commands/nameMovieCutsDvdCompareTmdb.test.ts
-packages/server/src/app-commands/remuxToMkv.test.ts
-packages/server/src/app-commands/reorderTracks.test.ts
-packages/server/src/app-commands/renumberChapters.test.ts   ← added by worker 4d
+packages/core/src/app-commands/nameMovieCutsDvdCompareTmdb.test.ts
+packages/core/src/app-commands/remuxToMkv.test.ts
+packages/core/src/app-commands/reorderTracks.test.ts
+packages/core/src/app-commands/renumberChapters.test.ts   ← added by worker 4d
 ```
 
-Plus any test under `packages/server/src/tools/` that mocks a spawn-op (rare; double-check).
+Plus any test under `packages/core/src/tools/` that mocks a spawn-op (rare; double-check).
 
 ### 3. Document the convention
 
 Add a one-paragraph note to [docs/agents/testing.md](../../docs/agents/testing.md) under the "Unit Tests (vitest)" section, right next to the existing memfs mention:
 
-> Modules under `packages/server/src/cli-spawn-operations/` are auto-mocked in `vitest.setup.ts` — every spawn-op wraps a 3rd-party `mkvtoolnix` / `ffmpeg` / `fpcalc` binary, so we draw the test boundary at the process-spawn layer the same way we draw it at the `node:fs` boundary with memfs. Tests opt in to per-call behavior with `vi.mocked(spawnOpFn).mockReturnValue(...)`; forgetting to stub returns `undefined` (loud failure) rather than silently shelling out.
+> Modules under `packages/core/src/cli-spawn-operations/` are auto-mocked in `vitest.setup.ts` — every spawn-op wraps a 3rd-party `mkvtoolnix` / `ffmpeg` / `fpcalc` binary, so we draw the test boundary at the process-spawn layer the same way we draw it at the `node:fs` boundary with memfs. Tests opt in to per-call behavior with `vi.mocked(spawnOpFn).mockReturnValue(...)`; forgetting to stub returns `undefined` (loud failure) rather than silently shelling out.
 
 ### 4. (Optional) Loud failure on forgotten stub
 
@@ -110,7 +110,7 @@ A `vi.fn()` that returns `undefined` is loud-ish but not maximally helpful — t
 
 ### Extend
 
-- [packages/server/vitest.setup.ts](../../packages/server/vitest.setup.ts) — add the auto-mock block.
+- [packages/core/vitest.setup.ts](../../packages/core/vitest.setup.ts) — add the auto-mock block.
 - [docs/agents/testing.md](../../docs/agents/testing.md) — document the convention.
 - ~4 existing app-command test files — strip per-test `vi.mock(...)` calls.
 

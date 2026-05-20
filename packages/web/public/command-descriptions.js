@@ -26,8 +26,16 @@ window.commandDescriptions = {
       "videoLanguage": "A 3-letter ISO-6392 language code for video tracks. All tracks will be labeled with this language."
     }
   },
+  "convertLosslessToFlac": {
+    "summary": "Encode lossless audio files (.wav / .aif / .aiff / .m4a / .m4b) to FLAC in-place (strictly lossless)",
+    "fields": {
+      "sourcePath": "Directory containing lossless audio files (.wav / .wave / .aif / .aiff / .m4a / .m4b) to encode to FLAC, or a directory of directories of those files when used with isRecursive.",
+      "isRecursive": "Recursively descends one level into subdirectories looking for accepted lossless audio files.",
+      "isSourceDeleted": "When true, deletes the source file after a successful FLAC encode. Defaults to false; the original is kept by default."
+    }
+  },
   "copyFiles": {
-    "summary": "Copy files (and optionally folders) from source to destination, with optional regex filtering and renaming. Atomic: bytes go to a sibling .muxmagic.tmp and are rename-installed on success — a crash never leaves a partial under the real name. Refuses to overwrite existing destinations unless allowOverwrite is set.",
+    "summary": "Copy files (and optionally folders) from source to destination, with optional regex filtering and renaming",
     "fields": {
       "sourcePath": "Directory to copy files from.",
       "destinationPath": "Directory to copy files into. Created if it does not already exist.",
@@ -207,9 +215,9 @@ window.commandDescriptions = {
     }
   },
   "moveFiles": {
-    "summary": "Move files from source to destination, with optional regex filtering and renaming. Same-volume moves short-circuit to fs.rename (O(1) metadata op — gigabyte files in milliseconds); cross-volume falls back to streaming copy + per-file unlink. Refuses to overwrite existing destinations unless allowOverwrite is set. Source directory is NOT removed after the move — wire up deleteEmptyFolders separately if you want that.",
+    "summary": "Move files from source to destination, with optional regex filtering and renaming",
     "fields": {
-      "sourcePath": "Directory to move files from. Files matching the filter are removed from here as they land at the destination; the directory itself is preserved.",
+      "sourcePath": "Directory to move files from. Deleted after all files are copied.",
       "destinationPath": "Directory to move files into. Created if it does not already exist.",
       "fileFilterRegex": "If set, only files whose names match this regular expression are moved. Bare strings are accepted for back-compat with pre-flags templates.",
       "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",

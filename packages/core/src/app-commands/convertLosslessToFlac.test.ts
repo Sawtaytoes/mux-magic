@@ -1,0 +1,324 @@
+import { join } from "node:path"
+import { vol } from "memfs"
+import {
+  firstValueFrom,
+  Observable,
+  of,
+  toArray,
+} from "rxjs"
+import {
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
+
+vi.mock("../cli-spawn-operations/runFfmpeg.js", () => ({
+  runFfmpeg: vi.fn(),
+}))
+
+const { runFfmpeg } = await import(
+  "../cli-spawn-operations/runFfmpeg.js"
+)
+const { convertLosslessToFlac } = await import(
+  "./convertLosslessToFlac.js"
+)
+
+const runFfmpegMock = vi.mocked(runFfmpeg)
+
+const mockFfmpegSuccess = (outputFilePath: string) => {
+  runFfmpegMock.mockReturnValueOnce(of(outputFilePath))
+}
+
+// ffmpeg failure = subject completes without emitting, mirroring the
+// `if (code === 0) observer.next(...)` guard inside runFfmpeg itself.
+const mockFfmpegFailure = () => {
+  runFfmpegMock.mockReturnValueOnce(
+    new Observable<string>((subscriber) => {
+      subscriber.complete()
+    }),
+  )
+}
+
+describe(convertLosslessToFlac.name, () => {
+  beforeEach(() => {
+    runFfmpegMock.mockReset()
+  })
+
+  test("encodes every .wav in the source directory (non-recursive)", async () => {
+    vol.fromJSON({
+      "/music/track01.wav": "wav1",
+      "/music/track02.wav": "wav2",
+      "/music/notes.mp3": "mp3",
+      "/music/cover.jpg": "jpg",
+      "/music/disc1/inner.wav": "innerwav",
+    })
+    mockFfmpegSuccess("/music/track01.flac")
+    mockFfmpegSuccess("/music/track02.flac")
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: false,
+        sourcePath: "/music",
+      }).pipe(toArray()),
+    )
+
+    expect(runFfmpegMock).toHaveBeenCalledTimes(2)
+    const inputPaths = runFfmpegMock.mock.calls.map(
+      ([{ inputFilePaths }]) => inputFilePaths[0],
+    )
+    expect(inputPaths).toEqual(
+      expect.arrayContaining([
+        join("/music", "track01.wav"),
+        join("/music", "track02.wav"),
+      ]),
+    )
+    expect(inputPaths).not.toContain(
+      join("/music", "notes.mp3"),
+    )
+    expect(inputPaths).not.toContain(
+      join("/music", "cover.jpg"),
+    )
+    expect(inputPaths).not.toContain(
+      join("/music", "disc1", "inner.wav"),
+    )
+  })
+
+  test("invokes ffmpeg with -c:a flac and -map_metadata 0", async () => {
+    vol.fromJSON({ "/music/track01.wav": "wav1" })
+    mockFfmpegSuccess("/music/track01.flac")
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: false,
+        sourcePath: "/music",
+      }).pipe(toArray()),
+    )
+
+    const [{ args }] = runFfmpegMock.mock.calls[0]
+    expect(args).toEqual(
+      expect.arrayContaining(["-c:a", "flac"]),
+    )
+    expect(args).toEqual(
+      expect.arrayContaining(["-map_metadata", "0"]),
+    )
+  })
+
+  test("does not pass any resample / remix / bit-depth coercion flags (lossless guard)", async () => {
+    vol.fromJSON({ "/music/track01.wav": "wav1" })
+    mockFfmpegSuccess("/music/track01.flac")
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: false,
+        sourcePath: "/music",
+      }).pipe(toArray()),
+    )
+
+    const [{ args }] = runFfmpegMock.mock.calls[0]
+    expect(args).not.toContain("-ar")
+    expect(args).not.toContain("-ac")
+    expect(args).not.toContain("-sample_fmt")
+  })
+
+  test("writes the FLAC alongside the source WAV (same dir, .flac extension)", async () => {
+    vol.fromJSON({
+      "/music/album/track01.wav": "wav1",
+      "/music/album/Track Two.wav": "wav2",
+    })
+    mockFfmpegSuccess("/music/album/track01.flac")
+    mockFfmpegSuccess("/music/album/Track Two.flac")
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: false,
+        sourcePath: "/music/album",
+      }).pipe(toArray()),
+    )
+
+    const outputPaths = runFfmpegMock.mock.calls.map(
+      ([{ outputFilePath }]) => outputFilePath,
+    )
+    expect(outputPaths).toEqual(
+      expect.arrayContaining([
+        join("/music/album", "track01.flac"),
+        join("/music/album", "Track Two.flac"),
+      ]),
+    )
+  })
+
+  test("descends one level when isRecursive is true", async () => {
+    vol.fromJSON({
+      "/music/track01.wav": "wav1",
+      "/music/disc1/inner.wav": "wav2",
+    })
+    mockFfmpegSuccess("/music/track01.flac")
+    mockFfmpegSuccess("/music/disc1/inner.flac")
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: true,
+        sourcePath: "/music",
+      }).pipe(toArray()),
+    )
+
+    const inputPaths = runFfmpegMock.mock.calls.map(
+      ([{ inputFilePaths }]) => inputFilePaths[0],
+    )
+    expect(inputPaths).toEqual(
+      expect.arrayContaining([
+        join("/music", "track01.wav"),
+        join("/music", "disc1", "inner.wav"),
+      ]),
+    )
+  })
+
+  test("does not delete the source .wav when isSourceDeleted is omitted (default false)", async () => {
+    vol.fromJSON({ "/music/track01.wav": "wav1" })
+    mockFfmpegSuccess("/music/track01.flac")
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: false,
+        sourcePath: "/music",
+      }).pipe(toArray()),
+    )
+
+    expect(vol.existsSync("/music/track01.wav")).toBe(true)
+  })
+
+  test("does not delete the source .wav when isSourceDeleted is false explicitly", async () => {
+    vol.fromJSON({ "/music/track01.wav": "wav1" })
+    mockFfmpegSuccess("/music/track01.flac")
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: false,
+        isSourceDeleted: false,
+        sourcePath: "/music",
+      }).pipe(toArray()),
+    )
+
+    expect(vol.existsSync("/music/track01.wav")).toBe(true)
+  })
+
+  test("deletes the source .wav after a successful ffmpeg encode when isSourceDeleted is true", async () => {
+    vol.fromJSON({
+      "/music/track01.wav": "wav1",
+      "/music/notes.mp3": "mp3",
+    })
+    mockFfmpegSuccess("/music/track01.flac")
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: false,
+        isSourceDeleted: true,
+        sourcePath: "/music",
+      }).pipe(toArray()),
+    )
+
+    expect(vol.existsSync("/music/track01.wav")).toBe(false)
+    // unrelated siblings are untouched
+    expect(vol.existsSync("/music/notes.mp3")).toBe(true)
+  })
+
+  test("does NOT delete the source .wav when ffmpeg fails, even with isSourceDeleted: true", async () => {
+    vol.fromJSON({ "/music/track01.wav": "wav1" })
+    mockFfmpegFailure()
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: false,
+        isSourceDeleted: true,
+        sourcePath: "/music",
+      }).pipe(toArray()),
+    )
+
+    expect(vol.existsSync("/music/track01.wav")).toBe(true)
+  })
+
+  test("accepts .wav, .aif, .aiff, .m4a, .m4b and rejects everything else (including .flac and .mkv/.mp4)", async () => {
+    vol.fromJSON({
+      "/music/song.wav": "wav",
+      "/music/song.aif": "aif",
+      "/music/song.aiff": "aiff",
+      "/music/album.m4a": "m4a",
+      "/music/audiobook.m4b": "m4b",
+      // Skipped: already FLAC.
+      "/music/already.flac": "flac",
+      // Skipped: lossy.
+      "/music/notes.mp3": "mp3",
+      "/music/podcast.aac": "aac",
+      // Skipped: container-with-video; the has-video-track safety
+      // worker handles these separately.
+      "/music/music-video.mkv": "mkv",
+      "/music/clip.mp4": "mp4",
+    })
+    // Mock once per accepted file.
+    mockFfmpegSuccess("/music/song.flac")
+    mockFfmpegSuccess("/music/song.flac")
+    mockFfmpegSuccess("/music/song.flac")
+    mockFfmpegSuccess("/music/album.flac")
+    mockFfmpegSuccess("/music/audiobook.flac")
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: false,
+        sourcePath: "/music",
+      }).pipe(toArray()),
+    )
+
+    const inputPaths = runFfmpegMock.mock.calls.map(
+      ([{ inputFilePaths }]) => inputFilePaths[0],
+    )
+    expect(inputPaths).toEqual(
+      expect.arrayContaining([
+        join("/music", "song.wav"),
+        join("/music", "song.aif"),
+        join("/music", "song.aiff"),
+        join("/music", "album.m4a"),
+        join("/music", "audiobook.m4b"),
+      ]),
+    )
+    expect(inputPaths).toHaveLength(5)
+    expect(inputPaths).not.toContain(
+      join("/music", "already.flac"),
+    )
+    expect(inputPaths).not.toContain(
+      join("/music", "notes.mp3"),
+    )
+    expect(inputPaths).not.toContain(
+      join("/music", "music-video.mkv"),
+    )
+    expect(inputPaths).not.toContain(
+      join("/music", "clip.mp4"),
+    )
+  })
+
+  test("output paths swap any accepted lossless extension to .flac in-place", async () => {
+    vol.fromJSON({
+      "/music/song.aif": "aif",
+      "/music/album.m4a": "m4a",
+    })
+    mockFfmpegSuccess("/music/song.flac")
+    mockFfmpegSuccess("/music/album.flac")
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: false,
+        sourcePath: "/music",
+      }).pipe(toArray()),
+    )
+
+    const outputPaths = runFfmpegMock.mock.calls.map(
+      ([{ outputFilePath }]) => outputFilePath,
+    )
+    expect(outputPaths).toEqual(
+      expect.arrayContaining([
+        join("/music", "song.flac"),
+        join("/music", "album.flac"),
+      ]),
+    )
+  })
+})

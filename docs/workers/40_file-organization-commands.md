@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/40_file-organization-commands/`
 **Phase:** 4
 **Depends on:** 20
-**Parallel with:** any Phase 4 worker that doesn't touch `packages/cli/src/cli.ts`, `packages/server/src/api/routes/commandRoutes.ts`, or `packages/server/src/api/schemas.ts`
+**Parallel with:** any Phase 4 worker that doesn't touch `packages/cli/src/cli.ts`, `packages/api/src/api/routes/commandRoutes.ts`, or `packages/api/src/api/schemas.ts`
 
 ## Universal Rules (TL;DR)
 
@@ -45,7 +45,7 @@ Get-ChildItem -Path $sourceDir -Directory | ForEach-Object {
 
 ### Commands to add
 
-All three are camelCase, follow the existing `flattenOutput` / `moveFiles` Observable pattern, and live as app-commands in `packages/server/src/app-commands/` with thin yargs adapters in `packages/cli/src/cli-commands/`.
+All three are camelCase, follow the existing `flattenOutput` / `moveFiles` Observable pattern, and live as app-commands in `packages/core/src/app-commands/` with thin yargs adapters in `packages/cli/src/cli-commands/`.
 
 #### 1. `moveFilesIntoNamedFolders`
 
@@ -65,7 +65,7 @@ All three are camelCase, follow the existing `flattenOutput` / `moveFiles` Obser
   - CLI: `--deleteSourceFolderAfterDistributing` (boolean, default `false`)
   - JS: `isDeletingSourceFolderAfterDistributing: boolean` (default `false`)
   - When `true`, removes `sourceFolderPath` after all copies succeed. Defaults to `false` so the destructive step is opt-in.
-- **Mechanism**: list parent's children with `getFolder`, filter out `sourceFolderPath` itself, then for each sibling recursively copy contents. Reuse `aclSafeCopyFile` + `runTasks` + progress-emitter pattern from [moveFiles.ts](../../packages/server/src/app-commands/moveFiles.ts) and [copyFiles.ts](../../packages/server/src/app-commands/copyFiles.ts). Sibling directories may live on other volumes, so the byte-copying path is required.
+- **Mechanism**: list parent's children with `getFolder`, filter out `sourceFolderPath` itself, then for each sibling recursively copy contents. Reuse `aclSafeCopyFile` + `runTasks` + progress-emitter pattern from [moveFiles.ts](../../packages/core/src/app-commands/moveFiles.ts) and [copyFiles.ts](../../packages/core/src/app-commands/copyFiles.ts). Sibling directories may live on other volumes, so the byte-copying path is required.
 - **Emits**: `Observable<{ source: string; destination: string }>`, one record per file copied across all siblings.
 
 #### 3. `flattenChildFolders`
@@ -83,12 +83,12 @@ All three are camelCase, follow the existing `flattenOutput` / `moveFiles` Obser
 
 ### New
 
-- `packages/server/src/app-commands/moveFilesIntoNamedFolders.ts`
-- `packages/server/src/app-commands/moveFilesIntoNamedFolders.test.ts`
-- `packages/server/src/app-commands/distributeFolderToSiblings.ts`
-- `packages/server/src/app-commands/distributeFolderToSiblings.test.ts`
-- `packages/server/src/app-commands/flattenChildFolders.ts`
-- `packages/server/src/app-commands/flattenChildFolders.test.ts`
+- `packages/core/src/app-commands/moveFilesIntoNamedFolders.ts`
+- `packages/core/src/app-commands/moveFilesIntoNamedFolders.test.ts`
+- `packages/core/src/app-commands/distributeFolderToSiblings.ts`
+- `packages/core/src/app-commands/distributeFolderToSiblings.test.ts`
+- `packages/core/src/app-commands/flattenChildFolders.ts`
+- `packages/core/src/app-commands/flattenChildFolders.test.ts`
 - `packages/cli/src/cli-commands/moveFilesIntoNamedFoldersCommand.ts`
 - `packages/cli/src/cli-commands/distributeFolderToSiblingsCommand.ts`
 - `packages/cli/src/cli-commands/flattenChildFoldersCommand.ts`
@@ -96,17 +96,17 @@ All three are camelCase, follow the existing `flattenOutput` / `moveFiles` Obser
 ### Modified
 
 - `packages/cli/src/cli.ts` — register the three new yargs `CommandModule`s alongside `copyFilesCommand`, `moveFilesCommand`, `flattenOutputCommand`.
-- `packages/server/src/api/routes/commandRoutes.ts` — three imports (top, ~L22), three names in the command-name list (~L122), and three registry entries with `getObservable`, `schema`, `summary`, `tags: ["File Operations"]` mirroring the `flattenOutput` (L233) and `moveFiles` (L459) entries.
-- `packages/server/src/api/schemas.ts` — three Zod request schemas mirroring `flattenOutputRequestSchema` and `moveFilesRequestSchema`.
+- `packages/api/src/api/routes/commandRoutes.ts` — three imports (top, ~L22), three names in the command-name list (~L122), and three registry entries with `getObservable`, `schema`, `summary`, `tags: ["File Operations"]` mirroring the `flattenOutput` (L233) and `moveFiles` (L459) entries.
+- `packages/api/src/api/schemas.ts` — three Zod request schemas mirroring `flattenOutputRequestSchema` and `moveFilesRequestSchema`.
 - `packages/web/public/command-descriptions.js` — three new descriptions (or regenerate via `yarn build:command-descriptions` if available; otherwise hand-edit following the pattern at L36, L44, L256).
 - `docs/workers/MANIFEST.md` — flip this worker's row to `in-progress` at start, `done` after PR merge.
 
 ### Pattern templates to mirror line-for-line
 
-- App-command structure & AbortController wrap → [flattenOutput.ts:41-176](../../packages/server/src/app-commands/flattenOutput.ts#L41-L176)
-- App-command with `{ source, destination }` records + per-file `runTasks` → [moveFiles.ts:43-207](../../packages/server/src/app-commands/moveFiles.ts#L43-L207)
+- App-command structure & AbortController wrap → [flattenOutput.ts:41-176](../../packages/core/src/app-commands/flattenOutput.ts#L41-L176)
+- App-command with `{ source, destination }` records + per-file `runTasks` → [moveFiles.ts:43-207](../../packages/core/src/app-commands/moveFiles.ts#L43-L207)
 - CLI adapter shape (positional + option + handler + `InferArgvOptions`) → [flattenOutputCommand.ts](../../packages/cli/src/cli-commands/flattenOutputCommand.ts)
-- HTTP route registration → [commandRoutes.ts:233-245](../../packages/server/src/api/routes/commandRoutes.ts#L233-L245) (`flattenOutput` entry)
+- HTTP route registration → [commandRoutes.ts:233-245](../../packages/api/src/api/routes/commandRoutes.ts#L233-L245) (`flattenOutput` entry)
 
 ### Building blocks to reuse (do NOT recreate)
 
@@ -118,7 +118,7 @@ From `@mux-magic/tools`:
 - `renameFileOrFolder` / `createRenameFileOrFolderObservable` — fs.rename wrapper (already used by `FileInfo.renameFile`)
 - `logInfo`, `logAndRethrowPipelineError`
 
-From `packages/server/src/tools/`:
+From `packages/core/src/tools/`:
 - `runTasks` (taskScheduler) — for `distributeFolderToSiblings`'s per-file concurrency
 - `createProgressEmitter(jobId, { totalFiles, totalBytes })` — progress events for the web UI
 - `getActiveJobId` — null in CLI mode, set in HTTP mode; gates the conditional emitter setup
@@ -136,7 +136,7 @@ From `packages/server/src/tools/`:
 
 For each command, write failing tests first, then implement.
 
-Test runner: vitest. Filesystem: `memfs` via `vol.fromJSON` + `vol.reset()` in `beforeEach`. Pattern reference: [copyFiles.test.ts](../../packages/server/src/app-commands/copyFiles.test.ts).
+Test runner: vitest. Filesystem: `memfs` via `vol.fromJSON` + `vol.reset()` in `beforeEach`. Pattern reference: [copyFiles.test.ts](../../packages/core/src/app-commands/copyFiles.test.ts).
 
 Per-command coverage:
 - **`moveFilesIntoNamedFolders`**
