@@ -2,6 +2,7 @@ import { firstValueFrom } from "rxjs"
 import { describe, expect, test } from "vitest"
 
 import {
+  dedupePossibleNames,
   parseCuts,
   parseSpecialFeatures,
   parseUntimedSuggestions,
@@ -248,6 +249,122 @@ describe(parseUntimedSuggestions.name, () => {
         name: "Image Gallery (4 images)",
         timecode: undefined,
       },
+    ])
+  })
+})
+
+describe(dedupePossibleNames.name, () => {
+  test("returns the input unchanged when there are no duplicates", () => {
+    const input = [
+      { name: "Audio Commentary", timecode: "1:30:00" },
+      { name: "Behind the Scenes", timecode: "12:34" },
+      { name: "Image Gallery", timecode: undefined },
+    ]
+    expect(dedupePossibleNames(input)).toEqual(input)
+  })
+
+  test("collapses two identical entries to one", () => {
+    const input = [
+      { name: "* The Film", timecode: undefined },
+      { name: "Audio Commentary", timecode: undefined },
+      { name: "* The Film", timecode: undefined },
+    ]
+    expect(dedupePossibleNames(input)).toEqual([
+      { name: "* The Film", timecode: undefined },
+      { name: "Audio Commentary", timecode: undefined },
+    ])
+  })
+
+  test("collapses a smart-quote variant with a plain variant (first occurrence wins)", () => {
+    const input = [
+      {
+        name: "“Shrek's Interactive Journey: II” Photo Gallery",
+        timecode: undefined,
+      },
+      {
+        name: "Shrek's Interactive Journey - II Photo Gallery",
+        timecode: undefined,
+      },
+    ]
+    expect(dedupePossibleNames(input)).toEqual([
+      {
+        name: "“Shrek's Interactive Journey: II” Photo Gallery",
+        timecode: undefined,
+      },
+    ])
+  })
+
+  test("prefers the timed variant when collapsing with an untimed duplicate", () => {
+    const input = [
+      { name: "Far Far Away Idol", timecode: undefined },
+      { name: "Far Far Away Idol", timecode: "8:55" },
+    ]
+    expect(dedupePossibleNames(input)).toEqual([
+      { name: "Far Far Away Idol", timecode: "8:55" },
+    ])
+  })
+
+  test("keeps the first timed entry when both duplicates are timed", () => {
+    const input = [
+      { name: "Featurette", timecode: "10:00" },
+      { name: "Featurette", timecode: "10:05" },
+    ]
+    expect(dedupePossibleNames(input)).toEqual([
+      { name: "Featurette", timecode: "10:00" },
+    ])
+  })
+
+  test("keeps entries with the same name but distinct parentName", () => {
+    const input: Parameters<typeof dedupePossibleNames>[0] =
+      [
+        {
+          name: "Accidentally in Love",
+          timecode: "3:14",
+          parentName: "Shrek, Rattle & Roll [Disc One]",
+        },
+        {
+          name: "Accidentally in Love",
+          timecode: "3:14",
+          parentName: "Shrek, Rattle & Roll [Disc Two]",
+        },
+      ]
+    expect(dedupePossibleNames(input)).toEqual(input)
+  })
+
+  test("collapses children sharing the same parentName across disc repeats", () => {
+    const input = [
+      {
+        name: "Accidentally in Love",
+        timecode: undefined,
+        parentName: "Shrek, Rattle & Roll",
+      },
+      {
+        name: "Accidentally in Love",
+        timecode: "3:14",
+        parentName: "Shrek, Rattle & Roll",
+      },
+    ]
+    expect(dedupePossibleNames(input)).toEqual([
+      {
+        name: "Accidentally in Love",
+        timecode: "3:14",
+        parentName: "Shrek, Rattle & Roll",
+      },
+    ])
+  })
+
+  test("preserves the original ordering of non-duplicate entries", () => {
+    const input = [
+      { name: "A", timecode: undefined },
+      { name: "B", timecode: undefined },
+      { name: "A", timecode: undefined },
+      { name: "C", timecode: undefined },
+      { name: "B", timecode: undefined },
+    ]
+    expect(dedupePossibleNames(input)).toEqual([
+      { name: "A", timecode: undefined },
+      { name: "B", timecode: undefined },
+      { name: "C", timecode: undefined },
     ])
   })
 })
