@@ -22,9 +22,11 @@ import {
   deleteCopiedOriginalsRequestSchema,
   deleteFilesByExtensionRequestSchema,
   deleteFolderRequestSchema,
+  distributeFolderToSiblingsRequestSchema,
   exitIfEmptyRequestSchema,
   extractSubtitlesRequestSchema,
   fixIncorrectDefaultTracksRequestSchema,
+  flattenChildFoldersRequestSchema,
   flattenOutputRequestSchema,
   getAudioOffsetsRequestSchema,
   hasBetterAudioRequestSchema,
@@ -39,6 +41,7 @@ import {
   makeDirectoryRequestSchema,
   mergeTracksRequestSchema,
   modifySubtitleMetadataRequestSchema,
+  moveFilesIntoNamedFoldersRequestSchema,
   moveFilesRequestSchema,
   nameAnimeEpisodesAniDBRequestSchema,
   nameAnimeEpisodesRequestSchema,
@@ -237,6 +240,66 @@ export const COMMANDS: Commands = {
           label: "Allow overwrite",
           description:
             "Default off: the command fails fast with EEXIST if any destination file already exists. Turn on for mirror-sync / idempotent-re-run flows where last-write-wins is the desired behavior.",
+        }),
+      ],
+    }
+  })(),
+  moveFilesIntoNamedFolders: (() => {
+    const field = fieldBuilder(
+      moveFilesIntoNamedFoldersRequestSchema,
+    )
+    return {
+      summary:
+        "Foldarize: move each file into a same-named subdirectory (extension stripped from the folder name). Casper.mkv → Casper/Casper.mkv.",
+      tag: "File Operations",
+      outputFolderName: null,
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+      ],
+    }
+  })(),
+  distributeFolderToSiblings: (() => {
+    const field = fieldBuilder(
+      distributeFolderToSiblingsRequestSchema,
+    )
+    return {
+      summary:
+        "Copy a folder (e.g. ./attachments) into every sibling directory of its parent, with optional source-folder cleanup",
+      tag: "File Operations",
+      outputFolderName: null,
+      fields: [
+        field("sourceFolderPath", {
+          type: "path",
+          label: "Source Folder Path",
+        }),
+        field("deleteSourceFolderAfterDistributing", {
+          type: "boolean",
+          label: "Delete source folder after distributing",
+        }),
+      ],
+    }
+  })(),
+  flattenChildFolders: (() => {
+    const field = fieldBuilder(
+      flattenChildFoldersRequestSchema,
+    )
+    return {
+      summary:
+        "For each immediate child directory of parentPath, move every file up to parentPath. Distinct from flattenOutput (single folder) — iterates over every child.",
+      tag: "File Operations",
+      outputFolderName: null,
+      fields: [
+        field("parentPath", {
+          type: "path",
+          label: "Parent Path",
+        }),
+        field("deleteEmptyChildFoldersAfterFlattening", {
+          type: "boolean",
+          label:
+            "Delete empty child folders after flattening",
         }),
       ],
     }
