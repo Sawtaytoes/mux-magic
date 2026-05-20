@@ -19,8 +19,7 @@ export const decodeCueBuffer = (buffer: Buffer): string => {
     })
     return decoder.decode(buffer)
   } catch {
-    const guess =
-      chardet.detect(buffer) ?? "windows-1252"
+    const guess = chardet.detect(buffer) ?? "windows-1252"
     return iconv.decode(buffer, guess)
   }
 }
@@ -36,8 +35,7 @@ export const readCueWithEncodingFallback = async (
     })
     return decoder.decode(buffer)
   } catch {
-    const guess =
-      chardet.detect(buffer) ?? "windows-1252"
+    const guess = chardet.detect(buffer) ?? "windows-1252"
     logInfo("CUE", `${cuePath}: decoded as ${guess}`)
     return iconv.decode(buffer, guess)
   }

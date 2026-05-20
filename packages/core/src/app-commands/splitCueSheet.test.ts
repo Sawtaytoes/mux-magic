@@ -128,14 +128,10 @@ describe(splitCueSheet.name, () => {
       ),
     ).toBe(true)
     expect(
-      destinations.some((path) =>
-        path.includes("Album1"),
-      ),
+      destinations.some((path) => path.includes("Album1")),
     ).toBe(true)
     expect(
-      destinations.some((path) =>
-        path.includes("Album2"),
-      ),
+      destinations.some((path) => path.includes("Album2")),
     ).toBe(true)
   })
 
@@ -170,9 +166,7 @@ describe(splitCueSheet.name, () => {
     expect(records).toHaveLength(3)
     const firstCall = vi.mocked(splitCueSheetFfmpeg).mock
       .calls[0][0]
-    expect(firstCall.inputAudioPath).toMatch(
-      /Album\.flac$/,
-    )
+    expect(firstCall.inputAudioPath).toMatch(/Album\.flac$/)
   })
 
   test("AbortController on unsubscribe stops further runFfmpeg invocations", async () => {

@@ -3,10 +3,9 @@ import { describe, expect, test, vi } from "vitest"
 import { resolveCueAudioFile } from "./resolveCueAudioFile.js"
 
 vi.mock("@mux-magic/tools", async () => {
-  const actual =
-    await vi.importActual<typeof import("@mux-magic/tools")>(
-      "@mux-magic/tools",
-    )
+  const actual = await vi.importActual<
+    typeof import("@mux-magic/tools")
+  >("@mux-magic/tools")
   return {
     ...actual,
     logInfo: vi.fn(),
@@ -51,7 +50,9 @@ describe(resolveCueAudioFile.name, () => {
     })
     expect(result.kind).toBe("ok")
     if (result.kind !== "ok") return
-    expect(result.path).toBe(join("/music/Album", "Album.flac"))
+    expect(result.path).toBe(
+      join("/music/Album", "Album.flac"),
+    )
     expect(logInfo).toHaveBeenCalled()
   })
 

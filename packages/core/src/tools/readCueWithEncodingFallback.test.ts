@@ -36,9 +36,7 @@ describe(decodeCueBuffer.name, () => {
   })
 
   test("decodes a Windows-1252 CUE that contains é", async () => {
-    const buf = await loadFixture(
-      "windows-1252-accent.cue",
-    )
+    const buf = await loadFixture("windows-1252-accent.cue")
     const text = decodeCueBuffer(buf)
     expect(text).toMatch(/Café au lait/)
     expect(text).toMatch(/Soirée/)

@@ -176,7 +176,7 @@ export const parseCueSheet = (
             : finalState.finalizedTracks.concat(finalized)
         })()
 
-  const lastIsMissing =
+  const hasMissingLastIndex =
     finalState.currentTrack !== null &&
     finalState.currentTrack.startFrame === undefined
 
@@ -186,7 +186,7 @@ export const parseCueSheet = (
 
   if (
     finalState.hasMissingIndex ||
-    lastIsMissing ||
+    hasMissingLastIndex ||
     flushedFinal.length === 0
   ) {
     return flushedFinal.length === 0

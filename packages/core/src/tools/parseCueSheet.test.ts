@@ -68,10 +68,10 @@ describe(parseCueSheet.name, () => {
       number: 2,
       title: "Second Song",
       performer: "Artist",
-      startFrame: ((3 * 60 + 25) * 75) + 50,
+      startFrame: (3 * 60 + 25) * 75 + 50,
     })
     expect(result.tracks[2].startFrame).toBe(
-      ((7 * 60 + 12) * 75) + 25,
+      (7 * 60 + 12) * 75 + 25,
     )
   })
 
@@ -81,7 +81,7 @@ describe(parseCueSheet.name, () => {
     if (result.kind !== "ok") return
     expect(result.tracks).toHaveLength(2)
     expect(result.tracks[1].startFrame).toBe(
-      (3 * 60 * 75) + (2 * 75),
+      3 * 60 * 75 + 2 * 75,
     )
   })
 

@@ -1,8 +1,8 @@
+import type { Stats } from "node:fs"
 import { readdir, readFile, stat } from "node:fs/promises"
-import { basename, dirname, extname, join } from "node:path"
+import { basename, extname, join } from "node:path"
 import {
   logAndRethrowPipelineError,
-  logInfo,
   logWarning,
 } from "@mux-magic/tools"
 import chardet from "chardet"
@@ -18,14 +18,14 @@ import {
 } from "rxjs"
 import { splitCueSheetFfmpeg } from "../cli-spawn-operations/splitCueSheetFfmpeg.js"
 import { cueTrackToOutputFilename } from "../tools/cueTrackToOutputFilename.js"
+import { getFileDuration } from "../tools/getFileDuration.js"
+import { getMediaInfo } from "../tools/getMediaInfo.js"
+import { CUE_SPLITS_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import {
   type CueTrack,
   parseCueSheet,
 } from "../tools/parseCueSheet.js"
-import { CUE_SPLITS_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import { resolveCueAudioFile } from "../tools/resolveCueAudioFile.js"
-import { getMediaInfo } from "../tools/getMediaInfo.js"
-import { getFileDuration } from "../tools/getFileDuration.js"
 
 export type SplitCueSheetRecord = {
   source: string
@@ -61,8 +61,7 @@ const decodeCueBytes = (buffer: Buffer): string => {
     })
     return decoder.decode(buffer)
   } catch {
-    const guess =
-      chardet.detect(buffer) ?? "windows-1252"
+    const guess = chardet.detect(buffer) ?? "windows-1252"
     return iconv.decode(buffer, guess)
   }
 }
@@ -104,25 +103,28 @@ const collectCueFolders = async ({
     Array<{ folderPath: string; cuePath: string }>
   > => {
     const entries = await readdir(folderPath)
+    type StatInfo = {
+      entry: string
+      fullPath: string
+      entryStat: Stats
+    }
     const stats = await Promise.all(
-      entries.map(async (entry) => {
-        const fullPath = join(folderPath, entry)
-        try {
-          const entryStat = await stat(fullPath)
-          return { entry, fullPath, entryStat }
-        } catch {
-          return null
-        }
-      }),
+      entries.map(
+        async (entry): Promise<StatInfo | null> => {
+          const fullPath = join(folderPath, entry)
+          try {
+            const entryStat = (await stat(
+              fullPath,
+            )) as Stats
+            return { entry, fullPath, entryStat }
+          } catch {
+            return null
+          }
+        },
+      ),
     )
     const validStats = stats.filter(
-      (
-        info,
-      ): info is {
-        entry: string
-        fullPath: string
-        entryStat: Awaited<ReturnType<typeof stat>>
-      } => info !== null,
+      (info): info is StatInfo => info !== null,
     )
     const cueEntries = validStats.filter(
       (info) =>
@@ -220,20 +222,17 @@ export const splitCueSheet = ({
         // Pre-flight: detect album-folder basename collisions
         // (worker 66 halt-and-list pattern). Same basename in
         // different parents would silently overwrite — refuse.
-        const grouped = plans.reduce(
-          (groups, plan) => {
-            const key = plan.albumFolderName.toLowerCase()
-            const existing = groups.get(key) ?? []
-            return new Map(groups).set(
-              key,
-              existing.concat(plan),
-            )
-          },
-          new Map<string, CuePlan[]>(),
-        )
-        const collisions = Array.from(grouped.values()).filter(
-          (group) => group.length > 1,
-        )
+        const grouped = plans.reduce((groups, plan) => {
+          const key = plan.albumFolderName.toLowerCase()
+          const existing = groups.get(key) ?? []
+          return new Map(groups).set(
+            key,
+            existing.concat(plan),
+          )
+        }, new Map<string, CuePlan[]>())
+        const collisions = Array.from(
+          grouped.values(),
+        ).filter((group) => group.length > 1)
         if (collisions.length > 0) {
           const message = collisions
             .map(

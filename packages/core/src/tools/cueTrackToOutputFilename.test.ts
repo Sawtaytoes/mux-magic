@@ -10,7 +10,7 @@ describe(cueTrackToOutputFilename.name, () => {
 
   test("strips Windows-reserved characters from the title", () => {
     expect(
-      cueTrackToOutputFilename(12, 'AC/DC: Back in Black'),
+      cueTrackToOutputFilename(12, "AC/DC: Back in Black"),
     ).toBe("12 - ACDC Back in Black.flac")
   })
 
@@ -21,25 +21,26 @@ describe(cueTrackToOutputFilename.name, () => {
   })
 
   test("preserves non-Latin characters (Shift_JIS-friendly)", () => {
-    expect(cueTrackToOutputFilename(5, "残酷な天使のテーゼ")).toBe(
-      "05 - 残酷な天使のテーゼ.flac",
-    )
+    expect(
+      cueTrackToOutputFilename(5, "残酷な天使のテーゼ"),
+    ).toBe("05 - 残酷な天使のテーゼ.flac")
   })
 
   test("throws on track number 0 with a clear message", () => {
-    expect(() => cueTrackToOutputFilename(0, "Anything"))
-      .toThrowError(/track number/i)
+    expect(() =>
+      cueTrackToOutputFilename(0, "Anything"),
+    ).toThrowError(/track number/i)
   })
 
   test("throws on an empty title with a clear message", () => {
-    expect(() => cueTrackToOutputFilename(1, "")).toThrowError(
-      /title/i,
-    )
+    expect(() =>
+      cueTrackToOutputFilename(1, ""),
+    ).toThrowError(/title/i)
   })
 
   test("throws on a title that is only reserved chars", () => {
-    expect(() => cueTrackToOutputFilename(1, "///")).toThrowError(
-      /title/i,
-    )
+    expect(() =>
+      cueTrackToOutputFilename(1, "///"),
+    ).toThrowError(/title/i)
   })
 })

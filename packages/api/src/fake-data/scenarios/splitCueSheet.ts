@@ -72,9 +72,9 @@ export const splitCueSheetScenario = (
 
   const records = ALBUMS.flatMap((album) =>
     album.tracks.map((track) => {
-      const destination = `CUE-SPLITS/${album.folder.split(
-        "/",
-      ).slice(-1)[0]}/${String(track.number).padStart(
+      const destination = `CUE-SPLITS/${
+        album.folder.split("/").slice(-1)[0]
+      }/${String(track.number).padStart(
         2,
         "0",
       )} - ${track.title}.flac`
@@ -89,10 +89,7 @@ export const splitCueSheetScenario = (
 
   return concat(
     effect(() => {
-      logInfo(
-        label,
-        `Starting fake splitCueSheet run.`,
-      )
+      logInfo(label, `Starting fake splitCueSheet run.`)
       logInfo(label, `Body: ${JSON.stringify(body)}`)
       logInfo(
         label,
