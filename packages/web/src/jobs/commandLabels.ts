@@ -15,6 +15,7 @@ const commandLabels: Record<string, string> = {
   exitIfEmpty: "Exit If Empty",
 
   // Audio Operations
+  convertWavToFlac: "Convert WAV to FLAC",
   getAudioOffsets: "Get Audio Offsets",
   replaceFlacWithPcmAudio: "Replace FLAC with PCM Audio",
 
