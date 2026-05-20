@@ -1408,6 +1408,26 @@ export const splitChaptersRequestSchema = z.object({
     ),
 })
 
+export const splitCueSheetRequestSchema = z.object({
+  sourcePath: z
+    .string()
+    .describe(
+      "Music library root containing albums with CUE sheets.",
+    ),
+  isRecursive: z
+    .boolean()
+    .default(true)
+    .describe(
+      "Recursively descend into subdirectories looking for CUE files. Default true.",
+    ),
+  outputFolderName: z
+    .string()
+    .default("CUE-SPLITS")
+    .describe(
+      "Folder name created under sourcePath that holds all per-album subfolders.",
+    ),
+})
+
 export const storeAspectRatioDataRequestSchema = z.object({
   sourcePath: z
     .string()

@@ -19,6 +19,7 @@ import {
   renameMovieClipDownloadsScenario,
 } from "./scenarios/renameCommands.js"
 import { replaceFlacWithPcmAudioScenario } from "./scenarios/replaceFlacWithPcmAudio.js"
+import { splitCueSheetScenario } from "./scenarios/splitCueSheet.js"
 import { storeAspectRatioDataScenario } from "./scenarios/storeAspectRatioData.js"
 import { successScenario } from "./scenarios/success.js"
 
@@ -116,6 +117,7 @@ const OBSERVABLE_OVERRIDES: Partial<
   renameMovieClipDownloads:
     renameMovieClipDownloadsScenario,
   replaceFlacWithPcmAudio: replaceFlacWithPcmAudioScenario,
+  splitCueSheet: splitCueSheetScenario,
   storeAspectRatioData: storeAspectRatioDataScenario,
 }
 

@@ -49,6 +49,7 @@ import { replaceFlacWithPcmAudioCommand } from "./cli-commands/replaceFlacWithPc
 import { replaceTracksCommand } from "./cli-commands/replaceTracksCommand.js"
 import { setDisplayWidthCommand } from "./cli-commands/setDisplayWidthCommand.js"
 import { splitChaptersCommand } from "./cli-commands/splitChaptersCommand.js"
+import { splitCueSheetCommand } from "./cli-commands/splitCueSheetCommand.js"
 import { storeAspectRatioDataCommand } from "./cli-commands/storeAspectRatioDataCommand.js"
 
 console.time("Command Runtime")
@@ -103,5 +104,6 @@ yargs(hideBin(process.argv))
   .command(replaceTracksCommand)
   .command(setDisplayWidthCommand)
   .command(splitChaptersCommand)
+  .command(splitCueSheetCommand)
   .command(storeAspectRatioDataCommand)
   .strict().argv

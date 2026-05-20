@@ -17,6 +17,7 @@ const commandLabels: Record<string, string> = {
   // Audio Operations
   getAudioOffsets: "Get Audio Offsets",
   replaceFlacWithPcmAudio: "Replace FLAC with PCM Audio",
+  splitCueSheet: "Split CUE Sheet to FLAC",
 
   // Track Operations
   changeTrackLanguages: "Change Track Languages",
