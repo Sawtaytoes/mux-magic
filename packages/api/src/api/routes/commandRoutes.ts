@@ -9,7 +9,7 @@ import {
   addSubtitlesDefaultProps,
 } from "@mux-magic/core/src/app-commands/addSubtitles.js"
 import { changeTrackLanguages } from "@mux-magic/core/src/app-commands/changeTrackLanguages.js"
-import { convertWavToFlac } from "@mux-magic/core/src/app-commands/convertWavToFlac.js"
+import { convertLosslessToFlac } from "@mux-magic/core/src/app-commands/convertLosslessToFlac.js"
 import {
   type CopyRecord,
   copyFiles,
@@ -128,7 +128,7 @@ const startCommandJob = ({
 export const commandNames = [
   "makeDirectory",
   "changeTrackLanguages",
-  "convertWavToFlac",
+  "convertLosslessToFlac",
   "copyFiles",
   "flattenOutput",
   "copyOutSubtitles",
@@ -225,16 +225,16 @@ export const commandConfigs: Record<
     summary: "Change language tags for media tracks",
     tags: ["Track Operations"],
   },
-  convertWavToFlac: {
+  convertLosslessToFlac: {
     getObservable: (body) =>
-      convertWavToFlac({
+      convertLosslessToFlac({
         isRecursive: body.isRecursive,
         isSourceDeleted: body.isSourceDeleted,
         sourcePath: body.sourcePath,
       }),
-    schema: schemas.convertWavToFlacRequestSchema,
+    schema: schemas.convertLosslessToFlacRequestSchema,
     summary:
-      "Encode .wav files to FLAC in-place (strictly lossless)",
+      "Encode lossless audio files (.wav / .aif / .aiff / .m4a / .m4b) to FLAC in-place (strictly lossless)",
     tags: ["Audio Operations"],
   },
   copyFiles: {

@@ -4,5 +4,5 @@ paths:
     value: /fixture/music
 steps:
   - id: step-fixture
-    command: convertWavToFlac
+    command: convertLosslessToFlac
     params: {sourcePath: '@basePath', isRecursive: true, isSourceDeleted: true}

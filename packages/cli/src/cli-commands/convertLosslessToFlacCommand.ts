@@ -1,4 +1,4 @@
-import { convertWavToFlac } from "@mux-magic/core/src/app-commands/convertWavToFlac.js"
+import { convertLosslessToFlac } from "@mux-magic/core/src/app-commands/convertLosslessToFlac.js"
 import { subscribeCli } from "@mux-magic/core/src/tools/subscribeCli.js"
 import type {
   Argv,
@@ -12,21 +12,21 @@ type InferArgvOptions<T> =
 const builder = (yargs: Argv) =>
   yargs
     .example(
-      '$0 convertWavToFlac "~/music"',
-      "Encodes .wav files in '~/music' to FLAC in-place (strictly lossless).",
+      '$0 convertLosslessToFlac "~/music"',
+      "Encodes any .wav / .aif / .aiff / .m4a / .m4b files in '~/music' to FLAC in-place (strictly lossless).",
     )
     .example(
-      '$0 convertWavToFlac "~/music" -r',
+      '$0 convertLosslessToFlac "~/music" -r',
       "Recursively descends one level into subdirectories.",
     )
     .example(
-      '$0 convertWavToFlac "~/music" --delete-source',
-      "Encodes to FLAC and removes the source .wav after each successful encode.",
+      '$0 convertLosslessToFlac "~/music" --delete-source',
+      "Encodes to FLAC and removes the source file after each successful encode.",
     )
     .positional("sourcePath", {
       demandOption: true,
       describe:
-        "Directory containing .wav files or directories of .wav files.",
+        "Directory containing lossless audio files (.wav / .wave / .aif / .aiff / .m4a / .m4b) or directories of them.",
       type: "string",
     })
     .option("isRecursive", {
@@ -34,7 +34,7 @@ const builder = (yargs: Argv) =>
       boolean: true,
       default: false,
       describe:
-        "Recursively descends one level into subdirectories looking for .wav files.",
+        "Recursively descends one level into subdirectories looking for accepted lossless audio files.",
       nargs: 0,
       type: "boolean",
     })
@@ -43,20 +43,20 @@ const builder = (yargs: Argv) =>
       boolean: true,
       default: false,
       describe:
-        "When set, deletes each source .wav after its FLAC encode succeeds. Defaults to keeping the originals.",
+        "When set, deletes each source file after its FLAC encode succeeds. Defaults to keeping the originals.",
       nargs: 0,
       type: "boolean",
     })
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
-export const convertWavToFlacCommand: CommandModule<
+export const convertLosslessToFlacCommand: CommandModule<
   Record<string, unknown>,
   Args
 > = {
-  command: "convertWavToFlac <sourcePath>",
+  command: "convertLosslessToFlac <sourcePath>",
   describe:
-    "Encodes .wav files to FLAC in-place. Strictly lossless — channels, bit depth, sample rate, and metadata are preserved. Optionally deletes each source .wav after a successful encode.",
+    "Encodes lossless audio files (.wav / .wave / .aif / .aiff / .m4a / .m4b) to FLAC in-place. Strictly lossless — channels, bit depth, sample rate, and metadata are preserved. Optionally deletes each source file after a successful encode.",
 
   builder: builder as CommandBuilder<
     Record<string, unknown>,
@@ -64,7 +64,7 @@ export const convertWavToFlacCommand: CommandModule<
   >,
 
   handler: (argv) => {
-    convertWavToFlac({
+    convertLosslessToFlac({
       isRecursive: argv.isRecursive,
       isSourceDeleted: argv.isSourceDeleted,
       sourcePath: argv.sourcePath,

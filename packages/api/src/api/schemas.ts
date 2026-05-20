@@ -271,24 +271,24 @@ export const getAudioOffsetsRequestSchema = z.object({
     ),
 })
 
-export const convertWavToFlacRequestSchema = z.object({
+export const convertLosslessToFlacRequestSchema = z.object({
   sourcePath: z
     .string()
     .min(1)
     .describe(
-      "Directory containing .wav files to encode to FLAC, or a directory of directories of .wav files when used with isRecursive.",
+      "Directory containing lossless audio files (.wav / .wave / .aif / .aiff / .m4a / .m4b) to encode to FLAC, or a directory of directories of those files when used with isRecursive.",
     ),
   isRecursive: z
     .boolean()
     .default(false)
     .describe(
-      "Recursively descends one level into subdirectories looking for .wav files.",
+      "Recursively descends one level into subdirectories looking for accepted lossless audio files.",
     ),
   isSourceDeleted: z
     .boolean()
     .default(false)
     .describe(
-      "When true, deletes the source .wav file after a successful FLAC encode. Defaults to false; the original .wav is kept by default.",
+      "When true, deletes the source file after a successful FLAC encode. Defaults to false; the original is kept by default.",
     ),
 })
 

@@ -9,7 +9,7 @@ import { hideBin } from "yargs/helpers"
 
 import { addSubtitlesCommand } from "./cli-commands/addSubtitlesCommand.js"
 import { changeTrackLanguagesCommand } from "./cli-commands/changeTrackLanguagesCommand.js"
-import { convertWavToFlacCommand } from "./cli-commands/convertWavToFlacCommand.js"
+import { convertLosslessToFlacCommand } from "./cli-commands/convertLosslessToFlacCommand.js"
 import { copyFilesCommand } from "./cli-commands/copyFilesCommand.js"
 import { copyOutSubtitlesCommand } from "./cli-commands/copyOutSubtitlesCommand.js"
 import { deleteCopiedOriginalsCommand } from "./cli-commands/deleteCopiedOriginalsCommand.js"
@@ -63,7 +63,7 @@ yargs(hideBin(process.argv))
   .wrap(process.stdout.columns)
   .usage("Usage: $0 <cmd> [args]")
   .command(changeTrackLanguagesCommand)
-  .command(convertWavToFlacCommand)
+  .command(convertLosslessToFlacCommand)
   .command(copyFilesCommand)
   .command(copyOutSubtitlesCommand)
   .command(extractSubtitlesCommand)
