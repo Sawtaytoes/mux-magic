@@ -16,6 +16,7 @@
 import {
   addSubtitlesRequestSchema,
   changeTrackLanguagesRequestSchema,
+  convertWavToFlacRequestSchema,
   copyFilesRequestSchema,
   copyOutSubtitlesRequestSchema,
   deleteCopiedOriginalsRequestSchema,
@@ -470,6 +471,29 @@ export const COMMANDS: Commands = {
         field("isRecursive", {
           type: "boolean",
           label: "Recursive",
+        }),
+      ],
+    }
+  })(),
+  convertWavToFlac: (() => {
+    const field = fieldBuilder(convertWavToFlacRequestSchema)
+    return {
+      summary:
+        "Encode .wav files to FLAC in-place (strictly lossless)",
+      tag: "Audio Operations",
+      outputFolderName: null,
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Recursive",
+        }),
+        field("isSourceDeleted", {
+          type: "boolean",
+          label: "Delete Source .wav After Successful Encode",
         }),
       ],
     }
