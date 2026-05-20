@@ -24,68 +24,68 @@ import { BuilderSequenceList } from "../BuilderSequenceList/BuilderSequenceList"
 // first paint. Lazy-loading them keeps `yamlCodec` + `js-yaml` + the per-modal
 // component code out of the main chunk; rolldown emits `<link rel=
 // "modulepreload">` for each so the user-perceived open latency stays
-// imperceptible. The `.then(m => ({ default: m.X }))` adapter exists because
-// every modal is a named export (project convention — see worker 07) but
-// React.lazy only accepts a default export.
+// imperceptible. The `.then((mod) => ({ default: mod.X }))` adapter exists
+// because every modal is a named export (project convention — see worker 07)
+// but React.lazy only accepts a default export.
 const LoadModal = lazy(() =>
   import("../../components/LoadModal/LoadModal").then(
-    (m) => ({ default: m.LoadModal }),
+    (mod) => ({ default: mod.LoadModal }),
   ),
 )
 const YamlModal = lazy(() =>
   import("../../components/YamlModal/YamlModal").then(
-    (m) => ({ default: m.YamlModal }),
+    (mod) => ({ default: mod.YamlModal }),
   ),
 )
 const SequenceRunModal = lazy(() =>
   import(
     "../../components/SequenceRunModal/SequenceRunModal"
-  ).then((m) => ({ default: m.SequenceRunModal })),
+  ).then((mod) => ({ default: mod.SequenceRunModal })),
 )
 const SmartMatchModal = lazy(() =>
   import(
     "../../components/SmartMatchModal/SmartMatchModal"
-  ).then((m) => ({ default: m.SmartMatchModal })),
+  ).then((mod) => ({ default: mod.SmartMatchModal })),
 )
 const FileExplorerModal = lazy(() =>
   import(
     "../../components/FileExplorerModal/FileExplorerModal"
-  ).then((m) => ({ default: m.FileExplorerModal })),
+  ).then((mod) => ({ default: mod.FileExplorerModal })),
 )
 const EditVariablesModal = lazy(() =>
   import(
     "../../components/EditVariablesModal/EditVariablesModal"
-  ).then((m) => ({ default: m.EditVariablesModal })),
+  ).then((mod) => ({ default: mod.EditVariablesModal })),
 )
 const CommandHelpModal = lazy(() =>
   import(
     "../../components/CommandHelpModal/CommandHelpModal"
-  ).then((m) => ({ default: m.CommandHelpModal })),
+  ).then((mod) => ({ default: mod.CommandHelpModal })),
 )
 const LookupModal = lazy(() =>
   import("../../components/LookupModal/LookupModal").then(
-    (m) => ({ default: m.LookupModal }),
+    (mod) => ({ default: mod.LookupModal }),
   ),
 )
 const PromptModal = lazy(() =>
   import("../../components/PromptModal/PromptModal").then(
-    (m) => ({ default: m.PromptModal }),
+    (mod) => ({ default: mod.PromptModal }),
   ),
 )
 const AudioPreviewModal = lazy(() =>
   import(
     "../../components/AudioPreviewModal/AudioPreviewModal"
-  ).then((m) => ({ default: m.AudioPreviewModal })),
+  ).then((mod) => ({ default: mod.AudioPreviewModal })),
 )
 const ImagePreviewModal = lazy(() =>
   import(
     "../../components/ImagePreviewModal/ImagePreviewModal"
-  ).then((m) => ({ default: m.ImagePreviewModal })),
+  ).then((mod) => ({ default: mod.ImagePreviewModal })),
 )
 const VideoPreviewModal = lazy(() =>
   import(
     "../../components/VideoPreviewModal/VideoPreviewModal"
-  ).then((m) => ({ default: m.VideoPreviewModal })),
+  ).then((mod) => ({ default: mod.VideoPreviewModal })),
 )
 
 // ─── BuilderPage ──────────────────────────────────────────────────────────────
@@ -112,7 +112,8 @@ export const BuilderPage = () => {
   // useEffect below, whichever resolves first. Worker 79 moved `js-yaml`
   // out of the main chunk; both effects share the dynamic import via
   // ESM's module cache so only one network/parse round-trip happens.
-  type YamlCodecModule = typeof import("../../jobs/yamlCodec")
+  type YamlCodecModule =
+    typeof import("../../jobs/yamlCodec")
   const codecRef = useRef<YamlCodecModule | null>(null)
 
   useEffect(() => {

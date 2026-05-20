@@ -6,7 +6,10 @@ import {
   findStepById,
   isGroup,
 } from "../jobs/sequenceUtils"
-import { loadYamlFromText, toYamlStr } from "../jobs/yamlCodec"
+import {
+  loadYamlFromText,
+  toYamlStr,
+} from "../jobs/yamlCodec"
 import { commandsAtom } from "../state/commandsAtom"
 import { dragReorderAtom } from "../state/dragAtoms"
 import {
