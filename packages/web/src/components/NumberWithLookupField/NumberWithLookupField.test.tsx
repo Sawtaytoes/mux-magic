@@ -306,3 +306,133 @@ describe("NumberWithLookupField — reverse-lookup auto-resolution", () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })
+
+// Release-hash reverse-lookup.
+// ────────────────────────────
+// dvdCompareReleaseHash is a sibling-aware field: it has no lookupType of
+// its own, but the reverse-lookup machinery resolves the label by pairing
+// the hash with the sibling dvdCompareId. The field renders via
+// NumberWithLookupField (not NumberField) so the effect is wired up.
+describe("NumberWithLookupField — dvdCompareReleaseHash sibling-id reverse-lookup", () => {
+  const releaseHashField = {
+    name: "dvdCompareReleaseHash",
+    type: "numberWithLookup",
+    label: "Release Hash",
+    default: 1,
+    companionNameField: "dvdCompareReleaseLabel",
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it("uses field.default for the input and fires lookupDvdCompareRelease when params has no hash but sibling dvdCompareId is set", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        label:
+          "Blu-ray ALL America - Universal Pictures [2022]",
+      }),
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const step: Step = {
+      id: "test-step-rh",
+      alias: "",
+      command: "nameSpecialFeaturesDvdCompareTmdb",
+      // No dvdCompareReleaseHash, no dvdCompareReleaseLabel — exactly the
+      // shape from the user-reported YAML where the label is missing.
+      params: { dvdCompareId: 53207 },
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    const store = createStore()
+    store.set(stepsAtom, [step])
+
+    render(
+      <Provider store={store}>
+        <NumberWithLookupField
+          field={releaseHashField}
+          step={step}
+        />
+      </Provider>,
+    )
+
+    // Input reflects field.default (was "" before the fallback was added).
+    const input = screen.getByDisplayValue(1)
+    expect(input).toBeVisible()
+
+    await waitFor(
+      () => {
+        const updated = store.get(stepsAtom)[0] as Step
+        expect(updated.params.dvdCompareReleaseLabel).toBe(
+          "Blu-ray ALL America - Universal Pictures [2022]",
+        )
+      },
+      { timeout: 2000 },
+    )
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(String(url)).toContain(
+      "/queries/lookupDvdCompareRelease",
+    )
+    expect(JSON.parse(init.body as string)).toEqual({
+      dvdCompareId: 53207,
+      hash: "1",
+    })
+  })
+
+  it("skips the lookup when the sibling dvdCompareId is missing (can't resolve a release without a film)", async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal("fetch", fetchMock)
+
+    const step: Step = {
+      id: "test-step-rh-no-sibling",
+      alias: "",
+      command: "nameSpecialFeaturesDvdCompareTmdb",
+      params: {},
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    const store = createStore()
+    store.set(stepsAtom, [step])
+
+    render(
+      <Provider store={store}>
+        <NumberWithLookupField
+          field={releaseHashField}
+          step={step}
+        />
+      </Provider>,
+    )
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("does not render the 🔍 lookup button (no lookupType on this field)", () => {
+    const step: Step = {
+      id: "test-step-rh-no-button",
+      alias: "",
+      command: "nameSpecialFeaturesDvdCompareTmdb",
+      params: { dvdCompareId: 53207 },
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    render(
+      <Provider>
+        <NumberWithLookupField
+          field={releaseHashField}
+          step={step}
+        />
+      </Provider>,
+    )
+    expect(
+      screen.queryByTitle(/look up/i),
+    ).not.toBeInTheDocument()
+  })
+})

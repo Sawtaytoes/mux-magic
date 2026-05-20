@@ -1422,8 +1422,10 @@ export const COMMANDS: Commands = {
         }),
         // Schema has no default for `dvdCompareReleaseHash`. UI defaults
         // to 1 (the first release option) — matches NSF.
+        // numberWithLookup so the sibling-id reverse-lookup branch in
+        // runReverseLookup fires and auto-fills dvdCompareReleaseLabel.
         field("dvdCompareReleaseHash", {
-          type: "number",
+          type: "numberWithLookup",
           label: "Release Hash",
           default: 1,
           companionNameField: "dvdCompareReleaseLabel",
@@ -1481,8 +1483,10 @@ export const COMMANDS: Commands = {
         // Drift: schema has no default for `dvdCompareReleaseHash`
         // (`.optional()` with no `.default()`), but the UI defaults to 1
         // (the first release option). Keep the override.
+        // numberWithLookup so the sibling-id reverse-lookup branch in
+        // runReverseLookup fires and auto-fills dvdCompareReleaseLabel.
         field("dvdCompareReleaseHash", {
-          type: "number",
+          type: "numberWithLookup",
           label: "Release Hash",
           default: 1,
           companionNameField: "dvdCompareReleaseLabel",

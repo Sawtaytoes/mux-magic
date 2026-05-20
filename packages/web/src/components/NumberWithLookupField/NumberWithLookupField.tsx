@@ -75,9 +75,19 @@ export const NumberWithLookupField = ({
     const fromParams = step.params[field.name] as
       | number
       | undefined
-    return typeof fromParams === "number" &&
+    if (
+      typeof fromParams === "number" &&
       Number.isFinite(fromParams)
-      ? fromParams
+    ) {
+      return fromParams
+    }
+    // Fall back to the field's UI default (e.g. dvdCompareReleaseHash
+    // defaults to 1). Without this, a freshly-loaded card with no
+    // persisted hash shows nothing in the input AND skips the
+    // reverse-lookup effect (rawValue === ""), so the companion label
+    // never auto-fills even though the user sees "1" displayed.
+    return typeof field.default === "number"
+      ? field.default
       : undefined
   })()
   const rawValue =
@@ -405,15 +415,17 @@ export const NumberWithLookupField = ({
             className={inputBaseClass}
           />
         )}
-        <button
-          type="button"
-          onClick={handleLookup}
-          title={`Look up ${field.label ?? field.name}`}
-          aria-label={`Look up ${field.label ?? field.name}`}
-          className="shrink-0 text-xs bg-slate-700 hover:bg-blue-700 text-slate-200 hover:text-white px-2.5 py-1.5 rounded border border-slate-600 hover:border-blue-500"
-        >
-          🔍
-        </button>
+        {lookupType && (
+          <button
+            type="button"
+            onClick={handleLookup}
+            title={`Look up ${field.label ?? field.name}`}
+            aria-label={`Look up ${field.label ?? field.name}`}
+            className="shrink-0 text-xs bg-slate-700 hover:bg-blue-700 text-slate-200 hover:text-white px-2.5 py-1.5 rounded border border-slate-600 hover:border-blue-500"
+          >
+            🔍
+          </button>
+        )}
       </div>
       {(companionName || rightSideLink) && (
         <div className="flex items-start gap-2 mt-0.5">
