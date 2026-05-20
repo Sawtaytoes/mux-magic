@@ -239,6 +239,13 @@ window.commandDescriptions = {
       "deleteSourceFolderAfterDistributing": "Delete the source folder after all copies succeed. Default false: source is preserved so the destructive step is explicit and opt-in."
     }
   },
+  "flattenChildFolders": {
+    "summary": "Move every file from each immediate child directory of parentPath up to parentPath itself, with optional empty-child cleanup",
+    "fields": {
+      "parentPath": "Folder whose immediate child directories should each have their files moved up to this folder. Files already at the parent level are untouched.",
+      "deleteEmptyChildFoldersAfterFlattening": "Delete the now-empty child directories after the moves complete. Default false: the empties are preserved for inspection (matches flattenOutput's default)."
+    }
+  },
   "renameFiles": {
     "summary": "Rename files in place via regex (no copy, no move). Pre-flight halts the run if two files would map to the same target name.",
     "fields": {

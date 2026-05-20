@@ -18,6 +18,7 @@ import { deleteFolderCommand } from "./cli-commands/deleteFolderCommand.js"
 import { distributeFolderToSiblingsCommand } from "./cli-commands/distributeFolderToSiblingsCommand.js"
 import { extractSubtitlesCommand } from "./cli-commands/extractSubtitlesCommand.js"
 import { fixIncorrectDefaultTracksCommand } from "./cli-commands/fixIncorrectDefaultTracksCommand.js"
+import { flattenChildFoldersCommand } from "./cli-commands/flattenChildFoldersCommand.js"
 import { flattenOutputCommand } from "./cli-commands/flattenOutputCommand.js"
 import { getAudioOffsetsCommand } from "./cli-commands/getAudioOffsetsCommand.js"
 import { getSubtitleMetadataCommand } from "./cli-commands/getSubtitleMetadataCommand.js"
@@ -71,6 +72,7 @@ yargs(hideBin(process.argv))
   .command(copyOutSubtitlesCommand)
   .command(extractSubtitlesCommand)
   .command(fixIncorrectDefaultTracksCommand)
+  .command(flattenChildFoldersCommand)
   .command(flattenOutputCommand)
   .command(getAudioOffsetsCommand)
   .command(getSubtitleMetadataCommand)

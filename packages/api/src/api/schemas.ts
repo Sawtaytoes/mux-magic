@@ -190,6 +190,20 @@ export const distributeFolderToSiblingsRequestSchema =
       ),
   })
 
+export const flattenChildFoldersRequestSchema = z.object({
+  parentPath: z
+    .string()
+    .describe(
+      "Folder whose immediate child directories should each have their files moved up to this folder. Files already at the parent level are untouched.",
+    ),
+  deleteEmptyChildFoldersAfterFlattening: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Delete the now-empty child directories after the moves complete. Default false: the empties are preserved for inspection (matches flattenOutput's default).",
+    ),
+})
+
 export const moveFilesRequestSchema = z.object({
   sourcePath: z
     .string()

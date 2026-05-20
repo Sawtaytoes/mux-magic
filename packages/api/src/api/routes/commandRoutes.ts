@@ -30,6 +30,7 @@ import {
   extractSubtitlesDefaultProps,
 } from "@mux-magic/core/src/app-commands/extractSubtitles.js"
 import { fixIncorrectDefaultTracks } from "@mux-magic/core/src/app-commands/fixIncorrectDefaultTracks.js"
+import { flattenChildFolders } from "@mux-magic/core/src/app-commands/flattenChildFolders.js"
 import { flattenOutput } from "@mux-magic/core/src/app-commands/flattenOutput.js"
 import {
   getAudioOffsets,
@@ -165,6 +166,7 @@ export const commandNames = [
   "moveFiles",
   "moveFilesIntoNamedFolders",
   "distributeFolderToSiblings",
+  "flattenChildFolders",
   "renameFiles",
   "nameAnimeEpisodes",
   "nameAnimeEpisodesAniDB",
@@ -616,6 +618,18 @@ export const commandConfigs: Record<
     schema: schemas.distributeFolderToSiblingsRequestSchema,
     summary:
       "Copy a folder (default ./attachments) into every sibling directory of its parent, with optional source-folder cleanup",
+    tags: ["File Operations"],
+  },
+  flattenChildFolders: {
+    getObservable: (body) =>
+      flattenChildFolders({
+        isDeletingEmptyChildFoldersAfterFlattening:
+          body.deleteEmptyChildFoldersAfterFlattening,
+        parentPath: body.parentPath,
+      }),
+    schema: schemas.flattenChildFoldersRequestSchema,
+    summary:
+      "Move every file from each immediate child directory of parentPath up to parentPath itself, with optional empty-child cleanup",
     tags: ["File Operations"],
   },
   renameFiles: {
