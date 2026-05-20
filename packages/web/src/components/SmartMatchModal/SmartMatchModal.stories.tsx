@@ -312,6 +312,28 @@ export const Empty: Story = {
   ),
 }
 
+// Worker 6f: opens the modal already mid-edit on the first row so
+// the reviewer can see the swapped-in custom text input + ↩ "back to
+// selection" toggle without manually clicking ✏. Mirrors the legacy
+// v1 HTML modal's primary use case: override a DVDCompare typo or
+// add a Plex `-other` suffix even though candidates exist.
+export const MidEditFirstRow: Story = {
+  parameters: { initialState: mixedConfidencePayload },
+  render: () => (
+    <>
+      <ReOpenButton initialState={mixedConfidencePayload} />
+      <SmartMatchModal />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const toggle =
+      canvasElement.ownerDocument.querySelector(
+        '[data-smart-match-edit-toggle="BONUS_1"]',
+      ) as HTMLButtonElement | null
+    if (toggle) toggle.click()
+  },
+}
+
 // Real-world disc shape (Shrek 2 UHD Blu-ray). Best story for
 // validating the styled RenameTargetPicker's two-row option layout —
 // each candidate's optional timecode chip is visible alongside the
