@@ -83,7 +83,7 @@ export const NsfRunResults = ({
       {renamePairs.length > 0 && (
         <div
           data-nsf-rename-list
-          className="max-h-40 overflow-y-auto font-mono text-xs flex flex-col gap-0.5"
+          className="font-mono text-xs flex flex-col gap-0.5"
         >
           {renamePairs.map((pair) => (
             <div

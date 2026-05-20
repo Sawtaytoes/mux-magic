@@ -78,6 +78,10 @@ import {
   splitChapters,
   splitChaptersDefaultProps,
 } from "@mux-magic/core/src/app-commands/splitChapters.js"
+import {
+  splitCueSheet,
+  splitCueSheetDefaultProps,
+} from "@mux-magic/core/src/app-commands/splitCueSheet.js"
 import { storeAspectRatioData } from "@mux-magic/core/src/app-commands/storeAspectRatioData.js"
 import { makeDirectory } from "@mux-magic/tools"
 import type { Context } from "hono"
@@ -168,6 +172,7 @@ export const commandNames = [
   "replaceTracks",
   "setDisplayWidth",
   "splitChapters",
+  "splitCueSheet",
   "storeAspectRatioData",
 ] as const
 
@@ -787,6 +792,19 @@ export const commandConfigs: Record<
     schema: schemas.splitChaptersRequestSchema,
     summary: "Split media files by chapter markers",
     tags: ["File Operations"],
+  },
+  splitCueSheet: {
+    getObservable: (body) =>
+      splitCueSheet({
+        isRecursive: body.isRecursive,
+        outputFolderName: body.outputFolderName,
+        sourcePath: body.sourcePath,
+      }),
+    outputFolderName:
+      splitCueSheetDefaultProps.outputFolderName,
+    schema: schemas.splitCueSheetRequestSchema,
+    summary: "Split CUE sheet to FLAC",
+    tags: ["Audio Operations"],
   },
   storeAspectRatioData: {
     getObservable: (body) =>

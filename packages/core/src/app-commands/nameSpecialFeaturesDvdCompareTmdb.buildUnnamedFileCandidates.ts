@@ -66,6 +66,16 @@ export const buildUnnamedFileCandidates = ({
       })
       // `.toSorted()` returns a fresh sorted array — preserves the "no
       // array mutation" rule from AGENTS.md while keeping ties stable.
+      //
+      // Heads-up to the next reader: this server-side word-overlap
+      // ranking is largely redundant with the client's
+      // `smartMatchScoring.rankSuggestions`, which re-ranks the same
+      // list with a duration-weighted scorer and ignores input order.
+      // The only benefit today is that callers without the Smart Match
+      // modal (CLI / JSON consumers) still get a sensible top pick.
+      // Worker 25 (`nsf-fix-unnamed-overhaul`) moves the richer
+      // duration-weighted scorer server-side, at which point this
+      // overlap pass should be removed — not extended.
       const ranked = scored.toSorted(
         (firstEntry, secondEntry) =>
           secondEntry.overlap - firstEntry.overlap,

@@ -11,6 +11,8 @@ A multiple-choice modal that pauses a running job to ask the user something — 
 
 A persistent **paused-pipeline header** sits above the options so the user always knows the running job is suspended waiting on them. The bottom action bar carries two visually distinct controls: a red **Cancel job** (DELETE `/jobs/:id`) and a subdued **Close (job stays running)** that just dismisses the modal — the SSE `isDone` flow in `useLogStream` clears the prompt atom server-side when a job actually terminates, so closing the modal locally never leaves stale state behind.
 
+Dismissal (Close button, Escape, or backdrop click) **minimizes** the modal rather than clearing it: `promptModalAtom` keeps the prompt with `isMinimized: true` so [`StepCard`](../StepCard/) can render a clickable "paused" badge that reopens the modal in place. The job stays suspended waiting for input until the user picks an option or fires Cancel job — there is no path here that loses an unsubmitted prompt.
+
 Options are sorted with the convention: `1..9` first (in numeric order, with `0` placed at the end of digits), then negative-indexed sentinel options (`-1` skip, etc.) at the bottom.
 
 ## Behaviour
@@ -22,11 +24,12 @@ Options are sorted with the convention: `1..9` first (in numeric order, with `0`
 - **Cancel job** → fires `DELETE /jobs/:id`, clears the prompt atom. The corresponding sequence step transitions to `cancelled` via the SSE-done flow.
 - **Close (job stays running)** → clears the prompt atom only. No fetch. The pipeline keeps waiting for input until the user re-opens the modal or sends another POST.
 - **Keyboard**:
-  - Digit keys (`0-9`) → picks the option with matching `index`.
+  - Digit keys (`0-9`) → picks the option with matching `index`. Modifier-chorded variants (`Ctrl+1`, `Alt+1`, `Cmd+1`) are ignored so OS/browser shortcuts pass through cleanly.
   - `Space` → picks the skip option (`index === -1`) if present.
-  - `Escape` → closes the modal WITHOUT submitting/cancelling. Universal modal UX — never lose a long-running job to an accidental Esc.
-  - `Ctrl+C` / `Cmd+C` → destructive Cancel job. Suppressed when there is an active text selection on the page, so the user can still copy the prompt message normally.
-- **Backdrop click** → closes without submitting (same semantics as the Close button).
+  - `Escape` → minimizes the modal WITHOUT submitting/cancelling. Universal modal UX — never lose a long-running job to an accidental Esc. The prompt is reachable again via the "paused" badge on the matching `StepCard`.
+  - All keyboard shortcuts are gated on `!isMinimized` — once the modal is hidden, the listener stays mounted but no-ops so a stray key can't silently answer a prompt the user can't see.
+  - There is no destructive keyboard shortcut. An earlier iteration bound `Ctrl/Cmd+C` to Cancel job, but the chord sits too close to the universal copy shortcut in muscle memory; the visible red button is the sole cancel path.
+- **Backdrop click** → minimizes (same semantics as `Escape` and the Close button — prompt stays alive, reachable via the `StepCard` "paused" badge).
 
 ## Atom wiring
 

@@ -5,6 +5,7 @@ import {
   useState,
 } from "react"
 import { apiBase } from "../../apiBase"
+import { useIsContainerized } from "../../hooks/useIsContainerized"
 
 const BROWSER_UNSUPPORTED_AUDIO = new Set([
   "ac-3",
@@ -30,8 +31,10 @@ export const FileVideoPlayer = ({
   const mseCleanupRef = useRef<(() => void) | null>(null)
   const [isStatusVisible, setIsStatusVisible] =
     useState(false)
-  const [isContainerized, setIsContainerized] =
-    useState(false)
+  // Shared via the useIsContainerized hook so PromptModal,
+  // FileVideoPlayer, and any other consumer share a single per-store
+  // /version probe instead of each firing their own on mount.
+  const isContainerized = useIsContainerized()
   // null = features not loaded yet → playback effect waits before
   // deciding which URL to use. Defaulting unloaded → null avoids the
   // race where setupPlayback runs once with a stale `false`, points
@@ -64,12 +67,9 @@ export const FileVideoPlayer = ({
   }, [clearMse])
 
   useEffect(() => {
-    fetch(`${apiBase}/version`, { cache: "no-store" })
-      .then((resp) => resp.json())
-      .then((data: { isContainerized?: boolean }) => {
-        setIsContainerized(data.isContainerized === true)
-      })
-      .catch(() => {})
+    // /version is now probed by useIsContainerized; this effect only
+    // loads /features (the experimental-transcode flag).
+    //
     // Mirror the server-side default (false) on /features fetch failure
     // so a flaky probe never accidentally turns the experimental
     // transcode path on for the user. The flag's docstring in

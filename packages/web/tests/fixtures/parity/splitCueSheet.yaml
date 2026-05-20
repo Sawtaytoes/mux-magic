@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/music
+steps:
+  - id: step-fixture
+    command: splitCueSheet
+    params: {sourcePath: '@basePath', isRecursive: true, outputFolderName: CUE-SPLITS}
