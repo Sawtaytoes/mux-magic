@@ -60,6 +60,15 @@ export const nameSpecialFeaturesDvdCompareTmdbScenario = (
   // scenario actually pauses for the user's choice, mirroring how a
   // real run would block. The user can dry-run the interactive UX
   // (Play button, Cancel job, Close) without a real DVD rip.
+  //
+  // Cancel-job contract: when the user clicks "Cancel job" the resulting
+  // DELETE /jobs/:id cascades through jobStore.cancelJob, which
+  // unsubscribes the outer scenario observable. RxJS tears down the
+  // active inner subscription (this `phaseTwoPrompt`), and
+  // getUserSearchInput's `return () => cancelPrompt(promptId)` cleanup
+  // removes the pending entry from the promptStore. End-to-end, a fake
+  // run cancels cleanly with no leaked prompt state — the contract is
+  // locked by getUserSearchInput.test.ts.
   const phaseTwoPrompt = getUserSearchInput({
     message:
       "MOVIE_t01.mkv would rename to 'Inception (2010) -featurette', but that file already exists on disk. What should happen?",

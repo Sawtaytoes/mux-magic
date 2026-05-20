@@ -253,11 +253,14 @@ describe("PromptModal", () => {
     expect(answerOrCancelCalls).toEqual([])
   })
 
-  test("Ctrl+C fires Cancel job (DELETE) and clears the atom", async () => {
+  test("Ctrl+C no longer cancels the job (chord was removed — only the visible button does)", async () => {
+    // An earlier version bound Ctrl/Cmd+C to destructive Cancel. Too
+    // close to the universal copy shortcut in muscle memory — fast
+    // users would lose a long-running job by reflex. The button is the
+    // sole cancel path now; pressing Ctrl+C inside the modal does
+    // nothing (the browser's clipboard handler is undisturbed).
     const user = userEvent.setup()
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(new Response("", { status: 202 }))
+    const fetchSpy = vi.spyOn(globalThis, "fetch")
     const store = createStore()
     store.set(promptModalAtom, {
       jobId: "job-ctrlc",
@@ -267,33 +270,7 @@ describe("PromptModal", () => {
     })
     renderWithStore(store)
     await user.keyboard("{Control>}c{/Control}")
-    await waitFor(() =>
-      expect(store.get(promptModalAtom)).toBeNull(),
-    )
-    expect(fetchSpy).toHaveBeenCalledWith(
-      `${apiBase}/jobs/job-ctrlc`,
-      expect.objectContaining({ method: "DELETE" }),
-    )
-  })
-
-  test("Ctrl+C is suppressed when there is an active text selection (user can copy)", async () => {
-    const user = userEvent.setup()
-    const fetchSpy = vi.spyOn(globalThis, "fetch")
-    vi.spyOn(window, "getSelection").mockReturnValue({
-      toString: () => "some selected text",
-    } as Selection)
-    const store = createStore()
-    store.set(promptModalAtom, {
-      jobId: "job-sel",
-      promptId: "p-sel",
-      message: "Pick one",
-      options: [{ index: 1, label: "Option A" }],
-    })
-    renderWithStore(store)
-    await user.keyboard("{Control>}c{/Control}")
     expect(store.get(promptModalAtom)).not.toBeNull()
-    // The suppression assertion is "no DELETE leaked through to the
-    // jobs API" — the mount-time /version probe is unrelated.
     const cancelCalls = fetchSpy.mock.calls.filter(
       ([url, init]) =>
         typeof url === "string" &&
@@ -302,5 +279,54 @@ describe("PromptModal", () => {
           "DELETE",
     )
     expect(cancelCalls).toEqual([])
+  })
+
+  test("digit shortcut is suppressed while the modal is minimized", async () => {
+    // The keydown listener stays mounted even when the modal hides.
+    // Without the isMinimized gate, a stray "1" press after the user
+    // dismissed the modal would silently submit option 1 to a prompt
+    // they can't see.
+    const user = userEvent.setup()
+    const fetchSpy = vi.spyOn(globalThis, "fetch")
+    const store = createStore()
+    store.set(promptModalAtom, {
+      jobId: "job-min",
+      promptId: "p-min",
+      message: "Pick one",
+      isMinimized: true,
+      options: [{ index: 1, label: "Option A" }],
+    })
+    renderWithStore(store)
+    await user.keyboard("1")
+    expect(store.get(promptModalAtom)).toEqual(
+      expect.objectContaining({ isMinimized: true }),
+    )
+    const inputCalls = fetchSpy.mock.calls.filter(
+      ([url]) =>
+        typeof url === "string" && url.includes("/input"),
+    )
+    expect(inputCalls).toEqual([])
+  })
+
+  test("modifier-chorded digit (Ctrl+1) is NOT treated as a pick", async () => {
+    // Ctrl+1, Alt+1, Cmd+1 are OS/browser shortcuts (tab switch,
+    // bookmark, …). They must not double-fire as a prompt pick.
+    const user = userEvent.setup()
+    const fetchSpy = vi.spyOn(globalThis, "fetch")
+    const store = createStore()
+    store.set(promptModalAtom, {
+      jobId: "job-mod",
+      promptId: "p-mod",
+      message: "Pick one",
+      options: [{ index: 1, label: "Option A" }],
+    })
+    renderWithStore(store)
+    await user.keyboard("{Control>}1{/Control}")
+    expect(store.get(promptModalAtom)).not.toBeNull()
+    const inputCalls = fetchSpy.mock.calls.filter(
+      ([url]) =>
+        typeof url === "string" && url.includes("/input"),
+    )
+    expect(inputCalls).toEqual([])
   })
 })

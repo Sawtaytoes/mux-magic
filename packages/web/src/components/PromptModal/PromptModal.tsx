@@ -4,6 +4,7 @@ import { apiBase } from "../../apiBase"
 import { promptModalAtom } from "../../components/PromptModal/promptModalAtom"
 import type { PromptOption } from "../../components/PromptModal/types"
 import { videoPreviewModalAtom } from "../../components/VideoPreviewModal/videoPreviewModalAtom"
+import { useIsContainerized } from "../../hooks/useIsContainerized"
 
 // Top-level Play button uses a fixed key in the label map, since
 // there's no path-distinct row id to peg it to. The per-row buttons
@@ -52,13 +53,6 @@ const sortOptions = (
     return rankA - rankB
   })
 
-const hasActiveTextSelection = (): boolean => {
-  const selection = window.getSelection()
-  return (
-    selection !== null && selection.toString().length > 0
-  )
-}
-
 const kbdChipClass =
   "text-[10px] font-mono bg-slate-700 text-slate-200 px-1.5 py-0.5 rounded"
 
@@ -68,29 +62,15 @@ export const PromptModal = () => {
   const setVideoPreview = useSetAtom(videoPreviewModalAtom)
   const promptDataRef = useRef(promptData)
   promptDataRef.current = promptData
-  // Mirror FileVideoPlayer's pattern: probe /version on mount to
-  // decide whether host-side "Open in Local Player" is reachable.
-  // PromptModal is mounted unconditionally at BuilderPage so this
-  // fires once for the page lifetime, not once per prompt.
-  // (If this ends up shared with more modals, lift to an atom; for
-  // now duplicating with FileVideoPlayer is cheaper than the abstraction.)
-  const [isContainerized, setIsContainerized] =
-    useState(false)
+  // Shared with FileVideoPlayer and any other consumer — see
+  // useIsContainerized for the once-per-store probe rationale.
+  const isContainerized = useIsContainerized()
   // Per-button label so the "Launching…/Launched/Failed" feedback is
   // scoped to the button the user actually clicked, not blasted across
   // every Open-in-Player button in the row list.
   const [openLabels, setOpenLabels] = useState<
     Record<string, string>
   >({})
-
-  useEffect(() => {
-    fetch(`${apiBase}/version`, { cache: "no-store" })
-      .then((resp) => resp.json())
-      .then((data: { isContainerized?: boolean }) => {
-        setIsContainerized(data.isContainerized === true)
-      })
-      .catch(() => {})
-  }, [])
 
   const openInLocalPlayer = async (
     key: string,
@@ -166,13 +146,39 @@ export const PromptModal = () => {
   //   Space      — pick `-1` Skip if present
   //   Escape     — close the modal WITHOUT submitting/cancelling
   //                (universal UX — don't lose a job to an accidental Esc)
-  //   Ctrl/Cmd+C — destructive Cancel job (DELETE /jobs/:id)
-  //                guarded by an active-text-selection check so the user
-  //                can still copy the prompt message normally
+  //
+  // No destructive shortcut: the visible red `Cancel job` button is the
+  // sole cancel path. An earlier version bound Ctrl/Cmd+C here, but the
+  // chord is too tightly fused to "copy" in muscle memory — fast users
+  // would lose a long-running job by deselecting text and reflexively
+  // hitting it. The visible button is unambiguous and reachable.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const current = promptDataRef.current
       if (!current) return
+      // Minimized: the listener stays mounted but the modal is hidden.
+      // Without this, a stray digit/Space would silently submit to a
+      // prompt the user can't see, and Escape would re-minimize an
+      // already-minimized atom — confusing in either direction.
+      if (current.isMinimized) return
+
+      if (event.key === "Escape") {
+        event.preventDefault()
+        // Minimize, don't clear — Escape is a dismissal, the job is
+        // still waiting for input. StepCard reopens via its paused
+        // badge once the user knows where to look.
+        setPromptData((prev) =>
+          prev ? { ...prev, isMinimized: true } : prev,
+        )
+        return
+      }
+
+      // Digit / Space are picks; modifier-chorded variants are
+      // browser/OS shortcuts (Cmd+Space = Spotlight, Ctrl+1 = tab 1,
+      // Alt+digit = bookmark, …) and must NOT also pick an option.
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return
+      }
 
       const num = parseInt(event.key, 10)
       if (!Number.isNaN(num)) {
@@ -190,7 +196,9 @@ export const PromptModal = () => {
         return
       }
 
-      if (event.key === " " || event.key === "Spacebar") {
+      // Only the modern KeyboardEvent.key value — legacy IE/old-Firefox
+      // emitted `"Spacebar"` here but no current browser does.
+      if (event.key === " ") {
         const skipOption = current.options.find(
           (option) => option.index === -1,
         )
@@ -203,28 +211,6 @@ export const PromptModal = () => {
           )
           setPromptData(null)
         }
-        return
-      }
-
-      if (event.key === "Escape") {
-        event.preventDefault()
-        // Minimize, don't clear — Escape is a dismissal, the job is
-        // still waiting for input. StepCard reopens via its paused
-        // badge once the user knows where to look.
-        setPromptData((prev) =>
-          prev ? { ...prev, isMinimized: true } : prev,
-        )
-        return
-      }
-
-      const isCancelChord =
-        (event.ctrlKey || event.metaKey) &&
-        event.key.toLowerCase() === "c"
-      if (isCancelChord && !hasActiveTextSelection()) {
-        event.preventDefault()
-        const { jobId } = current
-        setPromptData(null)
-        void cancelJob(jobId)
       }
     }
 
@@ -418,10 +404,6 @@ export const PromptModal = () => {
           <span className="flex items-center gap-1">
             <kbd className={kbdChipClass}>Esc</kbd>Close
             (pipeline waits)
-          </span>
-          <span className="flex items-center gap-1">
-            <kbd className={kbdChipClass}>Ctrl+C</kbd>Cancel
-            job
           </span>
         </div>
 

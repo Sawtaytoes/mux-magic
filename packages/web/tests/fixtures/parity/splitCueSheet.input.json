@@ -1,0 +1,20 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/music"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "splitCueSheet",
+    "params": {
+      "isRecursive": true,
+      "outputFolderName": "CUE-SPLITS"
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

@@ -55,6 +55,7 @@ import {
   replaceTracksRequestSchema,
   setDisplayWidthRequestSchema,
   splitChaptersRequestSchema,
+  splitCueSheetRequestSchema,
   storeAspectRatioDataRequestSchema,
 } from "@mux-magic/api/api-schemas"
 import type { Commands } from "../commands/types"
@@ -497,6 +498,29 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label:
             "Delete Source File After Successful Encode",
+        }),
+      ],
+    }
+  })(),
+  splitCueSheet: (() => {
+    const field = fieldBuilder(splitCueSheetRequestSchema)
+    return {
+      summary:
+        "Split lossless album rips into per-track FLACs using their CUE sheets. Handles UTF-8, Windows-1252, and Shift_JIS CUE files.",
+      tag: "Audio Operations",
+      outputFolderName: "CUE-SPLITS",
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Recursive",
+        }),
+        field("outputFolderName", {
+          type: "string",
+          label: "Output Folder Name",
         }),
       ],
     }
