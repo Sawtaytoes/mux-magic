@@ -131,6 +131,7 @@ const meta: Meta<typeof StepRunProgressView> = {
     stepId: STEP_ID,
     sourcePath: "G:\\Disc-Rips\\Shrek 2 - 4K",
     snap: {},
+    convertLosslessResults: { converted: [], skipped: [] },
   },
   parameters: {
     layout: "padded",
@@ -249,6 +250,56 @@ export const DoneAfterSmartMatchApply: Story = {
     },
   },
   decorators: [withLogs(sampleLogLines)],
+}
+
+// convertLosslessToFlac mixed-result run — the case the user hit on
+// the Clair Obscur OST. Verifies counts row + per-reason grouped skip
+// lists render together with a small converted list.
+export const ConvertLosslessMixed: Story = {
+  args: {
+    isRunning: false,
+    renamePairs: [],
+    summary: null,
+    sourcePath:
+      "G:\\Music\\Lorien Testard\\Clair Obscur_ Expedition 33_ Original Soundtrack",
+    convertLosslessResults: {
+      converted: [
+        {
+          kind: "converted",
+          source: "G:\\Music\\sample\\track-16bit.wav",
+          destination:
+            "G:\\Music\\sample\\track-16bit.flac",
+        },
+      ],
+      skipped: [
+        {
+          kind: "skipped",
+          source:
+            "G:\\Music\\Lorien Testard\\1-01 Alicia.wav",
+          reason: "float-pcm",
+        },
+        {
+          kind: "skipped",
+          source:
+            "G:\\Music\\Lorien Testard\\1-02 Gustave.wav",
+          reason: "float-pcm",
+        },
+        {
+          kind: "skipped",
+          source: "G:\\Music\\SACD\\disc-01.dff",
+          reason: "dsd",
+        },
+      ],
+    },
+  },
+  decorators: [
+    withLogs([
+      "[SKIPPED FLAC SOURCE] float-pcm: 1-01 Alicia.wav",
+      "[SKIPPED FLAC SOURCE] float-pcm: 1-02 Gustave.wav",
+      "[SKIPPED FLAC SOURCE] dsd: disc-01.dff",
+      "[CREATED FLAC FILE] track-16bit.flac",
+    ]),
+  ],
 }
 
 // No NSF results at all — non-NSF command that produced log output

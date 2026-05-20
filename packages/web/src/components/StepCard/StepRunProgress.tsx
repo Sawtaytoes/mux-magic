@@ -13,6 +13,10 @@ import { stepsAtom } from "../../state/stepsAtom"
 import { variablesAtom } from "../../state/variablesAtom"
 import type { SequenceItem, Step } from "../../types"
 import {
+  type ConvertLosslessRunResultsData,
+  findConvertLosslessResults,
+} from "../ConvertLosslessRunResults/findConvertLosslessResults"
+import {
   findNsfRenamePairs,
   findNsfSummary,
   mergeAppliedRenamesIntoNsfResults,
@@ -97,6 +101,13 @@ export const StepRunProgress = ({
   const [renamePairs, setRenamePairs] = useState<
     NsfRenamePair[]
   >([])
+  const [
+    convertLosslessResults,
+    setConvertLosslessResults,
+  ] = useState<ConvertLosslessRunResultsData>({
+    converted: [],
+    skipped: [],
+  })
   // Track the jobId the captured results belong to. When jobId changes
   // (a fresh run), reset state during render — the React-idiomatic
   // alternative to a useEffect([jobId]), avoids a stale paint where
@@ -108,6 +119,10 @@ export const StepRunProgress = ({
     setLastSeenJobId(jobId)
     setSummary(null)
     setRenamePairs([])
+    setConvertLosslessResults({
+      converted: [],
+      skipped: [],
+    })
   }
 
   const handleDone = useCallback(
@@ -131,6 +146,9 @@ export const StepRunProgress = ({
       setRunning(false)
       setSummary(findNsfSummary(payload.results))
       setRenamePairs(findNsfRenamePairs(payload.results))
+      setConvertLosslessResults(
+        findConvertLosslessResults(payload.results),
+      )
     },
     [stepId, setStepRunStatus, setRunning],
   )
@@ -176,6 +194,7 @@ export const StepRunProgress = ({
       sourcePath={sourcePath}
       renamePairs={merged.renamePairs}
       summary={merged.summary}
+      convertLosslessResults={convertLosslessResults}
     />
   )
 }
