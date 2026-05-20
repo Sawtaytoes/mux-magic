@@ -70,6 +70,7 @@ export type AudioTrack = {
   Format_Commercial_IfAny?: string
   Format_Commercial: string
   Format_Settings_Endianness?: string
+  Format_Settings_Floating_Point?: "No" | "Yes"
   Format_Settings_Mode?: string
   Format: string
   FrameCount: string

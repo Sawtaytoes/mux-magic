@@ -2,8 +2,10 @@ import { join } from "node:path"
 import { vol } from "memfs"
 import {
   firstValueFrom,
+  lastValueFrom,
   Observable,
   of,
+  throwError,
   toArray,
 } from "rxjs"
 import {
@@ -13,19 +15,32 @@ import {
   test,
   vi,
 } from "vitest"
+import type {
+  AudioTrack,
+  GeneralTrack,
+  MediaInfo,
+} from "../tools/getMediaInfo.js"
 
 vi.mock("../cli-spawn-operations/runFfmpeg.js", () => ({
   runFfmpeg: vi.fn(),
 }))
 
+vi.mock("../tools/getMediaInfo.js", () => ({
+  getMediaInfo: vi.fn(),
+}))
+
 const { runFfmpeg } = await import(
   "../cli-spawn-operations/runFfmpeg.js"
+)
+const { getMediaInfo } = await import(
+  "../tools/getMediaInfo.js"
 )
 const { convertLosslessToFlac } = await import(
   "./convertLosslessToFlac.js"
 )
 
 const runFfmpegMock = vi.mocked(runFfmpeg)
+const getMediaInfoMock = vi.mocked(getMediaInfo)
 
 const mockFfmpegSuccess = (outputFilePath: string) => {
   runFfmpegMock.mockReturnValueOnce(of(outputFilePath))
@@ -41,9 +56,84 @@ const mockFfmpegFailure = () => {
   )
 }
 
+const buildMediaInfo = (
+  audioOverrides: Partial<AudioTrack>,
+): MediaInfo => {
+  const audioTrack = {
+    "@type": "Audio",
+    BitDepth: "16",
+    BitRate_Mode: "CBR",
+    BitRate: "1411200",
+    ChannelLayout_Original: "L R",
+    ChannelLayout: "L R",
+    ChannelPositions: "Front: L R",
+    Channels_Original: "2",
+    Channels: "2",
+    CodecID: "1",
+    Compression_Mode: "Lossless",
+    Default: "Yes",
+    Delay_Source: "Container",
+    Delay: "0.000",
+    Duration: "180.000",
+    extra: {},
+    Forced: "No",
+    Format_Commercial: "PCM",
+    Format: "PCM",
+    FrameCount: "8467200",
+    FrameRate: "44100.000",
+    ID: "0",
+    SamplesPerFrame: "1",
+    SamplingCount: "7938000",
+    SamplingRate: "44100",
+    StreamOrder: "0",
+    StreamSize: "31752000",
+    UniqueID: "0",
+    Video_Delay: "0",
+    ...audioOverrides,
+  } as AudioTrack
+  const generalTrack = {
+    "@type": "General",
+  } as GeneralTrack
+  return {
+    creatingLibrary: {
+      name: "MediaInfoLib",
+      url: "https://mediaarea.net/MediaInfo",
+      version: "23.04",
+    },
+    media: {
+      "@ref": "/music",
+      track: [generalTrack, audioTrack],
+    },
+  }
+}
+
+// Default per-test mediainfo mock: every probed file looks like
+// 16-bit integer PCM (compatible). Tests that need float/DSD override
+// with `mockMediaInfoOnce(...)`.
+const setDefaultPcmProbe = () => {
+  getMediaInfoMock.mockImplementation(() =>
+    of(buildMediaInfo({})),
+  )
+}
+
+const mockMediaInfoOnce = (
+  pathSubstring: string,
+  audioOverrides: Partial<AudioTrack>,
+) => {
+  const prevImpl = getMediaInfoMock.getMockImplementation()
+  getMediaInfoMock.mockImplementation((filePath) => {
+    if (filePath.includes(pathSubstring)) {
+      return of(buildMediaInfo(audioOverrides))
+    }
+    return prevImpl?.(filePath) ?? of(buildMediaInfo({}))
+  })
+}
+
 describe(convertLosslessToFlac.name, () => {
   beforeEach(() => {
     runFfmpegMock.mockReset()
+    getMediaInfoMock.mockReset()
+    setDefaultPcmProbe()
   })
 
   test("encodes every .wav in the source directory (non-recursive)", async () => {
@@ -320,5 +410,247 @@ describe(convertLosslessToFlac.name, () => {
         join("/music", "album.flac"),
       ]),
     )
+  })
+
+  describe("result records", () => {
+    test("emits a converted record for a single integer-PCM input (isSourceDeleted: false)", async () => {
+      vol.fromJSON({ "/music/track01.wav": "wav1" })
+      mockFfmpegSuccess(join("/music", "track01.flac"))
+
+      const records = await lastValueFrom(
+        convertLosslessToFlac({
+          isRecursive: false,
+          sourcePath: "/music",
+        }),
+      )
+
+      expect(records).toEqual([
+        {
+          destination: join("/music", "track01.flac"),
+          isSourceDeleted: false,
+          kind: "converted",
+          source: join("/music", "track01.wav"),
+        },
+      ])
+    })
+
+    test("emits a converted record with isSourceDeleted: true when the source was unlinked", async () => {
+      vol.fromJSON({ "/music/track01.wav": "wav1" })
+      mockFfmpegSuccess(join("/music", "track01.flac"))
+
+      const records = await lastValueFrom(
+        convertLosslessToFlac({
+          isRecursive: false,
+          isSourceDeleted: true,
+          sourcePath: "/music",
+        }),
+      )
+
+      expect(records).toEqual([
+        {
+          destination: join("/music", "track01.flac"),
+          isSourceDeleted: true,
+          kind: "converted",
+          source: join("/music", "track01.wav"),
+        },
+      ])
+    })
+
+    test("emits zero records when no lossless audio files match (extension filter still gates)", async () => {
+      vol.fromJSON({
+        "/music/already.flac": "flac",
+        "/music/notes.mp3": "mp3",
+        "/music/music-video.mkv": "mkv",
+      })
+
+      const records = await lastValueFrom(
+        convertLosslessToFlac({
+          isRecursive: false,
+          sourcePath: "/music",
+        }),
+      )
+
+      expect(records).toEqual([])
+      expect(runFfmpegMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("float / DSD probe skip", () => {
+    test("emits a skipped record with reason: float-pcm when Format_Settings_Floating_Point is 'Yes', and does not invoke ffmpeg", async () => {
+      vol.fromJSON({ "/music/float.wav": "wav1" })
+      mockMediaInfoOnce("float.wav", {
+        BitDepth: "32",
+        Format_Settings_Floating_Point: "Yes",
+      })
+
+      const records = await lastValueFrom(
+        convertLosslessToFlac({
+          isRecursive: false,
+          sourcePath: "/music",
+        }),
+      )
+
+      expect(records).toEqual([
+        {
+          kind: "skipped",
+          reason: "float-pcm",
+          source: join("/music", "float.wav"),
+        },
+      ])
+      expect(runFfmpegMock).not.toHaveBeenCalled()
+    })
+
+    test("emits a skipped record with reason: dsd when Format is 'DSD', and does not invoke ffmpeg", async () => {
+      vol.fromJSON({ "/music/dsd-source.aif": "aif" })
+      mockMediaInfoOnce("dsd-source.aif", { Format: "DSD" })
+
+      const records = await lastValueFrom(
+        convertLosslessToFlac({
+          isRecursive: false,
+          sourcePath: "/music",
+        }),
+      )
+
+      expect(records).toEqual([
+        {
+          kind: "skipped",
+          reason: "dsd",
+          source: join("/music", "dsd-source.aif"),
+        },
+      ])
+      expect(runFfmpegMock).not.toHaveBeenCalled()
+    })
+
+    test("mixed batch: 1 integer-PCM + 1 float + 1 DSD → 1 converted + 2 skipped; ffmpeg called once", async () => {
+      vol.fromJSON({
+        "/music/clean.wav": "wav",
+        "/music/float.wav": "wav",
+        "/music/dsd.aif": "aif",
+      })
+      mockMediaInfoOnce("float.wav", {
+        BitDepth: "32",
+        Format_Settings_Floating_Point: "Yes",
+      })
+      mockMediaInfoOnce("dsd.aif", { Format: "DSD" })
+      mockFfmpegSuccess(join("/music", "clean.flac"))
+
+      const records = await lastValueFrom(
+        convertLosslessToFlac({
+          isRecursive: false,
+          sourcePath: "/music",
+        }),
+      )
+
+      const converted = records.filter(
+        (record) => record.kind === "converted",
+      )
+      const skipped = records.filter(
+        (record) => record.kind === "skipped",
+      )
+
+      expect(converted).toHaveLength(1)
+      expect(converted[0]).toMatchObject({
+        kind: "converted",
+        source: join("/music", "clean.wav"),
+        destination: join("/music", "clean.flac"),
+      })
+      expect(skipped).toHaveLength(2)
+      expect(
+        skipped.map((record) => record.reason).sort(),
+      ).toEqual(["dsd", "float-pcm"])
+      expect(runFfmpegMock).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("isAuditOnly dry-run", () => {
+    test("emits a skipped record with reason: audit-only for every otherwise-compatible input, and does not invoke ffmpeg", async () => {
+      vol.fromJSON({ "/music/track01.wav": "wav1" })
+
+      const records = await lastValueFrom(
+        convertLosslessToFlac({
+          isAuditOnly: true,
+          isRecursive: false,
+          sourcePath: "/music",
+        }),
+      )
+
+      expect(records).toEqual([
+        {
+          kind: "skipped",
+          reason: "audit-only",
+          source: join("/music", "track01.wav"),
+        },
+      ])
+      expect(runFfmpegMock).not.toHaveBeenCalled()
+    })
+
+    test("does not unlink the source even when isSourceDeleted is true and isAuditOnly is true", async () => {
+      vol.fromJSON({ "/music/track01.wav": "wav1" })
+
+      await lastValueFrom(
+        convertLosslessToFlac({
+          isAuditOnly: true,
+          isRecursive: false,
+          isSourceDeleted: true,
+          sourcePath: "/music",
+        }),
+      )
+
+      expect(vol.existsSync("/music/track01.wav")).toBe(
+        true,
+      )
+      expect(runFfmpegMock).not.toHaveBeenCalled()
+    })
+
+    test("float / DSD skips still take precedence over audit-only (reason reflects the actual incompatibility)", async () => {
+      vol.fromJSON({
+        "/music/float.wav": "wav",
+        "/music/clean.wav": "wav",
+      })
+      mockMediaInfoOnce("float.wav", {
+        BitDepth: "32",
+        Format_Settings_Floating_Point: "Yes",
+      })
+
+      const records = await lastValueFrom(
+        convertLosslessToFlac({
+          isAuditOnly: true,
+          isRecursive: false,
+          sourcePath: "/music",
+        }),
+      )
+
+      const reasonBySource = Object.fromEntries(
+        records
+          .filter((record) => record.kind === "skipped")
+          .map((record) => [record.source, record.reason]),
+      )
+      expect(
+        reasonBySource[join("/music", "float.wav")],
+      ).toBe("float-pcm")
+      expect(
+        reasonBySource[join("/music", "clean.wav")],
+      ).toBe("audit-only")
+      expect(runFfmpegMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("probe errors", () => {
+    test("propagates getMediaInfo errors as pipeline errors (no silent unreadable skip)", async () => {
+      vol.fromJSON({ "/music/unreadable.wav": "wav" })
+      const probeError = new Error("mediainfo crashed")
+      getMediaInfoMock.mockImplementation(() =>
+        throwError(() => probeError),
+      )
+
+      await expect(
+        lastValueFrom(
+          convertLosslessToFlac({
+            isRecursive: false,
+            sourcePath: "/music",
+          }),
+        ),
+      ).rejects.toBe(probeError)
+    })
   })
 })

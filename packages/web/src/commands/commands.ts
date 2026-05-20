@@ -511,6 +511,10 @@ export const COMMANDS: Commands = {
           label:
             "Delete Source File After Successful Encode",
         }),
+        field("isAuditOnly", {
+          type: "boolean",
+          label: "Audit Only (Dry-Run)",
+        }),
       ],
     }
   })(),

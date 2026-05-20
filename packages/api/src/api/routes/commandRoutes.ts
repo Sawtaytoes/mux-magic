@@ -9,7 +9,12 @@ import {
   addSubtitlesDefaultProps,
 } from "@mux-magic/core/src/app-commands/addSubtitles.js"
 import { changeTrackLanguages } from "@mux-magic/core/src/app-commands/changeTrackLanguages.js"
-import { convertLosslessToFlac } from "@mux-magic/core/src/app-commands/convertLosslessToFlac.js"
+import {
+  type ConvertLosslessToFlacConvertedRecord,
+  type ConvertLosslessToFlacRecord,
+  type ConvertLosslessToFlacSkippedRecord,
+  convertLosslessToFlac,
+} from "@mux-magic/core/src/app-commands/convertLosslessToFlac.js"
 import {
   type CopyRecord,
   copyFiles,
@@ -233,10 +238,38 @@ export const commandConfigs: Record<
   convertLosslessToFlac: {
     getObservable: (body) =>
       convertLosslessToFlac({
+        isAuditOnly: body.isAuditOnly,
         isRecursive: body.isRecursive,
         isSourceDeleted: body.isSourceDeleted,
         sourcePath: body.sourcePath,
       }),
+    extractOutputs: (results) => {
+      const records =
+        results as ConvertLosslessToFlacRecord[]
+      const converted = records.filter(
+        (
+          record,
+        ): record is ConvertLosslessToFlacConvertedRecord =>
+          record.kind === "converted",
+      )
+      const skipped = records.filter(
+        (
+          record,
+        ): record is ConvertLosslessToFlacSkippedRecord =>
+          record.kind === "skipped",
+      )
+      return {
+        convertedDestinationPaths: converted.map(
+          (record) => record.destination,
+        ),
+        convertedSourcePaths: converted.map(
+          (record) => record.source,
+        ),
+        skippedSourcePaths: skipped.map(
+          (record) => record.source,
+        ),
+      }
+    },
     schema: schemas.convertLosslessToFlacRequestSchema,
     summary:
       "Encode lossless audio files (.wav / .aif / .aiff / .m4a / .m4b) to FLAC in-place (strictly lossless)",
