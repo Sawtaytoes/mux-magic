@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/52_dvdcompare-cuts-censorship-detection/`
 **Phase:** 5
 **Depends on:** 22 (NSF rename — `searchDvdCompare` baseline + canonical command-name conventions), 3a (NSF module split — the `parseSpecialFeatures` HTML-parse pattern this worker mirrors lives in the same family of `*.ts` tools post-3a)
-**Parallel with:** any Phase 5 worker that doesn't touch [packages/server/src/tools/searchDvdCompare.ts](../../packages/server/src/tools/searchDvdCompare.ts), [packages/server/src/tools/parseSpecialFeatures.ts](../../packages/server/src/tools/parseSpecialFeatures.ts), [packages/server/src/tools/__fixtures__/](../../packages/server/src/tools/__fixtures__/), or [packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts](../../packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts) family.
+**Parallel with:** any Phase 5 worker that doesn't touch [packages/core/src/tools/searchDvdCompare.ts](../../packages/core/src/tools/searchDvdCompare.ts), [packages/core/src/tools/parseSpecialFeatures.ts](../../packages/core/src/tools/parseSpecialFeatures.ts), [packages/core/src/tools/__fixtures__/](../../packages/core/src/tools/__fixtures__/), or [packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts](../../packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts) family.
 
 ## Universal Rules (TL;DR)
 
@@ -15,13 +15,13 @@ Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typechec
 
 DVDCompare.net publishes a "cuts" table on most release pages: a list of censored, removed, or edition-specific scenes with timecode-aligned descriptions and aggregate seconds-removed totals. For releases the user already identifies via the existing DVD Compare integration (the NSF flow has been wiring this up since worker 22), this table is the single best ground-truth signal for "is the local file the uncut version or a censored regional cut?"
 
-Today the codebase parses one DVDCompare surface — the special-features list — via [packages/server/src/tools/parseSpecialFeatures.ts](../../packages/server/src/tools/parseSpecialFeatures.ts). That parser establishes the pattern: load a known fixture HTML, walk the DOM into a structured object, snapshot-test the result so brittle scraper changes surface immediately. The cuts table needs the same treatment.
+Today the codebase parses one DVDCompare surface — the special-features list — via [packages/core/src/tools/parseSpecialFeatures.ts](../../packages/core/src/tools/parseSpecialFeatures.ts). That parser establishes the pattern: load a known fixture HTML, walk the DOM into a structured object, snapshot-test the result so brittle scraper changes surface immediately. The cuts table needs the same treatment.
 
 Once the cuts data is parsed, comparing it against the local file's actual duration is a small, well-defined heuristic:
 
 - `expectedRuntime` = the release's listed runtime on the DVDCompare page.
 - `cutsRemovedSeconds` = sum of the cuts table's per-cut deltas.
-- Local file duration via `mkvmerge -J` (already wrapped by [packages/server/src/tools/getFileDuration.ts](../../packages/server/src/tools/getFileDuration.ts)).
+- Local file duration via `mkvmerge -J` (already wrapped by [packages/core/src/tools/getFileDuration.ts](../../packages/core/src/tools/getFileDuration.ts)).
 - Tolerance band: ±2 seconds (configurable). Anything outside the band is flagged.
 
 Three outcomes per file:
@@ -35,10 +35,10 @@ The output is a dry-run report — the command does not mutate the file, move it
 
 ### 1. New tool — `parseDvdCompareCuts`
 
-New file: `packages/server/src/tools/parseDvdCompareCuts.ts`. Mirror [parseSpecialFeatures.ts](../../packages/server/src/tools/parseSpecialFeatures.ts) structurally:
+New file: `packages/core/src/tools/parseDvdCompareCuts.ts`. Mirror [parseSpecialFeatures.ts](../../packages/core/src/tools/parseSpecialFeatures.ts) structurally:
 
 - Pure function: input is the raw HTML string, output is a structured TypeScript object.
-- Use the same HTML parser the special-features parser uses (grep `parseSpecialFeatures.ts` for the import — most likely `cheerio` or `node-html-parser`; pick whichever is already in `package.json` for `@mux-magic/server`).
+- Use the same HTML parser the special-features parser uses (grep `parseSpecialFeatures.ts` for the import — most likely `cheerio` or `node-html-parser`; pick whichever is already in `package.json` for `@mux-magic/api`).
 - Return shape:
 
 ```ts
@@ -58,17 +58,17 @@ type DvdCompareCutsResult = {
 
 ### 2. HTML fixtures
 
-Web scrapers break silently when the source site changes; the only defense is fixture-driven snapshot testing. Add fixtures under [packages/server/src/tools/__fixtures__/](../../packages/server/src/tools/__fixtures__/) (the same dir that already holds `dvdcompare-soldier-4k-74759.html`):
+Web scrapers break silently when the source site changes; the only defense is fixture-driven snapshot testing. Add fixtures under [packages/core/src/tools/__fixtures__/](../../packages/core/src/tools/__fixtures__/) (the same dir that already holds `dvdcompare-soldier-4k-74759.html`):
 
 - `dvdcompare-cuts-uncut-release.html` — a real DVDCompare page for a release whose cuts table is empty (most releases). Confirms the "no cuts table" code path returns `cuts: []` cleanly.
 - `dvdcompare-cuts-censored-release.html` — a real DVDCompare page for a release with a populated cuts table (e.g. an anime regional-censor release or a film with a US-vs-international cut). The fixture exercises the row-walking logic with multiple cuts including ones missing a timecode.
 - Save the HTML byte-identical to what `fetch` returns — do not pretty-print or run through a formatter. Brittleness is the point of fixture-driven tests; reformatting masks real selector changes.
 
-The user-facing fetch path (in production) still uses [searchDvdCompare.ts](../../packages/server/src/tools/searchDvdCompare.ts) to retrieve the release page. The new tool consumes the HTML; tests load it from `__fixtures__`.
+The user-facing fetch path (in production) still uses [searchDvdCompare.ts](../../packages/core/src/tools/searchDvdCompare.ts) to retrieve the release page. The new tool consumes the HTML; tests load it from `__fixtures__`.
 
 ### 3. New app-command — `detectPotentialCensorship`
 
-New file: `packages/server/src/app-commands/detectPotentialCensorship.ts`. Inputs:
+New file: `packages/core/src/app-commands/detectPotentialCensorship.ts`. Inputs:
 
 | Field | Type | Default | Notes |
 |---|---|---|---|
@@ -90,8 +90,8 @@ This is dry-run only. No file moves, no edition tags, no mutations. The output c
 
 ### 4. Schema + UI registration
 
-- [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts) — `detectPotentialCensorshipRequestSchema`. Validate `toleranceSeconds >= 0`.
-- [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) — register; tag `"Detection"` or whichever existing tag groups dry-run detection commands like `hasDuplicateMusicFiles`.
+- [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts) — `detectPotentialCensorshipRequestSchema`. Validate `toleranceSeconds >= 0`.
+- [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts) — register; tag `"Detection"` or whichever existing tag groups dry-run detection commands like `hasDuplicateMusicFiles`.
 - [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts) — UI metadata, summary, field rendering.
 - [packages/web/src/jobs/commandLabels.ts](../../packages/web/src/jobs/commandLabels.ts) — human label, e.g. `"Detect Potential Censorship (DVDCompare cuts)"`.
 - CLI subcommand: `packages/cli/src/cli-commands/detectPotentialCensorshipCommand.ts` following the existing yargs pattern.
@@ -117,29 +117,29 @@ Two-commit pattern: failing red commit first, then green implementation.
 
 ### New
 
-- [packages/server/src/tools/parseDvdCompareCuts.ts](../../packages/server/src/tools/parseDvdCompareCuts.ts)
-- [packages/server/src/tools/parseDvdCompareCuts.test.ts](../../packages/server/src/tools/parseDvdCompareCuts.test.ts)
-- [packages/server/src/tools/__fixtures__/dvdcompare-cuts-uncut-release.html](../../packages/server/src/tools/__fixtures__/dvdcompare-cuts-uncut-release.html)
-- [packages/server/src/tools/__fixtures__/dvdcompare-cuts-censored-release.html](../../packages/server/src/tools/__fixtures__/dvdcompare-cuts-censored-release.html)
-- [packages/server/src/app-commands/detectPotentialCensorship.ts](../../packages/server/src/app-commands/detectPotentialCensorship.ts)
-- [packages/server/src/app-commands/detectPotentialCensorship.test.ts](../../packages/server/src/app-commands/detectPotentialCensorship.test.ts)
+- [packages/core/src/tools/parseDvdCompareCuts.ts](../../packages/core/src/tools/parseDvdCompareCuts.ts)
+- [packages/core/src/tools/parseDvdCompareCuts.test.ts](../../packages/core/src/tools/parseDvdCompareCuts.test.ts)
+- [packages/core/src/tools/__fixtures__/dvdcompare-cuts-uncut-release.html](../../packages/core/src/tools/__fixtures__/dvdcompare-cuts-uncut-release.html)
+- [packages/core/src/tools/__fixtures__/dvdcompare-cuts-censored-release.html](../../packages/core/src/tools/__fixtures__/dvdcompare-cuts-censored-release.html)
+- [packages/core/src/app-commands/detectPotentialCensorship.ts](../../packages/core/src/app-commands/detectPotentialCensorship.ts)
+- [packages/core/src/app-commands/detectPotentialCensorship.test.ts](../../packages/core/src/app-commands/detectPotentialCensorship.test.ts)
 - [packages/cli/src/cli-commands/detectPotentialCensorshipCommand.ts](../../packages/cli/src/cli-commands/detectPotentialCensorshipCommand.ts)
 - [packages/web/tests/fixtures/parity/detectPotentialCensorship.input.json](../../packages/web/tests/fixtures/parity/detectPotentialCensorship.input.json)
 - [packages/web/tests/fixtures/parity/detectPotentialCensorship.yaml](../../packages/web/tests/fixtures/parity/detectPotentialCensorship.yaml)
 
 ### Modified
 
-- [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts) — `detectPotentialCensorshipRequestSchema`
-- [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) — register command + OpenAPI surface
+- [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts) — `detectPotentialCensorshipRequestSchema`
+- [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts) — register command + OpenAPI surface
 - [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts) — UI registration with `dvdCompareId` link field
 - [packages/web/src/jobs/commandLabels.ts](../../packages/web/src/jobs/commandLabels.ts) — display label
 - [packages/cli/src/cli.ts](../../packages/cli/src/cli.ts) — wire the new CLI subcommand
 
 ### Reuse — do not reinvent
 
-- HTML parsing: copy the import + idiom from [parseSpecialFeatures.ts](../../packages/server/src/tools/parseSpecialFeatures.ts) — same parser, same defensive style, same snapshot-test pattern.
-- Fetching the release page: [searchDvdCompare.ts](../../packages/server/src/tools/searchDvdCompare.ts) (or whichever sibling helper the post-22/3a NSF code uses to retrieve a release URL).
-- Duration: [packages/server/src/tools/getFileDuration.ts](../../packages/server/src/tools/getFileDuration.ts) is the canonical wrapper — do not spawn `ffprobe` directly.
+- HTML parsing: copy the import + idiom from [parseSpecialFeatures.ts](../../packages/core/src/tools/parseSpecialFeatures.ts) — same parser, same defensive style, same snapshot-test pattern.
+- Fetching the release page: [searchDvdCompare.ts](../../packages/core/src/tools/searchDvdCompare.ts) (or whichever sibling helper the post-22/3a NSF code uses to retrieve a release URL).
+- Duration: [packages/core/src/tools/getFileDuration.ts](../../packages/core/src/tools/getFileDuration.ts) is the canonical wrapper — do not spawn `ffprobe` directly.
 - Variable link picker: the worker 35 DVD Compare ID component — render it through the existing field schema, not a bespoke text input.
 
 ## Verification

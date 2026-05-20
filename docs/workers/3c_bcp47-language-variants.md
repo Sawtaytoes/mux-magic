@@ -26,7 +26,7 @@ Keep the ISO 639-2 3-letter code as the canonical "base language" and the compar
 **Why augment:**
 
 - Existing string-equality checks (`track.properties.language === "und"`, `=== "eng"`, etc.) keep working — no coercion needed.
-- mkvmerge's `--audio-tracks chi,eng` filter syntax in [replaceTracksMkvMerge.ts](../../packages/server/src/cli-spawn-operations/replaceTracksMkvMerge.ts) and [keepSpecifiedLanguageTracks.ts](../../packages/server/src/cli-spawn-operations/keepSpecifiedLanguageTracks.ts) needs a stable 3-letter key — preserved for free.
+- mkvmerge's `--audio-tracks chi,eng` filter syntax in [replaceTracksMkvMerge.ts](../../packages/core/src/cli-spawn-operations/replaceTracksMkvMerge.ts) and [keepSpecifiedLanguageTracks.ts](../../packages/core/src/cli-spawn-operations/keepSpecifiedLanguageTracks.ts) needs a stable 3-letter key — preserved for free.
 - Lookup sources (TVDB, AniDB, MAL) emit 2/3-letter codes — no inbound translation table required; `ietf` stays `null` for lookup-derived data.
 - Existing stored project files stay valid (the `ietf` field is optional).
 - Schema diff is additive — one optional field per language slot — instead of a sweeping rewrite of every `z.enum(iso6392LanguageCodes)` site.
@@ -86,13 +86,13 @@ export const BCP47_VARIANTS = [
 export type Bcp47VariantTag = (typeof BCP47_VARIANTS)[number]["tag"]
 ```
 
-Mirror the file in `packages/server/src/tools/bcp47Variants.ts` (or export from `@mux-magic/tools` after worker 39 / 20 if that's already merged) so server-side Zod validates against the same list.
+Mirror the file in `packages/core/src/tools/bcp47Variants.ts` (or export from `@mux-magic/tools` after worker 39 / 20 if that's already merged) so server-side Zod validates against the same list.
 
 ### Server changes
 
-1. **New file:** `packages/server/src/tools/bcp47Variants.ts` (or shared export from `@mux-magic/tools`). Exports `BCP47_VARIANTS`, `bcp47VariantTags`, `Bcp47VariantTag`.
+1. **New file:** `packages/core/src/tools/bcp47Variants.ts` (or shared export from `@mux-magic/tools`). Exports `BCP47_VARIANTS`, `bcp47VariantTags`, `Bcp47VariantTag`.
 
-2. **[packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts)** — extend the three language-array slots (`audioLanguages`, `subtitlesLanguages`, `videoLanguages`):
+2. **[packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts)** — extend the three language-array slots (`audioLanguages`, `subtitlesLanguages`, `videoLanguages`):
    ```ts
    const languageSelectionSchema = z.union([
      z.enum(iso6392LanguageCodes),                    // legacy bare-string form
@@ -104,7 +104,7 @@ Mirror the file in `packages/server/src/tools/bcp47Variants.ts` (or export from 
    ```
    This keeps existing API clients working.
 
-3. **[packages/server/src/cli-spawn-operations/updateTrackLanguage.ts](../../packages/server/src/cli-spawn-operations/updateTrackLanguage.ts)** — change the input type from `Iso6392LanguageCode` to `LanguageSelection`. Build args:
+3. **[packages/core/src/cli-spawn-operations/updateTrackLanguage.ts](../../packages/core/src/cli-spawn-operations/updateTrackLanguage.ts)** — change the input type from `Iso6392LanguageCode` to `LanguageSelection`. Build args:
    ```ts
    const args = [
      "--edit", `track:@${trackId}`,
@@ -114,19 +114,19 @@ Mirror the file in `packages/server/src/tools/bcp47Variants.ts` (or export from 
    ```
    mkvpropedit accepts both properties. Setting `language-ietf` causes it to derive `language` automatically, but we set both explicitly so the file remains well-formed for older mkvtoolnix readers.
 
-4. **[packages/server/src/cli-spawn-operations/replaceTrackById.ts](../../packages/server/src/cli-spawn-operations/replaceTrackById.ts)** — extend the `--language` flag construction at lines 35–38 to emit BCP 47 when present:
+4. **[packages/core/src/cli-spawn-operations/replaceTrackById.ts](../../packages/core/src/cli-spawn-operations/replaceTrackById.ts)** — extend the `--language` flag construction at lines 35–38 to emit BCP 47 when present:
    ```ts
    "--language", `${trackId}:${selection.ietf ?? convertIso6391ToIso6392(selection.code)}`
    ```
    mkvmerge's `--language` accepts either form per track.
 
-5. **[packages/server/src/cli-spawn-operations/defineLanguageForUndefinedTracks.ts](../../packages/server/src/cli-spawn-operations/defineLanguageForUndefinedTracks.ts)** — line 24 `=== "und"` stays as-is (we still write `language=…` for the legacy property; `"und"` is also a valid BCP 47 base). Line 33: emit both `language=` and (if present) `language-ietf=`.
+5. **[packages/core/src/cli-spawn-operations/defineLanguageForUndefinedTracks.ts](../../packages/core/src/cli-spawn-operations/defineLanguageForUndefinedTracks.ts)** — line 24 `=== "und"` stays as-is (we still write `language=…` for the legacy property; `"und"` is also a valid BCP 47 base). Line 33: emit both `language=` and (if present) `language-ietf=`.
 
-6. **[packages/server/src/cli-spawn-operations/replaceTracksMkvMerge.ts](../../packages/server/src/cli-spawn-operations/replaceTracksMkvMerge.ts)** + **[packages/server/src/cli-spawn-operations/keepSpecifiedLanguageTracks.ts](../../packages/server/src/cli-spawn-operations/keepSpecifiedLanguageTracks.ts)** — `--audio-tracks` / `--subtitle-tracks` are *filter* flags, not language-setters. They keep using the 3-letter `code` (read from `selection.code` instead of the bare string). No semantic change.
+6. **[packages/core/src/cli-spawn-operations/replaceTracksMkvMerge.ts](../../packages/core/src/cli-spawn-operations/replaceTracksMkvMerge.ts)** + **[packages/core/src/cli-spawn-operations/keepSpecifiedLanguageTracks.ts](../../packages/core/src/cli-spawn-operations/keepSpecifiedLanguageTracks.ts)** — `--audio-tracks` / `--subtitle-tracks` are *filter* flags, not language-setters. They keep using the 3-letter `code` (read from `selection.code` instead of the bare string). No semantic change.
 
-7. **[packages/server/src/tools/getTrackLanguages.ts](../../packages/server/src/tools/getTrackLanguages.ts)** — when MediaInfo XML reports a `Language` field that's BCP 47 (contains `-`), populate `{ code: deriveBase(tag), ietf: tag }` instead of just `code`. Use a small `deriveBase` helper that strips region/script and maps the leading 2-letter via the existing [convertIso6391ToIso6392.ts](../../packages/server/src/tools/convertIso6391ToIso6392.ts).
+7. **[packages/core/src/tools/getTrackLanguages.ts](../../packages/core/src/tools/getTrackLanguages.ts)** — when MediaInfo XML reports a `Language` field that's BCP 47 (contains `-`), populate `{ code: deriveBase(tag), ietf: tag }` instead of just `code`. Use a small `deriveBase` helper that strips region/script and maps the leading 2-letter via the existing [convertIso6391ToIso6392.ts](../../packages/core/src/tools/convertIso6391ToIso6392.ts).
 
-8. **[packages/server/src/api/types.ts](../../packages/server/src/api/types.ts)** — surface `LanguageSelection` type for downstream consumers.
+8. **[packages/api/src/api/types.ts](../../packages/api/src/api/types.ts)** — surface `LanguageSelection` type for downstream consumers.
 
 ### Web changes
 
@@ -165,7 +165,7 @@ The variant field clears whenever the base language changes (so picking `chi` �
 
 ### Reuse / do NOT duplicate
 
-- `convertIso6391ToIso6392` at [packages/server/src/tools/convertIso6391ToIso6392.ts](../../packages/server/src/tools/convertIso6391ToIso6392.ts) — reuse for `deriveBase` when parsing a `zh-…` tag back to `chi`.
+- `convertIso6391ToIso6392` at [packages/core/src/tools/convertIso6391ToIso6392.ts](../../packages/core/src/tools/convertIso6391ToIso6392.ts) — reuse for `deriveBase` when parsing a `zh-…` tag back to `chi`.
 - `ISO_639_2_LANGUAGES` at [packages/web/src/data/iso639-2.ts](../../packages/web/src/data/iso639-2.ts) — remains the primary registry.
 - `buildOrderedLanguageOptions` at [packages/web/src/data/orderLanguageOptions.ts](../../packages/web/src/data/orderLanguageOptions.ts) — reused as-is for the base dropdown.
 - Worker 08's tagify autocomplete in `LanguageCodesField` — the multi-select tag rendering and filter logic stays; only the chip shape and emitted value change.
@@ -188,19 +188,19 @@ The variant field clears whenever the base language changes (so picking `chi` �
 
 ### New
 - `packages/web/src/data/bcp47Variants.ts`
-- `packages/server/src/tools/bcp47Variants.ts` (or single source from `@mux-magic/tools`)
+- `packages/core/src/tools/bcp47Variants.ts` (or single source from `@mux-magic/tools`)
 - `packages/web/src/components/LanguageCodeField/RegionVariantField.tsx`
 - Tests + stories for all of the above
 
 ### Modified
-- [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts)
-- [packages/server/src/api/types.ts](../../packages/server/src/api/types.ts)
-- [packages/server/src/cli-spawn-operations/updateTrackLanguage.ts](../../packages/server/src/cli-spawn-operations/updateTrackLanguage.ts)
-- [packages/server/src/cli-spawn-operations/replaceTrackById.ts](../../packages/server/src/cli-spawn-operations/replaceTrackById.ts)
-- [packages/server/src/cli-spawn-operations/defineLanguageForUndefinedTracks.ts](../../packages/server/src/cli-spawn-operations/defineLanguageForUndefinedTracks.ts)
-- [packages/server/src/cli-spawn-operations/replaceTracksMkvMerge.ts](../../packages/server/src/cli-spawn-operations/replaceTracksMkvMerge.ts)
-- [packages/server/src/cli-spawn-operations/keepSpecifiedLanguageTracks.ts](../../packages/server/src/cli-spawn-operations/keepSpecifiedLanguageTracks.ts)
-- [packages/server/src/tools/getTrackLanguages.ts](../../packages/server/src/tools/getTrackLanguages.ts)
+- [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts)
+- [packages/api/src/api/types.ts](../../packages/api/src/api/types.ts)
+- [packages/core/src/cli-spawn-operations/updateTrackLanguage.ts](../../packages/core/src/cli-spawn-operations/updateTrackLanguage.ts)
+- [packages/core/src/cli-spawn-operations/replaceTrackById.ts](../../packages/core/src/cli-spawn-operations/replaceTrackById.ts)
+- [packages/core/src/cli-spawn-operations/defineLanguageForUndefinedTracks.ts](../../packages/core/src/cli-spawn-operations/defineLanguageForUndefinedTracks.ts)
+- [packages/core/src/cli-spawn-operations/replaceTracksMkvMerge.ts](../../packages/core/src/cli-spawn-operations/replaceTracksMkvMerge.ts)
+- [packages/core/src/cli-spawn-operations/keepSpecifiedLanguageTracks.ts](../../packages/core/src/cli-spawn-operations/keepSpecifiedLanguageTracks.ts)
+- [packages/core/src/tools/getTrackLanguages.ts](../../packages/core/src/tools/getTrackLanguages.ts)
 - [packages/web/src/components/LanguageCodeField/LanguageCodeField.tsx](../../packages/web/src/components/LanguageCodeField/LanguageCodeField.tsx)
 - [packages/web/src/components/LanguageCodesField/LanguageCodesField.tsx](../../packages/web/src/components/LanguageCodesField/LanguageCodesField.tsx)
 - [packages/web/src/components/NumberWithLookupField/NumberWithLookupField.tsx](../../packages/web/src/components/NumberWithLookupField/NumberWithLookupField.tsx)

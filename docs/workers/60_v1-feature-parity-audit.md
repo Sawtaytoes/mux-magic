@@ -37,7 +37,7 @@ These were discovered during the worker-58/59 triage and are already absorbed in
 - **PromptModal `▶ Play` button silently no-ops** — `window.openVideoModal` registered inside `FileExplorerModal` only fires when the explorer is open. Worker 58 Part A.
 - **PromptModal has no explicit cancel-out** — backdrop-click and Escape leave the server-side observable suspended. Worker 58 Part A.
 - **Smart Match / Fix Unnamed batch modal missing** — built in `a7fef431`, deleted in `28534ec5`, never ported. Worker 58 Part B.
-- **NSF dry-run / fake-mode doesn't fire interactive prompts** — fake scenario at [packages/server/src/fake-data/scenarios/nameSpecialFeaturesDvdCompareTmdb.ts:125-126](../../packages/server/src/fake-data/scenarios/nameSpecialFeaturesDvdCompareTmdb.ts#L125-L126) explicitly auto-skips. v1.0.0 fired the same prompts a real run would, which was the only way to QA the interactive flow without a real DVD rip. Worker 58 Part C.
+- **NSF dry-run / fake-mode doesn't fire interactive prompts** — fake scenario at [packages/api/src/fake-data/scenarios/nameSpecialFeaturesDvdCompareTmdb.ts:125-126](../../packages/api/src/fake-data/scenarios/nameSpecialFeaturesDvdCompareTmdb.ts#L125-L126) explicitly auto-skips. v1.0.0 fired the same prompts a real run would, which was the only way to QA the interactive flow without a real DVD rip. Worker 58 Part C.
 
 Treat these as **known-positive anchors** for the audit's calibration: if your method doesn't surface all four when run against `server-v1.0.0`, the method has a gap.
 

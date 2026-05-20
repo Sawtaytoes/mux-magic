@@ -82,10 +82,12 @@ export const parseCueSheet = (
       const fileMatch = fileLineRegex.exec(line)
       if (fileMatch) {
         return {
-          ...state,
           audioFileHint:
             state.audioFileHint ?? fileMatch[1],
           fileCount: state.fileCount + 1,
+          currentTrack: state.currentTrack,
+          finalizedTracks: state.finalizedTracks,
+          hasMissingIndex: state.hasMissingIndex,
         }
       }
 
@@ -107,7 +109,8 @@ export const parseCueSheet = (
           (state.currentTrack !== null &&
             state.currentTrack.startFrame === undefined)
         return {
-          ...state,
+          audioFileHint: state.audioFileHint,
+          fileCount: state.fileCount,
           finalizedTracks: flushedTracks,
           hasMissingIndex: isMissing,
           currentTrack: {
@@ -122,10 +125,15 @@ export const parseCueSheet = (
       const titleMatch = titleLineRegex.exec(line)
       if (titleMatch) {
         return {
-          ...state,
+          audioFileHint: state.audioFileHint,
+          fileCount: state.fileCount,
+          finalizedTracks: state.finalizedTracks,
+          hasMissingIndex: state.hasMissingIndex,
           currentTrack: {
-            ...state.currentTrack,
+            number: state.currentTrack.number,
             title: titleMatch[1],
+            performer: state.currentTrack.performer,
+            startFrame: state.currentTrack.startFrame,
           },
         }
       }
@@ -133,10 +141,15 @@ export const parseCueSheet = (
       const performerMatch = performerLineRegex.exec(line)
       if (performerMatch) {
         return {
-          ...state,
+          audioFileHint: state.audioFileHint,
+          fileCount: state.fileCount,
+          finalizedTracks: state.finalizedTracks,
+          hasMissingIndex: state.hasMissingIndex,
           currentTrack: {
-            ...state.currentTrack,
+            number: state.currentTrack.number,
+            title: state.currentTrack.title,
             performer: performerMatch[1],
+            startFrame: state.currentTrack.startFrame,
           },
         }
       }
@@ -151,9 +164,14 @@ export const parseCueSheet = (
         const startFrame =
           (minutes * 60 + seconds) * 75 + frames
         return {
-          ...state,
+          audioFileHint: state.audioFileHint,
+          fileCount: state.fileCount,
+          finalizedTracks: state.finalizedTracks,
+          hasMissingIndex: state.hasMissingIndex,
           currentTrack: {
-            ...state.currentTrack,
+            number: state.currentTrack.number,
+            title: state.currentTrack.title,
+            performer: state.currentTrack.performer,
             startFrame,
           },
         }

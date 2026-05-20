@@ -64,7 +64,7 @@ Add the panel as a new top-level tab in whatever navigation the app uses (see `p
 
 This is the e2e test that worker 2b deferred. It is **the** must-ship piece of this worker — the panel can be light, but the e2e proves the full persist → deliver → display loop.
 
-Scenario: trigger a known-failing job (use the existing fake/test command handler — see `packages/server/src/__mocks__/` for the pattern) with `WEBHOOK_JOB_FAILED_URL` pointing at a local Playwright-spun HTTP server that:
+Scenario: trigger a known-failing job (use the existing fake/test command handler — see `packages/core/src/__mocks__/` for the pattern) with `WEBHOOK_JOB_FAILED_URL` pointing at a local Playwright-spun HTTP server that:
 1. Returns `500` on the first request.
 2. Returns `200` on every subsequent request.
 

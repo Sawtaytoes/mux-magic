@@ -15,6 +15,7 @@ const commandLabels: Record<string, string> = {
   exitIfEmpty: "Exit If Empty",
 
   // Audio Operations
+  convertLosslessToFlac: "Convert Lossless Audio to FLAC",
   getAudioOffsets: "Get Audio Offsets",
   replaceFlacWithPcmAudio: "Replace FLAC with PCM Audio",
   splitCueSheet: "Split CUE Sheet to FLAC",

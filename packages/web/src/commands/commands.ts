@@ -16,6 +16,7 @@
 import {
   addSubtitlesRequestSchema,
   changeTrackLanguagesRequestSchema,
+  convertLosslessToFlacRequestSchema,
   copyFilesRequestSchema,
   copyOutSubtitlesRequestSchema,
   deleteCopiedOriginalsRequestSchema,
@@ -471,6 +472,32 @@ export const COMMANDS: Commands = {
         field("isRecursive", {
           type: "boolean",
           label: "Recursive",
+        }),
+      ],
+    }
+  })(),
+  convertLosslessToFlac: (() => {
+    const field = fieldBuilder(
+      convertLosslessToFlacRequestSchema,
+    )
+    return {
+      summary:
+        "Encode lossless audio files (.wav / .aif / .aiff / .m4a / .m4b) to FLAC in-place (strictly lossless)",
+      tag: "Audio Operations",
+      outputFolderName: null,
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Recursive",
+        }),
+        field("isSourceDeleted", {
+          type: "boolean",
+          label:
+            "Delete Source File After Successful Encode",
         }),
       ],
     }
