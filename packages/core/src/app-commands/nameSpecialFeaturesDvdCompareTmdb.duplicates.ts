@@ -15,22 +15,26 @@ import { getUserSearchInput } from "../tools/getUserSearchInput.js"
 // (e.g. which entry currently holds index 0 — that's the one the
 // existing scan would assign the un-suffixed name to). Returns a map
 // from target → ordered list of renames sharing it.
+//
+// Built via `.reduce` returning a fresh `Map` per iteration to satisfy
+// the repo's no-array-mutation rule (worker 25 drive-by) — the old
+// `.push` mutated the bucket array in place.
 export const groupRenamesByTarget = <
   T extends { renamedFilename: string },
 >(
   renames: T[],
-): Map<string, T[]> => {
-  const groups = new Map<string, T[]>()
-  renames.forEach((rename) => {
+): Map<string, T[]> =>
+  renames.reduce<Map<string, T[]>>((groups, rename) => {
     const existing = groups.get(rename.renamedFilename)
-    if (existing) {
-      existing.push(rename)
-      return
-    }
-    groups.set(rename.renamedFilename, [rename])
-  })
-  return groups
-}
+    const next = new Map(groups)
+    next.set(
+      rename.renamedFilename,
+      existing
+        ? existing.concat(rename)
+        : [rename],
+    )
+    return next
+  }, new Map<string, T[]>())
 
 // Promote one rename to the front of the array while preserving the
 // relative order of every other entry. Used by the duplicate-detection
@@ -52,43 +56,50 @@ export const promoteRenameToFront = <T>(
   ]
 }
 
+export type DuplicatePromptResult = {
+  // Renames that survived the prompt — what the rest of the pipeline
+  // should act on.
+  kept: {
+    fileInfo: FileInfo
+    renamedFilename: string
+  }[]
+  // Full paths of files the user excluded by picking "this one is the
+  // real match" on a duplicate group. The orchestrator routes these
+  // into `<sourcePath>/DUPLICATES/` so the user can review them on
+  // disk (worker 25 — the filesystem is the cache).
+  droppedFullPaths: string[]
+}
+
 // Build a Phase-B duplicate-detection prompt observable. For each group
 // of >1 files mapping to the same target name, emit a multi-select
 // `getUserSearchInput` prompt with one option per file (each option
 // carrying a per-row `filePath` so the Builder can render a ▶ Play
 // button on every row). The user picks which file claims the
-// un-suffixed target name; the chosen file is moved to the front of
-// the group, and the rest fall through to the existing scan-counter
-// for `(2)/(3)/…` suffixing. -1 (skip) preserves DVDCompare order.
+// un-suffixed target name; the chosen file is kept in the rename list,
+// the rest are filtered out AND reported in `droppedFullPaths` so the
+// orchestrator can route them into `DUPLICATES/`. -1 (skip) preserves
+// every entry in DVDCompare order so the downstream scan counter
+// suffixes (2)/(3)/… deterministically.
 export const reorderForDuplicatePrompts = (
   renames: {
     fileInfo: FileInfo
     renamedFilename: string
   }[],
-): Observable<
-  { fileInfo: FileInfo; renamedFilename: string }[]
-> => {
+): Observable<DuplicatePromptResult> => {
   const groups = groupRenamesByTarget(renames)
   const duplicateGroups = Array.from(
     groups.values(),
   ).filter((group) => group.length > 1)
   if (duplicateGroups.length === 0) {
-    return of(renames)
+    return of({ kept: renames, droppedFullPaths: [] })
   }
-  // Walk each duplicate group sequentially. `concatMap` over the
-  // groups keeps prompts strictly ordered so the UI never shows two
-  // duplicate-pick modals at once. Each iteration emits one
-  // { group, selectedIndex } pair; we collect them with toArray and
-  // fold into the final reordered renames in a single pass at the
-  // end. Avoids the prior reduce-of-observables pattern that caused
-  // a hang after the first prompt was answered.
   return from(duplicateGroups).pipe(
     concatMap((group) =>
       getUserSearchInput({
         message:
           `These ${group.length} files all match "${group[0].renamedFilename}".\n` +
-          "Pick the one that's the real match — the rest will be left " +
-          "unrenamed so you can identify them separately.",
+          "Pick the one that's the real match — the rest will be moved " +
+          "to a DUPLICATES/ folder so you can identify them separately.",
         options: [
           ...group.map((rename, index) => ({
             index,
@@ -109,36 +120,33 @@ export const reorderForDuplicatePrompts = (
     ),
     toArray(),
     map((picks) =>
-      picks.reduce(
-        (currentRenames, { group, selectedIndex }) => {
+      picks.reduce<DuplicatePromptResult>(
+        (current, { group, selectedIndex }) => {
           if (selectedIndex < 0) {
-            // User skipped → preserve all renames; the downstream counter
-            // scan auto-suffixes (2)/(3)/… in DVDCompare order.
-            return currentRenames
+            // Skip → keep every entry; downstream counter auto-suffixes
+            // (2)/(3)/… in DVDCompare order.
+            return current
           }
           const chosen = group[selectedIndex]
           if (!chosen) {
-            return currentRenames
+            return current
           }
-          // Drop the non-chosen group members from the rename list.
-          // Their fileInfo is still in the upstream `matches` array, so
-          // they'll surface in `unrenamedFilenames` for the post-rename
-          // summary — letting the user identify each via the Phase B
-          // interactive renamer rather than wearing a misleading (2)
-          // suffix the user explicitly rejected by picking only one.
-          const droppedFullPaths = new Set(
-            group
-              .filter((rename) => rename !== chosen)
-              .map((rename) => rename.fileInfo.fullPath),
-          )
-          return currentRenames.filter(
-            (rename) =>
-              !droppedFullPaths.has(
-                rename.fileInfo.fullPath,
+          const droppedFromGroup = group
+            .filter((rename) => rename !== chosen)
+            .map((rename) => rename.fileInfo.fullPath)
+          const droppedSet = new Set(droppedFromGroup)
+          return {
+            kept: current.kept.filter(
+              (rename) =>
+                !droppedSet.has(rename.fileInfo.fullPath),
+            ),
+            droppedFullPaths:
+              current.droppedFullPaths.concat(
+                droppedFromGroup,
               ),
-          )
+          }
         },
-        renames,
+        { kept: renames, droppedFullPaths: [] },
       ),
     ),
   )

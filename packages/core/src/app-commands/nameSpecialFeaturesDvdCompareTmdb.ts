@@ -12,6 +12,7 @@ import {
   defaultIfEmpty,
   defer,
   EMPTY,
+  ignoreElements,
   map,
   mergeAll,
   mergeMap,
@@ -41,6 +42,12 @@ import {
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { searchDvdCompare } from "../tools/searchDvdCompare.js"
 import { buildUnnamedFileCandidates } from "./nameSpecialFeaturesDvdCompareTmdb.buildUnnamedFileCandidates.js"
+import {
+  DUPLICATES_BUCKET,
+  logBucketFolderCountsIfPresent,
+  moveFilesToBucket,
+  UNNAMED_FEATURES_BUCKET,
+} from "./nameSpecialFeaturesDvdCompareTmdb.buckets.js"
 import { reorderForDuplicatePrompts } from "./nameSpecialFeaturesDvdCompareTmdb.duplicates.js"
 import {
   findUniqueTargetPath,
@@ -175,7 +182,15 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
           movie,
           possibleNames,
         }) =>
-          getFilesAtDepth({ depth: 0, sourcePath }).pipe(
+          // Worker 25 defense-in-depth: log + skip bucket folders on
+          // re-run. `getFilesAtDepth({ depth: 0 })` is files-only and
+          // wouldn't recurse into UNNAMED-FEATURES/ or DUPLICATES/
+          // today, but the explicit log makes intent visible and
+          // survives future enumeration refactors.
+          concat(
+            logBucketFolderCountsIfPresent(sourcePath),
+            getFilesAtDepth({ depth: 0, sourcePath }),
+          ).pipe(
             mergeMap((fileInfo) =>
               getMediaInfo(fileInfo.fullPath).pipe(
                 mergeMap((mediaInfo) =>
@@ -373,13 +388,19 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
               // is also the behavior under `autoNameDuplicates: true`.
               const promptForDuplicates$ =
                 isAutoNamingDuplicates
-                  ? of(conflictOrderedRenames)
+                  ? of({
+                      kept: conflictOrderedRenames,
+                      droppedFullPaths: [] as string[],
+                    })
                   : reorderForDuplicatePrompts(
                       conflictOrderedRenames,
                     )
 
               return promptForDuplicates$.pipe(
-                concatMap((orderedRenames) => {
+                concatMap(({
+                  kept: orderedRenames,
+                  droppedFullPaths,
+                }) => {
                   const allKnownNames =
                     flattenAllKnownNames({
                       cuts,
@@ -637,7 +658,38 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                           : undefined,
                     }),
                   )
-                  return concat(renamesStream$, summary$)
+                  // Worker 25: after the rename pass, route every leftover
+                  // unrenamed file into <sourcePath>/UNNAMED-FEATURES/ and
+                  // every duplicate-prompt-dropped file into
+                  // <sourcePath>/DUPLICATES/. Bucket folders are created
+                  // lazily — a fully-matched run with no dupes leaves no
+                  // bucket folders on disk. The filesystem becomes the
+                  // cache: a refresh / crash / close-without-applying
+                  // leaves a perfectly recoverable disc folder.
+                  const leftoverFullPaths = leftoverMatches.map(
+                    (match) => match.fileInfo.fullPath,
+                  )
+                  const bucketMoves$: Observable<
+                    Observable<NameSpecialFeaturesResult>
+                  > = of(
+                    concat(
+                      moveFilesToBucket({
+                        sourcePath,
+                        bucketName: UNNAMED_FEATURES_BUCKET,
+                        filePaths: leftoverFullPaths,
+                      }).pipe(ignoreElements()),
+                      moveFilesToBucket({
+                        sourcePath,
+                        bucketName: DUPLICATES_BUCKET,
+                        filePaths: droppedFullPaths,
+                      }).pipe(ignoreElements()),
+                    ),
+                  )
+                  return concat(
+                    renamesStream$,
+                    bucketMoves$,
+                    summary$,
+                  )
                 }),
               )
             }),

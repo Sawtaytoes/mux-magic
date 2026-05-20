@@ -65,6 +65,17 @@ describe(groupRenamesByTarget.name, () => {
     ])
     expect(groups.size).toBe(2)
   })
+
+  test("does not mutate the input array (worker 25: no-array-mutation guarantee)", () => {
+    const inputs = [
+      { renamedFilename: "A" },
+      { renamedFilename: "A" },
+      { renamedFilename: "B" },
+    ]
+    const snapshot = inputs.slice()
+    groupRenamesByTarget(inputs)
+    expect(inputs).toEqual(snapshot)
+  })
 })
 
 describe(promoteRenameToFront.name, () => {
@@ -117,11 +128,12 @@ describe(reorderForDuplicatePrompts.name, () => {
     const result = await firstValueFrom(
       reorderForDuplicatePrompts(renames),
     )
-    expect(result).toEqual(renames)
+    expect(result.kept).toEqual(renames)
+    expect(result.droppedFullPaths).toEqual([])
     expect(getUserSearchInput).not.toHaveBeenCalled()
   })
 
-  test("drops non-chosen group members when the user picks one entry from a duplicate group", async () => {
+  test("drops non-chosen group members AND surfaces their fullPaths so the orchestrator can route them into DUPLICATES/", async () => {
     const renames = [
       {
         fileInfo: makeFileInfo("disc-a.mkv"),
@@ -139,17 +151,24 @@ describe(reorderForDuplicatePrompts.name, () => {
       },
     ]
     // User picks index 0 (disc-a) as the real Behind the Scenes;
-    // disc-b should be dropped from the rename list.
+    // disc-b should be dropped from the rename list AND reported in
+    // droppedFullPaths so the orchestrator can fs.rename it into
+    // DUPLICATES/ on completion.
     vi.mocked(getUserSearchInput).mockReturnValue(of(0))
     const result = await firstValueFrom(
       reorderForDuplicatePrompts(renames),
     )
     expect(
-      result.map((rename) => rename.fileInfo.filename),
+      result.kept.map(
+        (rename) => rename.fileInfo.filename,
+      ),
     ).toEqual(["disc-a.mkv", "c.mkv"])
+    expect(result.droppedFullPaths).toEqual([
+      "/work/disc-b.mkv",
+    ])
   })
 
-  test("preserves every entry when the user skips (selectedIndex === -1)", async () => {
+  test("preserves every entry AND emits no droppedFullPaths when the user skips (selectedIndex === -1)", async () => {
     const renames = [
       {
         fileInfo: makeFileInfo("disc-a.mkv"),
@@ -166,9 +185,11 @@ describe(reorderForDuplicatePrompts.name, () => {
     const result = await firstValueFrom(
       reorderForDuplicatePrompts(renames),
     )
-    // Skip → the downstream scan counter handles (2)/(3) suffixing.
     expect(
-      result.map((rename) => rename.fileInfo.filename),
+      result.kept.map(
+        (rename) => rename.fileInfo.filename,
+      ),
     ).toEqual(["disc-a.mkv", "disc-b.mkv"])
+    expect(result.droppedFullPaths).toEqual([])
   })
 })
