@@ -17,6 +17,7 @@ type ConvertLosslessToFlacRequiredProps = {
 }
 
 type ConvertLosslessToFlacOptionalProps = {
+  isAuditOnly?: boolean
   isSourceDeleted?: boolean
 }
 
@@ -24,7 +25,30 @@ export type ConvertLosslessToFlacProps =
   ConvertLosslessToFlacRequiredProps &
     ConvertLosslessToFlacOptionalProps
 
+export type ConvertLosslessToFlacSkipReason =
+  | "audit-only"
+  | "dsd"
+  | "float-pcm"
+
+export type ConvertLosslessToFlacConvertedRecord = {
+  destination: string
+  isSourceDeleted: boolean
+  kind: "converted"
+  source: string
+}
+
+export type ConvertLosslessToFlacSkippedRecord = {
+  kind: "skipped"
+  reason: ConvertLosslessToFlacSkipReason
+  source: string
+}
+
+export type ConvertLosslessToFlacRecord =
+  | ConvertLosslessToFlacConvertedRecord
+  | ConvertLosslessToFlacSkippedRecord
+
 export const convertLosslessToFlacDefaultProps = {
+  isAuditOnly: false,
   isSourceDeleted:
     convertLosslessFileToFlacDefaultProps.isSourceDeleted,
 } satisfies ConvertLosslessToFlacOptionalProps
