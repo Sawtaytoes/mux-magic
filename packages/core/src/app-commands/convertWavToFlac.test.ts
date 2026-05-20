@@ -1,3 +1,4 @@
+import { join } from "node:path"
 import { vol } from "memfs"
 import { firstValueFrom, Observable, of, toArray } from "rxjs"
 import {
@@ -64,13 +65,19 @@ describe(convertWavToFlac.name, () => {
     )
     expect(inputPaths).toEqual(
       expect.arrayContaining([
-        "/music/track01.wav",
-        "/music/track02.wav",
+        join("/music", "track01.wav"),
+        join("/music", "track02.wav"),
       ]),
     )
-    expect(inputPaths).not.toContain("/music/notes.mp3")
-    expect(inputPaths).not.toContain("/music/cover.jpg")
-    expect(inputPaths).not.toContain("/music/disc1/inner.wav")
+    expect(inputPaths).not.toContain(
+      join("/music", "notes.mp3"),
+    )
+    expect(inputPaths).not.toContain(
+      join("/music", "cover.jpg"),
+    )
+    expect(inputPaths).not.toContain(
+      join("/music", "disc1", "inner.wav"),
+    )
   })
 
   test("invokes ffmpeg with -c:a flac and -map_metadata 0", async () => {
@@ -130,8 +137,8 @@ describe(convertWavToFlac.name, () => {
     )
     expect(outputPaths).toEqual(
       expect.arrayContaining([
-        "/music/album/track01.flac",
-        "/music/album/Track Two.flac",
+        join("/music/album", "track01.flac"),
+        join("/music/album", "Track Two.flac"),
       ]),
     )
   })
@@ -156,8 +163,8 @@ describe(convertWavToFlac.name, () => {
     )
     expect(inputPaths).toEqual(
       expect.arrayContaining([
-        "/music/track01.wav",
-        "/music/disc1/inner.wav",
+        join("/music", "track01.wav"),
+        join("/music", "disc1", "inner.wav"),
       ]),
     )
   })
