@@ -6,7 +6,10 @@ import {
 } from "@testing-library/react"
 import { afterEach, describe, expect, test } from "vitest"
 import { ConvertLosslessRunResults } from "./ConvertLosslessRunResults"
-import type { ConvertLosslessRunResultsData } from "./findConvertLosslessResults"
+import type {
+  ConvertLosslessRunResultsData,
+  ConvertLosslessSkippedRecord,
+} from "./findConvertLosslessResults"
 
 afterEach(() => {
   cleanup()
@@ -175,22 +178,18 @@ describe("ConvertLosslessRunResults", () => {
       // ~20 compatible + 124 float should NOT render as
       // "124 skipped, all float-pcm" — instead "20 would
       // convert • 124 would skip."
-      const auditOnly = Array.from(
-        { length: 20 },
-        (_, index) => ({
+      const auditOnly: ConvertLosslessSkippedRecord[] =
+        Array.from({ length: 20 }, (_, index) => ({
           kind: "skipped" as const,
           source: `/music/ok-${String(index).padStart(2, "0")}.wav`,
           reason: "audit-only" as const,
-        }),
-      )
-      const float = Array.from(
-        { length: 124 },
-        (_, index) => ({
+        }))
+      const float: ConvertLosslessSkippedRecord[] =
+        Array.from({ length: 124 }, (_, index) => ({
           kind: "skipped" as const,
           source: `/music/float-${String(index).padStart(3, "0")}.wav`,
           reason: "float-pcm" as const,
-        }),
-      )
+        }))
       render(
         <ConvertLosslessRunResults
           data={buildData({

@@ -222,7 +222,11 @@ describe("JsonField", () => {
     expect(textarea).toHaveAttribute("placeholder", "[]")
   })
 
-  it("has id matching command-fieldName for label association", () => {
+  it("has id matching stepId-fieldName for label association", () => {
+    // ID scheme switched from `${command}-${field.name}` to
+    // `${step.id}-${field.name}` in 212661fe to dodge cross-card
+    // collisions when two steps share a command. This test pins the
+    // new per-step-unique shape.
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -238,7 +242,7 @@ describe("JsonField", () => {
     const textarea = screen.getByRole("textbox")
     expect(textarea).toHaveAttribute(
       "id",
-      "testCommand-testJson",
+      "step-1-testJson",
     )
   })
 
