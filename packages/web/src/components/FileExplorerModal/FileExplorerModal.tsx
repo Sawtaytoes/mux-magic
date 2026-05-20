@@ -457,8 +457,8 @@ export const FileExplorerModal = () => {
       : "Delete → Permanent"
   const deleteModeClass =
     deleteMode === "trash"
-      ? "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-emerald-900/50 text-emerald-300 border border-emerald-700/50"
-      : "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-rose-900/50 text-rose-300 border border-rose-700/50"
+      ? "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium text-emerald-300 border border-emerald-700/50 cursor-default select-none"
+      : "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium text-rose-300 border border-rose-700/50 cursor-default select-none"
 
   return (
     <div
@@ -791,29 +791,29 @@ export const FileExplorerModal = () => {
             )}
         </div>
 
-        {/* Footer — hidden in picker mode */}
-        {!isPicker && (
-          <div
-            id="file-explorer-footer"
-            className="flex items-center gap-3 px-4 py-2 border-t border-slate-700 shrink-0"
+        {/* Footer — always rendered; button stays inert when nothing is
+            selected. Picker mode's "📌 Use this folder" lives in the title
+            bar, so the two affordances coexist without competing. */}
+        <div
+          id="file-explorer-footer"
+          className="flex items-center gap-3 px-4 py-2 border-t border-slate-700 shrink-0"
+        >
+          <span
+            id="file-explorer-selection-count"
+            className="text-xs text-slate-400"
           >
-            <span
-              id="file-explorer-selection-count"
-              className="text-xs text-slate-400"
-            >
-              {selected.size} selected
-            </span>
-            <button
-              type="button"
-              id="file-explorer-delete-btn"
-              disabled={selected.size === 0}
-              onClick={() => void confirmDelete()}
-              className="text-xs bg-rose-700 hover:bg-rose-600 disabled:opacity-40 text-white px-3 py-1 rounded font-medium ml-auto"
-            >
-              Delete selected
-            </button>
-          </div>
-        )}
+            {selected.size} selected
+          </span>
+          <button
+            type="button"
+            id="file-explorer-delete-btn"
+            disabled={selected.size === 0}
+            onClick={() => void confirmDelete()}
+            className="text-xs bg-rose-700 hover:bg-rose-600 disabled:opacity-40 text-white px-3 py-1 rounded font-medium ml-auto"
+          >
+            Delete selected
+          </button>
+        </div>
       </div>
     </div>
   )

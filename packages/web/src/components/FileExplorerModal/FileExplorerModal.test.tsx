@@ -213,6 +213,97 @@ describe("FileExplorerModal", () => {
     fetchSpy.mockRestore()
   })
 
+  test("shows Delete selected footer in picker mode and triggers DELETE /files", async () => {
+    const deleteCalls: Array<{
+      method: string
+      body: unknown
+    }> = []
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation((url, init) => {
+        const urlStr = String(url)
+        const method = (init?.method ?? "GET").toUpperCase()
+        if (
+          urlStr.endsWith("/files") &&
+          method === "DELETE"
+        ) {
+          deleteCalls.push({
+            method,
+            body: init?.body
+              ? JSON.parse(String(init.body))
+              : null,
+          })
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                results: [
+                  {
+                    path: "/movies/Movie.mkv",
+                    isOk: true,
+                  },
+                ],
+              }),
+              { status: 200 },
+            ),
+          )
+        }
+        if (urlStr.includes("/files/list")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                separator: "/",
+                entries: [
+                  {
+                    name: "Movie.mkv",
+                    isFile: true,
+                    isDirectory: false,
+                    size: 1000,
+                    duration: null,
+                    mtime: null,
+                  },
+                ],
+              }),
+              { status: 200 },
+            ),
+          )
+        }
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ mode: "permanent" }),
+            { status: 200 },
+          ),
+        )
+      })
+    const confirmSpy = vi
+      .spyOn(window, "confirm")
+      .mockReturnValue(true)
+    const store = createStore()
+    store.set(fileExplorerAtom, {
+      path: "/movies",
+      pickerOnSelect: () => {},
+    })
+    renderWithStore(store)
+    const row = await screen.findByText(/Movie\.mkv/)
+    expect(row).toBeVisible()
+    const deleteBtn = screen.getByRole("button", {
+      name: /Delete selected/i,
+    })
+    expect(deleteBtn).toBeVisible()
+    expect(deleteBtn).toBeDisabled()
+    await userEvent.click(
+      screen.getByTitle("Select all files"),
+    )
+    expect(deleteBtn).not.toBeDisabled()
+    await userEvent.click(deleteBtn)
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(deleteCalls).toHaveLength(1)
+    expect(deleteCalls[0]?.body).toEqual({
+      paths: ["/movies/Movie.mkv"],
+    })
+    fetchSpy.mockRestore()
+    confirmSpy.mockRestore()
+  })
+
   test("breadcrumb for /media/Anime has no double slash", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
