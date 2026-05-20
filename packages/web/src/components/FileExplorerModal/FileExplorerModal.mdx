@@ -17,8 +17,9 @@ Sortable by name, duration, size, or modification time. Directories always sort 
 - **Navigate** → click a directory row or any breadcrumb segment. Both reset selection and re-fetch listing + delete-mode.
 - **Sort** → click column header. Same-column click flips direction; different column resets to ascending.
 - **Select files** → row checkbox (directories disabled). Header checkbox toggles all *files* (not directories — they can't be deleted from this UI).
-- **Delete** → `Delete selected` posts `DELETE /files` with the array of paths. Failure list is shown in a window.alert.
-- **Picker confirm** → `📌 Use this folder` calls `pickerOnSelect(currentPath)`, closes the modal, and forwards the result to whoever opened it (typically `PathVariableCard`).
+- **Delete** → `Delete selected` posts `DELETE /files` with the array of paths. Failure list is shown in a window.alert. The footer renders in *both* browse and picker mode (worker 73); the button is `disabled` while nothing is selected.
+- **Delete-mode badge** → the `Delete → Recycle Bin` / `Delete → Permanent` pill in the title bar is a **status indicator**, not an action. It's sourced from `/files/delete-mode` per current path (some paths can't trash — network shares, external drives). The only affordance that actually deletes is the footer's `Delete selected` button.
+- **Picker confirm** → `📌 Use this folder` calls `pickerOnSelect(currentPath)`, closes the modal, and forwards the result to whoever opened it (typically `PathVariableCard`). Independent of the footer delete — both can be used in the same session (clean up unwanted files, then confirm the folder).
 - **Video playback** → clicking a video file row sets `videoPreviewModalAtom` — `VideoPreviewModal` (mounted at the app top level by `BuilderPage`) renders the `FileVideoPlayer` overlay. Audio-codec probing and the transcode fallback live in `FileVideoPlayer` itself.
 - **Esc** → closes the explorer. The video preview owns its own Escape handler (z-[60] overlay, sits above this modal).
 

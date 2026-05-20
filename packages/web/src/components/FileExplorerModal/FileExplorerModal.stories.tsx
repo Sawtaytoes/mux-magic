@@ -135,3 +135,30 @@ export const PickerMode: Story = {
     </>
   ),
 }
+
+// Same as PickerMode — exists so VRT can snapshot the picker variant with the
+// always-on delete footer visible. The footer's "Delete selected" button now
+// renders in picker mode (worker 73); it's inert until rows are ticked.
+export const PickerModeWithDelete: Story = {
+  parameters: {
+    initialState: {
+      path: "/movies",
+      pickerOnSelect: (path: string) => {
+        console.log("Picker selected:", path)
+      },
+    } satisfies FileExplorerState,
+  },
+  render: () => (
+    <>
+      <ReOpenButton
+        initialState={{
+          path: "/movies",
+          pickerOnSelect: (path: string) => {
+            console.log("Picker selected:", path)
+          },
+        }}
+      />
+      <FileExplorerModal />
+    </>
+  ),
+}
