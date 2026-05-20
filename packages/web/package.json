@@ -16,6 +16,7 @@
     "dev": "vite",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006 --config-dir .storybook",
+    "test:build-budget": "vitest run --config vitest.build-budget.config.ts",
     "test:storybook": "vitest run --config vitest.storybook.config.ts",
     "test": "vitest",
     "typecheck": "tsc --noEmit"
