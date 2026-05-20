@@ -32,25 +32,66 @@ const renderWithStore = (
     </Provider>,
   )
 
+// Worker 25: the modal now consumes pre-ranked `FileSuggestion[]`
+// straight from the server payload — confidence values are realistic
+// stand-ins for what `rankCandidatesForFile` would produce for these
+// inputs (Theatrical Cut at duration 5400 ≈ 0.7; the filename-only
+// MOVIE_t99 row falls below LOW_CONFIDENCE_THRESHOLD).
 const mixedPayload = {
   jobId: "job-1",
   stepId: "step-1",
   sourcePath: "/movies/Demo",
-  unrenamedFiles: [
+  suggestions: [
     {
       filename: "BONUS_1",
       extension: ".mkv",
       durationSeconds: 5400,
+      rankedCandidates: [
+        {
+          candidate: {
+            name: "Theatrical Cut",
+            timecode: "1:30:00",
+          },
+          confidence: 0.7,
+          durationScore: 1,
+          filenameScore: 0,
+        },
+        {
+          candidate: {
+            name: "Image Gallery",
+            timecode: undefined,
+          },
+          confidence: 0,
+          durationScore: Number.NaN,
+          filenameScore: 0,
+        },
+      ],
     },
     {
       filename: "MOVIE_t99",
       extension: ".mkv",
       durationSeconds: 30,
+      rankedCandidates: [
+        {
+          candidate: {
+            name: "Image Gallery",
+            timecode: undefined,
+          },
+          confidence: 0,
+          durationScore: Number.NaN,
+          filenameScore: 0,
+        },
+        {
+          candidate: {
+            name: "Theatrical Cut",
+            timecode: "1:30:00",
+          },
+          confidence: 0,
+          durationScore: 0,
+          filenameScore: 0,
+        },
+      ],
     },
-  ],
-  candidates: [
-    { name: "Theatrical Cut", timecode: "1:30:00" },
-    { name: "Image Gallery", timecode: undefined },
   ],
 }
 
@@ -172,8 +213,7 @@ describe("SmartMatchModal", () => {
       jobId: "job-2",
       stepId: "step-2",
       sourcePath: "/movies/Demo",
-      unrenamedFiles: [],
-      candidates: [],
+      suggestions: [],
     })
     renderWithStore(store)
     expect(

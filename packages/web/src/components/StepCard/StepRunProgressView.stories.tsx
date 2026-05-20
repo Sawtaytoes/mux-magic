@@ -78,18 +78,46 @@ const sampleSummary: NsfSummaryRecord = {
     {
       filename: "Shrek 2-SF_01_SpotlightPussInBoots_t46",
       durationSeconds: 643,
-      candidates: ["Spotlight on Puss in Boots Featurette"],
+      rankedCandidates: [
+        {
+          candidate: {
+            name: "Spotlight on Puss in Boots Featurette",
+            timecode: undefined,
+          },
+          confidence: 0.6,
+          durationScore: Number.NaN,
+          filenameScore: 1,
+        },
+      ],
     },
     {
       filename: "Shrek 2-SF_03_FarAwayIdol_t48",
       durationSeconds: 535,
-      candidates: ["Far Far Away Idol"],
+      rankedCandidates: [
+        {
+          candidate: {
+            name: "Far Far Away Idol",
+            timecode: undefined,
+          },
+          confidence: 0.4,
+          durationScore: Number.NaN,
+          filenameScore: 0,
+        },
+      ],
     },
     {
       filename: "Shrek 2-SF_04_MV_01_Accidentally_t49",
       durationSeconds: 188,
-      candidates: [
-        "Accidentally in Love Music Video by Counting Crows",
+      rankedCandidates: [
+        {
+          candidate: {
+            name: "Accidentally in Love Music Video by Counting Crows",
+            timecode: undefined,
+          },
+          confidence: 0.3,
+          durationScore: Number.NaN,
+          filenameScore: 0,
+        },
       ],
     },
   ],
@@ -205,8 +233,16 @@ export const DoneAfterSmartMatchApply: Story = {
         {
           filename: "Shrek 2-SF_04_MV_01_Accidentally_t49",
           durationSeconds: 188,
-          candidates: [
-            "Accidentally in Love Music Video by Counting Crows",
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Accidentally in Love Music Video by Counting Crows",
+                timecode: undefined,
+              },
+              confidence: 0.3,
+              durationScore: Number.NaN,
+              filenameScore: 0,
+            },
           ],
         },
       ],
