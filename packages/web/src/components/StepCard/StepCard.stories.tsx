@@ -1,10 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import { createStore, Provider } from "jotai"
+import { createStore, Provider, useSetAtom } from "jotai"
+import { useEffect } from "react"
 import type { ProgressSnapshot } from "../../jobs/types"
 import { commandsAtom } from "../../state/commandsAtom"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
+import { promptModalAtom } from "../PromptModal/promptModalAtom"
+import type { PromptData } from "../PromptModal/types"
 import { StepCard } from "./StepCard"
 
 const baseStep: Step = {
@@ -142,6 +145,70 @@ export const Collapsed: Story = {
   ],
   args: {
     step: { ...baseStep, isCollapsed: true },
+    index: 0,
+    isFirst: true,
+    isLast: true,
+  },
+}
+
+// The pulse is driven by a falsy → true transition of
+// promptModalAtom.isMinimized. To make it visually reviewable in
+// Storybook we mount with a visible prompt, then flip it to minimized
+// on the next tick so the StepCard's effect actually observes the
+// transition (a static minimized prompt would NOT pulse).
+const pausedStep: Step = {
+  ...baseStep,
+  status: "running",
+  jobId: "job-paused-1",
+}
+const visiblePrompt: PromptData = {
+  jobId: "job-paused-1",
+  promptId: "p1",
+  message: "Pick which audio track to keep",
+  options: [],
+  isMinimized: false,
+}
+
+const TriggerMinimizeAfterMount = () => {
+  const setPromptData = useSetAtom(promptModalAtom)
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setPromptData({
+        ...visiblePrompt,
+        isMinimized: true,
+      })
+    }, 50)
+    return () => {
+      window.clearTimeout(id)
+    }
+  }, [setPromptData])
+  return null
+}
+
+const withPausedStore =
+  (initialPrompt: PromptData) =>
+  (Story: React.ComponentType) => {
+    const store = createStore()
+    store.set(stepsAtom, [pausedStep])
+    store.set(commandsAtom, {
+      encodeVideo: {
+        summary: "Encode a video file to H.264",
+        fields: [],
+      },
+    })
+    store.set(promptModalAtom, initialPrompt)
+    return (
+      <Provider store={store}>
+        <TriggerMinimizeAfterMount />
+        <Story />
+      </Provider>
+    )
+  }
+
+export const PausedBadgeJustMinimized: Story = {
+  decorators: [withPausedStore(visiblePrompt)],
+  args: {
+    step: pausedStep,
     index: 0,
     isFirst: true,
     isLast: true,

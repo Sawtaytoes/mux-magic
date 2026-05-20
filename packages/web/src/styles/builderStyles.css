@@ -28,6 +28,32 @@
   pointer-events: none;
 }
 
+/* One-shot pulse on the StepCard "paused" badge that fires on the
+   dismiss transition of the PromptModal (see StepCard.tsx). Two
+   ~450ms cycles → ~900ms total. JS clears the class on the same
+   timer; the keyframe itself doesn't loop. */
+@keyframes pausedBadgePulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.08);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.35);
+  }
+}
+.paused-badge-just-minimized {
+  animation: pausedBadgePulse 450ms ease-in-out 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .paused-badge-just-minimized {
+    animation: none;
+  }
+}
+
 /* Drag-and-drop handle (@dnd-kit). touch-action:none lets pointer
    events reach the dnd-kit sensor on touch screens without the
    browser intercepting the scroll gesture first. */
