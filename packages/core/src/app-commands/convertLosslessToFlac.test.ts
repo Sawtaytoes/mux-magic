@@ -264,6 +264,41 @@ describe(convertLosslessToFlac.name, () => {
     )
   })
 
+  test("descends to recursiveDepth levels when isRecursive is true", async () => {
+    vol.fromJSON({
+      "/music/track01.wav": "wav1",
+      "/music/disc1/inner.wav": "wav2",
+      "/music/disc1/sub/deep.wav": "wav3",
+      "/music/disc1/sub/deeper/too-deep.wav": "wav4",
+    })
+    mockFfmpegSuccess("/music/track01.flac")
+    mockFfmpegSuccess("/music/disc1/inner.flac")
+    mockFfmpegSuccess("/music/disc1/sub/deep.flac")
+    mockFfmpegSuccess("/music/disc1/sub/deeper/too-deep.flac")
+
+    await firstValueFrom(
+      convertLosslessToFlac({
+        isRecursive: true,
+        recursiveDepth: 2,
+        sourcePath: "/music",
+      }).pipe(toArray()),
+    )
+
+    const inputPaths = runFfmpegMock.mock.calls.map(
+      ([{ inputFilePaths }]) => inputFilePaths[0],
+    )
+    expect(inputPaths).toEqual(
+      expect.arrayContaining([
+        join("/music", "track01.wav"),
+        join("/music", "disc1", "inner.wav"),
+        join("/music", "disc1", "sub", "deep.wav"),
+      ]),
+    )
+    expect(inputPaths).not.toContain(
+      join("/music", "disc1", "sub", "deeper", "too-deep.wav"),
+    )
+  })
+
   test("does not delete the source .wav when isSourceDeleted is omitted (default false)", async () => {
     vol.fromJSON({ "/music/track01.wav": "wav1" })
     mockFfmpegSuccess("/music/track01.flac")

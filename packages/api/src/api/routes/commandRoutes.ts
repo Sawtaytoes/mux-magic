@@ -241,6 +241,7 @@ export const commandConfigs: Record<
         isAuditOnly: body.isAuditOnly,
         isRecursive: body.isRecursive,
         isSourceDeleted: body.isSourceDeleted,
+        recursiveDepth: body.recursiveDepth,
         sourcePath: body.sourcePath,
       }),
     extractOutputs: (results) => {

@@ -17,7 +17,11 @@ const builder = (yargs: Argv) =>
     )
     .example(
       '$0 convertLosslessToFlac "~/music" -r',
-      "Recursively descends one level into subdirectories.",
+      "Recursively descends one level into subdirectories (default depth).",
+    )
+    .example(
+      '$0 convertLosslessToFlac "~/music" -r --recursiveDepth 3',
+      "Recursively descends three levels of subdirectories.",
     )
     .example(
       '$0 convertLosslessToFlac "~/music" --delete-source',
@@ -38,9 +42,15 @@ const builder = (yargs: Argv) =>
       boolean: true,
       default: false,
       describe:
-        "Recursively descends one level into subdirectories looking for accepted lossless audio files.",
+        "Recursively descends into subdirectories looking for accepted lossless audio files. Depth is controlled by --recursiveDepth (default 1).",
       nargs: 0,
       type: "boolean",
+    })
+    .option("recursiveDepth", {
+      default: 0,
+      describe:
+        "Maximum recursion depth when --isRecursive is set (0 = default depth of 1).",
+      type: "number",
     })
     .option("isSourceDeleted", {
       alias: "delete-source",
@@ -81,6 +91,7 @@ export const convertLosslessToFlacCommand: CommandModule<
       isAuditOnly: argv.isAuditOnly,
       isRecursive: argv.isRecursive,
       isSourceDeleted: argv.isSourceDeleted,
+      recursiveDepth: argv.recursiveDepth,
       sourcePath: argv.sourcePath,
     }).subscribe(subscribeCli())
   },

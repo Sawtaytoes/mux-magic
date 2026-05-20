@@ -26,6 +26,7 @@ type ConvertLosslessToFlacRequiredProps = {
 type ConvertLosslessToFlacOptionalProps = {
   isAuditOnly?: boolean
   isSourceDeleted?: boolean
+  recursiveDepth?: number
 }
 
 export type ConvertLosslessToFlacProps =
@@ -64,10 +65,11 @@ export const convertLosslessToFlac = ({
   isAuditOnly = convertLosslessToFlacDefaultProps.isAuditOnly,
   isRecursive,
   isSourceDeleted = convertLosslessToFlacDefaultProps.isSourceDeleted,
+  recursiveDepth,
   sourcePath,
 }: ConvertLosslessToFlacProps) =>
   getFilesAtDepth({
-    depth: isRecursive ? 1 : 0,
+    depth: isRecursive ? recursiveDepth || 1 : 0,
     sourcePath,
   }).pipe(
     filterIsLosslessAudioFile(),

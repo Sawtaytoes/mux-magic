@@ -29,9 +29,9 @@ export const NumberField = ({
 
   return (
     <div>
-      <FieldLabel command={step.command} field={field} />
+      <FieldLabel stepId={step.id} field={field} />
       <input
-        id={`${step.command}-${field.name}`}
+        id={`${step.id}-${field.name}`}
         type="number"
         defaultValue={value as number | string}
         aria-label={field.label ?? field.name}

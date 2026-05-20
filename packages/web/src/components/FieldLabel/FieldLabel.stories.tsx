@@ -15,14 +15,14 @@ type Story = StoryObj<typeof FieldLabel>
 
 export const Default: Story = {
   args: {
-    command: "ffmpeg",
+    stepId: "step-1",
     field: { name: "filename", label: "Filename" },
   },
 }
 
 export const Required: Story = {
   args: {
-    command: "ffmpeg",
+    stepId: "step-1",
     field: {
       name: "filename",
       label: "Filename",
@@ -33,7 +33,7 @@ export const Required: Story = {
 
 export const NoLabel: Story = {
   args: {
-    command: "ffmpeg",
+    stepId: "step-1",
     field: { name: "outputPath" },
   },
 }

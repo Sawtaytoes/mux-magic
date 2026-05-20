@@ -69,6 +69,7 @@ export type AudioTrack = {
   Format_AdditionalFeatures?: string
   Format_Commercial_IfAny?: string
   Format_Commercial: string
+  Format_Profile?: string
   Format_Settings_Endianness?: string
   Format_Settings_Floating_Point?: "No" | "Yes"
   Format_Settings_Mode?: string

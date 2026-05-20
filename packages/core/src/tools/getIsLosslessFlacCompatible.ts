@@ -19,13 +19,36 @@ const getAudioTrack = (
       track["@type"] === "Audio",
   )
 
+// MediaInfo signals float-PCM via different audio-track fields
+// depending on the WAV's RIFF chunk variant and MediaInfo version:
+//   - `Format_Settings_Floating_Point: "Yes"` — WAVE_FORMAT_EXTENSIBLE
+//     (cIEEEFloat sub-format tag) on older MediaInfo builds.
+//   - `Format_Profile: "Float"` — plain WAVE_FORMAT_IEEE_FLOAT
+//     ("PcmWaveformat") container, especially on MediaInfo 26+.
+// Either is authoritative; we accept both. `BitDepth: "32"` alone is
+// NOT a float signal (32-bit integer WAVs are valid and FLAC-encodable).
+//
+// MediaInfo signals DSD via the audio-track Format string itself:
+//   - "DSD" — uncompressed DSD (DSF, uncompressed DSDIFF). Rate is in
+//     SamplingRate (2822400 = DSD64, 5644800 = DSD128, etc.) — there
+//     is no "DSD64" / "DSD128" Format variant.
+//   - "DST" — Direct Stream Transfer, lossless compression of DSD
+//     inside DSDIFF (.dff). FLAC cannot represent DST any more than
+//     it can represent raw DSD.
+// DSD-over-PCM (DoP) is deliberately indistinguishable from normal
+// 24-bit PCM at MediaInfo level and is out of scope for this probe.
+const dsdFormats = new Set(["DSD", "DST"])
+
 const getSkipReason = (
   audioTrack: AudioTrack,
 ): LosslessFlacSkipReason | undefined => {
   if (audioTrack.Format_Settings_Floating_Point === "Yes") {
     return "float-pcm"
   }
-  if (audioTrack.Format.startsWith("DSD")) {
+  if (audioTrack.Format_Profile === "Float") {
+    return "float-pcm"
+  }
+  if (dsdFormats.has(audioTrack.Format)) {
     return "dsd"
   }
   return undefined

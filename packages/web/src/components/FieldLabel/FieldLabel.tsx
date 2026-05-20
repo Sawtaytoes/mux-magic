@@ -2,7 +2,7 @@ import type { CommandField } from "../../commands/types"
 import { FieldTooltip } from "../FieldTooltip/FieldTooltip"
 
 type FieldLabelProps = {
-  command: string
+  stepId: string
   field: Pick<
     CommandField,
     "name" | "label" | "isRequired" | "description"
@@ -10,11 +10,11 @@ type FieldLabelProps = {
 }
 
 export const FieldLabel = ({
-  command,
+  stepId,
   field,
 }: FieldLabelProps) => (
   <label
-    htmlFor={`${command}-${field.name}`}
+    htmlFor={`${stepId}-${field.name}`}
     className="block text-xs text-slate-400 mb-1 cursor-help"
   >
     <FieldTooltip description={field.description ?? ""}>

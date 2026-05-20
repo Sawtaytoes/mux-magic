@@ -143,6 +143,29 @@ describe(getIsLosslessFlacCompatible.name, () => {
     })
   })
 
+  test("returns kind: skip with reason: float-pcm when Format_Profile is 'Float' (PcmWaveformat WAVs, MediaInfo 26+)", async () => {
+    // Regression: MediaInfo 26.01 emits `Format_Profile: "Float"` on
+    // plain WAVE_FORMAT_IEEE_FLOAT files and does NOT set
+    // Format_Settings_Floating_Point. Probe must accept either field.
+    getMediaInfoMock.mockReturnValue(
+      of(
+        buildMediaInfo({
+          BitDepth: "32",
+          Format: "PCM",
+          Format_Profile: "Float",
+        }),
+      ),
+    )
+    const fileInfo = buildFileInfo("/music/float-pcmwaveformat.wav")
+    const result = await firstValueFrom(
+      getIsLosslessFlacCompatible(fileInfo),
+    )
+    expect(result).toEqual({
+      kind: "skip",
+      reason: "float-pcm",
+    })
+  })
+
   test("returns kind: skip with reason: float-pcm when Format_Settings_Floating_Point is 'Yes' at 64-bit", async () => {
     getMediaInfoMock.mockReturnValue(
       of(
@@ -173,9 +196,12 @@ describe(getIsLosslessFlacCompatible.name, () => {
     expect(result).toEqual({ kind: "skip", reason: "dsd" })
   })
 
-  test("returns kind: skip with reason: dsd when Format starts with 'DSD' (e.g. 'DSD64')", async () => {
+  test("returns kind: skip with reason: dsd when Format is 'DST' (DST-compressed DSD in DSDIFF)", async () => {
+    // MediaInfo emits Format: "DST" for Direct Stream Transfer streams
+    // inside .dff containers — a lossless compression of DSD that FLAC
+    // also can't represent. `startsWith("DSD")` would miss it.
     getMediaInfoMock.mockReturnValue(
-      of(buildMediaInfo({ Format: "DSD64" })),
+      of(buildMediaInfo({ Format: "DST" })),
     )
     const fileInfo = buildFileInfo("/music/track.dff")
     const result = await firstValueFrom(

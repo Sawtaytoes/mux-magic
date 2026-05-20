@@ -145,7 +145,7 @@ export const RenameRegexField = ({
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2">
-        <FieldLabel command={step.command} field={field} />
+        <FieldLabel stepId={step.id} field={field} />
         <button
           type="button"
           onClick={toggleDisplayMode}

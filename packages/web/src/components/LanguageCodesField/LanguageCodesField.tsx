@@ -77,7 +77,7 @@ export const LanguageCodesField = ({
 
   return (
     <div>
-      <FieldLabel command={step.command} field={field} />
+      <FieldLabel stepId={step.id} field={field} />
       <TagInputBase
         tags={tags}
         onRemove={removeCode}
