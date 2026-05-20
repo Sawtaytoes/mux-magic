@@ -273,13 +273,15 @@ export const aclSafeCopyFile = async (
   const onProgress = options?.onProgress
 
   try {
-    // onProgress requested → go straight to the streaming tier so
-    // per-chunk events fire as the bytes move. Without onProgress
-    // the kernel tier is preferred for its dramatic speed advantage.
-    const isKernelCopyDone =
-      onProgress === undefined
-        ? await kernelCopyTier(source, tempPath)
-        : false
+    // Always try the kernel block-copy first — it's dramatically
+    // faster, and the streaming tier loses the speedup just to
+    // animate a progress bar mid-file. When `onProgress` is set we
+    // still want kernel-tier; the bar simply ticks per-file (one
+    // completion event) instead of per-chunk.
+    const isKernelCopyDone = await kernelCopyTier(
+      source,
+      tempPath,
+    )
 
     if (!isKernelCopyDone) {
       await streamTier({
