@@ -231,6 +231,145 @@ export const ParentPreselected: Story = {
   render: (args) => <PickerHost {...args} />,
 }
 
+// Dense pool — mirrors a real Shrek 2 Blu-ray run where DVDCompare
+// emits 12+ scored candidates. With the previous 192px PortalDropdown
+// cap only ~4 options were visible at once; the bumped 480px cap
+// (worker 71) surfaces roughly 9–10 of the two-row options before the
+// scrollbar appears. Open the dropdown to verify. Resize the
+// Storybook canvas to a narrow viewport to also confirm the
+// viewport-aware clamp still kicks in below the cap.
+const denseCandidates: ScoredCandidate[] = [
+  {
+    candidate: {
+      name: "Spotlight on Puss in Boots Featurette",
+      timecode: "10:46",
+    },
+    confidence: 0.95,
+    durationScore: 0.95,
+    filenameScore: 0.8,
+  },
+  {
+    candidate: {
+      name: "Far Far Away Idol",
+      timecode: "5:53",
+    },
+    confidence: 0.78,
+    durationScore: 0.7,
+    filenameScore: 0.6,
+  },
+  {
+    candidate: {
+      name: "Meet the Cast Featurette",
+      timecode: "8:12",
+    },
+    confidence: 0.62,
+    durationScore: 0.55,
+    filenameScore: 0.5,
+  },
+  {
+    candidate: {
+      name: "The Tech of Shrek 2 Featurette",
+      timecode: "12:30",
+    },
+    confidence: 0.55,
+    durationScore: 0.5,
+    filenameScore: 0.45,
+  },
+  {
+    candidate: { name: "Shrek, Rattle & Roll" },
+    confidence: 0.2,
+    durationScore: 0,
+    filenameScore: 0.33,
+  },
+  {
+    candidate: {
+      name: "Accidentally in Love Music Video by Counting Crows",
+      timecode: "3:22",
+      parentName: "Shrek, Rattle & Roll",
+    },
+    confidence: 0.5,
+    durationScore: 0.4,
+    filenameScore: 0.45,
+  },
+  {
+    candidate: {
+      name: "These Boots Are Made for Walking Music Video by Puss in Boots",
+      timecode: "2:17",
+      parentName: "Shrek, Rattle & Roll",
+    },
+    confidence: 0.4,
+    durationScore: 0.1,
+    filenameScore: 0.55,
+  },
+  {
+    candidate: {
+      name: 'Shrek the Musical "I Know It\'s Today"',
+      timecode: "5:36",
+      parentName: "Shrek, Rattle & Roll",
+    },
+    confidence: 0.3,
+    durationScore: 0,
+    filenameScore: 0.45,
+  },
+  {
+    candidate: {
+      name: "Audio Commentary by Directors Kelly Asbury and Conrad Vernon",
+    },
+    confidence: 0.1,
+    durationScore: 0,
+    filenameScore: 0.1,
+  },
+  {
+    candidate: { name: "* The Film" },
+    confidence: 0.05,
+    durationScore: 0,
+    filenameScore: 0.05,
+  },
+  {
+    candidate: { name: "Deleted Scenes", timecode: "9:00" },
+    confidence: 0.25,
+    durationScore: 0.2,
+    filenameScore: 0.3,
+  },
+  {
+    candidate: {
+      name: "International Trailers Compilation",
+      timecode: "4:15",
+    },
+    confidence: 0.15,
+    durationScore: 0.1,
+    filenameScore: 0.2,
+  },
+]
+
+// Renders the dense pool so the bumped max-height (worker 71) is
+// reviewable — open the dropdown and count visible options.
+export const DenseCandidates: Story = {
+  args: {
+    candidates: denseCandidates,
+    initialName: "Spotlight on Puss in Boots Featurette",
+    isDisabled: false,
+  },
+  render: (args) => <PickerHost {...args} />,
+}
+
+// Dense pool inside a narrow viewport — wraps the picker in a
+// short host so the viewport-aware clamp pins the dropdown below
+// the cap. Confirms bumping the constant doesn't regress small
+// viewports.
+export const DenseCandidatesNarrowViewport: Story = {
+  args: {
+    candidates: denseCandidates,
+    initialName: "Spotlight on Puss in Boots Featurette",
+    isDisabled: false,
+  },
+  render: (args) => (
+    <div style={{ height: 240, overflow: "auto" }}>
+      <PickerHost {...args} />
+    </div>
+  ),
+}
+
 // Edge case: only one candidate. Useful for verifying that the
 // picker doesn't gate itself off when the pool is single-entry.
 export const SingleCandidate: Story = {
