@@ -137,57 +137,12 @@ const startCommandJob = ({
   )
 }
 
-export const commandNames = [
-  "makeDirectory",
-  "changeTrackLanguages",
-  "convertLosslessToFlac",
-  "copyFiles",
-  "flattenOutput",
-  "copyOutSubtitles",
-  "extractSubtitles",
-  "fixIncorrectDefaultTracks",
-  "getAudioOffsets",
-  "hasBetterAudio",
-  "hasBetterVersion",
-  "hasDuplicateMusicFiles",
-  "hasImaxEnhancedAudio",
-  "hasManyAudioTracks",
-  "hasSurroundSound",
-  "hasWrongDefaultTrack",
-  "isMissingSubtitles",
-  "deleteCopiedOriginals",
-  "deleteFilesByExtension",
-  "deleteFolder",
-  "exitIfEmpty",
-  "modifySubtitleMetadata",
-  "keepLanguages",
-  "addSubtitles",
-  "mergeTracks",
-  "moveFiles",
-  "moveFilesIntoNamedFolders",
-  "distributeFolderToSiblings",
-  "flattenChildFolders",
-  "renameFiles",
-  "nameAnimeEpisodes",
-  "nameAnimeEpisodesAniDB",
-  "nameMovieCutsDvdCompareTmdb",
-  "nameSpecialFeaturesDvdCompareTmdb",
-  "nameTvShowEpisodes",
-  "remuxToMkv",
-  "renumberChapters",
-  "renameDemos",
-  "renameMovieClipDownloads",
-  "reorderTracks",
-  "replaceAttachments",
-  "replaceFlacWithPcmAudio",
-  "replaceTracks",
-  "setDisplayWidth",
-  "splitChapters",
-  "splitCueSheet",
-  "storeAspectRatioData",
-] as const
+import {
+  type CommandName,
+  commandNames,
+} from "../commandNames.js"
 
-export type CommandName = (typeof commandNames)[number]
+export { type CommandName, commandNames }
 
 export type CommandConfig = {
   // Optional projector that maps the collected emission stream into a
