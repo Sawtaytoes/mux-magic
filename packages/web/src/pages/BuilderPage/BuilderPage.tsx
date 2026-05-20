@@ -3,11 +3,13 @@ import { useHydrateAtoms } from "jotai/utils"
 import { useEffect } from "react"
 
 import { COMMANDS } from "../../commands/commands"
+import { AudioPreviewModal } from "../../components/AudioPreviewModal/AudioPreviewModal"
 import { CommandHelpModal } from "../../components/CommandHelpModal/CommandHelpModal"
 import { CommandPicker } from "../../components/CommandPicker/CommandPicker"
 import { EditVariablesModal } from "../../components/EditVariablesModal/EditVariablesModal"
 import { EnumPicker } from "../../components/EnumPicker/EnumPicker"
 import { FileExplorerModal } from "../../components/FileExplorerModal/FileExplorerModal"
+import { ImagePreviewModal } from "../../components/ImagePreviewModal/ImagePreviewModal"
 import { LinkPicker } from "../../components/LinkPicker/LinkPicker"
 import { LoadModal } from "../../components/LoadModal/LoadModal"
 import { LookupModal } from "../../components/LookupModal/LookupModal"
@@ -189,6 +191,8 @@ export const BuilderPage = () => {
       <LookupModal />
       <FileExplorerModal />
       <VideoPreviewModal />
+      <AudioPreviewModal />
+      <ImagePreviewModal />
       <SmartMatchModal />
 
       {/* Pickers — render via createPortal into document.body */}

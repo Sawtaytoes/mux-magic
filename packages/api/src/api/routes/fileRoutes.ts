@@ -37,16 +37,36 @@ const messageFromError = (error: unknown): string => {
   return String(error)
 }
 
-// Best-effort MIME for the in-browser <video> tag. Browsers don't all
-// agree on .mkv (none stream it natively) but advertising the right MIME
-// at least lets supportive browsers (Chrome with codec support) try.
-const guessMimeType = (path: string): string => {
+// Best-effort MIME for the in-browser <video>/<audio>/<img> tags.
+// Browsers don't all agree on .mkv (none stream it natively) but
+// advertising the right MIME at least lets supportive browsers (Chrome
+// with codec support) try. Audio + image extensions are listed in
+// worker 78's spec and match the modal's preview kind dispatch.
+// Exported for direct testing — the response-level Range/stream test
+// would otherwise have to fire one request per extension.
+export const guessMimeType = (path: string): string => {
   const ext = extname(path).toLowerCase()
+  // Video
   if (ext === ".mp4" || ext === ".m4v") return "video/mp4"
   if (ext === ".webm") return "video/webm"
   if (ext === ".mkv") return "video/x-matroska"
   if (ext === ".avi") return "video/x-msvideo"
   if (ext === ".mov") return "video/quicktime"
+  // Audio
+  if (ext === ".flac") return "audio/flac"
+  if (ext === ".mp3") return "audio/mpeg"
+  if (ext === ".wav" || ext === ".wave") return "audio/wav"
+  if (ext === ".m4a" || ext === ".m4b") return "audio/mp4"
+  if (ext === ".ogg" || ext === ".opus") return "audio/ogg"
+  if (ext === ".aac") return "audio/aac"
+  if (ext === ".aif" || ext === ".aiff") return "audio/aiff"
+  // Image
+  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg"
+  if (ext === ".png") return "image/png"
+  if (ext === ".webp") return "image/webp"
+  if (ext === ".gif") return "image/gif"
+  if (ext === ".bmp") return "image/bmp"
+  if (ext === ".avif") return "image/avif"
   return "application/octet-stream"
 }
 

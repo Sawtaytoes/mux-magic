@@ -6,6 +6,7 @@ import {
 } from "react"
 import { apiBase } from "../../apiBase"
 import { useIsContainerized } from "../../hooks/useIsContainerized"
+import { streamUrl } from "../../streamUrl"
 
 const BROWSER_UNSUPPORTED_AUDIO = new Set([
   "ac-3",
@@ -141,7 +142,7 @@ export const FileVideoPlayer = ({
       // experimental path the flag protects.
       const playbackUrl = isNeedingTranscode
         ? `${apiBase}/transcode/audio?${new URLSearchParams({ path, codec: "opus" })}`
-        : `${apiBase}/files/stream?${new URLSearchParams({ path })}`
+        : streamUrl(path)
 
       setIsStatusVisible(isNeedingTranscode)
       player.addEventListener(

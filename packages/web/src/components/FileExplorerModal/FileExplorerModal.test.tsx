@@ -18,8 +18,46 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+import { audioPreviewModalAtom } from "../../components/AudioPreviewModal/audioPreviewModalAtom"
 import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
+import { imagePreviewModalAtom } from "../../components/ImagePreviewModal/imagePreviewModalAtom"
+import { videoPreviewModalAtom } from "../../components/VideoPreviewModal/videoPreviewModalAtom"
 import { FileExplorerModal } from "./FileExplorerModal"
+
+const mockListing = (
+  entries: Array<{
+    name: string
+    isFile: boolean
+    isDirectory: boolean
+  }>,
+  separator = "/",
+) =>
+  vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation((url) => {
+      const urlStr = String(url)
+      if (urlStr.includes("/files/list")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              separator,
+              entries: entries.map((entry) => ({
+                ...entry,
+                size: 1000,
+                duration: null,
+                mtime: null,
+              })),
+            }),
+            { status: 200 },
+          ),
+        )
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify({ mode: "trash" }), {
+          status: 200,
+        }),
+      )
+    })
 
 const renderWithStore = (
   store: ReturnType<typeof createStore>,
@@ -211,6 +249,122 @@ describe("FileExplorerModal", () => {
     expect(
       screen.getByRole("button", { name: "media" }),
     ).toBeInTheDocument()
+    fetchSpy.mockRestore()
+  })
+
+  test("clicking an image row (cover.jpg) sets imagePreviewModalAtom and leaves audio/video atoms untouched", async () => {
+    const fetchSpy = mockListing([
+      {
+        name: "cover.jpg",
+        isFile: true,
+        isDirectory: false,
+      },
+    ])
+    const store = createStore()
+    store.set(fileExplorerAtom, {
+      path: "/music/Album",
+      pickerOnSelect: null,
+    })
+    renderWithStore(store)
+    const row = await screen.findByRole("button", {
+      name: /cover\.jpg/,
+    })
+    await userEvent.click(row)
+    expect(store.get(imagePreviewModalAtom)).toStrictEqual({
+      path: "/music/Album/cover.jpg",
+    })
+    expect(store.get(audioPreviewModalAtom)).toBeNull()
+    expect(store.get(videoPreviewModalAtom)).toBeNull()
+    fetchSpy.mockRestore()
+  })
+
+  test("clicking an audio row (.flac) sets audioPreviewModalAtom and leaves image/video atoms untouched", async () => {
+    const fetchSpy = mockListing([
+      {
+        name: "01 Primal Planet.flac",
+        isFile: true,
+        isDirectory: false,
+      },
+    ])
+    const store = createStore()
+    store.set(fileExplorerAtom, {
+      path: "/music/Album",
+      pickerOnSelect: null,
+    })
+    renderWithStore(store)
+    const row = await screen.findByRole("button", {
+      name: /01 Primal Planet\.flac/,
+    })
+    await userEvent.click(row)
+    expect(store.get(audioPreviewModalAtom)).toStrictEqual({
+      path: "/music/Album/01 Primal Planet.flac",
+    })
+    expect(store.get(imagePreviewModalAtom)).toBeNull()
+    expect(store.get(videoPreviewModalAtom)).toBeNull()
+    fetchSpy.mockRestore()
+  })
+
+  test("clicking a video row (.mkv) still sets videoPreviewModalAtom (regression guard)", async () => {
+    const fetchSpy = mockListing([
+      {
+        name: "movie.mkv",
+        isFile: true,
+        isDirectory: false,
+      },
+    ])
+    const store = createStore()
+    store.set(fileExplorerAtom, {
+      path: "/movies",
+      pickerOnSelect: null,
+    })
+    renderWithStore(store)
+    const row = await screen.findByRole("button", {
+      name: /movie\.mkv/,
+    })
+    await userEvent.click(row)
+    expect(store.get(videoPreviewModalAtom)).toStrictEqual({
+      path: "/movies/movie.mkv",
+    })
+    expect(store.get(audioPreviewModalAtom)).toBeNull()
+    expect(store.get(imagePreviewModalAtom)).toBeNull()
+    fetchSpy.mockRestore()
+  })
+
+  test("icon column shows 🎵/🖼️/🎬/📄 for audio/image/video/other rows", async () => {
+    const fetchSpy = mockListing([
+      {
+        name: "song.flac",
+        isFile: true,
+        isDirectory: false,
+      },
+      {
+        name: "cover.jpg",
+        isFile: true,
+        isDirectory: false,
+      },
+      {
+        name: "movie.mkv",
+        isFile: true,
+        isDirectory: false,
+      },
+      {
+        name: "notes.txt",
+        isFile: true,
+        isDirectory: false,
+      },
+    ])
+    const store = createStore()
+    store.set(fileExplorerAtom, {
+      path: "/mixed",
+      pickerOnSelect: null,
+    })
+    renderWithStore(store)
+    expect(
+      await screen.findByText(/🎵 song\.flac/),
+    ).toBeVisible()
+    expect(screen.getByText(/🖼️ cover\.jpg/)).toBeVisible()
+    expect(screen.getByText(/🎬 movie\.mkv/)).toBeVisible()
+    expect(screen.getByText(/📄 notes\.txt/)).toBeVisible()
     fetchSpy.mockRestore()
   })
 

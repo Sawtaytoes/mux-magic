@@ -68,6 +68,50 @@ export const BrowseMode: Story = {
   ),
 }
 
+// Worker 78 — these don't seed mocked entries (the modal hits the real
+// API), but they pre-set a path the dev server can resolve so screenshot
+// runs (worker 6a VRT rig, when it lands) can hit consistent folders for
+// audio + image preview surfaces.
+export const WithAudioRows: Story = {
+  parameters: {
+    initialState: {
+      path: "/music",
+      pickerOnSelect: null,
+    } satisfies FileExplorerState,
+  },
+  render: () => (
+    <>
+      <ReOpenButton
+        initialState={{
+          path: "/music",
+          pickerOnSelect: null,
+        }}
+      />
+      <FileExplorerModal />
+    </>
+  ),
+}
+
+export const WithImageRows: Story = {
+  parameters: {
+    initialState: {
+      path: "/music/Album",
+      pickerOnSelect: null,
+    } satisfies FileExplorerState,
+  },
+  render: () => (
+    <>
+      <ReOpenButton
+        initialState={{
+          path: "/music/Album",
+          pickerOnSelect: null,
+        }}
+      />
+      <FileExplorerModal />
+    </>
+  ),
+}
+
 export const PickerMode: Story = {
   parameters: {
     initialState: {
