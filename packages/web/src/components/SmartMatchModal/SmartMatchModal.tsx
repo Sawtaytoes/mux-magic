@@ -8,6 +8,7 @@ import { smartMatchModalAtom } from "./smartMatchModalAtom"
 import {
   type FileSuggestion,
   LOW_CONFIDENCE_THRESHOLD,
+  UNNAMED_FEATURES_BUCKET,
 } from "./smartMatchTypes"
 
 // Per-row state the user can edit. Distinguishes "off by default for
@@ -16,6 +17,10 @@ type RowState = {
   isIncluded: boolean
   selectedCandidateName: string
   error: string | null
+  // Worker 25: an Apply-time collision warning lives here so the user
+  // sees inline which row conflicts with which other row. Cleared on
+  // the next Apply attempt or on any row mutation.
+  collisionWith: string | null
   isApplied: boolean
 }
 
@@ -27,6 +32,22 @@ const joinPath = (
   const separator = trimmed.includes("\\") ? "\\" : "/"
   return `${trimmed}${separator}${filename}`
 }
+
+// Worker 25: leftover files live at
+// `<sourcePath>/UNNAMED-FEATURES/<filename><ext>` after NSF completes.
+// The modal builds `oldPath` against that bucket; the rename POST
+// moves the file back to `<sourcePath>/<newName><ext>` in one
+// /files/rename call (the route already handles cross-folder
+// fs.rename).
+const buildBucketOldPath = (
+  sourcePath: string,
+  filename: string,
+  extension: string,
+): string =>
+  joinPath(
+    joinPath(sourcePath, UNNAMED_FEATURES_BUCKET),
+    `${filename}${extension}`,
+  )
 
 // Append the file's extension to `desiredName` unless the user
 // already typed one. The extension comes from the server-side
@@ -87,6 +108,7 @@ const buildInitialRows = (
           isIncluded: isHighConfidence,
           selectedCandidateName: topName,
           error: null,
+          collisionWith: null,
           isApplied: false,
         },
       ]
@@ -147,7 +169,6 @@ export const SmartMatchModal = () => {
   }
 
   const handleApply = async () => {
-    setIsApplying(true)
     const plans = suggestions
       .map((suggestion) => {
         const row = rows.get(suggestion.filename)
@@ -155,12 +176,8 @@ export const SmartMatchModal = () => {
         const desiredBase = row.selectedCandidateName.trim()
         if (desiredBase.length === 0) return null
         // Both sides must include the file's extension. The server's
-        // FileInfo.filename is extension-stripped (e.g.
-        // "Shrek 2-SF_03_FarAwayIdol_t48" with no ".mkv"); appending
-        // `suggestion.extension` restores the on-disk path. Without
-        // this the rename POST hits ENOENT because the file at
-        // `<sourcePath>\<stem>` doesn't exist — only `<stem>.mkv`
-        // does.
+        // FileInfo.filename is extension-stripped; appending
+        // `suggestion.extension` restores the on-disk path.
         const finalName = ensureExtension(
           desiredBase,
           suggestion.extension,
@@ -174,9 +191,14 @@ export const SmartMatchModal = () => {
           // emits on its own renames, so the step card can merge the
           // two streams without special-casing.
           newName: desiredBase,
-          oldPath: joinPath(
+          // Worker 25: file lives in UNNAMED-FEATURES/ after NSF
+          // completes. The /files/rename route handles cross-folder
+          // fs.rename, so the move-back-to-sourcePath happens in the
+          // same POST as the rename.
+          oldPath: buildBucketOldPath(
             state.sourcePath,
-            `${suggestion.filename}${suggestion.extension}`,
+            suggestion.filename,
+            suggestion.extension,
           ),
           newPath: joinPath(state.sourcePath, finalName),
         }
@@ -185,6 +207,63 @@ export const SmartMatchModal = () => {
         (entry): entry is NonNullable<typeof entry> =>
           entry !== null,
       )
+
+    // Worker 25: Apply-time collision detection. If two-or-more
+    // checked rows would produce the same `newPath`, halt the Apply
+    // and surface inline collision warnings on each conflicting row
+    // with the colliding row's filename. Apply only proceeds when no
+    // collisions remain. Pattern mirrors worker 66's pre-flight
+    // collision detection in renameFiles.
+    const collisionByPath = plans.reduce(
+      (acc, plan) =>
+        acc.set(
+          plan.newPath,
+          (acc.get(plan.newPath) ?? []).concat(
+            plan.filename,
+          ),
+        ),
+      new Map<string, string[]>(),
+    )
+    const collisions = new Map<string, string[]>(
+      Array.from(collisionByPath.entries()).filter(
+        ([, filenames]) => filenames.length > 1,
+      ),
+    )
+    if (collisions.size > 0) {
+      setRows((prev) => {
+        const next = new Map(prev)
+        for (const filenames of collisions.values()) {
+          for (const filename of filenames) {
+            const current = next.get(filename)
+            if (!current) continue
+            const others = filenames.filter(
+              (other) => other !== filename,
+            )
+            next.set(filename, {
+              ...current,
+              collisionWith: others.join(", "),
+            })
+          }
+        }
+        return next
+      })
+      return
+    }
+
+    // Clear any prior collision warnings now that the plan is clean.
+    setRows((prev) => {
+      const next = new Map(prev)
+      for (const [filename, current] of next.entries()) {
+        if (current.collisionWith !== null) {
+          next.set(filename, {
+            ...current,
+            collisionWith: null,
+          })
+        }
+      }
+      return next
+    })
+    setIsApplying(true)
 
     // Sequential renames so we can update per-row status as we go and
     // avoid hammering the server with N parallel POSTs.
@@ -423,9 +502,13 @@ export const SmartMatchModal = () => {
                         title="Preview this file"
                         onClick={() =>
                           setVideoPreview({
-                            path: joinPath(
+                            // Worker 25: the file lives in
+                            // UNNAMED-FEATURES/ after NSF completes;
+                            // build the preview path against the bucket.
+                            path: buildBucketOldPath(
                               state.sourcePath,
-                              `${suggestion.filename}${suggestion.extension}`,
+                              suggestion.filename,
+                              suggestion.extension,
                             ),
                           })
                         }
@@ -442,6 +525,14 @@ export const SmartMatchModal = () => {
                           suggestion.durationSeconds,
                         )}
                       </div>
+                      {row.collisionWith && (
+                        <div
+                          data-smart-match-collision
+                          className="text-[10px] font-mono mt-1 text-amber-300"
+                        >
+                          Same target as: {row.collisionWith}
+                        </div>
+                      )}
                       {row.error && (
                         <div className="text-[10px] font-mono mt-1 text-red-300">
                           {row.error}

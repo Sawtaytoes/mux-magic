@@ -9,6 +9,15 @@
 
 export const LOW_CONFIDENCE_THRESHOLD = 0.6
 
+// Worker 25: NSF auto-routes leftover files into
+// `<sourcePath>/UNNAMED-FEATURES/` after the rename pass. The Smart
+// Match modal builds its Apply `oldPath` against that bucket and
+// renames the file back to `sourcePath` with the user-picked name in
+// one /files/rename POST. The server's bucket constant lives at
+// `packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.buckets.ts`;
+// kept here as a mirror so the web side doesn't take a core dep.
+export const UNNAMED_FEATURES_BUCKET = "UNNAMED-FEATURES"
+
 export type Candidate = {
   name: string
   timecode?: string

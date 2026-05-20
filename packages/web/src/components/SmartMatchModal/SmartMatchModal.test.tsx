@@ -141,7 +141,7 @@ describe("SmartMatchModal", () => {
     expect(includeMovieT99.checked).toBe(false)
   })
 
-  test("Apply fires one POST /files/rename per included row", async () => {
+  test("Apply fires one POST /files/rename per included row with oldPath under UNNAMED-FEATURES/ (worker 25)", async () => {
     const user = userEvent.setup()
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
@@ -159,9 +159,19 @@ describe("SmartMatchModal", () => {
     await waitFor(() =>
       expect(fetchSpy).toHaveBeenCalledTimes(1),
     )
-    expect(fetchSpy).toHaveBeenCalledWith(
-      `${apiBase}/files/rename`,
-      expect.objectContaining({ method: "POST" }),
+    const [url, init] = fetchSpy.mock.calls[0]
+    expect(url).toBe(`${apiBase}/files/rename`)
+    const body = JSON.parse(
+      (init as RequestInit).body as string,
+    ) as { oldPath: string; newPath: string }
+    // Worker 25: oldPath points into the UNNAMED-FEATURES/ bucket; the
+    // /files/rename route handles cross-folder fs.rename, so the file
+    // moves back to sourcePath under its new name in one call.
+    expect(body.oldPath).toBe(
+      "/movies/Demo/UNNAMED-FEATURES/BONUS_1.mkv",
+    )
+    expect(body.newPath).toBe(
+      "/movies/Demo/Theatrical Cut.mkv",
     )
   })
 
@@ -219,6 +229,83 @@ describe("SmartMatchModal", () => {
     expect(
       screen.getByText(/No unnamed files/i),
     ).toBeInTheDocument()
+  })
+
+  test("Apply pre-flight detects cross-row target collisions and halts with inline warnings (worker 25)", async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ isOk: true }), {
+          status: 200,
+        }),
+      )
+    // Two rows where both top candidates are the same high-confidence
+    // pick — by default both auto-check AND both produce the same
+    // newPath, so Apply should halt with inline collision warnings
+    // rather than firing any rename POSTs.
+    const collisionPayload = {
+      jobId: "job-collide",
+      stepId: "step-1",
+      sourcePath: "/movies/Demo",
+      suggestions: [
+        {
+          filename: "BONUS_a",
+          extension: ".mkv",
+          durationSeconds: 5400,
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Theatrical Cut",
+                timecode: "1:30:00",
+              },
+              confidence: 0.7,
+              durationScore: 1,
+              filenameScore: 0,
+            },
+          ],
+        },
+        {
+          filename: "BONUS_b",
+          extension: ".mkv",
+          durationSeconds: 5400,
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Theatrical Cut",
+                timecode: "1:30:00",
+              },
+              confidence: 0.7,
+              durationScore: 1,
+              filenameScore: 0,
+            },
+          ],
+        },
+      ],
+    }
+    const store = createStore()
+    store.set(smartMatchModalAtom, collisionPayload)
+    renderWithStore(store)
+    await user.click(
+      screen.getByRole("button", { name: /Apply/ }),
+    )
+    // No POSTs fired — the pre-flight check halted Apply.
+    expect(fetchSpy).not.toHaveBeenCalled()
+    // Both rows surface an inline collision warning naming the other row.
+    const collisionLines = document.querySelectorAll(
+      "[data-smart-match-collision]",
+    )
+    expect(collisionLines).toHaveLength(2)
+    // Unchecking BONUS_b resolves the collision; Apply now proceeds.
+    await user.click(
+      screen.getByLabelText("Include BONUS_b"),
+    )
+    await user.click(
+      screen.getByRole("button", { name: /Apply/ }),
+    )
+    await waitFor(() =>
+      expect(fetchSpy).toHaveBeenCalledTimes(1),
+    )
   })
 
   test("Close button clears the atom", async () => {
