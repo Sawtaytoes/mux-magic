@@ -23,7 +23,62 @@ vi.mock(
 )
 
 import { getMediaInfo } from "@mux-magic/core/src/tools/getMediaInfo.js"
-import { fileRoutes } from "./fileRoutes.js"
+import { fileRoutes, guessMimeType } from "./fileRoutes.js"
+
+describe("guessMimeType (worker 78)", () => {
+  test("maps each documented audio extension to the worker-78 MIME string", () => {
+    expect(guessMimeType("song.flac")).toBe("audio/flac")
+    expect(guessMimeType("song.mp3")).toBe("audio/mpeg")
+    expect(guessMimeType("song.wav")).toBe("audio/wav")
+    expect(guessMimeType("song.wave")).toBe("audio/wav")
+    expect(guessMimeType("song.m4a")).toBe("audio/mp4")
+    expect(guessMimeType("song.m4b")).toBe("audio/mp4")
+    expect(guessMimeType("song.ogg")).toBe("audio/ogg")
+    expect(guessMimeType("song.opus")).toBe("audio/ogg")
+    expect(guessMimeType("song.aac")).toBe("audio/aac")
+    expect(guessMimeType("song.aif")).toBe("audio/aiff")
+    expect(guessMimeType("song.aiff")).toBe("audio/aiff")
+  })
+
+  test("maps each documented image extension to the worker-78 MIME string", () => {
+    expect(guessMimeType("cover.jpg")).toBe("image/jpeg")
+    expect(guessMimeType("cover.jpeg")).toBe("image/jpeg")
+    expect(guessMimeType("cover.png")).toBe("image/png")
+    expect(guessMimeType("cover.webp")).toBe("image/webp")
+    expect(guessMimeType("cover.gif")).toBe("image/gif")
+    expect(guessMimeType("cover.bmp")).toBe("image/bmp")
+    expect(guessMimeType("cover.avif")).toBe("image/avif")
+  })
+
+  test("preserves the pre-worker-78 video mappings", () => {
+    expect(guessMimeType("movie.mp4")).toBe("video/mp4")
+    expect(guessMimeType("movie.m4v")).toBe("video/mp4")
+    expect(guessMimeType("movie.webm")).toBe("video/webm")
+    expect(guessMimeType("movie.mkv")).toBe(
+      "video/x-matroska",
+    )
+    expect(guessMimeType("movie.avi")).toBe(
+      "video/x-msvideo",
+    )
+    expect(guessMimeType("movie.mov")).toBe(
+      "video/quicktime",
+    )
+  })
+
+  test("falls back to application/octet-stream for unknown extensions", () => {
+    expect(guessMimeType("notes.txt")).toBe(
+      "application/octet-stream",
+    )
+    expect(guessMimeType("archive.zip")).toBe(
+      "application/octet-stream",
+    )
+  })
+
+  test("is case-insensitive on the extension", () => {
+    expect(guessMimeType("COVER.JPG")).toBe("image/jpeg")
+    expect(guessMimeType("Song.FLAC")).toBe("audio/flac")
+  })
+})
 
 // Hono in-process tests for the file routes. Filesystem ops are routed
 // through memfs (globally mocked in vitest.setup.ts) so each test can

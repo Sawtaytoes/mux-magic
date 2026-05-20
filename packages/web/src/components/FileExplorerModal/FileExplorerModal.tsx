@@ -11,12 +11,14 @@ import {
   useState,
 } from "react"
 import { apiBase } from "../../apiBase"
+import { audioPreviewModalAtom } from "../../components/AudioPreviewModal/audioPreviewModalAtom"
 import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
 import type {
   FileEntry,
   SortColumn,
   SortDirection,
 } from "../../components/FileExplorerModal/types"
+import { imagePreviewModalAtom } from "../../components/ImagePreviewModal/imagePreviewModalAtom"
 import { videoPreviewModalAtom } from "../../components/VideoPreviewModal/videoPreviewModalAtom"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -34,6 +36,30 @@ const VIDEO_EXTENSIONS = new Set([
   ".wmv",
 ])
 
+const AUDIO_EXTENSIONS = new Set([
+  ".aac",
+  ".aif",
+  ".aiff",
+  ".flac",
+  ".m4a",
+  ".m4b",
+  ".mp3",
+  ".ogg",
+  ".opus",
+  ".wav",
+  ".wave",
+])
+
+const IMAGE_EXTENSIONS = new Set([
+  ".avif",
+  ".bmp",
+  ".gif",
+  ".jpeg",
+  ".jpg",
+  ".png",
+  ".webp",
+])
+
 const _BROWSER_UNSUPPORTED_AUDIO = new Set([
   "ac-3",
   "dts",
@@ -47,13 +73,17 @@ const _BROWSER_UNSUPPORTED_AUDIO = new Set([
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
-const isVideoFile = (name: string): boolean => {
+const extOf = (name: string): string => {
   const dot = name.lastIndexOf(".")
-  return (
-    dot >= 0 &&
-    VIDEO_EXTENSIONS.has(name.slice(dot).toLowerCase())
-  )
+  return dot < 0 ? "" : name.slice(dot).toLowerCase()
 }
+
+const isVideoFile = (name: string): boolean =>
+  VIDEO_EXTENSIONS.has(extOf(name))
+const isAudioFile = (name: string): boolean =>
+  AUDIO_EXTENSIONS.has(extOf(name))
+const isImageFile = (name: string): boolean =>
+  IMAGE_EXTENSIONS.has(extOf(name))
 
 const formatSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`
@@ -193,6 +223,8 @@ export const FileExplorerModal = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const setVideoPreview = useSetAtom(videoPreviewModalAtom)
+  const setAudioPreview = useSetAtom(audioPreviewModalAtom)
+  const setImagePreview = useSetAtom(imagePreviewModalAtom)
 
   // Open/navigate logic: when explorerState changes, reset and load new path.
   useEffect(() => {
@@ -611,14 +643,57 @@ export const FileExplorerModal = () => {
                   </thead>
                   <tbody>
                     {sortedEntries.map((entry) => {
-                      const isVideo =
+                      const previewKind:
+                        | "video"
+                        | "audio"
+                        | "image"
+                        | null =
                         entry.isFile &&
                         isVideoFile(entry.name)
+                          ? "video"
+                          : entry.isFile &&
+                              isAudioFile(entry.name)
+                            ? "audio"
+                            : entry.isFile &&
+                                isImageFile(entry.name)
+                              ? "image"
+                              : null
                       const icon = entry.isDirectory
                         ? "📁"
-                        : isVideo
+                        : previewKind === "video"
                           ? "🎬"
-                          : "📄"
+                          : previewKind === "audio"
+                            ? "🎵"
+                            : previewKind === "image"
+                              ? "🖼️"
+                              : "📄"
+                      const onPreviewClick = () => {
+                        const fullPath = joinPath(
+                          currentPath,
+                          entry.name,
+                          separator,
+                        )
+                        if (previewKind === "video")
+                          setVideoPreview({
+                            path: fullPath,
+                          })
+                        else if (previewKind === "audio")
+                          setAudioPreview({
+                            path: fullPath,
+                          })
+                        else if (previewKind === "image")
+                          setImagePreview({
+                            path: fullPath,
+                          })
+                      }
+                      const previewTitle =
+                        previewKind === "video"
+                          ? "Play in browser"
+                          : previewKind === "audio"
+                            ? "Play in browser"
+                            : previewKind === "image"
+                              ? "View image"
+                              : ""
 
                       return (
                         <tr
@@ -663,20 +738,12 @@ export const FileExplorerModal = () => {
                               >
                                 {icon} {entry.name}
                               </button>
-                            ) : isVideo ? (
+                            ) : previewKind !== null ? (
                               <button
                                 type="button"
                                 className="fe-name fe-file text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
-                                title="Play in browser"
-                                onClick={() =>
-                                  setVideoPreview({
-                                    path: joinPath(
-                                      currentPath,
-                                      entry.name,
-                                      separator,
-                                    ),
-                                  })
-                                }
+                                title={previewTitle}
+                                onClick={onPreviewClick}
                               >
                                 {icon} {entry.name}
                               </button>
