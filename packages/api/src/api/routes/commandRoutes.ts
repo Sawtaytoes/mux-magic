@@ -266,15 +266,14 @@ export const commandConfigs: Record<
           record.kind === "skipped",
       )
       return {
-        convertedDestinationPaths: converted.map(
-          (record) => record.destination,
-        ),
-        convertedSourcePaths: converted.map(
-          (record) => record.source,
-        ),
-        skippedSourcePaths: skipped.map(
-          (record) => record.source,
-        ),
+        converted: converted.map((record) => ({
+          source: record.source,
+          destination: record.destination,
+        })),
+        skipped: skipped.map((record) => ({
+          source: record.source,
+          reason: record.reason,
+        })),
       }
     },
     schema: schemas.convertLosslessToFlacRequestSchema,
