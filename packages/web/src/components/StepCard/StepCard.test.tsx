@@ -1,7 +1,9 @@
 import {
+  act,
   cleanup,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
@@ -16,6 +18,8 @@ import { commandsAtom } from "../../state/commandsAtom"
 import { commandPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
+import { promptModalAtom } from "../PromptModal/promptModalAtom"
+import type { PromptData } from "../PromptModal/types"
 import { StepCard } from "./StepCard"
 
 const makeStep = (overrides: Partial<Step> = {}): Step => ({
@@ -197,5 +201,125 @@ describe("StepCard", () => {
     )
 
     expect(spy).toHaveBeenCalledOnce()
+  })
+})
+
+describe("StepCard — paused-badge just-minimized pulse", () => {
+  const pausedStep = (): Step =>
+    makeStep({
+      command: "testCmd",
+      status: "running",
+      jobId: "job-paused-1",
+    })
+
+  const visiblePrompt: PromptData = {
+    jobId: "job-paused-1",
+    promptId: "p1",
+    message: "Pick one",
+    options: [],
+    isMinimized: false,
+  }
+
+  const renderWithPrompt = (prompt: PromptData) => {
+    const store = createStore()
+    store.set(commandsAtom, {
+      testCmd: {
+        summary: "Test command",
+        fields: [],
+        outputFolderName: null,
+      },
+    })
+    const step = pausedStep()
+    store.set(stepsAtom, [step])
+    store.set(promptModalAtom, prompt)
+    render(
+      <Provider store={store}>
+        <StepCard step={step} index={0} isFirst isLast />
+      </Provider>,
+    )
+    return store
+  }
+
+  test("paused badge gains data-just-minimized when prompt transitions to minimized, then clears", async () => {
+    const store = renderWithPrompt(visiblePrompt)
+
+    const badgeButton = screen.getByRole("button", {
+      name: /resume — reopen the prompt/i,
+    })
+    expect(
+      badgeButton.getAttribute("data-just-minimized"),
+    ).toBeNull()
+
+    act(() => {
+      store.set(promptModalAtom, {
+        ...visiblePrompt,
+        isMinimized: true,
+      })
+    })
+
+    await waitFor(() => {
+      expect(
+        badgeButton.getAttribute("data-just-minimized"),
+      ).toBe("true")
+    })
+
+    await waitFor(
+      () => {
+        expect(
+          badgeButton.getAttribute("data-just-minimized"),
+        ).toBeNull()
+      },
+      { timeout: 2000 },
+    )
+  })
+
+  test("does not pulse when the prompt arrives already minimized", () => {
+    renderWithPrompt({
+      ...visiblePrompt,
+      isMinimized: true,
+    })
+
+    const badgeButton = screen.getByRole("button", {
+      name: /resume — reopen the prompt/i,
+    })
+    expect(
+      badgeButton.getAttribute("data-just-minimized"),
+    ).toBeNull()
+  })
+
+  test("does not pulse when prefers-reduced-motion is set", async () => {
+    const matchMediaMock = vi.fn().mockReturnValue({
+      matches: true,
+      media: "(prefers-reduced-motion: reduce)",
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      onchange: null,
+      dispatchEvent: vi.fn(),
+    })
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      configurable: true,
+      value: matchMediaMock,
+    })
+
+    const store = renderWithPrompt(visiblePrompt)
+    const badgeButton = screen.getByRole("button", {
+      name: /resume — reopen the prompt/i,
+    })
+
+    act(() => {
+      store.set(promptModalAtom, {
+        ...visiblePrompt,
+        isMinimized: true,
+      })
+    })
+
+    // Give the effect a tick to run; it should NOT flip the flag.
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(
+      badgeButton.getAttribute("data-just-minimized"),
+    ).toBeNull()
   })
 })
