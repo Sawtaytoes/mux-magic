@@ -476,7 +476,9 @@ export const COMMANDS: Commands = {
     }
   })(),
   convertWavToFlac: (() => {
-    const field = fieldBuilder(convertWavToFlacRequestSchema)
+    const field = fieldBuilder(
+      convertWavToFlacRequestSchema,
+    )
     return {
       summary:
         "Encode .wav files to FLAC in-place (strictly lossless)",
@@ -493,7 +495,8 @@ export const COMMANDS: Commands = {
         }),
         field("isSourceDeleted", {
           type: "boolean",
-          label: "Delete Source .wav After Successful Encode",
+          label:
+            "Delete Source .wav After Successful Encode",
         }),
       ],
     }

@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/music
+steps:
+  - id: step-fixture
+    command: convertWavToFlac
+    params: {sourcePath: '@basePath', isRecursive: true, isSourceDeleted: true}
