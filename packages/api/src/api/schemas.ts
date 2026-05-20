@@ -302,6 +302,12 @@ export const convertLosslessToFlacRequestSchema = z.object({
     .describe(
       "When true, deletes the source file after a successful FLAC encode. Defaults to false; the original is kept by default.",
     ),
+  isAuditOnly: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Dry-run: probe each file with mediainfo and report what would be converted vs. skipped (and why), but do not invoke ffmpeg or write any FLAC files. Source files are never touched. Useful for scanning a whole music library before committing to the encode.",
+    ),
 })
 
 export const changeTrackLanguagesRequestSchema = z.object({

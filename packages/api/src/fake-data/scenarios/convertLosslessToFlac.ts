@@ -9,6 +9,13 @@ import {
   timer,
 } from "rxjs"
 
+type SkipReason = "audit-only" | "dsd" | "float-pcm"
+
+type FakeFile = {
+  path: string
+  skipReason: SkipReason | null
+}
+
 const pause = (ms: number): Observable<never> =>
   timer(ms).pipe(ignoreElements()) as Observable<never>
 
@@ -18,14 +25,19 @@ const effect = (fn: () => void): Observable<never> =>
     sub.complete()
   })
 
-// Mixed lossless inputs across the formats the command accepts —
-// surfaces in the dry-run UI that the rename to "convertLossless..."
-// isn't just a relabel but actually covers the broader extension set.
-const LOSSLESS_FILES = [
-  "Disc1/Track01.wav",
-  "Disc1/Track02.aif",
-  "Disc1/Track03.aiff",
-  "Disc2/Track01.m4a",
+// Mixed lossless inputs across the formats the command accepts plus a
+// 32-bit-float WAV and a DSD source. The float/DSD entries surface the
+// new probe-skip behavior in the JobCard's Results disclosure so the
+// converted/skipped split can be eyeballed via fake-data.
+const FAKE_FILES: readonly FakeFile[] = [
+  { path: "Disc1/Track01.wav", skipReason: null },
+  { path: "Disc1/Track02.aif", skipReason: null },
+  {
+    path: "Disc1/Track03-float.wav",
+    skipReason: "float-pcm",
+  },
+  { path: "Disc2/Track01.m4a", skipReason: null },
+  { path: "Disc2/Track02.dff", skipReason: "dsd" },
 ] as const
 
 const swapExtensionToFlac = (filePath: string) =>
@@ -33,6 +45,39 @@ const swapExtensionToFlac = (filePath: string) =>
     /\.(wav|wave|aif|aiff|m4a|m4b)$/iu,
     ".flac",
   )
+
+const getEffectiveSkipReason = (
+  file: FakeFile,
+  isAuditOnly: boolean,
+): SkipReason | null => {
+  if (file.skipReason !== null) return file.skipReason
+  if (isAuditOnly) return "audit-only"
+  return null
+}
+
+const buildRecord = (
+  file: FakeFile,
+  isSourceDeleted: boolean,
+  isAuditOnly: boolean,
+) => {
+  const effectiveSkipReason = getEffectiveSkipReason(
+    file,
+    isAuditOnly,
+  )
+  if (effectiveSkipReason !== null) {
+    return {
+      kind: "skipped" as const,
+      reason: effectiveSkipReason,
+      source: file.path,
+    }
+  }
+  return {
+    destination: swapExtensionToFlac(file.path),
+    isSourceDeleted,
+    kind: "converted" as const,
+    source: file.path,
+  }
+}
 
 export const convertLosslessToFlacScenario = (
   body: unknown,
@@ -46,6 +91,11 @@ export const convertLosslessToFlacScenario = (
     "isSourceDeleted" in body &&
     (body as { isSourceDeleted?: unknown })
       .isSourceDeleted === true
+  const isAuditOnly =
+    typeof body === "object" &&
+    body !== null &&
+    "isAuditOnly" in body &&
+    (body as { isAuditOnly?: unknown }).isAuditOnly === true
 
   const emitProgress = (
     ratio: number,
@@ -53,14 +103,12 @@ export const convertLosslessToFlacScenario = (
   ) => {
     const jobId = getActiveJobId()
     if (!jobId) return
-    const filesDone = Math.round(
-      ratio * LOSSLESS_FILES.length,
-    )
+    const filesDone = Math.round(ratio * FAKE_FILES.length)
     emitJobEvent(jobId, {
       type: "progress",
       ratio,
       filesDone,
-      filesTotal: LOSSLESS_FILES.length,
+      filesTotal: FAKE_FILES.length,
       currentFiles: activePaths.map((path) => ({
         path,
         ratio: ratio % 0.5 < 0.25 ? 0.4 : 0.75,
@@ -68,29 +116,42 @@ export const convertLosslessToFlacScenario = (
     })
   }
 
-  const fakeFileSteps = LOSSLESS_FILES.flatMap(
-    (sourcePath, fileIndex) => {
-      const flacPath = swapExtensionToFlac(sourcePath)
+  const fakeFileSteps = FAKE_FILES.flatMap(
+    (file, fileIndex) => {
+      const flacPath = swapExtensionToFlac(file.path)
       const progressBefore =
-        (fileIndex + 0.5) / LOSSLESS_FILES.length
+        (fileIndex + 0.5) / FAKE_FILES.length
       const progressAfter =
-        (fileIndex + 1) / LOSSLESS_FILES.length
+        (fileIndex + 1) / FAKE_FILES.length
+      const effectiveSkipReason = getEffectiveSkipReason(
+        file,
+        isAuditOnly,
+      )
       return [
         effect(() => {
-          logInfo(
-            label,
-            `Encoding ${sourcePath} → ${flacPath}`,
-          )
-          emitProgress(progressBefore, [sourcePath])
-        }),
-        pause(350),
-        effect(() => {
-          logInfo(label, `  ✓ ${flacPath}`)
-          if (isSourceDeleted) {
+          if (effectiveSkipReason !== null) {
             logInfo(
               label,
-              `  · removed source ${sourcePath}`,
+              `SKIPPED FLAC SOURCE (${effectiveSkipReason}): ${file.path}`,
             )
+          } else {
+            logInfo(
+              label,
+              `Encoding ${file.path} → ${flacPath}`,
+            )
+          }
+          emitProgress(progressBefore, [file.path])
+        }),
+        pause(effectiveSkipReason !== null ? 80 : 350),
+        effect(() => {
+          if (effectiveSkipReason === null) {
+            logInfo(label, `  ✓ ${flacPath}`)
+            if (isSourceDeleted) {
+              logInfo(
+                label,
+                `  · removed source ${file.path}`,
+              )
+            }
           }
           emitProgress(progressAfter, [])
         }),
@@ -107,27 +168,35 @@ export const convertLosslessToFlacScenario = (
       logInfo(label, `Body: ${JSON.stringify(body)}`)
       logInfo(
         label,
-        `Found ${LOSSLESS_FILES.length} lossless audio files to encode.`,
+        `Probing ${FAKE_FILES.length} lossless audio files.`,
       )
-      logInfo(
-        label,
-        `Mode: ${isSourceDeleted ? "encode + delete source" : "encode only (keep sources)"}`,
-      )
+      const modeDescription = isAuditOnly
+        ? "audit-only (dry-run; no ffmpeg, no writes)"
+        : isSourceDeleted
+          ? "encode + delete source"
+          : "encode only (keep sources)"
+      logInfo(label, `Mode: ${modeDescription}`)
       emitProgress(0, [])
     }),
     ...fakeFileSteps,
     effect(() => {
+      const convertedCount = FAKE_FILES.filter(
+        (file) =>
+          getEffectiveSkipReason(file, isAuditOnly) ===
+          null,
+      ).length
+      const skippedCount =
+        FAKE_FILES.length - convertedCount
       logInfo(
         label,
-        `Done. Encoded ${LOSSLESS_FILES.length} lossless audio files to FLAC.`,
+        `Done. ${convertedCount} converted, ${skippedCount} skipped.`,
       )
       emitProgress(1.0, [])
     }),
     from(
-      LOSSLESS_FILES.map((sourcePath) => ({
-        source: sourcePath,
-        destination: swapExtensionToFlac(sourcePath),
-      })) as unknown[],
+      FAKE_FILES.map((file) =>
+        buildRecord(file, isSourceDeleted, isAuditOnly),
+      ) as unknown[],
     ),
   ) as Observable<unknown>
 }

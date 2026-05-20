@@ -31,7 +31,8 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory containing lossless audio files (.wav / .wave / .aif / .aiff / .m4a / .m4b) to encode to FLAC, or a directory of directories of those files when used with isRecursive.",
       "isRecursive": "Recursively descends one level into subdirectories looking for accepted lossless audio files.",
-      "isSourceDeleted": "When true, deletes the source file after a successful FLAC encode. Defaults to false; the original is kept by default."
+      "isSourceDeleted": "When true, deletes the source file after a successful FLAC encode. Defaults to false; the original is kept by default.",
+      "isAuditOnly": "Dry-run: probe each file with mediainfo and report what would be converted vs. skipped (and why), but do not invoke ffmpeg or write any FLAC files. Source files are never touched. Useful for scanning a whole music library before committing to the encode."
     }
   },
   "copyFiles": {

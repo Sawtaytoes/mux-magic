@@ -5,4 +5,4 @@ paths:
 steps:
   - id: step-fixture
     command: convertLosslessToFlac
-    params: {sourcePath: '@basePath', isRecursive: true, isSourceDeleted: true}
+    params: {sourcePath: '@basePath', isRecursive: true, isSourceDeleted: true, isAuditOnly: true}
