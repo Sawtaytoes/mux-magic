@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/69_link-picker-type-tagged-outputs/`
 **Phase:** 4
 **Depends on:** 01 (done)
-**Parallel with:** any worker that doesn't touch [packages/web/src/components/LinkPicker/LinkPicker.tsx](../../packages/web/src/components/LinkPicker/LinkPicker.tsx), [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts), [packages/web/src/commands/types.ts](../../packages/web/src/commands/types.ts), or the server-side `extractOutputs` declarations in [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts).
+**Parallel with:** any worker that doesn't touch [packages/web/src/components/LinkPicker/LinkPicker.tsx](../../packages/web/src/components/LinkPicker/LinkPicker.tsx), [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts), [packages/web/src/commands/types.ts](../../packages/web/src/commands/types.ts), or the server-side `extractOutputs` declarations in [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts).
 
 ## Universal Rules (TL;DR)
 
@@ -31,7 +31,7 @@ Replace the name-based `acceptedOutputs` whitelist with a **value-type system** 
 
 ### Value-type taxonomy
 
-The minimum set, derived from a survey of every existing field type in [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts) and every `extractOutputs` shape in [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts):
+The minimum set, derived from a survey of every existing field type in [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts) and every `extractOutputs` shape in [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts):
 
 ```ts
 type FieldValueType =

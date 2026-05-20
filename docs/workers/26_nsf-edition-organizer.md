@@ -122,10 +122,10 @@ Useful for the web UI to show the user what's about to happen. The actual moves 
 
 ## Files (post-worker-3a layout)
 
-- `packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/editions/findSiblingsForEdition.ts` (new or extension)
-- `packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/editions/moveToEditionFolder.ts` (extend with sibling-handling + collision detection)
-- `packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/editions/buildEditionPlan.ts` (new)
-- `packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/events.ts` (extend with `EditionPlanEvent`)
+- `packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/editions/findSiblingsForEdition.ts` (new or extension)
+- `packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/editions/moveToEditionFolder.ts` (extend with sibling-handling + collision detection)
+- `packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/editions/buildEditionPlan.ts` (new)
+- `packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/events.ts` (extend with `EditionPlanEvent`)
 - Web UI: edition-plan preview component (search [packages/web/src/components/](../../packages/web/src/components/))
 - Tests for all of the above
 
