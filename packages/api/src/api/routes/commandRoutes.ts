@@ -23,12 +23,14 @@ import { copyOutSubtitles } from "@mux-magic/core/src/app-commands/copyOutSubtit
 import { deleteCopiedOriginals } from "@mux-magic/core/src/app-commands/deleteCopiedOriginals.js"
 import { deleteFilesByExtension } from "@mux-magic/core/src/app-commands/deleteFilesByExtension.js"
 import { deleteFolder } from "@mux-magic/core/src/app-commands/deleteFolder.js"
+import { distributeFolderToSiblings } from "@mux-magic/core/src/app-commands/distributeFolderToSiblings.js"
 import { exitIfEmpty } from "@mux-magic/core/src/app-commands/exitIfEmpty.js"
 import {
   extractSubtitles,
   extractSubtitlesDefaultProps,
 } from "@mux-magic/core/src/app-commands/extractSubtitles.js"
 import { fixIncorrectDefaultTracks } from "@mux-magic/core/src/app-commands/fixIncorrectDefaultTracks.js"
+import { flattenChildFolders } from "@mux-magic/core/src/app-commands/flattenChildFolders.js"
 import { flattenOutput } from "@mux-magic/core/src/app-commands/flattenOutput.js"
 import {
   getAudioOffsets,
@@ -49,6 +51,7 @@ import {
 import { mergeTracks } from "@mux-magic/core/src/app-commands/mergeTracks.js"
 import { modifySubtitleMetadata } from "@mux-magic/core/src/app-commands/modifySubtitleMetadata.js"
 import { moveFiles } from "@mux-magic/core/src/app-commands/moveFiles.js"
+import { moveFilesIntoNamedFolders } from "@mux-magic/core/src/app-commands/moveFilesIntoNamedFolders.js"
 import { nameAnimeEpisodes } from "@mux-magic/core/src/app-commands/nameAnimeEpisodes.js"
 import { nameAnimeEpisodesAniDB } from "@mux-magic/core/src/app-commands/nameAnimeEpisodesAniDB.js"
 import { nameMovieCutsDvdCompareTmdb } from "@mux-magic/core/src/app-commands/nameMovieCutsDvdCompareTmdb.js"
@@ -161,6 +164,9 @@ export const commandNames = [
   "addSubtitles",
   "mergeTracks",
   "moveFiles",
+  "moveFilesIntoNamedFolders",
+  "distributeFolderToSiblings",
+  "flattenChildFolders",
   "renameFiles",
   "nameAnimeEpisodes",
   "nameAnimeEpisodesAniDB",
@@ -590,6 +596,40 @@ export const commandConfigs: Record<
     schema: schemas.moveFilesRequestSchema,
     summary:
       "Move files from source to destination, with optional regex filtering and renaming",
+    tags: ["File Operations"],
+  },
+  moveFilesIntoNamedFolders: {
+    getObservable: (body) =>
+      moveFilesIntoNamedFolders({
+        sourcePath: body.sourcePath,
+      }),
+    schema: schemas.moveFilesIntoNamedFoldersRequestSchema,
+    summary:
+      "Foldarize a directory: each file is moved into a new same-named subdirectory (extension stripped from the folder name)",
+    tags: ["File Operations"],
+  },
+  distributeFolderToSiblings: {
+    getObservable: (body) =>
+      distributeFolderToSiblings({
+        isDeletingSourceFolderAfterDistributing:
+          body.deleteSourceFolderAfterDistributing,
+        sourceFolderPath: body.sourceFolderPath,
+      }),
+    schema: schemas.distributeFolderToSiblingsRequestSchema,
+    summary:
+      "Copy a folder (default ./attachments) into every sibling directory of its parent, with optional source-folder cleanup",
+    tags: ["File Operations"],
+  },
+  flattenChildFolders: {
+    getObservable: (body) =>
+      flattenChildFolders({
+        isDeletingEmptyChildFoldersAfterFlattening:
+          body.deleteEmptyChildFoldersAfterFlattening,
+        parentPath: body.parentPath,
+      }),
+    schema: schemas.flattenChildFoldersRequestSchema,
+    summary:
+      "Move every file from each immediate child directory of parentPath up to parentPath itself, with optional empty-child cleanup",
     tags: ["File Operations"],
   },
   renameFiles: {

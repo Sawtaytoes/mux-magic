@@ -166,6 +166,44 @@ export const flattenOutputRequestSchema = z.object({
     ),
 })
 
+export const moveFilesIntoNamedFoldersRequestSchema =
+  z.object({
+    sourcePath: z
+      .string()
+      .describe(
+        "Folder whose files are each moved into a same-named subdirectory (file extension stripped from the folder name). Casper.mkv → Casper/Casper.mkv. Pre-existing subdirectories are untouched.",
+      ),
+  })
+
+export const distributeFolderToSiblingsRequestSchema =
+  z.object({
+    sourceFolderPath: z
+      .string()
+      .describe(
+        "Folder to copy into every sibling directory of its parent. Canonical use case is an `attachments` folder beside per-episode dirs.",
+      ),
+    deleteSourceFolderAfterDistributing: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Delete the source folder after all copies succeed. Default false: source is preserved so the destructive step is explicit and opt-in.",
+      ),
+  })
+
+export const flattenChildFoldersRequestSchema = z.object({
+  parentPath: z
+    .string()
+    .describe(
+      "Folder whose immediate child directories should each have their files moved up to this folder. Files already at the parent level are untouched.",
+    ),
+  deleteEmptyChildFoldersAfterFlattening: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Delete the now-empty child directories after the moves complete. Default false: the empties are preserved for inspection (matches flattenOutput's default).",
+    ),
+})
+
 export const moveFilesRequestSchema = z.object({
   sourcePath: z
     .string()

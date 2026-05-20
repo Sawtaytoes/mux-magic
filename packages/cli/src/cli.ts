@@ -15,8 +15,10 @@ import { copyOutSubtitlesCommand } from "./cli-commands/copyOutSubtitlesCommand.
 import { deleteCopiedOriginalsCommand } from "./cli-commands/deleteCopiedOriginalsCommand.js"
 import { deleteFilesByExtensionCommand } from "./cli-commands/deleteFilesByExtensionCommand.js"
 import { deleteFolderCommand } from "./cli-commands/deleteFolderCommand.js"
+import { distributeFolderToSiblingsCommand } from "./cli-commands/distributeFolderToSiblingsCommand.js"
 import { extractSubtitlesCommand } from "./cli-commands/extractSubtitlesCommand.js"
 import { fixIncorrectDefaultTracksCommand } from "./cli-commands/fixIncorrectDefaultTracksCommand.js"
+import { flattenChildFoldersCommand } from "./cli-commands/flattenChildFoldersCommand.js"
 import { flattenOutputCommand } from "./cli-commands/flattenOutputCommand.js"
 import { getAudioOffsetsCommand } from "./cli-commands/getAudioOffsetsCommand.js"
 import { getSubtitleMetadataCommand } from "./cli-commands/getSubtitleMetadataCommand.js"
@@ -34,6 +36,7 @@ import { mergeOrderedChaptersCommand } from "./cli-commands/mergeOrderedChapters
 import { mergeTracksCommand } from "./cli-commands/mergeTracksCommand.js"
 import { modifySubtitleMetadataCommand } from "./cli-commands/modifySubtitleMetadataCommand.js"
 import { moveFilesCommand } from "./cli-commands/moveFilesCommand.js"
+import { moveFilesIntoNamedFoldersCommand } from "./cli-commands/moveFilesIntoNamedFoldersCommand.js"
 import { nameAnimeEpisodesAniDBCommand } from "./cli-commands/nameAnimeEpisodesAniDBCommand.js"
 import { nameAnimeEpisodesCommand } from "./cli-commands/nameAnimeEpisodesCommand.js"
 import { nameMovieCutsDvdCompareTmdbCommand } from "./cli-commands/nameMovieCutsDvdCompareTmdbCommand.js"
@@ -69,6 +72,7 @@ yargs(hideBin(process.argv))
   .command(copyOutSubtitlesCommand)
   .command(extractSubtitlesCommand)
   .command(fixIncorrectDefaultTracksCommand)
+  .command(flattenChildFoldersCommand)
   .command(flattenOutputCommand)
   .command(getAudioOffsetsCommand)
   .command(getSubtitleMetadataCommand)
@@ -90,6 +94,8 @@ yargs(hideBin(process.argv))
   .command(mergeOrderedChaptersCommand)
   .command(mergeTracksCommand)
   .command(moveFilesCommand)
+  .command(moveFilesIntoNamedFoldersCommand)
+  .command(distributeFolderToSiblingsCommand)
   .command(nameAnimeEpisodesCommand)
   .command(nameAnimeEpisodesAniDBCommand)
   .command(nameMovieCutsDvdCompareTmdbCommand)
