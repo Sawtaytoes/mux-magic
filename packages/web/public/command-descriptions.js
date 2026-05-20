@@ -42,7 +42,8 @@ window.commandDescriptions = {
       "fileFilterRegex": "If set, only files whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
       "folderFilterRegex": "If set (and includeFolders is true), only folders whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
       "includeFolders": "When true, top-level subdirectories matching folderFilterRegex are copied as units (recursively). Files are only copied if fileFilterRegex is also set.",
-      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place."
+      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
+      "allowOverwrite": "When true, existing destination files are overwritten. Default false: the command refuses to clobber and fails fast with an EEXIST-shaped error naming the colliding path. Opt in for mirror-sync / idempotent re-run flows."
     }
   },
   "flattenOutput": {
@@ -219,7 +220,8 @@ window.commandDescriptions = {
       "sourcePath": "Directory to move files from. Deleted after all files are copied.",
       "destinationPath": "Directory to move files into. Created if it does not already exist.",
       "fileFilterRegex": "If set, only files whose names match this regular expression are moved. Bare strings are accepted for back-compat with pre-flags templates.",
-      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place."
+      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
+      "allowOverwrite": "When true, existing destination files are overwritten. Default false: the command refuses to clobber and fails fast with an EEXIST-shaped error naming the colliding path. Opt in for mirror-sync / idempotent re-run flows."
     }
   },
   "renameFiles": {

@@ -46,6 +46,12 @@ const builder = (yargs: Argv) =>
         "Replacement string for --renamePattern. Capture groups available as $1, $2, etc.",
       type: "string",
     })
+    .option("allowOverwrite", {
+      default: false,
+      describe:
+        "Overwrite existing destination files. Default false: the command refuses to clobber and fails fast with an EEXIST-shaped error.",
+      type: "boolean",
+    })
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
@@ -76,6 +82,7 @@ export const moveFilesCommand: CommandModule<
       fileFilterRegex: argv.fileFilterRegex,
       renameRegex,
       sourcePath: argv.sourcePath,
+      isOverwriteAllowed: argv.allowOverwrite,
     }).subscribe(subscribeCli())
   },
 }
