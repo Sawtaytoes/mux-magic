@@ -15,16 +15,21 @@ import type {
 //
 // Presentational only — the hosting component derives `data` from the
 // SSE `payload.results` at `isDone` and passes it in.
+//
+// Audit-mode awareness: a `skipped` record with reason `"audit-only"`
+// means "the probe said this file is compatible, but Audit Only was on
+// so I didn't encode it" — i.e. it's the *would-be-converted* set, not
+// a real skip. The panel detects the presence of any audit-only record
+// and re-labels: "Would convert / Would skip" instead of
+// "Converted / Skipped". Hiding audit-only entirely (the previous
+// behavior) caused the audit count to look like "all 124 are float-pcm"
+// when really 124 were float and the other ~20 were compatible-but-
+// dry-run, invisible to the user.
 
 type Props = {
   data: ConvertLosslessRunResultsData
 }
 
-// Audit-only is deliberately omitted from BOTH counts and the per-
-// reason listing: an audit-only run skips every otherwise-encodable
-// file by definition, so re-stating "60 audit-only skips" tells the
-// user nothing the "Audit Only (Dry-Run)" checkbox didn't. Only the
-// substantive skips (float / DSD) are worth surfacing.
 type ListedSkipReason = Exclude<
   ConvertLosslessSkipReason,
   "audit-only"
@@ -83,51 +88,102 @@ const groupSkippedByReason = (
 export const ConvertLosslessRunResults = ({
   data,
 }: Props) => {
+  const auditOnlyRecords = data.skipped.filter(
+    (record) => record.reason === "audit-only",
+  )
+  const isAuditMode = auditOnlyRecords.length > 0
+
+  // In a real run the converted list is the boring expected case
+  // (collapsed). In an audit run it IS the answer the user came for
+  // ("which files would actually encode?") — open it by default so the
+  // list is visible without an extra click.
   const [isConvertedOpen, setIsConvertedOpen] =
-    useState(false)
+    useState(isAuditMode)
   const [isSkippedOpen, setIsSkippedOpen] = useState(true)
 
   const listedSkipped = data.skipped.filter((record) =>
     isListedSkipReason(record.reason),
   )
 
+  // Compatible-file count: in a real run that's the encoded set; in an
+  // audit run it's the would-be-encoded set (the audit-only records).
+  // Treated as one list so the UI tells the same story regardless of
+  // which mode the user picked.
+  const compatibleSources: Array<{
+    source: string
+    destination: string | null
+  }> = isAuditMode
+    ? auditOnlyRecords.map((record) => ({
+        source: record.source,
+        destination: null,
+      }))
+    : data.converted.map(
+        (record: ConvertLosslessConvertedRecord) => ({
+          source: record.source,
+          destination: record.destination,
+        }),
+      )
+
   if (
-    data.converted.length === 0 &&
+    compatibleSources.length === 0 &&
     listedSkipped.length === 0
   ) {
     return null
   }
 
-  const sortedConverted = data.converted.toSorted(
-    (recordA, recordB) =>
-      compareByBasename(recordA.source, recordB.source),
+  const sortedCompatible = compatibleSources.toSorted(
+    (entryA, entryB) =>
+      compareByBasename(entryA.source, entryB.source),
   )
   const skippedGroups = groupSkippedByReason(listedSkipped)
+
+  const compatibleHeading = isAuditMode
+    ? "Would convert"
+    : "Converted"
+  const compatibleCountLabel = isAuditMode
+    ? "would convert"
+    : "converted"
+  const skippedCountLabel = isAuditMode
+    ? "would skip"
+    : "skipped"
+  const skippedHeadingPrefix = isAuditMode
+    ? "Would skip"
+    : "Skipped"
 
   return (
     <div
       id="convert-lossless-run-results"
       className="flex flex-col gap-2 text-xs"
     >
+      {isAuditMode && (
+        <div
+          data-cl-audit-banner
+          className="rounded border border-blue-800/40 bg-blue-950/30 px-2 py-1 text-blue-300"
+        >
+          Audit-only (dry-run) — counts below are what a
+          real run <em>would</em> do; no files were encoded
+          or deleted.
+        </div>
+      )}
       <div
         data-cl-counts
         className="flex flex-wrap items-center gap-3 text-slate-300"
       >
         <span>
           <span className="font-semibold text-emerald-300">
-            {data.converted.length}
+            {compatibleSources.length}
           </span>{" "}
-          converted
+          {compatibleCountLabel}
         </span>
         <span>
           <span className="font-semibold text-amber-300">
             {listedSkipped.length}
           </span>{" "}
-          skipped
+          {skippedCountLabel}
         </span>
       </div>
 
-      {data.converted.length > 0 && (
+      {compatibleSources.length > 0 && (
         <details
           data-cl-converted
           open={isConvertedOpen}
@@ -140,20 +196,22 @@ export const ConvertLosslessRunResults = ({
           className="rounded border border-emerald-800/40 bg-emerald-950/30"
         >
           <summary className="cursor-pointer px-2 py-1 text-emerald-300">
-            Converted ({data.converted.length})
+            {compatibleHeading} ({compatibleSources.length})
           </summary>
           <ul className="px-3 py-2 space-y-1 font-mono text-emerald-200/90 break-all">
-            {sortedConverted.map(
-              (record: ConvertLosslessConvertedRecord) => (
-                <li key={record.source}>
-                  {basename(record.source)}
-                  <span className="text-emerald-500">
-                    {" → "}
-                  </span>
-                  {basename(record.destination)}
-                </li>
-              ),
-            )}
+            {sortedCompatible.map((entry) => (
+              <li key={entry.source}>
+                {basename(entry.source)}
+                {entry.destination !== null && (
+                  <>
+                    <span className="text-emerald-500">
+                      {" → "}
+                    </span>
+                    {basename(entry.destination)}
+                  </>
+                )}
+              </li>
+            ))}
           </ul>
         </details>
       )}
@@ -172,7 +230,8 @@ export const ConvertLosslessRunResults = ({
           className="rounded border border-amber-800/40 bg-amber-950/30"
         >
           <summary className="cursor-pointer px-2 py-1 text-amber-300">
-            Skipped — {skipReasonLabel[group.reason]} (
+            {skippedHeadingPrefix} —{" "}
+            {skipReasonLabel[group.reason]} (
             {group.records.length})
           </summary>
           <ul className="px-3 py-2 space-y-1 font-mono text-amber-200/90 break-all">

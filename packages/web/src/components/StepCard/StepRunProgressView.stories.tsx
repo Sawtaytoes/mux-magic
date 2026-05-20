@@ -252,6 +252,64 @@ export const DoneAfterSmartMatchApply: Story = {
   decorators: [withLogs(sampleLogLines)],
 }
 
+// convertLosslessToFlac audit-only on a mixed folder — the regression
+// case: 2 compatible files (audit-only skipped) + 3 float-pcm skipped.
+// Hidden audit-only records previously made this look like "5 skipped
+// — all float" which was a lie of omission. Now reads "2 would convert
+// • 3 would skip" with both lists visible.
+export const ConvertLosslessAuditMixed: Story = {
+  args: {
+    isRunning: false,
+    renamePairs: [],
+    summary: null,
+    sourcePath:
+      "G:\\Music\\Lorien Testard\\Clair Obscur_ Expedition 33_ Original Soundtrack",
+    convertLosslessResults: {
+      converted: [],
+      skipped: [
+        {
+          kind: "skipped",
+          source:
+            "G:\\Music\\Lorien Testard\\1-15 Get up!.wav",
+          reason: "audit-only",
+        },
+        {
+          kind: "skipped",
+          source:
+            "G:\\Music\\Lorien Testard\\1-17 Battling Breeze.wav",
+          reason: "audit-only",
+        },
+        {
+          kind: "skipped",
+          source:
+            "G:\\Music\\Lorien Testard\\1-01 Alicia.wav",
+          reason: "float-pcm",
+        },
+        {
+          kind: "skipped",
+          source:
+            "G:\\Music\\Lorien Testard\\1-02 Gustave.wav",
+          reason: "float-pcm",
+        },
+        {
+          kind: "skipped",
+          source: "G:\\Music\\SACD\\disc-01.dff",
+          reason: "dsd",
+        },
+      ],
+    },
+  },
+  decorators: [
+    withLogs([
+      "[SKIPPED FLAC SOURCE] audit-only: 1-15 Get up!.wav",
+      "[SKIPPED FLAC SOURCE] audit-only: 1-17 Battling Breeze.wav",
+      "[SKIPPED FLAC SOURCE] float-pcm: 1-01 Alicia.wav",
+      "[SKIPPED FLAC SOURCE] float-pcm: 1-02 Gustave.wav",
+      "[SKIPPED FLAC SOURCE] dsd: disc-01.dff",
+    ]),
+  ],
+}
+
 // convertLosslessToFlac mixed-result run — the case the user hit on
 // the Clair Obscur OST. Verifies counts row + per-reason grouped skip
 // lists render together with a small converted list.
