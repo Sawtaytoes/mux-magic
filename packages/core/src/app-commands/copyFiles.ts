@@ -111,6 +111,7 @@ export const copyFiles = ({
   isIncludingFolders = false,
   renameRegex,
   sourcePath,
+  isOverwriteAllowed = false,
 }: {
   destinationPath: string
   fileFilterRegex?: RegexFilterInput
@@ -118,6 +119,7 @@ export const copyFiles = ({
   isIncludingFolders?: boolean
   renameRegex?: RenameRegex
   sourcePath: string
+  isOverwriteAllowed?: boolean
 }): Observable<CopyRecord> => {
   // Pre-validate every regex once, synchronously, before the Observable
   // is even constructed. A bad pattern or flag surfaces as a sync throw
@@ -218,6 +220,7 @@ export const copyFiles = ({
                         let lastBytesWritten = 0
                         const copyOptions: CopyOptions = {
                           signal: abortController.signal,
+                          isOverwriteAllowed,
                           ...(tracker !== null
                             ? {
                                 onProgress: (event) => {

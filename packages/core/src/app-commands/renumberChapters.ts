@@ -68,7 +68,11 @@ const replaceOriginal = async ({
     if (errnoError.code !== "EXDEV") {
       throw error
     }
-    await aclSafeCopyFile(tempPath, destinationPath)
+    // The original file at `destinationPath` is the whole point of
+    // the replace — opt into the worker-59 overwrite default.
+    await aclSafeCopyFile(tempPath, destinationPath, {
+      isOverwriteAllowed: true,
+    })
     await unlink(tempPath)
   }
 }

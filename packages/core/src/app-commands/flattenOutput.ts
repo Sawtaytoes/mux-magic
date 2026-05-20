@@ -114,6 +114,12 @@ export const flattenOutput = ({
 
                   const copyOptions: CopyOptions = {
                     signal: abortController.signal,
+                    // flattenOutput's job is to overlay a processed
+                    // step's output back over the parent's working
+                    // copy — same-name collisions are the intended
+                    // case, not the error case. Opt into the
+                    // worker-59 overwrite default.
+                    isOverwriteAllowed: true,
                     ...(tracker !== null
                       ? {
                           onProgress: (event) => {

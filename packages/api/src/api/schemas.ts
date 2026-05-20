@@ -144,6 +144,12 @@ export const copyFilesRequestSchema = z.object({
       "When true, top-level subdirectories matching folderFilterRegex are copied as units (recursively). Files are only copied if fileFilterRegex is also set.",
     ),
   renameRegex: renameRegexSchema.optional(),
+  allowOverwrite: z
+    .boolean()
+    .default(false)
+    .describe(
+      "When true, existing destination files are overwritten. Default false: the command refuses to clobber and fails fast with an EEXIST-shaped error naming the colliding path. Opt in for mirror-sync / idempotent re-run flows.",
+    ),
 })
 
 export const flattenOutputRequestSchema = z.object({
@@ -178,6 +184,12 @@ export const moveFilesRequestSchema = z.object({
       "If set, only files whose names match this regular expression are moved. Bare strings are accepted for back-compat with pre-flags templates.",
     ),
   renameRegex: renameRegexSchema.optional(),
+  allowOverwrite: z
+    .boolean()
+    .default(false)
+    .describe(
+      "When true, existing destination files are overwritten. Default false: the command refuses to clobber and fails fast with an EEXIST-shaped error naming the colliding path. Opt in for mirror-sync / idempotent re-run flows.",
+    ),
 })
 
 export const renameFilesRequestSchema = z.object({

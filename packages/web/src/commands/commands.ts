@@ -129,6 +129,12 @@ export const COMMANDS: Commands = {
           label: "Rename Regex",
           isRequired: false,
         }),
+        field("allowOverwrite", {
+          type: "boolean",
+          label: "Allow overwrite",
+          description:
+            "Default off: the command fails fast with EEXIST if any destination file already exists. Turn on for mirror-sync / idempotent-re-run flows where last-write-wins is the desired behavior.",
+        }),
       ],
     }
   })(),
@@ -225,6 +231,12 @@ export const COMMANDS: Commands = {
           type: "renameRegex",
           label: "Rename Regex",
           isRequired: false,
+        }),
+        field("allowOverwrite", {
+          type: "boolean",
+          label: "Allow overwrite",
+          description:
+            "Default off: the command fails fast with EEXIST if any destination file already exists. Turn on for mirror-sync / idempotent-re-run flows where last-write-wins is the desired behavior.",
         }),
       ],
     }
