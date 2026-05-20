@@ -214,22 +214,70 @@ export const nameSpecialFeaturesDvdCompareTmdbScenario = (
         "Director's Commentary",
         "The Making of Inception",
       ],
+      // Worker 25: server now emits already-ranked `ScoredCandidate[]`
+      // with confidence + per-signal scores so the Smart Match modal can
+      // render straight from the payload — no client-side re-ranking.
+      // The two entries below are realistic confidence numbers for the
+      // happy path (high-confidence filename-overlap match on top,
+      // weaker fallback below).
       unnamedFileCandidates: [
         {
           filename: "MOVIE_t04.mkv",
+          extension: ".mkv",
           durationSeconds: 760,
-          candidates: [
-            "Image Gallery (250 images)",
-            "Director's Commentary",
-            "Behind the Scenes",
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Image Gallery (250 images)",
+                timecode: undefined,
+              },
+              confidence: 0.6,
+              durationScore: Number.NaN,
+              filenameScore: 1,
+            },
+            {
+              candidate: {
+                name: "Director's Commentary",
+                timecode: undefined,
+              },
+              confidence: 0,
+              durationScore: Number.NaN,
+              filenameScore: 0,
+            },
+            {
+              candidate: {
+                name: "Behind the Scenes",
+                timecode: undefined,
+              },
+              confidence: 0,
+              durationScore: Number.NaN,
+              filenameScore: 0,
+            },
           ],
         },
         {
           filename: "MOVIE_t05.mkv",
+          extension: ".mkv",
           durationSeconds: 48,
-          candidates: [
-            "Director's Commentary",
-            "Image Gallery (250 images)",
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Director's Commentary",
+                timecode: undefined,
+              },
+              confidence: 0.05,
+              durationScore: Number.NaN,
+              filenameScore: 0,
+            },
+            {
+              candidate: {
+                name: "Image Gallery (250 images)",
+                timecode: undefined,
+              },
+              confidence: 0,
+              durationScore: Number.NaN,
+              filenameScore: 0,
+            },
           ],
         },
       ],
