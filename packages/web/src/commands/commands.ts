@@ -52,6 +52,7 @@ import {
   renameDemosRequestSchema,
   renameFilesRequestSchema,
   renameMovieClipDownloadsRequestSchema,
+  renumberChaptersRequestSchema,
   reorderTracksRequestSchema,
   replaceAttachmentsRequestSchema,
   replaceFlacWithPcmAudioRequestSchema,
@@ -797,6 +798,31 @@ export const COMMANDS: Commands = {
           type: "numberArray",
           label: "Offsets (milliseconds, one per episode)",
           placeholder: "0, -200, 150",
+        }),
+      ],
+    }
+  })(),
+  renumberChapters: (() => {
+    const field = fieldBuilder(
+      renumberChaptersRequestSchema,
+    )
+    return {
+      summary:
+        "Renumber `Chapter NN`-style chapter names sequentially via a metadata-only mkvmerge remux (preserves timecodes, UIDs, custom-named chapters)",
+      tag: "Track Operations",
+      outputFolderName: null,
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Recursive",
+        }),
+        field("isPaddingChapterNumbers", {
+          type: "boolean",
+          label: "Zero-Pad Chapter Numbers",
         }),
       ],
     }

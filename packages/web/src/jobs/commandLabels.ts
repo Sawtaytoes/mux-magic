@@ -1,4 +1,7 @@
-const commandLabels: Record<string, string> = {
+// Exported (not file-local) so the registry-sync test in
+// commands.test.ts can assert every server-side commandName has a
+// human label here. Treat this as read-only outside this file.
+export const commandLabels: Record<string, string> = {
   // File Operations
   makeDirectory: "Make Directory",
   copyFiles: "Copy Files",
@@ -30,6 +33,7 @@ const commandLabels: Record<string, string> = {
   fixIncorrectDefaultTracks: "Fix Incorrect Default Tracks",
   keepLanguages: "Keep Languages",
   mergeTracks: "Add Subtitles (deprecated)",
+  renumberChapters: "Renumber Chapters",
   reorderTracks: "Reorder Tracks",
   replaceTracks: "Replace Tracks",
 
@@ -52,6 +56,7 @@ const commandLabels: Record<string, string> = {
   hasWrongDefaultTrack: "Has Wrong Default Track",
 
   // Naming Operations
+  renameFiles: "Rename Files",
   nameAnimeEpisodes: "Name Anime Episodes (MAL)",
   nameAnimeEpisodesAniDB: "Name Anime Episodes (AniDB)",
   nameMovieCutsDvdCompareTmdb:

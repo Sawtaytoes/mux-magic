@@ -12,6 +12,10 @@
       "types": "./src/api/schemas.ts",
       "default": "./src/api/schemas.ts"
     },
+    "./command-names": {
+      "types": "./src/api/commandNames.ts",
+      "default": "./src/api/commandNames.ts"
+    },
     "./*": "./*"
   },
   "description": "Hono API routes + OpenAPI config for mux-magic. Wraps @mux-magic/core with the HTTP layer; exports the `app` Hono instance. No listener — worker 29 reintroduces a packages/server/ front-door that owns the listener.",
