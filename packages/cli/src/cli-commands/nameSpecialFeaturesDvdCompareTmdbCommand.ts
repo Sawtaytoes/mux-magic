@@ -120,13 +120,13 @@ export const nameSpecialFeaturesDvdCompareTmdbCommand: CommandModule<
               "UNNAMED FILE CANDIDATES",
               "Possible candidate associations for unnamed files",
               event.unnamedFileCandidates.flatMap(
-                ({ filename, candidates }) =>
+                ({ filename, rankedCandidates }) =>
                   [`  • ${filename}`].concat(
-                    candidates
+                    rankedCandidates
                       .slice(0, 3)
                       .map(
-                        (candidate) =>
-                          `      - ${candidate}`,
+                        (scored) =>
+                          `      - ${scored.candidate.name}`,
                       ),
                   ),
               ),

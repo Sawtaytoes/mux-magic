@@ -6,6 +6,34 @@ import {
   type SmartMatchModalState,
   smartMatchModalAtom,
 } from "./smartMatchModalAtom"
+import type {
+  FileSuggestion,
+  ScoredCandidate,
+} from "./smartMatchTypes"
+
+// Worker 25: the modal now receives already-scored suggestions from
+// the server payload — these stories no longer run the scorer. The
+// helper below builds plausible ScoredCandidate entries by hand so
+// the story files stay readable without copying scorer math.
+const scored = (
+  name: string,
+  confidence: number,
+  options: {
+    timecode?: string
+    durationScore?: number
+    filenameScore?: number
+    parentName?: string
+  } = {},
+): ScoredCandidate => ({
+  candidate: {
+    name,
+    timecode: options.timecode,
+    parentName: options.parentName,
+  },
+  confidence,
+  durationScore: options.durationScore ?? Number.NaN,
+  filenameScore: options.filenameScore ?? 0,
+})
 
 const ReOpenButton = ({
   initialState,
@@ -26,75 +54,106 @@ const ReOpenButton = ({
   )
 }
 
+const allHighConfidenceSuggestions: FileSuggestion[] = [
+  {
+    filename: "BONUS_1",
+    extension: ".mkv",
+    durationSeconds: 5400,
+    rankedCandidates: [
+      scored("Theatrical Cut", 0.7, {
+        timecode: "1:30:00",
+        durationScore: 1,
+      }),
+      scored("Trailer", 0, { timecode: "0:02:30" }),
+    ],
+  },
+  {
+    filename: "BONUS_2",
+    extension: ".mkv",
+    durationSeconds: 150,
+    rankedCandidates: [
+      scored("Trailer", 0.7, {
+        timecode: "0:02:30",
+        durationScore: 1,
+      }),
+      scored("Theatrical Cut", 0, { timecode: "1:30:00" }),
+    ],
+  },
+]
+
 const allHighConfidencePayload: SmartMatchModalState = {
   jobId: "job-high",
   stepId: "step-1",
   sourcePath: "/movies/Demo",
-  unrenamedFiles: [
-    {
-      filename: "BONUS_1",
-      extension: ".mkv",
-      durationSeconds: 5400,
-    },
-    {
-      filename: "BONUS_2",
-      extension: ".mkv",
-      durationSeconds: 150,
-    },
-  ],
-  candidates: [
-    { name: "Theatrical Cut", timecode: "1:30:00" },
-    { name: "Trailer", timecode: "0:02:30" },
-  ],
+  suggestions: allHighConfidenceSuggestions,
 }
+
+const mixedConfidenceSuggestions: FileSuggestion[] = [
+  {
+    filename: "BONUS_1",
+    extension: ".mkv",
+    durationSeconds: 5400,
+    rankedCandidates: [
+      scored("Theatrical Cut", 0.7, {
+        timecode: "1:30:00",
+        durationScore: 1,
+      }),
+      scored("Image Gallery", 0),
+      scored("Promotional Featurette", 0),
+    ],
+  },
+  {
+    filename: "image-gallery-disc1",
+    extension: ".mkv",
+    durationSeconds: 30,
+    rankedCandidates: [
+      scored("Image Gallery", 0.6, { filenameScore: 1 }),
+      scored("Promotional Featurette", 0),
+      scored("Theatrical Cut", 0, { timecode: "1:30:00" }),
+    ],
+  },
+  {
+    filename: "MOVIE_t99",
+    extension: ".mkv",
+    durationSeconds: 45,
+    rankedCandidates: [
+      scored("Image Gallery", 0),
+      scored("Promotional Featurette", 0),
+      scored("Theatrical Cut", 0, { timecode: "1:30:00" }),
+    ],
+  },
+]
 
 const mixedConfidencePayload: SmartMatchModalState = {
   jobId: "job-mixed",
   stepId: "step-1",
   sourcePath: "/movies/Demo",
-  unrenamedFiles: [
-    {
-      filename: "BONUS_1",
-      extension: ".mkv",
-      durationSeconds: 5400,
-    },
-    {
-      filename: "image-gallery-disc1",
-      extension: ".mkv",
-      durationSeconds: 30,
-    },
-    {
-      filename: "MOVIE_t99",
-      extension: ".mkv",
-      durationSeconds: 45,
-    },
-  ],
-  candidates: [
-    { name: "Theatrical Cut", timecode: "1:30:00" },
-    { name: "Image Gallery", timecode: undefined },
-    { name: "Promotional Featurette", timecode: undefined },
-  ],
+  suggestions: mixedConfidenceSuggestions,
 }
 
 const allLowConfidencePayload: SmartMatchModalState = {
   jobId: "job-low",
   stepId: "step-1",
   sourcePath: "/movies/Demo",
-  unrenamedFiles: [
+  suggestions: [
     {
       filename: "MOVIE_t99",
       extension: ".mkv",
       durationSeconds: 45,
+      rankedCandidates: [
+        scored("Image Gallery", 0),
+        scored("Promotional Featurette", 0),
+      ],
     },
     {
       filename: "MOVIE_t100",
       extension: ".mkv",
       durationSeconds: 60,
+      rankedCandidates: [
+        scored("Image Gallery", 0),
+        scored("Promotional Featurette", 0),
+      ],
     },
-  ],
-  candidates: [
-    { name: "Image Gallery", timecode: undefined },
-    { name: "Promotional Featurette", timecode: undefined },
   ],
 }
 
@@ -102,69 +161,76 @@ const allLowConfidencePayload: SmartMatchModalState = {
 // 3 leftover files paired against a candidate pool that includes both
 // timed extras (featurettes / music videos rejected as out of
 // tolerance) and untimed entries (audio commentaries, photo gallery,
-// jukebox). Use this story to test the styled RenameTargetPicker
-// without a real DVDCompare scrape or job run.
+// jukebox).
 const shrek2BluRayPayload: SmartMatchModalState = {
   jobId: "job-shrek2",
   stepId: "step-1",
   sourcePath: "G:\\Disc-Rips\\Shrek 2 - 4K",
-  unrenamedFiles: [
+  suggestions: [
     {
       filename: "Shrek 2-SF_01_SpotlightPussInBoots_t46",
       extension: ".mkv",
       durationSeconds: 643,
+      rankedCandidates: [
+        scored(
+          "Spotlight on Puss in Boots Featurette",
+          0.7,
+          {
+            timecode: "10:46",
+            durationScore: 1,
+            filenameScore: 0.66,
+          },
+        ),
+        scored(
+          "Audio Commentary by Directors Kelly Asbury and Conrad Vernon",
+          0,
+        ),
+        scored(
+          '"Shrek\'s Interactive Journey: II" Photo Gallery',
+          0,
+        ),
+      ],
     },
     {
       filename: "Shrek 2-SF_04_MV_01_Accidentally_t49",
       extension: ".mkv",
       durationSeconds: 188,
+      rankedCandidates: [
+        scored(
+          "Accidentally in Love Music Video by Counting Crows",
+          0.65,
+          {
+            timecode: "3:22",
+            parentName: "Shrek, Rattle & Roll",
+            durationScore: 0.85,
+            filenameScore: 0.4,
+          },
+        ),
+        scored(
+          "These Boots Are Made for Walking Music Video by Puss in Boots",
+          0,
+          {
+            timecode: "2:17",
+            parentName: "Shrek, Rattle & Roll",
+          },
+        ),
+      ],
     },
     {
       filename: "Shrek 2-SF_03_FarAwayIdol_t48",
       extension: ".mkv",
       durationSeconds: 536,
+      rankedCandidates: [
+        scored("Far Far Away Idol", 0.7, {
+          timecode: "5:53",
+          durationScore: 1,
+          filenameScore: 0.5,
+        }),
+        scored("Spotlight on Puss in Boots Featurette", 0, {
+          timecode: "10:46",
+        }),
+      ],
     },
-  ],
-  candidates: [
-    {
-      name: "Spotlight on Puss in Boots Featurette",
-      timecode: "10:46",
-    },
-    {
-      name: "Far Far Away Idol",
-      timecode: "5:53",
-    },
-    {
-      name: "Shrek, Rattle & Roll",
-    },
-    {
-      name: "Accidentally in Love Music Video by Counting Crows",
-      timecode: "3:22",
-      parentName: "Shrek, Rattle & Roll",
-    },
-    {
-      name: "These Boots Are Made for Walking Music Video by Puss in Boots",
-      timecode: "2:17",
-      parentName: "Shrek, Rattle & Roll",
-    },
-    {
-      name: 'Shrek the Musical "I Know It\'s Today"',
-      timecode: "5:36",
-      parentName: "Shrek, Rattle & Roll",
-    },
-    {
-      name: '"Shrek\'s Interactive Journey: II" Photo Gallery',
-    },
-    {
-      name: "DreamWorks Animation Jukebox: Kung Fu Panda 2, Megamind, The Penguins of Madagascar, Shrek the Musical, and Kung Fu Panda World (video game)",
-    },
-    {
-      name: "Audio Commentary by Directors Kelly Asbury and Conrad Vernon",
-    },
-    {
-      name: "Audio Commentary by Producer Aron Warner and Editor Mike Andrews",
-    },
-    { name: "* The Film" },
   ],
 }
 
@@ -172,8 +238,7 @@ const emptyPayload: SmartMatchModalState = {
   jobId: "job-empty",
   stepId: "step-1",
   sourcePath: "/movies/Demo",
-  unrenamedFiles: [],
-  candidates: [],
+  suggestions: [],
 }
 
 const meta: Meta<typeof SmartMatchModal> = {
@@ -247,14 +312,10 @@ export const Empty: Story = {
   ),
 }
 
-// Real-world disc shape (Shrek 2 UHD Blu-ray). The pool mixes timed
-// candidates (Spotlight on Puss in Boots at 10:46, Far Far Away Idol
-// at 5:53, Accidentally in Love at 3:22) with untimed entries (audio
-// commentaries, photo gallery, jukebox, * The Film). Best story for
+// Real-world disc shape (Shrek 2 UHD Blu-ray). Best story for
 // validating the styled RenameTargetPicker's two-row option layout —
 // each candidate's optional timecode chip is visible alongside the
-// confidence chip, ranked by duration proximity to the file's
-// runtime.
+// confidence chip.
 export const Shrek2BluRayDiscShape: Story = {
   parameters: { initialState: shrek2BluRayPayload },
   render: () => (

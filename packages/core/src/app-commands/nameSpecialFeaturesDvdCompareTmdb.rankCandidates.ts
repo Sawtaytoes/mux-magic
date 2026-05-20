@@ -1,55 +1,28 @@
-// Smart-suggestion ranker for the Smart Match (Fix Unnamed) modal.
-// Pure functions — no DOM, no React, no atoms. Direct port of the
-// legacy `packages/web/public/builder/js/util/specials-fuzzy.js`
-// (commit 28534ec5^) with two adaptations:
-//   1. File-side input changed from `timecode?: string` to
-//      `durationSeconds: number | null` so the modal can consume the
-//      worker-58 server payload directly without re-parsing timecodes.
-//   2. In-place `.sort()` replaced with `.toSorted()` per the repo's
-//      "no array mutation" rule.
+// Server-side ranker for the Smart Match (Fix Unnamed) flow.
 //
-// Two scoring signals:
-//   1. Duration proximity — when a candidate has a `timecode` AND the
-//      file has a runtime, score by how close the two are. A 0-second
-//      delta scores 1.0; deltas above DURATION_PROXIMITY_TOLERANCE_SECONDS
-//      degrade linearly to 0.
-//   2. Filename similarity — shared-word overlap between the file's
-//      stem and the candidate label, normalized by candidate-word count.
-//
-// When BOTH signals are available the combined score is a weighted blend
-// (duration weighs heavier — file runtime is a much stronger signal than
-// fuzzy filename overlap when DVDCompare published a runtime). When only
-// filename signal is available the score degrades to filename-only with
-// a small penalty (multiplied by FILENAME_ONLY_SCORE_FACTOR) so the UI's
-// confidence-threshold highlight correctly flags it as low-confidence.
+// Ported verbatim from the original client-side
+// `packages/web/src/components/SmartMatchModal/smartMatchScoring.ts`
+// (worker 58) — moved here by worker 25 so the server emits already-
+// ranked `ScoredCandidate[]` and the modal is a pure presenter. Algorithm
+// and constants are unchanged; only the file location and the addition
+// of `applyOrderBonus` (worker 25's order-based tie-break) are new.
+
+import type { PossibleName } from "../tools/parseSpecialFeatures.js"
 
 export const DURATION_PROXIMITY_TOLERANCE_SECONDS = 90
 export const DURATION_WEIGHT = 0.7
 export const FILENAME_ONLY_SCORE_FACTOR = 0.6
 export const LOW_CONFIDENCE_THRESHOLD = 0.6
+// Small enough to never override a real duration signal — it only breaks
+// ties between equally-scored candidates by preferring the candidate
+// whose DVDCompare-listing position matches the file's sorted-folder-
+// listing position.
+export const ORDER_BONUS = 0.05
 
 export type Candidate = {
   name: string
   timecode?: string
-  // Name of the DVDCompare parent entry this candidate sits under, when
-  // the source page nested it (e.g. "Shrek, Rattle & Roll:" containing
-  // three indented music videos). Drives the Smart Match dropdown's
-  // hierarchy display so the user can see that this candidate is a
-  // child of an enclosing parent and reason about duplicates more
-  // easily. Undefined for top-level entries.
   parentName?: string
-}
-
-export type UnrenamedFile = {
-  filename: string
-  // File extension including the dot (e.g. ".mkv"). Empty string if
-  // the file has no extension. Needed at modal-render time to build
-  // the correct on-disk paths in oldPath/newPath — the server-side
-  // `filename` is already extension-stripped by `FileInfo`'s
-  // `getLastItemInFilePath`, so without this slot the rename POST
-  // hits ENOENT.
-  extension: string
-  durationSeconds: number | null
 }
 
 export type ScoredCandidate = {
@@ -59,19 +32,6 @@ export type ScoredCandidate = {
   filenameScore: number
 }
 
-export type FileSuggestion = {
-  filename: string
-  // File extension including the dot (e.g. ".mkv"). Carried alongside
-  // the stem so the modal can rebuild the on-disk path for the
-  // rename POST without re-deriving from a stem that has no
-  // extension to begin with (see UnrenamedFile.extension).
-  extension: string
-  durationSeconds: number | null
-  rankedCandidates: ScoredCandidate[]
-}
-
-// Parse a timecode string (e.g. "1:30:45" or "12:34" or "45") into total
-// seconds. Returns NaN for unparseable input so callers can branch.
 export const parseTimecodeToSeconds = (
   timecode: string | undefined | null,
 ): number => {
@@ -139,9 +99,6 @@ export const scoreFilenameOverlap = ({
   return matchingWords.length / candidateWords.length
 }
 
-// Range 0..1. NaN inputs (or missing timecode / null duration) yield NaN
-// so callers can branch — 0 would imply "we know they're far apart",
-// NaN means "we don't know."
 export const scoreDurationProximity = ({
   candidateTimecode,
   fileDurationSeconds,
@@ -230,25 +187,53 @@ export const rankCandidatesForFile = ({
   )
 }
 
-// Top-level helper used by the modal. Returns per-file ranked
-// suggestion arrays — empty when either input list is empty (the modal
-// renders an "empty state" in that case).
-export const rankSuggestions = ({
-  candidates,
-  unrenamedFiles,
+// Order-based tie-break: when a file at sorted-listing position
+// `fileIndex` is ranked against DVDCompare candidates and one of those
+// candidates sits at the same index in the published feature list,
+// nudge that candidate's confidence by ORDER_BONUS and re-sort.
+//
+// The bonus is small (0.05) — well under the gap a real duration signal
+// produces — so it only flips the order between candidates that were
+// already neck-and-neck (e.g. two filename-only matches with identical
+// word overlap).
+export const applyOrderBonus = ({
+  rankedCandidates,
+  fileIndex,
+  dvdCompareOrder,
 }: {
-  candidates: Candidate[]
-  unrenamedFiles: UnrenamedFile[]
-}): FileSuggestion[] =>
-  unrenamedFiles.map(
-    ({ filename, extension, durationSeconds }) => ({
-      filename,
-      extension,
-      durationSeconds,
-      rankedCandidates: rankCandidatesForFile({
-        fileDurationSeconds: durationSeconds,
-        filename,
-        candidates,
-      }),
-    }),
+  rankedCandidates: ScoredCandidate[]
+  fileIndex: number
+  dvdCompareOrder: string[]
+}): ScoredCandidate[] => {
+  if (
+    fileIndex < 0 ||
+    fileIndex >= dvdCompareOrder.length
+  ) {
+    return rankedCandidates
+  }
+  const expectedName = dvdCompareOrder[fileIndex]
+  const adjusted = rankedCandidates.map((scored) =>
+    scored.candidate.name === expectedName
+      ? {
+          ...scored,
+          confidence: scored.confidence + ORDER_BONUS,
+        }
+      : scored,
   )
+  return adjusted.toSorted(
+    (firstEntry, secondEntry) =>
+      secondEntry.confidence - firstEntry.confidence,
+  )
+}
+
+// Convenience: convert a list of `PossibleName` (the type
+// `parseSpecialFeatures` emits) into the `Candidate` shape this scorer
+// expects. Kept thin so callers don't redo the field rename inline.
+export const toCandidates = (
+  possibleNames: PossibleName[],
+): Candidate[] =>
+  possibleNames.map((entry) => ({
+    name: entry.name,
+    timecode: entry.timecode,
+    parentName: entry.parentName,
+  }))

@@ -13,7 +13,7 @@ Worker 58 / Part B ported this modal from the v1.0.0 legacy `packages/web/public
 
 ## Behaviour
 
-- **Open** → set `smartMatchModalAtom` to `{ jobId, stepId, sourcePath, unrenamedFiles, candidates }`. The modal opens; per-file ranked suggestions are computed via `smartMatchScoring.rankSuggestions`.
+- **Open** → set `smartMatchModalAtom` to `{ jobId, stepId, sourcePath, suggestions }`. Worker 25 moved scoring server-side: `suggestions` is `FileSuggestion[]` with `rankedCandidates: ScoredCandidate[]` pre-baked, so the modal is a pure presenter.
 - **Per-row include checkbox** → high-confidence rows (≥ `LOW_CONFIDENCE_THRESHOLD = 0.6`) are pre-checked; low-confidence rows are pre-unchecked so the user explicitly opts-in to a sketchy match.
 - **Per-row override dropdown** → lists every candidate in `name — XX%` form, ordered by confidence. Picking a different option swaps the rename target for that row.
 - **Per-row Play button** → opens the standalone `VideoPreviewModal` overlay for that file (does NOT commit any rename).
@@ -26,19 +26,12 @@ Worker 58 / Part B ported this modal from the v1.0.0 legacy `packages/web/public
 
 | Atom | Role |
 |------|------|
-| `smartMatchModalAtom` | `{ jobId, stepId, sourcePath, unrenamedFiles, candidates } \| null` — visibility + payload |
+| `smartMatchModalAtom` | `{ jobId, stepId, sourcePath, suggestions } \| null` — visibility + pre-ranked payload |
 | `videoPreviewModalAtom` | Set by the per-row Play button to open the standalone preview |
 
 ## Scoring
 
-`smartMatchScoring.ts` (also worker 58, ported verbatim from `specials-fuzzy.js`) supplies:
-
-| Constant | Value | Role |
-|----------|-------|------|
-| `DURATION_PROXIMITY_TOLERANCE_SECONDS` | `90` | Delta beyond which duration proximity scores 0 |
-| `DURATION_WEIGHT` | `0.7` | Weight of duration vs filename when both signals are available |
-| `FILENAME_ONLY_SCORE_FACTOR` | `0.6` | Penalty applied when only filename overlap is available |
-| `LOW_CONFIDENCE_THRESHOLD` | `0.6` | Below this score: yellow row + opt-out by default |
+Worker 25 relocated the scorer to `packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.rankCandidates.ts` (server-side). The modal reads `rankedCandidates: ScoredCandidate[]` straight from the SSE payload — no client-side ranking pass. The web side keeps `LOW_CONFIDENCE_THRESHOLD = 0.6` in `smartMatchTypes.ts` purely for the UI threshold check (the server uses the same constant).
 
 ## Server endpoint
 

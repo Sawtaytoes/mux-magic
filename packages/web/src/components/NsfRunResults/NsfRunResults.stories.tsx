@@ -80,21 +80,55 @@ const exampleSummary: NsfSummaryRecord = {
     {
       filename: "Shrek 2-SF_01_SpotlightPussInBoots_t46",
       durationSeconds: 643.328,
-      candidates: [
-        "Spotlight on Puss in Boots Featurette",
-        "Audio Commentary by Directors Kelly Asbury and Conrad Vernon",
+      rankedCandidates: [
+        {
+          candidate: {
+            name: "Spotlight on Puss in Boots Featurette",
+            timecode: undefined,
+          },
+          confidence: 0.6,
+          durationScore: Number.NaN,
+          filenameScore: 1,
+        },
+        {
+          candidate: {
+            name: "Audio Commentary by Directors Kelly Asbury and Conrad Vernon",
+            timecode: undefined,
+          },
+          confidence: 0,
+          durationScore: Number.NaN,
+          filenameScore: 0,
+        },
       ],
     },
     {
       filename: "Shrek 2-SF_03_FarAwayIdol_t48",
       durationSeconds: 535.584,
-      candidates: ["Far Far Away Idol"],
+      rankedCandidates: [
+        {
+          candidate: {
+            name: "Far Far Away Idol",
+            timecode: undefined,
+          },
+          confidence: 0.4,
+          durationScore: Number.NaN,
+          filenameScore: 0,
+        },
+      ],
     },
     {
       filename: "Shrek 2-SF_04_MV_01_Accidentally_t49",
       durationSeconds: 187.896,
-      candidates: [
-        "Accidentally in Love Music Video by Counting Crows",
+      rankedCandidates: [
+        {
+          candidate: {
+            name: "Accidentally in Love Music Video by Counting Crows",
+            timecode: undefined,
+          },
+          confidence: 0.3,
+          durationScore: Number.NaN,
+          filenameScore: 0,
+        },
       ],
     },
   ],
@@ -122,8 +156,8 @@ export const MixedWithCandidates: Story = {
 }
 
 // Leftover files exist but DVDCompare yielded no untimed suggestions.
-// Each unnamedFileCandidate carries an empty `candidates` array — the
-// modal still opens so the user can rename manually via the text
+// Each unnamedFileCandidate carries an empty `rankedCandidates` array —
+// the modal still opens so the user can rename manually via the text
 // inputs (see SmartMatchModal's no-candidates branch).
 export const LeftoversWithNoCandidates: Story = {
   args: {
@@ -139,12 +173,12 @@ export const LeftoversWithNoCandidates: Story = {
           filename:
             "Shrek 2-SF_01_SpotlightPussInBoots_t46",
           durationSeconds: 643,
-          candidates: [],
+          rankedCandidates: [],
         },
         {
           filename: "Shrek 2-SF_03_FarAwayIdol_t48",
           durationSeconds: 535,
-          candidates: [],
+          rankedCandidates: [],
         },
       ],
     },
