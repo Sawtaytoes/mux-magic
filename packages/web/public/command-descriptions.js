@@ -26,6 +26,14 @@ window.commandDescriptions = {
       "videoLanguage": "A 3-letter ISO-6392 language code for video tracks. All tracks will be labeled with this language."
     }
   },
+  "convertWavToFlac": {
+    "summary": "Encode .wav files to FLAC in-place (strictly lossless)",
+    "fields": {
+      "sourcePath": "Directory containing .wav files to encode to FLAC, or a directory of directories of .wav files when used with isRecursive.",
+      "isRecursive": "Recursively descends one level into subdirectories looking for .wav files.",
+      "isSourceDeleted": "When true, deletes the source .wav file after a successful FLAC encode. Defaults to false; the original .wav is kept by default."
+    }
+  },
   "copyFiles": {
     "summary": "Copy files (and optionally folders) from source to destination, with optional regex filtering and renaming",
     "fields": {
