@@ -22,6 +22,35 @@ type RowState = {
   // the next Apply attempt or on any row mutation.
   collisionWith: string | null
   isApplied: boolean
+  // Worker 6f: ✏ toggle swaps the candidate picker for a free-text
+  // input. Mirrors the legacy v1 specials-mapping-modal (HTML build,
+  // pre-React) which kept picker selection and typed name as TWO
+  // independent fields: the picker selection is preserved while the
+  // user edits, and Apply uses the typed value only while `isEditing`
+  // is true AND `customName` is non-empty (legacy "custom wins when
+  // input is visible"). Unlike legacy, toggling off RETAINS
+  // `customName` so the user can flip back to the picker for a quick
+  // compare without losing typed work.
+  isEditing: boolean
+  customName: string
+}
+
+// Worker 6f: the effective rename target. Custom name wins only while
+// the input is visible AND non-empty (legacy semantic); otherwise the
+// picker selection is the source of truth. Zero-candidate rows have no
+// picker and always treat `selectedCandidateName` as the typed value
+// (the cell's text input writes there directly — see render).
+const resolveDesiredName = (
+  row: RowState,
+  candidateCount: number,
+): string => {
+  if (candidateCount === 0) {
+    return row.selectedCandidateName
+  }
+  if (row.isEditing && row.customName.trim().length > 0) {
+    return row.customName
+  }
+  return row.selectedCandidateName
 }
 
 const joinPath = (
@@ -110,6 +139,11 @@ const buildInitialRows = (
           error: null,
           collisionWith: null,
           isApplied: false,
+          // Worker 6f: rows start in picker mode with an empty custom
+          // slot. The zero-candidates branch ignores both fields and
+          // writes its input directly to `selectedCandidateName`.
+          isEditing: false,
+          customName: "",
         },
       ]
     }),
@@ -173,7 +207,12 @@ export const SmartMatchModal = () => {
       .map((suggestion) => {
         const row = rows.get(suggestion.filename)
         if (!row?.isIncluded || row.isApplied) return null
-        const desiredBase = row.selectedCandidateName.trim()
+        // Worker 6f: pull the effective name through the picker/custom
+        // resolver so typed values win while ✏ is active.
+        const desiredBase = resolveDesiredName(
+          row,
+          suggestion.rankedCandidates.length,
+        ).trim()
         if (desiredBase.length === 0) return null
         // Both sides must include the file's extension. The server's
         // FileInfo.filename is extension-stripped; appending
@@ -546,46 +585,143 @@ export const SmartMatchModal = () => {
                       )}
                     </td>
                     <td className="px-2 py-1.5 align-top">
-                      {suggestion.rankedCandidates
-                        .length === 0 ? (
-                        <input
-                          type="text"
-                          aria-label={`Rename target for ${suggestion.filename}`}
-                          placeholder="Type a new name…"
-                          value={row.selectedCandidateName}
-                          disabled={
-                            row.isApplied || isApplying
-                          }
-                          onChange={(event) =>
-                            updateRow(suggestion.filename, {
-                              selectedCandidateName:
-                                event.target.value,
-                              isIncluded:
-                                event.target.value.trim()
-                                  .length > 0,
-                            })
-                          }
-                          className="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500"
-                        />
-                      ) : (
-                        <RenameTargetPicker
-                          candidates={
-                            suggestion.rankedCandidates
-                          }
-                          selectedName={
-                            row.selectedCandidateName
-                          }
-                          onSelect={(name) =>
-                            updateRow(suggestion.filename, {
-                              selectedCandidateName: name,
-                            })
-                          }
-                          isDisabled={
-                            row.isApplied || isApplying
-                          }
-                          ariaLabel={`Rename target for ${suggestion.filename}`}
-                        />
-                      )}
+                      <div className="flex items-start gap-1.5">
+                        <div className="flex-1 min-w-0">
+                          {suggestion.rankedCandidates
+                            .length === 0 ? (
+                            <input
+                              type="text"
+                              aria-label={`Rename target for ${suggestion.filename}`}
+                              placeholder="Type a new name…"
+                              value={
+                                row.selectedCandidateName
+                              }
+                              disabled={
+                                row.isApplied || isApplying
+                              }
+                              onChange={(event) =>
+                                updateRow(
+                                  suggestion.filename,
+                                  {
+                                    selectedCandidateName:
+                                      event.target.value,
+                                    isIncluded:
+                                      event.target.value.trim()
+                                        .length > 0,
+                                  },
+                                )
+                              }
+                              className="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500"
+                            />
+                          ) : row.isEditing ? (
+                            <input
+                              type="text"
+                              data-smart-match-custom-input={
+                                suggestion.filename
+                              }
+                              aria-label={`Custom rename target for ${suggestion.filename}`}
+                              placeholder="Type a custom name…"
+                              value={row.customName}
+                              disabled={
+                                row.isApplied || isApplying
+                              }
+                              onChange={(event) =>
+                                updateRow(
+                                  suggestion.filename,
+                                  {
+                                    customName:
+                                      event.target.value,
+                                    // Worker 6f: typing in ✏ mode opts
+                                    // the row in (matches the
+                                    // zero-candidates branch's UX) but
+                                    // does NOT flip off on empty — the
+                                    // picker selection may still be a
+                                    // valid include target.
+                                    isIncluded:
+                                      event.target.value.trim()
+                                        .length > 0 ||
+                                      row.isIncluded,
+                                  },
+                                )
+                              }
+                              onKeyDown={(event) => {
+                                // Worker 6f: legacy v1 commit-on-Enter
+                                // — blur the input so the user can tab
+                                // through to Apply without an extra
+                                // click. Doesn't toggle ✏ off; typed
+                                // value stays the active rename target.
+                                if (event.key === "Enter") {
+                                  event.preventDefault()
+                                  event.currentTarget.blur()
+                                }
+                              }}
+                              className="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-blue-500 rounded px-1.5 py-1 focus:outline-none"
+                            />
+                          ) : (
+                            <RenameTargetPicker
+                              candidates={
+                                suggestion.rankedCandidates
+                              }
+                              selectedName={
+                                row.selectedCandidateName
+                              }
+                              onSelect={(name) =>
+                                updateRow(
+                                  suggestion.filename,
+                                  {
+                                    selectedCandidateName:
+                                      name,
+                                  },
+                                )
+                              }
+                              isDisabled={
+                                row.isApplied || isApplying
+                              }
+                              ariaLabel={`Rename target for ${suggestion.filename}`}
+                            />
+                          )}
+                        </div>
+                        {/* Worker 6f: ✏ toggle only renders when candidates
+                            exist — the zero-candidates branch already shows
+                            a text input, so there's nothing to swap back to.
+                            Icon mirrors legacy v1: ✏ enters edit, ↩ returns
+                            to the picker. `customName` is retained across
+                            toggles (hybrid: legacy fields, doc retention). */}
+                        {suggestion.rankedCandidates
+                          .length > 0 && (
+                          <button
+                            type="button"
+                            data-smart-match-edit-toggle={
+                              suggestion.filename
+                            }
+                            aria-label={
+                              row.isEditing
+                                ? `Use candidate picker for ${suggestion.filename}`
+                                : `Type a custom name for ${suggestion.filename}`
+                            }
+                            aria-pressed={row.isEditing}
+                            title={
+                              row.isEditing
+                                ? "Back to selection"
+                                : "Enter a custom name"
+                            }
+                            disabled={
+                              row.isApplied || isApplying
+                            }
+                            onClick={() =>
+                              updateRow(
+                                suggestion.filename,
+                                {
+                                  isEditing: !row.isEditing,
+                                },
+                              )
+                            }
+                            className="text-cyan-400 hover:text-cyan-300 disabled:opacity-40 disabled:cursor-not-allowed text-[13px] leading-none font-medium px-1.5 py-1"
+                          >
+                            {row.isEditing ? "↩" : "✏"}
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-2 py-1.5 align-top text-center">
                       <span

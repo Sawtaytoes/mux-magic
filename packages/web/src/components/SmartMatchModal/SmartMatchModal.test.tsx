@@ -308,6 +308,79 @@ describe("SmartMatchModal", () => {
     )
   })
 
+  test("toggling ✏ swaps the picker for a text input; typed name is the one POSTed on apply (worker 6f)", async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ isOk: true }), {
+          status: 200,
+        }),
+      )
+    const store = createStore()
+    store.set(smartMatchModalAtom, mixedPayload)
+    renderWithStore(store)
+    // BONUS_1 defaults to picker (Theatrical Cut). Clicking ✏
+    // should reveal a custom input and let the user type a name
+    // that wins on apply even though candidates exist.
+    const editToggle = document.querySelector(
+      '[data-smart-match-edit-toggle="BONUS_1"]',
+    ) as HTMLButtonElement
+    expect(editToggle).not.toBeNull()
+    await user.click(editToggle)
+    const customInput = (await screen.findByLabelText(
+      "Custom rename target for BONUS_1",
+    )) as HTMLInputElement
+    expect(customInput).toBeVisible()
+    // Hybrid model: input starts empty (legacy fields semantic).
+    expect(customInput.value).toBe("")
+    await user.type(
+      customInput,
+      "Director's Commentary -other",
+    )
+    await user.click(
+      screen.getByRole("button", { name: /Apply/ }),
+    )
+    await waitFor(() =>
+      expect(fetchSpy).toHaveBeenCalledTimes(1),
+    )
+    const [, init] = fetchSpy.mock.calls[0]
+    const body = JSON.parse(
+      (init as RequestInit).body as string,
+    ) as { oldPath: string; newPath: string }
+    expect(body.newPath).toBe(
+      "/movies/Demo/Director's Commentary -other.mkv",
+    )
+  })
+
+  test("toggling ✏ off retains the typed value for the next toggle (worker 6f hybrid retention)", async () => {
+    const user = userEvent.setup()
+    const store = createStore()
+    store.set(smartMatchModalAtom, mixedPayload)
+    renderWithStore(store)
+    const editToggle = document.querySelector(
+      '[data-smart-match-edit-toggle="BONUS_1"]',
+    ) as HTMLButtonElement
+    await user.click(editToggle)
+    const customInput = (await screen.findByLabelText(
+      "Custom rename target for BONUS_1",
+    )) as HTMLInputElement
+    await user.type(customInput, "My Custom Take")
+    // Toggle back to picker — typed value should NOT be cleared.
+    await user.click(editToggle)
+    expect(
+      screen.queryByLabelText(
+        "Custom rename target for BONUS_1",
+      ),
+    ).toBeNull()
+    // Toggle ✏ on again — the previously typed value is still there.
+    await user.click(editToggle)
+    const customInputAfter = (await screen.findByLabelText(
+      "Custom rename target for BONUS_1",
+    )) as HTMLInputElement
+    expect(customInputAfter.value).toBe("My Custom Take")
+  })
+
   test("Close button clears the atom", async () => {
     const user = userEvent.setup()
     const store = createStore()
