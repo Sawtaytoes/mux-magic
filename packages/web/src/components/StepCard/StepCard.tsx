@@ -4,7 +4,7 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useAtomValue, useSetAtom } from "jotai"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
@@ -79,6 +79,37 @@ export const StepCard = ({
         : prev,
     )
   }
+  // One-shot pulse on the falsy → true transition of this step's
+  // promptData.isMinimized, so a user who dismissed the modal by
+  // accident (Escape, backdrop click) sees a visual breadcrumb on
+  // the badge where their prompt went. Not fired on first render of
+  // an already-minimized prompt — see types.ts: a brand-new prompt
+  // arrives with isMinimized undefined, so falsy→true only happens
+  // on user-driven dismissal.
+  const isCurrentlyMinimized = Boolean(
+    isPausedForPrompt && promptData?.isMinimized,
+  )
+  const prevIsMinimizedRef = useRef(isCurrentlyMinimized)
+  const [isJustMinimized, setIsJustMinimized] =
+    useState(false)
+  useEffect(() => {
+    const hasJustMinimized =
+      !prevIsMinimizedRef.current && isCurrentlyMinimized
+    prevIsMinimizedRef.current = isCurrentlyMinimized
+    if (!hasJustMinimized) return
+    const isReducedMotion =
+      window.matchMedia?.(
+        "(prefers-reduced-motion: reduce)",
+      ).matches ?? false
+    if (isReducedMotion) return
+    setIsJustMinimized(true)
+    const timer = window.setTimeout(() => {
+      setIsJustMinimized(false)
+    }, 900)
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [isCurrentlyMinimized])
   const isRunDisabled =
     !step.command ||
     (isGloballyRunning && !isThisStepRunning)
@@ -253,7 +284,10 @@ export const StepCard = ({
             onClick={resumePrompt}
             title="Resume — reopen the prompt for this step"
             aria-label="Resume — reopen the prompt for this step"
-            className="cursor-pointer"
+            data-just-minimized={
+              isJustMinimized ? "true" : undefined
+            }
+            className={`cursor-pointer rounded-full${isJustMinimized ? " paused-badge-just-minimized" : ""}`}
           >
             <StatusBadge status="paused" />
           </button>
