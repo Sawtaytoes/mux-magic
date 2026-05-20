@@ -3,7 +3,7 @@ import { PortalDropdown } from "../PortalDropdown/PortalDropdown"
 import {
   LOW_CONFIDENCE_THRESHOLD,
   type ScoredCandidate,
-} from "./smartMatchScoring"
+} from "./smartMatchTypes"
 
 // Styled "Rename to" picker for the SmartMatchModal. Replaces the
 // native <select> with a PortalDropdown-based trigger so each option

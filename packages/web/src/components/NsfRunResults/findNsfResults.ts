@@ -11,6 +11,8 @@
 // — narrowed to the fields the UI reads so unrelated server changes
 // don't ripple into web typecheck.
 
+import type { ScoredCandidate } from "../SmartMatchModal/smartMatchTypes"
+
 export type NsfSummaryRecord = {
   unrenamedFilenames: string[]
   possibleNames: Array<{
@@ -25,7 +27,9 @@ export type NsfSummaryRecord = {
     // fall back to "" when undefined.
     extension?: string
     durationSeconds: number | null
-    candidates: string[]
+    // Worker 25: server now emits already-ranked candidates with
+    // confidence + per-signal scores. Modal renders these directly.
+    rankedCandidates: ScoredCandidate[]
   }>
 }
 

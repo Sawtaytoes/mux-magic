@@ -1,5 +1,5 @@
 import { useAtom, useSetAtom } from "jotai"
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { apiBase } from "../../apiBase"
 import { videoPreviewModalAtom } from "../../components/VideoPreviewModal/videoPreviewModalAtom"
 import { appliedSmartMatchRenamesByJobIdAtom } from "./appliedSmartMatchRenamesAtom"
@@ -8,8 +8,7 @@ import { smartMatchModalAtom } from "./smartMatchModalAtom"
 import {
   type FileSuggestion,
   LOW_CONFIDENCE_THRESHOLD,
-  rankSuggestions,
-} from "./smartMatchScoring"
+} from "./smartMatchTypes"
 
 // Per-row state the user can edit. Distinguishes "off by default for
 // low confidence" (off) from explicitly skipped (off after toggle).
@@ -102,16 +101,12 @@ export const SmartMatchModal = () => {
     appliedSmartMatchRenamesByJobIdAtom,
   )
 
-  const suggestions = useMemo<FileSuggestion[]>(
-    () =>
-      state === null
-        ? []
-        : rankSuggestions({
-            candidates: state.candidates,
-            unrenamedFiles: state.unrenamedFiles,
-          }),
-    [state],
-  )
+  // Worker 25: suggestions arrive pre-ranked from the server payload —
+  // the duration-weighted scorer + order tie-break runs in
+  // `nameSpecialFeaturesDvdCompareTmdb.rankCandidates.ts` before the
+  // summary event is emitted, so the modal is a pure presenter.
+  const suggestions: FileSuggestion[] =
+    state?.suggestions ?? []
 
   const [rows, setRows] = useState<Map<string, RowState>>(
     () => buildInitialRows(suggestions),
