@@ -6,7 +6,7 @@ import {
   findStepById,
   isGroup,
 } from "../jobs/sequenceUtils"
-import { toYamlStr } from "../jobs/yamlCodec"
+import { loadYamlFromText, toYamlStr } from "../jobs/yamlCodec"
 import { commandsAtom } from "../state/commandsAtom"
 import { dragReorderAtom } from "../state/dragAtoms"
 import {
@@ -450,9 +450,6 @@ export const useBuilderActions = () => {
       const text = await navigator.clipboard.readText()
       if (!text) return
 
-      const { loadYamlFromText } = await import(
-        "../jobs/yamlCodec"
-      )
       const commands = store.get(commandsAtom)
       const currentPaths = store.get(pathsAtom)
 
