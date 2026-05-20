@@ -1,13 +1,18 @@
 import type { PossibleName } from "../tools/parseSpecialFeatures.js"
+import type { ScoredCandidate } from "./nameSpecialFeaturesDvdCompareTmdb.rankCandidates.js"
 
 // A candidate association for an unnamed file — used in the follow-up
-// association report when files remain unnamed after the main pass and
-// there are untimed DVDCompare entries that could match them.
+// association report when files remain unnamed after the main pass.
 //
-// `durationSeconds` carries the per-file runtime so the Smart Match modal
-// (worker 58 / Part B) can rank candidates by duration proximity without
-// re-probing /files/list at render time. Null when mediainfo couldn't
-// resolve a duration for this file.
+// `rankedCandidates` is the duration-weighted scored output of
+// `rankCandidatesForFile` (with worker 25's order tie-break applied).
+// The Smart Match modal renders these directly — no client-side
+// re-ranking — so confidence + per-signal scores match server intent
+// byte-for-byte.
+//
+// `durationSeconds` carries the per-file runtime so the modal can show
+// the measured runtime alongside each candidate's published timecode.
+// Null when mediainfo couldn't resolve a duration for this file.
 export type UnnamedFileCandidate = {
   filename: string
   // File extension including the dot (e.g. ".mkv"). Empty string when
@@ -18,7 +23,7 @@ export type UnnamedFileCandidate = {
   // `oldPath`/`newPath` and the rename fails with ENOENT.
   extension: string
   durationSeconds: number | null
-  candidates: string[]
+  rankedCandidates: ScoredCandidate[]
 }
 
 // Per-rename emission shape. The pipeline emits one of these per file
