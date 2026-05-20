@@ -1,40 +1,92 @@
 import { useStore } from "jotai"
 import { useHydrateAtoms } from "jotai/utils"
-import { useEffect } from "react"
+import { lazy, Suspense, useEffect, useRef } from "react"
 
 import { COMMANDS } from "../../commands/commands"
-import { AudioPreviewModal } from "../../components/AudioPreviewModal/AudioPreviewModal"
-import { CommandHelpModal } from "../../components/CommandHelpModal/CommandHelpModal"
 import { CommandPicker } from "../../components/CommandPicker/CommandPicker"
-import { EditVariablesModal } from "../../components/EditVariablesModal/EditVariablesModal"
 import { EnumPicker } from "../../components/EnumPicker/EnumPicker"
-import { FileExplorerModal } from "../../components/FileExplorerModal/FileExplorerModal"
-import { ImagePreviewModal } from "../../components/ImagePreviewModal/ImagePreviewModal"
 import { LinkPicker } from "../../components/LinkPicker/LinkPicker"
-import { LoadModal } from "../../components/LoadModal/LoadModal"
-import { LookupModal } from "../../components/LookupModal/LookupModal"
 import { PageHeader } from "../../components/PageHeader/PageHeader"
 import { PathPicker } from "../../components/PathPicker/PathPicker"
-import { PromptModal } from "../../components/PromptModal/PromptModal"
-import { SequenceRunModal } from "../../components/SequenceRunModal/SequenceRunModal"
-import { SmartMatchModal } from "../../components/SmartMatchModal/SmartMatchModal"
 import { VariablesSidebar } from "../../components/VariablesSidebar/VariablesSidebar"
-import { VideoPreviewModal } from "../../components/VideoPreviewModal/VideoPreviewModal"
-import { YamlModal } from "../../components/YamlModal/YamlModal"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
 import { usePageTitle } from "../../hooks/usePageTitle"
 import { decodeSeqJsonParam } from "../../jobs/decodeSeqJsonParam"
 import { decodeSeqParam } from "../../jobs/decodeSeqParam"
 import { encodeSeqJsonParam } from "../../jobs/encodeSeqJsonParam"
-import {
-  buildSequenceObject,
-  loadYamlFromText,
-} from "../../jobs/yamlCodec"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import { variablesAtom } from "../../state/variablesAtom"
 import { BuilderSequenceList } from "../BuilderSequenceList/BuilderSequenceList"
+
+// Each modal is atom-gated to closed-by-default, so they never appear on
+// first paint. Lazy-loading them keeps `yamlCodec` + `js-yaml` + the per-modal
+// component code out of the main chunk; rolldown emits `<link rel=
+// "modulepreload">` for each so the user-perceived open latency stays
+// imperceptible. The `.then((mod) => ({ default: mod.X }))` adapter exists
+// because every modal is a named export (project convention — see worker 07)
+// but React.lazy only accepts a default export.
+const LoadModal = lazy(() =>
+  import("../../components/LoadModal/LoadModal").then(
+    (mod) => ({ default: mod.LoadModal }),
+  ),
+)
+const YamlModal = lazy(() =>
+  import("../../components/YamlModal/YamlModal").then(
+    (mod) => ({ default: mod.YamlModal }),
+  ),
+)
+const SequenceRunModal = lazy(() =>
+  import(
+    "../../components/SequenceRunModal/SequenceRunModal"
+  ).then((mod) => ({ default: mod.SequenceRunModal })),
+)
+const SmartMatchModal = lazy(() =>
+  import(
+    "../../components/SmartMatchModal/SmartMatchModal"
+  ).then((mod) => ({ default: mod.SmartMatchModal })),
+)
+const FileExplorerModal = lazy(() =>
+  import(
+    "../../components/FileExplorerModal/FileExplorerModal"
+  ).then((mod) => ({ default: mod.FileExplorerModal })),
+)
+const EditVariablesModal = lazy(() =>
+  import(
+    "../../components/EditVariablesModal/EditVariablesModal"
+  ).then((mod) => ({ default: mod.EditVariablesModal })),
+)
+const CommandHelpModal = lazy(() =>
+  import(
+    "../../components/CommandHelpModal/CommandHelpModal"
+  ).then((mod) => ({ default: mod.CommandHelpModal })),
+)
+const LookupModal = lazy(() =>
+  import("../../components/LookupModal/LookupModal").then(
+    (mod) => ({ default: mod.LookupModal }),
+  ),
+)
+const PromptModal = lazy(() =>
+  import("../../components/PromptModal/PromptModal").then(
+    (mod) => ({ default: mod.PromptModal }),
+  ),
+)
+const AudioPreviewModal = lazy(() =>
+  import(
+    "../../components/AudioPreviewModal/AudioPreviewModal"
+  ).then((mod) => ({ default: mod.AudioPreviewModal })),
+)
+const ImagePreviewModal = lazy(() =>
+  import(
+    "../../components/ImagePreviewModal/ImagePreviewModal"
+  ).then((mod) => ({ default: mod.ImagePreviewModal })),
+)
+const VideoPreviewModal = lazy(() =>
+  import(
+    "../../components/VideoPreviewModal/VideoPreviewModal"
+  ).then((mod) => ({ default: mod.VideoPreviewModal })),
+)
 
 // ─── BuilderPage ──────────────────────────────────────────────────────────────
 
@@ -56,42 +108,57 @@ export const BuilderPage = () => {
   // exactly once on mount, never re-runs when atom values change.
   const store = useStore()
 
+  // Cached yamlCodec module — populated by the dynamic import in either
+  // useEffect below, whichever resolves first. Worker 79 moved `js-yaml`
+  // out of the main chunk; both effects share the dynamic import via
+  // ESM's module cache so only one network/parse round-trip happens.
+  type YamlCodecModule =
+    typeof import("../../jobs/yamlCodec")
+  const codecRef = useRef<YamlCodecModule | null>(null)
+
   useEffect(() => {
-    const params = new URLSearchParams(
-      window.location.search,
-    )
-    const decoded =
-      decodeSeqJsonParam(params.get("seqJson")) ??
-      decodeSeqParam(params.get("seq"))
-    if (!decoded) return
-
-    try {
-      const result = loadYamlFromText(
-        decoded,
-        store.get(commandsAtom),
-        store.get(pathsAtom),
+    void (async () => {
+      const params = new URLSearchParams(
+        window.location.search,
       )
-      store.set(stepsAtom, result.steps)
-      // Write to variablesAtom so non-path types loaded from ?seq= survive
-      // (worker 35: dvdCompareId, future TMDB/AniDB).
-      store.set(variablesAtom, result.paths)
+      const decoded =
+        decodeSeqJsonParam(params.get("seqJson")) ??
+        decodeSeqParam(params.get("seq"))
+      if (!decoded) return
 
-      // Intentionally NOT stripping the query param from the URL. Earlier
-      // code did so (to prevent refresh from clobbering edits) but that
-      // caused a worse regression: refresh removed both the query string
-      // AND the loaded YAML, leaving an empty builder. The acceptable
-      // trade-off is "refresh re-loads original URL state and discards
-      // post-load edits" — still better than "refresh loses everything."
-      // Live URL syncing in the writer effect below makes that trade-off
-      // moot in practice.
-    } catch (error) {
-      // Invalid payload shouldn't crash the page — the user can paste a
-      // corrected version via LoadModal. Surface in console for debugging.
-      console.error(
-        "Failed to load sequence from URL parameter:",
-        error,
-      )
-    }
+      const codec =
+        codecRef.current ??
+        (await import("../../jobs/yamlCodec"))
+      codecRef.current = codec
+
+      try {
+        const result = codec.loadYamlFromText(
+          decoded,
+          store.get(commandsAtom),
+          store.get(pathsAtom),
+        )
+        store.set(stepsAtom, result.steps)
+        // Write to variablesAtom so non-path types loaded from ?seq= survive
+        // (worker 35: dvdCompareId, future TMDB/AniDB).
+        store.set(variablesAtom, result.paths)
+
+        // Intentionally NOT stripping the query param from the URL. Earlier
+        // code did so (to prevent refresh from clobbering edits) but that
+        // caused a worse regression: refresh removed both the query string
+        // AND the loaded YAML, leaving an empty builder. The acceptable
+        // trade-off is "refresh re-loads original URL state and discards
+        // post-load edits" — still better than "refresh loses everything."
+        // Live URL syncing in the writer effect below makes that trade-off
+        // moot in practice.
+      } catch (error) {
+        // Invalid payload shouldn't crash the page — the user can paste a
+        // corrected version via LoadModal. Surface in console for debugging.
+        console.error(
+          "Failed to load sequence from URL parameter:",
+          error,
+        )
+      }
+    })()
   }, [store])
 
   // Live URL syncing: on every change to steps / paths, synchronously
@@ -120,8 +187,23 @@ export const BuilderPage = () => {
   // future code path defers an atom write into a microtask or animation
   // frame; they're no-ops today because writeUrl already ran on the
   // change that triggered the unload.
+  //
+  // Worker 79 made `yamlCodec` lazy so `js-yaml` lands in an async chunk
+  // shared with the modal subtree. We kick off the dynamic import on
+  // mount and cache the module in `codecRef`; the first keystroke before
+  // the import resolves is the only writeUrl call that no-ops, and the
+  // very next change re-syncs the URL. In practice the module resolves
+  // sub-frame so this is invisible.
   useEffect(() => {
+    if (!codecRef.current) {
+      void import("../../jobs/yamlCodec").then((module) => {
+        codecRef.current = module
+      })
+    }
+
     const writeUrl = () => {
+      const codec = codecRef.current
+      if (!codec) return
       const commands = store.get(commandsAtom)
       if (!commands || Object.keys(commands).length === 0) {
         return
@@ -136,7 +218,7 @@ export const BuilderPage = () => {
       const url = new URL(window.location.href)
       if (hasContent) {
         const json = JSON.stringify(
-          buildSequenceObject(steps, paths, commands),
+          codec.buildSequenceObject(steps, paths, commands),
         )
         url.searchParams.set(
           "seqJson",
@@ -181,19 +263,23 @@ export const BuilderPage = () => {
         <VariablesSidebar />
       </div>
 
-      {/* Modals */}
-      <EditVariablesModal />
-      <YamlModal />
-      <LoadModal />
-      <CommandHelpModal />
-      <PromptModal />
-      <SequenceRunModal />
-      <LookupModal />
-      <FileExplorerModal />
-      <VideoPreviewModal />
-      <AudioPreviewModal />
-      <ImagePreviewModal />
-      <SmartMatchModal />
+      {/* Modals — lazy-loaded; each is atom-gated to closed-by-default so
+          `null` is the correct Suspense fallback (nothing renders until
+          the user actually opens one and the chunk resolves). */}
+      <Suspense fallback={null}>
+        <EditVariablesModal />
+        <YamlModal />
+        <LoadModal />
+        <CommandHelpModal />
+        <PromptModal />
+        <SequenceRunModal />
+        <LookupModal />
+        <FileExplorerModal />
+        <VideoPreviewModal />
+        <AudioPreviewModal />
+        <ImagePreviewModal />
+        <SmartMatchModal />
+      </Suspense>
 
       {/* Pickers — render via createPortal into document.body */}
       <CommandPicker />

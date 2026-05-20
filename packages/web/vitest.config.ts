@@ -17,6 +17,12 @@ export default defineConfig({
   test: {
     name: "web",
     include: ["src/**/*.test.{ts,tsx}"],
+    // __build-budget__ runs in node mode (spawns `vite build`, reads
+    // dist/) — owned by `vitest.build-budget.config.ts`.
+    exclude: [
+      "**/node_modules/**",
+      "src/__build-budget__/**",
+    ],
     browser: {
       enabled: true,
       provider: playwright(),

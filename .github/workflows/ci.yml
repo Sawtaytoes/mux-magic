@@ -87,3 +87,21 @@ jobs:
       - run: yarn build:tools
       - run: yarn build:prod
       - run: yarn e2e
+
+  build-budget:
+    # Worker 79: enforces the BuilderPage modal subtree + yamlCodec stay
+    # code-split and that rolldown emits no INEFFECTIVE_DYNAMIC_IMPORT
+    # warnings. The test spawns its own `vite build`, so it doesn't
+    # depend on prior workflow steps.
+    needs: check-prior-run
+    if: needs.check-prior-run.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    env:
+      RUN_BUILD_BUDGET: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - run: yarn build:tools
+      - run: yarn workspace @mux-magic/web test:build-budget
