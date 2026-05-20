@@ -109,20 +109,18 @@ const collectCueFolders = async ({
       entryStat: Stats
     }
     const stats = await Promise.all(
-      entries.map(
-        (entry): Promise<StatInfo | null> => {
-          const fullPath = join(folderPath, entry)
-          return stat(fullPath)
-            .then(
-              (entryStat): StatInfo => ({
-                entry,
-                fullPath,
-                entryStat: entryStat as Stats,
-              }),
-            )
-            .catch(() => null)
-        },
-      ),
+      entries.map((entry): Promise<StatInfo | null> => {
+        const fullPath = join(folderPath, entry)
+        return stat(fullPath)
+          .then(
+            (entryStat): StatInfo => ({
+              entry,
+              fullPath,
+              entryStat: entryStat as Stats,
+            }),
+          )
+          .catch(() => null)
+      }),
     )
     const validStats = stats.filter(
       (info): info is StatInfo => info !== null,
