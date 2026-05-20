@@ -125,6 +125,7 @@ export const RenameTargetPicker = ({
       <PortalDropdown
         anchorRef={triggerRef}
         isOpen={isOpen}
+        maxHeightPx={480}
         items={candidates.map((scored) => {
           const { name, timecode, parentName } =
             scored.candidate

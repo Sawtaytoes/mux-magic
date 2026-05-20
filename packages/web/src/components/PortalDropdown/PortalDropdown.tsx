@@ -1,7 +1,7 @@
 import { useLayoutEffect, useState } from "react"
 import { createPortal } from "react-dom"
 
-const MAX_HEIGHT_PX = 192
+const DEFAULT_MAX_HEIGHT_PX = 400
 const GAP_PX = 4
 const VIEWPORT_MARGIN_PX = 8
 const MIN_HEIGHT_PX = 64
@@ -27,12 +27,14 @@ type PortalDropdownProps = {
   anchorRef: React.RefObject<HTMLElement | null>
   isOpen: boolean
   items: ReadonlyArray<PortalDropdownItem>
+  maxHeightPx?: number
 }
 
 export const PortalDropdown = ({
   anchorRef,
   isOpen,
   items,
+  maxHeightPx = DEFAULT_MAX_HEIGHT_PX,
 }: PortalDropdownProps) => {
   const [position, setPosition] =
     useState<PortalDropdownPosition | null>(null)
@@ -54,14 +56,13 @@ export const PortalDropdown = ({
       const spaceAbove =
         rect.top - GAP_PX - VIEWPORT_MARGIN_PX
       const isFlippedUp =
-        spaceBelow < MAX_HEIGHT_PX &&
-        spaceAbove > spaceBelow
+        spaceBelow < maxHeightPx && spaceAbove > spaceBelow
       const available = isFlippedUp
         ? spaceAbove
         : spaceBelow
       const maxHeight = Math.max(
         MIN_HEIGHT_PX,
-        Math.min(MAX_HEIGHT_PX, available),
+        Math.min(maxHeightPx, available),
       )
       setPosition(
         isFlippedUp
@@ -89,7 +90,7 @@ export const PortalDropdown = ({
       window.removeEventListener("scroll", update, true)
       window.removeEventListener("resize", update)
     }
-  }, [isOpen, anchorRef])
+  }, [isOpen, anchorRef, maxHeightPx])
 
   if (!isOpen || items.length === 0 || !position) {
     return null
