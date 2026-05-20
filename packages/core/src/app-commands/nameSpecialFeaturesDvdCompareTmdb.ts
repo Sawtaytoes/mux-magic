@@ -36,6 +36,7 @@ import {
   type TimecodeDeviation,
 } from "../tools/getSpecialFeatureFromTimecode.js"
 import {
+  dedupePossibleNames,
   flattenExtrasAsPossibleNames,
   parseSpecialFeatures,
 } from "../tools/parseSpecialFeatures.js"
@@ -323,9 +324,11 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
               // list is suppressed because it's just noise.
               const possibleNamesForSummary =
                 unrenamedFilenames.length > 0
-                  ? possibleNames.concat(
-                      flattenExtrasAsPossibleNames(
-                        specialFeatures,
+                  ? dedupePossibleNames(
+                      possibleNames.concat(
+                        flattenExtrasAsPossibleNames(
+                          specialFeatures,
+                        ),
                       ),
                     )
                   : []
