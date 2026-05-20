@@ -54,7 +54,10 @@ export const buildUnnamedFileCandidates = ({
   )
 
   return unrenamedFiles.map(
-    ({ filename, extension, durationSeconds }, fileIndex) => {
+    (
+      { filename, extension, durationSeconds },
+      fileIndex,
+    ) => {
       const ranked = rankCandidatesForFile({
         candidates,
         fileDurationSeconds: durationSeconds,

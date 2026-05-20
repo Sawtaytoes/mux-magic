@@ -41,13 +41,13 @@ import {
 } from "../tools/parseSpecialFeatures.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { searchDvdCompare } from "../tools/searchDvdCompare.js"
-import { buildUnnamedFileCandidates } from "./nameSpecialFeaturesDvdCompareTmdb.buildUnnamedFileCandidates.js"
 import {
   DUPLICATES_BUCKET,
   logBucketFolderCountsIfPresent,
   moveFilesToBucket,
   UNNAMED_FEATURES_BUCKET,
 } from "./nameSpecialFeaturesDvdCompareTmdb.buckets.js"
+import { buildUnnamedFileCandidates } from "./nameSpecialFeaturesDvdCompareTmdb.buildUnnamedFileCandidates.js"
 import { reorderForDuplicatePrompts } from "./nameSpecialFeaturesDvdCompareTmdb.duplicates.js"
 import {
   findUniqueTargetPath,
@@ -397,300 +397,304 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                     )
 
               return promptForDuplicates$.pipe(
-                concatMap(({
-                  kept: orderedRenames,
-                  droppedFullPaths,
-                }) => {
-                  const allKnownNames =
-                    flattenAllKnownNames({
-                      cuts,
-                      extras: specialFeatures,
-                      possibleNames,
-                    })
-                  // Render the renames through the duplicate-counter +
-                  // rename-observable scan as before, then append the summary.
-                  // N4 collision handling: for each rename we check (via the
-                  // scan state) whether the target name was already seen within
-                  // this run (intra-run duplicate) OR exists on disk (pre-existing
-                  // file). Intra-run duplicates use the existing (2)/(3) counter.
-                  // Pre-existing on-disk collisions branch on nonInteractive:
-                  //   - nonInteractive=true  → auto-suffix with (2)/(3) counter.
-                  //   - nonInteractive=false → emit { collision } and skip the rename.
-                  const renamesStream$ = of(
-                    ...orderedRenames,
-                  ).pipe(
-                    scan(
-                      (
-                        { previousFilenameCount },
-                        { fileInfo, renamedFilename },
-                      ) => {
-                        const isIntraRunDuplicate =
-                          renamedFilename in
-                          previousFilenameCount
-                        const finalName =
-                          isIntraRunDuplicate
-                            ? `(${getNextFilenameCount(previousFilenameCount[renamedFilename])}) ${renamedFilename}`
-                            : renamedFilename
-                        return {
-                          previousFilenameCount: {
-                            ...previousFilenameCount,
-                            [renamedFilename]:
-                              getNextFilenameCount(
-                                previousFilenameCount[
-                                  renamedFilename
-                                ],
-                              ),
-                          },
-                          renameFileObservable:
-                            // N4: on-disk collision check for non-intra-run
-                            // conflicts. When the target already exists and
-                            // we're not in nonInteractive mode, emit a
-                            // collision event instead of attempting the rename.
-                            defer(async () => {
-                              const ext = extname(
-                                fileInfo.fullPath,
-                              )
-                              const desiredPath = join(
-                                sourcePath,
-                                finalName.concat(ext),
-                              )
-                              // Self-rename: file already lives at the target path
-                              // (common when re-running after a prior successful run).
-                              // Skip the rename but log it so the user can see why a
-                              // prompt-answered file produced no rename event —
-                              // previously this was completely silent and read as
-                              // "execution failed."
-                              if (
-                                fileInfo.fullPath ===
-                                desiredPath
-                              ) {
-                                logInfo(
-                                  "ALREADY NAMED",
-                                  `"${fileInfo.filename}" is already at its target name — nothing to do.`,
+                concatMap(
+                  ({
+                    kept: orderedRenames,
+                    droppedFullPaths,
+                  }) => {
+                    const allKnownNames =
+                      flattenAllKnownNames({
+                        cuts,
+                        extras: specialFeatures,
+                        possibleNames,
+                      })
+                    // Render the renames through the duplicate-counter +
+                    // rename-observable scan as before, then append the summary.
+                    // N4 collision handling: for each rename we check (via the
+                    // scan state) whether the target name was already seen within
+                    // this run (intra-run duplicate) OR exists on disk (pre-existing
+                    // file). Intra-run duplicates use the existing (2)/(3) counter.
+                    // Pre-existing on-disk collisions branch on nonInteractive:
+                    //   - nonInteractive=true  → auto-suffix with (2)/(3) counter.
+                    //   - nonInteractive=false → emit { collision } and skip the rename.
+                    const renamesStream$ = of(
+                      ...orderedRenames,
+                    ).pipe(
+                      scan(
+                        (
+                          { previousFilenameCount },
+                          { fileInfo, renamedFilename },
+                        ) => {
+                          const isIntraRunDuplicate =
+                            renamedFilename in
+                            previousFilenameCount
+                          const finalName =
+                            isIntraRunDuplicate
+                              ? `(${getNextFilenameCount(previousFilenameCount[renamedFilename])}) ${renamedFilename}`
+                              : renamedFilename
+                          return {
+                            previousFilenameCount: {
+                              ...previousFilenameCount,
+                              [renamedFilename]:
+                                getNextFilenameCount(
+                                  previousFilenameCount[
+                                    renamedFilename
+                                  ],
+                                ),
+                            },
+                            renameFileObservable:
+                              // N4: on-disk collision check for non-intra-run
+                              // conflicts. When the target already exists and
+                              // we're not in nonInteractive mode, emit a
+                              // collision event instead of attempting the rename.
+                              defer(async () => {
+                                const ext = extname(
+                                  fileInfo.fullPath,
                                 )
+                                const desiredPath = join(
+                                  sourcePath,
+                                  finalName.concat(ext),
+                                )
+                                // Self-rename: file already lives at the target path
+                                // (common when re-running after a prior successful run).
+                                // Skip the rename but log it so the user can see why a
+                                // prompt-answered file produced no rename event —
+                                // previously this was completely silent and read as
+                                // "execution failed."
+                                if (
+                                  fileInfo.fullPath ===
+                                  desiredPath
+                                ) {
+                                  logInfo(
+                                    "ALREADY NAMED",
+                                    `"${fileInfo.filename}" is already at its target name — nothing to do.`,
+                                  )
+                                  return {
+                                    resolvedName: finalName,
+                                    isCollision: false,
+                                    isNoop: true,
+                                  }
+                                }
+                                if (isNonInteractive) {
+                                  // Auto-suffix mode: find a free path via
+                                  // findUniqueTargetPath (handles both intra-run
+                                  // and pre-existing on-disk cases uniformly).
+                                  const uniquePath =
+                                    await findUniqueTargetPath(
+                                      desiredPath,
+                                    )
+                                  const uniqueName =
+                                    basename(
+                                      uniquePath,
+                                      ext,
+                                    )
+                                  return {
+                                    resolvedName:
+                                      uniqueName,
+                                    isCollision: false,
+                                    isNoop: false,
+                                  }
+                                }
+                                // Interactive mode: check if the target already
+                                // exists on disk (distinct from intra-run dupes
+                                // which the scan counter handles).
+                                const isTargetOnDisk =
+                                  await access(
+                                    desiredPath,
+                                  ).then(
+                                    () => true,
+                                    () => false,
+                                  )
                                 return {
                                   resolvedName: finalName,
-                                  isCollision: false,
-                                  isNoop: true,
-                                }
-                              }
-                              if (isNonInteractive) {
-                                // Auto-suffix mode: find a free path via
-                                // findUniqueTargetPath (handles both intra-run
-                                // and pre-existing on-disk cases uniformly).
-                                const uniquePath =
-                                  await findUniqueTargetPath(
-                                    desiredPath,
-                                  )
-                                const uniqueName = basename(
-                                  uniquePath,
-                                  ext,
-                                )
-                                return {
-                                  resolvedName: uniqueName,
-                                  isCollision: false,
+                                  isCollision:
+                                    isTargetOnDisk &&
+                                    !isIntraRunDuplicate,
                                   isNoop: false,
                                 }
-                              }
-                              // Interactive mode: check if the target already
-                              // exists on disk (distinct from intra-run dupes
-                              // which the scan counter handles).
-                              const isTargetOnDisk =
-                                await access(
-                                  desiredPath,
-                                ).then(
-                                  () => true,
-                                  () => false,
-                                )
-                              return {
-                                resolvedName: finalName,
-                                isCollision:
-                                  isTargetOnDisk &&
-                                  !isIntraRunDuplicate,
-                                isNoop: false,
-                              }
-                            }).pipe(
-                              concatMap(
-                                ({
-                                  resolvedName,
-                                  isCollision,
-                                  isNoop,
-                                }): Observable<NameSpecialFeaturesResult> => {
-                                  if (isNoop) {
-                                    return EMPTY
-                                  }
-                                  if (isCollision) {
-                                    logWarning(
-                                      "COLLISION",
-                                      `"${resolvedName}" already exists. Emitting review-needed event (pass --non-interactive to auto-suffix).`,
-                                    )
-                                    return of<NameSpecialFeaturesResult>(
-                                      {
-                                        hasCollision: true,
-                                        filename:
-                                          fileInfo.filename,
-                                        targetFilename:
-                                          resolvedName,
-                                      },
-                                    )
-                                  }
-                                  return fileInfo
-                                    .renameFile(
-                                      resolvedName,
-                                    )
-                                    .pipe(
-                                      concatMap(
-                                        (): Observable<NameSpecialFeaturesResult> => {
-                                          const renamedResult: NameSpecialFeaturesResult =
-                                            {
-                                              oldName:
-                                                fileInfo.filename,
-                                              newName:
-                                                resolvedName,
+                              }).pipe(
+                                concatMap(
+                                  ({
+                                    resolvedName,
+                                    isCollision,
+                                    isNoop,
+                                  }): Observable<NameSpecialFeaturesResult> => {
+                                    if (isNoop) {
+                                      return EMPTY
+                                    }
+                                    if (isCollision) {
+                                      logWarning(
+                                        "COLLISION",
+                                        `"${resolvedName}" already exists. Emitting review-needed event (pass --non-interactive to auto-suffix).`,
+                                      )
+                                      return of<NameSpecialFeaturesResult>(
+                                        {
+                                          hasCollision: true,
+                                          filename:
+                                            fileInfo.filename,
+                                          targetFilename:
+                                            resolvedName,
+                                        },
+                                      )
+                                    }
+                                    return fileInfo
+                                      .renameFile(
+                                        resolvedName,
+                                      )
+                                      .pipe(
+                                        concatMap(
+                                          (): Observable<NameSpecialFeaturesResult> => {
+                                            const renamedResult: NameSpecialFeaturesResult =
+                                              {
+                                                oldName:
+                                                  fileInfo.filename,
+                                                newName:
+                                                  resolvedName,
+                                              }
+                                            // N1: after a successful rename, if the
+                                            // renamed file is a main-feature with an
+                                            // edition tag AND moveToEditionFolders is
+                                            // requested, move it into the nested folder.
+                                            if (
+                                              !isMovingToEditionFolders
+                                            ) {
+                                              return of(
+                                                renamedResult,
+                                              )
                                             }
-                                          // N1: after a successful rename, if the
-                                          // renamed file is a main-feature with an
-                                          // edition tag AND moveToEditionFolders is
-                                          // requested, move it into the nested folder.
-                                          if (
-                                            !isMovingToEditionFolders
-                                          ) {
-                                            return of(
-                                              renamedResult,
-                                            )
-                                          }
-                                          if (
-                                            !isMainFeatureFilename(
-                                              resolvedName,
-                                            )
-                                          ) {
-                                            return of(
-                                              renamedResult,
-                                            )
-                                          }
-                                          const edition =
-                                            parseEditionFromFilename(
-                                              resolvedName,
-                                            )
-                                          if (!edition) {
-                                            return of(
-                                              renamedResult,
-                                            )
-                                          }
-                                          const renamedFilePath =
-                                            join(
-                                              sourcePath,
-                                              resolvedName.concat(
-                                                extname(
-                                                  fileInfo.fullPath,
+                                            if (
+                                              !isMainFeatureFilename(
+                                                resolvedName,
+                                              )
+                                            ) {
+                                              return of(
+                                                renamedResult,
+                                              )
+                                            }
+                                            const edition =
+                                              parseEditionFromFilename(
+                                                resolvedName,
+                                              )
+                                            if (!edition) {
+                                              return of(
+                                                renamedResult,
+                                              )
+                                            }
+                                            const renamedFilePath =
+                                              join(
+                                                sourcePath,
+                                                resolvedName.concat(
+                                                  extname(
+                                                    fileInfo.fullPath,
+                                                  ),
+                                                ),
+                                              )
+                                            return concat(
+                                              of(
+                                                renamedResult,
+                                              ),
+                                              moveFileToEditionFolder(
+                                                renamedFilePath,
+                                                movie,
+                                              ).pipe(
+                                                map(
+                                                  (
+                                                    destPath,
+                                                  ): NameSpecialFeaturesResult => {
+                                                    if (
+                                                      destPath ===
+                                                      null
+                                                    )
+                                                      return renamedResult
+                                                    logInfo(
+                                                      "MOVED TO EDITION FOLDER",
+                                                      destPath,
+                                                    )
+                                                    return {
+                                                      hasMovedToEditionFolder: true,
+                                                      filename:
+                                                        resolvedName.concat(
+                                                          extname(
+                                                            fileInfo.fullPath,
+                                                          ),
+                                                        ),
+                                                      destinationPath:
+                                                        destPath,
+                                                    }
+                                                  },
                                                 ),
                                               ),
                                             )
-                                          return concat(
-                                            of(
-                                              renamedResult,
-                                            ),
-                                            moveFileToEditionFolder(
-                                              renamedFilePath,
-                                              movie,
-                                            ).pipe(
-                                              map(
-                                                (
-                                                  destPath,
-                                                ): NameSpecialFeaturesResult => {
-                                                  if (
-                                                    destPath ===
-                                                    null
-                                                  )
-                                                    return renamedResult
-                                                  logInfo(
-                                                    "MOVED TO EDITION FOLDER",
-                                                    destPath,
-                                                  )
-                                                  return {
-                                                    hasMovedToEditionFolder: true,
-                                                    filename:
-                                                      resolvedName.concat(
-                                                        extname(
-                                                          fileInfo.fullPath,
-                                                        ),
-                                                      ),
-                                                    destinationPath:
-                                                      destPath,
-                                                  }
-                                                },
-                                              ),
-                                            ),
-                                          )
-                                        },
-                                      ),
-                                    )
-                                },
+                                          },
+                                        ),
+                                      )
+                                  },
+                                ),
                               ),
-                            ),
-                        }
-                      },
-                      {
-                        previousFilenameCount: {} as Record<
-                          string,
-                          number
-                        >,
-                        renameFileObservable:
-                          new Observable() as Observable<NameSpecialFeaturesResult>,
-                      },
-                    ),
-                    map(
-                      ({ renameFileObservable }) =>
-                        renameFileObservable,
-                    ),
-                  )
-                  const summary$: Observable<
-                    Observable<NameSpecialFeaturesResult>
-                  > = of(
-                    of<NameSpecialFeaturesResult>({
-                      unrenamedFilenames,
-                      possibleNames:
-                        possibleNamesForSummary,
-                      allKnownNames,
-                      unnamedFileCandidates:
-                        unnamedFileCandidates.length > 0
-                          ? unnamedFileCandidates
-                          : undefined,
-                    }),
-                  )
-                  // Worker 25: after the rename pass, route every leftover
-                  // unrenamed file into <sourcePath>/UNNAMED-FEATURES/ and
-                  // every duplicate-prompt-dropped file into
-                  // <sourcePath>/DUPLICATES/. Bucket folders are created
-                  // lazily — a fully-matched run with no dupes leaves no
-                  // bucket folders on disk. The filesystem becomes the
-                  // cache: a refresh / crash / close-without-applying
-                  // leaves a perfectly recoverable disc folder.
-                  const leftoverFullPaths = leftoverMatches.map(
-                    (match) => match.fileInfo.fullPath,
-                  )
-                  const bucketMoves$: Observable<
-                    Observable<NameSpecialFeaturesResult>
-                  > = of(
-                    concat(
-                      moveFilesToBucket({
-                        sourcePath,
-                        bucketName: UNNAMED_FEATURES_BUCKET,
-                        filePaths: leftoverFullPaths,
-                      }).pipe(ignoreElements()),
-                      moveFilesToBucket({
-                        sourcePath,
-                        bucketName: DUPLICATES_BUCKET,
-                        filePaths: droppedFullPaths,
-                      }).pipe(ignoreElements()),
-                    ),
-                  )
-                  return concat(
-                    renamesStream$,
-                    bucketMoves$,
-                    summary$,
-                  )
-                }),
+                          }
+                        },
+                        {
+                          previousFilenameCount:
+                            {} as Record<string, number>,
+                          renameFileObservable:
+                            new Observable() as Observable<NameSpecialFeaturesResult>,
+                        },
+                      ),
+                      map(
+                        ({ renameFileObservable }) =>
+                          renameFileObservable,
+                      ),
+                    )
+                    const summary$: Observable<
+                      Observable<NameSpecialFeaturesResult>
+                    > = of(
+                      of<NameSpecialFeaturesResult>({
+                        unrenamedFilenames,
+                        possibleNames:
+                          possibleNamesForSummary,
+                        allKnownNames,
+                        unnamedFileCandidates:
+                          unnamedFileCandidates.length > 0
+                            ? unnamedFileCandidates
+                            : undefined,
+                      }),
+                    )
+                    // Worker 25: after the rename pass, route every leftover
+                    // unrenamed file into <sourcePath>/UNNAMED-FEATURES/ and
+                    // every duplicate-prompt-dropped file into
+                    // <sourcePath>/DUPLICATES/. Bucket folders are created
+                    // lazily — a fully-matched run with no dupes leaves no
+                    // bucket folders on disk. The filesystem becomes the
+                    // cache: a refresh / crash / close-without-applying
+                    // leaves a perfectly recoverable disc folder.
+                    const leftoverFullPaths =
+                      leftoverMatches.map(
+                        (match) => match.fileInfo.fullPath,
+                      )
+                    const bucketMoves$: Observable<
+                      Observable<NameSpecialFeaturesResult>
+                    > = of(
+                      concat(
+                        moveFilesToBucket({
+                          sourcePath,
+                          bucketName:
+                            UNNAMED_FEATURES_BUCKET,
+                          filePaths: leftoverFullPaths,
+                        }).pipe(ignoreElements()),
+                        moveFilesToBucket({
+                          sourcePath,
+                          bucketName: DUPLICATES_BUCKET,
+                          filePaths: droppedFullPaths,
+                        }).pipe(ignoreElements()),
+                      ),
+                    )
+                    return concat(
+                      renamesStream$,
+                      bucketMoves$,
+                      summary$,
+                    )
+                  },
+                ),
               )
             }),
           ),

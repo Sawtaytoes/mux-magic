@@ -172,13 +172,23 @@ const shrek2BluRayPayload: SmartMatchModalState = {
       extension: ".mkv",
       durationSeconds: 643,
       rankedCandidates: [
-        scored("Spotlight on Puss in Boots Featurette", 0.7, {
-          timecode: "10:46",
-          durationScore: 1,
-          filenameScore: 0.66,
-        }),
-        scored("Audio Commentary by Directors Kelly Asbury and Conrad Vernon", 0),
-        scored('"Shrek\'s Interactive Journey: II" Photo Gallery', 0),
+        scored(
+          "Spotlight on Puss in Boots Featurette",
+          0.7,
+          {
+            timecode: "10:46",
+            durationScore: 1,
+            filenameScore: 0.66,
+          },
+        ),
+        scored(
+          "Audio Commentary by Directors Kelly Asbury and Conrad Vernon",
+          0,
+        ),
+        scored(
+          '"Shrek\'s Interactive Journey: II" Photo Gallery',
+          0,
+        ),
       ],
     },
     {
@@ -186,16 +196,24 @@ const shrek2BluRayPayload: SmartMatchModalState = {
       extension: ".mkv",
       durationSeconds: 188,
       rankedCandidates: [
-        scored("Accidentally in Love Music Video by Counting Crows", 0.65, {
-          timecode: "3:22",
-          parentName: "Shrek, Rattle & Roll",
-          durationScore: 0.85,
-          filenameScore: 0.4,
-        }),
-        scored("These Boots Are Made for Walking Music Video by Puss in Boots", 0, {
-          timecode: "2:17",
-          parentName: "Shrek, Rattle & Roll",
-        }),
+        scored(
+          "Accidentally in Love Music Video by Counting Crows",
+          0.65,
+          {
+            timecode: "3:22",
+            parentName: "Shrek, Rattle & Roll",
+            durationScore: 0.85,
+            filenameScore: 0.4,
+          },
+        ),
+        scored(
+          "These Boots Are Made for Walking Music Video by Puss in Boots",
+          0,
+          {
+            timecode: "2:17",
+            parentName: "Shrek, Rattle & Roll",
+          },
+        ),
       ],
     },
     {

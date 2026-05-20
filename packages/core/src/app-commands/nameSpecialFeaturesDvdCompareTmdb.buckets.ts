@@ -1,10 +1,10 @@
+import { readdir, stat } from "node:fs/promises"
+import { basename, join } from "node:path"
 import {
   logInfo,
   makeDirectory,
   renameFileOrFolder,
 } from "@mux-magic/tools"
-import { readdir, stat } from "node:fs/promises"
-import { basename, join } from "node:path"
 import {
   concatMap,
   defer,
@@ -115,9 +115,7 @@ export const moveFilesToBucket = ({
             oldPath,
             newPath,
           }).pipe(
-            map(
-              (): BucketMove => ({ oldPath, newPath }),
-            ),
+            map((): BucketMove => ({ oldPath, newPath })),
             tap((move) =>
               logInfo(
                 "MOVED TO BUCKET",

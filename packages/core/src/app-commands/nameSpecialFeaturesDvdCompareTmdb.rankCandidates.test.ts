@@ -222,10 +222,7 @@ describe(applyOrderBonus.name, () => {
       dvdCompareOrder: ["Alpha", "Beta", "Gamma"],
     })
     expect(result[0].candidate.name).toBe("Beta")
-    expect(result[0].confidence).toBeCloseTo(
-      ORDER_BONUS,
-      5,
-    )
+    expect(result[0].confidence).toBeCloseTo(ORDER_BONUS, 5)
   })
 
   test("never overrides a strong duration signal", () => {

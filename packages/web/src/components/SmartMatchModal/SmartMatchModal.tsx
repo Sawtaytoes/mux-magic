@@ -530,7 +530,8 @@ export const SmartMatchModal = () => {
                           data-smart-match-collision
                           className="text-[10px] font-mono mt-1 text-amber-300"
                         >
-                          Same target as: {row.collisionWith}
+                          Same target as:{" "}
+                          {row.collisionWith}
                         </div>
                       )}
                       {row.error && (
