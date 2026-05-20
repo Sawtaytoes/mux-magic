@@ -274,7 +274,9 @@ describe(convertLosslessToFlac.name, () => {
     mockFfmpegSuccess("/music/track01.flac")
     mockFfmpegSuccess("/music/disc1/inner.flac")
     mockFfmpegSuccess("/music/disc1/sub/deep.flac")
-    mockFfmpegSuccess("/music/disc1/sub/deeper/too-deep.flac")
+    mockFfmpegSuccess(
+      "/music/disc1/sub/deeper/too-deep.flac",
+    )
 
     await firstValueFrom(
       convertLosslessToFlac({
@@ -295,7 +297,13 @@ describe(convertLosslessToFlac.name, () => {
       ]),
     )
     expect(inputPaths).not.toContain(
-      join("/music", "disc1", "sub", "deeper", "too-deep.wav"),
+      join(
+        "/music",
+        "disc1",
+        "sub",
+        "deeper",
+        "too-deep.wav",
+      ),
     )
   })
 
