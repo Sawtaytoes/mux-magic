@@ -345,4 +345,61 @@ describe(copyFiles.name, () => {
       expect(vol.existsSync("/dst/ignore.txt")).toBe(false)
     })
   })
+
+  describe("allowOverwrite", () => {
+    test("refuses to clobber an existing destination by default", async () => {
+      vol.fromJSON({
+        "/cp-src/ep01.mkv": "fresh",
+        "/cp-src/ep02.mkv": "fresh2",
+        "/cp-dst/ep01.mkv": "stale",
+      })
+
+      await expect(
+        firstValueFrom(
+          copyFiles({
+            sourcePath: "/cp-src",
+            destinationPath: "/cp-dst",
+          }).pipe(toArray()),
+        ),
+      ).rejects.toMatchObject({ code: "EEXIST" })
+
+      // Pre-existing destination file kept verbatim, source kept,
+      // no temps left behind anywhere.
+      expect(
+        vol.readFileSync("/cp-dst/ep01.mkv", "utf8"),
+      ).toBe("stale")
+      expect(
+        vol.readFileSync("/cp-src/ep01.mkv", "utf8"),
+      ).toBe("fresh")
+      expect(
+        vol.existsSync("/cp-dst/ep01.mkv.muxmagic.tmp"),
+      ).toBe(false)
+    })
+
+    test("overwrites every colliding destination when allowOverwrite is true", async () => {
+      vol.fromJSON({
+        "/cp-src/ep01.mkv": "fresh1",
+        "/cp-src/ep02.mkv": "fresh2",
+        "/cp-dst/ep01.mkv": "stale1",
+      })
+
+      await firstValueFrom(
+        copyFiles({
+          sourcePath: "/cp-src",
+          destinationPath: "/cp-dst",
+          isOverwriteAllowed: true,
+        }).pipe(toArray()),
+      )
+
+      expect(
+        vol.readFileSync("/cp-dst/ep01.mkv", "utf8"),
+      ).toBe("fresh1")
+      expect(
+        vol.readFileSync("/cp-dst/ep02.mkv", "utf8"),
+      ).toBe("fresh2")
+      expect(
+        vol.existsSync("/cp-dst/ep01.mkv.muxmagic.tmp"),
+      ).toBe(false)
+    })
+  })
 })

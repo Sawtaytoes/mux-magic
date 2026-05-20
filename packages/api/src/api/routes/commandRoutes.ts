@@ -232,6 +232,7 @@ export const commandConfigs: Record<
         isIncludingFolders: body.includeFolders,
         renameRegex: body.renameRegex,
         sourcePath: body.sourcePath,
+        isOverwriteAllowed: body.allowOverwrite,
       }),
     extractOutputs: (results) => ({
       copiedSourcePaths: (results as CopyRecord[]).map(
@@ -526,6 +527,7 @@ export const commandConfigs: Record<
         fileFilterRegex: body.fileFilterRegex,
         renameRegex: body.renameRegex,
         sourcePath: body.sourcePath,
+        isOverwriteAllowed: body.allowOverwrite,
       }),
     extractOutputs: (results) => ({
       copiedSourcePaths: (results as CopyRecord[]).map(

@@ -1,4 +1,4 @@
-import { rm, stat } from "node:fs/promises"
+import { rename, stat, unlink } from "node:fs/promises"
 import { extname, join } from "node:path"
 import {
   aclSafeCopyFile,
@@ -34,30 +34,122 @@ type MoveRecord = {
   destination: string
 }
 
-// Copies every matching file in `sourcePath` into `destinationPath`, then
-// removes the source directory once all copies succeed. Emits a per-file
-// `{ source, destination }` record so the builder's Results panel can show
-// a readable "old → new" summary instead of a string of nulls.
+const hasErrorCode = (
+  error: unknown,
+  code: string,
+): boolean =>
+  error !== null &&
+  typeof error === "object" &&
+  "code" in error &&
+  (error as { code?: unknown }).code === code
+
+const buildExistsError = (
+  destination: string,
+): Error & { code: string } => {
+  const error = new Error(
+    `Refusing to overwrite existing destination: ${destination}`,
+  ) as Error & { code: string }
+  error.code = "EEXIST"
+  return error
+}
+
+const checkDestination = async (
+  destination: string,
+  isOverwriteAllowed: boolean,
+): Promise<boolean> => {
+  try {
+    await stat(destination)
+  } catch (error) {
+    if (hasErrorCode(error, "ENOENT")) return false
+    throw error
+  }
+  if (!isOverwriteAllowed)
+    throw buildExistsError(destination)
+  return true
+}
+
+// Same-volume rename short-circuit: metadata-only O(1) move. EXDEV
+// (cross-volume) triggers the streaming-copy fallback, which retains
+// per-byte progress and the AbortController wiring.
+const moveSingleFile = async ({
+  sourcePath,
+  destinationPath,
+  isOverwriteAllowed,
+  copyOptions,
+}: {
+  sourcePath: string
+  destinationPath: string
+  isOverwriteAllowed: boolean
+  copyOptions: CopyOptions
+}): Promise<"renamed" | "copied"> => {
+  const hasExistingDestination = await checkDestination(
+    destinationPath,
+    isOverwriteAllowed,
+  )
+  if (hasExistingDestination) {
+    // On Windows `rename` errors with EPERM against an existing
+    // target; the EXDEV fallback's aclSafeCopyFile already handles
+    // its own destination-exists case via the same temp+rename
+    // primitive, so we only need to clear the path here for the
+    // rename fast-path.
+    await unlink(destinationPath).catch((error) => {
+      if (hasErrorCode(error, "ENOENT")) return
+      throw error
+    })
+  }
+  try {
+    await rename(sourcePath, destinationPath)
+    return "renamed"
+  } catch (error) {
+    if (!hasErrorCode(error, "EXDEV")) throw error
+    // Cross-volume: stream the bytes, then drop the source entry.
+    // aclSafeCopyFile is already temp+rename + EEXIST-safe; pass
+    // isOverwriteAllowed through so it doesn't re-trip on the same
+    // destination check we just made.
+    await aclSafeCopyFile(sourcePath, destinationPath, {
+      ...copyOptions,
+      isOverwriteAllowed: true,
+    })
+    await unlink(sourcePath)
+    return "copied"
+  }
+}
+
+// Copies every matching file in `sourcePath` into `destinationPath`,
+// preferring an O(1) `fs.rename` on same-volume moves and falling
+// back to a streaming copy + per-file unlink on EXDEV. Emits a per-
+// file `{ source, destination }` record so the builder's Results
+// panel can show a readable "old → new" summary.
 //
-// Wraps the inner pipeline in an AbortController-aware Observable for
-// the same reason `copyFiles` does: an unsubscribe (sequence cancel,
-// parallel sibling fail-fast) must interrupt the in-flight stream copy
-// mid-byte instead of letting the remaining gigabytes finish.
+// Wraps the inner pipeline in an AbortController-aware Observable
+// for the same reason `copyFiles` does: an unsubscribe (sequence
+// cancel, parallel sibling fail-fast) must interrupt an in-flight
+// EXDEV-fallback stream copy mid-byte instead of letting the
+// remaining gigabytes finish.
+//
+// Worker 59 dropped the trailing `rm -r sourcePath` that used to run
+// after every move — it could destroy unrelated files in the source
+// directory that didn't match `fileFilterRegex`. Source-directory
+// cleanup belongs in `deleteFilesByExtension` + `deleteEmptyFolders`
+// (or `flattenChildFolders`), not bundled into the move primitive.
 export const moveFiles = ({
   destinationPath,
   fileFilterRegex,
   renameRegex,
   sourcePath,
+  isOverwriteAllowed = false,
 }: {
   destinationPath: string
   fileFilterRegex?: RegexFilterInput
   renameRegex?: RenameRegex
   sourcePath: string
+  isOverwriteAllowed?: boolean
 }): Observable<MoveRecord> => {
-  // Pre-validate at handler start (synchronously, outside the Observable
-  // ctor) so a bad pattern/flag surfaces named & explained at the call
-  // site, not as an unhandled rxjs error notification or per-file
-  // SyntaxError mid-job. See copyFiles.ts for the same shape.
+  // Pre-validate at handler start (synchronously, outside the
+  // Observable ctor) so a bad pattern/flag surfaces named and
+  // explained at the call site, not as an unhandled rxjs error
+  // notification or per-file SyntaxError mid-job. See copyFiles.ts
+  // for the same shape.
   const fileFilterCompiled = compileFilterRegex(
     fileFilterRegex,
     "fileFilterRegex",
@@ -72,9 +164,9 @@ export const moveFiles = ({
     const innerSubscription = getFiles({ sourcePath })
       .pipe(
         // Materialize the file list so we can stat upfront for the
-        // emitter's totalBytes, AND know totalFiles. Skipped if there's
-        // no active job context (CLI mode) — the per-file copy still
-        // runs, just without progress emission.
+        // emitter's totalBytes, AND know totalFiles. Skipped if
+        // there's no active job context (CLI mode) — the per-file
+        // move still runs, just without progress emission.
         toArray(),
         concatMap((allFiles) =>
           defer(async () => {
@@ -119,8 +211,9 @@ export const moveFiles = ({
                   size: sizes[index] ?? 0,
                 })),
               ).pipe(
-                // Per-file copies go through the global Task scheduler — see
-                // copyFiles.ts for the full rationale.
+                // Per-file moves go through the global Task
+                // scheduler — see copyFiles.ts for the full
+                // rationale.
                 runTasks(({ file, size }) => {
                   const destinationFilename =
                     applyRenameRegex(
@@ -142,10 +235,10 @@ export const moveFiles = ({
                         )
                       : null
 
-                  // aclSafeCopyFile.onProgress fires per chunk with
-                  // ABSOLUTE bytesWritten across the lifetime of one
-                  // file copy. The tracker's reportBytes wants per-chunk
-                  // delta, so we track the previous high-water mark.
+                  // For the EXDEV fallback only. aclSafeCopyFile's
+                  // onProgress fires per chunk with ABSOLUTE
+                  // bytesWritten, so we track the previous high-water
+                  // mark and report deltas to the tracker.
                   let lastBytesWritten = 0
 
                   const copyOptions: CopyOptions = {
@@ -168,18 +261,34 @@ export const moveFiles = ({
                     destinationPath,
                   ).pipe(
                     concatMap(() =>
-                      aclSafeCopyFile(
-                        file.fullPath,
-                        destinationFilePath,
-                        copyOptions,
+                      defer(() =>
+                        moveSingleFile({
+                          sourcePath: file.fullPath,
+                          destinationPath:
+                            destinationFilePath,
+                          isOverwriteAllowed,
+                          copyOptions,
+                        }),
                       ),
                     ),
-                    tap(() => {
+                    tap((mode) => {
                       logInfo(
-                        "COPIED",
+                        mode === "renamed"
+                          ? "MOVED"
+                          : "COPIED",
                         file.fullPath,
                         destinationFilePath,
                       )
+                      // Rename has no per-byte callback to drive the
+                      // tracker, so credit the full file size once
+                      // here. The EXDEV fallback already credited
+                      // bytes per chunk via copyOptions.onProgress.
+                      if (
+                        mode === "renamed" &&
+                        tracker !== null
+                      ) {
+                        tracker.reportBytes(size)
+                      }
                     }),
                     map(() => ({
                       source: file.fullPath,
@@ -193,29 +302,15 @@ export const moveFiles = ({
             ),
           ),
         ),
-        // Buffer the per-file move records so the source-dir removal only
-        // runs after every copy finished. Re-emit them downstream once rm
-        // resolves so callers (and the API job runner) see the full set.
-        toArray(),
-        concatMap((moves) =>
-          defer(() =>
-            rm(sourcePath, { recursive: true }),
-          ).pipe(
-            tap(() => {
-              logInfo("DELETED", sourcePath)
-            }),
-            concatMap(() => from(moves)),
-          ),
-        ),
         logAndRethrowPipelineError(moveFiles),
       )
       .subscribe(subscriber)
 
     return () => {
       // Order: abort first so an in-flight pipeline rejects via
-      // AbortError rather than a downstream EBADF when streams are torn
-      // down out from under it; then unsubscribe to stop further
-      // emissions.
+      // AbortError rather than a downstream EBADF when streams are
+      // torn down out from under it; then unsubscribe to stop
+      // further emissions.
       abortController.abort()
       innerSubscription.unsubscribe()
     }

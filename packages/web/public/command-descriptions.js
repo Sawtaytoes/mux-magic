@@ -27,14 +27,15 @@ window.commandDescriptions = {
     }
   },
   "copyFiles": {
-    "summary": "Copy files (and optionally folders) from source to destination, with optional regex filtering and renaming",
+    "summary": "Copy files (and optionally folders) from source to destination, with optional regex filtering and renaming. Atomic: bytes go to a sibling .muxmagic.tmp and are rename-installed on success — a crash never leaves a partial under the real name. Refuses to overwrite existing destinations unless allowOverwrite is set.",
     "fields": {
       "sourcePath": "Directory to copy files from.",
       "destinationPath": "Directory to copy files into. Created if it does not already exist.",
       "fileFilterRegex": "If set, only files whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
       "folderFilterRegex": "If set (and includeFolders is true), only folders whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
       "includeFolders": "When true, top-level subdirectories matching folderFilterRegex are copied as units (recursively). Files are only copied if fileFilterRegex is also set.",
-      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place."
+      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
+      "allowOverwrite": "When true, existing destination files are overwritten. Default false: the command refuses to clobber and fails fast with an EEXIST-shaped error naming the colliding path. Opt in for mirror-sync / idempotent re-run flows."
     }
   },
   "flattenOutput": {
@@ -206,12 +207,13 @@ window.commandDescriptions = {
     }
   },
   "moveFiles": {
-    "summary": "Move files from source to destination, with optional regex filtering and renaming",
+    "summary": "Move files from source to destination, with optional regex filtering and renaming. Same-volume moves short-circuit to fs.rename (O(1) metadata op — gigabyte files in milliseconds); cross-volume falls back to streaming copy + per-file unlink. Refuses to overwrite existing destinations unless allowOverwrite is set. Source directory is NOT removed after the move — wire up deleteEmptyFolders separately if you want that.",
     "fields": {
-      "sourcePath": "Directory to move files from. Deleted after all files are copied.",
+      "sourcePath": "Directory to move files from. Files matching the filter are removed from here as they land at the destination; the directory itself is preserved.",
       "destinationPath": "Directory to move files into. Created if it does not already exist.",
       "fileFilterRegex": "If set, only files whose names match this regular expression are moved. Bare strings are accepted for back-compat with pre-flags templates.",
-      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place."
+      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
+      "allowOverwrite": "When true, existing destination files are overwritten. Default false: the command refuses to clobber and fails fast with an EEXIST-shaped error naming the colliding path. Opt in for mirror-sync / idempotent re-run flows."
     }
   },
   "renameFiles": {
