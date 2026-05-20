@@ -175,6 +175,21 @@ export const moveFilesIntoNamedFoldersRequestSchema =
       ),
   })
 
+export const distributeFolderToSiblingsRequestSchema =
+  z.object({
+    sourceFolderPath: z
+      .string()
+      .describe(
+        "Folder to copy into every sibling directory of its parent. Canonical use case is an `attachments` folder beside per-episode dirs.",
+      ),
+    deleteSourceFolderAfterDistributing: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Delete the source folder after all copies succeed. Default false: source is preserved so the destructive step is explicit and opt-in.",
+      ),
+  })
+
 export const moveFilesRequestSchema = z.object({
   sourcePath: z
     .string()

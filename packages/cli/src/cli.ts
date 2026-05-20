@@ -15,6 +15,7 @@ import { copyOutSubtitlesCommand } from "./cli-commands/copyOutSubtitlesCommand.
 import { deleteCopiedOriginalsCommand } from "./cli-commands/deleteCopiedOriginalsCommand.js"
 import { deleteFilesByExtensionCommand } from "./cli-commands/deleteFilesByExtensionCommand.js"
 import { deleteFolderCommand } from "./cli-commands/deleteFolderCommand.js"
+import { distributeFolderToSiblingsCommand } from "./cli-commands/distributeFolderToSiblingsCommand.js"
 import { extractSubtitlesCommand } from "./cli-commands/extractSubtitlesCommand.js"
 import { fixIncorrectDefaultTracksCommand } from "./cli-commands/fixIncorrectDefaultTracksCommand.js"
 import { flattenOutputCommand } from "./cli-commands/flattenOutputCommand.js"
@@ -92,6 +93,7 @@ yargs(hideBin(process.argv))
   .command(mergeTracksCommand)
   .command(moveFilesCommand)
   .command(moveFilesIntoNamedFoldersCommand)
+  .command(distributeFolderToSiblingsCommand)
   .command(nameAnimeEpisodesCommand)
   .command(nameAnimeEpisodesAniDBCommand)
   .command(nameMovieCutsDvdCompareTmdbCommand)

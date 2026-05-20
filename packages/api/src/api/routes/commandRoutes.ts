@@ -23,6 +23,7 @@ import { copyOutSubtitles } from "@mux-magic/core/src/app-commands/copyOutSubtit
 import { deleteCopiedOriginals } from "@mux-magic/core/src/app-commands/deleteCopiedOriginals.js"
 import { deleteFilesByExtension } from "@mux-magic/core/src/app-commands/deleteFilesByExtension.js"
 import { deleteFolder } from "@mux-magic/core/src/app-commands/deleteFolder.js"
+import { distributeFolderToSiblings } from "@mux-magic/core/src/app-commands/distributeFolderToSiblings.js"
 import { exitIfEmpty } from "@mux-magic/core/src/app-commands/exitIfEmpty.js"
 import {
   extractSubtitles,
@@ -163,6 +164,7 @@ export const commandNames = [
   "mergeTracks",
   "moveFiles",
   "moveFilesIntoNamedFolders",
+  "distributeFolderToSiblings",
   "renameFiles",
   "nameAnimeEpisodes",
   "nameAnimeEpisodesAniDB",
@@ -602,6 +604,18 @@ export const commandConfigs: Record<
     schema: schemas.moveFilesIntoNamedFoldersRequestSchema,
     summary:
       "Foldarize a directory: each file is moved into a new same-named subdirectory (extension stripped from the folder name)",
+    tags: ["File Operations"],
+  },
+  distributeFolderToSiblings: {
+    getObservable: (body) =>
+      distributeFolderToSiblings({
+        isDeletingSourceFolderAfterDistributing:
+          body.deleteSourceFolderAfterDistributing,
+        sourceFolderPath: body.sourceFolderPath,
+      }),
+    schema: schemas.distributeFolderToSiblingsRequestSchema,
+    summary:
+      "Copy a folder (default ./attachments) into every sibling directory of its parent, with optional source-folder cleanup",
     tags: ["File Operations"],
   },
   renameFiles: {

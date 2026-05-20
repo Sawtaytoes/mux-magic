@@ -232,6 +232,13 @@ window.commandDescriptions = {
       "sourcePath": "Folder whose files are each moved into a same-named subdirectory (file extension stripped from the folder name). Casper.mkv → Casper/Casper.mkv. Pre-existing subdirectories are untouched."
     }
   },
+  "distributeFolderToSiblings": {
+    "summary": "Copy a folder (default ./attachments) into every sibling directory of its parent, with optional source-folder cleanup",
+    "fields": {
+      "sourceFolderPath": "Folder to copy into every sibling directory of its parent. Canonical use case is an `attachments` folder beside per-episode dirs.",
+      "deleteSourceFolderAfterDistributing": "Delete the source folder after all copies succeed. Default false: source is preserved so the destructive step is explicit and opt-in."
+    }
+  },
   "renameFiles": {
     "summary": "Rename files in place via regex (no copy, no move). Pre-flight halts the run if two files would map to the same target name.",
     "fields": {
