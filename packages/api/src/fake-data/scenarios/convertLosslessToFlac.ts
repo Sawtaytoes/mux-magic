@@ -18,21 +18,28 @@ const effect = (fn: () => void): Observable<never> =>
     sub.complete()
   })
 
-const WAV_FILES = [
+// Mixed lossless inputs across the formats the command accepts —
+// surfaces in the dry-run UI that the rename to "convertLossless..."
+// isn't just a relabel but actually covers the broader extension set.
+const LOSSLESS_FILES = [
   "Disc1/Track01.wav",
-  "Disc1/Track02.wav",
-  "Disc1/Track03.wav",
-  "Disc2/Track01.wav",
+  "Disc1/Track02.aif",
+  "Disc1/Track03.aiff",
+  "Disc2/Track01.m4a",
 ] as const
 
 const swapExtensionToFlac = (filePath: string) =>
-  filePath.replace(/\.wav$/u, ".flac")
+  filePath.replace(
+    /\.(wav|wave|aif|aiff|m4a|m4b)$/iu,
+    ".flac",
+  )
 
-export const convertWavToFlacScenario = (
+export const convertLosslessToFlacScenario = (
   body: unknown,
   options: { label?: string } = {},
 ): Observable<unknown> => {
-  const label = options.label ?? "fake/convertWavToFlac"
+  const label =
+    options.label ?? "fake/convertLosslessToFlac"
   const isSourceDeleted =
     typeof body === "object" &&
     body !== null &&
@@ -46,12 +53,14 @@ export const convertWavToFlacScenario = (
   ) => {
     const jobId = getActiveJobId()
     if (!jobId) return
-    const filesDone = Math.round(ratio * WAV_FILES.length)
+    const filesDone = Math.round(
+      ratio * LOSSLESS_FILES.length,
+    )
     emitJobEvent(jobId, {
       type: "progress",
       ratio,
       filesDone,
-      filesTotal: WAV_FILES.length,
+      filesTotal: LOSSLESS_FILES.length,
       currentFiles: activePaths.map((path) => ({
         path,
         ratio: ratio % 0.5 < 0.25 ? 0.4 : 0.75,
@@ -59,26 +68,29 @@ export const convertWavToFlacScenario = (
     })
   }
 
-  const fakeFileSteps = WAV_FILES.flatMap(
-    (wavPath, fileIndex) => {
-      const flacPath = swapExtensionToFlac(wavPath)
+  const fakeFileSteps = LOSSLESS_FILES.flatMap(
+    (sourcePath, fileIndex) => {
+      const flacPath = swapExtensionToFlac(sourcePath)
       const progressBefore =
-        (fileIndex + 0.5) / WAV_FILES.length
+        (fileIndex + 0.5) / LOSSLESS_FILES.length
       const progressAfter =
-        (fileIndex + 1) / WAV_FILES.length
+        (fileIndex + 1) / LOSSLESS_FILES.length
       return [
         effect(() => {
           logInfo(
             label,
-            `Encoding ${wavPath} → ${flacPath}`,
+            `Encoding ${sourcePath} → ${flacPath}`,
           )
-          emitProgress(progressBefore, [wavPath])
+          emitProgress(progressBefore, [sourcePath])
         }),
         pause(350),
         effect(() => {
           logInfo(label, `  ✓ ${flacPath}`)
           if (isSourceDeleted) {
-            logInfo(label, `  · removed source ${wavPath}`)
+            logInfo(
+              label,
+              `  · removed source ${sourcePath}`,
+            )
           }
           emitProgress(progressAfter, [])
         }),
@@ -88,15 +100,18 @@ export const convertWavToFlacScenario = (
 
   return concat(
     effect(() => {
-      logInfo(label, `Starting fake convertWavToFlac run.`)
+      logInfo(
+        label,
+        `Starting fake convertLosslessToFlac run.`,
+      )
       logInfo(label, `Body: ${JSON.stringify(body)}`)
       logInfo(
         label,
-        `Found ${WAV_FILES.length} .wav files to encode.`,
+        `Found ${LOSSLESS_FILES.length} lossless audio files to encode.`,
       )
       logInfo(
         label,
-        `Mode: ${isSourceDeleted ? "encode + delete source" : "encode only (keep .wav)"}`,
+        `Mode: ${isSourceDeleted ? "encode + delete source" : "encode only (keep sources)"}`,
       )
       emitProgress(0, [])
     }),
@@ -104,14 +119,14 @@ export const convertWavToFlacScenario = (
     effect(() => {
       logInfo(
         label,
-        `Done. Encoded ${WAV_FILES.length} .wav files to FLAC.`,
+        `Done. Encoded ${LOSSLESS_FILES.length} lossless audio files to FLAC.`,
       )
       emitProgress(1.0, [])
     }),
     from(
-      WAV_FILES.map((wavPath) => ({
-        source: wavPath,
-        destination: swapExtensionToFlac(wavPath),
+      LOSSLESS_FILES.map((sourcePath) => ({
+        source: sourcePath,
+        destination: swapExtensionToFlac(sourcePath),
       })) as unknown[],
     ),
   ) as Observable<unknown>

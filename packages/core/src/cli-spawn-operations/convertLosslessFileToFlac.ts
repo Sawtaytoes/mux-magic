@@ -3,21 +3,21 @@ import { basename, dirname, extname, join } from "node:path"
 import { concatMap, defer, from, map, of } from "rxjs"
 import { runFfmpeg } from "./runFfmpeg.js"
 
-type ConvertWavFileToFlacRequiredProps = {
+type ConvertLosslessFileToFlacRequiredProps = {
   filePath: string
 }
 
-type ConvertWavFileToFlacOptionalProps = {
+type ConvertLosslessFileToFlacOptionalProps = {
   isSourceDeleted?: boolean
 }
 
-export type ConvertWavFileToFlacProps =
-  ConvertWavFileToFlacRequiredProps &
-    ConvertWavFileToFlacOptionalProps
+export type ConvertLosslessFileToFlacProps =
+  ConvertLosslessFileToFlacRequiredProps &
+    ConvertLosslessFileToFlacOptionalProps
 
-export const convertWavFileToFlacDefaultProps = {
+export const convertLosslessFileToFlacDefaultProps = {
   isSourceDeleted: false,
-} satisfies ConvertWavFileToFlacOptionalProps
+} satisfies ConvertLosslessFileToFlacOptionalProps
 
 // Strictly lossless: only `-c:a flac` and `-map_metadata 0`. No `-ar`,
 // `-ac`, or `-sample_fmt` — those would resample, remix, or change bit
@@ -41,10 +41,10 @@ const getInPlaceFlacPath = (sourceFilePath: string) =>
     )}.flac`,
   )
 
-export const convertWavFileToFlac = ({
+export const convertLosslessFileToFlac = ({
   filePath,
-  isSourceDeleted = convertWavFileToFlacDefaultProps.isSourceDeleted,
-}: ConvertWavFileToFlacProps) =>
+  isSourceDeleted = convertLosslessFileToFlacDefaultProps.isSourceDeleted,
+}: ConvertLosslessFileToFlacProps) =>
   of(getInPlaceFlacPath(filePath)).pipe(
     concatMap((outputFilePath) =>
       runFfmpeg({

@@ -16,7 +16,7 @@
 import {
   addSubtitlesRequestSchema,
   changeTrackLanguagesRequestSchema,
-  convertWavToFlacRequestSchema,
+  convertLosslessToFlacRequestSchema,
   copyFilesRequestSchema,
   copyOutSubtitlesRequestSchema,
   deleteCopiedOriginalsRequestSchema,
@@ -475,13 +475,13 @@ export const COMMANDS: Commands = {
       ],
     }
   })(),
-  convertWavToFlac: (() => {
+  convertLosslessToFlac: (() => {
     const field = fieldBuilder(
-      convertWavToFlacRequestSchema,
+      convertLosslessToFlacRequestSchema,
     )
     return {
       summary:
-        "Encode .wav files to FLAC in-place (strictly lossless)",
+        "Encode lossless audio files (.wav / .aif / .aiff / .m4a / .m4b) to FLAC in-place (strictly lossless)",
       tag: "Audio Operations",
       outputFolderName: null,
       fields: [
@@ -496,7 +496,7 @@ export const COMMANDS: Commands = {
         field("isSourceDeleted", {
           type: "boolean",
           label:
-            "Delete Source .wav After Successful Encode",
+            "Delete Source File After Successful Encode",
         }),
       ],
     }

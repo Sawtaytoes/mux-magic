@@ -26,12 +26,12 @@ window.commandDescriptions = {
       "videoLanguage": "A 3-letter ISO-6392 language code for video tracks. All tracks will be labeled with this language."
     }
   },
-  "convertWavToFlac": {
-    "summary": "Encode .wav files to FLAC in-place (strictly lossless)",
+  "convertLosslessToFlac": {
+    "summary": "Encode lossless audio files (.wav / .aif / .aiff / .m4a / .m4b) to FLAC in-place (strictly lossless)",
     "fields": {
-      "sourcePath": "Directory containing .wav files to encode to FLAC, or a directory of directories of .wav files when used with isRecursive.",
-      "isRecursive": "Recursively descends one level into subdirectories looking for .wav files.",
-      "isSourceDeleted": "When true, deletes the source .wav file after a successful FLAC encode. Defaults to false; the original .wav is kept by default."
+      "sourcePath": "Directory containing lossless audio files (.wav / .wave / .aif / .aiff / .m4a / .m4b) to encode to FLAC, or a directory of directories of those files when used with isRecursive.",
+      "isRecursive": "Recursively descends one level into subdirectories looking for accepted lossless audio files.",
+      "isSourceDeleted": "When true, deletes the source file after a successful FLAC encode. Defaults to false; the original is kept by default."
     }
   },
   "copyFiles": {
