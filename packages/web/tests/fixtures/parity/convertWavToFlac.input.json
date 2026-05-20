@@ -1,0 +1,20 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/music"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "convertWavToFlac",
+    "params": {
+      "isRecursive": true,
+      "isSourceDeleted": true
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

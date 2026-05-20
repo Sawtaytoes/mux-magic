@@ -1,17 +1,6 @@
 import { unlink } from "node:fs/promises"
-import {
-  basename,
-  dirname,
-  extname,
-  join,
-} from "node:path"
-import {
-  concatMap,
-  defer,
-  from,
-  map,
-  of,
-} from "rxjs"
+import { basename, dirname, extname, join } from "node:path"
+import { concatMap, defer, from, map, of } from "rxjs"
 import { runFfmpeg } from "./runFfmpeg.js"
 
 type ConvertWavFileToFlacRequiredProps = {
