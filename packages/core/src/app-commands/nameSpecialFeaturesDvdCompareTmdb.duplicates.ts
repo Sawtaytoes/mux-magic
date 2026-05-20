@@ -29,9 +29,7 @@ export const groupRenamesByTarget = <
     const next = new Map(groups)
     next.set(
       rename.renamedFilename,
-      existing
-        ? existing.concat(rename)
-        : [rename],
+      existing ? existing.concat(rename) : [rename],
     )
     return next
   }, new Map<string, T[]>())

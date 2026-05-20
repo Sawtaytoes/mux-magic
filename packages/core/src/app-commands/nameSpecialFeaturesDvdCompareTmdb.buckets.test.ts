@@ -1,5 +1,5 @@
-import { vol } from "memfs"
 import { join } from "node:path"
+import { vol } from "memfs"
 import { lastValueFrom, toArray } from "rxjs"
 import { describe, expect, test } from "vitest"
 import {
@@ -11,9 +11,9 @@ import {
 
 describe(isBucketFolderName.name, () => {
   test("matches the two NSF bucket folder names", () => {
-    expect(isBucketFolderName(UNNAMED_FEATURES_BUCKET)).toBe(
-      true,
-    )
+    expect(
+      isBucketFolderName(UNNAMED_FEATURES_BUCKET),
+    ).toBe(true)
     expect(isBucketFolderName(DUPLICATES_BUCKET)).toBe(true)
   })
 

@@ -159,9 +159,7 @@ describe(reorderForDuplicatePrompts.name, () => {
       reorderForDuplicatePrompts(renames),
     )
     expect(
-      result.kept.map(
-        (rename) => rename.fileInfo.filename,
-      ),
+      result.kept.map((rename) => rename.fileInfo.filename),
     ).toEqual(["disc-a.mkv", "c.mkv"])
     expect(result.droppedFullPaths).toEqual([
       "/work/disc-b.mkv",
@@ -186,9 +184,7 @@ describe(reorderForDuplicatePrompts.name, () => {
       reorderForDuplicatePrompts(renames),
     )
     expect(
-      result.kept.map(
-        (rename) => rename.fileInfo.filename,
-      ),
+      result.kept.map((rename) => rename.fileInfo.filename),
     ).toEqual(["disc-a.mkv", "disc-b.mkv"])
     expect(result.droppedFullPaths).toEqual([])
   })
