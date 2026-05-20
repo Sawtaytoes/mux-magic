@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/53_version-iscontainerized-fix/`
 **Phase:** 4
 **Depends on:** —
-**Parallel with:** any worker that doesn't touch [packages/server/src/api/routes/versionRoutes.ts](../../packages/server/src/api/routes/versionRoutes.ts) or the root [Dockerfile](../../Dockerfile).
+**Parallel with:** any worker that doesn't touch [packages/api/src/api/routes/versionRoutes.ts](../../packages/api/src/api/routes/versionRoutes.ts) or the root [Dockerfile](../../Dockerfile).
 
 ## Universal Rules (TL;DR)
 
@@ -13,7 +13,7 @@ Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typechec
 
 ## Your Mission
 
-`GET /version` currently reports `isContainerized: true` on local non-containerised runs because the detection probe is `existsSync("/.dockerenv")` ([packages/server/src/api/routes/versionRoutes.ts:74](../../packages/server/src/api/routes/versionRoutes.ts)). That sentinel file exists for a host of reasons that don't mean "I'm in a container" — most commonly a leftover from a previous Docker install, a host-side `touch` for a tool that expected it, or a bind-mount probe from another stack. The result: the UI hides host-only affordances (like "Open in player") on a developer's normal local server.
+`GET /version` currently reports `isContainerized: true` on local non-containerised runs because the detection probe is `existsSync("/.dockerenv")` ([packages/api/src/api/routes/versionRoutes.ts:74](../../packages/api/src/api/routes/versionRoutes.ts)). That sentinel file exists for a host of reasons that don't mean "I'm in a container" — most commonly a leftover from a previous Docker install, a host-side `touch` for a tool that expected it, or a bind-mount probe from another stack. The result: the UI hides host-only affordances (like "Open in player") on a developer's normal local server.
 
 > Heads up — this worker was originally filed as id `47`, then renumbered to `53` because `47` was already in use by [`47_errors-panel-and-e2e`](47_errors-panel-and-e2e.md). Per the plan's "never renumber filed workers" rule, the older slot kept its number and this one moved.
 
@@ -51,8 +51,8 @@ Extract the detection into a small pure helper (taking the env-getter + cgroup-r
 
 ## Files
 
-- [packages/server/src/api/routes/versionRoutes.ts](../../packages/server/src/api/routes/versionRoutes.ts) — extract `detectIsContainerized`; drop `existsSync("/.dockerenv")`; update the schema `.describe(...)`.
-- `packages/server/src/api/routes/versionRoutes.detectIsContainerized.test.ts` — new.
+- [packages/api/src/api/routes/versionRoutes.ts](../../packages/api/src/api/routes/versionRoutes.ts) — extract `detectIsContainerized`; drop `existsSync("/.dockerenv")`; update the schema `.describe(...)`.
+- `packages/api/src/api/routes/versionRoutes.detectIsContainerized.test.ts` — new.
 - [Dockerfile](../../Dockerfile) — add `ENV IS_CONTAINERIZED=true`.
 
 ## Out of scope
@@ -64,7 +64,7 @@ Extract the detection into a small pure helper (taking the env-getter + cgroup-r
 ## Verification checklist
 
 - [ ] Worktree created; manifest row → `in-progress` in its own `chore(manifest):` commit
-- [ ] `grep` for `\.dockerenv` returns no hits in `packages/server/**`
+- [ ] `grep` for `\.dockerenv` returns no hits in `packages/api/**`
 - [ ] All new tests pass
 - [ ] Local `yarn dev:api-server` followed by `curl http://localhost:$PORT/version` reports `isContainerized: false` on the dev host
 - [ ] Standard gate clean (`lint → typecheck → test → e2e → lint`)

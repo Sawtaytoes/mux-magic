@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/42_foreach-folder-bulk/`
 **Phase:** 5
 **Depends on:** 27 (paused state + state persistence), 35 (`dvdCompareId` Variable type), 36 (Variables foundation — done), 25 (per-release answer cache; soft — bulk works without it but reuses it)
-**Parallel with:** any Phase 5 worker that doesn't touch [packages/server/src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts), [packages/server/src/api/routes/sequenceRoutes.ts](../../packages/server/src/api/routes/sequenceRoutes.ts), [packages/web/src/types.ts](../../packages/web/src/types.ts), or [packages/web/src/components/InsertDivider/InsertDivider.tsx](../../packages/web/src/components/InsertDivider/InsertDivider.tsx).
+**Parallel with:** any Phase 5 worker that doesn't touch [packages/api/src/api/sequenceRunner.ts](../../packages/api/src/api/sequenceRunner.ts), [packages/api/src/api/routes/sequenceRoutes.ts](../../packages/api/src/api/routes/sequenceRoutes.ts), [packages/web/src/types.ts](../../packages/web/src/types.ts), or [packages/web/src/components/InsertDivider/InsertDivider.tsx](../../packages/web/src/components/InsertDivider/InsertDivider.tsx).
 
 ## Universal Rules (TL;DR)
 
@@ -13,7 +13,7 @@ Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typechec
 
 ## Context
 
-The user has ~700 disc-rip subfolders under `G:\Disc-Rips`. Running **Name Special Features (DVD Compare + TMDB)** ([packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts](../../packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts)) by hand against each is impractical: each invocation needs a DVD Compare ID, frequently asks for user input mid-run (Phase-B duplicate-file prompts via `getUserSearchInput`), and some folders cannot be matched at all.
+The user has ~700 disc-rip subfolders under `G:\Disc-Rips`. Running **Name Special Features (DVD Compare + TMDB)** ([packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts](../../packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts)) by hand against each is impractical: each invocation needs a DVD Compare ID, frequently asks for user input mid-run (Phase-B duplicate-file prompts via `getUserSearchInput`), and some folders cannot be matched at all.
 
 This worker introduces **iteration at the sequence level** — a new group kind that runs its child steps once per matched subfolder of a parent directory, plus the supporting infrastructure (centralized registry file, pre-flight consistency check, "needs attention" review queue, `InsertDivider` redesign). The NSF command itself stays untouched.
 
@@ -26,7 +26,7 @@ Full design rationale lives at the plan file the user approved this from — kee
 Add a third group kind alongside today's sequential and parallel groups. Schema lives in:
 
 - Web type: [packages/web/src/types.ts](../../packages/web/src/types.ts) (~lines 24–61) — extend `Group` with a `kind: "sequential" | "parallel" | "forEachFolder"` discriminator (or add a new sibling type — choose whichever requires less churn at the call sites).
-- Server schema: [packages/server/src/api/routes/sequenceRoutes.ts](../../packages/server/src/api/routes/sequenceRoutes.ts) (~lines 368–379) — accept the new kind plus its config fields (see config table below).
+- Server schema: [packages/api/src/api/routes/sequenceRoutes.ts](../../packages/api/src/api/routes/sequenceRoutes.ts) (~lines 368–379) — accept the new kind plus its config fields (see config table below).
 
 A `forEachFolder` group carries this config:
 
@@ -59,7 +59,7 @@ special_features:
 New files:
 
 - `packages/web/src/jobs/centralRegistryCodec.ts` — encode/decode the registry. Mirror the patterns from [packages/web/src/jobs/yamlCodec.ts](../../packages/web/src/jobs/yamlCodec.ts) (including `legacyFieldRenames` style for forward-compat).
-- `packages/server/src/api/centralRegistry.ts` — server-side reader that loads `<parentPath>/.mux-magic.yaml` and exposes a per-folder lookup.
+- `packages/api/src/api/centralRegistry.ts` — server-side reader that loads `<parentPath>/.mux-magic.yaml` and exposes a per-folder lookup.
 
 ### 3. Pre-flight consistency check (load-bearing)
 
@@ -74,7 +74,7 @@ This step replaces what would naturally self-resolve with sidecars (sidecar gone
 
 ### 4. Sequence runner extension
 
-Extend [packages/server/src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) (currently flattens groups inline ~lines 187–232). When the runner encounters a `forEachFolder` group:
+Extend [packages/api/src/api/sequenceRunner.ts](../../packages/api/src/api/sequenceRunner.ts) (currently flattens groups inline ~lines 187–232). When the runner encounters a `forEachFolder` group:
 
 1. Resolve `parentPath` from the linked path Variable.
 2. Enumerate subfolders, apply `excludePatterns` (use the new shared glob helper from `packages/tools/src/globMatcher.ts` — see §5).
@@ -121,7 +121,7 @@ New page: `packages/web/src/pages/JobsReviewQueue/`. Tab on the jobs page that l
 
 ### 7. Variable resolution
 
-Extend [packages/server/src/api/resolveSequenceParams.ts](../../packages/server/src/api/resolveSequenceParams.ts) to inject `currentFolder` at the per-iteration scope, and to consult the central registry when resolving a `dvdCompareId` link inside a `forEachFolder` iteration (the registry's value wins over an unset Variable; an explicitly-set Variable still wins over the registry — matches the principle "the more specific source wins").
+Extend [packages/api/src/api/resolveSequenceParams.ts](../../packages/api/src/api/resolveSequenceParams.ts) to inject `currentFolder` at the per-iteration scope, and to consult the central registry when resolving a `dvdCompareId` link inside a `forEachFolder` iteration (the registry's value wins over an unset Variable; an explicitly-set Variable still wins over the registry — matches the principle "the more specific source wins").
 
 ## TDD steps
 
@@ -144,7 +144,7 @@ Extend [packages/server/src/api/resolveSequenceParams.ts](../../packages/server/
 ### New
 
 - [packages/web/src/jobs/centralRegistryCodec.ts](../../packages/web/src/jobs/centralRegistryCodec.ts)
-- [packages/server/src/api/centralRegistry.ts](../../packages/server/src/api/centralRegistry.ts)
+- [packages/api/src/api/centralRegistry.ts](../../packages/api/src/api/centralRegistry.ts)
 - [packages/web/src/components/ForEachFolderCard/](../../packages/web/src/components/ForEachFolderCard/) — `ForEachFolderCard.tsx` + story + test
 - [packages/web/src/components/GlobPatternList/](../../packages/web/src/components/GlobPatternList/) — shared exclude-pattern input
 - [packages/tools/src/globMatcher.ts](../../packages/tools/src/globMatcher.ts)
@@ -152,9 +152,9 @@ Extend [packages/server/src/api/resolveSequenceParams.ts](../../packages/server/
 
 ### Extend
 
-- [packages/server/src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) — `forEachFolder` expansion + sub-job orchestration
-- [packages/server/src/api/routes/sequenceRoutes.ts](../../packages/server/src/api/routes/sequenceRoutes.ts) — schema for the new group kind
-- [packages/server/src/api/resolveSequenceParams.ts](../../packages/server/src/api/resolveSequenceParams.ts) — `currentFolder` injection + registry-backed `dvdCompareId` resolution
+- [packages/api/src/api/sequenceRunner.ts](../../packages/api/src/api/sequenceRunner.ts) — `forEachFolder` expansion + sub-job orchestration
+- [packages/api/src/api/routes/sequenceRoutes.ts](../../packages/api/src/api/routes/sequenceRoutes.ts) — schema for the new group kind
+- [packages/api/src/api/resolveSequenceParams.ts](../../packages/api/src/api/resolveSequenceParams.ts) — `currentFolder` injection + registry-backed `dvdCompareId` resolution
 - [packages/web/src/types.ts](../../packages/web/src/types.ts) — `Group` discriminator
 - [packages/web/src/components/InsertDivider/InsertDivider.tsx](../../packages/web/src/components/InsertDivider/InsertDivider.tsx) — collapse to three controls; new `onInsertGroup(kind)` API
 - [packages/web/src/components/InsertDivider/InsertDivider.stories.tsx](../../packages/web/src/components/InsertDivider/InsertDivider.stories.tsx)
@@ -164,7 +164,7 @@ Extend [packages/server/src/api/resolveSequenceParams.ts](../../packages/server/
 
 ### Reuse — do not reinvent
 
-- NSF command stays untouched: [packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts](../../packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts) already accepts a `dvdCompareId`; the bulk runner just supplies it.
+- NSF command stays untouched: [packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts](../../packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.ts) already accepts a `dvdCompareId`; the bulk runner just supplies it.
 - `getUserSearchInput` already emits choice events on the SSE channel — worker 27 turns those into a `paused` transition; this worker just consumes it.
 - `GroupCard` + dnd-kit handles nesting: [packages/web/src/pages/BuilderSequenceList/BuilderSequenceList.tsx](../../packages/web/src/pages/BuilderSequenceList/BuilderSequenceList.tsx) — `forEachFolder` slots in as another group kind without new drag-drop logic.
 

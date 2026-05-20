@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/62_scale-resolution-scales-style-fields/`
 **Phase:** 5
 **Depends on:** 01
-**Parallel with:** any Phase 5 worker that does not touch [packages/server/src/tools/applyAssRules.ts](../../packages/server/src/tools/applyAssRules.ts), [packages/server/src/tools/assTypes.ts](../../packages/server/src/tools/assTypes.ts), [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts) (`scaleResolutionRuleSchema`), or [docs/dsl/subtitle-rules.md](../../docs/dsl/subtitle-rules.md).
+**Parallel with:** any Phase 5 worker that does not touch [packages/core/src/tools/applyAssRules.ts](../../packages/core/src/tools/applyAssRules.ts), [packages/core/src/tools/assTypes.ts](../../packages/core/src/tools/assTypes.ts), [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts) (`scaleResolutionRuleSchema`), or [docs/dsl/subtitle-rules.md](../../docs/dsl/subtitle-rules.md).
 
 ## Universal Rules (TL;DR)
 
@@ -13,7 +13,7 @@ Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typechec
 
 ## Context
 
-The `scaleResolution` rule is documented to "rescale `PlayResX`/`PlayResY` and **proportionally rewrite every style's font sizes, margins, outline, shadow**" ([docs/dsl/subtitle-rules.md:118](../../docs/dsl/subtitle-rules.md#L118)). The implementation in [applyAssRules.ts:565-664](../../packages/server/src/tools/applyAssRules.ts#L565-L664) does **not** do that — it only rewrites `[Script Info]` keys (`PlayResX`, `PlayResY`, `LayoutResX`, `LayoutResY`, `ScaledBorderAndShadow`) and leaves every `[V4+ Styles]` row untouched.
+The `scaleResolution` rule is documented to "rescale `PlayResX`/`PlayResY` and **proportionally rewrite every style's font sizes, margins, outline, shadow**" ([docs/dsl/subtitle-rules.md:118](../../docs/dsl/subtitle-rules.md#L118)). The implementation in [applyAssRules.ts:565-664](../../packages/core/src/tools/applyAssRules.ts#L565-L664) does **not** do that — it only rewrites `[Script Info]` keys (`PlayResX`, `PlayResY`, `LayoutResX`, `LayoutResY`, `ScaledBorderAndShadow`) and leaves every `[V4+ Styles]` row untouched.
 
 The visible failure mode: a user authoring at 1920×1080 with `MarginV: 90` rescales the file to 640×360 expecting `MarginV` to become `30` (the same 8.3% top/bottom gutter); instead `MarginV` stays at `90`, which is now 25% of the 360-tall canvas. Same problem for `Fontsize`, `Outline`, `Shadow`, `MarginL`, `MarginR`, and `Spacing` — the numeric value is in script-coordinate units, the coordinate space just shrank, but the value didn't track.
 
@@ -45,9 +45,9 @@ If `from` is omitted on the rule (today that means "skip per-file resolution gua
 
 ## Style protection
 
-Add `ignoredStyleNamesRegexString?: string` to `ScaleResolutionRule` ([assTypes.ts:136-144](../../packages/server/src/tools/assTypes.ts#L136-L144)). Semantics match `setStyleFields`: case-insensitive regex; styles whose `Name` field matches are left entirely unmodified. Default behavior when the field is omitted: scale every style (no protection).
+Add `ignoredStyleNamesRegexString?: string` to `ScaleResolutionRule` ([assTypes.ts:136-144](../../packages/core/src/tools/assTypes.ts#L136-L144)). Semantics match `setStyleFields`: case-insensitive regex; styles whose `Name` field matches are left entirely unmodified. Default behavior when the field is omitted: scale every style (no protection).
 
-Do **not** hardcode the regex string at the engine level; that's a default-rules concern and lives in [buildDefaultSubtitleModificationRules.ts](../../packages/server/src/tools/buildDefaultSubtitleModificationRules.ts). The engine just honors whatever the rule carries.
+Do **not** hardcode the regex string at the engine level; that's a default-rules concern and lives in [buildDefaultSubtitleModificationRules.ts](../../packages/core/src/tools/buildDefaultSubtitleModificationRules.ts). The engine just honors whatever the rule carries.
 
 ## Per-Dialogue-line margins
 
@@ -59,7 +59,7 @@ Also out of scope. Tags inside `{...}` blocks in Dialogue text (`\pos(x,y)`, `\f
 
 ## Schema work
 
-In [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts):
+In [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts):
 
 - Add `ignoredStyleNamesRegexString: z.string().optional()` to `scaleResolutionRuleSchema`.
 - Keep the existing `from`/`to`/`hasLayoutRes`/`hasScaledBorderAndShadow`/`isLayoutResSynced`/`when` shape.
@@ -98,7 +98,7 @@ Update [docs/dsl/subtitle-coverage.md](../../docs/dsl/subtitle-coverage.md) to a
 
 ## Tests (per test-coverage discipline)
 
-In [packages/server/src/tools/assFileTools.test.ts](../../packages/server/src/tools/assFileTools.test.ts) (or a sibling test file alongside `applyAssRules.ts` if cleaner — match repo convention):
+In [packages/core/src/tools/assFileTools.test.ts](../../packages/core/src/tools/assFileTools.test.ts) (or a sibling test file alongside `applyAssRules.ts` if cleaner — match repo convention):
 
 - **Style-field scaling math:** 1080→360 file with `Fontsize=24`, `Outline=2`, `Shadow=1`, `MarginV=90`, `MarginL=200`, `MarginR=200`, `Spacing=0` → after scale: `Fontsize=8`, `Outline=1` (Math.round(2/3) = 1), `Shadow=0` (Math.round(1/3) = 0), `MarginV=30`, `MarginL=67`, `MarginR=67`, `Spacing=0`. Assert each field individually.
 - **Asymmetric ratios:** non-uniform scale (e.g. 1920×1080 → 1280×720, so widthRatio=2/3, heightRatio=2/3 — pick a case where the ratios differ, e.g. 1920×1080 → 1280×1080 widthRatio=2/3, heightRatio=1) so width-axis vs height-axis fields produce different scaled values.
