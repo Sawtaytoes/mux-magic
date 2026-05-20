@@ -226,6 +226,12 @@ window.commandDescriptions = {
       "allowOverwrite": "When true, existing destination files are overwritten. Default false: the command refuses to clobber and fails fast with an EEXIST-shaped error naming the colliding path. Opt in for mirror-sync / idempotent re-run flows."
     }
   },
+  "moveFilesIntoNamedFolders": {
+    "summary": "Foldarize a directory: each file is moved into a new same-named subdirectory (extension stripped from the folder name)",
+    "fields": {
+      "sourcePath": "Folder whose files are each moved into a same-named subdirectory (file extension stripped from the folder name). Casper.mkv → Casper/Casper.mkv. Pre-existing subdirectories are untouched."
+    }
+  },
   "renameFiles": {
     "summary": "Rename files in place via regex (no copy, no move). Pre-flight halts the run if two files would map to the same target name.",
     "fields": {

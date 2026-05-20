@@ -34,6 +34,7 @@ import { mergeOrderedChaptersCommand } from "./cli-commands/mergeOrderedChapters
 import { mergeTracksCommand } from "./cli-commands/mergeTracksCommand.js"
 import { modifySubtitleMetadataCommand } from "./cli-commands/modifySubtitleMetadataCommand.js"
 import { moveFilesCommand } from "./cli-commands/moveFilesCommand.js"
+import { moveFilesIntoNamedFoldersCommand } from "./cli-commands/moveFilesIntoNamedFoldersCommand.js"
 import { nameAnimeEpisodesAniDBCommand } from "./cli-commands/nameAnimeEpisodesAniDBCommand.js"
 import { nameAnimeEpisodesCommand } from "./cli-commands/nameAnimeEpisodesCommand.js"
 import { nameMovieCutsDvdCompareTmdbCommand } from "./cli-commands/nameMovieCutsDvdCompareTmdbCommand.js"
@@ -90,6 +91,7 @@ yargs(hideBin(process.argv))
   .command(mergeOrderedChaptersCommand)
   .command(mergeTracksCommand)
   .command(moveFilesCommand)
+  .command(moveFilesIntoNamedFoldersCommand)
   .command(nameAnimeEpisodesCommand)
   .command(nameAnimeEpisodesAniDBCommand)
   .command(nameMovieCutsDvdCompareTmdbCommand)

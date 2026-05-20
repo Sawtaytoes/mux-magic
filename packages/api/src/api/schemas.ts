@@ -166,6 +166,15 @@ export const flattenOutputRequestSchema = z.object({
     ),
 })
 
+export const moveFilesIntoNamedFoldersRequestSchema =
+  z.object({
+    sourcePath: z
+      .string()
+      .describe(
+        "Folder whose files are each moved into a same-named subdirectory (file extension stripped from the folder name). Casper.mkv → Casper/Casper.mkv. Pre-existing subdirectories are untouched.",
+      ),
+  })
+
 export const moveFilesRequestSchema = z.object({
   sourcePath: z
     .string()
