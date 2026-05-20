@@ -51,14 +51,16 @@ export const NsfRunResults = ({
       jobId,
       stepId,
       sourcePath,
-      unrenamedFiles: summary.unnamedFileCandidates.map(
+      // Worker 25: server already emits per-file ranked candidates,
+      // so the modal receives them pre-scored. No client-side ranking.
+      suggestions: summary.unnamedFileCandidates.map(
         (entry) => ({
           filename: entry.filename,
           extension: entry.extension ?? "",
           durationSeconds: entry.durationSeconds,
+          rankedCandidates: entry.rankedCandidates,
         }),
       ),
-      candidates: summary.possibleNames,
     })
   }
 

@@ -381,6 +381,14 @@ window.commandDescriptions = {
       "chapterSplits": "Space-separated list of comma-separated chapter markers. Splits occur at the beginning of the chapter."
     }
   },
+  "splitCueSheet": {
+    "summary": "Split CUE sheet to FLAC",
+    "fields": {
+      "sourcePath": "Music library root containing albums with CUE sheets.",
+      "isRecursive": "Recursively descend into subdirectories looking for CUE files. Default true.",
+      "outputFolderName": "Folder name created under sourcePath that holds all per-album subfolders."
+    }
+  },
   "storeAspectRatioData": {
     "summary": "Analyze and store aspect ratio metadata",
     "fields": {

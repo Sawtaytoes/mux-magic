@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest"
 import { buildUnnamedFileCandidates } from "./nameSpecialFeaturesDvdCompareTmdb.buildUnnamedFileCandidates.js"
+import { ORDER_BONUS } from "./nameSpecialFeaturesDvdCompareTmdb.rankCandidates.js"
 
 describe(buildUnnamedFileCandidates.name, () => {
   test("returns empty when there are no unnamed files", () => {
@@ -13,7 +14,7 @@ describe(buildUnnamedFileCandidates.name, () => {
     ).toEqual([])
   })
 
-  test("emits empty-candidate entries when there are unrenamed files but no possible-name suggestions", () => {
+  test("emits empty-rankedCandidates entries when there are unrenamed files but no possible-name suggestions", () => {
     // Leftover files still need a UI surface even when DVDCompare has
     // no untimed extras to rank — the Smart Match modal renders them
     // as free-text rename rows. This is the every-extra-has-a-timecode
@@ -34,12 +35,12 @@ describe(buildUnnamedFileCandidates.name, () => {
         filename: "MOVIE_t23",
         extension: ".mkv",
         durationSeconds: 600,
-        candidates: [],
+        rankedCandidates: [],
       },
     ])
   })
 
-  test("returns a candidate list for each unnamed file when both lists are non-empty", () => {
+  test("returns a ScoredCandidate list for each unnamed file when both lists are non-empty", () => {
     const result = buildUnnamedFileCandidates({
       possibleNames: [
         { name: "Image Gallery", timecode: undefined },
@@ -56,7 +57,13 @@ describe(buildUnnamedFileCandidates.name, () => {
     expect(result[0].filename).toBe("MOVIE_t23")
     expect(result[0].extension).toBe(".mkv")
     expect(result[0].durationSeconds).toBe(600)
-    expect(result[0].candidates).toEqual(["Image Gallery"])
+    expect(result[0].rankedCandidates).toHaveLength(1)
+    expect(
+      result[0].rankedCandidates[0].candidate.name,
+    ).toBe("Image Gallery")
+    expect(
+      result[0].rankedCandidates[0].confidence,
+    ).toBeGreaterThanOrEqual(0)
   })
 
   test("threads durationSeconds through each entry, including null when mediainfo couldn't resolve one", () => {
@@ -81,7 +88,26 @@ describe(buildUnnamedFileCandidates.name, () => {
     expect(result[1].durationSeconds).toBeNull()
   })
 
-  test("ranks candidates that share more words with the filename first", () => {
+  test("ranks candidates with strong duration proximity ahead of filename-only matches", () => {
+    const result = buildUnnamedFileCandidates({
+      possibleNames: [
+        { name: "Trailer", timecode: undefined },
+        { name: "Theatrical Cut", timecode: "1:30:00" },
+      ],
+      unrenamedFiles: [
+        {
+          filename: "BONUS_1",
+          extension: ".mkv",
+          durationSeconds: 5400,
+        },
+      ],
+    })
+    expect(
+      result[0].rankedCandidates[0].candidate.name,
+    ).toBe("Theatrical Cut")
+  })
+
+  test("ranks candidates that share more words with the filename first when no durations are available", () => {
     const result = buildUnnamedFileCandidates({
       possibleNames: [
         {
@@ -102,9 +128,9 @@ describe(buildUnnamedFileCandidates.name, () => {
         },
       ],
     })
-    expect(result[0].candidates[0]).toBe(
-      "Image Gallery (1200 images)",
-    )
+    expect(
+      result[0].rankedCandidates[0].candidate.name,
+    ).toBe("Image Gallery (1200 images)")
   })
 
   test("produces one entry per unnamed file, each with the full candidate list", () => {
@@ -127,11 +153,11 @@ describe(buildUnnamedFileCandidates.name, () => {
       ],
     })
     expect(result).toHaveLength(2)
-    expect(result[0].candidates).toHaveLength(2)
-    expect(result[1].candidates).toHaveLength(2)
+    expect(result[0].rankedCandidates).toHaveLength(2)
+    expect(result[1].rankedCandidates).toHaveLength(2)
   })
 
-  test("preserves the timecode slot on each PossibleName entry through the call (currently unused for ranking but reserved for the web-side smart-match modal)", () => {
+  test("preserves the timecode slot on each candidate through ranking", () => {
     const result = buildUnnamedFileCandidates({
       possibleNames: [
         { name: "Trailer", timecode: "0:02:30" },
@@ -145,7 +171,51 @@ describe(buildUnnamedFileCandidates.name, () => {
         },
       ],
     })
-    expect(result[0].candidates).toContain("Trailer")
-    expect(result[0].candidates).toContain("Image Gallery")
+    const trailer = result[0].rankedCandidates.find(
+      (entry) => entry.candidate.name === "Trailer",
+    )
+    expect(trailer?.candidate.timecode).toBe("0:02:30")
+  })
+
+  test("applies the order-based tie-break — at fileIndex N, the Nth DVDCompare candidate gets ORDER_BONUS", () => {
+    // Three pure filename-only candidates (all confidence 0 here);
+    // the order bonus should pick the one at the same position as
+    // the file in the sorted-listing.
+    const result = buildUnnamedFileCandidates({
+      possibleNames: [
+        { name: "Alpha", timecode: undefined },
+        { name: "Beta", timecode: undefined },
+        { name: "Gamma", timecode: undefined },
+      ],
+      unrenamedFiles: [
+        {
+          filename: "file0.mkv",
+          extension: ".mkv",
+          durationSeconds: null,
+        },
+        {
+          filename: "file1.mkv",
+          extension: ".mkv",
+          durationSeconds: null,
+        },
+        {
+          filename: "file2.mkv",
+          extension: ".mkv",
+          durationSeconds: null,
+        },
+      ],
+    })
+    expect(
+      result[0].rankedCandidates[0].candidate.name,
+    ).toBe("Alpha")
+    expect(
+      result[0].rankedCandidates[0].confidence,
+    ).toBeCloseTo(ORDER_BONUS, 5)
+    expect(
+      result[1].rankedCandidates[0].candidate.name,
+    ).toBe("Beta")
+    expect(
+      result[2].rankedCandidates[0].candidate.name,
+    ).toBe("Gamma")
   })
 })

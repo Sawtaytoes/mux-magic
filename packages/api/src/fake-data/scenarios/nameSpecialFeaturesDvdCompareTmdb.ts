@@ -171,9 +171,8 @@ export const nameSpecialFeaturesDvdCompareTmdbScenario = (
     pause(400),
 
     // Phase 4 — two files remain unmatched. The summary emitted in
-    // Phase 5 now carries durationSeconds per file so the web-side
-    // Smart Match modal (worker 58 / Part B) can rank candidates by
-    // duration proximity.
+    // Phase 5 now carries durationSeconds per file plus pre-ranked
+    // ScoredCandidate[] (worker 25 moved the scorer server-side).
     effect(() => {
       logInfo(
         label,
@@ -185,6 +184,18 @@ export const nameSpecialFeaturesDvdCompareTmdbScenario = (
       logInfo(label, "  • MOVIE_t05.mkv")
       logInfo(label, "      - Director's Commentary")
       logInfo(label, "      - Image Gallery (250 images)")
+      // Worker 25: leftovers auto-move into UNNAMED-FEATURES/ as
+      // the rename pass completes. The fake scenario doesn't touch
+      // disk, but the log line mirrors the real run so dry-run
+      // testing of the post-NSF flow shows the user what they'll see.
+      logInfo(
+        label,
+        "MOVED TO BUCKET: MOVIE_t04.mkv → UNNAMED-FEATURES/",
+      )
+      logInfo(
+        label,
+        "MOVED TO BUCKET: MOVIE_t05.mkv → UNNAMED-FEATURES/",
+      )
       emitProgress(0.8)
     }),
     pause(300),
@@ -214,22 +225,70 @@ export const nameSpecialFeaturesDvdCompareTmdbScenario = (
         "Director's Commentary",
         "The Making of Inception",
       ],
+      // Worker 25: server now emits already-ranked `ScoredCandidate[]`
+      // with confidence + per-signal scores so the Smart Match modal can
+      // render straight from the payload — no client-side re-ranking.
+      // The two entries below are realistic confidence numbers for the
+      // happy path (high-confidence filename-overlap match on top,
+      // weaker fallback below).
       unnamedFileCandidates: [
         {
           filename: "MOVIE_t04.mkv",
+          extension: ".mkv",
           durationSeconds: 760,
-          candidates: [
-            "Image Gallery (250 images)",
-            "Director's Commentary",
-            "Behind the Scenes",
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Image Gallery (250 images)",
+                timecode: undefined,
+              },
+              confidence: 0.6,
+              durationScore: Number.NaN,
+              filenameScore: 1,
+            },
+            {
+              candidate: {
+                name: "Director's Commentary",
+                timecode: undefined,
+              },
+              confidence: 0,
+              durationScore: Number.NaN,
+              filenameScore: 0,
+            },
+            {
+              candidate: {
+                name: "Behind the Scenes",
+                timecode: undefined,
+              },
+              confidence: 0,
+              durationScore: Number.NaN,
+              filenameScore: 0,
+            },
           ],
         },
         {
           filename: "MOVIE_t05.mkv",
+          extension: ".mkv",
           durationSeconds: 48,
-          candidates: [
-            "Director's Commentary",
-            "Image Gallery (250 images)",
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Director's Commentary",
+                timecode: undefined,
+              },
+              confidence: 0.05,
+              durationScore: Number.NaN,
+              filenameScore: 0,
+            },
+            {
+              candidate: {
+                name: "Image Gallery (250 images)",
+                timecode: undefined,
+              },
+              confidence: 0,
+              durationScore: Number.NaN,
+              filenameScore: 0,
+            },
           ],
         },
       ],

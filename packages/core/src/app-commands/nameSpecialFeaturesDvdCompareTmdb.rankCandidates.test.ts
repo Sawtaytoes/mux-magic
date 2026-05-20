@@ -1,16 +1,17 @@
 import { describe, expect, test } from "vitest"
 
 import {
+  applyOrderBonus,
   combineScores,
   DURATION_PROXIMITY_TOLERANCE_SECONDS,
   DURATION_WEIGHT,
   FILENAME_ONLY_SCORE_FACTOR,
+  ORDER_BONUS,
   parseTimecodeToSeconds,
   rankCandidatesForFile,
-  rankSuggestions,
   scoreDurationProximity,
   scoreFilenameOverlap,
-} from "./smartMatchScoring"
+} from "./nameSpecialFeaturesDvdCompareTmdb.rankCandidates.js"
 
 describe(parseTimecodeToSeconds.name, () => {
   test("parses HH:MM:SS into total seconds", () => {
@@ -112,7 +113,6 @@ describe(scoreDurationProximity.name, () => {
   })
 
   test("scales linearly within the tolerance window", () => {
-    // 30s delta inside a 90s window → 1 - 30/90 ≈ 0.6666…
     const score = scoreDurationProximity({
       candidateTimecode: "1:30:00",
       fileDurationSeconds: 5430,
@@ -167,9 +167,7 @@ describe(rankCandidatesForFile.name, () => {
       fileDurationSeconds: 5400,
       filename: "BONUS_1.mkv",
       candidates: [
-        // Filename overlap is zero; duration proximity is exact.
         { name: "Theatrical Cut", timecode: "1:30:00" },
-        // Filename overlap zero; no timecode → 0 score.
         { name: "Image Gallery", timecode: undefined },
       ],
     })
@@ -200,59 +198,91 @@ describe(rankCandidatesForFile.name, () => {
         { name: "Pqr", timecode: undefined },
       ],
     })
-    // All zero scores — `.toSorted()` (TimSort under the hood) is stable
-    // in modern JS engines, so the input order is preserved.
     expect(
       result.map((entry) => entry.candidate.name),
     ).toEqual(["Xyz", "Pqr"])
   })
 })
 
-describe(rankSuggestions.name, () => {
-  test("returns one entry per unrenamed file with its ranked candidates", () => {
-    const result = rankSuggestions({
+describe(applyOrderBonus.name, () => {
+  test("adds ORDER_BONUS to the candidate at the matching index and re-sorts", () => {
+    const ranked = rankCandidatesForFile({
+      fileDurationSeconds: null,
+      filename: "title3.mkv",
       candidates: [
-        { name: "Theatrical", timecode: "1:30:00" },
-        { name: "Trailer", timecode: "0:02:30" },
-      ],
-      unrenamedFiles: [
-        {
-          filename: "BONUS_1",
-          extension: ".mkv",
-          durationSeconds: 5395,
-        },
-        {
-          filename: "BONUS_2",
-          extension: ".mkv",
-          durationSeconds: 151,
-        },
+        { name: "Alpha", timecode: undefined },
+        { name: "Beta", timecode: undefined },
+        { name: "Gamma", timecode: undefined },
       ],
     })
-    expect(result).toHaveLength(2)
-    expect(
-      result[0].rankedCandidates[0].candidate.name,
-    ).toBe("Theatrical")
-    expect(
-      result[1].rankedCandidates[0].candidate.name,
-    ).toBe("Trailer")
+    // Every score is 0 here — pure order tie-break case.
+    const result = applyOrderBonus({
+      rankedCandidates: ranked,
+      fileIndex: 1,
+      dvdCompareOrder: ["Alpha", "Beta", "Gamma"],
+    })
+    expect(result[0].candidate.name).toBe("Beta")
+    expect(result[0].confidence).toBeCloseTo(ORDER_BONUS, 5)
   })
 
-  test("works with no file durations (filename-fuzz fallback)", () => {
-    const result = rankSuggestions({
+  test("never overrides a strong duration signal", () => {
+    const ranked = rankCandidatesForFile({
+      fileDurationSeconds: 5400,
+      filename: "title2.mkv",
       candidates: [
-        { name: "Image Gallery", timecode: undefined },
-        { name: "Trailer", timecode: undefined },
-      ],
-      unrenamedFiles: [
-        {
-          filename: "image-gallery",
-          extension: ".mkv",
-          durationSeconds: null,
-        },
+        // Strong duration match — confidence ~0.7.
+        { name: "Theatrical", timecode: "1:30:00" },
+        // No duration, no filename overlap — confidence 0.
+        { name: "Gallery", timecode: undefined },
       ],
     })
-    expect(
-      result[0].rankedCandidates[0].candidate.name,
-    ).toBe("Image Gallery")
+    const result = applyOrderBonus({
+      rankedCandidates: ranked,
+      fileIndex: 1,
+      dvdCompareOrder: ["Theatrical", "Gallery"],
+    })
+    expect(result[0].candidate.name).toBe("Theatrical")
+  })
+
+  test("returns input unchanged when fileIndex is out of range", () => {
+    const ranked = rankCandidatesForFile({
+      fileDurationSeconds: null,
+      filename: "x.mkv",
+      candidates: [
+        { name: "Alpha", timecode: undefined },
+        { name: "Beta", timecode: undefined },
+      ],
+    })
+    const result = applyOrderBonus({
+      rankedCandidates: ranked,
+      fileIndex: 99,
+      dvdCompareOrder: ["Alpha", "Beta"],
+    })
+    expect(result).toEqual(ranked)
+  })
+
+  test("only nudges the matching candidate, not all candidates", () => {
+    const ranked = rankCandidatesForFile({
+      fileDurationSeconds: null,
+      filename: "x.mkv",
+      candidates: [
+        { name: "Alpha", timecode: undefined },
+        { name: "Beta", timecode: undefined },
+        { name: "Gamma", timecode: undefined },
+      ],
+    })
+    const result = applyOrderBonus({
+      rankedCandidates: ranked,
+      fileIndex: 2,
+      dvdCompareOrder: ["Alpha", "Beta", "Gamma"],
+    })
+    const gamma = result.find(
+      (entry) => entry.candidate.name === "Gamma",
+    )
+    const alpha = result.find(
+      (entry) => entry.candidate.name === "Alpha",
+    )
+    expect(gamma?.confidence).toBeCloseTo(ORDER_BONUS, 5)
+    expect(alpha?.confidence).toBe(0)
   })
 })

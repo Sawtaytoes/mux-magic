@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { useState } from "react"
 import { RenameTargetPicker } from "./RenameTargetPicker"
-import type { ScoredCandidate } from "./smartMatchScoring"
+import type { ScoredCandidate } from "./smartMatchTypes"
 
 // Wraps the controlled picker in a host that owns the selectedName
 // state — without it the picker would never update on selection
