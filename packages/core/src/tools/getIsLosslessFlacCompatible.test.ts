@@ -156,7 +156,9 @@ describe(getIsLosslessFlacCompatible.name, () => {
         }),
       ),
     )
-    const fileInfo = buildFileInfo("/music/float-pcmwaveformat.wav")
+    const fileInfo = buildFileInfo(
+      "/music/float-pcmwaveformat.wav",
+    )
     const result = await firstValueFrom(
       getIsLosslessFlacCompatible(fileInfo),
     )
