@@ -72,13 +72,26 @@ export const NsfRunResults = ({
       className="flex flex-col gap-2"
     >
       {summary && (
-        <p
+        <div
           data-nsf-rename-counts
-          className="text-xs text-slate-300"
+          className="flex flex-wrap items-center gap-2 text-xs text-slate-300"
         >
-          Renamed {renamePairs.length}. Files not renamed:{" "}
-          {summary.unrenamedFilenames.length}.
-        </p>
+          <span>
+            Renamed {renamePairs.length}. Files not renamed:{" "}
+            {summary.unrenamedFilenames.length}.
+          </span>
+          {isSmartMatchAvailable && (
+            <button
+              type="button"
+              id="smart-match-trigger"
+              onClick={openSmartMatch}
+              className="bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded font-medium"
+              title="Review and rename leftover files that didn't match by timecode"
+            >
+              ✨ Fix Unnamed
+            </button>
+          )}
+        </div>
       )}
       {renamePairs.length > 0 && (
         <div
@@ -123,19 +136,6 @@ export const NsfRunResults = ({
               <div key={filename}>{filename}</div>
             ))}
           </div>
-        </div>
-      )}
-      {isSmartMatchAvailable && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            id="smart-match-trigger"
-            onClick={openSmartMatch}
-            className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded font-medium"
-            title="Review and rename leftover files that didn't match by timecode"
-          >
-            ✨ Fix Unnamed
-          </button>
         </div>
       )}
     </div>
