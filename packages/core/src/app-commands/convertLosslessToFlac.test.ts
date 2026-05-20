@@ -91,7 +91,9 @@ const buildMediaInfo = (
     Video_Delay: "0",
     ...audioOverrides,
   } as AudioTrack
-  const generalTrack = { "@type": "General" } as GeneralTrack
+  const generalTrack = {
+    "@type": "General",
+  } as GeneralTrack
   return {
     creatingLibrary: {
       name: "MediaInfoLib",
@@ -540,9 +542,11 @@ describe(convertLosslessToFlac.name, () => {
       )
 
       const converted = records.filter(
-        (r) => r.kind === "converted",
+        (record) => record.kind === "converted",
       )
-      const skipped = records.filter((r) => r.kind === "skipped")
+      const skipped = records.filter(
+        (record) => record.kind === "skipped",
+      )
 
       expect(converted).toHaveLength(1)
       expect(converted[0]).toMatchObject({
@@ -552,7 +556,7 @@ describe(convertLosslessToFlac.name, () => {
       })
       expect(skipped).toHaveLength(2)
       expect(
-        skipped.map((r) => r.reason).sort(),
+        skipped.map((record) => record.reason).sort(),
       ).toEqual(["dsd", "float-pcm"])
       expect(runFfmpegMock).toHaveBeenCalledTimes(1)
     })
@@ -592,7 +596,9 @@ describe(convertLosslessToFlac.name, () => {
         }),
       )
 
-      expect(vol.existsSync("/music/track01.wav")).toBe(true)
+      expect(vol.existsSync("/music/track01.wav")).toBe(
+        true,
+      )
       expect(runFfmpegMock).not.toHaveBeenCalled()
     })
 
@@ -616,15 +622,15 @@ describe(convertLosslessToFlac.name, () => {
 
       const reasonBySource = Object.fromEntries(
         records
-          .filter((r) => r.kind === "skipped")
-          .map((r) => [r.source, r.reason]),
+          .filter((record) => record.kind === "skipped")
+          .map((record) => [record.source, record.reason]),
       )
-      expect(reasonBySource[join("/music", "float.wav")]).toBe(
-        "float-pcm",
-      )
-      expect(reasonBySource[join("/music", "clean.wav")]).toBe(
-        "audit-only",
-      )
+      expect(
+        reasonBySource[join("/music", "float.wav")],
+      ).toBe("float-pcm")
+      expect(
+        reasonBySource[join("/music", "clean.wav")],
+      ).toBe("audit-only")
       expect(runFfmpegMock).not.toHaveBeenCalled()
     })
   })

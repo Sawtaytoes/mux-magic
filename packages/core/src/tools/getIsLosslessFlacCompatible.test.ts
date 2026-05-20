@@ -1,6 +1,12 @@
-import { type FileInfo } from "@mux-magic/tools"
+import type { FileInfo } from "@mux-magic/tools"
 import { firstValueFrom, of, throwError } from "rxjs"
-import { beforeEach, describe, expect, test, vi } from "vitest"
+import {
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import type {
   AudioTrack,
   GeneralTrack,
@@ -69,12 +75,11 @@ const buildMediaInfo = (
   }
 }
 
-const buildFileInfo = (fullPath: string): FileInfo =>
-  ({
-    fullPath,
-    name: fullPath.split("/").pop() ?? "",
-    relativePath: fullPath,
-  }) as FileInfo
+const buildFileInfo = (fullPath: string): FileInfo => ({
+  filename: fullPath.split("/").pop() ?? "",
+  fullPath,
+  renameFile: vi.fn(),
+})
 
 describe(getIsLosslessFlacCompatible.name, () => {
   beforeEach(() => {
@@ -132,7 +137,10 @@ describe(getIsLosslessFlacCompatible.name, () => {
     const result = await firstValueFrom(
       getIsLosslessFlacCompatible(fileInfo),
     )
-    expect(result).toEqual({ kind: "skip", reason: "float-pcm" })
+    expect(result).toEqual({
+      kind: "skip",
+      reason: "float-pcm",
+    })
   })
 
   test("returns kind: skip with reason: float-pcm when Format_Settings_Floating_Point is 'Yes' at 64-bit", async () => {
@@ -148,7 +156,10 @@ describe(getIsLosslessFlacCompatible.name, () => {
     const result = await firstValueFrom(
       getIsLosslessFlacCompatible(fileInfo),
     )
-    expect(result).toEqual({ kind: "skip", reason: "float-pcm" })
+    expect(result).toEqual({
+      kind: "skip",
+      reason: "float-pcm",
+    })
   })
 
   test("returns kind: skip with reason: dsd when Format is 'DSD'", async () => {
@@ -175,7 +186,9 @@ describe(getIsLosslessFlacCompatible.name, () => {
 
   test("propagates errors from getMediaInfo instead of swallowing as a skip", async () => {
     const probeError = new Error("mediainfo crashed")
-    getMediaInfoMock.mockReturnValue(throwError(() => probeError))
+    getMediaInfoMock.mockReturnValue(
+      throwError(() => probeError),
+    )
     const fileInfo = buildFileInfo("/music/unreadable.wav")
     await expect(
       firstValueFrom(getIsLosslessFlacCompatible(fileInfo)),

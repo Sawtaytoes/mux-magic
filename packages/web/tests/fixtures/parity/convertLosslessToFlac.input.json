@@ -11,7 +11,8 @@
     "command": "convertLosslessToFlac",
     "params": {
       "isRecursive": true,
-      "isSourceDeleted": true
+      "isSourceDeleted": true,
+      "isAuditOnly": true
     },
     "links": {
       "sourcePath": "basePath"

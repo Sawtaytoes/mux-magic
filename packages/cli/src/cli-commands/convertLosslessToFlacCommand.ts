@@ -23,6 +23,10 @@ const builder = (yargs: Argv) =>
       '$0 convertLosslessToFlac "~/music" --delete-source',
       "Encodes to FLAC and removes the source file after each successful encode.",
     )
+    .example(
+      '$0 convertLosslessToFlac "~/music" -ra',
+      "Dry-run audit: recursively probe every lossless audio file and report what would be converted vs. skipped (float / DSD), without invoking ffmpeg or writing any FLAC files.",
+    )
     .positional("sourcePath", {
       demandOption: true,
       describe:
@@ -47,6 +51,15 @@ const builder = (yargs: Argv) =>
       nargs: 0,
       type: "boolean",
     })
+    .option("isAuditOnly", {
+      alias: "a",
+      boolean: true,
+      default: false,
+      describe:
+        "Dry-run: probe each file and report what would be converted vs. skipped (and why), but do not invoke ffmpeg or write any FLAC files. Source files are never touched. Useful for scanning a music library before committing to the encode.",
+      nargs: 0,
+      type: "boolean",
+    })
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
@@ -65,6 +78,7 @@ export const convertLosslessToFlacCommand: CommandModule<
 
   handler: (argv) => {
     convertLosslessToFlac({
+      isAuditOnly: argv.isAuditOnly,
       isRecursive: argv.isRecursive,
       isSourceDeleted: argv.isSourceDeleted,
       sourcePath: argv.sourcePath,
