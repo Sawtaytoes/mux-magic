@@ -46,10 +46,19 @@ and calls `serve()`.
 
 ## Adding a New Command
 
-1. Create `src/<commandName>.ts` returning `Observable<unknown>`
-2. Create `src/cli-commands/<commandName>.ts` using the `CommandModule` pattern (see below)
-3. Import and `.command(...)` the module in `src/cli.ts`
-4. Add a `app.post("/jobs/<commandName>", ...)` handler to `src/api/routes/commands.ts`
+A command needs to land on **five** surfaces or it won't be fully usable. Missing any one of them silently drops a different mode of access — a route-only command isn't callable from the builder; a builder-only command isn't callable from the CLI. Touch every one in the same PR.
+
+1. **App-command (Observable)** — `packages/core/src/app-commands/<commandName>.ts` (+ `.test.ts`). Returns `Observable<...>`; mirror an existing command like [flattenOutput.ts](../../packages/core/src/app-commands/flattenOutput.ts) for the AbortController + progress-emitter pattern.
+2. **CLI adapter** — `packages/cli/src/cli-commands/<commandName>Command.ts` (yargs `CommandModule`). Then import and `.command(<name>Command)` it in `packages/cli/src/cli.ts`.
+3. **HTTP route + commandName entry** — `packages/api/src/api/routes/commandRoutes.ts`: add the import, append `"<commandName>"` to the `commandNames` array, and add a registry entry to `commandConfigs` with `getObservable`, `schema`, `summary`, `tags`, plus optional `extractOutputs` / `outputFolderName` / `outputComputation`.
+4. **Zod request schema** — `packages/api/src/api/schemas.ts`: export `<commandName>RequestSchema` with `.describe()` text on every field (the per-field describe drives the builder's hover tooltips via the regenerated `command-descriptions.js`). Schemas are re-exported automatically via `@mux-magic/api/api-schemas` for the web side.
+5. **Web builder UI registry — TWO files, both required:**
+    - `packages/web/src/commands/commands.ts` — add an entry to the `COMMANDS` map keyed by `<commandName>` with `tag`, `outputFolderName`, and `fields` (built via `fieldBuilder(<commandName>RequestSchema)`). **The CommandPicker iterates over this map — without an entry here, the command does not appear in the builder sidebar even though it's callable via HTTP and CLI.**
+    - `packages/web/src/jobs/commandLabels.ts` — add a display label. Without it the sidebar shows the raw camelCase name.
+
+Then regenerate the auto-built UI metadata: `yarn build:command-descriptions` rewrites `packages/web/public/command-descriptions.js` from the Zod `.describe()` text. Commit the regenerated file.
+
+**Sanity check before opening the PR:** `grep -rn "flattenOutput\|moveFiles" packages/ docs/` — pick an established command and confirm your new command appears in every place the established one does. This is the single most reliable way to catch a missed wiring site (e.g. the `commands.ts` UI registry, which is easy to miss because there's no compile-time link between it and the server-side `commandNames` array).
 
 ## Sequence Runner DSL
 

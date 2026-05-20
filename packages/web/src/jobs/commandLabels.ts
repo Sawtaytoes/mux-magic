@@ -4,6 +4,11 @@ const commandLabels: Record<string, string> = {
   copyFiles: "Copy Files",
   flattenOutput: "Flatten Output",
   moveFiles: "Move Files",
+  moveFilesIntoNamedFolders:
+    "Move Files Into Named Folders",
+  distributeFolderToSiblings:
+    "Distribute Folder to Siblings",
+  flattenChildFolders: "Flatten Child Folders",
   replaceAttachments: "Replace Attachments",
   deleteFilesByExtension: "Delete Files by Extension",
   deleteFolder: "Delete Folder",
