@@ -678,6 +678,76 @@ describe(convertLosslessToFlac.name, () => {
     })
   })
 
+  describe("float-pcm survival under destructive flags", () => {
+    // Belt-and-suspenders contract: a 32-bit float WAV must NEVER be
+    // encoded to FLAC and its source must NEVER be unlinked, regardless
+    // of any other flag combination. This is the catastrophic-data-loss
+    // case — float-PCM cannot be losslessly represented in FLAC, and
+    // unlinking the source after a silent ffmpeg downcast would destroy
+    // the only float copy the user has.
+    test("isAuditOnly: false + isSourceDeleted: true + float WAV → no ffmpeg, no unlink, skipped record", async () => {
+      vol.fromJSON({ "/music/float.wav": "wav-float" })
+      mockMediaInfoOnce("float.wav", {
+        BitDepth: "32",
+        Format_Settings_Floating_Point: "Yes",
+      })
+
+      const records = await lastValueFrom(
+        convertLosslessToFlac({
+          isAuditOnly: false,
+          isRecursive: false,
+          isSourceDeleted: true,
+          sourcePath: "/music",
+        }),
+      )
+
+      expect(records).toEqual([
+        {
+          kind: "skipped",
+          reason: "float-pcm",
+          source: join("/music", "float.wav"),
+        },
+      ])
+      expect(runFfmpegMock).not.toHaveBeenCalled()
+      expect(vol.existsSync("/music/float.wav")).toBe(true)
+    })
+
+    test("isAuditOnly: false + isSourceDeleted: true + Format_Profile: 'Float' (PcmWaveformat WAV, MediaInfo 26+) → no ffmpeg, no unlink", async () => {
+      // The Clair Obscur OST shape: MediaInfo 26.01 emits
+      // `Format_Profile: "Float"` and does NOT set
+      // `Format_Settings_Floating_Point`. Probe must catch this and the
+      // pipeline must refuse to convert/unlink — exactly the data-loss
+      // scenario the worker 77 follow-up (commit 212661fe) addressed.
+      vol.fromJSON({ "/music/clair-obscur.wav": "wav" })
+      mockMediaInfoOnce("clair-obscur.wav", {
+        BitDepth: "32",
+        Format: "PCM",
+        Format_Profile: "Float",
+      })
+
+      const records = await lastValueFrom(
+        convertLosslessToFlac({
+          isAuditOnly: false,
+          isRecursive: false,
+          isSourceDeleted: true,
+          sourcePath: "/music",
+        }),
+      )
+
+      expect(records).toEqual([
+        {
+          kind: "skipped",
+          reason: "float-pcm",
+          source: join("/music", "clair-obscur.wav"),
+        },
+      ])
+      expect(runFfmpegMock).not.toHaveBeenCalled()
+      expect(
+        vol.existsSync("/music/clair-obscur.wav"),
+      ).toBe(true)
+    })
+  })
+
   describe("probe errors", () => {
     test("propagates getMediaInfo errors as pipeline errors (no silent unreadable skip)", async () => {
       vol.fromJSON({ "/music/unreadable.wav": "wav" })
