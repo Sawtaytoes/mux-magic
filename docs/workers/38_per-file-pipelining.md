@@ -25,11 +25,11 @@ This is **the biggest architectural shift in the plan**. The wide blast radius i
 
 ### Today's model (read first)
 
-Per the exploration of [sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) and a representative command like [copyFiles.ts](../../packages/server/src/app-commands/copyFiles.ts):
+Per the exploration of [sequenceRunner.ts](../../packages/api/src/api/sequenceRunner.ts) and a representative command like [copyFiles.ts](../../packages/core/src/app-commands/copyFiles.ts):
 
-- Sequence runner: outer `await runOneStep(step)` loop at [sequenceRunner.ts:668](../../packages/server/src/api/sequenceRunner.ts#L668). Each step's promise resolves only when its inner Observable completes — i.e., after every file has been processed.
+- Sequence runner: outer `await runOneStep(step)` loop at [sequenceRunner.ts:668](../../packages/api/src/api/sequenceRunner.ts#L668). Each step's promise resolves only when its inner Observable completes — i.e., after every file has been processed.
 - Command handler (`copyFiles`): receives a `getFiles`/`getFilesAtDepth` Observable, calls `.pipe(toArray())` to materialize the full file list, then iterates with `concatMap` + `runTasks` for per-file work.
-- Parallel groups: `Promise.all` with first-failure broadcast cancellation ([sequenceRunner.ts:486-608](../../packages/server/src/api/sequenceRunner.ts#L486-L608)).
+- Parallel groups: `Promise.all` with first-failure broadcast cancellation ([sequenceRunner.ts:486-608](../../packages/api/src/api/sequenceRunner.ts#L486-L608)).
 
 Net effect: per-step parallelism exists (via the task scheduler) but the **step boundary serializes**. A 3-step × 100-file sequence runs as three back-to-back batches.
 
@@ -116,7 +116,7 @@ export const wrapAsSourcePath = <Params>(handler: CommandHandler<Params>) =>
     )
 ```
 
-Every route under [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) that today calls `command.getObservable({ sourcePath, ...params })` switches to `wrapAsSourcePath(command.handler)({ sourcePath, ...params })`. Behavior preserved; contract unified.
+Every route under [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts) that today calls `command.getObservable({ sourcePath, ...params })` switches to `wrapAsSourcePath(command.handler)({ sourcePath, ...params })`. Behavior preserved; contract unified.
 
 ### Stream-breakers (the full-set-knowledge case)
 
@@ -194,13 +194,13 @@ The safety net for the highest-risk worker in the plan. Stream-breaker correctne
 
 ## Files
 
-- [packages/server/src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) — full rewrite to single `reduce → mergeMap` chain
-- [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) — `CommandConfig` shape changes; every route switches to `wrapAsSourcePath`
+- [packages/api/src/api/sequenceRunner.ts](../../packages/api/src/api/sequenceRunner.ts) — full rewrite to single `reduce → mergeMap` chain
+- [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts) — `CommandConfig` shape changes; every route switches to `wrapAsSourcePath`
 - `packages/tools/src/wrapAsSourcePath.ts` (new) — the generic folder-level adapter; exported from `@mux-magic/tools`
 - `packages/tools/src/FileContext.ts` (new) — shared `FileContext` type and helpers
-- **All** `packages/server/src/app-commands/*.ts` — every handler rewritten to operator signature
-- **All** `packages/server/src/app-commands/*.test.ts` — every test fixture rewritten
-- [packages/server/src/api/jobStore.ts](../../packages/server/src/api/jobStore.ts) — progress aggregation
+- **All** `packages/core/src/app-commands/*.ts` — every handler rewritten to operator signature
+- **All** `packages/core/src/app-commands/*.test.ts` — every test fixture rewritten
+- [packages/core/src/api/jobStore.ts](../../packages/core/src/api/jobStore.ts) — progress aggregation
 - [packages/web/src/jobs/yamlCodec.ts](../../packages/web/src/jobs/yamlCodec.ts) — per-step `sourcePath` encode/decode (likely already supported via worker 24, verify)
 - [packages/web/src/pages/BuilderPage/](../../packages/web/src/pages/BuilderPage/) + [packages/web/src/components/StepCard/StepCard.tsx](../../packages/web/src/components/StepCard/StepCard.tsx) — per-step source-mode picker
 - [packages/web/src/state/groupAtoms.ts](../../packages/web/src/state/groupAtoms.ts) — review whether existing group kinds need migration

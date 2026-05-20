@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/4b_audio-library-fingerprint-dedup/`
 **Phase:** 5
 **Depends on:** 11 (per-job thread-budget scheduler — the fingerprint pass must claim from it instead of bare-spawning)
-**Parallel with:** any Phase 5 worker that doesn't touch [packages/server/src/cli-spawn-operations/](../../packages/server/src/cli-spawn-operations/), [packages/server/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/server/src/app-commands/hasDuplicateMusicFiles.ts), or [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts).
+**Parallel with:** any Phase 5 worker that doesn't touch [packages/core/src/cli-spawn-operations/](../../packages/core/src/cli-spawn-operations/), [packages/core/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/core/src/app-commands/hasDuplicateMusicFiles.ts), or [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts).
 
 ## Universal Rules (TL;DR)
 
@@ -13,7 +13,7 @@ Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typechec
 
 ## Context
 
-The existing [packages/server/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/server/src/app-commands/hasDuplicateMusicFiles.ts) groups audio files by filename/size and reports near-collisions. That's enough to catch obvious duplicates from the same source, but it cannot catch the real-world case the user actually hits constantly:
+The existing [packages/core/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/core/src/app-commands/hasDuplicateMusicFiles.ts) groups audio files by filename/size and reports near-collisions. That's enough to catch obvious duplicates from the same source, but it cannot catch the real-world case the user actually hits constantly:
 
 - A CD-rip in the library is tagged `Artist - Track 03.flac` with full metadata.
 - A second copy exists somewhere — typically an unnamed `mw_battle1.mp3` extracted from a game disc, downloaded from a fan archive, or pulled out of an old backup. Same audio, different filename, different container, different bit depth, no tags.
@@ -35,12 +35,12 @@ The command is dry-run-first: it produces a report, not deletions. Acting on the
 [Chromaprint](https://acoustid.org/chromaprint) ships `fpcalc` as the canonical CLI. Document it alongside `mkvmerge` and `ffmpeg`:
 
 - Add `fpcalc` to the prerequisites section of [README.md](../../README.md) (use the same install-instructions section that already covers `mkvmerge` / `ffmpeg`).
-- Add an `fpcalcPath` entry to [packages/server/src/tools/appPaths.ts](../../packages/server/src/tools/appPaths.ts) mirroring the existing `ffmpegPath` / `mkvmergePath` exports (env-var override + sensible default; on Windows users typically have it on PATH).
+- Add an `fpcalcPath` entry to [packages/core/src/tools/appPaths.ts](../../packages/core/src/tools/appPaths.ts) mirroring the existing `ffmpegPath` / `mkvmergePath` exports (env-var override + sensible default; on Windows users typically have it on PATH).
 - The `fpcalc` binary itself is not vendored — it's a user-installed prerequisite, same as `mkvmerge` and `ffmpeg`. Document a clear error message when it's missing.
 
 ### 2. New `cli-spawn-op` — `runFpcalc`
 
-New file: `packages/server/src/cli-spawn-operations/runFpcalc.ts`. Pattern mirrors [packages/server/src/cli-spawn-operations/runFfmpeg.ts](../../packages/server/src/cli-spawn-operations/runFfmpeg.ts) and [packages/server/src/cli-spawn-operations/runMkvPropEdit.ts](../../packages/server/src/cli-spawn-operations/runMkvPropEdit.ts):
+New file: `packages/core/src/cli-spawn-operations/runFpcalc.ts`. Pattern mirrors [packages/core/src/cli-spawn-operations/runFfmpeg.ts](../../packages/core/src/cli-spawn-operations/runFfmpeg.ts) and [packages/core/src/cli-spawn-operations/runMkvPropEdit.ts](../../packages/core/src/cli-spawn-operations/runMkvPropEdit.ts):
 
 - Spawn `fpcalc -json -length 120 <file>` (120s window is the AcoustID default — covers the meaningful melodic content of typical tracks without blowing fingerprint cost on full-length files).
 - Parse the JSON output to `{ duration: number, fingerprint: string }`.
@@ -50,7 +50,7 @@ New file: `packages/server/src/cli-spawn-operations/runFpcalc.ts`. Pattern mirro
 
 ### 3. New `audioFingerprint` tool — fingerprint index + similarity
 
-New file: `packages/server/src/tools/audioFingerprint.ts`. Pure-ish helpers (the spawn happens at the edges via `runFpcalc`):
+New file: `packages/core/src/tools/audioFingerprint.ts`. Pure-ish helpers (the spawn happens at the edges via `runFpcalc`):
 
 - `buildFingerprintIndex(files$)` — observable in, observable out; produces a `Map<filePath, FingerprintRecord>` keyed by absolute path.
 - `compareFingerprints(a, b): number` — returns a similarity score in `[0, 1]`. Chromaprint fingerprints are base64-encoded 32-bit integer streams; compute Hamming distance per aligned position, normalize by total bits compared. Standard Chromaprint approach; do not invent a new scoring metric.
@@ -60,7 +60,7 @@ The index is held in memory for the duration of the job — these are 1-2 KiB st
 
 ### 4. New app-command — `audioFingerprint`
 
-New file: `packages/server/src/app-commands/audioFingerprint.ts`. Shape mirrors [hasDuplicateMusicFiles.ts](../../packages/server/src/app-commands/hasDuplicateMusicFiles.ts) (which this worker should re-read end-to-end as a structural reference, including its `filterIsAudioFile` use, `getFilesAtDepth` discovery, and `logAndRethrowPipelineError` placement). Inputs:
+New file: `packages/core/src/app-commands/audioFingerprint.ts`. Shape mirrors [hasDuplicateMusicFiles.ts](../../packages/core/src/app-commands/hasDuplicateMusicFiles.ts) (which this worker should re-read end-to-end as a structural reference, including its `filterIsAudioFile` use, `getFilesAtDepth` discovery, and `logAndRethrowPipelineError` placement). Inputs:
 
 | Field | Type | Default | Notes |
 |---|---|---|---|
@@ -80,12 +80,12 @@ No mutating array methods (this repo bans `.push` outright). Compose with `conca
 
 ### 5. Scheduler claim — worker 11 integration
 
-The worker 11 thread-budget scheduler is the load-bearing dependency. `fpcalc` is CPU-bound (decoding + fingerprinting at audio sample rate); running 64 in parallel on a 64-track music library will saturate the box and starve every other job. This command MUST claim from the per-job budget in [packages/server/src/api/jobRunner.ts](../../packages/server/src/api/jobRunner.ts) / scheduler infra and use the claimed value as the `mergeMap` concurrency parameter for both passes. Re-read worker 11's prompt and the merged scheduler code before wiring this up — do not pick a hard-coded concurrency.
+The worker 11 thread-budget scheduler is the load-bearing dependency. `fpcalc` is CPU-bound (decoding + fingerprinting at audio sample rate); running 64 in parallel on a 64-track music library will saturate the box and starve every other job. This command MUST claim from the per-job budget in [packages/api/src/api/jobRunner.ts](../../packages/api/src/api/jobRunner.ts) / scheduler infra and use the claimed value as the `mergeMap` concurrency parameter for both passes. Re-read worker 11's prompt and the merged scheduler code before wiring this up — do not pick a hard-coded concurrency.
 
 ### 6. Schema + web registration
 
-- Add `audioFingerprintRequestSchema` to [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts) (Zod). Validate `minSimilarity` is in `[0, 1]`; reject `referencePath === sourcePath` (no point scanning a library against itself this way — direct the user to `hasDuplicateMusicFiles` for the in-library case).
-- Register the command in [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) and the OpenAPI surface.
+- Add `audioFingerprintRequestSchema` to [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts) (Zod). Validate `minSimilarity` is in `[0, 1]`; reject `referencePath === sourcePath` (no point scanning a library against itself this way — direct the user to `hasDuplicateMusicFiles` for the in-library case).
+- Register the command in [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts) and the OpenAPI surface.
 - Add the command to [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts) with a `summary` and `tag: "Audio Operations"` (or whichever existing tag groups `hasDuplicateMusicFiles`).
 - Add a CLI subcommand at `packages/cli/src/cli-commands/audioFingerprintCommand.ts` mirroring `hasDuplicateMusicFilesCommand.ts`.
 
@@ -105,21 +105,21 @@ Two-commit pattern: failing red commit, then green implementation commit.
 
 ### New
 
-- [packages/server/src/cli-spawn-operations/runFpcalc.ts](../../packages/server/src/cli-spawn-operations/runFpcalc.ts)
-- [packages/server/src/cli-spawn-operations/runFpcalc.test.ts](../../packages/server/src/cli-spawn-operations/runFpcalc.test.ts)
-- [packages/server/src/tools/audioFingerprint.ts](../../packages/server/src/tools/audioFingerprint.ts)
-- [packages/server/src/tools/audioFingerprint.test.ts](../../packages/server/src/tools/audioFingerprint.test.ts)
-- [packages/server/src/app-commands/audioFingerprint.ts](../../packages/server/src/app-commands/audioFingerprint.ts)
-- [packages/server/src/app-commands/audioFingerprint.test.ts](../../packages/server/src/app-commands/audioFingerprint.test.ts)
+- [packages/core/src/cli-spawn-operations/runFpcalc.ts](../../packages/core/src/cli-spawn-operations/runFpcalc.ts)
+- [packages/core/src/cli-spawn-operations/runFpcalc.test.ts](../../packages/core/src/cli-spawn-operations/runFpcalc.test.ts)
+- [packages/core/src/tools/audioFingerprint.ts](../../packages/core/src/tools/audioFingerprint.ts)
+- [packages/core/src/tools/audioFingerprint.test.ts](../../packages/core/src/tools/audioFingerprint.test.ts)
+- [packages/core/src/app-commands/audioFingerprint.ts](../../packages/core/src/app-commands/audioFingerprint.ts)
+- [packages/core/src/app-commands/audioFingerprint.test.ts](../../packages/core/src/app-commands/audioFingerprint.test.ts)
 - [packages/cli/src/cli-commands/audioFingerprintCommand.ts](../../packages/cli/src/cli-commands/audioFingerprintCommand.ts)
 - [packages/web/tests/fixtures/parity/audioFingerprint.input.json](../../packages/web/tests/fixtures/parity/audioFingerprint.input.json)
 - [packages/web/tests/fixtures/parity/audioFingerprint.yaml](../../packages/web/tests/fixtures/parity/audioFingerprint.yaml)
 
 ### Modified
 
-- [packages/server/src/tools/appPaths.ts](../../packages/server/src/tools/appPaths.ts) — `fpcalcPath` export
-- [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts) — `audioFingerprintRequestSchema`
-- [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) — register command + OpenAPI summary/tag
+- [packages/core/src/tools/appPaths.ts](../../packages/core/src/tools/appPaths.ts) — `fpcalcPath` export
+- [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts) — `audioFingerprintRequestSchema`
+- [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts) — register command + OpenAPI summary/tag
 - [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts) — UI registration
 - [packages/web/src/jobs/commandLabels.ts](../../packages/web/src/jobs/commandLabels.ts) — display label
 - [packages/cli/src/cli.ts](../../packages/cli/src/cli.ts) — wire the new CLI subcommand
@@ -127,9 +127,9 @@ Two-commit pattern: failing red commit, then green implementation commit.
 
 ### Reuse — do not reinvent
 
-- File discovery: `getFilesAtDepth` + `filterIsAudioFile` from [packages/server/src/tools/filterIsAudioFile.ts](../../packages/server/src/tools/filterIsAudioFile.ts).
-- Spawn shape: copy from [runFfmpeg.ts](../../packages/server/src/cli-spawn-operations/runFfmpeg.ts) / [runMkvPropEdit.ts](../../packages/server/src/cli-spawn-operations/runMkvPropEdit.ts).
-- Cancellation: `treeKillOnUnsubscribe` from [packages/server/src/cli-spawn-operations/treeKillChild.ts](../../packages/server/src/cli-spawn-operations/treeKillChild.ts).
+- File discovery: `getFilesAtDepth` + `filterIsAudioFile` from [packages/core/src/tools/filterIsAudioFile.ts](../../packages/core/src/tools/filterIsAudioFile.ts).
+- Spawn shape: copy from [runFfmpeg.ts](../../packages/core/src/cli-spawn-operations/runFfmpeg.ts) / [runMkvPropEdit.ts](../../packages/core/src/cli-spawn-operations/runMkvPropEdit.ts).
+- Cancellation: `treeKillOnUnsubscribe` from [packages/core/src/cli-spawn-operations/treeKillChild.ts](../../packages/core/src/cli-spawn-operations/treeKillChild.ts).
 - Scheduler budget: worker 11's claim API in the merged jobRunner — do not invent a parallel concurrency knob.
 
 ## Verification

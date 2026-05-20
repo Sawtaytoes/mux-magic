@@ -32,7 +32,7 @@ Combining (1) and (2): the `paused` state has a defined meaning (the job is awai
 
 ### Change 1: JobStatus enum — add `paused`
 
-Per the exploration of [packages/server/src/api/types.ts](../../packages/server/src/api/types.ts):
+Per the exploration of [packages/api/src/api/types.ts](../../packages/api/src/api/types.ts):
 
 ```ts
 export type JobStatus =
@@ -141,10 +141,10 @@ For `paused` jobs:
 
 ## Files
 
-- [packages/server/src/api/types.ts](../../packages/server/src/api/types.ts) — extend `JobStatus`, `Job`, add `JobPauseReason`
-- [packages/server/src/api/jobStore.ts](../../packages/server/src/api/jobStore.ts) — persistence layer
-- New: `packages/server/src/api/jobPersistence.ts` (atomic write + read + prune helpers)
-- [packages/server/src/server.ts](../../packages/server/src/server.ts) — call boot-scan on startup
+- [packages/api/src/api/types.ts](../../packages/api/src/api/types.ts) — extend `JobStatus`, `Job`, add `JobPauseReason`
+- [packages/core/src/api/jobStore.ts](../../packages/core/src/api/jobStore.ts) — persistence layer
+- New: `packages/api/src/api/jobPersistence.ts` (atomic write + read + prune helpers)
+- [packages/server/src/index.ts](../../packages/server/src/index.ts) — call boot-scan on startup
 - Wherever prompts are emitted (search for `PromptEvent` emitters) — wire pause/unpause transitions
 - Web UI: paused-jobs view, Resume button (search [packages/web/src/components/](../../packages/web/src/components/))
 - Tests for all of the above

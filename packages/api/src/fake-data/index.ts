@@ -7,6 +7,7 @@ import {
   commandNames,
   commandConfigs as realCommandConfigs,
 } from "../api/routes/commandRoutes.js"
+import { convertLosslessToFlacScenario } from "./scenarios/convertLosslessToFlac.js"
 import { failureScenario } from "./scenarios/failure.js"
 import { getAudioOffsetsScenario } from "./scenarios/getAudioOffsets.js"
 import { inProgressScenario } from "./scenarios/inProgress.js"
@@ -106,6 +107,7 @@ type ObservableFactory = (
 const OBSERVABLE_OVERRIDES: Partial<
   Record<CommandName, ObservableFactory>
 > = {
+  convertLosslessToFlac: convertLosslessToFlacScenario,
   getAudioOffsets: getAudioOffsetsScenario,
   nameAnimeEpisodes: nameAnimeEpisodesScenario,
   nameAnimeEpisodesAniDB: nameAnimeEpisodesAniDBScenario,

@@ -62,7 +62,7 @@ Don't remove annotations in these cases (most produce a TS error if you try; thi
 
 There's no test for "no redundant return types" — the verification is `yarn typecheck` and `yarn test` after each package. Treat each package as one TDD cycle:
 
-1. **Pick a package.** Start with [packages/tools](../../packages/tools) (smallest surface). Then [packages/cli](../../packages/cli), then [packages/server](../../packages/server), then [packages/web](../../packages/web).
+1. **Pick a package.** Start with [packages/tools](../../packages/tools) (smallest surface). Then [packages/cli](../../packages/cli), then [packages/api](../../packages/api), then [packages/web](../../packages/web).
 2. **Find candidates.** Within the package, run:
 
    ```bash

@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/51_release-date-into-date-tag/`
 **Phase:** 5
 **Depends on:** 01
-**Parallel with:** any Phase 5 worker that doesn't touch [packages/server/src/cli-spawn-operations/runMkvPropEdit.ts](../../packages/server/src/cli-spawn-operations/runMkvPropEdit.ts), [packages/server/src/tools/getMkvInfo.ts](../../packages/server/src/tools/getMkvInfo.ts), or [packages/server/src/app-commands/](../../packages/server/src/app-commands/) collisions on the new file.
+**Parallel with:** any Phase 5 worker that doesn't touch [packages/core/src/cli-spawn-operations/runMkvPropEdit.ts](../../packages/core/src/cli-spawn-operations/runMkvPropEdit.ts), [packages/core/src/tools/getMkvInfo.ts](../../packages/core/src/tools/getMkvInfo.ts), or [packages/core/src/app-commands/](../../packages/core/src/app-commands/) collisions on the new file.
 
 ## Universal Rules (TL;DR)
 
@@ -17,15 +17,15 @@ Add a new app-command — working name `copyReleaseDateIntoDateTag` (final comma
 
 ### Pre-work investigation (load-bearing — record findings in the PR)
 
-1. Read [packages/server/src/cli-spawn-operations/runMkvPropEdit.ts](../../packages/server/src/cli-spawn-operations/runMkvPropEdit.ts). Today it accepts arbitrary `args` and passes them after `filePath` to `mkvpropedit`. Verify by grepping every existing caller (`setOnlyFirstTracksAsDefault`, `updateTrackLanguage`, `setDisplayWidthMkvPropEdit`, `defineLanguageForUndefinedTracks`, `changeTrackLanguages`) whether any of them already pass `--edit info` or `--tags` — and whether the wrapper's success/failure handling assumes the same exit-code contract for tag edits as for track edits (it should, since `mkvpropedit` returns 0/1/2 uniformly, but the buffered-stderr surfacing matters when the failure mode is "tags XML rejected").
+1. Read [packages/core/src/cli-spawn-operations/runMkvPropEdit.ts](../../packages/core/src/cli-spawn-operations/runMkvPropEdit.ts). Today it accepts arbitrary `args` and passes them after `filePath` to `mkvpropedit`. Verify by grepping every existing caller (`setOnlyFirstTracksAsDefault`, `updateTrackLanguage`, `setDisplayWidthMkvPropEdit`, `defineLanguageForUndefinedTracks`, `changeTrackLanguages`) whether any of them already pass `--edit info` or `--tags` — and whether the wrapper's success/failure handling assumes the same exit-code contract for tag edits as for track edits (it should, since `mkvpropedit` returns 0/1/2 uniformly, but the buffered-stderr surfacing matters when the failure mode is "tags XML rejected").
 2. Decide between two implementation paths and document the chosen one in the PR description:
    - **Path A — direct `--edit info`/`--tags`:** `mkvpropedit` supports targeted tag mutation with `--tags global:tags.xml` (replaces all global tags) or per-track via `--edit track:N --tags …`. If the source-of-truth here is "set the global `Date` tag value," confirm whether `mkvpropedit` can do it as a single CLI invocation without round-tripping the existing tag set. The "Release Date" tag is a SimpleTag under a Targets element, not a property on `info`, so `--edit info` alone is probably insufficient — you almost certainly need the `--tags` form.
-   - **Path B — `mkvextract tags` round-trip:** extract the existing tags XML via `mkvextract tags <file> -` (stdout) — there's already a stdout-capturing wrapper at [packages/server/src/cli-spawn-operations/runMkvExtractStdOut.ts](../../packages/server/src/cli-spawn-operations/runMkvExtractStdOut.ts) — parse the XML, set `<SimpleTag><Name>DATE</Name>` from the `RELEASE_DATE` value when missing, write a temp XML, then `mkvpropedit <file> --tags global:tempXmlPath`. Cleanly delete the temp file on success and on error.
+   - **Path B — `mkvextract tags` round-trip:** extract the existing tags XML via `mkvextract tags <file> -` (stdout) — there's already a stdout-capturing wrapper at [packages/core/src/cli-spawn-operations/runMkvExtractStdOut.ts](../../packages/core/src/cli-spawn-operations/runMkvExtractStdOut.ts) — parse the XML, set `<SimpleTag><Name>DATE</Name>` from the `RELEASE_DATE` value when missing, write a temp XML, then `mkvpropedit <file> --tags global:tempXmlPath`. Cleanly delete the temp file on success and on error.
 3. If Path A doesn't compose with the existing `runMkvPropEdit` contract (e.g. it needs a different stderr-tolerance posture for the `--tags` form, or temp-file lifecycle), prefer Path B. Either way, **do not duplicate `runMkvPropEdit`** — extend it with a focused, optional config knob, or wrap it with a thin tag-aware helper alongside it.
 
 ### Implementation
 
-New app-command file: `packages/server/src/app-commands/copyReleaseDateIntoDateTag.ts`. Follow the shape of [packages/server/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/server/src/app-commands/hasDuplicateMusicFiles.ts) and [packages/server/src/app-commands/changeTrackLanguages.ts](../../packages/server/src/app-commands/changeTrackLanguages.ts) for streaming and tag-mutation patterns respectively:
+New app-command file: `packages/core/src/app-commands/copyReleaseDateIntoDateTag.ts`. Follow the shape of [packages/core/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/core/src/app-commands/hasDuplicateMusicFiles.ts) and [packages/core/src/app-commands/changeTrackLanguages.ts](../../packages/core/src/app-commands/changeTrackLanguages.ts) for streaming and tag-mutation patterns respectively:
 
 - Inputs: `sourcePath`, `isRecursive`, `recursiveDepth` (match the canonical `sourcePath` shape per the [sourcePath canonical convention](../../AGENTS.md)).
 - Use `getFilesAtDepth` to walk, filter for `.mkv`.
@@ -38,8 +38,8 @@ New app-command file: `packages/server/src/app-commands/copyReleaseDateIntoDateT
 
 - CLI: `packages/cli/src/cli-commands/copyReleaseDateIntoDateTagCommand.ts` (mirror [hasDuplicateMusicFilesCommand.ts](../../packages/cli/src/cli-commands/hasDuplicateMusicFilesCommand.ts)).
 - Web command registry: register the new command id + label in [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts) and [packages/web/src/jobs/commandLabels.ts](../../packages/web/src/jobs/commandLabels.ts). Add a description in [packages/web/public/command-descriptions.js](../../packages/web/public/command-descriptions.js).
-- API schema: register in [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts) and [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts).
-- Fake data: add an entry in [packages/server/src/fake-data/index.ts](../../packages/server/src/fake-data/index.ts) so dry-run scenarios cover it.
+- API schema: register in [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts) and [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts).
+- Fake data: add an entry in [packages/api/src/fake-data/index.ts](../../packages/api/src/fake-data/index.ts) so dry-run scenarios cover it.
 - Parity fixture: add `hasDuplicateMusicFiles`-style fixtures under `packages/web/tests/fixtures/parity/` if the new command participates in the parity sweep.
 - Docs: update [docs/api.md](../../docs/api.md) and [docs/cli.md](../../docs/cli.md).
 
@@ -63,17 +63,17 @@ New app-command file: `packages/server/src/app-commands/copyReleaseDateIntoDateT
 
 ### New
 
-- [packages/server/src/app-commands/copyReleaseDateIntoDateTag.ts](../../packages/server/src/app-commands/copyReleaseDateIntoDateTag.ts)
-- [packages/server/src/app-commands/copyReleaseDateIntoDateTag.test.ts](../../packages/server/src/app-commands/copyReleaseDateIntoDateTag.test.ts)
+- [packages/core/src/app-commands/copyReleaseDateIntoDateTag.ts](../../packages/core/src/app-commands/copyReleaseDateIntoDateTag.ts)
+- [packages/core/src/app-commands/copyReleaseDateIntoDateTag.test.ts](../../packages/core/src/app-commands/copyReleaseDateIntoDateTag.test.ts)
 - [packages/cli/src/cli-commands/copyReleaseDateIntoDateTagCommand.ts](../../packages/cli/src/cli-commands/copyReleaseDateIntoDateTagCommand.ts)
 - Possibly a small helper file alongside `runMkvPropEdit.ts` if you extract a tag-XML round-trip helper (Path B). Use a dotted-suffix sibling per the [no-barrel-for-single-command-splits convention](../../AGENTS.md), e.g. `runMkvPropEdit.tags.ts`.
 
 ### Extend
 
-- [packages/server/src/cli-spawn-operations/runMkvPropEdit.ts](../../packages/server/src/cli-spawn-operations/runMkvPropEdit.ts) — only if Path A requires a config knob; otherwise leave untouched.
-- [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts)
-- [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts)
-- [packages/server/src/fake-data/index.ts](../../packages/server/src/fake-data/index.ts)
+- [packages/core/src/cli-spawn-operations/runMkvPropEdit.ts](../../packages/core/src/cli-spawn-operations/runMkvPropEdit.ts) — only if Path A requires a config knob; otherwise leave untouched.
+- [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts)
+- [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts)
+- [packages/api/src/fake-data/index.ts](../../packages/api/src/fake-data/index.ts)
 - [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts)
 - [packages/web/src/jobs/commandLabels.ts](../../packages/web/src/jobs/commandLabels.ts)
 - [packages/web/public/command-descriptions.js](../../packages/web/public/command-descriptions.js)

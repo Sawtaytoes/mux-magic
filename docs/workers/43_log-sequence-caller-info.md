@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/43_log-sequence-caller-info/`
 **Phase:** 5
 **Depends on:** 01 (rebrand), 41 (structured logging — soft; this worker uses the same `logInfo` path either way)
-**Parallel with:** any Phase 5 worker that doesn't touch [packages/server/src/api/routes/sequenceRoutes.ts](../../packages/server/src/api/routes/sequenceRoutes.ts), [packages/server/src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts), [packages/server/src/api/jobStore.ts](../../packages/server/src/api/jobStore.ts), [packages/server/src/api/types.ts](../../packages/server/src/api/types.ts), or [packages/web/src/components/JobCard/JobCard.tsx](../../packages/web/src/components/JobCard/JobCard.tsx).
+**Parallel with:** any Phase 5 worker that doesn't touch [packages/api/src/api/routes/sequenceRoutes.ts](../../packages/api/src/api/routes/sequenceRoutes.ts), [packages/api/src/api/sequenceRunner.ts](../../packages/api/src/api/sequenceRunner.ts), [packages/core/src/api/jobStore.ts](../../packages/core/src/api/jobStore.ts), [packages/api/src/api/types.ts](../../packages/api/src/api/types.ts), or [packages/web/src/components/JobCard/JobCard.tsx](../../packages/web/src/components/JobCard/JobCard.tsx).
 
 ## Universal Rules (TL;DR)
 
@@ -26,7 +26,7 @@ Caller identity captured: remote IP, reverse-DNS hostname of that IP, `Origin` h
 
 ### 1. New helper — `getCallerInfo` + `resolveCallerHostname`
 
-New file: `packages/server/src/api/utils/getCallerInfo.ts`.
+New file: `packages/api/src/api/utils/getCallerInfo.ts`.
 
 ```ts
 export type CallerInfo = {
@@ -54,20 +54,20 @@ export const resolveCallerHostname = (
 
 `resolveCallerHostname` is **async**, uses `node:dns/promises` `reverse(ip)`, returns the first name. Wraps in `Promise.race` with a default `500ms` timeout. Swallows `ENOTFOUND`, `ENODATA`, and timeout, returning `null`. Skips obvious loopback (`127.0.0.1`, `::1`) without making a DNS call.
 
-Follow the `(context: Context) => …` pattern already used by `isFakeRequest` / `getFakeScenario` in [packages/server/src/fake-data/index.ts](../../packages/server/src/fake-data/index.ts) — same arg shape, same export style.
+Follow the `(context: Context) => …` pattern already used by `isFakeRequest` / `getFakeScenario` in [packages/api/src/fake-data/index.ts](../../packages/api/src/fake-data/index.ts) — same arg shape, same export style.
 
 ### 2. Job type + jobStore — persist `callerInfo`
 
-[packages/server/src/api/types.ts](../../packages/server/src/api/types.ts): add `callerInfo: CallerInfo | null` to the `Job` type (and ensure the `JobWire` projection picks it up). `null` for non-sequence jobs and child step jobs.
+[packages/api/src/api/types.ts](../../packages/api/src/api/types.ts): add `callerInfo: CallerInfo | null` to the `Job` type (and ensure the `JobWire` projection picks it up). `null` for non-sequence jobs and child step jobs.
 
-[packages/server/src/api/jobStore.ts](../../packages/server/src/api/jobStore.ts):
+[packages/core/src/api/jobStore.ts](../../packages/core/src/api/jobStore.ts):
 
 - Extend `createJob` to accept and persist `callerInfo` (default `null`).
 - Add `setJobCallerHostname(jobId, hostname)` that mutates the field on the existing job record and emits a job-update event over SSE so the UI re-renders once reverse-DNS finishes. Reuse the existing `emitJobEvent` channel — no new event type needed; the standard job-update payload carries the full updated Job.
 
 ### 3. Wire through `sequenceRoutes.ts`
 
-[packages/server/src/api/routes/sequenceRoutes.ts](../../packages/server/src/api/routes/sequenceRoutes.ts) at the dispatch handler (currently ~lines 598–649), before `runSequenceJob`:
+[packages/api/src/api/routes/sequenceRoutes.ts](../../packages/api/src/api/routes/sequenceRoutes.ts) at the dispatch handler (currently ~lines 598–649), before `runSequenceJob`:
 
 ```ts
 const callerInfo = getCallerInfo(context)
@@ -87,7 +87,7 @@ runSequenceJob(job.id, parsed, {
 
 ### 4. Extend `runSequenceJob`
 
-[packages/server/src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) `runSequenceJob` (~line 153): add `callerInfo?: CallerInfo` to the options.
+[packages/api/src/api/sequenceRunner.ts](../../packages/api/src/api/sequenceRunner.ts) `runSequenceJob` (~line 153): add `callerInfo?: CallerInfo` to the options.
 
 Near the top of the async start (before the first-step loop, ahead of the existing `logInfo("SEQUENCE", …)` site around line 365), guarded by `if (callerInfo)`:
 
@@ -132,22 +132,22 @@ If a web-side type mirror of `JobWire` exists (e.g. in [packages/web/src/types.t
 
 ### New
 
-- [packages/server/src/api/utils/getCallerInfo.ts](../../packages/server/src/api/utils/getCallerInfo.ts) — `getCallerInfo` + `resolveCallerHostname` + `CallerInfo` type
-- `packages/server/src/api/utils/getCallerInfo.test.ts` — unit tests for both helpers
+- [packages/api/src/api/utils/getCallerInfo.ts](../../packages/api/src/api/utils/getCallerInfo.ts) — `getCallerInfo` + `resolveCallerHostname` + `CallerInfo` type
+- `packages/api/src/api/utils/getCallerInfo.test.ts` — unit tests for both helpers
 
 ### Extend
 
-- [packages/server/src/api/types.ts](../../packages/server/src/api/types.ts) — add `callerInfo: CallerInfo | null` to `Job` (and `JobWire` if it has its own field list)
-- [packages/server/src/api/jobStore.ts](../../packages/server/src/api/jobStore.ts) — `createJob` accepts `callerInfo`; add `setJobCallerHostname`
-- [packages/server/src/api/routes/sequenceRoutes.ts](../../packages/server/src/api/routes/sequenceRoutes.ts) — call `getCallerInfo(context)` at dispatch; pass through `createJob` + `runSequenceJob`
-- [packages/server/src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) — accept `callerInfo` option; resolve hostname + emit first log line
+- [packages/api/src/api/types.ts](../../packages/api/src/api/types.ts) — add `callerInfo: CallerInfo | null` to `Job` (and `JobWire` if it has its own field list)
+- [packages/core/src/api/jobStore.ts](../../packages/core/src/api/jobStore.ts) — `createJob` accepts `callerInfo`; add `setJobCallerHostname`
+- [packages/api/src/api/routes/sequenceRoutes.ts](../../packages/api/src/api/routes/sequenceRoutes.ts) — call `getCallerInfo(context)` at dispatch; pass through `createJob` + `runSequenceJob`
+- [packages/api/src/api/sequenceRunner.ts](../../packages/api/src/api/sequenceRunner.ts) — accept `callerInfo` option; resolve hostname + emit first log line
 - [packages/web/src/components/JobCard/JobCard.tsx](../../packages/web/src/components/JobCard/JobCard.tsx) — render caller info + disclosure when present
 - Web-side `JobWire` type mirror (wherever it lives) — include `callerInfo`
 
 ### Reuse — do not reinvent
 
 - `getConnInfo` from `@hono/node-server/conninfo` — supported Hono-on-Node socket info accessor. No custom middleware required.
-- `(context: Context) => …` extraction pattern from [packages/server/src/fake-data/index.ts](../../packages/server/src/fake-data/index.ts) (`isFakeRequest`, `getFakeScenario`).
+- `(context: Context) => …` extraction pattern from [packages/api/src/fake-data/index.ts](../../packages/api/src/fake-data/index.ts) (`isFakeRequest`, `getFakeScenario`).
 - `logInfo` from `@mux-magic/tools` ([packages/tools/src/logMessage.ts](../../packages/tools/src/logMessage.ts)) — flows through the existing `appendJobLog` capture path; nothing new on the transport layer.
 - The job-update SSE channel — `emitJobEvent` already pushes the full Job; no new event type needed for the hostname enrichment.
 - `JobCard`'s existing disclosure pattern — copy the params/results/logs structure for the "Dispatched by" disclosure.
