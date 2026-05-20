@@ -45,7 +45,7 @@ export const NumberArrayField = ({
 
   return (
     <input
-      id={`${step.command}-${field.name}`}
+      id={`${step.id}-${field.name}`}
       type="text"
       value={inputValue}
       placeholder={field.placeholder ?? "0, 100"}

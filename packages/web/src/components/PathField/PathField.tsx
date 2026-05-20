@@ -136,7 +136,7 @@ export const PathField = ({
   return (
     <div className="mb-2">
       <div className="flex items-center gap-2 mb-1">
-        <FieldLabel command={step.command} field={field} />
+        <FieldLabel stepId={step.id} field={field} />
         <button
           type="button"
           onClick={handleBrowse}
@@ -160,7 +160,7 @@ export const PathField = ({
       <input
         ref={inputRef}
         type="text"
-        id={`${step.command}-${field.name}`}
+        id={`${step.id}-${field.name}`}
         data-field={field.name}
         value={displayValue}
         readOnly={isObjectLink}

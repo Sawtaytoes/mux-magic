@@ -353,13 +353,13 @@ export const NumberWithLookupField = ({
 
   return (
     <div className="mb-2">
-      <FieldLabel command={step.command} field={field} />
+      <FieldLabel stepId={step.id} field={field} />
       <div className="flex items-center gap-2">
         {hasIncrementButtons ? (
           <>
             <input
               type="number"
-              id={`${step.command}-${field.name}`}
+              id={`${step.id}-${field.name}`}
               value={rawValue}
               placeholder={field.placeholder ?? ""}
               onChange={(event) => {
@@ -394,7 +394,7 @@ export const NumberWithLookupField = ({
           <input
             type="text"
             inputMode="numeric"
-            id={`${step.command}-${field.name}`}
+            id={`${step.id}-${field.name}`}
             value={rawValue}
             placeholder={field.placeholder ?? ""}
             onChange={(event) => {

@@ -294,7 +294,15 @@ export const convertLosslessToFlacRequestSchema = z.object({
     .boolean()
     .default(false)
     .describe(
-      "Recursively descends one level into subdirectories looking for accepted lossless audio files.",
+      "Recursively descends into subdirectories looking for accepted lossless audio files. Depth is controlled by recursiveDepth (default 1 when isRecursive is true).",
+    ),
+  recursiveDepth: z
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .describe(
+      "Maximum recursion depth when isRecursive is set (0 = default depth of 1; mirrors deleteFilesByExtension). Pass 3 to descend three levels of subdirectories.",
     ),
   isSourceDeleted: z
     .boolean()

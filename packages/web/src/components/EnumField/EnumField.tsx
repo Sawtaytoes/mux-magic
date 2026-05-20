@@ -46,10 +46,10 @@ export const EnumField = ({
 
   return (
     <div>
-      <FieldLabel command={step.command} field={field} />
+      <FieldLabel stepId={step.id} field={field} />
       <button
         ref={buttonRef}
-        id={`${step.command}-${field.name}`}
+        id={`${step.id}-${field.name}`}
         type="button"
         onClick={handleClick}
         data-enum-picker-trigger

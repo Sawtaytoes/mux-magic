@@ -15,7 +15,7 @@ describe("FieldLabel", () => {
   test("renders the field label text", () => {
     render(
       <FieldLabel
-        command="ffmpeg"
+        stepId="step-1"
         field={{ name: "filename", label: "Filename" }}
       />,
     )
@@ -25,7 +25,7 @@ describe("FieldLabel", () => {
   test("falls back to field name when label is absent", () => {
     render(
       <FieldLabel
-        command="ffmpeg"
+        stepId="step-1"
         field={{ name: "filename" }}
       />,
     )
@@ -35,7 +35,7 @@ describe("FieldLabel", () => {
   test("shows a required asterisk when required is true", () => {
     render(
       <FieldLabel
-        command="ffmpeg"
+        stepId="step-1"
         field={{
           name: "filename",
           label: "Filename",
@@ -49,7 +49,7 @@ describe("FieldLabel", () => {
   test("omits the required asterisk when required is false", () => {
     render(
       <FieldLabel
-        command="ffmpeg"
+        stepId="step-1"
         field={{
           name: "filename",
           label: "Filename",
@@ -64,7 +64,7 @@ describe("FieldLabel", () => {
     const user = userEvent.setup()
     render(
       <FieldLabel
-        command="ffmpeg"
+        stepId="step-1"
         field={{
           name: "filename",
           label: "Filename",

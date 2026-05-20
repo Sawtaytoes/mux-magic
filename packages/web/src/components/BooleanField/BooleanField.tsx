@@ -25,14 +25,14 @@ export const BooleanField = ({
   return (
     <label className="flex items-center gap-2 cursor-pointer select-none py-0.5">
       <input
-        id={`${step.command}-${field.name}`}
+        id={`${step.id}-${field.name}`}
         type="checkbox"
         checked={Boolean(checked)}
         onChange={handleChange}
         aria-label={field.label ?? field.name}
         className="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer"
       />
-      <FieldLabel command={step.command} field={field} />
+      <FieldLabel stepId={step.id} field={field} />
     </label>
   )
 }

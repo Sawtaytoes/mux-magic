@@ -64,7 +64,7 @@ export const SubtitleRulesField = ({
   return (
     <div className="mb-2">
       <div className="flex items-center justify-between gap-2 mb-1">
-        <FieldLabel command={step.command} field={field} />
+        <FieldLabel stepId={step.id} field={field} />
         <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs text-slate-300">
           <input
             id={`${step.command}-hasDefaultRules`}

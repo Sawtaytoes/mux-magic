@@ -43,7 +43,7 @@ export const FolderMultiSelectField = ({
 
   return (
     <div className="mb-2">
-      <FieldLabel command={step.command} field={field} />
+      <FieldLabel stepId={step.id} field={field} />
       <div className="flex flex-wrap gap-1 mb-1.5">
         {folders.map((folder) => (
           <span

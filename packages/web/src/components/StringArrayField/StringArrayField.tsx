@@ -96,7 +96,7 @@ export const StringArrayField = ({
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <FieldLabel command={step.command} field={field} />
+        <FieldLabel stepId={step.id} field={field} />
         <button
           ref={linkButtonRef}
           type="button"
@@ -114,7 +114,7 @@ export const StringArrayField = ({
         </p>
       ) : (
         <input
-          id={`${step.command}-${field.name}`}
+          id={`${step.id}-${field.name}`}
           type="text"
           value={displayValue}
           placeholder={field.placeholder ?? ""}

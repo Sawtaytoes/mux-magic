@@ -506,6 +506,19 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Recursive",
         }),
+        // Schema default is 0 (sentinel for server default of 1); UI
+        // overrides to 1 so the depth input shows a useful value the
+        // moment the user checks isRecursive.
+        field("recursiveDepth", {
+          type: "number",
+          label: "Depth",
+          default: 1,
+          min: 1,
+          visibleWhen: {
+            fieldName: "isRecursive",
+            value: true,
+          },
+        }),
         field("isSourceDeleted", {
           type: "boolean",
           label:
@@ -515,6 +528,12 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label: "Audit Only (Dry-Run)",
         }),
+      ],
+      groups: [
+        {
+          fields: ["isRecursive", "recursiveDepth"],
+          layout: "field-group-check-fill",
+        },
       ],
     }
   })(),

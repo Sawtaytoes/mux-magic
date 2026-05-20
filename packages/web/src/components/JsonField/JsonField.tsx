@@ -49,7 +49,7 @@ export const JsonField = ({
   if (isReadOnly) {
     return (
       <textarea
-        id={`${step.command}-${field.name}`}
+        id={`${step.id}-${field.name}`}
         value={displayValue}
         placeholder={field.placeholder ?? "[]"}
         readOnly
@@ -64,7 +64,7 @@ export const JsonField = ({
 
   return (
     <textarea
-      id={`${step.command}-${field.name}`}
+      id={`${step.id}-${field.name}`}
       value={displayValue}
       placeholder={field.placeholder ?? "[]"}
       onChange={(event) => handleChange(event.target.value)}
