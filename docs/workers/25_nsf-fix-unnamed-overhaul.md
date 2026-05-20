@@ -150,11 +150,11 @@ Worker 27 is adding `paused` job state + on-disk job persistence. Coordinate on 
 
 ## Files (post-worker-3a layout)
 
-- `packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/unnamed/buildUnnamedFileCandidates.ts` (rewrite per new scoring)
-- `packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/unnamed/rankCandidatesForFile.ts` (new)
-- `packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/unnamed/unnamedCache.ts` (new)
-- `packages/server/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/unnamed/promptForUserChoice.ts` (extend payload)
-- Prompt-event types — possibly [packages/server/src/api/types.ts](../../packages/server/src/api/types.ts)
+- `packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/unnamed/buildUnnamedFileCandidates.ts` (rewrite per new scoring)
+- `packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/unnamed/rankCandidatesForFile.ts` (new)
+- `packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/unnamed/unnamedCache.ts` (new)
+- `packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb/unnamed/promptForUserChoice.ts` (extend payload)
+- Prompt-event types — possibly [packages/api/src/api/types.ts](../../packages/api/src/api/types.ts)
 - Web UI prompt component (search for it under [packages/web/src/components/](../../packages/web/src/components/))
 - Tests for all of the above
 

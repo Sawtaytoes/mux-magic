@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/4c_subtitle-attachments-and-track-granular-merge/`
 **Phase:** 5
 **Depends on:** 3b (subtitle/track command consolidation — the merge-mode discriminator builds on its schema topology)
-**Parallel with:** any Phase 5 worker that doesn't touch [packages/server/src/app-commands/extractSubtitles.ts](../../packages/server/src/app-commands/extractSubtitles.ts), [packages/server/src/app-commands/mergeTracks.ts](../../packages/server/src/app-commands/mergeTracks.ts), [packages/server/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts](../../packages/server/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts), [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts), or the matching web field schemas.
+**Parallel with:** any Phase 5 worker that doesn't touch [packages/core/src/app-commands/extractSubtitles.ts](../../packages/core/src/app-commands/extractSubtitles.ts), [packages/core/src/app-commands/mergeTracks.ts](../../packages/core/src/app-commands/mergeTracks.ts), [packages/core/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts](../../packages/core/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts), [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts), or the matching web field schemas.
 
 ## Universal Rules (TL;DR)
 
@@ -15,17 +15,17 @@ Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typechec
 
 Two real workflows the current command shape can't express cleanly. They're separate UX surfaces but share enough mkvmerge-arg plumbing that splitting them across two workers would force the same plumbing twice.
 
-**Problem A — attachments aren't extracted with subtitles.** Today [packages/server/src/app-commands/extractSubtitles.ts](../../packages/server/src/app-commands/extractSubtitles.ts) pulls subtitle tracks via `mkvextract tracks`. The user then opens the extracted `.ass`/`.srt` in Aegisub to edit. Aegisub references the file's *attachments* — TTF/OTF fonts, occasionally raster overlays — which never made it onto disk. The user has to manually run `mkvextract attachments` against the source file before editing, every time. This is mechanical busywork the existing command should optionally do in one shot.
+**Problem A — attachments aren't extracted with subtitles.** Today [packages/core/src/app-commands/extractSubtitles.ts](../../packages/core/src/app-commands/extractSubtitles.ts) pulls subtitle tracks via `mkvextract tracks`. The user then opens the extracted `.ass`/`.srt` in Aegisub to edit. Aegisub references the file's *attachments* — TTF/OTF fonts, occasionally raster overlays — which never made it onto disk. The user has to manually run `mkvextract attachments` against the source file before editing, every time. This is mechanical busywork the existing command should optionally do in one shot.
 
-**Problem B — merging back clobbers everything else.** When the user finishes editing one subtitle track and wants to merge it back into the source MKV via [mergeTracks.ts](../../packages/server/src/app-commands/mergeTracks.ts) (which spawns through [mergeSubtitlesMkvMerge.ts](../../packages/server/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts)), the current code path replaces **all** subtitle tracks. If the file had English + Japanese + signs/songs subs and the user only edited the English track, the Japanese and signs/songs tracks vanish from the output. Same for attachments — the existing `replace-all` semantics drop anything the user didn't explicitly carry over.
+**Problem B — merging back clobbers everything else.** When the user finishes editing one subtitle track and wants to merge it back into the source MKV via [mergeTracks.ts](../../packages/core/src/app-commands/mergeTracks.ts) (which spawns through [mergeSubtitlesMkvMerge.ts](../../packages/core/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts)), the current code path replaces **all** subtitle tracks. If the file had English + Japanese + signs/songs subs and the user only edited the English track, the Japanese and signs/songs tracks vanish from the output. Same for attachments — the existing `replace-all` semantics drop anything the user didn't explicitly carry over.
 
-The selective pattern needed already exists in the codebase: [packages/server/src/cli-spawn-operations/replaceAttachmentsMkvMerge.ts](../../packages/server/src/cli-spawn-operations/replaceAttachmentsMkvMerge.ts) shows how to use mkvmerge's track-selection flags to swap one slot of a container without touching the others. This worker extends that selective approach to subtitle tracks via mkvmerge's track-UID model.
+The selective pattern needed already exists in the codebase: [packages/core/src/cli-spawn-operations/replaceAttachmentsMkvMerge.ts](../../packages/core/src/cli-spawn-operations/replaceAttachmentsMkvMerge.ts) shows how to use mkvmerge's track-selection flags to swap one slot of a container without touching the others. This worker extends that selective approach to subtitle tracks via mkvmerge's track-UID model.
 
 ## Your Mission
 
 ### 1. `extractSubtitles` — optional `extractAttachments` flag
 
-Extend [packages/server/src/app-commands/extractSubtitles.ts](../../packages/server/src/app-commands/extractSubtitles.ts) with one new optional input:
+Extend [packages/core/src/app-commands/extractSubtitles.ts](../../packages/core/src/app-commands/extractSubtitles.ts) with one new optional input:
 
 | Field | Type | Default | Notes |
 |---|---|---|---|
@@ -37,13 +37,13 @@ Output layout — attachments land in `<outputFolderName>/attachments/` next to 
 
 Implementation:
 
-- New `cli-spawn-op` only if `mkvextract attachments` isn't already wrapped — check for an existing `extractAttachmentsMkvExtract.ts` (similar to `extractSubtitleTrack.ts`) before creating a new file. If none exists, add `packages/server/src/cli-spawn-operations/extractAttachmentsMkvExtract.ts` following the structural pattern of [extractSubtitleTrack.ts](../../packages/server/src/cli-spawn-operations/extractSubtitleTrack.ts).
+- New `cli-spawn-op` only if `mkvextract attachments` isn't already wrapped — check for an existing `extractAttachmentsMkvExtract.ts` (similar to `extractSubtitleTrack.ts`) before creating a new file. If none exists, add `packages/core/src/cli-spawn-operations/extractAttachmentsMkvExtract.ts` following the structural pattern of [extractSubtitleTrack.ts](../../packages/core/src/cli-spawn-operations/extractSubtitleTrack.ts).
 - Pipeline: existing subtitle extraction runs unchanged; when `extractAttachments === true`, append a `concatMap` that runs `mkvextract attachments <source> <id>:<dest>` for each attachment listed in `getMkvInfo` output.
 - Skip silently when the source has zero attachments; emit a single `logInfo` line for non-zero cases listing the attachment names written.
 
 ### 2. `mergeTracks` / `mergeSubtitlesMkvMerge` — `mode` discriminator
 
-Add a new top-level field to both [packages/server/src/app-commands/mergeTracks.ts](../../packages/server/src/app-commands/mergeTracks.ts) and the spawn op [packages/server/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts](../../packages/server/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts):
+Add a new top-level field to both [packages/core/src/app-commands/mergeTracks.ts](../../packages/core/src/app-commands/mergeTracks.ts) and the spawn op [packages/core/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts](../../packages/core/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts):
 
 ```ts
 type MergeMode =
@@ -54,7 +54,7 @@ type MergeMode =
 Discriminator semantics:
 
 - **`replace-all`** — current behavior, byte-for-byte. Default. No migration risk for existing saved sequences.
-- **`replace-by-track-uid`** — produce mkvmerge args that copy every track and attachment from the source EXCEPT the one with `targetTrackUid`, then merge the new subtitle in its place. The track UID is the stable identifier mkvmerge exposes via `mkvmerge -i -J` (already surfaced by the project's `getMkvInfo` wrapper at [packages/server/src/tools/getMkvInfo.ts](../../packages/server/src/tools/getMkvInfo.ts)). Use that — never the positional track index, which renumbers when tracks are added/removed.
+- **`replace-by-track-uid`** — produce mkvmerge args that copy every track and attachment from the source EXCEPT the one with `targetTrackUid`, then merge the new subtitle in its place. The track UID is the stable identifier mkvmerge exposes via `mkvmerge -i -J` (already surfaced by the project's `getMkvInfo` wrapper at [packages/core/src/tools/getMkvInfo.ts](../../packages/core/src/tools/getMkvInfo.ts)). Use that — never the positional track index, which renumbers when tracks are added/removed.
 
 mkvmerge invocation for `replace-by-track-uid`:
 
@@ -62,11 +62,11 @@ mkvmerge invocation for `replace-by-track-uid`:
 - All other tracks (`--audio-tracks`, `--video-tracks`, etc.) and `--attachments` pass through untouched.
 - The replacement subtitle file is appended as a second input. Reuse the language/default-flag plumbing that already exists in `mergeSubtitlesMkvMerge`.
 
-Mirror the [replaceAttachmentsMkvMerge.ts](../../packages/server/src/cli-spawn-operations/replaceAttachmentsMkvMerge.ts) selective-replacement pattern — same `runMkvMerge.js` underlying call, same `outputFolderName` knob, same Observable shape.
+Mirror the [replaceAttachmentsMkvMerge.ts](../../packages/core/src/cli-spawn-operations/replaceAttachmentsMkvMerge.ts) selective-replacement pattern — same `runMkvMerge.js` underlying call, same `outputFolderName` knob, same Observable shape.
 
 ### 3. Schema (server + web) updates
 
-- [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts) — add `extractAttachments: z.boolean().optional()` to `extractSubtitlesRequestSchema`; add the `MergeMode` discriminator (`z.discriminatedUnion("mode", [...])`) to `mergeTracksRequestSchema`. Keep `replace-all` as the inferred default when the field is absent so existing saved YAML still validates without migration.
+- [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts) — add `extractAttachments: z.boolean().optional()` to `extractSubtitlesRequestSchema`; add the `MergeMode` discriminator (`z.discriminatedUnion("mode", [...])`) to `mergeTracksRequestSchema`. Keep `replace-all` as the inferred default when the field is absent so existing saved YAML still validates without migration.
 - [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts) — update the `extractSubtitles` and `mergeTracks` field metadata so the new fields surface in the builder UI. The `mode` field should render as a dropdown (existing discriminator-rendering convention — do not invent a new control). `targetTrackUid` is a number field shown only when `mode === "replace-by-track-uid"`.
 - [packages/web/src/jobs/yamlCodec.ts](../../packages/web/src/jobs/yamlCodec.ts) — confirm the new fields round-trip; the discriminator should serialize as `mode: replace-by-track-uid` plus `targetTrackUid: 3` rather than a nested object. Use the standard `legacyFieldRenames` convention for any back-compat needs (memory ref: yamlCodec is the canonical location and legacy-rename hook).
 - Parity fixtures: update [packages/web/tests/fixtures/parity/extractSubtitles.input.json](../../packages/web/tests/fixtures/parity/extractSubtitles.input.json) + `.yaml`, and [packages/web/tests/fixtures/parity/mergeTracks.input.json](../../packages/web/tests/fixtures/parity/mergeTracks.input.json) + `.yaml`, so the new fields are exercised by the parity test harness. Use [packages/web/scripts/capture-parity-fixtures.ts](../../packages/web/scripts/capture-parity-fixtures.ts) to regenerate.
@@ -97,20 +97,20 @@ Two-commit pattern: failing red commit first, then green implementation.
 
 ### New
 
-- [packages/server/src/cli-spawn-operations/extractAttachmentsMkvExtract.ts](../../packages/server/src/cli-spawn-operations/extractAttachmentsMkvExtract.ts) (only if no equivalent already exists — grep first)
-- [packages/server/src/cli-spawn-operations/extractAttachmentsMkvExtract.test.ts](../../packages/server/src/cli-spawn-operations/extractAttachmentsMkvExtract.test.ts)
+- [packages/core/src/cli-spawn-operations/extractAttachmentsMkvExtract.ts](../../packages/core/src/cli-spawn-operations/extractAttachmentsMkvExtract.ts) (only if no equivalent already exists — grep first)
+- [packages/core/src/cli-spawn-operations/extractAttachmentsMkvExtract.test.ts](../../packages/core/src/cli-spawn-operations/extractAttachmentsMkvExtract.test.ts)
 - New parity fixtures listed under §3 above
 
 ### Modified
 
 **Server:**
-- [packages/server/src/app-commands/extractSubtitles.ts](../../packages/server/src/app-commands/extractSubtitles.ts)
-- [packages/server/src/app-commands/extractSubtitles.test.ts](../../packages/server/src/app-commands/extractSubtitles.test.ts)
-- [packages/server/src/app-commands/mergeTracks.ts](../../packages/server/src/app-commands/mergeTracks.ts)
-- [packages/server/src/app-commands/mergeTracks.test.ts](../../packages/server/src/app-commands/mergeTracks.test.ts) (if exists; else add)
-- [packages/server/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts](../../packages/server/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts)
-- [packages/server/src/cli-spawn-operations/mergeSubtitlesMkvMerge.test.ts](../../packages/server/src/cli-spawn-operations/mergeSubtitlesMkvMerge.test.ts) (if exists; else add)
-- [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts) — extend both request schemas
+- [packages/core/src/app-commands/extractSubtitles.ts](../../packages/core/src/app-commands/extractSubtitles.ts)
+- [packages/core/src/app-commands/extractSubtitles.test.ts](../../packages/core/src/app-commands/extractSubtitles.test.ts)
+- [packages/core/src/app-commands/mergeTracks.ts](../../packages/core/src/app-commands/mergeTracks.ts)
+- [packages/core/src/app-commands/mergeTracks.test.ts](../../packages/core/src/app-commands/mergeTracks.test.ts) (if exists; else add)
+- [packages/core/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts](../../packages/core/src/cli-spawn-operations/mergeSubtitlesMkvMerge.ts)
+- [packages/core/src/cli-spawn-operations/mergeSubtitlesMkvMerge.test.ts](../../packages/core/src/cli-spawn-operations/mergeSubtitlesMkvMerge.test.ts) (if exists; else add)
+- [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts) — extend both request schemas
 
 **CLI:**
 - [packages/cli/src/cli-commands/extractSubtitlesCommand.ts](../../packages/cli/src/cli-commands/extractSubtitlesCommand.ts)
@@ -125,9 +125,9 @@ Two-commit pattern: failing red commit first, then green implementation.
 
 ### Reuse — do not reinvent
 
-- `mkvmerge`/`mkvextract` wrappers in [packages/server/src/cli-spawn-operations/](../../packages/server/src/cli-spawn-operations/) — extend existing helpers; do not spawn `mkvmerge` directly from app-commands.
+- `mkvmerge`/`mkvextract` wrappers in [packages/core/src/cli-spawn-operations/](../../packages/core/src/cli-spawn-operations/) — extend existing helpers; do not spawn `mkvmerge` directly from app-commands.
 - `getMkvInfo` for track UIDs and attachment listings — it already parses `mkvmerge -J` output.
-- The selective-replacement pattern in [replaceAttachmentsMkvMerge.ts](../../packages/server/src/cli-spawn-operations/replaceAttachmentsMkvMerge.ts) — this is the structural template for `replace-by-track-uid`.
+- The selective-replacement pattern in [replaceAttachmentsMkvMerge.ts](../../packages/core/src/cli-spawn-operations/replaceAttachmentsMkvMerge.ts) — this is the structural template for `replace-by-track-uid`.
 - The existing builder discriminator-field renderer (whichever component handles discriminators today) — find it and reuse it. Do not invent a parallel mode-selector control.
 
 ## Verification

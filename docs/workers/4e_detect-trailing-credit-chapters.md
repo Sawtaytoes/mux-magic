@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/4e_detect-trailing-content-outliers/`
 **Phase:** 5
 **Depends on:** 01
-**Parallel with:** any Phase 5 worker that doesn't touch [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts), [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts), [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts), or [packages/web/src/jobs/commandLabels.ts](../../packages/web/src/jobs/commandLabels.ts).
+**Parallel with:** any Phase 5 worker that doesn't touch [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts), [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts), [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts), or [packages/web/src/jobs/commandLabels.ts](../../packages/web/src/jobs/commandLabels.ts).
 
 > **Naming note.** This worker's command was originally drafted as `detectTrailingCreditChapters` (chapter-name match against `Credits`/`ED`/`Outro`/...). That approach has been replaced with cohort-relative outlier detection, so the command name moves to `detectTrailingContentOutliers`. The doc filename keeps its `4e_…` prefix for manifest stability; if you want to rename the doc + branch as well, do it in the same `chore(manifest)` commit that flips this row to `in-progress`.
 
@@ -30,7 +30,7 @@ This is the read-side bookend of worker 4d (renumber chapters). Once a trim-rang
 
 ### Shape to mirror
 
-[packages/server/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/server/src/app-commands/hasDuplicateMusicFiles.ts) is the canonical "group siblings → compute cohort signal → emit only the anomalies" command in this repo. Mirror its overall layout: directory enumeration → grouping → per-group analysis → tap/log → `logAndRethrowPipelineError`. The per-group analysis is where this worker diverges — it computes cohort statistics from `getMkvInfo` rather than comparing basenames.
+[packages/core/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/core/src/app-commands/hasDuplicateMusicFiles.ts) is the canonical "group siblings → compute cohort signal → emit only the anomalies" command in this repo. Mirror its overall layout: directory enumeration → grouping → per-group analysis → tap/log → `logAndRethrowPipelineError`. The per-group analysis is where this worker diverges — it computes cohort statistics from `getMkvInfo` rather than comparing basenames.
 
 ### Inputs
 
@@ -62,7 +62,7 @@ export const detectTrailingContentOutliersDefaultProps = {
 1. Enumerate MKVs under `sourcePath` (depth 1 unless `isRecursive`, matching `fixIncorrectDefaultTracks`'s pattern).
 2. **Cluster** files by filename-prefix stem — strip a trailing episode-number token (e.g. `Show Name S01E07.mkv` → stem `Show Name S01`). Multiple seasons or extras in the same folder produce separate cohorts. If the prefix-stripping heuristic doesn't land cleanly, extract the stem-derivation into a sibling `detectTrailingContentOutliers.cluster.ts` (dotted-suffix, no barrel).
 3. For each cohort with `< minClusterSize` members: emit an `console.info` line (`"cohort '<stem>': only N files, skipping"`) and continue. No records emitted for these.
-4. For each qualifying cohort, call `getMkvInfo` once per file, surfacing **duration** plus per-chapter `{ name, startTime, endTime }`. Reuse the existing `mkvmerge -J` invocation — do not shell out twice. If extending `getMkvInfo` would balloon it, add a sibling `getMkvChapters.ts` under [packages/server/src/tools/](../../packages/server/src/tools/).
+4. For each qualifying cohort, call `getMkvInfo` once per file, surfacing **duration** plus per-chapter `{ name, startTime, endTime }`. Reuse the existing `mkvmerge -J` invocation — do not shell out twice. If extending `getMkvInfo` would balloon it, add a sibling `getMkvChapters.ts` under [packages/core/src/tools/](../../packages/core/src/tools/).
 5. Compute cohort medians: `medianDurationSec`, `medianChapterCount`, `medianLastChapterDurationSec`.
 6. For each file, evaluate three independent signals:
    - **`duration-outlier`** — `|file.durationSec - medianDurationSec| > durationOutlierSeconds`.
@@ -94,29 +94,29 @@ export const detectTrailingContentOutliersDefaultProps = {
 
 The command needs surfaces in the same six places every other app-command lives:
 
-1. **App-command:** [packages/server/src/app-commands/detectTrailingContentOutliers.ts](../../packages/server/src/app-commands/detectTrailingContentOutliers.ts) — new file.
-2. **Schema:** add `detectTrailingContentOutliersRequestSchema` to [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts). Fields: `sourcePath` (path), `isRecursive` (boolean), `durationOutlierSeconds` (number > 0 optional), `minClusterSize` (integer ≥ 2 optional). Use `is`/`has` prefix discipline (eslint rule from worker 05).
-3. **Route registration:** add the entry to [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) under the appropriate tag (likely `Analysis` — this is detection, not mutation).
+1. **App-command:** [packages/core/src/app-commands/detectTrailingContentOutliers.ts](../../packages/core/src/app-commands/detectTrailingContentOutliers.ts) — new file.
+2. **Schema:** add `detectTrailingContentOutliersRequestSchema` to [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts). Fields: `sourcePath` (path), `isRecursive` (boolean), `durationOutlierSeconds` (number > 0 optional), `minClusterSize` (integer ≥ 2 optional). Use `is`/`has` prefix discipline (eslint rule from worker 05).
+3. **Route registration:** add the entry to [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts) under the appropriate tag (likely `Analysis` — this is detection, not mutation).
 4. **Web command list:** add to [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts) `fieldBuilder(...)` block (alphabetical with siblings).
 5. **Label:** add to [packages/web/src/jobs/commandLabels.ts](../../packages/web/src/jobs/commandLabels.ts) — display name `Detect Trailing Content Outliers`.
 6. **CLI wrapper:** [packages/cli/src/cli-commands/detectTrailingContentOutliersCommand.ts](../../packages/cli/src/cli-commands/detectTrailingContentOutliersCommand.ts) — mirror [hasDuplicateMusicFilesCommand.ts](../../packages/cli/src/cli-commands/hasDuplicateMusicFilesCommand.ts) (positional `sourcePath`, `-r`, optional `--duration-outlier-seconds` and `--min-cluster-size`). Register in the CLI's command index.
 
 ### Helper extraction (one-component-per-file discipline)
 
-`getMkvInfo` currently returns chapter aggregates (`num_entries`) but not per-chapter names/timecodes. Extend it (or add a sibling `getMkvChapters.ts`) so callers can opt into the heavier per-chapter payload without paying for it on every consumer. Match the existing helper layout under [packages/server/src/tools/](../../packages/server/src/tools/).
+`getMkvInfo` currently returns chapter aggregates (`num_entries`) but not per-chapter names/timecodes. Extend it (or add a sibling `getMkvChapters.ts`) so callers can opt into the heavier per-chapter payload without paying for it on every consumer. Match the existing helper layout under [packages/core/src/tools/](../../packages/core/src/tools/).
 
 If the cohort-clustering / median-statistics logic grows past a few lines, extract sibling `detectTrailingContentOutliers.cluster.ts` and `detectTrailingContentOutliers.stats.ts` — dotted-suffix siblings, no barrel (see project memory).
 
 ### Fake-data scenario
 
-Add [packages/server/src/fake-data/scenarios/detectTrailingContentOutliers.ts](../../packages/server/src/fake-data/scenarios/detectTrailingContentOutliers.ts) modelled on [replaceFlacWithPcmAudio.ts](../../packages/server/src/fake-data/scenarios/replaceFlacWithPcmAudio.ts). Cover:
+Add [packages/api/src/fake-data/scenarios/detectTrailingContentOutliers.ts](../../packages/api/src/fake-data/scenarios/detectTrailingContentOutliers.ts) modelled on [replaceFlacWithPcmAudio.ts](../../packages/api/src/fake-data/scenarios/replaceFlacWithPcmAudio.ts). Cover:
 
 - A 12-file season where file 7 is ~30s longer (disc-end stinger). Expect one record with `duration-outlier` reason.
 - The same season where file 12 (the finale) is 90s longer but has no extra chapter. Expect one record, `isLastInCluster: true`.
 - A folder with two stems (`Show A S01E*`, `Show B S01E*`) so cohort splitting is exercised.
 - A folder with only two files in a stem — expect skip-with-info-log, no emission.
 
-Register the scenario in [packages/server/src/fake-data/index.ts](../../packages/server/src/fake-data/index.ts).
+Register the scenario in [packages/api/src/fake-data/index.ts](../../packages/api/src/fake-data/index.ts).
 
 ## TDD steps
 
@@ -138,29 +138,29 @@ Register the scenario in [packages/server/src/fake-data/index.ts](../../packages
 
 ### New
 
-- [packages/server/src/app-commands/detectTrailingContentOutliers.ts](../../packages/server/src/app-commands/detectTrailingContentOutliers.ts)
-- [packages/server/src/app-commands/detectTrailingContentOutliers.test.ts](../../packages/server/src/app-commands/detectTrailingContentOutliers.test.ts)
-- [packages/server/src/fake-data/scenarios/detectTrailingContentOutliers.ts](../../packages/server/src/fake-data/scenarios/detectTrailingContentOutliers.ts)
+- [packages/core/src/app-commands/detectTrailingContentOutliers.ts](../../packages/core/src/app-commands/detectTrailingContentOutliers.ts)
+- [packages/core/src/app-commands/detectTrailingContentOutliers.test.ts](../../packages/core/src/app-commands/detectTrailingContentOutliers.test.ts)
+- [packages/api/src/fake-data/scenarios/detectTrailingContentOutliers.ts](../../packages/api/src/fake-data/scenarios/detectTrailingContentOutliers.ts)
 - [packages/cli/src/cli-commands/detectTrailingContentOutliersCommand.ts](../../packages/cli/src/cli-commands/detectTrailingContentOutliersCommand.ts)
 - [packages/web/tests/fixtures/parity/detectTrailingContentOutliers.input.json](../../packages/web/tests/fixtures/parity/detectTrailingContentOutliers.input.json)
 - [packages/web/tests/fixtures/parity/detectTrailingContentOutliers.yaml](../../packages/web/tests/fixtures/parity/detectTrailingContentOutliers.yaml)
-- Optional siblings: `packages/server/src/tools/getMkvChapters.ts`, `detectTrailingContentOutliers.cluster.ts`, `detectTrailingContentOutliers.stats.ts` — only if the relevant section would balloon the main file
+- Optional siblings: `packages/core/src/tools/getMkvChapters.ts`, `detectTrailingContentOutliers.cluster.ts`, `detectTrailingContentOutliers.stats.ts` — only if the relevant section would balloon the main file
 
 ### Extend
 
-- [packages/server/src/tools/getMkvInfo.ts](../../packages/server/src/tools/getMkvInfo.ts) — surface duration + per-chapter `name`/`startTime`/`endTime` (only if not extracted to a sibling)
-- [packages/server/src/api/schemas.ts](../../packages/server/src/api/schemas.ts) — `detectTrailingContentOutliersRequestSchema`
-- [packages/server/src/api/routes/commandRoutes.ts](../../packages/server/src/api/routes/commandRoutes.ts) — route registration
-- [packages/server/src/fake-data/index.ts](../../packages/server/src/fake-data/index.ts) — scenario registration
+- [packages/core/src/tools/getMkvInfo.ts](../../packages/core/src/tools/getMkvInfo.ts) — surface duration + per-chapter `name`/`startTime`/`endTime` (only if not extracted to a sibling)
+- [packages/api/src/api/schemas.ts](../../packages/api/src/api/schemas.ts) — `detectTrailingContentOutliersRequestSchema`
+- [packages/api/src/api/routes/commandRoutes.ts](../../packages/api/src/api/routes/commandRoutes.ts) — route registration
+- [packages/api/src/fake-data/index.ts](../../packages/api/src/fake-data/index.ts) — scenario registration
 - [packages/web/src/commands/commands.ts](../../packages/web/src/commands/commands.ts) — field builder
 - [packages/web/src/jobs/commandLabels.ts](../../packages/web/src/jobs/commandLabels.ts) — display label
 - CLI command index (find via grep — wherever sibling CLI commands are registered)
 
 ### Reuse — do not reinvent
 
-- [hasDuplicateMusicFiles.ts](../../packages/server/src/app-commands/hasDuplicateMusicFiles.ts) — overall pipeline shape (group, report, no mutation, `logAndRethrowPipelineError`).
-- [getMkvInfo.ts](../../packages/server/src/tools/getMkvInfo.ts) — MKV introspection; do not invent a second `mkvmerge -J` caller.
-- [filterIsVideoFile.ts](../../packages/server/src/tools/filterIsVideoFile.ts) — already filters to video extensions.
+- [hasDuplicateMusicFiles.ts](../../packages/core/src/app-commands/hasDuplicateMusicFiles.ts) — overall pipeline shape (group, report, no mutation, `logAndRethrowPipelineError`).
+- [getMkvInfo.ts](../../packages/core/src/tools/getMkvInfo.ts) — MKV introspection; do not invent a second `mkvmerge -J` caller.
+- [filterIsVideoFile.ts](../../packages/core/src/tools/filterIsVideoFile.ts) — already filters to video extensions.
 
 ## Verification checklist
 

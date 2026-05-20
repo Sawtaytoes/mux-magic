@@ -5,7 +5,7 @@
 **Worktree:** `.claude/worktrees/4a_duplicate-music-files-scheduler-audit/`
 **Phase:** 5
 **Depends on:** 11 (per-job thread budget), 38 (per-file pipelining)
-**Parallel with:** any Phase 5 worker that doesn't touch [packages/server/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/server/src/app-commands/hasDuplicateMusicFiles.ts) or its CLI binding.
+**Parallel with:** any Phase 5 worker that doesn't touch [packages/core/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/core/src/app-commands/hasDuplicateMusicFiles.ts) or its CLI binding.
 
 ## Universal Rules (TL;DR)
 
@@ -13,7 +13,7 @@ Worktree-isolated. Random PORT/WEB_PORT. Pre-merge gate: `yarn lint → typechec
 
 ## Your Mission
 
-Audit the existing [hasDuplicateMusicFiles](../../packages/server/src/app-commands/hasDuplicateMusicFiles.ts) command against two infrastructure changes that landed after it was written:
+Audit the existing [hasDuplicateMusicFiles](../../packages/core/src/app-commands/hasDuplicateMusicFiles.ts) command against two infrastructure changes that landed after it was written:
 
 1. **Worker 11's per-job thread budget** — every command running through the sequence runner now claims threads from a per-job pool (governed by the user-set `threadCount` Variable, capped at the `DEFAULT_THREAD_COUNT` env ceiling). Commands that don't cooperate either starve (claiming more than budget allows) or stall the budget (holding threads while idle).
 2. **Worker 38's per-file pipelining** — `sequenceRunner.ts` no longer waits for a step to complete on every file before starting the next step. Files flow through steps continuously, and any step that assumes "all files have already arrived" before producing output deadlocks downstream steps.
@@ -38,7 +38,7 @@ The first `groupBy` is the load-bearing operator: each new path either opens a n
 
 1. **`groupBy` keeps group subscriptions open indefinitely** until the source completes. Under per-file pipelining (worker 38), the upstream source still terminates when the directory walk completes, so this is fine in principle. Confirm by running the command against a fixture directory through the pipelined sequence runner and asserting: (a) the duplicate report is identical to running it standalone; (b) the runner reports the command complete (no dangling open groups holding the job in `running`).
 2. **Concurrency claim posture.** `getFilesAtDepth` does the directory walk synchronously-ish (it's a filesystem walk, not a CPU pool consumer); the `mergeMap` operators here are pure transforms with no spawned subprocesses. The command should claim **at most one thread** from the per-job budget — this is an I/O-bound walk + in-memory grouping, not an `mkv*`/`ffmpeg` spawn worker. Verify against worker 11's taskScheduler API (`packages/tools/src/taskScheduler*.ts` and how callers wire `perJobClaim`). If the command currently claims more than 1, narrow it. If it doesn't claim at all (and the scheduler permits non-claiming runs as "lightweight"), document that decision in the PR.
-3. **No-`toArray`, no batch-mode coupling.** Confirm the pipeline doesn't currently terminate in `.pipe(toArray())` (it doesn't, per the snippet above) and that nothing downstream of the command implicitly expects batched output. Grep callers in `packages/server/src/api/`, `packages/cli/src/cli-commands/hasDuplicateMusicFilesCommand.ts`, and any sequence-runner expansion to confirm. The CLI subscriber [hasDuplicateMusicFilesCommand.ts](../../packages/cli/src/cli-commands/hasDuplicateMusicFilesCommand.ts) just `subscribeCli()` — fine.
+3. **No-`toArray`, no batch-mode coupling.** Confirm the pipeline doesn't currently terminate in `.pipe(toArray())` (it doesn't, per the snippet above) and that nothing downstream of the command implicitly expects batched output. Grep callers in `packages/api/src/api/`, `packages/cli/src/cli-commands/hasDuplicateMusicFilesCommand.ts`, and any sequence-runner expansion to confirm. The CLI subscriber [hasDuplicateMusicFilesCommand.ts](../../packages/cli/src/cli-commands/hasDuplicateMusicFilesCommand.ts) just `subscribeCli()` — fine.
 
 ### Decisions to make in the PR
 
@@ -49,7 +49,7 @@ Whichever path you choose, document the decision and the evidence supporting it 
 
 ### Per-job claim wiring (load-bearing)
 
-Find how worker 11 / worker 38 expect app-commands to claim threads. Existing tag-touching and remux commands wired through `runMkvPropEdit`/`runMkvMerge`/`runFfmpeg` claim via the spawn op. `hasDuplicateMusicFiles` spawns nothing, so it needs an explicit lightweight claim (or a documented "lightweight, no claim needed" annotation per worker 11's contract). Pick the same posture other lightweight commands use — grep `packages/server/src/app-commands/**` for the convention; if no precedent exists, claim 1 thread per command invocation (not per file).
+Find how worker 11 / worker 38 expect app-commands to claim threads. Existing tag-touching and remux commands wired through `runMkvPropEdit`/`runMkvMerge`/`runFfmpeg` claim via the spawn op. `hasDuplicateMusicFiles` spawns nothing, so it needs an explicit lightweight claim (or a documented "lightweight, no claim needed" annotation per worker 11's contract). Pick the same posture other lightweight commands use — grep `packages/core/src/app-commands/**` for the convention; if no precedent exists, claim 1 thread per command invocation (not per file).
 
 ## Tests (per test-coverage discipline)
 
@@ -69,12 +69,12 @@ Find how worker 11 / worker 38 expect app-commands to claim threads. Existing ta
 
 ### Extend
 
-- [packages/server/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/server/src/app-commands/hasDuplicateMusicFiles.ts) — at minimum, add per-job claim wiring; rewrite operators only if §1 found a bug
-- [packages/server/src/app-commands/hasDuplicateMusicFiles.test.ts](../../packages/server/src/app-commands/hasDuplicateMusicFiles.test.ts) — new tests (create if missing)
+- [packages/core/src/app-commands/hasDuplicateMusicFiles.ts](../../packages/core/src/app-commands/hasDuplicateMusicFiles.ts) — at minimum, add per-job claim wiring; rewrite operators only if §1 found a bug
+- [packages/core/src/app-commands/hasDuplicateMusicFiles.test.ts](../../packages/core/src/app-commands/hasDuplicateMusicFiles.test.ts) — new tests (create if missing)
 
 ### Reference (read, do not change unless audit forces it)
 
-- [packages/server/src/api/sequenceRunner.ts](../../packages/server/src/api/sequenceRunner.ts) — pipelined-mode entry per worker 38
+- [packages/api/src/api/sequenceRunner.ts](../../packages/api/src/api/sequenceRunner.ts) — pipelined-mode entry per worker 38
 - [packages/tools/src/taskScheduler.ts](../../packages/tools/src/taskScheduler.ts) and `taskScheduler.injection.test.ts` — per-job claim contract from worker 11
 - [packages/cli/src/cli-commands/hasDuplicateMusicFilesCommand.ts](../../packages/cli/src/cli-commands/hasDuplicateMusicFilesCommand.ts) — CLI subscriber; should not need changes
 
