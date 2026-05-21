@@ -133,7 +133,7 @@ describe(reorderForDuplicatePrompts.name, () => {
     expect(getUserSearchInput).not.toHaveBeenCalled()
   })
 
-  test("drops non-chosen group members AND surfaces their fullPaths so the orchestrator can route them into DUPLICATES/", async () => {
+  test("drops non-chosen group members AND surfaces their fullPaths so the orchestrator can treat them as unnamed (Smart Match + UNNAMED-FEATURES/ bucket)", async () => {
     const renames = [
       {
         fileInfo: makeFileInfo("disc-a.mkv"),
@@ -152,8 +152,9 @@ describe(reorderForDuplicatePrompts.name, () => {
     ]
     // User picks index 0 (disc-a) as the real Behind the Scenes;
     // disc-b should be dropped from the rename list AND reported in
-    // droppedFullPaths so the orchestrator can fs.rename it into
-    // DUPLICATES/ on completion.
+    // droppedFullPaths so the orchestrator can treat it as unnamed —
+    // counted in the summary, surfaced in Smart Match, and bucketed
+    // into UNNAMED-FEATURES/ alongside other unmatched files.
     vi.mocked(getUserSearchInput).mockReturnValue(of(0))
     const result = await firstValueFrom(
       reorderForDuplicatePrompts(renames),

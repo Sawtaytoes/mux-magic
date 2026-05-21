@@ -62,9 +62,11 @@ export type DuplicatePromptResult = {
     renamedFilename: string
   }[]
   // Full paths of files the user excluded by picking "this one is the
-  // real match" on a duplicate group. The orchestrator routes these
-  // into `<sourcePath>/DUPLICATES/` so the user can review them on
-  // disk (worker 25 — the filesystem is the cache).
+  // real match" on a duplicate group. The orchestrator treats these as
+  // unnamed alongside matcher leftovers — counted in the summary,
+  // surfaced in the Smart Match modal with ranked candidates, and
+  // routed to `<sourcePath>/UNNAMED-FEATURES/` so Smart Match's Apply
+  // can find them on disk.
   droppedFullPaths: string[]
 }
 
@@ -75,7 +77,8 @@ export type DuplicatePromptResult = {
 // button on every row). The user picks which file claims the
 // un-suffixed target name; the chosen file is kept in the rename list,
 // the rest are filtered out AND reported in `droppedFullPaths` so the
-// orchestrator can route them into `DUPLICATES/`. -1 (skip) preserves
+// orchestrator can treat them as unnamed (Smart Match modal +
+// UNNAMED-FEATURES/ bucket). -1 (skip) preserves
 // every entry in DVDCompare order so the downstream scan counter
 // suffixes (2)/(3)/… deterministically.
 export const reorderForDuplicatePrompts = (
@@ -96,8 +99,8 @@ export const reorderForDuplicatePrompts = (
       getUserSearchInput({
         message:
           `These ${group.length} files all match "${group[0].renamedFilename}".\n` +
-          "Pick the one that's the real match — the rest will be moved " +
-          "to a DUPLICATES/ folder so you can identify them separately.",
+          "Pick the one that's the real match — the rest will be " +
+          "treated as unnamed (review them in Smart Match).",
         options: [
           ...group.map((rename, index) => ({
             index,
