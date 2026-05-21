@@ -332,8 +332,11 @@ describe("SmartMatchModal", () => {
       "Custom rename target for BONUS_1",
     )) as HTMLInputElement
     expect(customInput).toBeVisible()
-    // Hybrid model: input starts empty (legacy fields semantic).
-    expect(customInput.value).toBe("")
+    // Entering ✏ for the first time seeds the input from the picker
+    // selection so the user can hand-edit (e.g. strip a typo) rather
+    // than retype the whole name.
+    expect(customInput.value).toBe("Theatrical Cut")
+    await user.clear(customInput)
     await user.type(
       customInput,
       "Director's Commentary -other",
@@ -365,6 +368,9 @@ describe("SmartMatchModal", () => {
     const customInput = (await screen.findByLabelText(
       "Custom rename target for BONUS_1",
     )) as HTMLInputElement
+    // First ✏ entry seeds from the picker; clear before typing the
+    // value we actually want to assert is retained across toggles.
+    await user.clear(customInput)
     await user.type(customInput, "My Custom Take")
     // Toggle back to picker — typed value should NOT be cleared.
     await user.click(editToggle)

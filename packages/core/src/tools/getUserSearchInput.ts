@@ -29,6 +29,12 @@ export const getUserSearchInput = (params: {
   // special-features picker to show the on-disk filename below the
   // proposed title the user is deciding on.
   subtitle?: string
+  // Forwarded to the SSE PromptEvent so the Builder's prompt modal can
+  // render a small caption ABOVE the headline `message`. Used by the
+  // special-features category picker to surface the DVDCompare parent
+  // category (e.g. "3 Side-By-Side Comparisons") above an ambiguous
+  // child label.
+  context?: string
 }) =>
   new Observable<number>((observer) => {
     const jobId = getActiveJobId()
@@ -44,6 +50,7 @@ export const getUserSearchInput = (params: {
         filePath: params.filePath,
         filePaths: params.filePaths,
         subtitle: params.subtitle,
+        context: params.context,
       })
 
       let isResolved = false
@@ -66,6 +73,9 @@ export const getUserSearchInput = (params: {
       }
     }
 
+    if (params.context) {
+      process.stdout.write(`${params.context}\n`)
+    }
     process.stdout.write(`${params.message}\n`)
     if (params.subtitle) {
       process.stdout.write(`${params.subtitle}\n`)

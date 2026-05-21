@@ -251,10 +251,18 @@ export const PromptModal = () => {
         </p>
 
         <div className="flex flex-col gap-1">
+          {promptData.context && (
+            <p
+              id="prompt-context"
+              className="text-slate-400 text-xs leading-snug"
+            >
+              {promptData.context}
+            </p>
+          )}
           <p
             id="prompt-message"
             className={
-              promptData.subtitle
+              promptData.subtitle || promptData.context
                 ? "text-slate-100 text-lg font-semibold leading-snug"
                 : "text-slate-100 text-sm leading-relaxed"
             }

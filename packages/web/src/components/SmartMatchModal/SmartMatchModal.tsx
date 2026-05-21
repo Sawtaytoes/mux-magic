@@ -23,14 +23,15 @@ type RowState = {
   collisionWith: string | null
   isApplied: boolean
   // Worker 6f: ✏ toggle swaps the candidate picker for a free-text
-  // input. Mirrors the legacy v1 specials-mapping-modal (HTML build,
-  // pre-React) which kept picker selection and typed name as TWO
-  // independent fields: the picker selection is preserved while the
-  // user edits, and Apply uses the typed value only while `isEditing`
-  // is true AND `customName` is non-empty (legacy "custom wins when
-  // input is visible"). Unlike legacy, toggling off RETAINS
-  // `customName` so the user can flip back to the picker for a quick
-  // compare without losing typed work.
+  // input. Picker selection and typed name are TWO independent fields:
+  // the picker selection is preserved while the user edits, and Apply
+  // uses the typed value only while `isEditing` is true AND
+  // `customName` is non-empty. Entering ✏ for the first time seeds
+  // `customName` from `selectedCandidateName` so the user can
+  // hand-edit the candidate text (the common case: fix a DVDCompare
+  // typo) rather than retype the whole name. Toggling off RETAINS
+  // `customName` so flipping back to the picker for a quick compare
+  // doesn't lose typed work.
   isEditing: boolean
   customName: string
 }
@@ -708,14 +709,34 @@ export const SmartMatchModal = () => {
                             disabled={
                               row.isApplied || isApplying
                             }
-                            onClick={() =>
+                            onClick={() => {
+                              // Seed `customName` from the picker
+                              // selection on first ✏ entry so the user
+                              // can hand-edit the candidate text (e.g.
+                              // strip a "(0:33" typo from a DVDCompare
+                              // entry) instead of retyping the whole
+                              // name. Only seeds when empty so an
+                              // already-typed value survives an
+                              // off-then-on round-trip (legacy v1
+                              // hybrid retention contract — see test
+                              // "toggling ✏ off retains the typed
+                              // value for the next toggle").
+                              const isEnteringEdit =
+                                !row.isEditing
+                              const isSeedingCustomName =
+                                isEnteringEdit &&
+                                row.customName.length === 0
                               updateRow(
                                 suggestion.filename,
                                 {
-                                  isEditing: !row.isEditing,
+                                  isEditing: isEnteringEdit,
+                                  ...(isSeedingCustomName && {
+                                    customName:
+                                      row.selectedCandidateName,
+                                  }),
                                 },
                               )
-                            }
+                            }}
                             className="text-cyan-400 hover:text-cyan-300 disabled:opacity-40 disabled:cursor-not-allowed text-[13px] leading-none font-medium px-1.5 py-1"
                           >
                             {row.isEditing ? "↩" : "✏"}

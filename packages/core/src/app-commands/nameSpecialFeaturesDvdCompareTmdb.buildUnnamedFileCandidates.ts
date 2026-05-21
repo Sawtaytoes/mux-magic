@@ -1,8 +1,10 @@
+import { applySpecialFeatureSuffix } from "../tools/getSpecialFeatureFromTimecode.js"
 import type { PossibleName } from "../tools/parseSpecialFeatures.js"
 import type { UnnamedFileCandidate } from "./nameSpecialFeaturesDvdCompareTmdb.events.js"
 import {
   applyOrderBonus,
   rankCandidatesForFile,
+  type ScoredCandidate,
   toCandidates,
 } from "./nameSpecialFeaturesDvdCompareTmdb.rankCandidates.js"
 
@@ -63,11 +65,30 @@ export const buildUnnamedFileCandidates = ({
         fileDurationSeconds: durationSeconds,
         filename,
       })
-      const rankedCandidates = applyOrderBonus({
+      const orderedRanked = applyOrderBonus({
         rankedCandidates: ranked,
         fileIndex,
         dvdCompareOrder,
       })
+      // Bake the Plex category suffix (`-trailer`, `-featurette`, …)
+      // into the candidate display name AFTER ranking — keeping the
+      // scorer working on bare names avoids polluting filename-overlap
+      // scores with category-suffix words that would never appear in
+      // a disc-rip filename. The modal uses `candidate.name` directly
+      // both for the dropdown label and the rename target, so the
+      // suffix becomes the on-disk file name the user gets.
+      const rankedCandidates: ScoredCandidate[] =
+        orderedRanked.map((scored) => ({
+          ...scored,
+          candidate: {
+            ...scored.candidate,
+            name: applySpecialFeatureSuffix({
+              text: scored.candidate.name,
+              type: scored.candidate.type,
+              parentType: scored.candidate.parentType,
+            }),
+          },
+        }))
       return {
         filename,
         extension,

@@ -79,6 +79,12 @@ export type PromptEvent = {
   // a proposed new title). Keeps the title visually distinct from
   // the file context.
   subtitle?: string
+  // Optional small-text caption rendered ABOVE `message`. Used to
+  // surface contextual hierarchy when `message` is a child label that
+  // would be ambiguous on its own — e.g. DVDCompare's
+  // "3 Side-By-Side Comparisons" sitting above the child "Airplane
+  // Models". Sits visually opposite `subtitle` (which renders below).
+  context?: string
   // Optional absolute file path that this prompt is "about" — when set,
   // the Builder's prompt modal renders a ▶ Play button that streams the
   // file via /files/stream and opens the existing video sub-modal so the
