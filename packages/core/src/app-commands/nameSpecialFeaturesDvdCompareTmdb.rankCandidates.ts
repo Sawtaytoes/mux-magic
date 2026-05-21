@@ -7,7 +7,10 @@
 // and constants are unchanged; only the file location and the addition
 // of `applyOrderBonus` (worker 25's order-based tie-break) are new.
 
-import type { PossibleName } from "../tools/parseSpecialFeatures.js"
+import type {
+  PossibleName,
+  SpecialFeatureType,
+} from "../tools/parseSpecialFeatures.js"
 
 export const DURATION_PROXIMITY_TOLERANCE_SECONDS = 90
 export const DURATION_WEIGHT = 0.7
@@ -23,6 +26,11 @@ export type Candidate = {
   name: string
   timecode?: string
   parentName?: string
+  // Forwarded from `PossibleName` so the candidate builder can apply
+  // the same `-trailer` / `-featurette` / `-behindthescenes` suffix
+  // the main NSF rename flow appends. The scorer itself ignores these.
+  type?: SpecialFeatureType
+  parentType?: SpecialFeatureType
 }
 
 export type ScoredCandidate = {
@@ -236,4 +244,6 @@ export const toCandidates = (
     name: entry.name,
     timecode: entry.timecode,
     parentName: entry.parentName,
+    type: entry.type,
+    parentType: entry.parentType,
   }))

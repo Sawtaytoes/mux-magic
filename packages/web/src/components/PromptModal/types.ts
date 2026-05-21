@@ -21,6 +21,10 @@ export type PromptData = {
   // on-disk filename when `message` is a proposed new title — keeps
   // the headline distinct from the file context.
   subtitle?: string
+  // Smaller caption rendered ABOVE `message`. Used to surface
+  // hierarchical context (e.g. DVDCompare's parent section heading)
+  // when `message` alone is ambiguous.
+  context?: string
   filePath?: string
   filePaths?: PromptFilePath[]
   options: PromptOption[]

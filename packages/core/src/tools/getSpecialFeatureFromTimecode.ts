@@ -12,6 +12,7 @@ import { convertNumberToTimeString } from "./getFileDuration.js"
 import { getUserSearchInput } from "./getUserSearchInput.js"
 import {
   type SpecialFeature,
+  type SpecialFeatureType,
   specialFeatureTypes,
 } from "./parseSpecialFeatures.js"
 
@@ -141,6 +142,49 @@ export const specialFeatureMatchRenames = [
     replacement: "$1 -other",
   },
 ] as const
+
+// Mirrors `getSpecialFeatureFromTimecode`'s suffix decision tree as a
+// pure transform so the Smart Match candidate builder can apply the
+// SAME `-trailer` / `-featurette` / `-behindthescenes` suffix the main
+// NSF flow appends after a successful match.
+//
+// Decision order matches the rxjs pipeline above:
+//   1. Text-regex table (`specialFeatureMatchRenames`) — catches names
+//      that carry their category in their words ("Theatrical Trailer",
+//      "Making of …", etc.).
+//   2. Parsed `type` from DVDCompare's section heading.
+//   3. Parsed `parentType` when the entry itself was untyped but its
+//      section heading had a type.
+//   4. Fallthrough: return the text unmodified. The pipeline's
+//      "prompt the user for a category" branch has no equivalent here
+//      because Smart Match already exposes ✏ free-text editing — the
+//      user can hand-tag categories that DVDCompare didn't classify.
+export const applySpecialFeatureSuffix = ({
+  text,
+  type,
+  parentType,
+}: {
+  text: string
+  type?: SpecialFeatureType
+  parentType?: SpecialFeatureType
+}): string => {
+  const matchRename = specialFeatureMatchRenames.find(
+    ({ searchTerm }) => text.match(searchTerm),
+  )
+  if (matchRename) {
+    return text.replace(
+      matchRename.searchTerm,
+      matchRename.replacement,
+    )
+  }
+  if (type && type !== "unknown") {
+    return `${text} -${type}`
+  }
+  if (parentType && parentType !== "unknown") {
+    return `${text} -${parentType}`
+  }
+  return text
+}
 
 export const getTimecodeAtOffset = (
   timecode: string,
@@ -299,7 +343,13 @@ export const getSpecialFeatureFromTimecode = ({
             ...matchingExtras.map(
               (matchingExtra, index) => ({
                 index,
-                label: matchingExtra.text,
+                // When the DVDCompare entry sits under a section heading
+                // (e.g. "3 Side-By-Side Comparisons › Airplane Models"),
+                // prefix the parent's text so the user can tell otherwise
+                // identical-looking child options apart.
+                label: matchingExtra.parentText
+                  ? `${matchingExtra.parentText} › ${matchingExtra.text}`
+                  : matchingExtra.text,
               }),
             ),
             {
@@ -325,7 +375,7 @@ export const getSpecialFeatureFromTimecode = ({
 
       return EMPTY
     }),
-    mergeMap(({ parentType, text, type }) => {
+    mergeMap(({ parentType, parentText, text, type }) => {
       const specialFeatureMatchRename =
         specialFeatureMatchRenames.find(({ searchTerm }) =>
           text.match(searchTerm),
@@ -338,13 +388,24 @@ export const getSpecialFeatureFromTimecode = ({
         return of(text.replace(searchTerm, replacement))
       }
 
+      // Note: the deeper unknown/unknown branch keeps its own interactive
+      // prompt path because users in the main NSF flow expect to be
+      // asked. `applySpecialFeatureSuffix` is the non-interactive twin
+      // used by the Smart Match candidate builder.
       if (type === "unknown") {
         if (parentType === "unknown") {
+          // `subtitle` carries both the on-disk filename and the file's
+          // media timecode so the user can see how long the clip runs
+          // before picking a Plex category — short clips often belong
+          // to a different bucket (e.g. -trailer vs -featurette) than
+          // long-form ones with the same headline text.
+          const baseFilename = filePath
+            ? basename(filePath)
+            : filename
           return getUserSearchInput({
             message: text,
-            subtitle: filePath
-              ? basename(filePath)
-              : filename,
+            subtitle: `${baseFilename} · ${mediaTimecode}`,
+            context: parentText,
             filePath,
             options: [
               ...specialFeatureTypes.map(

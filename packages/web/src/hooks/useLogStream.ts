@@ -89,6 +89,7 @@ export const useLogStream = (
           promptId: data.promptId,
           message: data.message,
           subtitle: data.subtitle,
+          context: data.context,
           options: data.options,
           filePath: data.filePath,
           filePaths: data.filePaths,

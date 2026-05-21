@@ -60,7 +60,7 @@ describe(buildUnnamedFileCandidates.name, () => {
     expect(result[0].rankedCandidates).toHaveLength(1)
     expect(
       result[0].rankedCandidates[0].candidate.name,
-    ).toBe("Image Gallery")
+    ).toBe("Image Gallery -other")
     expect(
       result[0].rankedCandidates[0].confidence,
     ).toBeGreaterThanOrEqual(0)
@@ -128,9 +128,14 @@ describe(buildUnnamedFileCandidates.name, () => {
         },
       ],
     })
+    // Builder appends the Plex category suffix from
+    // `specialFeatureMatchRenames` after ranking — "Image Gallery
+    // (…)" maps to `-other`, matching the main NSF rename flow so
+    // Smart Match writes the same on-disk name the timecode matcher
+    // would have written.
     expect(
       result[0].rankedCandidates[0].candidate.name,
-    ).toBe("Image Gallery (1200 images)")
+    ).toBe("Image Gallery (1200 images) -other")
   })
 
   test("produces one entry per unnamed file, each with the full candidate list", () => {
@@ -171,8 +176,14 @@ describe(buildUnnamedFileCandidates.name, () => {
         },
       ],
     })
+    // "Trailer" picks up the `-trailer` suffix from
+    // `specialFeatureMatchRenames` (text-based catch). The timecode
+    // slot must survive that post-rank rewrite — the modal renders
+    // it next to each candidate so the user can compare against the
+    // file's measured runtime.
     const trailer = result[0].rankedCandidates.find(
-      (entry) => entry.candidate.name === "Trailer",
+      (entry) =>
+        entry.candidate.name === "Trailer -trailer",
     )
     expect(trailer?.candidate.timecode).toBe("0:02:30")
   })
