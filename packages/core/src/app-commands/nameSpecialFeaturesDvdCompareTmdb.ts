@@ -43,7 +43,6 @@ import {
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { searchDvdCompare } from "../tools/searchDvdCompare.js"
 import {
-  DUPLICATES_BUCKET,
   logBucketFolderCountsIfPresent,
   moveFilesToBucket,
   UNNAMED_FEATURES_BUCKET,
@@ -278,92 +277,16 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                   (rename) => rename.fileInfo.fullPath,
                 ),
               )
-              // Files that survived the post-processor without a rename —
-              // surfaced as a final summary so the user can see at a glance
-              // which entries the matcher couldn't place. Most common cause
-              // is a special feature DVDCompare lists without a timecode
-              // (e.g. image galleries). Always emitted, even when empty,
-              // so the formatter has a stable result shape.
-              const leftoverMatches = matches.filter(
+              // Files that survived the post-processor without a rename.
+              // Augmented after Phase-B (below) with duplicate-prompt
+              // losers — the user explicitly rejected those as the real
+              // match for a target name, so they're conceptually unnamed.
+              const baseLeftoverMatches = matches.filter(
                 (match) =>
                   !renamedFullPaths.has(
                     match.fileInfo.fullPath,
                   ),
               )
-              const unrenamedFilenames =
-                leftoverMatches.map(
-                  (match) => match.fileInfo.filename,
-                )
-              const unrenamedFiles = leftoverMatches.map(
-                (match) => ({
-                  filename: match.fileInfo.filename,
-                  // FileInfo.filename is extension-stripped via
-                  // `getLastItemInFilePath` (basename(path, extname(path))).
-                  // Recover the extension from the full path so the
-                  // Smart Match modal can rebuild the correct on-disk
-                  // oldPath/newPath for the rename POST — without this
-                  // the rename fails ENOENT.
-                  extension: extname(
-                    match.fileInfo.fullPath,
-                  ),
-                  durationSeconds:
-                    match.durationSeconds ?? null,
-                }),
-              )
-
-              // Surface DVDCompare suggestions when leftover files exist.
-              // Includes BOTH untimed entries (audio commentaries, image
-              // galleries — the natural smart-match pool) AND timed extras
-              // (featurettes / music videos / etc.) so the user can see
-              // runtimes in the Smart Match dropdown and compare against
-              // the file's measured duration. The timed entries got
-              // rejected by the strict timecode matcher (out of tolerance),
-              // but are often the actual right answer — especially when
-              // DVDCompare's published runtime is slightly off from the
-              // disc-rip duration. On the happy path (no leftovers) the
-              // list is suppressed because it's just noise.
-              const possibleNamesForSummary =
-                unrenamedFilenames.length > 0
-                  ? dedupePossibleNames(
-                      possibleNames.concat(
-                        flattenExtrasAsPossibleNames(
-                          specialFeatures,
-                        ),
-                      ),
-                    )
-                  : []
-
-              // Build per-file candidate associations for the follow-up
-              // association report. Populated whenever there are leftover
-              // files; entries carry an empty `candidates` array when
-              // DVDCompare had no untimed suggestions so the web-side
-              // Smart Match modal can still surface the leftover filenames
-              // for manual rename. `unrenamedFiles` (worker 58 / Part B)
-              // carries `durationSeconds` per file so the modal can rank
-              // candidates by duration proximity when candidates exist.
-              const unnamedFileCandidates =
-                buildUnnamedFileCandidates({
-                  possibleNames: possibleNamesForSummary,
-                  unrenamedFiles,
-                })
-
-              if (unnamedFileCandidates.length > 0) {
-                logInfo(
-                  "UNNAMED FILES",
-                  "Unnamed files with DVDCompare candidate associations",
-                  unnamedFileCandidates.flatMap(
-                    ({ filename, rankedCandidates }) =>
-                      [`  • ${filename}`].concat(
-                        rankedCandidates
-                          .slice(0, 3)
-                          .map(
-                            (scored) =>
-                              `      - ${scored.candidate.name}`,
-                          ),
-                      ),
-                  ),
-                )
-              }
 
               logInfo(
                 "RENAMING",
@@ -405,6 +328,89 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                     kept: orderedRenames,
                     droppedFullPaths,
                   }) => {
+                    // Phase-B losers (files the user explicitly rejected
+                    // as the real match for an ambiguous target name)
+                    // join the unnamed set: counted in the summary,
+                    // surfaced in the Smart Match modal with ranked
+                    // candidates, and routed to UNNAMED-FEATURES/ so
+                    // Smart Match's hard-coded oldPath actually points
+                    // at the file. Previously they vanished into
+                    // DUPLICATES/ silently with no UI affordance — the
+                    // user only knew they existed by browsing the disc.
+                    const droppedFullPathSet = new Set(
+                      droppedFullPaths,
+                    )
+                    const leftoverMatches =
+                      baseLeftoverMatches.concat(
+                        matches.filter((match) =>
+                          droppedFullPathSet.has(
+                            match.fileInfo.fullPath,
+                          ),
+                        ),
+                      )
+                    const unrenamedFilenames =
+                      leftoverMatches.map(
+                        (match) => match.fileInfo.filename,
+                      )
+                    const unrenamedFiles =
+                      leftoverMatches.map((match) => ({
+                        filename: match.fileInfo.filename,
+                        // FileInfo.filename is extension-stripped via
+                        // `getLastItemInFilePath` (basename(path, extname(path))).
+                        // Recover the extension from the full path so the
+                        // Smart Match modal can rebuild the correct on-disk
+                        // oldPath/newPath for the rename POST — without this
+                        // the rename fails ENOENT.
+                        extension: extname(
+                          match.fileInfo.fullPath,
+                        ),
+                        durationSeconds:
+                          match.durationSeconds ?? null,
+                      }))
+                    // Surface DVDCompare suggestions when leftover files exist.
+                    // Includes BOTH untimed entries (audio commentaries, image
+                    // galleries — the natural smart-match pool) AND timed extras
+                    // (featurettes / music videos / etc.) so the user can see
+                    // runtimes in the Smart Match dropdown and compare against
+                    // the file's measured duration.
+                    const possibleNamesForSummary =
+                      unrenamedFilenames.length > 0
+                        ? dedupePossibleNames(
+                            possibleNames.concat(
+                              flattenExtrasAsPossibleNames(
+                                specialFeatures,
+                              ),
+                            ),
+                          )
+                        : []
+                    const unnamedFileCandidates =
+                      buildUnnamedFileCandidates({
+                        possibleNames:
+                          possibleNamesForSummary,
+                        unrenamedFiles,
+                      })
+
+                    if (unnamedFileCandidates.length > 0) {
+                      logInfo(
+                        "UNNAMED FILES",
+                        "Unnamed files with DVDCompare candidate associations",
+                        unnamedFileCandidates.flatMap(
+                          ({
+                            filename,
+                            rankedCandidates,
+                          }) =>
+                            [`  • ${filename}`].concat(
+                              rankedCandidates
+                                .slice(0, 3)
+                                .map(
+                                  (scored) =>
+                                    `      - ${scored.candidate.name}`,
+                                ),
+                            ),
+                        ),
+                      )
+                    }
+
                     const allKnownNames =
                       flattenAllKnownNames({
                         cuts,
@@ -662,14 +668,14 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                             : undefined,
                       }),
                     )
-                    // Worker 25: after the rename pass, route every leftover
-                    // unrenamed file into <sourcePath>/UNNAMED-FEATURES/ and
-                    // every duplicate-prompt-dropped file into
-                    // <sourcePath>/DUPLICATES/. Bucket folders are created
-                    // lazily — a fully-matched run with no dupes leaves no
-                    // bucket folders on disk. The filesystem becomes the
-                    // cache: a refresh / crash / close-without-applying
-                    // leaves a perfectly recoverable disc folder.
+                    // Worker 25: after the rename pass, route every
+                    // leftover file (matcher leftovers + Phase-B losers)
+                    // into <sourcePath>/UNNAMED-FEATURES/ so Smart Match
+                    // can rename them back. The bucket folder is created
+                    // lazily — a fully-matched run leaves no bucket on
+                    // disk. The filesystem becomes the cache: a refresh
+                    // / crash / close-without-applying leaves a
+                    // perfectly recoverable disc folder.
                     const leftoverFullPaths =
                       leftoverMatches.map(
                         (match) => match.fileInfo.fullPath,
@@ -677,19 +683,11 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                     const bucketMoves$: Observable<
                       Observable<NameSpecialFeaturesResult>
                     > = of(
-                      concat(
-                        moveFilesToBucket({
-                          sourcePath,
-                          bucketName:
-                            UNNAMED_FEATURES_BUCKET,
-                          filePaths: leftoverFullPaths,
-                        }).pipe(ignoreElements()),
-                        moveFilesToBucket({
-                          sourcePath,
-                          bucketName: DUPLICATES_BUCKET,
-                          filePaths: droppedFullPaths,
-                        }).pipe(ignoreElements()),
-                      ),
+                      moveFilesToBucket({
+                        sourcePath,
+                        bucketName: UNNAMED_FEATURES_BUCKET,
+                        filePaths: leftoverFullPaths,
+                      }).pipe(ignoreElements()),
                     )
                     return concat(
                       renamesStream$,
