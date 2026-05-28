@@ -1,6 +1,10 @@
 import { existsSync } from "node:fs"
 import { basename, dirname } from "node:path"
-import { logInfo, makeDirectory } from "@mux-magic/tools"
+import {
+  logInfo,
+  makeDirectory,
+  runTask,
+} from "@mux-magic/tools"
 import {
   concatMap,
   defer,
@@ -54,11 +58,19 @@ const extractWav = ({
   inputFilePath: string
   outputFilePath: string
 }): Observable<string> =>
-  runFfmpeg({
-    args: ["-c:a:0", "pcm_s16le"],
-    inputFilePaths: [inputFilePath],
-    outputFilePath,
-  })
+  // Each WAV extraction takes its own scheduler slot — `getAudioOffset`
+  // fans these out in parallel via forkJoin, so each ffmpeg child
+  // process needs to compete for a MAX_THREADS slot independently.
+  // The callers (`getAudioOffsets`, `replaceTracks`) opt out of the
+  // outer per-file slot via withFileProgress({ isOuterScheduled: false })
+  // to avoid the double-scheduling deadlock.
+  runTask(
+    runFfmpeg({
+      args: ["-c:a:0", "pcm_s16le"],
+      inputFilePaths: [inputFilePath],
+      outputFilePath,
+    }),
+  )
 
 // Resolves to the WAV path (extracted or reused). Skips ffmpeg when an
 // existing WAV at the target path already matches the input's duration
@@ -197,10 +209,17 @@ export const getAudioOffset = ({
                 )
               : null
           tracker?.setRatio(null)
-          return runAudioOffsetFinder({
-            destinationFilePath: destinationFileOutputPath,
-            sourceFilePath: sourceFileOutputPath,
-          }).pipe(rxFinalize(() => tracker?.finish()))
+          // Wrap the offset-finder spawn in its own scheduler slot,
+          // same reasoning as extractWav: this is the deepest IO layer
+          // and the caller's outer iteration is unscheduled to avoid
+          // a double-scheduling deadlock.
+          return runTask(
+            runAudioOffsetFinder({
+              destinationFilePath:
+                destinationFileOutputPath,
+              sourceFilePath: sourceFileOutputPath,
+            }),
+          ).pipe(rxFinalize(() => tracker?.finish()))
         }),
     ),
   )

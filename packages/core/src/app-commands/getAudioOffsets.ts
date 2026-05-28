@@ -70,6 +70,12 @@ export const getAudioOffsets = ({
                 sourceFilePath,
               })),
             ),
+          // getAudioOffset wraps its two ffmpeg extractions + the
+          // offset-finder spawn in `runTask` individually, so the outer
+          // per-file iteration here must NOT hold a scheduler slot —
+          // otherwise the inner runTask calls could starve waiting for
+          // slots already held by their own outer ancestors.
+          { isOuterScheduled: false },
         ),
         tap(
           ({
