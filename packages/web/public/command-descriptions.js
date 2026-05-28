@@ -88,7 +88,8 @@ window.commandDescriptions = {
     "summary": "Calculate audio synchronization offsets between files",
     "fields": {
       "sourcePath": "Directory with media files with tracks you want to copy.",
-      "destinationFilesPath": "Directory containing media files with tracks you want replaced."
+      "destinationFilesPath": "Directory containing media files with tracks you want replaced.",
+      "isOverwritingExtractedAudio": "Force re-extraction of the source/destination WAV files even when a previous extraction is already present alongside the AUDIO-OFFSETS folder. When false (default), an existing WAV whose mediaInfo duration matches its input within 1 second is reused so the slow ffmpeg PCM decode is skipped on re-runs."
     }
   },
   "hasBetterAudio": {
@@ -377,9 +378,10 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory with media files with tracks you want to copy.",
       "destinationFilesPath": "Directory containing media files with tracks you want replaced.",
-      "hasChapterSyncOffset": "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the source files path. Falls back to globalOffset (or per-file offsets) when false or when no chapters.xml is found.",
+      "hasAudioSyncOffset": "Per-file automatic audio sync: extract both source and destination audio to WAV via ffmpeg and run audio-offset-finder to compute the delay, then use that per-file offset when remuxing. Falls back to globalOffset (or per-file offsets) when disabled.",
       "globalOffset": "The offset in milliseconds to apply to all audio being transferred.",
       "includeChapters": "Adds chapters along with other tracks.",
+      "isOverwritingExtractedAudio": "Force re-extraction of the source/destination WAV files used for per-file audio-sync offset detection. Only applies when hasAudioSyncOffset is true. When false (default), an existing WAV whose mediaInfo duration matches its input within 1 second is reused so ffmpeg doesn't re-decode the audio on every run.",
       "audioLanguages": "A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed.",
       "subtitlesLanguages": "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
       "videoLanguages": "A 3-letter ISO-6392 language code for video tracks to keep. All others will be removed.",

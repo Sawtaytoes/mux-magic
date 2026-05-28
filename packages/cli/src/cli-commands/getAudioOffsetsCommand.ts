@@ -27,6 +27,14 @@ const builder = (yargs: Argv) =>
         "Directory containing media files with tracks you want replaced.",
       type: "string",
     })
+    .option("isOverwritingExtractedAudio", {
+      alias: "overwrite-audio",
+      default: false,
+      describe:
+        "Force re-extraction of the source/destination WAV files even when a previous extraction is present. Defaults to reusing a cached WAV whose mediaInfo duration matches its input within 1s.",
+      nargs: 0,
+      type: "boolean",
+    })
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
@@ -47,6 +55,8 @@ export const getAudioOffsetsCommand: CommandModule<
   handler: (argv) => {
     getAudioOffsets({
       destinationFilesPath: argv.destinationFilesPath,
+      isOverwritingExtractedAudio:
+        argv.isOverwritingExtractedAudio,
       sourcePath: argv.sourcePath,
     }).subscribe(subscribeCli())
   },

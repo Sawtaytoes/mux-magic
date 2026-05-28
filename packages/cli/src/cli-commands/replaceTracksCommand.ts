@@ -60,11 +60,11 @@ const builder = (yargs: Argv) =>
         "A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed",
       type: "array",
     })
-    .option("hasChapterSyncOffset", {
+    .option("hasAudioSyncOffset", {
       alias: "a",
       default: false,
       describe:
-        "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the source files path. Falls back to globalOffset (or per-file offsets) when no chapters.xml is found.",
+        "Per-file automatic audio sync: extract both source and destination audio to WAV via ffmpeg and run audio-offset-finder to compute the delay, then use that per-file offset when remuxing. Falls back to globalOffset (or per-file offsets) when disabled.",
       nargs: 0,
       type: "boolean",
     })
@@ -81,6 +81,14 @@ const builder = (yargs: Argv) =>
       alias: "c",
       default: false,
       describe: "Adds chapters along with other tracks.",
+      nargs: 0,
+      type: "boolean",
+    })
+    .option("isOverwritingExtractedAudio", {
+      alias: "overwrite-audio",
+      default: false,
+      describe:
+        "Force re-extraction of the per-file audio-sync WAV files even when a previous extraction is present. Only applies with --hasAudioSyncOffset. Defaults to reusing a cached WAV whose mediaInfo duration matches its input within 1s.",
       nargs: 0,
       type: "boolean",
     })
@@ -125,8 +133,10 @@ export const replaceTracksCommand: CommandModule<
         argv.audioLanguages as Iso6392LanguageCode[],
       destinationFilesPath: argv.destinationFilesPath,
       globalOffsetInMilliseconds: argv.globalOffset,
-      hasChapterSyncOffset: argv.hasChapterSyncOffset,
+      hasAudioSyncOffset: argv.hasAudioSyncOffset,
       hasChapters: argv.includeChapters,
+      isOverwritingExtractedAudio:
+        argv.isOverwritingExtractedAudio,
       offsets: argv.offsets.map((offset) => Number(offset)),
       sourcePath: argv.sourcePath,
       subtitlesLanguages:
