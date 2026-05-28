@@ -377,6 +377,17 @@ type WithFileProgressOptions = {
   // regardless of ordering, so filesDone increments correctly even
   // when files finish out of order.
   concurrency?: number
+  // Default true — each per-file observable is wrapped in `runTask(...)`
+  // so it competes for a scheduler slot. Set false for commands whose
+  // per-file work itself contains multiple `runTask(...)` calls (e.g.
+  // getAudioOffsets fans two ffmpeg extractions in parallel and wraps
+  // each one in `runTask` individually). Double-scheduling — outer +
+  // inner both holding slots — risks the deadlock the scheduler comment
+  // at taskScheduler.ts warns about: MAX_THREADS outer slots can starve
+  // the inner work forever. When false, the outer iteration is plain
+  // orchestration and the actual scheduler accounting happens at the
+  // per-spawn layer the caller wires up.
+  isOuterScheduled?: boolean
 }
 
 // Sugar for the per-file-iterator pattern that ~all app-commands share:
@@ -404,6 +415,10 @@ export const withFileProgress =
       toArray(),
       concatMap((files) => {
         const concurrency = options.concurrency ?? Infinity
+        const isOuterScheduled =
+          options.isOuterScheduled ?? true
+        const wrap = <V>(work$: Observable<V>) =>
+          isOuterScheduled ? runTask(work$) : work$
         const indexedFiles = files.map((file, index) => ({
           file,
           index,
@@ -413,7 +428,7 @@ export const withFileProgress =
           return from(indexedFiles).pipe(
             mergeMap(
               ({ file, index }) =>
-                runTask(perFile(file, index)),
+                wrap(perFile(file, index)),
               concurrency,
             ),
           )
@@ -424,7 +439,7 @@ export const withFileProgress =
         return from(indexedFiles).pipe(
           mergeMap(
             ({ file, index }) =>
-              runTask(
+              wrap(
                 perFile(file, index).pipe(
                   rxFinalize(() =>
                     emitter.incrementFilesDone(),

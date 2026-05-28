@@ -2,6 +2,7 @@ import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
   logInfo,
+  runTask,
 } from "@mux-magic/tools"
 import {
   concatMap,
@@ -100,17 +101,26 @@ export const replaceTracks = ({
                 )
               }),
               concatMap((offsetInMilliseconds) =>
-                replaceTracksMkvMerge({
-                  audioLanguages,
-                  destinationFilePath,
-                  hasChapters,
-                  offsetInMilliseconds:
-                    offsets[index] ?? offsetInMilliseconds,
-                  outputFolderName,
-                  sourceFilePath,
-                  subtitlesLanguages,
-                  videoLanguages,
-                }),
+                // mkvmerge is the second IO-heavy phase per file
+                // (after the optional audio-offset analysis). It gets
+                // its own scheduler slot — same reasoning as the
+                // runTask wraps inside getAudioOffset. The outer
+                // iteration below opts out via isOuterScheduled: false
+                // so this inner slot can actually be granted.
+                runTask(
+                  replaceTracksMkvMerge({
+                    audioLanguages,
+                    destinationFilePath,
+                    hasChapters,
+                    offsetInMilliseconds:
+                      offsets[index] ??
+                      offsetInMilliseconds,
+                    outputFolderName,
+                    sourceFilePath,
+                    subtitlesLanguages,
+                    videoLanguages,
+                  }),
+                ),
               ),
               tap((outputFilePath) => {
                 logInfo(
@@ -120,6 +130,11 @@ export const replaceTracks = ({
               }),
               filter(Boolean),
             ),
+          // Per-file work below contains its own runTask wraps
+          // (getAudioOffset's ffmpegs + offset finder, and the
+          // mkvmerge above). The outer iteration must stay
+          // unscheduled to avoid the double-scheduling deadlock.
+          { isOuterScheduled: false },
         ),
         toArray(),
       ),
