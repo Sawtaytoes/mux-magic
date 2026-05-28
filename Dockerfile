@@ -120,7 +120,12 @@ RUN \
   rm -rf /var/lib/apt/lists/*
 
 # audio-offset-finder (Python) — runs out-of-process so it lives in pipx
-# rather than being bundled.
+# rather than being bundled. pipx drops the entry point in
+# /root/.local/bin; `pipx ensurepath` only patches ~/.bashrc, but Node's
+# child_process.spawn doesn't go through a shell, so the binary stays
+# invisible to runAudioOffsetFinder unless PATH is set on the container's
+# process env directly.
+ENV PATH="/root/.local/bin:${PATH}"
 COPY requirements.txt ./
 RUN \
   pipx install audio-offset-finder && \

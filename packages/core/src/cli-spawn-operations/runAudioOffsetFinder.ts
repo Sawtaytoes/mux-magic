@@ -48,6 +48,16 @@ export const runAudioOffsetFinder = ({
       commandArgs,
     )
 
+    // Without an 'error' listener, spawn failures (ENOENT when the binary
+    // isn't on PATH, EACCES, etc.) bubble to process-level uncaughtException
+    // — which the server's crash handler catches and process.exit(1)s,
+    // dropping the SSE stream silently and leaving the job card stuck on
+    // "running" forever. Route the error back through the observer so the
+    // pipeline's standard error path takes over and the job is marked failed.
+    childProcess.on("error", (err) => {
+      observer.error(err)
+    })
+
     const tty = createTtyAffordances(childProcess)
 
     let outputData: string = ""
