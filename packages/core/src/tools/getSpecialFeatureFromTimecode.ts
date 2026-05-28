@@ -30,7 +30,15 @@ export const specialFeatureMatchRenames = [
     replacement: "$1 -deleted",
   },
   {
+    searchTerm: /(.*alternate scenes?.*)/i,
+    replacement: "$1 -deleted",
+  },
+  {
     searchTerm: /(.*extended version?.*)/i,
+    replacement: "$1 -deleted",
+  },
+  {
+    searchTerm: /(.*extended scenes?.*)/i,
     replacement: "$1 -deleted",
   },
   {
