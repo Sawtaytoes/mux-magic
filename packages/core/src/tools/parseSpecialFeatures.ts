@@ -382,7 +382,17 @@ export const parseSpecialFeatures = (
     )
     .pipe(
       map(({ text, ...otherProps }) => {
-        const matches = text.match(
+        // Normalize hyphen/underscore separators to spaces *only* for
+        // matching, not for the stored text — otherwise "behind-the-scenes"
+        // would fail to hit the multi-word "behind the scenes" key and
+        // leak through to the single-word "scene" key, classifying BTS
+        // featurettes as -scene (regression seen on EPK behind-the-scenes
+        // titles).
+        const normalizedForMatch = text.replace(
+          /[-_]+/g,
+          " ",
+        )
+        const matches = normalizedForMatch.match(
           new RegExp(
             specialFeatureMatchKeys.join("|"),
             "i",

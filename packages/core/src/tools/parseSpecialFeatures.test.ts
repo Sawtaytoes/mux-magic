@@ -128,6 +128,29 @@ describe(`${parseSpecialFeatures.name} — extras vs cuts split`, () => {
     ).toEqual({ extras: [], cuts: [], possibleNames: [] })
   })
 
+  test("classifies a hyphenated 'behind-the-scenes' title as behindthescenes (regression: previously matched 'scene' and produced type='scene')", async () => {
+    const text = [
+      "DISC ONE (Blu-ray)",
+      "VFX Before and After 2025 behind-the-scenes look at how the film's special effects were created (12:34)",
+    ].join("\n")
+    const result = await firstValueFrom(
+      parseSpecialFeatures(text),
+    )
+    expect(result.extras).toHaveLength(1)
+    expect(result.extras[0]?.type).toBe("behindthescenes")
+  })
+
+  test("classifies an underscore-separated 'behind_the_scenes' title as behindthescenes", async () => {
+    const text = [
+      "DISC ONE (Blu-ray)",
+      "Some title behind_the_scenes (5:00)",
+    ].join("\n")
+    const result = await firstValueFrom(
+      parseSpecialFeatures(text),
+    )
+    expect(result.extras[0]?.type).toBe("behindthescenes")
+  })
+
   test("includes possibleNames for untimed lines (e.g. image galleries) the main extras filter drops", async () => {
     const text = [
       "DISC ONE (Blu-ray)",
