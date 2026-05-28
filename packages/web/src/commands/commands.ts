@@ -886,6 +886,13 @@ export const COMMANDS: Commands = {
         field("isOverwritingExtractedAudio", {
           type: "boolean",
           label: "Overwrite extracted audio",
+          // Re-extracting the WAV cache is a no-op unless per-file
+          // automatic sync is actually running, so the toggle only
+          // makes sense when hasAudioSyncOffset is on.
+          visibleWhen: {
+            fieldName: "hasAudioSyncOffset",
+            value: true,
+          },
         }),
         field("globalOffset", {
           type: "number",
@@ -913,6 +920,15 @@ export const COMMANDS: Commands = {
           type: "numberArray",
           label: "Per-file Offsets (ms)",
         }),
+      ],
+      groups: [
+        {
+          fields: [
+            "hasAudioSyncOffset",
+            "isOverwritingExtractedAudio",
+          ],
+          layout: "field-group-two-col",
+        },
       ],
     }
   })(),

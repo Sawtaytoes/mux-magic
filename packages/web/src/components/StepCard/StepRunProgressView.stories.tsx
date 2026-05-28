@@ -129,9 +129,11 @@ const meta: Meta<typeof StepRunProgressView> = {
   args: {
     jobId: JOB_ID,
     stepId: STEP_ID,
+    commandName: "nameSpecialFeaturesDvdCompareTmdb",
     sourcePath: "G:\\Disc-Rips\\Shrek 2 - 4K",
     snap: {},
     convertLosslessResults: { converted: [], skipped: [] },
+    results: null,
   },
   parameters: {
     layout: "padded",

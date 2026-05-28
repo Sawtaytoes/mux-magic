@@ -108,6 +108,8 @@ export const StepRunProgress = ({
     converted: [],
     skipped: [],
   })
+  const [results, setResults] =
+    useState<ReadonlyArray<unknown> | null>(null)
   // Track the jobId the captured results belong to. When jobId changes
   // (a fresh run), reset state during render — the React-idiomatic
   // alternative to a useEffect([jobId]), avoids a stale paint where
@@ -123,6 +125,7 @@ export const StepRunProgress = ({
       converted: [],
       skipped: [],
     })
+    setResults(null)
   }
 
   const handleDone = useCallback(
@@ -149,6 +152,7 @@ export const StepRunProgress = ({
       setConvertLosslessResults(
         findConvertLosslessResults(payload.results),
       )
+      setResults(payload.results ?? null)
     },
     [stepId, setStepRunStatus, setRunning],
   )
@@ -189,12 +193,14 @@ export const StepRunProgress = ({
     <StepRunProgressView
       jobId={jobId}
       stepId={stepId}
+      commandName={step?.command ?? ""}
       isRunning={isRunning}
       snap={snap}
       sourcePath={sourcePath}
       renamePairs={merged.renamePairs}
       summary={merged.summary}
       convertLosslessResults={convertLosslessResults}
+      results={results}
     />
   )
 }
