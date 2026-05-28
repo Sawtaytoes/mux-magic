@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest"
 
 import {
+  applySpecialFeatureSuffix,
   getIsSimilarTimecode,
   getOffsetsFromCenterPoint,
 } from "./getSpecialFeatureFromTimecode.js"
@@ -124,5 +125,51 @@ describe(getIsSimilarTimecode.name, () => {
         timecodePaddingAmount,
       }),
     ).toBe(false)
+  })
+})
+
+describe(applySpecialFeatureSuffix.name, () => {
+  test("routes 'Extended Scene' to -deleted (regression: previously stripped 'Scene' and produced 'Extended -scene')", () => {
+    expect(
+      applySpecialFeatureSuffix({ text: "Extended Scene" }),
+    ).toBe("Extended Scene -deleted")
+  })
+
+  test("routes plural 'Extended Scenes' to -deleted", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "Extended Scenes",
+      }),
+    ).toBe("Extended Scenes -deleted")
+  })
+
+  test("routes 'Alternate Scene' to -deleted (symmetric with 'Alternate Version')", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "Alternate Scene",
+      }),
+    ).toBe("Alternate Scene -deleted")
+  })
+
+  test("routes plural 'Alternate Scenes' to -deleted", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "Alternate Scenes",
+      }),
+    ).toBe("Alternate Scenes -deleted")
+  })
+
+  test("still strips trailing ' Scene' on unrelated names via the generic -scene rule", () => {
+    expect(
+      applySpecialFeatureSuffix({ text: "Opening Scene" }),
+    ).toBe("Opening -scene")
+  })
+
+  test("'extended version' continues to route to -deleted (no regression on the original pattern)", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "Extended Version",
+      }),
+    ).toBe("Extended Version -deleted")
   })
 })
