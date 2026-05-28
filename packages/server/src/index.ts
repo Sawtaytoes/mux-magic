@@ -125,7 +125,9 @@ const boot = async (): Promise<void> => {
       getRequestListener(root.fetch),
     )
     httpServer.listen(API_PORT, () => {
-      logInfo("MUX-MAGIC SERVER LISTENING PORT", API_PORT)
+      console.log(
+        `Server listening on http://localhost:${API_PORT}`,
+      )
       loadJobErrorsFromDisk()
         .then(() => {
           resumePendingDeliveries()
@@ -172,7 +174,9 @@ const boot = async (): Promise<void> => {
   httpServer.on("request", getRequestListener(root.fetch))
   installDevShutdownHandlers(httpServer)
   httpServer.listen(API_PORT, () => {
-    logInfo("MUX-MAGIC DEV SERVER LISTENING PORT", API_PORT)
+    console.log(
+      `Dev server listening on http://localhost:${API_PORT}`,
+    )
     loadJobErrorsFromDisk()
       .then(() => {
         resumePendingDeliveries()
