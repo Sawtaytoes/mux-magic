@@ -319,6 +319,12 @@ export const getAudioOffsetsRequestSchema = z.object({
     .describe(
       "Directory containing media files with tracks you want replaced.",
     ),
+  isOverwritingExtractedAudio: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Force re-extraction of the source/destination WAV files even when a previous extraction is already present alongside the AUDIO-OFFSETS folder. When false (default), an existing WAV whose mediaInfo duration matches its input within 1 second is reused so the slow ffmpeg PCM decode is skipped on re-runs.",
+    ),
 })
 
 export const convertLosslessToFlacRequestSchema = z.object({
@@ -1416,11 +1422,11 @@ export const replaceTracksRequestSchema = z.object({
     .describe(
       "Directory containing media files with tracks you want replaced.",
     ),
-  hasChapterSyncOffset: z
+  hasAudioSyncOffset: z
     .boolean()
     .default(false)
     .describe(
-      "Compute the audio sync offset by aligning chapter 1 between the destination media file's Menu track and a chapters.xml inside the source files path. Falls back to globalOffset (or per-file offsets) when false or when no chapters.xml is found.",
+      "Per-file automatic audio sync: extract both source and destination audio to WAV via ffmpeg and run audio-offset-finder to compute the delay, then use that per-file offset when remuxing. Falls back to globalOffset (or per-file offsets) when disabled.",
     ),
   globalOffset: z
     .number()
@@ -1432,6 +1438,12 @@ export const replaceTracksRequestSchema = z.object({
     .boolean()
     .default(false)
     .describe("Adds chapters along with other tracks."),
+  isOverwritingExtractedAudio: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Force re-extraction of the source/destination WAV files used for per-file audio-sync offset detection. Only applies when hasAudioSyncOffset is true. When false (default), an existing WAV whose mediaInfo duration matches its input within 1 second is reused so ffmpeg doesn't re-decode the audio on every run.",
+    ),
   audioLanguages: z
     .array(z.enum(iso6392LanguageCodes))
     .default([])

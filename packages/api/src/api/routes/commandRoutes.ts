@@ -320,6 +320,8 @@ export const commandConfigs: Record<
     getObservable: (body) =>
       getAudioOffsets({
         destinationFilesPath: body.destinationFilesPath,
+        isOverwritingExtractedAudio:
+          body.isOverwritingExtractedAudio,
         sourcePath: body.sourcePath,
       }),
     outputFolderName:
@@ -786,8 +788,10 @@ export const commandConfigs: Record<
         audioLanguages: body.audioLanguages,
         destinationFilesPath: body.destinationFilesPath,
         globalOffsetInMilliseconds: body.globalOffset,
-        hasChapterSyncOffset: body.hasChapterSyncOffset,
+        hasAudioSyncOffset: body.hasAudioSyncOffset,
         hasChapters: body.includeChapters,
+        isOverwritingExtractedAudio:
+          body.isOverwritingExtractedAudio,
         offsets: body.offsets,
         sourcePath: body.sourcePath,
         subtitlesLanguages: body.subtitlesLanguages,

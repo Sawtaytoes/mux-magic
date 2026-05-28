@@ -16,6 +16,7 @@ type GetAudioOffsetsRequiredProps = {
 }
 
 type GetAudioOffsetsOptionalProps = {
+  isOverwritingExtractedAudio?: boolean
   outputFolderName?: string
 }
 
@@ -24,12 +25,14 @@ export type GetAudioOffsetsProps =
     GetAudioOffsetsOptionalProps
 
 export const getAudioOffsetsDefaultProps = {
+  isOverwritingExtractedAudio: false,
   outputFolderName:
     getAudioOffsetDefaultProps.outputFolderName,
 } satisfies GetAudioOffsetsOptionalProps
 
 export const getAudioOffsets = ({
   destinationFilesPath,
+  isOverwritingExtractedAudio = getAudioOffsetsDefaultProps.isOverwritingExtractedAudio,
   outputFolderName = getAudioOffsetsDefaultProps.outputFolderName,
   sourcePath,
 }: GetAudioOffsetsProps) =>
@@ -57,6 +60,7 @@ export const getAudioOffsets = ({
           ({ destinationFilePath, sourceFilePath }) =>
             getAudioOffset({
               destinationFilePath,
+              isOverwritingExtractedAudio,
               outputFolderName,
               sourceFilePath,
             }).pipe(

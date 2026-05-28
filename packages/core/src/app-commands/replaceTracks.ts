@@ -22,7 +22,7 @@ import { withFileProgress } from "../tools/progressEmitter.js"
 type ReplaceTracksRequiredProps = {
   audioLanguages: Iso6392LanguageCode[]
   destinationFilesPath: string
-  hasChapterSyncOffset: boolean
+  hasAudioSyncOffset: boolean
   hasChapters: boolean
   offsets: number[]
   sourcePath: string
@@ -32,6 +32,7 @@ type ReplaceTracksRequiredProps = {
 
 type ReplaceTracksOptionalProps = {
   globalOffsetInMilliseconds?: number
+  isOverwritingExtractedAudio?: boolean
   outputFolderName?: string
 }
 
@@ -39,6 +40,7 @@ export type ReplaceTracksProps =
   ReplaceTracksRequiredProps & ReplaceTracksOptionalProps
 
 export const replaceTracksDefaultProps = {
+  isOverwritingExtractedAudio: false,
   outputFolderName:
     replaceTracksMkvMergeDefaultProps.outputFolderName,
 } satisfies ReplaceTracksOptionalProps
@@ -47,8 +49,9 @@ export const replaceTracks = ({
   audioLanguages,
   destinationFilesPath,
   globalOffsetInMilliseconds,
-  hasChapterSyncOffset,
+  hasAudioSyncOffset,
   hasChapters,
+  isOverwritingExtractedAudio = replaceTracksDefaultProps.isOverwritingExtractedAudio,
   offsets,
   outputFolderName = replaceTracksDefaultProps.outputFolderName,
   sourcePath,
@@ -82,9 +85,10 @@ export const replaceTracks = ({
             { destinationFilePath, sourceFilePath },
             index,
           ) =>
-            (hasChapterSyncOffset
+            (hasAudioSyncOffset
               ? getAudioOffset({
                   destinationFilePath,
+                  isOverwritingExtractedAudio,
                   sourceFilePath,
                 })
               : of(globalOffsetInMilliseconds)

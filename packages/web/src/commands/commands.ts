@@ -529,6 +529,10 @@ export const COMMANDS: Commands = {
           type: "path",
           label: "Destination Files Path",
         }),
+        field("isOverwritingExtractedAudio", {
+          type: "boolean",
+          label: "Overwrite extracted audio",
+        }),
       ],
     }
   })(),
@@ -875,9 +879,13 @@ export const COMMANDS: Commands = {
           type: "path",
           label: "Destination Files Path",
         }),
-        field("hasChapterSyncOffset", {
+        field("hasAudioSyncOffset", {
           type: "boolean",
-          label: "Chapter-Sync Offset",
+          label: "Auto Audio Sync (per file)",
+        }),
+        field("isOverwritingExtractedAudio", {
+          type: "boolean",
+          label: "Overwrite extracted audio",
         }),
         field("globalOffset", {
           type: "number",
