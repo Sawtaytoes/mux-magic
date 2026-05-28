@@ -58,7 +58,11 @@ export const specialFeatureMatchRenames = [
     replacement: "$1 -featurette",
   },
   {
-    searchTerm: /(.*behind the scenes.*)/i,
+    // Tolerate hyphen / underscore separators so "behind-the-scenes" (the
+    // form DVDCompare and many EPK release titles use) classifies as
+    // -behindthescenes instead of leaking through to the trailing
+    // ` scene$` rule and producing a misleading -scene suffix.
+    searchTerm: /(.*behind[-_\s]the[-_\s]scenes.*)/i,
     replacement: "$1 -behindthescenes",
   },
   {
@@ -151,19 +155,52 @@ export const specialFeatureMatchRenames = [
   },
 ] as const
 
+// DVDCompare lists child entries to grammatically extend their parent
+// header — e.g. "Interviews with cast and crew including:" followed by
+// "- actor Kurt Russell". Pulled out of context the fragment reads as a
+// lowercase sentence fragment ("actor Kurt Russell"), which Plex then
+// displays unchanged in its Extras shelf. When the effective category
+// is `interview`, prepending "Interview with " produces natural English;
+// for other categories we just capitalize the leading letter so the
+// shelf label doesn't start lowercase.
+export const humanizeExtraName = ({
+  text,
+  type,
+  parentType,
+}: {
+  text: string
+  type?: SpecialFeatureType
+  parentType?: SpecialFeatureType
+}): string => {
+  const firstChar = text.charAt(0)
+  const isLowercaseStart =
+    firstChar >= "a" && firstChar <= "z"
+  if (!isLowercaseStart) {
+    return text
+  }
+  const effectiveType =
+    type && type !== "unknown" ? type : parentType
+  if (effectiveType === "interview") {
+    return `Interview with ${text}`
+  }
+  return firstChar.toUpperCase() + text.slice(1)
+}
+
 // Mirrors `getSpecialFeatureFromTimecode`'s suffix decision tree as a
 // pure transform so the Smart Match candidate builder can apply the
 // SAME `-trailer` / `-featurette` / `-behindthescenes` suffix the main
 // NSF flow appends after a successful match.
 //
 // Decision order matches the rxjs pipeline above:
-//   1. Text-regex table (`specialFeatureMatchRenames`) — catches names
+//   1. Humanize lowercase-fragment names (DVDCompare child entries that
+//      grammatically extend a parent header).
+//   2. Text-regex table (`specialFeatureMatchRenames`) — catches names
 //      that carry their category in their words ("Theatrical Trailer",
 //      "Making of …", etc.).
-//   2. Parsed `type` from DVDCompare's section heading.
-//   3. Parsed `parentType` when the entry itself was untyped but its
+//   3. Parsed `type` from DVDCompare's section heading.
+//   4. Parsed `parentType` when the entry itself was untyped but its
 //      section heading had a type.
-//   4. Fallthrough: return the text unmodified. The pipeline's
+//   5. Fallthrough: return the text unmodified. The pipeline's
 //      "prompt the user for a category" branch has no equivalent here
 //      because Smart Match already exposes ✏ free-text editing — the
 //      user can hand-tag categories that DVDCompare didn't classify.
@@ -176,22 +213,27 @@ export const applySpecialFeatureSuffix = ({
   type?: SpecialFeatureType
   parentType?: SpecialFeatureType
 }): string => {
+  const humanized = humanizeExtraName({
+    text,
+    type,
+    parentType,
+  })
   const matchRename = specialFeatureMatchRenames.find(
-    ({ searchTerm }) => text.match(searchTerm),
+    ({ searchTerm }) => humanized.match(searchTerm),
   )
   if (matchRename) {
-    return text.replace(
+    return humanized.replace(
       matchRename.searchTerm,
       matchRename.replacement,
     )
   }
   if (type && type !== "unknown") {
-    return `${text} -${type}`
+    return `${humanized} -${type}`
   }
   if (parentType && parentType !== "unknown") {
-    return `${text} -${parentType}`
+    return `${humanized} -${parentType}`
   }
-  return text
+  return humanized
 }
 
 export const getTimecodeAtOffset = (
@@ -384,16 +426,23 @@ export const getSpecialFeatureFromTimecode = ({
       return EMPTY
     }),
     mergeMap(({ parentType, parentText, text, type }) => {
+      const humanized = humanizeExtraName({
+        text,
+        type,
+        parentType,
+      })
       const specialFeatureMatchRename =
         specialFeatureMatchRenames.find(({ searchTerm }) =>
-          text.match(searchTerm),
+          humanized.match(searchTerm),
         )
 
       if (specialFeatureMatchRename) {
         const { searchTerm, replacement } =
           specialFeatureMatchRename
 
-        return of(text.replace(searchTerm, replacement))
+        return of(
+          humanized.replace(searchTerm, replacement),
+        )
       }
 
       // Note: the deeper unknown/unknown branch keeps its own interactive
@@ -435,15 +484,16 @@ export const getSpecialFeatureFromTimecode = ({
             }),
             filter(Boolean),
             map(
-              (selectedType) => `${text} -${selectedType}`,
+              (selectedType) =>
+                `${humanizeExtraName({ text, type: selectedType, parentType })} -${selectedType}`,
             ),
           )
         }
 
-        return of(`${text} -${parentType}`)
+        return of(`${humanized} -${parentType}`)
       }
 
-      return of(`${text} -${type}`)
+      return of(`${humanized} -${type}`)
     }),
     logAndSwallowPipelineError(
       getSpecialFeatureFromTimecode,

@@ -172,4 +172,66 @@ describe(applySpecialFeatureSuffix.name, () => {
       }),
     ).toBe("Extended Version -deleted")
   })
+
+  test("routes a hyphenated 'behind-the-scenes' title to -behindthescenes (regression: previously matched 'scene' and produced -scene)", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "VFX Before and After 2025 behind-the-scenes look at how the film's special effects were created",
+        type: "behindthescenes",
+      }),
+    ).toBe(
+      "VFX Before and After 2025 behind-the-scenes look at how the film's special effects were created -behindthescenes",
+    )
+  })
+
+  test("routes an underscore-separated 'behind_the_scenes' title to -behindthescenes", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "Some Title behind_the_scenes look",
+        type: "behindthescenes",
+      }),
+    ).toBe(
+      "Some Title behind_the_scenes look -behindthescenes",
+    )
+  })
+
+  test("prepends 'Interview with ' to a lowercase-starting child whose parentType is interview", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "actor Gary Busey",
+        type: "interview",
+        parentType: "interview",
+      }),
+    ).toBe("Interview with actor Gary Busey -interview")
+  })
+
+  test("prepends 'Interview with ' when only parentType is interview (child's own type is unknown)", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "director Paul W.S. Anderson",
+        type: "unknown",
+        parentType: "interview",
+      }),
+    ).toBe(
+      "Interview with director Paul W.S. Anderson -interview",
+    )
+  })
+
+  test("capitalizes a lowercase-starting fragment when the category is not interview", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "actor Jason Scott Lee",
+        type: "featurette",
+      }),
+    ).toBe("Actor Jason Scott Lee -featurette")
+  })
+
+  test("leaves already-capitalized titles untouched", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "Interview with Kurt Russell",
+        type: "interview",
+      }),
+    ).toBe("Interview with Kurt Russell -interview")
+  })
 })
