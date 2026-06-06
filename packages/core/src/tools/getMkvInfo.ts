@@ -99,6 +99,15 @@ export const getMkvInfo = (
 
     const childProcess = spawn(mkvMergePath, commandArgs)
 
+    // Without an 'error' listener, a spawn failure (ENOENT when mkvmerge
+    // isn't on PATH, EACCES, etc.) bubbles to process-level
+    // uncaughtException and the server's crash handler exits the process.
+    // Same guard runAudioOffsetFinder already carries — route it through
+    // the observer so the file is marked failed instead.
+    childProcess.on("error", (err) => {
+      observer.error(err)
+    })
+
     const tty = createTtyAffordances(childProcess)
 
     const chunks: Uint8Array[] = []
@@ -119,35 +128,30 @@ export const getMkvInfo = (
       logInfo("MKVMERGE IDENTIFY", text)
     })
 
+    // Assemble + emit in 'close', NOT 'exit'. 'exit' fires the moment the
+    // child terminates, but stdout's pipe is drained asynchronously by
+    // libuv and its 'data' events can still be pending — reading `chunks`
+    // there races the drain and yields an empty/truncated buffer, which
+    // surfaces downstream as JSON.parse "Unexpected end of JSON input".
+    // 'close' is emitted only after every stdio stream has hit EOF, so the
+    // buffer is guaranteed complete. Under a burst of parallel identifies
+    // the event loop is saturated and the race loses consistently, which
+    // is why every file failed rather than just some.
     childProcess.on("close", (code) => {
-      if (code === null && tty.isUsingTtyAffordances) {
-        setTimeout(() => {
-          process.exit()
-        }, 500)
-      }
-    })
-
-    childProcess.on("exit", (code) => {
       tty.detach()
 
-      if (code === 0) {
-        const bufferOutput =
-          Buffer.concat(chunks).toString("utf8")
-
-        observer.next(
-          bufferOutput.replace(
-            /("codec_private_data"\s*:\s*)"[^"]*"/g,
-            '$1""',
-          ),
-        )
-        observer.complete()
+      // code === null is the user-cancel path: the process was killed by a
+      // signal (treeKill on unsubscribe). Finish without emitting.
+      if (code === null) {
+        if (tty.isUsingTtyAffordances) {
+          setTimeout(() => {
+            process.exit()
+          }, 500)
+        }
         return
       }
-      // code === null is the user-cancel path the 'close' handler
-      // resolves. Anything else with captured stderr is a real failure
-      // — surface it so the caller doesn't see an empty-tracks result
-      // and silently skip the file.
-      if (code !== null) {
+
+      if (code !== 0) {
         observer.error(
           new Error(
             `mkvmerge exited with code ${code}` +
@@ -156,7 +160,34 @@ export const getMkvInfo = (
                 : ""),
           ),
         )
+        return
       }
+
+      const bufferOutput =
+        Buffer.concat(chunks).toString("utf8")
+
+      // mkvmerge exited 0 but produced nothing on stdout — there's no JSON
+      // to parse. Surface a clear error rather than letting the empty
+      // string reach JSON.parse and throw a cryptic SyntaxError.
+      if (bufferOutput.trim() === "") {
+        observer.error(
+          new Error(
+            "mkvmerge exited 0 but produced no output" +
+              (stderrChunks.length
+                ? `: ${stderrChunks.join("").trim()}`
+                : ""),
+          ),
+        )
+        return
+      }
+
+      observer.next(
+        bufferOutput.replace(
+          /("codec_private_data"\s*:\s*)"[^"]*"/g,
+          '$1""',
+        ),
+      )
+      observer.complete()
     })
 
     // Kill the mkvmerge subtree on unsubscribe. Without this, a sequence
