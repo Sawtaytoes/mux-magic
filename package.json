@@ -54,9 +54,9 @@
     "@playwright/test": "^1.60.0",
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/node": "^25.6.2",
-    "@vitest/browser": "^4.1.7",
-    "@vitest/browser-playwright": "^4.1.5",
-    "@vitest/ui": "^4.1.5",
+    "@vitest/browser": "^4.1.8",
+    "@vitest/browser-playwright": "^4.1.8",
+    "@vitest/ui": "^4.1.8",
     "@yarnpkg/sdks": "^3.2.3",
     "cpx2": "^8.0.2",
     "esbuild": "^0.28.0",
@@ -67,7 +67,7 @@
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.2",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.8"
   },
   "resolutions": {
     "mal-scraper@^2.13.2": "patch:mal-scraper@npm%3A2.13.2#./.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch",
