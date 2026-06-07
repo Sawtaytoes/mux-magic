@@ -3,7 +3,7 @@ import {
   logAndRethrowPipelineError,
   logInfo,
 } from "@mux-magic/tools"
-import { concatMap, EMPTY, toArray } from "rxjs"
+import { concatMap, EMPTY, from, map, toArray } from "rxjs"
 import {
   type ExtractSubtitleTrack,
   extractSubtitleTracks,
@@ -173,7 +173,18 @@ export const extractSubtitles = ({
             filePath: fileInfo.fullPath,
             outputFolderName,
             tracks: extractionTracks,
-          })
+          }).pipe(
+            // Surface one record per extracted subtitle file. Without
+            // this, the per-file value is `outputFilePaths` (a string[]),
+            // so the job emits an array-of-arrays that the UI's per-item
+            // results panel renders as nothing — the "completed but no
+            // visible output" symptom. Flattening to `{ filePath }`
+            // objects matches modifySubtitleMetadata's emission shape.
+            concatMap((outputFilePaths) =>
+              from(outputFilePaths),
+            ),
+            map((filePath) => ({ filePath })),
+          )
         }),
       ),
     ),
