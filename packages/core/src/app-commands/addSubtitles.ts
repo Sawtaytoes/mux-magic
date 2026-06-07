@@ -95,12 +95,12 @@ const throwNoMediaFilesError = ({
   ]).pipe(
     concatMap(([sourceFolders, subtitlesVideoFiles]) =>
       throwError(() => {
-        const looksSwapped =
+        const isSwapped =
           sourceFolders.length > 0 &&
           subtitlesVideoFiles.length > 0
 
         return new Error(
-          looksSwapped
+          isSwapped
             ? `addSubtitles: no video files in sourcePath "${sourcePath}", but it holds ${sourceFolders.length} subfolder(s) while subtitlesPath "${subtitlesPath}" holds ${subtitlesVideoFiles.length} video file(s). The two paths look swapped — set sourcePath to the media directory and subtitlesPath to the extracted-subtitles directory.`
             : `addSubtitles: no video files found in sourcePath "${sourcePath}". Point sourcePath at the directory containing your media files.`,
         )
