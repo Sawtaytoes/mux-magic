@@ -417,6 +417,12 @@ export const COMMANDS: Commands = {
           label: "Paths to Delete",
           placeholder:
             "Link from a prior copyFiles step's copiedSourcePaths output",
+          // The only string-array field that is genuinely wired to an
+          // upstream output rather than typed by hand. `isLinkable` opts
+          // it into StringArrayField's link/path picker; user-typed lists
+          // (chapterSplits, extensions) leave it off and render a plain
+          // comma-separated input instead.
+          isLinkable: true,
           // Server schema is `string[]`. Folder (single path) and path
           // variables (single string) are type-incompatible — narrow the
           // link picker so users only see valid array sources. Update
@@ -437,10 +443,14 @@ export const COMMANDS: Commands = {
           type: "path",
           label: "Source Path",
         }),
+        // Space-separated list of comma-separated chapter markers — one
+        // token per file, commas within a token are that file's splits
+        // (e.g. "7,18,26,33 6,17,25 6"). NOT `stringArray`, whose comma
+        // delimiter would split a single file's "6,9" into two files.
         field("chapterSplits", {
-          type: "stringArray",
+          type: "chapterSplits",
           label: "Chapter Splits",
-          placeholder: "ch1, ch2",
+          placeholder: "7,18,26,33 6,17,25 6",
         }),
       ],
     }
