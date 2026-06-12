@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import readline from "node:readline"
 import { Observable } from "rxjs"
-import { emitJobEvent } from "../api/jobStore.js"
+import { emitJobEvent, updateJob } from "../api/jobStore.js"
 import { getActiveJobId } from "../api/logCapture.js"
 import {
   cancelPrompt,
@@ -42,6 +42,11 @@ export const getUserSearchInput = (params: {
     if (jobId) {
       const promptId = randomUUID()
 
+      updateJob(jobId, {
+        status: "paused",
+        pauseReason: "user_input",
+      })
+
       emitJobEvent(jobId, {
         message: params.message,
         options: params.options,
@@ -58,6 +63,10 @@ export const getUserSearchInput = (params: {
       registerPrompt(promptId)
         .then((index) => {
           isResolved = true
+          updateJob(jobId, {
+            status: "running",
+            pauseReason: null,
+          })
           observer.next(index)
           observer.complete()
         })
@@ -69,7 +78,9 @@ export const getUserSearchInput = (params: {
       // cancelled, parallel sibling failed, etc.) — not after natural
       // completion, where resolvePrompt already deleted the entry.
       return () => {
-        if (!isResolved) cancelPrompt(promptId)
+        if (!isResolved) {
+          cancelPrompt(promptId)
+        }
       }
     }
 

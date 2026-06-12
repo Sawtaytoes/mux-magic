@@ -17,6 +17,7 @@ export const makeFakeJob = (
   outputs: null,
   params: null,
   parentJobId: null,
+  pauseReason: null,
   results: [],
   startedAt: null,
   stepId: null,

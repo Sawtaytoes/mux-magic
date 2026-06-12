@@ -23,6 +23,7 @@ import { sequenceRunModalAtom } from "./sequenceRunModalAtom"
 const STATUS_CLASSES: Record<JobStatus, string> = {
   pending: "bg-slate-700 text-slate-300",
   running: "bg-amber-700 text-amber-100",
+  paused: "bg-amber-900 text-amber-200",
   completed: "bg-emerald-700 text-emerald-100",
   failed: "bg-red-700 text-red-100",
   cancelled: "bg-slate-600 text-slate-100",

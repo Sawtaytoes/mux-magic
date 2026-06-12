@@ -1,3 +1,4 @@
+import { disableJobPersistenceForTests } from "@mux-magic/core/src/api/jobStore.js"
 import {
   __resetTaskSchedulerForTests,
   initTaskScheduler,
@@ -31,6 +32,7 @@ vi.mock(
 // `runTask` plumbing to be live so `withFileProgress` doesn't throw.
 beforeEach(() => {
   initTaskScheduler(Infinity)
+  disableJobPersistenceForTests()
 })
 
 // Reset the in-memory filesystem and scheduler after each test so state
