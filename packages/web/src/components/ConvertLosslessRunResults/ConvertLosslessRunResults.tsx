@@ -49,10 +49,7 @@ const basename = (path: string) => {
   return lastSep === -1 ? path : path.slice(lastSep + 1)
 }
 
-const compareByBasename = (
-  pathA: string,
-  pathB: string,
-) =>
+const compareByBasename = (pathA: string, pathB: string) =>
   basename(pathA).localeCompare(
     basename(pathB),
     undefined,

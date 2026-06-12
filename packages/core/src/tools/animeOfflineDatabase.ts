@@ -27,12 +27,10 @@ const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const ANIDB_AID_PATTERN =
   /^https?:\/\/anidb\.net\/anime\/(\d+)\/?$/i
 
-const cacheDir = () =>
-  join(getAnidbCacheDir(), "manami")
+const cacheDir = () => join(getAnidbCacheDir(), "manami")
 const dataPath = () =>
   join(cacheDir(), "anime-offline-database.json")
-const versionPath = () =>
-  join(cacheDir(), "version")
+const versionPath = () => join(cacheDir(), "version")
 
 // Subset of the manami entry shape — only the fields we read.
 type ManamiEntry = {
@@ -123,10 +121,7 @@ const pickEnglishSynonym = (
   return bestSynonym
 }
 
-const isFresh = async (
-  path: string,
-  maxAgeMs: number,
-) => {
+const isFresh = async (path: string, maxAgeMs: number) => {
   try {
     const stats = await stat(path)
     return Date.now() - stats.mtimeMs < maxAgeMs

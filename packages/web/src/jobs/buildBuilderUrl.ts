@@ -7,9 +7,7 @@ import type { Job } from "./types"
 // bytes shorter and avoids the `encodeURIComponent` step entirely. JSON is
 // valid YAML, so the BuilderPage reader still feeds the decoded payload
 // straight into `loadYamlFromText`.
-const encodeSequenceAsUrl = (
-  sequenceBody: unknown,
-) =>
+const encodeSequenceAsUrl = (sequenceBody: unknown) =>
   `/builder?seqJson=${encodeSeqJsonParam(JSON.stringify(sequenceBody))}`
 
 export const buildBuilderUrl = (job: Job) => {

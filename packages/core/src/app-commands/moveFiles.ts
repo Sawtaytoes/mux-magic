@@ -34,10 +34,7 @@ type MoveRecord = {
   destination: string
 }
 
-const hasErrorCode = (
-  error: unknown,
-  code: string,
-) =>
+const hasErrorCode = (error: unknown, code: string) =>
   error !== null &&
   typeof error === "object" &&
   "code" in error &&

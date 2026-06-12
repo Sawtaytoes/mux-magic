@@ -89,9 +89,7 @@ const buildScheduler =
       const inflightByJob = new Map<string, number>()
       const queue: ScheduledTask[] = []
 
-      const canAdmit = ({
-        jobId,
-      }: ScheduledTask) => {
+      const canAdmit = ({ jobId }: ScheduledTask) => {
         if (inflight >= maxConcurrency) return false
         if (jobId === null) return true
         const claim =

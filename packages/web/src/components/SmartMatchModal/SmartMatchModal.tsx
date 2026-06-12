@@ -54,10 +54,7 @@ const resolveDesiredName = (
   return row.selectedCandidateName
 }
 
-const joinPath = (
-  folder: string,
-  filename: string,
-) => {
+const joinPath = (folder: string, filename: string) => {
   const trimmed = folder.replace(/[\\/]+$/, "")
   const separator = trimmed.includes("\\") ? "\\" : "/"
   return `${trimmed}${separator}${filename}`
@@ -103,9 +100,7 @@ const ensureExtension = (
   return `${desiredName}${extension}`
 }
 
-const formatDurationSeconds = (
-  seconds: number | null,
-) => {
+const formatDurationSeconds = (seconds: number | null) => {
   if (seconds === null) return "—"
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)

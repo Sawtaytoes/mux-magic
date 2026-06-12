@@ -31,10 +31,7 @@ const throttle = async () => {
   lastRequestAt = Date.now()
 }
 
-const isFresh = async (
-  path: string,
-  maxAgeMs: number,
-) => {
+const isFresh = async (path: string, maxAgeMs: number) => {
   try {
     const stats = await stat(path)
     return Date.now() - stats.mtimeMs < maxAgeMs
