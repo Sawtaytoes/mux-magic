@@ -1,0 +1,38 @@
+{/* DeliveryStateBadge.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as DeliveryStateBadgeStories from "./DeliveryStateBadge.stories";
+
+<Meta of={DeliveryStateBadgeStories} />
+
+# DeliveryStateBadge
+
+A small coloured pill badge that shows the webhook-delivery state of a persisted job-error record. Used inside `ErrorRow` to give an at-a-glance status for each error.
+
+## Props
+
+| Prop | Type | Notes |
+|------|------|-------|
+| `state` | `"pending" \| "delivered" \| "exhausted"` | The delivery state from `webhookDelivery.state` |
+
+## Colour tokens
+
+Each state maps to an existing Tailwind colour token — no ad-hoc hex values:
+
+| State | Classes |
+|-------|---------|
+| `pending` | `bg-slate-700 text-slate-300` |
+| `delivered` | `bg-emerald-950 text-emerald-400` |
+| `exhausted` | `bg-red-950 text-red-400` |
+
+## Pending
+
+<Canvas of={DeliveryStateBadgeStories.Pending} />
+
+## Delivered
+
+<Canvas of={DeliveryStateBadgeStories.Delivered} />
+
+## Exhausted
+
+<Canvas of={DeliveryStateBadgeStories.Exhausted} />
