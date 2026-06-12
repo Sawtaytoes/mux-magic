@@ -55,7 +55,7 @@ export const __resetLogSinksForTests = (): void => {
   sinks.clear()
 }
 
-const emit = (record: LogRecord): void => {
+const emit = (record: LogRecord) => {
   for (const sink of sinks) {
     sink(record)
   }

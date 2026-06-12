@@ -32,7 +32,7 @@ import * as schemas from "../schemas.js"
 
 export const fileRoutes = new OpenAPIHono()
 
-const messageFromError = (error: unknown): string => {
+const messageFromError = (error: unknown) => {
   if (error instanceof Error) return error.message
   return String(error)
 }

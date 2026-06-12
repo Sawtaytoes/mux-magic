@@ -55,7 +55,7 @@ export type JikanAnimeRow = {
   }
 }
 
-const pickDisplayName = (row: JikanAnimeRow): string =>
+const pickDisplayName = (row: JikanAnimeRow) =>
   row.title_english?.trim() ||
   row.title?.trim() ||
   row.title_japanese?.trim() ||

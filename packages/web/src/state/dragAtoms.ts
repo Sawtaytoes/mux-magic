@@ -8,7 +8,7 @@ import { stepsAtom } from "./stepsAtom"
 // sourceContainerId / targetContainerId are the SortableContext `id` values:
 //   "top-level" for the root list, or a group.id for intra-group lists.
 
-const getItemId = (item: SequenceItem): string =>
+const getItemId = (item: SequenceItem) =>
   isGroup(item) ? item.id : (item as Step).id
 
 export const dragReorderAtom = atom(

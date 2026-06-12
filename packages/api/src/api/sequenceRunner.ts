@@ -68,7 +68,7 @@ export type SequenceBody = {
 // DEFAULT_THREAD_COUNT when no threadCount variable is present.
 const resolveThreadCountClaim = (
   variables: Record<string, SequenceVariable> | undefined,
-): number => {
+) => {
   const maxThreads = resolveMaxThreads()
 
   if (variables) {
@@ -252,7 +252,7 @@ export const runSequenceJob = (
   const markChildTerminalIfPending = (
     childId: string,
     status: "skipped" | "exited",
-  ): void => {
+  ) => {
     if (getJob(childId)?.status === "pending") {
       updateJob(childId, {
         completedAt: new Date(),
@@ -273,7 +273,7 @@ export const runSequenceJob = (
   const markRemainingTerminalFromFlatIndex = (
     fromFlatIndex: number,
     status: "skipped" | "exited",
-  ): void => {
+  ) => {
     for (
       let idx = fromFlatIndex;
       idx < childJobIds.length;
@@ -283,7 +283,7 @@ export const runSequenceJob = (
     }
   }
 
-  const logRunSummary = (): void => {
+  const logRunSummary = () => {
     if (flatSteps.length === 0) return
     logInfo("SEQUENCE", "Run summary:")
     flatSteps.forEach((flat, index) => {
@@ -299,7 +299,7 @@ export const runSequenceJob = (
 
   const finalize = (
     status: "completed" | "failed" | "cancelled" | "exited",
-  ): void => {
+  ) => {
     logRunSummary()
     updateJob(jobId, {
       completedAt: new Date(),
@@ -320,7 +320,7 @@ export const runSequenceJob = (
   //      sees the whole sequence terminate.
   const finalizeFromChildCancel = (
     lastStepInItem: SequenceStep,
-  ): void => {
+  ) => {
     const umbrella = getJob(jobId)
     if (!umbrella || umbrella.status !== "running") return
     markRemainingTerminalFromFlatIndex(
@@ -338,7 +338,7 @@ export const runSequenceJob = (
   const finalizeFromExit = (
     lastStepInItem: SequenceStep,
     reason: string,
-  ): void => {
+  ) => {
     const umbrella = getJob(jobId)
     if (!umbrella || umbrella.status !== "running") return
     logInfo(
@@ -510,9 +510,7 @@ export const runSequenceJob = (
   // Returns the index of the first FlatStep whose underlying step
   // reference matches `target` — used to convert "we just finished
   // this group" into a flat-index for cascading skip.
-  const flatIndexAfter = (
-    lastStepInItem: SequenceStep,
-  ): number => {
+  const flatIndexAfter = (lastStepInItem: SequenceStep) => {
     const last = flatSteps.findIndex(
       (flat) => flat.step === lastStepInItem,
     )

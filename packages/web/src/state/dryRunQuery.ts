@@ -25,7 +25,7 @@ const readFakeFromUrl = (): FakeParam => {
   return null
 }
 
-const writeFakeToUrl = (value: FakeParam): void => {
+const writeFakeToUrl = (value: FakeParam) => {
   const params = new URLSearchParams(window.location.search)
   if (value === null) {
     params.delete("fake")
@@ -102,7 +102,7 @@ export type DryRunInputs = {
 export const buildRunFetchUrl = (
   path: string,
   inputs: DryRunInputs,
-): string => {
+) => {
   const baseUrl = `${apiBase}${path}`
   if (!inputs.isDryRun) return baseUrl
   // ?fake=success / ?fake=failure parallels the server scenario names

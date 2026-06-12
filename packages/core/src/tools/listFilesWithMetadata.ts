@@ -64,7 +64,7 @@ const VIDEO_EXTENSIONS = new Set([
   ".wmv",
 ])
 
-const isVideoExtension = (name: string): boolean =>
+const isVideoExtension = (name: string) =>
   VIDEO_EXTENSIONS.has(extname(name).toLowerCase())
 
 // Concurrent map with a fixed worker count. AsyncPool-style — keeps a
@@ -77,7 +77,7 @@ const mapWithConcurrency = async <T, U>(
 ): Promise<U[]> => {
   const results: U[] = new Array(items.length)
   let cursor = 0
-  const runWorker = async (): Promise<void> => {
+  const runWorker = async () => {
     while (cursor < items.length) {
       const index = cursor++
       results[index] = await worker(items[index], index)

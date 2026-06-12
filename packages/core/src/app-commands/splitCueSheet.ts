@@ -54,7 +54,7 @@ export const splitCueSheetDefaultProps = {
 // Inline decoder so this module can be tested with `node:fs` mocked
 // (the wrapper helper reads the buffer via fs/promises which memfs
 // supplies in tests). Mirrors readCueWithEncodingFallback.ts.
-const decodeCueBytes = (buffer: Buffer): string => {
+const decodeCueBytes = (buffer: Buffer) => {
   try {
     const decoder = new TextDecoder("utf-8", {
       fatal: true,
@@ -162,7 +162,7 @@ const collectCueFolders = async ({
 
 const FRAMES_PER_SECOND = 75
 
-const cueFrameToSeconds = (frame: number): number =>
+const cueFrameToSeconds = (frame: number) =>
   frame / FRAMES_PER_SECOND
 
 export const splitCueSheet = ({

@@ -69,7 +69,7 @@ export const parseTimecodeToSeconds = (
   return NaN
 }
 
-const normalizeStem = (filename: string): string => {
+const normalizeStem = (filename: string) => {
   const dotIndex = filename.lastIndexOf(".")
   const stem =
     dotIndex > 0 ? filename.slice(0, dotIndex) : filename

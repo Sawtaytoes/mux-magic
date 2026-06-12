@@ -18,7 +18,7 @@ const repoRoot = resolve(
 const resolveAppPath = (
   relativePath: string,
   systemName: string,
-): string => {
+) => {
   const absolutePath = resolve(repoRoot, relativePath)
   return isWindows && existsSync(absolutePath)
     ? absolutePath

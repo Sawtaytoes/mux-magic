@@ -238,9 +238,7 @@ const resolveParams = (
 // Other routes return the simpler `{ error: string }` shape. Pick the
 // most specific human-readable message available; "Request failed"
 // is the last-resort fallback so the UI always has *something* to show.
-const extractRequestErrorMessage = (
-  body: unknown,
-): string => {
+const extractRequestErrorMessage = (body: unknown) => {
   if (body && typeof body === "object") {
     const bodyRecord = body as Record<string, unknown>
     const innerError = bodyRecord.error

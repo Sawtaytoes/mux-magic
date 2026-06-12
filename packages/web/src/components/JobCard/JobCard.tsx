@@ -16,7 +16,7 @@ import { StatusBadge } from "../StatusBadge/StatusBadge"
 
 // ─── ETA for sequence jobs ────────────────────────────────────────────────────
 
-const useAggregateEta = (job: Job): string => {
+const useAggregateEta = (job: Job) => {
   const progressByJobId = useAtomValue(progressByJobIdAtom)
   const jobs = useAtomValue(jobsAtom)
   if (job.status !== "running") return ""

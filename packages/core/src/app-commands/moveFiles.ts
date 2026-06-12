@@ -34,10 +34,7 @@ type MoveRecord = {
   destination: string
 }
 
-const hasErrorCode = (
-  error: unknown,
-  code: string,
-): boolean =>
+const hasErrorCode = (error: unknown, code: string) =>
   error !== null &&
   typeof error === "object" &&
   "code" in error &&
@@ -56,7 +53,7 @@ const buildExistsError = (
 const checkDestination = async (
   destination: string,
   isOverwriteAllowed: boolean,
-): Promise<boolean> => {
+) => {
   try {
     await stat(destination)
   } catch (error) {

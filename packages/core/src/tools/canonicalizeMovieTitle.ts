@@ -18,7 +18,7 @@ export type MovieIdentity = {
 //   "Dragon Lord AKA Long xiao ye AKA Dragon Strike AKA Young Master in Love"
 // TMDB indexes by the primary release title only, so trim the aliases off
 // the first occurrence of " AKA " before searching.
-const stripAkaAliases = (title: string): string =>
+const stripAkaAliases = (title: string) =>
   title.split(/\s+AKA\s+/iu)[0].trim()
 
 // Looks the DVDCompare-derived title up on TMDB and returns the canonical

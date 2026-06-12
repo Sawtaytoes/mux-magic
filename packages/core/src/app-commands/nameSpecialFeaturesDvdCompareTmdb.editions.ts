@@ -81,7 +81,7 @@ const hasDestinationCollision = ({
 }: {
   destinationDir: string
   filename: string
-}): Promise<boolean> =>
+}) =>
   readdir(destinationDir)
     .then((existingFilenames) =>
       existingFilenames.some(

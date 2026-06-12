@@ -41,7 +41,7 @@ const skipReasonLabel: Record<ListedSkipReason, string> = {
     "32-bit/64-bit float PCM (FLAC is integer-only)",
 }
 
-const basename = (path: string): string => {
+const basename = (path: string) => {
   const lastSep = Math.max(
     path.lastIndexOf("/"),
     path.lastIndexOf("\\"),
@@ -49,10 +49,7 @@ const basename = (path: string): string => {
   return lastSep === -1 ? path : path.slice(lastSep + 1)
 }
 
-const compareByBasename = (
-  pathA: string,
-  pathB: string,
-): number =>
+const compareByBasename = (pathA: string, pathB: string) =>
   basename(pathA).localeCompare(
     basename(pathB),
     undefined,

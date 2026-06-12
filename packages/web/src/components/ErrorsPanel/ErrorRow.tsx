@@ -8,7 +8,7 @@ interface ErrorRowProps {
   onRedeliver: () => Promise<void>
 }
 
-const formatRelativeTime = (isoString: string): string => {
+const formatRelativeTime = (isoString: string) => {
   const deltaMs = Date.now() - new Date(isoString).getTime()
   const deltaSeconds = Math.floor(deltaMs / 1000)
   if (deltaSeconds < 60) {
@@ -26,7 +26,7 @@ const formatRelativeTime = (isoString: string): string => {
   return `${deltaDays}d ago`
 }
 
-const idSuffix = (id: string): string =>
+const idSuffix = (id: string) =>
   id.length > 8 ? id.slice(-8) : id
 
 export const ErrorRow = ({

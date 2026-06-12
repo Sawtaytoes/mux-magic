@@ -23,8 +23,7 @@ import type {
 const PICKER_WIDTH = 360
 const PICKER_MAX_HEIGHT = 400
 
-const getCommandLabel = (name: string): string =>
-  commandLabel(name)
+const getCommandLabel = (name: string) => commandLabel(name)
 
 const makePathBreakable = (text: string) =>
   text.replace(/([/\\])/g, "​$1")
@@ -146,7 +145,7 @@ const findInitialIndex = (
   items: LinkItem[],
   anchor: LinkPickerAnchor,
   allSteps: SequenceItem[],
-): number => {
+) => {
   const flatOrder = flattenSteps(allSteps)
   const entry = flatOrder.find(
     (flatEntry) => flatEntry.step.id === anchor.stepId,
