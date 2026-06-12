@@ -64,7 +64,7 @@ export const setEffectiveValue = (
   step: Step,
   fieldName: string,
   nextValue: unknown,
-): void => {
+) => {
   const link = step.links?.[fieldName]
   if (typeof link !== "string") {
     return

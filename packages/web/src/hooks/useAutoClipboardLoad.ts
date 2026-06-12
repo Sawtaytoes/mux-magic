@@ -6,7 +6,7 @@ import { pathsAtom } from "../state/pathsAtom"
 import { stepsAtom } from "../state/stepsAtom"
 import { variablesAtom } from "../state/variablesAtom"
 
-const looksLikeYaml = (text: string): boolean => {
+const looksLikeYaml = (text: string) => {
   const trimmed = text.trim()
   if (!trimmed) return false
   return trimmed.includes(":") || trimmed.startsWith("-")

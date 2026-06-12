@@ -110,7 +110,7 @@ const computeMatches = (
 const computeNewValue = (
   entry: DirEntry,
   state: PathPickerState,
-): string => {
+) => {
   const { parentPath } = state
   const separator = state.separator || "/"
   const base =

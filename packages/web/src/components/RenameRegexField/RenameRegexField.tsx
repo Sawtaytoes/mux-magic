@@ -15,7 +15,7 @@ type RenameRegexFieldProps = {
 }
 
 let nextRuleId = 0
-const allocateRuleId = (): number => {
+const allocateRuleId = () => {
   const id = nextRuleId
   nextRuleId += 1
   return id

@@ -240,7 +240,7 @@ const resolveParams = (
 // is the last-resort fallback so the UI always has *something* to show.
 const extractRequestErrorMessage = (
   body: unknown,
-): string => {
+) => {
   if (body && typeof body === "object") {
     const bodyRecord = body as Record<string, unknown>
     const innerError = bodyRecord.error

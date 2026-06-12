@@ -9,10 +9,10 @@ import type { Job } from "./types"
 // straight into `loadYamlFromText`.
 const encodeSequenceAsUrl = (
   sequenceBody: unknown,
-): string =>
+) =>
   `/builder?seqJson=${encodeSeqJsonParam(JSON.stringify(sequenceBody))}`
 
-export const buildBuilderUrl = (job: Job): string => {
+export const buildBuilderUrl = (job: Job) => {
   if (
     job.commandName === "sequence" &&
     job.params &&

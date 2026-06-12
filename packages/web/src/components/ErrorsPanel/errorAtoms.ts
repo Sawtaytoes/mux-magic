@@ -39,7 +39,7 @@ export const errorsFilterAtom = atom<ErrorsFilter>({})
 
 export const buildErrorsUrl = (
   filter: ErrorsFilter,
-): string => {
+) => {
   const params = new URLSearchParams()
   if (filter.state !== undefined) {
     params.set("state", filter.state)

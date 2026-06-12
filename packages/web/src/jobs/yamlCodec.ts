@@ -103,7 +103,7 @@ export const toYamlStr = (
   steps: SequenceItem[],
   paths: Variable[],
   commands: Commands,
-): string => {
+) => {
   const hasSomething =
     steps.length > 0 ||
     paths.some((variable) => variable.value)
@@ -157,7 +157,7 @@ export type LoadYamlResult = {
   paths: Variable[]
 }
 
-const isGroupItem = (item: unknown): boolean =>
+const isGroupItem = (item: unknown) =>
   Boolean(
     item &&
       typeof item === "object" &&

@@ -35,7 +35,7 @@ export const DslRulesBuilder = ({
       : {}
 
   const ruleKeyMap = useRef(new WeakMap<DslRule, string>())
-  const getRuleKey = (rule: DslRule): string => {
+  const getRuleKey = (rule: DslRule) => {
     const existing = ruleKeyMap.current.get(rule)
     if (existing !== undefined) {
       return existing

@@ -13,7 +13,7 @@
 
 const BASE64URL_ALPHABET = /^[A-Za-z0-9_-]*$/
 
-export const toBase64Url = (bytes: Uint8Array): string => {
+export const toBase64Url = (bytes: Uint8Array) => {
   const binary = bytes.reduce(
     (accumulator, byte) =>
       accumulator + String.fromCharCode(byte),

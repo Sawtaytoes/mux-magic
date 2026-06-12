@@ -21,10 +21,10 @@ type Props = {
   ariaLabel: string
 }
 
-const formatConfidence = (confidence: number): string =>
+const formatConfidence = (confidence: number) =>
   `${Math.round(confidence * 100)}%`
 
-const confidenceClass = (confidence: number): string =>
+const confidenceClass = (confidence: number) =>
   confidence >= LOW_CONFIDENCE_THRESHOLD
     ? "bg-emerald-700 text-emerald-100"
     : "bg-amber-700 text-amber-100"

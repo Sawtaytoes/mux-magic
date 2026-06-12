@@ -9,5 +9,5 @@ import { toBase64Url } from "./base64url"
 
 const utf8Encoder = new TextEncoder()
 
-export const encodeSeqJsonParam = (json: string): string =>
+export const encodeSeqJsonParam = (json: string) =>
   toBase64Url(utf8Encoder.encode(json))
