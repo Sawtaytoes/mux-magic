@@ -14,9 +14,9 @@ import {
   test,
   vi,
 } from "vitest"
-import type { PersistedJobError } from "./errorAtoms"
-import { errorsAtom, errorsFetchAtom } from "./errorAtoms"
 import { ErrorsPanel } from "./ErrorsPanel"
+import type { PersistedJobError } from "./errorAtoms"
+import { errorsAtom } from "./errorAtoms"
 
 afterEach(() => {
   cleanup()
@@ -78,12 +78,17 @@ describe("ErrorsPanel — filter inputs build correct query strings", () => {
       </Provider>,
     )
 
-    const stateSelect = screen.getByRole("combobox", { name: /state/i })
+    const stateSelect = screen.getByRole("combobox", {
+      name: /state/i,
+    })
     await userEvent.selectOptions(stateSelect, "pending")
 
     await waitFor(() => {
       const mockFetch = vi.mocked(fetch)
-      const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]
+      const lastCall =
+        mockFetch.mock.calls[
+          mockFetch.mock.calls.length - 1
+        ]
       expect(lastCall[0]).toContain("state=pending")
     })
   })
@@ -97,12 +102,17 @@ describe("ErrorsPanel — filter inputs build correct query strings", () => {
       </Provider>,
     )
 
-    const jobIdInput = screen.getByRole("textbox", { name: /job id/i })
+    const jobIdInput = screen.getByRole("textbox", {
+      name: /job id/i,
+    })
     await userEvent.type(jobIdInput, "job_xyz")
 
     await waitFor(() => {
       const mockFetch = vi.mocked(fetch)
-      const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]
+      const lastCall =
+        mockFetch.mock.calls[
+          mockFetch.mock.calls.length - 1
+        ]
       expect(lastCall[0]).toContain("jobId=job_xyz")
     })
   })
@@ -150,15 +160,27 @@ describe("ErrorsPanel — re-render after redeliver", () => {
 
     // Wait for initial load
     await waitFor(() => {
-      expect(screen.getByText("exhausted")).toBeVisible()
+      expect(
+        screen.getByText("exhausted", {
+          selector: ".delivery-state-badge",
+        }),
+      ).toBeVisible()
     })
 
     // Click retry
-    await userEvent.click(screen.getByRole("button", { name: /retry delivery/i }))
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: /retry delivery/i,
+      }),
+    )
 
-    // After re-fetch, state should update to pending
+    // After re-fetch, state badge should update to pending
     await waitFor(() => {
-      expect(screen.getByText("pending")).toBeVisible()
+      expect(
+        screen.getByText("pending", {
+          selector: ".delivery-state-badge",
+        }),
+      ).toBeVisible()
     })
   })
 })

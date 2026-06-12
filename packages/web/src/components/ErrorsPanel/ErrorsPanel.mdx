@@ -1,0 +1,59 @@
+{/* ErrorsPanel.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as ErrorsPanelStories from "./ErrorsPanel.stories";
+
+<Meta of={ErrorsPanelStories} />
+
+# ErrorsPanel
+
+Displays persisted job-error records from the `/api/errors` endpoint. Each record represents a job error that failed to be delivered via the `WEBHOOK_JOB_FAILED_URL` webhook.
+
+Records are shown newest-first. Server-side filtering by `state` and `jobId` substring is applied via query parameters — no client-side filtering.
+
+## State badges
+
+Each row shows a `DeliveryStateBadge` indicating the webhook delivery status:
+
+| State | Colour | Meaning |
+|-------|--------|---------|
+| `pending` | Grey | Queued for delivery; retries in progress |
+| `delivered` | Green | Successfully delivered to the webhook |
+| `exhausted` | Red | All retry attempts exhausted; manual intervention needed |
+
+## Row actions
+
+- **Retry delivery** — Only shown on `exhausted` rows. POSTs to `/api/errors/:id/redeliver`, flips the record back to `pending`, and re-fetches the list.
+- **Dismiss** — Shown on every row. Requires a confirmation click before sending `DELETE /api/errors/:id`. After deletion the row disappears from the list.
+
+## Detail expansion
+
+Each row has an **Expand** toggle that reveals:
+- Full stack trace (monospace, scrollable)
+- `errorName`, `traceId`, `spanId`
+- `webhookDelivery.attempts`, `lastAttemptAt`, `lastError`
+- `stepIndex` and `fileId` when present
+
+## Props
+
+The panel has no props — it reads from `errorsAtom` (Jotai) and renders a filter bar + record list.
+
+## Empty
+
+<Canvas of={ErrorsPanelStories.Empty} />
+
+## WithPending
+
+<Canvas of={ErrorsPanelStories.WithPending} />
+
+## WithDelivered
+
+<Canvas of={ErrorsPanelStories.WithDelivered} />
+
+## WithExhausted
+
+<Canvas of={ErrorsPanelStories.WithExhausted} />
+
+## Mixed
+
+<Canvas of={ErrorsPanelStories.Mixed} />

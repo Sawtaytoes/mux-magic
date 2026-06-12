@@ -7,14 +7,13 @@ import {
 import userEvent from "@testing-library/user-event"
 import {
   afterEach,
-  beforeEach,
   describe,
   expect,
   test,
   vi,
 } from "vitest"
-import type { PersistedJobError } from "./errorAtoms"
 import { ErrorRow } from "./ErrorRow"
+import type { PersistedJobError } from "./errorAtoms"
 
 afterEach(() => {
   cleanup()
@@ -56,59 +55,121 @@ const renderRow = ({
 
 describe("ErrorRow — state badge", () => {
   test("shows pending badge for pending records", () => {
-    renderRow({ record: makeRecord({ webhookDelivery: { attempts: 0, state: "pending" } }) })
+    renderRow({
+      record: makeRecord({
+        webhookDelivery: { attempts: 0, state: "pending" },
+      }),
+    })
     expect(screen.getByText("pending")).toBeVisible()
   })
 
   test("shows delivered badge for delivered records", () => {
-    renderRow({ record: makeRecord({ webhookDelivery: { attempts: 1, state: "delivered" } }) })
+    renderRow({
+      record: makeRecord({
+        webhookDelivery: {
+          attempts: 1,
+          state: "delivered",
+        },
+      }),
+    })
     expect(screen.getByText("delivered")).toBeVisible()
   })
 
   test("shows exhausted badge for exhausted records", () => {
-    renderRow({ record: makeRecord({ webhookDelivery: { attempts: 8, state: "exhausted" } }) })
+    renderRow({
+      record: makeRecord({
+        webhookDelivery: {
+          attempts: 8,
+          state: "exhausted",
+        },
+      }),
+    })
     expect(screen.getByText("exhausted")).toBeVisible()
   })
 })
 
 describe("ErrorRow — row actions", () => {
   test("retry button is only visible for exhausted rows", () => {
-    renderRow({ record: makeRecord({ webhookDelivery: { attempts: 8, state: "exhausted" } }) })
-    expect(screen.getByRole("button", { name: /retry delivery/i })).toBeVisible()
+    renderRow({
+      record: makeRecord({
+        webhookDelivery: {
+          attempts: 8,
+          state: "exhausted",
+        },
+      }),
+    })
+    expect(
+      screen.getByRole("button", {
+        name: /retry delivery/i,
+      }),
+    ).toBeVisible()
   })
 
   test("retry button is not shown for pending rows", () => {
-    renderRow({ record: makeRecord({ webhookDelivery: { attempts: 0, state: "pending" } }) })
-    expect(screen.queryByRole("button", { name: /retry delivery/i })).toBeNull()
+    renderRow({
+      record: makeRecord({
+        webhookDelivery: { attempts: 0, state: "pending" },
+      }),
+    })
+    expect(
+      screen.queryByRole("button", {
+        name: /retry delivery/i,
+      }),
+    ).toBeNull()
   })
 
   test("retry button is not shown for delivered rows", () => {
-    renderRow({ record: makeRecord({ webhookDelivery: { attempts: 1, state: "delivered" } }) })
-    expect(screen.queryByRole("button", { name: /retry delivery/i })).toBeNull()
+    renderRow({
+      record: makeRecord({
+        webhookDelivery: {
+          attempts: 1,
+          state: "delivered",
+        },
+      }),
+    })
+    expect(
+      screen.queryByRole("button", {
+        name: /retry delivery/i,
+      }),
+    ).toBeNull()
   })
 
   test("dismiss button is visible on every row", () => {
-    renderRow({ record: makeRecord({ webhookDelivery: { attempts: 0, state: "pending" } }) })
-    expect(screen.getByRole("button", { name: /dismiss/i })).toBeVisible()
+    renderRow({
+      record: makeRecord({
+        webhookDelivery: { attempts: 0, state: "pending" },
+      }),
+    })
+    expect(
+      screen.getByRole("button", { name: /dismiss/i }),
+    ).toBeVisible()
   })
 
   test("dismiss button shows confirmation step before calling onDismiss", async () => {
     const onDismiss = vi.fn().mockResolvedValue(undefined)
     renderRow({ record: makeRecord(), onDismiss })
 
-    await userEvent.click(screen.getByRole("button", { name: /dismiss/i }))
+    await userEvent.click(
+      screen.getByRole("button", { name: /dismiss/i }),
+    )
 
     // First click should show a confirmation prompt, NOT call onDismiss yet
     expect(onDismiss).not.toHaveBeenCalled()
-    expect(screen.getByRole("button", { name: /confirm/i })).toBeVisible()
+    expect(
+      screen.getByRole("button", { name: /confirm/i }),
+    ).toBeVisible()
   })
 
   test("confirm button calls onDismiss after confirmation", async () => {
     const onDismiss = vi.fn().mockResolvedValue(undefined)
     renderRow({ record: makeRecord(), onDismiss })
 
-    await userEvent.click(screen.getByRole("button", { name: /dismiss/i }))
-    await userEvent.click(screen.getByRole("button", { name: /confirm/i }))
+    await userEvent.click(
+      screen.getByRole("button", { name: /dismiss/i }),
+    )
+    await userEvent.click(
+      screen.getByRole("button", { name: /confirm/i }),
+    )
 
     await waitFor(() => {
       expect(onDismiss).toHaveBeenCalledOnce()
@@ -118,11 +179,20 @@ describe("ErrorRow — row actions", () => {
   test("retry button calls onRedeliver immediately", async () => {
     const onRedeliver = vi.fn().mockResolvedValue(undefined)
     renderRow({
-      record: makeRecord({ webhookDelivery: { attempts: 8, state: "exhausted" } }),
+      record: makeRecord({
+        webhookDelivery: {
+          attempts: 8,
+          state: "exhausted",
+        },
+      }),
       onRedeliver,
     })
 
-    await userEvent.click(screen.getByRole("button", { name: /retry delivery/i }))
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: /retry delivery/i,
+      }),
+    )
 
     await waitFor(() => {
       expect(onRedeliver).toHaveBeenCalledOnce()
@@ -132,12 +202,18 @@ describe("ErrorRow — row actions", () => {
 
 describe("ErrorRow — content", () => {
   test("shows msg truncated in list row", () => {
-    renderRow({ record: makeRecord({ msg: "My error message" }) })
-    expect(screen.getByText("My error message")).toBeVisible()
+    renderRow({
+      record: makeRecord({ msg: "My error message" }),
+    })
+    expect(
+      screen.getByText("My error message"),
+    ).toBeVisible()
   })
 
   test("shows jobId in the row", () => {
-    renderRow({ record: makeRecord({ jobId: "job_abc123" }) })
+    renderRow({
+      record: makeRecord({ jobId: "job_abc123" }),
+    })
     expect(screen.getByText(/job_abc123/)).toBeVisible()
   })
 
@@ -149,7 +225,9 @@ describe("ErrorRow — content", () => {
     })
 
     // Expand the detail
-    await userEvent.click(screen.getByRole("button", { name: /expand/i }))
+    await userEvent.click(
+      screen.getByRole("button", { name: /expand/i }),
+    )
 
     expect(screen.getByText(/at foo\.ts/)).toBeVisible()
   })
