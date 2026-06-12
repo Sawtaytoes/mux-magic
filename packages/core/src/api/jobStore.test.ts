@@ -1,6 +1,7 @@
 import { Subject } from "rxjs"
 import {
   afterEach,
+  beforeEach,
   describe,
   expect,
   test,
@@ -13,6 +14,7 @@ import {
   completeSubject,
   createJob,
   createSubject,
+  disableJobPersistenceForTests,
   getAllJobs,
   getJob,
   getSubject,
@@ -21,6 +23,10 @@ import {
   unregisterJobSubscription,
   updateJob,
 } from "./jobStore.js"
+
+beforeEach(() => {
+  disableJobPersistenceForTests()
+})
 
 afterEach(() => {
   resetStore()
@@ -115,6 +121,43 @@ describe(updateJob.name, () => {
     expect(
       updateJob("does-not-exist", { status: "running" }),
     ).toBeUndefined()
+  })
+
+  test("can set status to paused with a pauseReason", () => {
+    const job = createJob({ commandName: "hasBetterAudio" })
+    updateJob(job.id, { status: "running" })
+
+    const updated = updateJob(job.id, {
+      status: "paused",
+      pauseReason: "user_input",
+    })
+
+    expect(updated?.status).toBe("paused")
+    expect(updated?.pauseReason).toBe("user_input")
+  })
+
+  test("can transition paused back to running and clear pauseReason", () => {
+    const job = createJob({ commandName: "hasBetterAudio" })
+    updateJob(job.id, { status: "running" })
+    updateJob(job.id, {
+      status: "paused",
+      pauseReason: "user_input",
+    })
+
+    const resumed = updateJob(job.id, {
+      status: "running",
+      pauseReason: null,
+    })
+
+    expect(resumed?.status).toBe("running")
+    expect(resumed?.pauseReason).toBeNull()
+  })
+})
+
+describe("createJob pauseReason field", () => {
+  test("initializes pauseReason to null", () => {
+    const job = createJob({ commandName: "hasBetterAudio" })
+    expect(job.pauseReason).toBeNull()
   })
 })
 
@@ -240,6 +283,21 @@ describe(cancelJob.name, () => {
     cancelJob(job.id)
 
     expect(sub.closed).toBe(true)
+  })
+
+  test("transitions a paused job to cancelled and clears pauseReason", () => {
+    const job = createJob({ commandName: "hasBetterAudio" })
+    updateJob(job.id, {
+      status: "paused",
+      pauseReason: "user_input",
+      startedAt: new Date(),
+    })
+
+    expect(cancelJob(job.id)).toBe(true)
+
+    expect(getJob(job.id)?.status).toBe("cancelled")
+    expect(getJob(job.id)?.pauseReason).toBeNull()
+    expect(getJob(job.id)?.completedAt).toBeInstanceOf(Date)
   })
 })
 

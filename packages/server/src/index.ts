@@ -10,6 +10,8 @@ import { fileURLToPath } from "node:url"
 import { getRequestListener } from "@hono/node-server"
 import { resumePendingDeliveries } from "@mux-magic/core/src/api/jobErrorDeliveryQueue.js"
 import { loadJobErrorsFromDisk } from "@mux-magic/core/src/api/jobErrorStore.js"
+import { pruneOldJobs } from "@mux-magic/core/src/api/jobPersistence.js"
+import { seedJobsFromDisk } from "@mux-magic/core/src/api/jobStore.js"
 import {
   getActiveJobId,
   installLogBridge,
@@ -28,6 +30,17 @@ import {
 } from "@mux-magic/tools"
 import { buildServer } from "./buildServer.js"
 import { wireViteMiddleware } from "./viteMiddleware.js"
+
+const COMPLETED_JOB_RETENTION_DAYS = 7
+const ONE_HOUR_MS = 60 * 60 * 1000
+
+const startIntervalPrune = (): void => {
+  setInterval(() => {
+    pruneOldJobs({
+      retentionDays: COMPLETED_JOB_RETENTION_DAYS,
+    }).catch(() => undefined)
+  }, ONE_HOUR_MS).unref()
+}
 
 // Mirrors the crash-handler / log-bridge bootstrap from the legacy
 // listener (packages/api/src/legacy-listener.ts, deleted in this worker).
@@ -128,6 +141,8 @@ const boot = async (): Promise<void> => {
       console.log(
         `Server listening on http://localhost:${API_PORT}`,
       )
+      seedJobsFromDisk().catch(() => undefined)
+      startIntervalPrune()
       loadJobErrorsFromDisk()
         .then(() => {
           resumePendingDeliveries()
@@ -177,6 +192,8 @@ const boot = async (): Promise<void> => {
     console.log(
       `Dev server listening on http://localhost:${API_PORT}`,
     )
+    seedJobsFromDisk().catch(() => undefined)
+    startIntervalPrune()
     loadJobErrorsFromDisk()
       .then(() => {
         resumePendingDeliveries()
