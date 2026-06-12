@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/music
+steps:
+  - id: step-fixture
+    command: findContainerAudioFiles
+    params: {sourcePath: '@basePath', isRecursive: true}
