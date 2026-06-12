@@ -13,15 +13,17 @@ vi.mock("../tools/searchDvdCompare.js", () => ({
   displayDvdCompareVariant: vi.fn(
     (variant: string) => variant,
   ),
+  getReleaseHashesByDvdCompareId: vi.fn(),
 }))
 
 vi.mock("../tools/getUserSearchInput.js", () => ({
   getUserSearchInput: vi.fn(),
 }))
 
-const { findDvdCompareResults } = await import(
-  "../tools/searchDvdCompare.js"
-)
+const {
+  findDvdCompareResults,
+  getReleaseHashesByDvdCompareId,
+} = await import("../tools/searchDvdCompare.js")
 const { getUserSearchInput } = await import(
   "../tools/getUserSearchInput.js"
 )
@@ -50,18 +52,36 @@ describe(resolveUrl.name, () => {
     )
     // Should not have invoked any search-resolving paths.
     expect(findDvdCompareResults).not.toHaveBeenCalled()
+    expect(
+      getReleaseHashesByDvdCompareId,
+    ).not.toHaveBeenCalled()
   })
 
-  test("builds the canonical film-page URL from a dvdCompareId + default release hash of 1", async () => {
+  test("fetches the release list when only dvdCompareId is provided (no hash pinned) and auto-selects the single result", async () => {
+    vi.mocked(
+      getReleaseHashesByDvdCompareId,
+    ).mockReturnValue(
+      of([
+        {
+          hash: "1",
+          label: "Blu-ray ALL America - Arrow Films [2026]",
+        },
+      ]),
+    )
+
     const result = await firstValueFrom(
       resolveUrl({ dvdCompareId: 1234 }),
     )
     expect(result).toBe(
       "https://www.dvdcompare.net/comparisons/film.php?fid=1234#1",
     )
+    expect(
+      getReleaseHashesByDvdCompareId,
+    ).toHaveBeenCalledWith(1234)
+    expect(getUserSearchInput).not.toHaveBeenCalled()
   })
 
-  test("uses the provided dvdCompareReleaseHash when picking the URL fragment", async () => {
+  test("uses the provided dvdCompareReleaseHash directly without fetching the release list", async () => {
     const result = await firstValueFrom(
       resolveUrl({
         dvdCompareId: 1234,
@@ -71,6 +91,9 @@ describe(resolveUrl.name, () => {
     expect(result).toBe(
       "https://www.dvdcompare.net/comparisons/film.php?fid=1234#5",
     )
+    expect(
+      getReleaseHashesByDvdCompareId,
+    ).not.toHaveBeenCalled()
   })
 
   test("auto-selects the direct-listing result when search redirects straight to a film page", async () => {
@@ -95,6 +118,9 @@ describe(resolveUrl.name, () => {
     )
     // Direct-listing path should NOT prompt the user.
     expect(getUserSearchInput).not.toHaveBeenCalled()
+    expect(
+      getReleaseHashesByDvdCompareId,
+    ).not.toHaveBeenCalled()
   })
 
   test("throws when the search returns zero results", async () => {
