@@ -12,8 +12,8 @@ import {
   toArray,
 } from "rxjs"
 import { convertContainerAudioFileToFlac } from "../cli-spawn-operations/convertContainerAudioFileToFlac.js"
-import { getMediaInfo } from "../tools/getMediaInfo.js"
 import { filterIsContainerWithVideoFile } from "../tools/filterIsContainerWithVideoFile.js"
+import { getMediaInfo } from "../tools/getMediaInfo.js"
 import { getMediaTrackSummary } from "../tools/getMediaTrackSummary.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
@@ -68,7 +68,9 @@ export const convertContainerAudioToFlac = ({
   }).pipe(
     filterIsContainerWithVideoFile(),
     withFileProgress(
-      (fileInfo): Observable<ConvertContainerAudioToFlacRecord> =>
+      (
+        fileInfo,
+      ): Observable<ConvertContainerAudioToFlacRecord> =>
         getMediaInfo(fileInfo.fullPath).pipe(
           concatMap((mediaInfo) => {
             const summary = getMediaTrackSummary(
@@ -104,10 +106,7 @@ export const convertContainerAudioToFlac = ({
                 (
                   destination,
                 ): ConvertContainerAudioToFlacConvertedRecord => {
-                  logInfo(
-                    "CREATED FLAC FILE",
-                    destination,
-                  )
+                  logInfo("CREATED FLAC FILE", destination)
                   return {
                     destination,
                     isSourceDeleted,

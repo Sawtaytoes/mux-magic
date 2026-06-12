@@ -20,7 +20,6 @@ import {
   type ConvertLosslessToFlacSkippedRecord,
   convertLosslessToFlac,
 } from "@mux-magic/core/src/app-commands/convertLosslessToFlac.js"
-import { findContainerAudioFiles } from "@mux-magic/core/src/app-commands/findContainerAudioFiles.js"
 import {
   type CopyRecord,
   copyFiles,
@@ -35,6 +34,7 @@ import {
   extractSubtitles,
   extractSubtitlesDefaultProps,
 } from "@mux-magic/core/src/app-commands/extractSubtitles.js"
+import { findContainerAudioFiles } from "@mux-magic/core/src/app-commands/findContainerAudioFiles.js"
 import { fixIncorrectDefaultTracks } from "@mux-magic/core/src/app-commands/fixIncorrectDefaultTracks.js"
 import { flattenChildFolders } from "@mux-magic/core/src/app-commands/flattenChildFolders.js"
 import { flattenOutput } from "@mux-magic/core/src/app-commands/flattenOutput.js"
@@ -258,7 +258,8 @@ export const commandConfigs: Record<
       convertContainerAudioToFlac({
         isRecursive: body.isRecursive,
         isSourceDeleted: body.isSourceDeleted,
-        isVideoDropAcknowledged: body.isVideoDropAcknowledged,
+        isVideoDropAcknowledged:
+          body.isVideoDropAcknowledged,
         sourcePath: body.sourcePath,
       }),
     extractOutputs: (results) => {

@@ -3,10 +3,10 @@ import {
   logAndRethrowPipelineError,
 } from "@mux-magic/tools"
 import { map, toArray } from "rxjs"
-import { getMediaInfo } from "../tools/getMediaInfo.js"
 import { filterIsContainerWithVideoFile } from "../tools/filterIsContainerWithVideoFile.js"
-import { getMediaTrackSummary } from "../tools/getMediaTrackSummary.js"
+import { getMediaInfo } from "../tools/getMediaInfo.js"
 import type { MediaTrackSummary } from "../tools/getMediaTrackSummary.js"
+import { getMediaTrackSummary } from "../tools/getMediaTrackSummary.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export type FindContainerAudioFilesProps = {
@@ -14,7 +14,8 @@ export type FindContainerAudioFilesProps = {
   sourcePath: string
 }
 
-export type FindContainerAudioFilesRecord = MediaTrackSummary
+export type FindContainerAudioFilesRecord =
+  MediaTrackSummary
 
 // Pure read — no filesystem mutation. Walks a directory for
 // container-with-video extensions (.mkv / .mp4 / .m4v / .mov / .webm / .avi),

@@ -18,7 +18,6 @@ import {
   changeTrackLanguagesRequestSchema,
   convertContainerAudioToFlacRequestSchema,
   convertLosslessToFlacRequestSchema,
-  findContainerAudioFilesRequestSchema,
   copyFilesRequestSchema,
   copyOutSubtitlesRequestSchema,
   deleteCopiedOriginalsRequestSchema,
@@ -27,6 +26,7 @@ import {
   distributeFolderToSiblingsRequestSchema,
   exitIfEmptyRequestSchema,
   extractSubtitlesRequestSchema,
+  findContainerAudioFilesRequestSchema,
   fixIncorrectDefaultTracksRequestSchema,
   flattenChildFoldersRequestSchema,
   flattenOutputRequestSchema,
@@ -658,7 +658,8 @@ export const COMMANDS: Commands = {
         }),
         field("isSourceDeleted", {
           type: "boolean",
-          label: "Delete Source File After Successful Encode",
+          label:
+            "Delete Source File After Successful Encode",
         }),
         field("isVideoDropAcknowledged", {
           type: "boolean",

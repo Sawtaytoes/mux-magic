@@ -124,7 +124,7 @@ export const findContainerAudioFilesScenario = (
     ...fakeFileSteps,
     effect(() => {
       const withVideoCount = FAKE_FILES.filter(
-        (f) => f.hasVideoTrack,
+        (file) => file.hasVideoTrack,
       ).length
       const audioOnlyCount =
         FAKE_FILES.length - withVideoCount
