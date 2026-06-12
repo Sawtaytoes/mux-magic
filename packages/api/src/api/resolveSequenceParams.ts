@@ -27,9 +27,15 @@ export type SequencePath = {
   type?: string
 }
 
+// Worker 45 adds tmdbId, anidbId, malId — all three have z.number() fields
+// and runtimeValueType: "number" on the client. Keep both sides in sync;
+// see variables-system.md §"Adding a new numeric variable type".
 const NUMERIC_VARIABLE_TYPES = new Set<string>([
   "dvdCompareId",
   "threadCount",
+  "tmdbId",
+  "anidbId",
+  "malId",
 ])
 
 export type StepRuntimeRecord = {
