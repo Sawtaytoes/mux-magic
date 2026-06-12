@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs"
+import { readFileSync } from "node:fs"
 import { readFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -28,11 +28,42 @@ const versionFileSchema = z.object({
   isContainerized: z
     .boolean()
     .describe(
-      "True when running inside a Docker container (detected via /.dockerenv). Used by the UI to hide host-only affordances like 'Open in player' that depend on the OS shell-open mechanism, which doesn't work from within a container.",
+      'True when running inside a container. Detection order: (1) IS_CONTAINERIZED env var set to the literal string "true" (stamped by the Dockerfile at build time); (2) /proc/1/cgroup substring match for "docker", "containerd", or "kubepods" (catches Linux containers built from other base images). Returns false on Windows/macOS hosts and bare-metal Linux where neither signal is present.',
     ),
 })
 
 type VersionPayload = z.infer<typeof versionFileSchema>
+
+type DetectIsContainerizedOptions = {
+  getEnv: () => string | undefined
+  readCgroupContents: () => string
+}
+
+const cgroupContainerSubstrings = [
+  "docker",
+  "containerd",
+  "kubepods",
+]
+
+export const detectIsContainerized = ({
+  getEnv,
+  readCgroupContents,
+}: DetectIsContainerizedOptions): boolean => {
+  const envValue = getEnv()
+
+  if (envValue === "true") {
+    return true
+  }
+
+  try {
+    const cgroupContents = readCgroupContents()
+    return cgroupContainerSubstrings.some((substring) =>
+      cgroupContents.includes(substring),
+    )
+  } catch {
+    return false
+  }
+}
 
 // Resolve once at module load so the read path is stable regardless of
 // the cwd the server was launched from. `import.meta.url` here points at
@@ -68,10 +99,13 @@ const readPackageVersion = async (): Promise<
   }
 }
 
-// Cached at module load — checking the filesystem once is fine
-// since the Docker bind-mount (or its absence) doesn't change at
-// runtime and we don't want every /version hit to stat the root.
-const isContainerized = existsSync("/.dockerenv")
+// Cached at module load — the container sentinel doesn't change at
+// runtime and we don't want every /version hit to read /proc/1/cgroup.
+const isContainerized = detectIsContainerized({
+  getEnv: () => process.env.IS_CONTAINERIZED,
+  readCgroupContents: () =>
+    readFileSync("/proc/1/cgroup", "utf8"),
+})
 
 const buildDevFallback =
   async (): Promise<VersionPayload> => ({
