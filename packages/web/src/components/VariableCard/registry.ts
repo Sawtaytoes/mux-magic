@@ -47,7 +47,7 @@ export const registerVariableType = <
   T extends VariableType,
 >(
   definition: VariableTypeDefinition<T>,
-): void => {
+) => {
   registry.set(
     definition.type,
     definition as unknown as VariableTypeDefinition<VariableType>,

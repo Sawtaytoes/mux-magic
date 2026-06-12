@@ -1,7 +1,7 @@
 import { homedir, platform } from "node:os"
 import { join } from "node:path"
 
-const resolveAppDataDir = (): string => {
+const resolveAppDataDir = () => {
   const explicit = process.env.MUX_MAGIC_DATA_DIR
   if (explicit !== undefined && explicit !== "")
     return explicit

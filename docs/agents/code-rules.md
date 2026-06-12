@@ -9,7 +9,7 @@ Guidelines for writing code in this repository. These rules apply to **every** s
 3. **Spell every variable name out.** Single letters (`i`, `h`, `m`, `s`, `c`, `el`) and 2-3 letter abbreviations (`bps`, `idx`, `ctx`, `opts`, `dest`, `src`, `val`, `err`) are banned. Use `index`, `hours`, `minutes`, `seconds`, `context`, `element`, `bitsPerSecond`, `options`, `destination`, `source`, `value`, `error`.
 4. **Booleans must start with `is` or `has`.** Function params, object properties, schema fields, CLI flags, local variables — all of them. `deleteSourceOnSuccess` is wrong; `isSourceDeletedOnSuccess` is right. `useDefaultRules` is wrong; `hasDefaultRules` is right. The prefix tells a reader at a glance that the value is yes/no, not a string or function. Matches the existing `isRecursive` / `hasChapterSyncOffset` / `hasFirstAudioLanguage` patterns.
 
-## All Nine Rules
+## All Ten Rules
 
 5. **Function arguments: single destructured object, not positional.** Any function that takes 2+ arguments uses a single object parameter with destructuring. `mountLogsDisclosure(parent, jobId, status)` is wrong; `mountLogsDisclosure({ parent, jobId, status })` is right. Callers pass `{ parent, jobId, status }`. Reasons: argument order doesn't matter at the call site, params are self-documenting, dropping/adding/renaming a param doesn't reshuffle every caller. Single-arg functions stay as-is (`getMediaInfo(filePath)`); the rule only kicks in at 2+. Existing positional functions are not retroactively required to change, but any function you create or whose signature you modify must follow this.
 
@@ -33,6 +33,8 @@ Guidelines for writing code in this repository. These rules apply to **every** s
 
 9. **No barrel files.** No `index.ts` or `index.css` re-export files inside component, state, util, or icon folders. Import each module by its full path: `import { LoadModal } from "./components/LoadModal"`, not `from "./components"`. The single allowed barrel is `packages/tools/src/index.ts`, which exists only because `@mux-magic/shared` is published to npm and consumers need a stable public entry point. Enforced by `import-x/no-barrel-files` in `eslint.config.js`.
 
+10. **No explicit return types on arrow functions unless required.** Let TS infer. Explicit annotations are required only for mutual / self-recursion (TS7023), generics whose inference collapses to `unknown`, and exported `packages/tools` helpers that form the npm-published API. Otherwise the annotation duplicates what TS would infer AND can silently mis-describe the contract if the body later changes (e.g. a `: string | null` annotation outliving a body that was simplified to always return `string`, forcing call sites to handle a case that can't happen).
+
 ## Before Opening a PR — Self-Check Your Diff
 
 The agents have repeatedly violated rules 1–4. Before you announce a PR, search your diff (`git diff master...HEAD -- '*.ts' '*.js' '*.mjs'`) for these literal substrings, and fix every hit:
@@ -50,6 +52,7 @@ The agents have repeatedly violated rules 1–4. Before you announce a PR, searc
 | `^function ` or `^export function ` (lines starting with `function`) | rule 7 |
 | `return ` keyword in your additions (outside test files) | rule 8 (use `() => (expression)` instead) |
 | Import path ending in a folder rather than a file (`from "./components"`, `from "../state"`) | rule 9 |
+| `\): [A-Za-z_][A-Za-z0-9_<>\|&\[\]{}, \?]*\s*=>` in non-recursive, non-exported code added in your diff | rule 10 (use inference instead of explicit return type) |
 | Multi-paragraph JSDoc blocks (`/** ... */` over more than one short line) | over-commenting (default: no comments — see "Doing tasks" guidance) |
 
 Workers that ship code containing any of the above will get the PR sent back. Catch it yourself first.

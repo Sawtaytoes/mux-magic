@@ -134,7 +134,7 @@ const timers = new Map<
   ReturnType<typeof setTimeout>
 >()
 
-const clearTimerFor = (recordId: string): void => {
+const clearTimerFor = (recordId: string) => {
   const existing = timers.get(recordId)
   if (existing !== undefined) {
     clearTimeout(existing)

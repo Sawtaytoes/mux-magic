@@ -60,7 +60,7 @@ export type ResolveResult = {
 // single-entry list suffices.
 const MAIN_SOURCE_FIELD_NAMES = ["sourcePath"] as const
 
-const stripTrailingSlash = (path: string): string =>
+const stripTrailingSlash = (path: string) =>
   path.replace(/[\\/]$/u, "")
 
 // Mirrors the builder's stepOutput() (see public/api/builder/index.html).
@@ -69,7 +69,7 @@ const stripTrailingSlash = (path: string): string =>
 const computeStepFolderOutput = (
   step: StepRuntimeRecord,
   config: CommandConfig,
-): string => {
+) => {
   const mainSourceField = MAIN_SOURCE_FIELD_NAMES.find(
     (name) =>
       typeof step.resolvedParams[name] === "string" &&

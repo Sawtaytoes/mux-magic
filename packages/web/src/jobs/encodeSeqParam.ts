@@ -12,5 +12,5 @@
 // Callers should pass YAML text produced by toYamlStr; decodeSeqParam then
 // feeds that text back through loadYamlFromText on the receiving end.
 
-export const encodeSeqParam = (text: string): string =>
+export const encodeSeqParam = (text: string) =>
   btoa(unescape(encodeURIComponent(text)))

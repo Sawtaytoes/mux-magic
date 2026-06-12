@@ -5,7 +5,7 @@
 // (NSF, ConvertLossless) live in their own components and run first;
 // GenericRunResults only fires for commands they don't claim.
 
-const basename = (path: string): string => {
+const basename = (path: string) => {
   const lastSeparatorIndex = Math.max(
     path.lastIndexOf("/"),
     path.lastIndexOf("\\"),

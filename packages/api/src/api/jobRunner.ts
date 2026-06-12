@@ -70,7 +70,7 @@ export const runJob = (
     // calls from the pipeline are routed to this job's log stream, and so
     // that runTask() can read getActiveJobId() for per-job quota tracking.
     withJobContext(jobId, () => {
-      const teardownClaim = (): void => {
+      const teardownClaim = () => {
         if (threadCountClaim != null) {
           unregisterJobClaim(jobId)
         }

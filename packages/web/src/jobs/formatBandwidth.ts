@@ -1,6 +1,6 @@
 export const formatBandwidth = (
   bytesPerSecond: number | undefined,
-): string => {
+) => {
   if (!bytesPerSecond || bytesPerSecond <= 0) return ""
   const bps = bytesPerSecond * 8
 
@@ -27,7 +27,7 @@ export const formatBandwidth = (
 export const formatRemaining = (
   bytesRemaining: number | undefined,
   bytesPerSecond: number | undefined,
-): string => {
+) => {
   if (!bytesRemaining || bytesRemaining <= 0) return ""
   if (!bytesPerSecond || bytesPerSecond <= 0) return ""
 
@@ -48,7 +48,7 @@ export const formatRemaining = (
 export const formatEta = (
   bytesRemaining: number | undefined,
   bytesPerSecond: number | undefined,
-): string => {
+) => {
   const remaining = formatRemaining(
     bytesRemaining,
     bytesPerSecond,

@@ -45,7 +45,7 @@ const findInitialIndex = (
   items: CommandItem[],
   anchor: CommandPickerAnchor,
   steps: SequenceItem[],
-): number => {
+) => {
   const step = findStepById(steps, anchor.stepId)
   const currentCommand = step?.command
   const idx = items.findIndex(

@@ -65,7 +65,7 @@ let inbox: Subject<ScheduledTask> | null = null
 // register before enqueueing tasks.
 const claimByJob = new Map<string, number>()
 
-const ensureInbox = (): Subject<ScheduledTask> => {
+const ensureInbox = () => {
   if (inbox === null) {
     throw new Error(
       "Task scheduler not initialized. Call initTaskScheduler() at process startup.",
@@ -89,9 +89,7 @@ const buildScheduler =
       const inflightByJob = new Map<string, number>()
       const queue: ScheduledTask[] = []
 
-      const canAdmit = ({
-        jobId,
-      }: ScheduledTask): boolean => {
+      const canAdmit = ({ jobId }: ScheduledTask) => {
         if (inflight >= maxConcurrency) return false
         if (jobId === null) return true
         const claim =
@@ -99,7 +97,7 @@ const buildScheduler =
         return (inflightByJob.get(jobId) ?? 0) < claim
       }
 
-      const onComplete = (jobId: string | null): void => {
+      const onComplete = (jobId: string | null) => {
         inflight -= 1
         if (jobId !== null) {
           const count = (inflightByJob.get(jobId) ?? 0) - 1
@@ -112,7 +110,7 @@ const buildScheduler =
         admitFromQueue()
       }
 
-      const admit = (index: number): void => {
+      const admit = (index: number) => {
         const task = queue.splice(index, 1)[0]
         if (!task) return
         inflight += 1
@@ -128,7 +126,7 @@ const buildScheduler =
         })
       }
 
-      const admitFromQueue = (): void => {
+      const admitFromQueue = () => {
         // Loop: each admit() removes one task from the queue and may open
         // room for another (e.g. a per-job cap was the constraint, not the
         // global cap). Stop when no admissible task remains.
@@ -329,7 +327,7 @@ export const mergeMapOrdered =
       // forward from `nextEmitIndex` while the next slot is marked
       // completed; stops at the first gap. Called on every inner
       // completion AND on upstream complete.
-      const tryFlush = (): void => {
+      const tryFlush = () => {
         while (completed.has(nextEmitIndex)) {
           const items = buffered.get(nextEmitIndex) ?? []
           items.forEach((item) => {

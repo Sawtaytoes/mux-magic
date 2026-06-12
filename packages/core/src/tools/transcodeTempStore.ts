@@ -47,7 +47,7 @@ type CacheEntry = {
 
 const DEFAULT_MAX_BYTES = 4 * 1024 * 1024 * 1024
 
-const parseMaxBytes = (): number => {
+const parseMaxBytes = () => {
   const fromEnv = process.env.TRANSCODE_CACHE_MAX_BYTES
   if (typeof fromEnv !== "string" || fromEnv.length === 0) {
     return DEFAULT_MAX_BYTES
@@ -59,11 +59,11 @@ const parseMaxBytes = (): number => {
   return parsed
 }
 
-const cacheDirectoryPath = (): string =>
+const cacheDirectoryPath = () =>
   join(tmpdir(), "mux-magic-transcode-cache")
 
 let isCacheDirectoryEnsured = false
-const ensureCacheDirectory = (): string => {
+const ensureCacheDirectory = () => {
   const directoryPath = cacheDirectoryPath()
   if (!isCacheDirectoryEnsured) {
     mkdirSync(directoryPath, { recursive: true })
@@ -72,15 +72,13 @@ const ensureCacheDirectory = (): string => {
   return directoryPath
 }
 
-const extensionForCodec = (
-  _codec: TranscodeCodec,
-): string => ".mp4"
+const extensionForCodec = (_codec: TranscodeCodec) => ".mp4"
 
 export const mimeTypeForCodec = (
   _codec: TranscodeCodec,
 ): string => "video/mp4"
 
-const hashKey = (key: TranscodeCacheKey): string =>
+const hashKey = (key: TranscodeCacheKey) =>
   createHash("sha256")
     .update(key.absPath)
     .update("|")
@@ -91,7 +89,7 @@ const hashKey = (key: TranscodeCacheKey): string =>
     .update(String(key.audioStream))
     .digest("hex")
 
-const buildTempPath = (key: TranscodeCacheKey): string => {
+const buildTempPath = (key: TranscodeCacheKey) => {
   const directoryPath = ensureCacheDirectory()
   const hashed = hashKey(key)
   return join(
@@ -103,7 +101,7 @@ const buildTempPath = (key: TranscodeCacheKey): string => {
 const entries = new Map<string, CacheEntry>()
 let maxTotalBytes: number = parseMaxBytes()
 
-const evictIfOverCap = async (): Promise<void> => {
+const evictIfOverCap = async () => {
   const currentTotal = Array.from(entries.values()).reduce(
     (total, entry) =>
       entry.isReady ? total + entry.sizeBytes : total,
@@ -180,9 +178,7 @@ export const transcodeTempStore = {
   // so subsequent acquire() calls treat it as a cache hit and the LRU
   // evictor can include it in size accounting. Falls back to stat()'ing
   // the file when the caller doesn't already know the size.
-  markReady: async (
-    key: TranscodeCacheKey,
-  ): Promise<void> => {
+  markReady: async (key: TranscodeCacheKey) => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {
@@ -208,9 +204,7 @@ export const transcodeTempStore = {
   // ready) and the refcount drops to zero, the on-disk file is unlinked
   // immediately because nobody will ever serve a half-written file —
   // a fresh acquire() will redo the encode.
-  release: async (
-    key: TranscodeCacheKey,
-  ): Promise<void> => {
+  release: async (key: TranscodeCacheKey) => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {
@@ -235,9 +229,7 @@ export const transcodeTempStore = {
   // Removes an entry's on-disk file and bookkeeping unconditionally.
   // Intended for the encoder's failure path so a partial cache file
   // doesn't get served by a retry.
-  invalidate: async (
-    key: TranscodeCacheKey,
-  ): Promise<void> => {
+  invalidate: async (key: TranscodeCacheKey) => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {
@@ -253,7 +245,7 @@ export const transcodeTempStore = {
 
   // Test helper: drop all in-memory bookkeeping. Does NOT remove
   // on-disk files (tests use memfs which resets per-test anyway).
-  __resetForTests: (): void => {
+  __resetForTests: () => {
     entries.clear()
     isCacheDirectoryEnsured = false
     maxTotalBytes = parseMaxBytes()
@@ -269,7 +261,7 @@ export const transcodeTempStore = {
   // Best-effort cleanup of the on-disk cache directory. Wired into a
   // process.on('exit') / beforeExit listener by the route module so a
   // dev-mode Ctrl+C doesn't leave gigabytes of orphaned `.webm` shards.
-  cleanupOnShutdown: (): void => {
+  cleanupOnShutdown: () => {
     const directoryPath = cacheDirectoryPath()
     try {
       const stats = statSync(directoryPath)
