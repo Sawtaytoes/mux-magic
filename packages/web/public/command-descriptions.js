@@ -21,9 +21,9 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory with media files whose tracks need language metadata corrections.",
       "isRecursive": "Recursively looks in folders for media files.",
-      "audioLanguage": "A 3-letter ISO-6392 language code for audio tracks. All tracks will be labeled with this language.",
-      "subtitlesLanguage": "A 3-letter ISO-6392 language code for subtitles tracks. All tracks will be labeled with this language.",
-      "videoLanguage": "A 3-letter ISO-6392 language code for video tracks. All tracks will be labeled with this language."
+      "audioLanguage": "Language for audio tracks. Accepts a 3-letter ISO-639-2 code (e.g. 'chi') or an object with code + optional BCP 47 ietf tag (e.g. { code: 'chi', ietf: 'zh-Hant-HK' }). All tracks will be labeled with this language.",
+      "subtitlesLanguage": "Language for subtitle tracks. Accepts a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag.",
+      "videoLanguage": "Language for video tracks. Accepts a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag."
     }
   },
   "convertLosslessToFlac": {
@@ -36,6 +36,22 @@ window.commandDescriptions = {
       "isAuditOnly": "Dry-run: probe each file with mediainfo and report what would be converted vs. skipped (and why), but do not invoke ffmpeg or write any FLAC files. Source files are never touched. Useful for scanning a whole music library before committing to the encode."
     }
   },
+  "findContainerAudioFiles": {
+    "summary": "Probe container-with-video files (.mkv / .mp4 / .m4v / .mov / .webm / .avi) with MediaInfo and report per-file track summaries (audio count, video count, codec, hasVideoTrack). Pure read — no filesystem mutation.",
+    "fields": {
+      "sourcePath": "Directory containing container-with-video files (.mkv / .mp4 / .m4v / .mov / .webm / .avi) to probe with MediaInfo. Returns a per-file track summary (audio count, video count, audio codec, hasVideoTrack). Pure read — no filesystem mutation.",
+      "isRecursive": "Recursively descends one level into subdirectories looking for container-with-video files. Default false."
+    }
+  },
+  "convertContainerAudioToFlac": {
+    "summary": "Encode audio tracks from container-with-video files (.mkv / .mp4 / etc.) to FLAC in-place, dropping the video stream. Requires isVideoDropAcknowledged: true to convert files that have a video track.",
+    "fields": {
+      "sourcePath": "Directory containing container-with-video files (.mkv / .mp4 / .m4v / .mov / .webm / .avi) whose audio tracks should be encoded to FLAC in-place.",
+      "isRecursive": "Recursively descends one level into subdirectories. Default false.",
+      "isSourceDeleted": "When true, deletes each source container file after its FLAC encode succeeds. Defaults to false; the original is kept by default.",
+      "isVideoDropAcknowledged": "When false (the default), files that contain a video track are skipped with a warning — use findContainerAudioFiles first to review. Set to true to acknowledge that the video track will be dropped during conversion."
+    }
+  },
   "copyFiles": {
     "summary": "Copy files (and optionally folders) from source to destination, with optional regex filtering and renaming",
     "fields": {
@@ -44,7 +60,7 @@ window.commandDescriptions = {
       "fileFilterRegex": "If set, only files whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
       "folderFilterRegex": "If set (and includeFolders is true), only folders whose names match this regular expression are copied. Bare strings are accepted for back-compat with pre-flags templates.",
       "includeFolders": "When true, top-level subdirectories matching folderFilterRegex are copied as units (recursively). Files are only copied if fileFilterRegex is also set.",
-      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
+      "renameRegex": "Regex-based rename applied to each entry's name. Accepts a single rule object (back-compat) or an ordered array of rules applied left-to-right. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
       "allowOverwrite": "When true, existing destination files are overwritten. Default false: the command refuses to clobber and fails fast with an EEXIST-shaped error naming the colliding path. Opt in for mirror-sync / idempotent re-run flows."
     }
   },
@@ -189,8 +205,8 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory where media files are located.",
       "isRecursive": "Recursively looks in folders for media files.",
-      "audioLanguages": "A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed.",
-      "subtitlesLanguages": "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
+      "audioLanguages": "Language selections for audio tracks to keep. Each entry is a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag. All others will be removed.",
+      "subtitlesLanguages": "Language selections for subtitles tracks to keep. Each entry is a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag. All others will be removed.",
       "useFirstAudioLanguage": "The language of the first audio track is the only language kept for audio tracks.",
       "useFirstSubtitlesLanguage": "The language of the first subtitles track is the only language kept for subtitles tracks."
     }
@@ -223,7 +239,7 @@ window.commandDescriptions = {
       "sourcePath": "Directory to move files from. Deleted after all files are copied.",
       "destinationPath": "Directory to move files into. Created if it does not already exist.",
       "fileFilterRegex": "If set, only files whose names match this regular expression are moved. Bare strings are accepted for back-compat with pre-flags templates.",
-      "renameRegex": "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
+      "renameRegex": "Regex-based rename applied to each entry's name. Accepts a single rule object (back-compat) or an ordered array of rules applied left-to-right. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
       "allowOverwrite": "When true, existing destination files are overwritten. Default false: the command refuses to clobber and fails fast with an EEXIST-shaped error naming the colliding path. Opt in for mirror-sync / idempotent re-run flows."
     }
   },
@@ -309,6 +325,19 @@ window.commandDescriptions = {
       "autoNameDuplicates": "When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/… suffixes deterministically. Pass false to instead emit a duplicate-pick prompt for each ambiguous group. Defaults to false so interactive runs prompt the user."
     }
   },
+  "onlyNameSpecialFeaturesDvdCompare": {
+    "summary": "Rename special features by timecode matching against DVDCompare.net — no TMDB lookup. Suited for concerts, documentaries, and other non-movie workflows.",
+    "fields": {
+      "sourcePath": "Directory containing special-features files.",
+      "dvdCompareId": "DVDCompare film ID — when provided, constructs URL directly and bypasses search.",
+      "dvdCompareReleaseHash": "The hash (URL fragment #) from the DVDCompare release page denoting which release variant is selected for that film. Defaults to 1 (the first release option).",
+      "url": "DVDCompare.net URL including the chosen release's hash tag.",
+      "searchTerm": "Title to search on DVDCompare.net (used when no url or dvdCompareId).",
+      "timecodePadding": "Seconds that timecodes may be off. Defaults to 2, matching typical DVDCompare-vs-rip drift. Pass 0 for exact-match-only.",
+      "fixedOffset": "Timecodes are pushed positively or negatively by this amount (in seconds).",
+      "autoNameDuplicates": "When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/… suffixes deterministically. Pass false to instead emit a duplicate-pick prompt for each ambiguous group. Defaults to false so interactive runs prompt the user."
+    }
+  },
   "nameTvShowEpisodes": {
     "summary": "Rename TV show episode files based on metadata",
     "fields": {
@@ -382,9 +411,9 @@ window.commandDescriptions = {
       "globalOffset": "The offset in milliseconds to apply to all audio being transferred.",
       "includeChapters": "Adds chapters along with other tracks.",
       "isOverwritingExtractedAudio": "Force re-extraction of the source/destination WAV files used for per-file audio-sync offset detection. Only applies when hasAudioSyncOffset is true. When false (default), an existing WAV whose mediaInfo duration matches its input within 1 second is reused so ffmpeg doesn't re-decode the audio on every run.",
-      "audioLanguages": "A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed.",
-      "subtitlesLanguages": "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
-      "videoLanguages": "A 3-letter ISO-6392 language code for video tracks to keep. All others will be removed.",
+      "audioLanguages": "Language selections for audio tracks to keep. Each entry is a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag. All others will be removed.",
+      "subtitlesLanguages": "Language selections for subtitles tracks to keep. Each entry is a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag. All others will be removed.",
+      "videoLanguages": "Language selections for video tracks to keep. Each entry is a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag. All others will be removed.",
       "offsets": "Space-separated list of time-alignment offsets to set for each individual file in milliseconds."
     }
   },
