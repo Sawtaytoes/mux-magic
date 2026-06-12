@@ -80,18 +80,28 @@ export const changeTrackLanguagesCommand: CommandModule<
   >,
 
   handler: (argv) => {
+    const audioCode = argv.audioLanguage as
+      | Iso6392LanguageCode
+      | undefined
+    const subtitlesCode = argv.subtitlesLanguage as
+      | Iso6392LanguageCode
+      | undefined
+    const videoCode = argv.videoLanguage as
+      | Iso6392LanguageCode
+      | undefined
+
     changeTrackLanguages({
-      audioLanguage: argv.audioLanguage as
-        | Iso6392LanguageCode
-        | undefined,
+      audioLanguage: audioCode
+        ? { code: audioCode }
+        : undefined,
       isRecursive: argv.isRecursive,
       sourcePath: argv.sourcePath,
-      subtitlesLanguage: argv.subtitlesLanguage as
-        | Iso6392LanguageCode
-        | undefined,
-      videoLanguage: argv.videoLanguage as
-        | Iso6392LanguageCode
-        | undefined,
+      subtitlesLanguage: subtitlesCode
+        ? { code: subtitlesCode }
+        : undefined,
+      videoLanguage: videoCode
+        ? { code: videoCode }
+        : undefined,
     }).subscribe(subscribeCli())
   },
 }

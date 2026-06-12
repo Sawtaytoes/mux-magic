@@ -33,9 +33,7 @@ describe("RegionVariantField — variants for chi", () => {
         onIetfChange={() => {}}
       />,
     )
-    expect(
-      screen.getByRole("combobox"),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("combobox")).toBeInTheDocument()
   })
 
   test("has (none) as the first option", () => {

@@ -1,3 +1,4 @@
+import type { LanguageSelection } from "@mux-magic/api/src/api/languageSelection.js"
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
@@ -9,7 +10,6 @@ import {
   getMkvInfo,
   type MkvTookNixTrackType,
 } from "../tools/getMkvInfo.js"
-import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const changeTrackLanguages = ({
@@ -19,15 +19,15 @@ export const changeTrackLanguages = ({
   subtitlesLanguage: selectedSubtitlesLanguage,
   videoLanguage: selectedVideoLanguage,
 }: {
-  audioLanguage?: Iso6392LanguageCode
+  audioLanguage?: LanguageSelection
   isRecursive: boolean
   sourcePath: string
-  subtitlesLanguage?: Iso6392LanguageCode
-  videoLanguage?: Iso6392LanguageCode
+  subtitlesLanguage?: LanguageSelection
+  videoLanguage?: LanguageSelection
 }) => {
-  const trackTypeLanguageCode: Record<
+  const trackTypeLanguageSelection: Record<
     MkvTookNixTrackType,
-    Iso6392LanguageCode | undefined
+    LanguageSelection | undefined
   > = {
     audio: selectedAudioLanguage,
     subtitles: selectedSubtitlesLanguage,
@@ -44,28 +44,26 @@ export const changeTrackLanguages = ({
         concatMap(({ tracks }) =>
           from(tracks).pipe(
             filter((track) =>
-              Boolean(trackTypeLanguageCode[track.type]),
+              Boolean(
+                trackTypeLanguageSelection[track.type],
+              ),
             ),
             concatMap((track) => {
-              const languageCode =
-                trackTypeLanguageCode[track.type]
-              if (languageCode == null) return EMPTY
+              const languageSelection =
+                trackTypeLanguageSelection[track.type]
+              if (languageSelection == null) {
+                return EMPTY
+              }
               const trackId = track.properties.number
 
               return updateTrackLanguage({
                 filePath: fileInfo.fullPath,
-                languageCode,
+                languageSelection,
                 trackId,
               }).pipe(
-                // Emit a per-track record so job.results carries the
-                // changes the run actually made — not a list of nulls
-                // (runMkvPropEdit's path emission gets shadowed by the
-                // outer toArray() void otherwise) and definitely not
-                // a process.exit() that would bring down the API
-                // server when this command runs from the API.
                 map((updatedFilePath) => ({
                   filePath: updatedFilePath,
-                  languageCode,
+                  languageCode: languageSelection.code,
                   trackId,
                   trackType: track.type,
                 })),

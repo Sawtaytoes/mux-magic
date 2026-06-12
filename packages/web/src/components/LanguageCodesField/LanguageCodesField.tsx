@@ -8,6 +8,45 @@ import { FieldLabel } from "../FieldLabel/FieldLabel"
 import { PortalDropdown } from "../PortalDropdown/PortalDropdown"
 import { TagInputBase } from "../TagInputBase/TagInputBase"
 
+type LanguageSelection = {
+  code: string
+  ietf?: string
+}
+
+const normalizeRawItem = (
+  rawItem: unknown,
+): LanguageSelection | null => {
+  if (typeof rawItem === "string" && rawItem.length > 0) {
+    return { code: rawItem }
+  }
+  if (
+    rawItem !== null &&
+    typeof rawItem === "object" &&
+    "code" in rawItem &&
+    typeof (rawItem as LanguageSelection).code === "string"
+  ) {
+    return rawItem as LanguageSelection
+  }
+  return null
+}
+
+const normalizeSelections = (
+  raw: unknown,
+): LanguageSelection[] => {
+  if (!Array.isArray(raw)) {
+    return []
+  }
+  return raw.reduce<LanguageSelection[]>(
+    (accumulated, rawItem) => {
+      const normalized = normalizeRawItem(rawItem)
+      return normalized
+        ? accumulated.concat(normalized)
+        : accumulated
+    },
+    [],
+  )
+}
+
 type LanguageCodesFieldProps = {
   step: Step
   field: CommandField
@@ -22,13 +61,17 @@ export const LanguageCodesField = ({
   const [isOpen, setIsOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const selected = Array.isArray(step.params[field.name])
-    ? (step.params[field.name] as string[])
-    : []
+  const selected = normalizeSelections(
+    step.params[field.name],
+  )
+
+  const selectedCodes = selected.map(
+    (selection) => selection.code,
+  )
 
   const removeCode = (codeToRemove: string) => {
     const updated = selected.filter(
-      (code) => code !== codeToRemove,
+      (selection) => selection.code !== codeToRemove,
     )
     setParam(
       step.id,
@@ -38,28 +81,35 @@ export const LanguageCodesField = ({
   }
 
   const addCode = (code: string) => {
-    if (selected.includes(code)) return
-    setParam(step.id, field.name, [...selected, code])
+    if (selectedCodes.includes(code)) {
+      return
+    }
+    setParam(step.id, field.name, [...selected, { code }])
     setFilterText("")
     setIsOpen(false)
   }
 
   const visibleOptions = buildOrderedLanguageOptions({
     filterText,
-    excluded: selected,
+    excluded: selectedCodes,
   })
 
-  const tags = selected.map((code) => ({
-    key: code,
+  const tags = selected.map((selection) => ({
+    key: selection.code,
     label: (
       <>
-        <span>{ISO_639_2_NAME_BY_CODE[code] ?? code}</span>
+        <span>
+          {ISO_639_2_NAME_BY_CODE[selection.code] ??
+            selection.code}
+        </span>
         <span className="font-mono text-slate-400 ml-1">
-          {code}
+          {selection.ietf
+            ? `${selection.code} · ${selection.ietf}`
+            : selection.code}
         </span>
       </>
     ),
-    title: `Remove ${code}`,
+    title: `Remove ${selection.code}`,
   }))
 
   const items = visibleOptions.map(({ code, name }) => ({

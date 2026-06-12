@@ -2,6 +2,7 @@ import { z } from "@hono/zod-openapi"
 
 import { iso6392LanguageCodes } from "@mux-magic/core/src/tools/iso6392LanguageCodes.js"
 import { subtitleTypeExtensions } from "@mux-magic/core/src/tools/subtitleTypes.js"
+import { languageSelectionSchema } from "./languageSelection.js"
 
 // Shared response schemas
 export const createJobResponseSchema = (
@@ -429,23 +430,20 @@ export const changeTrackLanguagesRequestSchema = z.object({
     .describe(
       "Recursively looks in folders for media files.",
     ),
-  audioLanguage: z
-    .enum(iso6392LanguageCodes)
+  audioLanguage: languageSelectionSchema
     .optional()
     .describe(
-      "A 3-letter ISO-6392 language code for audio tracks. All tracks will be labeled with this language.",
+      "Language for audio tracks. Accepts a 3-letter ISO-639-2 code (e.g. 'chi') or an object with code + optional BCP 47 ietf tag (e.g. { code: 'chi', ietf: 'zh-Hant-HK' }). All tracks will be labeled with this language.",
     ),
-  subtitlesLanguage: z
-    .enum(iso6392LanguageCodes)
+  subtitlesLanguage: languageSelectionSchema
     .optional()
     .describe(
-      "A 3-letter ISO-6392 language code for subtitles tracks. All tracks will be labeled with this language.",
+      "Language for subtitle tracks. Accepts a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag.",
     ),
-  videoLanguage: z
-    .enum(iso6392LanguageCodes)
+  videoLanguage: languageSelectionSchema
     .optional()
     .describe(
-      "A 3-letter ISO-6392 language code for video tracks. All tracks will be labeled with this language.",
+      "Language for video tracks. Accepts a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag.",
     ),
 })
 
@@ -1110,16 +1108,16 @@ export const keepLanguagesRequestSchema = z.object({
       "Recursively looks in folders for media files.",
     ),
   audioLanguages: z
-    .array(z.enum(iso6392LanguageCodes))
+    .array(languageSelectionSchema)
     .default([])
     .describe(
-      "A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed.",
+      "Language selections for audio tracks to keep. Each entry is a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag. All others will be removed.",
     ),
   subtitlesLanguages: z
-    .array(z.enum(iso6392LanguageCodes))
+    .array(languageSelectionSchema)
     .default([])
     .describe(
-      "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
+      "Language selections for subtitles tracks to keep. Each entry is a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag. All others will be removed.",
     ),
   useFirstAudioLanguage: z
     .boolean()
@@ -1500,22 +1498,22 @@ export const replaceTracksRequestSchema = z.object({
       "Force re-extraction of the source/destination WAV files used for per-file audio-sync offset detection. Only applies when hasAudioSyncOffset is true. When false (default), an existing WAV whose mediaInfo duration matches its input within 1 second is reused so ffmpeg doesn't re-decode the audio on every run.",
     ),
   audioLanguages: z
-    .array(z.enum(iso6392LanguageCodes))
+    .array(languageSelectionSchema)
     .default([])
     .describe(
-      "A 3-letter ISO-6392 language code for audio tracks to keep. All others will be removed.",
+      "Language selections for audio tracks to keep. Each entry is a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag. All others will be removed.",
     ),
   subtitlesLanguages: z
-    .array(z.enum(iso6392LanguageCodes))
+    .array(languageSelectionSchema)
     .default([])
     .describe(
-      "A 3-letter ISO-6392 language code for subtitles tracks to keep. All others will be removed.",
+      "Language selections for subtitles tracks to keep. Each entry is a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag. All others will be removed.",
     ),
   videoLanguages: z
-    .array(z.enum(iso6392LanguageCodes))
+    .array(languageSelectionSchema)
     .default([])
     .describe(
-      "A 3-letter ISO-6392 language code for video tracks to keep. All others will be removed.",
+      "Language selections for video tracks to keep. Each entry is a 3-letter ISO-639-2 code or an object with code + optional BCP 47 ietf tag. All others will be removed.",
     ),
   offsets: z
     .array(z.number())
