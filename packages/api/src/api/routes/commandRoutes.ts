@@ -63,6 +63,7 @@ import { nameAnimeEpisodesAniDB } from "@mux-magic/core/src/app-commands/nameAni
 import { nameMovieCutsDvdCompareTmdb } from "@mux-magic/core/src/app-commands/nameMovieCutsDvdCompareTmdb.js"
 import { nameSpecialFeaturesDvdCompareTmdb } from "@mux-magic/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.js"
 import { nameTvShowEpisodes } from "@mux-magic/core/src/app-commands/nameTvShowEpisodes.js"
+import { onlyNameSpecialFeaturesDvdCompare } from "@mux-magic/core/src/app-commands/onlyNameSpecialFeaturesDvdCompare.js"
 import { remuxToMkv } from "@mux-magic/core/src/app-commands/remuxToMkv.js"
 import { renameDemos } from "@mux-magic/core/src/app-commands/renameDemos.js"
 import {
@@ -727,6 +728,24 @@ export const commandConfigs: Record<
       schemas.nameSpecialFeaturesDvdCompareTmdbRequestSchema,
     summary:
       "Rename special features (and the main movie file) based on DVDCompare timecodes; movie title is canonicalized via TMDB",
+    tags: ["Naming Operations"],
+  },
+  onlyNameSpecialFeaturesDvdCompare: {
+    getObservable: (body) =>
+      onlyNameSpecialFeaturesDvdCompare({
+        isAutoNamingDuplicates: body.autoNameDuplicates,
+        dvdCompareId: body.dvdCompareId,
+        dvdCompareReleaseHash: body.dvdCompareReleaseHash,
+        fixedOffset: body.fixedOffset,
+        searchTerm: body.searchTerm,
+        sourcePath: body.sourcePath,
+        timecodePaddingAmount: body.timecodePadding,
+        url: body.url,
+      }),
+    schema:
+      schemas.onlyNameSpecialFeaturesDvdCompareRequestSchema,
+    summary:
+      "Rename special features by timecode matching against DVDCompare.net — no TMDB lookup. Suited for concerts, documentaries, and other non-movie workflows.",
     tags: ["Naming Operations"],
   },
   nameTvShowEpisodes: {

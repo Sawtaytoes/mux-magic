@@ -66,6 +66,8 @@ export const commandLabels: Record<string, string> = {
     "Name Movie Cuts (DVD Compare + TMDB)",
   nameSpecialFeaturesDvdCompareTmdb:
     "Name Special Features (DVD Compare + TMDB)",
+  onlyNameSpecialFeaturesDvdCompare:
+    "Name Special Features (DVD Compare, no TMDB)",
   nameTvShowEpisodes: "Name TV Show Episodes",
   renameDemos: "Rename Demos",
   renameMovieClipDownloads: "Rename Movie Clip Downloads",

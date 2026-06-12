@@ -1302,6 +1302,66 @@ export const nameSpecialFeaturesDvdCompareTmdbRequestSchema =
       ),
   })
 
+// Non-movie variant of nameSpecialFeaturesDvdCompareTmdb. No TMDB lookup,
+// no edition-folder organization — just timecode matching + Plex-suffix
+// rename. Suited for concerts, documentaries, miniseries extras, and other
+// workflows where TMDB has no entry or returns garbage matches.
+// At least one of `dvdCompareId`, `url`, or `searchTerm` is required at
+// runtime (enforced by the app-command's schema refinement). The API schema
+// here keeps them all optional because the at-least-one constraint is a
+// cross-field refinement that can't be expressed in JSON Schema / OpenAPI —
+// it is enforced by the app-command before any I/O fires.
+export const onlyNameSpecialFeaturesDvdCompareRequestSchema =
+  z.object({
+    sourcePath: z
+      .string()
+      .describe(
+        "Directory containing special-features files.",
+      ),
+    dvdCompareId: z
+      .number()
+      .optional()
+      .describe(
+        "DVDCompare film ID — when provided, constructs URL directly and bypasses search.",
+      ),
+    dvdCompareReleaseHash: z
+      .number()
+      .optional()
+      .describe(
+        "The hash (URL fragment #) from the DVDCompare release page denoting which release variant is selected for that film. Defaults to 1 (the first release option).",
+      ),
+    url: z
+      .string()
+      .optional()
+      .describe(
+        "DVDCompare.net URL including the chosen release's hash tag.",
+      ),
+    searchTerm: z
+      .string()
+      .optional()
+      .describe(
+        "Title to search on DVDCompare.net (used when no url or dvdCompareId).",
+      ),
+    timecodePadding: z
+      .number()
+      .default(2)
+      .describe(
+        "Seconds that timecodes may be off. Defaults to 2, matching typical DVDCompare-vs-rip drift. Pass 0 for exact-match-only.",
+      ),
+    fixedOffset: z
+      .number()
+      .default(0)
+      .describe(
+        "Timecodes are pushed positively or negatively by this amount (in seconds).",
+      ),
+    autoNameDuplicates: z
+      .boolean()
+      .default(false)
+      .describe(
+        "When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/… suffixes deterministically. Pass false to instead emit a duplicate-pick prompt for each ambiguous group. Defaults to false so interactive runs prompt the user.",
+      ),
+  })
+
 // Movie-cuts sibling of nameSpecialFeaturesDvdCompareTmdb. Intentionally
 // narrower — no special-features, no unnamed-file fallback, no duplicate
 // or on-disk-collision flags. The default `timecodePadding` is 15 (the
