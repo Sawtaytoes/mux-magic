@@ -64,7 +64,7 @@ const hasErrorCode = (
 // Best-effort cleanup — ignore ENOENT (already gone) and any other
 // unlink error. Cleanup failures must not mask the primary error the
 // caller is about to receive.
-const safeUnlink = async (path: string): Promise<void> => {
+const safeUnlink = async (path: string) => {
   try {
     await unlink(path)
   } catch {
@@ -74,7 +74,7 @@ const safeUnlink = async (path: string): Promise<void> => {
 
 const buildExistsError = (
   destination: string,
-): Error & { code: string } => {
+) => {
   const error = new Error(
     `Refusing to overwrite existing destination: ${destination}`,
   ) as Error & { code: string }
@@ -85,7 +85,7 @@ const buildExistsError = (
 const ensureDestinationWritable = async (
   destination: string,
   isOverwriteAllowed: boolean,
-): Promise<boolean> => {
+) => {
   try {
     await stat(destination)
   } catch (error) {
@@ -107,7 +107,7 @@ const streamTier = async ({
   destination: string
   tempPath: string
   options: CopyOptions | undefined
-}): Promise<void> => {
+}) => {
   const signal = options?.signal
   const onProgress = options?.onProgress
 
@@ -157,7 +157,7 @@ const streamTier = async ({
 const kernelCopyTier = async (
   source: string,
   tempPath: string,
-): Promise<boolean> => {
+) => {
   try {
     await copyFile(
       source,
@@ -200,7 +200,7 @@ const emitCompletionEvent = async (
   source: string,
   destination: string,
   onProgress: (event: CopyProgressEvent) => void,
-): Promise<void> => {
+) => {
   const { size: totalBytes } = await stat(source)
   onProgress({
     source,
@@ -218,7 +218,7 @@ const finalizeRename = async (
   tempPath: string,
   destination: string,
   hasExistingDestination: boolean,
-): Promise<void> => {
+) => {
   if (hasExistingDestination) {
     await unlink(destination).catch((error) => {
       if (hasErrorCode(error, "ENOENT")) return

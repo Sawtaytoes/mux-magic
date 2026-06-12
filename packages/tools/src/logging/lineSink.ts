@@ -2,16 +2,16 @@ import type { LogRecord } from "./logger.js"
 
 const RESERVED_KEYS = new Set(["level", "msg"])
 
-const pad = (value: number, width: number): string =>
+const pad = (value: number, width: number) =>
   String(value).padStart(width, "0")
 
-const formatTimestamp = (date: Date): string =>
+const formatTimestamp = (date: Date) =>
   `[${pad(date.getHours(), 2)}:${pad(date.getMinutes(), 2)}:${pad(
     date.getSeconds(),
     2,
   )}.${pad(date.getMilliseconds(), 3)}]`
 
-const formatValue = (value: unknown): string => {
+const formatValue = (value: unknown) => {
   if (value === null) {
     return "null"
   }
@@ -34,14 +34,14 @@ const formatValue = (value: unknown): string => {
 const renderField = ([key, value]: [
   string,
   unknown,
-]): string => `${key}=${formatValue(value)}`
+]) => `${key}=${formatValue(value)}`
 
 const isRenderableEntry =
   (excludedKeys: ReadonlySet<string>) =>
-  ([key, value]: [string, unknown]): boolean =>
+  ([key, value]: [string, unknown]) =>
     !excludedKeys.has(key) && value !== undefined
 
-const joinFields = (fields: readonly string[]): string =>
+const joinFields = (fields: readonly string[]) =>
   fields.length > 0 ? ` ${fields.join(" ")}` : ""
 
 const TAG_MODE_EXCLUDED_KEYS: ReadonlySet<string> = new Set(
