@@ -26,6 +26,16 @@ class FakeChildProcess extends EventEmitter {
 
 const spawnRecords: SpawnRecord[] = []
 
+// This test exercises the real writeChaptersMkvMerge implementation,
+// so we unmock it here to override the global auto-mock from
+// vitest.setup.ts. The lower-level child_process spawn is still mocked
+// below to avoid actual process spawning.
+vi.unmock("./writeChaptersMkvMerge.js")
+// treeKillChild is used as a cleanup on Observable teardown. The real
+// implementation is safe to use here — it returns immediately when the
+// FakeChildProcess has pid: undefined.
+vi.unmock("./treeKillChild.js")
+
 vi.mock("node:child_process", () => ({
   spawn: vi.fn((command: string, args: string[]) => {
     const fakeProcess = new FakeChildProcess()

@@ -15,16 +15,12 @@ import type {
   VideoTrack,
 } from "../tools/getMediaInfo.js"
 
-vi.mock("../cli-spawn-operations/runFfmpeg.js", () => ({
-  runFfmpeg: vi.fn(),
-}))
-
 vi.mock("../tools/getMediaInfo.js", () => ({
   getMediaInfo: vi.fn(),
 }))
 
-const { runFfmpeg } = await import(
-  "../cli-spawn-operations/runFfmpeg.js"
+const { convertContainerAudioFileToFlac } = await import(
+  "../cli-spawn-operations/convertContainerAudioFileToFlac.js"
 )
 const { getMediaInfo } = await import(
   "../tools/getMediaInfo.js"
@@ -33,17 +29,22 @@ const { convertContainerAudioToFlac } = await import(
   "./convertContainerAudioToFlac.js"
 )
 
-const runFfmpegMock = vi.mocked(runFfmpeg)
+const convertContainerAudioFileToFlacMock = vi.mocked(
+  convertContainerAudioFileToFlac,
+)
 const getMediaInfoMock = vi.mocked(getMediaInfo)
 
-// runFfmpeg only emits when ffmpeg exits 0; on failure the stream
-// completes without emitting (mirroring the real implementation).
-const mockFfmpegSuccess = (outputFilePath: string) => {
-  runFfmpegMock.mockReturnValueOnce(of(outputFilePath))
+// convertContainerAudioFileToFlac emits the output file path once on
+// success; on ffmpeg failure the stream completes without emitting
+// (mirroring the real implementation).
+const mockConvertSuccess = (outputFilePath: string) => {
+  convertContainerAudioFileToFlacMock.mockReturnValueOnce(
+    of(outputFilePath),
+  )
 }
 
-const mockFfmpegFailure = () => {
-  runFfmpegMock.mockReturnValueOnce(
+const mockConvertFailure = () => {
+  convertContainerAudioFileToFlacMock.mockReturnValueOnce(
     new Observable<string>((subscriber) => {
       subscriber.complete()
     }),
@@ -171,7 +172,7 @@ const buildVideoOnlyMediaInfo = (): MediaInfo => ({
 
 beforeEach(() => {
   vol.reset()
-  runFfmpegMock.mockReset()
+  convertContainerAudioFileToFlacMock.mockReset()
   getMediaInfoMock.mockReset()
   // Default: every file is audio-only FLAC-in-MKV
   getMediaInfoMock.mockImplementation(() =>
@@ -180,10 +181,10 @@ beforeEach(() => {
 })
 
 describe("convertContainerAudioToFlac", () => {
-  describe("ffmpeg arg shape — lossless guard", () => {
-    test("invokes ffmpeg with -vn (no video) flag", async () => {
+  describe("spawn-op call shape", () => {
+    test("invokes convertContainerAudioFileToFlac with the correct filePath", async () => {
       vol.fromJSON({ "/music/song.mkv": "mkv" })
-      mockFfmpegSuccess("/music/song.flac")
+      mockConvertSuccess("/music/song.flac")
 
       await lastValueFrom(
         convertContainerAudioToFlac({
@@ -193,16 +194,21 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      const [{ args }] = runFfmpegMock.mock.calls[0]
-      expect(args).toContain("-vn")
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filePath: join("/music", "song.mkv"),
+        }),
+      )
     })
 
-    test("invokes ffmpeg with -c:a flac when audio codec is not already FLAC", async () => {
+    test("invokes convertContainerAudioFileToFlac with the audioCodec from mediainfo", async () => {
       vol.fromJSON({ "/music/song.mkv": "mkv" })
       getMediaInfoMock.mockImplementation(() =>
         of(buildAudioOnlyMediaInfo("AAC")),
       )
-      mockFfmpegSuccess("/music/song.flac")
+      mockConvertSuccess("/music/song.flac")
 
       await lastValueFrom(
         convertContainerAudioToFlac({
@@ -212,16 +218,19 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      const [{ args }] = runFfmpegMock.mock.calls[0]
-      expect(args).toEqual(
-        expect.arrayContaining(["-c:a", "flac"]),
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          audioCodec: "AAC",
+        }),
       )
     })
 
-    test("invokes ffmpeg with -c:a copy (lossless demux) when audio is already FLAC", async () => {
+    test("invokes convertContainerAudioFileToFlac with the FLAC codec when audio is already FLAC", async () => {
       vol.fromJSON({ "/music/song.mkv": "mkv" })
       // Default mock returns FLAC
-      mockFfmpegSuccess("/music/song.flac")
+      mockConvertSuccess("/music/song.flac")
 
       await lastValueFrom(
         convertContainerAudioToFlac({
@@ -231,15 +240,18 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      const [{ args }] = runFfmpegMock.mock.calls[0]
-      expect(args).toEqual(
-        expect.arrayContaining(["-c:a", "copy"]),
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          audioCodec: "FLAC",
+        }),
       )
     })
 
-    test("invokes ffmpeg with -map_metadata 0", async () => {
+    test("passes isSourceDeleted: false by default", async () => {
       vol.fromJSON({ "/music/song.mkv": "mkv" })
-      mockFfmpegSuccess("/music/song.flac")
+      mockConvertSuccess("/music/song.flac")
 
       await lastValueFrom(
         convertContainerAudioToFlac({
@@ -249,78 +261,30 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      const [{ args }] = runFfmpegMock.mock.calls[0]
-      expect(args).toEqual(
-        expect.arrayContaining(["-map_metadata", "0"]),
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ isSourceDeleted: false }),
       )
     })
 
-    test("does not pass -ar (lossless guard — no resample)", async () => {
+    test("passes isSourceDeleted: true through to the spawn-op when requested", async () => {
       vol.fromJSON({ "/music/song.mkv": "mkv" })
-      mockFfmpegSuccess("/music/song.flac")
+      mockConvertSuccess("/music/song.flac")
 
       await lastValueFrom(
         convertContainerAudioToFlac({
           isRecursive: false,
+          isSourceDeleted: true,
           isVideoDropAcknowledged: true,
           sourcePath: "/music",
         }),
       )
 
-      const [{ args }] = runFfmpegMock.mock.calls[0]
-      expect(args).not.toContain("-ar")
-    })
-
-    test("does not pass -ac (lossless guard — no remix)", async () => {
-      vol.fromJSON({ "/music/song.mkv": "mkv" })
-      mockFfmpegSuccess("/music/song.flac")
-
-      await lastValueFrom(
-        convertContainerAudioToFlac({
-          isRecursive: false,
-          isVideoDropAcknowledged: true,
-          sourcePath: "/music",
-        }),
-      )
-
-      const [{ args }] = runFfmpegMock.mock.calls[0]
-      expect(args).not.toContain("-ac")
-    })
-
-    test("does not pass -sample_fmt (lossless guard — no bit-depth coercion)", async () => {
-      vol.fromJSON({ "/music/song.mkv": "mkv" })
-      mockFfmpegSuccess("/music/song.flac")
-
-      await lastValueFrom(
-        convertContainerAudioToFlac({
-          isRecursive: false,
-          isVideoDropAcknowledged: true,
-          sourcePath: "/music",
-        }),
-      )
-
-      const [{ args }] = runFfmpegMock.mock.calls[0]
-      expect(args).not.toContain("-sample_fmt")
-    })
-  })
-
-  describe("output path", () => {
-    test("writes the FLAC in-place (same dir, .flac extension)", async () => {
-      vol.fromJSON({ "/music/song.mkv": "mkv" })
-      mockFfmpegSuccess("/music/song.flac")
-
-      await lastValueFrom(
-        convertContainerAudioToFlac({
-          isRecursive: false,
-          isVideoDropAcknowledged: true,
-          sourcePath: "/music",
-        }),
-      )
-
-      const [{ outputFilePath }] =
-        runFfmpegMock.mock.calls[0]
-      expect(outputFilePath).toBe(
-        join("/music", "song.flac"),
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ isSourceDeleted: true }),
       )
     })
   })
@@ -339,7 +303,9 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      expect(runFfmpegMock).not.toHaveBeenCalled()
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).not.toHaveBeenCalled()
       expect(result).toHaveLength(0)
     })
 
@@ -348,7 +314,7 @@ describe("convertContainerAudioToFlac", () => {
       getMediaInfoMock.mockImplementation(() =>
         of(buildAudioWithVideoMediaInfo("AAC")),
       )
-      mockFfmpegSuccess("/music/video.flac")
+      mockConvertSuccess("/music/video.flac")
 
       const result = await lastValueFrom(
         convertContainerAudioToFlac({
@@ -358,11 +324,13 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      expect(runFfmpegMock).toHaveBeenCalledOnce()
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).toHaveBeenCalledOnce()
       expect(result).toHaveLength(1)
     })
 
-    test("skips files with no audio track and does not call ffmpeg", async () => {
+    test("skips files with no audio track and does not call the spawn-op", async () => {
       vol.fromJSON({ "/music/video-only.mkv": "mkv" })
       getMediaInfoMock.mockImplementation(() =>
         of(buildVideoOnlyMediaInfo()),
@@ -376,7 +344,9 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      expect(runFfmpegMock).not.toHaveBeenCalled()
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).not.toHaveBeenCalled()
       expect(result).toHaveLength(0)
     })
 
@@ -394,7 +364,7 @@ describe("convertContainerAudioToFlac", () => {
         }
         return of(buildAudioOnlyMediaInfo())
       })
-      mockFfmpegSuccess("/music/audio-only.flac")
+      mockConvertSuccess("/music/audio-only.flac")
 
       const result = await lastValueFrom(
         convertContainerAudioToFlac({
@@ -404,7 +374,9 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      expect(runFfmpegMock).toHaveBeenCalledOnce()
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).toHaveBeenCalledOnce()
       expect(result).toHaveLength(1)
       expect(result[0]?.source).toBe(
         join("/music", "audio-only.mkv"),
@@ -415,7 +387,10 @@ describe("convertContainerAudioToFlac", () => {
   describe("isSourceDeleted", () => {
     test("does not delete the source file when isSourceDeleted is omitted (default false)", async () => {
       vol.fromJSON({ "/music/song.mkv": "mkv" })
-      mockFfmpegSuccess("/music/song.flac")
+      // spawn-op returns output path; not deleting is handled by the
+      // spawn-op implementation — at this level we just verify the
+      // isSourceDeleted flag was forwarded correctly.
+      mockConvertSuccess("/music/song.flac")
 
       await lastValueFrom(
         convertContainerAudioToFlac({
@@ -425,12 +400,16 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      expect(vol.existsSync("/music/song.mkv")).toBe(true)
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ isSourceDeleted: false }),
+      )
     })
 
-    test("deletes the source file after a successful encode when isSourceDeleted is true", async () => {
+    test("forwards isSourceDeleted: true to the spawn-op after a successful conversion", async () => {
       vol.fromJSON({ "/music/song.mkv": "mkv" })
-      mockFfmpegSuccess("/music/song.flac")
+      mockConvertSuccess("/music/song.flac")
 
       await lastValueFrom(
         convertContainerAudioToFlac({
@@ -441,14 +420,18 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      expect(vol.existsSync("/music/song.mkv")).toBe(false)
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ isSourceDeleted: true }),
+      )
     })
 
-    test("does NOT delete the source when ffmpeg fails, even with isSourceDeleted: true", async () => {
+    test("emits zero converted records when the spawn-op stream completes without emitting (ffmpeg failure path)", async () => {
       vol.fromJSON({ "/music/song.mkv": "mkv" })
-      mockFfmpegFailure()
+      mockConvertFailure()
 
-      await lastValueFrom(
+      const result = await lastValueFrom(
         convertContainerAudioToFlac({
           isRecursive: false,
           isSourceDeleted: true,
@@ -457,14 +440,14 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      expect(vol.existsSync("/music/song.mkv")).toBe(true)
+      expect(result).toHaveLength(0)
     })
   })
 
   describe("result records", () => {
     test("emits a converted record for a successful conversion", async () => {
       vol.fromJSON({ "/music/song.mkv": "mkv" })
-      mockFfmpegSuccess(join("/music", "song.flac"))
+      mockConvertSuccess(join("/music", "song.flac"))
 
       const result = await lastValueFrom(
         convertContainerAudioToFlac({
@@ -484,9 +467,9 @@ describe("convertContainerAudioToFlac", () => {
       ])
     })
 
-    test("emits a converted record with isSourceDeleted: true when source was unlinked", async () => {
+    test("emits a converted record with isSourceDeleted: true when requested", async () => {
       vol.fromJSON({ "/music/song.mkv": "mkv" })
-      mockFfmpegSuccess(join("/music", "song.flac"))
+      mockConvertSuccess(join("/music", "song.flac"))
 
       const result = await lastValueFrom(
         convertContainerAudioToFlac({
@@ -527,7 +510,7 @@ describe("convertContainerAudioToFlac", () => {
         "/music/song.mkv": "mkv",
         "/music/albums/inner.mkv": "mkv",
       })
-      mockFfmpegSuccess("/music/song.flac")
+      mockConvertSuccess("/music/song.flac")
 
       await lastValueFrom(
         convertContainerAudioToFlac({
@@ -537,12 +520,12 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      expect(runFfmpegMock).toHaveBeenCalledTimes(1)
-      const [{ inputFilePaths }] =
-        runFfmpegMock.mock.calls[0]
-      expect(inputFilePaths[0]).toBe(
-        join("/music", "song.mkv"),
-      )
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).toHaveBeenCalledTimes(1)
+      const [{ filePath }] =
+        convertContainerAudioFileToFlacMock.mock.calls[0]
+      expect(filePath).toBe(join("/music", "song.mkv"))
     })
 
     test("descends one level into subdirectories when isRecursive is true", async () => {
@@ -550,8 +533,8 @@ describe("convertContainerAudioToFlac", () => {
         "/music/song.mkv": "mkv",
         "/music/albums/inner.mkv": "mkv",
       })
-      mockFfmpegSuccess("/music/song.flac")
-      mockFfmpegSuccess("/music/albums/inner.flac")
+      mockConvertSuccess("/music/song.flac")
+      mockConvertSuccess("/music/albums/inner.flac")
 
       await lastValueFrom(
         convertContainerAudioToFlac({
@@ -561,10 +544,13 @@ describe("convertContainerAudioToFlac", () => {
         }),
       )
 
-      expect(runFfmpegMock).toHaveBeenCalledTimes(2)
-      const inputPaths = runFfmpegMock.mock.calls.map(
-        ([{ inputFilePaths }]) => inputFilePaths[0],
-      )
+      expect(
+        convertContainerAudioFileToFlacMock,
+      ).toHaveBeenCalledTimes(2)
+      const inputPaths =
+        convertContainerAudioFileToFlacMock.mock.calls.map(
+          ([{ filePath }]) => filePath,
+        )
       expect(inputPaths).toEqual(
         expect.arrayContaining([
           join("/music", "song.mkv"),
@@ -589,8 +575,8 @@ describe("convertContainerAudioToFlac", () => {
         }
         return of(buildAudioOnlyMediaInfo("FLAC"))
       })
-      mockFfmpegSuccess("/music/lossless-rip.flac")
-      mockFfmpegSuccess("/music/aac-song.flac")
+      mockConvertSuccess("/music/lossless-rip.flac")
+      mockConvertSuccess("/music/aac-song.flac")
 
       const result = await lastValueFrom(
         convertContainerAudioToFlac({
@@ -601,18 +587,18 @@ describe("convertContainerAudioToFlac", () => {
       )
 
       expect(result).toHaveLength(2)
-      // lossless-rip uses copy (demux)
-      const losslessCall = runFfmpegMock.mock.calls.find(
-        ([{ inputFilePaths }]) =>
-          inputFilePaths[0]?.includes("lossless-rip"),
-      )
-      expect(losslessCall?.[0].args).toContain("copy")
-      // aac-song uses re-encode
-      const aacCall = runFfmpegMock.mock.calls.find(
-        ([{ inputFilePaths }]) =>
-          inputFilePaths[0]?.includes("aac-song"),
-      )
-      expect(aacCall?.[0].args).toContain("flac")
+      // lossless-rip uses FLAC codec (copy); aac-song uses AAC codec (re-encode)
+      const losslessCall =
+        convertContainerAudioFileToFlacMock.mock.calls.find(
+          ([{ filePath }]) =>
+            filePath.includes("lossless-rip"),
+        )
+      expect(losslessCall?.[0].audioCodec).toBe("FLAC")
+      const aacCall =
+        convertContainerAudioFileToFlacMock.mock.calls.find(
+          ([{ filePath }]) => filePath.includes("aac-song"),
+        )
+      expect(aacCall?.[0].audioCodec).toBe("AAC")
     })
   })
 })

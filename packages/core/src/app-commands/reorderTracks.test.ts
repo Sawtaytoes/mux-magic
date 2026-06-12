@@ -15,23 +15,8 @@ vi.mock("../tools/getMkvInfo.js", () => ({
   getMkvInfo: vi.fn(),
 }))
 
-vi.mock(
-  "../cli-spawn-operations/reorderTracksFfmpeg.js",
-  () => ({
-    reorderTracksFfmpeg: vi.fn(),
-    reorderTracksFfmpegDefaultProps: {
-      outputFolderName: "REORDERED-TRACKS",
-    },
-  }),
-)
-
-vi.mock(
-  "../cli-spawn-operations/setOnlyFirstTracksAsDefault.js",
-  () => ({
-    setOnlyFirstTracksAsDefault: vi.fn(),
-  }),
-)
-
+// reorderTracksFfmpeg and setOnlyFirstTracksAsDefault are auto-mocked
+// globally in vitest.setup.ts. Import the already-mocked symbols directly.
 const { getMkvInfo } = await import(
   "../tools/getMkvInfo.js"
 )
