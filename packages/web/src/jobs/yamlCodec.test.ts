@@ -1190,3 +1190,136 @@ steps:
     }
   })
 })
+
+// ─── renameRegex array form — YAML round-trip (worker 6e) ────────────────────
+//
+// Uses `toYamlStr` with an empty commands map (raw-params pass-through),
+// then reads back with `yaml.load` (from js-yaml) to verify the serialized
+// shape byte-stable. This avoids the loadYamlFromText "Unknown command"
+// guard while still exercising js-yaml's object ↔ YAML round-trip.
+// Bare-object back-compat is verified by confirming the object form is
+// preserved as a plain mapping (not an array) after the round-trip.
+
+describe("renameRegex array form round-trip (worker 6e)", () => {
+  test("array form serializes and reloads byte-stable", () => {
+    const step = makeStep({
+      command: "unknownPassthrough",
+      params: {
+        sourcePath: "/media",
+        renameRegex: [
+          {
+            pattern: "^Dandadan",
+            replacement: "Dan Da Dan",
+          },
+          {
+            pattern: "(Centuria) (\\d+)",
+            replacement: "$1 c$2",
+          },
+          {
+            pattern: "\\.([^.]+)$",
+            replacement: "",
+          },
+        ],
+      },
+    })
+    const yamlStr = toYamlStr(
+      [step as SequenceItem],
+      [],
+      {},
+    )
+    expect(yamlStr).toContain("Dandadan")
+    expect(yamlStr).toContain("Dan Da Dan")
+    expect(yamlStr).toContain("Centuria")
+
+    const parsed = yaml.load(yamlStr) as {
+      steps: Array<{
+        params: {
+          renameRegex: Array<{
+            pattern: string
+            replacement: string
+          }>
+        }
+      }>
+    }
+    const renameRegex = parsed.steps[0].params.renameRegex
+    expect(Array.isArray(renameRegex)).toBe(true)
+    expect(renameRegex).toHaveLength(3)
+    expect(renameRegex[0].pattern).toBe("^Dandadan")
+    expect(renameRegex[0].replacement).toBe("Dan Da Dan")
+    expect(renameRegex[2].pattern).toBe("\\.([^.]+)$")
+    expect(renameRegex[2].replacement).toBe("")
+  })
+
+  test("bare-object form still round-trips unchanged", () => {
+    const step = makeStep({
+      command: "unknownPassthrough",
+      params: {
+        sourcePath: "/media",
+        renameRegex: {
+          pattern: "^\\[Group\\] ",
+          replacement: "",
+        },
+      },
+    })
+    const yamlStr = toYamlStr(
+      [step as SequenceItem],
+      [],
+      {},
+    )
+    const parsed = yaml.load(yamlStr) as {
+      steps: Array<{
+        params: {
+          renameRegex: {
+            pattern: string
+            replacement: string
+          }
+        }
+      }>
+    }
+    const renameRegex = parsed.steps[0].params.renameRegex
+    expect(Array.isArray(renameRegex)).toBe(false)
+    expect(renameRegex.pattern).toBe("^\\[Group\\] ")
+    expect(renameRegex.replacement).toBe("")
+  })
+
+  test("array form with flags and sample fields round-trips", () => {
+    const step = makeStep({
+      command: "unknownPassthrough",
+      params: {
+        renameRegex: [
+          {
+            pattern: "show",
+            replacement: "Series",
+            flags: "i",
+            sample: "SHOW-01.mkv",
+          },
+          {
+            pattern: "-(\\d+)",
+            replacement: " ep$1",
+          },
+        ],
+      },
+    })
+    const yamlStr = toYamlStr(
+      [step as SequenceItem],
+      [],
+      {},
+    )
+    const parsed = yaml.load(yamlStr) as {
+      steps: Array<{
+        params: {
+          renameRegex: Array<{
+            pattern: string
+            replacement: string
+            flags?: string
+            sample?: string
+          }>
+        }
+      }>
+    }
+    const renameRegex = parsed.steps[0].params.renameRegex
+    expect(renameRegex[0].flags).toBe("i")
+    expect(renameRegex[0].sample).toBe("SHOW-01.mkv")
+    expect(renameRegex[1].flags).toBeUndefined()
+  })
+})

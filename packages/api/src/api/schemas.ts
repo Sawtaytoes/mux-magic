@@ -104,17 +104,28 @@ const regexFilterFieldSchema = z.preprocess(
 // Same shape as `regexFilterValueSchema` plus `replacement`. The legacy
 // 2-key `{ pattern, replacement }` form already satisfies this schema
 // because `flags` and `sample` are optional — no preprocessing needed.
-// Exported so worker 66's `renameFiles` command schema can reuse it.
-export const renameRegexSchema = regexFilterValueSchema
-  .extend({
+// Worker 6e broadened `renameRegexSchema` to accept either the bare
+// single-rule object (back-compat — every existing template still
+// validates unchanged) or a non-empty ordered array of rules applied
+// left-to-right. An empty array is rejected via `.min(1)` — a field
+// that's present but applies nothing is a template authoring error.
+const renameRegexRuleSchema = regexFilterValueSchema.extend(
+  {
     replacement: z
       .string()
       .describe(
         "Replacement string. Capture groups from `pattern` are available as $1, $2, etc.",
       ),
-  })
+  },
+)
+
+export const renameRegexSchema = z
+  .union([
+    renameRegexRuleSchema,
+    z.array(renameRegexRuleSchema).min(1),
+  ])
   .describe(
-    "Regex-based rename applied to each entry's name. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
+    "Regex-based rename applied to each entry's name. Accepts a single rule object (back-compat) or an ordered array of rules applied left-to-right. For copy/move commands the result is the destination filename; for renameFiles it replaces the on-disk name in place.",
   )
 
 export const copyFilesRequestSchema = z.object({
