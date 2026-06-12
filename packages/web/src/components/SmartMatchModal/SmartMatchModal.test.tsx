@@ -387,6 +387,103 @@ describe("SmartMatchModal", () => {
     expect(customInputAfter.value).toBe("My Custom Take")
   })
 
+  test("row confidence badge syncs to the selected candidate, not the top-ranked one (worker 70 bug A)", async () => {
+    // Two candidates: top-ranked has confidence 0.7 (70%), second has 0.2 (20%).
+    // After the user selects the second candidate, the row badge must read "20%",
+    // not "70%" (which was the bug — the badge was using rankedCandidates[0]).
+    const user = userEvent.setup()
+    // Mock getBoundingClientRect so PortalDropdown can compute its position
+    // and render the listbox in the portal.
+    vi.spyOn(
+      HTMLElement.prototype,
+      "getBoundingClientRect",
+    ).mockReturnValue({
+      top: 100,
+      bottom: 140,
+      left: 0,
+      right: 200,
+      width: 200,
+      height: 40,
+      x: 0,
+      y: 100,
+      toJSON: () => ({}),
+    })
+    Object.defineProperty(window, "innerHeight", {
+      value: 800,
+      configurable: true,
+      writable: true,
+    })
+    const badgeSyncPayload = {
+      jobId: "job-badge-sync",
+      stepId: "step-1",
+      sourcePath: "/movies/Demo",
+      suggestions: [
+        {
+          filename: "FAR_AWAY_IDOL",
+          extension: ".mkv",
+          durationSeconds: 353,
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Theatrical Cut",
+                timecode: "1:30:00",
+              },
+              confidence: 0.7,
+              durationScore: 1,
+              filenameScore: 0,
+            },
+            {
+              candidate: {
+                name: "Far Far Away Idol",
+                timecode: "8:55",
+              },
+              confidence: 0.2,
+              durationScore: 0,
+              filenameScore: 0.75,
+            },
+          ],
+        },
+      ],
+    }
+    const store = createStore()
+    store.set(smartMatchModalAtom, badgeSyncPayload)
+    renderWithStore(store)
+
+    // Initially the top candidate (70%) is pre-selected — badge should show 70%.
+    const row = document.querySelector(
+      '[data-smart-match-row="FAR_AWAY_IDOL"]',
+    )
+    expect(row).not.toBeNull()
+    // The badge is the last cell in the row.
+    const initialBadge = row?.querySelector(
+      "td:last-child span",
+    )
+    expect(initialBadge?.textContent).toBe("70%")
+
+    // Open the picker dropdown.
+    const picker = screen.getByLabelText(
+      "Rename target for FAR_AWAY_IDOL",
+    )
+    await user.click(picker)
+
+    // Select the second candidate via the portal listbox.
+    const secondOption = await screen.findByRole("option", {
+      name: /Far Far Away Idol/,
+    })
+    await user.pointer({
+      target: secondOption,
+      keys: "[MouseLeft]",
+    })
+
+    // Badge must now reflect the selected candidate's confidence (20%), not the top's (70%).
+    await waitFor(() => {
+      const updatedBadge = row?.querySelector(
+        "td:last-child span",
+      )
+      expect(updatedBadge?.textContent).toBe("20%")
+    })
+  })
+
   test("Close button clears the atom", async () => {
     const user = userEvent.setup()
     const store = createStore()

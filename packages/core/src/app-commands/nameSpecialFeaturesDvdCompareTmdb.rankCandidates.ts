@@ -148,6 +148,19 @@ export const combineScores = ({
   if (!hasDuration && !hasFilename) {
     return 0
   }
+  // When the candidate has a timecode but its runtime is wildly off the file's
+  // duration (delta > DURATION_PROXIMITY_TOLERANCE_SECONDS → durationScore === 0),
+  // fall back to the filename-only scoring branch so strong filename overlap
+  // (e.g. "Far Far Away Idol" vs "Shrek 2-SF_03_FarAwayIdol_t48") still surfaces
+  // as moderate confidence rather than being zeroed out by the duration weight.
+  if (
+    hasDuration &&
+    hasFilename &&
+    durationScore === 0 &&
+    filenameScore > 0
+  ) {
+    return filenameScore * FILENAME_ONLY_SCORE_FACTOR
+  }
   if (hasDuration && hasFilename) {
     return (
       DURATION_WEIGHT * durationScore +

@@ -497,10 +497,14 @@ export const SmartMatchModal = () => {
               {suggestions.map((suggestion) => {
                 const row = rows.get(suggestion.filename)
                 if (!row) return null
-                const topCandidate =
-                  suggestion.rankedCandidates[0]
+                const selectedCandidate =
+                  suggestion.rankedCandidates.find(
+                    (scoredCandidate) =>
+                      scoredCandidate.candidate.name ===
+                      row.selectedCandidateName,
+                  ) ?? suggestion.rankedCandidates[0]
                 const confidence =
-                  topCandidate?.confidence ?? 0
+                  selectedCandidate?.confidence ?? 0
                 const isLowConfidence =
                   confidence < LOW_CONFIDENCE_THRESHOLD
                 const rowClass = row.isApplied
