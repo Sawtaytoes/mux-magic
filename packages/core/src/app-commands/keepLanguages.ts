@@ -1,4 +1,5 @@
 import { join } from "node:path"
+import type { LanguageSelection } from "@mux-magic/api/src/api/languageSelection.js"
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
@@ -24,12 +25,12 @@ import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type KeepLanguagesRequiredProps = {
-  audioLanguages: Iso6392LanguageCode[]
+  audioLanguages: LanguageSelection[]
   hasFirstAudioLanguage: boolean
   hasFirstSubtitlesLanguage: boolean
   isRecursive: boolean
   sourcePath: string
-  subtitlesLanguages: Iso6392LanguageCode[]
+  subtitlesLanguages: LanguageSelection[]
 }
 
 type KeepLanguagesOptionalProps = {
@@ -81,7 +82,7 @@ export const keepLanguages = ({
             selectedAudioLanguages.some(
               (selectedAudioLanguage) =>
                 audioLanguages.includes(
-                  selectedAudioLanguage,
+                  selectedAudioLanguage.code,
                 ),
             ),
         })),
@@ -96,19 +97,33 @@ export const keepLanguages = ({
               ...selectedAudioLanguages,
               ...(hasFirstAudioLanguage &&
               audioLanguages.length > 0
-                ? [audioLanguages.at(0)]
+                ? [
+                    {
+                      code: audioLanguages.at(
+                        0,
+                      ) as Iso6392LanguageCode,
+                    },
+                  ]
                 : hasMatchingAudioLanguage
                   ? []
-                  : audioLanguages),
-            ],
+                  : audioLanguages.map((code) => ({
+                      code,
+                    }))),
+            ] as LanguageSelection[],
             subtitlesLanguages,
             subtitlesLanguagesToKeep: [
               ...selectedSubtitlesLanguages,
               ...(hasFirstSubtitlesLanguage &&
               subtitlesLanguages.length > 0
-                ? [subtitlesLanguages.at(0)]
+                ? [
+                    {
+                      code: subtitlesLanguages.at(
+                        0,
+                      ) as Iso6392LanguageCode,
+                    },
+                  ]
                 : []),
-            ],
+            ] as LanguageSelection[],
           }),
         ),
         filter(
@@ -118,17 +133,19 @@ export const keepLanguages = ({
             subtitlesLanguages,
             subtitlesLanguagesToKeep,
           }) =>
-            // Only continue if keeping these languages results in a different file output.
             audioLanguages.some(
-              (audioLanguage) =>
-                !audioLanguagesToKeep.includes(
-                  audioLanguage,
+              (audioLanguageCode) =>
+                !audioLanguagesToKeep.some(
+                  (selection) =>
+                    selection.code === audioLanguageCode,
                 ),
             ) ||
             subtitlesLanguages.some(
-              (subtitlesLanguage) =>
-                !subtitlesLanguagesToKeep.includes(
-                  subtitlesLanguage,
+              (subtitlesLanguageCode) =>
+                !subtitlesLanguagesToKeep.some(
+                  (selection) =>
+                    selection.code ===
+                    subtitlesLanguageCode,
                 ),
             ),
         ),
@@ -138,19 +155,10 @@ export const keepLanguages = ({
             subtitlesLanguagesToKeep,
           }) =>
             keepSpecifiedLanguageTracks({
-              audioLanguages: audioLanguagesToKeep.filter(
-                (lang): lang is NonNullable<typeof lang> =>
-                  Boolean(lang),
-              ),
+              audioLanguages: audioLanguagesToKeep,
               filePath: fileInfo.fullPath,
               outputFolderName,
-              subtitlesLanguages:
-                subtitlesLanguagesToKeep.filter(
-                  (
-                    lang,
-                  ): lang is NonNullable<typeof lang> =>
-                    Boolean(lang),
-                ),
+              subtitlesLanguages: subtitlesLanguagesToKeep,
             }).pipe(
               tap(() => {
                 logInfo(

@@ -313,7 +313,7 @@ const muxSubtitlesPerFile = ({
                       : offsetInMilliseconds,
                   outputFolderName,
                   subtitlesFilesPaths,
-                  subtitlesLanguage: "eng",
+                  subtitlesLanguage: { code: "eng" },
                 }),
             ),
             // mergeSubtitlesMkvMerge emits the optional language-fix

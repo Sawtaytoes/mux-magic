@@ -1,19 +1,18 @@
+import type { LanguageSelection } from "@mux-magic/api/src/api/languageSelection.js"
 import { concatMap, filter, from } from "rxjs"
-
 import {
   getMkvInfo,
   type MkvTookNixTrackType,
 } from "../tools/getMkvInfo.js"
-import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { runMkvPropEdit } from "./runMkvPropEdit.js"
 
 export const defineLanguageForUndefinedTracks = ({
   filePath,
-  subtitleLanguage,
+  languageSelection,
   trackType,
 }: {
   filePath: string
-  subtitleLanguage: Iso6392LanguageCode
+  languageSelection: LanguageSelection
   trackType: MkvTookNixTrackType
 }) =>
   getMkvInfo(filePath).pipe(
@@ -30,7 +29,14 @@ export const defineLanguageForUndefinedTracks = ({
               `track:@${track.properties.number}`,
 
               "--set",
-              `language=${subtitleLanguage}`,
+              `language=${languageSelection.code}`,
+
+              ...(languageSelection.ietf
+                ? [
+                    "--set",
+                    `language-ietf=${languageSelection.ietf}`,
+                  ]
+                : []),
             ],
             filePath,
           }),

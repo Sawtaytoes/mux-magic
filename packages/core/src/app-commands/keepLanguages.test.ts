@@ -15,12 +15,12 @@ describe(keepLanguages.name, () => {
     await expect(
       firstValueFrom(
         keepLanguages({
-          audioLanguages: ["jpn"],
+          audioLanguages: [{ code: "jpn" }],
           hasFirstAudioLanguage: false,
           hasFirstSubtitlesLanguage: false,
           isRecursive: false,
           sourcePath: "/work",
-          subtitlesLanguages: ["eng"],
+          subtitlesLanguages: [{ code: "eng" }],
         }).pipe(toArray()),
       ),
     ).rejects.toThrow("No video files found")
@@ -30,12 +30,12 @@ describe(keepLanguages.name, () => {
     await expect(
       firstValueFrom(
         keepLanguages({
-          audioLanguages: ["jpn"],
+          audioLanguages: [{ code: "jpn" }],
           hasFirstAudioLanguage: false,
           hasFirstSubtitlesLanguage: false,
           isRecursive: false,
           sourcePath: "/nonexistent",
-          subtitlesLanguages: ["eng"],
+          subtitlesLanguages: [{ code: "eng" }],
         }).pipe(toArray()),
       ),
     ).rejects.toMatchObject({ code: "ENOENT" })

@@ -1,6 +1,7 @@
 // Pure runtime job/event types live in core. Re-exported here so the web's
 // `@mux-magic/api/api-types` (later `@mux-magic/api/api-types`) entry
 // continues to surface one type module.
+
 export type {
   Job,
   JobLogDoneEvent,
@@ -13,12 +14,12 @@ export type {
   PromptOption,
   StepEvent,
 } from "@mux-magic/core/src/api/types.js"
-
 export type {
   DvdCompareRelease,
   DvdCompareResult,
   DvdCompareVariant,
 } from "@mux-magic/core/src/tools/searchDvdCompare.js"
+export type { LanguageSelection } from "./languageSelection.js"
 
 import type { z } from "@hono/zod-openapi"
 import type * as schemas from "./schemas.js"
