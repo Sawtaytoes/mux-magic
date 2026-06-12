@@ -7,15 +7,18 @@ import * as RenameRegexFieldStories from "./RenameRegexField.stories";
 
 # RenameRegexField
 
-A four-input editor (pattern + flags + replacement + sample) for the nested-object `renameRegex` field used by the `copyFiles` and `moveFiles` commands. The server applies the pair as `name.replace(new RegExp(pattern, flags), replacement)` against each copied/moved entry's basename. Worker 65 extended worker 63's two-input editor with the `flags` knob, an optional `sample` field that drives a client-side live tester, and a slash-form display toggle for users who prefer `/pattern/flags`.
+An editor for the `renameRegex` field used by `copyFiles`, `moveFiles`, and `renameFiles`. Worker 65 extended the original two-input editor with a `flags` knob, an optional `sample` live-tester, and a slash-form display toggle. Worker 6e broadened the field to accept an **ordered chain of rules** applied left-to-right — each rule's output becomes the next rule's input.
 
 ## Behaviour
 
-- **Read** — `step.params.renameRegex` is interpreted as `{ pattern, replacement, flags?, sample? }`. Missing keys collapse to `""`.
-- **Write — minimal wire shape** — when `flags` and `sample` are both empty the component emits the legacy 2-key `{ pattern, replacement }` so YAML diffs stay small for users who never touch the new fields. With either set it promotes to the 4-key object. When *every* field is blank it writes `undefined` so `buildParams` strips the key entirely.
-- **Live tester** — typing into "Test against (optional)" runs `new RegExp(pattern, flags).exec(sample)` and shows a Match / No match badge plus the predicted output filename and any captured groups. Pure client-side; no server round-trip.
-- **Slash-form toggle** — "Show as /…/" flips presentation between the separate pattern + flags inputs and a single `/pattern/flags` JS-regex-literal input. The underlying schema stays the separated pair.
-- **Flag validation** — typing an unknown flag char marks the input `aria-invalid` and surfaces an inline tooltip listing the offending chars (no exceptions).
+- **Single rule (default)** — starts as a single `{ pattern, replacement, flags?, sample? }` editor. Existing templates load unchanged.
+- **Add rule** — clicking **+ Add rule** converts the field to chain mode and appends a blank second rule. The first rule's data is preserved.
+- **Chain mode** — each rule row shows a Rule N label, ↑/↓ reorder buttons, and a ✕ delete button. Deleting down to one rule keeps the array form on the wire.
+- **Per-rule live preview** — each row's "Test against" field runs `new RegExp(pattern, flags).exec(sample)` and shows a Match / No match badge with the predicted output and capture groups.
+- **Chain output** — when any rule has a sample, a "Chain output" row at the bottom shows the result of applying every rule left-to-right to that sample. This makes "rule 3 broke it" visible at a glance.
+- **Write — minimal wire shape** — single-rule mode emits the legacy 2-key `{ pattern, replacement }` when `flags` and `sample` are both empty. With either set it promotes to the 4-key object. When every field is blank it writes `undefined`. Chain mode always emits an array.
+- **Slash-form toggle** — "Show as /…/" flips presentation between separate pattern + flags inputs and a single `/pattern/flags` literal. The underlying schema stays the separated pair.
+- **Flag validation** — unknown flag chars mark the input `aria-invalid` with an inline tooltip.
 
 ## Props
 
@@ -43,3 +46,15 @@ A four-input editor (pattern + flags + replacement + sample) for the nested-obje
 ## Sample doesn't match
 
 <Canvas of={RenameRegexFieldStories.WithSampleNoMatch} />
+
+## Single rule (existing — back-compat)
+
+<Canvas of={RenameRegexFieldStories.SingleRuleBackCompat} />
+
+## Chain of three rules (Dandadan → Dan Da Dan → ext-strip)
+
+<Canvas of={RenameRegexFieldStories.ChainOfThreeRules} />
+
+## Chain with one invalid rule (inline error)
+
+<Canvas of={RenameRegexFieldStories.ChainWithInvalidRule} />
