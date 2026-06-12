@@ -1,6 +1,8 @@
 import { useSetAtom } from "jotai"
+import { EditionPlanPreview } from "../EditionPlanPreview/EditionPlanPreview"
 import { smartMatchModalAtom } from "../SmartMatchModal/smartMatchModalAtom"
 import type {
+  NsfEditionPlanRecord,
   NsfRenamePair,
   NsfSummaryRecord,
 } from "./findNsfResults"
@@ -21,6 +23,7 @@ type Props = {
   sourcePath: string | null
   renamePairs: NsfRenamePair[]
   summary: NsfSummaryRecord | null
+  editionPlan?: NsfEditionPlanRecord | null
 }
 
 export const NsfRunResults = ({
@@ -29,6 +32,7 @@ export const NsfRunResults = ({
   sourcePath,
   renamePairs,
   summary,
+  editionPlan,
 }: Props) => {
   const setSmartMatch = useSetAtom(smartMatchModalAtom)
 
@@ -64,7 +68,11 @@ export const NsfRunResults = ({
     })
   }
 
-  if (summary === null && renamePairs.length === 0) {
+  if (
+    summary === null &&
+    renamePairs.length === 0 &&
+    (editionPlan == null || editionPlan.moves.length === 0)
+  ) {
     return null
   }
 
@@ -73,6 +81,10 @@ export const NsfRunResults = ({
       id="nsf-run-results"
       className="flex flex-col gap-2"
     >
+      {editionPlan != null &&
+        editionPlan.moves.length > 0 && (
+          <EditionPlanPreview editionPlan={editionPlan} />
+        )}
       {summary && (
         <div
           data-nsf-rename-counts

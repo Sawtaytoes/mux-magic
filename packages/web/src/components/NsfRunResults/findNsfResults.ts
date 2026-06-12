@@ -38,11 +38,30 @@ export type NsfRenamePair = {
   newName: string
 }
 
+// A single planned file move within an edition-folder organization run.
+// Mirrors `EditionPlanMove` from `packages/core/src/app-commands/
+// nameSpecialFeaturesDvdCompareTmdb.buildEditionPlan.ts`.
+export type NsfEditionPlanMove = {
+  sourceFilename: string
+  destinationPath: string
+  editionName: string
+  isSibling: boolean
+}
+
+// The edition-plan preview event emitted before any edition-folder moves
+// happen. Mirrors `EditionPlanEvent` from
+// `packages/core/src/app-commands/nameSpecialFeaturesDvdCompareTmdb.events.ts`.
+export type NsfEditionPlanRecord = {
+  isEditionPlan: true
+  moves: NsfEditionPlanMove[]
+}
+
 export const isNsfSummary = (
   entry: unknown,
 ): entry is NsfSummaryRecord => {
-  if (typeof entry !== "object" || entry === null)
+  if (typeof entry !== "object" || entry === null) {
     return false
+  }
   const candidate = entry as Record<string, unknown>
   return (
     Array.isArray(candidate.unrenamedFilenames) &&
@@ -53,8 +72,9 @@ export const isNsfSummary = (
 export const isNsfRenamePair = (
   entry: unknown,
 ): entry is NsfRenamePair => {
-  if (typeof entry !== "object" || entry === null)
+  if (typeof entry !== "object" || entry === null) {
     return false
+  }
   const candidate = entry as Record<string, unknown>
   return (
     typeof candidate.oldName === "string" &&
@@ -62,10 +82,25 @@ export const isNsfRenamePair = (
   )
 }
 
+export const isNsfEditionPlan = (
+  entry: unknown,
+): entry is NsfEditionPlanRecord => {
+  if (typeof entry !== "object" || entry === null) {
+    return false
+  }
+  const candidate = entry as Record<string, unknown>
+  return (
+    candidate.isEditionPlan === true &&
+    Array.isArray(candidate.moves)
+  )
+}
+
 export const findNsfSummary = (
   results: unknown[] | undefined,
 ): NsfSummaryRecord | null => {
-  if (!results) return null
+  if (!results) {
+    return null
+  }
   const match = results.find(isNsfSummary)
   return match ?? null
 }
@@ -73,8 +108,20 @@ export const findNsfSummary = (
 export const findNsfRenamePairs = (
   results: unknown[] | undefined,
 ): NsfRenamePair[] => {
-  if (!results) return []
+  if (!results) {
+    return []
+  }
   return results.filter(isNsfRenamePair)
+}
+
+export const findNsfEditionPlan = (
+  results: unknown[] | undefined,
+): NsfEditionPlanRecord | null => {
+  if (!results) {
+    return null
+  }
+  const match = results.find(isNsfEditionPlan)
+  return match ?? null
 }
 
 // Folds SmartMatch-applied renames into the SSE-derived NSF results so

@@ -149,6 +149,20 @@ export const nameSpecialFeaturesDvdCompareTmdbCommand: CommandModule<
           )
           return
         }
+        if ("hasEditionFolderCollision" in event) {
+          logWarning(
+            "EDITION FOLDER COLLISION",
+            `"${event.filename}" skipped — destination already has a file with the same name at "${event.existingPath}".`,
+          )
+          return
+        }
+        if ("isEditionPlan" in event) {
+          logInfo(
+            "EDITION PLAN",
+            `Planning ${event.moves.length} edition-folder ${event.moves.length === 1 ? "move" : "moves"}`,
+          )
+          return
+        }
         renamedCount += 1
         logInfo("RENAMED", event.oldName, event.newName)
       },

@@ -3,6 +3,7 @@ import { ConvertLosslessRunResults } from "../ConvertLosslessRunResults/ConvertL
 import type { ConvertLosslessRunResultsData } from "../ConvertLosslessRunResults/findConvertLosslessResults"
 import { GenericRunResults } from "../GenericRunResults/GenericRunResults"
 import type {
+  NsfEditionPlanRecord,
   NsfRenamePair,
   NsfSummaryRecord,
 } from "../NsfRunResults/findNsfResults"
@@ -23,6 +24,7 @@ type Props = {
   sourcePath: string | null
   renamePairs: NsfRenamePair[]
   summary: NsfSummaryRecord | null
+  editionPlan?: NsfEditionPlanRecord | null
   convertLosslessResults: ConvertLosslessRunResultsData
   results: ReadonlyArray<unknown> | null
 }
@@ -36,6 +38,7 @@ export const StepRunProgressView = ({
   sourcePath,
   renamePairs,
   summary,
+  editionPlan,
   convertLosslessResults,
   results,
 }: Props) => (
@@ -47,6 +50,7 @@ export const StepRunProgressView = ({
       sourcePath={sourcePath}
       renamePairs={renamePairs}
       summary={summary}
+      editionPlan={editionPlan}
     />
     <ConvertLosslessRunResults
       data={convertLosslessResults}
