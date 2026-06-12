@@ -44,6 +44,7 @@ import { nameAnimeEpisodesCommand } from "./cli-commands/nameAnimeEpisodesComman
 import { nameMovieCutsDvdCompareTmdbCommand } from "./cli-commands/nameMovieCutsDvdCompareTmdbCommand.js"
 import { nameSpecialFeaturesDvdCompareTmdbCommand } from "./cli-commands/nameSpecialFeaturesDvdCompareTmdbCommand.js"
 import { nameTvShowEpisodesCommand } from "./cli-commands/nameTvShowEpisodesCommand.js"
+import { onlyNameSpecialFeaturesDvdCompareCommand } from "./cli-commands/onlyNameSpecialFeaturesDvdCompareCommand.js"
 import { remuxToMkvCommand } from "./cli-commands/remuxToMkvCommand.js"
 import { renameDemosCommand } from "./cli-commands/renameDemosCommand.js"
 import { renameFilesCommand } from "./cli-commands/renameFilesCommand.js"
@@ -104,6 +105,7 @@ yargs(hideBin(process.argv))
   .command(nameAnimeEpisodesAniDBCommand)
   .command(nameMovieCutsDvdCompareTmdbCommand)
   .command(nameSpecialFeaturesDvdCompareTmdbCommand)
+  .command(onlyNameSpecialFeaturesDvdCompareCommand)
   .command(nameTvShowEpisodesCommand)
   .command(remuxToMkvCommand)
   .command(renameDemosCommand)
