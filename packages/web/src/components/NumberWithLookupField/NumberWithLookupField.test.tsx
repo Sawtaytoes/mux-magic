@@ -9,7 +9,6 @@ import {
   afterEach,
   describe,
   expect,
-  it,
   test,
   vi,
 } from "vitest"
@@ -41,7 +40,7 @@ describe("NumberWithLookupField", () => {
   const field =
     FIXTURE_COMMANDS_BUNDLE_D.nameAnimeEpisodes.fields[1]
 
-  it("renders input with current number value", () => {
+  test("renders input with current number value", () => {
     const step = createTestStep({ params: { malId: 5114 } })
     render(
       <Provider>
@@ -52,7 +51,7 @@ describe("NumberWithLookupField", () => {
     expect(input).toBeInTheDocument()
   })
 
-  it("shows lookup button", () => {
+  test("shows lookup button", () => {
     const step = createTestStep()
     render(
       <Provider>
@@ -63,7 +62,7 @@ describe("NumberWithLookupField", () => {
     expect(lookupButton).toBeInTheDocument()
   })
 
-  it("shows companion name as link when present", () => {
+  test("shows companion name as link when present", () => {
     const step = createTestStep({
       params: {
         malId: 5114,
@@ -82,7 +81,7 @@ describe("NumberWithLookupField", () => {
     expect(companionLink.tagName).toBe("A")
   })
 
-  it("hides companion name when empty", () => {
+  test("hides companion name when empty", () => {
     const step = createTestStep({
       params: { malId: 5114, malName: "" },
     })
@@ -96,7 +95,7 @@ describe("NumberWithLookupField", () => {
     ).not.toBeInTheDocument()
   })
 
-  it("renders with AniDB lookup type from fixture B", () => {
+  test("renders with AniDB lookup type from fixture B", () => {
     const anidbField =
       FIXTURE_COMMANDS_BUNDLE_B.nameAnimeEpisodesAniDB
         .fields[1]
@@ -359,7 +358,7 @@ describe("NumberWithLookupField — reverse-lookup auto-resolution", () => {
     vi.unstubAllGlobals()
   })
 
-  it("fetches and stores companion name on mount when ID is set but companion is empty", async () => {
+  test("fetches and stores companion name on mount when ID is set but companion is empty", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ name: "Cowboy Bebop" }),
@@ -403,7 +402,7 @@ describe("NumberWithLookupField — reverse-lookup auto-resolution", () => {
     })
   })
 
-  it("skips the fetch when the companion name is already present (YAML cache)", async () => {
+  test("skips the fetch when the companion name is already present (YAML cache)", async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal("fetch", fetchMock)
 
@@ -455,7 +454,7 @@ describe("NumberWithLookupField — dvdCompareReleaseHash sibling-id reverse-loo
     vi.unstubAllGlobals()
   })
 
-  it("uses field.default for the input and fires lookupDvdCompareRelease when params has no hash but sibling dvdCompareId is set", async () => {
+  test("uses field.default for the input and fires lookupDvdCompareRelease when params has no hash but sibling dvdCompareId is set", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -512,7 +511,7 @@ describe("NumberWithLookupField — dvdCompareReleaseHash sibling-id reverse-loo
     })
   })
 
-  it("skips the lookup when the sibling dvdCompareId is missing (can't resolve a release without a film)", async () => {
+  test("skips the lookup when the sibling dvdCompareId is missing (can't resolve a release without a film)", async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal("fetch", fetchMock)
 
@@ -541,7 +540,7 @@ describe("NumberWithLookupField — dvdCompareReleaseHash sibling-id reverse-loo
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it("does not render the 🔍 lookup button (no lookupType on this field)", () => {
+  test("does not render the 🔍 lookup button (no lookupType on this field)", () => {
     const step: Step = {
       id: "test-step-rh-no-button",
       alias: "",

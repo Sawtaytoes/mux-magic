@@ -5,13 +5,7 @@ import {
   screen,
 } from "@testing-library/react"
 import { createStore, Provider } from "jotai"
-import {
-  afterEach,
-  describe,
-  expect,
-  it,
-  test,
-} from "vitest"
+import { afterEach, describe, expect, test } from "vitest"
 import type { CommandField } from "../../commands/types"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
@@ -66,48 +60,48 @@ afterEach(() => {
 // token is ONE file's split spec; commas inside a token are that file's
 // chapters.
 describe("parseChapterSplits", () => {
-  it("keeps a single file's comma-separated chapters as one token", () => {
+  test("keeps a single file's comma-separated chapters as one token", () => {
     // The reported regression: "6,9" means split one file at chapters 6
     // and 9 — it must NOT become two files ["6", "9"].
     expect(parseChapterSplits("6,9")).toEqual(["6,9"])
   })
 
-  it("treats whitespace as the per-file separator", () => {
+  test("treats whitespace as the per-file separator", () => {
     expect(
       parseChapterSplits("7,18,26,33 6,17,25 6"),
     ).toEqual(["7,18,26,33", "6,17,25", "6"])
   })
 
-  it("collapses runs of whitespace and trims", () => {
+  test("collapses runs of whitespace and trims", () => {
     expect(parseChapterSplits("  6,9   12   ")).toEqual([
       "6,9",
       "12",
     ])
   })
 
-  it("returns an empty array for blank input", () => {
+  test("returns an empty array for blank input", () => {
     expect(parseChapterSplits("")).toEqual([])
     expect(parseChapterSplits("   ")).toEqual([])
   })
 
-  it("does not split a single chapter into characters", () => {
+  test("does not split a single chapter into characters", () => {
     expect(parseChapterSplits("6")).toEqual(["6"])
   })
 })
 
 describe("ChapterSplitsField", () => {
-  it("renders the label with a required asterisk", () => {
+  test("renders the label with a required asterisk", () => {
     renderField(makeStep())
     expect(screen.getByText("Chapter Splits")).toBeVisible()
     expect(screen.getByText("*")).toBeVisible()
   })
 
-  it("displays an empty string when value is undefined", () => {
+  test("displays an empty string when value is undefined", () => {
     renderField(makeStep())
     expect(screen.getByRole("textbox")).toHaveValue("")
   })
 
-  it("displays the array joined by spaces (not commas)", () => {
+  test("displays the array joined by spaces (not commas)", () => {
     renderField(
       makeStep({
         chapterSplits: ["7,18,26,33", "6,17,25", "6"],
@@ -118,7 +112,7 @@ describe("ChapterSplitsField", () => {
     )
   })
 
-  it("does not render a link / path picker button", () => {
+  test("does not render a link / path picker button", () => {
     // Regression: chapterSplits is typed by hand, never wired to a path
     // variable or upstream output.
     renderField(makeStep())
@@ -165,7 +159,7 @@ describe("ChapterSplitsField", () => {
     )
   })
 
-  it("uses the field placeholder when provided", () => {
+  test("uses the field placeholder when provided", () => {
     renderField(makeStep(), {
       ...field,
       placeholder: "1,2 3,4",

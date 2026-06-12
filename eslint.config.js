@@ -28,6 +28,7 @@
 // See docs/react-migration-plan.md "ESLint (Minimal: Two Plugins Only)" for
 // the target shape once the plugins land.
 
+import vitestPlugin from "@vitest/eslint-plugin"
 import { defineConfig } from "eslint/config"
 import reactPlugin from "eslint-plugin-react"
 import tseslint from "typescript-eslint"
@@ -171,6 +172,22 @@ export default defineConfig(
     ],
     rules: {
       "react/no-multi-comp": "off",
+    },
+  },
+  {
+    // AGENTS.md / docs/agents/testing.md convention: `test()`, not `it()`.
+    // `it` and `test` are vitest aliases; this repo standardises on `test`
+    // for consistency. Auto-fixable: `yarn lint --fix` rewrites `it(` → `test(`
+    // and `it.only`/`it.skip` → `test.only`/`test.skip`.
+    // Scoped to *.test.{ts,tsx} only — e2e Playwright specs (e2e/*.spec.ts) use
+    // a different `test` namespace and are intentionally excluded.
+    files: ["**/*.test.{ts,tsx}"],
+    plugins: { vitest: vitestPlugin },
+    rules: {
+      "vitest/consistent-test-it": [
+        "error",
+        { fn: "test" },
+      ],
     },
   },
 )
