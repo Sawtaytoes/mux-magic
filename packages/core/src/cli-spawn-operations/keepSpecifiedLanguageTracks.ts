@@ -1,14 +1,14 @@
 import { dirname, join } from "node:path"
+import type { LanguageSelection } from "@mux-magic/api/src/api/languageSelection.js"
 import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import type { Observable } from "rxjs"
-import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { LANGUAGE_TRIMMED_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import { runMkvMerge } from "./runMkvMerge.js"
 
 type KeepSpecifiedLanguageTracksRequiredProps = {
-  audioLanguages: Iso6392LanguageCode[]
+  audioLanguages: LanguageSelection[]
   filePath: string
-  subtitlesLanguages: Iso6392LanguageCode[]
+  subtitlesLanguages: LanguageSelection[]
 }
 
 type KeepSpecifiedLanguageTracksOptionalProps = {
@@ -37,13 +37,20 @@ export const keepSpecifiedLanguageTracks = ({
   return runMkvMerge({
     args: [
       ...(hasAudioLanguages
-        ? ["--audio-tracks", audioLanguages.join(",")]
+        ? [
+            "--audio-tracks",
+            audioLanguages
+              .map((selection) => selection.code)
+              .join(","),
+          ]
         : []),
 
       ...(hasSubtitlesLanguages
         ? [
             "--subtitle-tracks",
-            subtitlesLanguages.join(","),
+            subtitlesLanguages
+              .map((selection) => selection.code)
+              .join(","),
           ]
         : []),
 

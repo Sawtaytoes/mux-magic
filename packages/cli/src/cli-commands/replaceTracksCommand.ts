@@ -129,8 +129,9 @@ export const replaceTracksCommand: CommandModule<
 
   handler: (argv) => {
     replaceTracks({
-      audioLanguages:
-        argv.audioLanguages as Iso6392LanguageCode[],
+      audioLanguages: (
+        argv.audioLanguages as Iso6392LanguageCode[]
+      ).map((code) => ({ code })),
       destinationFilesPath: argv.destinationFilesPath,
       globalOffsetInMilliseconds: argv.globalOffset,
       hasAudioSyncOffset: argv.hasAudioSyncOffset,
@@ -139,10 +140,12 @@ export const replaceTracksCommand: CommandModule<
         argv.isOverwritingExtractedAudio,
       offsets: argv.offsets.map((offset) => Number(offset)),
       sourcePath: argv.sourcePath,
-      subtitlesLanguages:
-        argv.subtitlesLanguages as Iso6392LanguageCode[],
-      videoLanguages:
-        argv.videoLanguages as Iso6392LanguageCode[],
+      subtitlesLanguages: (
+        argv.subtitlesLanguages as Iso6392LanguageCode[]
+      ).map((code) => ({ code })),
+      videoLanguages: (
+        argv.videoLanguages as Iso6392LanguageCode[]
+      ).map((code) => ({ code })),
     }).subscribe(subscribeCli())
   },
 }

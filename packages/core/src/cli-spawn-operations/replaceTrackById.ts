@@ -1,18 +1,17 @@
+import type { LanguageSelection } from "@mux-magic/api/src/api/languageSelection.js"
 import { addFolderNameBeforeFilename } from "@mux-magic/tools"
 import { concatMap, map, of } from "rxjs"
-import { convertIso6391ToIso6392 } from "../tools/convertIso6391ToIso6392.js"
-import type { Iso6391LanguageCode } from "../tools/iso6391LanguageCodes.js"
 import { runMkvMerge } from "./runMkvMerge.js"
 
 export const replacedTrackPath = "TRACK-REPLACED"
 
 export const replaceTrackById = ({
-  languageCode,
+  languageSelection,
   sourceFilePath,
   trackId,
   trackReplacementFilePath,
 }: {
-  languageCode: Iso6391LanguageCode
+  languageSelection: LanguageSelection
   sourceFilePath: string
   trackId: string
   trackReplacementFilePath: string
@@ -28,14 +27,8 @@ export const replaceTrackById = ({
         args: [
           sourceFilePath,
 
-          // "--no-audio",
-
-          // "--audio-tracks",
-
           "--language",
-          `${trackId}:${convertIso6391ToIso6392(
-            languageCode,
-          )}`,
+          `${trackId}:${languageSelection.ietf ?? languageSelection.code}`,
 
           trackReplacementFilePath,
         ],

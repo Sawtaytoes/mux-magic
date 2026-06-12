@@ -95,15 +95,17 @@ export const keepLanguagesCommand: CommandModule<
 
   handler: (argv) => {
     keepLanguages({
-      audioLanguages:
-        argv.audioLanguages as Iso6392LanguageCode[],
+      audioLanguages: (
+        argv.audioLanguages as Iso6392LanguageCode[]
+      ).map((code) => ({ code })),
       hasFirstAudioLanguage: argv.useFirstAudioLanguage,
       hasFirstSubtitlesLanguage:
         argv.useFirstSubtitlesLanguage,
       isRecursive: argv.isRecursive,
       sourcePath: argv.sourcePath,
-      subtitlesLanguages:
-        argv.subtitlesLanguages as Iso6392LanguageCode[],
+      subtitlesLanguages: (
+        argv.subtitlesLanguages as Iso6392LanguageCode[]
+      ).map((code) => ({ code })),
     }).subscribe(subscribeCli())
   },
 }

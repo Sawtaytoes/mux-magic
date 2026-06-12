@@ -124,7 +124,7 @@ describe("LanguageCodesField — tag rendering", () => {
     const steps = store.get(stepsAtom)
     expect(
       (steps[0] as Step).params.audioLanguages,
-    ).toEqual(["jpn"])
+    ).toEqual([{ code: "jpn" }])
   })
 
   test("removing the last tag sets the param to undefined", async () => {
@@ -213,7 +213,7 @@ describe("LanguageCodesField — filter autocomplete", () => {
     ).toBeInTheDocument()
   })
 
-  test("selecting an option adds it to stepsAtom params", async () => {
+  test("selecting an option adds it to stepsAtom params as a LanguageSelection object", async () => {
     const user = userEvent.setup()
     const step = createMockStep()
     const store = renderField(step, field)
@@ -228,9 +228,11 @@ describe("LanguageCodesField — filter autocomplete", () => {
     await user.click(engOption)
 
     const steps = store.get(stepsAtom)
+    const audioLanguages = (steps[0] as Step).params
+      .audioLanguages as { code: string }[]
     expect(
-      (steps[0] as Step).params.audioLanguages,
-    ).toContain("eng")
+      audioLanguages.some((sel) => sel.code === "eng"),
+    ).toBe(true)
   })
 
   test("selecting an option clears the filter input", async () => {
