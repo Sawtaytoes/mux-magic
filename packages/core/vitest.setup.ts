@@ -4,6 +4,7 @@ import {
 } from "@mux-magic/tools"
 import { vol } from "memfs"
 import { afterEach, beforeEach, vi } from "vitest"
+import { disableJobPersistenceForTests } from "./src/api/jobStore.js"
 
 // Always mock `fs` because it's used everywhere, and we never want to hit the filesystem.
 vi.mock("node:fs")
@@ -25,6 +26,7 @@ vi.mock("./src/tools/currentEnvironment.js", () => ({
 
 beforeEach(() => {
   initTaskScheduler(Infinity)
+  disableJobPersistenceForTests()
 })
 
 afterEach(() => {
