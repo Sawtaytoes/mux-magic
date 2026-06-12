@@ -4,7 +4,13 @@ import {
   screen,
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import { ComputeFromEditor } from "./ComputeFromEditor"
 import { StyleFieldRow } from "./StyleFieldRow"
 import type { ComputeFrom, DslRule } from "./types"
@@ -26,7 +32,7 @@ const makeSetStyleFieldsRules = (
 // ─── B14: StyleFieldRow "Field" trigger opens STYLE_FIELDS picker ─────────────
 
 describe("StyleFieldRow — field key autocomplete (B14)", () => {
-  it("renders the field key as a clickable trigger button", () => {
+  test("renders the field key as a clickable trigger button", () => {
     const rules = makeSetStyleFieldsRules(
       "Fontname",
       "Arial",
@@ -46,7 +52,7 @@ describe("StyleFieldRow — field key autocomplete (B14)", () => {
     ).toBeInTheDocument()
   })
 
-  it("clicking the field key trigger reveals Fontname as a dropdown option", async () => {
+  test("clicking the field key trigger reveals Fontname as a dropdown option", async () => {
     const user = userEvent.setup()
     const rules = makeSetStyleFieldsRules(
       "Fontname",
@@ -71,7 +77,7 @@ describe("StyleFieldRow — field key autocomplete (B14)", () => {
     ).toBeInTheDocument()
   })
 
-  it("clicking a STYLE_FIELDS option commits the renamed field", async () => {
+  test("clicking a STYLE_FIELDS option commits the renamed field", async () => {
     const user = userEvent.setup()
     const rules = makeSetStyleFieldsRules("Field1", "")
     const onCommitRules = vi.fn()
@@ -102,7 +108,7 @@ describe("StyleFieldRow — field key autocomplete (B14)", () => {
     expect(Object.keys(fields)).toContain("PrimaryColour")
   })
 
-  it("does not open the picker when isReadOnly", async () => {
+  test("does not open the picker when isReadOnly", async () => {
     const user = userEvent.setup()
     const rules = makeSetStyleFieldsRules(
       "Fontname",
@@ -152,7 +158,7 @@ const makeComputedRules = (
 ]
 
 describe("ComputeFromEditor — property autocomplete (B14)", () => {
-  it("clicking the property trigger with scope=scriptInfo shows PlayResY", async () => {
+  test("clicking the property trigger with scope=scriptInfo shows PlayResY", async () => {
     const user = userEvent.setup()
     render(
       <ComputeFromEditor
@@ -178,7 +184,7 @@ describe("ComputeFromEditor — property autocomplete (B14)", () => {
     ).not.toBeInTheDocument()
   })
 
-  it("clicking the property trigger with scope=style shows PrimaryColour", async () => {
+  test("clicking the property trigger with scope=style shows PrimaryColour", async () => {
     const user = userEvent.setup()
     render(
       <ComputeFromEditor
@@ -202,7 +208,7 @@ describe("ComputeFromEditor — property autocomplete (B14)", () => {
     ).not.toBeInTheDocument()
   })
 
-  it("selecting a property option commits the value", async () => {
+  test("selecting a property option commits the value", async () => {
     const user = userEvent.setup()
     const onCommitRules = vi.fn()
     render(
@@ -234,7 +240,7 @@ describe("ComputeFromEditor — property autocomplete (B14)", () => {
     expect(fieldValue.property).toBe("PlayResY")
   })
 
-  it("typing a custom property value not in the list still saves correctly", async () => {
+  test("typing a custom property value not in the list still saves correctly", async () => {
     const user = userEvent.setup()
     const onCommitRules = vi.fn()
     render(

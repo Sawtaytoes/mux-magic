@@ -5,13 +5,7 @@ import {
   screen,
 } from "@testing-library/react"
 import { createStore, Provider } from "jotai"
-import {
-  afterEach,
-  describe,
-  expect,
-  it,
-  test,
-} from "vitest"
+import { afterEach, describe, expect, test } from "vitest"
 import { FIXTURE_COMMANDS_BUNDLE_C } from "../../commands/__fixtures__/commands"
 import type { CommandField } from "../../commands/types"
 import { stepsAtom } from "../../state/stepsAtom"
@@ -63,7 +57,7 @@ describe("NumberArrayField", () => {
   const field: CommandField = FIXTURE_COMMANDS_BUNDLE_C
     .addSubtitles.fields[1] as CommandField
 
-  it("displays empty string when value is undefined", () => {
+  test("displays empty string when value is undefined", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -80,7 +74,7 @@ describe("NumberArrayField", () => {
     expect(input).toHaveValue("")
   })
 
-  it("displays array as comma-separated string", () => {
+  test("displays array as comma-separated string", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -97,7 +91,7 @@ describe("NumberArrayField", () => {
     expect(input).toHaveValue("0, -200, 150")
   })
 
-  it("trims whitespace from items", () => {
+  test("trims whitespace from items", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -114,7 +108,7 @@ describe("NumberArrayField", () => {
     expect(input).toHaveValue("100, -50")
   })
 
-  it("filters out non-numeric values", () => {
+  test("filters out non-numeric values", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -131,7 +125,7 @@ describe("NumberArrayField", () => {
     expect(input).toHaveValue("100, 50")
   })
 
-  it("uses field placeholder when provided", () => {
+  test("uses field placeholder when provided", () => {
     const customField: CommandField = {
       ...field,
       placeholder: "100, 200, 300",
@@ -156,7 +150,7 @@ describe("NumberArrayField", () => {
     )
   })
 
-  it("defaults to showing 0, 100 placeholder", () => {
+  test("defaults to showing 0, 100 placeholder", () => {
     const step: Step = {
       id: "step-1",
       alias: "",

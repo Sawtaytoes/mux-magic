@@ -4,7 +4,7 @@ import {
   screen,
 } from "@testing-library/react"
 import { Provider } from "jotai"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, test } from "vitest"
 
 import type { Step } from "../../types"
 import {
@@ -34,13 +34,13 @@ import type { DslRule } from "./types"
 // ─── Mutation unit tests (pure, no React) ─────────────────────────────────────
 
 describe("addRule", () => {
-  it("appends a setScriptInfo rule by default", () => {
+  test("appends a setScriptInfo rule by default", () => {
     const result = addRule({ rules: [] })
     expect(result).toHaveLength(1)
     expect(result[0].type).toBe("setScriptInfo")
   })
 
-  it("appends a scaleResolution rule when specified", () => {
+  test("appends a scaleResolution rule when specified", () => {
     const result = addRule({
       rules: [],
       ruleType: "scaleResolution",
@@ -48,7 +48,7 @@ describe("addRule", () => {
     expect(result[0].type).toBe("scaleResolution")
   })
 
-  it("inserts at the specified index", () => {
+  test("inserts at the specified index", () => {
     const rules: DslRule[] = [
       { type: "setScriptInfo", key: "A", value: "" },
       { type: "setScriptInfo", key: "B", value: "" },
@@ -66,7 +66,7 @@ describe("addRule", () => {
 })
 
 describe("removeRule", () => {
-  it("removes the rule at the given index", () => {
+  test("removes the rule at the given index", () => {
     const rules: DslRule[] = [
       { type: "setScriptInfo", key: "A", value: "" },
       { type: "setScriptInfo", key: "B", value: "" },
@@ -76,7 +76,7 @@ describe("removeRule", () => {
     expect((result[0] as { key: string }).key).toBe("B")
   })
 
-  it("returns original array for out-of-range index", () => {
+  test("returns original array for out-of-range index", () => {
     const rules: DslRule[] = [
       { type: "setScriptInfo", key: "A", value: "" },
     ]
@@ -86,7 +86,7 @@ describe("removeRule", () => {
 })
 
 describe("moveRule", () => {
-  it("moves a rule down by 1", () => {
+  test("moves a rule down by 1", () => {
     const rules: DslRule[] = [
       { type: "setScriptInfo", key: "A", value: "" },
       { type: "setScriptInfo", key: "B", value: "" },
@@ -100,7 +100,7 @@ describe("moveRule", () => {
     expect((result[1] as { key: string }).key).toBe("A")
   })
 
-  it("no-ops when moving the first rule up", () => {
+  test("no-ops when moving the first rule up", () => {
     const rules: DslRule[] = [
       { type: "setScriptInfo", key: "A", value: "" },
       { type: "setScriptInfo", key: "B", value: "" },
@@ -115,7 +115,7 @@ describe("moveRule", () => {
 })
 
 describe("changeRuleType", () => {
-  it("replaces the rule with an empty rule of the new type", () => {
+  test("replaces the rule with an empty rule of the new type", () => {
     const rules: DslRule[] = [
       { type: "setScriptInfo", key: "X", value: "Y" },
     ]
@@ -132,7 +132,7 @@ describe("changeRuleType", () => {
 })
 
 describe("setScriptInfoField", () => {
-  it("updates the key field", () => {
+  test("updates the key field", () => {
     const rules: DslRule[] = [
       { type: "setScriptInfo", key: "Old", value: "" },
     ]
@@ -145,7 +145,7 @@ describe("setScriptInfoField", () => {
     expect((result[0] as { key: string }).key).toBe("New")
   })
 
-  it("updates the value field", () => {
+  test("updates the value field", () => {
     const rules: DslRule[] = [
       { type: "setScriptInfo", key: "", value: "Old" },
     ]
@@ -162,7 +162,7 @@ describe("setScriptInfoField", () => {
 })
 
 describe("setScaleResolutionDimension", () => {
-  it("updates from.width", () => {
+  test("updates from.width", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
@@ -186,7 +186,7 @@ describe("setScaleResolutionDimension", () => {
 // ─── readIsAspectLinked + legacy migration ────────────────────────────────────
 
 describe("readIsAspectLinked", () => {
-  it("returns true when no flags are set (default-on)", () => {
+  test("returns true when no flags are set (default-on)", () => {
     const rule = {
       type: "scaleResolution" as const,
       from: { width: 1920, height: 1080 },
@@ -195,7 +195,7 @@ describe("readIsAspectLinked", () => {
     expect(readIsAspectLinked(rule)).toBe(true)
   })
 
-  it("returns false when isAspectLinked is false", () => {
+  test("returns false when isAspectLinked is false", () => {
     const rule = {
       type: "scaleResolution" as const,
       from: { width: 1920, height: 1080 },
@@ -205,7 +205,7 @@ describe("readIsAspectLinked", () => {
     expect(readIsAspectLinked(rule)).toBe(false)
   })
 
-  it("returns false when legacy isFromAspectLocked is false", () => {
+  test("returns false when legacy isFromAspectLocked is false", () => {
     const rule = {
       type: "scaleResolution" as const,
       from: { width: 1920, height: 1080 },
@@ -215,7 +215,7 @@ describe("readIsAspectLinked", () => {
     expect(readIsAspectLinked(rule)).toBe(false)
   })
 
-  it("returns false when legacy isToAspectLocked is false", () => {
+  test("returns false when legacy isToAspectLocked is false", () => {
     const rule = {
       type: "scaleResolution" as const,
       from: { width: 1920, height: 1080 },
@@ -229,7 +229,7 @@ describe("readIsAspectLinked", () => {
 // ─── setScaleResolutionAspectLink ─────────────────────────────────────────────
 
 describe("setScaleResolutionAspectLink", () => {
-  it("marks unlinked by writing isAspectLinked=false and drops legacy keys", () => {
+  test("marks unlinked by writing isAspectLinked=false and drops legacy keys", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
@@ -254,7 +254,7 @@ describe("setScaleResolutionAspectLink", () => {
     )
   })
 
-  it("relinking deletes isAspectLinked key (default-on omission) and drops legacy keys", () => {
+  test("relinking deletes isAspectLinked key (default-on omission) and drops legacy keys", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
@@ -282,7 +282,7 @@ describe("setScaleResolutionAspectLink", () => {
 // ─── setScaleResolutionToDimensionLinked ──────────────────────────────────────
 
 describe("setScaleResolutionToDimensionLinked", () => {
-  it("preserves from aspect (2.4:1) when editing to.width — not to's own prior ratio", () => {
+  test("preserves from aspect (2.4:1) when editing to.width — not to's own prior ratio", () => {
     // This is the regression test: from is 1920×800 (2.4:1), to is 1280×720 (16:9).
     // Editing to.width=3840 while linked should give to.height=1600 (from's 2.4:1),
     // NOT 2160 (to's own 16:9).
@@ -310,7 +310,7 @@ describe("setScaleResolutionToDimensionLinked", () => {
     expect(updated.from.height).toBe(800)
   })
 
-  it("preserves from aspect when editing to.height", () => {
+  test("preserves from aspect when editing to.height", () => {
     // from is 1920×800 (2.4:1); editing to.height=800 → to.width=1920
     const rules: DslRule[] = [
       {
@@ -332,7 +332,7 @@ describe("setScaleResolutionToDimensionLinked", () => {
     expect(updated.to.width).toBe(1920)
   })
 
-  it("falls back to 16:9 when from dims are 0x0", () => {
+  test("falls back to 16:9 when from dims are 0x0", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
@@ -353,7 +353,7 @@ describe("setScaleResolutionToDimensionLinked", () => {
     expect(updated.to.height).toBe(1080)
   })
 
-  it("strips legacy aspect keys on write", () => {
+  test("strips legacy aspect keys on write", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
@@ -382,7 +382,7 @@ describe("setScaleResolutionToDimensionLinked", () => {
 // ─── from.* edit while linked — must be free (no to.* side-effects) ──────────
 
 describe("setScaleResolutionDimension for from group", () => {
-  it("editing from.width while linked does NOT touch to.*", () => {
+  test("editing from.width while linked does NOT touch to.*", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
@@ -409,7 +409,7 @@ describe("setScaleResolutionDimension for from group", () => {
 })
 
 describe("when mutations", () => {
-  it("adds and removes a when clause", () => {
+  test("adds and removes a when clause", () => {
     const rules: DslRule[] = [
       { type: "setScriptInfo", key: "", value: "" },
     ]
@@ -433,7 +433,7 @@ describe("when mutations", () => {
 })
 
 describe("applyIf mutations", () => {
-  it("adds and removes an applyIf clause", () => {
+  test("adds and removes an applyIf clause", () => {
     const rules: DslRule[] = [
       { type: "setStyleFields", fields: {} },
     ]
@@ -457,7 +457,7 @@ describe("applyIf mutations", () => {
 })
 
 describe("style field mutations", () => {
-  it("adds and removes a style field", () => {
+  test("adds and removes a style field", () => {
     const rules: DslRule[] = [
       { type: "setStyleFields", fields: {} },
     ]
@@ -504,7 +504,7 @@ afterEach(() => {
 })
 
 describe("DslRulesBuilder render", () => {
-  it("mounts without error for empty rules", () => {
+  test("mounts without error for empty rules", () => {
     render(
       <Provider>
         <DslRulesBuilder step={createStep()} />
@@ -515,7 +515,7 @@ describe("DslRulesBuilder render", () => {
     ).toBeInTheDocument()
   })
 
-  it("mounts without error for old-format parity fixture rules", () => {
+  test("mounts without error for old-format parity fixture rules", () => {
     const parityRules = [
       {
         match: {
@@ -547,7 +547,7 @@ describe("DslRulesBuilder render", () => {
     ).not.toBeInTheDocument()
   })
 
-  it("renders a rule card for each DSL rule", () => {
+  test("renders a rule card for each DSL rule", () => {
     const rules: DslRule[] = [
       {
         type: "setScriptInfo",
@@ -573,7 +573,7 @@ describe("DslRulesBuilder render", () => {
     ).toBeInTheDocument()
   })
 
-  it("renders exactly one aspect link button (linked by default)", () => {
+  test("renders exactly one aspect link button (linked by default)", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
@@ -596,7 +596,7 @@ describe("DslRulesBuilder render", () => {
     )
   })
 
-  it("reflects unlinked state when isAspectLinked is false", () => {
+  test("reflects unlinked state when isAspectLinked is false", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
@@ -619,7 +619,7 @@ describe("DslRulesBuilder render", () => {
     )
   })
 
-  it("reflects unlinked state when legacy isFromAspectLocked is false", () => {
+  test("reflects unlinked state when legacy isFromAspectLocked is false", () => {
     const rules: DslRule[] = [
       {
         type: "scaleResolution",
