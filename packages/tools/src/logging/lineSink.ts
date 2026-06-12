@@ -31,10 +31,8 @@ const formatValue = (value: unknown) => {
   }
 }
 
-const renderField = ([key, value]: [
-  string,
-  unknown,
-]) => `${key}=${formatValue(value)}`
+const renderField = ([key, value]: [string, unknown]) =>
+  `${key}=${formatValue(value)}`
 
 const isRenderableEntry =
   (excludedKeys: ReadonlySet<string>) =>

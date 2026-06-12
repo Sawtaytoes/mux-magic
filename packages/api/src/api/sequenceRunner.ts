@@ -510,9 +510,7 @@ export const runSequenceJob = (
   // Returns the index of the first FlatStep whose underlying step
   // reference matches `target` — used to convert "we just finished
   // this group" into a flat-index for cascading skip.
-  const flatIndexAfter = (
-    lastStepInItem: SequenceStep,
-  ) => {
+  const flatIndexAfter = (lastStepInItem: SequenceStep) => {
     const last = flatSteps.findIndex(
       (flat) => flat.step === lastStepInItem,
     )

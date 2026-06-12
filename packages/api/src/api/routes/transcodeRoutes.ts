@@ -87,9 +87,8 @@ type ValidationResult =
   | { failure: ValidationFailure; params: null }
   | { failure: null; params: ValidatedParams }
 
-const defaultBitrateForCodec = (
-  codec: TranscodeCodec,
-) => (codec === "opus" ? "192k" : "256k")
+const defaultBitrateForCodec = (codec: TranscodeCodec) =>
+  codec === "opus" ? "192k" : "256k"
 
 const validateBitrate = (
   rawBitrate: string | undefined,

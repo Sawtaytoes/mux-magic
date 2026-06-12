@@ -67,9 +67,7 @@ const formatCandidateLabel = (
 // Episode title preference matches the rest of the AniDB rename flow:
 // English → x-jat (romaji) → first available. Duplicated here rather
 // than imported to keep the helper self-contained.
-const pickEpisodeTitle = (
-  titles: AnidbEpisode["titles"],
-) =>
+const pickEpisodeTitle = (titles: AnidbEpisode["titles"]) =>
   titles.find((title) => title.lang === "en")?.value ??
   titles.find((title) => title.lang === "x-jat")?.value ??
   titles[0]?.value ??

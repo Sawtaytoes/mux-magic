@@ -72,9 +72,7 @@ const safeUnlink = async (path: string) => {
   }
 }
 
-const buildExistsError = (
-  destination: string,
-) => {
+const buildExistsError = (destination: string) => {
   const error = new Error(
     `Refusing to overwrite existing destination: ${destination}`,
   ) as Error & { code: string }

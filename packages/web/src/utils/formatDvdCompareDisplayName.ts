@@ -14,8 +14,7 @@
 
 export const displayDvdCompareVariant = (
   variant: string,
-) =>
-  variant === "Blu-ray 4K" ? "UHD Blu-ray" : variant
+) => (variant === "Blu-ray 4K" ? "UHD Blu-ray" : variant)
 
 export const formatDvdCompareDisplayName = (args: {
   baseTitle: string

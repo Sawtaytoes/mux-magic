@@ -72,9 +72,7 @@ const ensureCacheDirectory = () => {
   return directoryPath
 }
 
-const extensionForCodec = (
-  _codec: TranscodeCodec,
-) => ".mp4"
+const extensionForCodec = (_codec: TranscodeCodec) => ".mp4"
 
 export const mimeTypeForCodec = (
   _codec: TranscodeCodec,
@@ -180,9 +178,7 @@ export const transcodeTempStore = {
   // so subsequent acquire() calls treat it as a cache hit and the LRU
   // evictor can include it in size accounting. Falls back to stat()'ing
   // the file when the caller doesn't already know the size.
-  markReady: async (
-    key: TranscodeCacheKey,
-  ) => {
+  markReady: async (key: TranscodeCacheKey) => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {
@@ -208,9 +204,7 @@ export const transcodeTempStore = {
   // ready) and the refcount drops to zero, the on-disk file is unlinked
   // immediately because nobody will ever serve a half-written file —
   // a fresh acquire() will redo the encode.
-  release: async (
-    key: TranscodeCacheKey,
-  ) => {
+  release: async (key: TranscodeCacheKey) => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {
@@ -235,9 +229,7 @@ export const transcodeTempStore = {
   // Removes an entry's on-disk file and bookkeeping unconditionally.
   // Intended for the encoder's failure path so a partial cache file
   // doesn't get served by a retry.
-  invalidate: async (
-    key: TranscodeCacheKey,
-  ) => {
+  invalidate: async (key: TranscodeCacheKey) => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {

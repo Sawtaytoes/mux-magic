@@ -262,9 +262,7 @@ export const createTemplateStore = ({
       return merged
     })
 
-  const deleteTemplate = async (
-    id: string,
-  ) =>
+  const deleteTemplate = async (id: string) =>
     serializeWrite(async () => {
       const file = await readTemplatesFile(filePath)
       const hasMatch = file.templates.some(
