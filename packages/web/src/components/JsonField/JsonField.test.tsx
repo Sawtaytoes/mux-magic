@@ -5,13 +5,7 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import {
-  afterEach,
-  describe,
-  expect,
-  it,
-  test,
-} from "vitest"
+import { afterEach, describe, expect, test } from "vitest"
 import type { CommandField } from "../../commands/types"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
@@ -38,7 +32,7 @@ describe("JsonField", () => {
     label: "JSON Data",
   }
 
-  it("displays empty string when value is undefined", () => {
+  test("displays empty string when value is undefined", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -55,7 +49,7 @@ describe("JsonField", () => {
     expect(textarea).toHaveValue("")
   })
 
-  it("displays string value as-is", () => {
+  test("displays string value as-is", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -72,7 +66,7 @@ describe("JsonField", () => {
     expect(textarea).toHaveValue('{"key": "value"}')
   })
 
-  it("displays object value as formatted JSON", () => {
+  test("displays object value as formatted JSON", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -97,7 +91,7 @@ describe("JsonField", () => {
     )
   })
 
-  it("handles empty JSON object", () => {
+  test("handles empty JSON object", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -114,7 +108,7 @@ describe("JsonField", () => {
     expect(textarea).toHaveValue("{}")
   })
 
-  it("handles arrays in JSON", () => {
+  test("handles arrays in JSON", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -131,7 +125,7 @@ describe("JsonField", () => {
     expect(textarea).toHaveValue("[\n  1,\n  2,\n  3\n]")
   })
 
-  it("displays linked state as read-only text", () => {
+  test("displays linked state as read-only text", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -157,7 +151,7 @@ describe("JsonField", () => {
     ).toBeInTheDocument()
   })
 
-  it("displays linked state with default output name", () => {
+  test("displays linked state with default output name", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -180,7 +174,7 @@ describe("JsonField", () => {
     ).toBeInTheDocument()
   })
 
-  it("uses field placeholder when provided", () => {
+  test("uses field placeholder when provided", () => {
     const customField: CommandField = {
       ...field,
       placeholder: '{"default": "value"}',
@@ -205,7 +199,7 @@ describe("JsonField", () => {
     )
   })
 
-  it("defaults to [] placeholder", () => {
+  test("defaults to [] placeholder", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -222,7 +216,7 @@ describe("JsonField", () => {
     expect(textarea).toHaveAttribute("placeholder", "[]")
   })
 
-  it("has id matching stepId-fieldName for label association", () => {
+  test("has id matching stepId-fieldName for label association", () => {
     // ID scheme switched from `${command}-${field.name}` to
     // `${step.id}-${field.name}` in 212661fe to dodge cross-card
     // collisions when two steps share a command. This test pins the
@@ -246,7 +240,7 @@ describe("JsonField", () => {
     )
   })
 
-  it("sets aria-required when field is required", () => {
+  test("sets aria-required when field is required", () => {
     const requiredField: CommandField = {
       ...field,
       isRequired: true,
@@ -270,7 +264,7 @@ describe("JsonField", () => {
     )
   })
 
-  it("does not set aria-required when field is not required", () => {
+  test("does not set aria-required when field is not required", () => {
     const step: Step = {
       id: "step-1",
       alias: "",

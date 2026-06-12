@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { Provider } from "jotai"
-import { describe, expect, it } from "vitest"
+import { describe, expect, test } from "vitest"
 
 import { FIXTURE_COMMANDS_BUNDLE_D } from "../../commands/__fixtures__/commands"
 import type { Step } from "../../types"
@@ -26,7 +26,7 @@ describe("SubtitleRulesField", () => {
     FIXTURE_COMMANDS_BUNDLE_D.modifySubtitleMetadata
       .fields[1]
 
-  it("renders the visual rules builder", () => {
+  test("renders the visual rules builder", () => {
     const step = createTestStep()
     render(
       <Provider>
@@ -38,7 +38,7 @@ describe("SubtitleRulesField", () => {
     ).toBeInTheDocument()
   })
 
-  it("shows empty state when no rules are configured", () => {
+  test("shows empty state when no rules are configured", () => {
     const step = createTestStep({ params: { rules: [] } })
     render(
       <Provider>
@@ -50,7 +50,7 @@ describe("SubtitleRulesField", () => {
     ).toBeInTheDocument()
   })
 
-  it("renders a rule card when a rule exists", () => {
+  test("renders a rule card when a rule exists", () => {
     const step = createTestStep({
       params: {
         rules: [
@@ -72,7 +72,7 @@ describe("SubtitleRulesField", () => {
     ).toBeInTheDocument()
   })
 
-  it("renders default rules preview when hasDefaultRules is true", async () => {
+  test("renders default rules preview when hasDefaultRules is true", async () => {
     const step = createTestStep({
       params: { rules: [], hasDefaultRules: true },
     })
@@ -95,7 +95,7 @@ describe("SubtitleRulesField", () => {
     ).toBeGreaterThanOrEqual(1)
   })
 
-  it("hides default rules preview when hasDefaultRules is false", () => {
+  test("hides default rules preview when hasDefaultRules is false", () => {
     const step = createTestStep({
       params: { rules: [], hasDefaultRules: false },
     })
@@ -109,7 +109,7 @@ describe("SubtitleRulesField", () => {
     ).not.toBeInTheDocument()
   })
 
-  it("toggle button renders CollapseChevron svg with -rotate-90 when collapsed", async () => {
+  test("toggle button renders CollapseChevron svg with -rotate-90 when collapsed", async () => {
     const step = createTestStep({
       params: { rules: [], hasDefaultRules: true },
     })
@@ -138,7 +138,7 @@ describe("SubtitleRulesField", () => {
     ).not.toContain("-rotate-90")
   })
 
-  it("preview section is collapsible", async () => {
+  test("preview section is collapsible", async () => {
     const step = createTestStep({
       params: { rules: [], hasDefaultRules: true },
     })

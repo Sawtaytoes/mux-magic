@@ -4,7 +4,13 @@ import {
   screen,
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import { PredicatesManager } from "./PredicatesManager"
 import type { PredicatesMap } from "./types"
 
@@ -28,7 +34,7 @@ const renderPredicatesManager = (
   )
 
 describe("PredicatesManager chevron (B5)", () => {
-  it("renders an svg chevron in the Predicates toggle button", () => {
+  test("renders an svg chevron in the Predicates toggle button", () => {
     renderPredicatesManager()
     const button = screen.getByRole("button", {
       name: /predicates/i,
@@ -37,7 +43,7 @@ describe("PredicatesManager chevron (B5)", () => {
     expect(svg).not.toBeNull()
   })
 
-  it("svg has -rotate-90 when predicates section is collapsed", () => {
+  test("svg has -rotate-90 when predicates section is collapsed", () => {
     renderPredicatesManager()
     const button = screen.getByRole("button", {
       name: /predicates/i,
@@ -48,7 +54,7 @@ describe("PredicatesManager chevron (B5)", () => {
     )
   })
 
-  it("svg loses -rotate-90 after clicking to expand", async () => {
+  test("svg loses -rotate-90 after clicking to expand", async () => {
     renderPredicatesManager()
     const button = screen.getByRole("button", {
       name: /predicates/i,
@@ -60,7 +66,7 @@ describe("PredicatesManager chevron (B5)", () => {
     )
   })
 
-  it("clicking again re-collapses and restores -rotate-90", async () => {
+  test("clicking again re-collapses and restores -rotate-90", async () => {
     renderPredicatesManager()
     const button = screen.getByRole("button", {
       name: /predicates/i,
