@@ -1,0 +1,19 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/music"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "findContainerAudioFiles",
+    "params": {
+      "isRecursive": true
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

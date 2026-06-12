@@ -11,6 +11,8 @@ export const commandNames = [
   "makeDirectory",
   "changeTrackLanguages",
   "convertLosslessToFlac",
+  "convertContainerAudioToFlac",
+  "findContainerAudioFiles",
   "copyFiles",
   "flattenOutput",
   "copyOutSubtitles",

@@ -362,6 +362,51 @@ export const convertLosslessToFlacRequestSchema = z.object({
     ),
 })
 
+export const findContainerAudioFilesRequestSchema = z.object(
+  {
+    sourcePath: z
+      .string()
+      .min(1)
+      .describe(
+        "Directory containing container-with-video files (.mkv / .mp4 / .m4v / .mov / .webm / .avi) to probe with MediaInfo. Returns a per-file track summary (audio count, video count, audio codec, hasVideoTrack). Pure read — no filesystem mutation.",
+      ),
+    isRecursive: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Recursively descends one level into subdirectories looking for container-with-video files. Default false.",
+      ),
+  },
+)
+
+export const convertContainerAudioToFlacRequestSchema =
+  z.object({
+    sourcePath: z
+      .string()
+      .min(1)
+      .describe(
+        "Directory containing container-with-video files (.mkv / .mp4 / .m4v / .mov / .webm / .avi) whose audio tracks should be encoded to FLAC in-place.",
+      ),
+    isRecursive: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Recursively descends one level into subdirectories. Default false.",
+      ),
+    isSourceDeleted: z
+      .boolean()
+      .default(false)
+      .describe(
+        "When true, deletes each source container file after its FLAC encode succeeds. Defaults to false; the original is kept by default.",
+      ),
+    isVideoDropAcknowledged: z
+      .boolean()
+      .default(false)
+      .describe(
+        "When false (the default), files that contain a video track are skipped with a warning — use findContainerAudioFiles first to review. Set to true to acknowledge that the video track will be dropped during conversion.",
+      ),
+  })
+
 export const changeTrackLanguagesRequestSchema = z.object({
   sourcePath: z
     .string()

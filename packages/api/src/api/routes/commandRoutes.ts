@@ -10,11 +10,17 @@ import {
 } from "@mux-magic/core/src/app-commands/addSubtitles.js"
 import { changeTrackLanguages } from "@mux-magic/core/src/app-commands/changeTrackLanguages.js"
 import {
+  type ConvertContainerAudioToFlacConvertedRecord,
+  type ConvertContainerAudioToFlacRecord,
+  convertContainerAudioToFlac,
+} from "@mux-magic/core/src/app-commands/convertContainerAudioToFlac.js"
+import {
   type ConvertLosslessToFlacConvertedRecord,
   type ConvertLosslessToFlacRecord,
   type ConvertLosslessToFlacSkippedRecord,
   convertLosslessToFlac,
 } from "@mux-magic/core/src/app-commands/convertLosslessToFlac.js"
+import { findContainerAudioFiles } from "@mux-magic/core/src/app-commands/findContainerAudioFiles.js"
 import {
   type CopyRecord,
   copyFiles,
@@ -234,6 +240,47 @@ export const commandConfigs: Record<
     schema: schemas.convertLosslessToFlacRequestSchema,
     summary:
       "Encode lossless audio files (.wav / .aif / .aiff / .m4a / .m4b) to FLAC in-place (strictly lossless)",
+    tags: ["Audio Operations"],
+  },
+  findContainerAudioFiles: {
+    getObservable: (body) =>
+      findContainerAudioFiles({
+        isRecursive: body.isRecursive,
+        sourcePath: body.sourcePath,
+      }),
+    schema: schemas.findContainerAudioFilesRequestSchema,
+    summary:
+      "Probe container-with-video files (.mkv / .mp4 / .m4v / .mov / .webm / .avi) with MediaInfo and report per-file track summaries (audio count, video count, codec, hasVideoTrack). Pure read — no filesystem mutation.",
+    tags: ["Audio Operations"],
+  },
+  convertContainerAudioToFlac: {
+    getObservable: (body) =>
+      convertContainerAudioToFlac({
+        isRecursive: body.isRecursive,
+        isSourceDeleted: body.isSourceDeleted,
+        isVideoDropAcknowledged: body.isVideoDropAcknowledged,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => {
+      const records =
+        results as ConvertContainerAudioToFlacRecord[]
+      const converted = records.filter(
+        (
+          record,
+        ): record is ConvertContainerAudioToFlacConvertedRecord =>
+          record.kind === "converted",
+      )
+      return {
+        converted: converted.map((record) => ({
+          source: record.source,
+          destination: record.destination,
+        })),
+      }
+    },
+    schema:
+      schemas.convertContainerAudioToFlacRequestSchema,
+    summary:
+      "Encode audio tracks from container-with-video files (.mkv / .mp4 / etc.) to FLAC in-place, dropping the video stream. Requires isVideoDropAcknowledged: true to convert files that have a video track.",
     tags: ["Audio Operations"],
   },
   copyFiles: {
