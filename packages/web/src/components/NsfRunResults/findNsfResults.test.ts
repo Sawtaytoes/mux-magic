@@ -1,6 +1,9 @@
 import { describe, expect, test } from "vitest"
 import {
+  findNsfEditionPlan,
+  isNsfEditionPlan,
   mergeAppliedRenamesIntoNsfResults,
+  type NsfEditionPlanRecord,
   type NsfRenamePair,
   type NsfSummaryRecord,
 } from "./findNsfResults"
@@ -171,5 +174,83 @@ describe(mergeAppliedRenamesIntoNsfResults.name, () => {
     })
     expect(result.summary).toBeNull()
     expect(result.renamePairs).toEqual([applied])
+  })
+})
+
+describe(isNsfEditionPlan.name, () => {
+  const validPlan: NsfEditionPlanRecord = {
+    isEditionPlan: true,
+    moves: [
+      {
+        sourceFilename:
+          "Dragon Lord (1982) {edition-Hong Kong Version}.mkv",
+        destinationPath:
+          "/Dragon Lord (1982)/Dragon Lord (1982) {edition-Hong Kong Version}/Dragon Lord (1982) {edition-Hong Kong Version}.mkv",
+        editionName: "Hong Kong Version",
+        isSibling: false,
+      },
+    ],
+  }
+
+  test("returns true for a valid edition plan record", () => {
+    expect(isNsfEditionPlan(validPlan)).toBe(true)
+  })
+
+  test("returns false for a rename pair (different shape)", () => {
+    const renamePair: NsfRenamePair = {
+      oldName: "old.mkv",
+      newName: "new.mkv",
+    }
+    expect(isNsfEditionPlan(renamePair)).toBe(false)
+  })
+
+  test("returns false for null", () => {
+    expect(isNsfEditionPlan(null)).toBe(false)
+  })
+
+  test("returns false when isEditionPlan is missing", () => {
+    expect(isNsfEditionPlan({ moves: [] })).toBe(false)
+  })
+
+  test("returns false when moves is not an array", () => {
+    expect(
+      isNsfEditionPlan({
+        isEditionPlan: true,
+        moves: "not-array",
+      }),
+    ).toBe(false)
+  })
+
+  test("returns true for a plan with empty moves array", () => {
+    expect(
+      isNsfEditionPlan({ isEditionPlan: true, moves: [] }),
+    ).toBe(true)
+  })
+})
+
+describe(findNsfEditionPlan.name, () => {
+  test("finds the edition plan in a mixed results array", () => {
+    const editionPlan: NsfEditionPlanRecord = {
+      isEditionPlan: true,
+      moves: [],
+    }
+    const results = [
+      { oldName: "foo", newName: "bar" },
+      editionPlan,
+      {
+        unrenamedFilenames: [],
+        possibleNames: [],
+      },
+    ]
+    expect(findNsfEditionPlan(results)).toBe(editionPlan)
+  })
+
+  test("returns null when no edition plan is present", () => {
+    const results = [{ oldName: "foo", newName: "bar" }]
+    expect(findNsfEditionPlan(results)).toBeNull()
+  })
+
+  test("returns null for undefined input", () => {
+    expect(findNsfEditionPlan(undefined)).toBeNull()
   })
 })
