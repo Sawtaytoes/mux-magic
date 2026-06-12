@@ -19,6 +19,12 @@ export const JobsPage = () => {
           >
             Sequence Builder ↗
           </a>
+          <a
+            href="/errors"
+            className="text-sm font-normal text-slate-400 hover:text-slate-300 ml-3"
+          >
+            Errors ↗
+          </a>
         </h1>
         <StatusBar />
       </div>

@@ -1,0 +1,36 @@
+{/* ErrorRow.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as ErrorRowStories from "./ErrorRow.stories";
+
+<Meta of={ErrorRowStories} />
+
+# ErrorRow
+
+A single row in the ErrorsPanel. Shows a condensed view of a persisted job-error record including the delivery-state badge, relative timestamp, job ID link, truncated message, and action buttons.
+
+## Props
+
+| Prop | Type | Notes |
+|------|------|-------|
+| `record` | `PersistedJobError` | The error record to display |
+| `onDismiss` | `() => Promise<void>` | Called after the user confirms the dismiss action |
+| `onRedeliver` | `() => Promise<void>` | Called when the user clicks "Retry delivery" on an exhausted row |
+
+## Actions
+
+- **Expand / Collapse** — Toggles the detail panel showing `stack`, `errorName`, `traceId`, `spanId`, delivery history.
+- **Retry delivery** — Only rendered on `exhausted` rows. Immediately calls `onRedeliver` (no confirmation needed — it's non-destructive).
+- **Dismiss** — Renders a two-step confirmation (Dismiss → Confirm / Cancel) before calling `onDismiss`. Prevents accidental deletions.
+
+## Pending
+
+<Canvas of={ErrorRowStories.Pending} />
+
+## Delivered
+
+<Canvas of={ErrorRowStories.Delivered} />
+
+## Exhausted
+
+<Canvas of={ErrorRowStories.Exhausted} />
