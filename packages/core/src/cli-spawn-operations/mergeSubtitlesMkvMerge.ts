@@ -1,7 +1,6 @@
 import { dirname, join } from "node:path"
+import type { LanguageSelection } from "@mux-magic/api/src/api/languageSelection.js"
 import { concatMap, endWith } from "rxjs"
-
-import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { SUBTITLED_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import { defineLanguageForUndefinedTracks } from "./defineLanguageForUndefinedTracks.js"
 import { runMkvMerge } from "./runMkvMerge.js"
@@ -12,7 +11,7 @@ type MergeSubtitlesMkvMergeRequiredProps = {
   attachmentFilePaths: string[]
   destinationFilePath: string
   subtitlesFilesPaths: string[]
-  subtitlesLanguage: Iso6392LanguageCode
+  subtitlesLanguage: LanguageSelection
 }
 
 type MergeSubtitlesMkvMergeOptionalProps = {
@@ -81,7 +80,7 @@ export const mergeSubtitlesMkvMerge = ({
             outputFolderName,
           ),
         ),
-        subtitleLanguage: subtitlesLanguage,
+        languageSelection: subtitlesLanguage,
         trackType: "subtitles",
       }).pipe(
         // TODO: Remove this. It's causing 2 logs instead of 1.

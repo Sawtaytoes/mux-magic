@@ -1,3 +1,4 @@
+import type { LanguageSelection } from "@mux-magic/api/src/api/languageSelection.js"
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
@@ -17,18 +18,17 @@ import {
   replaceTracksMkvMerge,
   replaceTracksMkvMergeDefaultProps,
 } from "../cli-spawn-operations/replaceTracksMkvMerge.js"
-import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ReplaceTracksRequiredProps = {
-  audioLanguages: Iso6392LanguageCode[]
+  audioLanguages: LanguageSelection[]
   destinationFilesPath: string
   hasAudioSyncOffset: boolean
   hasChapters: boolean
   offsets: number[]
   sourcePath: string
-  subtitlesLanguages: Iso6392LanguageCode[]
-  videoLanguages: Iso6392LanguageCode[]
+  subtitlesLanguages: LanguageSelection[]
+  videoLanguages: LanguageSelection[]
 }
 
 type ReplaceTracksOptionalProps = {
@@ -101,12 +101,6 @@ export const replaceTracks = ({
                 )
               }),
               concatMap((offsetInMilliseconds) =>
-                // mkvmerge is the second IO-heavy phase per file
-                // (after the optional audio-offset analysis). It gets
-                // its own scheduler slot — same reasoning as the
-                // runTask wraps inside getAudioOffset. The outer
-                // iteration below opts out via isOuterScheduled: false
-                // so this inner slot can actually be granted.
                 runTask(
                   replaceTracksMkvMerge({
                     audioLanguages,
@@ -130,10 +124,6 @@ export const replaceTracks = ({
               }),
               filter(Boolean),
             ),
-          // Per-file work below contains its own runTask wraps
-          // (getAudioOffset's ffmpegs + offset finder, and the
-          // mkvmerge above). The outer iteration must stay
-          // unscheduled to avoid the double-scheduling deadlock.
           { isOuterScheduled: false },
         ),
         toArray(),

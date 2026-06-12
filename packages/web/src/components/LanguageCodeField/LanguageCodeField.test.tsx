@@ -95,6 +95,25 @@ describe("LanguageCodeField — selected tag rendering", () => {
     ).toBeUndefined()
   })
 
+  test("renders no variant field for jpn (no BCP 47 variants)", () => {
+    const step = createMockStep({
+      params: { audioLanguage: "jpn" },
+    })
+    renderField(step, field)
+    expect(
+      screen.queryByRole("combobox", { name: /variant/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  test("renders a variant select for chi (7 Chinese BCP 47 variants)", () => {
+    const step = createMockStep({
+      params: { audioLanguage: "chi" },
+    })
+    renderField(step, field)
+    const selects = screen.getAllByRole("combobox")
+    expect(selects.length).toBeGreaterThanOrEqual(1)
+  })
+
   test("uses field label component", () => {
     const step = createMockStep()
     renderField(step, field)
@@ -153,7 +172,7 @@ describe("LanguageCodeField — filter autocomplete", () => {
     ).toBeInTheDocument()
   })
 
-  test("selecting an option sets the param to that code", async () => {
+  test("selecting an option sets the param to a LanguageSelection object", async () => {
     const user = userEvent.setup()
     const step = createMockStep()
     const store = renderField(step, field)
@@ -168,9 +187,9 @@ describe("LanguageCodeField — filter autocomplete", () => {
     await user.click(jpnOption)
 
     const steps = store.get(stepsAtom)
-    expect((steps[0] as Step).params.audioLanguage).toBe(
-      "jpn",
-    )
+    expect(
+      (steps[0] as Step).params.audioLanguage,
+    ).toEqual({ code: "jpn" })
   })
 
   test("selecting an option clears the filter input", async () => {
@@ -190,44 +209,46 @@ describe("LanguageCodeField — filter autocomplete", () => {
   test("selecting a new code replaces the previous selection", async () => {
     const user = userEvent.setup()
     const step = createMockStep({
-      params: { audioLanguage: "eng" },
+      params: { audioLanguage: "jpn" },
     })
     const store = renderField(step, field)
 
     await user.type(
       screen.getByRole("combobox"),
-      "Japanese",
+      "Korean",
     )
 
     const listbox = screen.getByRole("listbox")
-    const jpnOption = within(listbox)
+    const korOption = within(listbox)
       .getAllByRole("option")
-      .find((opt) => within(opt).queryByText("jpn"))
-    if (!jpnOption) throw new Error("jpn option not found")
-    await user.click(jpnOption)
+      .find((opt) => within(opt).queryByText("kor"))
+    if (!korOption) throw new Error("kor option not found")
+    await user.click(korOption)
 
     const steps = store.get(stepsAtom)
-    expect((steps[0] as Step).params.audioLanguage).toBe(
-      "jpn",
-    )
+    expect(
+      (steps[0] as Step).params.audioLanguage,
+    ).toEqual({ code: "kor" })
   })
 
   test("currently-selected code is excluded from the dropdown", async () => {
     const user = userEvent.setup()
     const step = createMockStep({
-      params: { audioLanguage: "eng" },
+      params: { audioLanguage: "jpn" },
     })
     renderField(step, field)
 
-    await user.type(screen.getByRole("combobox"), "eng")
+    // Type a letter that matches many codes — "j" — so the listbox renders
+    // with results. The selected code "jpn" must not appear among them.
+    await user.type(screen.getByRole("combobox"), "j")
 
     const listbox = screen.getByRole("listbox")
     const options = within(listbox).queryAllByRole("option")
-    const engOptionInList = options.find(
+    const jpnOptionInList = options.find(
       (opt) =>
-        within(opt).queryByText("eng") !== null &&
-        within(opt).queryByText("English") !== null,
+        within(opt).queryByText("jpn") !== null &&
+        within(opt).queryByText("Japanese") !== null,
     )
-    expect(engOptionInList).toBeUndefined()
+    expect(jpnOptionInList).toBeUndefined()
   })
 })

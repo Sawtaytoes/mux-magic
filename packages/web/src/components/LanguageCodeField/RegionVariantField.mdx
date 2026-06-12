@@ -1,0 +1,34 @@
+import { Canvas, Meta } from "@storybook/blocks"
+import * as Stories from "./RegionVariantField.stories"
+
+<Meta of={Stories} />
+
+# RegionVariantField
+
+A secondary select that appears below the primary language picker **only** when the chosen base language has curated BCP 47 regional variants. When no variants exist for the selected language (e.g. Japanese), nothing renders.
+
+## Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `baseCode` | `string` | ISO 639-2 three-letter base language code (e.g. `"chi"`, `"por"`). |
+| `selectedIetf` | `string \| null` | Currently selected BCP 47 tag, or `null` for no variant. |
+| `onIetfChange` | `(tag: string \| null) => void` | Called when the user picks a variant. Passes `null` when `(none)` is selected. |
+
+## Stories
+
+### Chinese — no selection
+
+<Canvas of={Stories.ChineseNoSelection} />
+
+### Chinese — with selection
+
+<Canvas of={Stories.ChineseWithSelection} />
+
+### Portuguese — no selection
+
+<Canvas of={Stories.PortugueseNoSelection} />
+
+### Japanese — hidden (no variants)
+
+<Canvas of={Stories.JapaneseHiddenNoVariants} />

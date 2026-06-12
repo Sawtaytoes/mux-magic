@@ -1,7 +1,7 @@
 import { dirname, join } from "node:path"
+import type { LanguageSelection } from "@mux-magic/api/src/api/languageSelection.js"
 import { concatMap, endWith, of } from "rxjs"
 import { getIsVideoFile } from "../tools/filterIsVideoFile.js"
-import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { REPLACED_TRACKS_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import { defineLanguageForUndefinedTracks } from "./defineLanguageForUndefinedTracks.js"
 import { runMkvMerge } from "./runMkvMerge.js"
@@ -10,12 +10,12 @@ export const replacedTracksFolderName =
   REPLACED_TRACKS_FOLDER_NAME
 
 type ReplaceTracksMkvMergeRequiredProps = {
-  audioLanguages: Iso6392LanguageCode[]
+  audioLanguages: LanguageSelection[]
   destinationFilePath: string
   hasChapters: boolean
   sourceFilePath: string
-  subtitlesLanguages: Iso6392LanguageCode[]
-  videoLanguages: Iso6392LanguageCode[]
+  subtitlesLanguages: LanguageSelection[]
+  videoLanguages: LanguageSelection[]
 }
 
 type ReplaceTracksMkvMergeOptionalProps = {
@@ -50,10 +50,14 @@ export const replaceTracksMkvMerge = ({
 
   const isVideoFile = getIsVideoFile(sourceFilePath)
 
+  const firstSubtitlesSelection = subtitlesLanguages[0] ?? {
+    code: "eng" as const,
+  }
+
   return isVideoFile
     ? defineLanguageForUndefinedTracks({
         filePath: sourceFilePath,
-        subtitleLanguage: subtitlesLanguages[0] || "eng",
+        languageSelection: firstSubtitlesSelection,
         trackType: "subtitles",
       }).pipe(
         // This would normally go to the next step in the pipeline, but there are sometimes no "und" language tracks, so we need to utilize this `endWith` to continue in the event the `filter` stopped us.
@@ -83,21 +87,27 @@ export const replaceTracksMkvMerge = ({
               ...(isVideoFile && hasAudioLanguages
                 ? [
                     "--audio-tracks",
-                    audioLanguages.join(","),
+                    audioLanguages
+                      .map((selection) => selection.code)
+                      .join(","),
                   ]
                 : ["--no-audio"]),
 
               ...(isVideoFile && hasSubtitlesLanguages
                 ? [
                     "--subtitle-tracks",
-                    subtitlesLanguages.join(","),
+                    subtitlesLanguages
+                      .map((selection) => selection.code)
+                      .join(","),
                   ]
                 : ["--no-subtitles"]),
 
               ...(isVideoFile && hasVideoLanguages
                 ? [
                     "--video-tracks",
-                    videoLanguages.join(","),
+                    videoLanguages
+                      .map((selection) => selection.code)
+                      .join(","),
                   ]
                 : ["--no-video"]),
 

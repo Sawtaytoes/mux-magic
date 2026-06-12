@@ -1,13 +1,13 @@
-import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
+import type { LanguageSelection } from "@mux-magic/api/src/api/languageSelection.js"
 import { runMkvPropEdit } from "./runMkvPropEdit.js"
 
 export const updateTrackLanguage = ({
   filePath,
-  languageCode,
+  languageSelection,
   trackId,
 }: {
   filePath: string
-  languageCode: Iso6392LanguageCode
+  languageSelection: LanguageSelection
   trackId: number
 }) =>
   runMkvPropEdit({
@@ -16,7 +16,14 @@ export const updateTrackLanguage = ({
       `track:@${trackId}`,
 
       "--set",
-      `language=${languageCode}`,
+      `language=${languageSelection.code}`,
+
+      ...(languageSelection.ietf
+        ? [
+            "--set",
+            `language-ietf=${languageSelection.ietf}`,
+          ]
+        : []),
     ],
     filePath,
   })
