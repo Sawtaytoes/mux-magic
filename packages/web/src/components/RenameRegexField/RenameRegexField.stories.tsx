@@ -95,3 +95,70 @@ export const WithSampleNoMatch: Story = {
     field: baseField,
   },
 }
+
+// ─── Chain stories (worker 6e) ─────────────────────────────────────────────
+
+export const ChainOfThreeRules: Story = {
+  args: {
+    step: {
+      ...baseStep,
+      params: {
+        renameRegex: [
+          {
+            pattern: "^Dandadan",
+            replacement: "Dan Da Dan",
+            sample: "Dandadan - Centuria 12.mkv",
+          },
+          {
+            pattern: "(Centuria) (\\d+)",
+            replacement: "$1 c$2",
+          },
+          {
+            pattern: "\\.([^.]+)$",
+            replacement: "",
+          },
+        ],
+      },
+    },
+    field: baseField,
+  },
+}
+
+export const ChainWithInvalidRule: Story = {
+  args: {
+    step: {
+      ...baseStep,
+      params: {
+        renameRegex: [
+          {
+            pattern: "^Dandadan",
+            replacement: "Dan Da Dan",
+            sample: "Dandadan Vol 1.mkv",
+          },
+          {
+            pattern: "[invalid(regex",
+            replacement: "oops",
+          },
+        ],
+      },
+    },
+    field: baseField,
+  },
+}
+
+export const SingleRuleBackCompat: Story = {
+  name: "Single rule (existing — back-compat)",
+  args: {
+    step: {
+      ...baseStep,
+      params: {
+        renameRegex: {
+          pattern: "^\\[Group\\] (.+)",
+          replacement: "$1",
+          sample: "[Group] My Show - 01 [BD 1080p].mkv",
+        },
+      },
+    },
+    field: baseField,
+  },
+}

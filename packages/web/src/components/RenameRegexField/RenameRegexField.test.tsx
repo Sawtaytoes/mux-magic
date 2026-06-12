@@ -45,6 +45,8 @@ afterEach(() => {
 })
 
 describe("RenameRegexField", () => {
+  // ─── Existing single-rule tests (regression) ─────────────────────────────
+
   test("renders blank pattern + replacement inputs when no value is set", () => {
     renderField()
     const patternInput = screen.getByLabelText(
@@ -203,5 +205,203 @@ describe("RenameRegexField", () => {
     await user.clear(replacementInput)
     const updated = store.get(stepsAtom)[0] as Step
     expect(updated.params.renameRegex).toBeUndefined()
+  })
+
+  // ─── Array form — initial read ────────────────────────────────────────────
+
+  test("renders rule rows when value is an array of rules", () => {
+    renderField({
+      ...baseStep,
+      params: {
+        renameRegex: [
+          {
+            pattern: "^Dandadan",
+            replacement: "Dan Da Dan",
+          },
+          {
+            pattern: "(Centuria) (\\d+)",
+            replacement: "$1 c$2",
+          },
+        ],
+      },
+    })
+    const patternInputs = screen.getAllByLabelText(
+      "Pattern",
+    ) as HTMLInputElement[]
+    expect(patternInputs).toHaveLength(2)
+    expect(patternInputs[0].value).toBe("^Dandadan")
+    expect(patternInputs[1].value).toBe("(Centuria) (\\d+)")
+  })
+
+  // ─── Add rule ─────────────────────────────────────────────────────────────
+
+  test("clicking Add rule converts to array form and appends a blank rule", async () => {
+    const user = userEvent.setup()
+    const store = renderField({
+      ...baseStep,
+      params: {
+        renameRegex: {
+          pattern: "^Dandadan",
+          replacement: "Dan Da Dan",
+        },
+      },
+    })
+    await user.click(
+      screen.getByRole("button", { name: /add rule/i }),
+    )
+    const updated = store.get(stepsAtom)[0] as Step
+    expect(Array.isArray(updated.params.renameRegex)).toBe(
+      true,
+    )
+    const rules = updated.params.renameRegex as Array<{
+      pattern: string
+      replacement: string
+    }>
+    expect(rules).toHaveLength(2)
+    expect(rules[0].pattern).toBe("^Dandadan")
+    expect(rules[1].pattern).toBe("")
+  })
+
+  test("add rule on empty field appends a second blank row", async () => {
+    const user = userEvent.setup()
+    const store = renderField()
+    await user.click(
+      screen.getByRole("button", { name: /add rule/i }),
+    )
+    const updated = store.get(stepsAtom)[0] as Step
+    expect(Array.isArray(updated.params.renameRegex)).toBe(
+      true,
+    )
+    const rules = updated.params.renameRegex as Array<{
+      pattern: string
+      replacement: string
+    }>
+    expect(rules).toHaveLength(2)
+  })
+
+  // ─── Delete rule ──────────────────────────────────────────────────────────
+
+  test("deleting a rule in chain mode removes the row", async () => {
+    const user = userEvent.setup()
+    const store = renderField({
+      ...baseStep,
+      params: {
+        renameRegex: [
+          { pattern: "rule1", replacement: "r1" },
+          { pattern: "rule2", replacement: "r2" },
+          { pattern: "rule3", replacement: "r3" },
+        ],
+      },
+    })
+    const deleteButtons = screen.getAllByRole("button", {
+      name: /delete rule/i,
+    })
+    expect(deleteButtons).toHaveLength(3)
+    await user.click(deleteButtons[1])
+    const updated = store.get(stepsAtom)[0] as Step
+    const rules = updated.params.renameRegex as Array<{
+      pattern: string
+      replacement: string
+    }>
+    expect(rules).toHaveLength(2)
+    expect(rules[0].pattern).toBe("rule1")
+    expect(rules[1].pattern).toBe("rule3")
+  })
+
+  test("deleting down to one rule keeps the array form", async () => {
+    const user = userEvent.setup()
+    const store = renderField({
+      ...baseStep,
+      params: {
+        renameRegex: [
+          { pattern: "rule1", replacement: "r1" },
+          { pattern: "rule2", replacement: "r2" },
+        ],
+      },
+    })
+    const deleteButtons = screen.getAllByRole("button", {
+      name: /delete rule/i,
+    })
+    await user.click(deleteButtons[1])
+    const updated = store.get(stepsAtom)[0] as Step
+    expect(Array.isArray(updated.params.renameRegex)).toBe(
+      true,
+    )
+    const rules = updated.params.renameRegex as Array<{
+      pattern: string
+    }>
+    expect(rules).toHaveLength(1)
+    expect(rules[0].pattern).toBe("rule1")
+  })
+
+  // ─── Reorder ──────────────────────────────────────────────────────────────
+
+  test("move-up swaps a rule with the one above it", async () => {
+    const user = userEvent.setup()
+    const store = renderField({
+      ...baseStep,
+      params: {
+        renameRegex: [
+          { pattern: "first", replacement: "F" },
+          { pattern: "second", replacement: "S" },
+        ],
+      },
+    })
+    const upButtons = screen.getAllByRole("button", {
+      name: /move rule up/i,
+    })
+    await user.click(upButtons[1])
+    const updated = store.get(stepsAtom)[0] as Step
+    const rules = updated.params.renameRegex as Array<{
+      pattern: string
+    }>
+    expect(rules[0].pattern).toBe("second")
+    expect(rules[1].pattern).toBe("first")
+  })
+
+  test("move-down swaps a rule with the one below it", async () => {
+    const user = userEvent.setup()
+    const store = renderField({
+      ...baseStep,
+      params: {
+        renameRegex: [
+          { pattern: "first", replacement: "F" },
+          { pattern: "second", replacement: "S" },
+        ],
+      },
+    })
+    const downButtons = screen.getAllByRole("button", {
+      name: /move rule down/i,
+    })
+    await user.click(downButtons[0])
+    const updated = store.get(stepsAtom)[0] as Step
+    const rules = updated.params.renameRegex as Array<{
+      pattern: string
+    }>
+    expect(rules[0].pattern).toBe("second")
+    expect(rules[1].pattern).toBe("first")
+  })
+
+  // ─── Chain final-output preview ───────────────────────────────────────────
+
+  test("final-output preview reflects chain output when first rule has a sample", async () => {
+    renderField({
+      ...baseStep,
+      params: {
+        renameRegex: [
+          {
+            pattern: "^Dandadan",
+            replacement: "Dan Da Dan",
+            sample: "Dandadan Vol 1",
+          },
+          {
+            pattern: "Dan Da Dan",
+            replacement: "DDD",
+          },
+        ],
+      },
+    })
+    expect(screen.getByText("Chain output")).toBeVisible()
+    expect(screen.getByText("DDD Vol 1")).toBeVisible()
   })
 })
