@@ -25,8 +25,8 @@ import { getActiveJobId } from "../api/logCapture.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import {
   compileFilterRegex,
-  compileRegexValue,
   type RegexFilterInput,
+  validateRenameRegexChain,
 } from "./copyFiles.js"
 
 type MoveRecord = {
@@ -154,9 +154,7 @@ export const moveFiles = ({
     fileFilterRegex,
     "fileFilterRegex",
   )
-  if (renameRegex !== undefined) {
-    compileRegexValue(renameRegex, "renameRegex")
-  }
+  validateRenameRegexChain(renameRegex)
 
   return new Observable<MoveRecord>((subscriber) => {
     const abortController = new AbortController()

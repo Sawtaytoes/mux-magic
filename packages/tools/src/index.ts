@@ -17,6 +17,7 @@ export { addFolderNameBeforeFilename } from "./addFolderNameBeforeFilename.js"
 export {
   applyRenameRegex,
   type RenameRegex,
+  type RenameRegexRule,
 } from "./applyRenameRegex.js"
 export { cleanupFilename } from "./cleanupFilename.js"
 export {

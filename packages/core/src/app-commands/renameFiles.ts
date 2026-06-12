@@ -18,8 +18,8 @@ import {
 } from "rxjs"
 import {
   compileFilterRegex,
-  compileRegexValue,
   type RegexFilterInput,
+  validateRenameRegexChain,
 } from "./copyFiles.js"
 
 export type RenameRecord = {
@@ -58,7 +58,7 @@ export const renameFiles = ({
     fileFilterRegex,
     "fileFilterRegex",
   )
-  compileRegexValue(renameRegex, "renameRegex")
+  validateRenameRegexChain(renameRegex)
 
   return new Observable<RenameRecord>((subscriber) => {
     const abortController = new AbortController()

@@ -97,6 +97,35 @@ export const compileFilterRegex = (
     : compileRegexValue(value, fieldLabel)
 }
 
+// Pre-flight compile for a RenameRegex chain. Validates every rule's
+// pattern + flags at handler-start time (before any file I/O) and fails
+// fast on the first invalid rule, surfacing its zero-based index. Returns
+// without a value — the compiled RegExps are not needed here because
+// `applyRenameRegex` re-compiles per call; this call is purely for the
+// early error surface. Accepts `undefined` (renameRegex is optional in
+// copyFiles / moveFiles).
+export const validateRenameRegexChain = (
+  renameRegex: RenameRegex | undefined,
+): void => {
+  if (renameRegex === undefined) return
+  const rules = Array.isArray(renameRegex)
+    ? renameRegex
+    : [renameRegex]
+  rules.forEach((rule, index) => {
+    try {
+      compileRegexValue(rule, `renameRegex[${index}]`)
+    } catch (cause) {
+      throw new Error(
+        `Invalid renameRegex rule at index ${index}: ${
+          cause instanceof Error
+            ? cause.message
+            : String(cause)
+        }`,
+      )
+    }
+  })
+}
+
 // Wraps the inner copy pipeline in an Observable whose teardown aborts
 // an internal AbortController. The signal threads into every per-file
 // `aclSafeCopyFile` call so an unsubscribe (sequence cancel, parallel
@@ -134,9 +163,7 @@ export const copyFiles = ({
     folderFilterRegex,
     "folderFilterRegex",
   )
-  if (renameRegex !== undefined) {
-    compileRegexValue(renameRegex, "renameRegex")
-  }
+  validateRenameRegexChain(renameRegex)
 
   return new Observable<CopyRecord>((subscriber) => {
     const abortController = new AbortController()
