@@ -1,4 +1,5 @@
 import type { PossibleName } from "../tools/parseSpecialFeatures.js"
+import type { EditionPlanMove } from "./nameSpecialFeaturesDvdCompareTmdb.buildEditionPlan.js"
 import type { ScoredCandidate } from "./nameSpecialFeaturesDvdCompareTmdb.rankCandidates.js"
 
 // A candidate association for an unnamed file — used in the follow-up
@@ -26,6 +27,14 @@ export type UnnamedFileCandidate = {
   rankedCandidates: ScoredCandidate[]
 }
 
+// Preview event emitted before any edition-folder moves occur.
+// Summarizes every planned move so the web UI can display a preview
+// of what is about to happen (main features + their sibling files).
+export type EditionPlanEvent = {
+  isEditionPlan: true
+  moves: EditionPlanMove[]
+}
+
 // Per-rename emission shape. The pipeline emits one of these per file
 // it actually renamed (`{ oldName, newName }`), then a single trailing
 // summary record (`{ unrenamedFilenames, possibleNames, allKnownNames }`)
@@ -46,6 +55,13 @@ export type UnnamedFileCandidate = {
 //
 // The `movedToEditionFolder` variant is emitted after a main-feature
 // file is successfully moved into its edition-aware nested folder.
+//
+// The `hasEditionFolderCollision` variant is emitted when a same-name
+// file already exists in the destination edition folder — the move is
+// skipped to avoid overwriting.
+//
+// The `isEditionPlan` variant is emitted before any moves happen,
+// summarizing all planned edition-folder moves (main features + siblings).
 export type NameSpecialFeaturesResult =
   | { oldName: string; newName: string }
   | {
@@ -64,3 +80,10 @@ export type NameSpecialFeaturesResult =
       filename: string
       destinationPath: string
     }
+  | {
+      hasEditionFolderCollision: true
+      filename: string
+      destinationPath: string
+      existingPath: string
+    }
+  | EditionPlanEvent
