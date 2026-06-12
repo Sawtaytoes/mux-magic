@@ -9,6 +9,7 @@ import { hideBin } from "yargs/helpers"
 
 import { addSubtitlesCommand } from "./cli-commands/addSubtitlesCommand.js"
 import { changeTrackLanguagesCommand } from "./cli-commands/changeTrackLanguagesCommand.js"
+import { convertContainerAudioToFlacCommand } from "./cli-commands/convertContainerAudioToFlacCommand.js"
 import { convertLosslessToFlacCommand } from "./cli-commands/convertLosslessToFlacCommand.js"
 import { copyFilesCommand } from "./cli-commands/copyFilesCommand.js"
 import { copyOutSubtitlesCommand } from "./cli-commands/copyOutSubtitlesCommand.js"
@@ -17,6 +18,7 @@ import { deleteFilesByExtensionCommand } from "./cli-commands/deleteFilesByExten
 import { deleteFolderCommand } from "./cli-commands/deleteFolderCommand.js"
 import { distributeFolderToSiblingsCommand } from "./cli-commands/distributeFolderToSiblingsCommand.js"
 import { extractSubtitlesCommand } from "./cli-commands/extractSubtitlesCommand.js"
+import { findContainerAudioFilesCommand } from "./cli-commands/findContainerAudioFilesCommand.js"
 import { fixIncorrectDefaultTracksCommand } from "./cli-commands/fixIncorrectDefaultTracksCommand.js"
 import { flattenChildFoldersCommand } from "./cli-commands/flattenChildFoldersCommand.js"
 import { flattenOutputCommand } from "./cli-commands/flattenOutputCommand.js"
@@ -68,6 +70,8 @@ yargs(hideBin(process.argv))
   .usage("Usage: $0 <cmd> [args]")
   .command(changeTrackLanguagesCommand)
   .command(convertLosslessToFlacCommand)
+  .command(findContainerAudioFilesCommand)
+  .command(convertContainerAudioToFlacCommand)
   .command(copyFilesCommand)
   .command(copyOutSubtitlesCommand)
   .command(extractSubtitlesCommand)

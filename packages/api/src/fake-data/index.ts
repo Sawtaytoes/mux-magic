@@ -7,8 +7,10 @@ import {
   commandNames,
   commandConfigs as realCommandConfigs,
 } from "../api/routes/commandRoutes.js"
+import { convertContainerAudioToFlacScenario } from "./scenarios/convertContainerAudioToFlac.js"
 import { convertLosslessToFlacScenario } from "./scenarios/convertLosslessToFlac.js"
 import { failureScenario } from "./scenarios/failure.js"
+import { findContainerAudioFilesScenario } from "./scenarios/findContainerAudioFiles.js"
 import { getAudioOffsetsScenario } from "./scenarios/getAudioOffsets.js"
 import { inProgressScenario } from "./scenarios/inProgress.js"
 import { nameSpecialFeaturesDvdCompareTmdbScenario } from "./scenarios/nameSpecialFeaturesDvdCompareTmdb.js"
@@ -109,6 +111,9 @@ const OBSERVABLE_OVERRIDES: Partial<
   Record<CommandName, ObservableFactory>
 > = {
   convertLosslessToFlac: convertLosslessToFlacScenario,
+  convertContainerAudioToFlac:
+    convertContainerAudioToFlacScenario,
+  findContainerAudioFiles: findContainerAudioFilesScenario,
   getAudioOffsets: getAudioOffsetsScenario,
   nameAnimeEpisodes: nameAnimeEpisodesScenario,
   nameAnimeEpisodesAniDB: nameAnimeEpisodesAniDBScenario,

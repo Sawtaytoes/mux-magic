@@ -16,6 +16,7 @@
 import {
   addSubtitlesRequestSchema,
   changeTrackLanguagesRequestSchema,
+  convertContainerAudioToFlacRequestSchema,
   convertLosslessToFlacRequestSchema,
   copyFilesRequestSchema,
   copyOutSubtitlesRequestSchema,
@@ -25,6 +26,7 @@ import {
   distributeFolderToSiblingsRequestSchema,
   exitIfEmptyRequestSchema,
   extractSubtitlesRequestSchema,
+  findContainerAudioFilesRequestSchema,
   fixIncorrectDefaultTracksRequestSchema,
   flattenChildFoldersRequestSchema,
   flattenOutputRequestSchema,
@@ -612,6 +614,58 @@ export const COMMANDS: Commands = {
           fields: ["isRecursive", "recursiveDepth"],
           layout: "field-group-check-fill",
         },
+      ],
+    }
+  })(),
+  findContainerAudioFiles: (() => {
+    const field = fieldBuilder(
+      findContainerAudioFilesRequestSchema,
+    )
+    return {
+      summary:
+        "Probe container-with-video files (.mkv / .mp4 / .m4v / .mov / .webm / .avi) with MediaInfo and report per-file track summaries (audio count, video count, codec, hasVideoTrack). Pure read — no filesystem mutation.",
+      tag: "Audio Operations",
+      outputFolderName: null,
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Recursive",
+        }),
+      ],
+    }
+  })(),
+  convertContainerAudioToFlac: (() => {
+    const field = fieldBuilder(
+      convertContainerAudioToFlacRequestSchema,
+    )
+    return {
+      summary:
+        "Encode audio tracks from container-with-video files (.mkv / .mp4 / etc.) to FLAC in-place, dropping the video stream. Requires isVideoDropAcknowledged: true to convert files with a video track.",
+      tag: "Audio Operations",
+      outputFolderName: null,
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Recursive",
+        }),
+        field("isSourceDeleted", {
+          type: "boolean",
+          label:
+            "Delete Source File After Successful Encode",
+        }),
+        field("isVideoDropAcknowledged", {
+          type: "boolean",
+          label:
+            "I acknowledge the video track will be dropped",
+        }),
       ],
     }
   })(),

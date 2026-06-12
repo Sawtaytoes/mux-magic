@@ -24,6 +24,9 @@ export const commandLabels: Record<string, string> = {
 
   // Audio Operations
   convertLosslessToFlac: "Convert Lossless Audio to FLAC",
+  findContainerAudioFiles: "Find Audio-in-Container Files",
+  convertContainerAudioToFlac:
+    "Convert Audio-in-Container to FLAC",
   getAudioOffsets: "Get Audio Offsets",
   replaceFlacWithPcmAudio: "Replace FLAC with PCM Audio",
   splitCueSheet: "Split CUE Sheet to FLAC",
