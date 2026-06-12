@@ -1,4 +1,5 @@
 import { atom } from "jotai"
+import { listVariableTypes } from "../components/VariableCard/registry"
 import { isGroup } from "../jobs/sequenceUtils"
 import type { SequenceItem, Step, StepLink } from "../types"
 import { commandsAtom } from "./commandsAtom"
@@ -194,12 +195,15 @@ export const addStepToGroupAtom = atom(
   },
 )
 
-// Returns a fresh dvdCompareId Variable id IF the named command has a
-// `dvdCompareId` field; otherwise null. Side-effect: appends the new
-// variable to variablesAtom. Worker 35: removes the manual "+ Add
-// Variable" click when a user picks a command that needs one — the
-// variable appears in the Variables panel and the step links to it.
-const ensureDvdCompareIdVariable = (
+// Scans the named command's fields for any field whose name matches a
+// registered linkable Variable type. For each match, auto-creates a fresh
+// Variable of that type and returns a map of { fieldName → newVariableId }.
+//
+// Worker 35 originally hard-coded this to `dvdCompareId` only. Worker 45
+// generalizes it: a field participates automatically when its `name`
+// equals a registered VariableType that has `isLinkable: true`. No new
+// metadata is required on the command schema.
+const ensureLinkableIdVariables = (
   get: <T>(atomToRead: import("jotai").Atom<T>) => T,
   set: <Value, Args extends unknown[], Result>(
     writableAtom: import("jotai").WritableAtom<
@@ -210,28 +214,42 @@ const ensureDvdCompareIdVariable = (
     ...args: Args
   ) => Result,
   commandName: string,
-): string | null => {
+): Record<string, string> => {
   const commands = get(commandsAtom)
   const commandDefinition = commands[commandName]
-  if (!commandDefinition) return null
-  const hasDvdCompareIdField =
-    commandDefinition.fields.some(
-      (field) => field.name === "dvdCompareId",
-    )
-  if (!hasDvdCompareIdField) return null
+  if (!commandDefinition) return {}
+
+  const linkableTypes = listVariableTypes().filter(
+    (definition) => definition.isLinkable,
+  )
+  const linkableTypeNames = new Set(
+    linkableTypes.map((definition) => definition.type),
+  )
+
+  const matchingFields = commandDefinition.fields.filter(
+    (field) =>
+      linkableTypeNames.has(
+        field.name as import("../types").VariableType,
+      ),
+  )
+  if (matchingFields.length === 0) return {}
 
   const existing = get(variablesAtom)
-  const newId = `dvdCompareIdVariable_${Math.random().toString(36).slice(2, 8)}`
-  set(variablesAtom, [
-    ...existing,
-    {
-      id: newId,
-      label: "",
-      value: "",
-      type: "dvdCompareId",
-    },
-  ])
-  return newId
+  const newVariables = matchingFields.map((field) => ({
+    id: `${field.name}Variable_${Math.random().toString(36).slice(2, 8)}`,
+    label: "",
+    value: "",
+    type: field.name as import("../types").VariableType,
+  }))
+
+  set(variablesAtom, [...existing, ...newVariables])
+
+  return Object.fromEntries(
+    matchingFields.map((field, index) => [
+      field.name,
+      newVariables[index].id,
+    ]),
+  )
 }
 
 export const changeCommandAtom = atom(
@@ -241,13 +259,8 @@ export const changeCommandAtom = atom(
     set,
     args: { stepId: string; commandName: string },
   ) => {
-    const autoLinkVarId = ensureDvdCompareIdVariable(
-      get,
-      set,
-      args.commandName,
-    )
     const autoLinks: Record<string, StepLink> =
-      autoLinkVarId ? { dvdCompareId: autoLinkVarId } : {}
+      ensureLinkableIdVariables(get, set, args.commandName)
     set(stepsAtom, (items) =>
       items.map((item) => {
         if (!isGroup(item)) {

@@ -13,8 +13,11 @@ import {
 } from "../../state/variablesAtom"
 import type { Variable } from "../../types"
 import { ThreadCountVariableCard } from "../ThreadCountVariableCard/ThreadCountVariableCard"
+import { AnidbIdInput } from "./AnidbIdInput"
 import { DvdCompareIdInput } from "./DvdCompareIdInput"
+import { MalIdInput } from "./MalIdInput"
 import { PathValueInput } from "./PathValueInput"
+import { TmdbIdInput } from "./TmdbIdInput"
 
 interface VariableCardProps {
   variable: Variable
@@ -164,6 +167,30 @@ export const VariableCard = ({
       {variable.type === "threadCount" && (
         <ThreadCountVariableCard
           variable={variable as Variable<"threadCount">}
+          onValueChange={(value) =>
+            setValue({ variableId: variable.id, value })
+          }
+        />
+      )}
+      {variable.type === "tmdbId" && (
+        <TmdbIdInput
+          variable={variable as Variable<"tmdbId">}
+          onValueChange={(value) =>
+            setValue({ variableId: variable.id, value })
+          }
+        />
+      )}
+      {variable.type === "anidbId" && (
+        <AnidbIdInput
+          variable={variable as Variable<"anidbId">}
+          onValueChange={(value) =>
+            setValue({ variableId: variable.id, value })
+          }
+        />
+      )}
+      {variable.type === "malId" && (
+        <MalIdInput
+          variable={variable as Variable<"malId">}
           onValueChange={(value) =>
             setValue({ variableId: variable.id, value })
           }

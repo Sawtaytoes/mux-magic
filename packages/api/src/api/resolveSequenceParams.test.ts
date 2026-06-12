@@ -341,4 +341,45 @@ describe(resolveSequenceParams.name, () => {
     })
     expect(resolved.sourcePath).toBe("D:\\Show/OUT")
   })
+
+  // ─── Worker 45: tmdbId / anidbId / malId numeric coercion ──────────────────
+
+  test("coerces a tmdbId variable's string .value to Number on @id resolution", () => {
+    const { resolved, errors } = resolveSequenceParams({
+      rawParams: { tmdbId: "@tmdb1" },
+      pathsById: {
+        tmdb1: { value: "157336", type: "tmdbId" },
+      },
+      stepsById: {},
+      commandConfigsByName: {},
+    })
+    expect(resolved).toEqual({ tmdbId: 157336 })
+    expect(errors).toEqual([])
+  })
+
+  test("coerces an anidbId variable's string .value to Number on @id resolution", () => {
+    const { resolved, errors } = resolveSequenceParams({
+      rawParams: { anidbId: "@anidb1" },
+      pathsById: {
+        anidb1: { value: "8160", type: "anidbId" },
+      },
+      stepsById: {},
+      commandConfigsByName: {},
+    })
+    expect(resolved).toEqual({ anidbId: 8160 })
+    expect(errors).toEqual([])
+  })
+
+  test("coerces a malId variable's string .value to Number on @id resolution", () => {
+    const { resolved, errors } = resolveSequenceParams({
+      rawParams: { malId: "@mal1" },
+      pathsById: {
+        mal1: { value: "5114", type: "malId" },
+      },
+      stepsById: {},
+      commandConfigsByName: {},
+    })
+    expect(resolved).toEqual({ malId: 5114 })
+    expect(errors).toEqual([])
+  })
 })
