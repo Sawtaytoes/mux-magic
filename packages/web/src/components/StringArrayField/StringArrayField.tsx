@@ -63,7 +63,13 @@ export const StringArrayField = ({
   const setLinkPickerState = useSetAtom(linkPickerStateAtom)
   const linkButtonRef = useRef<HTMLButtonElement>(null)
 
-  const link = step.links?.[field.name]
+  // Only fields that opt in (currently just `pathsToDelete`) get the
+  // link/path picker. Plain typed lists like `chapterSplits` and
+  // `extensions` render a bare comma-separated input — wiring a path
+  // variable into them would emit a path where the server expects the
+  // typed string[], which is never what the user wants.
+  const isLinkable = field.isLinkable === true
+  const link = isLinkable ? step.links?.[field.name] : undefined
   const isLinked = link != null
   const linkLabel = resolveLinkLabel(link, paths, allSteps)
 
@@ -97,16 +103,18 @@ export const StringArrayField = ({
     <div>
       <div className="flex items-center gap-2 mb-1">
         <FieldLabel stepId={step.id} field={field} />
-        <button
-          ref={linkButtonRef}
-          type="button"
-          onClick={handleLinkPicker}
-          title="Link to a path variable or step output"
-          className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer"
-        >
-          <span className="truncate">{linkLabel}</span>
-          <span className="text-slate-400 shrink-0">▾</span>
-        </button>
+        {isLinkable && (
+          <button
+            ref={linkButtonRef}
+            type="button"
+            onClick={handleLinkPicker}
+            title="Link to a path variable or step output"
+            className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer"
+          >
+            <span className="truncate">{linkLabel}</span>
+            <span className="text-slate-400 shrink-0">▾</span>
+          </button>
+        )}
       </div>
       {isLinked ? (
         <p className="w-full bg-slate-900 text-slate-400 text-xs rounded px-2 py-1.5 border border-slate-700 font-mono">

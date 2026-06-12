@@ -1,6 +1,7 @@
 import type { CommandField } from "../../commands/types"
 import type { Step } from "../../types"
 import { BooleanField } from "../BooleanField/BooleanField"
+import { ChapterSplitsField } from "../ChapterSplitsField/ChapterSplitsField"
 import { EnumField } from "../EnumField/EnumField"
 import { FolderMultiSelectField } from "../FolderMultiSelectField/FolderMultiSelectField"
 import { FolderTagsField } from "../FolderTagsField/FolderTagsField"
@@ -51,6 +52,10 @@ export const FieldDispatcher = ({
       )
     case "stringArray":
       return <StringArrayField field={field} step={step} />
+    case "chapterSplits":
+      return (
+        <ChapterSplitsField field={field} step={step} />
+      )
     case "numberArray":
       return <NumberArrayField field={field} step={step} />
     case "json":

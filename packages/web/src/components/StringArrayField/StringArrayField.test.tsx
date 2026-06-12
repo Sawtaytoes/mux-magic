@@ -112,7 +112,7 @@ describe("StringArrayField", () => {
     )
   })
 
-  it("renders link button labeled '— custom —' when unlinked", () => {
+  it("does not render the link button for a non-linkable field", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -124,7 +124,38 @@ describe("StringArrayField", () => {
       isCollapsed: false,
     }
 
+    // `extensions` is a user-typed list (no isLinkable) — it should render
+    // a plain input with no path/output picker.
     renderField(step, field)
+    expect(
+      screen.queryByTitle(
+        "Link to a path variable or step output",
+      ),
+    ).toBeNull()
+    expect(screen.queryByText("— custom —")).toBeNull()
+    expect(screen.getByRole("textbox")).toBeVisible()
+  })
+
+  it("renders link button labeled '— custom —' when a linkable field is unlinked", () => {
+    const step: Step = {
+      id: "step-1",
+      alias: "",
+      command: "deleteCopiedOriginals",
+      params: {},
+      links: {},
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    const pathsToDeleteField: CommandField = {
+      name: "pathsToDelete",
+      type: "stringArray",
+      label: "Paths to Delete",
+      isRequired: true,
+      isLinkable: true,
+    }
+
+    renderField(step, pathsToDeleteField)
     expect(
       screen.getByTitle(
         "Link to a path variable or step output",
@@ -150,6 +181,7 @@ describe("StringArrayField", () => {
       type: "stringArray",
       label: "Paths to Delete",
       isRequired: true,
+      isLinkable: true,
     }
 
     const store = renderField(step, pathsToDeleteField)
@@ -198,6 +230,7 @@ describe("StringArrayField", () => {
       type: "stringArray",
       label: "Paths to Delete",
       isRequired: true,
+      isLinkable: true,
     }
 
     renderField(linkedStep, pathsToDeleteField, [
