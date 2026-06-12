@@ -49,6 +49,8 @@ This is in addition to the existing TDD-failing-test-first convention. TDD catch
 - Use `captureConsoleMessage` / `captureLogMessage` helpers to silence and inspect console output
 - Use `vol.fromJSON(...)` from memfs to seed the virtual filesystem
 
+Modules under `packages/core/src/cli-spawn-operations/` are auto-mocked in `vitest.setup.ts` — every spawn-op wraps a 3rd-party `mkvtoolnix` / `ffmpeg` / `fpcalc` binary, so we draw the test boundary at the process-spawn layer the same way we draw it at the `node:fs` boundary with memfs. Tests opt in to per-call behavior with `vi.mocked(spawnOpFn).mockReturnValue(...)`; forgetting to stub returns an explicit error (loud failure) rather than silently shelling out. If a test file exercises the *real* spawn-op implementation (e.g. unit tests for the spawn-op itself), call `vi.unmock("./theSpawnOp.js")` at the top of that file to restore the actual module.
+
 ## App-Command Tests (memfs-backed)
 
 App commands return Observables and write through `node:fs/promises`, so the unit-test pattern is: seed the virtual filesystem with `vol.fromJSON`, run the observable to completion via `firstValueFrom(... .pipe(toArray()))` (or `lastValueFrom` for the final emission), then assert filesystem state with `stat` / `readFileSync`. See `flattenOutput.test.ts` and `deleteFilesByExtension.test.ts` for the canonical shape.

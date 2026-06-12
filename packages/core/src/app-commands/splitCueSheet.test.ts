@@ -15,12 +15,8 @@ import {
 } from "vitest"
 import { splitCueSheet } from "./splitCueSheet.js"
 
-vi.mock(
-  "../cli-spawn-operations/splitCueSheetFfmpeg.js",
-  () => ({
-    splitCueSheetFfmpeg: vi.fn(),
-  }),
-)
+// splitCueSheetFfmpeg is auto-mocked globally in vitest.setup.ts.
+// Import the already-mocked symbol directly.
 vi.mock("../tools/getMediaInfo.js", () => ({
   getMediaInfo: vi.fn(),
 }))
