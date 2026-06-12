@@ -3,6 +3,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import {
   afterEach,
@@ -18,7 +19,8 @@ import {
   FIXTURE_COMMANDS_BUNDLE_D,
 } from "../../commands/__fixtures__/commands"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { Step } from "../../types"
+import { variablesAtom } from "../../state/variablesAtom"
+import type { Step, Variable } from "../../types"
 import { NumberWithLookupField } from "./NumberWithLookupField"
 
 const createTestStep = (
@@ -213,6 +215,133 @@ describe("NumberWithLookupField", () => {
     incrementButton.click()
     const steps = store.get(stepsAtom)
     expect((steps[0] as Step).params.malId).toBe(6)
+  })
+})
+
+// ─── Linked-field behaviour (worker 45) ──────────────────────────────────────
+// When a step's field is linked to a Variable, the field should display the
+// Variable's value and write changes back through to the Variable.
+
+describe("NumberWithLookupField — linked-field read/write", () => {
+  const malField =
+    FIXTURE_COMMANDS_BUNDLE_D.nameAnimeEpisodes.fields[1]
+
+  test("displays the linked Variable's value as the input value", () => {
+    const malVariable: Variable = {
+      id: "malIdVariable_test",
+      label: "FMA Brotherhood",
+      value: "5114",
+      type: "malId",
+    }
+    const step: Step = {
+      id: "test-linked-step",
+      alias: "",
+      command: "nameAnimeEpisodes",
+      params: {},
+      links: { malId: malVariable.id },
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    const store = createStore()
+    store.set(stepsAtom, [step])
+    store.set(variablesAtom, [malVariable])
+
+    render(
+      <Provider store={store}>
+        <NumberWithLookupField
+          field={malField}
+          step={step}
+        />
+      </Provider>,
+    )
+
+    // Input shows the Variable's value (5114), not step.params.malId
+    const input = screen.getByDisplayValue(5114)
+    expect(input).toBeInTheDocument()
+  })
+
+  test("shows empty input when linked Variable value is empty", () => {
+    const malVariable: Variable = {
+      id: "malIdVariable_empty",
+      label: "",
+      value: "",
+      type: "malId",
+    }
+    const step: Step = {
+      id: "test-linked-empty",
+      alias: "",
+      command: "nameAnimeEpisodes",
+      params: {},
+      links: { malId: malVariable.id },
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    const store = createStore()
+    store.set(stepsAtom, [step])
+    store.set(variablesAtom, [malVariable])
+
+    render(
+      <Provider store={store}>
+        <NumberWithLookupField
+          field={malField}
+          step={step}
+        />
+      </Provider>,
+    )
+
+    // Input should show "" (empty) when variable value is empty.
+    // malId field has hasIncrementButtons: false → renders as textbox
+    const input = screen.getByRole("textbox")
+    expect(input).toHaveDisplayValue("")
+  })
+
+  test("onChange writes to the linked Variable, not to step.params", async () => {
+    const user = userEvent.setup()
+    const malVariable: Variable = {
+      id: "malIdVariable_write",
+      label: "",
+      value: "",
+      type: "malId",
+    }
+    const step: Step = {
+      id: "test-linked-write",
+      alias: "",
+      command: "nameAnimeEpisodes",
+      params: {},
+      links: { malId: malVariable.id },
+      status: null,
+      error: null,
+      isCollapsed: false,
+    }
+    const store = createStore()
+    store.set(stepsAtom, [step])
+    store.set(variablesAtom, [malVariable])
+
+    render(
+      <Provider store={store}>
+        <NumberWithLookupField
+          field={malField}
+          step={step}
+        />
+      </Provider>,
+    )
+
+    // malId field has hasIncrementButtons: false → renders as textbox
+    const input = screen.getByRole("textbox")
+    await user.clear(input)
+    await user.type(input, "5114")
+
+    // Variable should have been updated
+    await waitFor(() => {
+      const variables = store.get(variablesAtom)
+      expect(variables[0].value).toBe("5114")
+    })
+
+    // step.params.malId should remain unchanged (write went to variable)
+    const updatedStep = store.get(stepsAtom)[0] as Step
+    expect(updatedStep.params.malId).toBeUndefined()
   })
 })
 

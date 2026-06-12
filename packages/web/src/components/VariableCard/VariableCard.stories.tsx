@@ -122,3 +122,127 @@ export const DvdCompareIdEmpty: Story = {
     isFirst: false,
   },
 }
+
+// ─── tmdbId variant (worker 45) ──────────────────────────────────────────────
+
+const tmdbIdNumeric: Variable = {
+  id: "tmdbIdVariable_abc",
+  label: "Interstellar",
+  value: "157336",
+  type: "tmdbId",
+}
+
+export const TmdbIdNumeric: Story = {
+  decorators: [withStore([tmdbIdNumeric])],
+  args: { variable: tmdbIdNumeric, isFirst: false },
+}
+
+export const TmdbIdUrl: Story = {
+  decorators: [
+    withStore([
+      {
+        ...tmdbIdNumeric,
+        value: "https://www.themoviedb.org/movie/157336",
+      },
+    ]),
+  ],
+  args: {
+    variable: {
+      ...tmdbIdNumeric,
+      value: "https://www.themoviedb.org/movie/157336",
+    },
+    isFirst: false,
+  },
+}
+
+export const TmdbIdEmpty: Story = {
+  decorators: [
+    withStore([{ ...tmdbIdNumeric, value: "" }]),
+  ],
+  args: {
+    variable: { ...tmdbIdNumeric, value: "" },
+    isFirst: false,
+  },
+}
+
+// ─── anidbId variant (worker 45) ─────────────────────────────────────────────
+
+const anidbIdNumeric: Variable = {
+  id: "anidbIdVariable_def",
+  label: "Fullmetal Alchemist: Brotherhood",
+  value: "6922",
+  type: "anidbId",
+}
+
+export const AnidbIdNumeric: Story = {
+  decorators: [withStore([anidbIdNumeric])],
+  args: { variable: anidbIdNumeric, isFirst: false },
+}
+
+export const AnidbIdUrl: Story = {
+  decorators: [
+    withStore([
+      {
+        ...anidbIdNumeric,
+        value: "https://anidb.net/anime/6922",
+      },
+    ]),
+  ],
+  args: {
+    variable: {
+      ...anidbIdNumeric,
+      value: "https://anidb.net/anime/6922",
+    },
+    isFirst: false,
+  },
+}
+
+export const AnidbIdEmpty: Story = {
+  decorators: [
+    withStore([{ ...anidbIdNumeric, value: "" }]),
+  ],
+  args: {
+    variable: { ...anidbIdNumeric, value: "" },
+    isFirst: false,
+  },
+}
+
+// ─── malId variant (worker 45) ───────────────────────────────────────────────
+
+const malIdNumeric: Variable = {
+  id: "malIdVariable_ghi",
+  label: "Fullmetal Alchemist: Brotherhood",
+  value: "5114",
+  type: "malId",
+}
+
+export const MalIdNumeric: Story = {
+  decorators: [withStore([malIdNumeric])],
+  args: { variable: malIdNumeric, isFirst: false },
+}
+
+export const MalIdUrl: Story = {
+  decorators: [
+    withStore([
+      {
+        ...malIdNumeric,
+        value: "https://myanimelist.net/anime/5114",
+      },
+    ]),
+  ],
+  args: {
+    variable: {
+      ...malIdNumeric,
+      value: "https://myanimelist.net/anime/5114",
+    },
+    isFirst: false,
+  },
+}
+
+export const MalIdEmpty: Story = {
+  decorators: [withStore([{ ...malIdNumeric, value: "" }])],
+  args: {
+    variable: { ...malIdNumeric, value: "" },
+    isFirst: false,
+  },
+}

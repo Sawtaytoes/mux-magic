@@ -1,6 +1,9 @@
 import type { JSX } from "react"
+import { ANIDB_ID_VARIABLE_DEFINITION } from "../../state/variableTypes/anidbId"
 import { DVD_COMPARE_ID_VARIABLE_DEFINITION } from "../../state/variableTypes/dvdCompareId"
+import { MAL_ID_VARIABLE_DEFINITION } from "../../state/variableTypes/malId"
 import { THREAD_COUNT_VARIABLE_DEFINITION } from "../../state/variableTypes/threadCount"
+import { TMDB_ID_VARIABLE_DEFINITION } from "../../state/variableTypes/tmdbId"
 import type { Variable, VariableType } from "../../types"
 
 export type VariableTypeDefinition<
@@ -88,3 +91,9 @@ registerVariableType(DVD_COMPARE_ID_VARIABLE_DEFINITION)
 // YAML envelope worker 11 introduced. The input is a numeric field rendered
 // by VariableCard.tsx dispatching on type.
 registerVariableType(THREAD_COUNT_VARIABLE_DEFINITION)
+
+// Worker 45: tmdbId, anidbId, malId. All are multi-cardinality, isLinkable,
+// runtimeValueType "number". One per step that uses the matching field name.
+registerVariableType(TMDB_ID_VARIABLE_DEFINITION)
+registerVariableType(ANIDB_ID_VARIABLE_DEFINITION)
+registerVariableType(MAL_ID_VARIABLE_DEFINITION)
