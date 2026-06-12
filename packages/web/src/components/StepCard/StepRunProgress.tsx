@@ -17,9 +17,11 @@ import {
   findConvertLosslessResults,
 } from "../ConvertLosslessRunResults/findConvertLosslessResults"
 import {
+  findNsfEditionPlan,
   findNsfRenamePairs,
   findNsfSummary,
   mergeAppliedRenamesIntoNsfResults,
+  type NsfEditionPlanRecord,
   type NsfRenamePair,
   type NsfSummaryRecord,
 } from "../NsfRunResults/findNsfResults"
@@ -101,6 +103,8 @@ export const StepRunProgress = ({
   const [renamePairs, setRenamePairs] = useState<
     NsfRenamePair[]
   >([])
+  const [editionPlan, setEditionPlan] =
+    useState<NsfEditionPlanRecord | null>(null)
   const [
     convertLosslessResults,
     setConvertLosslessResults,
@@ -121,6 +125,7 @@ export const StepRunProgress = ({
     setLastSeenJobId(jobId)
     setSummary(null)
     setRenamePairs([])
+    setEditionPlan(null)
     setConvertLosslessResults({
       converted: [],
       skipped: [],
@@ -149,6 +154,7 @@ export const StepRunProgress = ({
       setRunning(false)
       setSummary(findNsfSummary(payload.results))
       setRenamePairs(findNsfRenamePairs(payload.results))
+      setEditionPlan(findNsfEditionPlan(payload.results))
       setConvertLosslessResults(
         findConvertLosslessResults(payload.results),
       )
@@ -199,6 +205,7 @@ export const StepRunProgress = ({
       sourcePath={sourcePath}
       renamePairs={merged.renamePairs}
       summary={merged.summary}
+      editionPlan={editionPlan}
       convertLosslessResults={convertLosslessResults}
       results={results}
     />
