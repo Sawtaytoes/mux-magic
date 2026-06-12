@@ -63,7 +63,7 @@ export const safeBuildRegex = (
 export const formatSlashLiteral = (
   pattern: string,
   flags: string,
-): string => `/${pattern.replace(/\//g, "\\/")}/${flags}`
+) => `/${pattern.replace(/\//g, "\\/")}/${flags}`
 
 // Inverse of formatSlashLiteral — splits the user's edits to the slash
 // literal back into `{ pattern, flags }`. Tolerates a missing leading

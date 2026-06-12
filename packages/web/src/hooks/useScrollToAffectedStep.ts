@@ -8,11 +8,11 @@ import {
 import { stepsAtom } from "../state/stepsAtom"
 import type { Group } from "../types"
 
-const isReducedMotion = (): boolean =>
+const isReducedMotion = () =>
   window.matchMedia?.("(prefers-reduced-motion: reduce)")
     .matches ?? false
 
-export const useScrollToAffectedStep = (): void => {
+export const useScrollToAffectedStep = () => {
   const store = useStore()
 
   useEffect(() => {

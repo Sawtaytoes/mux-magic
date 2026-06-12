@@ -14,14 +14,14 @@
 
 export const displayDvdCompareVariant = (
   variant: string,
-): string =>
+) =>
   variant === "Blu-ray 4K" ? "UHD Blu-ray" : variant
 
 export const formatDvdCompareDisplayName = (args: {
   baseTitle: string
   variant?: string
   year?: string
-}): string => {
+}) => {
   const variantSuffix =
     args.variant && args.variant !== "DVD"
       ? ` (${displayDvdCompareVariant(args.variant)})`

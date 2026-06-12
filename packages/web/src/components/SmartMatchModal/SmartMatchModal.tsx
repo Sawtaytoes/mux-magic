@@ -44,7 +44,7 @@ type RowState = {
 const resolveDesiredName = (
   row: RowState,
   candidateCount: number,
-): string => {
+) => {
   if (candidateCount === 0) {
     return row.selectedCandidateName
   }
@@ -57,7 +57,7 @@ const resolveDesiredName = (
 const joinPath = (
   folder: string,
   filename: string,
-): string => {
+) => {
   const trimmed = folder.replace(/[\\/]+$/, "")
   const separator = trimmed.includes("\\") ? "\\" : "/"
   return `${trimmed}${separator}${filename}`
@@ -73,7 +73,7 @@ const buildBucketOldPath = (
   sourcePath: string,
   filename: string,
   extension: string,
-): string =>
+) =>
   joinPath(
     joinPath(sourcePath, UNNAMED_FEATURES_BUCKET),
     `${filename}${extension}`,
@@ -89,7 +89,7 @@ const buildBucketOldPath = (
 const ensureExtension = (
   desiredName: string,
   extension: string,
-): string => {
+) => {
   if (extension.length === 0) {
     return desiredName
   }
@@ -105,7 +105,7 @@ const ensureExtension = (
 
 const formatDurationSeconds = (
   seconds: number | null,
-): string => {
+) => {
   if (seconds === null) return "—"
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
@@ -116,7 +116,7 @@ const formatDurationSeconds = (
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`
 }
 
-const formatConfidence = (confidence: number): string => {
+const formatConfidence = (confidence: number) => {
   return `${Math.round(confidence * 100)}%`
 }
 

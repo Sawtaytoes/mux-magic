@@ -21,7 +21,7 @@ export const useTolerantEventSource = <T>({
   onMessage,
   onConnected,
   onPossiblyDisconnected,
-}: Options<T>): void => {
+}: Options<T>) => {
   const onMessageRef = useRef(onMessage)
   const onConnectedRef = useRef(onConnected)
   const onDisconnectedRef = useRef(onPossiblyDisconnected)

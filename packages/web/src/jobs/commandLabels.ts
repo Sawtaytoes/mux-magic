@@ -87,7 +87,7 @@ export const commandLabels: Record<string, string> = {
 
 export const commandLabel = (
   name: string | undefined,
-): string => {
+) => {
   if (!name) return ""
   return commandLabels[name] ?? name
 }

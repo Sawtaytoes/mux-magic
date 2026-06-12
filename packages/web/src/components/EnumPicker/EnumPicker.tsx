@@ -40,7 +40,7 @@ const findInitialIndex = (
   anchor: EnumPickerAnchor,
   commands: Commands,
   steps: SequenceItem[],
-): number => {
+) => {
   const step = findStepById(steps, anchor.stepId)
   const currentValue = step?.params?.[anchor.fieldName]
   const command = step?.command

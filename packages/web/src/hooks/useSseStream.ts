@@ -8,7 +8,7 @@ import { useTolerantEventSource } from "./useTolerantEventSource"
 
 // Connects to /jobs/stream and keeps jobsAtom in sync.
 // Terminal jobs have their cached progress cleared to prevent unbounded growth.
-export const useSseStream = (): void => {
+export const useSseStream = () => {
   const setJobs = useSetAtom(jobsAtom)
   const setConnection = useSetAtom(jobsConnectionAtom)
   const setProgress = useSetAtom(progressByJobIdAtom)

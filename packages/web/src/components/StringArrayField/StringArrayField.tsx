@@ -30,7 +30,7 @@ const resolveLinkLabel = (
   link: StepLink | undefined,
   paths: PathVariable[],
   steps: SequenceItem[],
-): string => {
+) => {
   if (!link) {
     return "— custom —"
   }

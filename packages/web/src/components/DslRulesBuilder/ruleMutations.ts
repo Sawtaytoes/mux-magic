@@ -19,7 +19,7 @@ const FALLBACK_RATIO_HEIGHT = 9
 // `false`) reads as unlinked.
 export const readIsAspectLinked = (
   rule: ScaleResolutionRule,
-): boolean => {
+) => {
   if (rule.isAspectLinked === false) return false
   if (rule.isFromAspectLocked === false) return false
   if (rule.isToAspectLocked === false) return false

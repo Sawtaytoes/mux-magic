@@ -73,19 +73,19 @@ const _BROWSER_UNSUPPORTED_AUDIO = new Set([
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
-const extOf = (name: string): string => {
+const extOf = (name: string) => {
   const dot = name.lastIndexOf(".")
   return dot < 0 ? "" : name.slice(dot).toLowerCase()
 }
 
-const isVideoFile = (name: string): boolean =>
+const isVideoFile = (name: string) =>
   VIDEO_EXTENSIONS.has(extOf(name))
-const isAudioFile = (name: string): boolean =>
+const isAudioFile = (name: string) =>
   AUDIO_EXTENSIONS.has(extOf(name))
-const isImageFile = (name: string): boolean =>
+const isImageFile = (name: string) =>
   IMAGE_EXTENSIONS.has(extOf(name))
 
-const formatSize = (bytes: number): string => {
+const formatSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024)
     return `${(bytes / 1024).toFixed(0)} KB`
@@ -94,7 +94,7 @@ const formatSize = (bytes: number): string => {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
-const formatMtime = (iso: string | null): string => {
+const formatMtime = (iso: string | null) => {
   if (!iso) return "—"
   const dateObj = new Date(iso)
   const yyyy = dateObj.getFullYear()
@@ -120,7 +120,7 @@ const joinPath = (
   dir: string,
   child: string,
   separator: string,
-): string => {
+) => {
   const trimmed = dir.endsWith(separator)
     ? dir.slice(0, -1)
     : dir
@@ -162,7 +162,7 @@ const buildBreadcrumb = (
 
 const buildComparator =
   (column: SortColumn, direction: SortDirection) =>
-  (entryA: FileEntry, entryB: FileEntry): number => {
+  (entryA: FileEntry, entryB: FileEntry) => {
     if (entryA.isDirectory !== entryB.isDirectory) {
       return entryA.isDirectory ? -1 : 1
     }

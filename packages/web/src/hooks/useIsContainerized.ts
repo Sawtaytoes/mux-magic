@@ -20,5 +20,5 @@ isContainerizedAtom.onMount = (set) => {
     .catch(() => {})
 }
 
-export const useIsContainerized = (): boolean =>
+export const useIsContainerized = () =>
   useAtomValue(isContainerizedAtom)
