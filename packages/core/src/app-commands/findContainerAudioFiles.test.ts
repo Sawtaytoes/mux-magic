@@ -28,9 +28,7 @@ const { findContainerAudioFiles } = await import(
 
 const getMediaInfoMock = vi.mocked(getMediaInfo)
 
-const buildAudioTrack = (
-  format = "FLAC",
-): AudioTrack =>
+const buildAudioTrack = (format = "FLAC"): AudioTrack =>
   ({
     "@type": "Audio",
     Format: format,
@@ -162,7 +160,9 @@ describe("findContainerAudioFiles", () => {
     )
 
     expect(result).toHaveLength(2)
-    const filePaths = result.map((r) => r.filePath)
+    const filePaths = result.map(
+      (record) => record.filePath,
+    )
     expect(filePaths).toEqual(
       expect.arrayContaining([
         join("/music", "song.mkv"),
@@ -237,7 +237,9 @@ describe("findContainerAudioFiles", () => {
       }),
     )
 
-    const filePaths = result.map((r) => r.filePath)
+    const filePaths = result.map(
+      (record) => record.filePath,
+    )
     expect(filePaths).toContain(join("/music", "song.mkv"))
     expect(filePaths).not.toContain(
       join("/music", "albums", "inner.mkv"),
@@ -260,7 +262,9 @@ describe("findContainerAudioFiles", () => {
       }),
     )
 
-    const filePaths = result.map((r) => r.filePath)
+    const filePaths = result.map(
+      (record) => record.filePath,
+    )
     expect(filePaths).toContain(join("/music", "song.mkv"))
     expect(filePaths).toContain(
       join("/music", "albums", "inner.mkv"),

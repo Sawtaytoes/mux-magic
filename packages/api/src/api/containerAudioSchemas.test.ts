@@ -6,10 +6,11 @@ import {
 
 describe("findContainerAudioFilesRequestSchema", () => {
   test("round-trips with minimal required sourcePath", () => {
-    const parsed = findContainerAudioFilesRequestSchema.parse({
-      isRecursive: false,
-      sourcePath: "/music",
-    })
+    const parsed =
+      findContainerAudioFilesRequestSchema.parse({
+        isRecursive: false,
+        sourcePath: "/music",
+      })
     expect(parsed.sourcePath).toBe("/music")
     expect(parsed.isRecursive).toBe(false)
   })
@@ -24,17 +25,19 @@ describe("findContainerAudioFilesRequestSchema", () => {
   })
 
   test("defaults isRecursive to false when omitted", () => {
-    const parsed = findContainerAudioFilesRequestSchema.parse({
-      sourcePath: "/music",
-    })
+    const parsed =
+      findContainerAudioFilesRequestSchema.parse({
+        sourcePath: "/music",
+      })
     expect(parsed.isRecursive).toBe(false)
   })
 
   test("accepts isRecursive: true", () => {
-    const parsed = findContainerAudioFilesRequestSchema.parse({
-      isRecursive: true,
-      sourcePath: "/music",
-    })
+    const parsed =
+      findContainerAudioFilesRequestSchema.parse({
+        isRecursive: true,
+        sourcePath: "/music",
+      })
     expect(parsed.isRecursive).toBe(true)
   })
 })

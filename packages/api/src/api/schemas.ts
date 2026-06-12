@@ -362,8 +362,8 @@ export const convertLosslessToFlacRequestSchema = z.object({
     ),
 })
 
-export const findContainerAudioFilesRequestSchema = z.object(
-  {
+export const findContainerAudioFilesRequestSchema =
+  z.object({
     sourcePath: z
       .string()
       .min(1)
@@ -376,8 +376,7 @@ export const findContainerAudioFilesRequestSchema = z.object(
       .describe(
         "Recursively descends one level into subdirectories looking for container-with-video files. Default false.",
       ),
-  },
-)
+  })
 
 export const convertContainerAudioToFlacRequestSchema =
   z.object({

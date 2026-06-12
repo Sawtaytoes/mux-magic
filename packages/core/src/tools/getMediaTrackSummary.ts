@@ -1,5 +1,9 @@
 import type { FileInfo } from "@mux-magic/tools"
-import type { AudioTrack, MediaInfo, VideoTrack } from "./getMediaInfo.js"
+import type {
+  AudioTrack,
+  MediaInfo,
+  VideoTrack,
+} from "./getMediaInfo.js"
 
 export type MediaTrackSummary = {
   audioCodec: string | null
@@ -24,10 +28,12 @@ export const getMediaTrackSummary = (
   const tracks = mediaInfo.media?.track ?? []
 
   const audioTracks = tracks.filter(
-    (track): track is AudioTrack => track["@type"] === "Audio",
+    (track): track is AudioTrack =>
+      track["@type"] === "Audio",
   )
   const videoTracks = tracks.filter(
-    (track): track is VideoTrack => track["@type"] === "Video",
+    (track): track is VideoTrack =>
+      track["@type"] === "Video",
   )
 
   const firstAudioTrack = audioTracks[0]

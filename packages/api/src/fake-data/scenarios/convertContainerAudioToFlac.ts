@@ -176,8 +176,14 @@ export const convertContainerAudioToFlacScenario = (
   )
 
   const records = FAKE_FILES.map((file) =>
-    buildRecord(file, isSourceDeleted, isVideoDropAcknowledged),
-  ).filter((r): r is ConvertedRecord => r !== null)
+    buildRecord(
+      file,
+      isSourceDeleted,
+      isVideoDropAcknowledged,
+    ),
+  ).filter(
+    (record): record is ConvertedRecord => record !== null,
+  )
 
   return concat(
     effect(() => {

@@ -1,12 +1,7 @@
-import { join } from "node:path"
+import { basename, join } from "node:path"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
-import {
-  beforeEach,
-  describe,
-  expect,
-  test,
-} from "vitest"
+import { beforeEach, describe, expect, test } from "vitest"
 import {
   containerWithVideoFileExtensions,
   filterIsContainerWithVideoFile,
@@ -23,24 +18,24 @@ beforeEach(() => {
 
 describe("containerWithVideoFileExtensions", () => {
   test("includes the six container-with-video extensions", () => {
-    expect(containerWithVideoFileExtensions.has(".mkv")).toBe(
-      true,
-    )
-    expect(containerWithVideoFileExtensions.has(".mp4")).toBe(
-      true,
-    )
-    expect(containerWithVideoFileExtensions.has(".m4v")).toBe(
-      true,
-    )
-    expect(containerWithVideoFileExtensions.has(".mov")).toBe(
-      true,
-    )
-    expect(containerWithVideoFileExtensions.has(".webm")).toBe(
-      true,
-    )
-    expect(containerWithVideoFileExtensions.has(".avi")).toBe(
-      true,
-    )
+    expect(
+      containerWithVideoFileExtensions.has(".mkv"),
+    ).toBe(true)
+    expect(
+      containerWithVideoFileExtensions.has(".mp4"),
+    ).toBe(true)
+    expect(
+      containerWithVideoFileExtensions.has(".m4v"),
+    ).toBe(true)
+    expect(
+      containerWithVideoFileExtensions.has(".mov"),
+    ).toBe(true)
+    expect(
+      containerWithVideoFileExtensions.has(".webm"),
+    ).toBe(true)
+    expect(
+      containerWithVideoFileExtensions.has(".avi"),
+    ).toBe(true)
   })
 
   test("contains exactly six extensions", () => {
@@ -50,15 +45,15 @@ describe("containerWithVideoFileExtensions", () => {
 
 describe("getIsContainerWithVideoFile", () => {
   test("returns true for .mkv", () => {
-    expect(getIsContainerWithVideoFile("/music/song.mkv")).toBe(
-      true,
-    )
+    expect(
+      getIsContainerWithVideoFile("/music/song.mkv"),
+    ).toBe(true)
   })
 
   test("returns true for .mp4", () => {
-    expect(getIsContainerWithVideoFile("/music/clip.mp4")).toBe(
-      true,
-    )
+    expect(
+      getIsContainerWithVideoFile("/music/clip.mp4"),
+    ).toBe(true)
   })
 
   test("returns true for .m4v", () => {
@@ -133,13 +128,15 @@ describe("filterIsContainerWithVideoFile", () => {
     })
 
     const files = await firstValueFrom(
-      getFilesAtDepth({ depth: 0, sourcePath: "/music" }).pipe(
-        filterIsContainerWithVideoFile(),
-        toArray(),
-      ),
+      getFilesAtDepth({
+        depth: 0,
+        sourcePath: "/music",
+      }).pipe(filterIsContainerWithVideoFile(), toArray()),
     )
 
-    const names = files.map((f) => f.fileName)
+    const names = files.map((fileInfo) =>
+      basename(fileInfo.fullPath),
+    )
     expect(names).toEqual(
       expect.arrayContaining(["song.mkv", "clip.mp4"]),
     )
@@ -156,10 +153,10 @@ describe("filterIsContainerWithVideoFile", () => {
     })
 
     const files = await firstValueFrom(
-      getFilesAtDepth({ depth: 0, sourcePath: "/music" }).pipe(
-        filterIsContainerWithVideoFile(),
-        toArray(),
-      ),
+      getFilesAtDepth({
+        depth: 0,
+        sourcePath: "/music",
+      }).pipe(filterIsContainerWithVideoFile(), toArray()),
     )
 
     expect(files).toHaveLength(0)
@@ -176,10 +173,10 @@ describe("filterIsContainerWithVideoFile", () => {
     })
 
     const files = await firstValueFrom(
-      getFilesAtDepth({ depth: 0, sourcePath: "/music" }).pipe(
-        filterIsContainerWithVideoFile(),
-        toArray(),
-      ),
+      getFilesAtDepth({
+        depth: 0,
+        sourcePath: "/music",
+      }).pipe(filterIsContainerWithVideoFile(), toArray()),
     )
 
     expect(files).toHaveLength(6)
@@ -189,10 +186,10 @@ describe("filterIsContainerWithVideoFile", () => {
     vol.fromJSON({ "/music/song.mkv": "mkv" })
 
     const files = await firstValueFrom(
-      getFilesAtDepth({ depth: 0, sourcePath: "/music" }).pipe(
-        filterIsContainerWithVideoFile(),
-        toArray(),
-      ),
+      getFilesAtDepth({
+        depth: 0,
+        sourcePath: "/music",
+      }).pipe(filterIsContainerWithVideoFile(), toArray()),
     )
 
     expect(files[0]?.fullPath).toBe(

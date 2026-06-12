@@ -1,16 +1,12 @@
-import {
-  describe,
-  expect,
-  test,
-  vi,
-} from "vitest"
+import type { FileInfo } from "@mux-magic/tools"
+import { EMPTY } from "rxjs"
+import { describe, expect, test } from "vitest"
 import type {
   AudioTrack,
   GeneralTrack,
   MediaInfo,
   VideoTrack,
 } from "./getMediaInfo.js"
-import type { FileInfo } from "@mux-magic/tools"
 
 const { getMediaTrackSummary } = await import(
   "./getMediaTrackSummary.js"
@@ -95,16 +91,13 @@ const buildVideoTrack = (): VideoTrack =>
   }) as VideoTrack
 
 const buildFileInfo = (fullPath: string): FileInfo => ({
-  fileName: fullPath.split("/").at(-1) ?? "",
+  filename: fullPath.split("/").at(-1) ?? "",
   fullPath,
+  renameFile: () => EMPTY,
 })
 
 const buildMediaInfo = (
-  tracks: Array<
-    | AudioTrack
-    | GeneralTrack
-    | VideoTrack
-  >,
+  tracks: Array<AudioTrack | GeneralTrack | VideoTrack>,
 ): MediaInfo => ({
   creatingLibrary: {
     name: "MediaInfoLib",
@@ -125,7 +118,10 @@ describe("getMediaTrackSummary", () => {
     ])
     const fileInfo = buildFileInfo("/music/song.mkv")
 
-    const summary = getMediaTrackSummary(fileInfo, mediaInfo)
+    const summary = getMediaTrackSummary(
+      fileInfo,
+      mediaInfo,
+    )
 
     expect(summary.audioTrackCount).toBe(1)
     expect(summary.videoTrackCount).toBe(0)
@@ -140,7 +136,10 @@ describe("getMediaTrackSummary", () => {
     ])
     const fileInfo = buildFileInfo("/music/video.mkv")
 
-    const summary = getMediaTrackSummary(fileInfo, mediaInfo)
+    const summary = getMediaTrackSummary(
+      fileInfo,
+      mediaInfo,
+    )
 
     expect(summary.hasVideoTrack).toBe(true)
     expect(summary.videoTrackCount).toBe(1)
@@ -153,7 +152,10 @@ describe("getMediaTrackSummary", () => {
     ])
     const fileInfo = buildFileInfo("/music/song.mkv")
 
-    const summary = getMediaTrackSummary(fileInfo, mediaInfo)
+    const summary = getMediaTrackSummary(
+      fileInfo,
+      mediaInfo,
+    )
 
     expect(summary.audioCodec).toBe("FLAC")
   })
@@ -165,7 +167,10 @@ describe("getMediaTrackSummary", () => {
     ])
     const fileInfo = buildFileInfo("/music/song.mp4")
 
-    const summary = getMediaTrackSummary(fileInfo, mediaInfo)
+    const summary = getMediaTrackSummary(
+      fileInfo,
+      mediaInfo,
+    )
 
     expect(summary.audioCodec).toBe("AAC")
   })
@@ -177,7 +182,10 @@ describe("getMediaTrackSummary", () => {
     ])
     const fileInfo = buildFileInfo("/music/video-only.mkv")
 
-    const summary = getMediaTrackSummary(fileInfo, mediaInfo)
+    const summary = getMediaTrackSummary(
+      fileInfo,
+      mediaInfo,
+    )
 
     expect(summary.audioTrackCount).toBe(0)
     expect(summary.audioCodec).toBeNull()
@@ -191,7 +199,10 @@ describe("getMediaTrackSummary", () => {
     ])
     const fileInfo = buildFileInfo("/music/song.mkv")
 
-    const summary = getMediaTrackSummary(fileInfo, mediaInfo)
+    const summary = getMediaTrackSummary(
+      fileInfo,
+      mediaInfo,
+    )
 
     expect(summary.audioTrackCount).toBe(2)
     // First audio track wins for codec
@@ -209,7 +220,10 @@ describe("getMediaTrackSummary", () => {
     }
     const fileInfo = buildFileInfo("/music/empty.mkv")
 
-    const summary = getMediaTrackSummary(fileInfo, mediaInfo)
+    const summary = getMediaTrackSummary(
+      fileInfo,
+      mediaInfo,
+    )
 
     expect(summary.audioTrackCount).toBe(0)
     expect(summary.videoTrackCount).toBe(0)
@@ -224,7 +238,10 @@ describe("getMediaTrackSummary", () => {
     ])
     const fileInfo = buildFileInfo("/music/song.mkv")
 
-    const summary = getMediaTrackSummary(fileInfo, mediaInfo)
+    const summary = getMediaTrackSummary(
+      fileInfo,
+      mediaInfo,
+    )
 
     expect(summary.filePath).toBe("/music/song.mkv")
   })
@@ -233,7 +250,10 @@ describe("getMediaTrackSummary", () => {
     const mediaInfo = buildMediaInfo([buildGeneralTrack()])
     const fileInfo = buildFileInfo("/music/empty.mkv")
 
-    const summary = getMediaTrackSummary(fileInfo, mediaInfo)
+    const summary = getMediaTrackSummary(
+      fileInfo,
+      mediaInfo,
+    )
 
     expect(summary.audioTrackCount).toBe(0)
     expect(summary.videoTrackCount).toBe(0)

@@ -1,10 +1,6 @@
 import { join } from "node:path"
 import { vol } from "memfs"
-import {
-  lastValueFrom,
-  Observable,
-  of,
-} from "rxjs"
+import { lastValueFrom, Observable, of } from "rxjs"
 import {
   beforeEach,
   describe,
@@ -62,9 +58,7 @@ const buildGeneralTrack = (): GeneralTrack =>
     Duration: "180.000",
   }) as GeneralTrack
 
-const buildAudioTrack = (
-  format = "FLAC",
-): AudioTrack =>
+const buildAudioTrack = (format = "FLAC"): AudioTrack =>
   ({
     "@type": "Audio",
     Format: format,
