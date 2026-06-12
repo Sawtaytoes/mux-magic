@@ -69,7 +69,9 @@ export const StringArrayField = ({
   // variable into them would emit a path where the server expects the
   // typed string[], which is never what the user wants.
   const isLinkable = field.isLinkable === true
-  const link = isLinkable ? step.links?.[field.name] : undefined
+  const link = isLinkable
+    ? step.links?.[field.name]
+    : undefined
   const isLinked = link != null
   const linkLabel = resolveLinkLabel(link, paths, allSteps)
 
@@ -112,7 +114,9 @@ export const StringArrayField = ({
             className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer"
           >
             <span className="truncate">{linkLabel}</span>
-            <span className="text-slate-400 shrink-0">▾</span>
+            <span className="text-slate-400 shrink-0">
+              ▾
+            </span>
           </button>
         )}
       </div>
