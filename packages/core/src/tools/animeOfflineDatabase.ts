@@ -27,11 +27,11 @@ const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const ANIDB_AID_PATTERN =
   /^https?:\/\/anidb\.net\/anime\/(\d+)\/?$/i
 
-const cacheDir = (): string =>
+const cacheDir = () =>
   join(getAnidbCacheDir(), "manami")
-const dataPath = (): string =>
+const dataPath = () =>
   join(cacheDir(), "anime-offline-database.json")
-const versionPath = (): string =>
+const versionPath = () =>
   join(cacheDir(), "version")
 
 // Subset of the manami entry shape — only the fields we read.
@@ -90,7 +90,7 @@ const ENGLISH_STOPWORDS_REGEX =
 // skipped before the stopword scoring runs.
 const LATIN_SCRIPT_REGEX = /^[ -ÿ‐-‧‰-⁞]+$/
 
-const scoreEnglishness = (text: string): number => {
+const scoreEnglishness = (text: string) => {
   if (!LATIN_SCRIPT_REGEX.test(text)) return 0
   const matches = text.match(ENGLISH_STOPWORDS_REGEX)
   return matches?.length ?? 0
@@ -126,7 +126,7 @@ const pickEnglishSynonym = (
 const isFresh = async (
   path: string,
   maxAgeMs: number,
-): Promise<boolean> => {
+) => {
   try {
     const stats = await stat(path)
     return Date.now() - stats.mtimeMs < maxAgeMs
@@ -135,7 +135,7 @@ const isFresh = async (
   }
 }
 
-const resolveLatestVersion = async (): Promise<string> => {
+const resolveLatestVersion = async () => {
   const res = await fetch(LATEST_URL, {
     method: "HEAD",
     redirect: "manual",
@@ -155,7 +155,7 @@ const resolveLatestVersion = async (): Promise<string> => {
   return match[1]
 }
 
-const downloadDataset = async (): Promise<void> => {
+const downloadDataset = async () => {
   const res = await fetch(LATEST_URL)
   if (!res.ok)
     throw new Error(
@@ -167,7 +167,7 @@ const downloadDataset = async (): Promise<void> => {
 
 let refreshPromise: Promise<void> | null = null
 
-const refreshIfStale = async (): Promise<void> => {
+const refreshIfStale = async () => {
   if (refreshPromise) return refreshPromise
 
   refreshPromise = (async () => {

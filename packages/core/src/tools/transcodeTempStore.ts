@@ -47,7 +47,7 @@ type CacheEntry = {
 
 const DEFAULT_MAX_BYTES = 4 * 1024 * 1024 * 1024
 
-const parseMaxBytes = (): number => {
+const parseMaxBytes = () => {
   const fromEnv = process.env.TRANSCODE_CACHE_MAX_BYTES
   if (typeof fromEnv !== "string" || fromEnv.length === 0) {
     return DEFAULT_MAX_BYTES
@@ -59,11 +59,11 @@ const parseMaxBytes = (): number => {
   return parsed
 }
 
-const cacheDirectoryPath = (): string =>
+const cacheDirectoryPath = () =>
   join(tmpdir(), "mux-magic-transcode-cache")
 
 let isCacheDirectoryEnsured = false
-const ensureCacheDirectory = (): string => {
+const ensureCacheDirectory = () => {
   const directoryPath = cacheDirectoryPath()
   if (!isCacheDirectoryEnsured) {
     mkdirSync(directoryPath, { recursive: true })
@@ -74,13 +74,13 @@ const ensureCacheDirectory = (): string => {
 
 const extensionForCodec = (
   _codec: TranscodeCodec,
-): string => ".mp4"
+) => ".mp4"
 
 export const mimeTypeForCodec = (
   _codec: TranscodeCodec,
 ): string => "video/mp4"
 
-const hashKey = (key: TranscodeCacheKey): string =>
+const hashKey = (key: TranscodeCacheKey) =>
   createHash("sha256")
     .update(key.absPath)
     .update("|")
@@ -91,7 +91,7 @@ const hashKey = (key: TranscodeCacheKey): string =>
     .update(String(key.audioStream))
     .digest("hex")
 
-const buildTempPath = (key: TranscodeCacheKey): string => {
+const buildTempPath = (key: TranscodeCacheKey) => {
   const directoryPath = ensureCacheDirectory()
   const hashed = hashKey(key)
   return join(
@@ -103,7 +103,7 @@ const buildTempPath = (key: TranscodeCacheKey): string => {
 const entries = new Map<string, CacheEntry>()
 let maxTotalBytes: number = parseMaxBytes()
 
-const evictIfOverCap = async (): Promise<void> => {
+const evictIfOverCap = async () => {
   const currentTotal = Array.from(entries.values()).reduce(
     (total, entry) =>
       entry.isReady ? total + entry.sizeBytes : total,
@@ -182,7 +182,7 @@ export const transcodeTempStore = {
   // the file when the caller doesn't already know the size.
   markReady: async (
     key: TranscodeCacheKey,
-  ): Promise<void> => {
+  ) => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {
@@ -210,7 +210,7 @@ export const transcodeTempStore = {
   // a fresh acquire() will redo the encode.
   release: async (
     key: TranscodeCacheKey,
-  ): Promise<void> => {
+  ) => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {
@@ -237,7 +237,7 @@ export const transcodeTempStore = {
   // doesn't get served by a retry.
   invalidate: async (
     key: TranscodeCacheKey,
-  ): Promise<void> => {
+  ) => {
     const hashed = hashKey(key)
     const entry = entries.get(hashed)
     if (!entry) {
@@ -253,7 +253,7 @@ export const transcodeTempStore = {
 
   // Test helper: drop all in-memory bookkeeping. Does NOT remove
   // on-disk files (tests use memfs which resets per-test anyway).
-  __resetForTests: (): void => {
+  __resetForTests: () => {
     entries.clear()
     isCacheDirectoryEnsured = false
     maxTotalBytes = parseMaxBytes()
@@ -269,7 +269,7 @@ export const transcodeTempStore = {
   // Best-effort cleanup of the on-disk cache directory. Wired into a
   // process.on('exit') / beforeExit listener by the route module so a
   // dev-mode Ctrl+C doesn't leave gigabytes of orphaned `.webm` shards.
-  cleanupOnShutdown: (): void => {
+  cleanupOnShutdown: () => {
     const directoryPath = cacheDirectoryPath()
     try {
       const stats = statSync(directoryPath)

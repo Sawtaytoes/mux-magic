@@ -66,7 +66,7 @@ export type TemplateStore = {
 // non-BMP literals.
 const COMBINING_DIACRITICS = /[\u0300-\u036f]/g
 
-const slugifyName = (name: string): string => {
+const slugifyName = (name: string) => {
   const stripped = name
     .toLowerCase()
     .normalize("NFKD")
@@ -147,7 +147,7 @@ const readTemplatesFile = async (
 const writeTemplatesFile = async (
   filePath: string,
   data: TemplatesFile,
-): Promise<void> => {
+) => {
   const parentDir = dirname(filePath)
   await mkdir(parentDir, { recursive: true })
   const tempPath = `${filePath}.tmp`
@@ -264,7 +264,7 @@ export const createTemplateStore = ({
 
   const deleteTemplate = async (
     id: string,
-  ): Promise<boolean> =>
+  ) =>
     serializeWrite(async () => {
       const file = await readTemplatesFile(filePath)
       const hasMatch = file.templates.some(

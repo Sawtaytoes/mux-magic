@@ -36,7 +36,7 @@ export type DvdCompareRelease = {
 
 const DVDCOMPARE_BASE = "https://www.dvdcompare.net"
 
-const decodeHtmlEntities = (text: string): string =>
+const decodeHtmlEntities = (text: string) =>
   text
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
@@ -167,7 +167,7 @@ export const findDvdCompareResults = (
     })(),
   )
 
-const stripTagsAndCollapse = (html: string): string =>
+const stripTagsAndCollapse = (html: string) =>
   decodeHtmlEntities(html.replace(/<[^>]+>/g, " "))
     .replace(/\s+/g, " ")
     .trim()
@@ -288,7 +288,7 @@ export const getReleaseHashesByDvdCompareId = (
 // but newer pages use "Rewind @ www.dvdcompare.net - <Title>". Both
 // prefixes are stripped here so the parsed result is just the film
 // portion regardless of which template the page was rendered with.
-const stripDvdCompareTitlePrefix = (text: string): string =>
+const stripDvdCompareTitlePrefix = (text: string) =>
   text
     .replace(
       /^Rewind\s*@\s*www\.dvdcompare\.net\s*[-:]\s*/i,

@@ -17,7 +17,7 @@ export type ExitDecision = {
 
 const ENOENT = "ENOENT"
 
-const isEnoent = (error: unknown): boolean =>
+const isEnoent = (error: unknown) =>
   typeof error === "object" &&
   error !== null &&
   "code" in error &&

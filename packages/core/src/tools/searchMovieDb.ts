@@ -33,7 +33,7 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3"
 const TMDB_IMAGE_BASE_URL =
   "https://image.tmdb.org/t/p/w185"
 
-const yearOf = (releaseDate: string | undefined): string =>
+const yearOf = (releaseDate: string | undefined) =>
   // TMDB returns release_date as yyyy-mm-dd or "" — slice the year off and
   // bail to "" when missing so the rename pipeline can decide what to do
   // with a year-less film.
@@ -58,7 +58,7 @@ export const mapTmdbSearchResults = (
       (result) => result.movieDbId > 0 && result.title,
     )
 
-const requireTmdbApiKey = (): string => {
+const requireTmdbApiKey = () => {
   const apiKey = process.env.TMDB_API_KEY
   if (!apiKey) {
     throw new Error(

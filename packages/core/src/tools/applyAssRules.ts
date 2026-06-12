@@ -87,7 +87,7 @@ const matchesAllPairs = ({
 }: {
   pairs: Record<string, string>
   source: Record<string, string>
-}): boolean =>
+}) =>
   Object.entries(pairs).every(
     ([key, value]) => source[key] === value,
   )
@@ -100,7 +100,7 @@ const evaluatePerSourceClause = ({
   clause: WhenPredicateClause
   predicates: NamedPredicates
   source: Record<string, string>
-}): boolean => {
+}) => {
   const { matches, excludes } = splitClause({ clause })
 
   const hasMatchesPasses = matches
@@ -153,7 +153,7 @@ const evaluateAggregateClause = ({
   clause: WhenPredicateClause
   predicates: NamedPredicates
   scope: "scriptInfo" | "style"
-}): boolean => {
+}) => {
   const sources =
     scope === "scriptInfo"
       ? batchMetadata.map(({ scriptInfo }) => scriptInfo)
@@ -280,7 +280,7 @@ const applyComputeFromOps = ({
 }: {
   initialValue: number
   operations: ComputeFromOp[]
-}): number =>
+}) =>
   operations.reduce((accumulator, operation) => {
     if (!isNumericOperation(operation)) {
       if (operation === "round") {
@@ -331,7 +331,7 @@ const resolveStyleFieldValue = ({
   fieldValue: StyleFieldValue
   fileMetadata: FileBatchMetadata
   styleRow: Record<string, string>
-}): string => {
+}) => {
   if (!isComputeFromValue(fieldValue)) {
     return fieldValue
   }
@@ -367,7 +367,7 @@ const styleMatchesEntry = ({
         gte?: number
       }
   styleValue: string | undefined
-}): boolean => {
+}) => {
   if (typeof fieldValue === "string") {
     return styleValue === fieldValue
   }
@@ -416,7 +416,7 @@ const styleRowMatchesClause = ({
 }: {
   clause: ApplyIfStyleClause
   styleRow: Record<string, string>
-}): boolean =>
+}) =>
   Object.entries(clause).every(([fieldName, fieldValue]) =>
     styleMatchesEntry({
       fieldValue,

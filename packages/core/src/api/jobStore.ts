@@ -129,7 +129,7 @@ const hasPersistableChange = (
   changes: Partial<
     Omit<Job, "command" | "id" | "logs" | "params">
   >,
-): boolean =>
+) =>
   Object.keys(changes).some((key) =>
     PERSIST_FIELDS.has(key as keyof Job),
   )

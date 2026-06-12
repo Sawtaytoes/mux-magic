@@ -129,7 +129,7 @@ export const runFfmpegAudioTranscode = ({
 
     let hasSettled = false
 
-    const settleAsFailure = (reason: string): void => {
+    const settleAsFailure = (reason: string) => {
       if (hasSettled) {
         return
       }
@@ -141,7 +141,7 @@ export const runFfmpegAudioTranscode = ({
         })
     }
 
-    const settleAsSuccess = (): void => {
+    const settleAsSuccess = () => {
       if (hasSettled) {
         return
       }

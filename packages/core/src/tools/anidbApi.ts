@@ -21,7 +21,7 @@ const ANIME_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const MIN_REQUEST_INTERVAL_MS = 2_500
 let lastRequestAt = 0
 
-const throttle = async (): Promise<void> => {
+const throttle = async () => {
   const wait =
     MIN_REQUEST_INTERVAL_MS - (Date.now() - lastRequestAt)
   if (wait > 0)
@@ -34,7 +34,7 @@ const throttle = async (): Promise<void> => {
 const isFresh = async (
   path: string,
   maxAgeMs: number,
-): Promise<boolean> => {
+) => {
   try {
     const stats = await stat(path)
     return Date.now() - stats.mtimeMs < maxAgeMs

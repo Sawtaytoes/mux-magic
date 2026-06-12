@@ -17,7 +17,7 @@ const PLEX_SPECIAL_FEATURE_SUFFIXES = [
 ] as const
 
 // Strip the file extension from a filename. Returns the stem.
-const getStem = (filename: string): string =>
+const getStem = (filename: string) =>
   filename.slice(
     0,
     filename.length - extname(filename).length,
@@ -32,7 +32,7 @@ const isSiblingOfMain = ({
 }: {
   candidateFilename: string
   mainStem: string
-}): boolean => {
+}) => {
   const candidateStem = getStem(candidateFilename)
   return PLEX_SPECIAL_FEATURE_SUFFIXES.some(
     (suffix) => candidateStem === `${mainStem}${suffix}`,

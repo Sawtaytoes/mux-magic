@@ -183,7 +183,7 @@ const snapshot = (state: EmitterState): EmitterPayload => {
   return payload
 }
 
-const flush = (state: EmitterState): void => {
+const flush = (state: EmitterState) => {
   if (state.pendingPayload === null) {
     return
   }
@@ -200,7 +200,7 @@ const flush = (state: EmitterState): void => {
 const scheduleEmit = (
   state: EmitterState,
   delayMs: number,
-): void => {
+) => {
   if (state.pendingTimer !== null) {
     return
   }
@@ -215,7 +215,7 @@ const scheduleEmit = (
 // throttle gate. First call defers a full interval; later calls
 // either flush immediately (if past the window) or hold the latest
 // payload until the timer fires.
-const tick = (state: EmitterState): void => {
+const tick = (state: EmitterState) => {
   state.pendingPayload = snapshot(state)
 
   const now = Date.now()

@@ -15,7 +15,7 @@ import type { Job } from "./types.js"
 // Platform-aware data directory resolution
 // ---------------------------------------------------------------------------
 
-const resolveAppDataDir = (): string => {
+const resolveAppDataDir = () => {
   const explicit = process.env.MUX_MAGIC_DATA_DIR
   if (explicit !== undefined && explicit !== "") {
     return explicit
@@ -60,7 +60,7 @@ export const __disableJobPersistenceForTests = (): void => {
   isDisabledForTests = true
 }
 
-const getDataDir = (): string =>
+const getDataDir = () =>
   activeDataDir ?? resolveAppDataDir()
 
 export const resolveJobsDir = (dataDir: string): string =>
@@ -217,7 +217,7 @@ const isJobEligibleForPrune = ({
 }: {
   job: Job
   cutoffDate: Date
-}): boolean => {
+}) => {
   if (job.status === "paused") {
     return false
   }
