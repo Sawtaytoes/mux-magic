@@ -18,6 +18,7 @@ const jobDetailSchema = z.object({
     .enum([
       "pending",
       "running",
+      "paused",
       "completed",
       "failed",
       "cancelled",
@@ -25,7 +26,13 @@ const jobDetailSchema = z.object({
       "exited",
     ])
     .describe(
-      "Job status. `skipped` is set on sequence-step child jobs that never ran because an earlier step failed or the umbrella was cancelled before reaching them; distinct from `cancelled`, which means the job was actively running when it got interrupted. `exited` is set on the umbrella job and every later flat step when a flow-control step (e.g. `exitIfEmpty`) signals a planned early exit — distinct from both `completed` (the sequence ran every step) and `skipped` (the rest of the sequence didn't run due to a failure or cancellation).",
+      "Job status. `paused` means the job is awaiting external input (e.g. a user picking a name for an unnamed file). `skipped` is set on sequence-step child jobs that never ran because an earlier step failed or the umbrella was cancelled before reaching them; distinct from `cancelled`, which means the job was actively running when it got interrupted. `exited` is set on the umbrella job and every later flat step when a flow-control step (e.g. `exitIfEmpty`) signals a planned early exit — distinct from both `completed` (the sequence ran every step) and `skipped` (the rest of the sequence didn't run due to a failure or cancellation).",
+    ),
+  pauseReason: z
+    .enum(["user_input", "rate_limit"])
+    .nullable()
+    .describe(
+      "Human-readable reason why the job is paused. Only set when status is `paused`; null for all other statuses.",
     ),
   params: z.unknown().describe("Command parameters"),
   results: z
@@ -100,9 +107,11 @@ jobRoutes.openapi(
       const send = (job: object) =>
         stream.writeSSE({ data: JSON.stringify(job) })
 
-      for (const { logs: _logs, ...job } of getAllJobs()) {
-        await send(job)
-      }
+      await Promise.all(
+        getAllJobs().map(({ logs: _logs, ...job }) =>
+          send(job),
+        ),
+      )
 
       await new Promise<void>((resolve) => {
         const sub = jobEvents$.subscribe({

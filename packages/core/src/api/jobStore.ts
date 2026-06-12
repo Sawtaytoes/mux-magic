@@ -5,6 +5,11 @@ import {
   __resetAllProgressEmittersForTests,
   disposeProgressEmitter,
 } from "../tools/progressEmitter.js"
+import {
+  loadJobsFromDisk,
+  persistJob,
+  pruneOldJobs,
+} from "./jobPersistence.js"
 import type {
   Job,
   ProgressEvent,
@@ -68,6 +73,7 @@ export const createJob = ({
     outputs: null,
     params,
     parentJobId,
+    pauseReason: null,
     results: [],
     startedAt: null,
     status: "pending",
@@ -79,6 +85,8 @@ export const createJob = ({
 
   const { logs: _logs, ...rest } = job
   jobSubject.next(rest)
+
+  void persistJob({ job })
 
   return job
 }
@@ -92,6 +100,38 @@ export const getAllJobs = (): Job[] =>
 export const getChildJobs = (parentJobId: string): Job[] =>
   Array.from(jobs.values()).filter(
     (job) => job.parentJobId === parentJobId,
+  )
+
+// Called on server boot to reconstruct in-memory job state from disk.
+// Uses loadJobsFromDisk which already resets `running` jobs to `failed`.
+// Does NOT fire jobSubject events (no SSE subscribers yet at boot).
+export const seedJobsFromDisk = async (): Promise<void> => {
+  const retentionDays = Number(
+    process.env.JOB_RETENTION_DAYS ?? "30",
+  )
+  await pruneOldJobs({ retentionDays })
+  const loaded = await loadJobsFromDisk()
+  loaded.forEach((job) => {
+    jobs.set(job.id, job)
+  })
+}
+
+const PERSIST_FIELDS = new Set<keyof Job>([
+  "status",
+  "error",
+  "pauseReason",
+  "outputs",
+  "startedAt",
+  "completedAt",
+])
+
+const hasPersistableChange = (
+  changes: Partial<
+    Omit<Job, "command" | "id" | "logs" | "params">
+  >,
+): boolean =>
+  Object.keys(changes).some((key) =>
+    PERSIST_FIELDS.has(key as keyof Job),
   )
 
 // Returns a new Job object (spread-based update, no direct property mutation).
@@ -114,6 +154,10 @@ export const updateJob = (
 
   const { logs: _logs, ...rest } = updated
   jobSubject.next(rest)
+
+  if (hasPersistableChange(changes)) {
+    void persistJob({ job: updated })
+  }
 
   return updated
 }
@@ -207,9 +251,10 @@ export const cancelOrSkipJob = (id: string): void => {
   const job = jobs.get(id)
   if (!job) return
 
-  if (job.status === "running") {
+  if (job.status === "running" || job.status === "paused") {
     updateJob(id, {
       completedAt: new Date(),
+      pauseReason: null,
       status: "cancelled",
     })
     const subscription = jobSubscriptions.get(id)
@@ -243,7 +288,9 @@ export const cancelOrSkipJob = (id: string): void => {
 export const cancelJob = (id: string): boolean => {
   const job = jobs.get(id)
   if (!job) return false
-  if (job.status !== "running") return false
+  if (job.status !== "running" && job.status !== "paused") {
+    return false
+  }
 
   // Order matters: write the cancelled status BEFORE unsubscribing.
   // jobRunner's runJob() registers a teardown on the subscription that
@@ -253,6 +300,7 @@ export const cancelJob = (id: string): boolean => {
   // stale status when it resumes.
   updateJob(id, {
     completedAt: new Date(),
+    pauseReason: null,
     status: "cancelled",
   })
 
@@ -276,6 +324,11 @@ export const cancelJob = (id: string): boolean => {
 // ---------------------------------------------------------------------------
 // Test helper — clears all state between tests.
 // ---------------------------------------------------------------------------
+
+export {
+  __disableJobPersistenceForTests as disableJobPersistenceForTests,
+  __resetJobPersistenceForTests as configureJobPersistenceForTests,
+} from "./jobPersistence.js"
 
 export const resetStore = (): void => {
   jobs.clear()

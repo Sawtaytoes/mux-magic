@@ -7,6 +7,7 @@ export type {
   JobLogDoneEvent,
   JobLogLineEvent,
   JobLogsEvent,
+  JobPauseReason,
   JobStatus,
   JobWire,
   ProgressEvent,

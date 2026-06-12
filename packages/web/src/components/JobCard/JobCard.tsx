@@ -11,6 +11,7 @@ import { CopyTextButton } from "../CopyTextButton/CopyTextButton"
 import { JobLogsDisclosure } from "../JobLogsDisclosure/JobLogsDisclosure"
 import { JobStepsDisclosure } from "../JobStepsDisclosure/JobStepsDisclosure"
 import { ProgressBar } from "../ProgressBar/ProgressBar"
+import { ResumeJobButton } from "../ResumeJobButton/ResumeJobButton"
 import { StatusBadge } from "../StatusBadge/StatusBadge"
 
 // ─── ETA for sequence jobs ────────────────────────────────────────────────────
@@ -218,6 +219,12 @@ export const JobCard = ({ job }: JobCardProps) => {
           ✎ Open in Sequence Builder
         </a>
         {job.status === "running" && (
+          <CancelJobButton jobId={job.id} />
+        )}
+        {job.status === "paused" && (
+          <ResumeJobButton job={job} />
+        )}
+        {job.status === "paused" && (
           <CancelJobButton jobId={job.id} />
         )}
       </div>

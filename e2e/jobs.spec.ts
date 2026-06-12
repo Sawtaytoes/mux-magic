@@ -16,6 +16,7 @@ const makeJob = (overrides: Partial<Job> = {}): Job => ({
   outputs: null,
   params: null,
   parentJobId: null,
+  pauseReason: null,
   results: [],
   startedAt: null,
   status: "running",

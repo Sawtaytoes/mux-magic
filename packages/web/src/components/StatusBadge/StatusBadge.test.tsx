@@ -51,6 +51,13 @@ describe("StatusBadge", () => {
     ).toContain("text-slate-300")
   })
 
+  test("applies paused styles with amber color", () => {
+    render(<StatusBadge status="paused" />)
+    expect(screen.getByText("paused").className).toContain(
+      "text-amber-300",
+    )
+  })
+
   test("renders unknown status without crashing", () => {
     render(<StatusBadge status="unknown" />)
     expect(screen.getByText("unknown")).toBeInTheDocument()

@@ -1,6 +1,7 @@
 export type JobStatus =
   | "pending"
   | "running"
+  | "paused"
   | "completed"
   | "failed"
   | "cancelled"
@@ -13,6 +14,8 @@ export type JobStatus =
   // `exitIfEmpty`, and cascaded to every later flat step that never
   // ran by design.
   | "exited"
+
+export type JobPauseReason = "user_input" | "rate_limit"
 
 export type Job = {
   commandName: string
@@ -33,6 +36,9 @@ export type Job = {
   // /commands/<name> calls and umbrella /sequences/run jobs themselves).
   // The Jobs UI groups by this on the client.
   parentJobId: string | null
+  // Human-readable reason for why this job is paused. Only set when
+  // status is "paused"; null for all other statuses.
+  pauseReason: JobPauseReason | null
   results: unknown[]
   startedAt: Date | null
   status: JobStatus
