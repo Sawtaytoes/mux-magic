@@ -71,6 +71,7 @@
   },
   "resolutions": {
     "mal-scraper@^2.13.2": "patch:mal-scraper@npm%3A2.13.2#./.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch",
-    "@babel/runtime": ">=7.26.10"
+    "@babel/runtime": ">=7.26.10",
+    "shell-quote": ">=1.8.4"
   }
 }
