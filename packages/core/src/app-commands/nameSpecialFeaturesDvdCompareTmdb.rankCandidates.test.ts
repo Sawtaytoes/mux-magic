@@ -159,6 +159,23 @@ describe(combineScores.name, () => {
       }),
     ).toBe(0)
   })
+
+  test("falls back to filename-only scoring when the candidate has a timecode but the duration is wildly off (Far Far Away Idol case)", () => {
+    // The candidate has a timecode (8:55 = 535s) but the file is 5:53 (353s) —
+    // delta 182s exceeds the 90s tolerance → durationScore === 0.
+    // Strong filename overlap: "Far Far Away Idol" vs "Shrek 2-SF_03_FarAwayIdol_t48"
+    // shares "Far", "Away", "Idol" → filenameScore = 0.75 (3 of 4 words match).
+    // Expected: falls back to filenameScore * FILENAME_ONLY_SCORE_FACTOR = 0.75 * 0.6 = 0.45.
+    const combined = combineScores({
+      durationScore: 0,
+      filenameScore: 0.75,
+    })
+    expect(combined).toBeGreaterThan(0.2)
+    expect(combined).toBeCloseTo(
+      0.75 * FILENAME_ONLY_SCORE_FACTOR,
+      5,
+    )
+  })
 })
 
 describe(rankCandidatesForFile.name, () => {
@@ -201,6 +218,28 @@ describe(rankCandidatesForFile.name, () => {
     expect(
       result.map((entry) => entry.candidate.name),
     ).toEqual(["Xyz", "Pqr"])
+  })
+
+  test("surfaces a timed candidate with wildly-off duration but strong filename overlap at filename-only confidence (Far Far Away Idol case)", () => {
+    // Candidate timecode 8:55 (535s) vs file duration 5:53 (353s) — delta 182s > 90s tolerance.
+    // "Far Far Away Idol" vs "Shrek-2-Far-Away-Idol-t48": all 4 words match → filenameScore 1.0.
+    // After the filename-only fallback: confidence = 1.0 * 0.6 = 0.6 — well above 20%.
+    // (The real on-disk filename uses camelCase "FarAwayIdol" which is a single token;
+    //  this test uses a hyphen-separated form to exercise the fallback branch cleanly.)
+    const fileDurationSeconds = 5 * 60 + 53 // 353s
+    const result = rankCandidatesForFile({
+      fileDurationSeconds,
+      filename: "Shrek-2-Far-Away-Idol-t48.mkv",
+      candidates: [
+        {
+          name: "Far Far Away Idol",
+          timecode: "8:55",
+        },
+      ],
+    })
+    expect(result[0].confidence).toBeGreaterThan(0.2)
+    expect(result[0].durationScore).toBe(0)
+    expect(result[0].filenameScore).toBeGreaterThan(0)
   })
 })
 
