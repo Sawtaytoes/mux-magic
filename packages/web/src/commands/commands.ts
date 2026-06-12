@@ -50,6 +50,7 @@ import {
   nameMovieCutsDvdCompareTmdbRequestSchema,
   nameSpecialFeaturesDvdCompareTmdbRequestSchema,
   nameTvShowEpisodesRequestSchema,
+  onlyNameSpecialFeaturesDvdCompareRequestSchema,
   remuxToMkvRequestSchema,
   renameDemosRequestSchema,
   renameFilesRequestSchema,
@@ -1600,6 +1601,63 @@ export const COMMANDS: Commands = {
       // Group small numeric fields side-by-side on wider cards, using
       // container queries so they adapt to card width (when 2 cards display
       // side-by-side), not just the viewport.
+      groups: [
+        {
+          fields: ["timecodePadding", "fixedOffset"],
+          layout: "field-group-two-col",
+        },
+      ],
+    }
+  })(),
+  onlyNameSpecialFeaturesDvdCompare: (() => {
+    const field = fieldBuilder(
+      onlyNameSpecialFeaturesDvdCompareRequestSchema,
+    )
+    return {
+      summary:
+        "Rename special features by timecode matching against DVDCompare.net — no TMDB lookup. Suited for concerts, documentaries, and other non-movie workflows.",
+      tag: "Naming Operations",
+      outputFolderName: null,
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        // Schema marks dvdCompareId optional (CLI accepts url/searchTerm),
+        // but the builder form requires it — the lookup populates it
+        // before submit. Override the helper's derivation.
+        field("dvdCompareId", {
+          type: "numberWithLookup",
+          lookupType: "dvdcompare",
+          label: "DVDCompare Film ID",
+          placeholder: "74759",
+          isRequired: true,
+          companionNameField: "dvdCompareName",
+          hasIncrementButtons: false,
+        }),
+        // numberWithLookup so the sibling-id reverse-lookup branch in
+        // runReverseLookup fires and auto-fills dvdCompareReleaseLabel.
+        field("dvdCompareReleaseHash", {
+          type: "numberWithLookup",
+          label: "Release Hash",
+          default: 1,
+          companionNameField: "dvdCompareReleaseLabel",
+        }),
+        field("fixedOffset", {
+          type: "number",
+          label: "Fixed Offset (s)",
+        }),
+        field("timecodePadding", {
+          type: "number",
+          label: "Timecode Padding (s)",
+        }),
+        field("autoNameDuplicates", {
+          type: "boolean",
+          label: "Auto-name duplicates",
+          description:
+            "When two-or-more files match the same target name within a single run, auto-disambiguate them with (2)/(3)/… suffixes deterministically. Pass false to instead emit a duplicate-pick prompt for each ambiguous group.",
+        }),
+      ],
       groups: [
         {
           fields: ["timecodePadding", "fixedOffset"],

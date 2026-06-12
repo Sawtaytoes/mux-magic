@@ -44,6 +44,7 @@ export const commandNames = [
   "nameAnimeEpisodesAniDB",
   "nameMovieCutsDvdCompareTmdb",
   "nameSpecialFeaturesDvdCompareTmdb",
+  "onlyNameSpecialFeaturesDvdCompare",
   "nameTvShowEpisodes",
   "remuxToMkv",
   "renumberChapters",
