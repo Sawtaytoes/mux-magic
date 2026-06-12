@@ -118,6 +118,7 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
   return resolveUrl({
     dvdCompareId,
     dvdCompareReleaseHash,
+    isNonInteractive,
     searchTerm,
     url,
   })

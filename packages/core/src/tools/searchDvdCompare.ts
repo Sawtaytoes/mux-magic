@@ -2,7 +2,7 @@ import {
   logAndSwallowPipelineError,
   logInfo,
 } from "@mux-magic/tools"
-import { from, type Observable } from "rxjs"
+import { from, map, type Observable } from "rxjs"
 import {
   gotoPage,
   launchBrowser,
@@ -275,6 +275,13 @@ export const listDvdCompareReleases = (
 
       return { debug, releases }
     })(),
+  )
+
+export const getReleaseHashesByDvdCompareId = (
+  dvdCompareId: number,
+): Observable<DvdCompareRelease[]> =>
+  listDvdCompareReleases(dvdCompareId).pipe(
+    map(({ releases }) => releases),
   )
 
 // DVDCompare's <title> element historically used "DVD Compare: <Title>"
