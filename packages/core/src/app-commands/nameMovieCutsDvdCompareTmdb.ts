@@ -148,18 +148,22 @@ export const nameMovieCutsDvdCompareTmdb = ({
                       ({
                         newPath,
                       }): Observable<NameMovieCutsResult> =>
-                        moveFileToEditionFolder(
-                          newPath,
+                        moveFileToEditionFolder({
+                          sourceFilePath: newPath,
                           movie,
-                        ).pipe(
+                        }).pipe(
                           map(
                             (
-                              destinationPath,
+                              moveResult,
                             ): NameMovieCutsResult => ({
                               oldName: originalFilename,
                               newName: basename(newPath),
                               destinationPath:
-                                destinationPath ?? newPath,
+                                moveResult !== null &&
+                                "hasMovedToEditionFolder" in
+                                  moveResult
+                                  ? moveResult.destinationPath
+                                  : newPath,
                             }),
                           ),
                         ),

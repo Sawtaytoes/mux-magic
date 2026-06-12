@@ -187,9 +187,9 @@ describe("LanguageCodeField — filter autocomplete", () => {
     await user.click(jpnOption)
 
     const steps = store.get(stepsAtom)
-    expect(
-      (steps[0] as Step).params.audioLanguage,
-    ).toEqual({ code: "jpn" })
+    expect((steps[0] as Step).params.audioLanguage).toEqual(
+      { code: "jpn" },
+    )
   })
 
   test("selecting an option clears the filter input", async () => {
@@ -213,10 +213,7 @@ describe("LanguageCodeField — filter autocomplete", () => {
     })
     const store = renderField(step, field)
 
-    await user.type(
-      screen.getByRole("combobox"),
-      "Korean",
-    )
+    await user.type(screen.getByRole("combobox"), "Korean")
 
     const listbox = screen.getByRole("listbox")
     const korOption = within(listbox)
@@ -226,9 +223,9 @@ describe("LanguageCodeField — filter autocomplete", () => {
     await user.click(korOption)
 
     const steps = store.get(stepsAtom)
-    expect(
-      (steps[0] as Step).params.audioLanguage,
-    ).toEqual({ code: "kor" })
+    expect((steps[0] as Step).params.audioLanguage).toEqual(
+      { code: "kor" },
+    )
   })
 
   test("currently-selected code is excluded from the dropdown", async () => {

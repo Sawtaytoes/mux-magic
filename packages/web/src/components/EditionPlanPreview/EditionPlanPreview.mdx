@@ -1,0 +1,45 @@
+import { Meta, Canvas, Controls } from "@storybook/blocks"
+import * as EditionPlanPreviewStories from "./EditionPlanPreview.stories"
+
+<Meta of={EditionPlanPreviewStories} />
+
+# EditionPlanPreview
+
+Preview component for the edition-folder organization plan. The NSF
+(`nameSpecialFeaturesDvdCompareTmdb`) pipeline emits an `editionPlan`
+event **before** any moves happen, summarizing every planned file move.
+This component renders that preview so users can see what is about to
+occur before the moves execute.
+
+## Props
+
+<Controls />
+
+## Stories
+
+### Single Edition With Sibling
+
+One edition with a main feature and a trailer sibling that will be
+co-moved into the edition folder.
+
+<Canvas of={EditionPlanPreviewStories.SingleEditionWithSibling} />
+
+### Multi Edition With Siblings
+
+Two editions (Director's Cut and Theatrical), each with a main feature
+and a trailer sibling. Each edition appears as a separate group.
+
+<Canvas of={EditionPlanPreviewStories.MultiEditionWithSiblings} />
+
+### Main Feature Only
+
+A single edition with only the main feature file — no Plex-suffix
+siblings detected in the source folder.
+
+<Canvas of={EditionPlanPreviewStories.MainFeatureOnly} />
+
+### Empty Plan
+
+No edition-tagged files detected — the component renders nothing.
+
+<Canvas of={EditionPlanPreviewStories.EmptyPlan} />

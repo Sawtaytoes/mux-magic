@@ -51,12 +51,8 @@ import { buildUnnamedFileCandidates } from "./nameSpecialFeaturesDvdCompareTmdb.
 import { reorderForDuplicatePrompts } from "./nameSpecialFeaturesDvdCompareTmdb.duplicates.js"
 import {
   findUniqueTargetPath,
-  moveFileToEditionFolder,
+  organizeEditionFolders,
 } from "./nameSpecialFeaturesDvdCompareTmdb.editions.js"
-import {
-  isMainFeatureFilename,
-  parseEditionFromFilename,
-} from "./nameSpecialFeaturesDvdCompareTmdb.editionTag.js"
 import type { NameSpecialFeaturesResult } from "./nameSpecialFeaturesDvdCompareTmdb.events.js"
 import type { FileMatch } from "./nameSpecialFeaturesDvdCompareTmdb.fileMatch.js"
 import { flattenAllKnownNames } from "./nameSpecialFeaturesDvdCompareTmdb.flattenAllKnownNames.js"
@@ -552,90 +548,13 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                                         resolvedName,
                                       )
                                       .pipe(
-                                        concatMap(
-                                          (): Observable<NameSpecialFeaturesResult> => {
-                                            const renamedResult: NameSpecialFeaturesResult =
-                                              {
-                                                oldName:
-                                                  fileInfo.filename,
-                                                newName:
-                                                  resolvedName,
-                                              }
-                                            // N1: after a successful rename, if the
-                                            // renamed file is a main-feature with an
-                                            // edition tag AND moveToEditionFolders is
-                                            // requested, move it into the nested folder.
-                                            if (
-                                              !isMovingToEditionFolders
-                                            ) {
-                                              return of(
-                                                renamedResult,
-                                              )
-                                            }
-                                            if (
-                                              !isMainFeatureFilename(
-                                                resolvedName,
-                                              )
-                                            ) {
-                                              return of(
-                                                renamedResult,
-                                              )
-                                            }
-                                            const edition =
-                                              parseEditionFromFilename(
-                                                resolvedName,
-                                              )
-                                            if (!edition) {
-                                              return of(
-                                                renamedResult,
-                                              )
-                                            }
-                                            const renamedFilePath =
-                                              join(
-                                                sourcePath,
-                                                resolvedName.concat(
-                                                  extname(
-                                                    fileInfo.fullPath,
-                                                  ),
-                                                ),
-                                              )
-                                            return concat(
-                                              of(
-                                                renamedResult,
-                                              ),
-                                              moveFileToEditionFolder(
-                                                renamedFilePath,
-                                                movie,
-                                              ).pipe(
-                                                map(
-                                                  (
-                                                    destPath,
-                                                  ): NameSpecialFeaturesResult => {
-                                                    if (
-                                                      destPath ===
-                                                      null
-                                                    )
-                                                      return renamedResult
-                                                    logInfo(
-                                                      "MOVED TO EDITION FOLDER",
-                                                      destPath,
-                                                    )
-                                                    return {
-                                                      hasMovedToEditionFolder: true,
-                                                      filename:
-                                                        resolvedName.concat(
-                                                          extname(
-                                                            fileInfo.fullPath,
-                                                          ),
-                                                        ),
-                                                      destinationPath:
-                                                        destPath,
-                                                    }
-                                                  },
-                                                ),
-                                              ),
-                                            )
-                                          },
+                                        map(
+                                          (): NameSpecialFeaturesResult => ({
+                                            oldName:
+                                              fileInfo.filename,
+                                            newName:
+                                              resolvedName,
+                                          }),
                                         ),
                                       )
                                   },
@@ -690,8 +609,53 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                         filePaths: leftoverFullPaths,
                       }).pipe(ignoreElements()),
                     )
+                    // Worker 26: after all renames complete, organize
+                    // edition-tagged files into their Plex nested folders.
+                    // Emits an `editionPlan` preview event first, then
+                    // `hasMovedToEditionFolder` / `hasEditionFolderCollision`
+                    // per file (main features + Plex-suffix siblings).
+                    // Runs only when `isMovingToEditionFolders` is true.
+                    const editionOrganization$: Observable<
+                      Observable<NameSpecialFeaturesResult>
+                    > = isMovingToEditionFolders
+                      ? of(
+                          organizeEditionFolders({
+                            sourcePath,
+                            movie,
+                          }).pipe(
+                            map(
+                              (
+                                editionResult,
+                              ): NameSpecialFeaturesResult => {
+                                if (
+                                  "isEditionPlan" in
+                                  editionResult
+                                ) {
+                                  return editionResult
+                                }
+                                if (
+                                  "hasEditionFolderCollision" in
+                                  editionResult
+                                ) {
+                                  logInfo(
+                                    "EDITION FOLDER COLLISION",
+                                    editionResult.destinationPath,
+                                  )
+                                  return editionResult
+                                }
+                                logInfo(
+                                  "MOVED TO EDITION FOLDER",
+                                  editionResult.destinationPath,
+                                )
+                                return editionResult
+                              },
+                            ),
+                          ),
+                        )
+                      : EMPTY
                     return concat(
                       renamesStream$,
+                      editionOrganization$,
                       bucketMoves$,
                       summary$,
                     )

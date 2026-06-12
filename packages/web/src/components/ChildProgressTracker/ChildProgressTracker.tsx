@@ -16,9 +16,11 @@ import type {
   Variable,
 } from "../../types"
 import {
+  findNsfEditionPlan,
   findNsfRenamePairs,
   findNsfSummary,
   mergeAppliedRenamesIntoNsfResults,
+  type NsfEditionPlanRecord,
   type NsfRenamePair,
   type NsfSummaryRecord,
 } from "../NsfRunResults/findNsfResults"
@@ -93,6 +95,8 @@ export const ChildProgressTracker = ({
   const [renamePairs, setRenamePairs] = useState<
     NsfRenamePair[]
   >([])
+  const [editionPlan, setEditionPlan] =
+    useState<NsfEditionPlanRecord | null>(null)
   // Reset captured results on jobId change — see StepRunProgress for
   // the same pattern.
   const [lastSeenJobId, setLastSeenJobId] = useState<
@@ -102,12 +106,14 @@ export const ChildProgressTracker = ({
     setLastSeenJobId(jobId)
     setSummary(null)
     setRenamePairs([])
+    setEditionPlan(null)
   }
 
   const handleDone = useCallback(
     (payload: LogStreamDonePayload) => {
       setSummary(findNsfSummary(payload.results))
       setRenamePairs(findNsfRenamePairs(payload.results))
+      setEditionPlan(findNsfEditionPlan(payload.results))
     },
     [],
   )
@@ -158,6 +164,7 @@ export const ChildProgressTracker = ({
         sourcePath={sourcePath}
         renamePairs={merged.renamePairs}
         summary={merged.summary}
+        editionPlan={editionPlan}
       />
     </div>
   )
