@@ -1,0 +1,21 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/music"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "convertContainerAudioToFlac",
+    "params": {
+      "isRecursive": true,
+      "isSourceDeleted": true,
+      "isVideoDropAcknowledged": true
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}
