@@ -83,6 +83,7 @@ ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV NODE_ENV=production
+ENV IS_CONTAINERIZED=true
 ENV PORT=3000
 
 # Runtime apt deps. ffmpeg/mkvtoolnix/mediainfo are spawned by the cli
