@@ -9,16 +9,8 @@ import {
 } from "vitest"
 import { addSubtitles } from "./addSubtitles.js"
 
-vi.mock(
-  "../cli-spawn-operations/mergeSubtitlesMkvMerge.js",
-  () => ({
-    mergeSubtitlesMkvMerge: vi.fn(),
-    mergeSubtitlesMkvMergeDefaultProps: {
-      outputFolderName: "SUBTITLED",
-    },
-  }),
-)
-
+// mergeSubtitlesMkvMerge is auto-mocked globally in vitest.setup.ts.
+// Import the already-mocked symbol directly.
 const { mergeSubtitlesMkvMerge } = await import(
   "../cli-spawn-operations/mergeSubtitlesMkvMerge.js"
 )

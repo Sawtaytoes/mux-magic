@@ -15,16 +15,8 @@ vi.mock("../tools/getMkvInfo.js", () => ({
   getMkvInfo: vi.fn(),
 }))
 
-vi.mock(
-  "../cli-spawn-operations/extractSubtitleTracks.js",
-  () => ({
-    extractSubtitleTracks: vi.fn(),
-    extractSubtitleTracksDefaultProps: {
-      outputFolderName: "EXTRACTED-SUBTITLES",
-    },
-  }),
-)
-
+// extractSubtitleTracks is auto-mocked globally in vitest.setup.ts.
+// Import the already-mocked symbol directly.
 const { getMkvInfo } = await import(
   "../tools/getMkvInfo.js"
 )

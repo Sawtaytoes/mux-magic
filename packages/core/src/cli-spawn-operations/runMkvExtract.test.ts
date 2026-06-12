@@ -17,6 +17,12 @@ class FakeChildProcess extends EventEmitter {
 
 const spawnRecords: FakeChildProcess[] = []
 
+// This test exercises the real runMkvExtract implementation, so we
+// unmock it here to override the global auto-mock from vitest.setup.ts.
+// Lower-level dependencies (child_process, treeKillChild) are still
+// mocked below to avoid actual process spawning.
+vi.unmock("./runMkvExtract.js")
+
 vi.mock("node:child_process", () => ({
   spawn: vi.fn(() => {
     const fakeProcess = new FakeChildProcess()

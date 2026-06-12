@@ -16,31 +16,11 @@ import {
   vi,
 } from "vitest"
 
-// 3rd-party CLI wrappers — mocked for the same reason `node:fs` is
-// memfs'd globally in vitest.setup.ts: every cli-spawn-operations/*
-// module spawns a real mkvtoolnix binary (mkvextract / mkvmerge), which
-// (a) isn't installed in CI, (b) touches real disk, and (c) produces
-// output we have no way to construct deterministically from
-// vol.fromJSON. Treat any import from cli-spawn-operations/ as the
-// process-spawn test boundary and stub it the same way fs is stubbed.
-//
-// Follow-up: a planned worker lifts this convention into vitest.setup.ts
-// so the per-test `vi.mock` calls become redundant — see
-// docs/workers/57_auto-mock-cli-spawn-operations.md.
-vi.mock(
-  "../cli-spawn-operations/runMkvExtractStdOut.js",
-  () => ({
-    runMkvExtractStdOut: vi.fn(),
-  }),
-)
-
-vi.mock(
-  "../cli-spawn-operations/writeChaptersMkvMerge.js",
-  () => ({
-    writeChaptersMkvMerge: vi.fn(),
-  }),
-)
-
+// 3rd-party CLI wrappers are auto-mocked globally in vitest.setup.ts —
+// every cli-spawn-operations/* module spawns a real mkvtoolnix binary
+// (mkvextract / mkvmerge), which (a) isn't installed in CI, (b) touches
+// real disk, and (c) produces output we can't construct deterministically
+// from vol.fromJSON. Import the already-mocked symbols directly.
 const { runMkvExtractStdOut } = await import(
   "../cli-spawn-operations/runMkvExtractStdOut.js"
 )

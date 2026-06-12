@@ -12,15 +12,9 @@ import {
 } from "vitest"
 import { remuxToMkv } from "./remuxToMkv.js"
 
-// mkvmerge isn't a thing in memfs, so the spawn wrapper is mocked out.
-// The fake honors the real contract — emit { inputFilePath, outputFilePath }
-// once and complete — and writes a stub output file so per-file unlink
-// assertions still mean something.
-vi.mock("../cli-spawn-operations/remuxMkvMerge.js", () => ({
-  remuxMkvMerge: vi.fn(),
-}))
-
-// Re-import after the mock is set up so the test sees the mocked symbol.
+// mkvmerge isn't a thing in memfs, so the spawn wrapper is mocked out
+// globally in vitest.setup.ts (auto-mock for all cli-spawn-operations).
+// Import the already-mocked symbol directly.
 const { remuxMkvMerge } = await import(
   "../cli-spawn-operations/remuxMkvMerge.js"
 )
