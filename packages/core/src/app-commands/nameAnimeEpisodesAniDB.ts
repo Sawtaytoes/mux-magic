@@ -52,7 +52,7 @@ const DURATION_MISMATCH_SLACK_MINUTES = 2
 // Episode title preference: English → x-jat (romaji) → first available.
 const pickEpisodeTitle = (
   titles: AnidbAnime["episodes"][number]["titles"],
-): string =>
+) =>
   titles.find((title) => title.lang === "en")?.value ??
   titles.find((title) => title.lang === "x-jat")?.value ??
   titles[0]?.value ??
@@ -107,8 +107,8 @@ const formatOutputFilename = ({
   seasonNumber: number
   sequentialIndex: number
   seriesName: string
-}): string => {
-  const padTwo = (value: number | string): string =>
+}) => {
+  const padTwo = (value: number | string) =>
     String(value).padStart(2, "0")
   if (category === "regular") {
     return cleanupFilename(
@@ -164,7 +164,7 @@ const warnIfDurationMismatch = ({
   episode: AnidbEpisode
   fileMinutes: number | null
   fileName: string
-}): void => {
+}) => {
   if (fileMinutes == null || episode.length == null) {
     return
   }

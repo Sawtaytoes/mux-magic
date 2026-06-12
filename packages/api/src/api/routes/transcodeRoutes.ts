@@ -56,7 +56,7 @@ const MAX_TRANSCODE_CONCURRENCY_DEFAULT = 4
 const BITRATE_CAP_KBPS = 512
 const BITRATE_REGEX = /^(\d+)k$/
 
-const parseConcurrency = (): number => {
+const parseConcurrency = () => {
   const fromEnv = process.env.MAX_TRANSCODE_CONCURRENCY
   if (typeof fromEnv !== "string" || fromEnv.length === 0) {
     return MAX_TRANSCODE_CONCURRENCY_DEFAULT
@@ -89,7 +89,7 @@ type ValidationResult =
 
 const defaultBitrateForCodec = (
   codec: TranscodeCodec,
-): string => (codec === "opus" ? "192k" : "256k")
+) => (codec === "opus" ? "192k" : "256k")
 
 const validateBitrate = (
   rawBitrate: string | undefined,
@@ -257,7 +257,7 @@ const validateAllParams = (
   }
 }
 
-const messageFromError = (error: unknown): string => {
+const messageFromError = (error: unknown) => {
   if (error instanceof Error) {
     return error.message
   }
@@ -439,7 +439,7 @@ const AVC_PROFILE_HEX: Record<string, string> = {
 const buildAvcCodecString = (
   formatProfile: string,
   formatLevel: string,
-): string => {
+) => {
   const fallback = "avc1.640029" // High@L4.1 — covers most Blu-ray rips
   const profileHex =
     AVC_PROFILE_HEX[formatProfile.trim()] ?? "64"
@@ -461,7 +461,7 @@ const buildHevcCodecString = (
   formatProfile: string,
   formatLevel: string,
   formatTier: string,
-): string => {
+) => {
   const fallback = "hvc1.1.6.L150.B0" // Main@L5.0@High
   const lowerProfile = formatProfile.toLowerCase()
   // Profile IDC: Main=1, Main 10=2

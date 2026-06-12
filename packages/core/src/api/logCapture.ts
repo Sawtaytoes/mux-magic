@@ -52,7 +52,7 @@ export const originalConsole = {
   warn: console.warn.bind(console),
 }
 
-const ts = (): string => {
+const ts = () => {
   const now = new Date()
   const hh = String(now.getHours()).padStart(2, "0")
   const mm = String(now.getMinutes()).padStart(2, "0")
@@ -61,7 +61,7 @@ const ts = (): string => {
   return `[${hh}:${mm}:${ss}.${ms}]`
 }
 
-const capture = (args: unknown[]): void => {
+const capture = (args: unknown[]) => {
   const jobId = getActiveJobId()
 
   if (!jobId) {

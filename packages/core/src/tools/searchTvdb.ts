@@ -29,7 +29,7 @@ export type TvdbRawResult = {
 // canonical name is non-Latin (e.g. Pokemon's "ポケットモンスター") still
 // surface in the lookup modal as "Pokémon". Falls back to whichever
 // translated name TVDB pre-selected, then the canonical name.
-const pickEnglishName = (entry: TvdbRawResult): string =>
+const pickEnglishName = (entry: TvdbRawResult) =>
   entry.translations?.eng ??
   entry.name_translated ??
   entry.name ??

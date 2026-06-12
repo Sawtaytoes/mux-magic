@@ -31,7 +31,7 @@ import { successScenario } from "./scenarios/success.js"
 // "inProgress" scenario names, making the query string self-documenting
 // (?fake=success / ?fake=failure / ?fake=inProgress). The 1/true/yes
 // aliases are retained for back-compat with anything posting raw flags.
-const isFakeQuery = (raw: string | undefined): boolean => {
+const isFakeQuery = (raw: string | undefined) => {
   if (!raw) return false
   const lowered = raw.toLowerCase()
   return (

@@ -10,7 +10,7 @@
 const reservedCharsRegex = /[<>:"/\\|?*\x00-\x1F]/g
 const whitespaceRunRegex = /\s+/g
 
-const sanitizeTitle = (title: string): string =>
+const sanitizeTitle = (title: string) =>
   title
     .replace(reservedCharsRegex, "")
     .replace(whitespaceRunRegex, " ")

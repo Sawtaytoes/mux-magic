@@ -26,7 +26,7 @@ type JobErrorsFile = {
 const compareOccurredAtAsc = (
   left: PersistedJobError,
   right: PersistedJobError,
-): number => {
+) => {
   if (left.occurredAt === right.occurredAt) return 0
   return left.occurredAt < right.occurredAt ? -1 : 1
 }
@@ -144,7 +144,7 @@ export const loadJobErrorsFromDisk =
     }
   }
 
-const ensureLoaded = async (): Promise<void> => {
+const ensureLoaded = async () => {
   if (state.isLoaded) return
   await loadJobErrorsFromDisk()
 }
@@ -152,7 +152,7 @@ const ensureLoaded = async (): Promise<void> => {
 const writeAtomic = async (
   filePath: string,
   payload: JobErrorsFile,
-): Promise<void> => {
+) => {
   await mkdir(dirname(filePath), { recursive: true })
   const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}`
   await writeFile(
@@ -169,7 +169,7 @@ const enqueueWrite = (
   mutator: (
     current: readonly PersistedJobError[],
   ) => readonly PersistedJobError[],
-): Promise<void> => {
+) => {
   const next = state.writeQueue.then(async () => {
     await ensureLoaded()
     const mutated = mutator(state.errors)
@@ -226,7 +226,7 @@ export type ListJobErrorsFilter = {
 const compareOccurredAtDesc = (
   left: PersistedJobError,
   right: PersistedJobError,
-): number => compareOccurredAtAsc(right, left)
+) => compareOccurredAtAsc(right, left)
 
 export const listJobErrors = (
   filter: ListJobErrorsFilter,

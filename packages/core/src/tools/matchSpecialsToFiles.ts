@@ -43,7 +43,7 @@ const formatCandidateLabel = (
   episode: AnidbEpisode,
   episodeTitle: string,
   fileMinutes: number | null,
-): string => {
+) => {
   const prefix = letterPrefixForType(episode.type)
   const numericPart = episode.epno.replace(/[^0-9]/g, "")
   const labelEpno = `${prefix}${numericPart}`.padEnd(4, " ")
@@ -69,7 +69,7 @@ const formatCandidateLabel = (
 // than imported to keep the helper self-contained.
 const pickEpisodeTitle = (
   titles: AnidbEpisode["titles"],
-): string =>
+) =>
   titles.find((title) => title.lang === "en")?.value ??
   titles.find((title) => title.lang === "x-jat")?.value ??
   titles[0]?.value ??

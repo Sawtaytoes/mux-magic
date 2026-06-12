@@ -14,7 +14,7 @@ import {
 const postWebhook = async (
   url: string,
   payload: Record<string, unknown>,
-): Promise<void> => {
+) => {
   try {
     const response = await fetch(url, {
       body: JSON.stringify(payload),

@@ -226,12 +226,12 @@ const sequenceItemSchema = z.preprocess(
 const validateSequenceItems = (
   items: ReadonlyArray<z.infer<typeof sequenceItemSchema>>,
   ctx: z.RefinementCtx,
-): void => {
+) => {
   const seenIds = new Set<string>()
   const flagDuplicate = (
     id: string,
     path: (string | number)[],
-  ): void => {
+  ) => {
     if (seenIds.has(id)) {
       ctx.addIssue({
         code: "custom",
