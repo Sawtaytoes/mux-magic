@@ -5,7 +5,7 @@ import {
 } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, test } from "vitest"
 import { FIXTURE_COMMANDS_BUNDLE_C } from "../../commands/__fixtures__/commands"
 import type { CommandField } from "../../commands/types"
 import { linkPickerStateAtom } from "../../state/pickerAtoms"
@@ -36,7 +36,7 @@ describe("StringArrayField", () => {
   const field: CommandField = FIXTURE_COMMANDS_BUNDLE_C
     .deleteFilesByExtension.fields[1] as CommandField
 
-  it("displays empty string when value is undefined", () => {
+  test("displays empty string when value is undefined", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -53,7 +53,7 @@ describe("StringArrayField", () => {
     expect(input).toHaveValue("")
   })
 
-  it("displays array as comma-separated string", () => {
+  test("displays array as comma-separated string", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -70,7 +70,7 @@ describe("StringArrayField", () => {
     expect(input).toHaveValue(".srt, .idx")
   })
 
-  it("trims whitespace from items", () => {
+  test("trims whitespace from items", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -87,7 +87,7 @@ describe("StringArrayField", () => {
     expect(input).toHaveValue(".srt, .idx")
   })
 
-  it("uses field placeholder when provided", () => {
+  test("uses field placeholder when provided", () => {
     const customField: CommandField = {
       ...field,
       placeholder: ".mkv, .mp4",
@@ -112,7 +112,7 @@ describe("StringArrayField", () => {
     )
   })
 
-  it("does not render the link button for a non-linkable field", () => {
+  test("does not render the link button for a non-linkable field", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -136,7 +136,7 @@ describe("StringArrayField", () => {
     expect(screen.getByRole("textbox")).toBeVisible()
   })
 
-  it("renders link button labeled '— custom —' when a linkable field is unlinked", () => {
+  test("renders link button labeled '— custom —' when a linkable field is unlinked", () => {
     const step: Step = {
       id: "step-1",
       alias: "",
@@ -164,7 +164,7 @@ describe("StringArrayField", () => {
     expect(screen.getByText("— custom —")).toBeVisible()
   })
 
-  it("clicking the link button opens the link picker for this field", async () => {
+  test("clicking the link button opens the link picker for this field", async () => {
     const user = userEvent.setup()
     const step: Step = {
       id: "step-2",
@@ -199,7 +199,7 @@ describe("StringArrayField", () => {
     })
   })
 
-  it("hides the text input and shows the linked source when a step link is set", () => {
+  test("hides the text input and shows the linked source when a step link is set", () => {
     const sourceStep: Step = {
       id: "step-1",
       alias: "",

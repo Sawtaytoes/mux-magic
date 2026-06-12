@@ -28,9 +28,9 @@
 // See docs/react-migration-plan.md "ESLint (Minimal: Two Plugins Only)" for
 // the target shape once the plugins land.
 
+import vitestPlugin from "@vitest/eslint-plugin"
 import { defineConfig } from "eslint/config"
 import reactPlugin from "eslint-plugin-react"
-import vitestPlugin from "@vitest/eslint-plugin"
 import tseslint from "typescript-eslint"
 
 // AGENTS.md rule #4: booleans start with `is` or `has`.
@@ -184,7 +184,10 @@ export default defineConfig(
     files: ["**/*.test.{ts,tsx}"],
     plugins: { vitest: vitestPlugin },
     rules: {
-      "vitest/consistent-test-it": ["error", { fn: "test" }],
+      "vitest/consistent-test-it": [
+        "error",
+        { fn: "test" },
+      ],
     },
   },
 )
