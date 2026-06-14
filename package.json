@@ -60,7 +60,7 @@
     "@vitest/ui": "^4.1.8",
     "@yarnpkg/sdks": "^3.2.3",
     "cpx2": "^8.0.2",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "eslint": "^10.3.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
@@ -73,6 +73,7 @@
   "resolutions": {
     "mal-scraper@^2.13.2": "patch:mal-scraper@npm%3A2.13.2#./.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch",
     "@babel/runtime": ">=7.26.10",
-    "shell-quote": ">=1.8.4"
+    "shell-quote": ">=1.8.4",
+    "esbuild": "^0.28.1"
   }
 }
