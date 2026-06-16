@@ -4,6 +4,7 @@ import { useCallback } from "react"
 import { sequenceRunModalAtom } from "../components/SequenceRunModal/sequenceRunModalAtom"
 import {
   findStepById,
+  flattenSteps,
   isGroup,
 } from "../jobs/sequenceUtils"
 import {
@@ -37,7 +38,10 @@ import {
   pathsAtom,
   setPathValueAtom,
 } from "../state/pathsAtom"
-import { runningAtom } from "../state/runAtoms"
+import {
+  runningAtom,
+  runOrStopStepAtom,
+} from "../state/runAtoms"
 import { setAllCollapsedAtom } from "../state/sequenceAtoms"
 import {
   changeCommandAtom,
@@ -80,6 +84,40 @@ const applySnapshot = (
   store.set(stepsAtom, snapshot.steps)
   store.set(variablesAtom, snapshot.paths)
 }
+
+// Every status a single-step run can settle into. Used by the client-side
+// `runSequence` to know when one step is done and the next may start.
+const TERMINAL_STEP_STATUSES = new Set([
+  "completed",
+  "failed",
+  "cancelled",
+  "skipped",
+  "exited",
+])
+
+// Resolves once the given step reaches a terminal status. StepRunProgress
+// (mounted while the step has a jobId) owns the step's SSE and writes the
+// terminal status via setStepRunStatusAtom; we just watch stepsAtom for that
+// transition rather than opening a second SSE to the same child job.
+const awaitStepTerminal = (
+  store: ReturnType<typeof useStore>,
+  stepId: string,
+): Promise<string | null> =>
+  new Promise((resolve) => {
+    const check = () => {
+      const status =
+        findStepById(store.get(stepsAtom), stepId)
+          ?.status ?? null
+      if (status && TERMINAL_STEP_STATUSES.has(status)) {
+        unsubscribe()
+        resolve(status)
+      }
+    }
+    const unsubscribe = store.sub(stepsAtom, check)
+    // Cover the case where the step already failed synchronously (e.g. a
+    // param-resolution error sets "failed" before this subscription attaches).
+    check()
+  })
 
 export const useBuilderActions = () => {
   const store = useStore()
@@ -339,6 +377,37 @@ export const useBuilderActions = () => {
       store.get(commandsAtom),
     )
     await navigator.clipboard.writeText(yaml)
+  }, [store])
+
+  // Client-side "Run Sequence": the browser drives the steps itself, one at
+  // a time, hitting /commands/:name per step (the same path the per-step ▶
+  // button uses). Contrast runViaApi below, which POSTs the whole YAML to
+  // /sequences/run as one server-orchestrated umbrella job. Two consequences
+  // of running client-side: parallel groups execute serially (we flatten the
+  // tree in order), and steps that chain a prior step's *named* runtime output
+  // can't be resolved here — those surface a per-step error and halt the run,
+  // directing the user to Run via API.
+  const runSequence = useCallback(async () => {
+    if (store.get(runningAtom)) return
+    const runnableSteps = flattenSteps(store.get(stepsAtom))
+      .map((entry) => entry.step)
+      .filter((step) => step.command)
+    if (runnableSteps.length === 0) return
+
+    for (const step of runnableSteps) {
+      // runOrStopStepAtom resolves params, POSTs the step, and sets it running
+      // (+ jobId, which mounts StepRunProgress to own the SSE + write the
+      // terminal status). Awaiting the set resolves once the POST settles.
+      await store.set(runOrStopStepAtom, step.id)
+      const finalStatus = await awaitStepTerminal(
+        store,
+        step.id,
+      )
+      // Fail-fast, mirroring the server-side runner: a step that doesn't
+      // cleanly complete (failure, cancel, unresolved chain, exitIfEmpty)
+      // stops the rest of the sequence.
+      if (finalStatus !== "completed") break
+    }
   }, [store])
 
   const runViaApi = useCallback(async () => {
@@ -700,6 +769,7 @@ export const useBuilderActions = () => {
     removeStep,
     reorderDrag,
     runGroup,
+    runSequence,
     runViaApi,
     setAllCollapsed,
     setLink,
