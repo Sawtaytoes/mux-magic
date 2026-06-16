@@ -13,7 +13,9 @@ import {
   completeSubject,
   createJob,
   createSubject,
+  emitJobEvent,
   getAllJobs,
+  getBufferedStepEvents,
   getJob,
   getSubject,
   registerJobSubscription,
@@ -21,6 +23,7 @@ import {
   unregisterJobSubscription,
   updateJob,
 } from "./jobStore.js"
+import type { StepEvent } from "./types.js"
 
 afterEach(() => {
   resetStore()
@@ -325,6 +328,82 @@ describe(`${cancelJob.name} — parent / child cascade`, () => {
       "completed",
     )
     expect(getJob(failedChild.id)?.status).toBe("failed")
+  })
+})
+
+describe(getBufferedStepEvents.name, () => {
+  const stepEvent = (
+    overrides: Partial<StepEvent> & {
+      type: StepEvent["type"]
+    },
+  ): StepEvent => ({
+    childJobId: "child-1",
+    stepId: "step_0bjm",
+    status: "running",
+    ...overrides,
+  })
+
+  test("returns an empty array for a job with no step events", () => {
+    const job = createJob({ commandName: "sequence" })
+    createSubject(job.id)
+
+    expect(getBufferedStepEvents(job.id)).toEqual([])
+  })
+
+  test("buffers step-started / step-finished events in emit order", () => {
+    const job = createJob({ commandName: "sequence" })
+    createSubject(job.id)
+
+    const started = stepEvent({ type: "step-started" })
+    const finished = stepEvent({
+      type: "step-finished",
+      status: "completed",
+    })
+    emitJobEvent(job.id, started)
+    emitJobEvent(job.id, finished)
+
+    expect(getBufferedStepEvents(job.id)).toEqual([
+      started,
+      finished,
+    ])
+  })
+
+  test("does not buffer non-step events (progress rides latestProgress instead)", () => {
+    const job = createJob({ commandName: "sequence" })
+    createSubject(job.id)
+
+    emitJobEvent(job.id, {
+      type: "progress",
+      ratio: 0.5,
+    })
+
+    expect(getBufferedStepEvents(job.id)).toEqual([])
+  })
+
+  test("buffers even when no subject is subscribed yet (the late-subscriber case)", () => {
+    // The whole point of the buffer: a step can start before any client
+    // subscribes. emitJobEvent must record it regardless of subject
+    // presence so the eventual /jobs/:id/logs connection can replay it.
+    const job = createJob({ commandName: "sequence" })
+
+    emitJobEvent(
+      job.id,
+      stepEvent({ type: "step-started" }),
+    )
+
+    expect(getBufferedStepEvents(job.id)).toHaveLength(1)
+  })
+
+  test("resetStore clears buffered step events", () => {
+    const job = createJob({ commandName: "sequence" })
+    emitJobEvent(
+      job.id,
+      stepEvent({ type: "step-started" }),
+    )
+
+    resetStore()
+
+    expect(getBufferedStepEvents(job.id)).toEqual([])
   })
 })
 
