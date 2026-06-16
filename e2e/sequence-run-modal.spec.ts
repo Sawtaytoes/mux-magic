@@ -55,10 +55,13 @@ async function stubSequenceRun(
   })
 }
 
-async function triggerRunSequence(page: Page) {
+// The umbrella SequenceRunModal is the SERVER-side path: "▶ Run via API"
+// POSTs /sequences/run and streams the umbrella job. "▶ Run Sequence" is the
+// client-side per-step runner and intentionally does NOT open this modal.
+async function triggerRunViaApi(page: Page) {
   await openControlsMenu(page)
   await page
-    .getByRole("button", { name: /▶ Run Sequence/ })
+    .getByRole("button", { name: /▶ Run via API/ })
     .click()
 }
 
@@ -73,7 +76,7 @@ test.describe("SequenceRunModal — background flow", () => {
   test("modal opens when sequence is triggered", async ({
     page,
   }) => {
-    await triggerRunSequence(page)
+    await triggerRunViaApi(page)
     await expect(
       page.locator("#sequence-run-modal"),
     ).toBeVisible()
@@ -82,7 +85,7 @@ test.describe("SequenceRunModal — background flow", () => {
   test("'Run in background' button hides modal and shows badge", async ({
     page,
   }) => {
-    await triggerRunSequence(page)
+    await triggerRunViaApi(page)
     await expect(
       page.locator("#sequence-run-modal"),
     ).toBeVisible()
@@ -109,7 +112,7 @@ test.describe("SequenceRunModal — background flow", () => {
   test("clicking badge re-opens modal", async ({
     page,
   }) => {
-    await triggerRunSequence(page)
+    await triggerRunViaApi(page)
     await page
       .getByRole("button", {
         name: /run in background/i,
@@ -142,7 +145,7 @@ test.describe("SequenceRunModal — background flow", () => {
       await route.continue()
     })
 
-    await triggerRunSequence(page)
+    await triggerRunViaApi(page)
     await expect(
       page.locator("#sequence-run-modal"),
     ).toBeVisible()
@@ -168,7 +171,7 @@ test.describe("SequenceRunModal — background flow", () => {
   test("Cancel button fires DELETE and removes badge", async ({
     page,
   }) => {
-    await triggerRunSequence(page)
+    await triggerRunViaApi(page)
 
     // Wait for running state (Cancel button appears)
     await expect(
