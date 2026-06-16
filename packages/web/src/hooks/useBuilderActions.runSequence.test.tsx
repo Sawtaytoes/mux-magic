@@ -10,6 +10,10 @@ import {
   vi,
 } from "vitest"
 import { COMMANDS } from "../commands/commands"
+import {
+  findStepById,
+  flattenSteps,
+} from "../jobs/sequenceUtils"
 import { commandsAtom } from "../state/commandsAtom"
 import { pathsAtom } from "../state/pathsAtom"
 import { runningAtom } from "../state/runAtoms"
@@ -65,13 +69,11 @@ const autoSettleSteps = (
 ) => {
   const runOrder: string[] = []
   const unsubscribe = store.sub(stepsAtom, () => {
-    const running = store
-      .get(stepsAtom)
+    const running = flattenSteps(store.get(stepsAtom))
+      .map((entry) => entry.step)
       .find(
-        (step): step is Step =>
-          "id" in step &&
-          step.status === "running" &&
-          Boolean(step.jobId),
+        (step) =>
+          step.status === "running" && Boolean(step.jobId),
       )
     if (!running) return
     runOrder.push(running.id)
@@ -145,12 +147,7 @@ describe("useBuilderActions.runSequence — client-side serial run", () => {
     // step_c must never start once step_b fails.
     expect(runOrder).toEqual(["step_a", "step_b"])
     expect(
-      store
-        .get(stepsAtom)
-        .find(
-          (step): step is Step =>
-            "id" in step && step.id === "step_c",
-        )?.status,
+      findStepById(store.get(stepsAtom), "step_c")?.status,
     ).toBeNull()
   })
 
