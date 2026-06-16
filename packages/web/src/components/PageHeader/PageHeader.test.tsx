@@ -298,7 +298,9 @@ describe("PageHeader", () => {
       screen.getByRole("button", { name: /run sequence/i }),
     ).toBeDisabled()
     expect(
-      screen.getByRole("button", { name: /run on server/i }),
+      screen.getByRole("button", {
+        name: /run on server/i,
+      }),
     ).toBeDisabled()
   })
 })
