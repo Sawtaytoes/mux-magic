@@ -449,7 +449,7 @@ export const PageHeader = () => {
               id="run-btn"
               onClick={() => void actions.runSequence()}
               disabled={isRunning}
-              title="Run each step in order from your browser (client-side). Parallel groups run serially; steps that chain a prior step's named output need Run via API."
+              title="Run each step in order from your browser (client-side). Parallel groups run serially; steps that chain a prior step's named output need Run on Server."
               className="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
             >
               ▶ Run Sequence
@@ -462,7 +462,7 @@ export const PageHeader = () => {
               title="Run the whole sequence on the server as one umbrella job (POST /sequences/run). Honors parallel groups and named-output chaining between steps."
               className="text-xs bg-sky-700 hover:bg-sky-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
             >
-              ▶ Run via API
+              ▶ Run on Server
             </button>
           </div>
 

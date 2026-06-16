@@ -386,7 +386,7 @@ export const useBuilderActions = () => {
   // of running client-side: parallel groups execute serially (we flatten the
   // tree in order), and steps that chain a prior step's *named* runtime output
   // can't be resolved here — those surface a per-step error and halt the run,
-  // directing the user to Run via API.
+  // directing the user to Run on Server.
   const runSequence = useCallback(async () => {
     if (store.get(runningAtom)) return
     const runnableSteps = flattenSteps(store.get(stepsAtom))

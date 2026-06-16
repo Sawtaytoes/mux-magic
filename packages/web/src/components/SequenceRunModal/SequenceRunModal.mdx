@@ -7,7 +7,7 @@ import * as SequenceRunModalStories from "./SequenceRunModal.stories";
 
 # SequenceRunModal
 
-The umbrella modal that opens when the user clicks **▶ Run Sequence** or **▶ Run via API** in `PageHeader`. Streams two SSE channels in parallel: the **parent** sequence (`/jobs/<id>/logs`) and the **child** step that's currently executing (`/jobs/<childId>/logs`).
+The umbrella modal that opens when the user clicks **▶ Run on Server** in `PageHeader` (the server-side `/sequences/run` path). The client-side **▶ Run Sequence** button does NOT open this modal — it runs each step in place on its `StepCard`. Streams two SSE channels in parallel: the **parent** sequence (`/jobs/<id>/logs`) and the **child** step that's currently executing (`/jobs/<childId>/logs`).
 
 ## Background mode
 

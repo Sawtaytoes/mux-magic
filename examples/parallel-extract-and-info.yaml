@@ -7,8 +7,8 @@
 # narrow ones via a container query.
 #
 # Drop the contents into the Sequence Builder's Load YAML panel and hit
-# "▶ Run via API" (the client-side "▶ Run Sequence" path runs everything
-# serially — only the API path honors isParallel).
+# "▶ Run on Server" (the client-side "▶ Run Sequence" path runs everything
+# serially — only the server path honors isParallel).
 #
 # Outline:
 #   1. extractSubs (parallel)      — copy out the .ass tracks
