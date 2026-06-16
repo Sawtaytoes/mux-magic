@@ -4,7 +4,7 @@
 # ../media-sync/packages/sync-anime-and-manga/src/processAnimeSubtitles.ts.
 # Drop the contents into the Sequence Builder's Load YAML panel, fill in
 # the workDir + parentDir paths for the series you're processing, and click
-# either "▶ Run Sequence" (client-side per-step run) or "▶ Run via API"
+# either "▶ Run Sequence" (client-side per-step run) or "▶ Run on Server"
 # (server-side umbrella job). Or POST it directly:
 #
 #   curl -X POST http://localhost:3000/sequences/run \

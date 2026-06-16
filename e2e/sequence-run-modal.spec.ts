@@ -55,13 +55,13 @@ async function stubSequenceRun(
   })
 }
 
-// The umbrella SequenceRunModal is the SERVER-side path: "▶ Run via API"
+// The umbrella SequenceRunModal is the SERVER-side path: "▶ Run on Server"
 // POSTs /sequences/run and streams the umbrella job. "▶ Run Sequence" is the
 // client-side per-step runner and intentionally does NOT open this modal.
 async function triggerRunViaApi(page: Page) {
   await openControlsMenu(page)
   await page
-    .getByRole("button", { name: /▶ Run via API/ })
+    .getByRole("button", { name: /▶ Run on Server/ })
     .click()
 }
 

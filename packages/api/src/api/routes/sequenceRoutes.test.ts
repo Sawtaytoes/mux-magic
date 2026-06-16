@@ -1116,7 +1116,7 @@ describe("POST /sequences/run — groups", () => {
     // Each runOneStep call inside the sequence runner emits a structured
     // step-started event on the UMBRELLA subject just before it
     // subscribes the child observable, and a step-finished event the
-    // moment the child outcome is decided. The builder's "Run via API"
+    // moment the child outcome is decided. The builder's "Run on Server"
     // modal subscribes to /jobs/<umbrella>/logs and uses these to follow
     // which child is active, so it can wire up that child's
     // ProgressEvent stream (which fires on the CHILD subject, not the

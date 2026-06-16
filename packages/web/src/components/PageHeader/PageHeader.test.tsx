@@ -289,7 +289,7 @@ describe("PageHeader", () => {
     expect(controlsMenu?.className).toContain("open")
   })
 
-  test("disables Run Sequence and Run via API buttons while running", async () => {
+  test("disables Run Sequence and Run on Server buttons while running", async () => {
     const store = createStore()
     store.set(runningAtom, true)
     renderWithStore(store)
@@ -298,7 +298,7 @@ describe("PageHeader", () => {
       screen.getByRole("button", { name: /run sequence/i }),
     ).toBeDisabled()
     expect(
-      screen.getByRole("button", { name: /run via api/i }),
+      screen.getByRole("button", { name: /run on server/i }),
     ).toBeDisabled()
   })
 })
