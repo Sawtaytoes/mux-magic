@@ -1,5 +1,6 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import {
+  getBufferedStepEvents,
   getJob,
   getLatestJobProgress,
   getSubject,
@@ -121,6 +122,19 @@ logsRoutes.openapi(
         })
         stopKeepalive()
         return
+      }
+
+      // Replay step lifecycle events (step-started / step-finished) for this
+      // umbrella job in the order they fired. These ride the subject live and
+      // are NOT part of job.logs, so a client that subscribes after a step has
+      // already started would otherwise miss the transition and never mark the
+      // step card "running". Replaying the full ordered sequence reconstructs
+      // the correct per-step state (still-running steps replay only a
+      // step-started; finished steps replay both). See jobStore.stepEventsByJob.
+      for (const stepEvent of getBufferedStepEvents(
+        job.id,
+      )) {
+        await send(stepEvent)
       }
 
       // Live phase: lines emitted via the subject are appended-then-published
