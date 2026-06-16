@@ -80,20 +80,30 @@ export const SequenceRunModal = () => {
         const startedStepId = data.stepId
         const childJobId = data.childJobId
         if (startedStepId) {
-          setModalState((prev) =>
-            prev.mode !== "closed"
-              ? {
-                  ...prev,
-                  activeChildren: [
-                    ...prev.activeChildren,
-                    {
-                      stepId: startedStepId,
-                      jobId: childJobId,
-                    },
-                  ],
-                }
-              : prev,
-          )
+          setModalState((prev) => {
+            if (prev.mode === "closed") return prev
+            // Dedup by stepId: step-started events are replayed on SSE
+            // (re)connect (see logRoutes step-event replay), so a
+            // reconnect mid-sequence can deliver a step-started for a
+            // child already being tracked. Without this guard the child
+            // would mount twice (duplicate React key on stepId).
+            if (
+              prev.activeChildren.some(
+                (child) => child.stepId === startedStepId,
+              )
+            )
+              return prev
+            return {
+              ...prev,
+              activeChildren: [
+                ...prev.activeChildren,
+                {
+                  stepId: startedStepId,
+                  jobId: childJobId,
+                },
+              ],
+            }
+          })
           setStepRunStatus({
             stepId: startedStepId,
             status: "running",

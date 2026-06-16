@@ -30,6 +30,14 @@ const subjects = new Map<
   Subject<string | JobEvent>
 >()
 const latestProgressByJob = new Map<string, ProgressEvent>()
+// Ordered log of step lifecycle events (step-started / step-finished) per
+// umbrella job. Unlike progress, every transition matters — replaying the
+// full ordered sequence on (re)connect lets a late subscriber reconstruct
+// exactly which steps are running vs. finished. These events are fire-once
+// on the subject and NOT part of job.logs, so without this buffer a client
+// that subscribes after a step has already started never learns it began
+// (the per-step "running" indicator on the builder card stays dark).
+const stepEventsByJob = new Map<string, StepEvent[]>()
 // Live RxJS Subscriptions keyed by jobId. Populated by jobRunner /
 // sequenceRunner when a job starts running, removed on natural completion
 // or by cancelJob below. Not exposed — Subscription objects aren't
@@ -158,12 +166,28 @@ export const emitJobEvent = (
   if (event.type === "progress") {
     latestProgressByJob.set(id, event)
   }
+  if (
+    event.type === "step-started" ||
+    event.type === "step-finished"
+  ) {
+    const buffered = stepEventsByJob.get(id)
+    if (buffered) buffered.push(event)
+    else stepEventsByJob.set(id, [event])
+  }
 }
 
 export const getLatestJobProgress = (
   id: string,
 ): ProgressEvent | null =>
   latestProgressByJob.get(id) ?? null
+
+// Ordered step lifecycle events emitted so far for an umbrella job. Empty
+// array when none — callers replay these on SSE (re)connect so a subscriber
+// that joined mid-run still sees which steps started/finished. See
+// stepEventsByJob above for why job.logs replay alone isn't enough.
+export const getBufferedStepEvents = (
+  id: string,
+): StepEvent[] => stepEventsByJob.get(id) ?? []
 
 export const completeSubject = (id: string): void => {
   subjects.get(id)?.complete()
@@ -282,5 +306,6 @@ export const resetStore = (): void => {
   subjects.clear()
   jobSubscriptions.clear()
   latestProgressByJob.clear()
+  stepEventsByJob.clear()
   __resetAllProgressEmittersForTests()
 }
