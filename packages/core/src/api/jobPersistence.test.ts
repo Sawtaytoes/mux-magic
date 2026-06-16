@@ -134,6 +134,42 @@ describe("persistJob", () => {
     })
   })
 
+  test("concurrent persists of the same job never collide on the temp file", async () => {
+    // Regression: temp paths were `…tmp-<pid>-<Date.now()>`, and Date.now()
+    // only resolves to the millisecond. Many persists of the same job fired
+    // in the same tick share a millisecond → identical temp name → the first
+    // rename moves it away and the rest throw ENOENT. Because persists are
+    // fire-and-forget, that rejection crashed the server. Firing a burst
+    // concurrently reliably lands several in the same millisecond.
+    const job = makeJob({
+      id: "job-concurrent",
+      status: "running",
+    })
+
+    const results = await Promise.allSettled(
+      Array.from({ length: 50 }, (_unused, index) =>
+        persistJob({
+          job: { ...job, results: [index] },
+          dataDir: testDataDir,
+        }),
+      ),
+    )
+
+    const rejected = results.filter(
+      (result) => result.status === "rejected",
+    )
+    expect(rejected).toHaveLength(0)
+
+    // The surviving file is still valid JSON (last writer wins atomically).
+    const raw = await readFile(
+      join(testJobsDir, "job-concurrent.json"),
+      "utf8",
+    )
+    expect(JSON.parse(raw)).toMatchObject({
+      id: "job-concurrent",
+    })
+  })
+
   test("persists pauseReason when job is paused", async () => {
     const job = makeJob({
       id: "job-paused",

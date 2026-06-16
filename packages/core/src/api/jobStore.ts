@@ -52,6 +52,21 @@ const jobSubject = new Subject<Omit<Job, "logs">>()
 
 export const jobEvents$ = jobSubject.asObservable()
 
+// Persistence is best-effort and fire-and-forget: createJob/updateJob don't
+// await it so a slow disk never blocks the in-memory store. That means a
+// rejected persist has no caller to catch it — left bare (`void persistJob`)
+// it surfaces as an unhandledRejection and takes the whole server down. A
+// failed write only costs durability (the job won't survive a restart), so
+// we log and swallow instead of crashing.
+const persistJobSafe = (job: Job): void => {
+  void persistJob({ job }).catch((error: unknown) => {
+    console.error(
+      `[jobStore] Failed to persist job ${job.id}:`,
+      error,
+    )
+  })
+}
+
 // ---------------------------------------------------------------------------
 // Job CRUD
 // ---------------------------------------------------------------------------
@@ -94,7 +109,7 @@ export const createJob = ({
   const { logs: _logs, ...rest } = job
   jobSubject.next(rest)
 
-  void persistJob({ job })
+  persistJobSafe(job)
 
   return job
 }
@@ -164,7 +179,7 @@ export const updateJob = (
   jobSubject.next(rest)
 
   if (hasPersistableChange(changes)) {
-    void persistJob({ job: updated })
+    persistJobSafe(updated)
   }
 
   return updated

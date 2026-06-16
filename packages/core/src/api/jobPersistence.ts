@@ -116,6 +116,15 @@ const deserializeJob = (
 // Atomic write helper
 // ---------------------------------------------------------------------------
 
+// Monotonic, process-wide so two writes never collide on a temp path —
+// `Date.now()` only has millisecond resolution, so without this counter
+// two persists of the same job in the same millisecond (e.g. a rapid
+// running → failed status flip) generate identical temp names. The first
+// rename then moves the shared temp away and the second throws ENOENT;
+// as an unhandled rejection from a fire-and-forget persist that crashed
+// the whole server.
+let writeSequence = 0
+
 const writeAtomic = async ({
   filePath,
   content,
@@ -123,7 +132,8 @@ const writeAtomic = async ({
   filePath: string
   content: string
 }): Promise<void> => {
-  const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}`
+  writeSequence += 1
+  const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}-${writeSequence}`
   await writeFile(tempPath, content, "utf8")
   await rename(tempPath, filePath)
 }
