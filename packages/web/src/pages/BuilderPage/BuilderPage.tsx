@@ -1,6 +1,6 @@
 import { useStore } from "jotai"
 import { useHydrateAtoms } from "jotai/utils"
-import { lazy, Suspense, useEffect, useRef } from "react"
+import { lazy, Suspense, useEffect } from "react"
 
 import { COMMANDS } from "../../commands/commands"
 import { CommandPicker } from "../../components/CommandPicker/CommandPicker"
@@ -14,6 +14,10 @@ import { usePageTitle } from "../../hooks/usePageTitle"
 import { decodeSeqJsonParam } from "../../jobs/decodeSeqJsonParam"
 import { decodeSeqParam } from "../../jobs/decodeSeqParam"
 import { encodeSeqJsonParam } from "../../jobs/encodeSeqJsonParam"
+import {
+  buildSequenceObject,
+  loadYamlFromText,
+} from "../../jobs/yamlCodec"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
@@ -108,57 +112,42 @@ export const BuilderPage = () => {
   // exactly once on mount, never re-runs when atom values change.
   const store = useStore()
 
-  // Cached yamlCodec module — populated by the dynamic import in either
-  // useEffect below, whichever resolves first. Worker 79 moved `js-yaml`
-  // out of the main chunk; both effects share the dynamic import via
-  // ESM's module cache so only one network/parse round-trip happens.
-  type YamlCodecModule =
-    typeof import("../../jobs/yamlCodec")
-  const codecRef = useRef<YamlCodecModule | null>(null)
-
   useEffect(() => {
-    void (async () => {
-      const params = new URLSearchParams(
-        window.location.search,
+    const params = new URLSearchParams(
+      window.location.search,
+    )
+    const decoded =
+      decodeSeqJsonParam(params.get("seqJson")) ??
+      decodeSeqParam(params.get("seq"))
+    if (!decoded) return
+
+    try {
+      const result = loadYamlFromText(
+        decoded,
+        store.get(commandsAtom),
+        store.get(pathsAtom),
       )
-      const decoded =
-        decodeSeqJsonParam(params.get("seqJson")) ??
-        decodeSeqParam(params.get("seq"))
-      if (!decoded) return
+      store.set(stepsAtom, result.steps)
+      // Write to variablesAtom so non-path types loaded from ?seq= survive
+      // (worker 35: dvdCompareId, future TMDB/AniDB).
+      store.set(variablesAtom, result.paths)
 
-      const codec =
-        codecRef.current ??
-        (await import("../../jobs/yamlCodec"))
-      codecRef.current = codec
-
-      try {
-        const result = codec.loadYamlFromText(
-          decoded,
-          store.get(commandsAtom),
-          store.get(pathsAtom),
-        )
-        store.set(stepsAtom, result.steps)
-        // Write to variablesAtom so non-path types loaded from ?seq= survive
-        // (worker 35: dvdCompareId, future TMDB/AniDB).
-        store.set(variablesAtom, result.paths)
-
-        // Intentionally NOT stripping the query param from the URL. Earlier
-        // code did so (to prevent refresh from clobbering edits) but that
-        // caused a worse regression: refresh removed both the query string
-        // AND the loaded YAML, leaving an empty builder. The acceptable
-        // trade-off is "refresh re-loads original URL state and discards
-        // post-load edits" — still better than "refresh loses everything."
-        // Live URL syncing in the writer effect below makes that trade-off
-        // moot in practice.
-      } catch (error) {
-        // Invalid payload shouldn't crash the page — the user can paste a
-        // corrected version via LoadModal. Surface in console for debugging.
-        console.error(
-          "Failed to load sequence from URL parameter:",
-          error,
-        )
-      }
-    })()
+      // Intentionally NOT stripping the query param from the URL. Earlier
+      // code did so (to prevent refresh from clobbering edits) but that
+      // caused a worse regression: refresh removed both the query string
+      // AND the loaded YAML, leaving an empty builder. The acceptable
+      // trade-off is "refresh re-loads original URL state and discards
+      // post-load edits" — still better than "refresh loses everything."
+      // Live URL syncing in the writer effect below makes that trade-off
+      // moot in practice.
+    } catch (error) {
+      // Invalid payload shouldn't crash the page — the user can paste a
+      // corrected version via LoadModal. Surface in console for debugging.
+      console.error(
+        "Failed to load sequence from URL parameter:",
+        error,
+      )
+    }
   }, [store])
 
   // Live URL syncing: on every change to steps / paths, synchronously
@@ -188,22 +177,13 @@ export const BuilderPage = () => {
   // frame; they're no-ops today because writeUrl already ran on the
   // change that triggered the unload.
   //
-  // Worker 79 made `yamlCodec` lazy so `js-yaml` lands in an async chunk
-  // shared with the modal subtree. We kick off the dynamic import on
-  // mount and cache the module in `codecRef`; the first keystroke before
-  // the import resolves is the only writeUrl call that no-ops, and the
-  // very next change re-syncs the URL. In practice the module resolves
-  // sub-frame so this is invisible.
+  // `yamlCodec` (and its `js-yaml` dependency) is kept out of the main
+  // chunk by a manualChunks rule in vite.config.ts, so this static import
+  // doesn't re-inflate the bundle (worker 79's budget). Importing it
+  // directly — rather than the old dynamic-import-into-a-ref dance — means
+  // writeUrl never no-ops waiting for a chunk to resolve.
   useEffect(() => {
-    if (!codecRef.current) {
-      void import("../../jobs/yamlCodec").then((module) => {
-        codecRef.current = module
-      })
-    }
-
     const writeUrl = () => {
-      const codec = codecRef.current
-      if (!codec) return
       const commands = store.get(commandsAtom)
       if (!commands || Object.keys(commands).length === 0) {
         return
@@ -218,7 +198,7 @@ export const BuilderPage = () => {
       const url = new URL(window.location.href)
       if (hasContent) {
         const json = JSON.stringify(
-          codec.buildSequenceObject(steps, paths, commands),
+          buildSequenceObject(steps, paths, commands),
         )
         url.searchParams.set(
           "seqJson",
