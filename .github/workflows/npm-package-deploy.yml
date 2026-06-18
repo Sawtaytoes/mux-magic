@@ -15,10 +15,6 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v6
-        with:
-          # Need full history + tags so we can diff packages/tools against the
-          # last `tools-v*` release tag and push the bump commit back to master.
-          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
@@ -27,65 +23,34 @@ jobs:
       - run: corepack enable
       - run: yarn install --immutable
 
-      # Auto-version + publish @mux-magic/tools, but ONLY when something in
-      # packages/tools actually changed since the last release. The
-      # `tools-v<version>` git tag is the source of truth for "last released":
+      # Publish @mux-magic/tools only when its version was bumped this push.
+      # "Was it bumped?" == "does a `tools-v<version>` tag already exist for the
+      # version in package.json?". If the tag exists, this version is already
+      # released — skip (no failed job). If not, publish and create the tag.
       #
-      #   * No tag yet (bootstrap): create `tools-v<current>` at HEAD and skip
-      #     publishing — that version is already on npm, we're just marking the
-      #     baseline so future runs have something to diff against.
-      #   * Tag exists, no diff in packages/tools: nothing to bump, exit clean.
-      #   * Tag exists, diff present: bump patch, commit + tag + push to master,
-      #     then publish via OIDC trusted publishing (--provenance).
-      #
-      # Pushes made with the default GITHUB_TOKEN do NOT re-trigger CI, so the
-      # bump commit can't cause a publish loop; `[skip ci]` is belt-and-braces.
-      - name: Release @mux-magic/tools if changed
+      # Bumping the version is a manual step done in the PR (see
+      # docs/agents/npm-publishing.md). CI never edits package.json or pushes a
+      # commit — master is protected by a ruleset requiring pull requests — it
+      # only pushes the lightweight `tools-v<version>` tag, which the branch
+      # ruleset does not cover.
+      - name: Publish @mux-magic/tools if its version was bumped
         run: |
           set -euo pipefail
           PKG_DIR="packages/tools"
 
+          version="$(node -p "require('./$PKG_DIR/package.json').version")"
+          tag="tools-v${version}"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "Tag ${tag} already exists — @mux-magic/tools@${version} is already released. Skipping."
+            exit 0
+          fi
+
+          echo "No ${tag} tag yet — publishing @mux-magic/tools@${version}."
+          ( cd "$PKG_DIR" && npm publish --provenance --access public )
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          current_version="$(node -p "require('./$PKG_DIR/package.json').version")"
-          last_tag="$(git tag --list 'tools-v*' --sort=-v:refname | head -n1)"
-
-          if [ -z "$last_tag" ]; then
-            baseline="tools-v${current_version}"
-            echo "No tools-v* tag found. Creating baseline $baseline at HEAD and skipping publish."
-            git tag "$baseline"
-            git push origin "$baseline"
-            exit 0
-          fi
-
-          echo "Last release tag: $last_tag"
-          if git diff --quiet "$last_tag" HEAD -- "$PKG_DIR"; then
-            echo "No changes in $PKG_DIR since $last_tag — nothing to publish."
-            exit 0
-          fi
-
-          echo "Changes detected in $PKG_DIR since $last_tag — bumping patch version."
-          # Bump in-place with node rather than `npm version`: npm's resolver
-          # chokes on this yarn workspace's eslint peer conflict (ERESOLVE),
-          # and a regex edit preserves the file's existing formatting.
-          new_version="$(node -e '
-            const fs = require("fs");
-            const file = process.argv[1];
-            const src = fs.readFileSync(file, "utf8");
-            const m = src.match(/"version":\s*"(\d+)\.(\d+)\.(\d+)"/);
-            if (!m) { console.error("no version field in " + file); process.exit(1); }
-            const next = m[1] + "." + m[2] + "." + (Number(m[3]) + 1);
-            fs.writeFileSync(file, src.replace(m[0], "\"version\": \"" + next + "\""));
-            process.stdout.write(next);
-          ' "$PKG_DIR/package.json")"
-          new_tag="tools-v${new_version}"
-
-          git add "$PKG_DIR/package.json"
-          git commit -m "chore(tools): release v${new_version} [skip ci]"
-          git tag "$new_tag"
-          git push origin "HEAD:master"
-          git push origin "$new_tag"
-
-          echo "Publishing @mux-magic/tools@${new_version}..."
-          ( cd "$PKG_DIR" && npm publish --provenance --access public )
+          git tag "$tag"
+          git push origin "$tag"
+          echo "Published and tagged ${tag}."
