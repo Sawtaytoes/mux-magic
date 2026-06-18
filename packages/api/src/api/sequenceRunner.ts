@@ -410,6 +410,37 @@ export const runSequenceJob = (
       return { kind: "failed", stepId, error: message }
     }
 
+    // Apply the command's own request schema to the reference-resolved
+    // params, exactly as the direct `POST /commands/<name>` route does via
+    // Hono body validation. This is what fills in per-command defaults
+    // (e.g. keepLanguages' `audioLanguages`/`subtitlesLanguages` →
+    // `.default([])`) and coerces/validates field types. Without it, a
+    // Builder step that left an optional field blank emits params with the
+    // field absent, the resolver passes that through untouched, and the
+    // command crashes on the missing value (Worker era: keepLanguages'
+    // `selectedAudioLanguages.some` on `undefined`). Validation failures
+    // surface as a failed step with zod's message, mirroring the 400 the
+    // direct route would return.
+    const validation = config.schema.safeParse(resolved)
+    if (!validation.success) {
+      const message = `Invalid params for "${step.command}": ${validation.error.message}`
+      logError("SEQUENCE", `Step ${stepId}: ${message}`)
+      updateJob(childId, {
+        completedAt: new Date(),
+        error: message,
+        status: "failed",
+      })
+      completeSubject(childId)
+      return { kind: "failed", stepId, error: message }
+    }
+    // Carry the schema-applied params (with defaults filled) forward as the
+    // step's resolved params so both getObservable and any downstream
+    // `linkedTo` folder computation see the same validated shape.
+    const validatedParams = validation.data as Record<
+      string,
+      unknown
+    >
+
     logInfo(
       "SEQUENCE",
       `Step ${stepId} (${step.command}): starting.`,
@@ -417,7 +448,7 @@ export const runSequenceJob = (
 
     let stepObservable: Observable<unknown>
     try {
-      stepObservable = config.getObservable(resolved)
+      stepObservable = config.getObservable(validatedParams)
     } catch (error) {
       const message = String(error)
       logError("SEQUENCE", `Step ${stepId}: ${message}`)
@@ -490,7 +521,7 @@ export const runSequenceJob = (
         stepId,
         command: step.command,
         outputs,
-        resolved,
+        resolved: validatedParams,
         reason:
           typeof outputs.exitReason === "string"
             ? outputs.exitReason
@@ -503,7 +534,7 @@ export const runSequenceJob = (
       stepId,
       command: step.command,
       outputs,
-      resolved,
+      resolved: validatedParams,
     }
   }
 
