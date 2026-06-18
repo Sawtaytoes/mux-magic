@@ -66,8 +66,19 @@ jobs:
           fi
 
           echo "Changes detected in $PKG_DIR since $last_tag — bumping patch version."
-          ( cd "$PKG_DIR" && npm version patch --no-git-tag-version )
-          new_version="$(node -p "require('./$PKG_DIR/package.json').version")"
+          # Bump in-place with node rather than `npm version`: npm's resolver
+          # chokes on this yarn workspace's eslint peer conflict (ERESOLVE),
+          # and a regex edit preserves the file's existing formatting.
+          new_version="$(node -e '
+            const fs = require("fs");
+            const file = process.argv[1];
+            const src = fs.readFileSync(file, "utf8");
+            const m = src.match(/"version":\s*"(\d+)\.(\d+)\.(\d+)"/);
+            if (!m) { console.error("no version field in " + file); process.exit(1); }
+            const next = m[1] + "." + m[2] + "." + (Number(m[3]) + 1);
+            fs.writeFileSync(file, src.replace(m[0], "\"version\": \"" + next + "\""));
+            process.stdout.write(next);
+          ' "$PKG_DIR/package.json")"
           new_tag="tools-v${new_version}"
 
           git add "$PKG_DIR/package.json"
