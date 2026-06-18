@@ -1,0 +1,63 @@
+name: TEST auto-bump (dry run)
+
+# TEMPORARY — proves the npm-package-deploy release logic works on GitHub's
+# runner against this branch, without any irreversible side effects (no commit,
+# no push to master, no npm publish). Delete before merging the PR.
+
+on:
+  push:
+    branches: [ci/auto-bump-tools]
+  workflow_dispatch:
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Dry-run the release decision logic
+        run: |
+          set -euo pipefail
+          PKG_DIR="packages/tools"
+          current_version="$(node -p "require('./$PKG_DIR/package.json').version")"
+          echo "current_version=$current_version"
+
+          echo "::group::Path 1 — bootstrap (no tools-v* tag yet)"
+          last_tag="$(git tag --list 'tools-v*' --sort=-v:refname | head -n1 || true)"
+          if [ -z "$last_tag" ]; then
+            echo "PASS: no tools-v* tag -> would create baseline tools-v${current_version} and SKIP publish"
+          else
+            echo "INFO: a tools-v* tag already exists ($last_tag); bootstrap path not exercised"
+          fi
+          echo "::endgroup::"
+
+          echo "::group::Path 2 — folder changed (force diff vs an old commit)"
+          # Stand-in for "last release": the first commit in history that touched packages/tools.
+          sim_tag="$(git log --reverse --format=%H -- "$PKG_DIR" | head -n1 || true)"
+          echo "simulated last-release ref = $sim_tag"
+          if git diff --quiet "$sim_tag" HEAD -- "$PKG_DIR"; then
+            echo "FAIL: expected a diff against an old commit but found none"
+            exit 1
+          fi
+          echo "diff present -> bump (dry run, nothing committed/pushed/published):"
+          git diff --name-only "$sim_tag" HEAD -- "$PKG_DIR" | sed 's/^/  changed: /'
+          ( cd "$PKG_DIR" && npm version patch --no-git-tag-version >/dev/null )
+          new_version="$(node -p "require('./$PKG_DIR/package.json').version")"
+          echo "PASS: would publish @mux-magic/tools@${new_version} and tag tools-v${new_version}"
+          git checkout -- "$PKG_DIR/package.json"
+          echo "::endgroup::"
+
+          echo "::group::Path 3 — no changes (diff HEAD..HEAD)"
+          if git diff --quiet HEAD HEAD -- "$PKG_DIR"; then
+            echo "PASS: no diff -> would SKIP cleanly (exit 0, no failed job)"
+          else
+            echo "FAIL: HEAD..HEAD should never differ"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+          echo "All paths exercised successfully."
