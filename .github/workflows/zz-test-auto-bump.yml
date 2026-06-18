@@ -44,10 +44,18 @@ jobs:
             exit 1
           fi
           echo "diff present -> bump (dry run, nothing committed/pushed/published):"
-          git diff --name-only "$sim_tag" HEAD -- "$PKG_DIR" | sed 's/^/  changed: /'
-          ( cd "$PKG_DIR" && npm version patch --no-git-tag-version >/dev/null )
-          new_version="$(node -p "require('./$PKG_DIR/package.json').version")"
-          echo "PASS: would publish @mux-magic/tools@${new_version} and tag tools-v${new_version}"
+          git diff --name-only "$sim_tag" HEAD -- "$PKG_DIR" | head -n 5 | sed 's/^/  changed: /'
+          new_version="$(node -e '
+            const fs = require("fs");
+            const file = process.argv[1];
+            const src = fs.readFileSync(file, "utf8");
+            const m = src.match(/"version":\s*"(\d+)\.(\d+)\.(\d+)"/);
+            if (!m) { console.error("no version field in " + file); process.exit(1); }
+            const next = m[1] + "." + m[2] + "." + (Number(m[3]) + 1);
+            fs.writeFileSync(file, src.replace(m[0], "\"version\": \"" + next + "\""));
+            process.stdout.write(next);
+          ' "$PKG_DIR/package.json")"
+          echo "PASS: bumped ${current_version} -> ${new_version}; would publish @mux-magic/tools@${new_version} and tag tools-v${new_version}"
           git checkout -- "$PKG_DIR/package.json"
           echo "::endgroup::"
 
