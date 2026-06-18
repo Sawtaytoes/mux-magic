@@ -223,10 +223,13 @@ describe("POST /sequences/run", () => {
     // app-command's error must propagate up to the umbrella status and
     // halt the recursive runStep advance.
     //
-    // deleteFolder's confirm:false path is a clean way to drive a real
-    // command observable to error: the runtime guard throws before any
-    // I/O, the observable emits an error notification, the runner's
+    // deleteFolder against a non-existent path is a clean way to drive a
+    // real command observable to error at runtime: rm (no force) throws
+    // ENOENT, the observable emits an error notification, the runner's
     // catchError marks the job failed, and the next step never starts.
+    // (confirm: true keeps the params schema-valid so the runner reaches
+    // the command rather than rejecting at the validation gate — that gate
+    // is exercised separately below.)
     vol.fromJSON({
       "/work/keep-me": "data",
     })
@@ -236,7 +239,10 @@ describe("POST /sequences/run", () => {
         {
           id: "refuse",
           command: "deleteFolder",
-          params: { sourcePath: "/work", confirm: false },
+          params: {
+            sourcePath: "/work/does-not-exist",
+            confirm: true,
+          },
         },
         {
           id: "should-not-run",
@@ -253,13 +259,58 @@ describe("POST /sequences/run", () => {
 
     const job = getJob(jobId)
     expect(job?.status).toBe("failed")
-    expect(job?.error).toMatch(/confirm: true/i)
+    expect(job?.error).toMatch(/ENOENT|no such file/i)
 
     // Second step must not have advanced — the recursion guard sees
     // status === "failed" and bails before runStep(stepIndex + 1).
     expect(vol.existsSync("/never-created")).toBe(false)
-    // Original folder is preserved (refusal happens before any rm).
+    // Original folder is preserved (the rm targeted a missing subpath).
     expect(vol.existsSync("/work/keep-me")).toBe(true)
+  })
+
+  test("validates sequence step params against the command schema (keepLanguages)", async () => {
+    // Regression: the sequence path passed step params straight to the
+    // command without applying its request schema, so per-command defaults
+    // never filled in and invalid values weren't caught. A keepLanguages
+    // step with the Builder's blank Audio/Subtitles Languages fields (which
+    // are omitted from params entirely) reached keepLanguages with
+    // audioLanguages: undefined and crashed on `.some`. The runner now runs
+    // each step's resolved params through the command's own schema first —
+    // applying `.default([])` and rejecting bad enum values exactly as
+    // POST /commands/keepLanguages does. An invalid language code proves the
+    // schema actually runs on this path (and therefore its defaults do too);
+    // before the fix this value passed through unchecked.
+    vol.fromJSON({ "/lang-src/notes.txt": "" })
+
+    const response = await post("/sequences/run", {
+      steps: [
+        {
+          id: "badLangs",
+          command: "keepLanguages",
+          params: {
+            sourcePath: "/lang-src",
+            audioLanguages: ["not-a-code"],
+          },
+        },
+        {
+          id: "after",
+          command: "makeDirectory",
+          params: { sourcePath: "/lang-after" },
+        },
+      ],
+    })
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
+
+    await flushAfter(50)
+
+    const job = getJob(jobId)
+    expect(job?.status).toBe("failed")
+    expect(job?.error).toMatch(/invalid params/i)
+
+    // The second step never advanced past the failed first step.
+    expect(vol.existsSync("/lang-after")).toBe(false)
   })
 
   test("modifySubtitleMetadata with hasDefaultRules:true bumps ScriptType end-to-end through the sequence runner", async () => {
@@ -656,8 +707,8 @@ describe("POST /sequences/run — groups", () => {
               id: "innerBoom",
               command: "deleteFolder",
               params: {
-                sourcePath: "/work",
-                confirm: false,
+                sourcePath: "/work/does-not-exist",
+                confirm: true,
               },
             },
             {
@@ -794,8 +845,8 @@ describe("POST /sequences/run — groups", () => {
               id: "innerBoom",
               command: "deleteFolder",
               params: {
-                sourcePath: "/work",
-                confirm: false,
+                sourcePath: "/work/does-not-exist",
+                confirm: true,
               },
             },
           ],
@@ -1232,8 +1283,8 @@ describe("POST /sequences/run — groups", () => {
   test("step-finished status reflects a failed child", async () => {
     // Slow step 1 keeps the umbrella subject alive long enough for the
     // test to subscribe before any step-finished events fire. Step 2
-    // then fails synchronously (deleteFolder with confirm:false against
-    // a non-empty path) and we assert its step-finished carries
+    // then fails at runtime (deleteFolder against a non-existent path
+    // throws ENOENT) and we assert its step-finished carries
     // status: "failed".
     const seedFiles: Record<string, string> = {
       "/step-fail-work/keep": "",
@@ -1258,8 +1309,8 @@ describe("POST /sequences/run — groups", () => {
           id: "boom",
           command: "deleteFolder",
           params: {
-            sourcePath: "/step-fail-work",
-            confirm: false,
+            sourcePath: "/step-fail-work/does-not-exist",
+            confirm: true,
           },
         },
       ],
