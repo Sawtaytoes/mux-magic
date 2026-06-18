@@ -15,6 +15,10 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          # Need full history + tags so we can diff packages/tools against the
+          # last `tools-v*` release tag and push the bump commit back to master.
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
@@ -22,10 +26,55 @@ jobs:
           package-manager-cache: false  # never use caching in release builds
       - run: corepack enable
       - run: yarn install --immutable
-      - run: npm publish --provenance --access public
-        working-directory: packages/tools
-      # - uses: changesets/action@v1
-      #   with:
-      #     publish: yarn changeset publish
-      #     title: "chore: version packages"
-      #     commit: "chore: version packages"
+
+      # Auto-version + publish @mux-magic/tools, but ONLY when something in
+      # packages/tools actually changed since the last release. The
+      # `tools-v<version>` git tag is the source of truth for "last released":
+      #
+      #   * No tag yet (bootstrap): create `tools-v<current>` at HEAD and skip
+      #     publishing — that version is already on npm, we're just marking the
+      #     baseline so future runs have something to diff against.
+      #   * Tag exists, no diff in packages/tools: nothing to bump, exit clean.
+      #   * Tag exists, diff present: bump patch, commit + tag + push to master,
+      #     then publish via OIDC trusted publishing (--provenance).
+      #
+      # Pushes made with the default GITHUB_TOKEN do NOT re-trigger CI, so the
+      # bump commit can't cause a publish loop; `[skip ci]` is belt-and-braces.
+      - name: Release @mux-magic/tools if changed
+        run: |
+          set -euo pipefail
+          PKG_DIR="packages/tools"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          current_version="$(node -p "require('./$PKG_DIR/package.json').version")"
+          last_tag="$(git tag --list 'tools-v*' --sort=-v:refname | head -n1)"
+
+          if [ -z "$last_tag" ]; then
+            baseline="tools-v${current_version}"
+            echo "No tools-v* tag found. Creating baseline $baseline at HEAD and skipping publish."
+            git tag "$baseline"
+            git push origin "$baseline"
+            exit 0
+          fi
+
+          echo "Last release tag: $last_tag"
+          if git diff --quiet "$last_tag" HEAD -- "$PKG_DIR"; then
+            echo "No changes in $PKG_DIR since $last_tag — nothing to publish."
+            exit 0
+          fi
+
+          echo "Changes detected in $PKG_DIR since $last_tag — bumping patch version."
+          ( cd "$PKG_DIR" && npm version patch --no-git-tag-version )
+          new_version="$(node -p "require('./$PKG_DIR/package.json').version")"
+          new_tag="tools-v${new_version}"
+
+          git add "$PKG_DIR/package.json"
+          git commit -m "chore(tools): release v${new_version} [skip ci]"
+          git tag "$new_tag"
+          git push origin "HEAD:master"
+          git push origin "$new_tag"
+
+          echo "Publishing @mux-magic/tools@${new_version}..."
+          ( cd "$PKG_DIR" && npm publish --provenance --access public )
