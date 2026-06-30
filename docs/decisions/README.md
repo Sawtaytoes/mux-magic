@@ -25,6 +25,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 | 2026-06-12 | [Container detection uses a positive signal, not `/.dockerenv`](2026-06-12-container-detection-positive-signal.md) | server/api | Accepted |
 | 2026-06-12 | [`test()` not `it()`; no redundant arrow return types](2026-06-12-test-not-it-and-no-return-types.md) | process | Accepted |
 | 2026-06-12 | [BCP 47 language variants are additive; don't switch to 2-letter codes](2026-06-12-bcp47-language-variants-additive.md) | core | Accepted |
+| 2026-05-20 | [Default recursion depth is 1 (not v1.0.0's 2)](2026-05-20-default-recursion-depth-is-1.md) | core / server/api | Accepted |
 | 2026-05-19 | [Atomic copy + filesystem move (FICLONE, ZFS-EPERM, no temp on same-volume moves)](2026-05-19-atomic-copy-and-filesystem-move.md) | core / tools | Accepted |
 | 2026-05-19 | [NSF state lives in the filesystem, not a JSON cache](2026-05-19-nsf-filesystem-is-the-state.md) | core / web | Accepted |
 | 2026-05-19 | [Smart Match scoring runs server-side; no client scorer](2026-05-19-smartmatch-scoring-server-side.md) | core / web | Accepted |
