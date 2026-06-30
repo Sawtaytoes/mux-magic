@@ -1,11 +1,12 @@
 import { readdir, stat } from "node:fs/promises"
-import { basename, join } from "node:path"
+import { basename, extname, join } from "node:path"
 import {
   logInfo,
   makeDirectory,
   renameFileOrFolder,
 } from "@mux-magic/tools"
 import {
+  catchError,
   concatMap,
   defer,
   EMPTY,
@@ -13,8 +14,13 @@ import {
   ignoreElements,
   map,
   type Observable,
+  of,
   tap,
+  toArray,
 } from "rxjs"
+import { getFileDuration } from "../tools/getFileDuration.js"
+import { getMediaInfo } from "../tools/getMediaInfo.js"
+import type { UnrenamedFile } from "./nameSpecialFeaturesDvdCompareTmdb.buildUnnamedFileCandidates.js"
 
 // Worker 25: the filesystem is the cache.
 //
@@ -84,11 +90,74 @@ export const logBucketFolderCountsIfPresent = (
         )
         logInfo(
           "BUCKET FOLDER PRESENT",
-          `${bucketName}/ already exists with ${inner.length} file${inner.length === 1 ? "" : "s"} — skipped.`,
+          `${bucketName}/ already exists with ${inner.length} file${inner.length === 1 ? "" : "s"} — read back into Smart Match.`,
         )
       }),
     )
   }).pipe(ignoreElements())
+
+// Worker 25's bucket read-back (regression fix — see
+// docs/audits/nsf-unnamed-rerun-regression.md). On a re-run, the top-level
+// source enumeration (`getFilesAtDepth({ depth: 0 })`) never recurses into
+// `UNNAMED-FEATURES/`, so files a prior run left there used to vanish from
+// the summary and the Smart Match modal never reopened. This reads those
+// files back — measuring each one's duration so the candidate ranker has
+// the same signal it had on the first pass — and returns them as
+// `UnrenamedFile`s the orchestrator folds into the summary. Surface-only:
+// these files are NOT renamed or re-bucketed here; the Smart Match modal's
+// Apply moves them back to `sourcePath` with the user-picked name.
+//
+// Emits a single array (possibly empty when the bucket is absent/empty).
+// A per-file mediainfo failure degrades to `durationSeconds: null` rather
+// than dropping the file — the user can still rename it by hand.
+export const readBucketUnrenamedFiles = ({
+  sourcePath,
+  bucketName,
+}: {
+  sourcePath: string
+  bucketName: string
+}): Observable<UnrenamedFile[]> =>
+  defer(async () => {
+    const bucketPath = join(sourcePath, bucketName)
+    const entries = await readdir(bucketPath).catch(
+      () => [] as string[],
+    )
+    return { bucketPath, entries }
+  }).pipe(
+    concatMap(({ bucketPath, entries }) =>
+      from(entries).pipe(
+        concatMap((entry) => {
+          const fullPath = join(bucketPath, entry)
+          return defer(() =>
+            stat(fullPath).then((stats) => stats.isFile()),
+          ).pipe(
+            catchError(() => of(false)),
+            concatMap((isFile) =>
+              isFile
+                ? getMediaInfo(fullPath).pipe(
+                    concatMap((mediaInfo) =>
+                      getFileDuration({ mediaInfo }),
+                    ),
+                    catchError(() => of(null)),
+                    map(
+                      (durationSeconds): UnrenamedFile => ({
+                        filename: basename(
+                          entry,
+                          extname(entry),
+                        ),
+                        extension: extname(entry),
+                        durationSeconds,
+                      }),
+                    ),
+                  )
+                : EMPTY,
+            ),
+          )
+        }),
+        toArray(),
+      ),
+    ),
+  )
 
 export const moveFilesToBucket = ({
   sourcePath,
