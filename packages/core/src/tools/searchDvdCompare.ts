@@ -147,7 +147,9 @@ export const findDvdCompareResults = (
           ? html
           : await fetch(
               `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${fid}`,
-            ).then((response) => decodeResponseText(response))
+            ).then((response) =>
+              decodeResponseText(response),
+            )
         const filmInfo = parseDvdCompareFilmTitle(
           filmHtml,
           fid,

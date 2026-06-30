@@ -41,7 +41,10 @@ describe("Hono app", () => {
     const response = await app.request("/templates", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Demo", yaml: "steps: []" }),
+      body: JSON.stringify({
+        name: "Demo",
+        yaml: "steps: []",
+      }),
     })
 
     expect(response.status).toBe(500)
