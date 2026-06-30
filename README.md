@@ -55,6 +55,7 @@ docker run -d --init \
   -e TMDB_API_KEY=your-key-here \
   -v /your/media-library:/media \
   -v anidb-cache:/cache/anidb \
+  -v app-data:/app/.config \
   mux-magic
 ```
 
@@ -77,12 +78,14 @@ services:
     volumes:
       - /your/media-library:/media
       - anidb-cache:/cache/anidb
+      - app-data:/app/.config
 
 volumes:
   anidb-cache:
+  app-data:
 ```
 
-> **Volume note.** Mount your media library at `/media` — write access is required since most commands modify files in place. The `anidb-cache` named volume ensures the AniDB metadata cache survives container restarts — without it, the ~60 MB dataset re-downloads on every start.
+> **Volume note.** Mount your media library at `/media` — write access is required since most commands modify files in place. The `anidb-cache` named volume ensures the AniDB metadata cache survives container restarts — without it, the ~60 MB dataset re-downloads on every start. The `app-data` volume holds server-owned state (saved sequence templates) at `/app/.config`; without it your templates are lost when the container is recreated. The directory is pre-created and writable in the image, so a fresh `docker run` works without it — the volume is only needed for persistence (or if you run the container read-only or as a non-root user, in which case bind-mount a writable path here).
 
 ---
 
@@ -98,6 +101,7 @@ All environment variables are optional. Set them in `.env` or pass them to the c
 | `MAX_TRANSCODE_CONCURRENCY` | `4` | Maximum number of concurrent audio transcode jobs (for browser audio playback fallback). Lower this on resource-constrained systems. |
 | `TRANSCODE_CACHE_MAX_BYTES` | `4294967296` (4 GB) | Maximum size of the transcode cache directory. Cache lives in `os.tmpdir()/media-tools-transcode-cache/`. |
 | `ANIDB_CACHE_FOLDER` | `./.cache/anidb` | Cache directory for AniDB metadata. **In Docker, set this to a mounted volume** so cache survives restarts (e.g., `/cache/anidb`). |
+| `APP_DATA_DIR` | `./.config` (`/app/.config` in Docker) | Directory for server-owned persistent state (saved sequence templates, queued webhook deliveries). Pre-created and writable in the image; **mount a volume here** so saved templates survive container recreation. |
 | `TMDB_API_KEY` | — | The Movie Database API key for movie/TV metadata lookup. Get one free at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api). |
 | `PUBLIC_URL` | — | Public-facing base URL (e.g. `https://media.example.com`). Used for canonical absolute URLs in the OpenAPI / Scalar docs page. The SPA itself talks to the API via relative `/api`, so this is not needed unless you want pretty docs URLs. |
 | `MEDIA_TOOLS_FAKE_DATA` | — | Set to `true` or `1` to populate the UI with mock data (useful for development/screenshots). |
