@@ -1260,7 +1260,7 @@ export const nameSpecialFeaturesDvdCompareTmdbRequestSchema =
       ),
     dvdCompareReleaseHash: z
       .number()
-      .optional()
+      .default(1)
       .describe(
         "The hash (URL fragment #) from the DVDCompare release page denoting which release variant is selected for that film. Defaults to 1 (the first release option).",
       ),
@@ -1326,7 +1326,7 @@ export const onlyNameSpecialFeaturesDvdCompareRequestSchema =
       ),
     dvdCompareReleaseHash: z
       .number()
-      .optional()
+      .default(1)
       .describe(
         "The hash (URL fragment #) from the DVDCompare release page denoting which release variant is selected for that film. Defaults to 1 (the first release option).",
       ),
@@ -1389,7 +1389,7 @@ export const nameMovieCutsDvdCompareTmdbRequestSchema =
       ),
     dvdCompareReleaseHash: z
       .number()
-      .optional()
+      .default(1)
       .describe(
         "Release hash (URL fragment #) on the DVDCompare page. Defaults to 1 (the first release option).",
       ),
@@ -2104,7 +2104,7 @@ export const deleteModeRequestSchema = z.object({
     .string()
     .optional()
     .describe(
-      "Optional folder path. When supplied, the response reflects the EFFECTIVE mode for that path — e.g. 'trash' downgrades to 'permanent' on Windows network drives where the Recycle Bin can't service the file. Without a path, the response carries the global DELETE_TO_TRASH setting.",
+      "Optional folder path. When supplied, the response reflects the EFFECTIVE mode for that path — e.g. 'trash' downgrades to 'permanent' on Windows network drives where the Recycle Bin can't service the file. Without a path, the response carries the global DELETE_MODE setting.",
     ),
 })
 
@@ -2112,7 +2112,7 @@ export const deleteModeResponseSchema = z.object({
   mode: z
     .enum(["trash", "permanent"])
     .describe(
-      "'trash' = files go to the OS Recycle Bin (default). 'permanent' = files are unlinked outright. Controlled via the DELETE_TO_TRASH env var; downgraded automatically for Windows network drives.",
+      "'trash' = files go to the OS Recycle Bin (default). 'permanent' = files are unlinked outright. Controlled via the DELETE_MODE env var; downgraded automatically for Windows network drives.",
     ),
   reason: z
     .string()
