@@ -64,6 +64,18 @@ Sources: [v1.0.0 parity delta](2026-06-29-v1.0.0-parity-delta.md), [decisions-vs
 - **Tests:** worker 52 already calls for DVD Compare HTML fixtures (scrapers are brittle) — reuse them; add a test where `fetch` throws / returns 503 and the cache is served.
 - Files: `packages/core/src/tools/searchDvdCompare.ts`, the release / special-features fetchers, plus a new cache helper (core or `@mux-magic/tools`).
 
+### U. Derive the movie title from the lookup and make it a usable (folder-name) value
+- **Idea (user 2026-06-30):** the DVD Compare → TheMovieDB resolution already grabs the **title**, not just the id — `resolveTmdbForBaseTitle` (`runReverseLookup.ts:126-161`) returns `{ tmdbId, tmdbName }`, where `tmdbName` is e.g. `Muppets Most Wanted (2014)`. Expose that resolved title as a **linkable value** (a `title` / `movieTitle` variable, or a named lookup output) so it can be dropped into a `copyFiles` / `moveFiles` destination as the folder name. Same one-way derivation as item S: `dvdCompareId → tmdbId → title`.
+- If the title is linked straight into a step field, the existing field-link machinery may be enough. If it needs to live *inside* another variable (e.g. a path), it depends on **item V**.
+- Files: `runReverseLookup.ts` (already returns the name), the variable registry, copy/move destination fields.
+
+### V. Variable composition — let a variable reference other variables
+- **Gap (user 2026-06-30, "should've been documented"):** variables hold literal values; one variable can't reference another. The user wants e.g. a path variable `<library>/${movieTitle}` that composes the derived title (item U) into a folder path. "Something we don't have yet."
+- Today's resolution (`packages/api/src/api/resolveSequenceParams.ts`) handles `@pathId` links, `{linkedTo}` step outputs, and `${...}` substring interpolation — but all of those run on **step params at run time**, not on **variable values**. A variable's value is a literal, not a template.
+- **Idea:** allow a variable value to interpolate other variables (`${otherLabel}` / `@id`), resolved when the variable is consumed. Guard against reference cycles and define resolution order. This unlocks "title → folder name" (U) and any composed path.
+- Closest existing machinery: worker 6d (`forEachTemplate`'s `${binding}` substring interpolation in child-step params) — the syntax exists for loop bindings; this extends the concept to variable-defines-variable.
+- Files: `resolveSequenceParams.ts`, the variables resolution path, `variablesAtom`.
+
 ---
 
 ## P2 — low severity (batch into one "lookup/results affordance restoration" worker)

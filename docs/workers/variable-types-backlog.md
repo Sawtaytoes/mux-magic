@@ -28,6 +28,14 @@ A sweep of the chat transcripts + memory files (2026-06-30) found **no** written
 
 You shouldn't have to configure `tmdbId` by hand when a `dvdCompareId` is already present — it can be **derived**. The "Open on TheMovieDB" link already does this: `resolveTmdbForBaseTitle` (`packages/web/src/components/NumberWithLookupField/runReverseLookup.ts:126-161`) turns the DVD-Compare-resolved title+year into a `{ tmdbId, tmdbName }`. The idea: when you look up one ID, auto-populate a *linked* variable that can be derived from it — **one-directional**: `dvdCompareId → tmdbId` works, but `tmdbId → dvdCompareId` doesn't (no reverse mapping). Tracked as **handoff item S**; prior art is workers 35 (reverse-lookup) and 45 (field↔variable link-awareness).
 
+### The title is derivable too (not just the id)
+
+The same DVD Compare → TheMovieDB lookup grabs the **title** (`tmdbName`, e.g. `Muppets Most Wanted (2014)`), so the resolved title can be a linkable value usable as a folder name elsewhere. Tracked as **handoff item U**.
+
+## Variable composition (variables referencing variables) — not supported yet
+
+Variables hold literal values; one variable can't reference another. To use a derived title *inside* a path variable (e.g. `<library>/${movieTitle}`), the system needs **variable composition** — resolving `${otherVariable}` / `@id` inside a variable's own value. Today's `${...}` interpolation (worker 6d) runs only on step params at run time, not on variable values. This is foundational and currently missing. Tracked as **handoff item V**.
+
 ## Your ideas (add here)
 
 *Capture remembered or new variable-type ideas here — name, what it holds, and whether it's lookup-backed. Each can later become a registry entry like worker 45 (and, if lookup-backed, should ship with the card search button from handoff item R).*
