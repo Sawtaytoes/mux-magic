@@ -11,7 +11,7 @@ vi.unmock("./runFfmpegAudioTranscode.js")
 // Arg-building unit tests for the browser-playback transcode encoder.
 // The streaming/spawn flow is exercised manually; here we only pin the
 // ffmpeg argument list so the per-request plan (audio presence + video
-// re-encode need) maps to the right `-map`/`-c:*` selectors.
+// re-encode need + GPU availability) maps to the right selectors.
 
 const cacheKey: TranscodeCacheKey = {
   absPath: "/movies/film.mkv",
@@ -44,6 +44,7 @@ describe("buildFfmpegArgs", () => {
   test("omits the audio section entirely for a video-only source", () => {
     const args = buildFfmpegArgs(cacheKey, 0, {
       hasAudio: false,
+      isNvencAvailable: false,
       isVideoReencodeNeeded: false,
     })
     expect(args).not.toContain("-c:a")
@@ -60,12 +61,15 @@ describe("buildFfmpegArgs", () => {
     )
   })
 
-  test("re-encodes non-H.264 video to libx264 High@L4.1", () => {
+  test("re-encodes non-H.264 video to libx264 High@L4.1 when no GPU", () => {
     const args = buildFfmpegArgs(cacheKey, 0, {
       hasAudio: false,
+      isNvencAvailable: false,
       isVideoReencodeNeeded: true,
     })
     expect(args).not.toContain("copy")
+    expect(args).not.toContain("h264_nvenc")
+    expect(args).not.toContain("-hwaccel")
     expect(args).toEqual(
       expect.arrayContaining([
         "-c:v",
@@ -86,9 +90,53 @@ describe("buildFfmpegArgs", () => {
     )
   })
 
+  test("re-encodes on the GPU (h264_nvenc + cuda hwaccel) when NVENC is available", () => {
+    const args = buildFfmpegArgs(cacheKey, 0, {
+      hasAudio: false,
+      isNvencAvailable: true,
+      isVideoReencodeNeeded: true,
+    })
+    expect(args).not.toContain("libx264")
+    expect(args).toEqual(
+      expect.arrayContaining([
+        "-hwaccel",
+        "cuda",
+        "-hwaccel_output_format",
+        "cuda",
+        "-c:v",
+        "h264_nvenc",
+        "-preset",
+        "p4",
+        "-profile:v",
+        "high",
+        "-level",
+        "4.1",
+      ]),
+    )
+    // Output codec is still H.264 High@L4.1 (matches avc1.640029 in HEAD).
+    // The hwaccel flags must precede -i (they are input options).
+    const hwaccelIndex = args.indexOf("-hwaccel")
+    expect(hwaccelIndex).toBeGreaterThanOrEqual(0)
+    expect(hwaccelIndex).toBeLessThan(args.indexOf("-i"))
+  })
+
+  test("does NOT add cuda hwaccel on the video-copy path even if NVENC is available", () => {
+    const args = buildFfmpegArgs(cacheKey, 0, {
+      hasAudio: true,
+      isNvencAvailable: true,
+      isVideoReencodeNeeded: false,
+    })
+    expect(args).toEqual(
+      expect.arrayContaining(["-c:v", "copy"]),
+    )
+    expect(args).not.toContain("-hwaccel")
+    expect(args).not.toContain("h264_nvenc")
+  })
+
   test("re-encodes video AND maps audio when both apply", () => {
     const args = buildFfmpegArgs(cacheKey, 0, {
       hasAudio: true,
+      isNvencAvailable: false,
       isVideoReencodeNeeded: true,
     })
     expect(args).toContain("libx264")
@@ -110,6 +158,7 @@ describe("buildFfmpegArgs", () => {
   test("always ends with the fragmented-mp4 container section to pipe:1", () => {
     const args = buildFfmpegArgs(cacheKey, 0, {
       hasAudio: false,
+      isNvencAvailable: false,
       isVideoReencodeNeeded: true,
     })
     expect(args.slice(-5)).toEqual([
@@ -125,7 +174,11 @@ describe("buildFfmpegArgs", () => {
     const args = buildFfmpegArgs(
       { ...cacheKey, codec: "aac" },
       0,
-      { hasAudio: true, isVideoReencodeNeeded: false },
+      {
+        hasAudio: true,
+        isNvencAvailable: false,
+        isVideoReencodeNeeded: false,
+      },
     )
     expect(args).toEqual(
       expect.arrayContaining(["-c:a", "aac"]),
