@@ -479,12 +479,16 @@ describe(findDvdCompareResults.name, () => {
   })
 
   // Helpers to build a fake Response with a given URL (simulating a redirect).
+  // The scraper reads raw bytes via arrayBuffer() (so it can recover
+  // mislabeled Windows-1252 pages), so the stub exposes arrayBuffer rather
+  // than text — matching the real fetch Response surface the code uses.
   const makeSearchPageResponse = (
     html: string,
     finalUrl: string,
   ) => ({
     url: finalUrl,
-    text: async () => html,
+    arrayBuffer: async () =>
+      new TextEncoder().encode(html).buffer,
   })
 
   test("returns isDirectListing:false with all candidates when the search lands on a multi-result page", async () => {
