@@ -8,8 +8,11 @@ on:
       - "feat/**"
     types: [completed]
 
+# Group by the branch that actually ran CI, not github.ref — under a
+# workflow_run trigger github.ref is always the default branch, which
+# would lump every feat/** deploy into one queue with master.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch || github.ref }}
 
 jobs:
   build:
@@ -24,7 +27,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@master
         with:
-          ref: "${{ github.sha }}"
+          # workflow_run's github.sha resolves to the DEFAULT branch (master),
+          # not the branch that ran CI — so building feat/** here used to
+          # produce a feat-tagged image containing master's code. Use the
+          # triggering run's head_sha so the image matches its tag.
+          ref: "${{ github.event.workflow_run.head_sha || github.sha }}"
 
       - name: Log in to GitHub Docker Registry
         uses: docker/login-action@v4
@@ -70,9 +77,9 @@ jobs:
           file: ./Dockerfile
           push: true
           build-args: |
-            GIT_SHA=${{ github.sha }}
+            GIT_SHA=${{ github.event.workflow_run.head_sha || github.sha }}
             BUILD_TIME=${{ steps.meta.outputs.build_time }}
           tags: |
-            ghcr.io/sawtaytoes/mux-magic:${{ github.sha }}
+            ghcr.io/sawtaytoes/mux-magic:${{ github.event.workflow_run.head_sha || github.sha }}
             ghcr.io/sawtaytoes/mux-magic:${{ steps.tags.outputs.branch_tag }}
             ${{ github.event.workflow_run.head_branch == 'master' && 'ghcr.io/sawtaytoes/mux-magic:latest' || '' }}
