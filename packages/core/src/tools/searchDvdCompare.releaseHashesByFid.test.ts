@@ -98,6 +98,9 @@ describe(getReleaseHashesByDvdCompareId.name, () => {
     globalThis.fetch = vi.fn(async () => ({
       status: 200,
       text: async () => html,
+      // Prod decodes via decodeResponseText -> response.arrayBuffer().
+      arrayBuffer: async () =>
+        new TextEncoder().encode(html).buffer,
     })) as unknown as typeof globalThis.fetch
   }
 
@@ -105,6 +108,8 @@ describe(getReleaseHashesByDvdCompareId.name, () => {
     const fetchSpy = vi.fn(async () => ({
       status: 200,
       text: async () => MULTI_RELEASE_HTML,
+      arrayBuffer: async () =>
+        new TextEncoder().encode(MULTI_RELEASE_HTML).buffer,
     }))
     globalThis.fetch =
       fetchSpy as unknown as typeof globalThis.fetch

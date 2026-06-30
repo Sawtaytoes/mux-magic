@@ -493,10 +493,10 @@ export const SmartMatchModal = () => {
   const eligibleRows = Array.from(rows.values()).filter(
     (row) => !row.isApplied,
   )
-  const someEligibleIncluded = eligibleRows.some(
+  const isSomeEligibleIncluded = eligibleRows.some(
     (row) => row.isIncluded,
   )
-  const allEligibleIncluded =
+  const isAllEligibleIncluded =
     eligibleRows.length > 0 &&
     eligibleRows.every((row) => row.isIncluded)
 
@@ -605,30 +605,30 @@ export const SmartMatchModal = () => {
                     <input
                       type="checkbox"
                       aria-label={
-                        someEligibleIncluded
+                        isSomeEligibleIncluded
                           ? "Uncheck all"
                           : "Select all"
                       }
                       title={
-                        someEligibleIncluded
+                        isSomeEligibleIncluded
                           ? "Uncheck all"
                           : "Select all"
                       }
                       ref={(node) => {
                         if (node) {
                           node.indeterminate =
-                            someEligibleIncluded &&
-                            !allEligibleIncluded
+                            isSomeEligibleIncluded &&
+                            !isAllEligibleIncluded
                         }
                       }}
-                      checked={allEligibleIncluded}
+                      checked={isAllEligibleIncluded}
                       disabled={
                         isApplying ||
                         eligibleRows.length === 0
                       }
                       onChange={() =>
                         setAllIncluded(
-                          !someEligibleIncluded,
+                          !isSomeEligibleIncluded,
                         )
                       }
                     />
