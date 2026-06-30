@@ -24,8 +24,12 @@ This file is the durable home for "variable types we might add." If you remember
 
 A sweep of the chat transcripts + memory files (2026-06-30) found **no** written list of additional variable-type ideas beyond the above. The user recalls having more ideas "in the past"; they were likely spoken in an uncaptured session or never written. (ISBN / MusicBrainz / IGDB appeared in the search only as false positives inside base64 screenshot data — not real mentions.)
 
+## Cross-population of linked ID variables (idea)
+
+You shouldn't have to configure `tmdbId` by hand when a `dvdCompareId` is already present — it can be **derived**. The "Open on TheMovieDB" link already does this: `resolveTmdbForBaseTitle` (`packages/web/src/components/NumberWithLookupField/runReverseLookup.ts:126-161`) turns the DVD-Compare-resolved title+year into a `{ tmdbId, tmdbName }`. The idea: when you look up one ID, auto-populate a *linked* variable that can be derived from it — **one-directional**: `dvdCompareId → tmdbId` works, but `tmdbId → dvdCompareId` doesn't (no reverse mapping). Tracked as **handoff item S**; prior art is workers 35 (reverse-lookup) and 45 (field↔variable link-awareness).
+
 ## Your ideas (add here)
 
-_Capture remembered or new variable-type ideas here — name, what it holds, and whether it's lookup-backed. Each can later become a registry entry like worker 45 (and, if lookup-backed, should ship with the card search button from handoff item R)._
+*Capture remembered or new variable-type ideas here — name, what it holds, and whether it's lookup-backed. Each can later become a registry entry like worker 45 (and, if lookup-backed, should ship with the card search button from handoff item R).*
 
-- _(empty)_
+- *(empty)*

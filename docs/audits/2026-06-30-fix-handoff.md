@@ -47,6 +47,23 @@ Sources: [v1.0.0 parity delta](2026-06-29-v1.0.0-parity-delta.md), [decisions-vs
 - **Fix:** in `VariableCard.tsx`, add a header search button for the lookup-backed types (mirror the `path` 📁 dispatch). Reuse the lookup-open logic from `NumberWithLookupField.tsx` (the command-field version that already maps type → lookup provider and opens the modal); on select, call `setValue({ variableId: variable.id, value })`.
 - Files: `VariableCard.tsx`, the per-type input components (`DvdCompareIdInput` etc.), `NumberWithLookupField.tsx` (reference).
 
+### S. Cross-populate linked ID variables on lookup (one-directional, where a mapping exists)
+- **Idea (user 2026-06-30):** when you look up / set one ID variable and another ID can be **derived** from it, auto-populate the linked variable instead of making the user look it up separately. Concretely: a `dvdCompareId` already resolves to a title + year, and `resolveTmdbForBaseTitle` (`runReverseLookup.ts:126-161`) already turns that into `{ tmdbId, tmdbName }` — this is exactly what powers the "Open on TheMovieDB" link on the DVD Compare field. So if a `tmdbId` variable is linked, set its value from the derived id automatically.
+- **Direction matters:** `dvdCompareId → tmdbId` works (DVD Compare → name → TheMovieDB search). The reverse (`tmdbId → dvdCompareId`) does **not** — there is no TheMovieDB→DVD Compare mapping. Only populate in the direction a derivation exists.
+- **Don't clobber:** only fill a linked variable that's empty (or confirm before overwriting a value the user set by hand).
+- **Prior art:** worker 35 (DVD Compare reverse-lookup), worker 45 (field→variable link-awareness / write-through). This extends "a field writes to its own variable" into "one variable derives another."
+- Files: `runReverseLookup.ts` (`resolveTmdbForBaseTitle`), `NumberWithLookupField.tsx`, `VariableCard.tsx` (compose with item R's search button), `variablesAtom` (`setVariableValueAtom`). Pairs naturally with item R.
+
+### T. Cache DVD Compare data so lookups survive the site going offline
+- **Problem (user 2026-06-30):** dvdcompare.net frequently goes offline. While it's down, every flow that scrapes it — Name Special Features, movie cuts, the cuts/censorship detection (worker 52) — fails. The user wants a cache to fall back on.
+- **Goal:** cache DVD Compare scrape results so lookups still work (or degrade gracefully) when the site is unreachable.
+- **Where:** wrap the fetches in `packages/core/src/tools/searchDvdCompare.ts` (search) plus the film-page / release-list / special-features fetchers with a disk-backed cache keyed by the request (DVD Compare id / release hash / URL).
+- **Strategy:** network-first, fall back to cache on any fetch failure (DNS error, timeout, non-2xx). Optionally cache-first, since DVD Compare data is essentially static per release. Persist the parsed result (or the raw HTML) under a cache dir (e.g. `<userData>/mux-magic/dvdcompare-cache/`) keyed by a stable hash of the request; long TTL + a manual clear.
+- **Surface it:** when serving from cache *because the site is down*, emit a clear "DVD Compare offline — using cached data (fetched `<date>`)" log/notice so the user knows the result may be stale.
+- **Not a conflict with worker 25:** the "filesystem is the cache, no JSON metadata" decision ([nsf-filesystem-is-the-state](../decisions/2026-05-19-nsf-filesystem-is-the-state.md)) is about local file-naming *state* — an HTTP scrape-response cache is a separate, legitimate concern.
+- **Tests:** worker 52 already calls for DVD Compare HTML fixtures (scrapers are brittle) — reuse them; add a test where `fetch` throws / returns 503 and the cache is served.
+- Files: `packages/core/src/tools/searchDvdCompare.ts`, the release / special-features fetchers, plus a new cache helper (core or `@mux-magic/tools`).
+
 ---
 
 ## P2 — low severity (batch into one "lookup/results affordance restoration" worker)
