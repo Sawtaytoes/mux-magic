@@ -18,14 +18,23 @@ The **feature film itself** is the only file that may be named without an
 extras suffix (it's `Title (Year)`, optionally with an `{edition-…}` tag).
 Everything else is an extra and must carry a `-<type>`.
 
-If a type cannot be determined automatically, the file is **not** auto-named
-to a bare title. Instead it is surfaced to the user to classify — via the
-Smart Match modal, which must let the user **pick from the Plex type list**
-(the eight/nine types above) for any file whose type the parser couldn't
-infer. `-other` is the correct catch-all when nothing more specific fits —
-notably **image/photo galleries** (DVDCompare's `… (N images)` /
-`… (N pages)` entries), which are always `-other`, never bare and never a
-content-type suffix borrowed from their title words.
+If a type cannot be determined automatically, the rename does **not** proceed
+with a bare name **and does not default to `-other`**. The user must
+explicitly pick a type from the Plex list in the Smart Match modal; until they
+do, that file's rename is blocked. The "— no type —" entry is a **placeholder**
+(the parser couldn't infer one), not a valid final state — Apply is disabled
+for any included row still on it.
+
+`-other` is reserved for content **positively identified** as "other" —
+notably image/photo galleries (DVDCompare's `(N images)` / `(N pages)`
+entries), which are always `-other`. It is **NOT** a fallback for an unknown
+type; never default to `-other` just because nothing else matched.
+
+The **feature film and its cuts/editions** (`Title (Year)`, optionally
+`{edition-…}`) are the only legitimately suffix-less names. Naming a Smart
+Match leftover as the feature film or a cut is a **future capability** (not yet
+in the modal) — when it lands it is the sole exception to the mandatory-suffix
+rule.
 
 ## What we rejected — DO NOT revert to this
 
@@ -45,8 +54,23 @@ content-type suffix borrowed from their title words.
   a behind-the-scenes video. Gallery detection takes precedence over the
   keyword→tag table for these entries.
 - **Auto-naming an un-typeable file rather than asking.** If the parser can't
-  determine a type, do not guess a bare name — surface a type picker. Silent
-  bare-naming is the failure mode this decision exists to prevent.
+  determine a type, do not guess a bare name AND do not default to `-other`.
+  Surface a type picker and **block the rename** until the user chooses. A
+  blanket `-other` default is just as wrong as a bare name — it silently
+  mislabels content the parser simply failed to classify. Silent auto-naming
+  (bare or `-other`) is the failure mode this decision exists to prevent.
+
+## Deferred — the film/cut exception (future work)
+
+Naming a Smart Match leftover as the **feature film or a cut/edition**
+(suffix-less `Title (Year)` / `{edition-…}`) is the only legitimate way to
+produce a name without a `-<type>`, but it is **not yet built** in the Smart
+Match modal. Until it is, Smart Match simply **does not name** an un-typeable
+file — the rename is blocked and the file is left in `UNNAMED-FEATURES/` for
+the user. A separate movie-naming task may already cover naming the film files
+themselves; the leftover is left alone here because this flow is for special
+features only. Tracked as a follow-up in
+[docs/audits/2026-06-30-fix-handoff.md](../audits/2026-06-30-fix-handoff.md).
 
 ## Why it must not be re-litigated
 

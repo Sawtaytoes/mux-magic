@@ -45,6 +45,10 @@ type RowState = {
   // Pre-populated from extractSuffixFromStem(filename) on row init,
   // falling back to inferSuffixFromName(candidateName).
   plexSuffix: string
+  // Set to true by the Apply pre-flight when this row is included,
+  // not yet applied, has a non-empty effective name, but plexSuffix is ''.
+  // Cleared when the user picks a suffix or on the next Apply attempt.
+  hasNoTypeWarning: boolean
 }
 
 // Worker 6f: the effective rename target. Custom name wins only while
@@ -138,12 +142,16 @@ const buildInitialRows = (
       const isHighConfidence =
         top !== undefined &&
         top.confidence >= LOW_CONFIDENCE_THRESHOLD
-      // Worker 7a: derive the initial Plex suffix from the existing
-      // filename so re-running NSF on already-named files keeps the
-      // previously-picked suffix type. Fall back to a keyword inference
-      // on the top candidate name when the filename carries no suffix.
+      // Worker 7a: derive the initial Plex suffix via a three-step cascade:
+      // 1. The existing filename may already carry a suffix (re-run case).
+      // 2. The candidate name may carry a core-applied suffix (e.g. a gallery
+      //    whose candidate name ends in '-other', or a '-trailer' the core
+      //    pipeline baked in) — extractSuffixFromStem handles this too.
+      // 3. Keyword inference on the candidate name — returns '' when unknown,
+      //    so unknown files start on '— no type —' and require user action.
       const initialPlexSuffix =
         extractSuffixFromStem(suggestion.filename) ||
+        extractSuffixFromStem(topName) ||
         (topName.length > 0
           ? inferSuffixFromName(topName)
           : "")
@@ -161,6 +169,7 @@ const buildInitialRows = (
           isEditing: false,
           customName: "",
           plexSuffix: initialPlexSuffix,
+          hasNoTypeWarning: false,
         },
       ]
     }),
@@ -272,6 +281,47 @@ export const SmartMatchModal = () => {
         (entry): entry is NonNullable<typeof entry> =>
           entry !== null,
       )
+
+    // Clear any prior no-type warnings on rows that now have a suffix
+    // (user picked a type since the last blocked Apply attempt).
+    setRows((prev) => {
+      const next = new Map(prev)
+      for (const [filename, current] of next.entries()) {
+        if (
+          current.hasNoTypeWarning &&
+          current.plexSuffix.length > 0
+        ) {
+          next.set(filename, {
+            ...current,
+            hasNoTypeWarning: false,
+          })
+        }
+      }
+      return next
+    })
+
+    // Pre-flight: every included, unapplied row with a non-empty effective
+    // name must have a non-empty plexSuffix (per the 2026-06-30 decision:
+    // unknown type → blocked, user must pick). Surface a warning in the row
+    // and return without firing any POSTs.
+    const noTypePlans = plans.filter(
+      (plan) => rows.get(plan.filename)?.plexSuffix === "",
+    )
+    if (noTypePlans.length > 0) {
+      setRows((prev) => {
+        const next = new Map(prev)
+        for (const plan of noTypePlans) {
+          const current = next.get(plan.filename)
+          if (!current) continue
+          next.set(plan.filename, {
+            ...current,
+            hasNoTypeWarning: true,
+          })
+        }
+        return next
+      })
+      return
+    }
 
     // Worker 25: Apply-time collision detection. If two-or-more
     // checked rows would produce the same `newPath`, halt the Apply
@@ -421,6 +471,25 @@ export const SmartMatchModal = () => {
   const includedCount = Array.from(rows.values()).filter(
     (row) => row.isIncluded && !row.isApplied,
   ).length
+
+  // Apply is blocked when any included, unapplied row that has a non-empty
+  // effective name is still on '— no type —'. We use `rows` + `suggestions`
+  // together so we can call resolveDesiredName (needs the candidate count).
+  const hasIncludedRowWithNoType = suggestions.some(
+    (suggestion) => {
+      const row = rows.get(suggestion.filename)
+      if (!row?.isIncluded || row.isApplied) {
+        return false
+      }
+      const resolvedBase = resolveDesiredName(
+        row,
+        suggestion.rankedCandidates.length,
+      ).trim()
+      return (
+        resolvedBase.length > 0 && row.plexSuffix === ""
+      )
+    },
+  )
 
   if (suggestions.length === 0) {
     return (
@@ -601,6 +670,14 @@ export const SmartMatchModal = () => {
                         >
                           Same target as:{" "}
                           {row.collisionWith}
+                        </div>
+                      )}
+                      {row.hasNoTypeWarning && (
+                        <div
+                          data-smart-match-no-type-warning
+                          className="text-[10px] font-mono mt-1 text-amber-300"
+                        >
+                          Pick a Plex type before applying.
                         </div>
                       )}
                       {row.error && (
@@ -861,7 +938,11 @@ export const SmartMatchModal = () => {
           <button
             type="button"
             id="smart-match-apply"
-            disabled={includedCount === 0 || isApplying}
+            disabled={
+              includedCount === 0 ||
+              isApplying ||
+              hasIncludedRowWithNoType
+            }
             onClick={() => void handleApply()}
             className="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded font-medium"
           >
