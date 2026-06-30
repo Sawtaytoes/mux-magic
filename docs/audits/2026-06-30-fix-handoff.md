@@ -40,6 +40,13 @@ Sources: [v1.0.0 parity delta](2026-06-29-v1.0.0-parity-delta.md), [decisions-vs
 ### G. Surface Name Special Features server options in the builder UI
 - `moveToEditionFolders` and `nonInteractive` exist server-side (`packages/api/src/api/schemas.ts:1285-1296`) but have **no builder field** — reachable only via hand-authored YAML / direct API. Add the fields (web command definition + labels), no server change needed.
 
+### R. Lookup-backed variable cards have no search button
+- **Problem (user-reported 2026-06-30):** a `dvdCompareId` variable card renders only a value input — there's no way to *look up* the id from the card. The user has to open a Name Special Features step, use its search button, then rely on the link-back. Same gap for the other lookup-backed types (`tmdbId` / `anidbId` / `malId`).
+- The `path` variable card already has a 📁 browse button in its header (`VariableCard.tsx:102-120`) that opens the file explorer and writes the pick back via `setValue`. Lookup-backed types should get an equivalent 🔍 **search** button that opens the lookup modal for the type's provider and writes the chosen id to the variable value.
+- The type defs already declare what's needed (`packages/web/src/state/variableTypes/*.ts`): `isLinkable: true`, `runtimeValueType: "number"`, and the `type` maps to a provider — `dvdCompareId`→DVD Compare, `tmdbId`→TheMovieDB, `anidbId`→AniDB, `malId`→MAL.
+- **Fix:** in `VariableCard.tsx`, add a header search button for the lookup-backed types (mirror the `path` 📁 dispatch). Reuse the lookup-open logic from `NumberWithLookupField.tsx` (the command-field version that already maps type → lookup provider and opens the modal); on select, call `setValue({ variableId: variable.id, value })`.
+- Files: `VariableCard.tsx`, the per-type input components (`DvdCompareIdInput` etc.), `NumberWithLookupField.tsx` (reference).
+
 ---
 
 ## P2 — low severity (batch into one "lookup/results affordance restoration" worker)
