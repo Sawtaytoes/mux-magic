@@ -97,12 +97,13 @@ describe("inferSuffixFromName", () => {
     )
   })
 
-  test("returns -other for a name that matches no known keyword", () => {
-    // 'Shorts' doesn't match '\bshort\b' (word boundary at end fails on 'Shorts')
-    // Per spec TDD step 2: inferSuffixFromName('Shrek Shorts') → '-other'
-    expect(inferSuffixFromName("Shrek Shorts")).toBe(
-      "-other",
-    )
+  test("returns '' for a name that matches no known keyword", () => {
+    // 'Shorts' doesn't match '\bshort\b' (word boundary at end fails on 'Shorts').
+    // Per the 2026-06-30 decision: unknown type → '' (not '-other').
+    // Previously this asserted '-other'; changed to '' because '-other' is now
+    // reserved for positively identified other content (image galleries), not
+    // a fallback for un-typeable names.
+    expect(inferSuffixFromName("Shrek Shorts")).toBe("")
   })
 
   test("returns -featurette for a name containing 'featurette'", () => {
@@ -143,11 +144,24 @@ describe("inferSuffixFromName", () => {
     )
   })
 
-  test("never returns empty string — always falls back to -other", () => {
-    expect(inferSuffixFromName("Unknown Content")).toBe(
-      "-other",
-    )
-    expect(inferSuffixFromName("")).toBe("-other")
+  test("returns '' for unknown content and for empty string — never falls back to -other", () => {
+    // Per the 2026-06-30 decision: '-other' is for positively identified other
+    // content only. Unknown/un-typeable names return '' so Apply is blocked
+    // until the user explicitly picks a type.
+    // Previously these asserted '-other'; changed to '' per the new rule.
+    expect(inferSuffixFromName("Unknown Content")).toBe("")
+    expect(inferSuffixFromName("")).toBe("")
+  })
+
+  test("returns '' for a gallery-style name — extractSuffixFromStem handles the baked -other suffix", () => {
+    // A gallery arrives from the core pipeline with the candidate name ending
+    // in '-other' (e.g. "Film (26 images) -other"). inferSuffixFromName has
+    // no keyword for this and correctly returns ''; the middle step in
+    // buildInitialRows — extractSuffixFromStem(topName) — recovers '-other'
+    // from the baked candidate name instead.
+    expect(
+      inferSuffixFromName("Film (26 images) -other"),
+    ).toBe("")
   })
 })
 

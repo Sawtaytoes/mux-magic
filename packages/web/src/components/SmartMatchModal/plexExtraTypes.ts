@@ -45,7 +45,10 @@ export const extractSuffixFromStem = (
 // Intentional mappings per docs/decisions/2023-07-31-plex-extras-suffix-vocabulary.md:
 //   documentary → -featurette (NOT -behindthescenes)
 //   clip        → -featurette
-// Falls back to '-other' when no keyword matches (never returns '').
+// Returns '' when no keyword matches — the type is unknown and the user must
+// pick one explicitly. '-other' is NOT a fallback; it is only for positively
+// identified "other" content (e.g. image galleries) whose suffix is already
+// baked into the candidate name and recovered by extractSuffixFromStem.
 export const inferSuffixFromName = (
   name: string,
 ): string => {
@@ -96,7 +99,7 @@ export const inferSuffixFromName = (
     return "-short"
   }
 
-  return "-other"
+  return ""
 }
 
 // Strip any known Plex suffix from the end of a base name string so a new

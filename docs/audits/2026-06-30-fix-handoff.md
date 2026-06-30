@@ -60,10 +60,20 @@ Three follow-up audits beyond the parity + decision passes. These check *behavio
 
 Governed by [the suffix decision](../decisions/2026-06-30-special-features-always-get-plex-type-suffix.md). The automatic timecode-match path always appends a suffix, but four paths can produce a **suffix-less** name (the exact regression the decision exists to prevent):
 
-- **N1 (P0) — untyped-candidate bare fallthrough.** `packages/core/src/tools/getSpecialFeatureFromTimecode.ts:239-245` ends in `return humanized` (no suffix) when no rename-regex matches and both `type` and `parentType` are unknown. That name feeds `nameSpecialFeaturesDvdCompareTmdb.buildUnnamedFileCandidates.ts:85-90` and is used verbatim as a default-selected, auto-applied rename. **Fix:** default to `-other` (or force a type pick). *Highest-value single fix.*
-- **N2 (P0) — Smart Match custom-name (✏) accepts a bare name.** `packages/web/src/components/SmartMatchModal/SmartMatchModal.tsx:51-54, 202-219` — typed name validated only `.trim().length>0`; `ensureExtension` never adds a suffix. **Fix:** in `handleApply`, require the stem to end in one of the nine `-<type>` suffixes (append `-other` or block with an inline error).
-- **N3 (P0) — Smart Match zero-candidate text box accepts a bare name.** Same file `:44-55, 592-615`, for files with no candidates. **Fix:** same suffix validation in `handleApply`, applied to all rows.
-- **N4 (P1) — the decision's required Plex-type picker UI is missing.** No nine-type dropdown anywhere (`RenameTargetPicker` only lists DVD-Compare candidates; no `plexExtraTypes.ts`). **Fix:** add a type dropdown that appends `-<type>` before the rename POST. (Overlaps worker 7a.)
+> **STATUS — 2026-06-30 (addressed this session):** All four are resolved.
+> Galleries `(N images)`/`(N pages)` → `-other` in core (commit `6331330a`).
+> The Plex-type picker (N4) shipped as worker 7a (commit `2f9d22d6`), and the
+> Smart Match modal now **blocks Apply** for any included row without a type —
+> covering N1/N2/N3 at the point of the rename POST. **IMPORTANT correction to
+> N1's recommendation:** per the decision, do NOT "default to `-other`" — that
+> is explicitly rejected. The correct fix (now implemented) is to **require an
+> explicit type pick and block** the rename until one is chosen. Galleries get
+> `-other` only by *positive identification*, not as a fallback.
+
+- **N1 (P0) — untyped-candidate bare fallthrough.** `applySpecialFeatureSuffix` returns bare `humanized` when type/parentType are unknown; that name feeds the Smart Match candidate. **Resolved** by the modal's require-type block (the bare candidate can't be Applied without a type pick) — NOT by defaulting `-other`. ✅
+- **N2 (P0) — Smart Match custom-name (✏) accepts a bare name.** **Resolved:** `handleApply` blocks any included row whose Plex-type is "— no type —". ✅
+- **N3 (P0) — Smart Match zero-candidate text box accepts a bare name.** **Resolved:** same `handleApply` block applies to all rows. ✅
+- **N4 (P1) — the decision's required Plex-type picker UI is missing.** **Resolved:** `plexExtraTypes.ts` + per-row `<select>` shipped as worker 7a. ✅
 
 ### O. Behavioral command-parity drift (v1.0.0 → now)
 
@@ -78,8 +88,7 @@ Governed by [the suffix decision](../decisions/2026-06-30-special-features-alway
 
 Governed by [five-surfaces](../decisions/2026-05-14-new-command-needs-five-wiring-surfaces.md). No v1.0.0 CLI command was lost (current CLI is a superset). Gaps:
 
-- **P-1 (P1) — `makeDirectory` has no CLI command** (in web `commands.ts:73` + API `schemas.ts:46`). Add `makeDirectoryCommand.ts` + register in `cli.ts`.
-- **P-2 (P1) — `exitIfEmpty` has no CLI command** (web `commands.ts:514` + API `schemas.ts:54`). Add it, OR document a builder/sequence-only exception in its area.
+- **P-1 / P-2 — NOT gaps (confirmed by the user 2026-06-30).** `makeDirectory` is a trivial recursive `mkdir` with no business logic — not worth a CLI command (script `mkdir -p` directly). `exitIfEmpty` is a sequence-flow gate (one-shot "is this folder empty → stop the sequence") that is meaningless outside a sequence. Both are intentionally **sequence/UI-only**; this is a legitimate exception to the five-surfaces rule for flow-control and trivial-shell commands. Do not add CLI commands for them.
 - **P-3 (P2) — regex `flags` not exposed on CLI** for `copyFiles`/`moveFiles`/`renameFiles` (API takes `{pattern, flags}`; CLI takes a bare string). Case-insensitive/multiline filtering is CLI-unreachable. Add `--fileFilterFlags`/`--folderFilterFlags` (validate `^[gimsuy]*$`).
 - **P-4 (P2) — multi-rule `renameRegex` array not exposed on CLI** (only a single `--renamePattern`/`--renameReplacement`). Add repeatable/JSON input or document the single-rule limit.
 - **P-5 (P2) — `extractSubtitles --folders` missing** (API `schemas.ts:311`). Add the option and forward it.
@@ -88,6 +97,16 @@ Governed by [five-surfaces](../decisions/2026-05-14-new-command-needs-five-wirin
 - **Reverse asymmetry (verify intentional):** `inverseTelecineDiscRips`, `mergeOrderedChapters`, `getSubtitleMetadata` are CLI-only / absent from the web picker (`getSubtitleMetadata` has an API schema but no web entry).
 
 ---
+
+## Deferred follow-ups
+
+### Q. Smart Match: name a leftover as the feature film / a cut (the suffix-less exception)
+
+Governed by [the suffix decision](../decisions/2026-06-30-special-features-always-get-plex-type-suffix.md) ("Deferred — the film/cut exception"). The decision makes a `-<type>` suffix mandatory for every special feature; the **only** legitimately suffix-less names are the feature film (`Title (Year)`) and its cuts/editions (`{edition-…}`). The Smart Match modal has **no** way to mark a leftover as the film or a cut, so today such a file simply **can't be named there** — the require-type block leaves it in `UNNAMED-FEATURES/` (acceptable interim behavior; this flow is for special features, not the movie itself).
+
+- **Open design** (user has no preferred shape yet): how should "this leftover is actually the film / a cut" surface — a special option in the type picker? a separate control? does the cut need an `{edition-…}` tag, and where does the edition name come from?
+- **Possible overlap:** a separate movie-/cut-naming task may already exist (the core run already does film/cut naming via `postProcessMatches` / `findMatchingCut`); check before building new UI. It may be enough to route the file back to `sourcePath` for the existing pipeline rather than name it in Smart Match.
+- **Until built:** leave un-typeable / film / cut files unnamed in the bucket. Do NOT auto-name them.
 
 ## Cleanup / verify
 
