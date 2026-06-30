@@ -20,6 +20,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
 | 2026-06-30 | [A special feature is never auto-named without a Plex `-<type>` suffix](2026-06-30-special-features-always-get-plex-type-suffix.md) | core / web | Accepted |
+| 2026-06-30 | [cleanupFilename: a colon-space becomes " - " (even after ")")](2026-06-30-cleanup-filename-colon-to-dash.md) | core / tools | Accepted |
 | 2026-06-29 | [The CI/lint-enforced conventions are locked too](2026-06-29-enforced-conventions-are-also-locked.md) | process | Accepted |
 | 2026-06-12 | [zod/mini migration is BLOCKED — do not retry](2026-06-12-zod-mini-migration-blocked.md) | server/api | Accepted |
 | 2026-06-12 | [Container detection uses a positive signal, not `/.dockerenv`](2026-06-12-container-detection-positive-signal.md) | server/api | Accepted |
