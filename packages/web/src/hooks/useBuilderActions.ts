@@ -394,6 +394,21 @@ export const useBuilderActions = () => {
       .filter((step) => step.command)
     if (runnableSteps.length === 0) return
 
+    // Clear a leftover terminal background badge from a prior "Run on
+    // Server" that completed and was minimized. It's no longer tracking
+    // anything, and leaving "Sequence completed" pinned while a fresh inline
+    // run starts is the confusing stale-state the badge is meant to avoid. A
+    // still-active background job can't be here — both run actions bail above
+    // when runningAtom is set.
+    const priorModal = store.get(sequenceRunModalAtom)
+    if (
+      priorModal.mode === "background" &&
+      priorModal.status !== "running" &&
+      priorModal.status !== "pending"
+    ) {
+      store.set(sequenceRunModalAtom, { mode: "closed" })
+    }
+
     for (const step of runnableSteps) {
       // runOrStopStepAtom resolves params, POSTs the step, and sets it running
       // (+ jobId, which mounts StepRunProgress to own the SSE + write the
