@@ -1,3 +1,4 @@
+import { constants as fsConstants } from "node:fs"
 import * as fsPromises from "node:fs/promises"
 import { stat } from "node:fs/promises"
 import { join } from "node:path"
@@ -231,6 +232,55 @@ describe(moveFiles.name, () => {
       expect(
         renameSpy.mock.calls.length,
       ).toBeGreaterThanOrEqual(2)
+    })
+
+    test("attempts the FICLONE kernel reflink first on the EXDEV fallback", async () => {
+      vol.reset()
+      vol.fromJSON({
+        "/xdev-src/episode-01.mkv": "ep1 bytes",
+      })
+
+      vi.spyOn(fsPromises, "rename").mockImplementationOnce(
+        async () => {
+          const error = new Error(
+            "EXDEV: cross-device link not permitted",
+          ) as Error & { code: string }
+          error.code = "EXDEV"
+          throw error
+        },
+      )
+
+      const copyFileSpy = vi.spyOn(fsPromises, "copyFile")
+
+      await firstValueFrom(
+        moveFiles({
+          sourcePath: "/xdev-src",
+          destinationPath: "/xdev-dst",
+        }).pipe(toArray()),
+      )
+
+      // The cross-volume fallback must route through
+      // aclSafeCopyFile's kernel block-copy tier, which requests a
+      // ZFS/Btrfs/APFS reflink via COPYFILE_FICLONE. That's the
+      // near-instant path for tens-of-GB files between datasets in
+      // one pool; the streaming copy is only the fallback when the
+      // reflink isn't available. Assert the flag was actually passed.
+      expect(copyFileSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        fsConstants.COPYFILE_FICLONE,
+      )
+
+      // And the move still completed: bytes landed, source gone.
+      expect(
+        vol.readFileSync(
+          "/xdev-dst/episode-01.mkv",
+          "utf8",
+        ),
+      ).toBe("ep1 bytes")
+      expect(
+        vol.existsSync("/xdev-src/episode-01.mkv"),
+      ).toBe(false)
     })
   })
 })
