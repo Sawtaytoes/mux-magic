@@ -10,6 +10,7 @@ import {
   vi,
 } from "vitest"
 import { COMMANDS } from "../commands/commands"
+import { sequenceRunModalAtom } from "../components/SequenceRunModal/sequenceRunModalAtom"
 import {
   findStepById,
   flattenSteps,
@@ -124,6 +125,61 @@ describe("useBuilderActions.runSequence — client-side serial run", () => {
     unsubscribe()
 
     expect(runOrder).toEqual(["step_a", "step_b", "step_c"])
+  })
+
+  test("clears a leftover terminal background badge from a prior server run before starting", async () => {
+    const store = setupStore([makeStep({ id: "step_a" })])
+    // Simulate a previous "Run on Server" that completed and was minimized
+    // into the background badge — and was never dismissed.
+    store.set(sequenceRunModalAtom, {
+      mode: "background",
+      jobId: "job-prior",
+      status: "completed",
+      logs: [],
+      activeChildren: [],
+      source: "sequence",
+    })
+    const { unsubscribe } = autoSettleSteps(store, {})
+    const { result } = renderHook(
+      () => useBuilderActions(),
+      { wrapper: wrapper(store) },
+    )
+
+    await result.current.runSequence()
+    unsubscribe()
+
+    // The stale badge is gone — a fresh inline run no longer sits under a
+    // confusing "Sequence completed" indicator from the old job.
+    expect(store.get(sequenceRunModalAtom).mode).toBe(
+      "closed",
+    )
+  })
+
+  test("leaves an ACTIVE background run untouched (does not clobber a live job)", async () => {
+    const store = setupStore([makeStep({ id: "step_a" })])
+    store.set(runningAtom, true)
+    store.set(sequenceRunModalAtom, {
+      mode: "background",
+      jobId: "job-live",
+      status: "running",
+      logs: [],
+      activeChildren: [],
+      source: "sequence",
+    })
+    const { result } = renderHook(
+      () => useBuilderActions(),
+      { wrapper: wrapper(store) },
+    )
+
+    // runningAtom is set, so runSequence bails immediately without touching
+    // the live background job's modal state.
+    await result.current.runSequence()
+
+    const state = store.get(sequenceRunModalAtom)
+    expect(state.mode).toBe("background")
+    expect(
+      state.mode !== "closed" ? state.status : null,
+    ).toBe("running")
   })
 
   test("stops the sequence at the first step that does not complete", async () => {

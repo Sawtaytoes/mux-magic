@@ -144,6 +144,41 @@ describe("SequenceRunModal", () => {
     )
   })
 
+  test("closing a COMPLETED run dismisses it (mode closed) instead of re-backgrounding the stale badge", () => {
+    const store = createStore()
+    store.set(sequenceRunModalAtom, {
+      ...openState,
+      status: "completed",
+    })
+    renderWithStore(store)
+
+    const backdrop = screen.getByRole("dialog", {
+      name: "Run Sequence",
+    }).parentElement as HTMLElement
+    fireEvent.click(backdrop)
+
+    // Terminal run has nothing left to track — closing fully dismisses it so
+    // the "Sequence completed" badge can't get stuck on the header.
+    expect(store.get(sequenceRunModalAtom).mode).toBe(
+      "closed",
+    )
+  })
+
+  test("closing a still-running run backgrounds it (badge keeps tracking)", () => {
+    const store = createStore()
+    store.set(sequenceRunModalAtom, openState)
+    renderWithStore(store)
+
+    const backdrop = screen.getByRole("dialog", {
+      name: "Run Sequence",
+    }).parentElement as HTMLElement
+    fireEvent.click(backdrop)
+
+    expect(store.get(sequenceRunModalAtom).mode).toBe(
+      "background",
+    )
+  })
+
   // ─── TDD step 3: Cancel button calls server DELETE ──────────────────────────
 
   test("Cancel button calls DELETE on the job and closes modal", async () => {

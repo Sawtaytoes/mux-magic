@@ -223,6 +223,25 @@ export const SequenceRunModal = () => {
     )
   }, [setModalState])
 
+  // Closing the modal (✕ / backdrop) means different things depending on
+  // whether the job is still active. A running (or pending) job keeps going
+  // in the background and the badge tracks it. A job that already reached a
+  // terminal state has nothing left to track, so closing dismisses it
+  // outright — otherwise the terminal "Sequence completed" badge would stay
+  // pinned to the header forever with no way to clear it (the Cancel button,
+  // the only other route to "closed", is shown only while running).
+  const dismissOrBackground = useCallback(() => {
+    setModalState((prev) => {
+      if (prev.mode === "closed") return prev
+      const isActive =
+        prev.status === "running" ||
+        prev.status === "pending"
+      return isActive
+        ? { ...prev, mode: "background" }
+        : { mode: "closed" }
+    })
+  }, [setModalState])
+
   // Cancel explicitly terminates the job server-side and closes the modal.
   const cancelJob = useCallback(async () => {
     const currentJobId = jobId
@@ -271,7 +290,7 @@ export const SequenceRunModal = () => {
   return (
     <Modal
       isOpen={modalState.mode === "open"}
-      onClose={sendToBackground}
+      onClose={dismissOrBackground}
       ariaLabel={modalTitle}
     >
       <div
@@ -309,7 +328,7 @@ export const SequenceRunModal = () => {
           )}
           <button
             type="button"
-            onClick={sendToBackground}
+            onClick={dismissOrBackground}
             className="text-slate-400 hover:text-white text-base leading-none ml-1"
             title="Close"
           >
