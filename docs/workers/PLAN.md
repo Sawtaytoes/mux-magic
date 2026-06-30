@@ -256,6 +256,7 @@ No intermediate master merges.
         │   50 wav-to-flac                       │       │
         │   51 release-date-into-date-tag        │       │
         │   52 dvdcompare-cuts-censorship-check  │       │
+        │   7c disable-sequence-items            │       │
         └─────────────────┬──────────────────────┘       │
                           │                              │
                           ▼                              │
