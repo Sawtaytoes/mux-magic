@@ -19,7 +19,7 @@ A Node.js CLI and REST API for batch media file operations (MKV track manipulati
 | External tool binaries (Windows paths for mkvtoolnix / MediaInfo) | [docs/agents/external-tools.md](docs/agents/external-tools.md) |
 | Workflows, roles, commit conventions | [docs/agents/workflows.md](docs/agents/workflows.md) |
 | Worker port/PID protocol (parallel e2e without collisions) | [docs/agents/worker-port-protocol.md](docs/agents/worker-port-protocol.md) |
-| npm publishing for `@mux-magic/tools` | [docs/agents/npm-publishing.md](docs/agents/npm-publishing.md) |
+| npm publishing — **bump `packages/tools` version in your PR to release `@mux-magic/tools`** | [docs/agents/npm-publishing.md](docs/agents/npm-publishing.md) |
 | PowerShell UTF-8 traps (Windows) | [docs/agents/powershell-windows.md](docs/agents/powershell-windows.md) |
 
 ## The Five Most-Violated Rules
