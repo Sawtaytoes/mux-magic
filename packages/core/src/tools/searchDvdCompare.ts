@@ -3,6 +3,7 @@ import {
   logInfo,
 } from "@mux-magic/tools"
 import { from, map, type Observable } from "rxjs"
+import { decodeResponseText } from "./decodeBufferWithEncodingFallback.js"
 import {
   gotoPage,
   launchBrowser,
@@ -114,7 +115,7 @@ export const findDvdCompareResults = (
           body: formData.toString(),
         },
       )
-      const html = await response.text()
+      const html = await decodeResponseText(response)
 
       // DVDCompare signals a single-match outcome in two ways:
       //   1) HTTP redirect (search.php → film.php?fid=N). fetch follows it
@@ -146,7 +147,7 @@ export const findDvdCompareResults = (
           ? html
           : await fetch(
               `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${fid}`,
-            ).then((response) => response.text())
+            ).then((response) => decodeResponseText(response))
         const filmInfo = parseDvdCompareFilmTitle(
           filmHtml,
           fid,
@@ -251,7 +252,7 @@ export const listDvdCompareReleases = (
     (async () => {
       const url = `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${dvdCompareId}&sel=on`
       const response = await fetch(url)
-      const html = await response.text()
+      const html = await decodeResponseText(response)
       const releases = parseDvdCompareReleasesHtml(html)
       const debug = buildReleasesDebug(
         url,
@@ -323,7 +324,7 @@ export const lookupDvdCompareFilm = (
       const response = await fetch(
         `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${dvdCompareId}`,
       )
-      const html = await response.text()
+      const html = await decodeResponseText(response)
       const result = parseDvdCompareFilmTitle(
         html,
         dvdCompareId,
@@ -351,7 +352,7 @@ export const lookupDvdCompareRelease = (
       const response = await fetch(
         `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${dvdCompareId}&sel=on`,
       )
-      const html = await response.text()
+      const html = await decodeResponseText(response)
       const releases = parseDvdCompareReleasesHtml(html)
       const matched = releases.find(
         (release) => release.hash === String(hash),
