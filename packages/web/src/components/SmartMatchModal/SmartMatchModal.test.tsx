@@ -141,6 +141,34 @@ describe("SmartMatchModal", () => {
     expect(includeMovieT99.checked).toBe(false)
   })
 
+  test("header checkbox unchecks all eligible rows in one click, then re-checks all on a second click", async () => {
+    const user = userEvent.setup()
+    const store = createStore()
+    store.set(smartMatchModalAtom, mixedPayload)
+    renderWithStore(store)
+    const includeBonus1 = screen.getByLabelText(
+      "Include BONUS_1",
+    ) as HTMLInputElement
+    const includeMovieT99 = screen.getByLabelText(
+      "Include MOVIE_t99",
+    ) as HTMLInputElement
+    // Starting point: BONUS_1 checked (high confidence), MOVIE_t99 not.
+    expect(includeBonus1.checked).toBe(true)
+    expect(includeMovieT99.checked).toBe(false)
+    // With something selected, the header offers "Uncheck all".
+    const headerToggle = screen.getByLabelText(
+      "Uncheck all",
+    ) as HTMLInputElement
+    await user.click(headerToggle)
+    // One click clears every eligible row.
+    expect(includeBonus1.checked).toBe(false)
+    expect(includeMovieT99.checked).toBe(false)
+    // Now the header flips to "Select all"; clicking checks every row.
+    await user.click(screen.getByLabelText("Select all"))
+    expect(includeBonus1.checked).toBe(true)
+    expect(includeMovieT99.checked).toBe(true)
+  })
+
   test("Apply fires one POST /files/rename per included row with oldPath under UNNAMED-FEATURES/ (worker 25)", async () => {
     // "Theatrical Cut" has no Plex-type keyword so inferSuffixFromName returns ''
     // (per the 2026-06-30 decision — '-other' is no longer a fallback). Apply is

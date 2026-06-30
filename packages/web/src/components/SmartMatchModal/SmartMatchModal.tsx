@@ -228,6 +228,20 @@ export const SmartMatchModal = () => {
     })
   }
 
+  // Bulk include/exclude every row the user can still act on. Applied rows
+  // are locked (their checkbox is disabled), so they're left untouched.
+  const setAllIncluded = (isIncluded: boolean) => {
+    setRows((prev) => {
+      const next = new Map(prev)
+      for (const [filename, current] of next.entries()) {
+        if (current.isApplied) continue
+        if (current.isIncluded === isIncluded) continue
+        next.set(filename, { ...current, isIncluded })
+      }
+      return next
+    })
+  }
+
   const handleApply = async () => {
     const plans = suggestions
       .map((suggestion) => {
@@ -472,6 +486,20 @@ export const SmartMatchModal = () => {
     (row) => row.isIncluded && !row.isApplied,
   ).length
 
+  // Header "select all" checkbox state. Only rows the user can still act on
+  // (not yet applied) count toward the tri-state. Clicking clears all when
+  // anything is selected (the "uncheck all" the user wanted) and selects all
+  // otherwise — so a single click resolves either direction.
+  const eligibleRows = Array.from(rows.values()).filter(
+    (row) => !row.isApplied,
+  )
+  const someEligibleIncluded = eligibleRows.some(
+    (row) => row.isIncluded,
+  )
+  const allEligibleIncluded =
+    eligibleRows.length > 0 &&
+    eligibleRows.every((row) => row.isIncluded)
+
   // Apply is blocked when any included, unapplied row that has a non-empty
   // effective name is still on '— no type —'. We use `rows` + `suggestions`
   // together so we can call resolveDesiredName (needs the candidate count).
@@ -573,7 +601,37 @@ export const SmartMatchModal = () => {
             <thead className="text-[10px] uppercase tracking-wider text-slate-400">
               <tr>
                 <th className="px-1 py-1 w-8 text-left">
-                  Use
+                  <div className="flex flex-col items-start gap-0.5">
+                    <input
+                      type="checkbox"
+                      aria-label={
+                        someEligibleIncluded
+                          ? "Uncheck all"
+                          : "Select all"
+                      }
+                      title={
+                        someEligibleIncluded
+                          ? "Uncheck all"
+                          : "Select all"
+                      }
+                      ref={(node) => {
+                        if (node) {
+                          node.indeterminate =
+                            someEligibleIncluded &&
+                            !allEligibleIncluded
+                        }
+                      }}
+                      checked={allEligibleIncluded}
+                      disabled={
+                        isApplying ||
+                        eligibleRows.length === 0
+                      }
+                      onChange={() =>
+                        setAllIncluded(!someEligibleIncluded)
+                      }
+                    />
+                    <span className="normal-case">Use</span>
+                  </div>
                 </th>
                 <th className="px-1 py-1 w-6"></th>
                 <th className="px-2 py-1 text-left">
