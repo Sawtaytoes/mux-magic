@@ -15,18 +15,15 @@ import {
 
 // Mock the `trash` package so trash-mode tests don't shell out to
 // Shell.Application / gio trash. The mock records calls so tests can
-// assert which paths went through trash vs unlink, and removes the
-// file from memfs so callers see consistent state after delete.
+// assert which paths went through trash vs a permanent delete, and
+// removes the entry from memfs (recursively, so a directory works too)
+// so callers see consistent state after delete.
 const trashCalls: string[][] = []
 vi.mock("trash", () => ({
   default: vi.fn((paths: string[]) => {
     trashCalls.push([...paths])
     paths.forEach((path) => {
-      try {
-        vol.unlinkSync(path)
-      } catch {
-        /* already gone */
-      }
+      vol.rmSync(path, { recursive: true, force: true })
     })
     return Promise.resolve()
   }),
@@ -35,31 +32,36 @@ vi.mock("trash", () => ({
 describe(getDeleteMode.name, () => {
   let original: string | undefined
   beforeEach(() => {
-    original = process.env.DELETE_TO_TRASH
+    original = process.env.DELETE_MODE
   })
   afterEach(() => {
     if (original === undefined)
-      delete process.env.DELETE_TO_TRASH
-    else process.env.DELETE_TO_TRASH = original
+      delete process.env.DELETE_MODE
+    else process.env.DELETE_MODE = original
   })
 
-  test("defaults to 'trash' when env is unset", () => {
-    delete process.env.DELETE_TO_TRASH
+  test("defaults to 'trash' when DELETE_MODE is unset", () => {
+    delete process.env.DELETE_MODE
     expect(getDeleteMode()).toBe("trash")
   })
 
-  test("'permanent' when DELETE_TO_TRASH=false", () => {
-    process.env.DELETE_TO_TRASH = "false"
+  test("'permanent' when DELETE_MODE=permanent", () => {
+    process.env.DELETE_MODE = "permanent"
     expect(getDeleteMode()).toBe("permanent")
   })
 
-  test("'permanent' when DELETE_TO_TRASH=0", () => {
-    process.env.DELETE_TO_TRASH = "0"
+  test("'trash' when DELETE_MODE=trash", () => {
+    process.env.DELETE_MODE = "trash"
+    expect(getDeleteMode()).toBe("trash")
+  })
+
+  test("trim + case-insensitive (Permanent -> permanent)", () => {
+    process.env.DELETE_MODE = "  Permanent  "
     expect(getDeleteMode()).toBe("permanent")
   })
 
-  test("'trash' when DELETE_TO_TRASH=true", () => {
-    process.env.DELETE_TO_TRASH = "true"
+  test("falls back to 'trash' for an unrecognized value", () => {
+    process.env.DELETE_MODE = "yes-please"
     expect(getDeleteMode()).toBe("trash")
   })
 })
@@ -74,11 +76,11 @@ describe(deleteFiles.name, () => {
   })
 
   afterEach(() => {
-    delete process.env.DELETE_TO_TRASH
+    delete process.env.DELETE_MODE
   })
 
   test("trash mode routes through the trash package and reports per-path success", async () => {
-    process.env.DELETE_TO_TRASH = "true"
+    process.env.DELETE_MODE = "trash"
     const { results } = await deleteFiles([
       "/disc-rips/SOLDIER/a.mkv",
       "/disc-rips/SOLDIER/b.mkv",
@@ -96,8 +98,8 @@ describe(deleteFiles.name, () => {
     ).toBe(true)
   })
 
-  test("permanent mode uses fs.unlink and removes the file from disk", async () => {
-    process.env.DELETE_TO_TRASH = "false"
+  test("permanent mode uses fs.rm and removes the file from disk", async () => {
+    process.env.DELETE_MODE = "permanent"
     const { results } = await deleteFiles([
       "/disc-rips/SOLDIER/a.mkv",
     ])
@@ -109,8 +111,23 @@ describe(deleteFiles.name, () => {
     ).toThrow()
   })
 
+  test("permanent mode recursively removes a selected directory", async () => {
+    process.env.DELETE_MODE = "permanent"
+    // The SOLDIER dir from beforeEach still holds a.mkv + b.mkv, so this
+    // also proves the recursive flag clears a non-empty directory.
+    const { results } = await deleteFiles([
+      "/disc-rips/SOLDIER",
+    ])
+    expect(results[0].isOk).toBe(true)
+    expect(results[0].mode).toBe("permanent")
+    expect(trashCalls).toHaveLength(0)
+    expect(() =>
+      vol.statSync("/disc-rips/SOLDIER"),
+    ).toThrow()
+  })
+
   test("rejects relative paths without aborting the batch", async () => {
-    process.env.DELETE_TO_TRASH = "false"
+    process.env.DELETE_MODE = "permanent"
     const { results } = await deleteFiles([
       "/disc-rips/SOLDIER/a.mkv", // valid
       "relative/path.mkv", // relative — rejected

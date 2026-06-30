@@ -348,11 +348,7 @@ export const FileExplorerModal = () => {
   const selectAll = (isChecked: boolean) => {
     if (isChecked) {
       setSelected(
-        new Set(
-          entries
-            .filter((entry) => entry.isFile)
-            .map((entry) => entry.name),
-        ),
+        new Set(entries.map((entry) => entry.name)),
       )
     } else {
       setSelected(new Set())
@@ -594,13 +590,9 @@ export const FileExplorerModal = () => {
                           }
                           checked={
                             selected.size > 0 &&
-                            entries
-                              .filter(
-                                (entry) => entry.isFile,
-                              )
-                              .every((entry) =>
-                                selected.has(entry.name),
-                              )
+                            entries.every((entry) =>
+                              selected.has(entry.name),
+                            )
                           }
                         />
                       </th>
@@ -703,10 +695,9 @@ export const FileExplorerModal = () => {
                           <td className="py-1 px-2">
                             <input
                               type="checkbox"
-                              disabled={entry.isDirectory}
                               title={
                                 entry.isDirectory
-                                  ? "Directories not deletable from this UI"
+                                  ? "Select this folder (deletes recursively)"
                                   : undefined
                               }
                               checked={selected.has(

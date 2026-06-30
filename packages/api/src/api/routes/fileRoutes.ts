@@ -153,7 +153,7 @@ fileRoutes.openapi(
     summary:
       "Report whether deletes go to the OS trash or are permanent",
     description:
-      "Called by the file-explorer modal so the confirm dialog can label its action accurately. The base mode is controlled by the DELETE_TO_TRASH env var (default 'trash'). When `path` is supplied AND the path lives on a Windows network drive, the response downgrades to 'permanent' since the OS Recycle Bin can't service network shares — the UI surfaces this via the badge so the user isn't surprised when 'trash' silently became permanent.",
+      "Called by the file-explorer modal so the confirm dialog can label its action accurately. The base mode is controlled by the DELETE_MODE env var (default 'trash'). When `path` is supplied AND the path lives on a Windows network drive, the response downgrades to 'permanent' since the OS Recycle Bin can't service network shares — the UI surfaces this via the badge so the user isn't surprised when 'trash' silently became permanent.",
     tags: ["File Operations"],
     request: {
       query: schemas.deleteModeRequestSchema,
@@ -185,7 +185,7 @@ fileRoutes.openapi(
     const effectiveMode = getEffectiveDeleteMode(path)
     let reason: string | null = null
     if (baseMode === "permanent") {
-      reason = "DELETE_TO_TRASH is set to false"
+      reason = "DELETE_MODE is set to permanent"
     } else if (
       effectiveMode === "permanent" &&
       isNetworkPath(path)
@@ -333,7 +333,7 @@ fileRoutes.openapi(
     path: "/files",
     summary: "Delete one or more files",
     description:
-      "Bulk delete used by the file-explorer modal. Each path is validated against ALLOWED_DELETE_ROOTS independently; a failure on one path does NOT abort the batch — the response carries per-path success/failure. Strategy (Recycle Bin vs permanent) is set globally via DELETE_TO_TRASH and reported through GET /files/delete-mode.",
+      "Bulk delete used by the file-explorer modal. Each path is validated against ALLOWED_DELETE_ROOTS independently; a failure on one path does NOT abort the batch — the response carries per-path success/failure. Strategy (Recycle Bin vs permanent) is set globally via DELETE_MODE and reported through GET /files/delete-mode.",
     tags: ["File Operations"],
     request: {
       body: {
