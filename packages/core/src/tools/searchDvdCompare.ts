@@ -5,8 +5,10 @@ import {
 import { from, map, type Observable } from "rxjs"
 import { decodeResponseText } from "./decodeBufferWithEncodingFallback.js"
 import {
+  BROWSER_USER_AGENT,
   gotoPage,
   launchBrowser,
+  newPageWithUserAgent,
   performAndWaitForNavigation,
 } from "./launchBrowser.js"
 
@@ -36,6 +38,34 @@ export type DvdCompareRelease = {
 }
 
 const DVDCOMPARE_BASE = "https://www.dvdcompare.net"
+
+// DVDCompare bot-blocks requests by User-Agent: a missing UA header or a
+// `curl/*` UA both return HTTP 403. Node's undici `fetch` currently sends
+// `User-Agent: node`, which DVDCompare happens to allow today — but that's
+// an undocumented quirk we shouldn't depend on (they already block bare and
+// curl agents and could tighten further). Sending a realistic desktop
+// browser UA on every DVDCompare request keeps these plain fetches working
+// regardless of how the site's bot-protection evolves. The same UA is
+// applied to the headless-Chromium context in launchBrowser so both code
+// paths look like the same client. Single-sourced from launchBrowser's
+// BROWSER_USER_AGENT so the fetch and headless-Chromium paths never drift.
+export const DVDCOMPARE_USER_AGENT = BROWSER_USER_AGENT
+
+// Thin wrapper over `fetch` that always sends the DVDCompare browser UA
+// while preserving any caller-supplied method/body/headers. Routed through
+// `globalThis.fetch` so the test suite's `globalThis.fetch` mocks still
+// intercept these calls.
+const fetchDvdCompare = (
+  url: string,
+  init?: RequestInit,
+): Promise<Response> =>
+  globalThis.fetch(url, {
+    ...init,
+    headers: {
+      "User-Agent": DVDCOMPARE_USER_AGENT,
+      ...init?.headers,
+    },
+  })
 
 const decodeHtmlEntities = (text: string) =>
   text
@@ -104,7 +134,7 @@ export const findDvdCompareResults = (
         param: searchTerm,
         searchtype: "text",
       })
-      const response = await fetch(
+      const response = await fetchDvdCompare(
         `${DVDCOMPARE_BASE}/comparisons/search.php`,
         {
           method: "POST",
@@ -145,7 +175,7 @@ export const findDvdCompareResults = (
         // work with.
         const filmHtml = directFidFromHttpRedirect
           ? html
-          : await fetch(
+          : await fetchDvdCompare(
               `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${fid}`,
             ).then((response) =>
               decodeResponseText(response),
@@ -253,7 +283,7 @@ export const listDvdCompareReleases = (
   from(
     (async () => {
       const url = `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${dvdCompareId}&sel=on`
-      const response = await fetch(url)
+      const response = await fetchDvdCompare(url)
       const html = await decodeResponseText(response)
       const releases = parseDvdCompareReleasesHtml(html)
       const debug = buildReleasesDebug(
@@ -323,7 +353,7 @@ export const lookupDvdCompareFilm = (
 ): Observable<{ name: string } | null> =>
   from(
     (async () => {
-      const response = await fetch(
+      const response = await fetchDvdCompare(
         `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${dvdCompareId}`,
       )
       const html = await decodeResponseText(response)
@@ -351,7 +381,7 @@ export const lookupDvdCompareRelease = (
 ): Observable<{ label: string } | null> =>
   from(
     (async () => {
-      const response = await fetch(
+      const response = await fetchDvdCompare(
         `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${dvdCompareId}&sel=on`,
       )
       const html = await decodeResponseText(response)
@@ -386,7 +416,7 @@ export const searchDvdCompare = ({
     (async () => {
       const browser = await launchBrowser()
       try {
-        const page = await browser.newPage()
+        const page = await newPageWithUserAgent(browser)
         // Append &sel=on before the hash so DVDCompare lands on the
         // unchecked-by-default release-picker form regardless of the user's
         // saved cookie state.
