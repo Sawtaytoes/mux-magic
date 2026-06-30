@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { Readable } from "node:stream"
 
 import { OpenAPIHono } from "@hono/zod-openapi"
+import { getIsNvencAvailable } from "@mux-magic/core/src/cli-spawn-operations/detectNvencSupport.js"
 import {
   buildFfmpegArgs,
   type TranscodePlan,
@@ -564,12 +565,20 @@ const handleTranscodeRequest = async ({
   // behaviour (map audio, copy video).
   let plan: TranscodePlan = {
     hasAudio: true,
+    isNvencAvailable: false,
     isVideoReencodeNeeded: false,
   }
   try {
     const info = await fetchStreamInfo(validatedAbsPath)
+    // Probe NVENC only when a re-encode is actually needed — a video
+    // copy never touches the encoder. getIsNvencAvailable caches after
+    // the first call, so this is a one-time startup cost.
+    const isNvencAvailable = info.isVideoReencodeNeeded
+      ? await getIsNvencAvailable()
+      : false
     plan = {
       hasAudio: info.hasAudio,
+      isNvencAvailable,
       isVideoReencodeNeeded: info.isVideoReencodeNeeded,
     }
   } catch {

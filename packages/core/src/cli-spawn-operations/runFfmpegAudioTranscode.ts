@@ -49,57 +49,81 @@ export type RunFfmpegAudioTranscodeOptions = {
 //   * isVideoReencodeNeeded — whether the source video codec is NOT
 //     browser-decodable (VC-1, MPEG-2, HEVC, AV1, VP9). Those must be
 //     re-encoded to H.264; H.264/AVC sources are copied.
+//   * isNvencAvailable — whether this host has a usable NVIDIA NVENC
+//     encoder (probed once at startup, see detectNvencSupport.ts). When
+//     true AND a re-encode is needed, decode+encode run on the GPU
+//     (vc1_cuvid/etc. via `-hwaccel cuda` → `h264_nvenc`); otherwise the
+//     CPU libx264 path runs. Same H.264 High@L4.1 output either way.
 export type TranscodePlan = {
   hasAudio: boolean
+  isNvencAvailable: boolean
   isVideoReencodeNeeded: boolean
 }
 
-// TODO(GPU): add NVIDIA hardware-acceleration when available.
-//   Detection: run `ffmpeg -hwaccels` at startup; if "cuda" is listed,
-//   enable NVDEC for input-side decoding with:
-//     ["-hwaccel", "cuda", "-hwaccel_output_format", "cuda"]
-//   inserted before "-i", and switch `-c:v copy` to
-//     ["-c:v", "h264_nvenc", "-preset", "p1"]
-//   for re-encoding paths. Fall back to CPU-only args when no GPU is
-//   detected so the server works on non-NVIDIA machines.
 export const buildFfmpegArgs = (
   cacheKey: TranscodeCacheKey,
   startSeconds = 0,
   plan: TranscodePlan = {
     hasAudio: true,
+    isNvencAvailable: false,
     isVideoReencodeNeeded: false,
   },
 ): string[] => {
   const seekSection: string[] =
     startSeconds > 0 ? ["-ss", String(startSeconds)] : []
+  const isGpuReencode =
+    plan.isVideoReencodeNeeded && plan.isNvencAvailable
+  // GPU decode keeps frames in VRAM (`-hwaccel_output_format cuda`) so
+  // h264_nvenc encodes them without a round-trip to system memory. Only
+  // applied on the GPU re-encode path; copy and CPU paths take no hwaccel.
+  const hwaccelSection = isGpuReencode
+    ? ["-hwaccel", "cuda", "-hwaccel_output_format", "cuda"]
+    : []
   // VC-1 (Blu-ray) and MPEG-2 (DVD), as well as HEVC/AV1/VP9, are not
   // browser-decodable, so re-encode to H.264 High@L4.1 (matches the
   // avc1.640029 codec tag the route advertises). H.264 sources copy.
-  const videoSection = plan.isVideoReencodeNeeded
-    ? [
-        "-map",
-        "0:v:0",
-        "-c:v",
-        "libx264",
-        "-preset",
-        "ultrafast",
-        "-tune",
-        "zerolatency",
-        "-pix_fmt",
-        "yuv420p",
-        "-profile:v",
-        "high",
-        "-level",
-        "4.1",
-        "-g",
-        "48",
-      ]
-    : ["-map", "0:v:0", "-c:v", "copy"]
+  // h264_nvenc on the GPU, libx264 (ultrafast/zerolatency) on the CPU.
+  const videoSection = !plan.isVideoReencodeNeeded
+    ? ["-map", "0:v:0", "-c:v", "copy"]
+    : isGpuReencode
+      ? [
+          "-map",
+          "0:v:0",
+          "-c:v",
+          "h264_nvenc",
+          "-preset",
+          "p4",
+          "-profile:v",
+          "high",
+          "-level",
+          "4.1",
+          "-g",
+          "48",
+        ]
+      : [
+          "-map",
+          "0:v:0",
+          "-c:v",
+          "libx264",
+          "-preset",
+          "ultrafast",
+          "-tune",
+          "zerolatency",
+          "-pix_fmt",
+          "yuv420p",
+          "-profile:v",
+          "high",
+          "-level",
+          "4.1",
+          "-g",
+          "48",
+        ]
   const sharedHead = [
     "-hide_banner",
     "-loglevel",
     "warning",
     "-nostats",
+    ...hwaccelSection,
     ...seekSection,
     "-i",
     cacheKey.absPath,
