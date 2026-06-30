@@ -131,7 +131,9 @@ describe(getIsSimilarTimecode.name, () => {
 describe(applySpecialFeatureSuffix.name, () => {
   test("routes a '(N images)' gallery name to -other", () => {
     expect(
-      applySpecialFeatureSuffix({ text: "Film (26 images)" }),
+      applySpecialFeatureSuffix({
+        text: "Film (26 images)",
+      }),
     ).toBe("Film (26 images) -other")
   })
 
@@ -161,7 +163,9 @@ describe(applySpecialFeatureSuffix.name, () => {
 
   test("routes 'Theatrical Trailer' to -trailer (keyword table unaffected by gallery rule)", () => {
     expect(
-      applySpecialFeatureSuffix({ text: "Theatrical Trailer" }),
+      applySpecialFeatureSuffix({
+        text: "Theatrical Trailer",
+      }),
     ).toBe("Theatrical Trailer -trailer")
   })
 
