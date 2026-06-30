@@ -77,18 +77,25 @@ export const isTranscodeNeeded = ({
   !isAudioFormatBrowserSafe(audioFormat)
 
 // Builds the MSE SourceBuffer mime from the HEAD X-Video-Codec header.
-// Audio is always Opus (the codec the client requests). Returns null when
-// no usable video codec tag is available — the caller then degrades to a
-// direct <video src>.
+// Audio (Opus) is appended ONLY when the source actually has an audio
+// track — a video-only file (e.g. a logo bumper) gets a video-only mime
+// so the SourceBuffer doesn't expect an audio track that never arrives.
+// Returns null when no usable video codec tag is available — the caller
+// then degrades to a direct <video src>.
 export const resolveTranscodeMimeType = (
   videoCodecTag: string | null,
+  hasAudio: boolean,
 ): string | null => {
   const videoCodecFull = videoCodecTag?.includes(".")
     ? videoCodecTag
     : videoCodecTag
       ? LEGACY_CODEC_FALLBACKS[videoCodecTag]
       : undefined
-  return videoCodecFull
-    ? `video/mp4; codecs="${videoCodecFull},opus"`
-    : null
+  if (!videoCodecFull) {
+    return null
+  }
+  const codecs = hasAudio
+    ? `${videoCodecFull},opus`
+    : videoCodecFull
+  return `video/mp4; codecs="${codecs}"`
 }

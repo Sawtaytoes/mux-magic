@@ -3,7 +3,10 @@ import { tmpdir } from "node:os"
 import { Readable } from "node:stream"
 
 import { OpenAPIHono } from "@hono/zod-openapi"
-import { buildFfmpegArgs } from "@mux-magic/core/src/cli-spawn-operations/runFfmpegAudioTranscode.js"
+import {
+  buildFfmpegArgs,
+  type TranscodePlan,
+} from "@mux-magic/core/src/cli-spawn-operations/runFfmpegAudioTranscode.js"
 import { ffmpegPath } from "@mux-magic/core/src/tools/appPaths.js"
 import { getMediaInfo } from "@mux-magic/core/src/tools/getMediaInfo.js"
 import {
@@ -270,6 +273,7 @@ type StreamResult = {
 
 type StreamRequest = {
   cacheKey: TranscodeCacheKey
+  plan: TranscodePlan
   startSeconds: number
   resolver: (result: StreamResult) => void
 }
@@ -284,11 +288,11 @@ const streamQueue$ = new Subject<StreamRequest>()
 streamQueue$
   .pipe(
     mergeMap(
-      ({ cacheKey, startSeconds, resolver }) =>
+      ({ cacheKey, plan, startSeconds, resolver }) =>
         new Observable<void>((observer) => {
           const childProcess = spawn(
             ffmpegPath,
-            buildFfmpegArgs(cacheKey, startSeconds),
+            buildFfmpegArgs(cacheKey, startSeconds, plan),
             { cwd: tmpdir(), env: process.env },
           )
 
@@ -325,10 +329,12 @@ streamQueue$
 const acquireTranscodeStream = (
   cacheKey: TranscodeCacheKey,
   startSeconds: number,
+  plan: TranscodePlan,
 ): Promise<StreamResult> =>
   new Promise((resolve) => {
     streamQueue$.next({
       cacheKey,
+      plan,
       resolver: resolve,
       startSeconds,
     })
@@ -344,13 +350,21 @@ const buildHeadersForCodec = (
 })
 
 // Runs MediaInfo on the validated path and extracts the fields the MSE
-// client needs: total duration in seconds and the video codec tag
-// (avc1/hvc1/av01). Both are optional — a MediaInfo failure is
+// client needs: total duration in seconds, whether the source has any
+// audio track, whether its video must be re-encoded, and the OUTPUT
+// video codec tag. All are best-effort — a MediaInfo failure is
 // non-fatal; the client falls back to direct <video src>.
+//
+// videoCodecTag is the codec the browser will actually receive: when the
+// source is non-H.264 (isVideoReencodeNeeded) the server re-encodes to
+// H.264 High@L4.1, so it advertises "avc1.640029" to match the encoder's
+// profile/level; otherwise the AVC tag derived from the source.
 const fetchStreamInfo = async (
   absPath: string,
 ): Promise<{
   durationSeconds: number | null
+  hasAudio: boolean
+  isVideoReencodeNeeded: boolean
   videoCodecTag: string | null
 }> => {
   const mediaInfo = await firstValueFrom(
@@ -362,6 +376,9 @@ const fetchStreamInfo = async (
   )
   const video = tracks.find(
     (track) => track["@type"] === "Video",
+  )
+  const hasAudio = tracks.some(
+    (track) => track["@type"] === "Audio",
   )
 
   let durationSeconds: number | null = null
@@ -376,6 +393,7 @@ const fetchStreamInfo = async (
     }
   }
 
+  let isVideoReencodeNeeded = false
   let videoCodecTag: string | null = null
   if (
     video &&
@@ -388,7 +406,7 @@ const fetchStreamInfo = async (
       typeof video.Format_Profile === "string"
         ? video.Format_Profile
         : ""
-    // MediaInfo returns level and tier as separate fields from profile.
+    // MediaInfo returns level as a separate field from profile.
     const level =
       "Format_Level" in video &&
       typeof (video as Record<string, unknown>)
@@ -396,27 +414,23 @@ const fetchStreamInfo = async (
         ? ((video as Record<string, unknown>)
             .Format_Level as string)
         : ""
-    const tier =
-      "Format_Tier" in video &&
-      typeof (video as Record<string, unknown>)
-        .Format_Tier === "string"
-        ? ((video as Record<string, unknown>)
-            .Format_Tier as string)
-        : ""
+    // H.264/AVC copies through untouched; every other codec (VC-1,
+    // MPEG Video, HEVC, AV1, VP9, …) is re-encoded to H.264, so the
+    // output codec is always avc1.640029 for those.
     if (fmt === "AVC") {
       videoCodecTag = buildAvcCodecString(profile, level)
-    } else if (fmt === "HEVC") {
-      videoCodecTag = buildHevcCodecString(
-        profile,
-        level,
-        tier,
-      )
-    } else if (fmt === "AV1") {
-      videoCodecTag = "av01.0.08M.08"
+    } else {
+      isVideoReencodeNeeded = true
+      videoCodecTag = "avc1.640029" // H.264 High@L4.1 (encoder output)
     }
   }
 
-  return { durationSeconds, videoCodecTag }
+  return {
+    durationSeconds,
+    hasAudio,
+    isVideoReencodeNeeded,
+    videoCodecTag,
+  }
 }
 
 // H.264 profile name → two-hex-digit profile_idc used in the codec string.
@@ -451,34 +465,6 @@ const buildAvcCodecString = (
     .padStart(2, "0")
     .toUpperCase()
   return `avc1.${profileHex}00${levelHex}`
-}
-
-// Derives the RFC 6381 codec string for HEVC, e.g. "hvc1.2.4.H153.B0"
-// for Main 10@L5.1@High. Falls back to Main@L5.0@High for any unparseable inputs.
-// MediaInfo returns profile, level, and tier as separate fields.
-const buildHevcCodecString = (
-  formatProfile: string,
-  formatLevel: string,
-  formatTier: string,
-) => {
-  const fallback = "hvc1.1.6.L150.B0" // Main@L5.0@High
-  const lowerProfile = formatProfile.toLowerCase()
-  // Profile IDC: Main=1, Main 10=2
-  const profileIdc = lowerProfile.startsWith("main 10")
-    ? 2
-    : 1
-  // Compatibility flags: 0x06 for Main (bits 1+2 set), 0x04 for Main 10 (bit 2 set)
-  const compatFlags = profileIdc === 1 ? "6" : "4"
-  const levelFloat = parseFloat(formatLevel)
-  if (Number.isNaN(levelFloat) || levelFloat <= 0) {
-    return fallback
-  }
-  // HEVC level indicator = level * 30 (e.g. 5.1 → 153)
-  const levelIndicator = Math.round(levelFloat * 30)
-  // MediaInfo Format_Tier is "High" or "Main" (absent → Main tier)
-  const tierFlag =
-    formatTier.toLowerCase() === "high" ? "H" : "L"
-  return `hvc1.${profileIdc}.${compatFlags}.${tierFlag}${levelIndicator}.B0`
 }
 
 const handleTranscodeRequest = async ({
@@ -543,8 +529,9 @@ const handleTranscodeRequest = async ({
   if (isHeadRequest) {
     let durationSeconds: number | null = null
     let videoCodecTag: string | null = null
+    let hasAudio = true
     try {
-      ;({ durationSeconds, videoCodecTag } =
+      ;({ durationSeconds, hasAudio, videoCodecTag } =
         await fetchStreamInfo(validatedAbsPath))
     } catch {
       // MediaInfo failure is non-fatal — client falls back to direct src
@@ -552,6 +539,7 @@ const handleTranscodeRequest = async ({
     return new Response(null, {
       headers: {
         ...buildHeadersForCodec(params.codec),
+        "X-Has-Audio": hasAudio ? "true" : "false",
         ...(durationSeconds !== null
           ? { "X-Duration": String(durationSeconds) }
           : {}),
@@ -570,10 +558,29 @@ const handleTranscodeRequest = async ({
     codec: params.codec,
   }
 
+  // Compute the transcode plan (audio presence + video re-encode need)
+  // so the encoder maps audio only when it exists and re-encodes
+  // non-H.264 video. A MediaInfo failure defaults to the safe legacy
+  // behaviour (map audio, copy video).
+  let plan: TranscodePlan = {
+    hasAudio: true,
+    isVideoReencodeNeeded: false,
+  }
+  try {
+    const info = await fetchStreamInfo(validatedAbsPath)
+    plan = {
+      hasAudio: info.hasAudio,
+      isVideoReencodeNeeded: info.isVideoReencodeNeeded,
+    }
+  } catch {
+    // Non-fatal — fall back to the default plan above.
+  }
+
   try {
     const { kill, stream } = await acquireTranscodeStream(
       cacheKey,
       params.startSeconds,
+      plan,
     )
     if (requestSignal !== undefined) {
       requestSignal.addEventListener(

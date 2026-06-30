@@ -10,13 +10,15 @@ import {
 } from "../tools/transcodeTempStore.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
-// Audio-only re-encode for the browser-playback path. Sibling to
-// runFfmpeg.ts but focused on `<video>`-friendly output:
+// Re-encode for the browser-playback path. Sibling to runFfmpeg.ts but
+// focused on `<video>`-friendly output:
 //
-//   * `-c:v copy` — never decode/encode video (zero CPU cost beyond
-//     muxing; design doc §3 + §4 explain why CUDA does not help here).
+//   * Video: `-c:v copy` when the source is H.264/AVC (zero CPU cost
+//     beyond muxing). VC-1/MPEG-2/HEVC/AV1/VP9 are re-encoded to H.264
+//     (`plan.isVideoReencodeNeeded`) since browsers can't decode them.
 //   * `-c:a libopus` (or `aac`) — re-encode the picked audio stream to
-//     a browser-safe codec at a capped bitrate.
+//     a browser-safe codec at a capped bitrate. Omitted entirely for
+//     video-only sources (`plan.hasAudio === false`).
 //   * No subtitles (`-map 0:s?` is intentionally absent per design doc
 //     §12 decision 3 — bitmap subs won't render in <video> and bloat
 //     the file; text subs are a separate side-channel concern).
@@ -39,6 +41,19 @@ export type RunFfmpegAudioTranscodeOptions = {
   tempPath: string
 }
 
+// Per-request transcode plan derived from the source's media tracks:
+//   * hasAudio — whether the source has any audio track. A video-only
+//     file (e.g. a logo bumper) has none; mapping `0:a:<n>` against it
+//     makes ffmpeg exit immediately ("Stream map matches no streams"),
+//     so the audio section is omitted entirely.
+//   * isVideoReencodeNeeded — whether the source video codec is NOT
+//     browser-decodable (VC-1, MPEG-2, HEVC, AV1, VP9). Those must be
+//     re-encoded to H.264; H.264/AVC sources are copied.
+export type TranscodePlan = {
+  hasAudio: boolean
+  isVideoReencodeNeeded: boolean
+}
+
 // TODO(GPU): add NVIDIA hardware-acceleration when available.
 //   Detection: run `ffmpeg -hwaccels` at startup; if "cuda" is listed,
 //   enable NVDEC for input-side decoding with:
@@ -50,9 +65,36 @@ export type RunFfmpegAudioTranscodeOptions = {
 export const buildFfmpegArgs = (
   cacheKey: TranscodeCacheKey,
   startSeconds = 0,
+  plan: TranscodePlan = {
+    hasAudio: true,
+    isVideoReencodeNeeded: false,
+  },
 ): string[] => {
   const seekSection: string[] =
     startSeconds > 0 ? ["-ss", String(startSeconds)] : []
+  // VC-1 (Blu-ray) and MPEG-2 (DVD), as well as HEVC/AV1/VP9, are not
+  // browser-decodable, so re-encode to H.264 High@L4.1 (matches the
+  // avc1.640029 codec tag the route advertises). H.264 sources copy.
+  const videoSection = plan.isVideoReencodeNeeded
+    ? [
+        "-map",
+        "0:v:0",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "ultrafast",
+        "-tune",
+        "zerolatency",
+        "-pix_fmt",
+        "yuv420p",
+        "-profile:v",
+        "high",
+        "-level",
+        "4.1",
+        "-g",
+        "48",
+      ]
+    : ["-map", "0:v:0", "-c:v", "copy"]
   const sharedHead = [
     "-hide_banner",
     "-loglevel",
@@ -61,16 +103,16 @@ export const buildFfmpegArgs = (
     ...seekSection,
     "-i",
     cacheKey.absPath,
-    "-map",
-    "0:v:0",
-    "-c:v",
-    "copy",
-    "-map",
-    `0:a:${cacheKey.audioStream}`,
+    ...videoSection,
   ]
-  const codecSection =
-    cacheKey.codec === "opus"
+  // Omit audio entirely for video-only files — mapping a non-existent
+  // audio stream makes ffmpeg exit before producing any output.
+  const codecSection = !plan.hasAudio
+    ? []
+    : cacheKey.codec === "opus"
       ? [
+          "-map",
+          `0:a:${cacheKey.audioStream}`,
           "-ac",
           "2",
           "-c:a",
@@ -79,6 +121,8 @@ export const buildFfmpegArgs = (
           cacheKey.bitrate,
         ]
       : [
+          "-map",
+          `0:a:${cacheKey.audioStream}`,
           "-ac",
           "2",
           "-c:a",
