@@ -9,7 +9,7 @@ import * as SmartMatchModalStories from "./SmartMatchModal.stories";
 
 Batch "Fix Unnamed" / Smart Match table modal for the `nameSpecialFeaturesDvdCompareTmdb` (NSF) command. Opens after an NSF run completes with leftover unnamed files AND at least one DVDCompare candidate. Each row is a leftover file paired with the highest-confidence candidate from the run's `possibleNames`; the user reviews, optionally overrides via dropdown, then clicks **Apply** to fire a batch of `POST /files/rename` calls.
 
-Worker 58 / Part B ported this modal from the v1.0.0 legacy `packages/web/public/builder/js/components/specials-mapping-modal.js` (added 2026-05-08 in `a7fef431`, deleted 2026-05-10 in `28534ec5` during the React conversion, never ported). Worker 6f then restored the ✏-custom-name affordance the React port had deferred — see "Per-row ✏ custom name" below. The Plex-suffix selector remains deferred to a follow-up worker.
+Worker 58 / Part B ported this modal from the v1.0.0 legacy `packages/web/public/builder/js/components/specials-mapping-modal.js` (added 2026-05-08 in `a7fef431`, deleted 2026-05-10 in `28534ec5` during the React conversion, never ported). Worker 6f then restored the ✏-custom-name affordance the React port had deferred — see "Per-row ✏ custom name" below. Worker 7a added the per-row Plex suffix selector — see "Per-row Plex suffix" below.
 
 ## Behaviour
 
@@ -17,6 +17,7 @@ Worker 58 / Part B ported this modal from the v1.0.0 legacy `packages/web/public
 - **Per-row include checkbox** → high-confidence rows (≥ `LOW_CONFIDENCE_THRESHOLD = 0.6`) are pre-checked; low-confidence rows are pre-unchecked so the user explicitly opts-in to a sketchy match.
 - **Per-row override dropdown** → lists every candidate in `name — XX%` form, ordered by confidence. Picking a different option swaps the rename target for that row.
 - **Per-row ✏ custom name** (worker 6f) → toggles the cell from the picker dropdown to a free-text input. The picker's selection and the typed value are kept as two independent fields (legacy v1 model); while the input is visible AND non-empty it wins on Apply, otherwise the picker selection is used. Typed value is RETAINED across toggles so the user can flip to the picker for a quick compare without losing work. Icon: `✏` enters edit, `↩` returns to picker. `Enter` blurs the input (commit-and-keep) so the user can tab into Apply without a mouse round-trip.
+- **Per-row Plex suffix** (worker 7a) → compact `<select>` labeled "Plex type:" listing the nine Plex local-extras types (`— no type —`, Trailer, Featurette, Interview, Behind the Scenes, Scene, Deleted Scene, Short, Other). Pre-selected from `extractSuffixFromStem(filename)` (reads an existing slug off the current filename so re-running NSF keeps the prior type), falling back to `inferSuffixFromName(candidateName)` keyword heuristic. Hidden while the row has no effective name. On Apply, the final rename target is `<base stripped of any existing slug> <selectedSuffix>` (never double-suffixed); empty suffix produces the bare base name unchanged. Helpers live in `plexExtraTypes.ts`.
 - **Per-row Play button** → opens the standalone `VideoPreviewModal` overlay for that file (does NOT commit any rename).
 - **Confidence badge** → green for ≥ 0.6, amber for below.
 - **Low-confidence row highlight** → yellow border + tinted background so the user can scan for "review me" rows at a glance.
@@ -67,3 +68,9 @@ Defensive: if the trigger fires with an empty payload (no leftover files), the m
 Worker 6f. Story opens with the first row already in ✏-edit mode — the custom text input has replaced the picker, and the toggle icon has flipped to `↩` ("Back to selection"). Reviewable surface for the new affordance without needing to click into the modal first.
 
 <Canvas of={SmartMatchModalStories.MidEditFirstRow} />
+
+## Plex suffix pre-selected
+
+Worker 7a. First row filename ends in `-featurette` so `extractSuffixFromStem` pre-selects "Featurette" in the Plex-type dropdown on load. Second row (`BONUS_trailer`) falls back to `inferSuffixFromName` which matches "Trailer". Shows the suffix selector at rest with realistic pre-selections.
+
+<Canvas of={SmartMatchModalStories.PlexSuffixPreSelected} />

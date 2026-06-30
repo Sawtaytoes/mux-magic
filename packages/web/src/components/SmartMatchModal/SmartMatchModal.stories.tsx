@@ -347,3 +347,53 @@ export const Shrek2BluRayDiscShape: Story = {
     </>
   ),
 }
+
+// Worker 7a: the first row's filename already ends in '-featurette' so
+// extractSuffixFromStem pre-selects "Featurette" in the Plex-type
+// dropdown without any user interaction. Makes the suffix selector
+// visible and its pre-selection behaviour reviewable immediately on
+// story load.
+const plexSuffixPreSelectedPayload: SmartMatchModalState = {
+  jobId: "job-plex-suffix",
+  stepId: "step-1",
+  sourcePath: "/movies/Demo",
+  suggestions: [
+    {
+      filename: "Spotlight on Puss in Boots-featurette",
+      extension: ".mkv",
+      durationSeconds: 643,
+      rankedCandidates: [
+        scored(
+          "Spotlight on Puss in Boots Featurette",
+          0.7,
+          { timecode: "10:46", durationScore: 1 },
+        ),
+      ],
+    },
+    {
+      filename: "BONUS_trailer",
+      extension: ".mkv",
+      durationSeconds: 150,
+      rankedCandidates: [
+        scored("Theatrical Trailer", 0.7, {
+          timecode: "0:02:30",
+          durationScore: 1,
+        }),
+      ],
+    },
+  ],
+}
+
+export const PlexSuffixPreSelected: Story = {
+  parameters: {
+    initialState: plexSuffixPreSelectedPayload,
+  },
+  render: () => (
+    <>
+      <ReOpenButton
+        initialState={plexSuffixPreSelectedPayload}
+      />
+      <SmartMatchModal />
+    </>
+  ),
+}

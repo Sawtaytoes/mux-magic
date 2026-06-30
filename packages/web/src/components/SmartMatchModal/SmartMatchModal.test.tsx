@@ -170,8 +170,11 @@ describe("SmartMatchModal", () => {
     expect(body.oldPath).toBe(
       "/movies/Demo/UNNAMED-FEATURES/BONUS_1.mkv",
     )
+    // Worker 7a: "Theatrical Cut" has no Plex-type keyword so
+    // inferSuffixFromName falls back to '-other'. The default suffix
+    // is therefore appended to the newPath.
     expect(body.newPath).toBe(
-      "/movies/Demo/Theatrical Cut.mkv",
+      "/movies/Demo/Theatrical Cut -other.mkv",
     )
   })
 
@@ -494,5 +497,289 @@ describe("SmartMatchModal", () => {
     })
     await user.click(closeButtons[0])
     expect(store.get(smartMatchModalAtom)).toBeNull()
+  })
+
+  // Worker 7a: Plex suffix selector tests ————————————————————————
+
+  test("7a: suffix <select> is present in the document for each row that has a candidate", () => {
+    const store = createStore()
+    store.set(smartMatchModalAtom, mixedPayload)
+    renderWithStore(store)
+    // BONUS_1 has candidates so the suffix select must be visible.
+    const suffixSelect = document.querySelector(
+      '[data-plex-suffix-select="BONUS_1"]',
+    ) as HTMLSelectElement | null
+    expect(suffixSelect).not.toBeNull()
+    // MOVIE_t99 also has candidates.
+    const suffixSelectMovieT99 = document.querySelector(
+      '[data-plex-suffix-select="MOVIE_t99"]',
+    ) as HTMLSelectElement | null
+    expect(suffixSelectMovieT99).not.toBeNull()
+  })
+
+  test("7a: changing the suffix <select> to -deleted updates the row's plexSuffix (reflected in the select value)", async () => {
+    const user = userEvent.setup()
+    const store = createStore()
+    store.set(smartMatchModalAtom, mixedPayload)
+    renderWithStore(store)
+    const suffixSelect = document.querySelector(
+      '[data-plex-suffix-select="BONUS_1"]',
+    ) as HTMLSelectElement
+    expect(suffixSelect).not.toBeNull()
+    await user.selectOptions(suffixSelect, "-deleted")
+    expect(suffixSelect.value).toBe("-deleted")
+  })
+
+  test("7a: Apply POSTs newPath with the suffix appended when a suffix is selected", async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ isOk: true }), {
+          status: 200,
+        }),
+      )
+    const store = createStore()
+    store.set(smartMatchModalAtom, {
+      jobId: "job-suffix",
+      stepId: "step-1",
+      sourcePath: "/movies/Demo",
+      suggestions: [
+        {
+          filename: "BONUS_1",
+          extension: ".mkv",
+          durationSeconds: 5400,
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Theatrical Cut",
+                timecode: "1:30:00",
+              },
+              confidence: 0.7,
+              durationScore: 1,
+              filenameScore: 0,
+            },
+          ],
+        },
+      ],
+    })
+    renderWithStore(store)
+    // Select -featurette for BONUS_1.
+    const suffixSelect = document.querySelector(
+      '[data-plex-suffix-select="BONUS_1"]',
+    ) as HTMLSelectElement
+    await user.selectOptions(suffixSelect, "-featurette")
+    await user.click(
+      screen.getByRole("button", { name: /Apply/ }),
+    )
+    await waitFor(() =>
+      expect(fetchSpy).toHaveBeenCalledTimes(1),
+    )
+    const [, init] = fetchSpy.mock.calls[0]
+    const body = JSON.parse(
+      (init as RequestInit).body as string,
+    ) as { oldPath: string; newPath: string }
+    expect(body.newPath).toBe(
+      "/movies/Demo/Theatrical Cut -featurette.mkv",
+    )
+  })
+
+  test("7a: Apply POSTs newPath as bare base when suffix is '' (no type)", async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ isOk: true }), {
+          status: 200,
+        }),
+      )
+    const store = createStore()
+    store.set(smartMatchModalAtom, {
+      jobId: "job-nosuffix",
+      stepId: "step-1",
+      sourcePath: "/movies/Demo",
+      suggestions: [
+        {
+          filename: "BONUS_1",
+          extension: ".mkv",
+          durationSeconds: 5400,
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Theatrical Cut",
+                timecode: "1:30:00",
+              },
+              confidence: 0.7,
+              durationScore: 1,
+              filenameScore: 0,
+            },
+          ],
+        },
+      ],
+    })
+    renderWithStore(store)
+    // Ensure suffix select is set to '' (no type).
+    const suffixSelect = document.querySelector(
+      '[data-plex-suffix-select="BONUS_1"]',
+    ) as HTMLSelectElement
+    await user.selectOptions(suffixSelect, "")
+    await user.click(
+      screen.getByRole("button", { name: /Apply/ }),
+    )
+    await waitFor(() =>
+      expect(fetchSpy).toHaveBeenCalledTimes(1),
+    )
+    const [, init] = fetchSpy.mock.calls[0]
+    const body = JSON.parse(
+      (init as RequestInit).body as string,
+    ) as { oldPath: string; newPath: string }
+    // No suffix → bare base name.
+    expect(body.newPath).toBe(
+      "/movies/Demo/Theatrical Cut.mkv",
+    )
+  })
+
+  test("7a: suffix <select> is hidden when selectedCandidateName is empty and customName is empty", () => {
+    const store = createStore()
+    store.set(smartMatchModalAtom, {
+      jobId: "job-noname",
+      stepId: "step-1",
+      sourcePath: "/movies/Demo",
+      suggestions: [
+        {
+          // Zero candidates → free-text input; starts with no value.
+          filename: "MYSTERY_t01",
+          extension: ".mkv",
+          durationSeconds: null,
+          rankedCandidates: [],
+        },
+      ],
+    })
+    renderWithStore(store)
+    // No candidate name → suffix select must not be rendered.
+    const suffixSelect = document.querySelector(
+      '[data-plex-suffix-select="MYSTERY_t01"]',
+    )
+    expect(suffixSelect).toBeNull()
+  })
+
+  test("7a: suffix <select> becomes visible once the user types a name in the zero-candidates input", async () => {
+    const user = userEvent.setup()
+    const store = createStore()
+    store.set(smartMatchModalAtom, {
+      jobId: "job-typed",
+      stepId: "step-1",
+      sourcePath: "/movies/Demo",
+      suggestions: [
+        {
+          filename: "MYSTERY_t01",
+          extension: ".mkv",
+          durationSeconds: null,
+          rankedCandidates: [],
+        },
+      ],
+    })
+    renderWithStore(store)
+    const textInput = screen.getByLabelText(
+      "Rename target for MYSTERY_t01",
+    ) as HTMLInputElement
+    await user.type(textInput, "Something")
+    // After typing, suffix select should appear.
+    const suffixSelect = document.querySelector(
+      '[data-plex-suffix-select="MYSTERY_t01"]',
+    )
+    expect(suffixSelect).not.toBeNull()
+  })
+
+  test("7a: re-opening the modal with a filename that already ends in -featurette pre-selects Featurette in the suffix <select>", () => {
+    const store = createStore()
+    store.set(smartMatchModalAtom, {
+      jobId: "job-preselect",
+      stepId: "step-1",
+      sourcePath: "/movies/Demo",
+      suggestions: [
+        {
+          // Filename already has -featurette → extractSuffixFromStem should
+          // pick this up and pre-select it in the dropdown.
+          filename: "Spotlight on Puss in Boots-featurette",
+          extension: ".mkv",
+          durationSeconds: 643,
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Spotlight on Puss in Boots Featurette",
+                timecode: "10:46",
+              },
+              confidence: 0.7,
+              durationScore: 1,
+              filenameScore: 0.66,
+            },
+          ],
+        },
+      ],
+    })
+    renderWithStore(store)
+    const suffixSelect = document.querySelector(
+      '[data-plex-suffix-select="Spotlight on Puss in Boots-featurette"]',
+    ) as HTMLSelectElement | null
+    expect(suffixSelect).not.toBeNull()
+    expect(suffixSelect?.value).toBe("-featurette")
+  })
+
+  test("7a: changing the suffix select does not double-suffix the newPath on Apply", async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ isOk: true }), {
+          status: 200,
+        }),
+      )
+    const store = createStore()
+    store.set(smartMatchModalAtom, {
+      jobId: "job-nodoublesufix",
+      stepId: "step-1",
+      sourcePath: "/movies/Demo",
+      suggestions: [
+        {
+          // Candidate name itself ends in a known suffix word — ensure
+          // the final path has only one suffix appended.
+          filename: "BONUS_1",
+          extension: ".mkv",
+          durationSeconds: 5400,
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Director Interview -interview",
+                timecode: "1:30:00",
+              },
+              confidence: 0.7,
+              durationScore: 1,
+              filenameScore: 0,
+            },
+          ],
+        },
+      ],
+    })
+    renderWithStore(store)
+    // Change to -featurette so the old -interview suffix must be stripped.
+    const suffixSelect = document.querySelector(
+      '[data-plex-suffix-select="BONUS_1"]',
+    ) as HTMLSelectElement
+    await user.selectOptions(suffixSelect, "-featurette")
+    await user.click(
+      screen.getByRole("button", { name: /Apply/ }),
+    )
+    await waitFor(() =>
+      expect(fetchSpy).toHaveBeenCalledTimes(1),
+    )
+    const [, init] = fetchSpy.mock.calls[0]
+    const body = JSON.parse(
+      (init as RequestInit).body as string,
+    ) as { oldPath: string; newPath: string }
+    // Must be "Director Interview -featurette", NOT "Director Interview -interview -featurette"
+    expect(body.newPath).toBe(
+      "/movies/Demo/Director Interview -featurette.mkv",
+    )
   })
 })

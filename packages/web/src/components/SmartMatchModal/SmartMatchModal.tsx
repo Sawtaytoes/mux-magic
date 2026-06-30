@@ -3,6 +3,12 @@ import { useState } from "react"
 import { apiBase } from "../../apiBase"
 import { videoPreviewModalAtom } from "../../components/VideoPreviewModal/videoPreviewModalAtom"
 import { appliedSmartMatchRenamesByJobIdAtom } from "./appliedSmartMatchRenamesAtom"
+import {
+  buildRenameTarget,
+  extractSuffixFromStem,
+  inferSuffixFromName,
+  PLEX_EXTRA_TYPES,
+} from "./plexExtraTypes"
 import { RenameTargetPicker } from "./RenameTargetPicker"
 import { smartMatchModalAtom } from "./smartMatchModalAtom"
 import {
@@ -34,6 +40,11 @@ type RowState = {
   // doesn't lose typed work.
   isEditing: boolean
   customName: string
+  // Worker 7a: selected Plex extra-type suffix for this row.
+  // Empty string = "— no type —" (base name used as-is on Apply).
+  // Pre-populated from extractSuffixFromStem(filename) on row init,
+  // falling back to inferSuffixFromName(candidateName).
+  plexSuffix: string
 }
 
 // Worker 6f: the effective rename target. Custom name wins only while
@@ -127,6 +138,15 @@ const buildInitialRows = (
       const isHighConfidence =
         top !== undefined &&
         top.confidence >= LOW_CONFIDENCE_THRESHOLD
+      // Worker 7a: derive the initial Plex suffix from the existing
+      // filename so re-running NSF on already-named files keeps the
+      // previously-picked suffix type. Fall back to a keyword inference
+      // on the top candidate name when the filename carries no suffix.
+      const initialPlexSuffix =
+        extractSuffixFromStem(suggestion.filename) ||
+        (topName.length > 0
+          ? inferSuffixFromName(topName)
+          : "")
       return [
         suggestion.filename,
         {
@@ -140,6 +160,7 @@ const buildInitialRows = (
           // writes its input directly to `selectedCandidateName`.
           isEditing: false,
           customName: "",
+          plexSuffix: initialPlexSuffix,
         },
       ]
     }),
@@ -205,11 +226,20 @@ export const SmartMatchModal = () => {
         if (!row?.isIncluded || row.isApplied) return null
         // Worker 6f: pull the effective name through the picker/custom
         // resolver so typed values win while ✏ is active.
-        const desiredBase = resolveDesiredName(
+        const resolvedBase = resolveDesiredName(
           row,
           suggestion.rankedCandidates.length,
         ).trim()
-        if (desiredBase.length === 0) return null
+        if (resolvedBase.length === 0) return null
+        // Worker 7a: compose the final rename target from the resolved
+        // base name and the per-row Plex suffix. buildRenameTarget strips
+        // any existing suffix off the base before appending the selected
+        // one, so the result never carries a double suffix even when the
+        // user typed a name that already ends in a Plex slug.
+        const desiredBase = buildRenameTarget(
+          resolvedBase,
+          row.plexSuffix,
+        )
         // Both sides must include the file's extension. The server's
         // FileInfo.filename is extension-stripped; appending
         // `suggestion.extension` restores the on-disk path.
@@ -585,6 +615,65 @@ export const SmartMatchModal = () => {
                       )}
                     </td>
                     <td className="px-2 py-1.5 align-top">
+                      {/* Worker 7a: derive the effective name for the
+                          suffix-row visibility check — mirrors resolveDesiredName
+                          but used here purely to hide/show the suffix row. */}
+                      {(() => {
+                        const effectiveName =
+                          resolveDesiredName(
+                            row,
+                            suggestion.rankedCandidates
+                              .length,
+                          ).trim()
+                        const hasSuffixRow =
+                          effectiveName.length > 0
+                        return (
+                          hasSuffixRow && (
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <label
+                                htmlFor={`plex-suffix-${suggestion.filename}`}
+                                className="text-[10px] text-slate-400 whitespace-nowrap shrink-0"
+                              >
+                                Plex type:
+                              </label>
+                              <select
+                                id={`plex-suffix-${suggestion.filename}`}
+                                data-plex-suffix-select={
+                                  suggestion.filename
+                                }
+                                value={row.plexSuffix}
+                                disabled={
+                                  row.isApplied ||
+                                  isApplying
+                                }
+                                onChange={(event) =>
+                                  updateRow(
+                                    suggestion.filename,
+                                    {
+                                      plexSuffix:
+                                        event.target.value,
+                                    },
+                                  )
+                                }
+                                className="text-[10px] font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {PLEX_EXTRA_TYPES.map(
+                                  (plexType) => (
+                                    <option
+                                      key={plexType.suffix}
+                                      value={
+                                        plexType.suffix
+                                      }
+                                    >
+                                      {plexType.label}
+                                    </option>
+                                  ),
+                                )}
+                              </select>
+                            </div>
+                          )
+                        )
+                      })()}
                       <div className="flex items-start gap-1.5">
                         <div className="flex-1 min-w-0">
                           {suggestion.rankedCandidates
