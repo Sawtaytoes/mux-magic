@@ -177,6 +177,16 @@ ARG BUILD_TIME
 ENV GIT_SHA=$GIT_SHA
 ENV BUILD_TIME=$BUILD_TIME
 
+# Server-owned persistent state (saved sequence templates, queued webhook
+# deliveries) lives in APP_DATA_DIR, which defaults to /app/.config. Pre-create
+# it so the first write never depends on a runtime mkdir, and make it
+# world-writable so the container still works when run as a non-root user (a
+# compose `user:` override) without a bind mount. This is what was behind the
+# "Templates API 500" — a write into a directory the process couldn't create or
+# write. For persistence across container recreation, bind-mount it
+# (`-v app-data:/app/.config`) or point APP_DATA_DIR at a mounted volume.
+RUN mkdir -p /app/.config && chmod 777 /app/.config
+
 EXPOSE $PORT
 
 # Single process. Node is PID 1 in the container; Docker's signal handling
