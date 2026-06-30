@@ -16,15 +16,31 @@ export type StoredTemplate = TemplateListItem & {
   createdAt: string
 }
 
+// Pull the most useful human message out of an error response. The server
+// returns `{ error, details }` for both validation (400) and unhandled
+// failures (500, via the API's onError net) — surface `details` (e.g. the
+// actual filesystem error) when present, falling back to the raw text.
+const extractErrorMessage = (text: string): string => {
+  try {
+    const body = JSON.parse(text) as {
+      error?: string
+      details?: string
+    }
+    return body.details ?? body.error ?? text
+  } catch {
+    return text
+  }
+}
+
 const parseJson = async <T>(
   response: Response,
 ): Promise<T> => {
   if (!response.ok) {
-    const text = await response
-      .text()
-      .catch(() => response.statusText)
+    const text = await response.text().catch(() => "")
+    const message =
+      extractErrorMessage(text) || response.statusText
     throw new Error(
-      `Templates API ${response.status}: ${text || response.statusText}`,
+      `Templates API ${response.status}: ${message}`,
     )
   }
   return (await response.json()) as T
