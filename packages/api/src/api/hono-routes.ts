@@ -1,5 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
+import { logError } from "@mux-magic/tools"
 import { cors } from "hono/cors"
+import { HTTPException } from "hono/http-exception"
 
 import { commandRoutes } from "./routes/commandRoutes.js"
 import { addDocRoutes } from "./routes/docRoutes.js"
@@ -40,6 +42,35 @@ app.use(
     allowHeaders: ["Content-Type"],
   }),
 )
+
+// Global error net. Without this, an unhandled throw inside any handler
+// (e.g. a filesystem write failing because APP_DATA_DIR is read-only or
+// not writable by the container user) collapses to Hono's default bare
+// "Internal Server Error" text — the real cause is lost and the UI shows
+// a useless 500. Here we log the full stack to stderr (mux-magic is a
+// single-user local tool, so echoing the message back to the client is
+// fine and is what makes the failure diagnosable) and return a structured
+// JSON body the web layer can surface verbatim.
+app.onError((error, context) => {
+  // HTTPException carries its own intended response (validation failures,
+  // explicit 4xx thrown by handlers) — pass it through untouched.
+  if (error instanceof HTTPException) {
+    return error.getResponse()
+  }
+  const details =
+    error instanceof Error ? error.message : String(error)
+  logError(
+    "API",
+    `${context.req.method} ${context.req.path} failed`,
+    error instanceof Error
+      ? (error.stack ?? error.message)
+      : String(error),
+  )
+  return context.json(
+    { error: "internal server error", details },
+    500,
+  )
+})
 
 app.route("/", featuresRoutes)
 app.route("/", jobRoutes)
