@@ -41,3 +41,13 @@ export type FileSuggestion = {
   durationSeconds: number | null
   rankedCandidates: ScoredCandidate[]
 }
+
+// Worker 7a: per-row mutable state stored alongside the suggestion.
+// Exported so `plexExtraTypes.ts` helpers can reference the shape;
+// the modal keeps the full `RowState` locally (which extends this).
+export type SmartMatchRow = {
+  // Worker 7a: Plex extra-type suffix selected for this row.
+  // Empty string means "— no type —" (apply base name only).
+  // One of the suffix values from PLEX_EXTRA_TYPES in plexExtraTypes.ts.
+  plexSuffix: string
+}
