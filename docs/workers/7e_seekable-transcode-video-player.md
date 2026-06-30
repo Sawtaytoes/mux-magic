@@ -1,8 +1,10 @@
 # Worker 7e — Seekable transcode video player (MSE client port)
 
-**Track:** web (+ small api/core) · **Model:** Opus · **Effort:** High · **Status:** in-progress
+**Track:** web (+ small api/core) · **Model:** Opus · **Effort:** High · **Status:** done
 
 > Resolves fix-handoff item **L** ([docs/audits/2026-06-30-fix-handoff.md](../audits/2026-06-30-fix-handoff.md)). Design + scope boundaries are locked in [docs/decisions/2026-06-30-seekable-transcode-video-player.md](../decisions/2026-06-30-seekable-transcode-video-player.md) — read it first.
+
+**Verified locally** with Playwright MCP (H.264 + AC-3 MKV, 6 min): duration shown immediately (6:01); plays from start with video **and** audio decoding; seek to 2:00 / 5:00 / back to 0:30 all resume with both streams (buffer re-anchored at the seek point via `timestampOffset`, decoded-byte counters advance, zero `MediaError`). The `EXPERIMENTAL_FFMPEG_TRANSCODING` flag is intentionally **retained** (step C deferred) pending the container Playwright re-test.
 
 ## Why
 
