@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-06-30 | [Seekable transcode video player: MSE client + audio-only re-encode, video copied](2026-06-30-seekable-transcode-video-player.md) | web / core / api | Accepted |
 | 2026-06-30 | [A special feature is never auto-named without a Plex `-<type>` suffix](2026-06-30-special-features-always-get-plex-type-suffix.md) | core / web | Accepted |
 | 2026-06-30 | [cleanupFilename: a colon-space becomes " - " (even after ")")](2026-06-30-cleanup-filename-colon-to-dash.md) | core / tools | Accepted |
 | 2026-06-29 | [The CI/lint-enforced conventions are locked too](2026-06-29-enforced-conventions-are-also-locked.md) | process | Accepted |
