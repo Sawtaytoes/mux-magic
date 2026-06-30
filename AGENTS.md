@@ -2,6 +2,10 @@
 
 Guidelines for AI agents working on this codebase. **This file is an index.** The reference docs under [docs/agents/](docs/agents/) are the source of truth — open the one matching your task.
 
+## ⛔ Locked Decisions — read before changing behavior
+
+[docs/decisions/](docs/decisions/) is an **append-only log of settled decisions**. Many were explicit user corrections ("no, that's wrong — do it this way"). **Do not silently reverse, re-litigate, or "improve" a locked decision back into the thing it replaced.** Before redesigning a feature, removing something that looks unused, or "simplifying" an API shape, check the decision log. If you genuinely believe a locked decision should change, do not just change it — propose a new ADR that supersedes the old one and get the user's sign-off first. Skim the [decisions index](docs/decisions/README.md) at the start of any non-trivial task.
+
 ## Project
 
 A Node.js CLI and REST API for batch media file operations (MKV track manipulation, file renaming, subtitle merging, etc.) using mkvtoolnix, ffmpeg, and mediainfo.
@@ -10,6 +14,7 @@ A Node.js CLI and REST API for batch media file operations (MKV track manipulati
 
 | Topic | Doc |
 |-------|-----|
+| **Locked decisions — settled choices that must not be silently reverted** | [docs/decisions/](docs/decisions/README.md) |
 | Code rules, naming, function style, no-barrels, indentation | [docs/agents/code-rules.md](docs/agents/code-rules.md) |
 | Testing — frameworks, pre-merge gate, forbidden styles, coverage discipline | [docs/agents/testing.md](docs/agents/testing.md) |
 | Test interaction conventions — `user-event`, controlled inputs, `.toBeVisible()` | [docs/agents/test-interactions.md](docs/agents/test-interactions.md) |
