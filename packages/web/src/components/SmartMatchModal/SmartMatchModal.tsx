@@ -627,7 +627,9 @@ export const SmartMatchModal = () => {
                         eligibleRows.length === 0
                       }
                       onChange={() =>
-                        setAllIncluded(!someEligibleIncluded)
+                        setAllIncluded(
+                          !someEligibleIncluded,
+                        )
                       }
                     />
                     <span className="normal-case">Use</span>

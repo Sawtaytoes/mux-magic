@@ -17,7 +17,9 @@ export const readCueWithEncodingFallback = async (
   cuePath: string,
 ): Promise<string> => {
   const buffer = await readFile(cuePath)
-  return decodeBufferWithEncodingFallback(buffer, (charset) =>
-    logInfo("CUE", `${cuePath}: decoded as ${charset}`),
+  return decodeBufferWithEncodingFallback(
+    buffer,
+    (charset) =>
+      logInfo("CUE", `${cuePath}: decoded as ${charset}`),
   )
 }
