@@ -52,6 +52,43 @@ Sources: [v1.0.0 parity delta](2026-06-29-v1.0.0-parity-delta.md), [decisions-vs
 
 ---
 
+## Sweep delta — 2026-06-30 (behavioral / enforcement / CLI blind spots)
+
+Three follow-up audits beyond the parity + decision passes. These check *behavior and enforcement*, not just presence.
+
+### N. Plex `-<type>` suffix rule is only PARTIALLY enforced
+
+Governed by [the suffix decision](../decisions/2026-06-30-special-features-always-get-plex-type-suffix.md). The automatic timecode-match path always appends a suffix, but four paths can produce a **suffix-less** name (the exact regression the decision exists to prevent):
+
+- **N1 (P0) — untyped-candidate bare fallthrough.** `packages/core/src/tools/getSpecialFeatureFromTimecode.ts:239-245` ends in `return humanized` (no suffix) when no rename-regex matches and both `type` and `parentType` are unknown. That name feeds `nameSpecialFeaturesDvdCompareTmdb.buildUnnamedFileCandidates.ts:85-90` and is used verbatim as a default-selected, auto-applied rename. **Fix:** default to `-other` (or force a type pick). *Highest-value single fix.*
+- **N2 (P0) — Smart Match custom-name (✏) accepts a bare name.** `packages/web/src/components/SmartMatchModal/SmartMatchModal.tsx:51-54, 202-219` — typed name validated only `.trim().length>0`; `ensureExtension` never adds a suffix. **Fix:** in `handleApply`, require the stem to end in one of the nine `-<type>` suffixes (append `-other` or block with an inline error).
+- **N3 (P0) — Smart Match zero-candidate text box accepts a bare name.** Same file `:44-55, 592-615`, for files with no candidates. **Fix:** same suffix validation in `handleApply`, applied to all rows.
+- **N4 (P1) — the decision's required Plex-type picker UI is missing.** No nine-type dropdown anywhere (`RenameTargetPicker` only lists DVD-Compare candidates; no `plexExtraTypes.ts`). **Fix:** add a type dropdown that appends `-<type>` before the rename POST. (Overlaps worker 7a.)
+
+### O. Behavioral command-parity drift (v1.0.0 → now)
+
+- **O1 (P2) — `deleteFilesByExtension` default recursion depth changed 2 → 1.** `server-v1.0.0:src/app-commands/deleteFilesByExtension.ts:46` (`recursiveDepth || 2`) → `packages/core/src/app-commands/deleteFilesByExtension.ts:38` (`recursiveDepth || 1`). A recursive delete with no explicit depth now only descends one level, leaving deeper files that v1 removed. Silent and untested (the test always passes an explicit depth). Direction is "deletes fewer," not data loss. **Fix:** restore `|| 2`, or record a decision if the shallower default is intended.
+- **O2 (P2, awareness) — `copyFiles` folder-copy branch ignores `allowOverwrite`.** The new `isIncludingFolders` path uses `fs.cp(..., { recursive: true })`, which clobbers via Node's `force:true` default regardless of `isOverwriteAllowed`. No v1 baseline (the option is new), so not strictly a regression, but it contradicts the refuse-overwrite-by-default rule in [atomic-copy](../decisions/2026-05-19-atomic-copy-and-filesystem-move.md). **Fix:** pass `{ force: isOverwriteAllowed }` / pre-check destinations.
+- **O3 (P2) — `cleanupFilename` colon-space sanitization narrowed.** v1 replaced any `": "` with `" - "`; current only does so after a word character (`/(\w): /`), so a `": "` after `)`/`]`/space/string-start now falls through to the `:→-` rule with different spacing. Edge-case title text only — common `Word: ` titles are unaffected, and `SxxExx` padding/templates are verified intact. Evidence: `server-v1.0.0:src/tools/cleanupFilename.ts:5-8` vs `packages/tools/src/cleanupFilename.ts:4-5`. **Fix:** revert the colon rule to `/: /g → " - "`, or record a decision documenting the narrowing (+ the new `" | "`→`" - "` and `.trim()` additions).
+- **Track-operation parity: CLEAN.** No drift in the muxing path — track order, default/forced flags, language tagging, and sync offsets all match v1.0.0 (every difference is a documented intentional change, e.g. BCP-47 `ietf`, `hasChapterSyncOffset`→`hasAudioSyncOffset`).
+- **Naming parity: CLEAN apart from O3.** Rename templates, zero-padding, `(N)`/`(2)(3)` disambiguation counters, edition tags, suffix vocabulary, and sort/tie-break order are all byte-equivalent ports. (`nameMovieCutsDvdCompareTmdb` is a new command with no v1 baseline.)
+- **Subtitle/timecode parsing: CLEAN** (verified during the naming pass — `parseSpecialFeatures`, `getSpecialFeatureFromTimecode`, `matchSpecialsToFiles` keyword→tag maps and timecode extraction are byte-identical). A dedicated subtitle-track-command slice was the last sweep still finishing; nothing high-severity expected given the parsing layer is clean.
+
+### P. Command-line parity gaps
+
+Governed by [five-surfaces](../decisions/2026-05-14-new-command-needs-five-wiring-surfaces.md). No v1.0.0 CLI command was lost (current CLI is a superset). Gaps:
+
+- **P-1 (P1) — `makeDirectory` has no CLI command** (in web `commands.ts:73` + API `schemas.ts:46`). Add `makeDirectoryCommand.ts` + register in `cli.ts`.
+- **P-2 (P1) — `exitIfEmpty` has no CLI command** (web `commands.ts:514` + API `schemas.ts:54`). Add it, OR document a builder/sequence-only exception in its area.
+- **P-3 (P2) — regex `flags` not exposed on CLI** for `copyFiles`/`moveFiles`/`renameFiles` (API takes `{pattern, flags}`; CLI takes a bare string). Case-insensitive/multiline filtering is CLI-unreachable. Add `--fileFilterFlags`/`--folderFilterFlags` (validate `^[gimsuy]*$`).
+- **P-4 (P2) — multi-rule `renameRegex` array not exposed on CLI** (only a single `--renamePattern`/`--renameReplacement`). Add repeatable/JSON input or document the single-rule limit.
+- **P-5 (P2) — `extractSubtitles --folders` missing** (API `schemas.ts:311`). Add the option and forward it.
+- **P-6 (P2) — `autoNameDuplicates` default drift:** CLI defaults `true`, web/API default `false`. Align (or document the CLI-non-interactive default).
+- **P-7 (P2) — `nameSpecialFeaturesDvdCompareTmdb` / `nameMovieCutsDvdCompareTmdb` don't expose `--dvdCompareId` / `--dvdCompareReleaseHash` / `--searchTerm`** (the `onlyName...` sibling does). Make `url` optional and add them for parity.
+- **Reverse asymmetry (verify intentional):** `inverseTelecineDiscRips`, `mergeOrderedChapters`, `getSubtitleMetadata` are CLI-only / absent from the web picker (`getSubtitleMetadata` has an API schema but no web entry).
+
+---
+
 ## Cleanup / verify
 
 - **M.** `packages/web/src/components/GenericRunResults/GenericRunResults.tsx:16` still lists the bare legacy command name `nameSpecialFeatures`. Verify this is intentional (matching old job records) and not a dead reference that should be the renamed `nameSpecialFeaturesDvdCompareTmdb`. Governed by [the rename + legacy-shim decision](../decisions/2026-05-14-name-special-features-rename-and-legacy-shim.md).
