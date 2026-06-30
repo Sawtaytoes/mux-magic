@@ -129,6 +129,42 @@ describe(getIsSimilarTimecode.name, () => {
 })
 
 describe(applySpecialFeatureSuffix.name, () => {
+  test("routes a '(N images)' gallery name to -other", () => {
+    expect(
+      applySpecialFeatureSuffix({ text: "Film (26 images)" }),
+    ).toBe("Film (26 images) -other")
+  })
+
+  test("routes 'Behind-the-Scenes (21 images)' to -other (gallery wins over -behindthescenes)", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "Behind-the-Scenes (21 images)",
+      }),
+    ).toBe("Behind-the-Scenes (21 images) -other")
+  })
+
+  test("routes 'Poster Art (10 images)' to -other", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "Poster Art (10 images)",
+      }),
+    ).toBe("Poster Art (10 images) -other")
+  })
+
+  test("routes a '(N pages)' gallery name to -other", () => {
+    expect(
+      applySpecialFeatureSuffix({
+        text: "Comic Book (8 pages)",
+      }),
+    ).toBe("Comic Book (8 pages) -other")
+  })
+
+  test("routes 'Theatrical Trailer' to -trailer (keyword table unaffected by gallery rule)", () => {
+    expect(
+      applySpecialFeatureSuffix({ text: "Theatrical Trailer" }),
+    ).toBe("Theatrical Trailer -trailer")
+  })
+
   test("routes 'Extended Scene' to -deleted (regression: previously stripped 'Scene' and produced 'Extended -scene')", () => {
     expect(
       applySpecialFeatureSuffix({ text: "Extended Scene" }),

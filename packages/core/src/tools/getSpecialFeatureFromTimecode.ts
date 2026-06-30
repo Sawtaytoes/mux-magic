@@ -18,6 +18,15 @@ import {
 
 export const specialFeatureMatchRenames = [
   {
+    // Image/photo galleries from DVDCompare surface as "Title (N images)"
+    // or "Title (N pages)". These are always -other regardless of any
+    // keyword in the title — a gallery named "Behind-the-Scenes (21 images)"
+    // is a photo gallery, not a behind-the-scenes video. This rule is placed
+    // first so it wins over all keyword rules below.
+    searchTerm: /(.*\(\d+\s+(?:images|pages)\).*)/i,
+    replacement: "$1 -other",
+  },
+  {
     searchTerm: /(.*deleted.*)/i,
     replacement: "$1 -deleted",
   },
