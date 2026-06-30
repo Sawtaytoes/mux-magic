@@ -18,7 +18,7 @@ import {
 //   2. Normalization + traversal rejection — block `..` after normalize
 //      so a client can't list/stream/delete `C:\Users\..\Windows\System32`.
 //
-// Deletes additionally trust the global DELETE_TO_TRASH setting (handled
+// Deletes additionally trust the global DELETE_MODE setting (handled
 // in deleteFiles.ts) — when trash is on, the OS Recycle Bin is the
 // recovery story; when off, the operator has explicitly opted into
 // permanent deletes (e.g. Docker-on-ZFS where the OS trash isn't useful

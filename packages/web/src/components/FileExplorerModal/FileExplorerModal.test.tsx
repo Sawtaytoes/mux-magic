@@ -304,6 +304,92 @@ describe("FileExplorerModal", () => {
     confirmSpy.mockRestore()
   })
 
+  test("a directory row is now selectable and deletable", async () => {
+    const deleteCalls: Array<{ body: unknown }> = []
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation((url, init) => {
+        const urlStr = String(url)
+        const method = (init?.method ?? "GET").toUpperCase()
+        if (
+          urlStr.endsWith("/files") &&
+          method === "DELETE"
+        ) {
+          deleteCalls.push({
+            body: init?.body
+              ? JSON.parse(String(init.body))
+              : null,
+          })
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                results: [
+                  {
+                    path: "/movies/UNNAMED-FEATURES",
+                    isOk: true,
+                  },
+                ],
+              }),
+              { status: 200 },
+            ),
+          )
+        }
+        if (urlStr.includes("/files/list")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                separator: "/",
+                entries: [
+                  {
+                    name: "UNNAMED-FEATURES",
+                    isFile: false,
+                    isDirectory: true,
+                    size: 0,
+                    duration: null,
+                    mtime: null,
+                  },
+                ],
+              }),
+              { status: 200 },
+            ),
+          )
+        }
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ mode: "permanent" }),
+            { status: 200 },
+          ),
+        )
+      })
+    const confirmSpy = vi
+      .spyOn(window, "confirm")
+      .mockReturnValue(true)
+    const store = createStore()
+    store.set(fileExplorerAtom, {
+      path: "/movies",
+      pickerOnSelect: null,
+    })
+    renderWithStore(store)
+    await screen.findByText(/UNNAMED-FEATURES/)
+    // The directory row's checkbox must be enabled (the old UI disabled it).
+    const checkbox = screen.getByRole("checkbox", {
+      name: /Select this folder/i,
+    })
+    expect(checkbox).not.toBeDisabled()
+    await userEvent.click(checkbox)
+    const deleteBtn = screen.getByRole("button", {
+      name: /Delete selected/i,
+    })
+    expect(deleteBtn).not.toBeDisabled()
+    await userEvent.click(deleteBtn)
+    expect(deleteCalls).toHaveLength(1)
+    expect(deleteCalls[0]?.body).toEqual({
+      paths: ["/movies/UNNAMED-FEATURES"],
+    })
+    fetchSpy.mockRestore()
+    confirmSpy.mockRestore()
+  })
+
   test("breadcrumb for /media/Anime has no double slash", async () => {
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
