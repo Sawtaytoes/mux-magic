@@ -1,4 +1,4 @@
-import { of } from "rxjs"
+import { type Observable, of } from "rxjs"
 import {
   afterEach,
   describe,
@@ -6,6 +6,19 @@ import {
   test,
   vi,
 } from "vitest"
+
+// Hoisted mock for getMediaInfo so individual tests can swap the tracks
+// it returns (e.g. a video-only VC-1 file vs. an H.264 file with audio).
+// Typed loosely (Record tracks) so per-test fixtures with Video/Audio
+// fields don't narrow to `never[]`.
+type MockMediaInfo = {
+  media: { track: Array<Record<string, unknown>> }
+}
+const { getMediaInfoMock } = vi.hoisted(() => ({
+  getMediaInfoMock: vi.fn<() => Observable<MockMediaInfo>>(
+    () => of({ media: { track: [] } }),
+  ),
+}))
 
 // Validation-layer tests for /transcode/audio. The streaming encode
 // flow lives behind RxJS + ffmpeg and is exercised manually rather than
@@ -32,7 +45,7 @@ vi.mock(
 vi.mock(
   "@mux-magic/core/src/tools/getMediaInfo.js",
   () => ({
-    getMediaInfo: vi.fn(() => of({ media: { track: [] } })),
+    getMediaInfo: getMediaInfoMock,
   }),
 )
 
@@ -45,6 +58,10 @@ const head = (path: string) =>
 
 afterEach(() => {
   vi.clearAllMocks()
+  // Restore the default empty-track response between tests.
+  getMediaInfoMock.mockReturnValue(
+    of({ media: { track: [] } }),
+  )
 })
 
 describe("GET /transcode/audio — input validation", () => {
@@ -144,6 +161,62 @@ describe("HEAD /transcode/audio", () => {
     expect(response.status).toBe(200)
     expect(response.headers.get("Content-Type")).toBe(
       "video/mp4",
+    )
+  })
+
+  test("reports X-Has-Audio: false for a video-only VC-1 source (re-encodes to avc1)", async () => {
+    getMediaInfoMock.mockReturnValue(
+      of({
+        media: {
+          track: [
+            { "@type": "General", Duration: "59.1" },
+            { "@type": "Video", Format: "VC-1" },
+          ],
+        },
+      }),
+    )
+
+    const response = await head(
+      `/transcode/audio?path=${encodeURIComponent(validPath)}&codec=opus`,
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("X-Has-Audio")).toBe(
+      "false",
+    )
+    expect(response.headers.get("X-Duration")).toBe("59.1")
+    // Non-H.264 video re-encodes, so the advertised OUTPUT codec is H.264.
+    expect(response.headers.get("X-Video-Codec")).toBe(
+      "avc1.640029",
+    )
+  })
+
+  test("reports X-Has-Audio: true and copies an H.264 source's codec", async () => {
+    getMediaInfoMock.mockReturnValue(
+      of({
+        media: {
+          track: [
+            { "@type": "General", Duration: "120" },
+            {
+              "@type": "Video",
+              Format: "AVC",
+              Format_Profile: "High",
+              Format_Level: "4.1",
+            },
+            { "@type": "Audio", Format: "AC-3" },
+          ],
+        },
+      }),
+    )
+
+    const response = await head(
+      `/transcode/audio?path=${encodeURIComponent(validPath)}&codec=opus`,
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("X-Has-Audio")).toBe("true")
+    expect(response.headers.get("X-Video-Codec")).toBe(
+      "avc1.640029",
     )
   })
 })

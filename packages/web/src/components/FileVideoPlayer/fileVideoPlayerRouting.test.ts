@@ -118,9 +118,25 @@ describe("isTranscodeNeeded", () => {
 })
 
 describe("resolveTranscodeMimeType", () => {
-  test("passes through a full RFC 6381 codec string + opus", () => {
-    expect(resolveTranscodeMimeType("avc1.640029")).toBe(
-      'video/mp4; codecs="avc1.640029,opus"',
+  test("passes through a full RFC 6381 codec string + opus when audio present", () => {
+    expect(
+      resolveTranscodeMimeType("avc1.640029", true),
+    ).toBe('video/mp4; codecs="avc1.640029,opus"')
+  })
+
+  test("omits opus for a video-only source (no audio)", () => {
+    expect(
+      resolveTranscodeMimeType("avc1.640029", false),
+    ).toBe('video/mp4; codecs="avc1.640029"')
+  })
+
+  test.each([
+    ["avc1", "avc1.640029"],
+    ["hvc1", "hvc1.1.6.L150.B0"],
+    ["av01", "av01.0.08M.08"],
+  ])("expands legacy base codec %s to its fallback (with audio)", (tag, expanded) => {
+    expect(resolveTranscodeMimeType(tag, true)).toBe(
+      `video/mp4; codecs="${expanded},opus"`,
     )
   })
 
@@ -128,17 +144,19 @@ describe("resolveTranscodeMimeType", () => {
     ["avc1", "avc1.640029"],
     ["hvc1", "hvc1.1.6.L150.B0"],
     ["av01", "av01.0.08M.08"],
-  ])("expands legacy base codec %s to its fallback", (tag, expanded) => {
-    expect(resolveTranscodeMimeType(tag)).toBe(
-      `video/mp4; codecs="${expanded},opus"`,
+  ])("expands legacy base codec %s without opus when no audio", (tag, expanded) => {
+    expect(resolveTranscodeMimeType(tag, false)).toBe(
+      `video/mp4; codecs="${expanded}"`,
     )
   })
 
   test("returns null for a null tag (→ direct-src fallback)", () => {
-    expect(resolveTranscodeMimeType(null)).toBeNull()
+    expect(resolveTranscodeMimeType(null, true)).toBeNull()
   })
 
   test("returns null for an unknown base codec tag", () => {
-    expect(resolveTranscodeMimeType("vp09")).toBeNull()
+    expect(
+      resolveTranscodeMimeType("vp09", true),
+    ).toBeNull()
   })
 })

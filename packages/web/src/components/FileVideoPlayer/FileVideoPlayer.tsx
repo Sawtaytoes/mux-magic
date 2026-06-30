@@ -36,16 +36,21 @@ type FileVideoPlayerProps = {
 // guards against.
 const setupMsePlayer = ({
   duration,
+  hasAudio,
   player,
   transcodeUrl,
   videoCodecTag,
 }: {
   duration: number
+  hasAudio: boolean
   player: HTMLVideoElement
   transcodeUrl: string
   videoCodecTag: string | null
 }): (() => void) => {
-  const mimeType = resolveTranscodeMimeType(videoCodecTag)
+  const mimeType = resolveTranscodeMimeType(
+    videoCodecTag,
+    hasAudio,
+  )
 
   if (
     !mimeType ||
@@ -470,6 +475,9 @@ export const FileVideoPlayer = ({
       // length and pick the SourceBuffer codec before any media arrives.
       let duration = Number.NaN
       let videoCodecTag: string | null = null
+      // Default true so a HEAD failure keeps the legacy audio-expecting
+      // behaviour; the server reports "false" only for video-only files.
+      let hasAudio = true
       try {
         const headResp = await fetch(transcodeUrl, {
           method: "HEAD",
@@ -480,12 +488,15 @@ export const FileVideoPlayer = ({
         )
         videoCodecTag =
           headResp.headers.get("X-Video-Codec")
+        hasAudio =
+          headResp.headers.get("X-Has-Audio") === "true"
       } catch {
         // HEAD failed — setupMsePlayer falls back to a direct src.
       }
 
       mseCleanupRef.current = setupMsePlayer({
         duration,
+        hasAudio,
         player,
         transcodeUrl,
         videoCodecTag,
@@ -559,7 +570,7 @@ export const FileVideoPlayer = ({
               id="video-modal-status"
               className="text-[10px] text-amber-300 bg-amber-900/40 border border-amber-700/50 px-1.5 py-0.5 rounded font-medium"
             >
-              Transcoding audio…
+              Transcoding…
             </span>
           )}
           <button
