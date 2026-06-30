@@ -37,6 +37,22 @@ const findScored = (
     (scored) => scored.candidate.name === name,
   ) ?? null
 
+// Above this many candidates the dropdown grows long enough (8 deleted
+// scenes + a clutch of trailers, galleries, etc. on a busy disc) that
+// scanning by eye is painful — show a filter box. Small lists stay
+// chrome-free.
+const SEARCHABLE_CANDIDATE_COUNT = 6
+
+const matchesQuery = (
+  scored: ScoredCandidate,
+  query: string,
+) =>
+  scored.candidate.name.toLowerCase().includes(query) ||
+  (scored.candidate.parentName
+    ?.toLowerCase()
+    .includes(query) ??
+    false)
+
 export const RenameTargetPicker = ({
   candidates,
   selectedName,
@@ -46,21 +62,37 @@ export const RenameTargetPicker = ({
 }: Props) => {
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [query, setQuery] = useState("")
 
   const selected = findScored(candidates, selectedName)
 
-  const close = () => setIsOpen(false)
+  const isSearchable =
+    candidates.length > SEARCHABLE_CANDIDATE_COUNT
+
+  // Filter only when the box is shown and the user has typed something;
+  // otherwise the full ranked list is preserved (ordering matters — the
+  // server pre-ranks by confidence).
+  const queryLower = query.trim().toLowerCase()
+  const visibleCandidates =
+    isSearchable && queryLower
+      ? candidates.filter((scored) =>
+          matchesQuery(scored, queryLower),
+        )
+      : candidates
+
+  const close = () => {
+    setIsOpen(false)
+    setQuery("")
+  }
 
   const toggle = () => {
     if (isDisabled) return
-    setIsOpen((isPrev) => !isPrev)
-  }
-
-  // setTimeout dance is the same trick as LanguageCodeField — without
-  // it, the mousedown inside the dropdown loses the race against the
-  // trigger's onBlur and the dropdown closes before the click lands.
-  const handleBlur = () => {
-    setTimeout(close, 150)
+    if (isOpen) {
+      close()
+    } else {
+      setQuery("")
+      setIsOpen(true)
+    }
   }
 
   return (
@@ -74,7 +106,6 @@ export const RenameTargetPicker = ({
         aria-label={ariaLabel}
         disabled={isDisabled}
         onClick={toggle}
-        onBlur={handleBlur}
         className="w-full text-left text-xs bg-slate-950 text-slate-100 border border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       >
         <span className="flex-1 min-w-0 flex flex-col">
@@ -126,7 +157,18 @@ export const RenameTargetPicker = ({
         anchorRef={triggerRef}
         isOpen={isOpen}
         maxHeightPx={480}
-        items={candidates.map((scored) => {
+        onClose={close}
+        search={
+          isSearchable
+            ? {
+                value: query,
+                onChange: setQuery,
+                placeholder: "Search candidates…",
+                emptyLabel: "No candidates match.",
+              }
+            : undefined
+        }
+        items={visibleCandidates.map((scored) => {
           const { name, timecode, parentName } =
             scored.candidate
           const isChild = Boolean(parentName)
