@@ -3,7 +3,11 @@
 # the self-contained esbuild bundle, the Vite SPA build, command-descriptions,
 # and version.json. Everything in this stage is discarded — nothing ships in
 # the final image except the build artifacts copied across the stage boundary.
-FROM node:24-slim AS builder
+#
+# Pinned to the -trixie- (Debian 13) variant rather than bare -slim (which
+# tracks Debian stable and would silently move the base): trixie's apt ships
+# ffmpeg 7.x (vs bookworm's 5.1.x) for the runtime stage's media tooling.
+FROM node:24-trixie-slim AS builder
 WORKDIR /app
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
@@ -75,7 +79,7 @@ RUN yarn build:prod
 # `vitest`, `biome`, `eslint`, `@playwright/test`, `build-essential`, `git`,
 # or source `.ts` files. Stack traces resolve via the `.map` files alone
 # under `--enable-source-maps`.
-FROM node:24-slim AS runtime
+FROM node:24-trixie-slim AS runtime
 WORKDIR /app
 
 ENV LANG=en_US.UTF-8
@@ -113,7 +117,7 @@ RUN \
   sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen && \
   update-ca-certificates && \
   wget -O /etc/apt/keyrings/gpg-pub-moritzbunkus.gpg https://mkvtoolnix.download/gpg-pub-moritzbunkus.gpg && \
-  echo "deb [signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/debian/ bookworm main" > /etc/apt/sources.list.d/mkvtoolnix.download.list && \
+  echo "deb [signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/debian/ trixie main" > /etc/apt/sources.list.d/mkvtoolnix.download.list && \
   apt-get update && \
   apt-get install -y --no-install-recommends mkvtoolnix && \
   apt-get remove -y wget && \
