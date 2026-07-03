@@ -13,17 +13,36 @@ WORKDIR /app
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 # Build-only apt deps: build-essential for native-module compiles during
-# yarn install, git for `git rev-parse HEAD` if the version script falls
-# back to it. wget/ca-certificates stay runtime-side (mkvtoolnix key fetch
-# happens in the runtime stage transiently).
+# yarn install and the numpy source build below, git for `git rev-parse HEAD`
+# if the version script falls back to it, python3 + python3-dev + python3-venv
+# to build the audio-offset-finder venv. wget/ca-certificates stay runtime-side
+# (mkvtoolnix key fetch happens in the runtime stage transiently).
 RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
     git \
+    python3 \
+    python3-dev \
+    python3-venv \
   && \
   rm -rf /var/lib/apt/lists/*
+
+# audio-offset-finder (Python, invoked out-of-process by the audio-offset
+# command) is compiled HERE in the builder — which has build-essential +
+# python3-dev — and the finished venv is copied into the runtime stage, which
+# has no toolchain. It pins numpy<2, and numpy <2 ships no wheel for Python 3.13
+# (this trixie base's system python3), so numpy 1.26.4 is built from source
+# against 3.13; scipy/librosa/matplotlib install from their own 3.13 wheels.
+# Keeping it on the base's Python 3.13 (rather than a separate pinned
+# interpreter) matches the cloudcli/t3code agent images. Own layer keyed only on
+# requirements.txt (audio-offset-finder==0.5.5) so the ~minute numpy compile
+# stays cached across source edits.
+COPY requirements.txt ./
+RUN python3 -m venv /opt/aof-venv \
+  && /opt/aof-venv/bin/pip install --no-cache-dir --upgrade pip \
+  && /opt/aof-venv/bin/pip install --no-cache-dir -r requirements.txt
 
 RUN \
   npm install -g corepack@latest && \
@@ -91,9 +110,10 @@ ENV IS_CONTAINERIZED=true
 ENV PORT=3000
 
 # Runtime apt deps. ffmpeg/mkvtoolnix/mediainfo are spawned by the cli
-# operations; python3 + pipx host audio-offset-finder; procps gives the
-# tree-kill child-process discovery something to inspect; ca-certificates +
-# locales cover TLS and UTF-8.
+# operations; python3 runs the audio-offset-finder venv copied from the builder
+# (the venv's interpreter symlink resolves to this system python3, same 3.13);
+# procps gives the tree-kill child-process discovery something to inspect;
+# ca-certificates + locales cover TLS and UTF-8.
 #
 # wget is installed transiently to fetch the mkvtoolnix repo key, then
 # removed in the same RUN so the final layer doesn't carry it. The system
@@ -123,27 +143,15 @@ RUN \
   apt-get autoremove -y && \
   rm -rf /var/lib/apt/lists/*
 
-# audio-offset-finder (Python) — runs out-of-process, so it lives in its own
-# tool venv rather than being bundled.
-#
-# It must NOT use this image's system Python. audio-offset-finder pins
-# `numpy<2`, and numpy <2 ships no wheel for Python 3.13 (the trixie base's
-# system python3) — pip would fall back to compiling numpy 1.26.x from source,
-# which needs a C toolchain the runtime stage doesn't carry and which numpy 1.x
-# isn't built to compile on 3.13 anyway. So install it into a uv-managed
-# **Python 3.12** tool venv: uv fetches a standalone CPython 3.12 and numpy
-# 1.26.4 installs from a prebuilt cp312 wheel — deterministic, no compiler.
-#
-# uv drops the entry point in /root/.local/bin (uv's default tool bin dir);
-# `PATH` is set on the container's process env directly because Node's
+# audio-offset-finder — copy the venv built (and numpy-compiled) in the builder
+# stage. `PATH` is set on the container's process env directly because Node's
 # child_process.spawn doesn't go through a shell, so a shell-rc PATH edit
-# wouldn't reach runAudioOffsetFinder. The version stays pinned in
-# requirements.txt (audio-offset-finder==0.5.5), applied via --with-requirements.
-COPY --from=ghcr.io/astral-sh/uv:0.11.26 /uv /usr/local/bin/uv
-ENV PATH="/root/.local/bin:${PATH}"
-ENV UV_TOOL_BIN_DIR=/root/.local/bin
-COPY requirements.txt ./
-RUN uv tool install --python 3.12 --with-requirements requirements.txt audio-offset-finder
+# wouldn't reach runAudioOffsetFinder; putting the venv's bin/ first exposes the
+# `audio-offset-finder` entry point. The venv is self-contained (numpy's
+# from-source build bundles its own linear-algebra), so no extra apt libs are
+# needed at runtime beyond the system python3 the interpreter symlink resolves to.
+COPY --from=builder /opt/aof-venv /opt/aof-venv
+ENV PATH="/opt/aof-venv/bin:${PATH}"
 
 # Corepack + production-only Yarn install. `yarn workspaces focus
 # --production --all` is Yarn 4's built-in equivalent of `npm install
