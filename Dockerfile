@@ -3,23 +3,46 @@
 # the self-contained esbuild bundle, the Vite SPA build, command-descriptions,
 # and version.json. Everything in this stage is discarded — nothing ships in
 # the final image except the build artifacts copied across the stage boundary.
-FROM node:24-slim AS builder
+#
+# Pinned to the -trixie- (Debian 13) variant rather than bare -slim (which
+# tracks Debian stable and would silently move the base): trixie's apt ships
+# ffmpeg 7.x (vs bookworm's 5.1.x) for the runtime stage's media tooling.
+FROM node:24-trixie-slim AS builder
 WORKDIR /app
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 # Build-only apt deps: build-essential for native-module compiles during
-# yarn install, git for `git rev-parse HEAD` if the version script falls
-# back to it. wget/ca-certificates stay runtime-side (mkvtoolnix key fetch
-# happens in the runtime stage transiently).
+# yarn install and the numpy source build below, git for `git rev-parse HEAD`
+# if the version script falls back to it, python3 + python3-dev + python3-venv
+# to build the audio-offset-finder venv. wget/ca-certificates stay runtime-side
+# (mkvtoolnix key fetch happens in the runtime stage transiently).
 RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
     git \
+    python3 \
+    python3-dev \
+    python3-venv \
   && \
   rm -rf /var/lib/apt/lists/*
+
+# audio-offset-finder (Python, invoked out-of-process by the audio-offset
+# command) is compiled HERE in the builder — which has build-essential +
+# python3-dev — and the finished venv is copied into the runtime stage, which
+# has no toolchain. It pins numpy<2, and numpy <2 ships no wheel for Python 3.13
+# (this trixie base's system python3), so numpy 1.26.4 is built from source
+# against 3.13; scipy/librosa/matplotlib install from their own 3.13 wheels.
+# Keeping it on the base's Python 3.13 (rather than a separate pinned
+# interpreter) matches the cloudcli/t3code agent images. Own layer keyed only on
+# requirements.txt (audio-offset-finder==0.5.5) so the ~minute numpy compile
+# stays cached across source edits.
+COPY requirements.txt ./
+RUN python3 -m venv /opt/aof-venv \
+  && /opt/aof-venv/bin/pip install --no-cache-dir --upgrade pip \
+  && /opt/aof-venv/bin/pip install --no-cache-dir -r requirements.txt
 
 RUN \
   npm install -g corepack@latest && \
@@ -75,7 +98,7 @@ RUN yarn build:prod
 # `vitest`, `biome`, `eslint`, `@playwright/test`, `build-essential`, `git`,
 # or source `.ts` files. Stack traces resolve via the `.map` files alone
 # under `--enable-source-maps`.
-FROM node:24-slim AS runtime
+FROM node:24-trixie-slim AS runtime
 WORKDIR /app
 
 ENV LANG=en_US.UTF-8
@@ -87,9 +110,10 @@ ENV IS_CONTAINERIZED=true
 ENV PORT=3000
 
 # Runtime apt deps. ffmpeg/mkvtoolnix/mediainfo are spawned by the cli
-# operations; python3 + pipx host audio-offset-finder; procps gives the
-# tree-kill child-process discovery something to inspect; ca-certificates +
-# locales cover TLS and UTF-8.
+# operations; python3 runs the audio-offset-finder venv copied from the builder
+# (the venv's interpreter symlink resolves to this system python3, same 3.13);
+# procps gives the tree-kill child-process discovery something to inspect;
+# ca-certificates + locales cover TLS and UTF-8.
 #
 # wget is installed transiently to fetch the mkvtoolnix repo key, then
 # removed in the same RUN so the final layer doesn't carry it. The system
@@ -105,7 +129,6 @@ RUN \
     ffmpeg \
     locales \
     mediainfo \
-    pipx \
     procps \
     python3 \
     wget \
@@ -113,24 +136,22 @@ RUN \
   sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen && \
   update-ca-certificates && \
   wget -O /etc/apt/keyrings/gpg-pub-moritzbunkus.gpg https://mkvtoolnix.download/gpg-pub-moritzbunkus.gpg && \
-  echo "deb [signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/debian/ bookworm main" > /etc/apt/sources.list.d/mkvtoolnix.download.list && \
+  echo "deb [signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/debian/ trixie main" > /etc/apt/sources.list.d/mkvtoolnix.download.list && \
   apt-get update && \
   apt-get install -y --no-install-recommends mkvtoolnix && \
   apt-get remove -y wget && \
   apt-get autoremove -y && \
   rm -rf /var/lib/apt/lists/*
 
-# audio-offset-finder (Python) — runs out-of-process so it lives in pipx
-# rather than being bundled. pipx drops the entry point in
-# /root/.local/bin; `pipx ensurepath` only patches ~/.bashrc, but Node's
-# child_process.spawn doesn't go through a shell, so the binary stays
-# invisible to runAudioOffsetFinder unless PATH is set on the container's
-# process env directly.
-ENV PATH="/root/.local/bin:${PATH}"
-COPY requirements.txt ./
-RUN \
-  pipx install audio-offset-finder && \
-  pipx ensurepath
+# audio-offset-finder — copy the venv built (and numpy-compiled) in the builder
+# stage. `PATH` is set on the container's process env directly because Node's
+# child_process.spawn doesn't go through a shell, so a shell-rc PATH edit
+# wouldn't reach runAudioOffsetFinder; putting the venv's bin/ first exposes the
+# `audio-offset-finder` entry point. The venv is self-contained (numpy's
+# from-source build bundles its own linear-algebra), so no extra apt libs are
+# needed at runtime beyond the system python3 the interpreter symlink resolves to.
+COPY --from=builder /opt/aof-venv /opt/aof-venv
+ENV PATH="/opt/aof-venv/bin:${PATH}"
 
 # Corepack + production-only Yarn install. `yarn workspaces focus
 # --production --all` is Yarn 4's built-in equivalent of `npm install
