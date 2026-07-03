@@ -109,7 +109,6 @@ RUN \
     ffmpeg \
     locales \
     mediainfo \
-    pipx \
     procps \
     python3 \
     wget \
@@ -124,17 +123,27 @@ RUN \
   apt-get autoremove -y && \
   rm -rf /var/lib/apt/lists/*
 
-# audio-offset-finder (Python) — runs out-of-process so it lives in pipx
-# rather than being bundled. pipx drops the entry point in
-# /root/.local/bin; `pipx ensurepath` only patches ~/.bashrc, but Node's
-# child_process.spawn doesn't go through a shell, so the binary stays
-# invisible to runAudioOffsetFinder unless PATH is set on the container's
-# process env directly.
+# audio-offset-finder (Python) — runs out-of-process, so it lives in its own
+# tool venv rather than being bundled.
+#
+# It must NOT use this image's system Python. audio-offset-finder pins
+# `numpy<2`, and numpy <2 ships no wheel for Python 3.13 (the trixie base's
+# system python3) — pip would fall back to compiling numpy 1.26.x from source,
+# which needs a C toolchain the runtime stage doesn't carry and which numpy 1.x
+# isn't built to compile on 3.13 anyway. So install it into a uv-managed
+# **Python 3.12** tool venv: uv fetches a standalone CPython 3.12 and numpy
+# 1.26.4 installs from a prebuilt cp312 wheel — deterministic, no compiler.
+#
+# uv drops the entry point in /root/.local/bin (uv's default tool bin dir);
+# `PATH` is set on the container's process env directly because Node's
+# child_process.spawn doesn't go through a shell, so a shell-rc PATH edit
+# wouldn't reach runAudioOffsetFinder. The version stays pinned in
+# requirements.txt (audio-offset-finder==0.5.5), applied via --with-requirements.
+COPY --from=ghcr.io/astral-sh/uv:0.11.26 /uv /usr/local/bin/uv
 ENV PATH="/root/.local/bin:${PATH}"
+ENV UV_TOOL_BIN_DIR=/root/.local/bin
 COPY requirements.txt ./
-RUN \
-  pipx install audio-offset-finder && \
-  pipx ensurepath
+RUN uv tool install --python 3.12 --with-requirements requirements.txt audio-offset-finder
 
 # Corepack + production-only Yarn install. `yarn workspaces focus
 # --production --all` is Yarn 4's built-in equivalent of `npm install
