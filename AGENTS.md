@@ -57,3 +57,7 @@ Full worktree / commit conventions in [workflows.md](docs/agents/workflows.md).
 ## Package Manager
 
 Always `yarn`, never `npm` or `npx`. One-off executables use `yarn dlx <pkg>`.
+
+## Git — this checkout may be shallow
+
+Some checkouts of this repo are **shallow clones** (check `test -f .git/shallow`). When shallow, history is truncated and grafted, so `git merge-base`, `git log`, `git rev-list --count`, and ancestry checks **lie**: unrelated-looking roots appear, branches seem to have "no common ancestor," and a plain fast-forward can look like a destructive 1000-commit rewind. It is an artifact, not reality. **Before reasoning about branch relationships, deleting/overwriting, or force-related operations, run `git fetch --unshallow` first** (or `--depth` deeper), then re-check. Trust `git ls-remote origin <ref>` for the true remote head over a possibly-stale local `origin/*` tracking ref.
