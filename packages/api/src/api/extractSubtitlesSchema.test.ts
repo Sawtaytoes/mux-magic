@@ -21,6 +21,45 @@ describe("extractSubtitlesRequestSchema", () => {
     expect(parsed.subtitleTypes).toEqual(["ass"])
   })
 
+  test("accepts the builder's { code } object shape, normalizing to bare codes", () => {
+    // Regression: the web LanguageCodesField always emits { code } objects,
+    // but the schema previously accepted only bare enum strings, so every
+    // sequence that selected a subtitle language 400'd with a ZodError.
+    const parsed = extractSubtitlesRequestSchema.parse({
+      sourcePath: "/work",
+      subtitlesLanguages: [{ code: "eng" }],
+    })
+    expect(parsed.subtitlesLanguages).toEqual([
+      { code: "eng" },
+    ])
+  })
+
+  test("still accepts bare ISO-639-2 code strings", () => {
+    const parsed = extractSubtitlesRequestSchema.parse({
+      sourcePath: "/work",
+      subtitlesLanguages: ["eng", "jpn"],
+    })
+    expect(parsed.subtitlesLanguages).toEqual([
+      { code: "eng" },
+      { code: "jpn" },
+    ])
+  })
+
+  test("rejects unknown language codes in either shape", () => {
+    expect(() =>
+      extractSubtitlesRequestSchema.parse({
+        sourcePath: "/work",
+        subtitlesLanguages: [{ code: "xxx" }],
+      }),
+    ).toThrow()
+    expect(() =>
+      extractSubtitlesRequestSchema.parse({
+        sourcePath: "/work",
+        subtitlesLanguages: ["xxx"],
+      }),
+    ).toThrow()
+  })
+
   test("rejects unknown subtitle types", () => {
     expect(() =>
       extractSubtitlesRequestSchema.parse({

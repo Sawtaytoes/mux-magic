@@ -233,31 +233,96 @@ const resolveParams = (
   return { resolved, errors }
 }
 
-// @hono/zod-openapi ships validation failures as
-//   { success: false, error: { issues: [{ path, message, ... }], name: 'ZodError' } }
-// Other routes return the simpler `{ error: string }` shape. Pick the
-// most specific human-readable message available; "Request failed"
-// is the last-resort fallback so the UI always has *something* to show.
+// A single Zod issue rendered as "path: message". For an enum failure Zod 4
+// inlines the *entire* allowed-value list into the issue's own `message`
+// (every ISO-639-2 code for a language field — hundreds of entries), which
+// is unreadable on a card. Replace it with a short, capped hint that still
+// names what was expected.
+const ENUM_HINT_LIMIT = 8
+
+const describeZodIssue = (raw: unknown) => {
+  const issue = (
+    raw && typeof raw === "object" ? raw : {}
+  ) as {
+    code?: unknown
+    message?: unknown
+    values?: unknown
+    path?: unknown
+  }
+  const path =
+    Array.isArray(issue.path) && issue.path.length > 0
+      ? issue.path.join(".")
+      : ""
+  const isEnumFailure =
+    (issue.code === "invalid_value" ||
+      issue.code === "invalid_enum_value") &&
+    Array.isArray(issue.values)
+  let message: string
+  if (isEnumFailure) {
+    const values = issue.values as unknown[]
+    const hint = values.slice(0, ENUM_HINT_LIMIT).join(", ")
+    const overflow =
+      values.length > ENUM_HINT_LIMIT ? ", …" : ""
+    message = `invalid value (expected one of: ${hint}${overflow})`
+  } else {
+    message =
+      typeof issue.message === "string"
+        ? issue.message
+        : "Invalid value"
+  }
+  return path ? `${path}: ${message}` : message
+}
+
+// Recover the issue list from a @hono/zod-openapi validation body. The
+// documented shape is { success: false, error: { name: 'ZodError', issues,
+// message } }, but in Zod 4 the serialized error keeps only { name, message
+// } — `issues` is a non-enumerable getter that does NOT survive
+// JSON.stringify, so the real payload carries the issues as a JSON string
+// inside `message`. Read from whichever is present.
+const readZodIssues = (
+  innerError: Record<string, unknown>,
+): unknown[] | null => {
+  const direct = innerError.issues
+  if (Array.isArray(direct) && direct.length > 0) {
+    return direct
+  }
+  const message = innerError.message
+  if (typeof message === "string") {
+    const trimmed = message.trim()
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed
+        }
+      } catch {
+        // Not a JSON issue list — fall back to the raw message below.
+      }
+    }
+  }
+  return null
+}
+
+// Pick the most specific human-readable message available. Other routes
+// return the simpler `{ error: string }` shape. "Request failed" is the
+// last-resort fallback so the UI always has *something* to show.
 const extractRequestErrorMessage = (body: unknown) => {
   if (body && typeof body === "object") {
     const bodyRecord = body as Record<string, unknown>
     const innerError = bodyRecord.error
     if (innerError && typeof innerError === "object") {
-      const issues = (innerError as { issues?: unknown })
-        .issues
-      if (Array.isArray(issues) && issues.length > 0) {
-        const issue = issues[0] as {
-          message?: unknown
-          path?: unknown
-        }
-        const path = Array.isArray(issue.path)
-          ? issue.path.join(".")
-          : ""
-        const message =
-          typeof issue.message === "string"
-            ? issue.message
-            : "Invalid value"
-        return path ? `${path}: ${message}` : message
+      const issues = readZodIssues(
+        innerError as Record<string, unknown>,
+      )
+      if (issues) {
+        return issues.map(describeZodIssue).join("; ")
+      }
+      // ZodError whose message wasn't a JSON issue list, or any other
+      // object error carrying a plain human-readable message string.
+      const message = (innerError as { message?: unknown })
+        .message
+      if (typeof message === "string" && message.trim()) {
+        return message
       }
     }
     if (typeof innerError === "string") return innerError

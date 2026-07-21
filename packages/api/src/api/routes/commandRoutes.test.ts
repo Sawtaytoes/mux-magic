@@ -166,4 +166,53 @@ describe("POST /commands/:name — dry-run safety", () => {
       false,
     )
   })
+
+  // ─── extractSubtitles accepts the builder's { code } language shape ──────
+  //
+  // The web LanguageCodesField always emits subtitlesLanguages as
+  // [{ code: "eng" }] objects. The schema used to accept only bare enum
+  // strings, so every such request 400'd at validation with an opaque
+  // ZodError before the handler ran. These two tests pin the fix at the
+  // full route boundary: the object shape is now accepted (202), and the
+  // handler maps it down to the bare code the core command consumes.
+  test("extractSubtitles accepts subtitlesLanguages: [{ code }] object shape (202, not 400)", async () => {
+    vol.fromJSON({
+      "/subs-src/keep.mkv": "video",
+    })
+
+    const response = await post(
+      "/commands/extractSubtitles?fake=success",
+      {
+        sourcePath: "/subs-src",
+        subtitlesLanguages: [{ code: "eng" }],
+        typesMode: "include",
+        subtitleTypes: ["ass"],
+      },
+    )
+
+    expect(response.status).toBe(202)
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
+    const status = await waitFor(
+      () => getJob(jobId)?.status,
+    )
+    expect(["running", "completed"]).toContain(status)
+  })
+
+  test("extractSubtitles still accepts bare code strings", async () => {
+    vol.fromJSON({
+      "/subs-src-2/keep.mkv": "video",
+    })
+
+    const response = await post(
+      "/commands/extractSubtitles?fake=success",
+      {
+        sourcePath: "/subs-src-2",
+        subtitlesLanguages: ["eng"],
+      },
+    )
+
+    expect(response.status).toBe(202)
+  })
 })

@@ -329,7 +329,10 @@ export const commandConfigs: Record<
         isRecursive: body.isRecursive,
         sourcePath: body.sourcePath,
         subtitleTypes: body.subtitleTypes,
-        subtitlesLanguages: body.subtitlesLanguages,
+        // Schema normalizes to { code } objects; the core takes bare codes.
+        subtitlesLanguages: body.subtitlesLanguages.map(
+          (selection: { code: string }) => selection.code,
+        ),
         typesMode: body.typesMode,
       }),
     outputFolderName:
@@ -345,7 +348,10 @@ export const commandConfigs: Record<
         isRecursive: body.isRecursive,
         sourcePath: body.sourcePath,
         subtitleTypes: body.subtitleTypes,
-        subtitlesLanguages: body.subtitlesLanguages,
+        // Schema normalizes to { code } objects; the core takes bare codes.
+        subtitlesLanguages: body.subtitlesLanguages.map(
+          (selection: { code: string }) => selection.code,
+        ),
         typesMode: body.typesMode,
       }),
     outputFolderName:
