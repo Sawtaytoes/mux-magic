@@ -252,6 +252,48 @@ describe("runOrStopStepAtom", () => {
       expect(store.get(runningAtom)).toBe(false)
     })
 
+    test("surfaces the real Zod 4 body shape where issues live in error.message (not an enumerable issues array)", async () => {
+      // Zod 4 serializes a ZodError to only { name, message }: `issues` is a
+      // non-enumerable getter that JSON.stringify drops, so @hono/zod-openapi
+      // ships the issue list as a JSON string inside `message`. This is the
+      // exact payload that used to collapse to an opaque "Request failed".
+      // Reproduces extractSubtitles rejecting `subtitlesLanguages: [{code}]`.
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 400,
+          json: () =>
+            Promise.resolve({
+              success: false,
+              error: {
+                name: "ZodError",
+                message: JSON.stringify([
+                  {
+                    code: "invalid_value",
+                    values: ["aar", "abk", "afr", "eng"],
+                    path: ["subtitlesLanguages", 0],
+                    message:
+                      'Invalid option: expected one of "aar"|"abk"|"afr"|"eng"',
+                  },
+                ]),
+              },
+            }),
+        }),
+      )
+      const step = makeStep()
+      const store = makeStore(step)
+
+      await store.set(runOrStopStepAtom, "step_1")
+
+      const updated = store.get(stepsAtom)[0] as Step
+      expect(updated.status).toBe("failed")
+      expect(updated.error).toBe(
+        "subtitlesLanguages.0: invalid value (expected one of: aar, abk, afr, eng)",
+      )
+      expect(store.get(runningAtom)).toBe(false)
+    })
+
     test("falls back to 'Request failed' when 400 body is non-JSON", async () => {
       vi.stubGlobal(
         "fetch",
