@@ -1,6 +1,5 @@
 import { z } from "@hono/zod-openapi"
 
-import { iso6392LanguageCodes } from "@mux-magic/core/src/tools/iso6392LanguageCodes.js"
 import { subtitleTypeExtensions } from "@mux-magic/core/src/tools/subtitleTypes.js"
 import { languageSelectionSchema } from "./languageSelection.js"
 
@@ -291,10 +290,14 @@ export const extractSubtitlesRequestSchema = z.object({
       "Recursively looks in folders for media files.",
     ),
   subtitlesLanguages: z
-    .array(z.enum(iso6392LanguageCodes))
+    // Accept both a bare ISO-639-2 code ("eng") and the builder's
+    // { code, ietf? } object shape, normalizing to { code }. Matches
+    // keepLanguages; without this the web LanguageCodesField (which always
+    // emits objects) produces requests the enum-only schema rejected.
+    .array(languageSelectionSchema)
     .default([])
     .describe(
-      "ISO-639-2 codes of subtitle tracks to extract. Leave empty to extract every language.",
+      "ISO-639-2 codes of subtitle tracks to extract (bare code or { code, ietf? } object). Leave empty to extract every language.",
     ),
   typesMode: z
     .enum(["none", "include", "exclude"])
