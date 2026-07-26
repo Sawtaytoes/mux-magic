@@ -113,3 +113,11 @@ All environment variables are optional. Set them in `.env` or pass them to the c
 - [REST API & Sequence Runner](docs/api.md)
 - [CLI commands](docs/cli.md)
 - [Local development](docs/development.md)
+
+## Design sketches (not built)
+
+- [Disc-backup title selection](docs/disc-backup-title-selection.md) — a review
+  UI that decides which titles to keep out of a whole-disc `[BACKUP]` folder
+  from [`ripdeck`](/mnt/TrueNAS-Apps/Repos/ripdeck): chapter/segment analysis to
+  collapse near-duplicate editions, detect commentary-only siblings, and split
+  anime "Play All" discs.
