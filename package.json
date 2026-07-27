@@ -73,13 +73,22 @@
   "resolutions": {
     "mal-scraper@^2.13.2": "patch:mal-scraper@npm%3A2.13.2#./.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch",
     "@babel/runtime": ">=7.26.10",
-    "shell-quote": ">=1.8.4",
+    "shell-quote": ">=1.10.0",
     "esbuild": "^0.28.1",
     "form-data": "^4.0.6",
-    "tar": "^7.5.16",
+    "tar": "^7.5.22",
     "@babel/core": "^7.29.6",
-    "js-yaml": "^4.2.0",
+    "js-yaml": "^4.3.0",
     "vite": "^8.0.16",
-    "react-router": "^7.15.1"
+    "react-router": "^7.18.0",
+    "axios": "^1.18.1",
+    "postcss": "^8.5.23",
+    "ws": "^8.21.1",
+    "brace-expansion@^1.1.7": "^1.1.16",
+    "brace-expansion@^2.0.1": "^2.1.2",
+    "brace-expansion@^5.0.5": "^5.0.8",
+    "undici@^6.25.0": "^6.27.0",
+    "undici@^7.19.0": "^7.28.0",
+    "undici@^7.25.0": "^7.28.0"
   }
 }
