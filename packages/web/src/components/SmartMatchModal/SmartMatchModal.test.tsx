@@ -549,6 +549,94 @@ describe("SmartMatchModal", () => {
     })
   })
 
+  test("7a: selecting a different candidate re-defaults the Plex type to match the new name", async () => {
+    // Top candidate is an untyped scene; the second is an image gallery whose
+    // name already carries '-other'. Picking the gallery must move the Plex
+    // type select to 'Other' automatically — the user shouldn't have to set it
+    // by hand (the seed only ran against the top candidate).
+    const user = userEvent.setup()
+    vi.spyOn(
+      HTMLElement.prototype,
+      "getBoundingClientRect",
+    ).mockReturnValue({
+      top: 100,
+      bottom: 140,
+      left: 0,
+      right: 200,
+      width: 200,
+      height: 40,
+      x: 0,
+      y: 100,
+      toJSON: () => ({}),
+    })
+    Object.defineProperty(window, "innerHeight", {
+      value: 800,
+      configurable: true,
+      writable: true,
+    })
+    const store = createStore()
+    store.set(smartMatchModalAtom, {
+      jobId: "job-redefault-type",
+      stepId: "step-1",
+      sourcePath: "/movies/Demo",
+      suggestions: [
+        {
+          filename: "RED_SUN_UHD_t04",
+          extension: ".mkv",
+          durationSeconds: 46,
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Opening Scene",
+                timecode: "0:46",
+              },
+              confidence: 0.7,
+              durationScore: 1,
+              filenameScore: 0,
+            },
+            {
+              candidate: {
+                name: "Image Gallery (45 images) -other",
+                timecode: undefined,
+              },
+              confidence: 0.6,
+              durationScore: 0,
+              filenameScore: 0.5,
+            },
+          ],
+        },
+      ],
+    })
+    renderWithStore(store)
+
+    const suffixSelect = document.querySelector(
+      '[data-plex-suffix-select="RED_SUN_UHD_t04"]',
+    ) as HTMLSelectElement | null
+    // Seeded from the top candidate ("Opening Scene") → '-scene'.
+    expect(suffixSelect?.value).toBe("-scene")
+
+    // Open the picker and select the gallery candidate.
+    const picker = screen.getByLabelText(
+      "Rename target for RED_SUN_UHD_t04",
+    )
+    await user.click(picker)
+    const galleryOption = await screen.findByRole(
+      "option",
+      {
+        name: /Image Gallery/,
+      },
+    )
+    await user.pointer({
+      target: galleryOption,
+      keys: "[MouseLeft]",
+    })
+
+    // Type must now follow the newly picked candidate → '-other'.
+    await waitFor(() => {
+      expect(suffixSelect?.value).toBe("-other")
+    })
+  })
+
   test("Close button clears the atom", async () => {
     const user = userEvent.setup()
     const store = createStore()

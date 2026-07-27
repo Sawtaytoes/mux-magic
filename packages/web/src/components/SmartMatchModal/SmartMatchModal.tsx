@@ -130,6 +130,26 @@ const formatConfidence = (confidence: number) => {
   return `${Math.round(confidence * 100)}%`
 }
 
+// Worker 7a: derive the Plex suffix for a row via a three-step cascade:
+// 1. The existing filename may already carry a suffix (re-run case).
+// 2. The candidate name may carry a core-applied suffix (e.g. a gallery
+//    whose candidate name ends in '-other', or a '-trailer' the core
+//    pipeline baked in) — extractSuffixFromStem handles this too.
+// 3. Keyword inference on the candidate name — returns '' when unknown,
+//    so unknown files start on '— no type —' and require user action.
+// Shared by buildInitialRows (seed) and the candidate picker's onSelect
+// so switching candidates re-defaults the type to match the new name
+// instead of stranding the row on the top candidate's type.
+const derivePlexSuffix = (
+  filename: string,
+  candidateName: string,
+): string =>
+  extractSuffixFromStem(filename) ||
+  extractSuffixFromStem(candidateName) ||
+  (candidateName.length > 0
+    ? inferSuffixFromName(candidateName)
+    : "")
+
 // Build the initial per-row map: low-confidence rows default to
 // excluded so the user explicitly opts-in to a sketchy match.
 const buildInitialRows = (
@@ -142,19 +162,10 @@ const buildInitialRows = (
       const isHighConfidence =
         top !== undefined &&
         top.confidence >= LOW_CONFIDENCE_THRESHOLD
-      // Worker 7a: derive the initial Plex suffix via a three-step cascade:
-      // 1. The existing filename may already carry a suffix (re-run case).
-      // 2. The candidate name may carry a core-applied suffix (e.g. a gallery
-      //    whose candidate name ends in '-other', or a '-trailer' the core
-      //    pipeline baked in) — extractSuffixFromStem handles this too.
-      // 3. Keyword inference on the candidate name — returns '' when unknown,
-      //    so unknown files start on '— no type —' and require user action.
-      const initialPlexSuffix =
-        extractSuffixFromStem(suggestion.filename) ||
-        extractSuffixFromStem(topName) ||
-        (topName.length > 0
-          ? inferSuffixFromName(topName)
-          : "")
+      const initialPlexSuffix = derivePlexSuffix(
+        suggestion.filename,
+        topName,
+      )
       return [
         suggestion.filename,
         {
@@ -897,6 +908,19 @@ export const SmartMatchModal = () => {
                                   {
                                     selectedCandidateName:
                                       name,
+                                    // Worker 7a: re-default the Plex
+                                    // type to match the newly picked
+                                    // candidate. The seed derives from
+                                    // the top candidate; switching to a
+                                    // different one (e.g. a '… -other'
+                                    // gallery) must move the type with
+                                    // it instead of stranding the row on
+                                    // the top candidate's type.
+                                    plexSuffix:
+                                      derivePlexSuffix(
+                                        suggestion.filename,
+                                        name,
+                                      ),
                                   },
                                 )
                               }
