@@ -76,7 +76,7 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory containing media files or containing other directories of media files.",
       "isRecursive": "Recursively looks in folders for media files.",
-      "subtitlesLanguages": "ISO-639-2 codes of subtitle tracks to extract. Leave empty to extract every language.",
+      "subtitlesLanguages": "ISO-639-2 codes of subtitle tracks to extract (bare code or { code, ietf? } object). Leave empty to extract every language.",
       "typesMode": "How to apply subtitleTypes: 'none' ignores the list (all types extracted), 'include' keeps only listed types, 'exclude' skips listed types. With 'include' and an empty subtitleTypes list, no tracks match — the command extracts nothing.",
       "subtitleTypes": "File extensions of subtitle formats to filter on (ass/srt/sup/sub). Ignored when typesMode is 'none'. 'sup' covers both PGS and TextST codecs.",
       "folders": "Folder names to extract subtitles into. Each extracted subtitle file is placed inside the named sub-folder relative to the source file location. Leave empty to use the default output folder."
@@ -87,7 +87,7 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "Directory containing media files or containing other directories of media files.",
       "isRecursive": "Recursively looks in folders for media files.",
-      "subtitlesLanguages": "ISO-639-2 codes of subtitle tracks to extract. Leave empty to extract every language.",
+      "subtitlesLanguages": "ISO-639-2 codes of subtitle tracks to extract (bare code or { code, ietf? } object). Leave empty to extract every language.",
       "typesMode": "How to apply subtitleTypes: 'none' ignores the list (all types extracted), 'include' keeps only listed types, 'exclude' skips listed types. With 'include' and an empty subtitleTypes list, no tracks match — the command extracts nothing.",
       "subtitleTypes": "File extensions of subtitle formats to filter on (ass/srt/sup/sub). Ignored when typesMode is 'none'. 'sup' covers both PGS and TextST codecs.",
       "folders": "Folder names to extract subtitles into. Each extracted subtitle file is placed inside the named sub-folder relative to the source file location. Leave empty to use the default output folder."
