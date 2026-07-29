@@ -6,7 +6,7 @@ disc-specific pattern below is **owner recall that still needs validating
 against real backups** — that is called out per-item rather than presented as
 fact.
 
-Input comes from [`ripdeck`](/mnt/TrueNAS-Apps/Repos/ripdeck), which rips whole
+Input comes from [`rip-deck`](/mnt/TrueNAS-Apps/Repos/rip-deck), which rips whole
 discs and marks them `[BACKUP] {title} ({year}) - {type}` on the Disc-Rips
 dataset. Those folders are complete BDMV/VIDEO_TS structures with **every**
 title still in them.
@@ -21,7 +21,7 @@ title still in them.
 > duplicate entries, but then I can post-process the backup and pull out the
 > important bits manually."
 
-So the workflow today is: `ripdeck` backs up the whole disc → the owner opens it
+So the workflow today is: `rip-deck` backs up the whole disc → the owner opens it
 in MakeMKV by hand → squints at a list of near-identical titles → picks the real
 ones. **That squinting is the thing to automate.**
 
@@ -215,7 +215,7 @@ And the framing that should drive the design:
 > "If we could do stuff like that, then I, as a human, shouldn't have to be
 > involved in the rip."
 
-Note **the rip** — not the review. The rip is already unattended in `ripdeck`.
+Note **the rip** — not the review. The rip is already unattended in `rip-deck`.
 This closes the remaining manual step, and it degrades gracefully: even a
 partial analyser that only implements signals 1 and 2 removes most of the
 squinting, because those two alone collapse the duplicate explosion.
@@ -228,7 +228,7 @@ squinting, because those two alone collapse the duplicate explosion.
   to set up across a bunch of disc images, but it could be very useful."* Every
   pattern above is a hypothesis until it is run against real backups from
   several studios. The `[BACKUP]` folders **are** that corpus, and they
-  accumulate for free as `ripdeck` runs.
+  accumulate for free as `rip-deck` runs.
 - **Studio patterns are conventions, not standards.** `mls0800`, Ghibli sides
   and Disney text-swaps are per-studio habits that change between releases.
   Encode them as **named, individually-testable heuristics with confidence
@@ -248,5 +248,5 @@ squinting, because those two alone collapse the duplicate explosion.
    a different rule set entirely, or just no studio hint?
 3. Should the analyser run automatically when a `[BACKUP]` folder appears, or
    on demand? (Automatic means a queue of pending reviews, which is nicer, but
-   it needs a trigger from `ripdeck` or a watch on the dataset.)
+   it needs a trigger from `rip-deck` or a watch on the dataset.)
 4. Where do confirmed decisions live so they survive a re-analysis?
