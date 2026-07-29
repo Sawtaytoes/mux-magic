@@ -1,9 +1,26 @@
 @import "tailwindcss";
 
+/* The fleet's design tokens. Replaces the hardcoded `#0f172a` /
+   `#f1f5f9` pair that used to sit in the `body` rule below.
+
+   This one import brings in `--color-*` custom properties for every
+   surface, content, border, and intent role, under a `@theme` block —
+   so `bg-surface-raised`, `text-content-muted`, and
+   `bg-intent-danger-solid` become real Tailwind utilities. It also
+   points Tailwind's `dark:` variant at `[data-scheme="dark"]` rather
+   than `prefers-color-scheme`, because the scheme here is a deliberate
+   choice, not an OS setting.
+
+   Which values resolve is decided by the `data-scheme` /
+   `data-density` / `data-variant` attributes on `<html>` in
+   `index.html`. Flipping `data-scheme` to `light` is the whole of what
+   light mode costs. */
+@import "@charcuterie/tokens/theme.css";
+
 @layer base {
   body {
-    background-color: #0f172a; /* slate-900 */
-    color: #f1f5f9; /* slate-100 */
+    background-color: var(--color-surface-base);
+    color: var(--color-content-primary);
     min-height: 100vh;
   }
 

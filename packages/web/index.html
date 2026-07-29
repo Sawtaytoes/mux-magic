@@ -1,13 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<!--
+  The three token axes from @charcuterie/tokens, all read off <html>.
+
+  Nothing in React observes them, so flipping one re-themes the whole
+  app with zero re-render. `data-scheme="light"` is the entirety of what
+  light mode costs; `data-variant` accepts daylight, hairline, layered,
+  or legible.
+
+  These are not optional. The token stylesheet scopes every colour to
+  `[data-scheme]` and every control size to `[data-density]`, so an
+  <html> with no attributes resolves no custom properties at all.
+-->
+<html
+  lang="en"
+  data-scheme="dark"
+  data-density="comfortable"
+  data-variant="daylight"
+>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mux Magic</title>
     <style>
       /* Prevents a white flash before the bundled CSS (tailwindStyles.css)
-         loads. Keep in sync with the body rule there. */
-      html, body { background-color: #0f172a; }
+         loads. These have to stay literals — the whole point is that they
+         apply before the stylesheet that defines --color-surface-base has
+         arrived — so they are `daylight`'s surface.base for each scheme,
+         copied. Re-copy them if the default variant ever changes.
+
+         Scoped to `html` and NOT `body`, which matters more than it looks:
+         this block is unlayered, and an unlayered rule beats anything in
+         `@layer base` no matter the order. Naming `body` here would
+         silently outrank the themed `body` rule in tailwindStyles.css, and
+         flipping data-scheme to light would leave the page dark. */
+      html { background-color: #131822; }
+      html[data-scheme="light"] { background-color: #f5f7fa; }
     </style>
   </head>
   <body>
