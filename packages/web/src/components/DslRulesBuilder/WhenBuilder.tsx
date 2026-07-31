@@ -1,3 +1,4 @@
+import { Select } from "@charcuterie/ui"
 import { isPlainObject } from "./clauseUtils"
 import { addWhenClause } from "./conditionMutations"
 import {
@@ -83,32 +84,35 @@ export const WhenBuilder = ({
           </p>
         )}
         {!isReadOnly && availableClauses.length > 0 && (
-          <select
-            aria-label="Condition type"
-            value=""
-            onChange={(event) => {
-              if (!event.target.value) {
+          <Select
+            className="mt-2 w-56 font-mono"
+            label="Condition type"
+            onChange={(clauseName) => {
+              if (!clauseName) {
                 return
               }
+
               onCommitRules(
                 addWhenClause({
                   rules,
                   ruleIndex,
-                  clauseName: event.target
-                    .value as WhenClauseName,
+                  clauseName: clauseName as WhenClauseName,
                 }),
               )
-              event.target.value = ""
             }}
-            className="text-xs bg-slate-700 text-slate-200 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 mt-2"
-          >
-            <option value="">+ Add clause…</option>
-            {availableClauses.map((clauseName) => (
-              <option key={clauseName} value={clauseName}>
-                {clauseName}
-              </option>
-            ))}
-          </select>
+            options={availableClauses.map((clauseName) => ({
+              label: clauseName,
+              value: clauseName,
+            }))}
+            // The old markup reset itself with `event.target.value = ""`
+            // — a direct DOM write, on a control React thought it owned,
+            // to make a one-shot action list look unchosen again. It is
+            // gone: the picked clause leaves `availableClauses` on the
+            // same commit, so the browser falls back to the disabled
+            // placeholder on its own.
+            placeholder="+ Add clause…"
+            size="sm"
+          />
         )}
       </div>
     </details>

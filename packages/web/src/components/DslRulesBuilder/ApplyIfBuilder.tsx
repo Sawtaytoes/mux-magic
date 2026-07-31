@@ -1,3 +1,4 @@
+import { Select } from "@charcuterie/ui"
 import { ApplyIfClauseRow } from "./ApplyIfClauseRow"
 import { isPlainObject } from "./clauseUtils"
 import { addApplyIfClause } from "./conditionMutations"
@@ -90,31 +91,37 @@ export const ApplyIfBuilder = ({
           </p>
         )}
         {!isReadOnly && availableClauses.length > 0 && (
-          <select
-            value=""
-            onChange={(event) => {
-              if (!event.target.value) {
+          <Select
+            className="mt-2 w-56 font-mono"
+            // The old `<select>` had no accessible name at all — no
+            // `aria-label`, no `<label for>` — so it was announced as
+            // "combobox" and `getByRole("combobox", { name })` could not
+            // find it. `Select` makes the name a required-in-practice
+            // prop for exactly that reason.
+            label="Apply-if clause type"
+            onChange={(clauseName) => {
+              if (!clauseName) {
                 return
               }
+
               onCommitRules(
                 addApplyIfClause({
                   rules,
                   ruleIndex,
-                  clauseName: event.target
-                    .value as ApplyIfClauseName,
+                  clauseName:
+                    clauseName as ApplyIfClauseName,
                 }),
               )
-              event.target.value = ""
             }}
-            className="text-xs bg-slate-700 text-slate-200 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 mt-2"
-          >
-            <option value="">+ Add clause…</option>
-            {availableClauses.map((clauseName) => (
-              <option key={clauseName} value={clauseName}>
-                {clauseName}
-              </option>
-            ))}
-          </select>
+            options={availableClauses.map((clauseName) => ({
+              label: clauseName,
+              value: clauseName,
+            }))}
+            // Same one-shot reset as `WhenBuilder`, and the same direct
+            // DOM write deleted with it.
+            placeholder="+ Add clause…"
+            size="sm"
+          />
         )}
       </div>
     </details>
