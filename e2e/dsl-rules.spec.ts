@@ -75,14 +75,27 @@ test.describe("DslRulesBuilder — rule lifecycle", () => {
       .first()
       .click()
 
-    // Find the first rule card's details panel.
+    // The disclosure is an `Accordion` now, not a `<details>`, so the state
+    // is `aria-expanded` on the trigger rather than an `open` attribute on
+    // the element — which is the same fact said in a way assistive
+    // technology can read.
     const ruleCard = page.locator("[data-rule-key]").first()
-    const detailsPanel = ruleCard.locator("details").first()
-    await detailsPanel.locator("summary").click()
-    await expect(detailsPanel).toHaveAttribute("open")
+    const trigger = ruleCard
+      .getByRole("button", { name: /^When \(advanced/ })
+      .first()
+    await trigger.click()
+    await expect(trigger).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    )
+
+    const panel = ruleCard.getByRole("group", {
+      name: /^When \(advanced/,
+    })
+    await expect(panel).toBeVisible()
 
     // Interact with something inside (type in a text field if present).
-    const textInputs = detailsPanel.locator(
+    const textInputs = panel.locator(
       'input[type="text"], input[type="number"]',
     )
     const inputCount = await textInputs.count()
@@ -90,8 +103,14 @@ test.describe("DslRulesBuilder — rule lifecycle", () => {
       await textInputs.first().fill("test-value")
     }
 
-    // Panel must still be open after the interaction.
-    await expect(detailsPanel).toHaveAttribute("open")
+    // Still open after the interaction. This test was written because the
+    // React-controlled `<details>` used to lose `open` on re-render — two
+    // owners for one fact. The accordion holds it alone.
+    await expect(trigger).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    )
+    await expect(panel).toBeVisible()
   })
 
   test("removing a rule card decrements the rule count", async ({
