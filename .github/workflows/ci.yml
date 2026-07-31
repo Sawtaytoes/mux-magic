@@ -88,6 +88,23 @@ jobs:
       - run: yarn build:prod
       - run: yarn e2e
 
+  storybook-build:
+    # The Storybook build was broken on `feat/mux-magic-revamp` for as long as
+    # nine MDX files imported the Storybook 8 `@storybook/blocks` entry point,
+    # and nothing here noticed because no job built Storybook. `storybook
+    # build` writes `index.json` and `iframe.html` even when it fails, so the
+    # output directory is not evidence — the step's exit code is.
+    needs: check-prior-run
+    if: needs.check-prior-run.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - run: yarn build:tools
+      - run: yarn workspace @mux-magic/web build:storybook
+
   build-budget:
     # Worker 79: enforces the BuilderPage modal subtree + yamlCodec stay
     # code-split and that rolldown emits no INEFFECTIVE_DYNAMIC_IMPORT
