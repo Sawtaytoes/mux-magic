@@ -1,5 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<!--
+  `data-scheme` is what makes `@charcuterie/tokens` publish a colour at all —
+  every `--color-*` is scoped under `[data-scheme="light"]` or
+  `[data-scheme="dark"]`, so an app that forgets the attribute gets no
+  variables rather than a default set, and every token-coloured component
+  renders transparent with no error anywhere.
+
+  Pinned to `dark`. Mux Magic has no light mode today and M6b did not add one
+  — the rest of the app is still ~1000 literal `*-slate-*` utilities, and a
+  scheme toggle that repaints only the shared components is worse than none.
+  The attribute is here rather than written from React on purpose: it is read
+  by CSS, so it must be true before the first paint, and nothing in React
+  observes it.
+-->
+<html lang="en" data-scheme="dark" data-variant="daylight" data-density="comfortable">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
