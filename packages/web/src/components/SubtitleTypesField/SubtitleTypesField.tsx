@@ -2,7 +2,7 @@ import { useRef, useState } from "react"
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldControl } from "../CommandFieldControl/CommandFieldControl"
 import { PortalDropdown } from "../PortalDropdown/PortalDropdown"
 import { TagInputBase } from "../TagInputBase/TagInputBase"
 import { SUBTITLE_TYPE_OPTIONS } from "./SubtitleTypesField.options"
@@ -86,32 +86,34 @@ export const SubtitleTypesField = ({
   }))
 
   return (
-    <div>
-      <FieldLabel stepId={step.id} field={field} />
-      <TagInputBase
-        tags={tags}
-        onRemove={removeValue}
-        inputRef={inputRef}
-        inputProps={{
-          role: "combobox",
-          "aria-expanded": isOpen,
-          "aria-haspopup": "listbox",
-          value: filterText,
-          placeholder: "Type to filter subtitle types…",
-          onChange: (event) => {
-            setFilterText(event.target.value)
-            setIsOpen(true)
-          },
-          onFocus: () => setIsOpen(true),
-          onBlur: () =>
-            setTimeout(() => setIsOpen(false), 150),
-        }}
-      />
+    <>
+      <CommandFieldControl field={field}>
+        <TagInputBase
+          tags={tags}
+          onRemove={removeValue}
+          inputRef={inputRef}
+          inputProps={{
+            role: "combobox",
+            "aria-expanded": isOpen,
+            "aria-haspopup": "listbox",
+            value: filterText,
+            placeholder: "Type to filter subtitle types…",
+            onChange: (event) => {
+              setFilterText(event.target.value)
+              setIsOpen(true)
+            },
+            onFocus: () => setIsOpen(true),
+            onBlur: () =>
+              setTimeout(() => setIsOpen(false), 150),
+          }}
+        />
+      </CommandFieldControl>
+
       <PortalDropdown
         anchorRef={inputRef}
         isOpen={isOpen}
         items={items}
       />
-    </div>
+    </>
   )
 }

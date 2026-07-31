@@ -3,7 +3,7 @@ import type { CommandField } from "../../commands/types"
 import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
 
 type FolderMultiSelectFieldProps = {
   field: CommandField
@@ -42,8 +42,7 @@ export const FolderMultiSelectField = ({
   }
 
   return (
-    <div className="mb-2">
-      <FieldLabel stepId={step.id} field={field} />
+    <CommandFieldGroup className="mb-2" field={field}>
       <div className="flex flex-wrap gap-1 mb-1.5">
         {folders.map((folder) => (
           <span
@@ -69,6 +68,6 @@ export const FolderMultiSelectField = ({
       >
         📁 Browse folders…
       </button>
-    </div>
+    </CommandFieldGroup>
   )
 }

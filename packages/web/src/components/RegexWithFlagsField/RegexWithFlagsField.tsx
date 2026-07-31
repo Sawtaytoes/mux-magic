@@ -2,7 +2,7 @@ import { useId, useState } from "react"
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
 import {
   formatSlashLiteral,
   parseSlashLiteral,
@@ -129,9 +129,8 @@ export const RegexWithFlagsField = ({
   }
 
   return (
-    <div>
-      <div className="flex items-baseline justify-between gap-2">
-        <FieldLabel stepId={step.id} field={field} />
+    <CommandFieldGroup
+      actions={
         <button
           type="button"
           onClick={toggleDisplayMode}
@@ -142,7 +141,9 @@ export const RegexWithFlagsField = ({
             ? "Show as /…/"
             : "Show as Aa"}
         </button>
-      </div>
+      }
+      field={field}
+    >
       {displayMode === "slash" ? (
         <div>
           <label
@@ -229,6 +230,6 @@ export const RegexWithFlagsField = ({
           hasOutput={false}
         />
       </div>
-    </div>
+    </CommandFieldGroup>
   )
 }
