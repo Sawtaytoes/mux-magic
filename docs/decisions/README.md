@@ -19,6 +19,8 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-07-31 | [The Add Variable picker stays a `menu`, not a `listbox`](2026-07-31-the-add-variable-picker-stays-a-menu.md) | web | Accepted |
+| 2026-07-31 | [`Field` owns the control id; `${step.id}-${field.name}` is not a contract](2026-07-31-field-owns-the-control-id.md) | web | Accepted |
 | 2026-07-31 | [The overlay layer is `@charcuterie/ui`, not Radix](2026-07-31-the-overlay-layer-is-charcuterie-not-radix.md) | web | Accepted |
 | 2026-07-01 | [Production runs the esbuild bundle under node, never tsx](2026-07-01-prod-runs-esbuild-bundle-not-tsx.md) | infra | Accepted |
 | 2026-06-30 | [Seekable transcode video player: MSE client + audio-only re-encode, video copied](2026-06-30-seekable-transcode-video-player.md) | web / core / api | Accepted |
