@@ -17,9 +17,9 @@ import the package directly. The Radix Popover re-export is deleted.
 
 | Gate | Result |
 | --- | --- |
-| `yarn lint:biome` / `yarn lint:eslint` | clean, **988 files** |
+| `yarn lint:biome` / `yarn lint:eslint` | clean, **988 files** checked |
 | `yarn typecheck` | clean |
-| `yarn vitest run` | **2794 tests over 363 files** (43 skipped), was 2775 |
+| `yarn vitest run` | **2794 tests over 363 files** (43 skipped) |
 | `yarn e2e` | **62 passed**, 5 skipped (the pre-existing MSE video-seek group) |
 | `yarn workspace @mux-magic/web build:storybook` | **exit 0**, **457 entries** across 157 story/docs files |
 | `yarn workspace @mux-magic/web test:build-budget` | pass, at a **raised** budget — see below |
