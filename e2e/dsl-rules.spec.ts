@@ -139,13 +139,16 @@ test.describe("DslRulesBuilder — rule lifecycle", () => {
   test("predicates panel adds a predicate entry and stays open", async ({
     page,
   }) => {
-    const predicatesDetails = page.locator(
-      "[data-details-key$=':predicates']",
-    )
-    await predicatesDetails
-      .getByRole("button", { name: /predicates/i })
+    // Reached by the trigger's accessible name — the `data-details-key`
+    // handle went with the `Accordion` migration.
+    await page
+      .getByRole("button", { name: /^Predicates \(/ })
+      .first()
       .click()
-    const addPredicateBtn = predicatesDetails.getByRole(
+    const predicatesPanel = page.getByRole("group", {
+      name: /^Predicates \(/,
+    })
+    const addPredicateBtn = predicatesPanel.getByRole(
       "button",
       { name: "+ Add predicate" },
     )
@@ -156,7 +159,7 @@ test.describe("DslRulesBuilder — rule lifecycle", () => {
     await expect(addPredicateBtn).toBeVisible()
     // At least one predicate entry should now exist.
     await expect(
-      predicatesDetails.locator("[data-predicate-key]"),
+      predicatesPanel.locator("[data-predicate-key]"),
     ).toHaveCount(1)
   })
 
