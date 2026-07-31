@@ -688,11 +688,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/tokens@portal:../../../charcuterie/packages/tokens::locator=%40mux-magic%2Fweb%40workspace%3Apackages%2Fweb":
-  version: 0.0.0-use.local
-  resolution: "@charcuterie/tokens@portal:../../../charcuterie/packages/tokens::locator=%40mux-magic%2Fweb%40workspace%3Apackages%2Fweb"
+"@charcuterie/tokens@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "@charcuterie/tokens@npm:0.1.0"
+  checksum: 10c0/c87ffc312f94296293fe3ad4e57579399880cc9dc603dab0611bab5a499ab6eb7e0eb9bddc75046eb6005efc0dab2ced042ff97322327e3708982d0063e9adcb
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "@csstools/color-helpers@npm:^6.0.2":
   version: 6.0.2
@@ -1836,7 +1837,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mux-magic/web@workspace:packages/web"
   dependencies:
-    "@charcuterie/tokens": "portal:../../../charcuterie/packages/tokens"
+    "@charcuterie/tokens": "npm:^0.1.0"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
