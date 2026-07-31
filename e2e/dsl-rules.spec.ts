@@ -183,16 +183,16 @@ test.describe("DslRulesBuilder — When panel", () => {
       .first()
       .click()
 
-    const whenDetails = page.locator(
-      "[data-details-key$=':when:0']",
-    )
-    await whenDetails.locator("summary").click()
-    const conditionSelect = whenDetails.getByRole(
-      "combobox",
-      {
-        name: "Condition type",
-      },
-    )
+    // The `When` disclosure is an `Accordion` now, not a `<details>`, so
+    // it is reached by the trigger's accessible name rather than by a
+    // `data-details-key` handle only this file could see.
+    await page
+      .getByRole("button", { name: /^When \(advanced/ })
+      .first()
+      .click()
+    const conditionSelect = page.getByRole("combobox", {
+      name: "Condition type",
+    })
     await expect(conditionSelect).toBeVisible()
 
     // Select a condition from the dropdown. selectOption resolving without
@@ -202,10 +202,14 @@ test.describe("DslRulesBuilder — When panel", () => {
     await conditionSelect.selectOption("anyScriptInfo")
 
     // The new clause renders a header span with the clause name.
-    // We locate the rule card root rather than scoping inside the details
-    // because the React-controlled <details>'s `open` attribute is lost on
-    // re-render, making children appear "hidden" to Playwright even when
-    // they are in the DOM.
+    //
+    // This used to be scoped to the rule-card root with a note explaining
+    // that "the React-controlled <details>'s `open` attribute is lost on
+    // re-render, making children appear hidden to Playwright even when they
+    // are in the DOM." That was the two-owners bug — React and `<details>`
+    // both holding `open` — surfacing as a flaky locator. The `Accordion`
+    // holds it alone now, so the panel's visibility is honest; the scoping
+    // stays because it is also the shorter path.
     await expect(
       page
         .locator("[data-rule-key]")

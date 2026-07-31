@@ -1,3 +1,4 @@
+import { Accordion } from "@charcuterie/ui"
 import { useAtomValue } from "jotai"
 
 import { buildBuilderUrl } from "../../jobs/buildBuilderUrl"
@@ -152,19 +153,36 @@ export const JobCard = ({ job }: JobCardProps) => {
 
       {/* Params disclosure */}
       {hasParams && (
-        <details>
-          <summary className="cursor-pointer text-xs text-slate-400 hover:text-slate-200 py-1 flex items-center gap-1">
-            Params
-            <CopyTextButton
-              getText={() =>
-                JSON.stringify(job.params, null, 2)
-              }
-            />
-          </summary>
-          <pre className="mt-1 text-xs bg-slate-950 rounded p-2 overflow-x-auto text-slate-300">
-            {JSON.stringify(job.params, null, 2)}
-          </pre>
-        </details>
+        <Accordion
+          items={[
+            {
+              content: (
+                <div className="flex flex-col gap-1">
+                  {/*
+                    The copy button used to sit in the `<summary>`.
+                    `Accordion`'s trigger is a `<button>`, and a `<button>`
+                    inside a `<button>` is invalid markup — browsers repair
+                    it by hoisting the inner one out of the trigger, which
+                    is worse than moving it here on purpose.
+                  */}
+                  <div className="flex justify-end">
+                    <CopyTextButton
+                      getText={() =>
+                        JSON.stringify(job.params, null, 2)
+                      }
+                    />
+                  </div>
+
+                  <pre className="overflow-x-auto rounded bg-slate-950 p-2 text-slate-300 text-xs">
+                    {JSON.stringify(job.params, null, 2)}
+                  </pre>
+                </div>
+              ),
+              key: "params",
+              label: "Params",
+            },
+          ]}
+        />
       )}
 
       {/* Error */}
@@ -176,21 +194,29 @@ export const JobCard = ({ job }: JobCardProps) => {
 
       {/* Results disclosure */}
       {job.results && job.results.length > 0 && (
-        <details>
-          <summary className="cursor-pointer text-xs text-slate-400 hover:text-slate-200 py-1">
-            Results ({job.results.length})
-          </summary>
-          <div className="mt-1 space-y-1">
-            {job.results.map((result) => (
-              <pre
-                key={JSON.stringify(result).slice(0, 64)}
-                className="text-xs bg-slate-950 rounded p-2 overflow-x-auto text-slate-300"
-              >
-                {JSON.stringify(result, null, 2)}
-              </pre>
-            ))}
-          </div>
-        </details>
+        <Accordion
+          items={[
+            {
+              content: (
+                <div className="space-y-1">
+                  {job.results.map((result) => (
+                    <pre
+                      className="overflow-x-auto rounded bg-slate-950 p-2 text-slate-300 text-xs"
+                      key={JSON.stringify(result).slice(
+                        0,
+                        64,
+                      )}
+                    >
+                      {JSON.stringify(result, null, 2)}
+                    </pre>
+                  ))}
+                </div>
+              ),
+              key: "results",
+              label: `Results (${job.results.length})`,
+            },
+          ]}
+        />
       )}
 
       {/* Logs */}

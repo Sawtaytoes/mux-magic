@@ -1,5 +1,7 @@
+import { Accordion, LogViewer } from "@charcuterie/ui"
 import { useAtomValue } from "jotai"
 import { useState } from "react"
+
 import { logsByJobIdAtom } from "../../state/logsByJobIdAtom"
 
 // Per-step log block. Renders the lines `useLogStream` already
@@ -15,10 +17,11 @@ type Props = {
   jobId: string
 }
 
+const LOGS_KEY = "logs"
+
 export const StepLogs = ({ jobId }: Props) => {
   const logsByJobId = useAtomValue(logsByJobIdAtom)
   const entries = logsByJobId.get(jobId) ?? []
-  const [isExpanded, setIsExpanded] = useState(false)
   const [copyLabel, setCopyLabel] = useState<
     "Copy logs" | "✓ Copied" | "✗ Failed"
   >("Copy logs")
@@ -43,34 +46,45 @@ export const StepLogs = ({ jobId }: Props) => {
   }
 
   return (
-    <div data-step-logs className="flex flex-col gap-1">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setIsExpanded((isPrev) => !isPrev)}
-          aria-expanded={isExpanded}
-          className="text-[10px] text-slate-400 hover:text-slate-200 font-mono"
-        >
-          {isExpanded ? "▾" : "▸"} Logs ({entries.length}{" "}
-          line{entries.length === 1 ? "" : "s"})
-        </button>
-        <button
-          type="button"
-          onClick={() => void handleCopy()}
-          className="text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-0.5 rounded font-mono"
-          title="Copy all log lines to clipboard"
-        >
-          📋 {copyLabel}
-        </button>
-      </div>
-      {isExpanded && (
-        <pre
-          data-step-logs-body
-          className="max-h-60 overflow-y-auto bg-slate-950 border border-slate-700 rounded text-[11px] text-slate-300 font-mono p-2 whitespace-pre-wrap wrap-break-word"
-        >
-          {entries.map((entry) => entry.line).join("\n")}
-        </pre>
-      )}
-    </div>
+    <Accordion
+      items={[
+        {
+          content: (
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-end">
+                <button
+                  className="rounded bg-slate-700 px-2 py-0.5 font-mono text-[10px] text-slate-200 hover:bg-slate-600"
+                  onClick={() => void handleCopy()}
+                  title="Copy all log lines to clipboard"
+                  type="button"
+                >
+                  📋 {copyLabel}
+                </button>
+              </div>
+
+              {/*
+                Was a `<pre>` holding the whole buffer joined into one text
+                node, with no following at all — a step that emits for an
+                hour rendered every line and the pane never moved.
+                `LogViewer` drops the oldest past its cap and follows the
+                tail from the user's own scroll position.
+
+                `data-step-logs-body` went with it: a handle only the suite
+                could see, replaced by the pane's accessible name.
+              */}
+              <LogViewer
+                label={`Logs for step ${jobId}`}
+                lines={entries.map((entry) => ({
+                  key: entry.key,
+                  text: entry.line,
+                }))}
+              />
+            </div>
+          ),
+          key: LOGS_KEY,
+          label: `Logs (${entries.length} line${entries.length === 1 ? "" : "s"})`,
+        },
+      ]}
+    />
   )
 }
