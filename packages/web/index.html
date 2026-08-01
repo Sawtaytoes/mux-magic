@@ -6,8 +6,30 @@
     <title>Mux Magic</title>
     <style>
       /* Prevents a white flash before the bundled CSS (tailwindStyles.css)
-         loads. Keep in sync with the body rule there. */
-      html, body { background-color: #0f172a; }
+         loads. Keep in sync with the body rule there.
+
+         **The `var()` is load-bearing, not decoration.** An inline
+         `<style>` is UNLAYERED, and unlayered author CSS beats every
+         `@layer` regardless of specificity — the body rule it is kept in
+         sync with lives in `@layer base`, and Tailwind's utilities live in
+         `@layer utilities`. So a flat `background-color: #0f172a` here does
+         not merely duplicate that rule, it OUTRANKS it, and the canvas can
+         never be repainted by anything layered.
+
+         Today both values are the same slate-900 and the symptom is
+         invisible. It stops being invisible the moment M6b puts
+         `@charcuterie/tokens` and a `data-scheme` on this app: rip-deck and
+         gallery-downloader both shipped this exact line, and in both the
+         result was `data-scheme="light"` rendering light chrome on a
+         permanently dark page, with no typecheck, build or test able to see
+         it. Written as a FALLBACK the literal applies only while
+         `--color-surface-base` is undefined — which is every moment today,
+         so this changes nothing now — and the token takes over the instant
+         the tokens stylesheet lands. Fixed ahead of M6b so the migration
+         does not land on it.
+         (`rip-deck` commit `fb2a143`; `gallery-downloader` commit
+         `1b5e7ba`.) */
+      html, body { background-color: var(--color-surface-base, #0f172a); }
     </style>
   </head>
   <body>
