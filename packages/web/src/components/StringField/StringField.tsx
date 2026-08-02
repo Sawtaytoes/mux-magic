@@ -1,7 +1,7 @@
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldControl } from "../CommandFieldControl/CommandFieldControl"
 
 type StringFieldProps = {
   field: CommandField
@@ -24,19 +24,14 @@ export const StringField = ({
   }
 
   return (
-    <div>
-      <FieldLabel stepId={step.id} field={field} />
+    <CommandFieldControl field={field}>
       <input
-        id={`${step.id}-${field.name}`}
         type="text"
         defaultValue={String(value)}
         placeholder={field.placeholder ?? ""}
         onInput={handleInput}
-        aria-required={
-          field.isRequired ? "true" : undefined
-        }
         className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
       />
-    </div>
+    </CommandFieldControl>
   )
 }

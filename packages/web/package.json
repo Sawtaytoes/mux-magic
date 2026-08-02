@@ -22,10 +22,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@charcuterie/tokens": "^0.2.0",
+    "@charcuterie/ui": "^0.2.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@radix-ui/react-popover": "^1.1.15",
     "@tanstack/react-query": "^5.100.9",
     "jotai": "^2.20.0",
     "js-yaml": "^4.3.0",

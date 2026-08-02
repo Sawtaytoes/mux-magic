@@ -1,3 +1,4 @@
+import { Select } from "@charcuterie/ui"
 import { useState } from "react"
 import { isPlainObject } from "./clauseUtils"
 import {
@@ -51,28 +52,32 @@ export const ComputeFromOpRow = ({
 
   return (
     <div className="flex items-center gap-1.5 mt-1">
-      <select
-        disabled={isReadOnly}
-        value={verb}
-        onChange={(event) => {
+      <Select
+        className="w-40 font-mono"
+        isDisabled={isReadOnly}
+        // The op row is keyed by index, so a delete above it hands this
+        // slot a different op. `Select` is uncontrolled, so without a key
+        // the DOM would keep the departed op's verb.
+        key={verb}
+        label={`Operation ${opIndex + 1}`}
+        onChange={(nextVerb) => {
           onCommitRules(
             setComputeFromOpVerb({
               rules,
               ruleIndex,
               fieldKey,
               opIndex,
-              verb: event.target.value,
+              verb: nextVerb,
             }),
           )
         }}
-        className="text-xs bg-slate-700 text-slate-200 rounded px-1.5 py-1 border border-slate-600 focus:outline-none focus:border-blue-500"
-      >
-        {COMPUTE_FROM_OPS_ALL.map((opVerb) => (
-          <option key={opVerb} value={opVerb}>
-            {opVerb}
-          </option>
-        ))}
-      </select>
+        options={COMPUTE_FROM_OPS_ALL.map((opVerb) => ({
+          label: opVerb,
+          value: opVerb,
+        }))}
+        size="sm"
+        value={verb}
+      />
       {isBareOp ? (
         <span className="text-xs text-slate-500 italic px-2">
           no operand

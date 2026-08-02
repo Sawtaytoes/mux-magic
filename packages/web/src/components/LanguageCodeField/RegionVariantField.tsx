@@ -1,3 +1,5 @@
+import { Field, Select } from "@charcuterie/ui"
+
 import { BCP47_VARIANTS } from "../../data/bcp47Variants"
 
 type RegionVariantFieldProps = {
@@ -19,30 +21,31 @@ export const RegionVariantField = ({
     return null
   }
 
-  const handleChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    const newValue = event.target.value
+  const handleChange = (newValue: string) => {
     onIetfChange(newValue === "" ? null : newValue)
   }
 
   return (
     <div className="mt-1">
-      <label className="block text-xs text-slate-400 mb-0.5">
-        Variant
-        <select
-          value={selectedIetf ?? ""}
+      <Field label="Variant">
+        <Select
           onChange={handleChange}
-          className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 mt-0.5"
-        >
-          <option value="">(none)</option>
-          {variants.map((variant) => (
-            <option key={variant.tag} value={variant.tag}>
-              {variant.name} ({variant.tag})
-            </option>
-          ))}
-        </select>
-      </label>
+          options={[
+            { label: "(none)", value: "" },
+            ...variants.map((variant) => ({
+              label: `${variant.name} (${variant.tag})`,
+              value: variant.tag,
+            })),
+          ]}
+          size="sm"
+          // `key` re-seeds the uncontrolled `<select>` when the BASE CODE
+          // changes. `Select` owns no value — the platform does — so a new
+          // `variants` list with the old DOM selection still in it would
+          // keep showing a variant of the language the user just left.
+          key={baseCode}
+          value={selectedIetf ?? ""}
+        />
+      </Field>
     </div>
   )
 }
