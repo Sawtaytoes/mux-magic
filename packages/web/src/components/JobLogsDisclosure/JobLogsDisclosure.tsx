@@ -77,9 +77,7 @@ export const JobLogsDisclosure = ({
               <div className="flex justify-end">
                 <CopyTextButton
                   getText={() =>
-                    lines
-                      .map(({ line }) => line)
-                      .join("\n")
+                    lines.map(({ line }) => line).join("\n")
                   }
                 />
               </div>

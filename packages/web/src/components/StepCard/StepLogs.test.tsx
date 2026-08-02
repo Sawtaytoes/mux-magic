@@ -22,17 +22,12 @@ const JOB_ID = "step-job-1"
 
 const renderStepLogs = (lines: string[]) => {
   const store = createStore()
-  const entries: LogEntry[] = lines.map(
-    (line, index) => ({
-      key: String(index),
-      line,
-    }),
-  )
+  const entries: LogEntry[] = lines.map((line, index) => ({
+    key: String(index),
+    line,
+  }))
 
-  store.set(
-    logsByJobIdAtom,
-    new Map([[JOB_ID, entries]]),
-  )
+  store.set(logsByJobIdAtom, new Map([[JOB_ID, entries]]))
 
   return render(
     <Provider store={store}>
@@ -149,9 +144,9 @@ describe("StepLogs", () => {
       "aria-expanded",
       "false",
     )
-    expect(
-      screen.getByRole("log", { hidden: true }),
-    ).toBe(pane)
+    expect(screen.getByRole("log", { hidden: true })).toBe(
+      pane,
+    )
 
     await user.click(trigger)
 
