@@ -58,7 +58,7 @@ phase boundary like everything else.
 | `Accordion` | **11** | `JobCard` ×2, `JobStepsDisclosure`, `JobLogsDisclosure`, `StepLogs`, `GenericRunResults`, `ConvertLosslessRunResults`, `WhenBuilder`, `ApplyIfBuilder`, `ErrorRow`, `PredicatesManager` |
 | `Field` | **11** | via `CommandFieldControl` |
 | `Tooltip` | **20** | every command field, via `CommandFieldControl` (11), `CommandFieldGroup` (8) and `BooleanField` |
-| `LogViewer` | **2** | via `DisclosedLogViewer` |
+| `LogViewer` | **2** | `JobLogsDisclosure`, `StepLogs` — via `DisclosedLogViewer` at the time; directly since `ui@1.0.0` deleted the workaround (see below) |
 | `Menu` | **1** | `VariablesPanel`'s type picker |
 | `SortableTableHeader` | **1**, four columns | `FileExplorerModal` |
 
@@ -234,6 +234,22 @@ with content that does not measure itself.
 `DisclosedLogViewer` works around it by not mounting the pane until the
 section has been opened once. The component wants an effect keyed on
 visibility, or an `IntersectionObserver`.
+
+> **✅ Fixed upstream 2026-08-02, and the workaround is gone.**
+> `@charcuterie/ui@1.0.0` fixes this in the library with a `ResizeObserver`
+> on the pane, live only while following — per spec it does not fire at
+> `observe()` time for an element that is not being rendered, so *gaining a
+> box is the first callback*, which is precisely the reveal. Not an
+> `IntersectionObserver`, which this section guessed at: that answers "is it
+> on screen", and a pane below the fold on a long page is not intersecting
+> yet has perfectly good layout.
+>
+> `DisclosedLogViewer` is **deleted**. `JobLogsDisclosure` and `StepLogs`
+> render `Accordion` and `LogViewer` directly, and the regression coverage
+> lives in `StepLogs.test.tsx`, which measures the tail rather than
+> asserting the pane was withheld — `scrollTop 722 / scrollHeight 976 /
+> clientHeight 254` after the reveal, versus `scrollTop 0` and a 722px gap
+> with the fix stubbed out.
 
 ### `TypePicker` is a menu, and the `Menu` docstring says otherwise
 
