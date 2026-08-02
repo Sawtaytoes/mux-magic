@@ -77,7 +77,7 @@ test.describe("Edit Variables modal", () => {
       .getByRole("button", { name: /add variable/i })
       .click()
     await dialog
-      .getByRole("button", { name: /^path$/i })
+      .getByRole("menuitem", { name: /^path$/i })
       .click()
     // A new variable card should appear inside the modal.
     await expect(
@@ -94,7 +94,7 @@ test.describe("Edit Variables modal", () => {
       .getByRole("button", { name: /add variable/i })
       .click()
     await dialog
-      .getByRole("button", { name: /max threads/i })
+      .getByRole("menuitem", { name: /max threads/i })
       .click()
     // The card renders the numeric thread-count input.
     await expect(
@@ -108,7 +108,9 @@ test.describe("Edit Variables modal", () => {
       .getByRole("button", { name: /add variable/i })
       .click()
     await expect(
-      dialog.getByRole("button", { name: /max threads/i }),
+      dialog.getByRole("menuitem", {
+        name: /max threads/i,
+      }),
     ).toHaveCount(0)
   })
 
@@ -121,7 +123,7 @@ test.describe("Edit Variables modal", () => {
       .getByRole("button", { name: /add variable/i })
       .click()
     await dialog
-      .getByRole("button", { name: /dvd compare id/i })
+      .getByRole("menuitem", { name: /dvd compare id/i })
       .click()
     await expect(
       dialog.getByText("dvdCompareId variable"),
@@ -183,7 +185,7 @@ test.describe("Variable YAML round-trip", () => {
       .getByRole("button", { name: /add variable/i })
       .click()
     await dialog
-      .getByRole("button", { name: /^path$/i })
+      .getByRole("menuitem", { name: /^path$/i })
       .click()
 
     // Give it a label and a value so toYamlStr sees a non-empty variable.
@@ -258,7 +260,7 @@ test.describe("Variable YAML round-trip", () => {
       .getByRole("button", { name: /add variable/i })
       .click()
     await dialog
-      .getByRole("button", { name: /max threads/i })
+      .getByRole("menuitem", { name: /max threads/i })
       .click()
     await dialog.getByRole("spinbutton").fill("4")
 
@@ -330,7 +332,7 @@ test.describe("Variable YAML round-trip", () => {
       .getByRole("button", { name: /add variable/i })
       .click()
     await dialog
-      .getByRole("button", { name: /dvd compare id/i })
+      .getByRole("menuitem", { name: /dvd compare id/i })
       .click()
 
     // Label + value so toYamlStr emits the variable.

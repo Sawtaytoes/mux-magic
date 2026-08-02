@@ -24,14 +24,32 @@ const DIST_ASSETS = join(PACKAGE_ROOT, "dist", "assets")
 
 // Threshold reasoning: pre-worker-79 the main chunk was ~287 kB gzip.
 // After splitting the 12 modals + yamlCodec it lands around ~248 kB
-// gzip. We allow 260 kB to give React Compiler-generated memoization
-// some headroom as the BuilderPage grows — but the threshold is well
-// under the original 287 kB, so a regression that re-inlines the
-// modals or yamlCodec will trip the test. Hitting the worker doc's
-// stretch target of <220 kB would require lazy-loading first-paint
-// components (BuilderSequenceList / the pickers), which is out of
-// scope per the worker spec.
-const MAIN_CHUNK_GZIP_MAX_KB = 260
+// gzip. 260 kB gave React Compiler-generated memoization some headroom
+// as the BuilderPage grew, well under the original 287 kB, so a
+// regression that re-inlines the modals or yamlCodec trips the test.
+// Hitting the worker doc's stretch target of <220 kB would require
+// lazy-loading first-paint components (BuilderSequenceList / the
+// pickers), which is out of scope per the worker spec.
+//
+// **Raised to 280 kB by charcuterie M6b.** Measured on the same build,
+// gzip level 9: 253.28 kB before the migration, 275.18 kB after —
+// **+21.90 kB gz** for `@charcuterie/ui` + `@charcuterie/logic` +
+// `@floating-ui/react`.
+//
+// It is not slack and it cannot be split away. Tree-shaking is already
+// working — `MediaTile`, `Skeleton`, `SegmentedControl`, `EmptyState`,
+// `LiveStatusIndicator`, `Toast` and `FileDropZone` appear nowhere in
+// the chunk — so this is only what the app actually renders. And
+// `Tooltip` is on **every command field**, so `@floating-ui/react` is a
+// first-paint dependency; moving `@charcuterie/ui` into a `manualChunks`
+// entry would shrink `index-*.js` without shortening the critical path
+// by a single byte, which is gaming this gate rather than passing it.
+//
+// 280 leaves ~5 kB of headroom and stays under the 287 kB the split was
+// originally measured against. Deleted in exchange: `FieldTooltip`'s 130
+// hand-rolled lines, `@radix-ui/react-popover`, and seven `<details>`
+// reconciliation blocks.
+const MAIN_CHUNK_GZIP_MAX_KB = 280
 
 const MODAL_CHUNK_NAMES = [
   "LoadModal",

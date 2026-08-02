@@ -4,7 +4,7 @@ import { ISO_639_2_NAME_BY_CODE } from "../../data/iso639-2"
 import { buildOrderedLanguageOptions } from "../../data/orderLanguageOptions"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldControl } from "../CommandFieldControl/CommandFieldControl"
 import { PortalDropdown } from "../PortalDropdown/PortalDropdown"
 import { TagInputBase } from "../TagInputBase/TagInputBase"
 import { RegionVariantField } from "./RegionVariantField"
@@ -95,32 +95,34 @@ export const LanguageCodeField = ({
     : []
 
   return (
-    <div>
-      <FieldLabel stepId={step.id} field={field} />
-      <TagInputBase
-        tags={tags}
-        onRemove={clearSelection}
-        inputRef={inputRef}
-        inputProps={{
-          role: "combobox",
-          "aria-expanded": isOpen,
-          "aria-haspopup": "listbox",
-          "aria-required": field.isRequired
-            ? "true"
-            : undefined,
-          value: filterText,
-          placeholder: selected
-            ? "Type to replace language…"
-            : "Type to filter languages…",
-          onChange: (event) => {
-            setFilterText(event.target.value)
-            setIsOpen(true)
-          },
-          onFocus: () => setIsOpen(true),
-          onBlur: () =>
-            setTimeout(() => setIsOpen(false), 150),
-        }}
-      />
+    <>
+      <CommandFieldControl field={field}>
+        <TagInputBase
+          tags={tags}
+          onRemove={clearSelection}
+          inputRef={inputRef}
+          inputProps={{
+            role: "combobox",
+            "aria-expanded": isOpen,
+            "aria-haspopup": "listbox",
+            "aria-required": field.isRequired
+              ? "true"
+              : undefined,
+            value: filterText,
+            placeholder: selected
+              ? "Type to replace language…"
+              : "Type to filter languages…",
+            onChange: (event) => {
+              setFilterText(event.target.value)
+              setIsOpen(true)
+            },
+            onFocus: () => setIsOpen(true),
+            onBlur: () =>
+              setTimeout(() => setIsOpen(false), 150),
+          }}
+        />
+      </CommandFieldControl>
+
       <RegionVariantField
         baseCode={selected?.code ?? ""}
         selectedIetf={selected?.ietf ?? null}
@@ -142,6 +144,6 @@ export const LanguageCodeField = ({
           ),
         }))}
       />
-    </div>
+    </>
   )
 }

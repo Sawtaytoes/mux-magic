@@ -224,11 +224,22 @@ describe("ErrorRow — content", () => {
       }),
     })
 
-    // Expand the detail
-    await userEvent.click(
-      screen.getByRole("button", { name: /expand/i }),
+    const trigger = screen.getByRole("button", {
+      name: "Detail",
+    })
+
+    // The state is on the control, not in its text. The old button was
+    // named "Expand" / "Collapse" with an `aria-label="Expand detail"` that
+    // never changed — so it announced "Expand detail" while the panel was
+    // already open, and there was no `aria-expanded` at all.
+    expect(trigger).toHaveAttribute(
+      "aria-expanded",
+      "false",
     )
 
+    await userEvent.click(trigger)
+
+    expect(trigger).toHaveAttribute("aria-expanded", "true")
     expect(screen.getByText(/at foo\.ts/)).toBeVisible()
   })
 })

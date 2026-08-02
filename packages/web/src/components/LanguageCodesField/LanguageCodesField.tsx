@@ -4,7 +4,7 @@ import { ISO_639_2_NAME_BY_CODE } from "../../data/iso639-2"
 import { buildOrderedLanguageOptions } from "../../data/orderLanguageOptions"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldControl } from "../CommandFieldControl/CommandFieldControl"
 import { PortalDropdown } from "../PortalDropdown/PortalDropdown"
 import { TagInputBase } from "../TagInputBase/TagInputBase"
 
@@ -126,32 +126,34 @@ export const LanguageCodesField = ({
   }))
 
   return (
-    <div>
-      <FieldLabel stepId={step.id} field={field} />
-      <TagInputBase
-        tags={tags}
-        onRemove={removeCode}
-        inputRef={inputRef}
-        inputProps={{
-          role: "combobox",
-          "aria-expanded": isOpen,
-          "aria-haspopup": "listbox",
-          value: filterText,
-          placeholder: "Type to filter languages…",
-          onChange: (event) => {
-            setFilterText(event.target.value)
-            setIsOpen(true)
-          },
-          onFocus: () => setIsOpen(true),
-          onBlur: () =>
-            setTimeout(() => setIsOpen(false), 150),
-        }}
-      />
+    <>
+      <CommandFieldControl field={field}>
+        <TagInputBase
+          tags={tags}
+          onRemove={removeCode}
+          inputRef={inputRef}
+          inputProps={{
+            role: "combobox",
+            "aria-expanded": isOpen,
+            "aria-haspopup": "listbox",
+            value: filterText,
+            placeholder: "Type to filter languages…",
+            onChange: (event) => {
+              setFilterText(event.target.value)
+              setIsOpen(true)
+            },
+            onFocus: () => setIsOpen(true),
+            onBlur: () =>
+              setTimeout(() => setIsOpen(false), 150),
+          }}
+        />
+      </CommandFieldControl>
+
       <PortalDropdown
         anchorRef={inputRef}
         isOpen={isOpen}
         items={items}
       />
-    </div>
+    </>
   )
 }

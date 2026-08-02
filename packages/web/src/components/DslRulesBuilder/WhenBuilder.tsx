@@ -1,3 +1,4 @@
+import { Accordion, Select } from "@charcuterie/ui"
 import { isPlainObject } from "./clauseUtils"
 import { addWhenClause } from "./conditionMutations"
 import {
@@ -48,69 +49,87 @@ export const WhenBuilder = ({
     !isReadOnly && openDetailsKeys.has(detailsKey)
 
   return (
-    <details
-      open={isOpen}
-      data-details-key={detailsKey}
-      className="mt-2 border border-slate-700/60 rounded"
-      onToggle={(event) => {
+    <Accordion
+      className="mt-2"
+      expandedKeys={isOpen ? [detailsKey] : []}
+      items={[
+        {
+          content: (
+            <>
+              {WHEN_CLAUSE_NAMES.filter((clauseName) =>
+                usedClauses.has(clauseName),
+              ).map((clauseName) => (
+                <WhenClauseRow
+                  key={clauseName}
+                  rules={rules}
+                  ruleIndex={ruleIndex}
+                  clauseName={clauseName}
+                  clauseValue={when[clauseName]}
+                  predicates={predicates}
+                  isReadOnly={isReadOnly}
+                  onCommitRules={onCommitRules}
+                />
+              ))}
+              {usedClauses.size === 0 && (
+                <p className="text-xs text-slate-500 italic">
+                  No clauses. Rule fires on every batch.
+                </p>
+              )}
+              {!isReadOnly &&
+                availableClauses.length > 0 && (
+                  <Select
+                    className="mt-2 w-56 font-mono"
+                    label="Condition type"
+                    onChange={(clauseName) => {
+                      if (!clauseName) {
+                        return
+                      }
+
+                      onCommitRules(
+                        addWhenClause({
+                          rules,
+                          ruleIndex,
+                          clauseName:
+                            clauseName as WhenClauseName,
+                        }),
+                      )
+                    }}
+                    options={availableClauses.map(
+                      (clauseName) => ({
+                        label: clauseName,
+                        value: clauseName,
+                      }),
+                    )}
+                    // The old markup reset itself with `event.target.value = ""`
+                    // — a direct DOM write, on a control React thought it owned,
+                    // to make a one-shot action list look unchosen again. It is
+                    // gone: the picked clause leaves `availableClauses` on the
+                    // same commit, so the browser falls back to the disabled
+                    // placeholder on its own.
+                    placeholder="+ Add clause…"
+                    size="sm"
+                  />
+                )}
+            </>
+          ),
+          // A read-only preview's section is DISABLED, not merely
+          // collapsed. `<details>` could not do this — a `<summary>`
+          // cannot be disabled — so `open={false}` was the only lever and
+          // the user could still click it open, at which point
+          // `onToggleDetails` was a no-op and nothing pushed the section
+          // shut again. It rendered exactly like a working disclosure.
+          isDisabled: isReadOnly,
+          key: detailsKey,
+          label:
+            "When (advanced — leave empty to always fire)",
+        },
+      ]}
+      onChange={(expandedKeys) => {
         onToggleDetails(
           detailsKey,
-          (event.target as HTMLDetailsElement).open,
+          expandedKeys.includes(detailsKey),
         )
       }}
-    >
-      <summary className="cursor-pointer text-xs text-slate-400 px-2 py-1 select-none">
-        When (advanced — leave empty to always fire)
-      </summary>
-      <div className="px-2 py-1.5">
-        {WHEN_CLAUSE_NAMES.filter((clauseName) =>
-          usedClauses.has(clauseName),
-        ).map((clauseName) => (
-          <WhenClauseRow
-            key={clauseName}
-            rules={rules}
-            ruleIndex={ruleIndex}
-            clauseName={clauseName}
-            clauseValue={when[clauseName]}
-            predicates={predicates}
-            isReadOnly={isReadOnly}
-            onCommitRules={onCommitRules}
-          />
-        ))}
-        {usedClauses.size === 0 && (
-          <p className="text-xs text-slate-500 italic">
-            No clauses. Rule fires on every batch.
-          </p>
-        )}
-        {!isReadOnly && availableClauses.length > 0 && (
-          <select
-            aria-label="Condition type"
-            value=""
-            onChange={(event) => {
-              if (!event.target.value) {
-                return
-              }
-              onCommitRules(
-                addWhenClause({
-                  rules,
-                  ruleIndex,
-                  clauseName: event.target
-                    .value as WhenClauseName,
-                }),
-              )
-              event.target.value = ""
-            }}
-            className="text-xs bg-slate-700 text-slate-200 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 mt-2"
-          >
-            <option value="">+ Add clause…</option>
-            {availableClauses.map((clauseName) => (
-              <option key={clauseName} value={clauseName}>
-                {clauseName}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-    </details>
+    />
   )
 }

@@ -2,7 +2,7 @@ import { useState } from "react"
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldControl } from "../CommandFieldControl/CommandFieldControl"
 import { TagInputBase } from "../TagInputBase/TagInputBase"
 
 type FolderTagsFieldProps = {
@@ -55,8 +55,7 @@ export const FolderTagsField = ({
   }))
 
   return (
-    <div>
-      <FieldLabel stepId={step.id} field={field} />
+    <CommandFieldControl field={field}>
       <TagInputBase
         tags={tags}
         onRemove={removeFolder}
@@ -68,6 +67,6 @@ export const FolderTagsField = ({
           onKeyDown: handleKeyDown,
         }}
       />
-    </div>
+    </CommandFieldControl>
   )
 }

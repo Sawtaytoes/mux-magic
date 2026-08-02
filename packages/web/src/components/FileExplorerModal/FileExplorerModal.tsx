@@ -1,4 +1,5 @@
-﻿import type {
+﻿import { SortableTableHeader } from "@charcuterie/ui"
+import type {
   DeleteFilesResponse,
   DeleteModeResponse,
   ListFilesResponse,
@@ -159,6 +160,15 @@ const buildBreadcrumb = (
 }
 
 // ─── Sort ─────────────────────────────────────────────────────────────────────
+
+// This app's own vocabulary is `"asc"` / `"desc"`; `aria-sort`'s is
+// `"ascending"` / `"descending"`, and those ARE the spec's token values
+// rather than a library preference. Mapped in one place rather than
+// renaming a type that reaches the comparator, the URL and the atom.
+const SORT_DIRECTION_BY_COLUMN_STATE = {
+  asc: "ascending",
+  desc: "descending",
+} as const
 
 const buildComparator =
   (column: SortColumn, direction: SortDirection) =>
@@ -322,15 +332,6 @@ export const FileExplorerModal = () => {
       setSortColumn(column)
       setSortDirection("asc")
     }
-  }
-
-  const sortIndicator = (column: SortColumn) => {
-    if (sortColumn !== column) return null
-    return (
-      <span className="ml-1 text-slate-300">
-        {sortDirection === "asc" ? "▲" : "▼"}
-      </span>
-    )
   }
 
   const toggleSelected = (
@@ -596,39 +597,61 @@ export const FileExplorerModal = () => {
                           }
                         />
                       </th>
+                      {/*
+                        Was a bare `<th onClick>` rendering the direction as
+                        `{sortDirection === "asc" ? "▲" : "▼"}`. Three things
+                        wrong, none of which any gate here could see:
+
+                        - **`aria-sort` existed nowhere in this repo.** A
+                          screen reader announces the glyph as "black
+                          up-pointing triangle" if the font has it, and this
+                          sandbox's headless Chromium does not — so the same
+                          character measures BLANK in a screenshot. axe has
+                          no rule for a missing `aria-sort`, because a table
+                          without one is simply not sorted as far as the
+                          accessibility tree knows.
+                        - **The header was unfocusable.** `onClick` on a
+                          `<th>` is mouse-only.
+                        - **The unsorted columns said nothing.** `none` is
+                          not the same as absent: absent means "not
+                          sortable", so omitting it told a screen-reader
+                          user the other three columns could not be sorted
+                          at all. `SortableTableHeader` writes `none` on
+                          every column it is not.
+                      */}
                       {(
                         [
                           {
                             col: "name" as const,
                             label: "Name",
-                            align: "text-left",
                           },
                           {
                             col: "duration" as const,
                             label: "Duration",
-                            align: "text-right",
                           },
                           {
                             col: "size" as const,
                             label: "Size",
-                            align: "text-right",
                           },
                           {
                             col: "mtime" as const,
                             label: "Modified",
-                            align: "text-left",
                           },
                         ] as const
-                      ).map(({ col, label, align }) => (
-                        <th
+                      ).map(({ col, label }) => (
+                        <SortableTableHeader
+                          direction={
+                            sortColumn === col
+                              ? SORT_DIRECTION_BY_COLUMN_STATE[
+                                  sortDirection
+                                ]
+                              : undefined
+                          }
                           key={col}
-                          className={`py-2 px-2 ${align} cursor-pointer hover:text-white select-none`}
-                          onClick={() => toggleSort(col)}
-                          title={`Sort by ${label.toLowerCase()}`}
+                          onSort={() => toggleSort(col)}
                         >
                           {label}
-                          {sortIndicator(col)}
-                        </th>
+                        </SortableTableHeader>
                       ))}
                       <th className="py-2 px-2 w-8" />
                     </tr>

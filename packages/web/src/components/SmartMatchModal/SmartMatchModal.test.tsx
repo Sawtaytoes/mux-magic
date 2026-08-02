@@ -32,6 +32,28 @@ const renderWithStore = (
     </Provider>,
   )
 
+/**
+ * The Plex-type select for one row, found by the name a screen reader
+ * hears rather than by a `data-plex-suffix-select` handle. The attribute
+ * was a `data-testid` under another name — a hook only the suite could
+ * see — and it is gone; `Select` requires an accessible name, so this
+ * query is the one a user and Playwright both make.
+ *
+ * **Re-queried on every call, never cached.** The control is uncontrolled
+ * and remounts when a new candidate re-derives the suffix, so a reference
+ * captured before that read the old node forever — and reported the fix
+ * from commit `bcb0f0b3` as broken when it was working.
+ */
+const findSuffixSelect = (filename: string) =>
+  screen.getByRole("combobox", {
+    name: `Plex type for ${filename}`,
+  }) as HTMLSelectElement
+
+const querySuffixSelect = (filename: string) =>
+  screen.queryByRole("combobox", {
+    name: `Plex type for ${filename}`,
+  })
+
 // Worker 25: the modal now consumes pre-ranked `FileSuggestion[]`
 // straight from the server payload — confidence values are realistic
 // stand-ins for what `rankCandidatesForFile` would produce for these
@@ -187,9 +209,7 @@ describe("SmartMatchModal", () => {
     store.set(smartMatchModalAtom, mixedPayload)
     renderWithStore(store)
     // BONUS_1 has "Theatrical Cut" → no keyword → ''. Must pick a type.
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="BONUS_1"]',
-    ) as HTMLSelectElement
+    const suffixSelect = findSuffixSelect("BONUS_1")
     await user.selectOptions(suffixSelect, "-trailer")
     await user.click(
       screen.getByRole("button", { name: /Apply/ }),
@@ -226,9 +246,7 @@ describe("SmartMatchModal", () => {
     const store = createStore()
     store.set(smartMatchModalAtom, mixedPayload)
     renderWithStore(store)
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="BONUS_1"]',
-    ) as HTMLSelectElement
+    const suffixSelect = findSuffixSelect("BONUS_1")
     await user.selectOptions(suffixSelect, "-trailer")
     await user.click(
       screen.getByRole("button", { name: /Apply/ }),
@@ -253,9 +271,7 @@ describe("SmartMatchModal", () => {
     const store = createStore()
     store.set(smartMatchModalAtom, mixedPayload)
     renderWithStore(store)
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="BONUS_1"]',
-    ) as HTMLSelectElement
+    const suffixSelect = findSuffixSelect("BONUS_1")
     await user.selectOptions(suffixSelect, "-trailer")
     await user.click(
       screen.getByRole("button", { name: /Apply/ }),
@@ -339,12 +355,8 @@ describe("SmartMatchModal", () => {
     // "Theatrical Cut" has no keyword → '' suffix → Apply is blocked by the
     // no-type pre-flight before even reaching collision detection. Pick a type
     // for both rows so the collision check runs.
-    const suffixSelectA = document.querySelector(
-      '[data-plex-suffix-select="BONUS_a"]',
-    ) as HTMLSelectElement
-    const suffixSelectB = document.querySelector(
-      '[data-plex-suffix-select="BONUS_b"]',
-    ) as HTMLSelectElement
+    const suffixSelectA = findSuffixSelect("BONUS_a")
+    const suffixSelectB = findSuffixSelect("BONUS_b")
     await user.selectOptions(suffixSelectA, "-trailer")
     await user.selectOptions(suffixSelectB, "-trailer")
     await user.click(
@@ -402,9 +414,7 @@ describe("SmartMatchModal", () => {
     // Select -other in the Plex type dropdown so the suffix is applied.
     // (In mixedPayload, "Theatrical Cut" has no keyword → '' default;
     // the user must pick a type before Apply is enabled.)
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="BONUS_1"]',
-    ) as HTMLSelectElement
+    const suffixSelect = findSuffixSelect("BONUS_1")
     await user.selectOptions(suffixSelect, "-other")
     await user.click(
       screen.getByRole("button", { name: /Apply/ }),
@@ -609,11 +619,10 @@ describe("SmartMatchModal", () => {
     })
     renderWithStore(store)
 
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="RED_SUN_UHD_t04"]',
-    ) as HTMLSelectElement | null
     // Seeded from the top candidate ("Opening Scene") → '-scene'.
-    expect(suffixSelect?.value).toBe("-scene")
+    expect(findSuffixSelect("RED_SUN_UHD_t04").value).toBe(
+      "-scene",
+    )
 
     // Open the picker and select the gallery candidate.
     const picker = screen.getByLabelText(
@@ -632,8 +641,12 @@ describe("SmartMatchModal", () => {
     })
 
     // Type must now follow the newly picked candidate → '-other'.
+    // Re-queried inside the `waitFor`: re-deriving the suffix remounts
+    // the uncontrolled select, so the node captured above is stale.
     await waitFor(() => {
-      expect(suffixSelect?.value).toBe("-other")
+      expect(
+        findSuffixSelect("RED_SUN_UHD_t04").value,
+      ).toBe("-other")
     })
   })
 
@@ -656,14 +669,11 @@ describe("SmartMatchModal", () => {
     store.set(smartMatchModalAtom, mixedPayload)
     renderWithStore(store)
     // BONUS_1 has candidates so the suffix select must be visible.
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="BONUS_1"]',
-    ) as HTMLSelectElement | null
+    const suffixSelect = findSuffixSelect("BONUS_1")
     expect(suffixSelect).not.toBeNull()
     // MOVIE_t99 also has candidates.
-    const suffixSelectMovieT99 = document.querySelector(
-      '[data-plex-suffix-select="MOVIE_t99"]',
-    ) as HTMLSelectElement | null
+    const suffixSelectMovieT99 =
+      findSuffixSelect("MOVIE_t99")
     expect(suffixSelectMovieT99).not.toBeNull()
   })
 
@@ -672,9 +682,7 @@ describe("SmartMatchModal", () => {
     const store = createStore()
     store.set(smartMatchModalAtom, mixedPayload)
     renderWithStore(store)
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="BONUS_1"]',
-    ) as HTMLSelectElement
+    const suffixSelect = findSuffixSelect("BONUS_1")
     expect(suffixSelect).not.toBeNull()
     await user.selectOptions(suffixSelect, "-deleted")
     expect(suffixSelect.value).toBe("-deleted")
@@ -715,9 +723,7 @@ describe("SmartMatchModal", () => {
     })
     renderWithStore(store)
     // Select -featurette for BONUS_1.
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="BONUS_1"]',
-    ) as HTMLSelectElement
+    const suffixSelect = findSuffixSelect("BONUS_1")
     await user.selectOptions(suffixSelect, "-featurette")
     await user.click(
       screen.getByRole("button", { name: /Apply/ }),
@@ -778,9 +784,7 @@ describe("SmartMatchModal", () => {
     }) as HTMLButtonElement
     expect(applyButton.disabled).toBe(true)
     // Confirm suffix select is on '' (no type) — the default for an un-typeable name.
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="BONUS_1"]',
-    ) as HTMLSelectElement
+    const suffixSelect = findSuffixSelect("BONUS_1")
     expect(suffixSelect.value).toBe("")
     // Attempt to click Apply anyway (button is disabled so no event fires, but
     // try clicking to verify the hard block: zero POSTs must be called).
@@ -809,10 +813,7 @@ describe("SmartMatchModal", () => {
     })
     renderWithStore(store)
     // No candidate name → suffix select must not be rendered.
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="MYSTERY_t01"]',
-    )
-    expect(suffixSelect).toBeNull()
+    expect(querySuffixSelect("MYSTERY_t01")).toBeNull()
   })
 
   test("7a: suffix <select> becomes visible once the user types a name in the zero-candidates input", async () => {
@@ -837,10 +838,7 @@ describe("SmartMatchModal", () => {
     ) as HTMLInputElement
     await user.type(textInput, "Something")
     // After typing, suffix select should appear.
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="MYSTERY_t01"]',
-    )
-    expect(suffixSelect).not.toBeNull()
+    expect(querySuffixSelect("MYSTERY_t01")).not.toBeNull()
   })
 
   test("7a: re-opening the modal with a filename that already ends in -featurette pre-selects Featurette in the suffix <select>", () => {
@@ -871,9 +869,9 @@ describe("SmartMatchModal", () => {
       ],
     })
     renderWithStore(store)
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="Spotlight on Puss in Boots-featurette"]',
-    ) as HTMLSelectElement | null
+    const suffixSelect = findSuffixSelect(
+      "Spotlight on Puss in Boots-featurette",
+    )
     expect(suffixSelect).not.toBeNull()
     expect(suffixSelect?.value).toBe("-featurette")
   })
@@ -923,9 +921,7 @@ describe("SmartMatchModal", () => {
     // indirectly by dispatching a click on the button after re-enabling it in
     // DOM, or just assert the warning appears after picking then clearing).
     // Simpler: pick a type, verify button enables, click Apply, verify POST.
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="BONUS_1"]',
-    ) as HTMLSelectElement
+    const suffixSelect = findSuffixSelect("BONUS_1")
     expect(suffixSelect.value).toBe("")
     await user.selectOptions(suffixSelect, "-interview")
     expect(applyButton.disabled).toBe(false)
@@ -972,9 +968,7 @@ describe("SmartMatchModal", () => {
       ],
     })
     renderWithStore(store)
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="BONUS_gallery"]',
-    ) as HTMLSelectElement | null
+    const suffixSelect = findSuffixSelect("BONUS_gallery")
     expect(suffixSelect).not.toBeNull()
     expect(suffixSelect?.value).toBe("-other")
   })
@@ -1016,9 +1010,7 @@ describe("SmartMatchModal", () => {
     })
     renderWithStore(store)
     // Change to -featurette so the old -interview suffix must be stripped.
-    const suffixSelect = document.querySelector(
-      '[data-plex-suffix-select="BONUS_1"]',
-    ) as HTMLSelectElement
+    const suffixSelect = findSuffixSelect("BONUS_1")
     await user.selectOptions(suffixSelect, "-featurette")
     await user.click(
       screen.getByRole("button", { name: /Apply/ }),

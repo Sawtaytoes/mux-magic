@@ -3,10 +3,10 @@ import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import type { Step } from "../../types"
+import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
 import { DslRulesBuilder } from "../DslRulesBuilder/DslRulesBuilder"
 import { RuleCard } from "../DslRulesBuilder/RuleCard"
 import type { DslRule } from "../DslRulesBuilder/types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
 
 const DEFAULT_RULES_PREVIEW: DslRule[] = [
   {
@@ -62,12 +62,10 @@ export const SubtitleRulesField = ({
   )
 
   return (
-    <div className="mb-2">
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <FieldLabel stepId={step.id} field={field} />
+    <CommandFieldGroup
+      actions={
         <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs text-slate-300">
           <input
-            id={`${step.command}-hasDefaultRules`}
             type="checkbox"
             checked={hasDefaultRules}
             onChange={(event) => {
@@ -81,7 +79,10 @@ export const SubtitleRulesField = ({
           />
           Has Default Rules
         </label>
-      </div>
+      }
+      className="mb-2"
+      field={field}
+    >
       {hasDefaultRules && (
         <div className="mt-2 mb-3 border border-amber-800/50 rounded px-3 py-2 bg-amber-950/20">
           <button
@@ -129,6 +130,6 @@ export const SubtitleRulesField = ({
         </div>
       )}
       <DslRulesBuilder step={step} />
-    </div>
+    </CommandFieldGroup>
   )
 }

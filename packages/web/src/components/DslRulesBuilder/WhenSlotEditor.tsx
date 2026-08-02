@@ -1,3 +1,4 @@
+import { Select } from "@charcuterie/ui"
 import { isPlainObject, isRefBody } from "./clauseUtils"
 import {
   addWhenEntry,
@@ -47,34 +48,32 @@ export const WhenSlotEditor = ({
         <span className="text-xs uppercase tracking-wide text-slate-400">
           {slotLabel}
         </span>
-        <select
-          disabled={isReadOnly}
-          value={refName}
-          onChange={(event) => {
+        <Select
+          className="w-56 font-mono"
+          isDisabled={isReadOnly}
+          key={refName}
+          label={`${slotLabel} predicate`}
+          onChange={(nextRefName) => {
             onCommitRules(
               setWhenClauseRef({
                 rules,
                 ruleIndex,
                 clauseName,
                 slot,
-                refName: event.target.value,
+                refName: nextRefName,
               }),
             )
           }}
-          className="text-xs bg-slate-700 text-slate-200 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500"
-        >
-          <option value="">
-            {refName ? "" : "— inline —"}
-          </option>
-          {predicateNames.map((predicateName) => (
-            <option
-              key={predicateName}
-              value={predicateName}
-            >
-              $ref: {predicateName}
-            </option>
-          ))}
-        </select>
+          options={[
+            { label: "— inline —", value: "" },
+            ...predicateNames.map((predicateName) => ({
+              label: `$ref: ${predicateName}`,
+              value: predicateName,
+            })),
+          ]}
+          size="sm"
+          value={refName}
+        />
       </div>
       {!isRef && (
         <>
