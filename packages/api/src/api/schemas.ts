@@ -1237,9 +1237,21 @@ export const nameAnimeEpisodesAniDBRequestSchema = z
       .describe(
         "Which AniDB episode types to rename. Each non-regular sub-type is run separately: specials (S), credits (C, OP/ED), trailers (T), parodies (P) all run the length-matched per-file picker and emit Plex's s00eNN. Others (type=6 alts) and regular are index-paired with a duration sanity-check warning.",
       ),
+    filenameRegex: z
+      .string()
+      .optional()
+      .describe(
+        'Regex with a named capture group (?<episodeNumber>…) used to pair each file to the AniDB episode whose number matches the captured value (e.g. "S\\\\d+E(?<episodeNumber>\\\\d+)"). Matched case-insensitively. Fixes mis-pairing on partial, non-contiguous, or out-of-order sets. Files that don\'t match fall back to index pairing (see startEpisodeNumber). Applies to the index-paired regular/others types only.',
+      ),
+    startEpisodeNumber: z
+      .number()
+      .optional()
+      .describe(
+        "First episode number when pairing a partial set by natural-sort index (e.g. 5 names the files s01e05, s01e06, …). Ignored for files matched by filenameRegex. Defaults to 1. Applies to the index-paired regular/others types only.",
+      ),
   })
   .describe(
-    "Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Episode-range selection is planned — see README §AniDB command notes.",
+    "Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Partial or non-contiguous sets can be paired by extracted episode number (filenameRegex) or by a natural-sort index offset (startEpisodeNumber).",
   )
 
 export const nameSpecialFeaturesDvdCompareTmdbRequestSchema =

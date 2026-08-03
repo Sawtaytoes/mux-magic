@@ -1476,6 +1476,16 @@ export const COMMANDS: Commands = {
             },
           ],
         }),
+        field("filenameRegex", {
+          type: "string",
+          label: "Filename Regex",
+          placeholder: "S\\d+E(?<episodeNumber>\\d+)",
+        }),
+        field("startEpisodeNumber", {
+          type: "number",
+          label: "Start Episode Number",
+          placeholder: "5",
+        }),
       ],
     }
   })(),
