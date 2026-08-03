@@ -50,6 +50,21 @@ const builder = (yargs: Argv) =>
       nargs: 1,
       type: "string",
     })
+    .option("filenameRegex", {
+      alias: "f",
+      describe:
+        'Regex with a named capture group (?<episodeNumber>…) to pair each file to the AniDB episode whose number matches the captured value (e.g. "S\\d+E(?<episodeNumber>\\d+)"). Matched case-insensitively. Non-matching files fall back to index pairing. Regular/others only.',
+      nargs: 1,
+      type: "string",
+    })
+    .option("startEpisodeNumber", {
+      alias: "e",
+      describe:
+        "First episode number when pairing a partial set by natural-sort index (e.g. 5 → s01e05, s01e06, …). Ignored for files matched by --filenameRegex. Defaults to 1. Regular/others only.",
+      nargs: 1,
+      number: true,
+      type: "number",
+    })
     .positional("sourcePath", {
       demandOption: true,
       describe: "Directory where all episodes are located.",
@@ -82,9 +97,11 @@ export const nameAnimeEpisodesAniDBCommand: CommandModule<
     nameAnimeEpisodesAniDB({
       anidbId: argv.anidbId,
       episodeType: argv.episodeType as AnidbEpisodeCategory,
+      filenameRegex: argv.filenameRegex,
       searchTerm: argv.searchTerm,
       seasonNumber: argv.seasonNumber,
       sourcePath: argv.sourcePath,
+      startEpisodeNumber: argv.startEpisodeNumber,
     })
       .pipe(toArray())
       .subscribe(subscribeCli())

@@ -690,9 +690,11 @@ export const commandConfigs: Record<
       nameAnimeEpisodesAniDB({
         anidbId: body.anidbId,
         episodeType: body.episodeType,
+        filenameRegex: body.filenameRegex,
         searchTerm: body.searchTerm,
         seasonNumber: body.seasonNumber,
         sourcePath: body.sourcePath,
+        startEpisodeNumber: body.startEpisodeNumber,
       }),
     schema: schemas.nameAnimeEpisodesAniDBRequestSchema,
     summary:
