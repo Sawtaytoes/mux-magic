@@ -149,6 +149,93 @@ const formatOutputFilename = ({
   )
 }
 
+// Compile the optional filenameRegex once. Throws a descriptive error
+// on an invalid pattern so it surfaces on the run card instead of a
+// cryptic RegExp SyntaxError. Case-insensitive so "S02E05" / "s02e05"
+// both match without the caller thinking about it.
+export const compileFilenameRegex = (
+  filenameRegex: string | undefined,
+): RegExp | null => {
+  if (!filenameRegex) {
+    return null
+  }
+  try {
+    return new RegExp(filenameRegex, "i")
+  } catch (error) {
+    throw new Error(
+      `Invalid filenameRegex "${filenameRegex}": ${(error as Error).message}`,
+    )
+  }
+}
+
+// Pull the episode number out of a filename via the compiled regex's
+// (?<episodeNumber>…) named group. Returns null when the regex has no
+// such group, doesn't match, or captures a non-number.
+export const extractEpisodeNumberFromFilename = (
+  filename: string,
+  compiledFilenameRegex: RegExp,
+): number | null => {
+  const captured =
+    compiledFilenameRegex.exec(filename)?.groups
+      ?.episodeNumber
+  if (captured == null) {
+    return null
+  }
+  const parsed = Number(captured)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+// Decide which AniDB episode a file pairs with in the index-paired
+// (regular / others) branch. Precedence:
+//   1. filenameRegex — pair by the episode number extracted from the
+//      filename (matched against AniDB's epno on its numeric part).
+//      Handles partial, non-contiguous, and out-of-order sets.
+//   2. startEpisodeNumber — offset natural-sort index pairing so a
+//      contiguous partial set begins at episode N (e.g. 5 → s01e05).
+//   3. default — natural-sort index pairing from episode 1.
+// A file that doesn't match the regex falls through to the offset path,
+// so a regex over a mixed folder degrades gracefully instead of
+// dropping the file.
+export const pairEpisodeToFileIndex = ({
+  compiledFilenameRegex,
+  episodes,
+  filename,
+  index,
+  startEpisodeNumber,
+}: {
+  compiledFilenameRegex: RegExp | null
+  episodes: AnidbEpisode[]
+  filename: string
+  index: number
+  startEpisodeNumber: number
+}): {
+  episode: AnidbEpisode | undefined
+  sequentialIndex: number
+} => {
+  if (compiledFilenameRegex) {
+    const episodeNumber = extractEpisodeNumberFromFilename(
+      filename,
+      compiledFilenameRegex,
+    )
+    if (episodeNumber != null) {
+      return {
+        episode: episodes.find(
+          (candidate) =>
+            Number(
+              candidate.epno.replace(/[^0-9]/g, ""),
+            ) === episodeNumber,
+        ),
+        sequentialIndex: episodeNumber,
+      }
+    }
+  }
+  const startOffset = startEpisodeNumber - 1
+  return {
+    episode: episodes.at(index + startOffset),
+    sequentialIndex: index + 1 + startOffset,
+  }
+}
+
 // Sanity-check the duration of a file paired by index against its
 // AniDB episode's reported `length`. Uses the rounding-aware
 // effective delta so a 32m file paired with a 35m AniDB episode
@@ -233,15 +320,19 @@ const resolveMovieFormatVariant = (
 export const nameAnimeEpisodesAniDB = ({
   anidbId,
   episodeType = "regular",
+  filenameRegex,
   searchTerm,
   seasonNumber,
   sourcePath,
+  startEpisodeNumber = 1,
 }: {
   anidbId?: number
   episodeType?: AnidbEpisodeCategory
+  filenameRegex?: string
   searchTerm?: string
   seasonNumber: number
   sourcePath: string
+  startEpisodeNumber?: number
 }) =>
   getFiles({ sourcePath }).pipe(
     toArray(),
@@ -363,18 +454,28 @@ export const nameAnimeEpisodesAniDB = ({
             )
           }
 
-          // regular + others share index-based pairing. The pair index
-          // is 0-based against the sorted video file list;
-          // sequentialIndex is 1-based for filename use. Each pair
-          // also reads the file's mediainfo duration and warns when
-          // the file/episode lengths diverge — advisory, the rename
-          // still applies.
+          // regular + others share index-based pairing. By default the
+          // 0-based file index against the sorted video list picks the
+          // episode (sequentialIndex is 1-based for filename use), but
+          // filenameRegex (pair by extracted episode number) or
+          // startEpisodeNumber (offset the index) override that for
+          // partial / non-contiguous sets. Each pair also reads the
+          // file's mediainfo duration and warns when the file/episode
+          // lengths diverge — advisory, the rename still applies.
+          const compiledFilenameRegex =
+            compileFilenameRegex(filenameRegex)
           return videoFileInfos$.pipe(
-            map((fileInfo, index) => ({
-              episode: episodes.at(index),
-              fileInfo,
-              sequentialIndex: index + 1,
-            })),
+            map((fileInfo, index) => {
+              const { episode, sequentialIndex } =
+                pairEpisodeToFileIndex({
+                  compiledFilenameRegex,
+                  episodes,
+                  filename: fileInfo.filename,
+                  index,
+                  startEpisodeNumber,
+                })
+              return { episode, fileInfo, sequentialIndex }
+            }),
             concatMap(
               ({ episode, fileInfo, sequentialIndex }) => {
                 if (!episode) {
