@@ -1,9 +1,10 @@
-import { useSetAtom } from "jotai"
-import { useRef } from "react"
+import type { ListboxItem } from "@charcuterie/ui"
+import { Combobox } from "@charcuterie/ui"
+import { useState } from "react"
 import type { CommandField } from "../../commands/types"
-import { enumPickerStateAtom } from "../../state/pickerAtoms"
+import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { CommandFieldControl } from "../CommandFieldControl/CommandFieldControl"
+import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
 
 type EnumFieldProps = {
   step: Step
@@ -14,50 +15,73 @@ export const EnumField = ({
   step,
   field,
 }: EnumFieldProps) => {
-  const setEnumPickerState = useSetAtom(enumPickerStateAtom)
-  const buttonRef = useRef<HTMLButtonElement>(null)
+  const { setParam } = useBuilderActions()
+  const [isOpen, setIsOpen] = useState(false)
+
+  const enumOptions = field.options ?? []
 
   const selected =
     step.params[field.name] ?? field.default ?? ""
-  const selectedOption = (field.options ?? []).find(
+  const selectedOption = enumOptions.find(
     (option) => option.value === selected,
   )
   const triggerLabel =
     selectedOption?.label ?? String(selected)
 
-  const handleClick = () => {
-    if (!buttonRef.current) return
-    const rect = buttonRef.current.getBoundingClientRect()
-    setEnumPickerState({
-      anchor: {
-        stepId: step.id,
-        fieldName: field.name,
-      },
-      triggerRect: {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
-      },
-    })
+  // Enum values may be non-string (number/boolean); the Combobox keys on
+  // strings, so map back to the original typed value on select.
+  const optionByValue = new Map(
+    enumOptions.map((option) => [
+      String(option.value),
+      option.value,
+    ]),
+  )
+
+  const options: ListboxItem[] = enumOptions.map(
+    (option) => ({
+      value: String(option.value),
+      textValue: `${option.label} ${String(option.value)}`,
+      label: option.label,
+    }),
+  )
+
+  const handleSelect = (value: string) => {
+    setParam(
+      step.id,
+      field.name,
+      optionByValue.get(value) ?? value,
+    )
+    setIsOpen(false)
   }
 
+  const trigger = (
+    <button
+      type="button"
+      onClick={() =>
+        setIsOpen((isCurrentlyOpen) => !isCurrentlyOpen)
+      }
+      data-enum-picker-trigger
+      className="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer"
+    >
+      <span className="flex-1 min-w-0 truncate">
+        {triggerLabel}
+      </span>
+      <span className="text-slate-400 shrink-0">▾</span>
+    </button>
+  )
+
   return (
-    <CommandFieldControl field={field}>
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={handleClick}
-        data-enum-picker-trigger
-        className="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer"
-      >
-        <span className="flex-1 min-w-0 truncate">
-          {triggerLabel}
-        </span>
-        <span className="text-slate-400 shrink-0">▾</span>
-      </button>
-    </CommandFieldControl>
+    <CommandFieldGroup field={field}>
+      <Combobox
+        trigger={trigger}
+        isVisible={isOpen}
+        onDismiss={() => setIsOpen(false)}
+        onSelect={handleSelect}
+        options={options}
+        selectedValue={String(selected)}
+        placeholder="Search options…"
+        emptyLabel="No options match."
+      />
+    </CommandFieldGroup>
   )
 }

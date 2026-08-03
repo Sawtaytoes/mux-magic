@@ -124,9 +124,28 @@ describe("LanguageCodeField — selected tag rendering", () => {
 })
 
 describe("LanguageCodeField — filter autocomplete", () => {
-  test("renders a filter combobox input", () => {
+  // The Combobox filter input lives in the portalled popup, opened from
+  // the "Add/Change …" trigger button — not inline in the field. The
+  // variant Select (also role="combobox") is a sibling, so open the picker
+  // by its button and read the popup input directly.
+  const openPicker = async (
+    user: ReturnType<typeof userEvent.setup>,
+  ) => {
+    await user.click(
+      screen.getByRole("button", {
+        name: /audio language/i,
+      }),
+    )
+    return screen.getByRole("combobox")
+  }
+
+  test("opening the picker reveals a filter combobox input", async () => {
+    const user = userEvent.setup()
     const step = createMockStep()
     renderField(step, field)
+
+    expect(screen.queryByRole("combobox")).toBeNull()
+    await openPicker(user)
     expect(screen.getByRole("combobox")).toBeInTheDocument()
   })
 
@@ -135,7 +154,7 @@ describe("LanguageCodeField — filter autocomplete", () => {
     const step = createMockStep()
     renderField(step, field)
 
-    await user.type(screen.getByRole("combobox"), "eng")
+    await user.type(await openPicker(user), "eng")
 
     expect(screen.getByRole("listbox")).toBeInTheDocument()
     expect(
@@ -148,10 +167,7 @@ describe("LanguageCodeField — filter autocomplete", () => {
     const step = createMockStep()
     renderField(step, field)
 
-    await user.type(
-      screen.getByRole("combobox"),
-      "Japanese",
-    )
+    await user.type(await openPicker(user), "Japanese")
 
     const listbox = screen.getByRole("listbox")
     expect(
@@ -164,7 +180,7 @@ describe("LanguageCodeField — filter autocomplete", () => {
     const step = createMockStep()
     renderField(step, field)
 
-    await user.click(screen.getByRole("combobox"))
+    await openPicker(user)
 
     const options = screen.getAllByRole("option")
     expect(
@@ -177,7 +193,7 @@ describe("LanguageCodeField — filter autocomplete", () => {
     const step = createMockStep()
     const store = renderField(step, field)
 
-    await user.type(screen.getByRole("combobox"), "jpn")
+    await user.type(await openPicker(user), "jpn")
 
     const listbox = screen.getByRole("listbox")
     const jpnOption = within(listbox)
@@ -192,18 +208,20 @@ describe("LanguageCodeField — filter autocomplete", () => {
     )
   })
 
-  test("selecting an option clears the filter input", async () => {
+  test("selecting an option closes the picker", async () => {
     const user = userEvent.setup()
     const step = createMockStep()
     renderField(step, field)
 
-    await user.type(screen.getByRole("combobox"), "eng")
+    await user.type(await openPicker(user), "eng")
     const listbox = screen.getByRole("listbox")
     const firstOption =
       within(listbox).getAllByRole("option")[0]
     await user.click(firstOption)
 
-    expect(screen.getByRole("combobox")).toHaveValue("")
+    // The variant Select stays a combobox once a code is chosen, but the
+    // filter popup is gone — no listbox remains open.
+    expect(screen.queryByRole("listbox")).toBeNull()
   })
 
   test("selecting a new code replaces the previous selection", async () => {
@@ -213,7 +231,7 @@ describe("LanguageCodeField — filter autocomplete", () => {
     })
     const store = renderField(step, field)
 
-    await user.type(screen.getByRole("combobox"), "Korean")
+    await user.type(await openPicker(user), "Korean")
 
     const listbox = screen.getByRole("listbox")
     const korOption = within(listbox)
@@ -237,7 +255,7 @@ describe("LanguageCodeField — filter autocomplete", () => {
 
     // Type a letter that matches many codes — "j" — so the listbox renders
     // with results. The selected code "jpn" must not appear among them.
-    await user.type(screen.getByRole("combobox"), "j")
+    await user.type(await openPicker(user), "j")
 
     const listbox = screen.getByRole("listbox")
     const options = within(listbox).queryAllByRole("option")

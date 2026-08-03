@@ -8,10 +8,7 @@ import { commandLabel } from "../../jobs/commandLabels"
 import { flattenSteps } from "../../jobs/sequenceUtils"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
-import {
-  linkPickerStateAtom,
-  pathPickerStateAtom,
-} from "../../state/pickerAtoms"
+import { pathPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type {
   PathVariable,
@@ -20,6 +17,7 @@ import type {
   StepLink,
 } from "../../types"
 import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
+import { LinkPicker } from "../LinkPicker/LinkPicker"
 import { parentPathFromInput } from "../PathPicker/parentPathFromInput"
 
 type PathFieldProps = {
@@ -63,14 +61,12 @@ export const PathField = ({
     setPathValue,
   } = useBuilderActions()
   const setFileExplorer = useSetAtom(fileExplorerAtom)
-  const setLinkPickerState = useSetAtom(linkPickerStateAtom)
   const setPathPickerState = useSetAtom(pathPickerStateAtom)
   const paths = useAtomValue(pathsAtom)
   const allSteps = useAtomValue(stepsAtom)
   const commands = useAtomValue(commandsAtom)
 
   const inputRef = useRef<HTMLInputElement>(null)
-  const linkButtonRef = useRef<HTMLButtonElement>(null)
   const debounceTimerRef = useRef<ReturnType<
     typeof setTimeout
   > | null>(null)
@@ -123,16 +119,6 @@ export const PathField = ({
     })
   }
 
-  const handleLinkPicker = () => {
-    const buttonRect =
-      linkButtonRef.current?.getBoundingClientRect()
-    if (!buttonRect) return
-    setLinkPickerState({
-      anchor: { stepId: step.id, fieldName: field.name },
-      triggerRect: buttonRect,
-    })
-  }
-
   return (
     <CommandFieldGroup
       actions={
@@ -146,18 +132,11 @@ export const PathField = ({
           >
             📁
           </button>
-          <button
-            ref={linkButtonRef}
-            type="button"
-            onClick={handleLinkPicker}
-            title="Link to a path variable or step output"
-            className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer"
-          >
-            <span className="truncate">{linkLabel}</span>
-            <span className="text-slate-400 shrink-0">
-              ▾
-            </span>
-          </button>
+          <LinkPicker
+            stepId={step.id}
+            fieldName={field.name}
+            label={linkLabel}
+          />
         </div>
       }
       className="mb-2"

@@ -1,6 +1,8 @@
-import { useAtom, useAtomValue } from "jotai"
-import { useEffect, useRef, useState } from "react"
-import { createPortal } from "react-dom"
+import type { ListboxItem } from "@charcuterie/ui"
+import { Combobox } from "@charcuterie/ui"
+import { useAtomValue } from "jotai"
+import type { ReactNode } from "react"
+import { useState } from "react"
 import { stepOutput } from "../../commands/links"
 import type { Commands } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
@@ -8,11 +10,6 @@ import { commandLabel } from "../../jobs/commandLabels"
 import { flattenSteps } from "../../jobs/sequenceUtils"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
-import {
-  type LinkPickerAnchor,
-  linkPickerStateAtom,
-  type TriggerRect,
-} from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type {
   PathVariable,
@@ -20,8 +17,10 @@ import type {
   StepLink,
 } from "../../types"
 
-const PICKER_WIDTH = 360
-const PICKER_MAX_HEIGHT = 400
+type LinkPickerAnchor = {
+  stepId: string
+  fieldName: string
+}
 
 const getCommandLabel = (name: string) => commandLabel(name)
 
@@ -141,309 +140,147 @@ const buildItems = (
   return pathItems.concat(stepItems)
 }
 
-const findInitialIndex = (
-  items: LinkItem[],
+const currentLinkValue = (
   anchor: LinkPickerAnchor,
   allSteps: SequenceItem[],
-) => {
+): string | undefined => {
   const flatOrder = flattenSteps(allSteps)
   const entry = flatOrder.find(
     (flatEntry) => flatEntry.step.id === anchor.stepId,
   )
-  if (!entry) {
-    return 0
-  }
   const link: StepLink | undefined =
-    entry.step.links?.[anchor.fieldName]
+    entry?.step.links?.[anchor.fieldName]
   if (typeof link === "string") {
-    const idx = items.findIndex(
-      (item) =>
-        item.kind === "path" &&
-        item.pathVariableId === link,
-    )
-    return idx >= 0 ? idx : 0
+    return `path:${link}`
   }
   if (link && typeof link === "object" && link.linkedTo) {
-    const idx = items.findIndex(
-      (item) =>
-        item.kind === "step" &&
-        item.sourceStepId === link.linkedTo &&
-        item.outputName === link.output,
-    )
-    return idx >= 0 ? idx : 0
+    return `step:${link.linkedTo}:${link.output}`
   }
-  return 0
+  return undefined
 }
 
-const matchesQuery = (item: LinkItem, query: string) =>
-  item.label.toLowerCase().includes(query) ||
-  item.detail.toLowerCase().includes(query)
-
-const computePosition = (
-  rect: TriggerRect,
-  width: number,
-  maxHeight: number,
-) => {
-  const margin = 8
-  const initialLeft = Math.round(
-    (rect.left + rect.right) / 2 - width / 2,
-  )
-  const clampedLeft = (() => {
-    if (initialLeft + width > window.innerWidth - margin) {
-      return Math.max(
-        margin,
-        window.innerWidth - width - margin,
-      )
-    }
-    if (initialLeft < margin) {
-      return margin
-    }
-    return initialLeft
-  })()
-  const spaceBelow =
-    window.innerHeight - rect.bottom - margin
-  const spaceAbove = rect.top - margin
-  const isFlippedAbove =
-    spaceBelow < 200 && spaceAbove > spaceBelow
-  const { top, height } = (() => {
-    if (isFlippedAbove) {
-      const flippedHeight = Math.min(
-        maxHeight,
-        Math.max(0, spaceAbove),
-      )
-      return {
-        top: rect.top - flippedHeight - 4,
-        height: flippedHeight,
-      }
-    }
-    const droppedHeight = Math.min(
-      maxHeight,
-      Math.max(0, spaceBelow),
-    )
-    return { top: rect.bottom + 4, height: droppedHeight }
-  })()
-  const clampedTop = Math.max(
-    margin,
-    Math.min(top, window.innerHeight - height - margin),
-  )
-  return {
-    top: clampedTop,
-    left: clampedLeft,
-    maxHeight: height,
-  }
-}
+const toOption = (item: LinkItem): ListboxItem => ({
+  value: item.value,
+  textValue: `${item.label} ${item.detail}`,
+  label: (
+    <span className="flex min-w-0 flex-1 flex-col">
+      <span
+        className={
+          item.kind === "path"
+            ? "text-xs font-medium"
+            : "text-xs font-mono"
+        }
+      >
+        {item.label}
+      </span>
+      {item.detail && (
+        <span className="path-detail font-mono text-[11px] text-slate-400 wrap-anywhere">
+          {makePathBreakable(item.detail)}
+        </span>
+      )}
+    </span>
+  ),
+})
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export const LinkPicker = () => {
-  const [pickerState, setPickerState] = useAtom(
-    linkPickerStateAtom,
-  )
+type LinkPickerProps = {
+  stepId: string
+  fieldName: string
+  /** The current link's display label, shown on the trigger button. */
+  label: ReactNode
+}
+
+/**
+ * Wires a step field to a prior step's output or a path variable. Rendered
+ * inline at each link-button site (`PathField`, `StringArrayField`) rather
+ * than as a singleton — the searchable Combobox portals itself and anchors
+ * off its own trigger.
+ */
+export const LinkPicker = ({
+  stepId,
+  fieldName,
+  label,
+}: LinkPickerProps) => {
   const allSteps = useAtomValue(stepsAtom)
   const paths = useAtomValue(pathsAtom)
   const commands = useAtomValue(commandsAtom)
   const { setLink } = useBuilderActions()
-  const [query, setQuery] = useState("")
-  const [activeIndex, setActiveIndex] = useState(0)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [isOpen, setIsOpen] = useState(false)
 
-  const allItems = pickerState
-    ? buildItems(
-        pickerState.anchor,
-        allSteps,
-        paths,
-        commands,
+  const anchor = { stepId, fieldName }
+  const items = buildItems(
+    anchor,
+    allSteps,
+    paths,
+    commands,
+  )
+  const options = items.map(toOption)
+
+  const flat = flattenSteps(allSteps)
+  const anchorStep = flat.find(
+    (entry) => entry.step.id === stepId,
+  )?.step
+  const anchorField = anchorStep?.command
+    ? commands[anchorStep.command]?.fields.find(
+        (entry) => entry.name === fieldName,
       )
-    : []
-  const hasAcceptedOutputsWhitelist = (() => {
-    if (!pickerState) return false
-    const flat = flattenSteps(allSteps)
-    const anchorStep = flat.find(
-      (entry) =>
-        entry.step.id === pickerState.anchor.stepId,
-    )?.step
-    if (!anchorStep?.command) return false
-    const anchorField = commands[
-      anchorStep.command
-    ]?.fields.find(
-      (entry) =>
-        entry.name === pickerState.anchor.fieldName,
+    : undefined
+  const hasAcceptedOutputsWhitelist = Array.isArray(
+    anchorField?.acceptedOutputs,
+  )
+
+  const handleSelect = (value: string) => {
+    const item = items.find(
+      (candidate) => candidate.value === value,
     )
-    return Array.isArray(anchorField?.acceptedOutputs)
-  })()
-  const queryLower = query.trim().toLowerCase()
-  const filtered = queryLower
-    ? allItems.filter((item) =>
-        matchesQuery(item, queryLower),
-      )
-    : allItems
-  const safeActiveIndex =
-    activeIndex >= filtered.length ? 0 : activeIndex
-
-  useEffect(() => {
-    if (!pickerState) {
+    setIsOpen(false)
+    if (!item) {
       return
     }
-    const items = buildItems(
-      pickerState.anchor,
-      allSteps,
-      paths,
-      commands,
-    )
-    setQuery("")
-    setActiveIndex(
-      findInitialIndex(items, pickerState.anchor, allSteps),
-    )
-    setTimeout(() => inputRef.current?.focus(), 0)
-  }, [pickerState, allSteps, paths, commands])
-
-  useEffect(() => {
-    if (!pickerState) {
-      return
-    }
-    const handleMouseDown = (event: MouseEvent) => {
-      const target = event.target as Node
-      const popover = document.getElementById(
-        "link-picker-react",
-      )
-      if (popover?.contains(target)) {
-        return
-      }
-      setPickerState(null)
-    }
-    document.addEventListener(
-      "mousedown",
-      handleMouseDown,
-      true,
-    )
-    return () =>
-      document.removeEventListener(
-        "mousedown",
-        handleMouseDown,
-        true,
-      )
-  }, [pickerState, setPickerState])
-
-  const close = () => setPickerState(null)
-
-  const selectItem = (item: LinkItem) => {
-    const anchor = pickerState?.anchor
-    close()
-    if (!anchor) return
     if (item.kind === "path") {
-      setLink(
-        anchor.stepId,
-        anchor.fieldName,
-        item.pathVariableId,
-      )
+      setLink(stepId, fieldName, item.pathVariableId)
     } else {
-      setLink(anchor.stepId, anchor.fieldName, {
+      setLink(stepId, fieldName, {
         linkedTo: item.sourceStepId,
         output: item.outputName,
       })
     }
   }
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Escape") {
-      event.preventDefault()
-      close()
-      return
-    }
-    if (!filtered.length) {
-      return
-    }
-    if (event.key === "ArrowDown") {
-      event.preventDefault()
-      setActiveIndex((prev) => (prev + 1) % filtered.length)
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault()
-      setActiveIndex(
-        (prev) =>
-          (prev - 1 + filtered.length) % filtered.length,
-      )
-    } else if (event.key === "Enter") {
-      event.preventDefault()
-      if (filtered[safeActiveIndex]) {
-        selectItem(filtered[safeActiveIndex])
+  const trigger = (
+    <button
+      type="button"
+      title="Link to a path variable or step output"
+      onClick={() =>
+        setIsOpen((isCurrentlyOpen) => !isCurrentlyOpen)
       }
-    }
-  }
-
-  if (!pickerState) {
-    return null
-  }
-
-  const { top, left, maxHeight } = computePosition(
-    pickerState.triggerRect,
-    PICKER_WIDTH,
-    PICKER_MAX_HEIGHT,
+      className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer"
+    >
+      <span className="truncate">{label}</span>
+      <span className="text-slate-400 shrink-0">▾</span>
+    </button>
   )
 
-  return createPortal(
-    <div
-      id="link-picker-react"
-      role="listbox"
-      aria-label="Link picker"
-      className="fixed z-40 bg-slate-900 border border-slate-600 rounded-lg shadow-xl flex flex-col"
-      style={{ top, left, width: PICKER_WIDTH, maxHeight }}
-    >
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder="Search locations…"
-        className="shrink-0 w-full px-3 py-2 text-xs bg-transparent border-b border-slate-700 text-slate-200 placeholder:text-slate-500 outline-none"
-        value={query}
-        onChange={(event) => {
-          setQuery(event.target.value)
-          setActiveIndex(0)
-        }}
-        onKeyDown={handleKeyDown}
-        aria-autocomplete="list"
-      />
-      <div className="overflow-y-auto py-1 flex-1">
-        {filtered.length === 0 ? (
-          <p className="text-xs text-slate-500 text-center py-4">
-            No matches.
-          </p>
-        ) : (
-          filtered.map((item, index) => {
-            const isActive = index === safeActiveIndex
-            const labelClass = `text-xs ${isActive ? "text-white" : "text-slate-200"} ${item.kind === "path" ? "font-medium" : "font-mono"}`
-            const detailClass = `path-detail font-mono text-[11px] pl-4 ${isActive ? "text-blue-100" : "text-slate-400"}`
-            return (
-              <button
-                key={item.value}
-                type="button"
-                role="option"
-                aria-selected={isActive}
-                className={`w-full text-left px-3 py-1.5 ${isActive ? "bg-blue-700" : "hover:bg-slate-800"}`}
-                onMouseDown={(event) =>
-                  event.preventDefault()
-                }
-                onClick={() => selectItem(item)}
-              >
-                <div className={labelClass}>
-                  {item.label}
-                </div>
-                {item.detail && (
-                  <div className={detailClass}>
-                    {makePathBreakable(item.detail)}
-                  </div>
-                )}
-              </button>
-            )
-          })
-        )}
-      </div>
-      {hasAcceptedOutputsWhitelist ? null : (
-        <div className="shrink-0 px-3 py-2 border-t border-slate-700 text-[11px] text-slate-500 italic">
-          {
-            "Don't see what you need? Close this and type a path directly into the field — it saves as a new path automatically."
-          }
-        </div>
-      )}
-    </div>,
-    document.body,
+  return (
+    <Combobox
+      trigger={trigger}
+      isVisible={isOpen}
+      onDismiss={() => setIsOpen(false)}
+      onSelect={handleSelect}
+      options={options}
+      selectedValue={currentLinkValue(anchor, allSteps)}
+      placeholder="Search locations…"
+      emptyLabel="No matches."
+      footer={
+        hasAcceptedOutputsWhitelist ? undefined : (
+          <span className="italic">
+            {
+              "Don't see what you need? Close this and type a path directly into the field — it saves as a new path automatically."
+            }
+          </span>
+        )
+      }
+    />
   )
 }

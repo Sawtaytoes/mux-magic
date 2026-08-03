@@ -76,7 +76,7 @@ test.describe("Edit Variables modal", () => {
     await dialog
       .getByRole("button", { name: /add variable/i })
       .click()
-    await dialog
+    await page
       .getByRole("menuitem", { name: /^path$/i })
       .click()
     // A new variable card should appear inside the modal.
@@ -93,7 +93,7 @@ test.describe("Edit Variables modal", () => {
     await dialog
       .getByRole("button", { name: /add variable/i })
       .click()
-    await dialog
+    await page
       .getByRole("menuitem", { name: /max threads/i })
       .click()
     // The card renders the numeric thread-count input.
@@ -108,7 +108,7 @@ test.describe("Edit Variables modal", () => {
       .getByRole("button", { name: /add variable/i })
       .click()
     await expect(
-      dialog.getByRole("menuitem", {
+      page.getByRole("menuitem", {
         name: /max threads/i,
       }),
     ).toHaveCount(0)
@@ -122,7 +122,7 @@ test.describe("Edit Variables modal", () => {
     await dialog
       .getByRole("button", { name: /add variable/i })
       .click()
-    await dialog
+    await page
       .getByRole("menuitem", { name: /dvd compare id/i })
       .click()
     await expect(
@@ -184,7 +184,7 @@ test.describe("Variable YAML round-trip", () => {
     await dialog
       .getByRole("button", { name: /add variable/i })
       .click()
-    await dialog
+    await page
       .getByRole("menuitem", { name: /^path$/i })
       .click()
 
@@ -259,7 +259,7 @@ test.describe("Variable YAML round-trip", () => {
     await dialog
       .getByRole("button", { name: /add variable/i })
       .click()
-    await dialog
+    await page
       .getByRole("menuitem", { name: /max threads/i })
       .click()
     await dialog.getByRole("spinbutton").fill("4")
@@ -331,7 +331,7 @@ test.describe("Variable YAML round-trip", () => {
     await dialog
       .getByRole("button", { name: /add variable/i })
       .click()
-    await dialog
+    await page
       .getByRole("menuitem", { name: /dvd compare id/i })
       .click()
 

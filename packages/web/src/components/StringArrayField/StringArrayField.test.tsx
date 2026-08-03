@@ -8,7 +8,6 @@ import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, test } from "vitest"
 import { FIXTURE_COMMANDS_BUNDLE_C } from "../../commands/__fixtures__/commands"
 import type { CommandField } from "../../commands/types"
-import { linkPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
 import { StringArrayField } from "./StringArrayField"
@@ -184,19 +183,20 @@ describe("StringArrayField", () => {
       isLinkable: true,
     }
 
-    const store = renderField(step, pathsToDeleteField)
+    renderField(step, pathsToDeleteField)
 
+    expect(screen.queryByRole("listbox")).toBeNull()
     await user.click(
       screen.getByTitle(
         "Link to a path variable or step output",
       ),
     )
 
-    const pickerState = store.get(linkPickerStateAtom)
-    expect(pickerState?.anchor).toEqual({
-      stepId: "step-2",
-      fieldName: "pathsToDelete",
-    })
+    // The inline LinkPicker's searchable Combobox opens.
+    expect(screen.getByRole("listbox")).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText(/search locations/i),
+    ).toBeInTheDocument()
   })
 
   test("hides the text input and shows the linked source when a step link is set", () => {

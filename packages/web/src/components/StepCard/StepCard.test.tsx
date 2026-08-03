@@ -14,8 +14,11 @@ import {
   test,
   vi,
 } from "vitest"
+import {
+  COMMANDS,
+  TAG_ORDER,
+} from "../../commands/commands"
 import { commandsAtom } from "../../state/commandsAtom"
-import { commandPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
 import { promptModalAtom } from "../PromptModal/promptModalAtom"
@@ -121,20 +124,55 @@ describe("StepCard", () => {
     expect(store.get(stepsAtom)).toHaveLength(0)
   })
 
-  test("opens command picker on trigger click", async () => {
+  test("opens the command picker (Combobox) on trigger click", async () => {
     const user = userEvent.setup()
-    const store = renderCard(makeStep())
+    renderCard(makeStep())
 
+    expect(screen.queryByRole("listbox")).toBeNull()
     await user.click(
       screen.getByRole("button", {
         name: /pick a command/i,
       }),
     )
 
-    expect(store.get(commandPickerStateAtom)).not.toBeNull()
+    expect(screen.getByRole("listbox")).toBeInTheDocument()
     expect(
-      store.get(commandPickerStateAtom)?.anchor.stepId,
-    ).toBe("step_1")
+      screen.getByPlaceholderText(/search commands/i),
+    ).toBeInTheDocument()
+  })
+
+  test("selecting a command from the picker calls changeCommand", async () => {
+    const user = userEvent.setup()
+    const store = createStore()
+    store.set(commandsAtom, {
+      copyFiles: {
+        tag: "File Operations",
+        summary: "Copy files",
+        fields: [],
+        outputFolderName: null,
+      },
+    })
+    const step = makeStep()
+    store.set(stepsAtom, [step])
+    render(
+      <Provider store={store}>
+        <StepCard step={step} index={0} isFirst isLast />
+      </Provider>,
+    )
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /pick a command/i,
+      }),
+    )
+    await user.click(
+      screen.getByRole("option", { name: /copyFiles/ }),
+    )
+
+    expect((store.get(stepsAtom)[0] as Step).command).toBe(
+      "copyFiles",
+    )
+    expect(screen.queryByRole("listbox")).toBeNull()
   })
 
   test("shows error message when step has an error", () => {
@@ -322,4 +360,21 @@ describe("StepCard — paused-badge just-minimized pulse", () => {
       badgeButton.getAttribute("data-just-minimized"),
     ).toBeNull()
   })
+})
+
+// The command picker builds its options with `TAG_ORDER.flatMap(tag => …filter
+// command.tag === tag)`, so a command whose tag is not in TAG_ORDER silently
+// never appears in the picker. This is the data invariant the deleted
+// CommandPicker suite guarded (as "TAG_ORDER must list every tag"); restored
+// here, at the picker's new home, as a pure-data check.
+test("every command tag is listed in TAG_ORDER, so none is dropped from the picker", () => {
+  const unlisted = [
+    ...new Set(
+      Object.values(COMMANDS)
+        .map((command) => command.tag)
+        .filter((tag): tag is string => tag !== undefined),
+    ),
+  ].filter((tag) => !TAG_ORDER.includes(tag))
+
+  expect(unlisted).toEqual([])
 })

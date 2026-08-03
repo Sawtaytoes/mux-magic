@@ -467,8 +467,8 @@ describe("SmartMatchModal", () => {
     // After the user selects the second candidate, the row badge must read "20%",
     // not "70%" (which was the bug — the badge was using rankedCandidates[0]).
     const user = userEvent.setup()
-    // Mock getBoundingClientRect so PortalDropdown can compute its position
-    // and render the listbox in the portal.
+    // Mock getBoundingClientRect so the Combobox/Listbox can anchor its
+    // portalled popup off the trigger's measured rect.
     vi.spyOn(
       HTMLElement.prototype,
       "getBoundingClientRect",

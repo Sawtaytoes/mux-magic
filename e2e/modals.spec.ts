@@ -31,7 +31,7 @@ async function addStepWithCommand(
   // Use .first() — the picker may show the same command name in multiple
   // result rows (e.g. search result + recent-use section).
   await page
-    .getByRole("button", { name: labelPattern })
+    .getByRole("option", { name: labelPattern })
     .first()
     .click()
 }

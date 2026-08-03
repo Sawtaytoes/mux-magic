@@ -14,7 +14,7 @@ The header is always visible (drag handle, collapse chevron, alias input, comman
 ## Behaviour
 
 - **Alias** → uncontrolled input. Commits to `updateStepAliasAtom` on blur or Enter; Escape blurs without committing differently (still triggers blur handler).
-- **Command trigger** → sets `commandPickerStateAtom` with `{ anchor: { stepId }, triggerRect }`. Selection writes back via `useBuilderActions().changeCommand`.
+- **Command trigger** → the trigger of an inline Charcuterie `Combobox` (searchable, TAG_ORDER-grouped options built from `commandsAtom`). It portals itself and anchors off the trigger via `useAnchoredOverlay`; selection writes back via `useBuilderActions().changeCommand`.
 - **Help button** → only renders if `step.command` is set. Sets `commandHelpCommandNameAtom` then opens `commandHelpModalOpenAtom`.
 - **Hamburger** → toggles a row of action buttons (Run/Stop, ↑, ↓, Copy YAML, ✕). Only rendered when expanded.
 - **Run/Stop** → calls legacy `window.runOrStopStep(stepId)`. The button visually flips between ▶ and ⏹ based on `step.status === "running" && step.jobId`.
@@ -31,8 +31,7 @@ The header is always visible (drag handle, collapse chevron, alias input, comman
 | `moveStepAtom` | Reorders the step within its parent (top level or group) |
 | `removeStepAtom` | Removes the step entirely |
 | `commandHelpCommandNameAtom` + `commandHelpModalOpenAtom` | Drives the command-help modal that opens via the ⓘ button |
-| `commandsAtom` | Provides command `summary`, `note`, `outputFolderName` for the body section |
-| `commandPickerStateAtom` | Set by the command trigger button to open the picker |
+| `commandsAtom` | Provides command `summary`, `note`, `outputFolderName` for the body section, and the inline command-picker `Combobox` options |
 
 ## Window globals consumed
 

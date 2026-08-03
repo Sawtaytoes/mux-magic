@@ -716,17 +716,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/ui@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@charcuterie/ui@npm:1.1.0"
+"@charcuterie/ui@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "@charcuterie/ui@npm:2.0.1"
   dependencies:
     "@charcuterie/logic": "npm:1.1.0"
     "@charcuterie/tokens": "npm:1.1.0"
     "@floating-ui/react": "npm:^0.27.20"
+    "@tanstack/react-virtual": "npm:^3.13.12"
   peerDependencies:
     react: ">=19"
     react-dom: ">=19"
-  checksum: 10c0/1a32215679a96cc0f5c8ee430878362c02ba2559fb1bd24e66bff046be26ef0bfde4a52a7fcd1512ca20b57748e00f772921f2e3da6bcf5d79f7fe8c454f4a80
+  checksum: 10c0/cfba44baa66540fa29569384f73efdb6cc89e8965ce0bc02defc3294384ce2fc6d7aee50324f272d7046c897b54871a49ad4fe7a258791c19c370376af1115ed
   languageName: node
   linkType: hard
 
@@ -1914,7 +1915,7 @@ __metadata:
   dependencies:
     "@charcuterie/logic": "npm:^1.1.0"
     "@charcuterie/tokens": "npm:^1.1.0"
-    "@charcuterie/ui": "npm:^1.1.0"
+    "@charcuterie/ui": "npm:^2.0.1"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
@@ -2911,10 +2912,29 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/react-virtual@npm:^3.13.12":
+  version: 3.14.9
+  resolution: "@tanstack/react-virtual@npm:3.14.9"
+  dependencies:
+    "@tanstack/virtual-core": "npm:3.17.7"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/4d89bb77c2e3db831e457500a003fbca62374e7f9cbf5c04e3ac92c75154bec5b9afaa9aa39d682d9983f8f6904d937746f9e88aecfd181ad1a96aed67b93768
+  languageName: node
+  linkType: hard
+
 "@tanstack/virtual-core@npm:3.14.0":
   version: 3.14.0
   resolution: "@tanstack/virtual-core@npm:3.14.0"
   checksum: 10c0/9e07e7f74f5e02dfc47b358f7b5089e680d8b14b9c5b90e9497be6f57c76ca98d185fbe5008795b89919346bfc3676ebe1c61b34980eefe6674c88ec6ff4b136
+  languageName: node
+  linkType: hard
+
+"@tanstack/virtual-core@npm:3.17.7":
+  version: 3.17.7
+  resolution: "@tanstack/virtual-core@npm:3.17.7"
+  checksum: 10c0/9dd7cc9859af0f79e2189422a27fa4f72bddaccd3ecb027ad3f6968a28cd472e964a11b0005bd605ad0d534860233005711752d10d3c297f57fc3c5dbe397d56
   languageName: node
   linkType: hard
 
