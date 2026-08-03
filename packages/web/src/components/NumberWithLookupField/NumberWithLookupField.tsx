@@ -10,7 +10,7 @@ import { setParamAtom } from "../../state/stepAtoms"
 import { variablesAtom } from "../../state/variablesAtom"
 import type { Step } from "../../types"
 import { parseDvdCompareDisplayName } from "../../utils/parseDvdCompareDisplayName"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
 import { ChevronDownSvg } from "./ChevronDownSvg"
 import { ChevronUpSvg } from "./ChevronUpSvg"
 import {
@@ -362,8 +362,7 @@ export const NumberWithLookupField = ({
     "flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
 
   return (
-    <div className="mb-2">
-      <FieldLabel stepId={step.id} field={field} />
+    <CommandFieldGroup className="mb-2" field={field}>
       <div className="flex items-center gap-2">
         {hasIncrementButtons ? (
           <>
@@ -463,6 +462,6 @@ export const NumberWithLookupField = ({
           )}
         </div>
       )}
-    </div>
+    </CommandFieldGroup>
   )
 }

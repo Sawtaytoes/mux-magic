@@ -580,4 +580,107 @@ describe("FileExplorerModal", () => {
     expect(screen.getByText("Anime")).toBeInTheDocument()
     fetchSpy.mockRestore()
   })
+  // ─── Sortable headers (charcuterie M6b) ──────────────────────────────────
+  //
+  // `aria-sort` existed nowhere in this repo before this. The direction was
+  // rendered as `{sortDirection === "asc" ? "▲" : "▼"}` — a character a
+  // screen reader announces as "black up-pointing triangle" if the font has
+  // it, and this sandbox's headless Chromium does not, so it measured blank
+  // in a screenshot too. axe has no rule for a missing `aria-sort`, because
+  // a table without one is simply not sorted as far as the accessibility
+  // tree knows. These tests are the gate that did not exist.
+
+  test("every sortable column announces a sort state, and the unsorted ones say `none`", async () => {
+    mockListing([
+      { name: "b.mkv", isDirectory: false, isFile: true },
+      { name: "a.mkv", isDirectory: false, isFile: true },
+    ])
+    const store = createStore()
+    store.set(fileExplorerAtom, {
+      path: "/movies",
+      pickerOnSelect: null,
+    })
+    renderWithStore(store)
+    await screen.findByText(/a\.mkv/)
+
+    // `none`, not absent. An ABSENT `aria-sort` means "this column is not
+    // sortable", so a table that omits it on the unsorted columns tells a
+    // screen-reader user the other three cannot be sorted at all.
+    const columnNames = [
+      "Name",
+      "Duration",
+      "Size",
+      "Modified",
+    ]
+
+    columnNames.forEach((columnName) => {
+      expect(
+        screen.getByRole("columnheader", {
+          name: columnName,
+        }),
+      ).toHaveAttribute("aria-sort", "none")
+    })
+  })
+
+  test("sorting a column moves aria-sort to it and cycles direction", async () => {
+    const user = userEvent.setup()
+    mockListing([
+      { name: "b.mkv", isDirectory: false, isFile: true },
+      { name: "a.mkv", isDirectory: false, isFile: true },
+    ])
+    const store = createStore()
+    store.set(fileExplorerAtom, {
+      path: "/movies",
+      pickerOnSelect: null,
+    })
+    renderWithStore(store)
+    await screen.findByText(/a\.mkv/)
+
+    // The click target is a `<button>` inside the `<th>` — the header used
+    // to be a bare `<th onClick>`, which no keyboard could reach.
+    await user.click(
+      screen.getByRole("button", { name: "Name" }),
+    )
+
+    expect(
+      screen.getByRole("columnheader", { name: "Name" }),
+    ).toHaveAttribute("aria-sort", "ascending")
+    expect(
+      screen.getByRole("columnheader", { name: "Size" }),
+    ).toHaveAttribute("aria-sort", "none")
+
+    await user.click(
+      screen.getByRole("button", { name: "Name" }),
+    )
+
+    expect(
+      screen.getByRole("columnheader", { name: "Name" }),
+    ).toHaveAttribute("aria-sort", "descending")
+  })
+
+  test("the column's name does not change when it is sorted", async () => {
+    const user = userEvent.setup()
+    mockListing([
+      { name: "a.mkv", isDirectory: false, isFile: true },
+    ])
+    const store = createStore()
+    store.set(fileExplorerAtom, {
+      path: "/movies",
+      pickerOnSelect: null,
+    })
+    renderWithStore(store)
+    await screen.findByText(/a\.mkv/)
+
+    await user.click(
+      screen.getByRole("button", { name: "Size" }),
+    )
+
+    // Appending the state to the name — "Size, sorted ascending" — is the
+    // tempting version and duplicates what `aria-sort` already says, so the
+    // column is announced twice and this query stops matching the moment
+    // anybody sorts it.
+    expect(
+      screen.getByRole("columnheader", { name: "Size" }),
+    ).toBeVisible()
+  })
 })

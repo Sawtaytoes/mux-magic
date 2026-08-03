@@ -1,3 +1,4 @@
+import { Select } from "@charcuterie/ui"
 import { useState } from "react"
 
 import { isPlainObject } from "./clauseUtils"
@@ -70,31 +71,29 @@ export const ApplyIfEntryRow = ({
         }}
         className="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
       />
-      <select
-        disabled={isReadOnly}
-        value={verb}
-        onChange={(event) => {
+      <Select
+        className="w-28 font-mono"
+        isDisabled={isReadOnly}
+        key={verb}
+        label={`Comparator for ${entryKey}`}
+        onChange={(nextVerb) => {
           onCommitRules(
             setApplyIfEntryComparator({
               rules,
               ruleIndex,
               clauseName,
               entryKey,
-              verb: event.target.value as ComparatorVerb,
+              verb: nextVerb as ComparatorVerb,
             }),
           )
         }}
-        className="text-xs bg-slate-700 text-slate-200 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500"
-      >
-        {COMPARATOR_VERBS.map((comparatorVerb) => (
-          <option
-            key={comparatorVerb}
-            value={comparatorVerb}
-          >
-            {comparatorVerb}
-          </option>
-        ))}
-      </select>
+        options={COMPARATOR_VERBS.map((comparatorVerb) => ({
+          label: comparatorVerb,
+          value: comparatorVerb,
+        }))}
+        size="sm"
+        value={verb}
+      />
       <input
         type="number"
         value={draftOperand}

@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { Accordion } from "@charcuterie/ui"
+
 import { formatGenericResults } from "./formatGenericResults"
 
 // Catch-all post-run results panel. Renders whatever the command
@@ -33,8 +34,6 @@ export const GenericRunResults = ({
   commandName,
   results,
 }: Props) => {
-  const [isOpen, setIsOpen] = useState(true)
-
   if (SPECIALIZED_RENDERER_COMMANDS.has(commandName)) {
     return null
   }
@@ -49,63 +48,61 @@ export const GenericRunResults = ({
     view.kind === "json" ? null : view.rows.length
 
   return (
-    <details
-      data-generic-run-results
-      data-kind={view.kind}
-      open={isOpen}
-      onToggle={(event) =>
-        setIsOpen(
-          (event.currentTarget as HTMLDetailsElement).open,
-        )
-      }
-      className="rounded border border-emerald-800/40 bg-emerald-950/30 text-xs"
-    >
-      <summary className="cursor-pointer px-2 py-1 text-emerald-300">
-        {heading}
-        {count !== null ? ` (${count})` : ""}
-      </summary>
-      <div className="px-3 py-2 font-mono text-emerald-200/90 break-all">
-        {view.kind === "audioOffsets" && (
-          <ul className="space-y-1">
-            {view.rows.map((row) => (
-              <li
-                key={`${row.label}:${row.offsetInMilliseconds}`}
-              >
-                {row.label}
-                <span className="text-emerald-500">
-                  {": "}
-                </span>
-                {row.offsetInMilliseconds}ms
-              </li>
-            ))}
-          </ul>
-        )}
-        {view.kind === "renames" && (
-          <ul className="space-y-1">
-            {view.rows.map((row) => (
-              <li key={`${row.fromValue}→${row.toValue}`}>
-                {row.fromValue}
-                <span className="text-emerald-500">
-                  {" → "}
-                </span>
-                {row.toValue}
-              </li>
-            ))}
-          </ul>
-        )}
-        {view.kind === "paths" && (
-          <ul className="space-y-1">
-            {view.rows.map((path) => (
-              <li key={path}>{path}</li>
-            ))}
-          </ul>
-        )}
-        {view.kind === "json" && (
-          <pre className="whitespace-pre-wrap">
-            {view.text}
-          </pre>
-        )}
-      </div>
-    </details>
+    <Accordion
+      className="border-emerald-800/40 bg-emerald-950/30 text-xs"
+      expandedKeys={[view.kind]}
+      items={[
+        {
+          content: (
+            <div className="break-all font-mono text-emerald-200/90">
+              {view.kind === "audioOffsets" && (
+                <ul className="space-y-1">
+                  {view.rows.map((row) => (
+                    <li
+                      key={`${row.label}:${row.offsetInMilliseconds}`}
+                    >
+                      {row.label}
+                      <span className="text-emerald-500">
+                        {": "}
+                      </span>
+                      {row.offsetInMilliseconds}ms
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {view.kind === "renames" && (
+                <ul className="space-y-1">
+                  {view.rows.map((row) => (
+                    <li
+                      key={`${row.fromValue}→${row.toValue}`}
+                    >
+                      {row.fromValue}
+                      <span className="text-emerald-500">
+                        {" → "}
+                      </span>
+                      {row.toValue}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {view.kind === "paths" && (
+                <ul className="space-y-1">
+                  {view.rows.map((path) => (
+                    <li key={path}>{path}</li>
+                  ))}
+                </ul>
+              )}
+              {view.kind === "json" && (
+                <pre className="whitespace-pre-wrap">
+                  {view.text}
+                </pre>
+              )}
+            </div>
+          ),
+          key: view.kind,
+          label: `${heading}${count !== null ? ` (${count})` : ""}`,
+        },
+      ]}
+    />
   )
 }

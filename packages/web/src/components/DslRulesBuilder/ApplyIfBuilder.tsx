@@ -1,3 +1,4 @@
+import { Accordion, Select } from "@charcuterie/ui"
 import { ApplyIfClauseRow } from "./ApplyIfClauseRow"
 import { isPlainObject } from "./clauseUtils"
 import { addApplyIfClause } from "./conditionMutations"
@@ -46,77 +47,93 @@ export const ApplyIfBuilder = ({
     !isReadOnly && openDetailsKeys.has(detailsKey)
 
   return (
-    <details
-      open={isOpen}
-      className="mt-2 border border-slate-700/60 rounded"
-      onToggle={(event) => {
+    <Accordion
+      className="mt-2"
+      expandedKeys={isOpen ? [detailsKey] : []}
+      items={[
+        {
+          content: (
+            <>
+              {APPLY_IF_CLAUSE_NAMES.filter((clauseName) =>
+                usedClauses.has(clauseName),
+              ).map((clauseName) => {
+                const clauseValue = isPlainObject(
+                  applyIf[clauseName],
+                )
+                  ? (applyIf[clauseName] as Record<
+                      string,
+                      ApplyIfEntry
+                    >)
+                  : {}
+                return (
+                  <ApplyIfClauseRow
+                    key={clauseName}
+                    rules={rules}
+                    ruleIndex={ruleIndex}
+                    clauseName={clauseName}
+                    clauseValue={clauseValue}
+                    isReadOnly={isReadOnly}
+                    onCommitRules={onCommitRules}
+                  />
+                )
+              })}
+              {usedClauses.size === 0 && (
+                <p className="text-xs text-slate-500 italic">
+                  No clauses. Fields applied to all styles.
+                </p>
+              )}
+              {!isReadOnly &&
+                availableClauses.length > 0 && (
+                  <Select
+                    className="mt-2 w-56 font-mono"
+                    // The old `<select>` had no accessible name at all — no
+                    // `aria-label`, no `<label for>` — so it was announced as
+                    // "combobox" and `getByRole("combobox", { name })` could not
+                    // find it. `Select` makes the name a required-in-practice
+                    // prop for exactly that reason.
+                    label="Apply-if clause type"
+                    onChange={(clauseName) => {
+                      if (!clauseName) {
+                        return
+                      }
+
+                      onCommitRules(
+                        addApplyIfClause({
+                          rules,
+                          ruleIndex,
+                          clauseName:
+                            clauseName as ApplyIfClauseName,
+                        }),
+                      )
+                    }}
+                    options={availableClauses.map(
+                      (clauseName) => ({
+                        label: clauseName,
+                        value: clauseName,
+                      }),
+                    )}
+                    // Same one-shot reset as `WhenBuilder`, and the same direct
+                    // DOM write deleted with it.
+                    placeholder="+ Add clause…"
+                    size="sm"
+                  />
+                )}
+            </>
+          ),
+          // Disabled rather than collapsed in the read-only preview — see
+          // `WhenBuilder` for what `<details>` could not express.
+          isDisabled: isReadOnly,
+          key: detailsKey,
+          label:
+            "Apply If (advanced — leave empty to apply to all styles)",
+        },
+      ]}
+      onChange={(expandedKeys) => {
         onToggleDetails(
           detailsKey,
-          (event.target as HTMLDetailsElement).open,
+          expandedKeys.includes(detailsKey),
         )
       }}
-    >
-      <summary className="cursor-pointer text-xs text-slate-400 px-2 py-1 select-none">
-        Apply If (advanced — leave empty to apply to all
-        styles)
-      </summary>
-      <div className="px-2 py-1.5">
-        {APPLY_IF_CLAUSE_NAMES.filter((clauseName) =>
-          usedClauses.has(clauseName),
-        ).map((clauseName) => {
-          const clauseValue = isPlainObject(
-            applyIf[clauseName],
-          )
-            ? (applyIf[clauseName] as Record<
-                string,
-                ApplyIfEntry
-              >)
-            : {}
-          return (
-            <ApplyIfClauseRow
-              key={clauseName}
-              rules={rules}
-              ruleIndex={ruleIndex}
-              clauseName={clauseName}
-              clauseValue={clauseValue}
-              isReadOnly={isReadOnly}
-              onCommitRules={onCommitRules}
-            />
-          )
-        })}
-        {usedClauses.size === 0 && (
-          <p className="text-xs text-slate-500 italic">
-            No clauses. Fields applied to all styles.
-          </p>
-        )}
-        {!isReadOnly && availableClauses.length > 0 && (
-          <select
-            value=""
-            onChange={(event) => {
-              if (!event.target.value) {
-                return
-              }
-              onCommitRules(
-                addApplyIfClause({
-                  rules,
-                  ruleIndex,
-                  clauseName: event.target
-                    .value as ApplyIfClauseName,
-                }),
-              )
-              event.target.value = ""
-            }}
-            className="text-xs bg-slate-700 text-slate-200 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 mt-2"
-          >
-            <option value="">+ Add clause…</option>
-            {availableClauses.map((clauseName) => (
-              <option key={clauseName} value={clauseName}>
-                {clauseName}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-    </details>
+    />
   )
 }

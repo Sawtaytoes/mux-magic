@@ -88,6 +88,48 @@ jobs:
       - run: yarn build:prod
       - run: yarn e2e
 
+  storybook-build:
+    # The Storybook build has been broken on EVERY branch of this repo —
+    # `master` included — for as long as nine MDX files imported the
+    # Storybook 8 `@storybook/blocks` entry point, and nothing here noticed
+    # because no job built Storybook.
+    #
+    # `storybook build` writes `index.json` and `iframe.html` even when it
+    # fails partway, so a broken build is byte-indistinguishable from a
+    # working one and the output directory is not evidence. The step's exit
+    # code is. That is not hypothetical: this repo's entry count was reported
+    # as fact out of a build that had exited 1.
+    needs: check-prior-run
+    if: needs.check-prior-run.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 24 }
+      - run: corepack enable && yarn install --immutable
+      - run: yarn build:tools
+      - run: yarn workspace @mux-magic/web build:storybook
+
+      # The sibling false-green to a partial build is a build that SUCCEEDS
+      # with an empty index — a `stories:` glob in `.storybook/main.ts` that
+      # stopped matching after a move. Nothing downstream can catch it: a
+      # smoke run over zero entries never enters its loop and reports
+      # "0 entries rendered clean" as a pass.
+      #
+      # A FLOOR, not a count. It exists to catch a glob that broke, not to be
+      # bumped every time a story is added — 457 entries across 157 files at
+      # the time of writing, so 400 is well clear of normal churn and nowhere
+      # near zero.
+      - name: Assert the Storybook index is not empty
+        run: |
+          set -euo pipefail
+          count="$(node -p "Object.keys(require('./packages/web/storybook-static/index.json').entries).length")"
+          echo "Storybook indexed ${count} entries."
+          if [ "$count" -lt 400 ]; then
+            echo "::error::Storybook indexed ${count} entries (floor is 400) — a stories glob in packages/web/.storybook/main.ts probably stopped matching."
+            exit 1
+          fi
+
   build-budget:
     # Worker 79: enforces the BuilderPage modal subtree + yamlCodec stay
     # code-split and that rolldown emits no INEFFECTIVE_DYNAMIC_IMPORT
