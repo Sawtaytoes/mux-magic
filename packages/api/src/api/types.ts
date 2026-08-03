@@ -87,6 +87,12 @@ export type LookupDvdCompareReleaseRequest = z.infer<
 export type NameLookupResponse = z.infer<
   typeof schemas.nameLookupResponseSchema
 >
+export type AnidbTitle = z.infer<
+  typeof schemas.anidbTitleSchema
+>
+export type LookupAnidbTitlesResponse = z.infer<
+  typeof schemas.lookupAnidbTitlesResponseSchema
+>
 export type LabelLookupResponse = z.infer<
   typeof schemas.labelLookupResponseSchema
 >

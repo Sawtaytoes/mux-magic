@@ -289,13 +289,16 @@ window.commandDescriptions = {
     }
   },
   "nameAnimeEpisodesAniDB": {
-    "summary": "Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Episode-range selection is planned — see README §AniDB command notes.",
+    "summary": "Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Partial or non-contiguous sets can be paired by extracted episode number (filenameRegex) or by a natural-sort index offset (startEpisodeNumber). Emits a seriesFolderName output (\"<name> [anidb-<id>]\") for downstream copy/move steps.",
     "fields": {
       "sourcePath": "Directory where all episodes are located.",
       "searchTerm": "Anime name for searching AniDB (via DuckDuckGo).",
       "seasonNumber": "Season number for the output filename (Plex-style sNNeNN). Ignored when --episodeType=specials.",
       "anidbId": "AniDB anime id (aid). When provided, skips the interactive search.",
-      "episodeType": "Which AniDB episode types to rename. Each non-regular sub-type is run separately: specials (S), credits (C, OP/ED), trailers (T), parodies (P) all run the length-matched per-file picker and emit Plex's s00eNN. Others (type=6 alts) and regular are index-paired with a duration sanity-check warning."
+      "episodeType": "Which AniDB episode types to rename. Each non-regular sub-type is run separately: specials (S), credits (C, OP/ED), trailers (T), parodies (P) all run the length-matched per-file picker and emit Plex's s00eNN. Others (type=6 alts) and regular are index-paired with a duration sanity-check warning.",
+      "filenameRegex": "Regex with a named capture group (?<episodeNumber>…) used to pair each file to the AniDB episode whose number matches the captured value (e.g. \"S\\\\d+E(?<episodeNumber>\\\\d+)\"). Matched case-insensitively. Fixes mis-pairing on partial, non-contiguous, or out-of-order sets. Files that don't match fall back to index pairing (see startEpisodeNumber). Applies to the index-paired regular/others types only.",
+      "startEpisodeNumber": "First episode number when pairing a partial set by natural-sort index (e.g. 5 names the files s01e05, s01e06, …). Ignored for files matched by filenameRegex. Defaults to 1. Applies to the index-paired regular/others types only.",
+      "seriesName": "Overrides AniDB's auto-picked series title in output filenames and the seriesFolderName output. Used verbatim (backticks, apostrophes and all) — pick a candidate with the AniDB title-picker then character-clean it. When omitted, AniDB's title is used."
     }
   },
   "nameMovieCutsDvdCompareTmdb": {

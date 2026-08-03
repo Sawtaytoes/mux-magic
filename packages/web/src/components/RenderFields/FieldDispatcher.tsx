@@ -1,5 +1,6 @@
 import type { CommandField } from "../../commands/types"
 import type { Step } from "../../types"
+import { AnidbTitlePickerField } from "../AnidbTitlePickerField/AnidbTitlePickerField"
 import { BooleanField } from "../BooleanField/BooleanField"
 import { ChapterSplitsField } from "../ChapterSplitsField/ChapterSplitsField"
 import { EnumField } from "../EnumField/EnumField"
@@ -43,6 +44,10 @@ export const FieldDispatcher = ({
     case "numberWithLookup":
       return (
         <NumberWithLookupField field={field} step={step} />
+      )
+    case "anidbTitlePicker":
+      return (
+        <AnidbTitlePickerField field={field} step={step} />
       )
     case "languageCode":
       return <LanguageCodeField field={field} step={step} />
