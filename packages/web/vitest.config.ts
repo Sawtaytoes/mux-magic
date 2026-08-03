@@ -41,6 +41,8 @@ export default defineConfig({
   // after a successful run — this list mirrors every top-level entry there.
   optimizeDeps: {
     include: [
+      "@charcuterie/logic",
+      "@charcuterie/logic/browser",
       "@dnd-kit/core",
       "@dnd-kit/sortable",
       "@dnd-kit/utilities",
