@@ -1,12 +1,12 @@
-import { useRef, useState } from "react"
+import type { ListboxItem } from "@charcuterie/ui"
+import { Combobox } from "@charcuterie/ui"
+import { useState } from "react"
 import type { CommandField } from "../../commands/types"
 import { ISO_639_2_NAME_BY_CODE } from "../../data/iso639-2"
 import { buildOrderedLanguageOptions } from "../../data/orderLanguageOptions"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { CommandFieldControl } from "../CommandFieldControl/CommandFieldControl"
-import { PortalDropdown } from "../PortalDropdown/PortalDropdown"
-import { TagInputBase } from "../TagInputBase/TagInputBase"
+import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
 
 type LanguageSelection = {
   code: string
@@ -57,9 +57,8 @@ export const LanguageCodesField = ({
   field,
 }: LanguageCodesFieldProps) => {
   const { setParam } = useBuilderActions()
-  const [filterText, setFilterText] = useState("")
+  const [query, setQuery] = useState("")
   const [isOpen, setIsOpen] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   const selected = normalizeSelections(
     step.params[field.name],
@@ -80,80 +79,101 @@ export const LanguageCodesField = ({
     )
   }
 
+  // The parent owns the multi-selection and excludes already-picked
+  // codes from the option list, so the Combobox is a single-select "add
+  // one" picker rather than `isMultiple`: on pick it commits and closes.
   const addCode = (code: string) => {
     if (selectedCodes.includes(code)) {
       return
     }
     setParam(step.id, field.name, [...selected, { code }])
-    setFilterText("")
+    setQuery("")
     setIsOpen(false)
   }
 
-  const visibleOptions = buildOrderedLanguageOptions({
-    filterText,
-    excluded: selectedCodes,
-  })
+  const close = () => {
+    setIsOpen(false)
+    setQuery("")
+  }
 
-  const tags = selected.map((selection) => ({
-    key: selection.code,
-    label: (
-      <>
-        <span>
-          {ISO_639_2_NAME_BY_CODE[selection.code] ??
-            selection.code}
+  // The consumer owns the query (eng-pinned ordering + the 50-option cap
+  // live in buildOrderedLanguageOptions), so options arrive pre-filtered.
+  const options: ListboxItem[] =
+    buildOrderedLanguageOptions({
+      filterText: query,
+      excluded: selectedCodes,
+    }).map(({ code, name }) => ({
+      value: code,
+      textValue: `${name} ${code}`,
+      label: (
+        <span className="flex flex-1 items-center justify-between gap-2">
+          <span className="text-xs">{name}</span>
+          <span className="font-mono text-content-muted text-xs">
+            {code}
+          </span>
         </span>
-        <span className="font-mono text-slate-400 ml-1">
-          {selection.ietf
-            ? `${selection.code} · ${selection.ietf}`
-            : selection.code}
-        </span>
-      </>
-    ),
-    title: `Remove ${selection.code}`,
-  }))
+      ),
+    }))
 
-  const items = visibleOptions.map(({ code, name }) => ({
-    key: code,
-    onSelect: () => addCode(code),
-    content: (
-      <>
-        <span className="text-xs">{name}</span>
-        <span className="font-mono text-slate-400 text-xs">
-          {code}
-        </span>
-      </>
-    ),
-  }))
+  const trigger = (
+    <button
+      type="button"
+      aria-label={`Add ${field.label ?? field.name}`}
+      onClick={() =>
+        setIsOpen((isCurrentlyOpen) => !isCurrentlyOpen)
+      }
+      className="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer"
+    >
+      <span className="flex-1 min-w-0 truncate text-slate-400">
+        Type to filter languages…
+      </span>
+      <span className="text-slate-400 shrink-0">▾</span>
+    </button>
+  )
 
   return (
-    <>
-      <CommandFieldControl field={field}>
-        <TagInputBase
-          tags={tags}
-          onRemove={removeCode}
-          inputRef={inputRef}
-          inputProps={{
-            role: "combobox",
-            "aria-expanded": isOpen,
-            "aria-haspopup": "listbox",
-            value: filterText,
-            placeholder: "Type to filter languages…",
-            onChange: (event) => {
-              setFilterText(event.target.value)
-              setIsOpen(true)
-            },
-            onFocus: () => setIsOpen(true),
-            onBlur: () =>
-              setTimeout(() => setIsOpen(false), 150),
-          }}
-        />
-      </CommandFieldControl>
+    <CommandFieldGroup field={field}>
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-1">
+          {selected.map((selection) => (
+            <span
+              key={selection.code}
+              className="inline-flex items-center gap-1 bg-slate-700 text-slate-200 text-xs rounded px-1.5 py-0.5"
+            >
+              <span>
+                {ISO_639_2_NAME_BY_CODE[selection.code] ??
+                  selection.code}
+              </span>
+              <span className="font-mono text-slate-400 ml-1">
+                {selection.ietf
+                  ? `${selection.code} · ${selection.ietf}`
+                  : selection.code}
+              </span>
+              <button
+                type="button"
+                onClick={() => removeCode(selection.code)}
+                className="text-slate-400 hover:text-red-400 leading-none cursor-pointer"
+                title={`Remove ${selection.code}`}
+                aria-label={`Remove ${selection.code}`}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
 
-      <PortalDropdown
-        anchorRef={inputRef}
-        isOpen={isOpen}
-        items={items}
+      <Combobox
+        trigger={trigger}
+        isVisible={isOpen}
+        onDismiss={close}
+        onSelect={addCode}
+        options={options}
+        query={query}
+        onQueryChange={setQuery}
+        placeholder="Type to filter languages…"
+        emptyLabel="No matches."
       />
-    </>
+    </CommandFieldGroup>
   )
 }

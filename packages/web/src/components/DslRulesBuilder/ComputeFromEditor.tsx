@@ -42,12 +42,9 @@ export const ComputeFromEditor = ({
   return (
     <div className="border border-slate-700/60 rounded px-2 py-1.5 bg-slate-900/40 mt-1">
       <div className="flex items-center gap-2">
-        <label
-          htmlFor={`cfe-property-${ruleIndex}-${fieldKey}`}
-          className="text-xs text-slate-400"
-        >
+        <span className="text-xs text-slate-400">
           property
-        </label>
+        </span>
         <AssFieldPicker
           label="property"
           value={computeFrom.property ?? ""}

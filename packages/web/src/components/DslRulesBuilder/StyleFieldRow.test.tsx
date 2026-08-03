@@ -257,7 +257,12 @@ describe("ComputeFromEditor — property autocomplete (B14)", () => {
       name: /property/i,
     })
     await user.click(trigger)
-    const input = screen.getByRole("textbox")
+    // The AssFieldPicker is now a creatable Combobox — its search input is
+    // reached by placeholder (the scope <Select> is also a combobox), and
+    // Enter on an unmatched query commits it raw.
+    const input = screen.getByPlaceholderText(
+      /search or type custom/i,
+    )
     await user.type(input, "CustomProp")
     await user.keyboard("{Enter}")
     expect(onCommitRules).toHaveBeenCalled()

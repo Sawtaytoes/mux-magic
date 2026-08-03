@@ -19,7 +19,7 @@ async function addModifySubtitleMetadataStep(page: Page) {
     .getByPlaceholder("Search commands…")
     .fill("modifySubtitleMetadata")
   await page
-    .getByRole("button", {
+    .getByRole("option", {
       name: /^Modify Subtitle Metadata\s/,
     })
     .click()

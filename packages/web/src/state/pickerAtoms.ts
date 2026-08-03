@@ -1,6 +1,14 @@
 import { atom } from "jotai"
 import type { DirEntry } from "../components/PathPicker/types"
 
+// The command / enum / link pickers migrated onto Charcuterie's Combobox
+// (rendered inline at each trigger site), so their atoms are gone. Only the
+// path picker still uses this atom-driven singleton: its live-input
+// directory autocomplete — the field's own input drives the suggestions and
+// selecting a directory navigates deeper, keeping the list open — does not
+// map onto the Combobox's trigger→popup-with-own-input, close-on-select
+// model. See the pickers-onto-charcuterie-combobox migration notes.
+
 export type TriggerRect = {
   left: number
   top: number
@@ -9,48 +17,6 @@ export type TriggerRect = {
   width: number
   height: number
 }
-
-// ─── Command picker ───────────────────────────────────────────────────────────
-
-export type CommandPickerAnchor = { stepId: string }
-
-export type CommandPickerState = {
-  anchor: CommandPickerAnchor
-  triggerRect: TriggerRect
-}
-
-export const commandPickerStateAtom =
-  atom<CommandPickerState | null>(null)
-
-// ─── Enum picker ──────────────────────────────────────────────────────────────
-
-export type EnumPickerAnchor = {
-  stepId: string
-  fieldName: string
-}
-
-export type EnumPickerState = {
-  anchor: EnumPickerAnchor
-  triggerRect: TriggerRect
-}
-
-export const enumPickerStateAtom =
-  atom<EnumPickerState | null>(null)
-
-// ─── Link picker ──────────────────────────────────────────────────────────────
-
-export type LinkPickerAnchor = {
-  stepId: string
-  fieldName: string
-}
-
-export type LinkPickerState = {
-  anchor: LinkPickerAnchor
-  triggerRect: TriggerRect
-}
-
-export const linkPickerStateAtom =
-  atom<LinkPickerState | null>(null)
 
 // ─── Path picker ──────────────────────────────────────────────────────────────
 

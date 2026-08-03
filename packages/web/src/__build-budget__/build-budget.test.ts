@@ -49,7 +49,20 @@ const DIST_ASSETS = join(PACKAGE_ROOT, "dist", "assets")
 // originally measured against. Deleted in exchange: `FieldTooltip`'s 130
 // hand-rolled lines, `@radix-ui/react-popover`, and seven `<details>`
 // reconciliation blocks.
-const MAIN_CHUNK_GZIP_MAX_KB = 280
+//
+// **Raised to 286 kB by the charcuterie M8 picker migration.** The seven
+// hand-rolled pickers moved onto `@charcuterie/ui`'s `Combobox`/`Listbox`,
+// which deletes far more app code than it adds (net −1.8k lines) but pulls
+// `@tanstack/react-virtual` — Combobox's windowing dep — into the main chunk:
+// the pickers are first-paint (a command picker sits on every `StepCard`), so
+// it cannot be split off the critical path. Measured same build, gzip 9:
+// 275.18 kB before → 283.22 kB after, **+8.04 kB gz** for `Combobox`/`Listbox`
+// + `react-virtual` (`floating-ui` was already first-paint via `Tooltip`).
+// 286 keeps ~2.8 kB headroom and still sits under the original 287 kB baseline,
+// so it is a ceiling, not slack — and `manualChunks` is still off the table for
+// the reason above: it would shrink `index-*.js` without shortening the
+// critical path by a byte.
+const MAIN_CHUNK_GZIP_MAX_KB = 286
 
 const MODAL_CHUNK_NAMES = [
   "LoadModal",

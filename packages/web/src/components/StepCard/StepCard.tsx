@@ -1,3 +1,5 @@
+import type { ListboxItem } from "@charcuterie/ui"
+import { Combobox } from "@charcuterie/ui"
 import {
   defaultAnimateLayoutChanges,
   useSortable,
@@ -5,6 +7,11 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useRef, useState } from "react"
+// Single source of truth — the picker's tag ordering must match the
+// canonical list in commands.ts so new tags (e.g. "Flow Control") flow
+// through automatically.
+import { TAG_ORDER } from "../../commands/commands"
+import type { Commands } from "../../commands/types"
 import {
   commandHelpCommandNameAtom,
   commandHelpModalOpenAtom,
@@ -15,7 +22,6 @@ import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { CopyIcon } from "../../icons/CopyIcon/CopyIcon"
 import { commandLabel } from "../../jobs/commandLabels"
 import { commandsAtom } from "../../state/commandsAtom"
-import { commandPickerStateAtom } from "../../state/pickerAtoms"
 import {
   runningAtom,
   runOrStopStepAtom,
@@ -28,6 +34,43 @@ import type { Step } from "../../types"
 import { RenderFields } from "../RenderFields/RenderFields"
 import { StatusBadge } from "../StatusBadge/StatusBadge"
 import { StepRunProgress } from "./StepRunProgress"
+
+// The command picker's options, grouped by TAG_ORDER and alphabetised
+// within each tag by display label. `textValue` carries label + name +
+// tag so the Combobox's internal filter matches any of the three (the old
+// CommandPicker.matchesQuery behaviour).
+const buildCommandOptions = (
+  commands: Commands,
+): ListboxItem[] =>
+  TAG_ORDER.flatMap((tag) =>
+    Object.entries(commands)
+      .filter(([, command]) => command.tag === tag)
+      .map(([name]) => name)
+      .sort((nameA, nameB) =>
+        commandLabel(nameA).localeCompare(
+          commandLabel(nameB),
+        ),
+      )
+      .map((name) => ({
+        value: name,
+        textValue: `${commandLabel(name)} ${name} ${tag}`,
+        label: (
+          <span className="flex flex-1 items-start gap-2">
+            <span className="flex-1 min-w-0 flex flex-col">
+              <span className="text-xs truncate">
+                {commandLabel(name)}
+              </span>
+              <span className="font-mono text-[10px] truncate text-slate-500">
+                {name}
+              </span>
+            </span>
+            <span className="text-[10px] shrink-0 mt-0.5 text-slate-500">
+              {tag}
+            </span>
+          </span>
+        ),
+      })),
+  )
 
 interface StepCardProps {
   step: Step
@@ -124,14 +167,16 @@ export const StepCard = ({
   const setCommandHelpOpen = useSetAtom(
     commandHelpModalOpenAtom,
   )
-  const setCommandPickerState = useSetAtom(
-    commandPickerStateAtom,
-  )
   const commands = useAtomValue(commandsAtom)
+  const [isCommandPickerOpen, setIsCommandPickerOpen] =
+    useState(false)
 
-  const { copyStepYaml, moveStep, removeStep } =
-    useBuilderActions()
-  const triggerRef = useRef<HTMLButtonElement>(null)
+  const {
+    changeCommand,
+    copyStepYaml,
+    moveStep,
+    removeStep,
+  } = useBuilderActions()
 
   const sortable = useSortable({
     id: step.id,
@@ -152,21 +197,11 @@ export const StepCard = ({
 
   const label = commandLabel(step.command) || step.command
 
-  const openCommandPicker = () => {
-    if (!triggerRef.current) return
-    const raw = triggerRef.current.getBoundingClientRect()
-    const triggerRect = {
-      left: raw.left,
-      top: raw.top,
-      right: raw.right,
-      bottom: raw.bottom,
-      width: raw.width,
-      height: raw.height,
-    }
-    setCommandPickerState((current) => {
-      if (current?.anchor.stepId === step.id) return null
-      return { anchor: { stepId: step.id }, triggerRect }
-    })
+  const commandOptions = buildCommandOptions(commands)
+
+  const handleCommandSelect = (name: string) => {
+    changeCommand(step.id, name)
+    setIsCommandPickerOpen(false)
   }
 
   const openCommandHelp = () => {
@@ -263,18 +298,34 @@ export const StepCard = ({
           onKeyDown={handleAliasKeydown}
           className="step-alias bg-transparent text-sm font-medium text-slate-200 px-1.5 py-0.5 rounded border-0 focus:outline-none focus:bg-slate-900/40 placeholder:text-slate-200 placeholder:font-medium"
         />
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={openCommandPicker}
-          data-cmd-picker-trigger
-          className="flex-1 min-w-0 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer"
-        >
-          <span className="flex-1 min-w-0 truncate flex items-center">
-            {triggerLabel}
-          </span>
-          <span className="text-slate-400 shrink-0">▾</span>
-        </button>
+        <Combobox
+          trigger={
+            <button
+              type="button"
+              onClick={() =>
+                setIsCommandPickerOpen(
+                  (isCurrentlyOpen) => !isCurrentlyOpen,
+                )
+              }
+              data-cmd-picker-trigger
+              className="flex-1 min-w-0 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer"
+            >
+              <span className="flex-1 min-w-0 truncate flex items-center">
+                {triggerLabel}
+              </span>
+              <span className="text-slate-400 shrink-0">
+                ▾
+              </span>
+            </button>
+          }
+          isVisible={isCommandPickerOpen}
+          onDismiss={() => setIsCommandPickerOpen(false)}
+          onSelect={handleCommandSelect}
+          options={commandOptions}
+          selectedValue={step.command || undefined}
+          placeholder="Search commands…"
+          emptyLabel="No commands match."
+        />
         {isPausedForPrompt ? (
           // Clickable to reopen the minimized PromptModal. When the
           // modal isn't minimized the click is harmless — resumePrompt
