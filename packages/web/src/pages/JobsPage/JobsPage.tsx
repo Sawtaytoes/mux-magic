@@ -12,6 +12,12 @@ export const JobsPage = () => {
     <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">
+          <a
+            href="/"
+            className="text-sm font-normal text-slate-400 hover:text-slate-300 mr-3"
+          >
+            ← Tools
+          </a>
           Jobs{" "}
           <a
             href="/builder"

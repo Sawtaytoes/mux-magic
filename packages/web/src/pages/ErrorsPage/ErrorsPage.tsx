@@ -9,7 +9,7 @@ export const ErrorsPage = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <a
-            href="/"
+            href="/jobs"
             className="text-sm text-blue-400 hover:text-blue-300"
           >
             ← Jobs

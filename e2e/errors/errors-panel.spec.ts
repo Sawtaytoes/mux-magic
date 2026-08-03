@@ -147,7 +147,7 @@ test.describe("Errors panel — persist → display → dismiss", () => {
   test("Errors nav link is visible on the Jobs page", async ({
     page,
   }) => {
-    await page.goto(`${webBaseUrl}/`)
+    await page.goto(`${webBaseUrl}/jobs`)
 
     await expect(
       page.getByRole("link", { name: /errors/i }).first(),

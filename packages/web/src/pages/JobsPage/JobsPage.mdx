@@ -7,9 +7,9 @@ import * as JobsPageStories from "./JobsPage.stories";
 
 # JobsPage
 
-The full Jobs page (mounted at `/`). Mounts `useSseStream()` on render, which opens the persistent EventSource for `/jobs/events` and feeds `jobsAtom`, `progressByJobIdAtom`, `logsByJobIdAtom`, and `jobsConnectionAtom` from the wire.
+The full Jobs page (mounted at `/jobs`; `/` is the `HomePage` tool picker). Mounts `useSseStream()` on render, which opens the persistent EventSource for `/jobs/events` and feeds `jobsAtom`, `progressByJobIdAtom`, `logsByJobIdAtom`, and `jobsConnectionAtom` from the wire.
 
-Renders a header (page title + "Sequence Builder ↗" link + `StatusBar`) and the list of top-level jobs (those without a `parentJobId`). Newest jobs first — the `jobsAtom` `Map` preserves insertion order, so reversing gives newest-first.
+Renders a header ("← Tools" back link + page title + "Sequence Builder ↗" / "Errors ↗" links + `StatusBar`) and the list of top-level jobs (those without a `parentJobId`). Newest jobs first — the `jobsAtom` `Map` preserves insertion order, so reversing gives newest-first.
 
 ## Behaviour
 
