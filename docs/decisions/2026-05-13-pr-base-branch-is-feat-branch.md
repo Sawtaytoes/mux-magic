@@ -1,6 +1,12 @@
 # 2026-05-13 — Worker PRs target `feat/mux-magic-revamp`, not `master`
 
-- **Status:** Accepted
+> [!WARNING]
+> **SUPERSEDED on 2026-08-03 by [`master` is the only base branch](2026-08-03-master-is-the-only-base-branch.md).**
+> This used to be the decision. It is kept for history — do NOT implement
+> what's below. The current rule is in the linked file: the revamp branch is
+> deleted and everything targets `master`.
+
+- **Status:** Superseded by [2026-08-03-master-is-the-only-base-branch](2026-08-03-master-is-the-only-base-branch.md)
 - **Date decided:** 2026-05-13 (branch model, PLAN.md §2); reinforced by the worker-72-on-master revert (PR #142)
 - **Area:** process
 - **Source:** [docs/workers/PLAN.md](../workers/PLAN.md) §2; memory `project_pr_base_branch.md`

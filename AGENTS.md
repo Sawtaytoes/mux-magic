@@ -49,8 +49,10 @@ Before merging UI or API route changes, also run `yarn e2e`. Full pre-merge gate
 
 ## Roles (one-liner)
 
-- **Primary** (repo root, branch `master` or `feat/mux-magic-revamp`): never push unless told; commit as you go.
-- **Worker** (`.claude/worktrees/<id>_<slug>/`, branch `worker-<id>-<slug>`): commit and push every change; open a PR against `feat/mux-magic-revamp`; only merge when told.
+- **Primary** (repo root, branch `master`): never push unless told; commit as you go.
+- **Worker** (`.claude/worktrees/<id>_<slug>/`, branch `worker-<id>-<slug>`): commit and push every change; open a PR against `master`; only merge when told.
+
+`master` is the only base branch — the `feat/mux-magic-revamp` integration branch was retired on 2026-08-03 ([decision](docs/decisions/2026-08-03-master-is-the-only-base-branch.md)). Older worker specs under [docs/workers/](docs/workers/) still say "PR against `feat/mux-magic-revamp`"; that text is stale and the branch no longer exists.
 
 Full worktree / commit conventions in [workflows.md](docs/agents/workflows.md).
 
