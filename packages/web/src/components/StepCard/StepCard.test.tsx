@@ -14,6 +14,10 @@ import {
   test,
   vi,
 } from "vitest"
+import {
+  COMMANDS,
+  TAG_ORDER,
+} from "../../commands/commands"
 import { commandsAtom } from "../../state/commandsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
@@ -356,4 +360,21 @@ describe("StepCard — paused-badge just-minimized pulse", () => {
       badgeButton.getAttribute("data-just-minimized"),
     ).toBeNull()
   })
+})
+
+// The command picker builds its options with `TAG_ORDER.flatMap(tag => …filter
+// command.tag === tag)`, so a command whose tag is not in TAG_ORDER silently
+// never appears in the picker. This is the data invariant the deleted
+// CommandPicker suite guarded (as "TAG_ORDER must list every tag"); restored
+// here, at the picker's new home, as a pure-data check.
+test("every command tag is listed in TAG_ORDER, so none is dropped from the picker", () => {
+  const unlisted = [
+    ...new Set(
+      Object.values(COMMANDS)
+        .map((command) => command.tag)
+        .filter((tag): tag is string => tag !== undefined),
+    ),
+  ].filter((tag) => !TAG_ORDER.includes(tag))
+
+  expect(unlisted).toEqual([])
 })
