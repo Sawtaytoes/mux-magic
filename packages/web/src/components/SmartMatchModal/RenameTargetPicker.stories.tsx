@@ -232,12 +232,11 @@ export const ParentPreselected: Story = {
 }
 
 // Dense pool — mirrors a real Shrek 2 Blu-ray run where DVDCompare
-// emits 12+ scored candidates. With the previous 192px PortalDropdown
-// cap only ~4 options were visible at once; the bumped 480px cap
-// (worker 71) surfaces roughly 9–10 of the two-row options before the
-// scrollbar appears. Open the dropdown to verify. Resize the
-// Storybook canvas to a narrow viewport to also confirm the
-// viewport-aware clamp still kicks in below the cap.
+// emits 12+ scored candidates (above SEARCHABLE_CANDIDATE_COUNT, so the
+// searchable Combobox renders). The Combobox's built-in max-height clamp
+// caps the panel and scrolls the two-row options within it. Open the
+// dropdown to verify. Resize the Storybook canvas to a narrow viewport
+// to also confirm the viewport-aware clamp still kicks in below the cap.
 const denseCandidates: ScoredCandidate[] = [
   {
     candidate: {
@@ -342,7 +341,7 @@ const denseCandidates: ScoredCandidate[] = [
   },
 ]
 
-// Renders the dense pool so the bumped max-height (worker 71) is
+// Renders the dense pool so the Combobox max-height clamp is
 // reviewable — open the dropdown and count visible options.
 export const DenseCandidates: Story = {
   args: {
