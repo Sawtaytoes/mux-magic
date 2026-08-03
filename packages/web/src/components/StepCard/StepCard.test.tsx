@@ -15,7 +15,6 @@ import {
   vi,
 } from "vitest"
 import { commandsAtom } from "../../state/commandsAtom"
-import { commandPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
 import { promptModalAtom } from "../PromptModal/promptModalAtom"
@@ -121,20 +120,55 @@ describe("StepCard", () => {
     expect(store.get(stepsAtom)).toHaveLength(0)
   })
 
-  test("opens command picker on trigger click", async () => {
+  test("opens the command picker (Combobox) on trigger click", async () => {
     const user = userEvent.setup()
-    const store = renderCard(makeStep())
+    renderCard(makeStep())
 
+    expect(screen.queryByRole("listbox")).toBeNull()
     await user.click(
       screen.getByRole("button", {
         name: /pick a command/i,
       }),
     )
 
-    expect(store.get(commandPickerStateAtom)).not.toBeNull()
+    expect(screen.getByRole("listbox")).toBeInTheDocument()
     expect(
-      store.get(commandPickerStateAtom)?.anchor.stepId,
-    ).toBe("step_1")
+      screen.getByPlaceholderText(/search commands/i),
+    ).toBeInTheDocument()
+  })
+
+  test("selecting a command from the picker calls changeCommand", async () => {
+    const user = userEvent.setup()
+    const store = createStore()
+    store.set(commandsAtom, {
+      copyFiles: {
+        tag: "File Operations",
+        summary: "Copy files",
+        fields: [],
+        outputFolderName: null,
+      },
+    })
+    const step = makeStep()
+    store.set(stepsAtom, [step])
+    render(
+      <Provider store={store}>
+        <StepCard step={step} index={0} isFirst isLast />
+      </Provider>,
+    )
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /pick a command/i,
+      }),
+    )
+    await user.click(
+      screen.getByRole("option", { name: /copyFiles/ }),
+    )
+
+    expect((store.get(stepsAtom)[0] as Step).command).toBe(
+      "copyFiles",
+    )
+    expect(screen.queryByRole("listbox")).toBeNull()
   })
 
   test("shows error message when step has an error", () => {
