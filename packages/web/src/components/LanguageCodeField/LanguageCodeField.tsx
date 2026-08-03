@@ -1,12 +1,12 @@
-import { useRef, useState } from "react"
+import type { ListboxItem } from "@charcuterie/ui"
+import { Combobox } from "@charcuterie/ui"
+import { useState } from "react"
 import type { CommandField } from "../../commands/types"
 import { ISO_639_2_NAME_BY_CODE } from "../../data/iso639-2"
 import { buildOrderedLanguageOptions } from "../../data/orderLanguageOptions"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { CommandFieldControl } from "../CommandFieldControl/CommandFieldControl"
-import { PortalDropdown } from "../PortalDropdown/PortalDropdown"
-import { TagInputBase } from "../TagInputBase/TagInputBase"
+import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
 import { RegionVariantField } from "./RegionVariantField"
 
 type LanguageSelection = {
@@ -41,9 +41,8 @@ export const LanguageCodeField = ({
   field,
 }: LanguageCodeFieldProps) => {
   const { setParam } = useBuilderActions()
-  const [filterText, setFilterText] = useState("")
+  const [query, setQuery] = useState("")
   const [isOpen, setIsOpen] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   const selected = normalizeParam(step.params[field.name])
 
@@ -51,10 +50,17 @@ export const LanguageCodeField = ({
     setParam(step.id, field.name, undefined)
   }
 
+  // Single-select: a pick replaces the previous language and closes the
+  // picker. The current code is excluded from the list.
   const selectCode = (code: string) => {
     setParam(step.id, field.name, { code })
-    setFilterText("")
+    setQuery("")
     setIsOpen(false)
+  }
+
+  const close = () => {
+    setIsOpen(false)
+    setQuery("")
   }
 
   const handleIetfChange = (tag: string | null) => {
@@ -67,17 +73,53 @@ export const LanguageCodeField = ({
     setParam(step.id, field.name, updated)
   }
 
-  const visibleOptions = buildOrderedLanguageOptions({
-    filterText,
-    excluded: selected ? [selected.code] : [],
-  })
+  // The consumer owns the query (eng-pinned ordering + the 50-option cap
+  // live in buildOrderedLanguageOptions), so options arrive pre-filtered.
+  const options: ListboxItem[] =
+    buildOrderedLanguageOptions({
+      filterText: query,
+      excluded: selected ? [selected.code] : [],
+    }).map(({ code, name }) => ({
+      value: code,
+      textValue: `${name} ${code}`,
+      label: (
+        <span className="flex flex-1 items-center justify-between gap-2">
+          <span className="text-xs">{name}</span>
+          <span className="font-mono text-content-muted text-xs">
+            {code}
+          </span>
+        </span>
+      ),
+    }))
 
-  const tags = selected
-    ? [
-        {
-          key: selected.code,
-          label: (
-            <>
+  const triggerLabel = selected
+    ? `Change ${field.label ?? field.name}`
+    : `Add ${field.label ?? field.name}`
+
+  const trigger = (
+    <button
+      type="button"
+      aria-label={triggerLabel}
+      onClick={() =>
+        setIsOpen((isCurrentlyOpen) => !isCurrentlyOpen)
+      }
+      className="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer"
+    >
+      <span className="flex-1 min-w-0 truncate text-slate-400">
+        {selected
+          ? "Type to replace language…"
+          : "Type to filter languages…"}
+      </span>
+      <span className="text-slate-400 shrink-0">▾</span>
+    </button>
+  )
+
+  return (
+    <>
+      <CommandFieldGroup field={field}>
+        {selected && (
+          <div className="flex flex-wrap gap-1 mb-1">
+            <span className="inline-flex items-center gap-1 bg-slate-700 text-slate-200 text-xs rounded px-1.5 py-0.5">
               <span>
                 {ISO_639_2_NAME_BY_CODE[selected.code] ??
                   selected.code}
@@ -87,62 +129,40 @@ export const LanguageCodeField = ({
                   ? `${selected.code} · ${selected.ietf}`
                   : selected.code}
               </span>
-            </>
-          ),
-          title: `Remove ${selected.code}`,
-        },
-      ]
-    : []
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="text-slate-400 hover:text-red-400 leading-none cursor-pointer"
+                title={`Remove ${selected.code}`}
+                aria-label={`Remove ${selected.code}`}
+              >
+                ✕
+              </button>
+            </span>
+          </div>
+        )}
 
-  return (
-    <>
-      <CommandFieldControl field={field}>
-        <TagInputBase
-          tags={tags}
-          onRemove={clearSelection}
-          inputRef={inputRef}
-          inputProps={{
-            role: "combobox",
-            "aria-expanded": isOpen,
-            "aria-haspopup": "listbox",
-            "aria-required": field.isRequired
-              ? "true"
-              : undefined,
-            value: filterText,
-            placeholder: selected
+        <Combobox
+          trigger={trigger}
+          isVisible={isOpen}
+          onDismiss={close}
+          onSelect={selectCode}
+          options={options}
+          query={query}
+          onQueryChange={setQuery}
+          placeholder={
+            selected
               ? "Type to replace language…"
-              : "Type to filter languages…",
-            onChange: (event) => {
-              setFilterText(event.target.value)
-              setIsOpen(true)
-            },
-            onFocus: () => setIsOpen(true),
-            onBlur: () =>
-              setTimeout(() => setIsOpen(false), 150),
-          }}
+              : "Type to filter languages…"
+          }
+          emptyLabel="No matches."
         />
-      </CommandFieldControl>
+      </CommandFieldGroup>
 
       <RegionVariantField
         baseCode={selected?.code ?? ""}
         selectedIetf={selected?.ietf ?? null}
         onIetfChange={handleIetfChange}
-      />
-      <PortalDropdown
-        anchorRef={inputRef}
-        isOpen={isOpen}
-        items={visibleOptions.map(({ code, name }) => ({
-          key: code,
-          onSelect: () => selectCode(code),
-          content: (
-            <>
-              <span className="text-xs">{name}</span>
-              <span className="font-mono text-slate-400 text-xs">
-                {code}
-              </span>
-            </>
-          ),
-        }))}
       />
     </>
   )
