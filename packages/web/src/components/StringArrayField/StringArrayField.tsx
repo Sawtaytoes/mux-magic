@@ -1,11 +1,9 @@
-import { useAtomValue, useSetAtom } from "jotai"
-import { useRef } from "react"
+import { useAtomValue } from "jotai"
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import { commandLabel } from "../../jobs/commandLabels"
 import { flattenSteps } from "../../jobs/sequenceUtils"
 import { pathsAtom } from "../../state/pathsAtom"
-import { linkPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type {
   PathVariable,
@@ -14,6 +12,7 @@ import type {
   StepLink,
 } from "../../types"
 import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
+import { LinkPicker } from "../LinkPicker/LinkPicker"
 
 type StringArrayFieldProps = {
   field: CommandField
@@ -60,8 +59,6 @@ export const StringArrayField = ({
   const { setParam } = useBuilderActions()
   const paths = useAtomValue(pathsAtom)
   const allSteps = useAtomValue(stepsAtom)
-  const setLinkPickerState = useSetAtom(linkPickerStateAtom)
-  const linkButtonRef = useRef<HTMLButtonElement>(null)
 
   // Only fields that opt in (currently just `pathsToDelete`) get the
   // link/path picker. Plain typed lists like `chapterSplits` and
@@ -91,32 +88,15 @@ export const StringArrayField = ({
     setParam(step.id, field.name, array)
   }
 
-  const handleLinkPicker = () => {
-    const buttonRect =
-      linkButtonRef.current?.getBoundingClientRect()
-    if (!buttonRect) return
-    setLinkPickerState({
-      anchor: { stepId: step.id, fieldName: field.name },
-      triggerRect: buttonRect,
-    })
-  }
-
   return (
     <CommandFieldGroup
       actions={
         isLinkable ? (
-          <button
-            ref={linkButtonRef}
-            type="button"
-            onClick={handleLinkPicker}
-            title="Link to a path variable or step output"
-            className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer"
-          >
-            <span className="truncate">{linkLabel}</span>
-            <span className="text-slate-400 shrink-0">
-              ▾
-            </span>
-          </button>
+          <LinkPicker
+            stepId={step.id}
+            fieldName={field.name}
+            label={linkLabel}
+          />
         ) : null
       }
       field={field}

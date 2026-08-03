@@ -3,8 +3,6 @@ import { useHydrateAtoms } from "jotai/utils"
 import { lazy, Suspense, useEffect } from "react"
 
 import { COMMANDS } from "../../commands/commands"
-import { CommandPicker } from "../../components/CommandPicker/CommandPicker"
-import { LinkPicker } from "../../components/LinkPicker/LinkPicker"
 import { PageHeader } from "../../components/PageHeader/PageHeader"
 import { PathPicker } from "../../components/PathPicker/PathPicker"
 import { VariablesSidebar } from "../../components/VariablesSidebar/VariablesSidebar"
@@ -261,8 +259,6 @@ export const BuilderPage = () => {
       </Suspense>
 
       {/* Pickers — render via createPortal into document.body */}
-      <CommandPicker />
-      <LinkPicker />
       <PathPicker />
     </div>
   )

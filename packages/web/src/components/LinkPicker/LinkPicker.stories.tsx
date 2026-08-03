@@ -1,19 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider } from "jotai"
+import type { ReactNode } from "react"
 import { pathsAtom } from "../../state/pathsAtom"
-import { linkPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
 import { LinkPicker } from "./LinkPicker"
-
-const TRIGGER_RECT = {
-  left: 400,
-  top: 300,
-  right: 760,
-  bottom: 324,
-  width: 360,
-  height: 24,
-}
 
 const makeStep = (id: string, command: string): Step => ({
   id,
@@ -26,7 +17,7 @@ const makeStep = (id: string, command: string): Step => ({
   isCollapsed: false,
 })
 
-const withOpenPicker = () => {
+const withSteps = (Story: () => ReactNode) => {
   const store = createStore()
   store.set(stepsAtom, [
     makeStep("step-1", "copyFiles"),
@@ -47,13 +38,11 @@ const withOpenPicker = () => {
       type: "path" as const,
     },
   ])
-  store.set(linkPickerStateAtom, {
-    anchor: { stepId: "step-3", fieldName: "sourcePath" },
-    triggerRect: TRIGGER_RECT,
-  })
-  return (Story: React.ComponentType) => (
+  return (
     <Provider store={store}>
-      <Story />
+      <div className="bg-slate-900 p-4">
+        <Story />
+      </div>
     </Provider>
   )
 }
@@ -62,27 +51,21 @@ const meta: Meta<typeof LinkPicker> = {
   title: "Pickers/LinkPicker",
   component: LinkPicker,
   parameters: {
-    layout: "fullscreen",
+    layout: "padded",
     backgrounds: { default: "dark" },
   },
+  decorators: [withSteps],
 }
 
 export default meta
 type Story = StoryObj<typeof LinkPicker>
 
-export const Open: Story = {
-  decorators: [withOpenPicker()],
-}
-
-export const Closed: Story = {
-  decorators: [
-    (Story) => {
-      const store = createStore()
-      return (
-        <Provider store={store}>
-          <Story />
-        </Provider>
-      )
-    },
-  ],
+// The trigger button — click it in the canvas to open the searchable
+// Combobox, which portals itself and anchors off the trigger.
+export const Default: Story = {
+  args: {
+    stepId: "step-3",
+    fieldName: "sourcePath",
+    label: "— custom —",
+  },
 }
