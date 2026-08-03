@@ -1,0 +1,12 @@
+{/* MonitorIcon.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as MonitorIconStories from "./MonitorIcon.stories";
+
+<Meta of={MonitorIconStories} />
+
+# MonitorIcon
+
+A 16×16px monitor SVG icon. The **system**-mode glyph for the header colour-scheme switcher (`<ColorSchemeSwitcher>`) — the mode that follows the OS `prefers-color-scheme`. Inherits `currentColor` stroke so it respects the parent text color.
+
+<Canvas of={MonitorIconStories.Default} />
