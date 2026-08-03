@@ -1,0 +1,16 @@
+{/* SchemeMenuButton.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as SchemeMenuButtonStories from "./SchemeMenuButton.stories";
+
+<Meta of={SchemeMenuButtonStories} />
+
+# SchemeMenuButton
+
+The colour-scheme control as a **row inside the header `⋮` overflow menu**, not a standalone toolbar button.
+
+It wires `@charcuterie/logic`'s `useColorScheme` (via the `@charcuterie/logic/browser` defaults — `matchMedia` + `localStorage` under the shared `charcuterie-scheme` key + `data-scheme` on `<html>`) to a plain slate menu-row button that reads **"Theme: System / Light / Dark"** with the current-mode glyph. Default mode is `system` (follow the OS); activating it cycles **light → dark → system**.
+
+It exists instead of the accent-coloured `<ColorSchemeSwitcher>` `IconButton` so the control **blends** with the muted-slate items beside it in the menu — the glyph and label inherit the menu's `currentColor` rather than the accent violet. First-paint resolution still lives in `index.html`'s `buildFirstPaintScript` snippet; this only drives runtime switching.
+
+<Canvas of={SchemeMenuButtonStories.Default} />
