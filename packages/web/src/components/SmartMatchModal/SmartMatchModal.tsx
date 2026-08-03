@@ -1,3 +1,4 @@
+import { Select } from "@charcuterie/ui"
 import { useAtom, useSetAtom } from "jotai"
 import { useState } from "react"
 import { apiBase } from "../../apiBase"
@@ -778,46 +779,54 @@ export const SmartMatchModal = () => {
                         return (
                           hasSuffixRow && (
                             <div className="flex items-center gap-1.5 mb-1.5">
-                              <label
-                                htmlFor={`plex-suffix-${suggestion.filename}`}
-                                className="text-[10px] text-slate-400 whitespace-nowrap shrink-0"
-                              >
-                                Plex type:
-                              </label>
-                              <select
-                                id={`plex-suffix-${suggestion.filename}`}
-                                data-plex-suffix-select={
-                                  suggestion.filename
-                                }
-                                value={row.plexSuffix}
-                                disabled={
+                              <Select
+                                className="font-mono"
+                                isDisabled={
                                   row.isApplied ||
                                   isApplying
                                 }
-                                onChange={(event) =>
+                                /*
+                                  The whole reason this key exists.
+
+                                  `Select` is UNCONTROLLED — `value` seeds
+                                  `defaultValue` and the DOM owns it from
+                                  then on — and this control has a SECOND
+                                  writer: picking a different candidate
+                                  re-derives the Plex type through
+                                  `derivePlexSuffix` (commit `bcb0f0b3`,
+                                  fixing a row stranded on the top
+                                  candidate's type). Without a remount the
+                                  select would keep showing the old type
+                                  and silently undo that fix — with a green
+                                  typecheck, because nothing in the type
+                                  system knows a value has two writers.
+
+                                  Keyed on the CANDIDATE, not on the
+                                  suffix: keying on `row.plexSuffix` would
+                                  also remount on the user's own change and
+                                  drop their keyboard focus. This remounts
+                                  only on the write that comes from
+                                  elsewhere.
+                                */
+                                key={
+                                  row.selectedCandidateName
+                                }
+                                label={`Plex type for ${suggestion.filename}`}
+                                onChange={(plexSuffix) =>
                                   updateRow(
                                     suggestion.filename,
-                                    {
-                                      plexSuffix:
-                                        event.target.value,
-                                    },
+                                    { plexSuffix },
                                   )
                                 }
-                                className="text-[10px] font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {PLEX_EXTRA_TYPES.map(
-                                  (plexType) => (
-                                    <option
-                                      key={plexType.suffix}
-                                      value={
-                                        plexType.suffix
-                                      }
-                                    >
-                                      {plexType.label}
-                                    </option>
-                                  ),
+                                options={PLEX_EXTRA_TYPES.map(
+                                  (plexType) => ({
+                                    label: plexType.label,
+                                    value: plexType.suffix,
+                                  }),
                                 )}
-                              </select>
+                                size="sm"
+                                value={row.plexSuffix}
+                              />
                             </div>
                           )
                         )

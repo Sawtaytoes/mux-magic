@@ -75,7 +75,7 @@ describe("VariablesPanel", () => {
       screen.getByRole("button", { name: /add variable/i }),
     )
     await user.click(
-      screen.getByRole("button", { name: /^path$/i }),
+      screen.getByRole("menuitem", { name: /^path$/i }),
     )
     const variables = store.get(variablesAtom)
     expect(variables).toHaveLength(1)
@@ -89,7 +89,7 @@ describe("VariablesPanel", () => {
       screen.getByRole("button", { name: /add variable/i }),
     )
     expect(
-      screen.getByRole("button", { name: /path/i }),
+      screen.getByRole("menuitem", { name: /path/i }),
     ).toBeInTheDocument()
   })
 
@@ -100,12 +100,12 @@ describe("VariablesPanel", () => {
       screen.getByRole("button", { name: /add variable/i }),
     )
     expect(
-      screen.getByRole("button", {
+      screen.getByRole("menuitem", {
         name: /dvd compare id/i,
       }),
     ).toBeVisible()
     expect(
-      screen.getByRole("button", { name: /^path$/i }),
+      screen.getByRole("menuitem", { name: /^path$/i }),
     ).toBeVisible()
   })
 
@@ -116,7 +116,7 @@ describe("VariablesPanel", () => {
       screen.getByRole("button", { name: /add variable/i }),
     )
     await user.click(
-      screen.getByRole("button", {
+      screen.getByRole("menuitem", {
         name: /dvd compare id/i,
       }),
     )
@@ -143,7 +143,9 @@ describe("VariablesPanel", () => {
       screen.getByRole("button", { name: /add variable/i }),
     )
     expect(
-      screen.getByRole("button", { name: /max threads/i }),
+      screen.getByRole("menuitem", {
+        name: /max threads/i,
+      }),
     ).toBeVisible()
   })
 
@@ -154,7 +156,9 @@ describe("VariablesPanel", () => {
       screen.getByRole("button", { name: /add variable/i }),
     )
     await user.click(
-      screen.getByRole("button", { name: /max threads/i }),
+      screen.getByRole("menuitem", {
+        name: /max threads/i,
+      }),
     )
     const variables = store.get(variablesAtom)
     expect(variables).toHaveLength(1)
@@ -181,5 +185,68 @@ describe("VariablesPanel", () => {
         name: /max threads/i,
       }),
     ).toBeNull()
+  })
+  // ─── The Add Variable menu (charcuterie M6b) ─────────────────────────────
+
+  test("the items are menuitems, not options — they add a variable rather than select one", async () => {
+    const user = userEvent.setup()
+    renderPanel([])
+    await user.click(
+      screen.getByRole("button", { name: /add variable/i }),
+    )
+
+    // `menuitem` DOES something; `option` IS something you are choosing.
+    // Picking "Path" adds a path variable and leaves nothing selected —
+    // there is no `aria-selected` state to report and no way to reopen the
+    // menu and see what was picked last time. See `TypePicker.tsx` for why
+    // this reverses `@charcuterie/ui`'s own note about this component.
+    expect(screen.getByRole("menu")).toBeVisible()
+    expect(screen.queryByRole("listbox")).toBeNull()
+    expect(screen.queryByRole("option")).toBeNull()
+  })
+
+  test("the menu is named by its trigger", async () => {
+    const user = userEvent.setup()
+    renderPanel([])
+    await user.click(
+      screen.getByRole("button", { name: /add variable/i }),
+    )
+
+    // `useRole(context, { role: "menu" })` puts `aria-labelledby` on the
+    // panel pointing at the trigger, and that beats an `aria-label`. The
+    // panel this replaced carried a "Choose a variable type:" paragraph
+    // that nothing referenced.
+    expect(
+      screen.getByRole("menu", { name: "Add variable" }),
+    ).toBeVisible()
+  })
+
+  test("Escape dismisses the menu", async () => {
+    const user = userEvent.setup()
+    renderPanel([])
+    await user.click(
+      screen.getByRole("button", { name: /add variable/i }),
+    )
+    expect(screen.getByRole("menu")).toBeVisible()
+
+    // The panel this replaced had a hand-rolled **Cancel** button standing
+    // in for Escape and outside-press, neither of which it had.
+    await user.keyboard("{Escape}")
+
+    expect(screen.queryByRole("menu")).toBeNull()
+  })
+
+  test("opening the menu moves focus to its first item", async () => {
+    const user = userEvent.setup()
+    renderPanel([])
+    await user.click(
+      screen.getByRole("button", { name: /add variable/i }),
+    )
+
+    // A menu that opens without moving focus leaves the keyboard user on
+    // the trigger with a menu they cannot reach. The old inline panel did
+    // exactly that.
+    const [firstItem] = screen.getAllByRole("menuitem")
+    expect(firstItem).toHaveFocus()
   })
 })

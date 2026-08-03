@@ -1,4 +1,6 @@
+import { Accordion } from "@charcuterie/ui"
 import { useState } from "react"
+
 import { DeliveryStateBadge } from "./DeliveryStateBadge"
 import type { PersistedJobError } from "./errorAtoms"
 
@@ -34,7 +36,6 @@ export const ErrorRow = ({
   onDismiss,
   onRedeliver,
 }: ErrorRowProps) => {
-  const [isExpanded, setIsExpanded] = useState(false)
   const [isConfirmingDismiss, setIsConfirmingDismiss] =
     useState(false)
   const [isRedelivering, setIsRedelivering] =
@@ -67,12 +68,6 @@ export const ErrorRow = ({
     })
   }
 
-  const handleExpandToggle = () => {
-    setIsExpanded(
-      (isPreviouslyExpanded) => !isPreviouslyExpanded,
-    )
-  }
-
   return (
     <article className="bg-slate-900 border border-slate-700 rounded-lg p-3 space-y-2">
       {/* Row header */}
@@ -102,15 +97,6 @@ export const ErrorRow = ({
 
       {/* Actions row */}
       <div className="flex items-center gap-2 flex-wrap">
-        <button
-          type="button"
-          aria-label="Expand detail"
-          onClick={handleExpandToggle}
-          className="text-xs text-slate-400 hover:text-slate-200 underline"
-        >
-          {isExpanded ? "Collapse" : "Expand"}
-        </button>
-
         {isExhausted && (
           <button
             type="button"
@@ -157,79 +143,96 @@ export const ErrorRow = ({
         )}
       </div>
 
-      {/* Detail expansion */}
-      {isExpanded && (
-        <div className="space-y-2 pt-1 border-t border-slate-800">
-          {record.errorName && (
-            <div className="text-xs text-slate-400">
-              <span className="text-slate-500">
-                Error:{" "}
-              </span>
-              {record.errorName}
-            </div>
-          )}
-          {record.traceId && (
-            <div className="text-xs text-slate-400 font-mono">
-              <span className="text-slate-500">
-                traceId:{" "}
-              </span>
-              {record.traceId}
-            </div>
-          )}
-          {record.spanId && (
-            <div className="text-xs text-slate-400 font-mono">
-              <span className="text-slate-500">
-                spanId:{" "}
-              </span>
-              {record.spanId}
-            </div>
-          )}
-          {record.stepIndex !== undefined && (
-            <div className="text-xs text-slate-400">
-              <span className="text-slate-500">
-                stepIndex:{" "}
-              </span>
-              {record.stepIndex}
-            </div>
-          )}
-          {record.fileId && (
-            <div className="text-xs text-slate-400 font-mono truncate">
-              <span className="text-slate-500">
-                fileId:{" "}
-              </span>
-              {record.fileId}
-            </div>
-          )}
-          <div className="text-xs space-y-0.5">
-            <div className="text-slate-500">
-              Delivery: {record.webhookDelivery.attempts}{" "}
-              attempt
-              {record.webhookDelivery.attempts !== 1
-                ? "s"
-                : ""}
-            </div>
-            {record.webhookDelivery.lastAttemptAt && (
-              <div className="text-slate-500">
-                Last attempt:{" "}
-                {formatRelativeTime(
-                  record.webhookDelivery.lastAttemptAt,
+      {/*
+        Was a bare "Expand"/"Collapse" `<button aria-label="Expand detail">`
+        beside a conditional `<div>` — no `aria-expanded`, no
+        `aria-controls`, and a name that said "Expand" while the panel was
+        already open. `Accordion` says the state on the control instead of
+        in the control's text, so the trigger's accessible name stays
+        "Detail" and a screen reader hears whether it is open.
+      */}
+      <Accordion
+        items={[
+          {
+            content: (
+              <div className="space-y-2">
+                {record.errorName && (
+                  <div className="text-xs text-slate-400">
+                    <span className="text-slate-500">
+                      Error:{" "}
+                    </span>
+                    {record.errorName}
+                  </div>
+                )}
+                {record.traceId && (
+                  <div className="text-xs text-slate-400 font-mono">
+                    <span className="text-slate-500">
+                      traceId:{" "}
+                    </span>
+                    {record.traceId}
+                  </div>
+                )}
+                {record.spanId && (
+                  <div className="text-xs text-slate-400 font-mono">
+                    <span className="text-slate-500">
+                      spanId:{" "}
+                    </span>
+                    {record.spanId}
+                  </div>
+                )}
+                {record.stepIndex !== undefined && (
+                  <div className="text-xs text-slate-400">
+                    <span className="text-slate-500">
+                      stepIndex:{" "}
+                    </span>
+                    {record.stepIndex}
+                  </div>
+                )}
+                {record.fileId && (
+                  <div className="text-xs text-slate-400 font-mono truncate">
+                    <span className="text-slate-500">
+                      fileId:{" "}
+                    </span>
+                    {record.fileId}
+                  </div>
+                )}
+                <div className="text-xs space-y-0.5">
+                  <div className="text-slate-500">
+                    Delivery:{" "}
+                    {record.webhookDelivery.attempts}{" "}
+                    attempt
+                    {record.webhookDelivery.attempts !== 1
+                      ? "s"
+                      : ""}
+                  </div>
+                  {record.webhookDelivery.lastAttemptAt && (
+                    <div className="text-slate-500">
+                      Last attempt:{" "}
+                      {formatRelativeTime(
+                        record.webhookDelivery
+                          .lastAttemptAt,
+                      )}
+                    </div>
+                  )}
+                  {record.webhookDelivery.lastError && (
+                    <div className="text-red-400">
+                      Last error:{" "}
+                      {record.webhookDelivery.lastError}
+                    </div>
+                  )}
+                </div>
+                {record.stack && (
+                  <pre className="text-xs bg-slate-950 rounded p-2 overflow-x-auto text-slate-400 max-h-48 overflow-y-auto whitespace-pre-wrap">
+                    {record.stack}
+                  </pre>
                 )}
               </div>
-            )}
-            {record.webhookDelivery.lastError && (
-              <div className="text-red-400">
-                Last error:{" "}
-                {record.webhookDelivery.lastError}
-              </div>
-            )}
-          </div>
-          {record.stack && (
-            <pre className="text-xs bg-slate-950 rounded p-2 overflow-x-auto text-slate-400 max-h-48 overflow-y-auto whitespace-pre-wrap">
-              {record.stack}
-            </pre>
-          )}
-        </div>
-      )}
+            ),
+            key: "detail",
+            label: "Detail",
+          },
+        ]}
+      />
     </article>
   )
 }

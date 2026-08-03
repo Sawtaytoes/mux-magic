@@ -13,7 +13,7 @@ import type {
   Step,
   StepLink,
 } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
 
 type StringArrayFieldProps = {
   field: CommandField
@@ -102,10 +102,9 @@ export const StringArrayField = ({
   }
 
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-1">
-        <FieldLabel stepId={step.id} field={field} />
-        {isLinkable && (
+    <CommandFieldGroup
+      actions={
+        isLinkable ? (
           <button
             ref={linkButtonRef}
             type="button"
@@ -118,27 +117,30 @@ export const StringArrayField = ({
               ▾
             </span>
           </button>
-        )}
-      </div>
+        ) : null
+      }
+      field={field}
+    >
       {isLinked ? (
         <p className="w-full bg-slate-900 text-slate-400 text-xs rounded px-2 py-1.5 border border-slate-700 font-mono">
           {linkLabel}
         </p>
       ) : (
         <input
-          id={`${step.id}-${field.name}`}
-          type="text"
-          value={displayValue}
-          placeholder={field.placeholder ?? ""}
-          onChange={(event) =>
-            handleChange(event.target.value)
-          }
+          aria-label={field.label ?? field.name}
           aria-required={
             field.isRequired ? "true" : undefined
           }
           className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+          id={`${step.id}-${field.name}`}
+          onChange={(event) =>
+            handleChange(event.target.value)
+          }
+          placeholder={field.placeholder ?? ""}
+          type="text"
+          value={displayValue}
         />
       )}
-    </div>
+    </CommandFieldGroup>
   )
 }

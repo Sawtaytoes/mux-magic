@@ -1,6 +1,5 @@
-import { useState } from "react"
+import { Accordion } from "@charcuterie/ui"
 
-import { CollapseChevron } from "../../icons/CollapseChevron/CollapseChevron"
 import { PredicateCard } from "./PredicateCard"
 import { addPredicate } from "./ruleMutations"
 import type {
@@ -31,60 +30,73 @@ export const PredicatesManager = ({
   onCommitPredicates,
 }: PredicatesManagerProps) => {
   const detailsKey = `${stepId}:predicates`
-  const [isOpen, setIsOpen] = useState(
-    !isReadOnly && openDetailsKeys.has(detailsKey),
-  )
   const predicateNames = Object.keys(predicates)
 
+  /*
+    The eleventh disclosure, and the one the M6b brief did not list — it is
+    the only one that was NOT a `<details>`, so a grep for `<details>` misses
+    it entirely. Its trigger was a plain `<button>` with a chevron icon and
+    **no `aria-expanded`**, beside a conditionally rendered `<div>`: exactly
+    `ErrorRow`'s defect, rendering perfectly.
+
+    `data-details-key` went with it. It was a `data-testid` under another
+    name; `e2e/dsl-rules.spec.ts` finds this by the trigger's accessible
+    name now.
+  */
   return (
-    <div
-      data-details-key={detailsKey}
-      className="mt-3 border border-slate-700/60 rounded"
-    >
-      <button
-        type="button"
-        onClick={() => {
-          const isNextOpen = !isOpen
-          setIsOpen(isNextOpen)
-          onToggleDetails(detailsKey, isNextOpen)
-        }}
-        className="flex items-center gap-1 cursor-pointer text-xs text-slate-400 px-2 py-1 select-none w-full text-left"
-      >
-        <CollapseChevron isCollapsed={!isOpen} />
-        Predicates ({predicateNames.length})
-      </button>
-      {isOpen && (
-        <div className="px-2 py-1.5">
-          {predicateNames.map((predicateName) => (
-            <PredicateCard
-              key={predicateName}
-              predicates={predicates}
-              predicateName={predicateName}
-              isReadOnly={isReadOnly}
-              onCommitPredicates={onCommitPredicates}
-            />
-          ))}
-          {predicateNames.length === 0 && (
-            <p className="text-xs text-slate-500 italic">
-              No predicates. Define reusable match sets here
-              to reference via $ref.
-            </p>
-          )}
-          {!isReadOnly && (
-            <button
-              type="button"
-              onClick={() => {
-                onCommitPredicates(
-                  addPredicate({ predicates }),
-                )
-              }}
-              className="text-xs text-slate-400 hover:text-blue-400 mt-2"
-            >
-              + Add predicate
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+    <Accordion
+      className="mt-3"
+      expandedKeys={
+        !isReadOnly && openDetailsKeys.has(detailsKey)
+          ? [detailsKey]
+          : []
+      }
+      items={[
+        {
+          content: (
+            <>
+              {predicateNames.map((predicateName) => (
+                <PredicateCard
+                  isReadOnly={isReadOnly}
+                  key={predicateName}
+                  onCommitPredicates={onCommitPredicates}
+                  predicateName={predicateName}
+                  predicates={predicates}
+                />
+              ))}
+
+              {predicateNames.length === 0 && (
+                <p className="text-xs text-slate-500 italic">
+                  No predicates. Define reusable match sets
+                  here to reference via $ref.
+                </p>
+              )}
+
+              {!isReadOnly && (
+                <button
+                  className="text-xs text-slate-400 hover:text-blue-400 mt-2"
+                  onClick={() => {
+                    onCommitPredicates(
+                      addPredicate({ predicates }),
+                    )
+                  }}
+                  type="button"
+                >
+                  + Add predicate
+                </button>
+              )}
+            </>
+          ),
+          key: detailsKey,
+          label: `Predicates (${predicateNames.length})`,
+        },
+      ]}
+      onChange={(expandedKeys) => {
+        onToggleDetails(
+          detailsKey,
+          expandedKeys.includes(detailsKey),
+        )
+      }}
+    />
   )
 }
