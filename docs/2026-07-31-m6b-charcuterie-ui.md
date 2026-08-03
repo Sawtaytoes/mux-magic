@@ -84,8 +84,15 @@ Two local wrappers exist because `Field` does not cover the shape:
 - **The app's ~1000 `*-slate-*` utilities.** The page canvas moved to
   `surface-base` / `content-primary` because token-coloured components have
   to sit on something that answers to the same scheme; converting the rest is
-  its own milestone. `data-scheme` is pinned to `dark` — a scheme toggle that
-  repaints only the shared components is worse than none.
+  its own milestone. When M6b shipped, `data-scheme` was pinned to `dark` — a
+  scheme toggle that repaints only the shared components was judged worse than
+  none. **Superseded (2026-08-03):** the OS light/dark milestone shipped — a
+  `<ColorSchemeSwitcher>` in the header cycles light → dark → system (default
+  `system`, so the app follows the OS), `data-scheme` is now resolved before
+  first paint by `@charcuterie/tokens`' `buildFirstPaintScript` and switched at
+  runtime via `@charcuterie/logic`'s `useColorScheme`. The `*-slate-*`
+  utilities remain literal, so panels still read dark-ish in light mode until
+  the palette milestone; the token-coloured chrome does follow the scheme.
 
 ---
 
@@ -345,6 +352,9 @@ to the state that changed rather than a default render:
 - The seven comboboxes. P2.
 - The `*-slate-*` palette. Its own milestone; the components are token-coloured
   and the page canvas is, the rest is not.
-- A light mode. `data-scheme` is pinned to `dark`.
+- ~~A light mode. `data-scheme` is pinned to `dark`.~~ **Done 2026-08-03** —
+  `<ColorSchemeSwitcher>` (light → dark → system, default `system`) + a
+  `buildFirstPaintScript` head snippet; see the "app's ~1000 `*-slate-*`
+  utilities" note above. The palette conversion is still its own milestone.
 - `Toast`, `ToastRegion`, `FileDropZone` — the three P1 components M6a itself
   recorded as having no React consumer. They still have none here.
