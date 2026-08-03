@@ -93,7 +93,7 @@ const filterAndSortByCategory = (
 //              index. The Plex scanner pulls these into the
 //              "Specials" virtual season regardless of which AniDB
 //              type the episode came from.
-const formatOutputFilename = ({
+export const formatOutputFilename = ({
   category,
   episode,
   episodeTitle,
@@ -110,6 +110,13 @@ const formatOutputFilename = ({
 }) => {
   const padTwo = (value: number | string) =>
     String(value).padStart(2, "0")
+  // A missing episode title (e.g. a currently-airing series AniDB hasn't
+  // published titles for yet) drops the " - <title>" segment rather than
+  // the whole file, so the rename still lands and is re-runnable once the
+  // title exists.
+  const titleSuffix = episodeTitle
+    ? ` - ${episodeTitle}`
+    : ""
   if (category === "regular") {
     return cleanupFilename(
       seriesName.concat(
@@ -118,8 +125,7 @@ const formatOutputFilename = ({
         padTwo(seasonNumber),
         "e",
         padTwo(episode.epno),
-        " - ",
-        episodeTitle,
+        titleSuffix,
       ),
     )
   }
@@ -130,8 +136,7 @@ const formatOutputFilename = ({
         "s00",
         "e",
         padTwo(sequentialIndex),
-        " - ",
-        episodeTitle,
+        titleSuffix,
       ),
     )
   }
@@ -143,11 +148,35 @@ const formatOutputFilename = ({
       padTwo(seasonNumber),
       "e",
       padTwo(sequentialIndex),
-      " - ",
-      episodeTitle,
+      titleSuffix,
     ),
   )
 }
+
+// The series name used in output filenames and the seriesFolderName
+// output. An explicit override (from the AniDB title-picker) wins
+// verbatim — backticks, apostrophes and all — so the user's
+// character-cleaned choice is preserved; otherwise fall back to AniDB's
+// auto-picked title.
+export const resolveSeriesName = (
+  seriesNameOverride: string | undefined,
+  titles: AnidbAnime["titles"],
+): string =>
+  seriesNameOverride && seriesNameOverride.length > 0
+    ? seriesNameOverride
+    : pickAnidbSeriesName(titles)
+
+// Sonarr/Plex series-folder convention: "<name> [anidb-<id>]". Surfaced
+// as an extractable output so a downstream copyFiles/moveFiles step can
+// drop the renamed files straight into the right library folder via
+// linkedTo.
+export const formatSeriesFolderName = ({
+  anidbId,
+  seriesName,
+}: {
+  anidbId: number
+  seriesName: string
+}): string => `${seriesName} [anidb-${anidbId}]`
 
 // Compile the optional filenameRegex once. Throws a descriptive error
 // on an invalid pattern so it surfaces on the run card instead of a
@@ -323,6 +352,7 @@ export const nameAnimeEpisodesAniDB = ({
   filenameRegex,
   searchTerm,
   seasonNumber,
+  seriesName: seriesNameOverride,
   sourcePath,
   startEpisodeNumber = 1,
 }: {
@@ -331,6 +361,7 @@ export const nameAnimeEpisodesAniDB = ({
   filenameRegex?: string
   searchTerm?: string
   seasonNumber: number
+  seriesName?: string
   sourcePath: string
   startEpisodeNumber?: number
 }) =>
@@ -369,8 +400,12 @@ export const nameAnimeEpisodesAniDB = ({
             filter(Boolean),
           )
       ).pipe(
-        concatMap((aid) => lookupAnidbById(aid)),
-        concatMap((anime) => {
+        concatMap((aid) =>
+          lookupAnidbById(aid).pipe(
+            map((anime) => ({ aid, anime })),
+          ),
+        ),
+        concatMap(({ aid, anime }) => {
           if (!anime)
             throw new Error(
               "AniDB returned no anime payload.",
@@ -379,133 +414,76 @@ export const nameAnimeEpisodesAniDB = ({
             anime.episodes,
             episodeType,
           )
-          const seriesName = pickAnidbSeriesName(
+          const seriesName = resolveSeriesName(
+            seriesNameOverride,
             anime.titles,
           )
+          const seriesFolderName = formatSeriesFolderName({
+            anidbId: aid,
+            seriesName,
+          })
           return resolveMovieFormatVariant(
             filtered,
             episodeType,
           ).pipe(
-            map((episodes) => ({ episodes, seriesName })),
+            map((episodes) => ({
+              episodes,
+              seriesFolderName,
+              seriesName,
+            })),
           )
         }),
-        concatMap(({ episodes, seriesName }) => {
-          const sortedFileInfos = naturalSort(fileInfos).by(
-            { asc: (fileInfo) => fileInfo.filename },
-          )
-          const videoFileInfos$ = from(
-            sortedFileInfos,
-          ).pipe(filterIsVideoFile())
+        concatMap(
+          ({ episodes, seriesFolderName, seriesName }) => {
+            const sortedFileInfos = naturalSort(
+              fileInfos,
+            ).by({ asc: (fileInfo) => fileInfo.filename })
+            const videoFileInfos$ = from(
+              sortedFileInfos,
+            ).pipe(filterIsVideoFile())
 
-          if (isPickerCategory(episodeType)) {
-            // Picker categories use a per-file interactive picker
-            // (length-matched candidates). Materialize the sorted
-            // video files first so matchSpecialsToFiles can
-            // claim/skip/cancel each one in turn.
-            return videoFileInfos$.pipe(
-              toArray(),
-              concatMap((videoFileInfos) =>
-                matchSpecialsToFiles({
-                  fileInfos: videoFileInfos,
-                  specials: episodes,
-                }).pipe(
-                  toArray(),
-                  concatMap((matches) =>
-                    from(
-                      matches.map((match, index) => ({
-                        fileInfo: match.fileInfo,
-                        episode: match.episode,
-                        sequentialIndex: index + 1,
-                      })),
+            if (isPickerCategory(episodeType)) {
+              // Picker categories use a per-file interactive picker
+              // (length-matched candidates). Materialize the sorted
+              // video files first so matchSpecialsToFiles can
+              // claim/skip/cancel each one in turn.
+              return videoFileInfos$.pipe(
+                toArray(),
+                concatMap((videoFileInfos) =>
+                  matchSpecialsToFiles({
+                    fileInfos: videoFileInfos,
+                    specials: episodes,
+                  }).pipe(
+                    toArray(),
+                    concatMap((matches) =>
+                      from(
+                        matches.map((match, index) => ({
+                          fileInfo: match.fileInfo,
+                          episode: match.episode,
+                          sequentialIndex: index + 1,
+                        })),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              mergeMap(
-                ({
-                  fileInfo,
-                  episode,
-                  sequentialIndex,
-                }) => {
-                  const title = pickEpisodeTitle(
-                    episode.titles,
-                  )
-                  if (!title) {
-                    logInfo(
-                      "NO EPISODE TITLE",
-                      fileInfo.filename,
-                      `(epno=${episode.epno})`,
-                    )
-                    return EMPTY
-                  }
-                  return of({
+                mergeMap(
+                  ({
                     fileInfo,
-                    renamedFilename: formatOutputFilename({
-                      category: episodeType,
-                      episode,
-                      episodeTitle: title,
-                      seasonNumber,
-                      sequentialIndex,
-                      seriesName,
-                    }),
-                  })
-                },
-              ),
-            )
-          }
-
-          // regular + others share index-based pairing. By default the
-          // 0-based file index against the sorted video list picks the
-          // episode (sequentialIndex is 1-based for filename use), but
-          // filenameRegex (pair by extracted episode number) or
-          // startEpisodeNumber (offset the index) override that for
-          // partial / non-contiguous sets. Each pair also reads the
-          // file's mediainfo duration and warns when the file/episode
-          // lengths diverge — advisory, the rename still applies.
-          const compiledFilenameRegex =
-            compileFilenameRegex(filenameRegex)
-          return videoFileInfos$.pipe(
-            map((fileInfo, index) => {
-              const { episode, sequentialIndex } =
-                pairEpisodeToFileIndex({
-                  compiledFilenameRegex,
-                  episodes,
-                  filename: fileInfo.filename,
-                  index,
-                  startEpisodeNumber,
-                })
-              return { episode, fileInfo, sequentialIndex }
-            }),
-            concatMap(
-              ({ episode, fileInfo, sequentialIndex }) => {
-                if (!episode) {
-                  logInfo(
-                    "NO EPISODE FOR FILE",
-                    fileInfo.filename,
-                  )
-                  return EMPTY
-                }
-                const title = pickEpisodeTitle(
-                  episode.titles,
-                )
-                if (!title) {
-                  logInfo(
-                    "NO EPISODE TITLE",
-                    fileInfo.filename,
-                    `(epno=${episode.epno})`,
-                  )
-                  return EMPTY
-                }
-                return readMediaDurationMinutes(
-                  fileInfo.fullPath,
-                ).pipe(
-                  map((fileMinutes) => {
-                    warnIfDurationMismatch({
-                      episode,
-                      fileMinutes,
-                      fileName: fileInfo.filename,
-                    })
-                    return {
+                    episode,
+                    sequentialIndex,
+                  }) => {
+                    const title = pickEpisodeTitle(
+                      episode.titles,
+                    )
+                    if (!title) {
+                      logInfo(
+                        "NO EPISODE TITLE",
+                        fileInfo.filename,
+                        `(epno=${episode.epno})`,
+                      )
+                      return EMPTY
+                    }
+                    return of({
                       fileInfo,
                       renamedFilename: formatOutputFilename(
                         {
@@ -517,21 +495,109 @@ export const nameAnimeEpisodesAniDB = ({
                           seriesName,
                         },
                       ),
-                    }
-                  }),
-                )
-              },
-            ),
-          )
-        }),
+                      seriesFolderName,
+                    })
+                  },
+                ),
+              )
+            }
+
+            // regular + others share index-based pairing. By default the
+            // 0-based file index against the sorted video list picks the
+            // episode (sequentialIndex is 1-based for filename use), but
+            // filenameRegex (pair by extracted episode number) or
+            // startEpisodeNumber (offset the index) override that for
+            // partial / non-contiguous sets. Each pair also reads the
+            // file's mediainfo duration and warns when the file/episode
+            // lengths diverge — advisory, the rename still applies.
+            const compiledFilenameRegex =
+              compileFilenameRegex(filenameRegex)
+            return videoFileInfos$.pipe(
+              map((fileInfo, index) => {
+                const { episode, sequentialIndex } =
+                  pairEpisodeToFileIndex({
+                    compiledFilenameRegex,
+                    episodes,
+                    filename: fileInfo.filename,
+                    index,
+                    startEpisodeNumber,
+                  })
+                return {
+                  episode,
+                  fileInfo,
+                  sequentialIndex,
+                }
+              }),
+              concatMap(
+                ({
+                  episode,
+                  fileInfo,
+                  sequentialIndex,
+                }) => {
+                  if (!episode) {
+                    logInfo(
+                      "NO EPISODE FOR FILE",
+                      fileInfo.filename,
+                    )
+                    return EMPTY
+                  }
+                  // A missing episode title no longer drops the file —
+                  // AniDB may not have published titles yet for a
+                  // currently-airing series. Name it without the title
+                  // segment (see formatOutputFilename) so the rename lands
+                  // and stays re-runnable once the title exists.
+                  const title = pickEpisodeTitle(
+                    episode.titles,
+                  )
+                  if (!title) {
+                    logInfo(
+                      "NO EPISODE TITLE",
+                      fileInfo.filename,
+                      `(epno=${episode.epno}) — naming without title`,
+                    )
+                  }
+                  return readMediaDurationMinutes(
+                    fileInfo.fullPath,
+                  ).pipe(
+                    map((fileMinutes) => {
+                      warnIfDurationMismatch({
+                        episode,
+                        fileMinutes,
+                        fileName: fileInfo.filename,
+                      })
+                      return {
+                        fileInfo,
+                        renamedFilename:
+                          formatOutputFilename({
+                            category: episodeType,
+                            episode,
+                            episodeTitle: title,
+                            seasonNumber,
+                            sequentialIndex,
+                            seriesName,
+                          }),
+                        seriesFolderName,
+                      }
+                    }),
+                  )
+                },
+              ),
+            )
+          },
+        ),
       ),
     ),
     toArray(),
     mergeAll(),
     mergeAll(),
     withFileProgress(
-      ({ fileInfo, renamedFilename }) =>
-        fileInfo.renameFile(renamedFilename),
+      ({ fileInfo, renamedFilename, seriesFolderName }) =>
+        fileInfo.renameFile(renamedFilename).pipe(
+          map((result) => ({
+            ...result,
+            seriesFolderName,
+          })),
+        ),
       { concurrency: Infinity },
     ),
     logAndRethrowPipelineError(nameAnimeEpisodesAniDB),

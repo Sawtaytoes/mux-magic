@@ -39,6 +39,7 @@ import {
   fakeLabelLookup,
   fakeListDirectoryEntries,
   fakeListDvdCompareReleases,
+  fakeLookupAnidbTitles,
   fakeNameLookup,
   fakeSearchAnidb,
   fakeSearchDvdCompare,
@@ -262,6 +263,61 @@ queryRoutes.openapi(
       const message = messageFromError(err)
       logError("LOOKUP ANIDB", message)
       return context.json({ name: null }, 200)
+    }
+  },
+)
+
+queryRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/queries/lookupAnidbTitles",
+    summary:
+      "List an AniDB anime's candidate titles by aid",
+    description:
+      "Used by the AniDB title-picker: returns every title AniDB carries for the anime (each with its language and type) so the user can pick one, then character-clean it. AniDB's synthetic (aXXXXX) reference form is filtered out.",
+    tags: ["Naming Operations"],
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: schemas.lookupAnidbRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Candidate titles (empty on error)",
+        content: {
+          "application/json": {
+            schema: schemas.lookupAnidbTitlesResponseSchema,
+          },
+        },
+      },
+    },
+  }),
+  async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(fakeLookupAnidbTitles(), 200)
+    }
+    const body = context.req.valid("json")
+    try {
+      const anime = await lastValueFrom(
+        lookupAnidbById(body.anidbId),
+      )
+      // Drop AniDB's synthetic "(aNNNNN)" cross-reference titles — they
+      // point at a related aid, not a usable series name.
+      const titles = (anime?.titles ?? []).filter(
+        (title) => !/^\(a\d+\)$/.test(title.value.trim()),
+      )
+      return context.json({ titles, error: null }, 200)
+    } catch (err) {
+      const message = messageFromError(err)
+      logError("LOOKUP ANIDB TITLES", message)
+      return context.json(
+        { titles: [], error: message },
+        200,
+      )
     }
   },
 )

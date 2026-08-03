@@ -693,9 +693,22 @@ export const commandConfigs: Record<
         filenameRegex: body.filenameRegex,
         searchTerm: body.searchTerm,
         seasonNumber: body.seasonNumber,
+        seriesName: body.seriesName,
         sourcePath: body.sourcePath,
         startEpisodeNumber: body.startEpisodeNumber,
       }),
+    // Every renamed file carries the same seriesFolderName ("<name>
+    // [anidb-<id>]"); surface it as a named output so a downstream
+    // copyFiles/moveFiles step can target the Plex/Sonarr library folder
+    // via linkedTo. Empty when nothing was renamed.
+    extractOutputs: (results) => {
+      const seriesFolderName = (
+        results as { seriesFolderName?: string }[]
+      ).find(
+        (record) => record?.seriesFolderName,
+      )?.seriesFolderName
+      return seriesFolderName ? { seriesFolderName } : {}
+    },
     schema: schemas.nameAnimeEpisodesAniDBRequestSchema,
     summary:
       "Rename anime episode files using AniDB metadata (regular, specials with length-matched picker, or type=6 alternates)",

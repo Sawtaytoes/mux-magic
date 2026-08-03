@@ -1,10 +1,16 @@
 import { describe, expect, test } from "vitest"
 
-import type { AnidbEpisode } from "../types/anidb.js"
+import type {
+  AnidbAnime,
+  AnidbEpisode,
+} from "../types/anidb.js"
 import {
   compileFilenameRegex,
   extractEpisodeNumberFromFilename,
+  formatOutputFilename,
+  formatSeriesFolderName,
   pairEpisodeToFileIndex,
+  resolveSeriesName,
 } from "./nameAnimeEpisodesAniDB.js"
 
 const makeEpisode = (epno: string): AnidbEpisode => ({
@@ -84,6 +90,80 @@ describe(extractEpisodeNumberFromFilename.name, () => {
         noGroup,
       ),
     ).toBeNull()
+  })
+})
+
+describe(resolveSeriesName.name, () => {
+  const titles: AnidbAnime["titles"] = [
+    {
+      lang: "en",
+      type: "official",
+      value: "Hell's Paradise",
+    },
+    { lang: "x-jat", type: "main", value: "Jigokuraku" },
+  ]
+
+  test("prefers an explicit override verbatim", () => {
+    // AniDB's actual backtick form is preserved exactly — the picker is
+    // the source of truth, backticks and all.
+    expect(
+      resolveSeriesName("Hell`s Paradise Season 2", titles),
+    ).toBe("Hell`s Paradise Season 2")
+  })
+
+  test("falls back to the AniDB-picked title when no override", () => {
+    expect(resolveSeriesName(undefined, titles)).toBe(
+      "Hell's Paradise",
+    )
+  })
+
+  test("treats an empty override as absent", () => {
+    expect(resolveSeriesName("", titles)).toBe(
+      "Hell's Paradise",
+    )
+  })
+})
+
+describe(formatSeriesFolderName.name, () => {
+  test("formats the Sonarr/Plex series-folder convention", () => {
+    expect(
+      formatSeriesFolderName({
+        anidbId: 8160,
+        seriesName: "Hell's Paradise",
+      }),
+    ).toBe("Hell's Paradise [anidb-8160]")
+  })
+})
+
+describe(formatOutputFilename.name, () => {
+  const episode = makeEpisode("5")
+
+  test("includes the episode title when present", () => {
+    expect(
+      formatOutputFilename({
+        category: "regular",
+        episode,
+        episodeTitle: "The Blade",
+        seasonNumber: 2,
+        sequentialIndex: 5,
+        seriesName: "Jigokuraku",
+      }),
+    ).toBe("Jigokuraku - s02e05 - The Blade")
+  })
+
+  test("drops the ' - <title>' segment when the title is missing", () => {
+    // Currently-airing series AniDB hasn't published titles for yet:
+    // name without the title segment instead of skipping the file.
+    expect(
+      formatOutputFilename({
+        category: "regular",
+        episode,
+        episodeTitle: "",
+        seasonNumber: 2,
+        sequentialIndex: 5,
+        seriesName: "Jigokuraku",
+      }),
+    ).toBe("Jigokuraku - s02e05")
   })
 })
 
