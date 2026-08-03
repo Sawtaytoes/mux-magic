@@ -3,7 +3,7 @@ import { useRef } from "react"
 import type { CommandField } from "../../commands/types"
 import { enumPickerStateAtom } from "../../state/pickerAtoms"
 import type { Step } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldControl } from "../CommandFieldControl/CommandFieldControl"
 
 type EnumFieldProps = {
   step: Step
@@ -45,11 +45,9 @@ export const EnumField = ({
   }
 
   return (
-    <div>
-      <FieldLabel stepId={step.id} field={field} />
+    <CommandFieldControl field={field}>
       <button
         ref={buttonRef}
-        id={`${step.id}-${field.name}`}
         type="button"
         onClick={handleClick}
         data-enum-picker-trigger
@@ -60,6 +58,6 @@ export const EnumField = ({
         </span>
         <span className="text-slate-400 shrink-0">▾</span>
       </button>
-    </div>
+    </CommandFieldControl>
   )
 }

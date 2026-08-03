@@ -75,14 +75,27 @@ test.describe("DslRulesBuilder — rule lifecycle", () => {
       .first()
       .click()
 
-    // Find the first rule card's details panel.
+    // The disclosure is an `Accordion` now, not a `<details>`, so the state
+    // is `aria-expanded` on the trigger rather than an `open` attribute on
+    // the element — which is the same fact said in a way assistive
+    // technology can read.
     const ruleCard = page.locator("[data-rule-key]").first()
-    const detailsPanel = ruleCard.locator("details").first()
-    await detailsPanel.locator("summary").click()
-    await expect(detailsPanel).toHaveAttribute("open")
+    const trigger = ruleCard
+      .getByRole("button", { name: /^When \(advanced/ })
+      .first()
+    await trigger.click()
+    await expect(trigger).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    )
+
+    const panel = ruleCard.getByRole("group", {
+      name: /^When \(advanced/,
+    })
+    await expect(panel).toBeVisible()
 
     // Interact with something inside (type in a text field if present).
-    const textInputs = detailsPanel.locator(
+    const textInputs = panel.locator(
       'input[type="text"], input[type="number"]',
     )
     const inputCount = await textInputs.count()
@@ -90,8 +103,14 @@ test.describe("DslRulesBuilder — rule lifecycle", () => {
       await textInputs.first().fill("test-value")
     }
 
-    // Panel must still be open after the interaction.
-    await expect(detailsPanel).toHaveAttribute("open")
+    // Still open after the interaction. This test was written because the
+    // React-controlled `<details>` used to lose `open` on re-render — two
+    // owners for one fact. The accordion holds it alone.
+    await expect(trigger).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    )
+    await expect(panel).toBeVisible()
   })
 
   test("removing a rule card decrements the rule count", async ({
@@ -120,13 +139,16 @@ test.describe("DslRulesBuilder — rule lifecycle", () => {
   test("predicates panel adds a predicate entry and stays open", async ({
     page,
   }) => {
-    const predicatesDetails = page.locator(
-      "[data-details-key$=':predicates']",
-    )
-    await predicatesDetails
-      .getByRole("button", { name: /predicates/i })
+    // Reached by the trigger's accessible name — the `data-details-key`
+    // handle went with the `Accordion` migration.
+    await page
+      .getByRole("button", { name: /^Predicates \(/ })
+      .first()
       .click()
-    const addPredicateBtn = predicatesDetails.getByRole(
+    const predicatesPanel = page.getByRole("group", {
+      name: /^Predicates \(/,
+    })
+    const addPredicateBtn = predicatesPanel.getByRole(
       "button",
       { name: "+ Add predicate" },
     )
@@ -137,7 +159,7 @@ test.describe("DslRulesBuilder — rule lifecycle", () => {
     await expect(addPredicateBtn).toBeVisible()
     // At least one predicate entry should now exist.
     await expect(
-      predicatesDetails.locator("[data-predicate-key]"),
+      predicatesPanel.locator("[data-predicate-key]"),
     ).toHaveCount(1)
   })
 
@@ -183,16 +205,16 @@ test.describe("DslRulesBuilder — When panel", () => {
       .first()
       .click()
 
-    const whenDetails = page.locator(
-      "[data-details-key$=':when:0']",
-    )
-    await whenDetails.locator("summary").click()
-    const conditionSelect = whenDetails.getByRole(
-      "combobox",
-      {
-        name: "Condition type",
-      },
-    )
+    // The `When` disclosure is an `Accordion` now, not a `<details>`, so
+    // it is reached by the trigger's accessible name rather than by a
+    // `data-details-key` handle only this file could see.
+    await page
+      .getByRole("button", { name: /^When \(advanced/ })
+      .first()
+      .click()
+    const conditionSelect = page.getByRole("combobox", {
+      name: "Condition type",
+    })
     await expect(conditionSelect).toBeVisible()
 
     // Select a condition from the dropdown. selectOption resolving without
@@ -202,10 +224,14 @@ test.describe("DslRulesBuilder — When panel", () => {
     await conditionSelect.selectOption("anyScriptInfo")
 
     // The new clause renders a header span with the clause name.
-    // We locate the rule card root rather than scoping inside the details
-    // because the React-controlled <details>'s `open` attribute is lost on
-    // re-render, making children appear "hidden" to Playwright even when
-    // they are in the DOM.
+    //
+    // This used to be scoped to the rule-card root with a note explaining
+    // that "the React-controlled <details>'s `open` attribute is lost on
+    // re-render, making children appear hidden to Playwright even when they
+    // are in the DOM." That was the two-owners bug — React and `<details>`
+    // both holding `open` — surfacing as a flaky locator. The `Accordion`
+    // holds it alone now, so the panel's visibility is honest; the scoping
+    // stays because it is also the shorter path.
     await expect(
       page
         .locator("[data-rule-key]")

@@ -1,9 +1,42 @@
+import { Accordion } from "@charcuterie/ui"
 import { useAtomValue, useSetAtom } from "jotai"
-import { useCallback, useEffect, useRef } from "react"
+
 import type { Job } from "../../jobs/types"
 import { stepsOpenByJobIdAtom } from "../../state/stepsOpenByJobIdAtom"
 import { JobStepRow } from "../JobStepRow/JobStepRow"
 
+const STEPS_KEY = "steps"
+
+/**
+ * The two-owners bug charcuterie's `Accordion` was written against, closed.
+ *
+ * This used to be a `<details>`, and `<details>` **owns `open`**. The steps
+ * state also lives in a Jotai atom so a job can be expanded from elsewhere,
+ * and reconciling the two took three separate mechanisms:
+ *
+ * ```tsx
+ * const detailsRef = useRef<HTMLDetailsElement>(null)
+ * const skipNextToggleRef = useRef(isOpen)
+ *
+ * useEffect(() => {
+ *   if (detailsRef.current) detailsRef.current.open = isOpen
+ * }, [isOpen])
+ *
+ * const handleToggle = (event) => {
+ *   if (skipNextToggleRef.current) {
+ *     skipNextToggleRef.current = false
+ *     return          // ← swallow the toggle our own write just fired
+ *   }
+ *   setStepsOpen(…)
+ * }
+ * ```
+ *
+ * A ref to reach past React, an effect to push state into the DOM, and a
+ * guard to stop the DOM's echo coming back. All three are gone: `Accordion`
+ * is a `<button aria-expanded>` over a `role="group"`, so there is one owner
+ * and the atom is written from `onChange` — which is a report, not a
+ * reconciliation.
+ */
 export const JobStepsDisclosure = ({
   jobId,
   jobs,
@@ -23,40 +56,38 @@ export const JobStepsDisclosure = ({
   const isOpen =
     stepsOpenByJobId.get(jobId) ?? isDefaultOpen
 
-  const detailsRef = useRef<HTMLDetailsElement>(null)
-  const skipNextToggleRef = useRef(isOpen)
-
-  useEffect(() => {
-    if (detailsRef.current) detailsRef.current.open = isOpen
-  }, [isOpen])
-
-  const handleToggle = useCallback(
-    (event: React.SyntheticEvent<HTMLDetailsElement>) => {
-      if (skipNextToggleRef.current) {
-        skipNextToggleRef.current = false
-        return
-      }
-      setStepsOpen((prev) =>
-        new Map(prev).set(jobId, event.currentTarget.open),
-      )
-    },
-    [jobId, setStepsOpen],
-  )
-
   return (
-    <details ref={detailsRef} onToggle={handleToggle}>
-      <summary className="cursor-pointer text-xs font-medium text-slate-400 hover:text-slate-200 py-1">
-        Steps ({jobs.length})
-      </summary>
-      <div className="mt-1 space-y-2">
-        {jobs.map((child, index) => (
-          <JobStepRow
-            key={child.id}
-            child={child}
-            index={index}
-          />
-        ))}
-      </div>
-    </details>
+    <Accordion
+      // **Initial** only, which is why `key` is the job id: a card
+      // recycled onto a different job re-seeds from that job's atom entry
+      // rather than inheriting the previous job's expansion.
+      expandedKeys={isOpen ? [STEPS_KEY] : []}
+      items={[
+        {
+          content: (
+            <div className="space-y-2">
+              {jobs.map((child, index) => (
+                <JobStepRow
+                  child={child}
+                  index={index}
+                  key={child.id}
+                />
+              ))}
+            </div>
+          ),
+          key: STEPS_KEY,
+          label: `Steps (${jobs.length})`,
+        },
+      ]}
+      key={jobId}
+      onChange={(expandedKeys) => {
+        setStepsOpen((previous) =>
+          new Map(previous).set(
+            jobId,
+            expandedKeys.includes(STEPS_KEY),
+          ),
+        )
+      }}
+    />
   )
 }
