@@ -1,0 +1,28 @@
+{/* HomePage.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as HomePageStories from "./HomePage.stories";
+
+<Meta of={HomePageStories} />
+
+# HomePage
+
+The tool picker mounted at `/`. Two `ToolCard`s — **Builder** (`/builder`) and **Jobs** (`/jobs`) — under the app title.
+
+Before this page existed, `/` was the Jobs page and the Builder was reachable only through a small header link. Jobs now lives at `/jobs`; `/` is the neutral landing surface.
+
+The Errors page (`/errors`) is deliberately *not* a card — it is a detail view of job failures and stays linked from the Jobs header.
+
+## Behaviour
+
+- Pure layout: no atoms, no fetching, no SSE. Cheap to mount, which is why the landing route doesn't open the jobs EventSource anymore.
+- Sets the document title to `Tools · Mux Magic` via `usePageTitle`.
+- Single column below the `sm` breakpoint; two columns above it.
+
+## Default
+
+<Canvas of={HomePageStories.Default} />
+
+## Narrow viewport (cards stack)
+
+<Canvas of={HomePageStories.Narrow} />

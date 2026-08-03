@@ -273,7 +273,7 @@ export const PageHeader = () => {
           <span className="page-menu-sep w-px h-6 bg-slate-700 mx-1" />
           <div className="page-menu-group">
             <a
-              href="/"
+              href="/jobs"
               className="text-xs text-slate-400 hover:text-slate-300"
             >
               Jobs ↗

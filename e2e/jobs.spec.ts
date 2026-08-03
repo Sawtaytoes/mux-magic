@@ -39,7 +39,7 @@ test.describe("Jobs page — SSE stream", () => {
       })
     })
 
-    await page.goto(`${webBaseUrl}/`)
+    await page.goto(`${webBaseUrl}/jobs`)
 
     await expect(
       page.getByRole("heading", { name: "Jobs" }),
@@ -74,7 +74,7 @@ test.describe("Jobs page — SSE stream", () => {
       })
     })
 
-    await page.goto(`${webBaseUrl}/`)
+    await page.goto(`${webBaseUrl}/jobs`)
 
     const jobCard = page.getByRole("article")
     await expect(jobCard).toBeVisible()
@@ -113,7 +113,7 @@ test.describe("Jobs page — SSE stream", () => {
       })
     })
 
-    await page.goto(`${webBaseUrl}/`)
+    await page.goto(`${webBaseUrl}/jobs`)
 
     const jobCard = page.getByRole("article")
     await expect(jobCard).toBeVisible()
@@ -149,7 +149,7 @@ test.describe("Jobs page — SSE stream", () => {
       })
     })
 
-    await page.goto(`${webBaseUrl}/`)
+    await page.goto(`${webBaseUrl}/jobs`)
 
     await expect(page.getByRole("article")).toHaveCount(2)
     // Newest first — JobsList reverses insertion order.
@@ -189,7 +189,7 @@ test.describe("Jobs page — SSE stream", () => {
       })
     })
 
-    await page.goto(`${webBaseUrl}/`)
+    await page.goto(`${webBaseUrl}/jobs`)
 
     // Only the parent should appear at the top level.
     await expect(page.getByRole("article")).toHaveCount(1)
