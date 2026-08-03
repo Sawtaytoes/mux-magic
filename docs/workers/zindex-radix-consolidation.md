@@ -9,6 +9,21 @@
 > [decisions/2026-07-31-the-overlay-layer-is-charcuterie-not-radix.md](../decisions/2026-07-31-the-overlay-layer-is-charcuterie-not-radix.md).
 >
 > The z-index observation itself still stands and is restated below.
+>
+> **Update 2026-08-03 (charcuterie M8): P2 has landed — `Combobox` exists, so
+> this migration is now executable.** `@charcuterie/ui@2.0.0` ships `Combobox`
+> (searchable/filtering/virtualized, `aria-activedescendant`, loading/error/empty/
+> footer states, creatable, multiple, `matchTriggerWidth`/`maxHeightPx`) and a
+> single-select `Listbox`, both portalled to the body on a shared overlay stack —
+> and the whole overlay layer now portals rather than riding the top layer, the
+> same fix `PortalDropdown` reached for independently and the reason `PathPicker`
+> no longer needs to render behind `EditVariablesModal`. See charcuterie's M8
+> handoff (`docs/2026-08-03-m8-the-overlay-rebuild-and-the-picker-family.md`). The
+> seven comboboxes take `Combobox`; the adaptive `SEARCHABLE_CANDIDATE_COUNT`
+> threshold becomes a `Listbox`-vs-`Combobox` prop; `state/pickerAtoms.ts` and all
+> five `computePosition` copies are deleted; `TypePicker` stays a `Menu`
+> (do-not-revert). **Rebase caveat:** docs pointing at `feat/mux-branch-revamp`
+> must rebase onto `master` — that branch was retired 2026-08-03.
 
 The centralized z-index scale at `packages/web/src/constants/zIndex.ts` exists
 because Wave C pickers and the custom `Modal` primitive both portal to
