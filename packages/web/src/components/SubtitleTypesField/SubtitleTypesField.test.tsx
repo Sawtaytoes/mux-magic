@@ -84,11 +84,24 @@ describe("SubtitleTypesField — tag rendering", () => {
 })
 
 describe("SubtitleTypesField — filter dropdown", () => {
+  // The Combobox filter input lives in the portalled popup, opened from
+  // the "Add …" trigger button — not inline in the field.
+  const openPicker = async (
+    user: ReturnType<typeof userEvent.setup>,
+  ) => {
+    await user.click(
+      screen.getByRole("button", {
+        name: /add subtitle types/i,
+      }),
+    )
+    return screen.getByRole("combobox")
+  }
+
   test("typing 'ass' shows the ASS option row", async () => {
     const user = userEvent.setup()
     renderField(createMockStep())
 
-    await user.type(screen.getByRole("combobox"), "ass")
+    await user.type(await openPicker(user), "ass")
 
     const listbox = screen.getByRole("listbox")
     expect(
@@ -100,7 +113,7 @@ describe("SubtitleTypesField — filter dropdown", () => {
     const user = userEvent.setup()
     renderField(createMockStep())
 
-    await user.type(screen.getByRole("combobox"), "TEXT")
+    await user.type(await openPicker(user), "TEXT")
 
     const listbox = screen.getByRole("listbox")
     expect(
@@ -115,7 +128,7 @@ describe("SubtitleTypesField — filter dropdown", () => {
     const user = userEvent.setup()
     renderField(createMockStep())
 
-    await user.type(screen.getByRole("combobox"), "bitmap")
+    await user.type(await openPicker(user), "bitmap")
 
     const listbox = screen.getByRole("listbox")
     expect(
@@ -133,7 +146,7 @@ describe("SubtitleTypesField — filter dropdown", () => {
     const user = userEvent.setup()
     const store = renderField(createMockStep())
 
-    await user.type(screen.getByRole("combobox"), "ass")
+    await user.type(await openPicker(user), "ass")
     const listbox = screen.getByRole("listbox")
     const assOption = within(listbox)
       .getAllByRole("option")
@@ -159,7 +172,7 @@ describe("SubtitleTypesField — filter dropdown", () => {
       }),
     )
 
-    await user.type(screen.getByRole("combobox"), "sup")
+    await user.type(await openPicker(user), "sup")
 
     const listbox = screen.queryByRole("listbox")
     // Either no listbox (empty options collapses it) or no PGS / TextST rows.
