@@ -1,3 +1,4 @@
+import { ColorSchemeSwitcher } from "@charcuterie/ui"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
 import { editVariablesModalOpenAtom } from "../../components/EditVariablesModal/editVariablesModalOpenAtom"
@@ -10,6 +11,9 @@ import { yamlModalOpenAtom } from "../../components/YamlModal/yamlModalAtom"
 import { Z_INDEX } from "../../constants/zIndex"
 import { useAutoClipboardLoad } from "../../hooks/useAutoClipboardLoad"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
+import { MonitorIcon } from "../../icons/MonitorIcon/MonitorIcon"
+import { MoonIcon } from "../../icons/MoonIcon/MoonIcon"
+import { SunIcon } from "../../icons/SunIcon/SunIcon"
 import { Switch } from "../../primitives/Switch/Switch"
 import {
   dryRunAtom,
@@ -66,6 +70,16 @@ const expandAllIcon = (
     <polyline points="5,11 10,16 15,11" />
   </svg>
 )
+
+// ─── Colour-scheme switcher icons ─────────────────────────────────────────────
+// One glyph per mode for `<ColorSchemeSwitcher>` (light → dark → system).
+// mux-magic hand-rolls its SVG icons rather than pulling an icon library, so
+// these are local `src/icons/*` components, not lucide.
+const colorSchemeIcons = {
+  dark: <MoonIcon />,
+  light: <SunIcon />,
+  system: <MonitorIcon />,
+}
 
 // ─── PageHeader ───────────────────────────────────────────────────────────────
 
@@ -340,6 +354,16 @@ export const PageHeader = () => {
           >
             {expandAllIcon}
           </button>
+          <span className="w-px h-4 bg-slate-700 mx-0.5" />
+          {/* OS light/dark scheme switcher — cycles light → dark → system.
+              Default mode is `system`, so the app follows the OS preference.
+              The connected component wires matchMedia + localStorage +
+              `data-scheme` on <html> itself; the first-paint script in
+              index.html shares its `charcuterie-scheme` storage key. */}
+          <ColorSchemeSwitcher
+            icons={colorSchemeIcons}
+            size="sm"
+          />
           <span className="w-px h-6 bg-slate-700 mx-1" />
         </div>
 

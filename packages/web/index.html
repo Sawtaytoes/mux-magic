@@ -6,45 +6,66 @@
   variables rather than a default set, and every token-coloured component
   renders transparent with no error anywhere.
 
-  Pinned to `dark`. Mux Magic has no light mode today and M6b did not add one
-  — the rest of the app is still ~1000 literal `*-slate-*` utilities, and a
-  scheme toggle that repaints only the shared components is worse than none.
-  The attribute is here rather than written from React on purpose: it is read
-  by CSS, so it must be true before the first paint, and nothing in React
-  observes it.
+  No longer pinned to `dark`. The scheme is now resolved before first paint by
+  the `@charcuterie/tokens` `buildFirstPaintScript` snippet in <head> below,
+  and switched at runtime by the `<ColorSchemeSwitcher>` in the page header
+  (which wires `@charcuterie/logic`'s `useColorScheme` to matchMedia +
+  localStorage + `data-scheme` on <html>). Default mode is `system`, so the
+  app now follows the OS light/dark preference. The attribute must be true
+  before the first paint — it is read by CSS, not observed by React — which
+  is exactly why the resolution runs in the head script rather than in React.
 -->
-<html lang="en" data-scheme="dark" data-variant="daylight" data-density="comfortable">
+<html lang="en" data-variant="daylight" data-density="comfortable">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mux Magic</title>
-    <style>
-      /* Prevents a white flash before the bundled CSS (tailwindStyles.css)
-         loads. Keep in sync with the body rule there.
+    <!--
+      First-paint scheme resolution — the inline snippet emitted by
+      `@charcuterie/tokens`' `buildFirstPaintScript(daylight)`. It reads the
+      persisted mode from localStorage under the SHARED key
+      `charcuterie-scheme` (the same key `localStoragePersistence` /
+      `<ColorSchemeSwitcher>` write, so the pre-paint attribute and the
+      hydrated hook agree — no flash-of-wrong-theme on reload), falls back to
+      the OS `prefers-color-scheme` media query when nothing is stored or the
+      mode is `system`, sets `data-scheme` on <html>, and injects an UNLAYERED
+      `html,body` background rule branched on the resolved scheme.
 
-         **The `var()` is load-bearing, not decoration.** An inline
-         `<style>` is UNLAYERED, and unlayered author CSS beats every
-         `@layer` regardless of specificity — the body rule it is kept in
-         sync with lives in `@layer base`, and Tailwind's utilities live in
-         `@layer utilities`. So a flat `background-color: #0f172a` here does
-         not merely duplicate that rule, it OUTRANKS it, and the canvas can
-         never be repainted by anything layered.
+      **The `var()` fallback is load-bearing, not decoration.** The injected
+      `<style>` is UNLAYERED, and unlayered author CSS beats every `@layer`
+      regardless of specificity, so it out-ranks Tailwind's layered `base`
+      body rule and the canvas can never be repainted mid-load. Written as a
+      FALLBACK (`var(--color-surface-base, #hex)`) the literal applies only
+      until the tokens stylesheet lands, then the token takes over — no white
+      (or wrong-scheme) flash either way.
 
-         Today both values are the same slate-900 and the symptom is
-         invisible. It stops being invisible the moment M6b puts
-         `@charcuterie/tokens` and a `data-scheme` on this app: rip-deck and
-         gallery-downloader both shipped this exact line, and in both the
-         result was `data-scheme="light"` rendering light chrome on a
-         permanently dark page, with no typecheck, build or test able to see
-         it. Written as a FALLBACK the literal applies only while
-         `--color-surface-base` is undefined — which is every moment today,
-         so this changes nothing now — and the token takes over the instant
-         the tokens stylesheet lands. Fixed ahead of M6b so the migration
-         does not land on it.
-         (`rip-deck` commit `fb2a143`; `gallery-downloader` commit
-         `1b5e7ba`.) */
-      html, body { background-color: var(--color-surface-base, #0f172a); }
-    </style>
+      Regenerate if the `daylight` variant's surface colours change:
+        node --input-type=module -e 'import {buildFirstPaintScript, daylight}
+          from "@charcuterie/tokens"; console.log(buildFirstPaintScript(daylight))'
+    -->
+    <script>
+      (() => {
+        var KEY = "charcuterie-scheme";
+        var stored;
+        try {
+          stored = window.localStorage.getItem(KEY);
+        } catch (_error) {
+          stored = null;
+        }
+        var isDark = stored === "dark" ||
+          ((stored === null || stored === "system") &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        var scheme = isDark ? "dark" : "light";
+        document.documentElement.setAttribute("data-scheme", scheme);
+        var background = isDark ? "#131822" : "#F5F7FA";
+        var style = document.createElement("style");
+        style.textContent =
+          "html,body{background-color:var(--color-surface-base," +
+          background +
+          ");color-scheme:" + scheme + "}";
+        document.head.appendChild(style);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
