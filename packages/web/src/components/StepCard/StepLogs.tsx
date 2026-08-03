@@ -1,6 +1,10 @@
+import { Accordion, LogViewer } from "@charcuterie/ui"
 import { useAtomValue } from "jotai"
 import { useState } from "react"
+
 import { logsByJobIdAtom } from "../../state/logsByJobIdAtom"
+
+const LOGS_KEY = "logs"
 
 // Per-step log block. Renders the lines `useLogStream` already
 // dropped into `logsByJobIdAtom` for this jobId; no extra SSE
@@ -11,6 +15,20 @@ import { logsByJobIdAtom } from "../../state/logsByJobIdAtom"
 // Restores the legacy v1 builder's "card shows logs you can copy"
 // behavior — the React port previously dropped this and surfaced
 // logs only inside SequenceRunModal, which closes after every run.
+//
+// The pane used to be a `<pre>` holding the whole buffer joined into one
+// text node, with no following at all and no cap — a step that emits for an
+// hour rendered every line and the pane never moved. `data-step-logs-body`
+// went with it: a handle only the suite could see, replaced by the pane's
+// accessible name.
+//
+// The pane mounts inside the collapsed panel, which `AccordionSection`
+// renders `hidden` rather than unmounting. That used to open the log on its
+// first line — no layout box means `scrollHeight 0` for `LogViewer`'s mount
+// effect — and a local `DisclosedLogViewer` withheld the pane until the
+// section had been opened once. `@charcuterie/ui@1.0.0` fixed it upstream
+// with a `ResizeObserver`, so the workaround is gone and these are the two
+// library components directly.
 type Props = {
   jobId: string
 }
@@ -18,7 +36,6 @@ type Props = {
 export const StepLogs = ({ jobId }: Props) => {
   const logsByJobId = useAtomValue(logsByJobIdAtom)
   const entries = logsByJobId.get(jobId) ?? []
-  const [isExpanded, setIsExpanded] = useState(false)
   const [copyLabel, setCopyLabel] = useState<
     "Copy logs" | "✓ Copied" | "✗ Failed"
   >("Copy logs")
@@ -43,34 +60,40 @@ export const StepLogs = ({ jobId }: Props) => {
   }
 
   return (
-    <div data-step-logs className="flex flex-col gap-1">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setIsExpanded((isPrev) => !isPrev)}
-          aria-expanded={isExpanded}
-          className="text-[10px] text-slate-400 hover:text-slate-200 font-mono"
-        >
-          {isExpanded ? "▾" : "▸"} Logs ({entries.length}{" "}
-          line{entries.length === 1 ? "" : "s"})
-        </button>
-        <button
-          type="button"
-          onClick={() => void handleCopy()}
-          className="text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-0.5 rounded font-mono"
-          title="Copy all log lines to clipboard"
-        >
-          📋 {copyLabel}
-        </button>
-      </div>
-      {isExpanded && (
-        <pre
-          data-step-logs-body
-          className="max-h-60 overflow-y-auto bg-slate-950 border border-slate-700 rounded text-[11px] text-slate-300 font-mono p-2 whitespace-pre-wrap wrap-break-word"
-        >
-          {entries.map((entry) => entry.line).join("\n")}
-        </pre>
-      )}
-    </div>
+    <Accordion
+      items={[
+        {
+          content: (
+            <div className="flex flex-col gap-1">
+              {/*
+                Above the pane rather than in the trigger: `Accordion`'s
+                trigger is a `<button>`, and a `<button>` inside one is
+                invalid markup browsers repair by hoisting it out.
+              */}
+              <div className="flex justify-end">
+                <button
+                  className="rounded bg-slate-700 px-2 py-0.5 font-mono text-[10px] text-slate-200 hover:bg-slate-600"
+                  onClick={() => void handleCopy()}
+                  title="Copy all log lines to clipboard"
+                  type="button"
+                >
+                  📋 {copyLabel}
+                </button>
+              </div>
+
+              <LogViewer
+                label={`Logs for step ${jobId}`}
+                lines={entries.map((entry) => ({
+                  key: entry.key,
+                  text: entry.line,
+                }))}
+              />
+            </div>
+          ),
+          key: LOGS_KEY,
+          label: `Logs (${entries.length} line${entries.length === 1 ? "" : "s"})`,
+        },
+      ]}
+    />
   )
 }

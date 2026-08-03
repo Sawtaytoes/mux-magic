@@ -2,7 +2,7 @@ import { useState } from "react"
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
 import { RenameRegexRuleRow } from "./RenameRegexRuleRow"
 import type {
   DisplayMode,
@@ -237,9 +237,8 @@ export const RenameRegexField = ({
     : null
 
   return (
-    <div>
-      <div className="flex items-baseline justify-between gap-2">
-        <FieldLabel stepId={step.id} field={field} />
+    <CommandFieldGroup
+      actions={
         <button
           type="button"
           onClick={toggleDisplayMode}
@@ -250,7 +249,9 @@ export const RenameRegexField = ({
             ? "Show as /…/"
             : "Show as Aa"}
         </button>
-      </div>
+      }
+      field={field}
+    >
       {rules.map((rule, index) => (
         <RenameRegexRuleRow
           key={rule._id}
@@ -288,6 +289,6 @@ export const RenameRegexField = ({
           }
         </small>
       )}
-    </div>
+    </CommandFieldGroup>
   )
 }

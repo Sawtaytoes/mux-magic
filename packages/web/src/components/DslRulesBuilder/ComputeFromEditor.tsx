@@ -1,3 +1,4 @@
+import { Select } from "@charcuterie/ui"
 import { useRef } from "react"
 import { AssFieldPicker } from "./AssFieldPicker"
 import {
@@ -65,32 +66,29 @@ export const ComputeFromEditor = ({
             )
           }}
         />
-        <label
-          htmlFor={`cfe-scope-${ruleIndex}-${fieldKey}`}
-          className="text-xs text-slate-400"
-        >
-          scope
-        </label>
-        <select
-          id={`cfe-scope-${ruleIndex}-${fieldKey}`}
-          disabled={isReadOnly}
-          value={scope}
-          onChange={(event) => {
+        <Select
+          className="w-32 font-mono"
+          isDisabled={isReadOnly}
+          key={scope}
+          label="scope"
+          onChange={(value) => {
             onCommitRules(
               setComputeFromField({
                 rules,
                 ruleIndex,
                 fieldKey,
                 propertyName: "scope",
-                value: event.target.value,
+                value,
               }),
             )
           }}
-          className="text-xs bg-slate-700 text-slate-200 rounded px-1.5 py-1 border border-slate-600 focus:outline-none focus:border-blue-500"
-        >
-          <option value="scriptInfo">scriptInfo</option>
-          <option value="style">style</option>
-        </select>
+          options={[
+            { label: "scriptInfo", value: "scriptInfo" },
+            { label: "style", value: "style" },
+          ]}
+          size="sm"
+          value={scope}
+        />
       </div>
       <div className="mt-1.5">
         <span className="text-xs uppercase tracking-wide text-slate-400">

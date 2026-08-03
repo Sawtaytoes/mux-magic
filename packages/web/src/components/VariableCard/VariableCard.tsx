@@ -1,3 +1,4 @@
+import { Select } from "@charcuterie/ui"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useRef } from "react"
 import { apiBase } from "../../apiBase"
@@ -214,37 +215,37 @@ export const VariableCard = ({
                 <span className="text-slate-400 font-mono shrink-0">
                   {stepId} → {fieldName}
                 </span>
-                <select
-                  aria-label={`Resolution for ${stepId} ${fieldName}`}
-                  className="ml-auto bg-slate-800 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500"
-                  defaultValue="unlink"
-                  onChange={(event) => {
-                    const val = event.currentTarget.value
+                <Select
+                  className="ml-auto"
+                  label={`Resolution for ${stepId} ${fieldName}`}
+                  onChange={(resolutionValue) => {
                     setResolution({
                       stepId,
                       fieldName,
                       resolution:
-                        val === "unlink"
+                        resolutionValue === "unlink"
                           ? { kind: "unlink" }
                           : {
                               kind: "replace",
-                              targetId: val,
+                              targetId: resolutionValue,
                             },
                     })
                   }}
-                >
-                  <option value="unlink">
-                    Unlink (use literal value)
-                  </option>
-                  {otherVariables.map((otherVariable) => (
-                    <option
-                      key={otherVariable.id}
-                      value={otherVariable.id}
-                    >
-                      Replace with: {otherVariable.label}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    {
+                      label: "Unlink (use literal value)",
+                      value: "unlink",
+                    },
+                    ...otherVariables.map(
+                      (otherVariable) => ({
+                        label: `Replace with: ${otherVariable.label}`,
+                        value: otherVariable.id,
+                      }),
+                    ),
+                  ]}
+                  size="sm"
+                  value="unlink"
+                />
               </div>
             ))}
           </div>

@@ -1,3 +1,4 @@
+import { Select } from "@charcuterie/ui"
 import { runWithViewTransition } from "../../utils/runWithViewTransition"
 import {
   changeRuleType,
@@ -63,26 +64,32 @@ export const RuleCard = ({
           {rule.type}
         </span>
       ) : (
-        <select
-          value={rule.type}
-          onChange={(event) => {
+        <Select
+          className="w-44 font-mono"
+          // Rule rows are keyed by `ruleKey`, but the rules array is
+          // replaced wholesale on every commit and a rule can also arrive
+          // from a loaded template or an undo. `Select` is uncontrolled by
+          // design, so the DOM has to be re-seeded when the type it is
+          // showing was not the user's own choice.
+          key={rule.type}
+          label={`Rule ${ruleIndex + 1} type`}
+          onChange={(ruleType) => {
             onCommitRules(
               changeRuleType({
                 rules,
                 ruleIndex,
-                ruleType: event.target
-                  .value as (typeof RULE_TYPES)[number],
+                ruleType:
+                  ruleType as (typeof RULE_TYPES)[number],
               }),
             )
           }}
-          className="text-xs bg-slate-700 text-blue-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
-        >
-          {RULE_TYPES.map((ruleType) => (
-            <option key={ruleType} value={ruleType}>
-              {ruleType}
-            </option>
-          ))}
-        </select>
+          options={RULE_TYPES.map((ruleType) => ({
+            label: ruleType,
+            value: ruleType,
+          }))}
+          size="sm"
+          value={rule.type}
+        />
       )}
       <div className="flex-1" />
       {isReadOnly && (

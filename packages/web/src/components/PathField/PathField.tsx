@@ -19,7 +19,7 @@ import type {
   Step,
   StepLink,
 } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
 import { parentPathFromInput } from "../PathPicker/parentPathFromInput"
 
 type PathFieldProps = {
@@ -134,32 +134,39 @@ export const PathField = ({
   }
 
   return (
-    <div className="mb-2">
-      <div className="flex items-center gap-2 mb-1">
-        <FieldLabel stepId={step.id} field={field} />
-        <button
-          type="button"
-          onClick={handleBrowse}
-          title="Browse folders"
-          aria-label="Browse folders"
-          className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 cursor-pointer"
-        >
-          📁
-        </button>
-        <button
-          ref={linkButtonRef}
-          type="button"
-          onClick={handleLinkPicker}
-          title="Link to a path variable or step output"
-          className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer"
-        >
-          <span className="truncate">{linkLabel}</span>
-          <span className="text-slate-400 shrink-0">▾</span>
-        </button>
-      </div>
+    <CommandFieldGroup
+      actions={
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleBrowse}
+            title="Browse folders"
+            aria-label="Browse folders"
+            className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 cursor-pointer"
+          >
+            📁
+          </button>
+          <button
+            ref={linkButtonRef}
+            type="button"
+            onClick={handleLinkPicker}
+            title="Link to a path variable or step output"
+            className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer"
+          >
+            <span className="truncate">{linkLabel}</span>
+            <span className="text-slate-400 shrink-0">
+              ▾
+            </span>
+          </button>
+        </div>
+      }
+      className="mb-2"
+      field={field}
+    >
       <input
         ref={inputRef}
         type="text"
+        aria-label={field.label ?? field.name}
         id={`${step.id}-${field.name}`}
         data-field={field.name}
         value={displayValue}
@@ -230,6 +237,6 @@ export const PathField = ({
         }}
         className={`w-full bg-slate-${isObjectLink ? "900" : "700"} text-slate-${isObjectLink ? "400" : "200"} text-xs rounded px-2 py-1.5 border border-slate-${isObjectLink ? "700" : "600"} focus:outline-none focus:border-blue-500 font-mono`}
       />
-    </div>
+    </CommandFieldGroup>
   )
 }

@@ -1,3 +1,4 @@
+import { Select } from "@charcuterie/ui"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect } from "react"
 import { apiBase } from "../../apiBase"
@@ -25,10 +26,7 @@ export const ErrorsPanel = () => {
     void fetchErrors(filter)
   }, [filter, fetchErrors])
 
-  const handleStateChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    const value = event.target.value
+  const handleStateChange = (value: string) => {
     setFilter((previous) => ({
       ...previous,
       state:
@@ -77,25 +75,21 @@ export const ErrorsPanel = () => {
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
-        <label className="flex items-center gap-2 text-sm text-slate-400">
-          <span>State</span>
-          <select
-            aria-label="State"
-            value={filter.state ?? ""}
+        <div className="flex w-40 items-center gap-2 text-sm text-slate-400">
+          <Select
+            label="State"
             onChange={handleStateChange}
-            className="bg-slate-800 border border-slate-600 text-slate-200 text-xs rounded px-2 py-1"
-          >
-            <option value="">All</option>
-            {DELIVERY_STATES.map((deliveryState) => (
-              <option
-                key={deliveryState}
-                value={deliveryState}
-              >
-                {deliveryState}
-              </option>
-            ))}
-          </select>
-        </label>
+            options={[
+              { label: "All", value: "" },
+              ...DELIVERY_STATES.map((deliveryState) => ({
+                label: deliveryState,
+                value: deliveryState,
+              })),
+            ]}
+            size="sm"
+            value={filter.state ?? ""}
+          />
+        </div>
 
         <label className="flex items-center gap-2 text-sm text-slate-400">
           <span>Job ID</span>

@@ -1,7 +1,7 @@
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
-import { FieldLabel } from "../FieldLabel/FieldLabel"
+import { CommandFieldControl } from "../CommandFieldControl/CommandFieldControl"
 
 type NumberFieldProps = {
   field: CommandField
@@ -28,20 +28,17 @@ export const NumberField = ({
   }
 
   return (
-    <div>
-      <FieldLabel stepId={step.id} field={field} />
-      <input
-        id={`${step.id}-${field.name}`}
-        type="number"
-        defaultValue={value as number | string}
-        aria-label={field.label ?? field.name}
-        placeholder={field.placeholder ?? ""}
-        onInput={handleInput}
-        aria-required={
-          field.isRequired ? "true" : undefined
-        }
-        className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
-      />
+    <>
+      <CommandFieldControl field={field}>
+        <input
+          type="number"
+          defaultValue={value as number | string}
+          placeholder={field.placeholder ?? ""}
+          onInput={handleInput}
+          className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
+        />
+      </CommandFieldControl>
+
       {field.companionNameField && Boolean(companion) && (
         <p
           data-step={step.id}
@@ -52,6 +49,6 @@ export const NumberField = ({
           {String(companion)}
         </p>
       )}
-    </div>
+    </>
   )
 }

@@ -1,12 +1,14 @@
+import { Menu } from "@charcuterie/ui"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useState } from "react"
+
 import {
   addVariableAtom,
   variablesAtom,
 } from "../../state/variablesAtom"
 import type { VariableType } from "../../types"
 import { VariableCard } from "../VariableCard/VariableCard"
-import { TypePicker } from "./TypePicker"
+import { useVariableTypeMenuItems } from "./TypePicker"
 
 export const VariablesPanel = () => {
   const variables = useAtomValue(variablesAtom)
@@ -17,6 +19,10 @@ export const VariablesPanel = () => {
     addVariable({ type })
     setIsPickerOpen(false)
   }
+
+  const typeMenuItems = useVariableTypeMenuItems({
+    onPick: handlePick,
+  })
 
   return (
     <div className="flex flex-col gap-3">
@@ -34,21 +40,35 @@ export const VariablesPanel = () => {
         />
       ))}
 
-      {isPickerOpen ? (
-        <TypePicker
-          onPick={handlePick}
-          onCancel={() => setIsPickerOpen(false)}
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setIsPickerOpen(true)}
-          aria-label="Add variable"
-          className="self-start text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded border border-dashed border-slate-700 hover:border-slate-500 transition-colors"
-        >
-          + Add Variable
-        </button>
-      )}
+      {/*
+        The menu is named by its trigger — `useRole(role: "menu")` puts
+        `aria-labelledby` on the panel pointing at this button, and that
+        beats an `aria-label`. So the old panel's "Choose a variable type:"
+        heading is gone rather than moved: it was a paragraph nothing
+        referenced, and the button already says the same thing.
+
+        The **Cancel** button is gone too. It was a hand-rolled stand-in for
+        Escape and outside-press, neither of which the inline panel had.
+      */}
+      <Menu
+        isVisible={isPickerOpen}
+        items={typeMenuItems}
+        onDismiss={() => {
+          setIsPickerOpen(false)
+        }}
+        trigger={
+          <button
+            aria-label="Add variable"
+            className="self-start text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded border border-dashed border-slate-700 hover:border-slate-500 transition-colors"
+            onClick={() => {
+              setIsPickerOpen(true)
+            }}
+            type="button"
+          >
+            + Add Variable
+          </button>
+        }
+      />
     </div>
   )
 }

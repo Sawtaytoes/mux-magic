@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { Accordion } from "@charcuterie/ui"
+
 import type {
   ConvertLosslessConvertedRecord,
   ConvertLosslessRunResultsData,
@@ -90,14 +91,6 @@ export const ConvertLosslessRunResults = ({
   )
   const isAuditMode = auditOnlyRecords.length > 0
 
-  // In a real run the converted list is the boring expected case
-  // (collapsed). In an audit run it IS the answer the user came for
-  // ("which files would actually encode?") — open it by default so the
-  // list is visible without an extra click.
-  const [isConvertedOpen, setIsConvertedOpen] =
-    useState(isAuditMode)
-  const [isSkippedOpen, setIsSkippedOpen] = useState(true)
-
   const listedSkipped = data.skipped.filter((record) =>
     isListedSkipReason(record.reason),
   )
@@ -180,66 +173,62 @@ export const ConvertLosslessRunResults = ({
         </span>
       </div>
 
-      {compatibleSources.length > 0 && (
-        <details
-          data-cl-converted
-          open={isConvertedOpen}
-          onToggle={(event) =>
-            setIsConvertedOpen(
-              (event.currentTarget as HTMLDetailsElement)
-                .open,
-            )
-          }
-          className="rounded border border-emerald-800/40 bg-emerald-950/30"
-        >
-          <summary className="cursor-pointer px-2 py-1 text-emerald-300">
-            {compatibleHeading} ({compatibleSources.length})
-          </summary>
-          <ul className="px-3 py-2 space-y-1 font-mono text-emerald-200/90 break-all">
-            {sortedCompatible.map((entry) => (
-              <li key={entry.source}>
-                {basename(entry.source)}
-                {entry.destination !== null && (
-                  <>
-                    <span className="text-emerald-500">
-                      {" → "}
-                    </span>
-                    {basename(entry.destination)}
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-
-      {skippedGroups.map((group) => (
-        <details
-          key={group.reason}
-          data-cl-skipped-group={group.reason}
-          open={isSkippedOpen}
-          onToggle={(event) =>
-            setIsSkippedOpen(
-              (event.currentTarget as HTMLDetailsElement)
-                .open,
-            )
-          }
-          className="rounded border border-amber-800/40 bg-amber-950/30"
-        >
-          <summary className="cursor-pointer px-2 py-1 text-amber-300">
-            {skippedHeadingPrefix} —{" "}
-            {skipReasonLabel[group.reason]} (
-            {group.records.length})
-          </summary>
-          <ul className="px-3 py-2 space-y-1 font-mono text-amber-200/90 break-all">
-            {group.records.map((record) => (
-              <li key={record.source}>
-                {basename(record.source)}
-              </li>
-            ))}
-          </ul>
-        </details>
-      ))}
+      {/*
+        One `isMultiple` accordion rather than three independent
+        `<details>` blocks. They were independent in markup only — the two
+        skipped groups shared ONE `isSkippedOpen` boolean, so opening
+        either opened both, and the reader could not tell from the JSX.
+      */}
+      <Accordion
+        expandedKeys={[
+          // The converted list is the boring expected case in a real run
+          // and collapsed. In an audit run it IS the answer the user came
+          // for ("which files would actually encode?"), so it opens.
+          ...(isAuditMode ? ["converted"] : []),
+          ...skippedGroups.map((group) => group.reason),
+        ]}
+        isMultiple
+        items={[
+          ...(compatibleSources.length > 0
+            ? [
+                {
+                  content: (
+                    <ul className="space-y-1 break-all font-mono text-emerald-200/90">
+                      {sortedCompatible.map((entry) => (
+                        <li key={entry.source}>
+                          {basename(entry.source)}
+                          {entry.destination !== null && (
+                            <>
+                              <span className="text-emerald-500">
+                                {" → "}
+                              </span>
+                              {basename(entry.destination)}
+                            </>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ),
+                  key: "converted",
+                  label: `${compatibleHeading} (${compatibleSources.length})`,
+                },
+              ]
+            : []),
+          ...skippedGroups.map((group) => ({
+            content: (
+              <ul className="space-y-1 break-all font-mono text-amber-200/90">
+                {group.records.map((record) => (
+                  <li key={record.source}>
+                    {basename(record.source)}
+                  </li>
+                ))}
+              </ul>
+            ),
+            key: group.reason,
+            label: `${skippedHeadingPrefix} — ${skipReasonLabel[group.reason]} (${group.records.length})`,
+          })),
+        ]}
+      />
     </div>
   )
 }

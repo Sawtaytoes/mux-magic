@@ -1,9 +1,42 @@
 @import "tailwindcss";
 
+/* Colours, the type ramp, radii, motion, and the three axes. `theme.css`
+   publishes `--color-*`, `--text-*`, `--radius-*` and friends into Tailwind's
+   own namespaces, so `bg-surface-raised` and `text-sm` are OURS and answer to
+   `[data-scheme]` / `[data-variant]` / `[data-density]` on `<html>` (set in
+   `index.html`, and by the `withThemeByDataAttribute` decorator in
+   `.storybook/preview.tsx`).
+
+   Without a `data-scheme` on `<html>` the tokens publish NO colour at all —
+   `variables.css` scopes every `--color-*` under `[data-scheme="light"]` or
+   `[data-scheme="dark"]`, so a missing attribute is not "falls back to the
+   defaults", it is every `@charcuterie/ui` component rendering with a
+   transparent background and inherited text. It fails silently: no error, no
+   failing test, a build that succeeds. */
+@import "@charcuterie/tokens/theme.css";
+
+/* The looping affordances the components need — the indeterminate sweep among
+   them. Switched off under `prefers-reduced-motion`. */
+@import "@charcuterie/ui/styles.css";
+
+/* NOT optional, and it fails **silently** without a line here. Tailwind v4
+   scans SOURCE TEXT for complete class strings and does not scan
+   dependencies, so every `@charcuterie/ui` component would render unstyled
+   with no error and no failing test. Four levels up because this is a Yarn
+   workspace with a hoisting linker — the package lands in the REPO ROOT's
+   `node_modules`, not in `packages/web`'s. */
+@source "../../../../node_modules/@charcuterie/ui/dist";
+
 @layer base {
   body {
-    background-color: #0f172a; /* slate-900 */
-    color: #f1f5f9; /* slate-100 */
+    /* Was `#0f172a` / `#f1f5f9` — slate-900 on slate-100. The rest of this
+       app's palette is still literal slate utilities and that is deliberately
+       out of M6b's scope; the page canvas moves to tokens because the
+       `@charcuterie/ui` components sitting on it are token-coloured, and a
+       component's `bg-surface-raised` against a hardcoded slate-900 page is
+       the mismatch that would show. */
+    background-color: var(--color-surface-base);
+    color: var(--color-content-primary);
     min-height: 100vh;
   }
 
