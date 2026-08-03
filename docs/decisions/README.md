@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-08-03 | [`master` is the only base branch; the revamp integration branch is retired](2026-08-03-master-is-the-only-base-branch.md) | process | Accepted |
 | 2026-07-31 | [The Add Variable picker stays a `menu`, not a `listbox`](2026-07-31-the-add-variable-picker-stays-a-menu.md) | web | Accepted |
 | 2026-07-31 | [`Field` owns the control id; `${step.id}-${field.name}` is not a contract](2026-07-31-field-owns-the-control-id.md) | web | Accepted |
 | 2026-07-31 | [The overlay layer is `@charcuterie/ui`, not Radix](2026-07-31-the-overlay-layer-is-charcuterie-not-radix.md) | web | Accepted |
@@ -48,7 +49,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 | 2026-05-14 | [`copyFiles`/`moveFiles` generalized; no per-media-type commands](2026-05-14-copyfiles-generalized-no-media-type-commands.md) | core | Accepted |
 | 2026-05-14 | [The YAML sequence codec lives in `web`, with a legacy-rename map](2026-05-14-yamlcodec-lives-in-web.md) | web | Accepted |
 | 2026-05-13 | [Rebrand: media-tools → mux-magic; `@media-tools` retired](2026-05-13-rebrand-media-tools-to-mux-magic.md) | naming | Accepted |
-| 2026-05-13 | [Worker PRs target `feat/mux-magic-revamp`, not `master`](2026-05-13-pr-base-branch-is-feat-branch.md) | process | Accepted |
+| 2026-05-13 | [Worker PRs target `feat/mux-magic-revamp`, not `master`](2026-05-13-pr-base-branch-is-feat-branch.md) | process | Superseded by [2026-08-03](2026-08-03-master-is-the-only-base-branch.md) |
 | 2026-05-13 | [HA inbound trigger endpoint](2026-05-13-ha-inbound-trigger-endpoint.md) | server/api | **Superseded** |
 | 2026-05-12 | [`sourcePath` is the canonical primary-input field name](2026-05-12-sourcepath-canonical-field-name.md) | core | Accepted |
 | 2026-05-08 | [Auto-merge PRs when tests + self-check pass](2026-05-08-auto-merge-passing-prs.md) | process | Accepted |
