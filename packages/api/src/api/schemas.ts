@@ -1249,9 +1249,15 @@ export const nameAnimeEpisodesAniDBRequestSchema = z
       .describe(
         "First episode number when pairing a partial set by natural-sort index (e.g. 5 names the files s01e05, s01e06, …). Ignored for files matched by filenameRegex. Defaults to 1. Applies to the index-paired regular/others types only.",
       ),
+    seriesName: z
+      .string()
+      .optional()
+      .describe(
+        "Overrides AniDB's auto-picked series title in output filenames and the seriesFolderName output. Used verbatim (backticks, apostrophes and all) — pick a candidate with the AniDB title-picker then character-clean it. When omitted, AniDB's title is used.",
+      ),
   })
   .describe(
-    "Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Partial or non-contiguous sets can be paired by extracted episode number (filenameRegex) or by a natural-sort index offset (startEpisodeNumber).",
+    'Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Partial or non-contiguous sets can be paired by extracted episode number (filenameRegex) or by a natural-sort index offset (startEpisodeNumber). Emits a seriesFolderName output ("<name> [anidb-<id>]") for downstream copy/move steps.',
   )
 
 export const nameSpecialFeaturesDvdCompareTmdbRequestSchema =
@@ -2004,6 +2010,34 @@ export const nameLookupResponseSchema = z.object({
     .string()
     .nullable()
     .describe("Display name, or null if not found"),
+})
+
+export const anidbTitleSchema = z.object({
+  lang: z
+    .string()
+    .describe("Language tag (e.g. en, x-jat, ja)"),
+  type: z
+    .string()
+    .describe(
+      "AniDB title type (main, official, synonym, short)",
+    ),
+  value: z
+    .string()
+    .describe("The title text, verbatim from AniDB"),
+})
+
+export const lookupAnidbTitlesResponseSchema = z.object({
+  titles: z
+    .array(anidbTitleSchema)
+    .describe(
+      "Candidate titles for the anime (AniDB's synthetic (aXXXXX) reference form filtered out).",
+    ),
+  error: z
+    .string()
+    .nullable()
+    .describe(
+      "Error message if the fetch failed; titles is empty when present.",
+    ),
 })
 
 export const labelLookupResponseSchema = z.object({

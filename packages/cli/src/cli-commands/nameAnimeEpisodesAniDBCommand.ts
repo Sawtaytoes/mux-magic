@@ -65,6 +65,13 @@ const builder = (yargs: Argv) =>
       number: true,
       type: "number",
     })
+    .option("seriesName", {
+      alias: "n",
+      describe:
+        "Overrides AniDB's auto-picked series title in output filenames and the seriesFolderName output. Used verbatim. When omitted, AniDB's title is used.",
+      nargs: 1,
+      type: "string",
+    })
     .positional("sourcePath", {
       demandOption: true,
       describe: "Directory where all episodes are located.",
@@ -100,6 +107,7 @@ export const nameAnimeEpisodesAniDBCommand: CommandModule<
       filenameRegex: argv.filenameRegex,
       searchTerm: argv.searchTerm,
       seasonNumber: argv.seasonNumber,
+      seriesName: argv.seriesName,
       sourcePath: argv.sourcePath,
       startEpisodeNumber: argv.startEpisodeNumber,
     })

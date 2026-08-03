@@ -517,6 +517,21 @@ export const fakeListDvdCompareReleases = () => ({
 export const fakeNameLookup = () => ({
   name: "Fake Series Name",
 })
+export const fakeLookupAnidbTitles = () => ({
+  titles: [
+    {
+      lang: "en",
+      type: "official",
+      value: "Fake Series Name",
+    },
+    {
+      lang: "x-jat",
+      type: "main",
+      value: "Fake Romaji Name",
+    },
+  ],
+  error: null,
+})
 export const fakeLabelLookup = () => ({
   label: "Fake Release Label",
 })

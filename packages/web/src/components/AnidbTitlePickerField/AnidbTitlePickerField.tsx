@@ -1,0 +1,125 @@
+import type { AnidbTitle } from "@mux-magic/api/api-types"
+import { useState } from "react"
+
+import type { CommandField } from "../../commands/types"
+import { useBuilderActions } from "../../hooks/useBuilderActions"
+import type { Step } from "../../types"
+import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
+import { fetchAnidbTitles } from "./fetchAnidbTitles"
+
+type AnidbTitlePickerFieldProps = {
+  field: CommandField
+  step: Step
+}
+
+// The seriesName override picker. The free-text input is the source of
+// truth — the user types or character-cleans here, and its value goes
+// verbatim into output filenames + the seriesFolderName output.
+//
+// "Load titles from AniDB" fetches the candidate titles for the sibling
+// AniDB ID (field.sourceField, default "anidbId") into a dropdown;
+// picking one drops it verbatim into the input — AniDB's actual form,
+// backticks and all — for the user to then clean.
+export const AnidbTitlePickerField = ({
+  field,
+  step,
+}: AnidbTitlePickerFieldProps) => {
+  const { setParam } = useBuilderActions()
+  const value = step.params[field.name] ?? ""
+
+  const sourceField = field.sourceField ?? "anidbId"
+  const rawSourceId = step.params[sourceField]
+  const anidbId = Number(rawSourceId)
+  const hasAnidbId = Number.isFinite(anidbId) && anidbId > 0
+
+  const [titles, setTitles] = useState<AnidbTitle[]>([])
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "loaded" | "empty"
+  >("idle")
+
+  const handleLoad = async () => {
+    if (!hasAnidbId) return
+    setStatus("loading")
+    const loaded = await fetchAnidbTitles(anidbId)
+    setTitles(loaded)
+    setStatus(loaded.length > 0 ? "loaded" : "empty")
+  }
+
+  const handleInput = (
+    event: React.FormEvent<HTMLInputElement>,
+  ) => {
+    const newValue = (event.target as HTMLInputElement)
+      .value
+    setParam(step.id, field.name, newValue || undefined)
+  }
+
+  const handlePick = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    const picked = event.target.value
+    if (picked) {
+      setParam(step.id, field.name, picked)
+    }
+  }
+
+  return (
+    <CommandFieldGroup field={field}>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-1.5">
+          <input
+            type="text"
+            aria-label={field.label ?? field.name}
+            value={String(value)}
+            placeholder={field.placeholder ?? ""}
+            onInput={handleInput}
+            className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
+          />
+          <button
+            type="button"
+            onClick={handleLoad}
+            disabled={!hasAnidbId || status === "loading"}
+            className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {status === "loading"
+              ? "Loading…"
+              : "Load titles from AniDB"}
+          </button>
+        </div>
+
+        {status === "loaded" && titles.length > 0 ? (
+          <select
+            aria-label="AniDB title candidates"
+            value=""
+            onChange={handlePick}
+            className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
+          >
+            <option value="" disabled>
+              Pick a title to copy into the field…
+            </option>
+            {titles.map((title) => (
+              <option
+                key={`${title.type}-${title.lang}-${title.value}`}
+                value={title.value}
+              >
+                {title.type} ({title.lang}): {title.value}
+              </option>
+            ))}
+          </select>
+        ) : null}
+
+        {status === "empty" ? (
+          <p className="text-xs text-slate-400">
+            No titles found for this AniDB ID.
+          </p>
+        ) : null}
+
+        {!hasAnidbId ? (
+          <p className="text-xs text-slate-400">
+            Set the AniDB Anime ID first, then load its
+            titles.
+          </p>
+        ) : null}
+      </div>
+    </CommandFieldGroup>
+  )
+}

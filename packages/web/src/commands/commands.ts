@@ -1486,6 +1486,21 @@ export const COMMANDS: Commands = {
           label: "Start Episode Number",
           placeholder: "5",
         }),
+        field("seriesName", {
+          type: "anidbTitlePicker",
+          label: "Series Name",
+          sourceField: "anidbId",
+          placeholder: "Hell`s Paradise Season 2",
+        }),
+      ],
+      // Every renamed file reports the same seriesFolderName ("<name>
+      // [anidb-<id>]"); a downstream copyFiles/moveFiles step links to it
+      // to drop the episodes into the right Plex/Sonarr library folder.
+      outputs: [
+        {
+          name: "seriesFolderName",
+          label: "Series folder name",
+        },
       ],
     }
   })(),
