@@ -152,9 +152,26 @@ describe("LanguageCodesField — tag rendering", () => {
 })
 
 describe("LanguageCodesField — filter autocomplete", () => {
-  test("renders a filter combobox input", () => {
+  // The Combobox filter input lives in the portalled popup, opened from
+  // the "Add …" trigger button — not inline in the field.
+  const openPicker = async (
+    user: ReturnType<typeof userEvent.setup>,
+  ) => {
+    await user.click(
+      screen.getByRole("button", {
+        name: /add audio languages/i,
+      }),
+    )
+    return screen.getByRole("combobox")
+  }
+
+  test("opening the picker reveals a filter combobox input", async () => {
+    const user = userEvent.setup()
     const step = createMockStep()
     renderField(step, field)
+
+    expect(screen.queryByRole("combobox")).toBeNull()
+    await openPicker(user)
     expect(screen.getByRole("combobox")).toBeInTheDocument()
   })
 
@@ -163,7 +180,8 @@ describe("LanguageCodesField — filter autocomplete", () => {
     const step = createMockStep()
     renderField(step, field)
 
-    await user.type(screen.getByRole("combobox"), "eng")
+    const input = await openPicker(user)
+    await user.type(input, "eng")
 
     expect(screen.getByRole("listbox")).toBeInTheDocument()
     expect(
@@ -176,7 +194,8 @@ describe("LanguageCodesField — filter autocomplete", () => {
     const step = createMockStep()
     renderField(step, field)
 
-    await user.type(screen.getByRole("combobox"), "eng")
+    const input = await openPicker(user)
+    await user.type(input, "eng")
 
     const listbox = screen.getByRole("listbox")
     expect(
@@ -189,10 +208,8 @@ describe("LanguageCodesField — filter autocomplete", () => {
     const step = createMockStep()
     renderField(step, field)
 
-    await user.type(
-      screen.getByRole("combobox"),
-      "Japanese",
-    )
+    const input = await openPicker(user)
+    await user.type(input, "Japanese")
 
     const listbox = screen.getByRole("listbox")
     expect(
@@ -205,7 +222,7 @@ describe("LanguageCodesField — filter autocomplete", () => {
     const step = createMockStep()
     renderField(step, field)
 
-    await user.click(screen.getByRole("combobox"))
+    await openPicker(user)
 
     const options = screen.getAllByRole("option")
     expect(
@@ -218,7 +235,8 @@ describe("LanguageCodesField — filter autocomplete", () => {
     const step = createMockStep()
     const store = renderField(step, field)
 
-    await user.type(screen.getByRole("combobox"), "eng")
+    const input = await openPicker(user)
+    await user.type(input, "eng")
 
     const listbox = screen.getByRole("listbox")
     const engOption = within(listbox)
@@ -235,18 +253,19 @@ describe("LanguageCodesField — filter autocomplete", () => {
     ).toBe(true)
   })
 
-  test("selecting an option clears the filter input", async () => {
+  test("selecting an option closes the picker", async () => {
     const user = userEvent.setup()
     const step = createMockStep()
     renderField(step, field)
 
-    await user.type(screen.getByRole("combobox"), "eng")
+    const input = await openPicker(user)
+    await user.type(input, "eng")
     const listbox = screen.getByRole("listbox")
     const firstOption =
       within(listbox).getAllByRole("option")[0]
     await user.click(firstOption)
 
-    expect(screen.getByRole("combobox")).toHaveValue("")
+    expect(screen.queryByRole("combobox")).toBeNull()
   })
 
   test("already-selected codes are excluded from the dropdown", async () => {
@@ -256,7 +275,8 @@ describe("LanguageCodesField — filter autocomplete", () => {
     })
     renderField(step, field)
 
-    await user.type(screen.getByRole("combobox"), "eng")
+    const input = await openPicker(user)
+    await user.type(input, "eng")
 
     const listbox = screen.getByRole("listbox")
     const options = within(listbox).queryAllByRole("option")
