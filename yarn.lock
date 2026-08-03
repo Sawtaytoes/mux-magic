@@ -688,9 +688,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/logic@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@charcuterie/logic@npm:0.1.0"
+"@charcuterie/logic@npm:1.0.0":
+  version: 1.0.0
+  resolution: "@charcuterie/logic@npm:1.0.0"
   peerDependencies:
     "@preact/signals-core": ">=1.8"
     jotai: ">=2"
@@ -705,28 +705,28 @@ __metadata:
       optional: true
     react:
       optional: true
-  checksum: 10c0/6dcb997c3c83718c13b093244982ec6705a890c375b4a234e662c0362743611d7590dcc7d50bce9a95961972da57884385ad23e08a683aa3e594c1008f584f2a
+  checksum: 10c0/d2eab812f7738dd66b2c99e536080fc989c484d7003397298ee2c77487a5917784080b6a672ba584a1a606659195fb39641020c90281807c881c7cb75e82e998
   languageName: node
   linkType: hard
 
-"@charcuterie/tokens@npm:0.2.0, @charcuterie/tokens@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "@charcuterie/tokens@npm:0.2.0"
-  checksum: 10c0/79c0e43626e421e769d20c8e43017865b570cf7ce289b7049cf62c7ba02bf42dad6c86c79012ae0a629d03bbe5b60b64abf036508bda80875a77263d3690d2f7
+"@charcuterie/tokens@npm:1.0.0, @charcuterie/tokens@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@charcuterie/tokens@npm:1.0.0"
+  checksum: 10c0/e0960e844323324fe5649118347ed7234598a2c405f6779308b8277aed3c7d400ab455e698ff29f0651e440acd38effa1ebd2f38ba06b7d8159502de2f719cf9
   languageName: node
   linkType: hard
 
-"@charcuterie/ui@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "@charcuterie/ui@npm:0.2.0"
+"@charcuterie/ui@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@charcuterie/ui@npm:1.0.0"
   dependencies:
-    "@charcuterie/logic": "npm:0.1.0"
-    "@charcuterie/tokens": "npm:0.2.0"
+    "@charcuterie/logic": "npm:1.0.0"
+    "@charcuterie/tokens": "npm:1.0.0"
     "@floating-ui/react": "npm:^0.27.20"
   peerDependencies:
     react: ">=19"
     react-dom: ">=19"
-  checksum: 10c0/0afbd1b3cebd728cf69cac2d066e24803832d619f25f90a450f8d7a3560717f693cdf434c54fef084617d3661752cf92ae68842f2a466458ecba481c76e13310
+  checksum: 10c0/fd99ea94ed02dfb95afac3cf4aae82953630d77a359cb58894320f4048172ed496013d177f45f87eaafa129f2dc8c95360085889244400b859e748002b5ead7a
   languageName: node
   linkType: hard
 
@@ -1912,8 +1912,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mux-magic/web@workspace:packages/web"
   dependencies:
-    "@charcuterie/tokens": "npm:^0.2.0"
-    "@charcuterie/ui": "npm:^0.2.0"
+    "@charcuterie/tokens": "npm:^1.0.0"
+    "@charcuterie/ui": "npm:^1.0.0"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
