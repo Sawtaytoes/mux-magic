@@ -26,7 +26,7 @@ const withInjectedTemplates = (
   store.set(templatesAtom, injected)
   return (Story: React.ComponentType) => (
     <Provider store={store}>
-      <div className="bg-slate-900 p-4 w-72">
+      <div className="bg-surface-base p-4 w-72">
         <Story />
       </div>
     </Provider>

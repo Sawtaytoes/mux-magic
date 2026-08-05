@@ -120,10 +120,10 @@
   top: calc(100% - 0.25rem);
   min-width: 14rem;
   padding: 0.75rem;
-  background: rgb(15 23 42);
-  border: 1px solid rgb(51 65 85);
+  background: var(--color-surface-overlay);
+  border: 1px solid var(--color-border-default);
   border-radius: 0.5rem;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--elevation-high);
   z-index: 50;
   opacity: 0;
   visibility: hidden;
