@@ -607,7 +607,15 @@ export const PageHeader = () => {
                 intent="neutral"
                 appearance="ghost"
                 size="sm"
-                onClick={() => setYamlModalOpen(true)}
+                onClick={() => {
+                  // Close the ⋮ menu as the modal opens (like the New
+                  // Sequence / Variables items do). The charcuterie Dialog
+                  // consumes Escape via floating-ui, so unlike the old
+                  // Modal it no longer bubbles to PageHeader's Escape→close
+                  // listener — the item has to dismiss the menu itself.
+                  setOpenMenu(null)
+                  setYamlModalOpen(true)
+                }}
                 title="View YAML"
               >
                 <svg
