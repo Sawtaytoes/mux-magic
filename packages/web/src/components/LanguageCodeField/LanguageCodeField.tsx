@@ -110,7 +110,9 @@ export const LanguageCodeField = ({
           ? "Type to replace language…"
           : "Type to filter languages…"}
       </span>
-      <span className="text-content-secondary shrink-0">▾</span>
+      <span className="text-content-secondary shrink-0">
+        ▾
+      </span>
     </button>
   )
 

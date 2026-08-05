@@ -500,7 +500,9 @@ export const PageHeader = () => {
               <IconButton
                 id="load-btn"
                 label="Load YAML"
-                intent={isYamlPasted ? "success" : "neutral"}
+                intent={
+                  isYamlPasted ? "success" : "neutral"
+                }
                 appearance={isYamlPasted ? "soft" : "ghost"}
                 size="sm"
                 onClick={async () => {
@@ -556,7 +558,9 @@ export const PageHeader = () => {
               <IconButton
                 id="copy-btn"
                 label="Copy YAML"
-                intent={isYamlCopied ? "success" : "neutral"}
+                intent={
+                  isYamlCopied ? "success" : "neutral"
+                }
                 appearance={isYamlCopied ? "soft" : "ghost"}
                 size="sm"
                 onClick={async () => {

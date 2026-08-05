@@ -66,7 +66,9 @@ export const EnumField = ({
       <span className="flex-1 min-w-0 truncate">
         {triggerLabel}
       </span>
-      <span className="text-content-secondary shrink-0">▾</span>
+      <span className="text-content-secondary shrink-0">
+        ▾
+      </span>
     </button>
   )
 

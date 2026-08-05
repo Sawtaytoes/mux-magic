@@ -1,4 +1,8 @@
-import { Accordion, Button, LogViewer } from "@charcuterie/ui"
+import {
+  Accordion,
+  Button,
+  LogViewer,
+} from "@charcuterie/ui"
 import { useAtomValue } from "jotai"
 import { useState } from "react"
 

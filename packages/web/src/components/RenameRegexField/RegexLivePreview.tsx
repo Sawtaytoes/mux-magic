@@ -53,7 +53,9 @@ export const RegexLivePreview = ({
       </div>
       {hasOutput && result.output !== null && (
         <div className="mt-1">
-          <span className="text-intent-success-content">→ </span>
+          <span className="text-intent-success-content">
+            →{" "}
+          </span>
           <span className="font-mono text-intent-success-content">
             {result.output}
           </span>

@@ -127,7 +127,9 @@ export const LanguageCodesField = ({
       <span className="flex-1 min-w-0 truncate text-content-muted">
         Type to filter languages…
       </span>
-      <span className="text-content-secondary shrink-0">▾</span>
+      <span className="text-content-secondary shrink-0">
+        ▾
+      </span>
     </button>
   )
 

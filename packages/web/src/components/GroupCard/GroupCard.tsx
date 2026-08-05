@@ -285,7 +285,9 @@ export const GroupCard = ({
           appearance="outline"
           size="sm"
           onClick={() => runGroup(group.id)}
-          isDisabled={!hasRunnableSteps || isGloballyRunning}
+          isDisabled={
+            !hasRunnableSteps || isGloballyRunning
+          }
           title={
             !hasRunnableSteps
               ? "Add a step with a command before running"

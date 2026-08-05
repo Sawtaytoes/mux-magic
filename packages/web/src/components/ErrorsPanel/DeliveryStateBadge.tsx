@@ -6,7 +6,8 @@ interface DeliveryStateBadgeProps {
 
 const stateClassMap: Record<WebhookDeliveryState, string> =
   {
-    pending: "bg-intent-neutral-surface text-intent-neutral-content",
+    pending:
+      "bg-intent-neutral-surface text-intent-neutral-content",
     delivered:
       "bg-intent-success-surface text-intent-success-content",
     exhausted:

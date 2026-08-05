@@ -48,7 +48,9 @@ export const AssFieldPicker = ({
         )}
       </span>
       {!isReadOnly && (
-        <span className="text-content-secondary shrink-0">▾</span>
+        <span className="text-content-secondary shrink-0">
+          ▾
+        </span>
       )}
     </button>
   )

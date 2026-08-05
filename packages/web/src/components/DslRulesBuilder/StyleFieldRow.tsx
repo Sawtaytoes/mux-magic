@@ -68,7 +68,9 @@ export const StyleFieldRow = ({
             )
           }}
         />
-        <span className="text-content-muted text-xs">=</span>
+        <span className="text-content-muted text-xs">
+          =
+        </span>
         {isComputed ? (
           <span className="flex-1 text-xs text-content-secondary italic">
             computed from metadata ↓

@@ -1,4 +1,5 @@
-﻿import type {
+﻿import { Button } from "@charcuterie/ui"
+import type {
   DvdCompareResult,
   ListDvdCompareReleasesResponse,
   SearchAnidbResponse,
@@ -7,7 +8,6 @@
   SearchMovieDbResponse,
   SearchTvdbResponse,
 } from "@mux-magic/api/api-types"
-import { Button } from "@charcuterie/ui"
 import { useEffect, useRef } from "react"
 import { apiBase } from "../../apiBase"
 import type {

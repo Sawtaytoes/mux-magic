@@ -150,10 +150,11 @@ test.describe("SequenceRunModal — background flow", () => {
       page.locator("#sequence-run-modal"),
     ).toBeVisible()
 
-    // Click backdrop (outside dialog)
-    await page.locator(".bg-scrim").first().click({
-      position: { x: 10, y: 10 },
-    })
+    // Press outside the dialog. The scrim sits below the panel's
+    // full-viewport centring layer (which is what floating-ui's
+    // outsidePress listens on), so click the top-left corner where only
+    // that layer — not the dialog — is under the pointer.
+    await page.mouse.click(10, 10)
 
     await expect(
       page.locator("#sequence-run-modal"),
