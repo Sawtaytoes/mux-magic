@@ -147,7 +147,8 @@ describe("PathField", () => {
       </Provider>,
     )
 
-    const input = screen.getByRole("textbox")
+    // The editable path input is a combobox (attached-input autocomplete).
+    const input = screen.getByRole("combobox")
     await user.clear(input)
     await user.type(input, "/new/path")
 
@@ -173,7 +174,7 @@ describe("PathField", () => {
       </Provider>,
     )
 
-    const input = screen.getByRole("textbox")
+    const input = screen.getByRole("combobox")
     await user.type(input, "/new/path")
 
     const updatedPaths = store.get(pathsAtom)
@@ -203,7 +204,7 @@ describe("PathField", () => {
       </Provider>,
     )
 
-    const input = screen.getByRole("textbox")
+    const input = screen.getByRole("combobox")
     await user.type(input, "/extra")
 
     const updatedSteps = store.get(stepsAtom)
@@ -246,7 +247,7 @@ describe("PathField", () => {
       </Provider>,
     )
 
-    const inputs = screen.getAllByRole("textbox")
+    const inputs = screen.getAllByRole("combobox")
     await user.clear(inputs[0])
     await user.type(inputs[0], "/new")
 
