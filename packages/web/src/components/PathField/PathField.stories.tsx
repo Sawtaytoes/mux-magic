@@ -1,14 +1,24 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { createStore, Provider, useAtomValue } from "jotai"
 import { useState } from "react"
-import { expect, userEvent, waitFor, within } from "storybook/test"
+import {
+  expect,
+  userEvent,
+  waitFor,
+  within,
+} from "storybook/test"
 import { FIXTURE_COMMANDS_BUNDLE_D } from "../../commands/__fixtures__/commands"
 import { pathsAtom } from "../../state/pathsAtom"
 import { stepsAtom } from "../../state/stepsAtom"
-import type { PathVariable, SequenceItem, Step } from "../../types"
+import type {
+  PathVariable,
+  SequenceItem,
+  Step,
+} from "../../types"
 import { PathField } from "./PathField"
 
-const field = FIXTURE_COMMANDS_BUNDLE_D.makeDirectory.fields[0]
+const field =
+  FIXTURE_COMMANDS_BUNDLE_D.makeDirectory.fields[0]
 
 // PathField derives its displayed value from the `step` prop, and its
 // writeback (mint path variable / setParam) goes to the jotai store — so a
@@ -87,7 +97,10 @@ export const Default: Story = {
     <StoreHarness
       stepId="example-1"
       steps={[
-        makeStep({ id: "example-1", params: { sourcePath: "" } }),
+        makeStep({
+          id: "example-1",
+          params: { sourcePath: "" },
+        }),
       ]}
     />
   ),
