@@ -1,5 +1,24 @@
 # Worker 6a — storybook-vrt-setup
 
+> [!IMPORTANT]
+> **Superseded approach — do NOT implement the in-repo-baseline (`toHaveScreenshot`)
+> design below.** The fleet VRT model shipped on **charcuterie** (2026-08-05) and is what
+> mux-magic should follow: **reg-suit** capturing every story light+dark, with baselines +
+> diff reports stored in **self-hosted Garage S3** (`garage.octen.dev`) — **never in git**
+> (thousands of PNGs would force git-LFS, a non-starter on this public repo). CI posts the
+> verdict back as a commit status + PR comment; the `vrt` job runs on the self-hosted
+> `garage-vrt-runner` (Garage is LAN-only + pinned pixels for determinism).
+>
+> To onboard mux-magic, copy charcuterie's `packages/docs/scripts/vrtCapture.mjs`,
+> `regconfig.json`, `scripts/vrtReportStatus.mjs`, and the `vrt` CI job, adapting **one
+> thing**: mux-magic keys light/dark off the `@storybook/addon-themes`
+> `withThemeByDataAttribute` **`theme`** global (not charcuterie's `scheme`), so the capture
+> URL toggles `globals=theme:light|dark`. Use a `vrt-mux-magic` Garage bucket.
+>
+> See: agentic `docs/decisions/2026-08-05-vrt-is-reg-suit-plus-self-hosted-garage.md`,
+> `truenas/garage/DEPLOY.md`, `docs/runbooks/self-hosted-github-runner-vrt.md`. The rich
+> story-coverage context below still stands — only the storage/baseline mechanism changed.
+
 **Model:** Sonnet · **Thinking:** ON · **Effort:** Medium
 **Branch:** `feat/mux-magic-revamp/6a-storybook-vrt-setup`
 **Worktree:** `.claude/worktrees/6a_storybook-vrt-setup/`
