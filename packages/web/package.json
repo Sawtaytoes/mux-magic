@@ -36,11 +36,11 @@
     "react-router": "^8.3.0"
   },
   "devDependencies": {
+    "@charcuterie/storybook-config": "^0.1.0",
     "@mux-magic/api": "workspace:*",
     "@rolldown/plugin-babel": "^0.2.3",
     "@storybook/addon-a11y": "^10.3.6",
     "@storybook/addon-docs": "^10.3.6",
-    "@storybook/addon-themes": "^10.3.6",
     "@storybook/addon-vitest": "^10.3.6",
     "@storybook/react": "^10.3.6",
     "@storybook/react-vite": "^10.3.6",
