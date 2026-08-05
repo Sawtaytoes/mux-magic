@@ -88,12 +88,12 @@ export const keepSpecifiedLanguageTracks = ({
       // never an acceptable trim result — this is the exact failure the
       // owner hits by hand (e.g. an English-native disc's French/Italian
       // featurette, or a track whose language tag is missing).
-      const wouldRemoveAllAudio =
+      const isRemovingAllAudio =
         hasAudioLanguages &&
         sourceAudioTracks.length > 0 &&
         survivingAudioTrackCount === 0
 
-      if (wouldRemoveAllAudio) {
+      if (isRemovingAllAudio) {
         logWarning(
           "KEEP LANGUAGES",
           `Requested audio languages ${JSON.stringify(
@@ -106,12 +106,12 @@ export const keepSpecifiedLanguageTracks = ({
         )
       }
 
-      const useAudioFilter =
-        hasAudioLanguages && !wouldRemoveAllAudio
+      const isUsingAudioFilter =
+        hasAudioLanguages && !isRemovingAllAudio
 
       return runMkvMerge({
         args: [
-          ...(useAudioFilter
+          ...(isUsingAudioFilter
             ? [
                 "--audio-tracks",
                 requestedAudioCodes.join(","),
