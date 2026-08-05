@@ -1,4 +1,4 @@
-import { Tooltip } from "@charcuterie/ui"
+import { Checkbox, Tooltip } from "@charcuterie/ui"
 
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
@@ -10,68 +10,64 @@ type BooleanFieldProps = {
 }
 
 /**
- * The one field that is deliberately **not** a `CommandFieldControl`.
+ * A boolean step param, rendered with Charcuterie's `Checkbox`.
  *
- * `Field` renders `label` above `control` in a `flex-col`, which is right
- * for a text input and wrong for a checkbox — a checkbox reads left of its
- * text, and stacking every boolean in a step card (`isRecursive`,
- * `isSourceDeleted`, `isDryRun`, …) doubles the card's height for no gain.
- * A wrapping `<label>` is also the one association that needs no `for` at
- * all, so there is no dangling-id bug here to fix.
+ * Was a hand-rolled `<input type="checkbox">` in
+ * `bg-slate-700 border-slate-500 accent-blue-500` — palette colours
+ * with no light mode, written before the library had a checkbox to
+ * reach for. `Checkbox` now owns the box, the wrapping `<label>` (the
+ * one association that needs no `for`, so there was never a
+ * dangling-id bug here to fix), and the tokens that read in every
+ * scheme; this file is just the bind to the step store.
  *
- * What WAS broken: `FieldLabel` is itself a `<label>`, and it was rendered
- * **inside** this one. `<label>` forbids descendant `<label>` elements
- * outright, and the inner one carried a `for` pointing at the same input
- * the outer one already wraps — two associations for one control, one of
- * them invalid markup. Neither typecheck, lint, nor axe reports it.
+ * Uncontrolled-with-initial, the same contract `StringField` already
+ * uses with `defaultValue`: `isChecked` seeds the box from the param,
+ * `onChange` writes each toggle back. The store is written and the box
+ * owns its own state — consistent with every other field in the card,
+ * and the reason `Checkbox` takes no controlled `checked`.
  */
 export const BooleanField = ({
   field,
   step,
 }: BooleanFieldProps) => {
   const { setParam } = useBuilderActions()
-  const checked =
-    step.params[field.name] ?? field.default ?? false
 
-  const handleChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    setParam(step.id, field.name, event.target.checked)
-  }
+  const isChecked = Boolean(
+    step.params[field.name] ?? field.default ?? false,
+  )
 
   const checkbox = (
-    <input
-      checked={Boolean(checked)}
-      className="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer"
-      onChange={handleChange}
-      required={field.isRequired ?? undefined}
-      type="checkbox"
+    <Checkbox
+      isChecked={isChecked}
+      label={
+        <>
+          {field.label ?? field.name}
+
+          {field.isRequired ? (
+            <span
+              aria-hidden="true"
+              className="ms-1 text-intent-danger-content"
+            >
+              *
+            </span>
+          ) : null}
+        </>
+      }
+      onChange={(isNowChecked) => {
+        setParam(step.id, field.name, isNowChecked)
+      }}
+      size="sm"
     />
   )
 
-  return (
-    // biome-ignore lint/a11y/noLabelWithoutControl: the control is the `<input type="checkbox">` below — wrapped, which is the association that needs no `for` at all. The rule cannot see it because `Tooltip` clones the input rather than rendering it as a literal child.
-    <label className="flex items-center gap-2 cursor-pointer select-none py-0.5 text-content-secondary text-xs">
-      {field.description ? (
-        <Tooltip label={field.description}>
-          {checkbox}
-        </Tooltip>
-      ) : (
-        checkbox
-      )}
-
-      <span>
-        {field.label ?? field.name}
-
-        {field.isRequired ? (
-          <span
-            aria-hidden="true"
-            className="ms-1 text-intent-danger-content"
-          >
-            *
-          </span>
-        ) : null}
-      </span>
-    </label>
+  // The description rides a `Tooltip` over the whole control, as it
+  // did before — `Checkbox` owns the input now, so the tip anchors to
+  // a wrapping span rather than the raw box.
+  return field.description ? (
+    <Tooltip label={field.description}>
+      <span className="inline-flex">{checkbox}</span>
+    </Tooltip>
+  ) : (
+    checkbox
   )
 }
