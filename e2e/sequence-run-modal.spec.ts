@@ -151,7 +151,7 @@ test.describe("SequenceRunModal — background flow", () => {
     ).toBeVisible()
 
     // Click backdrop (outside dialog)
-    await page.locator('[role="none"]').click({
+    await page.locator(".bg-scrim").first().click({
       position: { x: 10, y: 10 },
     })
 

@@ -1,3 +1,5 @@
+import { IconButton } from "@charcuterie/ui"
+
 type AspectLockButtonProps = {
   isLocked: boolean
   isReadOnly: boolean
@@ -11,19 +13,16 @@ export const AspectLockButton = ({
   ariaLabel,
   onToggle,
 }: AspectLockButtonProps) => (
-  <button
-    type="button"
-    aria-label={ariaLabel}
+  <IconButton
+    label={ariaLabel}
     aria-pressed={isLocked}
-    disabled={isReadOnly}
+    isDisabled={isReadOnly}
+    intent={isLocked ? "accent" : "neutral"}
+    appearance="ghost"
+    size="sm"
     onClick={() => {
       onToggle(!isLocked)
     }}
-    className={`p-0.5 rounded ${
-      isLocked
-        ? "text-blue-400 hover:text-blue-300"
-        : "text-slate-500 hover:text-slate-300"
-    } disabled:opacity-50 disabled:cursor-not-allowed`}
   >
     <svg
       aria-hidden="true"
@@ -46,5 +45,5 @@ export const AspectLockButton = ({
         </>
       )}
     </svg>
-  </button>
+  </IconButton>
 )

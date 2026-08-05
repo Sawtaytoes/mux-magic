@@ -1,3 +1,4 @@
+import { Button, Dialog } from "@charcuterie/ui"
 import { useState } from "react"
 
 import type { StoredTemplate } from "../../state/templatesApi"
@@ -29,8 +30,6 @@ export const SaveTemplateModal = ({
   const [errorMessage, setErrorMessage] = useState<
     string | null
   >(null)
-
-  if (!isOpen) return null
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -66,22 +65,15 @@ export const SaveTemplateModal = ({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-label="Save sequence as template"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70"
+    <Dialog
+      heading="Save sequence as template"
+      isVisible={isOpen}
+      onClose={onClose}
+      size="md"
     >
-      <form
-        onSubmit={onSubmit}
-        className="bg-slate-900 border border-slate-700 rounded-lg p-6 w-full max-w-md shadow-xl"
-      >
-        <h2 className="text-lg font-semibold text-slate-100 mb-4">
-          Save sequence as template
-        </h2>
-
+      <form onSubmit={onSubmit}>
         <label className="block mb-3">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <span className="text-xs font-semibold text-content-secondary uppercase tracking-wider">
             Name
           </span>
           <input
@@ -90,13 +82,13 @@ export const SaveTemplateModal = ({
             onChange={(event) =>
               setName(event.target.value)
             }
-            className="mt-1 w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-100"
+            className="mt-1 w-full bg-surface-sunken border border-border-default rounded px-3 py-2 text-content-primary"
             placeholder="My workflow"
           />
         </label>
 
         <label className="block mb-3">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <span className="text-xs font-semibold text-content-secondary uppercase tracking-wider">
             Description (optional)
           </span>
           <textarea
@@ -105,7 +97,7 @@ export const SaveTemplateModal = ({
             onChange={(event) =>
               setDescription(event.target.value)
             }
-            className="mt-1 w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-100"
+            className="mt-1 w-full bg-surface-sunken border border-border-default rounded px-3 py-2 text-content-primary"
             placeholder="What this template is for"
           />
         </label>
@@ -113,30 +105,34 @@ export const SaveTemplateModal = ({
         {errorMessage !== null && (
           <p
             role="alert"
-            className="text-red-400 text-sm mb-3 whitespace-pre-wrap"
+            className="text-intent-danger-content text-sm mb-3 whitespace-pre-wrap"
           >
             {errorMessage}
           </p>
         )}
 
         <div className="flex justify-end gap-2">
-          <button
+          <Button
             type="button"
+            intent="neutral"
+            appearance="soft"
+            size="sm"
             onClick={onClose}
-            disabled={isSubmitting}
-            className="px-3 py-2 text-sm text-slate-300 hover:text-slate-100"
+            isDisabled={isSubmitting}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            disabled={isSubmitting}
-            className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:text-slate-400 rounded text-white"
+            intent="accent"
+            appearance="solid"
+            size="sm"
+            isDisabled={isSubmitting}
           >
             {isSubmitting ? "Saving…" : "Save"}
-          </button>
+          </Button>
         </div>
       </form>
-    </div>
+    </Dialog>
   )
 }

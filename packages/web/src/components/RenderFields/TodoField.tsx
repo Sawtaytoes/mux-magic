@@ -12,7 +12,7 @@ export const TodoField = ({
   field,
 }: TodoFieldProps) => (
   <div
-    className="text-xs text-amber-400 italic py-0.5"
+    className="text-xs text-intent-warning-content italic py-0.5"
     data-todo-field-type={type}
   >
     [TodoField: {type} — {field.name}]

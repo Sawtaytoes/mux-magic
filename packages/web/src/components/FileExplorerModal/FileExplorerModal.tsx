@@ -1,4 +1,8 @@
-﻿import { SortableTableHeader } from "@charcuterie/ui"
+﻿import {
+  Button,
+  IconButton,
+  SortableTableHeader,
+} from "@charcuterie/ui"
 import type {
   DeleteFilesResponse,
   DeleteModeResponse,
@@ -454,14 +458,14 @@ export const FileExplorerModal = () => {
       : "Delete → Permanent"
   const deleteModeClass =
     deleteMode === "trash"
-      ? "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium text-emerald-300 border border-emerald-700/50 cursor-default select-none"
-      : "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium text-rose-300 border border-rose-700/50 cursor-default select-none"
+      ? "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium text-intent-success-content border border-intent-success-border cursor-default select-none"
+      : "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium text-intent-danger-content border border-intent-danger-border cursor-default select-none"
 
   return (
     <div
       role="none"
       id="file-explorer-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim"
       onClick={(event) => {
         if (event.target === event.currentTarget) close()
       }}
@@ -469,9 +473,9 @@ export const FileExplorerModal = () => {
         if (event.key === "Escape") close()
       }}
     >
-      <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col overflow-hidden max-h-[90dvh]">
+      <div className="bg-surface-raised border border-border-default rounded-xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col overflow-hidden max-h-[90dvh]">
         {/* Title bar */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border-default shrink-0 flex-wrap">
           {/* Breadcrumb */}
           <div
             id="file-explorer-breadcrumb"
@@ -483,7 +487,7 @@ export const FileExplorerModal = () => {
               return isLast ? (
                 <span
                   key={seg.target}
-                  className="text-slate-200 truncate"
+                  className="text-content-primary truncate"
                 >
                   {seg.label}
                 </span>
@@ -494,14 +498,14 @@ export const FileExplorerModal = () => {
                 >
                   <button
                     type="button"
-                    className="text-blue-300 hover:text-blue-200 underline-offset-2 hover:underline truncate"
+                    className="text-intent-accent-content hover:text-intent-accent-content underline-offset-2 hover:underline truncate"
                     title={`Navigate to ${seg.target}`}
                     onClick={() => navigateTo(seg.target)}
                   >
                     {seg.label}
                   </button>
                   {seg.label !== separator && (
-                    <span className="text-slate-500">
+                    <span className="text-content-muted">
                       {separator}
                     </span>
                   )}
@@ -526,31 +530,35 @@ export const FileExplorerModal = () => {
           {isPicker && (
             <span
               id="file-explorer-picker-badge"
-              className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-blue-900/50 text-blue-300 border border-blue-700/50"
+              className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-medium bg-intent-accent-surface text-intent-accent-content border border-intent-accent-border"
             >
               PICKER
             </span>
           )}
 
           {isPicker && (
-            <button
-              type="button"
+            <Button
               id="file-explorer-pick-btn"
+              intent="accent"
+              appearance="solid"
+              size="sm"
               onClick={handleConfirmPick}
-              className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded font-medium"
             >
               📌 Use this folder
-            </button>
+            </Button>
           )}
 
-          <button
-            type="button"
-            onClick={close}
-            className="text-slate-400 hover:text-white text-base leading-none ml-1"
+          <IconButton
+            label="Close"
             title="Close"
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
+            className="ml-1"
+            onClick={close}
           >
             ✕
-          </button>
+          </IconButton>
         </div>
 
         {/* Body */}
@@ -559,19 +567,19 @@ export const FileExplorerModal = () => {
           className="flex-1 overflow-y-auto min-h-0"
         >
           {isLoading && (
-            <p className="text-slate-500 text-sm py-4 text-center">
+            <p className="text-content-muted text-sm py-4 text-center">
               Loading…
             </p>
           )}
           {!isLoading && error && (
-            <p className="text-rose-400 text-sm py-4 px-3">
+            <p className="text-intent-danger-content text-sm py-4 px-3">
               {error}
             </p>
           )}
           {!isLoading &&
             !error &&
             sortedEntries.length === 0 && (
-              <p className="text-slate-500 text-sm py-4 text-center">
+              <p className="text-content-muted text-sm py-4 text-center">
                 Folder is empty.
               </p>
             )}
@@ -580,7 +588,7 @@ export const FileExplorerModal = () => {
             sortedEntries.length > 0 && (
               <div className="px-3 py-2">
                 <table className="w-full text-sm">
-                  <thead className="text-[10px] uppercase tracking-wider text-slate-300 sticky top-0 bg-slate-800 z-10 shadow-sm">
+                  <thead className="text-[10px] uppercase tracking-wider text-content-secondary sticky top-0 bg-surface-raised z-10 shadow-sm">
                     <tr>
                       <th className="py-2 px-2 text-left w-6">
                         <input
@@ -713,7 +721,7 @@ export const FileExplorerModal = () => {
                       return (
                         <tr
                           key={entry.name}
-                          className="border-b border-slate-800 hover:bg-slate-800/30"
+                          className="border-b border-border-subtle hover:bg-surface-sunken"
                         >
                           <td className="py-1 px-2">
                             <input
@@ -738,7 +746,7 @@ export const FileExplorerModal = () => {
                             {entry.isDirectory ? (
                               <button
                                 type="button"
-                                className="fe-name fe-dir text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
+                                className="fe-name fe-dir text-left text-content-primary hover:text-intent-accent-content underline-offset-2 hover:underline w-full"
                                 title="Open this folder"
                                 onClick={() =>
                                   navigateTo(
@@ -755,43 +763,46 @@ export const FileExplorerModal = () => {
                             ) : previewKind !== null ? (
                               <button
                                 type="button"
-                                className="fe-name fe-file text-left text-slate-200 hover:text-blue-300 underline-offset-2 hover:underline w-full"
+                                className="fe-name fe-file text-left text-content-primary hover:text-intent-accent-content underline-offset-2 hover:underline w-full"
                                 title={previewTitle}
                                 onClick={onPreviewClick}
                               >
                                 {icon} {entry.name}
                               </button>
                             ) : (
-                              <span className="text-slate-400">
+                              <span className="text-content-secondary">
                                 {icon} {entry.name}
                               </span>
                             )}
                           </td>
-                          <td className="py-1 px-2 text-right text-slate-300 font-mono text-xs whitespace-nowrap">
+                          <td className="py-1 px-2 text-right text-content-secondary font-mono text-xs whitespace-nowrap">
                             {entry.duration ?? "—"}
                           </td>
-                          <td className="py-1 px-2 text-right text-slate-400 font-mono text-xs whitespace-nowrap">
+                          <td className="py-1 px-2 text-right text-content-secondary font-mono text-xs whitespace-nowrap">
                             {entry.isDirectory
                               ? "—"
                               : formatSize(entry.size)}
                           </td>
-                          <td className="py-1 px-2 text-slate-400 font-mono text-xs whitespace-nowrap">
+                          <td className="py-1 px-2 text-content-secondary font-mono text-xs whitespace-nowrap">
                             {formatMtime(entry.mtime)}
                           </td>
                           <td className="py-1 px-2 text-center">
                             {entry.isFile ? (
-                              <button
-                                type="button"
-                                className="fe-copy text-slate-400 hover:text-slate-200"
+                              <IconButton
+                                label="Copy absolute path"
                                 title="Copy absolute path"
+                                intent="neutral"
+                                appearance="ghost"
+                                size="sm"
+                                className="fe-copy"
                                 onClick={() =>
                                   void copyPath(entry.name)
                                 }
                               >
                                 📋
-                              </button>
+                              </IconButton>
                             ) : (
-                              <span className="text-slate-700">
+                              <span className="text-content-muted">
                                 —
                               </span>
                             )}
@@ -810,23 +821,25 @@ export const FileExplorerModal = () => {
             bar, so the two affordances coexist without competing. */}
         <div
           id="file-explorer-footer"
-          className="flex items-center gap-3 px-4 py-2 border-t border-slate-700 shrink-0"
+          className="flex items-center gap-3 px-4 py-2 border-t border-border-default shrink-0"
         >
           <span
             id="file-explorer-selection-count"
-            className="text-xs text-slate-400"
+            className="text-xs text-content-secondary"
           >
             {selected.size} selected
           </span>
-          <button
-            type="button"
+          <Button
             id="file-explorer-delete-btn"
-            disabled={selected.size === 0}
+            intent="danger"
+            appearance="solid"
+            size="sm"
+            className="ml-auto"
+            isDisabled={selected.size === 0}
             onClick={() => void confirmDelete()}
-            className="text-xs bg-rose-700 hover:bg-rose-600 disabled:opacity-40 text-white px-3 py-1 rounded font-medium ml-auto"
           >
             Delete selected
-          </button>
+          </Button>
         </div>
       </div>
     </div>

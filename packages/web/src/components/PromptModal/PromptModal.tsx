@@ -1,3 +1,4 @@
+import { Button, Modal } from "@charcuterie/ui"
 import { useAtom, useSetAtom } from "jotai"
 import { useEffect, useRef, useState } from "react"
 import { apiBase } from "../../apiBase"
@@ -54,7 +55,7 @@ const sortOptions = (
   })
 
 const kbdChipClass =
-  "text-[10px] font-mono bg-slate-700 text-slate-200 px-1.5 py-0.5 rounded"
+  "text-[10px] font-mono bg-surface-sunken text-content-secondary px-1.5 py-0.5 rounded"
 
 export const PromptModal = () => {
   const [promptData, setPromptData] =
@@ -219,7 +220,7 @@ export const PromptModal = () => {
       document.removeEventListener("keydown", handleKeyDown)
   }, [setPromptData])
 
-  if (!promptData || promptData.isMinimized) return null
+  if (!promptData) return null
 
   const sortedOptions = sortOptions(promptData.options)
   const filePathsByIndex = new Map(
@@ -230,22 +231,16 @@ export const PromptModal = () => {
   )
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-      role="none"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) dismiss()
-      }}
+    <Modal
+      isVisible={!promptData.isMinimized}
+      onClose={dismiss}
+      aria-labelledby="prompt-message"
+      className="w-full max-w-lg p-5"
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="prompt-message"
-        className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 p-5 flex flex-col gap-4"
-      >
+      <div className="flex flex-col gap-4">
         <p
           id="prompt-paused-banner"
-          className="text-xs text-amber-300 bg-amber-900/30 border border-amber-700/50 rounded px-2 py-1.5"
+          className="text-xs text-intent-warning-content bg-intent-warning-surface border border-intent-warning-border rounded px-2 py-1.5"
         >
           ⏸ The pipeline is paused waiting for your choice.
         </p>
@@ -254,7 +249,7 @@ export const PromptModal = () => {
           {promptData.context && (
             <p
               id="prompt-context"
-              className="text-slate-400 text-xs leading-snug"
+              className="text-content-secondary text-xs leading-snug"
             >
               {promptData.context}
             </p>
@@ -263,8 +258,8 @@ export const PromptModal = () => {
             id="prompt-message"
             className={
               promptData.subtitle || promptData.context
-                ? "text-slate-100 text-lg font-semibold leading-snug"
-                : "text-slate-100 text-sm leading-relaxed"
+                ? "text-content-primary text-lg font-semibold leading-snug"
+                : "text-content-primary text-sm leading-relaxed"
             }
           >
             {promptData.message}
@@ -272,7 +267,7 @@ export const PromptModal = () => {
           {promptData.subtitle && (
             <p
               id="prompt-subtitle"
-              className="text-slate-400 text-xs leading-snug break-all"
+              className="text-content-secondary text-xs leading-snug break-all"
             >
               {promptData.subtitle}
             </p>
@@ -281,9 +276,10 @@ export const PromptModal = () => {
 
         {promptData.filePath && (
           <div id="prompt-preview" className="flex gap-2">
-            <button
-              type="button"
-              className="text-[10px] bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-medium leading-none"
+            <Button
+              intent="success"
+              appearance="solid"
+              size="sm"
               onClick={() => {
                 setVideoPreview({
                   path: promptData.filePath ?? "",
@@ -291,11 +287,12 @@ export const PromptModal = () => {
               }}
             >
               ▶ Play
-            </button>
+            </Button>
             {!isContainerized && promptData.filePath && (
-              <button
-                type="button"
-                className="text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-0.5 rounded font-medium leading-none border border-slate-600"
+              <Button
+                intent="neutral"
+                appearance="soft"
+                size="sm"
                 title="Open this file in the OS default media player"
                 onClick={() =>
                   void openInLocalPlayer(
@@ -306,7 +303,7 @@ export const PromptModal = () => {
               >
                 {openLabels[TOP_LEVEL_OPEN_KEY] ??
                   "⬡ Open in Local Player"}
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -321,7 +318,7 @@ export const PromptModal = () => {
               filePathsByIndex.get(option.index) ?? null
             const keyHint =
               option.index >= 0 && option.index <= 9 ? (
-                <span className="text-xs font-mono bg-slate-700 px-1.5 py-0.5 rounded mr-2">
+                <span className="text-xs font-mono bg-surface-sunken px-1.5 py-0.5 rounded mr-2">
                   {option.index}
                 </span>
               ) : null
@@ -336,11 +333,11 @@ export const PromptModal = () => {
               return (
                 <div
                   key={option.index}
-                  className="flex items-stretch gap-2 rounded-lg border border-slate-600 hover:border-blue-500 transition-colors"
+                  className="flex items-stretch gap-2 rounded-lg border border-border-default hover:border-border-focus transition-colors"
                 >
                   <button
                     type="button"
-                    className="flex-1 text-left text-sm px-4 py-2.5 rounded-l-lg text-slate-200 hover:bg-blue-700"
+                    className="flex-1 text-left text-sm px-4 py-2.5 rounded-l-lg text-content-primary hover:bg-intent-accent-surface"
                     onClick={() => void pick(option.index)}
                   >
                     {keyHint}
@@ -348,7 +345,7 @@ export const PromptModal = () => {
                   </button>
                   <button
                     type="button"
-                    className={`shrink-0 text-xs px-3 bg-emerald-700 hover:bg-emerald-600 text-white font-medium${isShowingOpenInLocalPlayer ? "" : " rounded-r-lg"}`}
+                    className={`shrink-0 text-xs px-3 bg-intent-success-solid hover:bg-intent-success-solid-hover text-intent-success-on-solid font-medium${isShowingOpenInLocalPlayer ? "" : " rounded-r-lg"}`}
                     title="Preview this file before picking"
                     onClick={(event) => {
                       event.preventDefault()
@@ -361,7 +358,7 @@ export const PromptModal = () => {
                   {isShowingOpenInLocalPlayer && (
                     <button
                       type="button"
-                      className="shrink-0 text-xs px-3 rounded-r-lg bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium border-l border-slate-600"
+                      className="shrink-0 text-xs px-3 rounded-r-lg bg-surface-sunken hover:bg-surface-raised text-content-secondary font-medium border-l border-border-default"
                       title="Open this file in the OS default media player"
                       onClick={(event) => {
                         event.preventDefault()
@@ -386,8 +383,8 @@ export const PromptModal = () => {
                 key={option.index}
                 className={`text-left text-sm px-4 py-2.5 rounded-lg border transition-colors ${
                   isSkip
-                    ? "border-slate-600 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
-                    : "border-slate-600 text-slate-200 hover:bg-blue-700 hover:border-blue-500"
+                    ? "border-border-default text-content-secondary hover:bg-surface-sunken hover:text-content-primary"
+                    : "border-border-default text-content-primary hover:bg-intent-accent-surface hover:border-border-focus"
                 }`}
                 onClick={() => void pick(option.index)}
               >
@@ -400,7 +397,7 @@ export const PromptModal = () => {
 
         <div
           id="prompt-keyboard-hints"
-          className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-400"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-content-secondary"
         >
           <span className="flex items-center gap-1">
             <kbd className={kbdChipClass}>0-9</kbd>Pick
@@ -417,31 +414,33 @@ export const PromptModal = () => {
 
         <div
           id="prompt-action-bar"
-          className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-700"
+          className="flex flex-wrap items-center gap-2 pt-3 border-t border-border-default"
         >
-          <button
-            type="button"
+          <Button
             id="prompt-cancel-job"
-            className="text-xs bg-red-700 hover:bg-red-600 text-white px-3 py-1.5 rounded font-medium"
+            intent="danger"
+            appearance="soft"
+            size="sm"
             title="Cancel the running job (DELETE /jobs/:id)"
             onClick={() => void handleCancelJob()}
           >
             Cancel job
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             id="prompt-close"
-            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded font-medium"
+            intent="neutral"
+            appearance="soft"
+            size="sm"
             title="Close this modal; the job will keep waiting for input"
             onClick={dismiss}
           >
             Close (job stays running)
-          </button>
-          <span className="text-[10px] text-slate-400">
+          </Button>
+          <span className="text-[10px] text-content-secondary">
             The pipeline will keep waiting for input.
           </span>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }

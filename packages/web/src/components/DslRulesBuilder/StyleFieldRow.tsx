@@ -1,3 +1,4 @@
+import { IconButton } from "@charcuterie/ui"
 import { useState } from "react"
 import { AssFieldPicker } from "./AssFieldPicker"
 import { STYLE_FIELDS } from "./assFields"
@@ -48,7 +49,7 @@ export const StyleFieldRow = ({
     useState(literalValue)
 
   return (
-    <div className="border border-slate-700/40 rounded px-2 py-1.5 mt-1 bg-slate-900/20">
+    <div className="border border-border-subtle rounded px-2 py-1.5 mt-1 bg-surface-raised">
       <div className="flex items-center gap-1.5">
         <AssFieldPicker
           label={fieldKey}
@@ -67,9 +68,9 @@ export const StyleFieldRow = ({
             )
           }}
         />
-        <span className="text-slate-500 text-xs">=</span>
+        <span className="text-content-muted text-xs">=</span>
         {isComputed ? (
-          <span className="flex-1 text-xs text-slate-400 italic">
+          <span className="flex-1 text-xs text-content-secondary italic">
             computed from metadata ↓
           </span>
         ) : (
@@ -91,10 +92,10 @@ export const StyleFieldRow = ({
                 }),
               )
             }}
-            className="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+            className="flex-1 min-w-0 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
           />
         )}
-        <label className="flex items-center gap-1 text-xs text-slate-400 cursor-pointer">
+        <label className="flex items-center gap-1 text-xs text-content-secondary cursor-pointer">
           <input
             type="checkbox"
             checked={isComputed}
@@ -109,13 +110,16 @@ export const StyleFieldRow = ({
                 }),
               )
             }}
-            className="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer"
+            className="w-3.5 h-3.5 rounded bg-surface-sunken border-border-strong accent-intent-accent-solid cursor-pointer"
           />
           computed
         </label>
         {!isReadOnly && (
-          <button
-            type="button"
+          <IconButton
+            label="Remove field"
+            intent="danger"
+            appearance="ghost"
+            size="sm"
             onClick={() => {
               onCommitRules(
                 removeStyleField({
@@ -125,10 +129,9 @@ export const StyleFieldRow = ({
                 }),
               )
             }}
-            className="text-xs text-slate-500 hover:text-red-400 px-1.5"
           >
             ✕
-          </button>
+          </IconButton>
         )}
       </div>
       {isComputed && computeFrom && (

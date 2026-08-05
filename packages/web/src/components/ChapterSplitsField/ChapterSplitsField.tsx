@@ -69,7 +69,7 @@ export const ChapterSplitsField = ({
           setInputValue(event.target.value)
         }
         onBlur={handleBlur}
-        className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+        className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
       />
     </CommandFieldControl>
   )

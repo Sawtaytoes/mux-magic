@@ -1,3 +1,4 @@
+import { IconButton } from "@charcuterie/ui"
 import { useAtom } from "jotai"
 import { useEffect } from "react"
 import { streamUrl } from "../../streamUrl"
@@ -39,30 +40,33 @@ export const AudioPreviewModal = () => {
     <div
       role="none"
       id="audio-modal"
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-scrim"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
     >
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md mx-4 flex flex-col overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-700 shrink-0">
+      <div className="bg-surface-raised border border-border-default rounded-xl shadow-2xl w-full max-w-md mx-4 flex flex-col overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-border-default shrink-0">
           <span
             id="audio-modal-name"
-            className="text-xs text-slate-400 font-mono flex-1 truncate"
+            className="text-xs text-content-secondary font-mono flex-1 truncate"
             title={path}
           >
             {path}
           </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-white text-base leading-none ml-1"
+          <IconButton
+            label="Close"
             title="Close"
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
+            className="ml-1"
+            onClick={onClose}
           >
             ✕
-          </button>
+          </IconButton>
         </div>
-        <div className="p-4 bg-slate-950">
+        <div className="p-4 bg-surface-sunken">
           {/** biome-ignore lint/a11y/useMediaCaption: native preview of an arbitrary audio file from the file explorer — no captions available. */}
           <audio
             id="audio-modal-player"

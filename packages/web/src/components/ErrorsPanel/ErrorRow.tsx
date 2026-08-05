@@ -1,4 +1,4 @@
-import { Accordion } from "@charcuterie/ui"
+import { Accordion, Button } from "@charcuterie/ui"
 import { useState } from "react"
 
 import { DeliveryStateBadge } from "./DeliveryStateBadge"
@@ -69,18 +69,18 @@ export const ErrorRow = ({
   }
 
   return (
-    <article className="bg-slate-900 border border-slate-700 rounded-lg p-3 space-y-2">
+    <article className="bg-surface-raised border border-border-default rounded-lg p-3 space-y-2">
       {/* Row header */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-slate-500 font-mono">
+        <span className="text-xs text-content-muted font-mono">
           {idSuffix(record.id)}
         </span>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-content-secondary">
           {formatRelativeTime(record.occurredAt)}
         </span>
         <a
           href={`/?jobId=${record.jobId}`}
-          className="text-xs text-blue-400 hover:text-blue-300"
+          className="text-xs text-intent-accent-content hover:underline"
           title={`Navigate to job ${record.jobId}`}
         >
           {record.jobId}
@@ -91,55 +91,59 @@ export const ErrorRow = ({
       </div>
 
       {/* Message */}
-      <p className="text-sm text-slate-300 truncate">
+      <p className="text-sm text-content-secondary truncate">
         {record.msg}
       </p>
 
       {/* Actions row */}
       <div className="flex items-center gap-2 flex-wrap">
         {isExhausted && (
-          <button
-            type="button"
+          <Button
+            intent="warning"
+            appearance="soft"
+            size="sm"
             aria-label="Retry delivery"
             onClick={handleRedeliverClick}
-            disabled={isRedelivering}
-            className="text-xs px-2 py-0.5 rounded bg-amber-900/40 text-amber-400 hover:bg-amber-900/70 disabled:opacity-40"
+            isDisabled={isRedelivering}
           >
             {isRedelivering
               ? "Retrying…"
               : "↺ Retry delivery"}
-          </button>
+          </Button>
         )}
 
         {isConfirmingDismiss ? (
           <span className="flex items-center gap-1">
-            <button
-              type="button"
+            <Button
+              intent="danger"
+              appearance="soft"
+              size="sm"
               aria-label="Confirm dismiss"
               onClick={handleConfirmDismiss}
-              disabled={isDismissing}
-              className="text-xs px-2 py-0.5 rounded bg-red-900/60 text-red-300 hover:bg-red-900/80 disabled:opacity-40"
+              isDisabled={isDismissing}
             >
               {isDismissing ? "Dismissing…" : "Confirm"}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              intent="neutral"
+              appearance="soft"
+              size="sm"
               aria-label="Cancel dismiss"
               onClick={handleCancelDismiss}
-              className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300 hover:bg-slate-600"
             >
               Cancel
-            </button>
+            </Button>
           </span>
         ) : (
-          <button
-            type="button"
+          <Button
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
             aria-label="Dismiss"
             onClick={handleDismissClick}
-            className="text-xs px-2 py-0.5 rounded bg-slate-700/60 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
           >
             Dismiss
-          </button>
+          </Button>
         )}
       </div>
 
@@ -157,47 +161,47 @@ export const ErrorRow = ({
             content: (
               <div className="space-y-2">
                 {record.errorName && (
-                  <div className="text-xs text-slate-400">
-                    <span className="text-slate-500">
+                  <div className="text-xs text-content-secondary">
+                    <span className="text-content-muted">
                       Error:{" "}
                     </span>
                     {record.errorName}
                   </div>
                 )}
                 {record.traceId && (
-                  <div className="text-xs text-slate-400 font-mono">
-                    <span className="text-slate-500">
+                  <div className="text-xs text-content-secondary font-mono">
+                    <span className="text-content-muted">
                       traceId:{" "}
                     </span>
                     {record.traceId}
                   </div>
                 )}
                 {record.spanId && (
-                  <div className="text-xs text-slate-400 font-mono">
-                    <span className="text-slate-500">
+                  <div className="text-xs text-content-secondary font-mono">
+                    <span className="text-content-muted">
                       spanId:{" "}
                     </span>
                     {record.spanId}
                   </div>
                 )}
                 {record.stepIndex !== undefined && (
-                  <div className="text-xs text-slate-400">
-                    <span className="text-slate-500">
+                  <div className="text-xs text-content-secondary">
+                    <span className="text-content-muted">
                       stepIndex:{" "}
                     </span>
                     {record.stepIndex}
                   </div>
                 )}
                 {record.fileId && (
-                  <div className="text-xs text-slate-400 font-mono truncate">
-                    <span className="text-slate-500">
+                  <div className="text-xs text-content-secondary font-mono truncate">
+                    <span className="text-content-muted">
                       fileId:{" "}
                     </span>
                     {record.fileId}
                   </div>
                 )}
                 <div className="text-xs space-y-0.5">
-                  <div className="text-slate-500">
+                  <div className="text-content-muted">
                     Delivery:{" "}
                     {record.webhookDelivery.attempts}{" "}
                     attempt
@@ -206,7 +210,7 @@ export const ErrorRow = ({
                       : ""}
                   </div>
                   {record.webhookDelivery.lastAttemptAt && (
-                    <div className="text-slate-500">
+                    <div className="text-content-muted">
                       Last attempt:{" "}
                       {formatRelativeTime(
                         record.webhookDelivery
@@ -215,14 +219,14 @@ export const ErrorRow = ({
                     </div>
                   )}
                   {record.webhookDelivery.lastError && (
-                    <div className="text-red-400">
+                    <div className="text-intent-danger-content">
                       Last error:{" "}
                       {record.webhookDelivery.lastError}
                     </div>
                   )}
                 </div>
                 {record.stack && (
-                  <pre className="text-xs bg-slate-950 rounded p-2 overflow-x-auto text-slate-400 max-h-48 overflow-y-auto whitespace-pre-wrap">
+                  <pre className="text-xs bg-surface-sunken rounded p-2 overflow-x-auto text-content-secondary max-h-48 overflow-y-auto whitespace-pre-wrap">
                     {record.stack}
                   </pre>
                 )}

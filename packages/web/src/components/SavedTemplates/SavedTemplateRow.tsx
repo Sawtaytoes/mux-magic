@@ -1,3 +1,5 @@
+import { Button } from "@charcuterie/ui"
+
 import type { TemplateListItem } from "../../state/templatesApi"
 
 type SavedTemplateRowProps = {
@@ -31,8 +33,8 @@ export const SavedTemplateRow = ({
   <li
     className={`group rounded px-2 py-2 border ${
       isSelected
-        ? "border-blue-500 bg-slate-800/60"
-        : "border-transparent hover:bg-slate-800/40"
+        ? "border-border-focus bg-surface-raised/60"
+        : "border-transparent hover:bg-surface-raised/40"
     }`}
     data-template-id={template.id}
   >
@@ -40,46 +42,50 @@ export const SavedTemplateRow = ({
       type="button"
       onClick={onLoad}
       title={template.description ?? template.name}
-      className="block w-full text-left text-sm text-slate-200 truncate"
+      className="block w-full text-left text-sm text-content-primary truncate"
     >
       {template.name}
     </button>
     {template.description !== undefined &&
       template.description.length > 0 && (
-        <p className="text-xs text-slate-400 truncate mt-0.5">
+        <p className="text-xs text-content-secondary truncate mt-0.5">
           {template.description}
         </p>
       )}
     <div className="mt-2 flex flex-wrap gap-1 text-[11px]">
-      <button
-        type="button"
+      <Button
+        intent="neutral"
+        appearance="soft"
+        size="sm"
         onClick={onUpdateFromCurrent}
-        className="px-1.5 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200"
         title="Overwrite this template with the current sequence"
       >
         Update
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        intent="neutral"
+        appearance="soft"
+        size="sm"
         onClick={onRename}
-        className="px-1.5 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200"
       >
         Rename
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        intent="neutral"
+        appearance="soft"
+        size="sm"
         onClick={onEditDescription}
-        className="px-1.5 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200"
       >
         Edit description
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        intent="danger"
+        appearance="soft"
+        size="sm"
         onClick={onDelete}
-        className="px-1.5 py-0.5 rounded bg-red-900/60 hover:bg-red-800 text-red-100"
       >
         Delete
-      </button>
+      </Button>
     </div>
   </li>
 )

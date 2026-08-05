@@ -1,3 +1,5 @@
+import { Button } from "@charcuterie/ui"
+
 interface InsertDividerProps {
   index: number
   onInsertStep: () => void
@@ -16,41 +18,49 @@ export const InsertDivider = ({
   onPaste,
 }: InsertDividerProps) => (
   <div className="col-span-full flex items-center group -my-0.5">
-    <div className="flex-1 h-px bg-slate-700/50 group-hover:bg-slate-600 transition-colors" />
+    <div className="flex-1 h-px bg-border-default/50 group-hover:bg-border-strong transition-colors" />
     <div className="flex items-center gap-1 mx-1">
-      <button
-        type="button"
+      <Button
+        intent="neutral"
+        appearance="ghost"
+        size="sm"
         onClick={onInsertStep}
         title="Insert a step here"
-        className="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-blue-400 rounded-full border border-transparent hover:border-blue-500/40 hover:bg-slate-800 transition-all whitespace-nowrap"
+        className="whitespace-nowrap"
       >
         ➕ Step
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        intent="neutral"
+        appearance="ghost"
+        size="sm"
         onClick={onInsertSequentialGroup}
         title="Insert a sequential group here"
-        className="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-blue-400 rounded-full border border-transparent hover:border-blue-500/40 hover:bg-slate-800 transition-all whitespace-nowrap"
+        className="whitespace-nowrap"
       >
         ➕ Group
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        intent="neutral"
+        appearance="ghost"
+        size="sm"
         onClick={onInsertParallelGroup}
         title="Insert a parallel group here"
-        className="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-blue-400 rounded-full border border-transparent hover:border-blue-500/40 hover:bg-slate-800 transition-all whitespace-nowrap"
+        className="whitespace-nowrap"
       >
         ➕ Parallel
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        intent="neutral"
+        appearance="ghost"
+        size="sm"
         onClick={onPaste}
         title="Paste a copied step or group here"
-        className="flex items-center gap-1 px-2.5 py-0.5 text-xs text-slate-600 hover:text-emerald-400 rounded-full border border-transparent hover:border-emerald-500/40 hover:bg-slate-800 transition-all whitespace-nowrap"
+        className="whitespace-nowrap"
       >
         📋 Paste
-      </button>
+      </Button>
     </div>
-    <div className="flex-1 h-px bg-slate-700/50 group-hover:bg-slate-600 transition-colors" />
+    <div className="flex-1 h-px bg-border-default/50 group-hover:bg-border-strong transition-colors" />
   </div>
 )

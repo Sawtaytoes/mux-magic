@@ -1,3 +1,5 @@
+import { Button } from "@charcuterie/ui"
+
 import { ApplyIfEntryRow } from "./ApplyIfEntryRow"
 import {
   addApplyIfEntry,
@@ -24,14 +26,16 @@ export const ApplyIfClauseRow = ({
   isReadOnly: boolean
   onCommitRules: (nextRules: DslRule[]) => void
 }) => (
-  <div className="border border-slate-700 rounded px-2 py-2 mt-2 bg-slate-900/30">
+  <div className="border border-border-default rounded px-2 py-2 mt-2 bg-surface-raised">
     <div className="flex items-center justify-between mb-1">
-      <span className="text-xs font-mono text-blue-300">
+      <span className="text-xs font-mono text-intent-accent-content">
         {clauseName}
       </span>
       {!isReadOnly && (
-        <button
-          type="button"
+        <Button
+          intent="danger"
+          appearance="ghost"
+          size="sm"
           onClick={() => {
             onCommitRules(
               removeApplyIfClause({
@@ -41,10 +45,9 @@ export const ApplyIfClauseRow = ({
               }),
             )
           }}
-          className="text-xs text-slate-500 hover:text-red-400"
         >
           ✕ Remove clause
-        </button>
+        </Button>
       )}
     </div>
     {Object.entries(clauseValue).map(
@@ -62,8 +65,11 @@ export const ApplyIfClauseRow = ({
       ),
     )}
     {!isReadOnly && (
-      <button
-        type="button"
+      <Button
+        intent="neutral"
+        appearance="ghost"
+        size="sm"
+        className="mt-1"
         onClick={() => {
           onCommitRules(
             addApplyIfEntry({
@@ -73,10 +79,9 @@ export const ApplyIfClauseRow = ({
             }),
           )
         }}
-        className="text-xs text-slate-400 hover:text-blue-400 mt-1"
       >
         + entry
-      </button>
+      </Button>
     )}
   </div>
 )

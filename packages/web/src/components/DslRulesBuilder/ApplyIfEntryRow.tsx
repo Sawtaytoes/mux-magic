@@ -1,4 +1,4 @@
-import { Select } from "@charcuterie/ui"
+import { IconButton, Select } from "@charcuterie/ui"
 import { useState } from "react"
 
 import { isPlainObject } from "./clauseUtils"
@@ -69,7 +69,7 @@ export const ApplyIfEntryRow = ({
             }),
           )
         }}
-        className="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+        className="flex-1 min-w-0 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
       />
       <Select
         className="w-28 font-mono"
@@ -114,11 +114,14 @@ export const ApplyIfEntryRow = ({
             }),
           )
         }}
-        className="w-20 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+        className="w-20 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
       />
       {!isReadOnly && (
-        <button
-          type="button"
+        <IconButton
+          label="Remove entry"
+          intent="danger"
+          appearance="ghost"
+          size="sm"
           onClick={() => {
             onCommitRules(
               removeApplyIfEntry({
@@ -129,10 +132,9 @@ export const ApplyIfEntryRow = ({
               }),
             )
           }}
-          className="text-xs text-slate-500 hover:text-red-400 px-1.5"
         >
           ✕
-        </button>
+        </IconButton>
       )}
     </div>
   )

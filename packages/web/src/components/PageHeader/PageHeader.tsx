@@ -1,3 +1,4 @@
+import { Button, IconButton } from "@charcuterie/ui"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
 import { editVariablesModalOpenAtom } from "../../components/EditVariablesModal/editVariablesModalOpenAtom"
@@ -109,13 +110,13 @@ export const PageHeader = () => {
     : `${backgroundBadgeLabel} — click to re-open`
   const backgroundBadgeClass =
     backgroundJobStatus === "completed"
-      ? "bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-300 border-emerald-500/40"
+      ? "bg-intent-success-surface hover:bg-intent-success-surface-hover text-intent-success-content border-intent-success-border"
       : backgroundJobStatus === "failed"
-        ? "bg-red-500/20 hover:bg-red-500/35 text-red-300 border-red-500/40"
+        ? "bg-intent-danger-surface hover:bg-intent-danger-surface-hover text-intent-danger-content border-intent-danger-border"
         : backgroundJobStatus === "cancelled" ||
             backgroundJobStatus === "skipped"
-          ? "bg-slate-500/20 hover:bg-slate-500/35 text-slate-300 border-slate-500/40"
-          : "bg-sky-500/20 hover:bg-sky-500/35 text-sky-400 border-sky-500/40"
+          ? "bg-intent-neutral-surface hover:bg-intent-neutral-surface-hover text-intent-neutral-content border-intent-neutral-border"
+          : "bg-intent-info-surface hover:bg-intent-info-surface-hover text-intent-info-content border-intent-info-border"
   const setEditVariablesModalOpen = useSetAtom(
     editVariablesModalOpenAtom,
   )
@@ -170,17 +171,19 @@ export const PageHeader = () => {
   return (
     <div
       id="page-header"
-      className="shrink-0 border-b border-slate-700 bg-slate-900"
+      className="shrink-0 border-b border-border-default bg-surface-raised"
       style={{ zIndex: Z_INDEX.sticky }}
     >
       <div className="page-header-inner flex items-center px-4 py-3 gap-3">
         {/* Responsive nav toggle */}
-        <button
-          type="button"
+        <IconButton
           id="page-nav-toggle"
+          label="Open menu"
           title="Menu"
-          aria-label="Open menu"
-          className="page-menu-toggle w-7 h-7 items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors"
+          intent="neutral"
+          appearance="ghost"
+          size="sm"
+          className="page-menu-toggle"
           onClick={() =>
             setOpenMenu((prev) => toggleMenu(prev, "nav"))
           }
@@ -200,13 +203,13 @@ export const PageHeader = () => {
             <path d="M4 12h16" />
             <path d="M4 18h16" />
           </svg>
-        </button>
+        </IconButton>
 
         {/* Title */}
         <h1 className="text-lg font-bold tracking-tight">
           <a
             href="/"
-            className="text-slate-100 hover:text-blue-300 transition-colors"
+            className="text-content-primary hover:text-intent-accent-content transition-colors"
           >
             Sequence Builder
           </a>
@@ -239,8 +242,8 @@ export const PageHeader = () => {
             onClick={toggleDryRun}
             className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded active:scale-95 self-center transition-all border ${
               isFailureMode
-                ? "bg-red-500/20 hover:bg-red-500/35 text-red-400 border-red-500/40"
-                : "bg-amber-500/20 hover:bg-amber-500/35 text-amber-400 border-amber-500/40"
+                ? "bg-intent-danger-surface hover:bg-intent-danger-surface-hover text-intent-danger-content border-intent-danger-border"
+                : "bg-intent-warning-surface hover:bg-intent-warning-surface-hover text-intent-warning-content border-intent-warning-border"
             }`}
             title={
               isFailureMode
@@ -259,23 +262,24 @@ export const PageHeader = () => {
           className={`page-menu page-menu-nav${openMenu === "nav" ? " open" : ""}`}
         >
           <div className="page-menu-group">
-            <button
-              type="button"
+            <Button
+              intent="neutral"
+              appearance="soft"
+              size="sm"
               onClick={() => {
                 actions.startNew()
                 setOpenMenu(null)
               }}
               title="Clear the current sequence and start fresh (Ctrl+Z to undo)"
-              className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded font-medium border border-slate-600"
             >
               New Sequence
-            </button>
+            </Button>
           </div>
-          <span className="page-menu-sep w-px h-6 bg-slate-700 mx-1" />
+          <span className="page-menu-sep w-px h-6 bg-border-default mx-1" />
           <div className="page-menu-group">
             <a
               href="/jobs"
-              className="text-xs text-slate-400 hover:text-slate-300"
+              className="text-xs text-content-secondary hover:text-content-primary"
             >
               Jobs ↗
             </a>
@@ -293,55 +297,65 @@ export const PageHeader = () => {
           aria-label="Header actions"
           className="ml-auto flex items-center gap-1"
         >
-          <button
-            type="button"
+          <Button
             id="variables-btn"
+            intent="neutral"
+            appearance="soft"
+            size="sm"
             onClick={() => setEditVariablesModalOpen(true)}
             title="Edit sequence variables"
             aria-label="Variables"
-            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1.5 rounded border border-slate-600 lg:hidden"
+            className="lg:hidden"
           >
             Variables
-          </button>
-          <span className="w-px h-4 bg-slate-700 mx-0.5 lg:hidden" />
-          <button
-            type="button"
+          </Button>
+          <span className="w-px h-4 bg-border-default mx-0.5 lg:hidden" />
+          <IconButton
             id="undo-btn"
+            label="Undo"
+            intent="neutral"
+            appearance="soft"
+            size="sm"
             onClick={() => void actions.undo()}
             title="Undo (Ctrl+Z)"
-            disabled={!isUndoPossible}
-            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7"
+            isDisabled={!isUndoPossible}
           >
             ↶
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
             id="redo-btn"
+            label="Redo"
+            intent="neutral"
+            appearance="soft"
+            size="sm"
             onClick={() => void actions.redo()}
             title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
-            disabled={!isRedoPossible}
-            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600 w-7"
+            isDisabled={!isRedoPossible}
           >
             ↷
-          </button>
-          <span className="w-px h-4 bg-slate-700 mx-0.5" />
-          <button
-            type="button"
+          </IconButton>
+          <span className="w-px h-4 bg-border-default mx-0.5" />
+          <IconButton
+            label="Collapse all"
+            intent="neutral"
+            appearance="soft"
+            size="sm"
             onClick={() => actions.setAllCollapsed(true)}
             title="Collapse every step + group"
-            className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
           >
             {collapseAllIcon}
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            label="Expand all"
+            intent="neutral"
+            appearance="soft"
+            size="sm"
             onClick={() => actions.setAllCollapsed(false)}
             title="Expand every step + group"
-            className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
           >
             {expandAllIcon}
-          </button>
-          <span className="w-px h-6 bg-slate-700 mx-1" />
+          </IconButton>
+          <span className="w-px h-6 bg-border-default mx-1" />
         </div>
 
         {/* Controls menu */}
@@ -354,62 +368,71 @@ export const PageHeader = () => {
               is hidden (≤480px). CSS in builderStyles.css hides this
               group at ≥481px so it never duplicates the pinned bar. */}
           <div className="page-menu-group page-menu-mobile-mirror">
-            <button
-              type="button"
+            <Button
+              intent="neutral"
+              appearance="soft"
+              size="sm"
               onClick={() => {
                 setEditVariablesModalOpen(true)
                 setOpenMenu(null)
               }}
               title="Edit sequence variables"
-              className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded font-medium border border-slate-600"
             >
               Variables
-            </button>
+            </Button>
             <div className="page-menu-row">
-              <button
-                type="button"
+              <IconButton
+                label="Undo"
+                intent="neutral"
+                appearance="soft"
+                size="sm"
                 onClick={() => void actions.undo()}
                 title="Undo (Ctrl+Z)"
-                disabled={!isUndoPossible}
-                className="text-sm bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600"
+                isDisabled={!isUndoPossible}
               >
                 ↶
-              </button>
-              <button
-                type="button"
+              </IconButton>
+              <IconButton
+                label="Redo"
+                intent="neutral"
+                appearance="soft"
+                size="sm"
                 onClick={() => void actions.redo()}
                 title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
-                disabled={!isRedoPossible}
-                className="text-sm bg-slate-700 hover:bg-slate-600 text-slate-200 disabled:opacity-30 disabled:hover:bg-slate-700 px-2 py-1.5 rounded border border-slate-600"
+                isDisabled={!isRedoPossible}
               >
                 ↷
-              </button>
+              </IconButton>
             </div>
             <div className="page-menu-row">
-              <button
-                type="button"
+              <IconButton
+                label="Collapse all"
+                intent="neutral"
+                appearance="soft"
+                size="sm"
                 onClick={() =>
                   actions.setAllCollapsed(true)
                 }
                 title="Collapse every step + group"
-                className="flex items-center justify-center px-2 py-1.5 rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
               >
                 {collapseAllIcon}
-              </button>
-              <button
-                type="button"
+              </IconButton>
+              <IconButton
+                label="Expand all"
+                intent="neutral"
+                appearance="soft"
+                size="sm"
                 onClick={() =>
                   actions.setAllCollapsed(false)
                 }
                 title="Expand every step + group"
-                className="flex items-center justify-center px-2 py-1.5 rounded text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
               >
                 {expandAllIcon}
-              </button>
+              </IconButton>
             </div>
           </div>
 
-          <span className="page-menu-sep page-menu-mobile-mirror w-px h-6 bg-slate-700 mx-1" />
+          <span className="page-menu-sep page-menu-mobile-mirror w-px h-6 bg-border-default mx-1" />
 
           {/* Dry run + run actions */}
           <div className="page-menu-group">
@@ -417,13 +440,13 @@ export const PageHeader = () => {
               type="button"
               id="dry-run-btn"
               onClick={toggleDryRun}
-              className="flex items-center justify-between gap-2 text-xs text-slate-300 cursor-pointer select-none"
+              className="flex items-center justify-between gap-2 text-xs text-content-secondary cursor-pointer select-none"
               title="Toggle dry-run mode — simulate commands without touching files"
             >
               <span className="leading-none">Dry Run</span>
               <Switch
                 isOn={isDryRun}
-                activeTrackClass="bg-amber-500 border-amber-400"
+                activeTrackClass="bg-intent-warning-solid border-intent-warning-border"
               />
             </button>
 
@@ -432,7 +455,7 @@ export const PageHeader = () => {
                 type="button"
                 id="failure-mode-btn"
                 onClick={toggleFailureMode}
-                className="flex items-center justify-between gap-2 text-xs text-red-300 cursor-pointer select-none"
+                className="flex items-center justify-between gap-2 text-xs text-intent-danger-content cursor-pointer select-none"
                 title="Simulate failures — all commands will fail (dry-run only)"
               >
                 <span className="leading-none">
@@ -440,41 +463,46 @@ export const PageHeader = () => {
                 </span>
                 <Switch
                   isOn={isFailureMode}
-                  activeTrackClass="bg-red-600 border-red-500"
+                  activeTrackClass="bg-intent-danger-solid border-intent-danger-border"
                 />
               </button>
             )}
 
-            <button
-              type="button"
+            <Button
               id="run-btn"
+              intent="success"
+              appearance="solid"
+              size="sm"
               onClick={() => void actions.runSequence()}
-              disabled={isRunning}
+              isDisabled={isRunning}
               title="Run each step in order from your browser (client-side). Parallel groups run serially; steps that chain a prior step's named output need Run on Server."
-              className="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
             >
               ▶ Run Sequence
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               id="run-api-btn"
+              intent="info"
+              appearance="solid"
+              size="sm"
               onClick={() => void actions.runViaApi()}
-              disabled={isRunning}
+              isDisabled={isRunning}
               title="Run the whole sequence on the server as one umbrella job (POST /sequences/run). Honors parallel groups and named-output chaining between steps."
-              className="text-xs bg-sky-700 hover:bg-sky-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
             >
               ▶ Run on Server
-            </button>
+            </Button>
           </div>
 
-          <span className="page-menu-sep w-px h-6 bg-slate-700 mx-1" />
+          <span className="page-menu-sep w-px h-6 bg-border-default mx-1" />
 
           <div className="page-menu-group">
             <div className="page-menu-row">
               {/* Load YAML */}
-              <button
-                type="button"
+              <IconButton
                 id="load-btn"
+                label="Load YAML"
+                intent={isYamlPasted ? "success" : "neutral"}
+                appearance={isYamlPasted ? "soft" : "ghost"}
+                size="sm"
                 onClick={async () => {
                   // Open the modal synchronously so LoadModal's paste
                   // listener attaches THIS tick — required for synthetic
@@ -502,7 +530,6 @@ export const PageHeader = () => {
                   }
                 }}
                 title="Load YAML"
-                className={`w-7 h-7 flex items-center justify-center rounded border transition-colors ${isYamlPasted ? "text-emerald-400 bg-slate-700 border-emerald-500/50" : "text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border-slate-700 hover:border-slate-600"}`}
               >
                 {isYamlPasted ? (
                   <span className="text-xs font-bold">
@@ -524,11 +551,14 @@ export const PageHeader = () => {
                     <path d="M16.5 7.5 12 3m0 0L7.5 7.5M12 3v13.5" />
                   </svg>
                 )}
-              </button>
+              </IconButton>
               {/* Copy YAML */}
-              <button
-                type="button"
+              <IconButton
                 id="copy-btn"
+                label="Copy YAML"
+                intent={isYamlCopied ? "success" : "neutral"}
+                appearance={isYamlCopied ? "soft" : "ghost"}
+                size="sm"
                 onClick={async () => {
                   await actions.copyYaml()
                   setIsYamlCopied(true)
@@ -538,7 +568,6 @@ export const PageHeader = () => {
                   )
                 }}
                 title="Copy YAML"
-                className={`w-7 h-7 flex items-center justify-center rounded border transition-colors ${isYamlCopied ? "text-emerald-400 bg-slate-700 border-emerald-500/50" : "text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border-slate-700 hover:border-slate-600"}`}
               >
                 {isYamlCopied ? (
                   <span className="text-xs font-bold">
@@ -567,13 +596,15 @@ export const PageHeader = () => {
                     />
                   </svg>
                 )}
-              </button>
+              </IconButton>
               {/* View YAML */}
-              <button
-                type="button"
+              <IconButton
+                label="View YAML"
+                intent="neutral"
+                appearance="ghost"
+                size="sm"
                 onClick={() => setYamlModalOpen(true)}
                 title="View YAML"
-                className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-colors"
               >
                 <svg
                   aria-hidden="true"
@@ -590,11 +621,11 @@ export const PageHeader = () => {
                   <path d="m6.75 17.25-4.5-5.25 4.5-5.25" />
                   <path d="m14.25 4.5-4.5 15" />
                 </svg>
-              </button>
+              </IconButton>
             </div>
           </div>
 
-          <span className="page-menu-sep w-px h-6 bg-slate-700 mx-1" />
+          <span className="page-menu-sep w-px h-6 bg-border-default mx-1" />
 
           {/* Colour scheme — cycles light → dark → system (default system,
               follows the OS). Presented as a plain slate menu row so it
@@ -608,20 +639,22 @@ export const PageHeader = () => {
         </div>
 
         {/* Responsive controls toggle */}
-        <button
-          type="button"
+        <IconButton
           id="page-controls-toggle"
+          label="Sequence actions"
+          intent="neutral"
+          appearance="ghost"
+          size="sm"
           onClick={() =>
             setOpenMenu((prev) =>
               toggleMenu(prev, "controls"),
             )
           }
           title="Sequence actions"
-          aria-label="Sequence actions"
-          className="page-menu-toggle w-7 h-7 items-center justify-center rounded text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-base leading-none"
+          className="page-menu-toggle text-base leading-none"
         >
           ⋮
-        </button>
+        </IconButton>
       </div>
     </div>
   )

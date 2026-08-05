@@ -91,7 +91,7 @@ export const LookupVariantStage = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-slate-400 text-xs">
+      <p className="text-content-secondary text-xs">
         Select a variant for "{group.baseTitle}":
       </p>
       {group.variants.map((variant, index) => (
@@ -101,9 +101,9 @@ export const LookupVariantStage = ({
           onClick={() =>
             selectVariant(variant.id, variant.variant)
           }
-          className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"
+          className="text-left text-sm px-3 py-2 rounded border border-border-default hover:border-border-focus hover:bg-intent-accent-surface text-content-primary transition-colors"
         >
-          <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2">
+          <span className="text-xs font-mono bg-surface-sunken px-1 rounded mr-2">
             {index + 1}
           </span>
           {variant.variant}

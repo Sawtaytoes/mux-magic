@@ -21,7 +21,7 @@ export const DimensionInput = ({
     <div className="flex items-center gap-1.5">
       <label
         htmlFor={id}
-        className="text-xs text-slate-400 w-12 shrink-0"
+        className="text-xs text-content-secondary w-12 shrink-0"
       >
         {label}
       </label>
@@ -41,7 +41,7 @@ export const DimensionInput = ({
           const parsed = draft === "" ? 0 : Number(draft)
           onCommit(parsed)
         }}
-        className="w-24 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+        className="w-24 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
       />
     </div>
   )

@@ -1,4 +1,4 @@
-import { Accordion } from "@charcuterie/ui"
+import { Accordion, Button } from "@charcuterie/ui"
 
 import { PredicateCard } from "./PredicateCard"
 import { addPredicate } from "./ruleMutations"
@@ -66,24 +66,26 @@ export const PredicatesManager = ({
               ))}
 
               {predicateNames.length === 0 && (
-                <p className="text-xs text-slate-500 italic">
+                <p className="text-xs text-content-muted italic">
                   No predicates. Define reusable match sets
                   here to reference via $ref.
                 </p>
               )}
 
               {!isReadOnly && (
-                <button
-                  className="text-xs text-slate-400 hover:text-blue-400 mt-2"
+                <Button
+                  intent="neutral"
+                  appearance="ghost"
+                  size="sm"
+                  className="mt-2"
                   onClick={() => {
                     onCommitPredicates(
                       addPredicate({ predicates }),
                     )
                   }}
-                  type="button"
                 >
                   + Add predicate
-                </button>
+                </Button>
               )}
             </>
           ),

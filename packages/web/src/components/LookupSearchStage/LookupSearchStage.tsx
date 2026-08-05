@@ -7,6 +7,7 @@
   SearchMovieDbResponse,
   SearchTvdbResponse,
 } from "@mux-magic/api/api-types"
+import { Button } from "@charcuterie/ui"
 import { useEffect, useRef } from "react"
 import { apiBase } from "../../apiBase"
 import type {
@@ -306,22 +307,23 @@ export const LookupSearchStage = ({
           }
           onKeyDown={handleKeyDown}
           placeholder="Search…"
-          className="flex-1 bg-slate-700 border border-slate-600 text-slate-100 text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="flex-1 bg-surface-sunken border border-border-default text-content-primary text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-focus-ring"
         />
-        <button
-          type="button"
+        <Button
+          intent="accent"
+          appearance="solid"
+          size="sm"
           onClick={() => void runSearch()}
-          disabled={
+          isDisabled={
             state.isLoading || !state.searchTerm.trim()
           }
-          className="text-xs bg-blue-700 hover:bg-blue-600 disabled:opacity-40 text-white px-3 py-1.5 rounded font-medium"
         >
           {state.isLoading ? "Searching…" : "Search"}
-        </button>
+        </Button>
       </div>
 
       {state.lookupType === "dvdcompare" && (
-        <div className="flex items-center gap-2 text-xs text-slate-400">
+        <div className="flex items-center gap-2 text-xs text-content-secondary">
           <span>Format:</span>
           {["Blu-ray 4K", "Blu-ray", "DVD", "all"].map(
             (format) => (
@@ -333,8 +335,8 @@ export const LookupSearchStage = ({
                 }
                 className={`px-2 py-0.5 rounded border ${
                   state.formatFilter === format
-                    ? "border-blue-500 text-blue-300 bg-blue-900/30"
-                    : "border-slate-600 text-slate-400 hover:border-slate-500"
+                    ? "border-border-focus text-intent-accent-content bg-intent-accent-surface"
+                    : "border-border-default text-content-secondary hover:border-border-strong"
                 }`}
               >
                 {format}
@@ -345,14 +347,14 @@ export const LookupSearchStage = ({
       )}
 
       {state.searchError && (
-        <p className="text-rose-400 text-xs">
+        <p className="text-intent-danger-content text-xs">
           {state.searchError}
         </p>
       )}
 
       {filteredResults !== null &&
         filteredResults.length === 0 && (
-          <p className="text-slate-500 text-sm text-center py-4">
+          <p className="text-content-muted text-sm text-center py-4">
             No results.
           </p>
         )}
@@ -390,7 +392,7 @@ export const LookupSearchStage = ({
                 typedResult.nameJapanese
               const keyHint =
                 index < 9 ? (
-                  <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2 shrink-0">
+                  <span className="text-xs font-mono bg-surface-sunken px-1 rounded mr-2 shrink-0">
                     {index + 1}
                   </span>
                 ) : null
@@ -481,14 +483,14 @@ export const LookupSearchStage = ({
                   type="button"
                   key={label}
                   onClick={handleSelect}
-                  className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"
+                  className="text-left text-sm px-3 py-2 rounded border border-border-default hover:border-border-focus hover:bg-intent-accent-surface text-content-primary transition-colors"
                 >
                   <div className="flex items-baseline gap-2">
                     {keyHint}
                     <span>{label}</span>
                   </div>
                   {japaneseSubtitle && (
-                    <div className="text-xs text-slate-500 mt-0.5 truncate">
+                    <div className="text-xs text-content-muted mt-0.5 truncate">
                       {japaneseSubtitle}
                     </div>
                   )}

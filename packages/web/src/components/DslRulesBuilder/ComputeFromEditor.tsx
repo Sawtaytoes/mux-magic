@@ -1,4 +1,4 @@
-import { Select } from "@charcuterie/ui"
+import { Button, Select } from "@charcuterie/ui"
 import { useRef } from "react"
 import { AssFieldPicker } from "./AssFieldPicker"
 import {
@@ -40,9 +40,9 @@ export const ComputeFromEditor = ({
     scope === "style" ? STYLE_FIELDS : SCRIPT_INFO_FIELDS
 
   return (
-    <div className="border border-slate-700/60 rounded px-2 py-1.5 bg-slate-900/40 mt-1">
+    <div className="border border-border-subtle rounded px-2 py-1.5 bg-surface-raised mt-1">
       <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-content-secondary">
           property
         </span>
         <AssFieldPicker
@@ -88,11 +88,11 @@ export const ComputeFromEditor = ({
         />
       </div>
       <div className="mt-1.5">
-        <span className="text-xs uppercase tracking-wide text-slate-400">
+        <span className="text-xs uppercase tracking-wide text-content-secondary">
           ops
         </span>
         {ops.length === 0 ? (
-          <p className="text-xs text-slate-500 italic mt-1">
+          <p className="text-xs text-content-muted italic mt-1">
             No ops yet.
           </p>
         ) : (
@@ -112,8 +112,11 @@ export const ComputeFromEditor = ({
           ))
         )}
         {!isReadOnly && (
-          <button
-            type="button"
+          <Button
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
+            className="mt-1"
             onClick={() => {
               onCommitRules(
                 addComputeFromOp({
@@ -123,10 +126,9 @@ export const ComputeFromEditor = ({
                 }),
               )
             }}
-            className="text-xs text-slate-400 hover:text-blue-400 mt-1"
           >
             + op
-          </button>
+          </Button>
         )}
       </div>
     </div>

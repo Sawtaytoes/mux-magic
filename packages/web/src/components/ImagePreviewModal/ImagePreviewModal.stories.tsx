@@ -17,7 +17,7 @@ const ReOpenButton = ({
     <div className="p-4">
       <button
         type="button"
-        className="text-xs bg-slate-700 text-white px-3 py-1.5 rounded"
+        className="text-xs bg-surface-sunken text-content-primary px-3 py-1.5 rounded"
         onClick={() => setImagePreview(initialState)}
       >
         Re-open image preview

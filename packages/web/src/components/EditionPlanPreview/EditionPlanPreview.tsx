@@ -44,7 +44,7 @@ export const EditionPlanPreview = ({
       data-edition-plan-preview
       className="flex flex-col gap-2"
     >
-      <p className="text-xs text-slate-400 font-medium">
+      <p className="text-xs text-content-secondary font-medium">
         Edition folders planned ({editionPlan.moves.length}{" "}
         {editionPlan.moves.length === 1 ? "file" : "files"}
         ):
@@ -53,11 +53,11 @@ export const EditionPlanPreview = ({
         <div
           key={editionName}
           data-edition-group
-          className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs"
+          className="bg-surface-raised border border-border-default rounded px-2 py-1.5 text-xs"
         >
           <p
             data-edition-name
-            className="text-blue-300 font-medium mb-1"
+            className="text-intent-accent-content font-medium mb-1"
           >
             {editionName}
           </p>
@@ -75,8 +75,8 @@ export const EditionPlanPreview = ({
                   <span
                     className={
                       move.isSibling
-                        ? "text-slate-400"
-                        : "text-slate-200"
+                        ? "text-content-secondary"
+                        : "text-content-primary"
                     }
                   >
                     {move.sourceFilename}
@@ -84,7 +84,7 @@ export const EditionPlanPreview = ({
                   {move.isSibling && (
                     <span
                       data-sibling-badge
-                      className="text-slate-500 text-xs"
+                      className="text-content-muted text-xs"
                     >
                       (sibling)
                     </span>

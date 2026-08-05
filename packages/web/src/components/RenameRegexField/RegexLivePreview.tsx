@@ -19,8 +19,8 @@ export const RegexLivePreview = ({
 
   if (result.state === "invalid") {
     return (
-      <div className="mt-2 rounded border border-amber-700/60 bg-amber-950/40 px-2 py-1.5 text-[11px] text-amber-300">
-        <span className="inline-block rounded bg-amber-800/60 px-1.5 py-0.5 font-semibold uppercase tracking-wider text-[9px]">
+      <div className="mt-2 rounded border border-intent-warning-border bg-intent-warning-surface px-2 py-1.5 text-[11px] text-intent-warning-content">
+        <span className="inline-block rounded bg-intent-warning-surface-hover px-1.5 py-0.5 font-semibold uppercase tracking-wider text-[9px]">
           Invalid
         </span>{" "}
         <span className="font-mono">{result.message}</span>
@@ -30,11 +30,11 @@ export const RegexLivePreview = ({
 
   if (result.state === "no-match") {
     return (
-      <div className="mt-2 rounded border border-rose-800/60 bg-rose-950/40 px-2 py-1.5 text-[11px] text-rose-300">
-        <span className="inline-block rounded bg-rose-800/60 px-1.5 py-0.5 font-semibold uppercase tracking-wider text-[9px]">
+      <div className="mt-2 rounded border border-intent-danger-border bg-intent-danger-surface px-2 py-1.5 text-[11px] text-intent-danger-content">
+        <span className="inline-block rounded bg-intent-danger-surface-hover px-1.5 py-0.5 font-semibold uppercase tracking-wider text-[9px]">
           No match
         </span>{" "}
-        <span className="font-mono text-rose-200/70">
+        <span className="font-mono text-intent-danger-content">
           {result.compiledPattern}
         </span>
       </div>
@@ -42,19 +42,19 @@ export const RegexLivePreview = ({
   }
 
   return (
-    <div className="mt-2 rounded border border-emerald-700/60 bg-emerald-950/40 px-2 py-1.5 text-[11px] text-emerald-200">
+    <div className="mt-2 rounded border border-intent-success-border bg-intent-success-surface px-2 py-1.5 text-[11px] text-intent-success-content">
       <div>
-        <span className="inline-block rounded bg-emerald-700/60 px-1.5 py-0.5 font-semibold uppercase tracking-wider text-[9px]">
+        <span className="inline-block rounded bg-intent-success-surface-hover px-1.5 py-0.5 font-semibold uppercase tracking-wider text-[9px]">
           Match
         </span>{" "}
-        <span className="font-mono text-emerald-200/70">
+        <span className="font-mono text-intent-success-content">
           {result.compiledPattern}
         </span>
       </div>
       {hasOutput && result.output !== null && (
         <div className="mt-1">
-          <span className="text-emerald-300/70">→ </span>
-          <span className="font-mono text-emerald-100">
+          <span className="text-intent-success-content">→ </span>
+          <span className="font-mono text-intent-success-content">
             {result.output}
           </span>
         </div>
@@ -64,13 +64,13 @@ export const RegexLivePreview = ({
           {result.groups.map((group) => (
             <li
               key={group.name}
-              className="font-mono text-emerald-200/80"
+              className="font-mono text-intent-success-content"
             >
-              <span className="text-emerald-400/70">
+              <span className="text-intent-success-content">
                 {`{ ${group.name}: `}
               </span>
               {`"${group.value}"`}
-              <span className="text-emerald-400/70">
+              <span className="text-intent-success-content">
                 {" }"}
               </span>
             </li>

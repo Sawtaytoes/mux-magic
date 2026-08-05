@@ -35,7 +35,7 @@ export const NumberField = ({
           defaultValue={value as number | string}
           placeholder={field.placeholder ?? ""}
           onInput={handleInput}
-          className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
+          className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus"
         />
       </CommandFieldControl>
 
@@ -43,7 +43,7 @@ export const NumberField = ({
         <p
           data-step={step.id}
           data-companion={field.name}
-          className="text-xs text-slate-500 mt-0.5 truncate"
+          className="text-xs text-content-muted mt-0.5 truncate"
           title={String(companion)}
         >
           {String(companion)}

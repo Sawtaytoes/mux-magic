@@ -225,7 +225,7 @@ export const BuilderPage = () => {
 
   return (
     <div
-      className="flex flex-col bg-slate-900 text-slate-200"
+      className="flex flex-col bg-surface-base text-content-primary"
       style={{ height: "100dvh", overflow: "hidden" }}
     >
       <PageHeader />

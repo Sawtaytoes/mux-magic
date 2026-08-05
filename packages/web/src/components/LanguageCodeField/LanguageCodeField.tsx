@@ -1,5 +1,5 @@
 import type { ListboxItem } from "@charcuterie/ui"
-import { Combobox } from "@charcuterie/ui"
+import { Combobox, IconButton } from "@charcuterie/ui"
 import { useState } from "react"
 import type { CommandField } from "../../commands/types"
 import { ISO_639_2_NAME_BY_CODE } from "../../data/iso639-2"
@@ -103,14 +103,14 @@ export const LanguageCodeField = ({
       onClick={() =>
         setIsOpen((isCurrentlyOpen) => !isCurrentlyOpen)
       }
-      className="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 text-left flex items-center gap-2 cursor-pointer"
+      className="w-full bg-surface-sunken hover:bg-surface-raised text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus text-left flex items-center gap-2 cursor-pointer"
     >
-      <span className="flex-1 min-w-0 truncate text-slate-400">
+      <span className="flex-1 min-w-0 truncate text-content-muted">
         {selected
           ? "Type to replace language…"
           : "Type to filter languages…"}
       </span>
-      <span className="text-slate-400 shrink-0">▾</span>
+      <span className="text-content-secondary shrink-0">▾</span>
     </button>
   )
 
@@ -119,25 +119,27 @@ export const LanguageCodeField = ({
       <CommandFieldGroup field={field}>
         {selected && (
           <div className="flex flex-wrap gap-1 mb-1">
-            <span className="inline-flex items-center gap-1 bg-slate-700 text-slate-200 text-xs rounded px-1.5 py-0.5">
+            <span className="inline-flex items-center gap-1 bg-surface-sunken text-content-primary text-xs rounded px-1.5 py-0.5">
               <span>
                 {ISO_639_2_NAME_BY_CODE[selected.code] ??
                   selected.code}
               </span>
-              <span className="font-mono text-slate-400 ml-1">
+              <span className="font-mono text-content-muted ml-1">
                 {selected.ietf
                   ? `${selected.code} · ${selected.ietf}`
                   : selected.code}
               </span>
-              <button
-                type="button"
-                onClick={clearSelection}
-                className="text-slate-400 hover:text-red-400 leading-none cursor-pointer"
+              <IconButton
+                label={`Remove ${selected.code}`}
                 title={`Remove ${selected.code}`}
-                aria-label={`Remove ${selected.code}`}
+                intent="danger"
+                appearance="ghost"
+                size="sm"
+                onClick={clearSelection}
+                className="leading-none"
               >
                 ✕
-              </button>
+              </IconButton>
             </span>
           </div>
         )}

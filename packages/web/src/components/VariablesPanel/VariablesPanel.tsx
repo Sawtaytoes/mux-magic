@@ -1,4 +1,4 @@
-import { Menu } from "@charcuterie/ui"
+import { Button, Menu } from "@charcuterie/ui"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useState } from "react"
 
@@ -27,7 +27,7 @@ export const VariablesPanel = () => {
   return (
     <div className="flex flex-col gap-3">
       {variables.length === 0 && (
-        <p className="text-xs text-slate-500 italic">
+        <p className="text-xs text-content-muted italic">
           No variables defined yet.
         </p>
       )}
@@ -57,16 +57,18 @@ export const VariablesPanel = () => {
           setIsPickerOpen(false)
         }}
         trigger={
-          <button
+          <Button
             aria-label="Add variable"
-            className="self-start text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded border border-dashed border-slate-700 hover:border-slate-500 transition-colors"
+            intent="neutral"
+            appearance="outline"
+            size="sm"
+            className="self-start border-dashed"
             onClick={() => {
               setIsPickerOpen(true)
             }}
-            type="button"
           >
             + Add Variable
-          </button>
+          </Button>
         }
       />
     </div>

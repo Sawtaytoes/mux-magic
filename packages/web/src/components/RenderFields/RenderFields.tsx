@@ -22,7 +22,7 @@ export const RenderFields = ({
 
   if (!commandDefinition) {
     return (
-      <div className="text-xs text-slate-500 italic py-1">
+      <div className="text-xs text-content-muted italic py-1">
         {step.command
           ? `[unknown command: ${step.command}]`
           : null}

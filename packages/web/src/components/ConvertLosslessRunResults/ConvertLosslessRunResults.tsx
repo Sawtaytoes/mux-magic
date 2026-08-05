@@ -148,7 +148,7 @@ export const ConvertLosslessRunResults = ({
       {isAuditMode && (
         <div
           data-cl-audit-banner
-          className="rounded border border-blue-800/40 bg-blue-950/30 px-2 py-1 text-blue-300"
+          className="rounded border border-intent-info-border bg-intent-info-surface px-2 py-1 text-intent-info-content"
         >
           Audit-only (dry-run) — counts below are what a
           real run <em>would</em> do; no files were encoded
@@ -157,16 +157,16 @@ export const ConvertLosslessRunResults = ({
       )}
       <div
         data-cl-counts
-        className="flex flex-wrap items-center gap-3 text-slate-300"
+        className="flex flex-wrap items-center gap-3 text-content-secondary"
       >
         <span>
-          <span className="font-semibold text-emerald-300">
+          <span className="font-semibold text-intent-success-content">
             {compatibleSources.length}
           </span>{" "}
           {compatibleCountLabel}
         </span>
         <span>
-          <span className="font-semibold text-amber-300">
+          <span className="font-semibold text-intent-warning-content">
             {listedSkipped.length}
           </span>{" "}
           {skippedCountLabel}
@@ -193,13 +193,13 @@ export const ConvertLosslessRunResults = ({
             ? [
                 {
                   content: (
-                    <ul className="space-y-1 break-all font-mono text-emerald-200/90">
+                    <ul className="space-y-1 break-all font-mono text-intent-success-content">
                       {sortedCompatible.map((entry) => (
                         <li key={entry.source}>
                           {basename(entry.source)}
                           {entry.destination !== null && (
                             <>
-                              <span className="text-emerald-500">
+                              <span className="text-intent-success-content">
                                 {" → "}
                               </span>
                               {basename(entry.destination)}
@@ -216,7 +216,7 @@ export const ConvertLosslessRunResults = ({
             : []),
           ...skippedGroups.map((group) => ({
             content: (
-              <ul className="space-y-1 break-all font-mono text-amber-200/90">
+              <ul className="space-y-1 break-all font-mono text-intent-warning-content">
                 {group.records.map((record) => (
                   <li key={record.source}>
                     {basename(record.source)}

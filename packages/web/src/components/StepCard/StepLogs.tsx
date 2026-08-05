@@ -1,4 +1,4 @@
-import { Accordion, LogViewer } from "@charcuterie/ui"
+import { Accordion, Button, LogViewer } from "@charcuterie/ui"
 import { useAtomValue } from "jotai"
 import { useState } from "react"
 
@@ -71,14 +71,16 @@ export const StepLogs = ({ jobId }: Props) => {
                 invalid markup browsers repair by hoisting it out.
               */}
               <div className="flex justify-end">
-                <button
-                  className="rounded bg-slate-700 px-2 py-0.5 font-mono text-[10px] text-slate-200 hover:bg-slate-600"
+                <Button
+                  intent="neutral"
+                  appearance="soft"
+                  size="sm"
+                  className="font-mono text-[10px]"
                   onClick={() => void handleCopy()}
                   title="Copy all log lines to clipboard"
-                  type="button"
                 >
                   📋 {copyLabel}
-                </button>
+                </Button>
               </div>
 
               <LogViewer
