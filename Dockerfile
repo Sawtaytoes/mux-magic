@@ -7,7 +7,7 @@
 # Pinned to the -trixie- (Debian 13) variant rather than bare -slim (which
 # tracks Debian stable and would silently move the base): trixie's apt ships
 # ffmpeg 7.x (vs bookworm's 5.1.x) for the runtime stage's media tooling.
-FROM node:24-trixie-slim AS builder
+FROM node:26-trixie-slim AS builder
 WORKDIR /app
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
@@ -98,7 +98,7 @@ RUN yarn build:prod
 # `vitest`, `biome`, `eslint`, `@playwright/test`, `build-essential`, `git`,
 # or source `.ts` files. Stack traces resolve via the `.map` files alone
 # under `--enable-source-maps`.
-FROM node:24-trixie-slim AS runtime
+FROM node:26-trixie-slim AS runtime
 WORKDIR /app
 
 ENV LANG=en_US.UTF-8
