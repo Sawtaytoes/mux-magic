@@ -1720,3 +1720,158 @@ describe("POST /sequences/run — groups", () => {
     })
   })
 })
+
+// The validate endpoint mirrors /sequences/run's two body shapes but never
+// starts a job — it always answers 200 with { isValid, errors }. It runs the
+// same envelope schema plus the per-step param check the runner does at
+// execution time, so a hand-written or generated sequence can be checked
+// before anything touches the filesystem.
+describe("POST /sequences/validate", () => {
+  type ValidationResult = {
+    isValid: boolean
+    errors: {
+      stepId?: string
+      command?: string
+      message: string
+    }[]
+  }
+
+  test("returns isValid:true for a well-formed sequence and creates no job", async () => {
+    const response = await post("/sequences/validate", {
+      paths: { src: { value: "/s" } },
+      steps: [
+        {
+          id: "mk",
+          command: "makeDirectory",
+          params: { sourcePath: "@src" },
+        },
+        {
+          id: "cp",
+          command: "copyFiles",
+          params: {
+            sourcePath: "@src",
+            destinationPath: {
+              linkedTo: "mk",
+              output: "folder",
+            },
+          },
+        },
+      ],
+    })
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as ValidationResult
+    expect(body).toEqual({ isValid: true, errors: [] })
+    // Validation is side-effect free — no umbrella/child jobs.
+    expect(getAllJobs()).toHaveLength(0)
+  })
+
+  test("flags a step missing a required param (keepLanguages without sourcePath)", async () => {
+    const response = await post("/sequences/validate", {
+      steps: [
+        {
+          id: "trim",
+          command: "keepLanguages",
+          params: { audioLanguages: ["eng"] },
+        },
+      ],
+    })
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as ValidationResult
+    expect(body.isValid).toBe(false)
+    expect(
+      body.errors.some(
+        (error) =>
+          error.stepId === "trim" &&
+          /sourcePath/i.test(error.message),
+      ),
+    ).toBe(true)
+    expect(getAllJobs()).toHaveLength(0)
+  })
+
+  test("flags an invalid enum value in a step's params (bad language code)", async () => {
+    const response = await post("/sequences/validate", {
+      steps: [
+        {
+          id: "trim",
+          command: "keepLanguages",
+          params: {
+            sourcePath: "/s",
+            audioLanguages: ["not-a-code"],
+          },
+        },
+      ],
+    })
+
+    const body = (await response.json()) as ValidationResult
+    expect(body.isValid).toBe(false)
+    expect(
+      body.errors.some((error) => error.stepId === "trim"),
+    ).toBe(true)
+  })
+
+  test("flags an unknown command via the envelope schema", async () => {
+    const response = await post("/sequences/validate", {
+      steps: [{ command: "doesNotExist", params: {} }],
+    })
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as ValidationResult
+    expect(body.isValid).toBe(false)
+    expect(body.errors.length).toBeGreaterThan(0)
+  })
+
+  test("flags an unknown @path variable reference", async () => {
+    const response = await post("/sequences/validate", {
+      steps: [
+        {
+          id: "x",
+          command: "makeDirectory",
+          params: { sourcePath: "@missing" },
+        },
+      ],
+    })
+
+    const body = (await response.json()) as ValidationResult
+    expect(body.isValid).toBe(false)
+    expect(
+      body.errors.some((error) =>
+        /missing/i.test(error.message),
+      ),
+    ).toBe(true)
+  })
+
+  test("returns a validation error (not a 400) for malformed YAML", async () => {
+    const response = await post("/sequences/validate", {
+      yaml: "this is: : : invalid yaml",
+    })
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as ValidationResult
+    expect(body.isValid).toBe(false)
+    expect(body.errors[0].message).toMatch(/invalid yaml/i)
+  })
+
+  test("accepts and validates a YAML string body", async () => {
+    const response = await post("/sequences/validate", {
+      yaml: [
+        "variables:",
+        "  workDir:",
+        "    value: /work",
+        "    type: path",
+        "steps:",
+        "  - id: trim",
+        "    command: keepLanguages",
+        "    params:",
+        "      sourcePath: '@workDir'",
+        "      audioLanguages: [eng]",
+        "      subtitlesLanguages: [eng]",
+      ].join("\n"),
+    })
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as ValidationResult
+    expect(body).toEqual({ isValid: true, errors: [] })
+  })
+})

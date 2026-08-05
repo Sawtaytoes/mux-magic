@@ -13,6 +13,7 @@ import {
   runSequenceJob,
   type SequenceBody,
 } from "../sequenceRunner.js"
+import { validateSequenceParams } from "../validateSequence.js"
 import { commandNames } from "./commandRoutes.js"
 
 // ─── Param value forms ──────────────────────────────────────────────────────
@@ -645,5 +646,135 @@ sequenceRoutes.openapi(
       },
       202,
     )
+  },
+)
+
+// ─── Validate ─────────────────────────────────────────────────────────────────
+
+const VALIDATE_ROUTE_DESCRIPTION = `
+Validate a sequence document **without running it** — no job is created and no files are touched. Use this to check a hand-written or generated sequence before \`POST /sequences/run\`.
+
+Accepts the same two body shapes as \`/sequences/run\` (\`{ "yaml": "<yaml string>" }\` or a pre-parsed \`ParsedSequenceBody\`), but always responds \`200\` with \`{ isValid, errors }\` rather than \`400\` — a malformed document is a validation result, not a request error.
+
+Two layers of checks run:
+
+1. **Envelope** — YAML parses; unique step ids; no \`linkedTo\` between parallel-group siblings; every \`command\` is a known command; \`@ref\` format. (Same schema \`/sequences/run\` applies before starting a job.)
+2. **Per-step params** — each step's \`params\`, after resolving \`@pathId\` variables and \`{ linkedTo, output: 'folder' }\` references, is validated against that command's request schema (the same check the runner does per step at execution time). Named step-output links can't be resolved without running and are treated as satisfied once the target step exists.
+
+Each entry in \`errors\` carries an optional \`stepId\` and \`command\` plus a human-readable \`message\`. \`isValid\` is \`true\` only when \`errors\` is empty.
+`.trim()
+
+const sequenceValidationErrorSchema = z.object({
+  command: z
+    .string()
+    .optional()
+    .describe(
+      "The step's command name, when the error is attributable to a specific step.",
+    ),
+  message: z
+    .string()
+    .describe("Human-readable description of the problem."),
+  stepId: z
+    .string()
+    .optional()
+    .describe(
+      "The offending step's id, when the error is attributable to a specific step.",
+    ),
+})
+
+const sequenceValidationResponseSchema = z
+  .object({
+    errors: z.array(sequenceValidationErrorSchema),
+    isValid: z.boolean(),
+  })
+  .openapi("SequenceValidationResult", {
+    example: {
+      errors: [
+        {
+          command: "keepLanguages",
+          message: "sourcePath: Required",
+          stepId: "trimFeature",
+        },
+      ],
+      isValid: false,
+    },
+  })
+
+sequenceRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/sequences/validate",
+    summary:
+      "Validate a sequence document without running it.",
+    description: VALIDATE_ROUTE_DESCRIPTION,
+    tags: ["Sequence Runner"],
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            // Intentionally permissive: the whole point is to accept a
+            // malformed document and report why, so validation happens in the
+            // handler rather than at the router boundary (which would 400).
+            schema: z.record(z.string(), z.unknown()),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description:
+          "Validation result. `isValid` is true only when `errors` is empty.",
+        content: {
+          "application/json": {
+            schema: sequenceValidationResponseSchema,
+          },
+        },
+      },
+    },
+  }),
+  async (context) => {
+    const body = context.req.valid("json") as Record<
+      string,
+      unknown
+    >
+
+    let loaded: unknown = body
+    if (typeof body.yaml === "string") {
+      try {
+        loaded = yaml.load(body.yaml)
+      } catch (error) {
+        return context.json(
+          {
+            errors: [
+              { message: `Invalid YAML: ${String(error)}` },
+            ],
+            isValid: false,
+          },
+          200,
+        )
+      }
+    }
+
+    const envelope =
+      validatedParsedSequenceSchema.safeParse(loaded)
+    if (!envelope.success) {
+      return context.json(
+        {
+          errors: envelope.error.issues.map((issue) => {
+            const path = issue.path.join(".")
+            return {
+              message: path
+                ? `${path}: ${issue.message}`
+                : issue.message,
+            }
+          }),
+          isValid: false,
+        },
+        200,
+      )
+    }
+
+    const result = validateSequenceParams(envelope.data)
+    return context.json(result, 200)
   },
 )
