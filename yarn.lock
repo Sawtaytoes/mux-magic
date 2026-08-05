@@ -688,7 +688,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/logic@npm:1.1.0, @charcuterie/logic@npm:^1.1.0":
+"@charcuterie/logic@npm:1.2.0":
+  version: 1.2.0
+  resolution: "@charcuterie/logic@npm:1.2.0"
+  peerDependencies:
+    "@preact/signals-core": ">=1.8"
+    jotai: ">=2"
+    preact: ">=10.11"
+    react: ">=18"
+  peerDependenciesMeta:
+    "@preact/signals-core":
+      optional: true
+    jotai:
+      optional: true
+    preact:
+      optional: true
+    react:
+      optional: true
+  checksum: 10c0/27ff8b7b0fabae05ecb386ca898861b466c0c0e94500d822988ae9389261513e14775ef075ad62fc8ae64698db31991d19ce99768b877f9131e73848db7ed3ab
+  languageName: node
+  linkType: hard
+
+"@charcuterie/logic@npm:^1.1.0":
   version: 1.1.0
   resolution: "@charcuterie/logic@npm:1.1.0"
   peerDependencies:
@@ -756,18 +777,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/ui@npm:^2.4.1":
-  version: 2.4.1
-  resolution: "@charcuterie/ui@npm:2.4.1"
+"@charcuterie/ui@npm:^2.5.0":
+  version: 2.5.0
+  resolution: "@charcuterie/ui@npm:2.5.0"
   dependencies:
-    "@charcuterie/logic": "npm:1.1.0"
+    "@charcuterie/logic": "npm:1.2.0"
     "@charcuterie/tokens": "npm:1.1.3"
     "@floating-ui/react": "npm:^0.27.20"
     "@tanstack/react-virtual": "npm:^3.13.12"
   peerDependencies:
     react: ">=19"
     react-dom: ">=19"
-  checksum: 10c0/fce8b7188a409434015d5f4f88d245019e7e3ebd17303a178936310a26f1511abdb34c564b243f3aa4235f2126055a7e1882e74a696ff2f01e6d787a735890b7
+  checksum: 10c0/abac8c8c3b83709b2c49806b0624697c00c33ef667618d4b6e9d43f1d6ae94ce05c98fd494bff84f89421e4052aaab31d5a8bc3fcc8ed960a00dd14956ac5c6e
   languageName: node
   linkType: hard
 
@@ -1956,7 +1977,7 @@ __metadata:
     "@charcuterie/logic": "npm:^1.1.0"
     "@charcuterie/storybook-config": "npm:^0.1.0"
     "@charcuterie/tokens": "npm:^1.1.0"
-    "@charcuterie/ui": "npm:^2.4.1"
+    "@charcuterie/ui": "npm:^2.5.0"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
