@@ -25,7 +25,11 @@ import "../src/styles/builderStyles.css"
  * `light` and non-daylight entries are here so those renderings can be looked
  * at before the app grows a toggle.
  */
-const themeAxes = installThemeAxes(["density", "variant", "scheme"])
+const themeAxes = installThemeAxes([
+  "density",
+  "variant",
+  "scheme",
+])
 
 /** The app's providers, innermost, so the theme is on `<html>` first. */
 const withAppProviders: Decorator = (Story) => {
