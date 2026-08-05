@@ -47,3 +47,50 @@
     scrollbar-color: rgba(100, 116, 139, 0.5) transparent;
   }
 }
+
+/* Dank Mono — the owner's preferred mono, over the shipped Victor Mono.
+   A LICENSED font: no woff2 enters this repo. In production the three
+   faces are served from this app's own origin at /fonts/*, supplied
+   read-only by a bind mount off the NAS at deploy time; local("Dank
+   Mono") is tried first so a machine with the font installed never
+   fetches it, and everywhere without the mount the url() 404s harmlessly
+   and the stack degrades to Victor Mono, never to the system default.
+   Mechanism: charcuterie
+   docs/decisions/2026-08-05-dank-mono-reaches-the-fleet-by-bind-mount.md */
+@font-face {
+  font-family: "Dank Mono";
+  src:
+    local("Dank Mono"),
+    url("/fonts/DankMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Dank Mono";
+  src:
+    local("Dank Mono Italic"),
+    local("Dank Mono"),
+    url("/fonts/DankMono-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Dank Mono";
+  src:
+    local("Dank Mono"),
+    url("/fonts/DankMono-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Unlayered so it beats @charcuterie/tokens' layered --font-mono with no
+   !important; Victor Mono stays the ligature fallback. */
+:root {
+  --font-mono:
+    "Dank Mono", "Victor Mono", ui-monospace,
+    SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
