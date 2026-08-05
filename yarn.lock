@@ -709,25 +709,32 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/tokens@npm:1.1.0, @charcuterie/tokens@npm:^1.1.0":
+"@charcuterie/tokens@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@charcuterie/tokens@npm:1.1.1"
+  checksum: 10c0/7ca4eb51f7e449ec3e7b30bfda3f23164bc2a31ee844ee538657cfa589f9f9ef51ff32aa3d1360e65d90d68a3d4f29ead417f6015ae9d56048b638cfe2835fb4
+  languageName: node
+  linkType: hard
+
+"@charcuterie/tokens@npm:^1.1.0":
   version: 1.1.0
   resolution: "@charcuterie/tokens@npm:1.1.0"
   checksum: 10c0/e61733877ccaa28f23f7ed3f8e6905dedcc510436e1d1e6ca02c4f5ca83d1455c735483bdf2e8d4f0949c8dbf6ed2e7b3b815236dc297481f517a3425e50295c
   languageName: node
   linkType: hard
 
-"@charcuterie/ui@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "@charcuterie/ui@npm:2.0.1"
+"@charcuterie/ui@npm:^2.3.0":
+  version: 2.3.0
+  resolution: "@charcuterie/ui@npm:2.3.0"
   dependencies:
     "@charcuterie/logic": "npm:1.1.0"
-    "@charcuterie/tokens": "npm:1.1.0"
+    "@charcuterie/tokens": "npm:1.1.1"
     "@floating-ui/react": "npm:^0.27.20"
     "@tanstack/react-virtual": "npm:^3.13.12"
   peerDependencies:
     react: ">=19"
     react-dom: ">=19"
-  checksum: 10c0/cfba44baa66540fa29569384f73efdb6cc89e8965ce0bc02defc3294384ce2fc6d7aee50324f272d7046c897b54871a49ad4fe7a258791c19c370376af1115ed
+  checksum: 10c0/51fd679a6eb44fca258bbe51b3bd8adc7c628bfc37d64ecc5f7cd47fa0d56da2c5c6b7f3de8f9e40c5872fa4b155fc00d3d3fe56ee57338850fc4e91229dd7f5
   languageName: node
   linkType: hard
 
@@ -1915,7 +1922,7 @@ __metadata:
   dependencies:
     "@charcuterie/logic": "npm:^1.1.0"
     "@charcuterie/tokens": "npm:^1.1.0"
-    "@charcuterie/ui": "npm:^2.0.1"
+    "@charcuterie/ui": "npm:^2.3.0"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"

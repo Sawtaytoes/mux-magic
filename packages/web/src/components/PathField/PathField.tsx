@@ -1,5 +1,6 @@
+import { Combobox } from "@charcuterie/ui"
 import { useAtomValue, useSetAtom } from "jotai"
-import { useEffect, useRef } from "react"
+import { useRef } from "react"
 import { getLinkedValue } from "../../commands/links"
 import type { CommandField } from "../../commands/types"
 import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
@@ -8,7 +9,6 @@ import { commandLabel } from "../../jobs/commandLabels"
 import { flattenSteps } from "../../jobs/sequenceUtils"
 import { commandsAtom } from "../../state/commandsAtom"
 import { pathsAtom } from "../../state/pathsAtom"
-import { pathPickerStateAtom } from "../../state/pickerAtoms"
 import { stepsAtom } from "../../state/stepsAtom"
 import type {
   PathVariable,
@@ -18,7 +18,7 @@ import type {
 } from "../../types"
 import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
 import { LinkPicker } from "../LinkPicker/LinkPicker"
-import { parentPathFromInput } from "../PathPicker/parentPathFromInput"
+import { usePathAutocomplete } from "../PathPicker/usePathAutocomplete"
 
 type PathFieldProps = {
   field: CommandField
@@ -61,24 +61,11 @@ export const PathField = ({
     setPathValue,
   } = useBuilderActions()
   const setFileExplorer = useSetAtom(fileExplorerAtom)
-  const setPathPickerState = useSetAtom(pathPickerStateAtom)
   const paths = useAtomValue(pathsAtom)
   const allSteps = useAtomValue(stepsAtom)
   const commands = useAtomValue(commandsAtom)
 
   const inputRef = useRef<HTMLInputElement>(null)
-  const debounceTimerRef = useRef<ReturnType<
-    typeof setTimeout
-  > | null>(null)
-
-  useEffect(
-    () => () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
-      }
-    },
-    [],
-  )
 
   const link = step.links?.[field.name]
   const isObjectLink =
@@ -105,6 +92,32 @@ export const PathField = ({
     link != null ? computedValue : manualValue
 
   const linkLabel = resolveLinkLabel(link, paths, allSteps)
+
+  // The value writeback stays here (not in the hook): a linked field writes
+  // the path variable, an unset field mints one, otherwise it's a plain
+  // param — logic the autocomplete hook has no business owning.
+  const writeValue = (rawValue: string) => {
+    if (isObjectLink) {
+      return
+    }
+
+    const nextValue = rawValue || undefined
+
+    if (typeof link === "string") {
+      setPathValue(link, rawValue)
+    } else if (!step.params[field.name] && nextValue) {
+      const newId = `pathVariable_${Math.random().toString(36).slice(2, 8)}`
+      addPathVariable(newId, nextValue)
+      setLink(step.id, field.name, newId)
+    } else {
+      setParam(step.id, field.name, nextValue)
+    }
+  }
+
+  const pathAutocomplete = usePathAutocomplete({
+    onWriteValue: writeValue,
+    value: displayValue,
+  })
 
   const handleBrowse = () => {
     setFileExplorer({
@@ -151,71 +164,27 @@ export const PathField = ({
         value={displayValue}
         readOnly={isObjectLink}
         onChange={(event) => {
-          if (isObjectLink) return
-          const rawValue = event.target.value
-          const value = rawValue || undefined
-          if (typeof link === "string") {
-            setPathValue(link, value ?? "")
-          } else if (!step.params[field.name] && value) {
-            const newId = `pathVariable_${Math.random().toString(36).slice(2, 8)}`
-            addPathVariable(newId, value)
-            setLink(step.id, field.name, newId)
-          } else {
-            setParam(step.id, field.name, value)
-          }
-          if (debounceTimerRef.current) {
-            clearTimeout(debounceTimerRef.current)
-          }
-          const currentInput = inputRef.current
-          if (
-            currentInput &&
-            /^([/\\]|[A-Za-z]:[/\\])/.test(rawValue)
-          ) {
-            const { parentPath, query } =
-              parentPathFromInput(rawValue)
-            const pickerTarget =
-              typeof link === "string"
-                ? ({
-                    mode: "pathVariable",
-                    pathVariableId: link,
-                  } as const)
-                : ({
-                    mode: "step",
-                    stepId: step.id,
-                    fieldName: field.name,
-                  } as const)
-            debounceTimerRef.current = setTimeout(() => {
-              const rect =
-                currentInput.getBoundingClientRect()
-              setPathPickerState({
-                inputElement: currentInput,
-                target: pickerTarget,
-                parentPath,
-                query,
-                triggerRect: {
-                  left: rect.left,
-                  top: rect.top,
-                  right: rect.right,
-                  bottom: rect.bottom,
-                  width: rect.width,
-                  height: rect.height,
-                },
-                entries: null,
-                error: null,
-                activeIndex: 0,
-                matches: null,
-                separator: "/",
-                cachedParentPath: null,
-                requestToken: 0,
-                debounceTimerId: null,
-              })
-            }, 250)
-          } else {
-            setPathPickerState(null)
-          }
+          pathAutocomplete.onInputChange(event.target.value)
         }}
         className={`w-full bg-slate-${isObjectLink ? "900" : "700"} text-slate-${isObjectLink ? "400" : "200"} text-xs rounded px-2 py-1.5 border border-slate-${isObjectLink ? "700" : "600"} focus:outline-none focus:border-blue-500 font-mono`}
       />
+
+      {/* Directory autocomplete: attached to the input above; a picked
+          folder drills in and the popup stays open. Object-linked fields
+          are read-only mirrors of another step's output — no autocomplete. */}
+      {!isObjectLink && (
+        <Combobox
+          emptyLabel="No matching entries."
+          error={pathAutocomplete.error}
+          inputRef={inputRef}
+          isLoading={pathAutocomplete.isLoading}
+          isVisible={pathAutocomplete.isOpen}
+          onDismiss={pathAutocomplete.close}
+          onSelect={pathAutocomplete.onSelectFolder}
+          options={pathAutocomplete.options}
+          query={displayValue}
+        />
+      )}
     </CommandFieldGroup>
   )
 }

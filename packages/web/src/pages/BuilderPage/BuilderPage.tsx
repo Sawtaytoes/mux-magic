@@ -4,7 +4,6 @@ import { lazy, Suspense, useEffect } from "react"
 
 import { COMMANDS } from "../../commands/commands"
 import { PageHeader } from "../../components/PageHeader/PageHeader"
-import { PathPicker } from "../../components/PathPicker/PathPicker"
 import { VariablesSidebar } from "../../components/VariablesSidebar/VariablesSidebar"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
 import { usePageTitle } from "../../hooks/usePageTitle"
@@ -257,9 +256,6 @@ export const BuilderPage = () => {
         <ImagePreviewModal />
         <SmartMatchModal />
       </Suspense>
-
-      {/* Pickers — render via createPortal into document.body */}
-      <PathPicker />
     </div>
   )
 }
