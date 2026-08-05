@@ -19,6 +19,8 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-08-05 | [`keepLanguages` never emits a zero-audio file](2026-08-05-keeplanguages-never-emits-zero-audio.md) | core | Accepted |
+| 2026-08-05 | [A sequence can be validated before it runs](2026-08-05-sequences-are-validatable-before-running.md) | server/api | Accepted |
 | 2026-08-03 | [`master` is the only base branch; the revamp integration branch is retired](2026-08-03-master-is-the-only-base-branch.md) | process | Accepted |
 | 2026-07-31 | [The Add Variable picker stays a `menu`, not a `listbox`](2026-07-31-the-add-variable-picker-stays-a-menu.md) | web | Accepted |
 | 2026-07-31 | [`Field` owns the control id; `${step.id}-${field.name}` is not a contract](2026-07-31-field-owns-the-control-id.md) | web | Accepted |
