@@ -151,6 +151,23 @@ Response (`202`):
 
 The umbrella job's lifecycle is the same as any other (`GET /jobs/:id`, SSE at `/jobs/:id/logs`). It flips to `failed` on the first failed step and skips the remainder; otherwise it completes after every step finishes.
 
+### Validate without running
+
+```
+POST /sequences/validate
+Content-Type: application/json
+```
+
+Checks a sequence document **without starting a job or touching any files** — use it to verify a hand-written or generated sequence before `POST /sequences/run`. Accepts the same two body shapes (`{ "yaml": ... }` or a pre-parsed `{ "paths"/"variables", "steps" }`), but always responds `200` with:
+
+```json
+{ "isValid": false, "errors": [{ "stepId": "trimFeature", "command": "keepLanguages", "message": "sourcePath: Required" }] }
+```
+
+Two layers run: (1) the **envelope** schema (YAML parses; unique step ids; no `linkedTo` between parallel-group siblings; every `command` is known; `@ref` format) — the same schema `/sequences/run` applies before starting a job; and (2) **per-step params** — each step's `params`, after resolving `@pathId` variables and `{ linkedTo, output: 'folder' }` references, is validated against that command's request schema (the same check the runner does per step at execution time). Named step-output links (`{ linkedTo, output: <name> }`) can't be resolved without running, so they're treated as satisfied once the target step exists. `isValid` is `true` only when `errors` is empty.
+
+Every command's request schema (and the sequence envelope schemas) are also machine-readable at `GET /openapi.json` (OpenAPI 3.1 = JSON Schema 2020-12), so a sequence can additionally be validated offline against that document.
+
 ### Document shape
 
 ```yaml
