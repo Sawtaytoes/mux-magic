@@ -37,12 +37,22 @@
   100% {
     opacity: 1;
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+    box-shadow: 0 0 0 0 transparent;
   }
   50% {
     opacity: 0.75;
     transform: scale(1.08);
-    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.35);
+    /* Was `rgba(251, 191, 36, 0.35)` — amber-400, the paused colour, hardcoded.
+       The ring has to be translucent to read as a glow rather than a second
+       border, and no token ships a pre-alpha'd warning; `color-mix` puts the
+       alpha on the token instead of forking a literal that only ever suited
+       dark. */
+    box-shadow: 0 0 0 4px
+      color-mix(
+        in oklab,
+        var(--color-intent-warning-solid) 35%,
+        transparent
+      );
   }
 }
 .paused-badge-just-minimized {
@@ -209,7 +219,9 @@
   display: block;
   width: 100%;
   height: 1px;
-  background: rgb(51 65 85);
+  /* Was `rgb(51 65 85)` — slate-700. A divider is a border, so it takes the
+     border token and flips with the scheme like every other rule in the menu. */
+  background: var(--color-border-default);
   margin: 0.25rem 0;
 }
 
@@ -297,7 +309,9 @@
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 0.25rem;
-  color: #34d399; /* emerald — matches the old ▶ */
+  /* Was `#34d399` (emerald-400) — "run" is the success intent, so it takes the
+     success content token and stops being a dark-only literal. */
+  color: var(--color-intent-success-content);
   transition:
     color 200ms ease,
     background-color 200ms ease;
@@ -305,9 +319,16 @@
   align-items: center;
   justify-content: center;
 }
+/* Hover was `#334155` (slate-700) behind a brightened `#6ee7b7` icon. Tokens
+   ship no "content-hover", and they do not need to: the intent's own hover
+   surface is what carries the state, and `-content` is contrast-checked
+   against exactly that surface. So the background moves and the icon holds —
+   which is also how every `@charcuterie/ui` icon button behaves. */
 .step-run-stop:hover {
-  background-color: #334155;
-  color: #6ee7b7;
+  background-color: var(
+    --color-intent-success-surface-hover
+  );
+  color: var(--color-intent-success-content);
 }
 .step-run-stop:disabled {
   opacity: 0.3;
@@ -315,14 +336,17 @@
 }
 .step-run-stop:disabled:hover {
   background-color: transparent;
-  color: #34d399;
+  color: var(--color-intent-success-content);
 }
+/* Was `#fbbf24` (amber-400) — a running step is the warning intent. */
 .step-run-stop.is-running {
-  color: #fbbf24;
-} /* amber — matches the old ⏹ */
+  color: var(--color-intent-warning-content);
+}
 .step-run-stop.is-running:hover {
-  color: #fcd34d;
-  background-color: #334155;
+  color: var(--color-intent-warning-content);
+  background-color: var(
+    --color-intent-warning-surface-hover
+  );
 }
 .step-run-stop-icon {
   position: absolute;
@@ -435,7 +459,10 @@
 .step-drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  /* Was `rgba(0, 0, 0, 0.45)`. `--color-scrim` is not "black at some alpha" —
+     each scheme tunes both the tint and the opacity (light scrims are lighter
+     AND thinner), which a flat black cannot express. */
+  background: var(--color-scrim);
   z-index: 200;
   opacity: 0;
   pointer-events: none;
@@ -453,8 +480,11 @@
   right: 0;
   bottom: 0;
   width: min(420px, 90vw);
-  background: rgb(15 23 42); /* slate-900 */
-  border-left: 1px solid rgb(51 65 85); /* slate-700 */
+  /* Was `rgb(15 23 42)` / `rgb(51 65 85)` — slate-900 on slate-700. The drawer
+     floats above the page over a scrim, so it is an overlay surface, not
+     `raised`. */
+  background: var(--color-surface-overlay);
+  border-left: 1px solid var(--color-border-default);
   z-index: 201;
   transform: translateX(100%);
   transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -476,7 +506,7 @@
     width: 100%;
     height: min(80dvh, 80vh);
     border-left: none;
-    border-top: 1px solid rgb(51 65 85);
+    border-top: 1px solid var(--color-border-default);
     border-radius: 1rem 1rem 0 0;
     transform: translateY(100%);
   }
