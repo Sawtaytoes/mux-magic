@@ -19,7 +19,7 @@ export const JobStepRow = ({
   const snap = progressByJobId.get(child.id)
 
   return (
-    <div className="border-l-2 border-border-default pl-3 py-1 space-y-1">
+    <div className="border-s-2 border-border-default ps-3 py-1 space-y-1">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-xs text-content-muted shrink-0">

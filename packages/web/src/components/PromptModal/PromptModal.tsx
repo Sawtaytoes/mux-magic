@@ -318,7 +318,7 @@ export const PromptModal = () => {
               filePathsByIndex.get(option.index) ?? null
             const keyHint =
               option.index >= 0 && option.index <= 9 ? (
-                <span className="text-xs font-mono bg-surface-sunken px-1.5 py-0.5 rounded mr-2">
+                <span className="text-xs font-mono bg-surface-sunken px-1.5 py-0.5 rounded me-2">
                   {option.index}
                 </span>
               ) : null
@@ -337,7 +337,7 @@ export const PromptModal = () => {
                 >
                   <button
                     type="button"
-                    className="flex-1 text-left text-sm px-4 py-2.5 rounded-l-lg text-content-primary hover:bg-intent-accent-surface"
+                    className="flex-1 text-start text-sm px-4 py-2.5 rounded-s-lg text-content-primary hover:bg-intent-accent-surface"
                     onClick={() => void pick(option.index)}
                   >
                     {keyHint}
@@ -345,7 +345,7 @@ export const PromptModal = () => {
                   </button>
                   <button
                     type="button"
-                    className={`shrink-0 text-xs px-3 bg-intent-success-solid hover:bg-intent-success-solid-hover text-intent-success-on-solid font-medium${isShowingOpenInLocalPlayer ? "" : " rounded-r-lg"}`}
+                    className={`shrink-0 text-xs px-3 bg-intent-success-solid hover:bg-intent-success-solid-hover text-intent-success-on-solid font-medium${isShowingOpenInLocalPlayer ? "" : " rounded-e-lg"}`}
                     title="Preview this file before picking"
                     onClick={(event) => {
                       event.preventDefault()
@@ -358,7 +358,7 @@ export const PromptModal = () => {
                   {isShowingOpenInLocalPlayer && (
                     <button
                       type="button"
-                      className="shrink-0 text-xs px-3 rounded-r-lg bg-surface-sunken hover:bg-surface-raised text-content-secondary font-medium border-l border-border-default"
+                      className="shrink-0 text-xs px-3 rounded-e-lg bg-surface-sunken hover:bg-surface-raised text-content-secondary font-medium border-s border-border-default"
                       title="Open this file in the OS default media player"
                       onClick={(event) => {
                         event.preventDefault()
@@ -381,7 +381,7 @@ export const PromptModal = () => {
               <button
                 type="button"
                 key={option.index}
-                className={`text-left text-sm px-4 py-2.5 rounded-lg border transition-colors ${
+                className={`text-start text-sm px-4 py-2.5 rounded-lg border transition-colors ${
                   isSkip
                     ? "border-border-default text-content-secondary hover:bg-surface-sunken hover:text-content-primary"
                     : "border-border-default text-content-primary hover:bg-intent-accent-surface hover:border-border-focus"

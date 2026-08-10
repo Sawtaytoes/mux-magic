@@ -16,7 +16,7 @@ export const Switch = ({
     aria-hidden="true"
   >
     <span
-      className="absolute top-px left-px w-3 h-3 rounded-full bg-white shadow-sm"
+      className="absolute top-px start-px w-3 h-3 rounded-full bg-white shadow-sm"
       style={{
         transition: "transform 150ms ease",
         transform: isOn ? "translateX(1rem)" : undefined,

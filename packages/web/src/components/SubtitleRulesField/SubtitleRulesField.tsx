@@ -90,7 +90,7 @@ export const SubtitleRulesField = ({
             onClick={() => {
               setIsPreviewOpen((isPrev) => !isPrev)
             }}
-            className="flex items-center gap-1 text-xs text-intent-warning-content w-full text-left mb-1"
+            className="flex items-center gap-1 text-xs text-intent-warning-content w-full text-start mb-1"
           >
             <CollapseChevron isCollapsed={!isPreviewOpen} />
             {

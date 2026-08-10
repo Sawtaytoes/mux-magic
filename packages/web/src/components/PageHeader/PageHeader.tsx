@@ -295,7 +295,7 @@ export const PageHeader = () => {
           id="header-pinned"
           role="toolbar"
           aria-label="Header actions"
-          className="ml-auto flex items-center gap-1"
+          className="ms-auto flex items-center gap-1"
         >
           <Button
             id="variables-btn"

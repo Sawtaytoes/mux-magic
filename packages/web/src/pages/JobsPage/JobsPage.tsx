@@ -14,20 +14,20 @@ export const JobsPage = () => {
         <h1 className="text-xl font-semibold">
           <a
             href="/"
-            className="text-sm font-normal text-content-secondary hover:text-content-secondary mr-3"
+            className="text-sm font-normal text-content-secondary hover:text-content-secondary me-3"
           >
             ← Tools
           </a>
           Jobs{" "}
           <a
             href="/builder"
-            className="text-sm font-normal text-intent-accent-content hover:text-intent-accent-content ml-3"
+            className="text-sm font-normal text-intent-accent-content hover:text-intent-accent-content ms-3"
           >
             Sequence Builder ↗
           </a>
           <a
             href="/errors"
-            className="text-sm font-normal text-content-secondary hover:text-content-secondary ml-3"
+            className="text-sm font-normal text-content-secondary hover:text-content-secondary ms-3"
           >
             Errors ↗
           </a>

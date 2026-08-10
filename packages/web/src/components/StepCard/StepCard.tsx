@@ -329,7 +329,7 @@ export const StepCard = ({
                   ▾
                 </span>
               }
-              className="flex-1 min-w-0 justify-between text-left"
+              className="flex-1 min-w-0 justify-between text-start"
             >
               <span className="flex-1 min-w-0 truncate flex items-center">
                 {triggerLabel}

@@ -67,12 +67,12 @@ const toOption = (scored: ScoredCandidate): ListboxItem => {
           </span>
         )}
         <span
-          className={`text-xs font-mono text-content-primary wrap-break-word ${isChild ? "pl-3 border-l border-border-default" : ""}`}
+          className={`text-xs font-mono text-content-primary wrap-break-word ${isChild ? "ps-3 border-s border-border-default" : ""}`}
         >
           {isChild && (
             <span
               aria-hidden
-              className="text-content-muted mr-1"
+              className="text-content-muted me-1"
             >
               ↳
             </span>
@@ -80,7 +80,7 @@ const toOption = (scored: ScoredCandidate): ListboxItem => {
           {name}
         </span>
         <span
-          className={`flex items-center gap-1.5 text-[10px] font-mono ${isChild ? "pl-3" : ""}`}
+          className={`flex items-center gap-1.5 text-[10px] font-mono ${isChild ? "ps-3" : ""}`}
         >
           {timecode && (
             <span className="bg-surface-sunken text-content-secondary px-1.5 py-0 rounded border border-border-default">
@@ -123,7 +123,7 @@ export const RenameTargetPicker = ({
         if (isDisabled) return
         setIsOpen((isCurrentlyOpen) => !isCurrentlyOpen)
       }}
-      className="w-full text-left text-xs bg-surface-sunken text-content-primary border border-border-default rounded px-2 py-1 focus:outline-none focus:border-border-focus disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      className="w-full text-start text-xs bg-surface-sunken text-content-primary border border-border-default rounded px-2 py-1 focus:outline-none focus:border-border-focus disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
     >
       <span className="flex-1 min-w-0 flex flex-col">
         {selected?.candidate.parentName && (

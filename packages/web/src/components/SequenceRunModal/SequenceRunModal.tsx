@@ -321,7 +321,7 @@ export const SequenceRunModal = () => {
             id="sequence-run-status"
             intent={statusIntent}
             size="sm"
-            className="ml-auto font-mono"
+            className="ms-auto font-mono"
           >
             {status}
           </Badge>
@@ -342,7 +342,7 @@ export const SequenceRunModal = () => {
             appearance="ghost"
             size="sm"
             onClick={dismissOrBackground}
-            className="ml-1"
+            className="ms-1"
           >
             ✕
           </IconButton>

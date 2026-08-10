@@ -95,7 +95,7 @@ export const LookupModal = () => {
                 appearance="outline"
                 size="sm"
                 onClick={goBack}
-                className="mr-1"
+                className="me-1"
               >
                 ← Back
               </Button>

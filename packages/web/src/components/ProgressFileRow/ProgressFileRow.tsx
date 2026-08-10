@@ -15,7 +15,7 @@ export const ProgressFileRow = ({
       <div className="truncate flex-1 min-w-0" title={path}>
         {fileName}
       </div>
-      <div className="shrink-0 w-8 text-right">
+      <div className="shrink-0 w-8 text-end">
         {typeof ratio === "number"
           ? `${(ratio * 100).toFixed(0)}%`
           : ""}

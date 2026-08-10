@@ -43,7 +43,7 @@ export const ProgressBar = ({
       <ProgressLabel snapshot={snapshot} />
       {snapshot.currentFiles &&
         snapshot.currentFiles.length > 0 && (
-          <div className="space-y-0.5 pl-2 mt-1">
+          <div className="space-y-0.5 ps-2 mt-1">
             {snapshot.currentFiles.map((file) => (
               <ProgressFileRow
                 key={file.path}
