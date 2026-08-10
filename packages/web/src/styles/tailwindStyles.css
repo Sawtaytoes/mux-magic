@@ -15,6 +15,15 @@
    failing test, a build that succeeds. */
 @import "@charcuterie/tokens/theme.css";
 
+/* The `@font-face` declarations for the self-hosted faces — Baloo 2
+   (`--font-display`), Outfit (`--font-sans`) and Victor Mono (`--font-mono`).
+   A SEPARATE entry point from `theme.css` on purpose (importing tokens should
+   not force a font download), but it fails silently the same way the missing
+   `@source` line below does: `theme.css` only sets `--font-sans: Outfit, …` as
+   a name, so without this line the browser has no Outfit face to load and
+   degrades to `system-ui` with no error and no failing test. */
+@import "@charcuterie/tokens/fonts.css";
+
 /* The looping affordances the components need — the indeterminate sweep among
    them. Switched off under `prefers-reduced-motion`. */
 @import "@charcuterie/ui/styles.css";
