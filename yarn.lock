@@ -688,7 +688,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/logic@npm:1.2.0":
+"@charcuterie/logic@npm:1.2.0, @charcuterie/logic@npm:^1.2.0":
   version: 1.2.0
   resolution: "@charcuterie/logic@npm:1.2.0"
   peerDependencies:
@@ -709,32 +709,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/logic@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@charcuterie/logic@npm:1.1.0"
-  peerDependencies:
-    "@preact/signals-core": ">=1.8"
-    jotai: ">=2"
-    preact: ">=10.11"
-    react: ">=18"
-  peerDependenciesMeta:
-    "@preact/signals-core":
-      optional: true
-    jotai:
-      optional: true
-    preact:
-      optional: true
-    react:
-      optional: true
-  checksum: 10c0/70ee12eb152cb9daaf2524c957ab08cb1dd1ed5b2cb3d0e7bf9ac18bbdca9f7bf81651cc29c96bba4987ea5149b3c7778893dc0102be16cdf88a72cd9570a150
-  languageName: node
-  linkType: hard
-
-"@charcuterie/storybook-config@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "@charcuterie/storybook-config@npm:0.1.0"
+"@charcuterie/storybook-config@npm:^0.1.3":
+  version: 0.1.3
+  resolution: "@charcuterie/storybook-config@npm:0.1.3"
   dependencies:
-    "@charcuterie/tokens": "npm:1.1.1"
+    "@charcuterie/tokens": "npm:1.2.0"
     remark-gfm: "npm:^4.0.1"
   peerDependencies:
     "@storybook/addon-docs": ">=10"
@@ -752,43 +731,33 @@ __metadata:
       optional: true
     vite:
       optional: true
-  checksum: 10c0/7a87165681721b924a0995715636e35b1212d7985094334d098cfbc21ee82061b05241877c04ea99ee72c2813d49642d8c24800612c03d2e7b0923acab3245db
+  checksum: 10c0/93ad689f990d89934ba2ca378172ade113dfe5c00600fbbc5054e77fe3bd5a98da5bc27a45b006b2a763bc49662b9ea9d1fcc109e35f4793a729622e35e87685
   languageName: node
   linkType: hard
 
-"@charcuterie/tokens@npm:1.1.1":
-  version: 1.1.1
-  resolution: "@charcuterie/tokens@npm:1.1.1"
-  checksum: 10c0/7ca4eb51f7e449ec3e7b30bfda3f23164bc2a31ee844ee538657cfa589f9f9ef51ff32aa3d1360e65d90d68a3d4f29ead417f6015ae9d56048b638cfe2835fb4
+"@charcuterie/tokens@npm:1.2.0, @charcuterie/tokens@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "@charcuterie/tokens@npm:1.2.0"
+  checksum: 10c0/902b493f0a90a888e2bbe0a36626c713c51adbcdb028b911d128d2564247a9ba895fbd1895bcde738ecd140dc7d35dc8558c5ab37ee094a13fb47b1b8aeea4a8
   languageName: node
   linkType: hard
 
-"@charcuterie/tokens@npm:1.1.3":
-  version: 1.1.3
-  resolution: "@charcuterie/tokens@npm:1.1.3"
-  checksum: 10c0/c4f54d6cdb87e84ad463be3e4336d104fa2e0b688ebb114f97e409f86c93f409fe0da561f799bddf9bbe17ff621af96dbe04783393220f9875ceb91154f1f6e4
-  languageName: node
-  linkType: hard
-
-"@charcuterie/tokens@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@charcuterie/tokens@npm:1.1.0"
-  checksum: 10c0/e61733877ccaa28f23f7ed3f8e6905dedcc510436e1d1e6ca02c4f5ca83d1455c735483bdf2e8d4f0949c8dbf6ed2e7b3b815236dc297481f517a3425e50295c
-  languageName: node
-  linkType: hard
-
-"@charcuterie/ui@npm:^2.6.0":
-  version: 2.6.0
-  resolution: "@charcuterie/ui@npm:2.6.0"
+"@charcuterie/ui@npm:^2.8.0":
+  version: 2.8.0
+  resolution: "@charcuterie/ui@npm:2.8.0"
   dependencies:
     "@charcuterie/logic": "npm:1.2.0"
-    "@charcuterie/tokens": "npm:1.1.3"
+    "@charcuterie/tokens": "npm:1.2.0"
     "@floating-ui/react": "npm:^0.27.20"
     "@tanstack/react-virtual": "npm:^3.13.12"
   peerDependencies:
     react: ">=19"
     react-dom: ">=19"
-  checksum: 10c0/7c343343372080066f1c2f50f6cf43e9e017d150a2a172aa2453cfd0e1b81a5a1c75c51ca121754c68c1fb31944f5444f01845bc53bb61a14e2d45aa3a74a578
+    react-router: ">=7"
+  peerDependenciesMeta:
+    react-router:
+      optional: true
+  checksum: 10c0/cfd37ffc1243b8e7552059e41d950deca9cae2f3f5863c1ee3bc6b34b783bf0adfff88a17855264caf89d17daeda4cdcb29a8ef5a534d7d6d411cf7121c7ea26
   languageName: node
   linkType: hard
 
@@ -1974,10 +1943,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mux-magic/web@workspace:packages/web"
   dependencies:
-    "@charcuterie/logic": "npm:^1.1.0"
-    "@charcuterie/storybook-config": "npm:^0.1.0"
-    "@charcuterie/tokens": "npm:^1.1.0"
-    "@charcuterie/ui": "npm:^2.6.0"
+    "@charcuterie/logic": "npm:^1.2.0"
+    "@charcuterie/storybook-config": "npm:^0.1.3"
+    "@charcuterie/tokens": "npm:^1.2.0"
+    "@charcuterie/ui": "npm:^2.8.0"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
