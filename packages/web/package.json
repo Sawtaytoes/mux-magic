@@ -38,6 +38,7 @@
   "devDependencies": {
     "@charcuterie/server": "^0.1.0",
     "@charcuterie/storybook-config": "^0.1.3",
+    "@charcuterie/vite-config": "^1.0.1",
     "@mux-magic/api": "workspace:*",
     "@rolldown/plugin-babel": "^0.2.3",
     "@storybook/addon-a11y": "^10.3.6",

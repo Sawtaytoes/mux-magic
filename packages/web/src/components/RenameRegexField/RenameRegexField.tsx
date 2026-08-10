@@ -276,7 +276,7 @@ export const RenameRegexField = ({
       </button>
       {chainOutput !== null && (
         <div className="mt-2 rounded border border-border-default bg-surface-sunken px-2 py-1.5 text-[11px] text-content-primary">
-          <span className="text-content-secondary text-[10px] font-semibold uppercase tracking-wider mr-1">
+          <span className="text-content-secondary text-[10px] font-semibold uppercase tracking-wider me-1">
             Chain output
           </span>
           <span className="font-mono">{chainOutput}</span>

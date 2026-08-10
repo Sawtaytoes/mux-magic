@@ -3,7 +3,7 @@ import { VariablesPanel } from "../VariablesPanel/VariablesPanel"
 
 export const VariablesSidebar = () => (
   <aside
-    className="hidden lg:flex flex-col w-72 shrink-0 border-l border-border-default bg-surface-raised overflow-y-auto"
+    className="hidden lg:flex flex-col w-72 shrink-0 border-s border-border-default bg-surface-raised overflow-y-auto"
     aria-label="Variables"
   >
     <div className="px-4 py-3 border-b border-border-default shrink-0">

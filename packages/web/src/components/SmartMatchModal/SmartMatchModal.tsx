@@ -588,7 +588,7 @@ export const SmartMatchModal = () => {
           <h2 className="text-base font-semibold text-content-primary">
             Smart Match — Fix Unnamed
           </h2>
-          <span className="text-xs text-content-muted font-mono ml-auto">
+          <span className="text-xs text-content-muted font-mono ms-auto">
             {suggestions.length} file
             {suggestions.length === 1 ? "" : "s"}
           </span>
@@ -615,7 +615,7 @@ export const SmartMatchModal = () => {
           <table className="w-full text-xs border-separate border-spacing-y-1.5">
             <thead className="text-[10px] uppercase tracking-wider text-content-secondary">
               <tr>
-                <th className="px-1 py-1 w-8 text-left">
+                <th className="px-1 py-1 w-8 text-start">
                   <div className="flex flex-col items-start gap-0.5">
                     <input
                       type="checkbox"
@@ -651,10 +651,10 @@ export const SmartMatchModal = () => {
                   </div>
                 </th>
                 <th className="px-1 py-1 w-6"></th>
-                <th className="px-2 py-1 text-left">
+                <th className="px-2 py-1 text-start">
                   File
                 </th>
-                <th className="px-2 py-1 text-left">
+                <th className="px-2 py-1 text-start">
                   Rename to
                 </th>
                 <th className="px-2 py-1 text-center w-20">
@@ -1023,7 +1023,7 @@ export const SmartMatchModal = () => {
         </div>
 
         <div className="px-4 py-3 border-t border-border-default flex items-center justify-end gap-2">
-          <span className="text-xs text-content-secondary mr-auto">
+          <span className="text-xs text-content-secondary me-auto">
             {includedCount} file
             {includedCount === 1 ? "" : "s"} selected
           </span>

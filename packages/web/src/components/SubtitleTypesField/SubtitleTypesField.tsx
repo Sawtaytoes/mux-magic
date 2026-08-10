@@ -86,7 +86,7 @@ export const SubtitleTypesField = ({
         <span className="flex flex-1 items-center justify-between gap-2">
           <span className="text-xs">
             {option.value}
-            <span className="text-content-muted ml-1">
+            <span className="text-content-muted ms-1">
               — {option.description}
             </span>
           </span>
@@ -104,7 +104,7 @@ export const SubtitleTypesField = ({
       onClick={() =>
         setIsOpen((isCurrentlyOpen) => !isCurrentlyOpen)
       }
-      className="w-full bg-surface-sunken hover:bg-surface-raised text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus text-left flex items-center gap-2 cursor-pointer"
+      className="w-full bg-surface-sunken hover:bg-surface-raised text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus text-start flex items-center gap-2 cursor-pointer"
     >
       <span className="flex-1 min-w-0 truncate text-content-muted">
         Type to filter subtitle types…

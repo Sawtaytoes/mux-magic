@@ -554,7 +554,7 @@ export const FileExplorerModal = () => {
             intent="neutral"
             appearance="ghost"
             size="sm"
-            className="ml-1"
+            className="ms-1"
             onClick={close}
           >
             ✕
@@ -590,7 +590,7 @@ export const FileExplorerModal = () => {
                 <table className="w-full text-sm">
                   <thead className="text-[10px] uppercase tracking-wider text-content-secondary sticky top-0 bg-surface-raised z-10 shadow-sm">
                     <tr>
-                      <th className="py-2 px-2 text-left w-6">
+                      <th className="py-2 px-2 text-start w-6">
                         <input
                           type="checkbox"
                           title="Select all files"
@@ -746,7 +746,7 @@ export const FileExplorerModal = () => {
                             {entry.isDirectory ? (
                               <button
                                 type="button"
-                                className="fe-name fe-dir text-left text-content-primary hover:text-intent-accent-content underline-offset-2 hover:underline w-full"
+                                className="fe-name fe-dir text-start text-content-primary hover:text-intent-accent-content underline-offset-2 hover:underline w-full"
                                 title="Open this folder"
                                 onClick={() =>
                                   navigateTo(
@@ -763,7 +763,7 @@ export const FileExplorerModal = () => {
                             ) : previewKind !== null ? (
                               <button
                                 type="button"
-                                className="fe-name fe-file text-left text-content-primary hover:text-intent-accent-content underline-offset-2 hover:underline w-full"
+                                className="fe-name fe-file text-start text-content-primary hover:text-intent-accent-content underline-offset-2 hover:underline w-full"
                                 title={previewTitle}
                                 onClick={onPreviewClick}
                               >
@@ -775,10 +775,10 @@ export const FileExplorerModal = () => {
                               </span>
                             )}
                           </td>
-                          <td className="py-1 px-2 text-right text-content-secondary font-mono text-xs whitespace-nowrap">
+                          <td className="py-1 px-2 text-end text-content-secondary font-mono text-xs whitespace-nowrap">
                             {entry.duration ?? "—"}
                           </td>
-                          <td className="py-1 px-2 text-right text-content-secondary font-mono text-xs whitespace-nowrap">
+                          <td className="py-1 px-2 text-end text-content-secondary font-mono text-xs whitespace-nowrap">
                             {entry.isDirectory
                               ? "—"
                               : formatSize(entry.size)}
@@ -834,7 +834,7 @@ export const FileExplorerModal = () => {
             intent="danger"
             appearance="solid"
             size="sm"
-            className="ml-auto"
+            className="ms-auto"
             isDisabled={selected.size === 0}
             onClick={() => void confirmDelete()}
           >

@@ -219,7 +219,7 @@ export const VariableCard = ({
                   {stepId} → {fieldName}
                 </span>
                 <Select
-                  className="ml-auto"
+                  className="ms-auto"
                   label={`Resolution for ${stepId} ${fieldName}`}
                   onChange={(resolutionValue) => {
                     setResolution({

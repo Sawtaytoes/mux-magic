@@ -688,6 +688,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@charcuterie/biome-config@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@charcuterie/biome-config@npm:1.0.0"
+  checksum: 10c0/d5b2a20083e72b89fbefad1d41a92e594614f69b2dfcbd031e60cf59e5432376ba67eb89a2fffb44ac95d91e417e1e6133096799b24fac6a528a22e1dc7fedfc
+  languageName: node
+  linkType: hard
+
+"@charcuterie/eslint-config@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@charcuterie/eslint-config@npm:1.1.0"
+  dependencies:
+    "@vitest/eslint-plugin": "npm:^1.6.20"
+    eslint-plugin-react: "npm:^7.37.5"
+  peerDependencies:
+    eslint: ">=10"
+    typescript-eslint: ">=8"
+  checksum: 10c0/eecf8047f1b9776715aa7c4c77cfc2859ea6f20be507bcb4351a4f24f4a560fe7832fc86074f0c1f312e1095b80f59bbbde95af11a07941f3ee86e2f47910909
+  languageName: node
+  linkType: hard
+
 "@charcuterie/logic@npm:1.2.0, @charcuterie/logic@npm:^1.2.0":
   version: 1.2.0
   resolution: "@charcuterie/logic@npm:1.2.0"
@@ -706,6 +726,15 @@ __metadata:
     react:
       optional: true
   checksum: 10c0/27ff8b7b0fabae05ecb386ca898861b466c0c0e94500d822988ae9389261513e14775ef075ad62fc8ae64698db31991d19ce99768b877f9131e73848db7ed3ab
+  languageName: node
+  linkType: hard
+
+"@charcuterie/playwright-config@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "@charcuterie/playwright-config@npm:1.0.1"
+  peerDependencies:
+    "@playwright/test": ">=1.40"
+  checksum: 10c0/309742d4b01a9bcb9ed06c8cbbe5149d2bc2d97eeff0d8384017da176555cb1c6c3dfd5bea652ebc398dd28e85397c940ffa5f713beec631d5bcaad3210722bd
   languageName: node
   linkType: hard
 
@@ -756,6 +785,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@charcuterie/tsconfig@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@charcuterie/tsconfig@npm:1.0.0"
+  checksum: 10c0/ed874314dcf6497b677ccc39f5cf442c8ad1d0d667e30a30fecf40e6a440b6949fc1a9e28d5ac02d79783770e884da80d92e935e269ac3710698f7a14d82a546
+  languageName: node
+  linkType: hard
+
 "@charcuterie/ui@npm:^2.8.0":
   version: 2.8.0
   resolution: "@charcuterie/ui@npm:2.8.0"
@@ -772,6 +808,24 @@ __metadata:
     react-router:
       optional: true
   checksum: 10c0/cfd37ffc1243b8e7552059e41d950deca9cae2f3f5863c1ee3bc6b34b783bf0adfff88a17855264caf89d17daeda4cdcb29a8ef5a534d7d6d411cf7121c7ea26
+  languageName: node
+  linkType: hard
+
+"@charcuterie/vite-config@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "@charcuterie/vite-config@npm:1.0.1"
+  peerDependencies:
+    vite: ">=5"
+  checksum: 10c0/39be9d184a437c03903552752656788dc83a2256d81b23f7c7ba1cd7a8cfd158cfe8d89cd98df44477038302aee17b63061e90ffdefab21f9bc0b2cf0d86e5d5
+  languageName: node
+  linkType: hard
+
+"@charcuterie/vitest-config@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "@charcuterie/vitest-config@npm:1.0.1"
+  peerDependencies:
+    vitest: ">=3"
+  checksum: 10c0/8d5ed73c2110ed1d022a646cceefecd6346b37769b7f8487bfa227ba53526b3104906b9701b0fab94ba13c4443148f205c109e1dd2287c04c000c88ebcae913d
   languageName: node
   linkType: hard
 
@@ -1963,6 +2017,7 @@ __metadata:
     "@charcuterie/storybook-config": "npm:^0.1.3"
     "@charcuterie/tokens": "npm:^1.2.0"
     "@charcuterie/ui": "npm:^2.8.0"
+    "@charcuterie/vite-config": "npm:^1.0.1"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
@@ -8600,6 +8655,11 @@ __metadata:
   dependencies:
     "@biomejs/biome": "npm:^2.4.15"
     "@changesets/cli": "npm:^2.31.0"
+    "@charcuterie/biome-config": "npm:^1.0.0"
+    "@charcuterie/eslint-config": "npm:^1.1.0"
+    "@charcuterie/playwright-config": "npm:^1.0.1"
+    "@charcuterie/tsconfig": "npm:^1.0.0"
+    "@charcuterie/vitest-config": "npm:^1.0.1"
     "@mux-magic/web": "workspace:*"
     "@playwright/mcp": "npm:^0.0.75"
     "@playwright/test": "npm:^1.61.1"
@@ -8607,13 +8667,11 @@ __metadata:
     "@types/node": "npm:^25.6.2"
     "@vitest/browser": "npm:^4.1.8"
     "@vitest/browser-playwright": "npm:^4.1.8"
-    "@vitest/eslint-plugin": "npm:^1.6.20"
     "@vitest/ui": "npm:^4.1.8"
     "@yarnpkg/sdks": "npm:^3.2.3"
     cpx2: "npm:^8.0.2"
     esbuild: "npm:^0.28.1"
     eslint: "npm:^10.3.0"
-    eslint-plugin-react: "npm:^7.37.5"
     eslint-plugin-react-hooks: "npm:^7.1.1"
     fast-sort: "npm:^3.4.1"
     playwright: "npm:^1.61.1"

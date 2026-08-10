@@ -26,7 +26,7 @@ export const CopyTextButton = ({
       appearance="ghost"
       size="sm"
       onClick={handleClick}
-      className="ml-2 shrink-0"
+      className="ms-2 shrink-0"
     >
       {isCopied ? "✓ Copied" : "📋 Copy"}
     </Button>
