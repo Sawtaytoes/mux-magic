@@ -58,7 +58,7 @@ export const ImagePreviewModal = () => {
             intent="neutral"
             appearance="ghost"
             size="sm"
-            className="ml-1"
+            className="ms-1"
             onClick={onClose}
           >
             ✕

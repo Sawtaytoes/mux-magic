@@ -1,6 +1,6 @@
-import { defineConfig } from "vitest/config"
+import { createVitestConfig } from "@charcuterie/vitest-config"
 
-export default defineConfig({
+export default createVitestConfig({
   test: {
     // e2e/ holds Playwright Test specs; they have their own runner (`yarn e2e`)
     // and break under vitest because @playwright/test's describe/test globals

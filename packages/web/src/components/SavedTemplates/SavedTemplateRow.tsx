@@ -42,7 +42,7 @@ export const SavedTemplateRow = ({
       type="button"
       onClick={onLoad}
       title={template.description ?? template.name}
-      className="block w-full text-left text-sm text-content-primary truncate"
+      className="block w-full text-start text-sm text-content-primary truncate"
     >
       {template.name}
     </button>

@@ -103,7 +103,7 @@ export const LanguageCodeField = ({
       onClick={() =>
         setIsOpen((isCurrentlyOpen) => !isCurrentlyOpen)
       }
-      className="w-full bg-surface-sunken hover:bg-surface-raised text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus text-left flex items-center gap-2 cursor-pointer"
+      className="w-full bg-surface-sunken hover:bg-surface-raised text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus text-start flex items-center gap-2 cursor-pointer"
     >
       <span className="flex-1 min-w-0 truncate text-content-muted">
         {selected
@@ -126,7 +126,7 @@ export const LanguageCodeField = ({
                 {ISO_639_2_NAME_BY_CODE[selected.code] ??
                   selected.code}
               </span>
-              <span className="font-mono text-content-muted ml-1">
+              <span className="font-mono text-content-muted ms-1">
                 {selected.ietf
                   ? `${selected.code} · ${selected.ietf}`
                   : selected.code}

@@ -392,7 +392,7 @@ export const LookupSearchStage = ({
                 typedResult.nameJapanese
               const keyHint =
                 index < 9 ? (
-                  <span className="text-xs font-mono bg-surface-sunken px-1 rounded mr-2 shrink-0">
+                  <span className="text-xs font-mono bg-surface-sunken px-1 rounded me-2 shrink-0">
                     {index + 1}
                   </span>
                 ) : null
@@ -483,7 +483,7 @@ export const LookupSearchStage = ({
                   type="button"
                   key={label}
                   onClick={handleSelect}
-                  className="text-left text-sm px-3 py-2 rounded border border-border-default hover:border-border-focus hover:bg-intent-accent-surface text-content-primary transition-colors"
+                  className="text-start text-sm px-3 py-2 rounded border border-border-default hover:border-border-focus hover:bg-intent-accent-surface text-content-primary transition-colors"
                 >
                   <div className="flex items-baseline gap-2">
                     {keyHint}
