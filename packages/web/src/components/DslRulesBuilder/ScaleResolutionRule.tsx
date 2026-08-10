@@ -102,7 +102,7 @@ export const ScaleResolutionRuleBody = ({
         {/* from cluster */}
         <div className="flex-1">
           <div className="mb-1">
-            <span className="text-xs uppercase tracking-wide text-slate-500">
+            <span className="text-xs uppercase tracking-wide text-content-muted">
               from
             </span>
           </div>
@@ -169,7 +169,7 @@ export const ScaleResolutionRuleBody = ({
         {/* to cluster */}
         <div className="flex-1">
           <div className="mb-1">
-            <span className="text-xs uppercase tracking-wide text-slate-500">
+            <span className="text-xs uppercase tracking-wide text-content-muted">
               to
             </span>
           </div>
@@ -226,9 +226,9 @@ export const ScaleResolutionRuleBody = ({
               }),
             )
           }}
-          className="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer"
+          className="w-3.5 h-3.5 rounded bg-surface-sunken border-border-default accent-intent-accent-solid cursor-pointer"
         />
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-content-secondary">
           Scale border and shadow
         </span>
       </label>

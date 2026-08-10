@@ -68,14 +68,14 @@ export const ErrorsPanel = () => {
     <section className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
         <h2 className="text-xl font-semibold">Errors</h2>
-        <span className="text-sm text-slate-400">
+        <span className="text-sm text-content-secondary">
           ({records.length})
         </span>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex w-40 items-center gap-2 text-sm text-slate-400">
+        <div className="flex w-40 items-center gap-2 text-sm text-content-secondary">
           <Select
             label="State"
             onChange={handleStateChange}
@@ -91,7 +91,7 @@ export const ErrorsPanel = () => {
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-slate-400">
+        <label className="flex items-center gap-2 text-sm text-content-secondary">
           <span>Job ID</span>
           <input
             type="text"
@@ -99,14 +99,14 @@ export const ErrorsPanel = () => {
             value={filter.jobId ?? ""}
             onChange={handleJobIdChange}
             placeholder="filter by job ID"
-            className="bg-slate-800 border border-slate-600 text-slate-200 text-xs rounded px-2 py-1 w-40"
+            className="bg-surface-sunken border border-border-default text-content-primary text-xs rounded px-2 py-1 w-40"
           />
         </label>
       </div>
 
       {/* Records list */}
       {records.length === 0 ? (
-        <p className="text-slate-500 text-sm py-4">
+        <p className="text-content-muted text-sm py-4">
           No errors recorded yet.
         </p>
       ) : (

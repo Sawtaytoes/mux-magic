@@ -1,3 +1,4 @@
+import { Badge, Button, IconButton } from "@charcuterie/ui"
 import type {
   JobLogsEvent,
   JobStatus,
@@ -18,17 +19,24 @@ import { setStepRunStatusAtom } from "../../state/stepAtoms"
 import { ChildProgressTracker } from "../ChildProgressTracker/ChildProgressTracker"
 import { sequenceRunModalAtom } from "./sequenceRunModalAtom"
 
-// ─── Status badge colours ─────────────────────────────────────────────────────
+// ─── Status badge intents ─────────────────────────────────────────────────────
 
-const STATUS_CLASSES: Record<JobStatus, string> = {
-  pending: "bg-slate-700 text-slate-300",
-  running: "bg-amber-700 text-amber-100",
-  paused: "bg-amber-900 text-amber-200",
-  completed: "bg-emerald-700 text-emerald-100",
-  failed: "bg-red-700 text-red-100",
-  cancelled: "bg-slate-600 text-slate-100",
-  skipped: "bg-slate-500 text-slate-100",
-  exited: "bg-indigo-700 text-indigo-100",
+type StatusIntent =
+  | "neutral"
+  | "success"
+  | "warning"
+  | "danger"
+  | "info"
+
+const STATUS_INTENT: Record<JobStatus, StatusIntent> = {
+  pending: "neutral",
+  running: "warning",
+  paused: "warning",
+  completed: "success",
+  failed: "danger",
+  cancelled: "neutral",
+  skipped: "neutral",
+  exited: "info",
 }
 
 export const SequenceRunModal = () => {
@@ -277,8 +285,7 @@ export const SequenceRunModal = () => {
 
   if (modalState.mode === "closed") return null
 
-  const statusClass =
-    STATUS_CLASSES[status] ?? "bg-slate-700 text-slate-300"
+  const statusIntent = STATUS_INTENT[status] ?? "neutral"
 
   const activeChildren = modalState.activeChildren ?? []
 
@@ -295,45 +302,50 @@ export const SequenceRunModal = () => {
     >
       <div
         id="sequence-run-modal"
-        className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col gap-0 overflow-hidden max-h-[85dvh]"
+        className="bg-surface-raised border border-border-default rounded-xl shadow-high w-full max-w-2xl mx-4 flex flex-col gap-0 overflow-hidden max-h-[85dvh]"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700 shrink-0">
-          <span className="text-slate-300 text-sm font-medium">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border-default shrink-0">
+          <span className="text-content-secondary text-sm font-medium">
             {modalTitle}
           </span>
           {modalState.jobId && (
             <span
               id="sequence-run-jobid"
-              className="text-xs text-slate-500 font-mono"
+              className="text-xs text-content-muted font-mono"
             >
               job {modalState.jobId}
             </span>
           )}
-          <span
+          <Badge
             id="sequence-run-status"
-            className={`text-xs px-2 py-0.5 rounded font-mono ml-auto ${statusClass}`}
+            intent={statusIntent}
+            size="sm"
+            className="ml-auto font-mono"
           >
             {status}
-          </span>
+          </Badge>
           {status === "running" && (
-            <button
-              type="button"
+            <Button
               id="sequence-run-cancel-btn"
+              intent="danger"
+              appearance="soft"
+              size="sm"
               onClick={() => void cancelJob()}
-              className="text-xs bg-red-700 hover:bg-red-600 text-white px-2 py-0.5 rounded font-medium"
             >
               Cancel
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
+          <IconButton
+            label="Close"
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
             onClick={dismissOrBackground}
-            className="text-slate-400 hover:text-white text-base leading-none ml-1"
-            title="Close"
+            className="ml-1"
           >
             ✕
-          </button>
+          </IconButton>
         </div>
 
         {/* Active child step progress bars */}
@@ -354,31 +366,33 @@ export const SequenceRunModal = () => {
         {/* Log output */}
         <pre
           id="sequence-run-logs"
-          className="flex-1 overflow-y-auto text-xs font-mono text-slate-300 px-4 py-3 whitespace-pre-wrap wrap-break-word min-h-0"
+          className="flex-1 overflow-y-auto text-xs font-mono text-content-secondary px-4 py-3 whitespace-pre-wrap wrap-break-word min-h-0"
         >
           {logs.join("\n")}
           <div ref={logsEndRef} />
         </pre>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-700 shrink-0">
-          <button
-            type="button"
+        <div className="flex items-center gap-2 px-4 py-2 border-t border-border-default shrink-0">
+          <Button
             id="sequence-run-copy-btn"
+            intent="neutral"
+            appearance="soft"
+            size="sm"
             onClick={() => void copyLogs()}
-            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded border border-slate-600"
           >
             Copy logs
-          </button>
+          </Button>
           {status === "running" && (
-            <button
-              type="button"
+            <Button
               id="sequence-run-background-btn"
+              intent="neutral"
+              appearance="soft"
+              size="sm"
               onClick={sendToBackground}
-              className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded border border-slate-600"
             >
               Run in background
-            </button>
+            </Button>
           )}
         </div>
       </div>

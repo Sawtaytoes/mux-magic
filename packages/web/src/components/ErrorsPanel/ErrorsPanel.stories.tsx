@@ -9,7 +9,7 @@ const withStore = (records: PersistedJobError[]) => {
   store.set(errorsAtom, records)
   return (Story: React.ComponentType) => (
     <Provider store={store}>
-      <div className="max-w-3xl p-4 space-y-4 bg-slate-950 min-h-screen">
+      <div className="max-w-3xl p-4 space-y-4 bg-surface-base min-h-screen">
         <Story />
       </div>
     </Provider>

@@ -19,11 +19,11 @@ export const JobsList = () => {
 
   if (topLevel.length === 0) {
     return (
-      <p className="text-slate-500 text-sm text-center py-12">
+      <p className="text-content-muted text-sm text-center py-12">
         No jobs yet. Run a command in the{" "}
         <a
           href="/builder"
-          className="text-blue-400 hover:text-blue-300"
+          className="text-intent-accent-content hover:text-intent-accent-content"
         >
           Sequence Builder
         </a>{" "}
@@ -36,9 +36,9 @@ export const JobsList = () => {
     <div className="space-y-6">
       {pausedJobs.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-amber-400 mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-intent-warning-content mb-3 flex items-center gap-2">
             ⏸ Paused Jobs ({pausedJobs.length})
-            <span className="font-normal text-amber-500/70 text-xs">
+            <span className="font-normal text-intent-warning-content text-xs">
               — awaiting input
             </span>
           </h2>

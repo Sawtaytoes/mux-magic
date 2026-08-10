@@ -1,4 +1,4 @@
-import { Select } from "@charcuterie/ui"
+import { IconButton, Select } from "@charcuterie/ui"
 import { useState } from "react"
 import { isPlainObject } from "./clauseUtils"
 import {
@@ -79,7 +79,7 @@ export const ComputeFromOpRow = ({
         value={verb}
       />
       {isBareOp ? (
-        <span className="text-xs text-slate-500 italic px-2">
+        <span className="text-xs text-content-muted italic px-2">
           no operand
         </span>
       ) : (
@@ -103,14 +103,17 @@ export const ComputeFromOpRow = ({
               }),
             )
           }}
-          className="w-24 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+          className="w-24 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
         />
       )}
       {!isReadOnly && (
         <>
-          <button
-            type="button"
-            disabled={isFirst}
+          <IconButton
+            label="Move op up"
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
+            isDisabled={isFirst}
             onClick={() => {
               onCommitRules(
                 moveComputeFromOp({
@@ -122,13 +125,15 @@ export const ComputeFromOpRow = ({
                 }),
               )
             }}
-            className="text-xs text-slate-400 hover:text-slate-100 disabled:opacity-30 px-1"
           >
             ↑
-          </button>
-          <button
-            type="button"
-            disabled={isLast}
+          </IconButton>
+          <IconButton
+            label="Move op down"
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
+            isDisabled={isLast}
             onClick={() => {
               onCommitRules(
                 moveComputeFromOp({
@@ -140,12 +145,14 @@ export const ComputeFromOpRow = ({
                 }),
               )
             }}
-            className="text-xs text-slate-400 hover:text-slate-100 disabled:opacity-30 px-1"
           >
             ↓
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            label="Remove op"
+            intent="danger"
+            appearance="ghost"
+            size="sm"
             onClick={() => {
               onCommitRules(
                 removeComputeFromOp({
@@ -156,10 +163,9 @@ export const ComputeFromOpRow = ({
                 }),
               )
             }}
-            className="text-xs text-slate-500 hover:text-red-400 px-1.5"
           >
             ✕
-          </button>
+          </IconButton>
         </>
       )}
     </div>

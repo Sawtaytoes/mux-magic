@@ -29,7 +29,7 @@ export const ProgressLabel = ({
   )
   if (eta) parts.push(eta)
   return (
-    <div className="text-xs text-slate-400 mt-0.5">
+    <div className="text-xs text-content-secondary mt-0.5">
       {parts.join(" · ")}
     </div>
   )

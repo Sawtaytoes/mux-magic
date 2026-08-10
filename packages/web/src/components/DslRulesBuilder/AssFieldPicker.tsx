@@ -40,15 +40,17 @@ export const AssFieldPicker = ({
         if (isReadOnly) return
         setIsOpen((isCurrentlyOpen) => !isCurrentlyOpen)
       }}
-      className="w-32 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono text-left flex items-center gap-1 cursor-pointer disabled:cursor-default disabled:opacity-60"
+      className="w-32 bg-surface-sunken hover:bg-surface-raised text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono text-left flex items-center gap-1 cursor-pointer disabled:cursor-default disabled:opacity-60"
     >
       <span className="flex-1 min-w-0 truncate">
         {value || (
-          <span className="text-slate-500">Field</span>
+          <span className="text-content-muted">Field</span>
         )}
       </span>
       {!isReadOnly && (
-        <span className="text-slate-400 shrink-0">▾</span>
+        <span className="text-content-secondary shrink-0">
+          ▾
+        </span>
       )}
     </button>
   )

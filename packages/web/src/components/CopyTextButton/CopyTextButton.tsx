@@ -1,3 +1,4 @@
+import { Button } from "@charcuterie/ui"
 import { useState } from "react"
 
 export const CopyTextButton = ({
@@ -20,12 +21,14 @@ export const CopyTextButton = ({
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      intent="neutral"
+      appearance="ghost"
+      size="sm"
       onClick={handleClick}
-      className="ml-2 text-xs text-slate-500 hover:text-slate-300 shrink-0"
+      className="ml-2 shrink-0"
     >
       {isCopied ? "✓ Copied" : "📋 Copy"}
-    </button>
+    </Button>
   )
 }

@@ -15,7 +15,7 @@ export const LookupReleaseStage = ({
     useBuilderActions()
   if (state.isLoading) {
     return (
-      <p className="text-slate-500 text-sm text-center py-4">
+      <p className="text-content-muted text-sm text-center py-4">
         Loading releases…
       </p>
     )
@@ -23,7 +23,7 @@ export const LookupReleaseStage = ({
 
   if (state.releasesError) {
     return (
-      <p className="text-rose-400 text-xs">
+      <p className="text-intent-danger-content text-xs">
         {String(state.releasesError)}
       </p>
     )
@@ -33,7 +33,7 @@ export const LookupReleaseStage = ({
 
   if (releases.length === 0) {
     return (
-      <p className="text-slate-500 text-sm text-center py-4">
+      <p className="text-content-muted text-sm text-center py-4">
         No releases found.
       </p>
     )
@@ -41,7 +41,7 @@ export const LookupReleaseStage = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-slate-400 text-xs">
+      <p className="text-content-secondary text-xs">
         Select a release:
       </p>
       {releases.map((release, index) => (
@@ -108,9 +108,9 @@ export const LookupReleaseStage = ({
             )
             onClose()
           }}
-          className="text-left text-sm px-3 py-2 rounded border border-slate-700 hover:border-blue-500 hover:bg-blue-900/20 text-slate-200 transition-colors"
+          className="text-left text-sm px-3 py-2 rounded border border-border-default hover:border-border-focus hover:bg-intent-accent-surface text-content-primary transition-colors"
         >
-          <span className="text-xs font-mono bg-slate-700 px-1 rounded mr-2">
+          <span className="text-xs font-mono bg-surface-sunken px-1 rounded mr-2">
             {index + 1}
           </span>
           {release.label}

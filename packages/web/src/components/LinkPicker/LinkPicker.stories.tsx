@@ -40,7 +40,7 @@ const withSteps = (Story: () => ReactNode) => {
   ])
   return (
     <Provider store={store}>
-      <div className="bg-slate-900 p-4">
+      <div className="bg-surface-base p-4">
         <Story />
       </div>
     </Provider>

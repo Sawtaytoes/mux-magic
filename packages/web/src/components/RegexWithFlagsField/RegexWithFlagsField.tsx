@@ -134,7 +134,7 @@ export const RegexWithFlagsField = ({
         <button
           type="button"
           onClick={toggleDisplayMode}
-          className="text-[10px] text-slate-400 hover:text-slate-200 underline-offset-2 hover:underline"
+          className="text-[10px] text-content-secondary hover:text-content-primary underline-offset-2 hover:underline"
           aria-label="Toggle slash-form regex display"
         >
           {displayMode === "plain"
@@ -148,7 +148,7 @@ export const RegexWithFlagsField = ({
         <div>
           <label
             htmlFor={slashId}
-            className="block text-[10px] text-slate-400 mb-0.5"
+            className="block text-[10px] text-content-secondary mb-0.5"
           >
             Pattern + flags
           </label>
@@ -161,7 +161,7 @@ export const RegexWithFlagsField = ({
             )}
             onChange={onChangeSlash}
             placeholder={field.placeholder ?? "/\\.mkv$/i"}
-            className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+            className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
           />
         </div>
       ) : (
@@ -169,7 +169,7 @@ export const RegexWithFlagsField = ({
           <div>
             <label
               htmlFor={patternId}
-              className="block text-[10px] text-slate-400 mb-0.5"
+              className="block text-[10px] text-content-secondary mb-0.5"
             >
               Pattern
             </label>
@@ -179,13 +179,13 @@ export const RegexWithFlagsField = ({
               value={value.pattern}
               onChange={onChangeField("pattern")}
               placeholder={field.placeholder ?? "\\.mkv$"}
-              className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+              className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
             />
           </div>
           <div>
             <label
               htmlFor={flagsId}
-              className="block text-[10px] text-slate-400 mb-0.5"
+              className="block text-[10px] text-content-secondary mb-0.5"
             >
               Flags
             </label>
@@ -201,10 +201,10 @@ export const RegexWithFlagsField = ({
                   ? "Optional regex flags (g i m s u y)"
                   : `Invalid flag(s): ${flagValidation.invalidChars}`
               }
-              className={`w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border focus:outline-none focus:border-blue-500 font-mono ${
+              className={`w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border focus:outline-none focus:border-border-focus font-mono ${
                 flagValidation.isValid
-                  ? "border-slate-600"
-                  : "border-rose-500"
+                  ? "border-border-default"
+                  : "border-intent-danger-border"
               }`}
             />
           </div>
@@ -213,7 +213,7 @@ export const RegexWithFlagsField = ({
       <div className="mt-2">
         <label
           htmlFor={sampleId}
-          className="block text-[10px] text-slate-400 mb-0.5"
+          className="block text-[10px] text-content-secondary mb-0.5"
         >
           Test against (optional)
         </label>
@@ -223,7 +223,7 @@ export const RegexWithFlagsField = ({
           value={value.sample}
           onChange={onChangeField("sample")}
           placeholder="example-filename.mkv"
-          className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+          className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
         />
         <RegexLivePreview
           result={livePreview}

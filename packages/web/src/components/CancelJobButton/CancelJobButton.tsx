@@ -1,3 +1,4 @@
+import { Button } from "@charcuterie/ui"
 import { useState } from "react"
 import { apiBase } from "../../apiBase"
 
@@ -20,14 +21,15 @@ export const CancelJobButton = ({
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      intent="danger"
+      appearance="soft"
+      size="sm"
       onClick={handleClick}
-      disabled={isDisabled}
+      isDisabled={isDisabled}
       title={`Cancel this job (DELETE /jobs/${jobId})`}
-      className="text-xs px-2 py-0.5 rounded bg-red-900/40 text-red-400 hover:bg-red-900/70 disabled:opacity-40"
     >
       ⏹ Cancel
-    </button>
+    </Button>
   )
 }

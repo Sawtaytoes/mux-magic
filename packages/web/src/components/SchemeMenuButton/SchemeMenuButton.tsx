@@ -64,7 +64,7 @@ export const SchemeMenuButton = () => {
       onClick={() => cycle()}
       title={`Colour scheme: ${MODE_LABEL[mode]} — click to switch to ${MODE_LABEL[nextMode]}`}
       aria-label={`Colour scheme: ${MODE_LABEL[mode]}. Activate to switch to ${MODE_LABEL[nextMode]}.`}
-      className="flex items-center justify-center gap-2 text-xs text-slate-300 hover:text-white cursor-pointer select-none"
+      className="flex items-center justify-center gap-2 text-xs text-content-secondary hover:text-content-primary cursor-pointer select-none"
     >
       <span aria-hidden="true" className="contents">
         {MODE_ICON[mode]}

@@ -129,7 +129,7 @@ describe("CommandHelpModal", () => {
       </Provider>,
     )
     await user.click(
-      screen.getByRole("button", { name: /✕ close/i }),
+      screen.getByRole("button", { name: "Close" }),
     )
     expect(store.get(commandHelpModalOpenAtom)).toBe(false)
     expect(screen.queryByText(/Help:/)).toBeNull()

@@ -1,3 +1,4 @@
+import { Button, IconButton } from "@charcuterie/ui"
 import {
   useCallback,
   useEffect,
@@ -547,7 +548,7 @@ export const FileVideoPlayer = ({
     <div
       role="none"
       id="video-modal"
-      className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/80"
+      className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-scrim"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
@@ -555,12 +556,12 @@ export const FileVideoPlayer = ({
         if (event.key === "Escape") onClose()
       }}
     >
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col overflow-hidden">
+      <div className="bg-surface-raised border border-border-default rounded-xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col overflow-hidden">
         {/* Title bar */}
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-700 shrink-0">
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-border-default shrink-0">
           <span
             id="video-modal-name"
-            className="text-xs text-slate-400 font-mono flex-1 truncate"
+            className="text-xs text-content-secondary font-mono flex-1 truncate"
             title={path}
           >
             {path}
@@ -568,37 +569,42 @@ export const FileVideoPlayer = ({
           {isStatusVisible && (
             <span
               id="video-modal-status"
-              className="text-[10px] text-amber-300 bg-amber-900/40 border border-amber-700/50 px-1.5 py-0.5 rounded font-medium"
+              className="text-[10px] text-intent-warning-content bg-intent-warning-surface border border-intent-warning-border px-1.5 py-0.5 rounded font-medium"
             >
               Transcoding…
             </span>
           )}
-          <button
-            type="button"
+          <Button
             id="video-modal-copy-path"
+            intent="neutral"
+            appearance="outline"
+            size="sm"
             onClick={() => void handleCopyPath()}
-            className="text-xs text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded border border-slate-700 hover:border-slate-600"
           >
             {copyLabel}
-          </button>
+          </Button>
           {!isContainerized && (
-            <button
-              type="button"
+            <Button
               id="video-modal-open-external"
+              intent="neutral"
+              appearance="outline"
+              size="sm"
               onClick={() => void handleOpenExternal()}
-              className="text-xs text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded border border-slate-700 hover:border-slate-600"
             >
               {openLabel}
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-white text-base leading-none ml-1"
+          <IconButton
+            label="Close"
             title="Close"
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
+            className="ml-1"
+            onClick={onClose}
           >
             ✕
-          </button>
+          </IconButton>
         </div>
         <video
           id="video-modal-player"

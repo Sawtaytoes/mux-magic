@@ -14,7 +14,7 @@ export default meta
 type Story = StoryObj<typeof CommandFieldGroup>
 
 const inputClass =
-  "w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+  "w-full bg-surface-raised text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-blue-500 font-mono"
 
 const patternAndFlags = (
   <div className="grid w-72 grid-cols-[1fr_4rem] gap-2">
@@ -44,7 +44,7 @@ export const WithActions: Story = {
   args: {
     actions: (
       <button
-        className="text-[10px] text-slate-400 hover:text-slate-200"
+        className="text-[10px] text-content-secondary hover:text-content-primary"
         type="button"
       >
         Show as /…/

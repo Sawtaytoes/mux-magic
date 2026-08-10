@@ -11,7 +11,7 @@ export const Switch = ({
     className={`relative shrink-0 inline-flex w-8 h-4 rounded-full overflow-hidden border transition-colors ${
       isOn
         ? activeTrackClass
-        : "bg-slate-600 border-slate-500"
+        : "bg-surface-sunken border-border-default"
     }`}
     aria-hidden="true"
   >

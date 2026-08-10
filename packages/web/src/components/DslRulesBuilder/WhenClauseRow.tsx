@@ -1,3 +1,5 @@
+import { Button } from "@charcuterie/ui"
+
 import { normalizeWhenClause } from "./clauseUtils"
 import { removeWhenClause } from "./conditionMutations"
 import type {
@@ -27,14 +29,16 @@ export const WhenClauseRow = ({
   const canonical = normalizeWhenClause(clauseValue)
 
   return (
-    <div className="border border-slate-700 rounded px-2 py-2 mt-2 bg-slate-900/30">
+    <div className="border border-border-default rounded px-2 py-2 mt-2 bg-surface-raised">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-mono text-blue-300">
+        <span className="text-xs font-mono text-intent-accent-content">
           {clauseName}
         </span>
         {!isReadOnly && (
-          <button
-            type="button"
+          <Button
+            intent="danger"
+            appearance="ghost"
+            size="sm"
             onClick={() => {
               onCommitRules(
                 removeWhenClause({
@@ -44,10 +48,9 @@ export const WhenClauseRow = ({
                 }),
               )
             }}
-            className="text-xs text-slate-500 hover:text-red-400"
           >
             ✕ Remove clause
-          </button>
+          </Button>
         )}
       </div>
       <WhenSlotEditor

@@ -21,9 +21,11 @@ import "../src/styles/builderStyles.css"
  * This replaces three separate pieces mux-magic used to carry: the
  * `@storybook/addon-themes` scheme toggle, a hand-written decorator that pinned
  * `data-variant` and echoed `data-density`, and a local `density` `globalType`.
- * `data-scheme` still defaults to `dark` (Mux Magic ships dark-only); the
- * `light` and non-daylight entries are here so those renderings can be looked
- * at before the app grows a toggle.
+ * `data-scheme` still defaults to `dark` — the scheme Mux Magic opens on — but
+ * it is no longer the only one that renders: `SchemeMenuButton` ships the
+ * switcher in the app, and this branch moved the last of the hand-rolled slate
+ * literals onto tokens, so the toolbar's `light` entry now shows what a user
+ * actually gets rather than a half-painted preview.
  */
 const themeAxes = installThemeAxes([
   "density",
@@ -52,9 +54,12 @@ const preview = {
     actions: {
       expandLevel: 0,
     },
-    backgrounds: {
-      default: "dark",
-    },
+    // No `backgrounds` default on purpose. The addon paints the canvas with a
+    // flat literal, which outranks the token-driven `body` rule in
+    // `tailwindStyles.css` and the first-paint rule `buildPreviewHead()`
+    // injects — so a pinned `"dark"` survives every flip of the `scheme`
+    // toolbar, and a `light` story renders light components on a dark canvas.
+    // The canvas now comes from `--color-surface-base`, which is the axis.
     docs: {
       theme:
         getPreferredColorScheme() === "dark"

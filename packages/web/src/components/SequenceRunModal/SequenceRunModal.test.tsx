@@ -134,7 +134,7 @@ describe("SequenceRunModal", () => {
     const backdrop = screen.getByRole("dialog", {
       name: "Run Sequence",
     }).parentElement as HTMLElement
-    fireEvent.click(backdrop)
+    fireEvent.pointerDown(backdrop)
 
     const state = store.get(sequenceRunModalAtom)
     expect(state.mode).toBe("background")
@@ -155,7 +155,7 @@ describe("SequenceRunModal", () => {
     const backdrop = screen.getByRole("dialog", {
       name: "Run Sequence",
     }).parentElement as HTMLElement
-    fireEvent.click(backdrop)
+    fireEvent.pointerDown(backdrop)
 
     // Terminal run has nothing left to track — closing fully dismisses it so
     // the "Sequence completed" badge can't get stuck on the header.
@@ -172,7 +172,7 @@ describe("SequenceRunModal", () => {
     const backdrop = screen.getByRole("dialog", {
       name: "Run Sequence",
     }).parentElement as HTMLElement
-    fireEvent.click(backdrop)
+    fireEvent.pointerDown(backdrop)
 
     expect(store.get(sequenceRunModalAtom).mode).toBe(
       "background",
@@ -214,7 +214,9 @@ describe("SequenceRunModal", () => {
     store.set(sequenceRunModalAtom, openState)
     renderWithStore(store)
 
-    await userEvent.click(screen.getByTitle("Close"))
+    await userEvent.click(
+      screen.getByRole("button", { name: "Close" }),
+    )
 
     const state = store.get(sequenceRunModalAtom)
     expect(state.mode).toBe("background")

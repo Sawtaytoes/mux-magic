@@ -42,7 +42,7 @@ export const StepRunProgressView = ({
   convertLosslessResults,
   results,
 }: Props) => (
-  <div className="px-3 py-2 border-b border-slate-700 bg-slate-900/60 flex flex-col gap-2">
+  <div className="px-3 py-2 border-b border-border-default bg-surface-raised flex flex-col gap-2">
     {isRunning && <ProgressBar snapshot={snap} />}
     <NsfRunResults
       jobId={jobId}

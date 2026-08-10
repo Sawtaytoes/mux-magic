@@ -130,7 +130,7 @@ export const DslRulesBuilder = ({
 
       {rules.length === 0 && (
         <>
-          <p className="text-xs text-slate-500 italic mt-2">
+          <p className="text-xs text-content-muted italic mt-2">
             No rules yet.
           </p>
           {!isReadOnly && (
