@@ -29,8 +29,10 @@ describe("Switch appearance", () => {
       />,
     )
     const track = container.firstChild as HTMLElement
-    expect(track.className).toContain("bg-slate-600")
-    expect(track.className).toContain("border-slate-500")
+    expect(track.className).toContain("bg-surface-sunken")
+    expect(track.className).toContain(
+      "border-border-default",
+    )
     expect(track.className).not.toContain("bg-amber-500")
   })
 

@@ -103,7 +103,7 @@ describe("YamlModal", () => {
     const store = renderModal(true)
 
     await user.click(
-      screen.getByRole("button", { name: /✕ close/i }),
+      screen.getByRole("button", { name: "Close" }),
     )
 
     expect(store.get(yamlModalOpenAtom)).toBe(false)

@@ -1,3 +1,4 @@
+import { Button } from "@charcuterie/ui"
 import { useState } from "react"
 
 import { ApplyIfBuilder } from "./ApplyIfBuilder"
@@ -46,21 +47,22 @@ export const SetStyleFieldsRuleBody = ({
   return (
     <div className="mt-2">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs uppercase tracking-wide text-slate-400">
+        <span className="text-xs uppercase tracking-wide text-content-secondary">
           fields
         </span>
         {!isReadOnly && (
-          <button
-            type="button"
+          <Button
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
             onClick={() => {
               onCommitRules(
                 addStyleField({ rules, ruleIndex }),
               )
             }}
-            className="text-xs text-slate-400 hover:text-blue-400"
           >
             + field
-          </button>
+          </Button>
         )}
       </div>
       {Object.entries(fields).map(
@@ -77,19 +79,19 @@ export const SetStyleFieldsRuleBody = ({
         ),
       )}
       {Object.keys(fields).length === 0 && (
-        <p className="text-xs text-slate-500 italic">
+        <p className="text-xs text-content-muted italic">
           No fields yet.
         </p>
       )}
       <div className="mt-2">
         <label
           htmlFor={`ssf-regex-${ruleIndex}`}
-          className="block text-xs text-slate-400 mb-0.5"
+          className="block text-xs text-content-secondary mb-0.5"
         >
           Ignore Style Names
         </label>
         <div className="flex items-center gap-1">
-          <span className="text-xs text-slate-500 font-mono shrink-0">
+          <span className="text-xs text-content-muted font-mono shrink-0">
             /
           </span>
           <input
@@ -110,9 +112,9 @@ export const SetStyleFieldsRuleBody = ({
                 }),
               )
             }}
-            className="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+            className="flex-1 min-w-0 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
           />
-          <span className="text-xs text-slate-500 font-mono shrink-0">
+          <span className="text-xs text-content-muted font-mono shrink-0">
             /i
           </span>
         </div>

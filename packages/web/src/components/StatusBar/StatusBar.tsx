@@ -8,15 +8,15 @@ const statusConfig: Record<
 > = {
   connecting: {
     label: "Connecting…",
-    className: "text-slate-400",
+    className: "text-content-secondary",
   },
   connected: {
     label: "Connected",
-    className: "text-emerald-400",
+    className: "text-intent-success-content",
   },
   unstable: {
     label: "Connection unstable — retrying…",
-    className: "text-amber-400",
+    className: "text-intent-warning-content",
   },
 }
 

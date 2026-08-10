@@ -4,8 +4,7 @@
    publishes `--color-*`, `--text-*`, `--radius-*` and friends into Tailwind's
    own namespaces, so `bg-surface-raised` and `text-sm` are OURS and answer to
    `[data-scheme]` / `[data-variant]` / `[data-density]` on `<html>` (set in
-   `index.html`, and by the `withThemeByDataAttribute` decorator in
-   `.storybook/preview.tsx`).
+   `index.html`, and by `installThemeAxes` in `.storybook/preview.tsx`).
 
    Without a `data-scheme` on `<html>` the tokens publish NO colour at all —
    `variables.css` scopes every `--color-*` under `[data-scheme="light"]` or
@@ -29,22 +28,26 @@
 
 @layer base {
   body {
-    /* Was `#0f172a` / `#f1f5f9` — slate-900 on slate-100. The rest of this
-       app's palette is still literal slate utilities and that is deliberately
-       out of M6b's scope; the page canvas moves to tokens because the
-       `@charcuterie/ui` components sitting on it are token-coloured, and a
-       component's `bg-surface-raised` against a hardcoded slate-900 page is
-       the mismatch that would show. */
+    /* Was `#0f172a` / `#f1f5f9` — slate-900 on slate-100. The canvas moved to
+       tokens first, ahead of the rest of the palette, because the
+       `@charcuterie/ui` components sitting on it were already token-coloured
+       and the mismatch showed here before anywhere else. The rest of the
+       palette has since followed: the hand-rolled slate utilities are gone
+       from all but three components, so the page and the things on it now
+       answer to the same `[data-scheme]`. */
     background-color: var(--color-surface-base);
     color: var(--color-content-primary);
     min-height: 100vh;
   }
 
-  /* Thin slate-tinted scrollbars on all scrollable elements — matches
-     the dark theme and avoids the jarring default browser scrollbar. */
+  /* Thin scrollbars on all scrollable elements, in place of the jarring
+     default. The thumb was `rgba(100, 116, 139, 0.5)` — slate-500 at half
+     alpha, which reads as a soft grey on the dark canvas and as a muddy smear
+     on the light one. `--color-border-strong` is the token for exactly this:
+     the most visible of the non-content lines, tuned per scheme. */
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(100, 116, 139, 0.5) transparent;
+    scrollbar-color: var(--color-border-strong) transparent;
   }
 }
 

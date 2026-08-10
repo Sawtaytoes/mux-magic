@@ -133,7 +133,7 @@ test.describe("CommandHelpModal", () => {
     ).toBeVisible()
 
     await page
-      .getByRole("button", { name: "✕ Close" })
+      .getByRole("button", { name: "Close" })
       .first()
       .click()
 
@@ -344,7 +344,7 @@ test.describe("LookupModal", () => {
 
     await page
       .locator("#lookup-modal")
-      .getByRole("button", { name: "✕" })
+      .getByRole("button", { name: "Close" })
       .click()
 
     await expect(page.locator("#lookup-modal")).toBeHidden()

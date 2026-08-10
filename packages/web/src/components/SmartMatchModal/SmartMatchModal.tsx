@@ -1,4 +1,4 @@
-import { Select } from "@charcuterie/ui"
+import { Button, IconButton, Select } from "@charcuterie/ui"
 import { useAtom, useSetAtom } from "jotai"
 import { useState } from "react"
 import { apiBase } from "../../apiBase"
@@ -536,7 +536,7 @@ export const SmartMatchModal = () => {
       <div
         role="none"
         id="smart-match-modal"
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-scrim"
         onClick={(event) => {
           if (event.target === event.currentTarget) close()
         }}
@@ -545,23 +545,24 @@ export const SmartMatchModal = () => {
           role="dialog"
           aria-modal="true"
           aria-label="Smart Match — empty"
-          className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 flex flex-col gap-3"
+          className="bg-surface-raised border border-border-default rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 flex flex-col gap-3"
         >
-          <h2 className="text-base font-semibold text-slate-100">
+          <h2 className="text-base font-semibold text-content-primary">
             No unnamed files
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-content-secondary">
             Every file was matched on the last run — nothing
             to fix.
           </p>
           <div className="flex justify-end">
-            <button
-              type="button"
+            <Button
+              intent="neutral"
+              appearance="soft"
+              size="sm"
               onClick={close}
-              className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded"
             >
               Close
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -572,7 +573,7 @@ export const SmartMatchModal = () => {
     <div
       role="none"
       id="smart-match-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim"
       onClick={(event) => {
         if (event.target === event.currentTarget) close()
       }}
@@ -581,28 +582,30 @@ export const SmartMatchModal = () => {
         role="dialog"
         aria-modal="true"
         aria-label="Smart Match — Fix Unnamed"
-        className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90dvh] flex flex-col"
+        className="bg-surface-raised border border-border-default rounded-xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90dvh] flex flex-col"
       >
-        <div className="px-4 py-3 border-b border-slate-700 flex items-center gap-2">
-          <h2 className="text-base font-semibold text-slate-100">
+        <div className="px-4 py-3 border-b border-border-default flex items-center gap-2">
+          <h2 className="text-base font-semibold text-content-primary">
             Smart Match — Fix Unnamed
           </h2>
-          <span className="text-xs text-slate-500 font-mono ml-auto">
+          <span className="text-xs text-content-muted font-mono ml-auto">
             {suggestions.length} file
             {suggestions.length === 1 ? "" : "s"}
           </span>
-          <button
-            type="button"
-            onClick={close}
-            className="text-slate-400 hover:text-slate-200 text-xl leading-none px-1"
+          <IconButton
+            label="Close"
             title="Close"
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
+            onClick={close}
           >
             ✕
-          </button>
+          </IconButton>
         </div>
 
         <div className="px-4 py-3 flex-1 overflow-y-auto">
-          <p className="text-xs text-slate-400 mb-3">
+          <p className="text-xs text-content-secondary mb-3">
             Pick the candidate name for each leftover file
             and check the box to include it in the rename
             batch. Yellow rows are below{" "}
@@ -610,7 +613,7 @@ export const SmartMatchModal = () => {
             confidence — review before applying.
           </p>
           <table className="w-full text-xs border-separate border-spacing-y-1.5">
-            <thead className="text-[10px] uppercase tracking-wider text-slate-400">
+            <thead className="text-[10px] uppercase tracking-wider text-content-secondary">
               <tr>
                 <th className="px-1 py-1 w-8 text-left">
                   <div className="flex flex-col items-start gap-0.5">
@@ -674,13 +677,13 @@ export const SmartMatchModal = () => {
                 const isLowConfidence =
                   confidence < LOW_CONFIDENCE_THRESHOLD
                 const rowClass = row.isApplied
-                  ? "border border-emerald-700/60 bg-emerald-900/20"
+                  ? "border border-intent-success-border bg-intent-success-surface"
                   : isLowConfidence
-                    ? "border border-amber-600/50 bg-amber-900/20"
-                    : "border border-slate-700 bg-slate-800/40"
+                    ? "border border-intent-warning-border bg-intent-warning-surface"
+                    : "border border-border-default bg-surface-sunken"
                 const badgeClass = isLowConfidence
-                  ? "bg-amber-700 text-amber-100"
-                  : "bg-emerald-700 text-emerald-100"
+                  ? "bg-intent-warning-solid text-intent-warning-on-solid"
+                  : "bg-intent-success-solid text-intent-success-on-solid"
                 return (
                   <tr
                     key={suggestion.filename}
@@ -706,10 +709,12 @@ export const SmartMatchModal = () => {
                       />
                     </td>
                     <td className="px-1.5 py-1.5 align-top">
-                      <button
-                        type="button"
-                        className="text-cyan-400 hover:text-cyan-300 text-[13px] leading-none font-medium px-1.5"
+                      <IconButton
+                        label="Preview this file"
                         title="Preview this file"
+                        intent="info"
+                        appearance="ghost"
+                        size="sm"
                         onClick={() =>
                           setVideoPreview({
                             // Worker 25: the file lives in
@@ -724,13 +729,13 @@ export const SmartMatchModal = () => {
                         }
                       >
                         ▶
-                      </button>
+                      </IconButton>
                     </td>
                     <td className="px-2 py-1.5 align-top">
-                      <div className="font-mono text-xs text-slate-100 wrap-break-word">
+                      <div className="font-mono text-xs text-content-primary wrap-break-word">
                         {suggestion.filename}
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                      <div className="text-[10px] text-content-secondary font-mono mt-0.5">
                         {formatDurationSeconds(
                           suggestion.durationSeconds,
                         )}
@@ -738,7 +743,7 @@ export const SmartMatchModal = () => {
                       {row.collisionWith && (
                         <div
                           data-smart-match-collision
-                          className="text-[10px] font-mono mt-1 text-amber-300"
+                          className="text-[10px] font-mono mt-1 text-intent-warning-content"
                         >
                           Same target as:{" "}
                           {row.collisionWith}
@@ -747,18 +752,18 @@ export const SmartMatchModal = () => {
                       {row.hasNoTypeWarning && (
                         <div
                           data-smart-match-no-type-warning
-                          className="text-[10px] font-mono mt-1 text-amber-300"
+                          className="text-[10px] font-mono mt-1 text-intent-warning-content"
                         >
                           Pick a Plex type before applying.
                         </div>
                       )}
                       {row.error && (
-                        <div className="text-[10px] font-mono mt-1 text-red-300">
+                        <div className="text-[10px] font-mono mt-1 text-intent-danger-content">
                           {row.error}
                         </div>
                       )}
                       {row.isApplied && (
-                        <div className="text-[10px] font-mono mt-1 text-emerald-300">
+                        <div className="text-[10px] font-mono mt-1 text-intent-success-content">
                           Renamed
                         </div>
                       )}
@@ -857,7 +862,7 @@ export const SmartMatchModal = () => {
                                   },
                                 )
                               }
-                              className="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-slate-600 rounded px-1.5 py-1 focus:outline-none focus:border-blue-500"
+                              className="w-full text-xs font-mono bg-surface-sunken text-content-primary border border-border-default rounded px-1.5 py-1 focus:outline-none focus:border-border-focus"
                             />
                           ) : row.isEditing ? (
                             <input
@@ -901,7 +906,7 @@ export const SmartMatchModal = () => {
                                   event.currentTarget.blur()
                                 }
                               }}
-                              className="w-full text-xs font-mono bg-slate-950 text-slate-100 border border-blue-500 rounded px-1.5 py-1 focus:outline-none"
+                              className="w-full text-xs font-mono bg-surface-sunken text-content-primary border border-border-focus rounded px-1.5 py-1 focus:outline-none"
                             />
                           ) : (
                             <RenameTargetPicker
@@ -948,12 +953,11 @@ export const SmartMatchModal = () => {
                             toggles (hybrid: legacy fields, doc retention). */}
                         {suggestion.rankedCandidates
                           .length > 0 && (
-                          <button
-                            type="button"
+                          <IconButton
                             data-smart-match-edit-toggle={
                               suggestion.filename
                             }
-                            aria-label={
+                            label={
                               row.isEditing
                                 ? `Use candidate picker for ${suggestion.filename}`
                                 : `Type a custom name for ${suggestion.filename}`
@@ -964,9 +968,12 @@ export const SmartMatchModal = () => {
                                 ? "Back to selection"
                                 : "Enter a custom name"
                             }
-                            disabled={
+                            isDisabled={
                               row.isApplied || isApplying
                             }
+                            intent="info"
+                            appearance="ghost"
+                            size="sm"
                             onClick={() => {
                               // Seed `customName` from the picker
                               // selection on first ✏ entry so the user
@@ -995,10 +1002,9 @@ export const SmartMatchModal = () => {
                                 },
                               )
                             }}
-                            className="text-cyan-400 hover:text-cyan-300 disabled:opacity-40 disabled:cursor-not-allowed text-[13px] leading-none font-medium px-1.5 py-1"
                           >
                             {row.isEditing ? "↩" : "✏"}
-                          </button>
+                          </IconButton>
                         )}
                       </div>
                     </td>
@@ -1016,31 +1022,33 @@ export const SmartMatchModal = () => {
           </table>
         </div>
 
-        <div className="px-4 py-3 border-t border-slate-700 flex items-center justify-end gap-2">
-          <span className="text-xs text-slate-400 mr-auto">
+        <div className="px-4 py-3 border-t border-border-default flex items-center justify-end gap-2">
+          <span className="text-xs text-content-secondary mr-auto">
             {includedCount} file
             {includedCount === 1 ? "" : "s"} selected
           </span>
-          <button
-            type="button"
+          <Button
+            intent="neutral"
+            appearance="soft"
+            size="sm"
             onClick={close}
-            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded"
           >
             Close
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             id="smart-match-apply"
-            disabled={
+            intent="success"
+            appearance="solid"
+            size="sm"
+            isDisabled={
               includedCount === 0 ||
               isApplying ||
               hasIncludedRowWithNoType
             }
             onClick={() => void handleApply()}
-            className="text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded font-medium"
           >
             {isApplying ? "Renaming…" : "Apply"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -149,11 +149,11 @@ export const ChildProgressTracker = ({
   return (
     <div
       id="api-run-progress-host"
-      className="px-4 py-2 border-b border-slate-700 bg-slate-900 shrink-0 flex flex-col gap-2"
+      className="px-4 py-2 border-b border-border-default bg-surface-raised shrink-0 flex flex-col gap-2"
     >
       <p
         id="api-run-progress-step-label"
-        className="text-xs text-slate-400"
+        className="text-xs text-content-secondary"
       >
         Step {stepId}
       </p>

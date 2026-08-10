@@ -1,3 +1,4 @@
+import { Button } from "@charcuterie/ui"
 import { useSetAtom } from "jotai"
 import { EditionPlanPreview } from "../EditionPlanPreview/EditionPlanPreview"
 import { smartMatchModalAtom } from "../SmartMatchModal/smartMatchModalAtom"
@@ -88,22 +89,23 @@ export const NsfRunResults = ({
       {summary && (
         <div
           data-nsf-rename-counts
-          className="flex flex-wrap items-center gap-2 text-xs text-slate-300"
+          className="flex flex-wrap items-center gap-2 text-xs text-content-secondary"
         >
           <span>
             Renamed {renamePairs.length}. Files not renamed:{" "}
             {summary.unrenamedFilenames.length}.
           </span>
           {isSmartMatchAvailable && (
-            <button
-              type="button"
+            <Button
               id="smart-match-trigger"
+              intent="accent"
+              appearance="solid"
+              size="sm"
               onClick={openSmartMatch}
-              className="bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded font-medium"
               title="Review and rename leftover files that didn't match by timecode"
             >
               ✨ Fix Unnamed
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -120,16 +122,19 @@ export const NsfRunResults = ({
             >
               <span
                 data-nsf-rename-old
-                className="text-slate-400 line-through decoration-slate-600"
+                className="text-content-secondary line-through decoration-content-muted"
               >
                 {pair.oldName}
               </span>
-              <span aria-hidden className="text-slate-500">
+              <span
+                aria-hidden
+                className="text-content-muted"
+              >
                 →
               </span>
               <span
                 data-nsf-rename-new
-                className="text-emerald-300"
+                className="text-intent-success-content"
               >
                 {pair.newName}
               </span>
@@ -140,7 +145,7 @@ export const NsfRunResults = ({
       {summary && summary.unrenamedFilenames.length > 0 && (
         <div
           data-nsf-unrenamed-list
-          className="bg-yellow-900/30 border border-yellow-700 text-yellow-100 rounded px-2 py-1.5 text-xs"
+          className="bg-intent-warning-surface border border-intent-warning-border text-intent-warning-content rounded px-2 py-1.5 text-xs"
         >
           <p className="font-medium mb-1">
             Files not renamed:

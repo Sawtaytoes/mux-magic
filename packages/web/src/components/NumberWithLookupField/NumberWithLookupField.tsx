@@ -1,3 +1,4 @@
+import { IconButton } from "@charcuterie/ui"
 import { useAtomValue, useSetAtom, useStore } from "jotai"
 import { useEffect, useRef } from "react"
 
@@ -359,7 +360,7 @@ export const NumberWithLookupField = ({
   })()
 
   const inputBaseClass =
-    "flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
+    "flex-1 min-w-0 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus"
 
   return (
     <CommandFieldGroup className="mb-2" field={field}>
@@ -381,22 +382,24 @@ export const NumberWithLookupField = ({
               className={`${inputBaseClass} [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
             />
             <div className="flex flex-col shrink-0">
-              <button
-                type="button"
+              <IconButton
+                label="Increment"
+                intent="neutral"
+                appearance="soft"
+                size="sm"
                 onClick={handleIncrement}
-                aria-label="Increment"
-                className="bg-slate-700 hover:bg-blue-700 text-slate-200 hover:text-white px-1.5 py-0.5 rounded-t border border-slate-600 hover:border-blue-500 flex items-center justify-center"
               >
                 <ChevronUpSvg />
-              </button>
-              <button
-                type="button"
+              </IconButton>
+              <IconButton
+                label="Decrement"
+                intent="neutral"
+                appearance="soft"
+                size="sm"
                 onClick={handleDecrement}
-                aria-label="Decrement"
-                className="bg-slate-700 hover:bg-blue-700 text-slate-200 hover:text-white px-1.5 py-0.5 rounded-b border-x border-b border-slate-600 hover:border-blue-500 flex items-center justify-center"
               >
                 <ChevronDownSvg />
-              </button>
+              </IconButton>
             </div>
           </>
         ) : (
@@ -415,15 +418,17 @@ export const NumberWithLookupField = ({
           />
         )}
         {lookupType && (
-          <button
-            type="button"
-            onClick={handleLookup}
+          <IconButton
+            label={`Look up ${field.label ?? field.name}`}
             title={`Look up ${field.label ?? field.name}`}
-            aria-label={`Look up ${field.label ?? field.name}`}
-            className="shrink-0 text-xs bg-slate-700 hover:bg-blue-700 text-slate-200 hover:text-white px-2.5 py-1.5 rounded border border-slate-600 hover:border-blue-500"
+            intent="neutral"
+            appearance="soft"
+            size="sm"
+            onClick={handleLookup}
+            className="shrink-0"
           >
             🔍
-          </button>
+          </IconButton>
         )}
       </div>
       {(companionName || rightSideLink) && (
@@ -434,7 +439,7 @@ export const NumberWithLookupField = ({
               target="_blank"
               rel="noopener noreferrer"
               title={companionName}
-              className={`flex-1 min-w-0 truncate text-xs text-blue-400 hover:text-blue-300 hover:underline ${companionName ? "" : "invisible"}`}
+              className={`flex-1 min-w-0 truncate text-xs text-intent-accent-content hover:underline ${companionName ? "" : "invisible"}`}
               data-step={step.id}
               data-companion={field.name}
             >
@@ -442,7 +447,7 @@ export const NumberWithLookupField = ({
             </a>
           ) : (
             <p
-              className={`flex-1 min-w-0 text-xs text-slate-500 truncate ${companionName ? "" : "hidden"}`}
+              className={`flex-1 min-w-0 text-xs text-content-muted truncate ${companionName ? "" : "hidden"}`}
               title={companionName}
             >
               {companionName}
@@ -455,7 +460,7 @@ export const NumberWithLookupField = ({
               rel="noopener noreferrer"
               data-step={step.id}
               data-right-link={field.name}
-              className="shrink-0 text-xs text-blue-400 hover:text-blue-300 hover:underline inline-flex items-center gap-1"
+              className="shrink-0 text-xs text-intent-accent-content hover:underline inline-flex items-center gap-1"
             >
               ↗ {rightSideLink.label}
             </a>

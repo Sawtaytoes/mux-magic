@@ -48,8 +48,8 @@ const InteractiveTemplate = () => {
   )
 
   return (
-    <div className="p-4 bg-slate-800">
-      <p className="text-slate-300 text-xs mb-2">
+    <div className="p-4 bg-surface-raised">
+      <p className="text-content-secondary text-xs mb-2">
         Selected: {selected ?? "(none)"}
       </p>
       <RegionVariantField

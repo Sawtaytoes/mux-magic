@@ -24,8 +24,8 @@ const formatConfidence = (confidence: number) =>
 
 const confidenceClass = (confidence: number) =>
   confidence >= LOW_CONFIDENCE_THRESHOLD
-    ? "bg-emerald-700 text-emerald-100"
-    : "bg-amber-700 text-amber-100"
+    ? "bg-intent-success-solid text-intent-success-on-solid"
+    : "bg-intent-warning-solid text-intent-warning-on-solid"
 
 const findScored = (
   candidates: ScoredCandidate[],
@@ -61,18 +61,18 @@ const toOption = (scored: ScoredCandidate): ListboxItem => {
         {parentName && (
           <span
             data-rename-target-option-parent-label
-            className="text-[9px] text-slate-500 font-mono uppercase tracking-wider"
+            className="text-[9px] text-content-muted font-mono uppercase tracking-wider"
           >
             under {parentName}
           </span>
         )}
         <span
-          className={`text-xs font-mono text-slate-100 wrap-break-word ${isChild ? "pl-3 border-l border-slate-700" : ""}`}
+          className={`text-xs font-mono text-content-primary wrap-break-word ${isChild ? "pl-3 border-l border-border-default" : ""}`}
         >
           {isChild && (
             <span
               aria-hidden
-              className="text-slate-500 mr-1"
+              className="text-content-muted mr-1"
             >
               ↳
             </span>
@@ -83,7 +83,7 @@ const toOption = (scored: ScoredCandidate): ListboxItem => {
           className={`flex items-center gap-1.5 text-[10px] font-mono ${isChild ? "pl-3" : ""}`}
         >
           {timecode && (
-            <span className="bg-slate-900 text-slate-300 px-1.5 py-0 rounded border border-slate-700">
+            <span className="bg-surface-sunken text-content-secondary px-1.5 py-0 rounded border border-border-default">
               {timecode}
             </span>
           )}
@@ -123,13 +123,13 @@ export const RenameTargetPicker = ({
         if (isDisabled) return
         setIsOpen((isCurrentlyOpen) => !isCurrentlyOpen)
       }}
-      className="w-full text-left text-xs bg-slate-950 text-slate-100 border border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      className="w-full text-left text-xs bg-surface-sunken text-content-primary border border-border-default rounded px-2 py-1 focus:outline-none focus:border-border-focus disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
     >
       <span className="flex-1 min-w-0 flex flex-col">
         {selected?.candidate.parentName && (
           <span
             data-rename-target-parent-label
-            className="text-[9px] text-slate-500 font-mono uppercase tracking-wider truncate"
+            className="text-[9px] text-content-muted font-mono uppercase tracking-wider truncate"
           >
             under {selected.candidate.parentName}
           </span>
@@ -139,7 +139,7 @@ export const RenameTargetPicker = ({
           className="font-mono truncate"
         >
           {selected?.candidate.name ?? selectedName ?? (
-            <span className="text-slate-500 italic">
+            <span className="text-content-muted italic">
               Pick a candidate…
             </span>
           )}
@@ -149,7 +149,7 @@ export const RenameTargetPicker = ({
             {selected.candidate.timecode && (
               <span
                 data-rename-target-timecode
-                className="bg-slate-800 text-slate-300 px-1.5 py-0 rounded border border-slate-700"
+                className="bg-surface-sunken text-content-secondary px-1.5 py-0 rounded border border-border-default"
               >
                 {selected.candidate.timecode}
               </span>
@@ -165,7 +165,7 @@ export const RenameTargetPicker = ({
       </span>
       <span
         aria-hidden
-        className="text-slate-400 text-[10px] shrink-0"
+        className="text-content-secondary text-[10px] shrink-0"
       >
         ▾
       </span>

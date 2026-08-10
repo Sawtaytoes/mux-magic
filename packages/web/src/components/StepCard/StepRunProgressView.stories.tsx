@@ -32,7 +32,7 @@ const withLogs =
     })
     return (
       <Provider store={store}>
-        <div className="bg-slate-800 max-w-2xl">
+        <div className="bg-surface-raised max-w-2xl">
           <Story />
         </div>
       </Provider>

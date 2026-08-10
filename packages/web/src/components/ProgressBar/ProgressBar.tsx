@@ -34,9 +34,9 @@ export const ProgressBar = ({
       aria-valuemax={100}
       aria-valuenow={valuenow}
     >
-      <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-surface-sunken rounded-full overflow-hidden">
         <div
-          className={`h-full bg-blue-500 rounded-full transition-all ${isIndeterminate ? "animate-pulse w-full" : ""}`}
+          className={`h-full bg-intent-info-solid rounded-full transition-all ${isIndeterminate ? "animate-pulse w-full" : ""}`}
           style={pct !== null ? { width: pct } : undefined}
         />
       </div>

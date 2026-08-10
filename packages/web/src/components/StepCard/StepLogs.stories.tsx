@@ -27,7 +27,7 @@ const withLogs =
     })
     return (
       <Provider store={store}>
-        <div className="bg-slate-900 max-w-2xl p-4">
+        <div className="bg-surface-base max-w-2xl p-4">
           <Story />
         </div>
       </Provider>

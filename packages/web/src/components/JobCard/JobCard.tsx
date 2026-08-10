@@ -103,7 +103,7 @@ export const JobCard = ({ job }: JobCardProps) => {
     Object.keys(paramsObject).length > 0
 
   return (
-    <article className="bg-slate-900 border border-slate-700 rounded-lg p-4 space-y-3">
+    <article className="bg-surface-raised border border-border-default rounded-lg p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <span className="font-semibold truncate">
@@ -111,7 +111,7 @@ export const JobCard = ({ job }: JobCardProps) => {
         </span>
         <div className="flex items-center gap-2 shrink-0">
           {eta && (
-            <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+            <span className="text-xs text-content-secondary bg-surface-sunken px-2 py-0.5 rounded">
               {eta}
             </span>
           )}
@@ -120,7 +120,7 @@ export const JobCard = ({ job }: JobCardProps) => {
       </div>
 
       {/* Meta */}
-      <div className="text-xs text-slate-500 space-y-0.5">
+      <div className="text-xs text-content-muted space-y-0.5">
         <div>ID: {job.id}</div>
         {job.startedAt && (
           <div>
@@ -144,7 +144,7 @@ export const JobCard = ({ job }: JobCardProps) => {
       {/* Source path shortcut */}
       {sourcePath && (
         <div
-          className="text-xs text-slate-400 truncate"
+          className="text-xs text-content-secondary truncate"
           title={sourcePath}
         >
           {sourcePath}
@@ -173,7 +173,7 @@ export const JobCard = ({ job }: JobCardProps) => {
                     />
                   </div>
 
-                  <pre className="overflow-x-auto rounded bg-slate-950 p-2 text-slate-300 text-xs">
+                  <pre className="overflow-x-auto rounded bg-surface-sunken p-2 text-content-secondary text-xs">
                     {JSON.stringify(job.params, null, 2)}
                   </pre>
                 </div>
@@ -187,7 +187,7 @@ export const JobCard = ({ job }: JobCardProps) => {
 
       {/* Error */}
       {job.error && (
-        <p className="text-sm text-red-400 break-words">
+        <p className="text-sm text-intent-danger-content break-words">
           {job.error}
         </p>
       )}
@@ -201,7 +201,7 @@ export const JobCard = ({ job }: JobCardProps) => {
                 <div className="space-y-1">
                   {job.results.map((result) => (
                     <pre
-                      className="overflow-x-auto rounded bg-slate-950 p-2 text-slate-300 text-xs"
+                      className="overflow-x-auto rounded bg-surface-sunken p-2 text-content-secondary text-xs"
                       key={JSON.stringify(result).slice(
                         0,
                         64,
@@ -240,7 +240,7 @@ export const JobCard = ({ job }: JobCardProps) => {
           href={buildBuilderUrl(job)}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-blue-400 hover:text-blue-300"
+          className="text-xs text-intent-accent-content hover:underline"
         >
           ✎ Open in Sequence Builder
         </a>

@@ -1,4 +1,4 @@
-import { Select } from "@charcuterie/ui"
+import { IconButton, Select } from "@charcuterie/ui"
 import { runWithViewTransition } from "../../utils/runWithViewTransition"
 import {
   changeRuleType,
@@ -53,14 +53,14 @@ export const RuleCard = ({
   <div
     data-rule-key={ruleIndex}
     style={{ viewTransitionName: `rule-${ruleKey}` }}
-    className="border border-slate-700 rounded px-3 py-2 bg-slate-800/60"
+    className="border border-border-default rounded px-3 py-2 bg-surface-raised"
   >
     <div className="flex items-center gap-2">
-      <span className="text-xs text-slate-500 font-mono shrink-0">
+      <span className="text-xs text-content-muted font-mono shrink-0">
         #{ruleIndex + 1}
       </span>
       {isReadOnly ? (
-        <span className="text-xs font-mono text-blue-300">
+        <span className="text-xs font-mono text-intent-accent-content">
           {rule.type}
         </span>
       ) : (
@@ -93,15 +93,18 @@ export const RuleCard = ({
       )}
       <div className="flex-1" />
       {isReadOnly && (
-        <span className="text-[10px] text-slate-500 italic">
+        <span className="text-[10px] text-content-muted italic">
           read-only
         </span>
       )}
       {!isReadOnly && (
         <>
-          <button
-            type="button"
-            disabled={isFirst}
+          <IconButton
+            label="Move rule up"
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
+            isDisabled={isFirst}
             onClick={() => {
               runWithViewTransition(() => {
                 onCommitRules(
@@ -113,13 +116,15 @@ export const RuleCard = ({
                 )
               })
             }}
-            className="text-xs text-slate-400 hover:text-slate-100 disabled:opacity-30 px-1"
           >
             ↑
-          </button>
-          <button
-            type="button"
-            disabled={isLast}
+          </IconButton>
+          <IconButton
+            label="Move rule down"
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
+            isDisabled={isLast}
             onClick={() => {
               runWithViewTransition(() => {
                 onCommitRules(
@@ -131,12 +136,14 @@ export const RuleCard = ({
                 )
               })
             }}
-            className="text-xs text-slate-400 hover:text-slate-100 disabled:opacity-30 px-1"
           >
             ↓
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            label="Remove rule"
+            intent="danger"
+            appearance="ghost"
+            size="sm"
             onClick={() => {
               runWithViewTransition(() => {
                 onCommitRules(
@@ -144,10 +151,9 @@ export const RuleCard = ({
                 )
               })
             }}
-            className="text-xs text-slate-500 hover:text-red-400 px-1.5"
           >
             ✕
-          </button>
+          </IconButton>
         </>
       )}
     </div>

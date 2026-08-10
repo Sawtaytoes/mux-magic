@@ -1,3 +1,4 @@
+import { Button, IconButton } from "@charcuterie/ui"
 import { useAtom } from "jotai"
 import { useEffect, useRef } from "react"
 import { lookupModalAtom } from "../../components/LookupModal/lookupModalAtom"
@@ -83,34 +84,38 @@ export const LookupModal = () => {
       {state && (
         <div
           id="lookup-modal"
-          className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col overflow-hidden max-h-[85dvh]"
+          className="bg-surface-raised border border-border-default rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col overflow-hidden max-h-[85dvh]"
         >
           {/* Header */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700 shrink-0">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border-default shrink-0">
             {isGoBackPossible && (
-              <button
-                type="button"
+              <Button
                 id="lookup-back-btn"
+                intent="neutral"
+                appearance="outline"
+                size="sm"
                 onClick={goBack}
-                className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded border border-slate-700 hover:border-slate-500 mr-1"
+                className="mr-1"
               >
                 ← Back
-              </button>
+              </Button>
             )}
             <h2
               id="lookup-title"
-              className="text-sm font-semibold text-slate-100 flex-1"
+              className="text-sm font-semibold text-content-primary flex-1"
             >
               {title}
             </h2>
-            <button
-              type="button"
-              onClick={close}
-              className="text-slate-400 hover:text-white text-base leading-none"
+            <IconButton
+              label="Close"
               title="Close"
+              intent="neutral"
+              appearance="ghost"
+              size="sm"
+              onClick={close}
             >
               ✕
-            </button>
+            </IconButton>
           </div>
 
           {/* Body */}

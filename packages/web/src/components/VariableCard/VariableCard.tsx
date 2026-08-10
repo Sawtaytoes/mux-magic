@@ -1,4 +1,4 @@
-import { Select } from "@charcuterie/ui"
+import { Button, IconButton, Select } from "@charcuterie/ui"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useRef } from "react"
 import { apiBase } from "../../apiBase"
@@ -97,27 +97,29 @@ export const VariableCard = ({
   return (
     <div
       data-path-var={variable.id}
-      className="col-span-full bg-slate-800/40 rounded-xl border border-dashed border-slate-600 px-4 py-3"
+      className="col-span-full bg-surface-raised/40 rounded-xl border border-dashed border-border-default px-4 py-3"
     >
       <div className="flex items-center gap-2 mb-2">
         {variable.type === "path" && (
-          <button
-            type="button"
+          <IconButton
+            intent="neutral"
+            appearance="ghost"
+            size="sm"
             onClick={handleBrowse}
             title={
               variable.value
                 ? "Browse files in this folder"
                 : "Browse to pick a folder for this path variable"
             }
-            aria-label={
+            label={
               variable.value
                 ? "Browse files in this folder"
                 : "Pick a folder for this path variable"
             }
-            className="text-xs text-slate-500 hover:text-slate-300 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700 shrink-0"
+            className="shrink-0"
           >
             📁
-          </button>
+          </IconButton>
         )}
         <input
           type="text"
@@ -127,9 +129,9 @@ export const VariableCard = ({
           onChange={(event) =>
             setLabel(event.currentTarget.value)
           }
-          className="text-xs font-medium text-slate-300 bg-transparent border-b border-slate-600 focus:outline-none focus:border-blue-500 flex-1 min-w-0"
+          className="text-xs font-medium text-content-secondary bg-transparent border-b border-border-default focus:outline-none focus:border-border-focus flex-1 min-w-0"
         />
-        <span className="text-xs text-slate-600 font-mono shrink-0">
+        <span className="text-xs text-content-muted font-mono shrink-0">
           {variable.type} variable
         </span>
         {/* The seeded basePath (first path) is undeletable so a fresh
@@ -137,15 +139,16 @@ export const VariableCard = ({
             other variable — additional paths, dvdCompareId entries, the
             singleton threadCount — uses the standard remove flow. */}
         {!(isFirst && variable.type === "path") && (
-          <button
-            type="button"
+          <IconButton
+            intent="danger"
+            appearance="ghost"
+            size="sm"
             onClick={() => remove(variable.id)}
             title={`Remove ${variable.type} variable`}
-            aria-label={`Remove ${variable.type} variable`}
-            className="text-xs text-slate-500 hover:text-red-400 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700"
+            label={`Remove ${variable.type} variable`}
           >
             ✕
-          </button>
+          </IconButton>
         )}
       </div>
       {variable.type === "path" && (
@@ -200,9 +203,9 @@ export const VariableCard = ({
       {isPendingDelete && (
         <div
           role="alert"
-          className="mt-3 rounded-lg border border-amber-600/50 bg-amber-900/20 px-3 py-2 text-xs"
+          className="mt-3 rounded-lg border border-intent-warning-border bg-intent-warning-surface px-3 py-2 text-xs"
         >
-          <p className="text-amber-300 font-medium mb-2">
+          <p className="text-intent-warning-content font-medium mb-2">
             This variable is used by the following fields.
             Choose what to do with each:
           </p>
@@ -212,7 +215,7 @@ export const VariableCard = ({
                 key={`${stepId}:${fieldName}`}
                 className="flex items-center gap-2"
               >
-                <span className="text-slate-400 font-mono shrink-0">
+                <span className="text-content-secondary font-mono shrink-0">
                   {stepId} → {fieldName}
                 </span>
                 <Select
@@ -250,20 +253,22 @@ export const VariableCard = ({
             ))}
           </div>
           <div className="flex gap-2 mt-3">
-            <button
-              type="button"
+            <Button
+              intent="danger"
+              appearance="solid"
+              size="sm"
               onClick={() => confirm()}
-              className="text-xs bg-red-700 hover:bg-red-600 text-white rounded px-3 py-1"
             >
               Delete and apply
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              intent="neutral"
+              appearance="outline"
+              size="sm"
               onClick={() => cancel()}
-              className="text-xs text-slate-400 hover:text-slate-200 rounded px-3 py-1 border border-slate-600 hover:border-slate-400"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}

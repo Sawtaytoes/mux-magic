@@ -179,8 +179,12 @@ describe("PageHeader", () => {
     renderWithStore(store)
     const badge = document.getElementById("dry-run-badge")
     expect(badge).not.toBeNull()
-    expect(badge?.className).toContain("text-amber-400")
-    expect(badge?.className).not.toContain("text-red-400")
+    expect(badge?.className).toContain(
+      "text-intent-warning-content",
+    )
+    expect(badge?.className).not.toContain(
+      "text-intent-danger-content",
+    )
   })
 
   test("DRY RUN badge has red classes when failureMode is true", () => {
@@ -190,8 +194,12 @@ describe("PageHeader", () => {
     renderWithStore(store)
     const badge = document.getElementById("dry-run-badge")
     expect(badge).not.toBeNull()
-    expect(badge?.className).toContain("text-red-400")
-    expect(badge?.className).not.toContain("text-amber-400")
+    expect(badge?.className).toContain(
+      "text-intent-danger-content",
+    )
+    expect(badge?.className).not.toContain(
+      "text-intent-warning-content",
+    )
   })
 
   test("DRY RUN badge title mentions failure mode when failureMode is true", () => {

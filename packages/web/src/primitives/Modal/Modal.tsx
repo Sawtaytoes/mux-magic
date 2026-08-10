@@ -1,5 +1,4 @@
-import { useEffect } from "react"
-import { createPortal } from "react-dom"
+import { Modal as CharcuterieModal } from "@charcuterie/ui"
 
 interface ModalProps {
   isOpen: boolean
@@ -8,45 +7,23 @@ interface ModalProps {
   children: React.ReactNode
 }
 
+// Thin wrapper preserving the app's historical Modal prop API
+// ({ isOpen, onClose, ariaLabel, children }) while delegating the
+// overlay/scrim/focus-trap/scroll-lock/token backdrop to Charcuterie's
+// bare Modal. Prop mapping: isOpen -> isVisible, ariaLabel -> aria-label.
 export const Modal = ({
   isOpen,
   onClose,
   ariaLabel,
   children,
 }: ModalProps) => {
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose()
-    }
-    document.addEventListener("keydown", handleKeyDown)
-    return () =>
-      document.removeEventListener("keydown", handleKeyDown)
-  }, [isOpen, onClose])
-
-  if (!isOpen) return null
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-      role="none"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") onClose()
-      }}
+  return (
+    <CharcuterieModal
+      isVisible={isOpen}
+      onClose={onClose}
+      aria-label={ariaLabel}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={ariaLabel}
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
-      >
-        {children}
-      </div>
-    </div>,
-    document.body,
+      {children}
+    </CharcuterieModal>
   )
 }

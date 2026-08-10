@@ -21,23 +21,23 @@ const SampleContent = ({
   onClose: () => void
 }) => (
   <div
-    className="bg-slate-900 border border-slate-700 rounded-xl flex flex-col"
+    className="bg-surface-raised border border-border-default rounded-xl flex flex-col"
     style={{ width: "min(90vw,480px)" }}
   >
-    <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-slate-700">
-      <span className="text-xs font-medium text-slate-400">
+    <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-border-default">
+      <span className="text-xs font-medium text-content-secondary">
         Example Modal
       </span>
       <button
         type="button"
         onClick={onClose}
-        className="text-xs text-slate-400 hover:text-slate-200"
+        className="text-xs text-content-secondary hover:text-content-primary"
       >
         ✕ Close
       </button>
     </div>
     <div className="px-6 py-8 text-center">
-      <p className="text-sm text-slate-300">
+      <p className="text-sm text-content-secondary">
         Backdrop click or Esc closes this modal.
       </p>
     </div>
@@ -52,7 +52,7 @@ export const Open: Story = {
         <div className="p-4">
           <button
             type="button"
-            className="text-xs bg-slate-700 text-white px-3 py-1.5 rounded"
+            className="text-xs bg-surface-raised text-content-primary px-3 py-1.5 rounded"
             onClick={() => setIsOpen(true)}
           >
             Open modal

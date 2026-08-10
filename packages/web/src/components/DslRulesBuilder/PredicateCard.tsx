@@ -1,3 +1,4 @@
+import { Button } from "@charcuterie/ui"
 import { useState } from "react"
 import { isPlainObject } from "./clauseUtils"
 import { PredicateEntryRow } from "./PredicateEntryRow"
@@ -29,10 +30,10 @@ export const PredicateCard = ({
   return (
     <div
       data-predicate-key={predicateName}
-      className="border border-slate-700/60 rounded px-2 py-1.5 mt-2 bg-slate-900/30"
+      className="border border-border-subtle rounded px-2 py-1.5 mt-2 bg-surface-raised"
     >
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-xs text-slate-500 shrink-0">
+        <span className="text-xs text-content-muted shrink-0">
           name
         </span>
         <input
@@ -52,11 +53,14 @@ export const PredicateCard = ({
               }),
             )
           }}
-          className="flex-1 min-w-0 bg-slate-700 text-blue-300 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+          className="flex-1 min-w-0 bg-surface-sunken text-intent-accent-content text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
         />
         {!isReadOnly && (
-          <button
-            type="button"
+          <Button
+            intent="danger"
+            appearance="ghost"
+            size="sm"
+            className="shrink-0"
             onClick={() => {
               onCommitPredicates(
                 removePredicate({
@@ -65,10 +69,9 @@ export const PredicateCard = ({
                 }),
               )
             }}
-            className="text-xs text-slate-500 hover:text-red-400 px-1 shrink-0"
           >
             ✕ Remove
-          </button>
+          </Button>
         )}
       </div>
       {Object.entries(body).map(
@@ -85,8 +88,11 @@ export const PredicateCard = ({
         ),
       )}
       {!isReadOnly && (
-        <button
-          type="button"
+        <Button
+          intent="neutral"
+          appearance="ghost"
+          size="sm"
+          className="mt-1"
           onClick={() => {
             onCommitPredicates(
               addPredicateEntry({
@@ -95,10 +101,9 @@ export const PredicateCard = ({
               }),
             )
           }}
-          className="text-xs text-slate-400 hover:text-blue-400 mt-1"
         >
           + entry
-        </button>
+        </Button>
       )}
     </div>
   )

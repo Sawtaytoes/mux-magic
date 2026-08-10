@@ -242,7 +242,7 @@ export const RenameRegexField = ({
         <button
           type="button"
           onClick={toggleDisplayMode}
-          className="text-[10px] text-slate-400 hover:text-slate-200 underline-offset-2 hover:underline"
+          className="text-[10px] text-content-secondary hover:text-content-primary underline-offset-2 hover:underline"
           aria-label="Toggle slash-form regex display"
         >
           {displayMode === "plain"
@@ -269,21 +269,21 @@ export const RenameRegexField = ({
       <button
         type="button"
         onClick={onAddRule}
-        className="mt-1 text-[10px] text-blue-400 hover:text-blue-200 underline-offset-2 hover:underline"
+        className="mt-1 text-[10px] text-intent-accent-content underline-offset-2 hover:underline"
         aria-label="Add rule"
       >
         + Add rule
       </button>
       {chainOutput !== null && (
-        <div className="mt-2 rounded border border-slate-600 bg-slate-800/60 px-2 py-1.5 text-[11px] text-slate-200">
-          <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mr-1">
+        <div className="mt-2 rounded border border-border-default bg-surface-sunken px-2 py-1.5 text-[11px] text-content-primary">
+          <span className="text-content-secondary text-[10px] font-semibold uppercase tracking-wider mr-1">
             Chain output
           </span>
           <span className="font-mono">{chainOutput}</span>
         </div>
       )}
       {!isChain && (
-        <small className="block text-[10px] text-slate-500 mt-1">
+        <small className="block text-[10px] text-content-muted mt-1">
           {
             "Applied to each entry's filename (or folder name) via String.replace. Capture groups $1, $2, … and $<name> are available in the replacement."
           }

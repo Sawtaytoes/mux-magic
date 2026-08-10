@@ -113,7 +113,7 @@ describe("SavedTemplateRow", () => {
       />,
     )
     const row = container.querySelector("li")
-    expect(row?.className).toContain("border-blue-500")
+    expect(row?.className).toContain("border-border-focus")
   })
 
   test("omits description paragraph when none is set", () => {

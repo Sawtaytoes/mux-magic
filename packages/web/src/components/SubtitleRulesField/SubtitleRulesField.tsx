@@ -64,7 +64,7 @@ export const SubtitleRulesField = ({
   return (
     <CommandFieldGroup
       actions={
-        <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs text-slate-300">
+        <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs text-content-secondary">
           <input
             type="checkbox"
             checked={hasDefaultRules}
@@ -75,7 +75,7 @@ export const SubtitleRulesField = ({
                 event.target.checked,
               )
             }}
-            className="w-3.5 h-3.5 rounded bg-slate-700 border-slate-500 accent-blue-500 cursor-pointer"
+            className="w-3.5 h-3.5 rounded bg-surface-sunken border-border-strong accent-intent-accent-solid cursor-pointer"
           />
           Has Default Rules
         </label>
@@ -84,13 +84,13 @@ export const SubtitleRulesField = ({
       field={field}
     >
       {hasDefaultRules && (
-        <div className="mt-2 mb-3 border border-amber-800/50 rounded px-3 py-2 bg-amber-950/20">
+        <div className="mt-2 mb-3 border border-intent-warning-border rounded px-3 py-2 bg-intent-warning-surface">
           <button
             type="button"
             onClick={() => {
               setIsPreviewOpen((isPrev) => !isPrev)
             }}
-            className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 w-full text-left mb-1"
+            className="flex items-center gap-1 text-xs text-intent-warning-content w-full text-left mb-1"
           >
             <CollapseChevron isCollapsed={!isPreviewOpen} />
             {

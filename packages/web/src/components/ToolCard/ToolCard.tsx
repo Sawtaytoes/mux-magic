@@ -15,15 +15,15 @@ export const ToolCard = ({
 }: ToolCardProps) => (
   <a
     href={href}
-    className="block rounded-xl border border-slate-700/70 bg-slate-800/40 p-7 transition-colors hover:border-slate-600 hover:bg-slate-800/70"
+    className="block rounded-xl border border-border-default bg-surface-sunken p-7 transition-colors hover:border-border-strong hover:bg-surface-raised"
   >
     <div className="flex items-center gap-3">
       {icon}
-      <h2 className="text-2xl font-semibold text-slate-100">
+      <h2 className="text-2xl font-semibold text-content-primary">
         {title}
       </h2>
     </div>
-    <p className="mt-3 text-slate-400 leading-relaxed">
+    <p className="mt-3 text-content-secondary leading-relaxed">
       {description}
     </p>
   </a>

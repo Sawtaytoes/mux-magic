@@ -281,7 +281,7 @@ export const BuilderSequenceList = () => {
 
   if (steps.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 py-16 text-slate-500">
+      <div className="flex flex-col items-center gap-4 py-16 text-content-muted">
         <p className="text-sm">No steps yet.</p>
         <InsertDivider
           index={0}

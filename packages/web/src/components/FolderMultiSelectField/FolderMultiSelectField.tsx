@@ -1,3 +1,4 @@
+import { Button, IconButton } from "@charcuterie/ui"
 import { useSetAtom } from "jotai"
 import type { CommandField } from "../../commands/types"
 import { fileExplorerAtom } from "../../components/FileExplorerModal/fileExplorerAtom"
@@ -47,27 +48,31 @@ export const FolderMultiSelectField = ({
         {folders.map((folder) => (
           <span
             key={folder}
-            className="inline-flex items-center gap-1 bg-slate-700 text-slate-200 text-xs rounded px-1.5 py-0.5 font-mono"
+            className="inline-flex items-center gap-1 bg-surface-sunken text-content-primary text-xs rounded px-1.5 py-0.5 font-mono"
           >
             📁 {folder}
-            <button
-              type="button"
-              onClick={() => removeFolder(folder)}
-              className="text-slate-400 hover:text-red-400 leading-none cursor-pointer"
+            <IconButton
+              label={`Remove ${folder}`}
               title={`Remove ${folder}`}
+              intent="danger"
+              appearance="ghost"
+              size="sm"
+              onClick={() => removeFolder(folder)}
+              className="leading-none"
             >
               ✕
-            </button>
+            </IconButton>
           </span>
         ))}
       </div>
-      <button
-        type="button"
+      <Button
+        intent="neutral"
+        appearance="soft"
+        size="sm"
         onClick={handleBrowse}
-        className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded border border-slate-600 focus:outline-none focus:border-blue-500"
       >
         📁 Browse folders…
-      </button>
+      </Button>
     </CommandFieldGroup>
   )
 }

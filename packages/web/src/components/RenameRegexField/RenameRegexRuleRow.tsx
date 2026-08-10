@@ -1,3 +1,4 @@
+import { IconButton } from "@charcuterie/ui"
 import { useId } from "react"
 import {
   formatSlashLiteral,
@@ -73,48 +74,51 @@ export const RenameRegexRuleRow = ({
     <div
       className={
         isChain
-          ? "border border-slate-700 rounded p-2 mb-2"
+          ? "border border-border-default rounded p-2 mb-2"
           : ""
       }
     >
       {isChain && (
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] text-slate-500 font-mono">
+          <span className="text-[10px] text-content-muted font-mono">
             Rule {ruleIndex + 1}
           </span>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              aria-label="Move rule up"
-              disabled={ruleIndex === 0}
+            <IconButton
+              label="Move rule up"
+              intent="neutral"
+              appearance="ghost"
+              size="sm"
+              isDisabled={ruleIndex === 0}
               onClick={() => {
                 onMoveUp(ruleIndex)
               }}
-              className="text-[10px] text-slate-400 hover:text-slate-200 disabled:opacity-30 px-1"
             >
               ↑
-            </button>
-            <button
-              type="button"
-              aria-label="Move rule down"
-              disabled={ruleIndex === totalRules - 1}
+            </IconButton>
+            <IconButton
+              label="Move rule down"
+              intent="neutral"
+              appearance="ghost"
+              size="sm"
+              isDisabled={ruleIndex === totalRules - 1}
               onClick={() => {
                 onMoveDown(ruleIndex)
               }}
-              className="text-[10px] text-slate-400 hover:text-slate-200 disabled:opacity-30 px-1"
             >
               ↓
-            </button>
-            <button
-              type="button"
-              aria-label="Delete rule"
+            </IconButton>
+            <IconButton
+              label="Delete rule"
+              intent="danger"
+              appearance="ghost"
+              size="sm"
               onClick={() => {
                 onDeleteRule(ruleIndex)
               }}
-              className="text-[10px] text-rose-400 hover:text-rose-200 px-1"
             >
               ✕
-            </button>
+            </IconButton>
           </div>
         </div>
       )}
@@ -122,7 +126,7 @@ export const RenameRegexRuleRow = ({
         <div>
           <label
             htmlFor={slashId}
-            className="block text-[10px] text-slate-400 mb-0.5"
+            className="block text-[10px] text-content-secondary mb-0.5"
           >
             Pattern + flags
           </label>
@@ -135,7 +139,7 @@ export const RenameRegexRuleRow = ({
             )}
             onChange={onChangeSlash}
             placeholder="/^(.+)\\.mkv$/i"
-            className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+            className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
           />
         </div>
       ) : (
@@ -143,7 +147,7 @@ export const RenameRegexRuleRow = ({
           <div>
             <label
               htmlFor={patternId}
-              className="block text-[10px] text-slate-400 mb-0.5"
+              className="block text-[10px] text-content-secondary mb-0.5"
             >
               Pattern
             </label>
@@ -153,13 +157,13 @@ export const RenameRegexRuleRow = ({
               value={rule.pattern}
               onChange={onChange("pattern")}
               placeholder="^(.+)\\.mkv$"
-              className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+              className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
             />
           </div>
           <div>
             <label
               htmlFor={flagsId}
-              className="block text-[10px] text-slate-400 mb-0.5"
+              className="block text-[10px] text-content-secondary mb-0.5"
             >
               Flags
             </label>
@@ -175,10 +179,10 @@ export const RenameRegexRuleRow = ({
                   ? "Optional regex flags (g i m s u y)"
                   : `Invalid flag(s): ${flagValidation.invalidChars}`
               }
-              className={`w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border focus:outline-none focus:border-blue-500 font-mono ${
+              className={`w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border focus:outline-none focus:border-border-focus font-mono ${
                 flagValidation.isValid
-                  ? "border-slate-600"
-                  : "border-rose-500"
+                  ? "border-border-default"
+                  : "border-intent-danger-border"
               }`}
             />
           </div>
@@ -187,7 +191,7 @@ export const RenameRegexRuleRow = ({
       <div className="mt-2">
         <label
           htmlFor={replacementId}
-          className="block text-[10px] text-slate-400 mb-0.5"
+          className="block text-[10px] text-content-secondary mb-0.5"
         >
           Replacement
         </label>
@@ -197,13 +201,13 @@ export const RenameRegexRuleRow = ({
           value={rule.replacement}
           onChange={onChange("replacement")}
           placeholder="$1.mp4"
-          className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+          className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
         />
       </div>
       <div className="mt-2">
         <label
           htmlFor={sampleId}
-          className="block text-[10px] text-slate-400 mb-0.5"
+          className="block text-[10px] text-content-secondary mb-0.5"
         >
           Test against (optional)
         </label>
@@ -213,7 +217,7 @@ export const RenameRegexRuleRow = ({
           value={rule.sample}
           onChange={onChange("sample")}
           placeholder="[Group] My Show - 01 [BD 1080p].mkv"
-          className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+          className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
         />
         <RegexLivePreview
           result={livePreview}

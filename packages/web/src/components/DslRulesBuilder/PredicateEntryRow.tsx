@@ -1,3 +1,4 @@
+import { IconButton } from "@charcuterie/ui"
 import { useState } from "react"
 import {
   removePredicateEntry,
@@ -46,9 +47,9 @@ export const PredicateEntryRow = ({
             }),
           )
         }}
-        className="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+        className="flex-1 min-w-0 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
       />
-      <span className="text-slate-500 text-xs">=</span>
+      <span className="text-content-muted text-xs">=</span>
       <input
         type="text"
         value={draftValue}
@@ -67,11 +68,14 @@ export const PredicateEntryRow = ({
             }),
           )
         }}
-        className="flex-1 min-w-0 bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+        className="flex-1 min-w-0 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
       />
       {!isReadOnly && (
-        <button
-          type="button"
+        <IconButton
+          label="Remove entry"
+          intent="danger"
+          appearance="ghost"
+          size="sm"
           onClick={() => {
             onCommitPredicates(
               removePredicateEntry({
@@ -81,10 +85,9 @@ export const PredicateEntryRow = ({
               }),
             )
           }}
-          className="text-xs text-slate-500 hover:text-red-400 px-1.5"
         >
           ✕
-        </button>
+        </IconButton>
       )}
     </div>
   )

@@ -1,3 +1,4 @@
+import { Button } from "@charcuterie/ui"
 import {
   useAtom,
   useAtomValue,
@@ -248,31 +249,32 @@ export const SavedTemplatesPanel = () => {
   return (
     <section aria-label="Saved Templates" className="mt-4">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <h3 className="text-xs font-semibold text-content-secondary uppercase tracking-wider">
           Saved Templates
         </h3>
-        <button
-          type="button"
+        <Button
+          intent="accent"
+          appearance="solid"
+          size="sm"
           onClick={() =>
             setPendingSaveYaml(readCurrentYaml())
           }
-          className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-500 rounded text-white"
         >
           Save current
-        </button>
+        </Button>
       </div>
 
       {errorMessage !== null && (
         <p
           role="alert"
-          className="text-xs text-red-400 mb-2"
+          className="text-xs text-intent-danger-content mb-2"
         >
           {errorMessage}
         </p>
       )}
 
       {templates.length === 0 ? (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-content-muted">
           No saved templates yet.
         </p>
       ) : (
@@ -308,18 +310,19 @@ export const SavedTemplatesPanel = () => {
       {undoSnapshot !== null && (
         <div
           role="status"
-          className="mt-3 p-2 rounded bg-slate-800 border border-slate-700 text-xs text-slate-300 flex items-center justify-between gap-2"
+          className="mt-3 p-2 rounded bg-surface-raised border border-border-default text-xs text-content-secondary flex items-center justify-between gap-2"
         >
           <span>
             Loaded template — replaces prior sequence.
           </span>
-          <button
-            type="button"
+          <Button
+            intent="neutral"
+            appearance="soft"
+            size="sm"
             onClick={onUndoLoad}
-            className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-100"
           >
             Undo
-          </button>
+          </Button>
         </div>
       )}
 

@@ -102,7 +102,7 @@ export const StringArrayField = ({
       field={field}
     >
       {isLinked ? (
-        <p className="w-full bg-slate-900 text-slate-400 text-xs rounded px-2 py-1.5 border border-slate-700 font-mono">
+        <p className="w-full bg-surface-raised text-content-secondary text-xs rounded px-2 py-1.5 border border-border-default font-mono">
           {linkLabel}
         </p>
       ) : (
@@ -111,7 +111,7 @@ export const StringArrayField = ({
           aria-required={
             field.isRequired ? "true" : undefined
           }
-          className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+          className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
           id={`${step.id}-${field.name}`}
           onChange={(event) =>
             handleChange(event.target.value)

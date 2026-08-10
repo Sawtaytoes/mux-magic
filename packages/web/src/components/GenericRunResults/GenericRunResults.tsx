@@ -49,12 +49,12 @@ export const GenericRunResults = ({
 
   return (
     <Accordion
-      className="border-emerald-800/40 bg-emerald-950/30 text-xs"
+      className="border-intent-success-border bg-intent-success-surface text-xs"
       expandedKeys={[view.kind]}
       items={[
         {
           content: (
-            <div className="break-all font-mono text-emerald-200/90">
+            <div className="break-all font-mono text-intent-success-content">
               {view.kind === "audioOffsets" && (
                 <ul className="space-y-1">
                   {view.rows.map((row) => (
@@ -62,7 +62,7 @@ export const GenericRunResults = ({
                       key={`${row.label}:${row.offsetInMilliseconds}`}
                     >
                       {row.label}
-                      <span className="text-emerald-500">
+                      <span className="text-intent-success-content">
                         {": "}
                       </span>
                       {row.offsetInMilliseconds}ms
@@ -77,7 +77,7 @@ export const GenericRunResults = ({
                       key={`${row.fromValue}→${row.toValue}`}
                     >
                       {row.fromValue}
-                      <span className="text-emerald-500">
+                      <span className="text-intent-success-content">
                         {" → "}
                       </span>
                       {row.toValue}

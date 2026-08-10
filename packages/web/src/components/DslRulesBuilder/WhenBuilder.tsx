@@ -71,7 +71,7 @@ export const WhenBuilder = ({
                 />
               ))}
               {usedClauses.size === 0 && (
-                <p className="text-xs text-slate-500 italic">
+                <p className="text-xs text-content-muted italic">
                   No clauses. Rule fires on every batch.
                 </p>
               )}

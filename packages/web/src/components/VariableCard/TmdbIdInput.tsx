@@ -19,6 +19,6 @@ export const TmdbIdInput = ({
     onChange={(event) =>
       onValueChange(event.currentTarget.value)
     }
-    className="w-full bg-slate-900 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+    className="w-full bg-surface-raised text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
   />
 )

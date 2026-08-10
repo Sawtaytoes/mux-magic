@@ -29,7 +29,7 @@ const meta: Meta<typeof SavedTemplateRow> = {
   },
   decorators: [
     (Story) => (
-      <ul className="w-72 bg-slate-900 p-2">
+      <ul className="w-72 bg-surface-base p-2">
         <Story />
       </ul>
     ),

@@ -1,4 +1,4 @@
-import { Select } from "@charcuterie/ui"
+import { Button, Select } from "@charcuterie/ui"
 import { isPlainObject, isRefBody } from "./clauseUtils"
 import {
   addWhenEntry,
@@ -43,9 +43,9 @@ export const WhenSlotEditor = ({
   const predicateNames = Object.keys(predicates)
 
   return (
-    <div className="border border-slate-700/60 rounded px-2 py-1.5 bg-slate-900/40">
+    <div className="border border-border-subtle rounded px-2 py-1.5 bg-surface-raised">
       <div className="flex items-center gap-2">
-        <span className="text-xs uppercase tracking-wide text-slate-400">
+        <span className="text-xs uppercase tracking-wide text-content-secondary">
           {slotLabel}
         </span>
         <Select
@@ -93,8 +93,11 @@ export const WhenSlotEditor = ({
             ),
           )}
           {!isReadOnly && (
-            <button
-              type="button"
+            <Button
+              intent="neutral"
+              appearance="ghost"
+              size="sm"
+              className="mt-1"
               onClick={() => {
                 onCommitRules(
                   addWhenEntry({
@@ -105,10 +108,9 @@ export const WhenSlotEditor = ({
                   }),
                 )
               }}
-              className="text-xs text-slate-400 hover:text-blue-400 mt-1"
             >
               + entry
-            </button>
+            </Button>
           )}
         </>
       )}

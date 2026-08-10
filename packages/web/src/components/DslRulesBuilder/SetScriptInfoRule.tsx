@@ -43,7 +43,7 @@ export const SetScriptInfoRuleBody = ({
         <div className="flex-1 min-w-0">
           <label
             htmlFor={`ssr-key-${ruleIndex}`}
-            className="block text-xs text-slate-400 mb-0.5"
+            className="block text-xs text-content-secondary mb-0.5"
           >
             Key
           </label>
@@ -66,13 +66,13 @@ export const SetScriptInfoRuleBody = ({
                 }),
               )
             }}
-            className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+            className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
           />
         </div>
         <div className="flex-1 min-w-0">
           <label
             htmlFor={`ssr-value-${ruleIndex}`}
-            className="block text-xs text-slate-400 mb-0.5"
+            className="block text-xs text-content-secondary mb-0.5"
           >
             Value
           </label>
@@ -95,7 +95,7 @@ export const SetScriptInfoRuleBody = ({
                 }),
               )
             }}
-            className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1 border border-slate-600 focus:outline-none focus:border-blue-500 font-mono"
+            className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
           />
         </div>
       </div>

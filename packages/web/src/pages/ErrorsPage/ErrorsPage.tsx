@@ -10,13 +10,13 @@ export const ErrorsPage = () => {
         <div className="flex items-center gap-4">
           <a
             href="/jobs"
-            className="text-sm text-blue-400 hover:text-blue-300"
+            className="text-sm text-intent-accent-content hover:text-intent-accent-content"
           >
             ← Jobs
           </a>
           <a
             href="/builder"
-            className="text-sm text-blue-400 hover:text-blue-300"
+            className="text-sm text-intent-accent-content hover:text-intent-accent-content"
           >
             Sequence Builder ↗
           </a>

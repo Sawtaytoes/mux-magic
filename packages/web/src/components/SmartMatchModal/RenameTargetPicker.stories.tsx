@@ -15,7 +15,7 @@ const PickerHost = (args: {
     args.initialName,
   )
   return (
-    <div className="bg-slate-900 max-w-md p-4">
+    <div className="bg-surface-base max-w-md p-4">
       <RenameTargetPicker
         candidates={args.candidates}
         selectedName={selectedName}
@@ -23,7 +23,7 @@ const PickerHost = (args: {
         isDisabled={args.isDisabled}
         ariaLabel="Pick a rename target"
       />
-      <p className="mt-3 text-[11px] text-slate-400 font-mono">
+      <p className="mt-3 text-[11px] text-content-secondary font-mono">
         selected: {selectedName || "—"}
       </p>
     </div>

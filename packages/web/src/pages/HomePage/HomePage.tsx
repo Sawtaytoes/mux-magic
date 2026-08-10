@@ -15,7 +15,7 @@ const builderIcon = (
     strokeWidth="1.8"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="w-7 h-7 text-sky-400"
+    className="w-7 h-7 text-intent-accent-content"
   >
     <rect x="3" y="4" width="7" height="6" rx="1.5" />
     <rect x="14" y="14" width="7" height="6" rx="1.5" />
@@ -33,7 +33,7 @@ const jobsIcon = (
     strokeWidth="1.8"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="w-7 h-7 text-emerald-400"
+    className="w-7 h-7 text-intent-success-content"
   >
     <path d="M12 8v4l2.5 2.5" />
     <path d="M3.5 12a8.5 8.5 0 1 0 2.2-5.7" />
@@ -46,10 +46,10 @@ export const HomePage = () => {
 
   return (
     <main className="max-w-6xl mx-auto px-6 py-20">
-      <h1 className="text-5xl font-bold tracking-tight text-slate-100 text-center">
+      <h1 className="text-5xl font-bold tracking-tight text-content-primary text-center">
         Mux Magic
       </h1>
-      <p className="mt-4 text-lg text-slate-400 text-center">
+      <p className="mt-4 text-lg text-content-secondary text-center">
         Pick a tool.
       </p>
       <div className="mt-14 grid gap-8 sm:grid-cols-2">

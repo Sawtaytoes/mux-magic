@@ -78,7 +78,7 @@ export const ApplyIfBuilder = ({
                 )
               })}
               {usedClauses.size === 0 && (
-                <p className="text-xs text-slate-500 italic">
+                <p className="text-xs text-content-muted italic">
                   No clauses. Fields applied to all styles.
                 </p>
               )}
