@@ -62,7 +62,22 @@ const DIST_ASSETS = join(PACKAGE_ROOT, "dist", "assets")
 // so it is a ceiling, not slack — and `manualChunks` is still off the table for
 // the reason above: it would shrink `index-*.js` without shortening the
 // critical path by a byte.
-const MAIN_CHUNK_GZIP_MAX_KB = 286
+//
+// **Cut to 110 kB when the routes became `lazy()`.** Every page is now split
+// out of the entry, so `index-*.js` holds the shell and what all four routes
+// share, not the Sequence Builder — 274.86 kB gzip before, **85.45 kB** after.
+//
+// The old ceiling was written when the entry *was* the app, and the note above
+// about `manualChunks` "not shortening the critical path" is the reason this
+// number could not move until now: splitting off a chunk everyone loads buys
+// nothing, splitting off one that only `/builder` loads buys everything.
+// Leaving 286 in place would be leaving a gate that cannot fail — a
+// re-inlined BuilderPage would sail under it.
+//
+// ~24 kB of headroom for shared code that genuinely belongs on every route.
+// If this needs raising, check first that the growth is actually shared and
+// not a page leaking back into the entry.
+const MAIN_CHUNK_GZIP_MAX_KB = 110
 
 const MODAL_CHUNK_NAMES = [
   "LoadModal",
