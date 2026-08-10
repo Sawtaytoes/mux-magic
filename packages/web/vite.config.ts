@@ -1,3 +1,4 @@
+import { precompressAssets } from "@charcuterie/server/vite"
 import babel from "@rolldown/plugin-babel"
 import tailwindcss from "@tailwindcss/vite"
 import react, {
@@ -12,6 +13,11 @@ export default defineConfig({
       presets: [reactCompilerPreset({ target: "19" })],
     }),
     tailwindcss(),
+    // Writes the `.br`/`.gz` siblings that `createStaticHandler` in
+    // packages/server looks for. Build time, not request time — the
+    // bytes are identical for every visitor and change only when the
+    // build does, so Brotli quality 11 is affordable exactly once.
+    precompressAssets(),
   ],
   server: {
     open: true,
