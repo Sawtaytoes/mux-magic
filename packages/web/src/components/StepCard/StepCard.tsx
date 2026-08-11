@@ -480,7 +480,7 @@ export const StepCard = ({
         />
       )}
       {!step.isCollapsed && (
-        <div className="px-3 py-2">
+        <div className="px-3 py-1.5">
           {cmd ? (
             <>
               {cmd.summary && (

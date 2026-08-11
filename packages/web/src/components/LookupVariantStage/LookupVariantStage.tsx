@@ -101,7 +101,7 @@ export const LookupVariantStage = ({
           onClick={() =>
             selectVariant(variant.id, variant.variant)
           }
-          className="text-start text-sm px-3 py-2 rounded border border-border-default hover:border-border-focus hover:bg-intent-accent-surface text-content-primary transition-colors"
+          className="text-start text-sm px-3 py-2 rounded hover:bg-intent-accent-surface text-content-primary transition-colors"
         >
           <span className="text-xs font-mono bg-surface-sunken px-1 rounded me-2">
             {index + 1}

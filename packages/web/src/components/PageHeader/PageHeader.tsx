@@ -1,4 +1,4 @@
-import { Button, IconButton } from "@charcuterie/ui"
+import { Button, IconButton, Switch } from "@charcuterie/ui"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
 import { editVariablesModalOpenAtom } from "../../components/EditVariablesModal/editVariablesModalOpenAtom"
@@ -11,7 +11,6 @@ import { yamlModalOpenAtom } from "../../components/YamlModal/yamlModalAtom"
 import { Z_INDEX } from "../../constants/zIndex"
 import { useAutoClipboardLoad } from "../../hooks/useAutoClipboardLoad"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
-import { Switch } from "../../primitives/Switch/Switch"
 import {
   dryRunAtom,
   failureModeAtom,
@@ -164,10 +163,6 @@ export const PageHeader = () => {
     setIsDryRun(!isDryRun)
   }
 
-  const toggleFailureMode = () => {
-    setIsFailureMode(!isFailureMode)
-  }
-
   return (
     <div
       id="page-header"
@@ -206,7 +201,7 @@ export const PageHeader = () => {
         </IconButton>
 
         {/* Title */}
-        <h1 className="text-lg font-bold tracking-tight">
+        <h1 className="text-lg font-bold tracking-tight leading-none">
           <a
             href="/"
             className="text-content-primary hover:text-intent-accent-content transition-colors"
@@ -436,36 +431,34 @@ export const PageHeader = () => {
 
           {/* Dry run + run actions */}
           <div className="page-menu-group">
-            <button
-              type="button"
+            {/* @charcuterie/ui Switch is uncontrolled (isChecked seeds it,
+                then it owns its state) — the `key` re-seeds it whenever the
+                atom changes elsewhere (e.g. the DRY RUN badge toggles it),
+                keeping the visual in step with the controlled atom. */}
+            <div
               id="dry-run-btn"
-              onClick={toggleDryRun}
-              className="flex items-center justify-between gap-2 text-xs text-content-secondary cursor-pointer select-none"
               title="Toggle dry-run mode — simulate commands without touching files"
             >
-              <span className="leading-none">Dry Run</span>
               <Switch
-                isOn={isDryRun}
-                activeTrackClass="bg-intent-warning-solid border-intent-warning-border"
+                key={`dry-run-${isDryRun}`}
+                label="Dry Run"
+                isChecked={isDryRun}
+                onChange={setIsDryRun}
               />
-            </button>
+            </div>
 
             {isDryRun && (
-              <button
-                type="button"
+              <div
                 id="failure-mode-btn"
-                onClick={toggleFailureMode}
-                className="flex items-center justify-between gap-2 text-xs text-intent-danger-content cursor-pointer select-none"
                 title="Simulate failures — all commands will fail (dry-run only)"
               >
-                <span className="leading-none">
-                  Simulate Failures
-                </span>
                 <Switch
-                  isOn={isFailureMode}
-                  activeTrackClass="bg-intent-danger-solid border-intent-danger-border"
+                  key={`failure-${isFailureMode}`}
+                  label="Simulate Failures"
+                  isChecked={isFailureMode}
+                  onChange={setIsFailureMode}
                 />
-              </button>
+              </div>
             )}
 
             <Button
