@@ -1,22 +1,34 @@
 <!DOCTYPE html>
-<!--
-  `data-scheme` is what makes `@charcuterie/tokens` publish a colour at all —
-  every `--color-*` is scoped under `[data-scheme="light"]` or
-  `[data-scheme="dark"]`, so an app that forgets the attribute gets no
-  variables rather than a default set, and every token-coloured component
-  renders transparent with no error anywhere.
-
-  No longer pinned to `dark`. The scheme is now resolved before first paint by
-  the `@charcuterie/tokens` `buildFirstPaintScript` snippet in <head> below,
-  and switched at runtime by the `<ColorSchemeSwitcher>` in the page header
-  (which wires `@charcuterie/logic`'s `useColorScheme` to matchMedia +
-  localStorage + `data-scheme` on <html>). Default mode is `system`, so the
-  app now follows the OS light/dark preference. The attribute must be true
-  before the first paint — it is read by CSS, not observed by React — which
-  is exactly why the resolution runs in the head script rather than in React.
--->
 <html lang="en" data-variant="daylight" data-density="comfortable">
   <head>
+    <!--
+      NOTHING may precede `<head>` here except `<!DOCTYPE html>` and the
+      `<html>` tag itself — no comments, no stray markup. Vite finds its
+      injection point with a plain, comment-blind regex (`/<head[^>]*>/i`),
+      so the FIRST literal `<head>` in the file wins even inside a comment.
+      This block used to sit above `<html>` and mentioned `<head>` in prose;
+      Vite therefore injected `@vitejs/plugin-react`'s react-refresh preamble
+      and `/@vite/client` INTO the comment, where they never ran. `yarn dev`
+      served a blank body with "`@vitejs/plugin-react` can't detect preamble"
+      in the console, while production builds — which take a different code
+      path and need no preamble — stayed perfectly green.
+
+      `data-scheme` is what makes `@charcuterie/tokens` publish a colour at
+      all — every `--color-*` is scoped under `[data-scheme="light"]` or
+      `[data-scheme="dark"]`, so an app that forgets the attribute gets no
+      variables rather than a default set, and every token-coloured component
+      renders transparent with no error anywhere.
+
+      No longer pinned to `dark`. The scheme is resolved before first paint by
+      the `@charcuterie/tokens` `buildFirstPaintScript` snippet below, and
+      switched at runtime by the `<ColorSchemeSwitcher>` in the page header
+      (which wires `@charcuterie/logic`'s `useColorScheme` to matchMedia +
+      localStorage + `data-scheme` on the root element). Default mode is
+      `system`, so the app follows the OS light/dark preference. The attribute
+      must be true before the first paint — it is read by CSS, not observed by
+      React — which is exactly why the resolution runs in the head script
+      rather than in React.
+    -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mux Magic</title>
