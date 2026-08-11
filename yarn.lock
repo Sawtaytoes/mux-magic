@@ -738,9 +738,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/server@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "@charcuterie/server@npm:0.1.0"
+"@charcuterie/server@npm:^0.2.0":
+  version: 0.2.0
+  resolution: "@charcuterie/server@npm:0.2.0"
   peerDependencies:
     "@hono/node-server": ">=1.13"
     hono: ">=4"
@@ -748,15 +748,15 @@ __metadata:
   peerDependenciesMeta:
     vite:
       optional: true
-  checksum: 10c0/7b7d0ee4b31303d1a47769c3be9bb138aa8f2e021db4ecbbeef5f9fddab83dfb3e80f2a26af5082be4de7df37602fac67403f5462db81ef1e18eec327557b5bd
+  checksum: 10c0/27919c25fa3c0cc7b4f9c3b167015cacd5e19fee463cc69ab208d00b458ea8554fd0f39231a336ed90efd578df6580a729ac436da6fccacf62dbbccd08149876
   languageName: node
   linkType: hard
 
-"@charcuterie/storybook-config@npm:^0.1.3":
-  version: 0.1.3
-  resolution: "@charcuterie/storybook-config@npm:0.1.3"
+"@charcuterie/storybook-config@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "@charcuterie/storybook-config@npm:0.2.2"
   dependencies:
-    "@charcuterie/tokens": "npm:1.2.0"
+    "@charcuterie/tokens": "npm:1.5.0"
     remark-gfm: "npm:^4.0.1"
   peerDependencies:
     "@storybook/addon-docs": ">=10"
@@ -774,18 +774,11 @@ __metadata:
       optional: true
     vite:
       optional: true
-  checksum: 10c0/93ad689f990d89934ba2ca378172ade113dfe5c00600fbbc5054e77fe3bd5a98da5bc27a45b006b2a763bc49662b9ea9d1fcc109e35f4793a729622e35e87685
+  checksum: 10c0/89e18233e83183ff77e3cb2f893414c01378faed01c8bafca1cfcc554698f45ed70489db1309701ebf2d84aad734308490e8a3ff80a2c9b87213a6d5c243cd6a
   languageName: node
   linkType: hard
 
-"@charcuterie/tokens@npm:1.2.0, @charcuterie/tokens@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "@charcuterie/tokens@npm:1.2.0"
-  checksum: 10c0/902b493f0a90a888e2bbe0a36626c713c51adbcdb028b911d128d2564247a9ba895fbd1895bcde738ecd140dc7d35dc8558c5ab37ee094a13fb47b1b8aeea4a8
-  languageName: node
-  linkType: hard
-
-"@charcuterie/tokens@npm:1.5.0":
+"@charcuterie/tokens@npm:1.5.0, @charcuterie/tokens@npm:^1.5.0":
   version: 1.5.0
   resolution: "@charcuterie/tokens@npm:1.5.0"
   checksum: 10c0/1dba63b654ca2cb4c54b2412dd7c82a29274333b22ed884d21d7afca050709af0dbbceaaaadb35733829e28a6464f5e01b1baf96957ba82e5f33ead1acf1e58e
@@ -1987,7 +1980,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mux-magic/server@workspace:packages/server"
   dependencies:
-    "@charcuterie/server": "npm:^0.1.0"
+    "@charcuterie/server": "npm:^0.2.0"
     "@hono/node-server": "npm:^2.0.2"
     "@mux-magic/api": "workspace:*"
     "@mux-magic/core": "workspace:*"
@@ -2020,9 +2013,9 @@ __metadata:
   resolution: "@mux-magic/web@workspace:packages/web"
   dependencies:
     "@charcuterie/logic": "npm:^1.2.0"
-    "@charcuterie/server": "npm:^0.1.0"
-    "@charcuterie/storybook-config": "npm:^0.1.3"
-    "@charcuterie/tokens": "npm:^1.2.0"
+    "@charcuterie/server": "npm:^0.2.0"
+    "@charcuterie/storybook-config": "npm:^0.2.2"
+    "@charcuterie/tokens": "npm:^1.5.0"
     "@charcuterie/ui": "npm:^2.11.0"
     "@charcuterie/vite-config": "npm:^1.0.2"
     "@dnd-kit/core": "npm:^6.3.1"
