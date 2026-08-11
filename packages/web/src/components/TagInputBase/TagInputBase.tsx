@@ -1,5 +1,3 @@
-import { IconButton } from "@charcuterie/ui"
-
 type TagItem = {
   key: string
   label: React.ReactNode
@@ -49,20 +47,18 @@ export const TagInputBase = ({
         {tags.map((tag) => (
           <span
             key={tag.key}
-            className="inline-flex items-center gap-1 bg-surface-sunken text-content-primary text-xs rounded px-1.5 py-0.5"
+            className="inline-flex items-center gap-1 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default"
           >
             {tag.label}
-            <IconButton
-              label={tag.title}
+            <button
+              type="button"
+              aria-label={tag.title}
               title={tag.title}
-              intent="danger"
-              appearance="ghost"
-              size="sm"
               onClick={() => onRemove(tag.key)}
-              className="leading-none"
+              className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded leading-none text-content-secondary hover:bg-intent-danger-surface hover:text-intent-danger-content cursor-pointer"
             >
               ✕
-            </IconButton>
+            </button>
           </span>
         ))}
       </div>

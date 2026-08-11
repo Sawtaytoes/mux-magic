@@ -45,7 +45,7 @@ describe("SavedTemplateRow", () => {
     )
     expect(
       screen.getByRole("button", {
-        name: "Movie Workflow",
+        name: /Movie Workflow/,
       }),
     ).toBeInTheDocument()
     expect(
@@ -64,7 +64,7 @@ describe("SavedTemplateRow", () => {
     )
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Movie Workflow",
+        name: /Movie Workflow/,
       }),
     )
     expect(handlers.onLoad).toHaveBeenCalledTimes(1)

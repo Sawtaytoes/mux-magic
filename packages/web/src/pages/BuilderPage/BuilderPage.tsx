@@ -1,3 +1,4 @@
+import { Main, Shell } from "@charcuterie/ui"
 import { useStore } from "jotai"
 import { useHydrateAtoms } from "jotai/utils"
 import { lazy, Suspense, useEffect } from "react"
@@ -5,6 +6,7 @@ import { lazy, Suspense, useEffect } from "react"
 import { COMMANDS } from "../../commands/commands"
 import { PageHeader } from "../../components/PageHeader/PageHeader"
 import { VariablesSidebar } from "../../components/VariablesSidebar/VariablesSidebar"
+import { Z_INDEX } from "../../constants/zIndex"
 import { useBuilderKeyboard } from "../../hooks/useBuilderKeyboard"
 import { usePageTitle } from "../../hooks/usePageTitle"
 import { decodeSeqJsonParam } from "../../jobs/decodeSeqJsonParam"
@@ -224,24 +226,31 @@ export const BuilderPage = () => {
   }, [store])
 
   return (
-    <div
-      className="flex flex-col bg-surface-base text-content-primary"
-      style={{ height: "100dvh", overflow: "hidden" }}
-    >
-      <PageHeader />
+    <>
+      {/* @charcuterie/ui Shell: a CSS-grid page frame (header row + content
+          column + end Rail). The Rail (VariablesSidebar) relocates instead of
+          `display:none` at narrow widths, so Variables + Saved Templates stay
+          reachable. PageHeader spans the header row and is made genuinely
+          sticky here (it previously set only z-index and scrolled away). */}
+      <Shell contentWidth="md">
+        <div
+          className="sticky top-0 col-span-full"
+          style={{ zIndex: Z_INDEX.sticky }}
+        >
+          <PageHeader />
+        </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-4 py-4">
-            <BuilderSequenceList />
-          </div>
-        </main>
         <VariablesSidebar />
-      </div>
+
+        <Main className="px-4 py-4">
+          <BuilderSequenceList />
+        </Main>
+      </Shell>
 
       {/* Modals — lazy-loaded; each is atom-gated to closed-by-default so
           `null` is the correct Suspense fallback (nothing renders until
-          the user actually opens one and the chunk resolves). */}
+          the user actually opens one and the chunk resolves). Rendered
+          outside Shell: each is `position: fixed` against the viewport. */}
       <Suspense fallback={null}>
         <EditVariablesModal />
         <YamlModal />
@@ -256,6 +265,6 @@ export const BuilderPage = () => {
         <ImagePreviewModal />
         <SmartMatchModal />
       </Suspense>
-    </div>
+    </>
   )
 }

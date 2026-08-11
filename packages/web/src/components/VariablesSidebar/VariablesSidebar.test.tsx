@@ -31,16 +31,18 @@ describe("VariablesSidebar", () => {
     ).toBeInTheDocument()
   })
 
-  test("sidebar container has hidden class for small screens", () => {
+  test("sidebar stays in the DOM at narrow widths (relocates, not hidden)", () => {
     renderSidebar()
     const sidebar = screen.getByRole("complementary")
-    expect(sidebar.className).toContain("hidden")
+    // Adopted onto the @charcuterie/ui Rail: below md it relocates to a
+    // scrolling strip instead of `display:none`, so it is never removed.
+    expect(sidebar.className).not.toContain("hidden")
   })
 
-  test("sidebar container has lg:flex class for large screens", () => {
+  test("sidebar becomes a fixed-width column at md and up", () => {
     renderSidebar()
     const sidebar = screen.getByRole("complementary")
-    expect(sidebar.className).toContain("lg:flex")
+    expect(sidebar.className).toContain("md:w-64")
   })
 
   test("sidebar has a Variables heading", () => {

@@ -1,5 +1,5 @@
 import type { ListboxItem } from "@charcuterie/ui"
-import { Combobox, IconButton } from "@charcuterie/ui"
+import { Combobox } from "@charcuterie/ui"
 import { useState } from "react"
 import type { CommandField } from "../../commands/types"
 import { ISO_639_2_NAME_BY_CODE } from "../../data/iso639-2"
@@ -121,27 +121,25 @@ export const LanguageCodeField = ({
       <CommandFieldGroup field={field}>
         {selected && (
           <div className="flex flex-wrap gap-1 mb-1">
-            <span className="inline-flex items-center gap-1 bg-surface-sunken text-content-primary text-xs rounded px-1.5 py-0.5">
+            <span className="inline-flex items-center gap-1 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default">
               <span>
                 {ISO_639_2_NAME_BY_CODE[selected.code] ??
                   selected.code}
               </span>
-              <span className="font-mono text-content-muted ms-1">
+              <span className="font-mono text-content-muted">
                 {selected.ietf
                   ? `${selected.code} · ${selected.ietf}`
                   : selected.code}
               </span>
-              <IconButton
-                label={`Remove ${selected.code}`}
+              <button
+                type="button"
+                aria-label={`Remove ${selected.code}`}
                 title={`Remove ${selected.code}`}
-                intent="danger"
-                appearance="ghost"
-                size="sm"
                 onClick={clearSelection}
-                className="leading-none"
+                className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded leading-none text-content-secondary hover:bg-intent-danger-surface hover:text-intent-danger-content cursor-pointer"
               >
                 ✕
-              </IconButton>
+              </button>
             </span>
           </div>
         )}

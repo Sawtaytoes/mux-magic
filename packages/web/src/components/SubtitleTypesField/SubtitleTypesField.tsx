@@ -1,5 +1,5 @@
 import type { ListboxItem } from "@charcuterie/ui"
-import { Combobox, IconButton } from "@charcuterie/ui"
+import { Combobox } from "@charcuterie/ui"
 import { useState } from "react"
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
@@ -122,20 +122,18 @@ export const SubtitleTypesField = ({
           {selected.map((value) => (
             <span
               key={value}
-              className="inline-flex items-center gap-1 bg-surface-sunken text-content-primary text-xs rounded px-1.5 py-0.5"
+              className="inline-flex items-center gap-1 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default"
             >
               <span className="font-mono">{value}</span>
-              <IconButton
-                label={`Remove ${value}`}
+              <button
+                type="button"
+                aria-label={`Remove ${value}`}
                 title={`Remove ${value}`}
-                intent="danger"
-                appearance="ghost"
-                size="sm"
                 onClick={() => removeValue(value)}
-                className="leading-none"
+                className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded leading-none text-content-secondary hover:bg-intent-danger-surface hover:text-intent-danger-content cursor-pointer"
               >
                 ✕
-              </IconButton>
+              </button>
             </span>
           ))}
         </div>

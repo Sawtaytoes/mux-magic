@@ -72,7 +72,7 @@ describe("PageHeader", () => {
     expect(store.get(dryRunAtom)).toBe(false)
     await openControlsMenu()
     await userEvent.click(
-      screen.getByRole("button", { name: /dry run/i }),
+      screen.getByRole("switch", { name: /dry run/i }),
     )
     expect(store.get(dryRunAtom)).toBe(true)
   })
@@ -82,7 +82,7 @@ describe("PageHeader", () => {
     renderWithStore(store)
     await openControlsMenu()
     await userEvent.click(
-      screen.getByRole("button", { name: /dry run/i }),
+      screen.getByRole("switch", { name: /dry run/i }),
     )
     expect(
       new URLSearchParams(window.location.search).get(
@@ -100,7 +100,7 @@ describe("PageHeader", () => {
     )
     await openControlsMenu()
     await userEvent.click(
-      screen.getByRole("button", { name: /dry run/i }),
+      screen.getByRole("switch", { name: /dry run/i }),
     )
     const dryRunCalls = setItemSpy.mock.calls.filter(
       ([key]) =>
@@ -126,7 +126,7 @@ describe("PageHeader", () => {
     renderWithStore(store)
     await openControlsMenu()
     expect(
-      screen.getByRole("button", {
+      screen.getByRole("switch", {
         name: /simulate failures/i,
       }),
     ).toBeInTheDocument()
@@ -136,7 +136,7 @@ describe("PageHeader", () => {
     const store = createStore()
     renderWithStore(store)
     expect(
-      screen.queryByRole("button", {
+      screen.queryByRole("switch", {
         name: /simulate failures/i,
       }),
     ).toBeNull()
@@ -148,7 +148,7 @@ describe("PageHeader", () => {
     renderWithStore(store)
     await openControlsMenu()
     await userEvent.click(
-      screen.getByRole("button", {
+      screen.getByRole("switch", {
         name: /simulate failures/i,
       }),
     )
@@ -161,7 +161,7 @@ describe("PageHeader", () => {
     renderWithStore(store)
     await openControlsMenu()
     await userEvent.click(
-      screen.getByRole("button", {
+      screen.getByRole("switch", {
         name: /simulate failures/i,
       }),
     )
