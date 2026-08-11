@@ -18,9 +18,12 @@ type SavedTemplateRowProps = {
 // trivially testable: render with mock handlers and assert each is
 // called when the right button fires.
 //
-// Layout: name button (click to load) on its own line, with the
-// management buttons stacked under it. Compact enough to fit four
-// rows in the narrow 18rem sidebar without crowding.
+// Layout: the whole title+description region is a single full-width
+// load control (click anywhere on it to load), with the management
+// buttons stacked under it as SIBLINGS — never nested inside the load
+// button (no button-in-button). Each management button stops event
+// propagation so clicking it doesn't also trigger a load. Compact
+// enough to fit four rows in the narrow 18rem sidebar without crowding.
 export const SavedTemplateRow = ({
   template,
   isSelected,
@@ -42,22 +45,27 @@ export const SavedTemplateRow = ({
       type="button"
       onClick={onLoad}
       title={template.description ?? template.name}
-      className="block w-full text-start text-sm text-content-primary truncate"
+      className="block w-full text-start rounded cursor-pointer hover:bg-intent-neutral-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
     >
-      {template.name}
+      <span className="block text-sm text-content-primary truncate">
+        {template.name}
+      </span>
+      {template.description !== undefined &&
+        template.description.length > 0 && (
+          <span className="block text-xs text-content-secondary truncate mt-0.5">
+            {template.description}
+          </span>
+        )}
     </button>
-    {template.description !== undefined &&
-      template.description.length > 0 && (
-        <p className="text-xs text-content-secondary truncate mt-0.5">
-          {template.description}
-        </p>
-      )}
     <div className="mt-2 flex flex-wrap gap-1 text-[11px]">
       <Button
         intent="neutral"
         appearance="soft"
         size="sm"
-        onClick={onUpdateFromCurrent}
+        onClick={(event) => {
+          event.stopPropagation()
+          onUpdateFromCurrent()
+        }}
         title="Overwrite this template with the current sequence"
       >
         Update
@@ -66,7 +74,10 @@ export const SavedTemplateRow = ({
         intent="neutral"
         appearance="soft"
         size="sm"
-        onClick={onRename}
+        onClick={(event) => {
+          event.stopPropagation()
+          onRename()
+        }}
       >
         Rename
       </Button>
@@ -74,7 +85,10 @@ export const SavedTemplateRow = ({
         intent="neutral"
         appearance="soft"
         size="sm"
-        onClick={onEditDescription}
+        onClick={(event) => {
+          event.stopPropagation()
+          onEditDescription()
+        }}
       >
         Edit description
       </Button>
@@ -82,7 +96,10 @@ export const SavedTemplateRow = ({
         intent="danger"
         appearance="soft"
         size="sm"
-        onClick={onDelete}
+        onClick={(event) => {
+          event.stopPropagation()
+          onDelete()
+        }}
       >
         Delete
       </Button>

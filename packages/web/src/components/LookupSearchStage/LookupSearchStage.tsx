@@ -483,7 +483,7 @@ export const LookupSearchStage = ({
                   type="button"
                   key={label}
                   onClick={handleSelect}
-                  className="text-start text-sm px-3 py-2 rounded border border-border-default hover:border-border-focus hover:bg-intent-accent-surface text-content-primary transition-colors"
+                  className="text-start text-sm px-3 py-2 rounded hover:bg-intent-accent-surface text-content-primary transition-colors"
                 >
                   <div className="flex items-baseline gap-2">
                     {keyHint}

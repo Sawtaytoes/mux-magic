@@ -62,7 +62,7 @@ export const CommandFieldGroup = ({
 
   return (
     <div
-      className={`flex flex-col gap-1.5 ${className ?? ""}`}
+      className={`flex flex-col gap-1 ${className ?? ""}`}
     >
       <div className="flex items-baseline justify-between gap-2">
         <span className="flex items-baseline gap-1 font-medium text-content-primary text-sm">
