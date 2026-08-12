@@ -67,6 +67,13 @@ export type WhenPredicateClause =
   | WhenPredicateClauseExplicit
   | WhenPredicateClauseShorthand
 
+// A clause map: an implicit AND over the clauses it names. This is what
+// every `when:` written before nesting existed looks like, and it stays
+// the wire format for any rule that does not nest.
+//
+// Note the asymmetry — `notAllScriptInfo` exists and `notAllStyle` does
+// NOT. That is deliberate and load-bearing: the builder's target picker
+// filters on it, so the missing pair cannot be constructed in the UI.
 export type WhenPredicate = {
   anyScriptInfo?: WhenPredicateClause
   allScriptInfo?: WhenPredicateClause
@@ -76,6 +83,24 @@ export type WhenPredicate = {
   allStyle?: WhenPredicateClause
   noneStyle?: WhenPredicateClause
 }
+
+// ── Nested `when:` ───────────────────────────────────────────────────
+//
+// A boolean node joins CHILD NODES; a clause map quantifies over SOURCE
+// ROWS. Keeping those two jobs in separate node kinds is the whole point:
+// `anyStyle: {a, b}` asks "is there one style row with BOTH?", which is
+// not the same question as "any of these two sub-conditions holds", and
+// conflating them would silently change what a saved rule means.
+//
+// A `WhenPredicate` IS a `WhenNode`, so every rule already on disk parses
+// and evaluates unchanged — the nested form is additive, not a migration.
+export type WhenBooleanNode = {
+  all?: WhenNode[]
+  any?: WhenNode[]
+  none?: WhenNode[]
+}
+
+export type WhenNode = WhenBooleanNode | WhenPredicate
 
 export type ComparatorOperator =
   | "lt"
@@ -97,6 +122,21 @@ export type ApplyIfPredicate = {
   allStyleMatches?: ApplyIfStyleClause
   noneStyleMatches?: ApplyIfStyleClause
 }
+
+// The same boolean layer `WhenNode` gets, for the same reason and with
+// the same guarantee: a clause still quantifies over style rows, an
+// `ApplyIfPredicate` is still a valid node, and nothing on disk changes
+// meaning. Kept symmetric deliberately — two rule predicates that nest
+// by different rules would be a trap for whoever writes the next one.
+export type ApplyIfBooleanNode = {
+  all?: ApplyIfNode[]
+  any?: ApplyIfNode[]
+  none?: ApplyIfNode[]
+}
+
+export type ApplyIfNode =
+  | ApplyIfBooleanNode
+  | ApplyIfPredicate
 
 // Math op for `computeFrom.ops` — either a `{ verb: number }` numeric op
 // or a bare-string no-arg op.
@@ -130,7 +170,7 @@ export type SetScriptInfoRule = {
   type: "setScriptInfo"
   key: string
   value: string
-  when?: WhenPredicate
+  when?: WhenNode
 }
 
 export type ScaleResolutionRule = {
@@ -140,15 +180,15 @@ export type ScaleResolutionRule = {
   hasLayoutRes?: boolean
   hasScaledBorderAndShadow?: boolean
   isLayoutResSynced?: boolean
-  when?: WhenPredicate
+  when?: WhenNode
 }
 
 export type SetStyleFieldsRule = {
   type: "setStyleFields"
   ignoredStyleNamesRegexString?: string
   fields: Record<string, StyleFieldValue>
-  applyIf?: ApplyIfPredicate
-  when?: WhenPredicate
+  applyIf?: ApplyIfNode
+  when?: WhenNode
 }
 
 export type AssModificationRule =

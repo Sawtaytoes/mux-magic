@@ -2,7 +2,9 @@ import { describe, expect, test } from "vitest"
 import {
   applyAssRules,
   buildFileMetadata,
+  evaluateApplyIfNode,
   evaluateApplyIfPredicate,
+  evaluateWhenNode,
   evaluateWhenPredicate,
   type FileBatchMetadata,
   filterRulesByWhen,
@@ -585,5 +587,290 @@ describe("when: + applyIf + computeFrom interact correctly through applyAssRules
       rules,
     })
     expect(filtered).toEqual([])
+  })
+})
+
+describe("evaluateWhenNode — nested boolean when:", () => {
+  test("a legacy clause map evaluates unchanged when passed as a node", () => {
+    const batchMetadata = buildBatchMetadata([SAMPLE_HD])
+
+    // The backward-compatibility guarantee, asserted rather than
+    // assumed: every `when:` already on disk is a clause map, and it
+    // must take the clause branch and answer exactly as it always has.
+    expect(
+      evaluateWhenNode({
+        batchMetadata,
+        node: { anyScriptInfo: { PlayResX: "1920" } },
+        predicates: {},
+      }),
+    ).toBe(
+      evaluateWhenPredicate({
+        batchMetadata,
+        predicate: { anyScriptInfo: { PlayResX: "1920" } },
+        predicates: {},
+      }),
+    )
+  })
+
+  test("any: is an OR over child nodes, which a flat clause map cannot express", () => {
+    const batchMetadata = buildBatchMetadata([SAMPLE_HD])
+
+    const isResult = evaluateWhenNode({
+      batchMetadata,
+      node: {
+        any: [
+          // false — this batch is 1920 wide
+          { anyScriptInfo: { PlayResX: "640" } },
+          // true
+          { anyScriptInfo: { PlayResX: "1920" } },
+        ],
+      },
+      predicates: {},
+    })
+
+    // A clause map ANDs its clauses, so this pair would be false there.
+    expect(isResult).toBe(true)
+  })
+
+  test("all: ANDs child nodes", () => {
+    const batchMetadata = buildBatchMetadata([SAMPLE_HD])
+
+    expect(
+      evaluateWhenNode({
+        batchMetadata,
+        node: {
+          all: [
+            { anyScriptInfo: { PlayResX: "1920" } },
+            { anyScriptInfo: { PlayResY: "1080" } },
+          ],
+        },
+        predicates: {},
+      }),
+    ).toBe(true)
+
+    expect(
+      evaluateWhenNode({
+        batchMetadata,
+        node: {
+          all: [
+            { anyScriptInfo: { PlayResX: "1920" } },
+            { anyScriptInfo: { PlayResX: "640" } },
+          ],
+        },
+        predicates: {},
+      }),
+    ).toBe(false)
+  })
+
+  test("none: is true only when every child fails", () => {
+    const batchMetadata = buildBatchMetadata([SAMPLE_HD])
+
+    expect(
+      evaluateWhenNode({
+        batchMetadata,
+        node: {
+          none: [{ anyScriptInfo: { PlayResX: "640" } }],
+        },
+        predicates: {},
+      }),
+    ).toBe(true)
+
+    expect(
+      evaluateWhenNode({
+        batchMetadata,
+        node: {
+          none: [{ anyScriptInfo: { PlayResX: "1920" } }],
+        },
+        predicates: {},
+      }),
+    ).toBe(false)
+  })
+
+  test("a clause still quantifies over ROWS, not over its sibling conditions", () => {
+    // The distinction the whole nested design exists to protect. The HD
+    // sample has two styles: Default (Fontsize 60) and Signs (48).
+    //
+    // ONE clause naming both pairs asks "is there a single style row with
+    // Fontsize 60 AND Fontsize 48?" — impossible, so false.
+    expect(
+      evaluateWhenNode({
+        batchMetadata: buildBatchMetadata([SAMPLE_HD]),
+        node: {
+          anyStyle: { Fontsize: "60", MarginL: "10" },
+        },
+        predicates: {},
+      }),
+    ).toBe(true)
+
+    expect(
+      evaluateWhenNode({
+        batchMetadata: buildBatchMetadata([SAMPLE_HD]),
+        node: { anyStyle: { Fontsize: "60", MarginV: "99" } },
+        predicates: {},
+      }),
+    ).toBe(false)
+
+    // Wrapping the SAME two facts in `any:` asks a different question —
+    // "does some row have Fontsize 60, or some row have MarginV 99?" —
+    // and gets a different answer. If these two ever agree, the boolean
+    // layer has eaten the row quantifier.
+    expect(
+      evaluateWhenNode({
+        batchMetadata: buildBatchMetadata([SAMPLE_HD]),
+        node: {
+          any: [
+            { anyStyle: { Fontsize: "60" } },
+            { anyStyle: { MarginV: "99" } },
+          ],
+        },
+        predicates: {},
+      }),
+    ).toBe(true)
+  })
+
+  test("nests boolean nodes inside boolean nodes", () => {
+    const batchMetadata = buildBatchMetadata([SAMPLE_HD])
+
+    expect(
+      evaluateWhenNode({
+        batchMetadata,
+        node: {
+          all: [
+            { anyScriptInfo: { PlayResX: "1920" } },
+            {
+              any: [
+                { anyScriptInfo: { PlayResX: "640" } },
+                { anyStyle: { Fontsize: "48" } },
+              ],
+            },
+          ],
+        },
+        predicates: {},
+      }),
+    ).toBe(true)
+  })
+
+  test("empty children follow the aggregator conventions", () => {
+    const batchMetadata = buildBatchMetadata([SAMPLE_HD])
+
+    expect(
+      evaluateWhenNode({
+        batchMetadata,
+        node: { all: [] },
+        predicates: {},
+      }),
+    ).toBe(true)
+
+    expect(
+      evaluateWhenNode({
+        batchMetadata,
+        node: { any: [] },
+        predicates: {},
+      }),
+    ).toBe(false)
+
+    expect(
+      evaluateWhenNode({
+        batchMetadata,
+        node: { none: [] },
+        predicates: {},
+      }),
+    ).toBe(true)
+  })
+
+  test("filterRulesByWhen accepts a nested when:", () => {
+    const batchMetadata = buildBatchMetadata([SAMPLE_HD])
+
+    const filtered = filterRulesByWhen({
+      batchMetadata,
+      predicates: {},
+      rules: [
+        {
+          type: "setScriptInfo",
+          key: "Kept",
+          value: "yes",
+          when: {
+            any: [
+              { anyScriptInfo: { PlayResX: "640" } },
+              { anyScriptInfo: { PlayResX: "1920" } },
+            ],
+          },
+        },
+        {
+          type: "setScriptInfo",
+          key: "Dropped",
+          value: "no",
+          when: {
+            all: [
+              { anyScriptInfo: { PlayResX: "1920" } },
+              { anyScriptInfo: { PlayResX: "640" } },
+            ],
+          },
+        },
+      ],
+    })
+
+    expect(filtered).toHaveLength(1)
+    expect(
+      (filtered[0] as { key: string }).key,
+    ).toBe("Kept")
+  })
+})
+
+describe("evaluateApplyIfNode — nested boolean applyIf", () => {
+  test("a legacy clause map evaluates unchanged", () => {
+    const [fileMetadata] = buildBatchMetadata([SAMPLE_HD])
+
+    expect(
+      evaluateApplyIfNode({
+        applyIf: { anyStyleMatches: { Fontsize: { gt: 50 } } },
+        fileMetadata,
+      }),
+    ).toBe(
+      evaluateApplyIfPredicate({
+        applyIf: { anyStyleMatches: { Fontsize: { gt: 50 } } },
+        fileMetadata,
+      }),
+    )
+  })
+
+  test("any: ORs child nodes; all: ANDs them; none: negates", () => {
+    const [fileMetadata] = buildBatchMetadata([SAMPLE_HD])
+
+    // HD styles: Default Fontsize 60, Signs Fontsize 48.
+    expect(
+      evaluateApplyIfNode({
+        applyIf: {
+          any: [
+            { anyStyleMatches: { Fontsize: { gt: 500 } } },
+            { anyStyleMatches: { Fontsize: { eq: 48 } } },
+          ],
+        },
+        fileMetadata,
+      }),
+    ).toBe(true)
+
+    expect(
+      evaluateApplyIfNode({
+        applyIf: {
+          all: [
+            { anyStyleMatches: { Fontsize: { eq: 60 } } },
+            { anyStyleMatches: { Fontsize: { gt: 500 } } },
+          ],
+        },
+        fileMetadata,
+      }),
+    ).toBe(false)
+
+    expect(
+      evaluateApplyIfNode({
+        applyIf: {
+          none: [
+            { anyStyleMatches: { Fontsize: { gt: 500 } } },
+          ],
+        },
+        fileMetadata,
+      }),
+    ).toBe(true)
   })
 })

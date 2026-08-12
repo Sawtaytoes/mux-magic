@@ -708,24 +708,33 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/logic@npm:1.2.0, @charcuterie/logic@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "@charcuterie/logic@npm:1.2.0"
+"@charcuterie/logic@npm:1.5.0, @charcuterie/logic@npm:^1.5.0":
+  version: 1.5.0
+  resolution: "@charcuterie/logic@npm:1.5.0"
   peerDependencies:
     "@preact/signals-core": ">=1.8"
+    "@tanstack/react-query": ">=5"
     jotai: ">=2"
+    openapi-fetch: ">=0.17"
+    openapi-react-query: ">=0.5"
     preact: ">=10.11"
     react: ">=18"
   peerDependenciesMeta:
     "@preact/signals-core":
       optional: true
+    "@tanstack/react-query":
+      optional: true
     jotai:
+      optional: true
+    openapi-fetch:
+      optional: true
+    openapi-react-query:
       optional: true
     preact:
       optional: true
     react:
       optional: true
-  checksum: 10c0/27ff8b7b0fabae05ecb386ca898861b466c0c0e94500d822988ae9389261513e14775ef075ad62fc8ae64698db31991d19ce99768b877f9131e73848db7ed3ab
+  checksum: 10c0/05a14a7b87ee6182e0a42f38e769c693e5519e8d08631c86cfc4cc339006160143bc6282cee66efedc3f2f128364be0d969a934ba79e794df3a5165e56da0cfc
   languageName: node
   linkType: hard
 
@@ -792,11 +801,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/ui@npm:^2.11.0":
-  version: 2.11.0
-  resolution: "@charcuterie/ui@npm:2.11.0"
+"@charcuterie/ui@npm:^2.13.0":
+  version: 2.13.0
+  resolution: "@charcuterie/ui@npm:2.13.0"
   dependencies:
-    "@charcuterie/logic": "npm:1.2.0"
+    "@charcuterie/logic": "npm:1.5.0"
     "@charcuterie/tokens": "npm:1.5.0"
     "@floating-ui/react": "npm:^0.27.20"
     "@tanstack/react-virtual": "npm:^3.13.12"
@@ -807,7 +816,7 @@ __metadata:
   peerDependenciesMeta:
     react-router:
       optional: true
-  checksum: 10c0/29eb536a7de143a07c8a51450963ed3bc55e109650490df9a79d014b19206f65e7f2ef9b6237bf96141d0f5ba39e8c6006a675539bf94980ed78f1388989734a
+  checksum: 10c0/092dd8b46192a799870beea8697d7f8423de967a30c74ba242b88d1664994c20682378e1e906f3e76f09ea2f7196a7b4751f362f1985ed483515d3bb8c30455f
   languageName: node
   linkType: hard
 
@@ -2012,11 +2021,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mux-magic/web@workspace:packages/web"
   dependencies:
-    "@charcuterie/logic": "npm:^1.2.0"
+    "@charcuterie/logic": "npm:^1.5.0"
     "@charcuterie/server": "npm:^0.2.0"
     "@charcuterie/storybook-config": "npm:^0.2.2"
     "@charcuterie/tokens": "npm:^1.5.0"
-    "@charcuterie/ui": "npm:^2.11.0"
+    "@charcuterie/ui": "npm:^2.13.0"
     "@charcuterie/vite-config": "npm:^1.0.2"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
