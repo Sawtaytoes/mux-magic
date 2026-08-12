@@ -1,10 +1,60 @@
 # Disc-backup title selection — a web UI for deciding what to keep
 
-**Status: design sketch, nothing built.** Written 2026-07-26 from the owner's
-description. No code exists, no disc has been analysed by it, and every
-disc-specific pattern below is **owner recall that still needs validating
-against real backups** — that is called out per-item rather than presented as
-fact.
+> [!NOTE]
+> **Status: partly built (2026-08-12).** Piece **A (the analyser) has
+> shipped** — `analyseDiscBackup`, the MakeMKV robot-mode reader, the
+> segment-map clustering and eight named heuristic rules, all tested
+> against **seven real backups** committed as fixtures. Pieces **B (the
+> review UI)** and **C (execution)** are not built yet.
+>
+> The sketch below is kept as written, because its per-item ⚠️ caveats are
+> what the implementation was checked against — and two of them turned out
+> to matter. **Where the evidence disagrees with the sketch, the evidence
+> wins**; those corrections are recorded in "What the real backups changed"
+> immediately below, and the four open questions are answered at the end.
+
+## What the real backups changed
+
+Capturing `makemkvcon -r --cache=1 --minlength=0 info` against seven
+`[BACKUP]` folders before writing any rules corrected four assumptions:
+
+1. **Segment maps are exposed — but they are TRUNCATED.** `TINFO`
+   attribute 26 carries the map, so clustering needs no `.mpls` parser for
+   a single-segment feature. But makemkvcon caps the field around 370
+   characters and ends it with `...`, so a long playlist's map is a
+   **prefix**. Modelled as `isSegmentMapTruncated`; no rule may claim two
+   long playlists are identical, because the difference could be entirely
+   in the elided tail. A `.mpls` parser is therefore **required** for
+   multi-segment titles, not optional.
+
+2. **"Large file without chapters → useless" does not generalise to
+   "long".** The Troy bonus disc's real featurettes are 1–17 minute
+   chapterless `.m2ts` titles; a "long chapterless → discard" rule would
+   propose throwing away ~20 genuine extras. `isChapterlessLongTitle`'s
+   floor is **feature length** (45 min), and in the current corpus it
+   fires on nothing — the chapterless things worth discarding are all
+   caught, with a better reason, by `isChapterlessTwin`.
+
+3. **Menu loops have MANY chapters, not zero.** The sketch guessed "tiny,
+   chapterless". Real menu loops carry a chapter per button — 87 chapters
+   in 1:27 (The Outfit), 271 in 4:31 (Troy bonus) — and no audio track at
+   all. `isMenuLoop` keys on chapter *density* plus missing audio; a rule
+   keyed on "no chapters" would have missed every one.
+
+4. **Soylent Green's three "editions" are confirmed as one video**, and
+   the raw `00425.m2ts` twin carries *every* track the three playlists
+   expose between them (LPCM 1.0 + 3 × DD 2.0). So it is not a duplicate
+   to discard — it is the cheap single-pass rip source. That inverts the
+   "no chapters = junk" rule, so it is surfaced as `inspect` rather than
+   taken silently.
+
+## Original sketch (2026-07-26)
+
+**Status at the time: design sketch, nothing built.** Written from the
+owner's description. No code existed, no disc had been analysed by it, and
+every disc-specific pattern below was **owner recall that still needed
+validating against real backups** — called out per-item rather than
+presented as fact.
 
 Input comes from [`rip-deck`](/mnt/TrueNAS-Apps/Repos/rip-deck), which rips whole
 discs and marks them `[BACKUP] {title} ({year}) - {type}` on the Disc-Rips
@@ -240,13 +290,41 @@ squinting, because those two alone collapse the duplicate explosion.
   time those become the regression corpus — and the thing that lets the
   heuristics get *measurably* better rather than just accumulating.
 
-## Open questions
+## Open questions — answered 2026-08-12
 
-1. Does `makemkvcon info` expose segment lists richly enough, or does this need
-   to parse `BDMV/PLAYLIST/*.mpls` directly?
-2. UHD discs are explicitly out of scope for the `mls0800` pattern — do they need
-   a different rule set entirely, or just no studio hint?
-3. Should the analyser run automatically when a `[BACKUP]` folder appears, or
-   on demand? (Automatic means a queue of pending reviews, which is nicer, but
-   it needs a trigger from `rip-deck` or a watch on the dataset.)
-4. Where do confirmed decisions live so they survive a re-analysis?
+**1. Does `makemkvcon info` expose segment lists richly enough, or does
+this need to parse `BDMV/PLAYLIST/*.mpls` directly?**
+**Both.** `TINFO` attribute 26 gives the segment map, and for a
+single-segment feature that is exact and sufficient — which is how the
+Soylent Green, Troy and Larry Flynt clusters are resolved with no `.mpls`
+parsing at all. But the field is truncated at ~370 characters, so
+multi-segment playlists get a prefix only. A `.mpls` parser is still
+needed for those, and separately for chapter marks and PID→track mapping
+during execution.
+
+**2. UHD discs are out of scope for `mls0800` — different rule set, or
+just no studio hint?**
+**Neither, so far: no studio hints are encoded at all.** Every rule in the
+registry keys on structure (segment maps, chapter density, track sets),
+not on studio filename conventions, and all eight behave identically on
+BD and UHD across the corpus (three UHD and three BD backups). The Disney
+`mls0800` pattern, Ghibli sides and anime Play-All splitting are
+deliberately **absent** from the registry until a matching backup has been
+run through the analyser — and the general-purpose `isDistinctCut` rule
+already detects the shape all three take, answering "keep both, here is
+the segment diff", which is the safe answer for each.
+
+**3. Automatic on `[BACKUP]` appearance, or on demand?**
+**On demand, for now.** `analyseDiscBackup` is a normal command on all
+five wiring surfaces (CLI, HTTP, builder), so it composes into a sequence
+like any other step. The analysis is cheap and read-only, so a watch or a
+`rip-deck` trigger can be added later without changing anything here; it
+was left out because a queue of pending reviews needs the review UI
+(piece B) to exist first.
+
+**4. Where do confirmed decisions live so they survive a re-analysis?**
+**In the backup, in a second file.** `DISC-ANALYSIS/analysis.json` is
+machine output and is rewritten on every run;
+`DISC-ANALYSIS/confirmed.json` is the human decision and is never
+overwritten by the analyser. Recorded as
+[a decision](decisions/2026-08-12-confirmed-dispositions-are-the-regression-corpus.md).

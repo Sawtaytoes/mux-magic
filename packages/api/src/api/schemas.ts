@@ -163,6 +163,26 @@ export const copyFilesRequestSchema = z.object({
     ),
 })
 
+export const analyseDiscBackupRequestSchema = z.object({
+  sourcePath: z
+    .string()
+    .describe(
+      "A `[BACKUP]` folder produced by rip-deck (e.g. `/media/Disc-Rips/[BACKUP] Desk Set - Blu-ray`). Read directly as a BDMV tree — no disc needed. Nothing in it is modified.",
+    ),
+  disabledRuleNames: z
+    .array(z.string())
+    .default([])
+    .describe(
+      "Heuristic rules to switch off by name (e.g. `isChapterlessLongTitle`). Studio patterns are conventions, not standards, so a rule that turns out to be wrong for a release can be disabled without unpicking the analyser.",
+    ),
+  minimumTitleLengthSeconds: z
+    .number()
+    .default(0)
+    .describe(
+      "MakeMKV's minimum title length. Defaults to 0 so short extras are seen and can be proposed for discard with a reason — MakeMKV's own 10-second default silently drops them (51 of Desk Set's 61 titles).",
+    ),
+})
+
 export const flattenOutputRequestSchema = z.object({
   sourcePath: z
     .string()
