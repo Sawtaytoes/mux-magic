@@ -32,9 +32,12 @@ export type WhenSlotValue =
   | RefBody
   | null
 
+// Both slots optional: a clause may carry only `matches`, only
+// `excludes`, or a `$ref` in one of them. Requiring both forced callers
+// to write `excludes: null` for the common matches-only case.
 export type WhenClauseCanonical = {
-  matches: WhenSlotValue
-  excludes: WhenSlotValue
+  matches?: WhenSlotValue
+  excludes?: WhenSlotValue
 }
 
 export type WhenClauseValue =
@@ -44,6 +47,22 @@ export type WhenClauseValue =
 export type WhenMap = Partial<
   Record<WhenClauseName, WhenClauseValue>
 >
+
+// ── Nested `when:` ───────────────────────────────────────────────────
+// Mirrors `WhenNode` in packages/core's `assTypes.ts`. The web package
+// deliberately does not depend on `@mux-magic/core` — these shapes are
+// restated here the same way `WhenMap` always has been.
+//
+// A boolean node joins CHILD NODES; a `WhenMap` quantifies over SOURCE
+// ROWS. A `WhenMap` is itself a valid node, which is what makes every
+// saved rule keep working.
+export type WhenBooleanNode = {
+  all?: WhenNode[]
+  any?: WhenNode[]
+  none?: WhenNode[]
+}
+
+export type WhenNode = WhenBooleanNode | WhenMap
 
 export const APPLY_IF_CLAUSE_NAMES = [
   "anyStyleMatches",
@@ -70,8 +89,22 @@ export type ApplyIfEntry = {
   [K in ComparatorVerb]?: number
 }
 export type ApplyIfMap = Partial<
-  Record<ApplyIfClauseName, Record<string, ApplyIfEntry>>
+  Record<
+    ApplyIfClauseName,
+    Record<string, ApplyIfEntry | string>
+  >
 >
+
+// The `applyIf` twin of `WhenBooleanNode`, mirroring core's
+// `ApplyIfNode`. Same rule: a boolean node joins child nodes, a clause
+// map quantifies over style rows, and a map is itself a valid node.
+export type ApplyIfBooleanNode = {
+  all?: ApplyIfNode[]
+  any?: ApplyIfNode[]
+  none?: ApplyIfNode[]
+}
+
+export type ApplyIfNode = ApplyIfBooleanNode | ApplyIfMap
 
 // ─── Decision 4: computeFrom ops chain — flat array ──────────────────────────
 // Flat array preserves serialized YAML shape exactly; avoids a transform layer.
@@ -143,7 +176,7 @@ export type SetScriptInfoRule = {
   type: "setScriptInfo"
   key: string
   value: string
-  when?: WhenMap
+  when?: WhenNode
 }
 
 // `isAspectLinked`: undefined ≡ linked (default).
@@ -164,7 +197,7 @@ export type ScaleResolutionRule = {
   isFromAspectLocked?: boolean
   /** @deprecated worker 0c → 46 migration. Read-only; new writes drop this key. */
   isToAspectLocked?: boolean
-  when?: WhenMap
+  when?: WhenNode
 }
 
 export type ScaleResolutionGroup = "from" | "to"
@@ -173,8 +206,8 @@ export type SetStyleFieldsRule = {
   type: "setStyleFields"
   fields: StyleFieldsMap
   ignoredStyleNamesRegexString?: string
-  applyIf?: ApplyIfMap
-  when?: WhenMap
+  applyIf?: ApplyIfNode
+  when?: WhenNode
 }
 
 export type DslRule =

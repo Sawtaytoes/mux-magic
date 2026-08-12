@@ -705,7 +705,9 @@ describe("evaluateWhenNode — nested boolean when:", () => {
     expect(
       evaluateWhenNode({
         batchMetadata: buildBatchMetadata([SAMPLE_HD]),
-        node: { anyStyle: { Fontsize: "60", MarginV: "99" } },
+        node: {
+          anyStyle: { Fontsize: "60", MarginV: "99" },
+        },
         predicates: {},
       }),
     ).toBe(false)
@@ -811,9 +813,9 @@ describe("evaluateWhenNode — nested boolean when:", () => {
     })
 
     expect(filtered).toHaveLength(1)
-    expect(
-      (filtered[0] as { key: string }).key,
-    ).toBe("Kept")
+    expect((filtered[0] as { key: string }).key).toBe(
+      "Kept",
+    )
   })
 })
 
@@ -823,12 +825,16 @@ describe("evaluateApplyIfNode — nested boolean applyIf", () => {
 
     expect(
       evaluateApplyIfNode({
-        applyIf: { anyStyleMatches: { Fontsize: { gt: 50 } } },
+        applyIf: {
+          anyStyleMatches: { Fontsize: { gt: 50 } },
+        },
         fileMetadata,
       }),
     ).toBe(
       evaluateApplyIfPredicate({
-        applyIf: { anyStyleMatches: { Fontsize: { gt: 50 } } },
+        applyIf: {
+          anyStyleMatches: { Fontsize: { gt: 50 } },
+        },
         fileMetadata,
       }),
     )
