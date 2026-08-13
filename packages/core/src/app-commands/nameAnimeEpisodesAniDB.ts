@@ -88,11 +88,17 @@ const filterAndSortByCategory = (
 //   others   → sequential index (1, 2, 3...) under the user's
 //              seasonNumber. The AniDB epno here is "O1", "O2"... —
 //              not user-friendly in a Plex library, so we drop it.
-//   picker categories (specials/credits/trailers/parodies):
-//              Plex's specials convention — season 0, sequential
-//              index. The Plex scanner pulls these into the
-//              "Specials" virtual season regardless of which AniDB
-//              type the episode came from.
+//   specials → season 0, plain sequential index (s00e01, e02…).
+//              The Plex scanner pulls these into the "Specials"
+//              virtual season.
+//   credits / trailers / parodies (the OP/ED/PV/parody extras):
+//              season 0, but numbered in AniDB's hundreds band by the
+//              episode's letter-number (credits C-n → 30n, trailers
+//              T-n → 20n, parodies P-n → 50n; see ORDERING_BASE_BY_TYPE).
+//              This keeps a partial or non-contiguous set on AniDB's own
+//              numbering (e.g. C1/C3/C4 → s00e301/e303/e304) and matches
+//              the existing library convention (an OP tagged "C1" lands
+//              at s00e301, like Fate-EXTRA's "Bright Burning Shout").
 export const formatOutputFilename = ({
   category,
   episode,
@@ -110,6 +116,8 @@ export const formatOutputFilename = ({
 }) => {
   const padTwo = (value: number | string) =>
     String(value).padStart(2, "0")
+  const padThree = (value: number | string) =>
+    String(value).padStart(3, "0")
   // A missing episode title (e.g. a currently-airing series AniDB hasn't
   // published titles for yet) drops the " - <title>" segment rather than
   // the whole file, so the rename still lands and is re-runnable once the
@@ -130,12 +138,22 @@ export const formatOutputFilename = ({
     )
   }
   if (isPickerCategory(category)) {
+    // Specials keep the plain sequential Plex convention; the other
+    // extras (credits/trailers/parodies) are placed in their AniDB
+    // hundreds band by their letter-number so the numbering survives a
+    // partial/non-contiguous set and matches the library (C1 → e301).
+    const episodeNumber =
+      category === "specials"
+        ? padTwo(sequentialIndex)
+        : padThree(
+            epnoOrderingValue(episode.type, episode.epno),
+          )
     return cleanupFilename(
       seriesName.concat(
         " - ",
         "s00",
         "e",
-        padTwo(sequentialIndex),
+        episodeNumber,
         titleSuffix,
       ),
     )
