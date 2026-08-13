@@ -66,9 +66,11 @@ export const getAnimeXml = (
   const inFlight = inFlightByAid.get(aid)
   if (inFlight !== undefined) return inFlight
 
-  const request = fetchAnimeXml(aid, options).finally(() => {
-    inFlightByAid.delete(aid)
-  })
+  const request = fetchAnimeXml(aid, options).finally(
+    () => {
+      inFlightByAid.delete(aid)
+    },
+  )
   inFlightByAid.set(aid, request)
   return request
 }
