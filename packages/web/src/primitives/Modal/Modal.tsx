@@ -5,6 +5,10 @@ interface ModalProps {
   onClose: () => void
   ariaLabel: string
   children: React.ReactNode
+  // Composed onto Charcuterie's Modal box (the bordered/rounded/elevated
+  // surface) — this is where a caller sets the modal's width, so the
+  // content inside must NOT paint its own second surface.
+  className?: string
 }
 
 // Thin wrapper preserving the app's historical Modal prop API
@@ -16,12 +20,14 @@ export const Modal = ({
   onClose,
   ariaLabel,
   children,
+  className,
 }: ModalProps) => {
   return (
     <CharcuterieModal
       isVisible={isOpen}
       onClose={onClose}
       aria-label={ariaLabel}
+      className={className}
     >
       {children}
     </CharcuterieModal>
