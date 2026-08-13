@@ -51,9 +51,13 @@ Before merging UI or API route changes, also run `yarn e2e`. Full pre-merge gate
 ## Roles (one-liner)
 
 - **Primary** (repo root, branch `master`): never push unless told; commit as you go.
-- **Worker** (`.claude/worktrees/<id>_<slug>/`, branch `worker-<id>-<slug>`): commit and push every change; open a PR against `master`; only merge when told.
+- **Worker** (`.claude/worktrees/<id>_<slug>/`, branch `worker-<id>-<slug>`): commit and push every change; open a PR against `master`; **merge it yourself once CI is green** (below).
 
 `master` is the only base branch — the `feat/mux-magic-revamp` integration branch was retired on 2026-08-03 ([decision](docs/decisions/2026-08-03-master-is-the-only-base-branch.md)). Older worker specs under [docs/workers/](docs/workers/) still say "PR against `feat/mux-magic-revamp`"; that text is stale and the branch no longer exists.
+
+**Merge your own PR the moment CI goes green — don't ask.** Squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash` (`gh pr merge` trips the shared-worktree lock). The ruleset below is what makes this safe: you cannot merge anything red, so "green" is the whole permission ([decision](docs/decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Leaving a green PR open to be asked about is the failure mode this replaced — it stalls the work and makes the owner the queue.
+
+Two things are still his call, not yours: **merging someone else's PR**, and **anything a merge sets in motion that a merge can't undo** — a master merge builds and pushes `ghcr.io/sawtaytoes/mux-magic:latest`, but the TrueNAS app is only redeployed onto it deliberately, so say what shipped and what still needs a redeploy.
 
 **Merging to `master` is hard-gated on green CI** by a GitHub ruleset — squash-only PRs, linear history, all CI jobs (`lint`, `typecheck`, `unit-tests`, `e2e`, `storybook-build`, `build-budget`) required, and **no bypass** (the owner token cannot merge past red CI either). Don't try to route around a blocked merge — a red gate means CI failed; fix it ([decision](docs/decisions/2026-08-05-master-merges-are-gated-on-ci-by-a-github-ruleset.md)).
 

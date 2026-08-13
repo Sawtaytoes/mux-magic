@@ -20,6 +20,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
 | 2026-08-13 | [Disc analysis runs at `--minlength=60`, not 0](2026-08-13-disc-analysis-minimum-title-length-is-60-seconds.md) | core / cli / api | Accepted |
+| 2026-08-13 | [Agents merge their own PRs as soon as CI is green](2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md) | process | Accepted |
 | 2026-08-13 | [PR/public screenshots use masked, fictional data](2026-08-13-pr-screenshots-use-masked-fake-data.md) | process | Accepted |
 | 2026-08-13 | [Sequence groups are flat-only (no parallel-of-sequences)](2026-08-13-groups-are-flat-only-no-parallel-of-sequences.md) | api / web | Known limitation |
 | 2026-08-12 | [Confirmed disc-title dispositions are the regression corpus, stored in the backup](2026-08-12-confirmed-dispositions-are-the-regression-corpus.md) | core / web | Accepted |

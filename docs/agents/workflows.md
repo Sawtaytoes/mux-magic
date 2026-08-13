@@ -13,7 +13,7 @@ If your repo folder name starts with `Mux-Magic-worker-`:
 
 1. **Create a feature branch** at the start of any non-trivial work — don't commit directly to `master`. Naming: `feature/<short-description>` (e.g. `feature/jobs-progress-followup`). If a feature branch is already checked out and matches the task, keep using it.
 2. **Commit AND push** to that branch as you go. This is the explicit reversal of the primary's "never push" rule — the push is what makes your work visible to the user and lets the primary (and other workers) see what you're up to. Push after every commit; don't batch.
-3. **Don't merge to `master` autonomously.** Wait for the user to explicitly say "merge it" or equivalent. Once told, merge your feature branch into local `master` and push.
+3. **Merge to `master` yourself once CI is green — don't ask.** Squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash`. The no-bypass ruleset means a red PR cannot be merged at all, so green is the permission ([decision](../decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Still the owner's call: someone else's PR, and the TrueNAS redeploy that puts a new image in front of the running app.
 4. Everything in `Commit conventions` below (commit-as-you-go, partial-file splits, focused commits) still applies — you're just additionally pushing the branch on every commit.
 5. **For UI changes, leave a dev server running when you hand off / open the PR.** The user reviews UI before approving — they can't tell from a diff whether a button morphs, whether copy feedback flashes, or whether a popover aligns. Start `yarn api-dev-server` (it picks up `PORT` from `.env` — never inline-override it with `$env:PORT=...`) in the background before announcing the PR, and tell the user the URL (`http://localhost:<PORT>/builder/` or `/`) so they can poke at it. Stop the server when they say they're done or when you merge.
 
@@ -26,11 +26,9 @@ The push-as-you-go rule is what keeps multiple workers from drifting into each o
 When working in a git worktree (created with `EnterWorktree`):
 
 1. **Commit as you go** — after each logical group of changes and passing tests, create a commit. Don't batch work into a single commit at the end.
-2. **Push to a PR, don't merge** — when all work is complete and tests pass, push changes to a GitHub PR and wait for the user to review. Do not merge autonomously; the user will review the PR and tell you when to merge.
-3. **Start a dev server when ready for testing** — once the PR is created and ready for review, start `yarn api-dev-server` on a random port (it picks up `PORT` from `.env`). This allows the user to test the changes in their browser before approving.
-4. **Kill the server after merge** — once the user tells you to merge and the merge is complete, stop the dev server.
-
-The user will review changes by examining the PR and testing the running server, then explicitly ask you to merge when ready.
+2. **Push to a PR, then merge it yourself when CI goes green** — squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash` ([decision](../decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Don't hold a green PR open waiting to be asked.
+3. **Start a dev server when the change is visible in the UI** — start `yarn api-dev-server` on a random port (it picks up `PORT` from `.env`) so the user can poke at it. Merging doesn't wait on that: the PR's before/after screenshots are the record, and the server is for follow-up questions.
+4. **Kill the server after the merge**, or when the user says they're done with it.
 
 ## Explaining Behavior Changes to the User
 
@@ -72,7 +70,7 @@ If a single file legitimately touches two unrelated concerns (e.g. a feature cha
 
 Natural commit points: a todo item flips to completed, a phase of a Plan-mode plan finishes, tests pass for a self-contained change, a refactor wraps up before the next one starts.
 
-Push rule depends on which role you are — see `Multi-Agent Workflow` above. Primary: never push without explicit instruction. Worker: push every commit to your feature branch; only merge to `master` when told.
+Push rule depends on which role you are — see `Multi-Agent Workflow` above. Primary: never push without explicit instruction. Worker: push every commit to your feature branch, and merge it to `master` yourself once CI is green.
 
 ## Worker Addressing
 
