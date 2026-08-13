@@ -141,3 +141,44 @@ export const ReadOnly: Story = {
     },
   },
 }
+
+/**
+ * A rule carrying both predicates, in the legacy flat shape every saved
+ * sequence uses. Open "When" or "Apply If" to drive the QueryBuilder:
+ * the quantifier picker is ANY/ALL/NO, and the target picker beside it
+ * says what is being quantified — sub-groups, style rows, or script
+ * info. Set the quantifier to NOT ALL and the target list filters to
+ * script info, because the DSL has no `notAllStyle`.
+ *
+ * There was no `when:`/`applyIf:` story before the QueryBuilder
+ * migration, which is why the predicates' rendering was never in a
+ * screenshot or an axe run.
+ */
+export const WithWhenAndApplyIf: Story = {
+  args: {
+    step: {
+      ...baseStep,
+      params: {
+        predicates: {
+          hdSource: { PlayResX: "1920" },
+        },
+        rules: [
+          {
+            type: "setStyleFields",
+            fields: { Fontname: "Arial" },
+            when: {
+              allScriptInfo: { PlayResX: "1920" },
+              anyStyle: {
+                excludes: { Bold: "-1" },
+                matches: { Fontname: "Comic Sans MS" },
+              },
+            },
+            applyIf: {
+              anyStyleMatches: { Fontsize: { gt: 40 } },
+            },
+          },
+        ],
+      },
+    },
+  },
+}

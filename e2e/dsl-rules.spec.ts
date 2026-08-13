@@ -197,7 +197,7 @@ test.describe("DslRulesBuilder — When panel", () => {
     await addModifySubtitleMetadataStep(page)
   })
 
-  test("When panel opens and a condition type can be selected", async ({
+  test("When panel opens and a group's combinator can be chosen", async ({
     page,
   }) => {
     await page
@@ -205,39 +205,83 @@ test.describe("DslRulesBuilder — When panel", () => {
       .first()
       .click()
 
-    // The `When` disclosure is an `Accordion` now, not a `<details>`, so
-    // it is reached by the trigger's accessible name rather than by a
+    // The `When` disclosure is an `Accordion`, not a `<details>`, so it
+    // is reached by the trigger's accessible name rather than by a
     // `data-details-key` handle only this file could see.
     await page
       .getByRole("button", { name: /^When \(advanced/ })
       .first()
       .click()
-    const conditionSelect = page.getByRole("combobox", {
-      name: "Condition type",
-    })
-    await expect(conditionSelect).toBeVisible()
 
-    // Select a condition from the dropdown. selectOption resolving without
-    // timeout proves the select was open and clickable. The mutation's
-    // side-effect (the clause appears as a WhenClauseRow header) is the
-    // user-visible outcome we care about.
-    await conditionSelect.selectOption("anyScriptInfo")
+    // There is no "+ Add clause…" select any more. A `when:` is a tree,
+    // and a group's combinator is two pickers: the quantifier, and what
+    // it ranges over. Both are `Listbox` triggers — buttons that open a
+    // listbox — named "<label>: <current value>" so the visible text
+    // stays inside the accessible name.
+    const quantifier = page
+      .getByRole("button", { name: /^Quantifier: / })
+      .first()
+    await expect(quantifier).toBeVisible()
 
-    // The new clause renders a header span with the clause name.
-    //
-    // This used to be scoped to the rule-card root with a note explaining
-    // that "the React-controlled <details>'s `open` attribute is lost on
-    // re-render, making children appear hidden to Playwright even when they
-    // are in the DOM." That was the two-owners bug — React and `<details>`
-    // both holding `open` — surfacing as a flaky locator. The `Accordion`
-    // holds it alone now, so the panel's visibility is honest; the scoping
-    // stays because it is also the shorter path.
+    const target = page
+      .getByRole("button", { name: /^Target: / })
+      .first()
+    await expect(target).toBeVisible()
+
+    // NOT ALL is the case the second picker exists for: the DSL declares
+    // `notAllScriptInfo` and no `notAllStyle`, so choosing it must leave
+    // exactly one legal target rather than offering a pair that cannot
+    // be written out.
+    await quantifier.click()
+    await page
+      .getByRole("option", { name: "NOT ALL" })
+      .click()
+
     await expect(
       page
-        .locator("[data-rule-key]")
-        .first()
-        .locator("text=anyScriptInfo"),
-    ).toBeAttached()
+        .getByRole("button", { name: /^Target: / })
+        .first(),
+    ).toHaveAccessibleName("Target: script info")
+
+    await page
+      .getByRole("button", { name: /^Target: / })
+      .first()
+      .click()
+
+    // Scoped to the open listbox: the rule-type control is a native
+    // `<select>`, whose `<option>`s also carry role "option".
+    await expect(
+      page.getByRole("listbox").getByRole("option"),
+    ).toHaveCount(1)
+  })
+
+  test("a condition can be added to a group", async ({
+    page,
+  }) => {
+    await page
+      .getByRole("button", { name: "+ setScriptInfo" })
+      .first()
+      .click()
+
+    await page
+      .getByRole("button", { name: /^When \(advanced/ })
+      .first()
+      .click()
+
+    await expect(
+      page.getByRole("textbox", { name: "Condition key" }),
+    ).toHaveCount(0)
+
+    await page
+      .getByRole("button", { name: "+ Condition" })
+      .first()
+      .click()
+
+    await expect(
+      page
+        .getByRole("textbox", { name: "Condition key" })
+        .first(),
+    ).toBeVisible()
   })
 })
 

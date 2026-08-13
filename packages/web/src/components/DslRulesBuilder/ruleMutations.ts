@@ -1,6 +1,7 @@
 import { isPlainObject } from "./clauseUtils"
 import { generateFreshKey } from "./generateFreshKey"
 import {
+  type ApplyIfNode,
   type DslRule,
   type PredicatesMap,
   RULE_TYPES,
@@ -8,6 +9,7 @@ import {
   type ScaleResolutionRule,
   type SetScriptInfoRule,
   type SetStyleFieldsRule,
+  type WhenNode,
 } from "./types"
 
 const FALLBACK_RATIO_WIDTH = 16
@@ -473,3 +475,61 @@ export const removePredicateEntry = ({
   delete nextBody[entryKey]
   return { ...predicates, [predicateName]: nextBody }
 }
+
+// `when:` is now edited as a whole tree rather than clause-by-clause, so
+// the builder commits one node (or `undefined` to drop the key entirely
+// and keep the YAML clean) instead of the dozen targeted mutations the
+// old clause editor needed.
+export const setRuleWhen = ({
+  nextWhen,
+  ruleIndex,
+  rules,
+}: {
+  nextWhen: WhenNode | undefined
+  ruleIndex: number
+  rules: DslRule[]
+}): DslRule[] =>
+  updateRuleAt({
+    ruleIndex,
+    rules,
+    updater: (rule) => {
+      if (nextWhen === undefined) {
+        const { when: _removedWhen, ...withoutWhen } = rule
+        return withoutWhen as DslRule
+      }
+
+      return { ...rule, when: nextWhen }
+    },
+  })
+
+// The `applyIf` twin of `setRuleWhen`. Only `setStyleFields` carries an
+// `applyIf`, so a rule of another type is returned untouched rather than
+// growing a key its type does not have.
+export const setRuleApplyIf = ({
+  nextApplyIf,
+  ruleIndex,
+  rules,
+}: {
+  nextApplyIf: ApplyIfNode | undefined
+  ruleIndex: number
+  rules: DslRule[]
+}): DslRule[] =>
+  updateRuleAt({
+    ruleIndex,
+    rules,
+    updater: (rule) => {
+      if (rule.type !== "setStyleFields") {
+        return rule
+      }
+
+      if (nextApplyIf === undefined) {
+        const {
+          applyIf: _removedApplyIf,
+          ...withoutApplyIf
+        } = rule
+        return withoutApplyIf as DslRule
+      }
+
+      return { ...rule, applyIf: nextApplyIf }
+    },
+  })

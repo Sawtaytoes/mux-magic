@@ -1,20 +1,17 @@
-import { Accordion, Select } from "@charcuterie/ui"
-import { ApplyIfClauseRow } from "./ApplyIfClauseRow"
-import { isPlainObject } from "./clauseUtils"
-import { addApplyIfClause } from "./conditionMutations"
-import {
-  APPLY_IF_CLAUSE_NAMES,
-  type ApplyIfClauseName,
-  type ApplyIfEntry,
-  type ApplyIfMap,
-  type DslRule,
-  type OpenDetailsKeys,
+import { Accordion } from "@charcuterie/ui"
+import { useEffect, useRef, useState } from "react"
+import { ApplyIfTreeEditor } from "./ApplyIfTreeEditor"
+import { setRuleApplyIf } from "./ruleMutations"
+import type {
+  ApplyIfNode,
+  DslRule,
+  OpenDetailsKeys,
 } from "./types"
 
 type ApplyIfBuilderProps = {
   rules: DslRule[]
   ruleIndex: number
-  applyIfValue: ApplyIfMap | undefined
+  applyIfValue: ApplyIfNode | undefined
   isReadOnly: boolean
   stepId: string
   openDetailsKeys: OpenDetailsKeys
@@ -26,25 +23,49 @@ type ApplyIfBuilderProps = {
 }
 
 export const ApplyIfBuilder = ({
-  rules,
-  ruleIndex,
   applyIfValue,
   isReadOnly,
-  stepId,
-  openDetailsKeys,
-  onToggleDetails,
   onCommitRules,
+  onToggleDetails,
+  openDetailsKeys,
+  ruleIndex,
+  rules,
+  stepId,
 }: ApplyIfBuilderProps) => {
-  const applyIf = isPlainObject(applyIfValue)
-    ? (applyIfValue as ApplyIfMap)
-    : {}
-  const usedClauses = new Set(Object.keys(applyIf))
-  const availableClauses = APPLY_IF_CLAUSE_NAMES.filter(
-    (clauseName) => !usedClauses.has(clauseName),
-  )
   const detailsKey = `${stepId}:applyif:${ruleIndex}`
   const isOpen =
     !isReadOnly && openDetailsKeys.has(detailsKey)
+
+  const externalApplyIf = JSON.stringify(
+    applyIfValue ?? null,
+  )
+
+  // Same external-change remount as `WhenBuilder`, for the same reason.
+  const lastEmittedRef = useRef<string | null>(null)
+  const [remountCount, setRemountCount] = useState(0)
+
+  useEffect(() => {
+    if (lastEmittedRef.current === null) {
+      return
+    }
+
+    if (lastEmittedRef.current !== externalApplyIf) {
+      lastEmittedRef.current = null
+      setRemountCount((previousCount) => previousCount + 1)
+    }
+  }, [externalApplyIf])
+
+  const handleCommitApplyIf = (
+    nextApplyIf: ApplyIfNode | undefined,
+  ) => {
+    lastEmittedRef.current = JSON.stringify(
+      nextApplyIf ?? null,
+    )
+
+    onCommitRules(
+      setRuleApplyIf({ nextApplyIf, ruleIndex, rules }),
+    )
+  }
 
   return (
     <Accordion
@@ -53,75 +74,13 @@ export const ApplyIfBuilder = ({
       items={[
         {
           content: (
-            <>
-              {APPLY_IF_CLAUSE_NAMES.filter((clauseName) =>
-                usedClauses.has(clauseName),
-              ).map((clauseName) => {
-                const clauseValue = isPlainObject(
-                  applyIf[clauseName],
-                )
-                  ? (applyIf[clauseName] as Record<
-                      string,
-                      ApplyIfEntry
-                    >)
-                  : {}
-                return (
-                  <ApplyIfClauseRow
-                    key={clauseName}
-                    rules={rules}
-                    ruleIndex={ruleIndex}
-                    clauseName={clauseName}
-                    clauseValue={clauseValue}
-                    isReadOnly={isReadOnly}
-                    onCommitRules={onCommitRules}
-                  />
-                )
-              })}
-              {usedClauses.size === 0 && (
-                <p className="text-xs text-content-muted italic">
-                  No clauses. Fields applied to all styles.
-                </p>
-              )}
-              {!isReadOnly &&
-                availableClauses.length > 0 && (
-                  <Select
-                    className="mt-2 w-56 font-mono"
-                    // The old `<select>` had no accessible name at all — no
-                    // `aria-label`, no `<label for>` — so it was announced as
-                    // "combobox" and `getByRole("combobox", { name })` could not
-                    // find it. `Select` makes the name a required-in-practice
-                    // prop for exactly that reason.
-                    label="Apply-if clause type"
-                    onChange={(clauseName) => {
-                      if (!clauseName) {
-                        return
-                      }
-
-                      onCommitRules(
-                        addApplyIfClause({
-                          rules,
-                          ruleIndex,
-                          clauseName:
-                            clauseName as ApplyIfClauseName,
-                        }),
-                      )
-                    }}
-                    options={availableClauses.map(
-                      (clauseName) => ({
-                        label: clauseName,
-                        value: clauseName,
-                      }),
-                    )}
-                    // Same one-shot reset as `WhenBuilder`, and the same direct
-                    // DOM write deleted with it.
-                    placeholder="+ Add clause…"
-                    size="sm"
-                  />
-                )}
-            </>
+            <ApplyIfTreeEditor
+              applyIfValue={applyIfValue}
+              isReadOnly={isReadOnly}
+              key={`${detailsKey}:${remountCount}`}
+              onCommitApplyIf={handleCommitApplyIf}
+            />
           ),
-          // Disabled rather than collapsed in the read-only preview — see
-          // `WhenBuilder` for what `<details>` could not express.
           isDisabled: isReadOnly,
           key: detailsKey,
           label:

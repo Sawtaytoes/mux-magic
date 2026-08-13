@@ -1,4 +1,6 @@
 import type {
+  ApplyIfBooleanNode,
+  ApplyIfNode,
   ApplyIfPredicate,
   ApplyIfStyleClause,
   AssFile,
@@ -14,6 +16,8 @@ import type {
   SetScriptInfoRule,
   SetStyleFieldsRule,
   StyleFieldValue,
+  WhenBooleanNode,
+  WhenNode,
   WhenPredicate,
   WhenPredicateClause,
 } from "./assTypes.js"
@@ -242,6 +246,71 @@ export const evaluateWhenPredicate = ({
   })
 }
 
+// The boolean joiners a nested `when:` node can carry. Anything else is a
+// clause map, which is why the legacy shape needs no marker of its own.
+const WHEN_BOOLEAN_KEYS = ["all", "any", "none"] as const
+
+type WhenBooleanKey = (typeof WHEN_BOOLEAN_KEYS)[number]
+
+const getBooleanKey = (
+  node: WhenNode,
+): WhenBooleanKey | undefined =>
+  WHEN_BOOLEAN_KEYS.find((key) =>
+    Array.isArray((node as Record<string, unknown>)[key]),
+  )
+
+// Evaluate a `when:` node, nested or not.
+//
+// The recursion is only over the BOOLEAN layer. The moment a node is a
+// clause map it goes to `evaluateWhenPredicate` untouched, so the
+// row-quantified semantics — `anyStyle` meaning "one style row matches
+// every pair in this clause" — are the existing implementation rather
+// than a reimplementation that could drift from it.
+//
+// This is also what makes the nested form backward compatible without a
+// migration: a legacy `when:` has no `all`/`any`/`none` key, so it takes
+// the clause-map branch on the first call and behaves exactly as before.
+export const evaluateWhenNode = ({
+  batchMetadata,
+  node,
+  predicates,
+}: {
+  batchMetadata: FileBatchMetadata[]
+  node: WhenNode
+  predicates: NamedPredicates
+}): boolean => {
+  const booleanKey = getBooleanKey(node)
+
+  if (!booleanKey) {
+    return evaluateWhenPredicate({
+      batchMetadata,
+      predicate: node as WhenPredicate,
+      predicates,
+    })
+  }
+
+  const children =
+    (node as WhenBooleanNode)[booleanKey] ?? []
+
+  const childResults = children.map((child) =>
+    evaluateWhenNode({
+      batchMetadata,
+      node: child,
+      predicates,
+    }),
+  )
+
+  // Empty-children conventions match the aggregators above: "all of
+  // zero" is vacuously true, "any of zero" false, "none of zero" true.
+  if (booleanKey === "all") {
+    return childResults.every((isMatch) => isMatch)
+  }
+  if (booleanKey === "any") {
+    return childResults.some((isMatch) => isMatch)
+  }
+  return childResults.every((isMatch) => !isMatch)
+}
+
 // Filter the rule list down to those whose `when:` predicate (if any)
 // passes against the aggregate batch metadata. Rules without `when:` always
 // pass.
@@ -258,9 +327,9 @@ export const filterRulesByWhen = ({
     if (!rule.when) {
       return true
     }
-    return evaluateWhenPredicate({
+    return evaluateWhenNode({
       batchMetadata,
-      predicate: rule.when,
+      node: rule.when,
       predicates,
     })
   })
@@ -423,6 +492,46 @@ const styleRowMatchesClause = ({
       styleValue: styleRow[fieldName],
     }),
   )
+
+// The `applyIf` twin of `evaluateWhenNode`. Same split: the recursion is
+// only over the boolean layer, and a clause map drops straight through to
+// `evaluateApplyIfPredicate` so the per-style-row semantics are the
+// existing implementation.
+export const evaluateApplyIfNode = ({
+  applyIf,
+  fileMetadata,
+}: {
+  applyIf: ApplyIfNode
+  fileMetadata: FileBatchMetadata
+}): boolean => {
+  const booleanKey = WHEN_BOOLEAN_KEYS.find((key) =>
+    Array.isArray(
+      (applyIf as Record<string, unknown>)[key],
+    ),
+  )
+
+  if (!booleanKey) {
+    return evaluateApplyIfPredicate({
+      applyIf: applyIf as ApplyIfPredicate,
+      fileMetadata,
+    })
+  }
+
+  const children =
+    (applyIf as ApplyIfBooleanNode)[booleanKey] ?? []
+
+  const childResults = children.map((child) =>
+    evaluateApplyIfNode({ applyIf: child, fileMetadata }),
+  )
+
+  if (booleanKey === "all") {
+    return childResults.every((isMatch) => isMatch)
+  }
+  if (booleanKey === "any") {
+    return childResults.some((isMatch) => isMatch)
+  }
+  return childResults.every((isMatch) => !isMatch)
+}
 
 export const evaluateApplyIfPredicate = ({
   applyIf,
@@ -674,7 +783,7 @@ const applySetStyleFields = ({
 }): AssFile => {
   if (
     rule.applyIf &&
-    !evaluateApplyIfPredicate({
+    !evaluateApplyIfNode({
       applyIf: rule.applyIf,
       fileMetadata,
     })
