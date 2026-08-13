@@ -225,8 +225,16 @@ both moved → delete `work/`. Where independent bare steps line up, wrap them i
 - `replaceTracks` (episodes) + `replaceFlacWithPcmAudio` (op-ed) — independent.
 - `moveFiles` (episodes) + `moveFiles` (op-ed) — both moves at the very end.
 
-Keep the **renames serial** — `nameAnimeEpisodesAniDB` hits the rate-limited AniDB
-API and the credits pass uses an interactive picker.
+**Renames are the exception — don't blindly parallelize them.** `nameAnimeEpisodesAniDB`
+looks up AniDB, and the throttle in `anidbApi.ts` is a timestamp check, **not a
+mutex**: it spaces out *sequential* calls (1 req / 2.5s) but three calls fired in
+one parallel group with a **cold cache** all read the same `lastRequestAt`, all
+compute `wait <= 0`, and hit AniDB simultaneously — a ban risk. It's only safe when
+the series' `<aid>.xml` is already cached fresh (7-day TTL, under the app's
+`cache/anime/`), in which case every call reads the disk and never fetches. So:
+run the renames **serial**, or **warm the cache** with one lookup before a parallel
+rename group. The credits pass also uses an interactive picker, so it pauses for
+confirmation regardless.
 
 Two hard limits to remember:
 
