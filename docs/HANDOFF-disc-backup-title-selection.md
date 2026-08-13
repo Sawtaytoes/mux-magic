@@ -24,7 +24,9 @@ Note the path is **`/api/commands/<name>`**, not `/jobs/<name>`.
 
 Verified 2026-08-13 on `[BACKUP] Desk Set - Blu-ray`: 61 titles, 56 keep /
 5 discard, writing `DISC-ANALYSIS/analysis.json` (171 KB) into the backup.
-The result matched the committed fixture's prediction exactly.
+The result matched the committed fixture's prediction exactly. That run was
+at the then-default `--minlength=0`; the default is now **60** (see the last
+section), so a re-run reports fewer titles.
 
 **Deployment, already done — don't redo it:**
 
@@ -185,10 +187,20 @@ unvalidated rule may never propose a `discard`:
 
 ---
 
-## Open question worth raising with the owner
+## Answered 2026-08-13 — the minimum title length is 60 seconds
 
-For Desk Set he said "save all titles". With `--minlength=0` that is **61
-titles**, but only two are plausibly real: the 1:43:33 feature
-(`00850.mpls`) and a 2:19 trailer (`01395.m2ts`). The other 59 are
-sub-minute fragments. Confirm what "all" means before extracting, rather
-than producing 59 junk files.
+For Desk Set the owner said "save all titles". At `--minlength=0` that is
+**61 titles**, but only two are real: the 1:43:33 feature (`00850.mpls`) and
+a 2:19 trailer (`01395.m2ts`). The other 59 are sub-minute fragments.
+
+He confirmed both halves: only those two are real, and the floor moves to
+**one minute** — not the 10-minute floor he uses for straight rips, which
+would throw the trailer away. `minimumTitleLengthSeconds` now defaults to
+`60` everywhere (core, CLI, API schema); pass `0` to see the fragments
+anyway. See
+[the decision](decisions/2026-08-13-disc-analysis-minimum-title-length-is-60-seconds.md)
+and PR #221.
+
+**So the numbers above are the `--minlength=0` numbers.** A re-run at the new
+default will report far fewer titles for Desk Set — that is expected, not a
+regression.
