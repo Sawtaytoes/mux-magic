@@ -32,7 +32,7 @@ originals so you can re-pull from source if a mux goes wrong) the files in:
 ```
 …/<Series>/work/            <- the VIDEO base (good encode), one file per episode
 …/<Series>/work/subs/       <- the SUBS donor release, one file per episode
-…/<Series>/work/op-ed/      <- creditless OP/ED (if any), handled as a second pass
+…/<Series>/work/op-ed/      <- creditless OP/ED (if any) — only until they're renamed
 ```
 
 - `work/` is the base. `nameAnimeEpisodesAniDB`, `keepLanguages`, etc. read a
@@ -40,6 +40,15 @@ originals so you can re-pull from source if a mux goes wrong) the files in:
   by any step pointed at `work/` — no cross-contamination.
 - The source release folders (TTGA / CRUCiBLE) **stay** on disk until you've
   verified the output. Only the throwaway BD masters get deleted when done.
+
+**The split is only needed for the renames.** `op-ed/` exists solely because the
+creditless extras need a *different* rename call (`episodeType: credits`) than the
+episodes. Once renamed, the names can't collide (`s00e301`/`s00e302` vs
+`s01e01`…`s01e12`), so **fold `op-ed/` back into `work/`** with a `flattenOutput`
+(`deleteSourceFolder: true` — it copies the contents up one level into the parent
+and removes the folder). Every step after that runs **once** over the whole set
+instead of being duplicated per folder. Don't fold `subs/` in — it's a donor whose
+filenames intentionally mirror the episodes.
 
 ### Splitting the base release's episodes from its OP/ED
 
@@ -92,39 +101,50 @@ flat. `deleteSourceFolder: true` removes the now-empty subfolder so the tree sta
 clean. Use `flattenOutput`, **not** `copyFiles` — it overwrites instead of tripping
 "Refusing to overwrite existing destination".
 
-## The pipeline (main episodes)
+## The pipeline
 
-Order: **rename both sides first**, then each op is `<track-op>` → `flattenOutput`
-back onto its working dir, then move, then delete `work/`.
+Shape: **stage into 3 folders → 3 renames → fold `op-ed/` into `work/` → everything
+else once**, with each track op followed by a `flattenOutput` back onto its working
+dir.
 
-1. **`nameAnimeEpisodesAniDB` on `work/`** — `anidbId`, `seasonNumber: 1`,
-   `seriesName`, `filenameRegex: 'S\d+E(?<episodeNumber>\d+)'`. Renames the base
-   episodes to `<Series> - s01eNN - <Title>.mkv` (in place, all files).
-2. **`nameAnimeEpisodesAniDB` on `work/subs/`** — identical params → identical
+1. **`copyFiles` ×3** (parallel-safe) — episodes → `work/`, creditless → `work/op-ed/`,
+   subs donor → `work/subs/`, each with its `fileFilterRegex`.
+2. **`nameAnimeEpisodesAniDB` on `work/`** — `anidbId`, `seasonNumber: 1`,
+   `seriesName`, `filenameRegex: 'S\d+E(?<episodeNumber>\d+)'` → `<Series> - s01eNN - <Title>.mkv`.
+3. **`nameAnimeEpisodesAniDB` on `work/subs/`** — identical params → identical
    filenames, so the merge can pair them.
-3. **`keepLanguages` on `work/`** → `LANGUAGE-TRIMMED`, then **`flattenOutput`**
-   back onto `work/`. `audioLanguages: [jpn]`, `subtitlesLanguages: [jpn]`: keeps
-   Japanese audio and **drops the English subs** (see gotcha).
-4. **`reorderTracks` on `work/subs/`** → `REORDERED-TRACKS`, then **`flattenOutput`**
-   back onto `work/subs/`. `subtitlesTrackIndexes: [0, 2]`, `videoTrackIndexes: []`,
-   `audioTrackIndexes: []`. Dropping video/audio is fine — files match by extension
-   (`.mkv`), so a subs-only mkv is still a valid `replaceTracks` source, and it's
-   tiny/fast.
-5. **`replaceTracks`** — `sourcePath: work/subs`, `destinationFilesPath: work`,
-   `subtitlesLanguages: [eng]` (the Chihiro tracks' language), `audioLanguages: []`,
-   `videoLanguages: []`, **`includeChapters: false`** (see gotcha) → `REPLACED-TRACKS`,
-   then **`flattenOutput`** back onto `work/`.
-6. **`replaceFlacWithPcmAudio` on `work/`** → `AUDIO-CONVERTED`, then
+4. **`nameAnimeEpisodesAniDB` on `work/op-ed/`** — `episodeType: credits` →
+   `s00e301`/`s00e302`. Keep the three renames **serial** (see the AniDB note below).
+5. **`flattenOutput` on `work/op-ed/`** (`deleteSourceFolder: true`) — the renamed
+   creditless files join the episodes in `work/`. From here there is **one** set.
+6. **`keepLanguages` on `work/`** → `LANGUAGE-TRIMMED`, then **`flattenOutput`** back
+   onto `work/`. `audioLanguages: [jpn]`, `subtitlesLanguages: [jpn]`: keeps Japanese
+   audio and **drops the English subs** (see gotcha). Runs over all 14 files at once.
+7. **`reorderTracks` on `work/subs/`** → `REORDERED-TRACKS`, then **`flattenOutput`**
+   back onto `work/subs/`. `subtitlesTrackIndexes: [0, 2]`; leave `videoTrackIndexes`
+   / `audioTrackIndexes` unset (they default to `[]`). Dropping video/audio is fine —
+   files match by extension (`.mkv`), so a subs-only mkv is still a valid
+   `replaceTracks` source, and it's tiny/fast. Steps 6 and 7 are independent → one
+   parallel group.
+8. **`replaceTracks`** — `sourcePath: work/subs`, `destinationFilesPath: work`,
+   `subtitlesLanguages: [eng]` (the donor tracks' language),
+   **`includeChapters: false`** (see gotcha) → `REPLACED-TRACKS`, then
+   **`flattenOutput`** back onto `work/`. **The OP/ED have no same-named file in
+   `subs/`, so they're skipped and never enter `REPLACED-TRACKS` — the flatten is
+   what keeps them in the set.** This is the clearest case for the flatten rule.
+9. **`replaceFlacWithPcmAudio` on `work/`** → `AUDIO-CONVERTED`, then
    **`flattenOutput`** back onto `work/`.
-7. **`moveFiles`** — `work/` → the library folder
-   `/media/Anime/<Series> [anidb-<id>]`. `moveFiles` is depth-0 (flat), so it moves
-   the finished episodes and leaves the `subs/`/`op-ed/` subfolders behind.
-8. **`deleteFolder`** — `sourcePath: work`, `confirm: true`. Only after **op-ed has
-   already run and been verified** (see below) — this removes `work/` and everything
-   left in it.
+10. **`moveFiles`** — `work/` → `/media/Anime/<Series> [anidb-<id>]`. Depth-0, so it
+    moves all 14 finished files and leaves the `subs/` subfolder behind.
+11. **`deleteFolder`** — `sourcePath: work`, `confirm: true`.
 
 Nothing mutates a copy in place except the in-`work/` overwrite that `flattenOutput`
 does deliberately; the source release folders are never touched.
+
+**Don't over-split the work.** An earlier draft of this ran `keepLanguages`,
+`replaceFlacWithPcmAudio`, the flattens and the final move **twice** — once for
+`work/`, once for `work/op-ed/` — and paid for it with duplicated steps and extra
+parallel groups. Folding `op-ed/` in right after its rename removes all of that.
 
 ## Gotchas (these are the load-bearing details)
 
@@ -158,27 +178,19 @@ index.
 ### Language codes are ISO 639-2 three-letter
 `jpn`, `eng`, `fra` — not `ja`/`en`.
 
-## Creditless OP/ED — run this pass FIRST
+### Creditless OP/ED only need their own *rename*
 
-The OP/ED come from the base release only (the subs donor has none), so they don't
-need a merge — just Japanese audio + FLAC→PCM + credits naming. **Run this small
-pass first** to prove the flatten/move/cleanup shape on two easy files before
-committing the 12-episode run. It operates entirely inside `work/op-ed/`:
+The OP/ED come from the base release only (the subs donor has none), so the sole
+thing that makes them special is the rename call: `episodeType: credits` (AniDB
+type 3) → `s00e301`/`s00e302`. Everything else (Japanese audio, FLAC→PCM, the move)
+is the **same work as the episodes**, so fold them into `work/` right after the
+rename and let the shared steps handle all 14 files.
 
-1. `nameAnimeEpisodesAniDB` — `anidbId`, **`episodeType: credits`** (AniDB type 3).
-   Lands them at `s00e301` / `s00e302` (see the credits-numbering note).
-2. `keepLanguages` — `audioLanguages: [jpn]`, `subtitlesLanguages: [jpn]` →
-   `LANGUAGE-TRIMMED`, then `flattenOutput` back onto `work/op-ed/`.
-3. `replaceFlacWithPcmAudio` → `AUDIO-CONVERTED`, then `flattenOutput` back onto
-   `work/op-ed/`.
-4. `moveFiles` `work/op-ed/` → the same `[anidb-<id>]` series folder (Season 0
-   lives in the series folder).
-
-`episodeType: credits` uses an interactive length-matched picker; with only the
-two files in `work/op-ed/` it just asks you to confirm OP→C1, ED→C2. **Note:** the
-`s00e301`-style numbering needs the running app built from
+`episodeType: credits` uses an interactive length-matched picker; with only the two
+files in `work/op-ed/` it just asks you to confirm OP→C1, ED→C2. **Note:** the
+`s00e301`-style numbering requires a build that includes
 [PR #207](https://github.com/Sawtaytoes/mux-magic/pull/207); an older build emits
-`s00e01`.
+`s00e01`/`s00e02`, and Season 0 files live in the same series folder either way.
 
 ## Validate the YAML before running it
 
@@ -208,22 +220,25 @@ sequences and stay as-is.
 
 ## Cleanup — delete `work/` at the very end
 
-`work/` (and its `subs/` + `op-ed/` children) are throwaway staging. Once **both**
-passes have moved their output into the library **and you've verified it**, delete
-the whole thing in one shot: `deleteFolder` with `sourcePath: <…>/work` and
-`confirm: true`. The source release folders (TTGA / CRUCiBLE) stay — only the
-`work/` copies go.
+`work/` (and its `subs/` child) is throwaway staging. Once the move has landed
+everything in the library **and you've verified it**, delete the whole thing in one
+shot: `deleteFolder` with `sourcePath: <…>/work` and `confirm: true`. The source
+release folders (TTGA / CRUCiBLE) stay — only the `work/` copies go.
 
-## One sequence, with parallel groups for the independent heavy ops
+## One sequence, with parallel groups for the independent ops
 
-It's all one **sequential** YAML: stage → rename → OP/ED and episodes processed →
-both moved → delete `work/`. Where independent bare steps line up, wrap them in a
-`kind: group` / `isParallel: true` group to run them concurrently — the big wins:
+It's all one **sequential** YAML: stage → rename → fold in `op-ed/` → shared track
+ops → move → delete `work/`. Where independent bare steps line up, wrap them in a
+`kind: group` / `isParallel: true` group to run them concurrently — the ones that
+survive the simplification:
 
-- `keepLanguages` (base) + `keepLanguages` (op-ed) + `reorderTracks` (subs) — three
-  independent track ops on three folders, one parallel group.
-- `replaceTracks` (episodes) + `replaceFlacWithPcmAudio` (op-ed) — independent.
-- `moveFiles` (episodes) + `moveFiles` (op-ed) — both moves at the very end.
+- the three `copyFiles` stages;
+- `keepLanguages` (`work/`) + `reorderTracks` (`work/subs/`) — different folders;
+- their two `flattenOutput`s.
+
+Note what is **not** parallel: after `op-ed/` is folded in there's only one set of
+files, so `replaceFlacWithPcmAudio` and the final `moveFiles` each run once. Reach
+for a parallel group when two steps touch **different folders**, not as a default.
 
 **Renames are the exception — don't blindly parallelize them.** `nameAnimeEpisodesAniDB`
 looks up AniDB, and the throttle in `anidbApi.ts` is a timestamp check, **not a
@@ -243,5 +258,9 @@ Two hard limits to remember:
 - A parallel group holds **bare steps only** — groups are flat-only, so you can't
   run two multi-step *streams* in parallel (no parallel-of-sequences). See the
   decision [`groups-are-flat-only-no-parallel-of-sequences`](decisions/2026-08-13-groups-are-flat-only-no-parallel-of-sequences.md).
-  That's why the two moves are individually parallelized at the end rather than
-  running the whole OP/ED and episodes tails concurrently.
+  Folding `op-ed/` into `work/` sidesteps the limitation entirely: there's only one
+  stream left to run.
+
+The AniDB throttle race is tracked as
+[issue #210](https://github.com/Sawtaytoes/mux-magic/issues/210); once it's a real
+mutex, the renames can join a parallel group too.
