@@ -1,4 +1,4 @@
-import { stat } from "node:fs/promises"
+import { readFile, stat } from "node:fs/promises"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
@@ -82,5 +82,48 @@ describe(flattenOutput.name, () => {
       "utf8",
     )
     expect(merged).toBe("merged-1")
+  })
+
+  test("MOVES rather than copy+deletes when deleteSourceFolder is true", async () => {
+    // Regression guard for the bug called out in
+    // docs/decisions/2026-05-19-atomic-copy-and-filesystem-move.md: a
+    // same-volume flatten that is about to delete its source must
+    // `fs.rename` the files up, not write a second full copy of every
+    // byte and then throw the originals away. Observable proof without
+    // spying on fs: the source files are gone from disk *individually*
+    // by the time the folder removal happens, and the destination holds
+    // their contents.
+    await firstValueFrom(
+      flattenOutput({
+        isDeletingSourceFolder: true,
+        sourcePath: "/work/SUBTITLED",
+      }).pipe(toArray()),
+    )
+
+    await expect(
+      readFile("/work/episode-01.mkv", "utf8"),
+    ).resolves.toBe("merged-1")
+    await expect(
+      readFile("/work/episode-02.mkv", "utf8"),
+    ).resolves.toBe("merged-2")
+    await expect(stat("/work/SUBTITLED")).rejects.toThrow()
+  })
+
+  test("still copies (leaving the source intact) when the folder is preserved", async () => {
+    // The default path must NOT move — the whole point of preserving the
+    // source folder is mid-sequence inspection, so the originals have to
+    // survive with their contents.
+    await firstValueFrom(
+      flattenOutput({ sourcePath: "/work/SUBTITLED" }).pipe(
+        toArray(),
+      ),
+    )
+
+    await expect(
+      readFile("/work/SUBTITLED/episode-01.mkv", "utf8"),
+    ).resolves.toBe("merged-1")
+    await expect(
+      readFile("/work/episode-01.mkv", "utf8"),
+    ).resolves.toBe("merged-1")
   })
 })

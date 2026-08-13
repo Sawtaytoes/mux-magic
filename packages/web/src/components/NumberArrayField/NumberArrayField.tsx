@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
+import { CommandFieldControl } from "../CommandFieldControl/CommandFieldControl"
 
 type NumberArrayFieldProps = {
   field: CommandField
@@ -44,17 +45,20 @@ export const NumberArrayField = ({
   }
 
   return (
-    <input
-      id={`${step.id}-${field.name}`}
-      type="text"
-      value={inputValue}
-      placeholder={field.placeholder ?? "0, 100"}
-      onChange={(event) =>
-        setInputValue(event.target.value)
-      }
-      onBlur={handleBlur}
-      aria-required={field.isRequired ? "true" : undefined}
-      className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
-    />
+    <CommandFieldControl field={field}>
+      <input
+        type="text"
+        value={inputValue}
+        placeholder={field.placeholder ?? "0, 100"}
+        onChange={(event) =>
+          setInputValue(event.target.value)
+        }
+        onBlur={handleBlur}
+        aria-required={
+          field.isRequired ? "true" : undefined
+        }
+        className="w-full bg-surface-sunken text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus font-mono"
+      />
+    </CommandFieldControl>
   )
 }

@@ -7,12 +7,6 @@ import { Provider } from "jotai"
 import { afterEach, describe, expect, test } from "vitest"
 
 import type { Step } from "../../types"
-import {
-  addApplyIfClause,
-  addWhenClause,
-  removeApplyIfClause,
-  removeWhenClause,
-} from "./conditionMutations"
 import { DslRulesBuilder } from "./DslRulesBuilder"
 import {
   addRule,
@@ -408,53 +402,12 @@ describe("setScaleResolutionDimension for from group", () => {
   })
 })
 
-describe("when mutations", () => {
-  test("adds and removes a when clause", () => {
-    const rules: DslRule[] = [
-      { type: "setScriptInfo", key: "", value: "" },
-    ]
-    const withClause = addWhenClause({
-      rules,
-      ruleIndex: 0,
-      clauseName: "anyScriptInfo",
-    })
-    expect(
-      (withClause[0] as { when?: object }).when,
-    ).toBeDefined()
-    const withoutClause = removeWhenClause({
-      rules: withClause,
-      ruleIndex: 0,
-      clauseName: "anyScriptInfo",
-    })
-    expect(
-      (withoutClause[0] as { when?: object }).when,
-    ).toBeUndefined()
-  })
-})
-
-describe("applyIf mutations", () => {
-  test("adds and removes an applyIf clause", () => {
-    const rules: DslRule[] = [
-      { type: "setStyleFields", fields: {} },
-    ]
-    const withClause = addApplyIfClause({
-      rules,
-      ruleIndex: 0,
-      clauseName: "anyStyleMatches",
-    })
-    expect(
-      (withClause[0] as { applyIf?: object }).applyIf,
-    ).toBeDefined()
-    const withoutClause = removeApplyIfClause({
-      rules: withClause,
-      ruleIndex: 0,
-      clauseName: "anyStyleMatches",
-    })
-    expect(
-      (withoutClause[0] as { applyIf?: object }).applyIf,
-    ).toBeUndefined()
-  })
-})
+// The `when` / `applyIf` clause mutations these once covered are gone:
+// both predicates are now edited as whole trees by `QueryBuilder`, and
+// the add/remove/patch plumbing lives in `@charcuterie/logic`'s tree
+// core. What actually needs testing moved with them — the conversion to
+// and from the saved shape — and is asserted in `whenTreeAdapters.test.ts`
+// and `applyIfTreeAdapters.test.ts`.
 
 describe("style field mutations", () => {
   test("adds and removes a style field", () => {

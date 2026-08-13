@@ -80,11 +80,14 @@ export const LookupModal = () => {
       isOpen={Boolean(state)}
       onClose={close}
       ariaLabel={title}
+      className="w-full max-w-lg"
     >
       {state && (
+        // Layout only — the surface chrome is Charcuterie's Modal box; a
+        // second bordered/rounded surface here is what doubled the frame.
         <div
           id="lookup-modal"
-          className="bg-surface-raised border border-border-default rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col overflow-hidden max-h-[85dvh]"
+          className="flex min-h-0 flex-1 flex-col"
         >
           {/* Header */}
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border-default shrink-0">

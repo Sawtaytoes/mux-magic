@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest"
 import type {
   AnidbAnime,
   AnidbEpisode,
+  AnidbEpisodeType,
 } from "../types/anidb.js"
 import {
   compileFilenameRegex,
@@ -164,6 +165,87 @@ describe(formatOutputFilename.name, () => {
         seriesName: "Jigokuraku",
       }),
     ).toBe("Jigokuraku - s02e05")
+  })
+
+  const makeTypedEpisode = (
+    epno: string,
+    type: AnidbEpisodeType,
+  ): AnidbEpisode => ({
+    epno,
+    titles: [{ lang: "en", value: `Episode ${epno}` }],
+    type,
+  })
+
+  test("specials keep the plain sequential s00e<NN> convention", () => {
+    expect(
+      formatOutputFilename({
+        category: "specials",
+        episode: makeTypedEpisode("S1", 2),
+        episodeTitle: "OVA 1",
+        seasonNumber: 1,
+        sequentialIndex: 1,
+        seriesName: "Jigokuraku",
+      }),
+    ).toBe("Jigokuraku - s00e01 - OVA 1")
+  })
+
+  test("credits (OP/ED) land in the 300 band by their C-number", () => {
+    expect(
+      formatOutputFilename({
+        category: "credits",
+        episode: makeTypedEpisode("C1", 3),
+        episodeTitle: "Bright Burning Shout",
+        seasonNumber: 1,
+        sequentialIndex: 1,
+        seriesName: "Fate-EXTRA Last Encore",
+      }),
+    ).toBe(
+      "Fate-EXTRA Last Encore - s00e301 - Bright Burning Shout",
+    )
+  })
+
+  test("credits keep AniDB's own number on a non-contiguous set (C3 → e303, not sequential)", () => {
+    // A folder with only C3/C4/C5 files: the third-listed C-episode is
+    // still e303, never e301 — this is why the number comes from the
+    // epno, not the picker's sequentialIndex.
+    expect(
+      formatOutputFilename({
+        category: "credits",
+        episode: makeTypedEpisode("C3", 3),
+        episodeTitle: "Zone It",
+        seasonNumber: 1,
+        sequentialIndex: 1,
+        seriesName: "Argevollen",
+      }),
+    ).toBe("Argevollen - s00e303 - Zone It")
+  })
+
+  test("trailers land in the 200 band by their T-number", () => {
+    expect(
+      formatOutputFilename({
+        category: "trailers",
+        episode: makeTypedEpisode("T1", 4),
+        episodeTitle: "Season 1 Trailer",
+        seasonNumber: 1,
+        sequentialIndex: 1,
+        seriesName: "Terror in Resonance",
+      }),
+    ).toBe(
+      "Terror in Resonance - s00e201 - Season 1 Trailer",
+    )
+  })
+
+  test("parodies land in the 500 band by their P-number", () => {
+    expect(
+      formatOutputFilename({
+        category: "parodies",
+        episode: makeTypedEpisode("P2", 5),
+        episodeTitle: "Mini Theater",
+        seasonNumber: 1,
+        sequentialIndex: 1,
+        seriesName: "Some Show",
+      }),
+    ).toBe("Some Show - s00e502 - Mini Theater")
   })
 })
 
