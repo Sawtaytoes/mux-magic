@@ -313,7 +313,27 @@ const loadStepItem = (
               : "folder",
         }
       } else {
-        step.params[field.name] = value
+        // A plain literal. When it's a path field that accepts saved
+        // locations and the literal exactly equals one of them, reconcile
+        // it to that location so the picker shows its name instead of
+        // "— custom —". This mirrors how "@id" references and dropdown
+        // selections both store a string link — an agent that pastes a raw
+        // filesystem path (rather than the app's internal "@id" form) still
+        // round-trips onto the matching location.
+        const matchedPathVariable =
+          field.type === "path" &&
+          !field.acceptedOutputs &&
+          typeof value === "string"
+            ? currentPaths.find(
+                (pathVariable) =>
+                  pathVariable.value === value,
+              )
+            : undefined
+        if (matchedPathVariable) {
+          step.links[field.name] = matchedPathVariable.id
+        } else {
+          step.params[field.name] = value
+        }
       }
     }
 

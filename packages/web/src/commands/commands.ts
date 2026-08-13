@@ -927,6 +927,19 @@ export const COMMANDS: Commands = {
           placeholder: "0",
         }),
       ],
+      // Video / audio / subtitle track orders read as one decision, so they
+      // sit three-up on a wide step card (stacking on narrow) instead of
+      // three unlabelled inputs a reader has to guess at.
+      groups: [
+        {
+          fields: [
+            "videoTrackIndexes",
+            "audioTrackIndexes",
+            "subtitlesTrackIndexes",
+          ],
+          layout: "field-group-three-col",
+        },
+      ],
     }
   })(),
   replaceTracks: (() => {

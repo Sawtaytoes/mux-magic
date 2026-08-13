@@ -5,12 +5,18 @@ import * as VariablesSidebarStories from "./VariablesSidebar.stories"
 
 # VariablesSidebar
 
-Persistent right-sidebar view of the sequence variables. Visible at `lg:` breakpoints and above; hidden on smaller screens where the Edit Variables modal is the only access point. Wraps `VariablesPanel` in an `<aside>` container.
+Persistent right-side view of the sequence variables and saved templates,
+rendered as a `@charcuterie/ui` `Rail`.
 
 ## Responsive behavior
 
-- **Below `lg`:** `hidden` — sidebar is not visible.
-- **At `lg` and above:** `flex` — docked to the right of the sequence list.
+- **Below `md`:** relocates to a horizontally-scrolling strip (it is _not_
+  removed from the DOM), so Variables and Saved Templates stay reachable.
+- **At `md` and above:** a fixed-width column on the right. Its width is
+  **user-draggable** (grab the handle on its left edge) and persisted to
+  `localStorage`; the column is **sticky** beneath the header and scrolls its
+  own overflow, so a long variable list never runs off the bottom of the
+  viewport or scrolls out of view with the sequence list.
 
 ## Stories
 
