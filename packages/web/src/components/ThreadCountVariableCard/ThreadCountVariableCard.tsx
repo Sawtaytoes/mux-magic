@@ -1,18 +1,14 @@
-import { useEffect, useState } from "react"
-import { apiBase } from "../../apiBase"
+import { api } from "../../api/api"
 import type { Variable } from "../../types"
-
-type SystemThreads = {
-  maxThreads: number
-  defaultThreadCount: number
-}
 
 // Worker 28: threadCount is now a Variable in the unified variablesAtom
 // (singleton, canonical id "tc"). This card renders the numeric input that
 // VariableCard.tsx dispatches to when `variable.type === "threadCount"`.
 // Empty value = unset (server falls back to DEFAULT_THREAD_COUNT). The
-// /system/threads fetch is purely informational (max ceiling + default
-// placeholder); it does NOT mutate the variable's value.
+// /system/threads read is purely informational (max ceiling + default
+// placeholder); it does NOT mutate the variable's value. Fetched through
+// the fleet's typed query seam (@charcuterie/logic/query) — the response
+// shape is inferred from the API's generated OpenAPI schema.
 export const ThreadCountVariableCard = ({
   variable,
   onValueChange,
@@ -20,15 +16,10 @@ export const ThreadCountVariableCard = ({
   variable: Variable<"threadCount">
   onValueChange: (value: string) => void
 }) => {
-  const [system, setSystem] =
-    useState<SystemThreads | null>(null)
-
-  useEffect(() => {
-    fetch(`${apiBase}/system/threads`)
-      .then((res) => res.json())
-      .then((data: SystemThreads) => setSystem(data))
-      .catch(() => {})
-  }, [])
+  const { data: system } = api.useQuery(
+    "get",
+    "/system/threads",
+  )
 
   return (
     <div data-thread-count-var>

@@ -2054,6 +2054,8 @@ __metadata:
     js-yaml: "npm:^4.3.0"
     msw: "npm:^2.14.5"
     msw-storybook-addon: "npm:^2.0.7"
+    openapi-fetch: "npm:^0.17.0"
+    openapi-react-query: "npm:^0.5.4"
     playwright: "npm:^1.61.1"
     react: "npm:^19.2.8"
     react-dom: "npm:^19.2.8"
@@ -8916,6 +8918,18 @@ __metadata:
   dependencies:
     openapi-typescript-helpers: "npm:^0.1.0"
   checksum: 10c0/7e981d28c7839469662a73d44f3a85e05c1a5842a8afd5d6e36c75cbf085aa7f705862871cc7ce07c04605ddc936af3d5850c2cc66d193ee1fea07e7135da192
+  languageName: node
+  linkType: hard
+
+"openapi-react-query@npm:^0.5.4":
+  version: 0.5.4
+  resolution: "openapi-react-query@npm:0.5.4"
+  dependencies:
+    openapi-typescript-helpers: "npm:^0.1.0"
+  peerDependencies:
+    "@tanstack/react-query": ^5.80.0
+    openapi-fetch: ^0.17.0
+  checksum: 10c0/c893049d1246b35516acb70bc359917c3e55f373d6e85d6bab05e2fedf90aa763b890eb15cf3bbf1c5899a2e99d4277aaba94ce81a845c6716ff312952664d7a
   languageName: node
   linkType: hard
 

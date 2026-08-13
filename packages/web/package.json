@@ -31,6 +31,8 @@
     "@tanstack/react-query": "^5.100.9",
     "jotai": "^2.20.0",
     "js-yaml": "^4.3.0",
+    "openapi-fetch": "^0.17.0",
+    "openapi-react-query": "^0.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router": "^8.3.0"

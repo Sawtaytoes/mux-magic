@@ -1,4 +1,8 @@
 import {
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query"
+import {
   cleanup,
   render,
   screen,
@@ -29,10 +33,23 @@ const makeVariable = (
 const renderCard = (variable: Variable, isFirst = true) => {
   const store = createStore()
   store.set(variablesAtom, [variable])
+  // A threadCount card reaches /system/threads through
+  // @charcuterie/logic/query, so every card render is wrapped in a
+  // QueryClient (retries off for deterministic tests).
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+    },
+  })
   render(
-    <Provider store={store}>
-      <VariableCard variable={variable} isFirst={isFirst} />
-    </Provider>,
+    <QueryClientProvider client={queryClient}>
+      <Provider store={store}>
+        <VariableCard
+          variable={variable}
+          isFirst={isFirst}
+        />
+      </Provider>
+    </QueryClientProvider>,
   )
   return store
 }
@@ -161,15 +178,21 @@ describe("VariableCard", () => {
     // (worker 28 folded the threadCount side-channel into variablesAtom).
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
             maxThreads: 8,
             defaultThreadCount: 2,
             totalCpus: 8,
           }),
-      }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        ),
+      ),
     )
     const variable: Variable = {
       id: "tc",
