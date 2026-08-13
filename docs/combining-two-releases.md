@@ -166,6 +166,45 @@ English subs** (they're being replaced by the donor's). `keepLanguages` with
 is a zero-audio guard but **no** zero-subtitle guard, so this is safe and
 intended — see the keepLanguages zero-audio decision.)
 
+### Probe EVERY episode's track layout before trusting an index — not just one
+
+**This is the mistake that cost a re-run.** Track indexes were read off episode 1
+and assumed to hold for the season. They didn't: in the CRUCiBLE release, E01 had
+**6** subtitle tracks (Chihiro dialogue at index 0, Chihiro Signs/Songs at **2**),
+while **E02–E12 had 17** (Chihiro dialogue still 0, but Signs/Songs at **3**, with
+index 2 being `English [CR]`). `subtitlesTrackIndexes: [0, 2]` therefore muxed
+Crunchyroll dialogue into 11 of 12 episodes, and nothing failed loudly — the count
+check in `reorderTracks` only catches an index that's out of range, never one that
+points at the *wrong* track. It was caught by eye in MediaInfo afterwards.
+
+Dump the whole set first and eyeball the column:
+
+```bash
+for f in "<release folder>"/*.mkv; do
+  mkvmerge -J "$f" | python3 -c "
+import sys,json
+d=json.load(sys.stdin); i=0
+for t in d['tracks']:
+    if t['type']=='subtitles':
+        p=t['properties']; print(i, p.get('language'), p.get('track_name','')); i+=1
+"
+done
+```
+
+If the layout isn't uniform, split the run per-group (one `reorderTracks` for the
+odd episodes, one for the rest) — the indexes are positional and there is no
+match-by-title selector.
+
+### Fixing a bad sub mux without redoing the whole pipeline
+
+If the video/audio/chapters are already right and only the subtitles are wrong,
+don't re-run the ingest. `replaceTracks` can point `destinationFilesPath` **at the
+library folder itself** and write to `<library>/REPLACED-TRACKS`, which a
+`flattenOutput` then overlays back over the originals. Re-stage only the subtitle
+donor, `reorderTracks` it with the corrected indexes, then replace. Files with no
+same-named donor (other seasons' episodes, the creditless extras) are skipped
+untouched, so the blast radius is exactly the episodes you re-staged.
+
 ### Track selection by index lives only in `reorderTracks`
 `replaceTracks`/`extractSubtitles`/`keepLanguages` all select by **language**, not
 track index. The only command that selects specific tracks by **per-type index**
