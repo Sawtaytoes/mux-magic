@@ -43,22 +43,37 @@ originals so you can re-pull from source if a mux goes wrong) the files in:
 
 ### Splitting the base release's episodes from its OP/ED
 
-`copyFiles`/`moveFiles` copy a **whole directory** — they can't glob a subset, so
-splitting a release that mixes episodes and creditless extras is a **shell step**,
-not a mux-magic step. For TTGA's `S01E##-*.mkv` episodes vs `S01OP-*`/`S01ED-*`:
+`copyFiles` takes a **`fileFilterRegex`** (a `{ pattern, flags }` object, or a bare
+string that's treated as the pattern), so staging a subset is a mux-magic step —
+no shell needed. Point `sourcePath` at the release folder and filter to the files
+you want. For TTGA's `S01E##-*.mkv` episodes vs `S01OP-*`/`S01ED-*`, and the whole
+CRUCiBLE folder:
 
-```bash
-BASE="/mnt/Bunnies/Family/Downloads/~ANIME/<Series>"       # = /media/Downloads/~ANIME/<Series> inside mux-magic
-TTGA="$BASE/<TTGA release folder>"
-CRUCIBLE="$BASE/<CRUCiBLE release folder>"
-mkdir -p "$BASE/work" "$BASE/work/subs" "$BASE/work/op-ed"
-cp "$TTGA/"S01E[0-9][0-9]-*.mkv          "$BASE/work/"        # episodes -> base
-cp "$TTGA/"S01OP-*.mkv "$TTGA/"S01ED-*.mkv "$BASE/work/op-ed/" # creditless -> op-ed
-cp "$CRUCIBLE/"*.mkv                      "$BASE/work/subs/"   # subs donor
+```yaml
+- id: stageEpisodes
+  command: copyFiles
+  params:
+    sourcePath: /media/Downloads/~ANIME/<Series>/<TTGA folder>
+    destinationPath: /media/Downloads/~ANIME/<Series>/work
+    fileFilterRegex: {pattern: '^S\d+E\d+-', flags: i}     # episodes only (not OPxx/EDxx)
+- id: stageCreditless
+  command: copyFiles
+  params:
+    sourcePath: /media/Downloads/~ANIME/<Series>/<TTGA folder>
+    destinationPath: /media/Downloads/~ANIME/<Series>/work/op-ed
+    fileFilterRegex: {pattern: '^S\d+(OP|ED)', flags: i}   # creditless only
+- id: stageSubs
+  command: copyFiles
+  params:
+    sourcePath: /media/Downloads/~ANIME/<Series>/<CRUCiBLE folder>
+    destinationPath: /media/Downloads/~ANIME/<Series>/work/subs
+    fileFilterRegex: {pattern: '\.mkv$', flags: i}
 ```
 
-(On ZFS, `cp --reflink=auto` clones instantly and costs no space when block
-cloning is enabled; plain `cp` is the safe fallback.)
+`copyFiles` creates the destination folders, so no pre-`mkdir`. Note the pattern
+`^S\d+E\d+-` matches `S01E01-…` but **not** `S01ED-…`/`S01OP-…` (no digit after the
+`E`), which is exactly the split we want. `copyFiles` does a real copy, so the
+source release folders are untouched — keep them until the output is verified.
 
 ## Flatten after every track op — don't chain into the subfolder
 
