@@ -174,7 +174,7 @@ const toOption = (item: LinkItem): ListboxItem => ({
         {item.label}
       </span>
       {item.detail && (
-        <span className="path-detail font-mono text-[11px] text-slate-400 wrap-anywhere">
+        <span className="path-detail font-mono text-[11px] text-content-muted wrap-anywhere">
           {makePathBreakable(item.detail)}
         </span>
       )}
@@ -255,10 +255,10 @@ export const LinkPicker = ({
       onClick={() =>
         setIsOpen((isCurrentlyOpen) => !isCurrentlyOpen)
       }
-      className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 min-w-0 max-w-full flex items-center gap-1 cursor-pointer"
+      className="shrink-0 text-xs bg-intent-neutral-surface hover:bg-intent-neutral-surface-hover text-intent-neutral-content rounded px-1.5 py-0.5 border border-intent-neutral-border focus:outline-none focus:border-border-focus min-w-0 max-w-full flex items-center gap-1 cursor-pointer"
     >
       <span className="truncate">{label}</span>
-      <span className="text-slate-400 shrink-0">▾</span>
+      <span className="text-content-muted shrink-0">▾</span>
     </button>
   )
 
