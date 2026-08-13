@@ -50,13 +50,16 @@ const buildKeyFailureError = (
  * Run `makemkvcon -r` and emit the parsed disc title graph.
  *
  * `--cache=1` keeps memory use trivial for an info-only pass, and
- * `--minlength=0` is deliberate: MakeMKV's default 10-second floor silently
- * drops short extras (Desk Set loses 51 of its 61 titles to it), and
- * "propose, never silently discard" means the analyser has to see them and
- * say why it is dropping them.
+ * `--minlength=60` is deliberate. MakeMKV's own floor is far higher (a
+ * 10-minute floor is the usual rip setting) and hides real extras, but
+ * `--minlength=0` goes too far the other way: Desk Set reports 61 titles of
+ * which 59 are sub-minute BDMV fragments, so the proposal list is noise. A
+ * one-minute floor keeps every title a person would recognise as content —
+ * features, trailers, featurettes — and drops only the fragments. Anything
+ * that survives the floor is still *proposed*, never silently discarded.
  */
 export const runMakeMkvCon = ({
-  minimumTitleLengthSeconds = 0,
+  minimumTitleLengthSeconds = 60,
   sourcePath,
 }: {
   minimumTitleLengthSeconds?: number

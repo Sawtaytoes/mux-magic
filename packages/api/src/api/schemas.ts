@@ -177,9 +177,9 @@ export const analyseDiscBackupRequestSchema = z.object({
     ),
   minimumTitleLengthSeconds: z
     .number()
-    .default(0)
+    .default(60)
     .describe(
-      "MakeMKV's minimum title length. Defaults to 0 so short extras are seen and can be proposed for discard with a reason — MakeMKV's own 10-second default silently drops them (51 of Desk Set's 61 titles).",
+      "MakeMKV's minimum title length. Defaults to 60 so real extras (trailers, featurettes) are seen and proposed with a reason, while sub-minute BDMV fragments stay out of the list — at 0, Desk Set reports 61 titles of which only 2 are content. Pass 0 to see every fragment anyway.",
     ),
 })
 
