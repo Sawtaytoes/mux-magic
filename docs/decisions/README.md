@@ -21,6 +21,8 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 | --- | --- | --- | --- |
 | 2026-08-13 | [PR/public screenshots use masked, fictional data](2026-08-13-pr-screenshots-use-masked-fake-data.md) | process | Accepted |
 | 2026-08-13 | [Sequence groups are flat-only (no parallel-of-sequences)](2026-08-13-groups-are-flat-only-no-parallel-of-sequences.md) | api / web | Known limitation |
+| 2026-08-12 | [Confirmed disc-title dispositions are the regression corpus, stored in the backup](2026-08-12-confirmed-dispositions-are-the-regression-corpus.md) | core / web | Accepted |
+| 2026-08-12 | [`makemkvcon` is embedded in the image, with a per-spawn `HOME`](2026-08-12-makemkvcon-is-embedded-in-the-image.md) | infra / core | Accepted |
 | 2026-08-05 | [`master` merges are gated on green CI by a GitHub ruleset (no bypass)](2026-08-05-master-merges-are-gated-on-ci-by-a-github-ruleset.md) | infra | Accepted |
 | 2026-08-05 | [`keepLanguages` never emits a zero-audio file](2026-08-05-keeplanguages-never-emits-zero-audio.md) | core | Accepted |
 | 2026-08-05 | [A sequence can be validated before it runs](2026-08-05-sequences-are-validatable-before-running.md) | server/api | Accepted |

@@ -5,6 +5,7 @@ export const commandLabels: Record<string, string> = {
   // File Operations
   makeDirectory: "Make Directory",
   copyFiles: "Copy Files",
+  analyseDiscBackup: "Analyse Disc Backup",
   flattenOutput: "Flatten Output",
   moveFiles: "Move Files",
   moveFilesIntoNamedFolders:

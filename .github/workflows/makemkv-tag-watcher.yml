@@ -1,0 +1,90 @@
+# Watch ghcr.io/jlesage/makemkv for a newer tag and open a PR bumping the
+# Dockerfile's `FROM` pin.
+#
+# MakeMKV refuses to run once its beta key expires, and the key rotates on
+# roughly a monthly cadence, so a stale image turns into "the analyser
+# returns no titles" with no other symptom. Merging the PR takes the normal
+# route — CI green, then docker-deploy pushes :master and the TrueNAS app
+# redeploys on its `pull_policy: always`.
+#
+# Caveat, stated here rather than rediscovered: jlesage's image lags
+# upstream MakeMKV by days-to-weeks. If latest-day ever matters, the
+# alternative is a build stage compiling makemkv-oss + makemkv-bin from
+# makemkv.com/download — more control, more maintenance. Start with the tag.
+name: MakeMKV Tag Watcher
+
+on:
+  schedule:
+    # Weekly, Monday 06:00 UTC. The upstream cadence is monthly-ish, so
+    # anything more frequent is just noise.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  check-for-new-tag:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@master
+
+      - name: Resolve the current and latest MakeMKV tags
+        id: tags
+        run: |
+          set -euo pipefail
+
+          current="$(grep -oP 'FROM ghcr\.io/jlesage/makemkv:\Kv[0-9.]+' Dockerfile | head -1)"
+          if [ -z "$current" ]; then
+            echo "::error::Could not read the MakeMKV tag out of the Dockerfile."
+            exit 1
+          fi
+
+          # ghcr.io serves an anonymous pull token for public packages.
+          token="$(curl -fsSL 'https://ghcr.io/token?scope=repository:jlesage/makemkv:pull&service=ghcr.io' | jq -r .token)"
+          latest="$(
+            curl -fsSL -H "Authorization: Bearer ${token}" \
+              'https://ghcr.io/v2/jlesage/makemkv/tags/list' \
+            | jq -r '.tags[]' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -V \
+            | tail -1
+          )"
+
+          echo "current=${current}" >> "$GITHUB_OUTPUT"
+          echo "latest=${latest}" >> "$GITHUB_OUTPUT"
+          echo "Current: ${current}  Latest: ${latest}"
+
+      - name: Bump the Dockerfile pin
+        if: steps.tags.outputs.latest != steps.tags.outputs.current
+        run: |
+          set -euo pipefail
+          sed -i \
+            "s#FROM ghcr.io/jlesage/makemkv:${{ steps.tags.outputs.current }}#FROM ghcr.io/jlesage/makemkv:${{ steps.tags.outputs.latest }}#" \
+            Dockerfile
+
+      - name: Open the bump PR
+        if: steps.tags.outputs.latest != steps.tags.outputs.current
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/makemkv-${{ steps.tags.outputs.latest }}
+          commit-message: |
+            chore(docker): MakeMKV ${{ steps.tags.outputs.current }} -> ${{ steps.tags.outputs.latest }}
+          title: "chore(docker): MakeMKV ${{ steps.tags.outputs.current }} → ${{ steps.tags.outputs.latest }}"
+          body: |
+            `ghcr.io/jlesage/makemkv` published `${{ steps.tags.outputs.latest }}`.
+
+            The Dockerfile's build-time assertion
+            (`makemkvcon -r --cache=1 info disc:9999 | grep -q 'MSG:1005.*started'`)
+            is what proves the new image's self-contained loader still
+            resolves on `node:26-trixie-slim`. If that step fails, the
+            symptom is a loader error on the interpreter or a glibc version
+            complaint — **not** a MakeMKV message. Don't "fix" it with a
+            glibc compat shim; `ldd` on `/opt/makemkv` is expected to look
+            alarming and is not evidence of anything.
+
+            Note this image lags upstream MakeMKV by days-to-weeks, so a
+            freshly-expired beta key may still be expired after this bump.

@@ -1,3 +1,21 @@
+# ---------- MakeMKV source stage ----------
+# MakeMKV has no distro package and building it needs the oss+bin tarball
+# pair and a compiler. jlesage's image already has a working build, and
+# /opt/makemkv is SELF-CONTAINED: it ships its own glibc loader and
+# libraries under /opt/makemkv/lib and resolves through them rather than
+# the host's.
+#
+# That is why this transplants onto a different base at all. Running `ldd`
+# on makemkvcon inside the Alpine original prints a screenful of "symbol
+# not found" relocation errors, because Alpine's musl ldd resolves against
+# musl. The binary runs correctly regardless. Don't be alarmed by ldd here,
+# and don't "fix" it by installing glibc compat.
+#
+# Lifted verbatim from rip-deck, which has run this exact transplant onto
+# this exact base (node:26-trixie-slim) since 2026-07-25. Bumping this tag
+# is automated by .github/workflows/makemkv-tag-watcher.yml.
+FROM ghcr.io/jlesage/makemkv:v26.07.2 AS makemkv
+
 # ---------- Builder stage ----------
 # Installs ALL deps (devDeps included) and runs `yarn build:prod` to produce
 # the self-contained esbuild bundle, the Vite SPA build, command-descriptions,
@@ -152,6 +170,41 @@ RUN \
 # needed at runtime beyond the system python3 the interpreter symlink resolves to.
 COPY --from=builder /opt/aof-venv /opt/aof-venv
 ENV PATH="/opt/aof-venv/bin:${PATH}"
+
+# makemkvcon — reads a `[BACKUP]` folder's BDMV tree directly
+# (`info file:/media/Disc-Rips/[BACKUP] …`), so no optical drive and no
+# `--device` passthrough is needed here, unlike rip-deck.
+COPY --from=makemkv /opt/makemkv /opt/makemkv
+ENV PATH="/opt/makemkv/bin:${PATH}"
+
+# The transplant, asserted rather than assumed.
+#
+# `--cache=1` and a nonexistent `disc:9999` keep this cheap and
+# device-free; the point is only that the bundled loader resolves on THIS
+# base. Matching MSG:1005 rather than the exit code is deliberate —
+# makemkvcon exits 0 on "Failed to open disc", so an exit code proves
+# nothing, while the startup banner can only come from a binary that
+# actually started. Costs one empty layer and turns a future base bump
+# from a runtime surprise into a build failure.
+RUN makemkvcon -r --cache=1 info disc:9999 \
+  | grep -q 'MSG:1005.*started'
+
+# MakeMKV keeps its registration key in `$HOME/.MakeMKV/settings.conf`.
+#
+# rip-deck can set `ENV HOME=/config` image-wide because makemkvcon is all
+# it runs. mux-magic CANNOT: it also runs ffmpeg, mkvtoolnix, Playwright
+# and a Python venv, and moving HOME would move all of their state too. So
+# HOME is set PER SPAWN in runMakeMkvCon.ts, from this variable, and
+# nothing else in the image sees it.
+#
+# Deployment binds the real key in:
+#   /mnt/TrueNAS-Apps/App-Configs/mux-magic/makemkv -> /makemkv-config
+# containing .MakeMKV/settings.conf. The key is NEVER baked into the image
+# and never committed; a missing or expired key fails loudly at the first
+# analysis (MSG:5021 / 5052 / 5055) rather than silently returning no
+# titles.
+ENV MUX_MAGIC_MAKEMKV_HOME=/makemkv-config
+RUN mkdir -p /makemkv-config/.MakeMKV && chmod 777 /makemkv-config
 
 # Corepack + production-only Yarn install. `yarn workspaces focus
 # --production --all` is Yarn 4's built-in equivalent of `npm install

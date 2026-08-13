@@ -8,6 +8,7 @@ import {
   addSubtitles,
   addSubtitlesDefaultProps,
 } from "@mux-magic/core/src/app-commands/addSubtitles.js"
+import { analyseDiscBackup } from "@mux-magic/core/src/app-commands/analyseDiscBackup.js"
 import { changeTrackLanguages } from "@mux-magic/core/src/app-commands/changeTrackLanguages.js"
 import {
   type ConvertContainerAudioToFlacConvertedRecord,
@@ -305,6 +306,23 @@ export const commandConfigs: Record<
     summary:
       "Copy files (and optionally folders) from source to destination, with optional regex filtering and renaming",
     tags: ["File Operations"],
+  },
+  analyseDiscBackup: {
+    getObservable: (body) =>
+      analyseDiscBackup({
+        disabledRuleNames: body.disabledRuleNames,
+        minimumTitleLengthSeconds:
+          body.minimumTitleLengthSeconds,
+        sourcePath: body.sourcePath,
+      }),
+    // Read-only, so no outputFolderName / outputComputation: the analysis
+    // goes to a DISC-ANALYSIS/ sidecar inside the backup and nothing else
+    // in the folder is touched, leaving sourcePath itself as what a
+    // downstream step chains off.
+    schema: schemas.analyseDiscBackupRequestSchema,
+    summary:
+      "Analyse a disc backup and propose which titles to rip, with a stated reason per title",
+    tags: ["Disc Backups"],
   },
   flattenOutput: {
     getObservable: (body) =>

@@ -60,6 +60,22 @@ export const mkvPropEditPath = resolveAppPath(
   "mkvpropedit",
 )
 
+// Transplanted from ghcr.io/jlesage/makemkv into /opt/makemkv by the
+// Dockerfile, which also puts it on PATH; on Windows MakeMKV installs to
+// Program Files under its own name.
+export const makeMkvConPath = resolveAppPath(
+  "apps.downloaded/makemkv/makemkvcon64.exe",
+  "makemkvcon",
+)
+
+// MakeMKV reads its registration key from `$HOME/.MakeMKV/settings.conf`.
+// This is applied PER SPAWN rather than as an image-wide `ENV HOME`,
+// because mux-magic also runs ffmpeg, mkvtoolnix, Playwright and a Python
+// venv and moving HOME would relocate all of their state too. Unset
+// outside the container, where the real HOME is already correct.
+export const makeMkvHomePath =
+  process.env.MUX_MAGIC_MAKEMKV_HOME ?? null
+
 // Directory for server-owned persistent state (saved sequence templates,
 // queued webhook deliveries from worker 2b, etc.). Defaults to ./.config
 // which is gitignored. Override with the APP_DATA_DIR env var when running

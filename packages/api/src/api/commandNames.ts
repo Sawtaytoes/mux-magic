@@ -8,6 +8,7 @@
 // `CommandName` type from here so existing call sites keep working.
 
 export const commandNames = [
+  "analyseDiscBackup",
   "makeDirectory",
   "changeTrackLanguages",
   "convertLosslessToFlac",

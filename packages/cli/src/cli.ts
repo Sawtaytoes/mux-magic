@@ -8,6 +8,7 @@ import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 
 import { addSubtitlesCommand } from "./cli-commands/addSubtitlesCommand.js"
+import { analyseDiscBackupCommand } from "./cli-commands/analyseDiscBackupCommand.js"
 import { changeTrackLanguagesCommand } from "./cli-commands/changeTrackLanguagesCommand.js"
 import { convertContainerAudioToFlacCommand } from "./cli-commands/convertContainerAudioToFlacCommand.js"
 import { convertLosslessToFlacCommand } from "./cli-commands/convertLosslessToFlacCommand.js"
@@ -78,6 +79,7 @@ yargs(hideBin(process.argv))
   .command(extractSubtitlesCommand)
   .command(fixIncorrectDefaultTracksCommand)
   .command(flattenChildFoldersCommand)
+  .command(analyseDiscBackupCommand)
   .command(flattenOutputCommand)
   .command(getAudioOffsetsCommand)
   .command(getSubtitleMetadataCommand)
