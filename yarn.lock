@@ -1921,7 +1921,7 @@ __metadata:
     chalk: "npm:^5.6.2"
     cli-progress: "npm:^3.12.0"
     fast-xml-parser: "npm:^5.7.3"
-    hono: "npm:^4.12.21"
+    hono: "npm:^4.12.34"
     js-yaml: "npm:^4.2.0"
     jsdom: "npm:^29.1.1"
     mal-scraper: "patch:mal-scraper@npm%3A2.13.2#~/.yarn/patches/mal-scraper-npm-2.13.2-36efb47931.patch"
@@ -1995,7 +1995,7 @@ __metadata:
     "@mux-magic/core": "workspace:*"
     "@mux-magic/tools": "workspace:*"
     "@mux-magic/web": "workspace:*"
-    hono: "npm:^4.12.21"
+    hono: "npm:^4.12.34"
     tsx: "npm:^4.21.0"
     typescript: "npm:^6.0.3"
     vite: "npm:^8.0.16"
@@ -6877,10 +6877,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hono@npm:^4.12.21":
-  version: 4.12.32
-  resolution: "hono@npm:4.12.32"
-  checksum: 10c0/3bb2fc0b042af87202e0cb0e5f77ee5b578684d868e1e321ed3de53e02f1ef02fe700811fa0d2fc765636a217bae7633d552d55934175f3dec6307a1f63f4ecb
+"hono@npm:^4.12.34":
+  version: 4.12.34
+  resolution: "hono@npm:4.12.34"
+  checksum: 10c0/9d184cb95bc630622d3a8885706feb8e98170556650ce139f09e54c96b9429b3194a296ad4fb0791e7b642a21a03acbf592cb0d19d906ab5e8b78a13337d61bc
   languageName: node
   linkType: hard
 
