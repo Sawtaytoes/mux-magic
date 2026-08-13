@@ -299,10 +299,14 @@ export const SequenceRunModal = () => {
       isOpen={modalState.mode === "open"}
       onClose={dismissOrBackground}
       ariaLabel={modalTitle}
+      className="w-full max-w-2xl"
     >
+      {/* Layout only — the surface (border/rounding/elevation/85dvh clamp)
+          is Charcuterie's Modal box; painting it again here is what produced
+          the doubled frame. */}
       <div
         id="sequence-run-modal"
-        className="bg-surface-raised border border-border-default rounded-xl shadow-high w-full max-w-2xl mx-4 flex flex-col gap-0 overflow-hidden max-h-[85dvh]"
+        className="flex min-h-0 flex-1 flex-col gap-0"
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border-default shrink-0">
