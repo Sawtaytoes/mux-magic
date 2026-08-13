@@ -21,14 +21,27 @@ const ANIME_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const MIN_REQUEST_INTERVAL_MS = 2_500
 let lastRequestAt = 0
 
-const throttle = async () => {
-  const wait =
-    MIN_REQUEST_INTERVAL_MS - (Date.now() - lastRequestAt)
-  if (wait > 0)
-    await new Promise((resolve) =>
-      setTimeout(resolve, wait),
-    )
-  lastRequestAt = Date.now()
+// Serialized through a promise chain, NOT a bare timestamp check. With a
+// bare check, concurrent callers all read the same stale `lastRequestAt`
+// before any of them writes it, all compute `wait <= 0`, and all fire in
+// the same tick — so a parallel sequence group containing several
+// nameAnimeEpisodesAniDB steps would burst past AniDB's 1-req/2s cap and
+// earn a ban. Chaining makes each caller wait for the previous one's slot
+// before claiming its own, so N concurrent lookups are spaced exactly like
+// N sequential ones.
+let throttleChain: Promise<void> = Promise.resolve()
+
+const throttle = () => {
+  throttleChain = throttleChain.then(async () => {
+    const wait =
+      MIN_REQUEST_INTERVAL_MS - (Date.now() - lastRequestAt)
+    if (wait > 0)
+      await new Promise((resolve) =>
+        setTimeout(resolve, wait),
+      )
+    lastRequestAt = Date.now()
+  })
+  return throttleChain
 }
 
 const isFresh = async (path: string, maxAgeMs: number) => {
@@ -40,7 +53,27 @@ const isFresh = async (path: string, maxAgeMs: number) => {
   }
 }
 
-export const getAnimeXml = async (
+// Concurrent lookups of the SAME aid collapse into one request: the
+// second caller awaits the first's promise instead of racing it to the
+// network (and then racing it to write the same cache file). Cleared in
+// a finally so a failure doesn't poison later retries.
+const inFlightByAid = new Map<number, Promise<string>>()
+
+export const getAnimeXml = (
+  aid: number,
+  options: { client: string; clientver: string },
+): Promise<string> => {
+  const inFlight = inFlightByAid.get(aid)
+  if (inFlight !== undefined) return inFlight
+
+  const request = fetchAnimeXml(aid, options).finally(() => {
+    inFlightByAid.delete(aid)
+  })
+  inFlightByAid.set(aid, request)
+  return request
+}
+
+const fetchAnimeXml = async (
   aid: number,
   {
     client,
