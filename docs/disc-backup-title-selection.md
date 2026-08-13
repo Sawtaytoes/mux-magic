@@ -1,8 +1,13 @@
 # Disc-backup title selection — a web UI for deciding what to keep
 
 > [!NOTE]
-> **Status: partly built (2026-08-12).** Piece **A (the analyser) has
-> shipped** — `analyseDiscBackup`, the MakeMKV robot-mode reader, the
+> **Status: partly built; piece A is LIVE (2026-08-13).** Merged in #205,
+> deployed, and verified against `[BACKUP] Desk Set - Blu-ray` through the
+> running app. `makemkvcon` is in the image and the MakeMKV key is bound
+> in. **Next agent: start from
+> [HANDOFF-disc-backup-title-selection.md](HANDOFF-disc-backup-title-selection.md).**
+>
+> Piece **A (the analyser) has shipped** — `analyseDiscBackup`, the MakeMKV robot-mode reader, the
 > segment-map clustering and eight named heuristic rules, all tested
 > against **seven real backups** committed as fixtures. Pieces **B (the
 > review UI)** and **C (execution)** are not built yet.
