@@ -20,12 +20,23 @@ import {
   toArray,
 } from "rxjs"
 import { getActiveJobId } from "../api/logCapture.js"
+import { moveSingleFile } from "../tools/moveSingleFile.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 
-// Copies every file in `sourcePath` up one level into its parent directory,
+// Lifts every file in `sourcePath` up one level into its parent directory,
 // overwriting any same-named originals. By default the source folder is
 // preserved so the user can inspect intermediate state mid-sequence; pass
 // `deleteSourceFolder: true` to remove it once you trust the pipeline.
+//
+// `deleteSourceFolder: true` MOVES (fs.rename) — it does not copy the bytes
+// and then delete them. A step's output folder is a sibling inside the same
+// working dir, so the rename is same-volume and O(1): instant even on a 50 GB
+// MKV, and on ZFS it avoids writing a second full copy of data that is about
+// to be deleted anyway. Only the preserve-the-source path (the default) copies,
+// because there the original genuinely has to survive. See
+// docs/decisions/2026-05-19-atomic-copy-and-filesystem-move.md — this was
+// called out there as the outstanding bug in this command's delete-originals
+// path ("it must move, not copy+delete").
 //
 // Use case: chained operations like addSubtitles output to <work>/SUBTITLED.
 // Without this command, chaining another step that also has an outputFolderName
@@ -135,15 +146,24 @@ export const flattenOutput = ({
                   }
 
                   return defer(() =>
-                    aclSafeCopyFile(
-                      file.fullPath,
-                      targetPath,
-                      copyOptions,
-                    ),
+                    isDeletingSourceFolder
+                      ? moveSingleFile({
+                          copyOptions,
+                          destinationPath: targetPath,
+                          isOverwriteAllowed: true,
+                          sourcePath: file.fullPath,
+                        })
+                      : aclSafeCopyFile(
+                          file.fullPath,
+                          targetPath,
+                          copyOptions,
+                        ).then(() => "copied" as const),
                   ).pipe(
-                    tap(() => {
+                    tap((mode) => {
                       logInfo(
-                        "COPIED BACK",
+                        mode === "renamed"
+                          ? "MOVED BACK"
+                          : "COPIED BACK",
                         file.fullPath,
                         targetPath,
                       )
