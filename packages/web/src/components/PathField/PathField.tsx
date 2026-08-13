@@ -93,6 +93,17 @@ export const PathField = ({
 
   const linkLabel = resolveLinkLabel(link, paths, allSteps)
 
+  // Whole class strings per state, never assembled from fragments.
+  // Tailwind v4 scans source TEXT, so a `bg-surface-${…}` built at
+  // runtime is a class it never generates — the previous
+  // `bg-slate-${isObjectLink ? "900" : "700"}` only rendered at all
+  // because other components happened to spell some of those literals
+  // out. An object-linked field is a read-only mirror of another step's
+  // output, so it sits recessed rather than editable.
+  const inputSchemeClasses = isObjectLink
+    ? "bg-surface-sunken text-content-muted border-border-subtle"
+    : "bg-surface-raised text-content-primary border-border-default"
+
   // The value writeback stays here (not in the hook): a linked field writes
   // the path variable, an unset field mints one, otherwise it's a plain
   // param — logic the autocomplete hook has no business owning.
@@ -141,7 +152,7 @@ export const PathField = ({
             onClick={handleBrowse}
             title="Browse folders"
             aria-label="Browse folders"
-            className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 cursor-pointer"
+            className="shrink-0 text-xs bg-intent-neutral-surface hover:bg-intent-neutral-surface-hover text-intent-neutral-content rounded px-1.5 py-0.5 border border-intent-neutral-border focus:outline-none focus:border-border-focus cursor-pointer"
           >
             📁
           </button>
@@ -166,7 +177,7 @@ export const PathField = ({
         onChange={(event) => {
           pathAutocomplete.onInputChange(event.target.value)
         }}
-        className={`w-full bg-slate-${isObjectLink ? "900" : "700"} text-slate-${isObjectLink ? "400" : "200"} text-xs rounded px-2 py-1.5 border border-slate-${isObjectLink ? "700" : "600"} focus:outline-none focus:border-blue-500 font-mono`}
+        className={`w-full ${inputSchemeClasses} text-xs rounded px-2 py-1.5 border focus:outline-none focus:border-border-focus font-mono`}
       />
 
       {/* Directory autocomplete: attached to the input above; a picked

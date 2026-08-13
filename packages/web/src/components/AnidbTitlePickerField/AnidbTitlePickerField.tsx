@@ -72,13 +72,13 @@ export const AnidbTitlePickerField = ({
             value={String(value)}
             placeholder={field.placeholder ?? ""}
             onInput={handleInput}
-            className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-raised text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus"
           />
           <button
             type="button"
             onClick={handleLoad}
             disabled={!hasAnidbId || status === "loading"}
-            className="shrink-0 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none focus:border-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            className="shrink-0 text-xs bg-intent-neutral-surface hover:bg-intent-neutral-surface-hover text-intent-neutral-content rounded px-1.5 py-0.5 border border-intent-neutral-border focus:outline-none focus:border-border-focus cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           >
             {status === "loading"
               ? "Loading…"
@@ -91,7 +91,7 @@ export const AnidbTitlePickerField = ({
             aria-label="AniDB title candidates"
             value=""
             onChange={handlePick}
-            className="w-full bg-slate-700 text-slate-200 text-xs rounded px-2 py-1.5 border border-slate-600 focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-raised text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus"
           >
             <option value="" disabled>
               Pick a title to copy into the field…
@@ -108,13 +108,13 @@ export const AnidbTitlePickerField = ({
         ) : null}
 
         {status === "empty" ? (
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-content-muted">
             No titles found for this AniDB ID.
           </p>
         ) : null}
 
         {!hasAnidbId ? (
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-content-muted">
             Set the AniDB Anime ID first, then load its
             titles.
           </p>
