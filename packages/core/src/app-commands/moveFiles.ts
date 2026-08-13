@@ -21,8 +21,8 @@ import {
   toArray,
 } from "rxjs"
 import { getActiveJobId } from "../api/logCapture.js"
-import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { moveSingleFile } from "../tools/moveSingleFile.js"
+import { createProgressEmitter } from "../tools/progressEmitter.js"
 import {
   compileFilterRegex,
   type RegexFilterInput,

@@ -106,9 +106,7 @@ describe(flattenOutput.name, () => {
     await expect(
       readFile("/work/episode-02.mkv", "utf8"),
     ).resolves.toBe("merged-2")
-    await expect(
-      stat("/work/SUBTITLED"),
-    ).rejects.toThrow()
+    await expect(stat("/work/SUBTITLED")).rejects.toThrow()
   })
 
   test("still copies (leaving the source intact) when the folder is preserved", async () => {
