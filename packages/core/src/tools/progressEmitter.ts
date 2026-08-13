@@ -51,8 +51,10 @@ export type FileTracker = {
   setRatio: (ratio: number | null) => void
   // Marks this file done. Folds its size into the cumulative byte tally
   // (caller-supplied takes precedence; falls back to whatever was
-  // accumulated via reportBytes), increments filesDone, and removes the
-  // tracker from the emitter's active-file set.
+  // accumulated via reportBytes) and removes the tracker from the
+  // emitter's active-file set. Also increments filesDone, but ONLY when
+  // the handle that created this tracker declared `totalFiles` — see
+  // the rollup-ownership note on createProgressEmitter.
   finish: (fileSizeBytes?: number) => void
 }
 
@@ -75,10 +77,14 @@ export type ProgressEmitter = {
   // ratio. Useful when the caller has computed the canonical job
   // ratio itself.
   setRatio: (ratio: number | null) => void
-  // Cancels any pending throttled emission. Does NOT emit a final
-  // 100% — the job's natural status flip to `completed` is enough
-  // signal for the UI to clear the bar. Always safe to call from
-  // RxJS finalize() / catchError() / cancellation paths.
+  // Flushes the buffered snapshot and clears any pending throttled
+  // emission, so a step finishing inside the throttle window doesn't
+  // strand the UI on a stale intermediate frame. Never synthesizes a
+  // 100% — it emits the real accumulated snapshot, so the cancelled and
+  // errored paths report where the work actually stopped. A job that
+  // never emitted anything stays silent (the deferred-first-emit
+  // "small jobs don't bother" property). Always safe to call from RxJS
+  // finalize() / catchError() / cancellation paths.
   finalize: () => void
 }
 
@@ -242,10 +248,23 @@ const tick = (state: EmitterState) => {
 // nested spawn op declaring extra totalBytes contributes to the same
 // rollup the iterator started). The returned handle is a thin facade
 // over the shared state — multiple call sites coexist safely.
+//
+// Rollup ownership: `startFile`/`finish` are used at two different
+// granularities against this shared state. A command that knows its
+// file list (copyFiles, moveFiles, flattenOutput,
+// distributeFolderToSiblings) declares `totalFiles` and starts one
+// tracker per file — for it, a finished tracker IS one finished file.
+// A spawn op (runMkvMerge, runFfmpeg, runMkvExtract, …) declares no
+// totals and starts a tracker purely to publish a `currentFiles` row;
+// several of them can run within a single outer file, so counting their
+// trackers would badly over-report. Declaring `totalFiles` is therefore
+// what makes a handle the owner of the `filesDone` rollup, and only an
+// owner's trackers bump the counter on finish().
 export const createProgressEmitter = (
   jobId: string,
   options: ProgressEmitterOptions = {},
 ): ProgressEmitter => {
+  const isRollupOwner = options.totalFiles !== undefined
   const existingState = states.get(jobId)
   const state: EmitterState = existingState ?? {
     jobId,
@@ -311,10 +330,9 @@ export const createProgressEmitter = (
             fileSizeBytesOverride ??
             fileState.totalBytes ??
             fileState.bytesWritten
-          // filesDone is NOT incremented here — only emitter.incrementFilesDone()
-          // does that. tracker.finish() only manages the currentFiles display.
-          // Callers inside withFileProgress get their filesDone count from the
-          // rxFinalize(() => emitter.incrementFilesDone()) wired by that operator.
+          if (isRollupOwner) {
+            state.filesDone += 1
+          }
           state.activeFiles.delete(trackerId)
           tick(state)
         },
@@ -336,7 +354,16 @@ export const createProgressEmitter = (
         clearTimeout(state.pendingTimer)
         state.pendingTimer = null
       }
-      state.pendingPayload = null
+
+      // A job that never emitted has no bar on screen to correct, so
+      // staying silent preserves the deferred-first-emit property.
+      // Otherwise flush what the throttle was holding — dropping it is
+      // what left finished steps rendering a stale partial frame.
+      if (state.lastEmitAt === null) {
+        state.pendingPayload = null
+      } else {
+        flush(state)
+      }
     },
   }
 }

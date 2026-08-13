@@ -1,4 +1,4 @@
-import { of } from "rxjs"
+import { map, of, timer } from "rxjs"
 import {
   afterEach,
   beforeEach,
@@ -188,12 +188,11 @@ describe(createProgressEmitter.name, () => {
     ])
   })
 
-  test("tracker.finish removes the file from currentFiles but does NOT increment filesDone", () => {
-    // tracker.finish() is display-only: it removes the active-file row from
-    // currentFiles so the UI stops showing the bar. The filesDone counter is
-    // the domain of emitter.incrementFilesDone() alone. withFileProgress wires
-    // that call via rxFinalize so per-pair counting and per-file ffmpeg tracking
-    // never double-count.
+  test("tracker.finish removes the file from currentFiles AND increments filesDone when the handle declared totalFiles", () => {
+    // A handle that declared totalFiles owns the filesDone rollup: it knows
+    // its file list, so one finished tracker is one finished file. This is
+    // the copyFiles / moveFiles / flattenOutput / distributeFolderToSiblings
+    // shape, which used to report 0/N for the whole run.
     const captured = captureProgress("job-finish")
     const emitter = createProgressEmitter("job-finish", {
       totalFiles: 2,
@@ -208,7 +207,7 @@ describe(createProgressEmitter.name, () => {
     vi.advanceTimersByTime(1000)
 
     expect(captured).toHaveLength(1)
-    expect(captured[0].filesDone).toBe(0)
+    expect(captured[0].filesDone).toBe(1)
     expect(captured[0].currentFiles).toEqual([
       { path: "/b.mkv", ratio: null },
     ])
@@ -217,11 +216,39 @@ describe(createProgressEmitter.name, () => {
     vi.advanceTimersByTime(1000)
 
     const finalEvent = captured[captured.length - 1]
-    expect(finalEvent.filesDone).toBe(0)
+    expect(finalEvent.filesDone).toBe(2)
+    expect(finalEvent.filesTotal).toBe(2)
     expect(finalEvent.currentFiles).toBeUndefined()
   })
 
-  test("tracker.finish is idempotent — second call after teardown is a no-op", () => {
+  test("tracker.finish does NOT increment filesDone when the handle declared no totals — the spawn-op display-only path", () => {
+    // runMkvMerge / runFfmpeg / runMkvExtract start a tracker purely to
+    // publish a currentFiles row, and several of them can run inside a
+    // single outer file. Counting those would over-report, so a handle
+    // that declared no totals never touches the rollup.
+    const captured = captureProgress("job-spawn-rows")
+    const owner = createProgressEmitter("job-spawn-rows", {
+      totalFiles: 2,
+    })
+    const spawnOperation = createProgressEmitter(
+      "job-spawn-rows",
+    )
+
+    const firstSpawn = spawnOperation.startFile("/out.mkv")
+    firstSpawn.finish()
+    const secondSpawn = spawnOperation.startFile("/out.mkv")
+    secondSpawn.finish()
+
+    owner.incrementFilesDone()
+
+    vi.advanceTimersByTime(1000)
+
+    expect(captured).toHaveLength(1)
+    expect(captured[0].filesDone).toBe(1)
+    expect(captured[0].filesTotal).toBe(2)
+  })
+
+  test("tracker.finish is idempotent — second call after teardown does not double-count", () => {
     const captured = captureProgress("job-idempotent")
     const emitter = createProgressEmitter(
       "job-idempotent",
@@ -235,8 +262,7 @@ describe(createProgressEmitter.name, () => {
     vi.advanceTimersByTime(1000)
 
     expect(captured).toHaveLength(1)
-    // tracker.finish does not increment filesDone; use emitter.incrementFilesDone()
-    expect(captured[0].filesDone).toBe(0)
+    expect(captured[0].filesDone).toBe(1)
   })
 
   test("setRatio overrides byte/file derived ratio — used by spawn ops with a tool-supplied percentage", () => {
@@ -265,6 +291,52 @@ describe(createProgressEmitter.name, () => {
 
     expect(captured).toHaveLength(1)
     expect(captured[0].ratio).toBeNull()
+  })
+
+  test("finalize flushes the buffered snapshot so a step finishing inside the throttle window is not stranded on a stale frame", () => {
+    const captured = captureProgress("job-stale")
+    const emitter = createProgressEmitter("job-stale", {
+      totalFiles: 4,
+    })
+
+    emitter.incrementFilesDone()
+    vi.advanceTimersByTime(1000)
+
+    expect(captured).toHaveLength(1)
+    expect(captured[0].filesDone).toBe(1)
+
+    // The remaining three files all land inside the next throttle
+    // window — the frame the UI used to be left showing forever.
+    emitter.incrementFilesDone()
+    emitter.incrementFilesDone()
+    emitter.incrementFilesDone()
+    vi.advanceTimersByTime(200)
+    emitter.finalize()
+
+    expect(captured).toHaveLength(2)
+    expect(captured[1].filesDone).toBe(4)
+    expect(captured[1].filesTotal).toBe(4)
+    expect(captured[1].ratio).toBe(1)
+  })
+
+  test("finalize on a cancelled run emits the real partial snapshot, never a fabricated completion", () => {
+    const captured = captureProgress("job-cancel")
+    const emitter = createProgressEmitter("job-cancel", {
+      totalFiles: 10,
+    })
+
+    emitter.incrementFilesDone()
+    vi.advanceTimersByTime(1000)
+
+    emitter.incrementFilesDone()
+    vi.advanceTimersByTime(100)
+    // Cancellation reaches finalize() through the RxJS teardown path.
+    emitter.finalize()
+
+    const finalEvent = captured[captured.length - 1]
+    expect(finalEvent.filesDone).toBe(2)
+    expect(finalEvent.filesTotal).toBe(10)
+    expect(finalEvent.ratio).toBe(0.2)
   })
 
   test("finalize is idempotent and safe to call without any prior ticks", () => {
@@ -330,6 +402,37 @@ describe(withFileProgress.name, () => {
       "processed-c.mkv",
     ])
     expect(captured).toEqual([])
+  })
+
+  test("reports exactly totalFiles at the end — regression guard against double-counting the rollup", () => {
+    // withFileProgress declares totalFiles, so its handle owns the rollup,
+    // but it counts via incrementFilesDone rather than trackers. If it ever
+    // also started trackers, every file would be counted twice and the bar
+    // would read 6/3.
+    const captured = captureProgress("job-count")
+
+    withJobContext("job-count", () => {
+      of("a.mkv", "b.mkv", "c.mkv")
+        .pipe(
+          withFileProgress(
+            // Staggered so the run outlives a throttle window and
+            // actually emits — files finishing together inside the
+            // first window is the silent-fast path covered above.
+            (file, index) =>
+              timer(1500 * (index + 1)).pipe(
+                map(() => `processed-${file}`),
+              ),
+            { isOuterScheduled: false },
+          ),
+        )
+        .subscribe()
+    })
+
+    vi.advanceTimersByTime(10_000)
+
+    const finalEvent = captured[captured.length - 1]
+    expect(finalEvent.filesDone).toBe(3)
+    expect(finalEvent.filesTotal).toBe(3)
   })
 
   test("falls through transparently when there is no active job context (direct CLI invocation path)", () => {
