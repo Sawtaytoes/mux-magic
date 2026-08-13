@@ -11,4 +11,5 @@ export const cleanupFilename = (filename: string) =>
     .replaceAll("*", "@")
     .replaceAll("...", "--")
     .replaceAll(" | ", " - ")
+    .replaceAll("`", "'")
     .trim()
