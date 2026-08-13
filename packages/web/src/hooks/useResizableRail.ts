@@ -83,8 +83,16 @@ export const useResizableRail = () => {
   )
   const [headerHeight, setHeaderHeight] = useState(0)
 
-  const railWidthRef = useRef(railWidth)
-  railWidthRef.current = railWidth
+  // Mirrors railWidth but is updated *synchronously* on every change, not on
+  // render — so a pointerup that fires in the same tick as the final
+  // pointermove (and the drag-start reader) sees the true current width rather
+  // than last render's stale value.
+  const latestWidthRef = useRef(railWidth)
+
+  const applyWidth = useCallback((nextWidth: number) => {
+    latestWidthRef.current = nextWidth
+    setRailWidth(nextWidth)
+  }, [])
 
   const dragOriginRef = useRef<{
     pointerX: number
@@ -122,14 +130,14 @@ export const useResizableRail = () => {
       }
       // The rail sits on the right; dragging its left edge leftward (a smaller
       // clientX) should widen it.
-      setRailWidth(
+      applyWidth(
         clampRailWidth(
           dragOrigin.width +
             (dragOrigin.pointerX - event.clientX),
         ),
       )
     },
-    [],
+    [applyWidth],
   )
 
   const stopDragging = useCallback(() => {
@@ -139,7 +147,7 @@ export const useResizableRail = () => {
       handlePointerMove,
     )
     window.removeEventListener("pointerup", stopDragging)
-    writeStoredRailWidth(railWidthRef.current)
+    writeStoredRailWidth(latestWidthRef.current)
   }, [handlePointerMove])
 
   const handleResizeHandlePointerDown = useCallback(
@@ -147,7 +155,7 @@ export const useResizableRail = () => {
       event.preventDefault()
       dragOriginRef.current = {
         pointerX: event.clientX,
-        width: railWidthRef.current,
+        width: latestWidthRef.current,
       }
       window.addEventListener(
         "pointermove",
@@ -162,9 +170,9 @@ export const useResizableRail = () => {
     (event: ReactKeyboardEvent) => {
       const requestedWidth =
         event.key === "ArrowLeft"
-          ? railWidthRef.current + KEYBOARD_RESIZE_STEP
+          ? latestWidthRef.current + KEYBOARD_RESIZE_STEP
           : event.key === "ArrowRight"
-            ? railWidthRef.current - KEYBOARD_RESIZE_STEP
+            ? latestWidthRef.current - KEYBOARD_RESIZE_STEP
             : event.key === "Home"
               ? MAXIMUM_RAIL_WIDTH
               : event.key === "End"
@@ -175,10 +183,10 @@ export const useResizableRail = () => {
       }
       event.preventDefault()
       const nextWidth = clampRailWidth(requestedWidth)
-      setRailWidth(nextWidth)
+      applyWidth(nextWidth)
       writeStoredRailWidth(nextWidth)
     },
-    [],
+    [applyWidth],
   )
 
   useEffect(
