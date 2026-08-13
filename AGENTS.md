@@ -15,6 +15,7 @@ A Node.js CLI and REST API for batch media file operations (MKV track manipulati
 | Topic | Doc |
 |-------|-----|
 | **Locked decisions — settled choices that must not be silently reverted** | [docs/decisions/](docs/decisions/README.md) |
+| Runbook — combine two releases (video from A, subs from B); flatten + filename-pairing recipe | [docs/combining-two-releases.md](docs/combining-two-releases.md) |
 | Code rules, naming, function style, no-barrels, indentation | [docs/agents/code-rules.md](docs/agents/code-rules.md) |
 | Testing — frameworks, pre-merge gate, forbidden styles, coverage discipline | [docs/agents/testing.md](docs/agents/testing.md) |
 | Test interaction conventions — `user-event`, controlled inputs, `.toBeVisible()` | [docs/agents/test-interactions.md](docs/agents/test-interactions.md) |
