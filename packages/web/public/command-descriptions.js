@@ -64,6 +64,14 @@ window.commandDescriptions = {
       "allowOverwrite": "When true, existing destination files are overwritten. Default false: the command refuses to clobber and fails fast with an EEXIST-shaped error naming the colliding path. Opt in for mirror-sync / idempotent re-run flows."
     }
   },
+  "analyseDiscBackup": {
+    "summary": "Analyse a disc backup and propose which titles to rip, with a stated reason per title",
+    "fields": {
+      "sourcePath": "A `[BACKUP]` folder produced by rip-deck (e.g. `/media/Disc-Rips/[BACKUP] Desk Set - Blu-ray`). Read directly as a BDMV tree — no disc needed. Nothing in it is modified.",
+      "disabledRuleNames": "Heuristic rules to switch off by name (e.g. `isChapterlessLongTitle`). Studio patterns are conventions, not standards, so a rule that turns out to be wrong for a release can be disabled without unpicking the analyser.",
+      "minimumTitleLengthSeconds": "MakeMKV's minimum title length. Defaults to 0 so short extras are seen and can be proposed for discard with a reason — MakeMKV's own 10-second default silently drops them (51 of Desk Set's 61 titles)."
+    }
+  },
   "flattenOutput": {
     "summary": "Flatten a chained step's output: copies the folder's contents up one level (deletes source only if requested)",
     "fields": {

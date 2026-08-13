@@ -15,6 +15,7 @@
 
 import {
   addSubtitlesRequestSchema,
+  analyseDiscBackupRequestSchema,
   changeTrackLanguagesRequestSchema,
   convertContainerAudioToFlacRequestSchema,
   convertLosslessToFlacRequestSchema,
@@ -141,6 +142,33 @@ export const COMMANDS: Commands = {
           label: "Allow overwrite",
           description:
             "Default off: the command fails fast with EEXIST if any destination file already exists. Turn on for mirror-sync / idempotent-re-run flows where last-write-wins is the desired behavior.",
+        }),
+      ],
+    }
+  })(),
+  analyseDiscBackup: (() => {
+    const field = fieldBuilder(
+      analyseDiscBackupRequestSchema,
+    )
+    return {
+      summary:
+        "Analyse a rip-deck [BACKUP] folder and propose which titles to rip, with a reason for each",
+      tag: "Disc Backups",
+      // Read-only. The proposal is written to a DISC-ANALYSIS/ sidecar
+      // inside the backup; nothing else in the folder is touched.
+      outputFolderName: null,
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Disc Backup Folder",
+        }),
+        field("disabledRuleNames", {
+          type: "stringArray",
+          label: "Heuristic rules to disable",
+        }),
+        field("minimumTitleLengthSeconds", {
+          type: "number",
+          label: "Minimum title length (seconds)",
         }),
       ],
     }
@@ -1887,6 +1915,7 @@ export const TAG_ORDER = [
   "Track Operations",
   "Subtitle Operations",
   "Analysis",
+  "Disc Backups",
   "Naming Operations",
   "Video Operations",
   "Metadata Operations",

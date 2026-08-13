@@ -49,6 +49,13 @@ test-results/
 
 *.log
 
+# ...except the captured MakeMKV robot-mode output committed deliberately
+# as test fixtures. Without this negation `*.log` swallows all seven of
+# them, and because they still sit on disk locally the analyser tests keep
+# passing on a dev machine while CI — which only has what git tracks —
+# fails every one of them.
+!packages/core/src/tools/makemkv/__fixtures__/*.robot.log
+
 # Local copy of Biome JSON schema (avoids IDE untrusted-URL warning)
 biome-schema.downloaded.json
 
