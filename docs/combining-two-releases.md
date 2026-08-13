@@ -180,6 +180,32 @@ two files in `work/op-ed/` it just asks you to confirm OP→C1, ED→C2. **Note:
 [PR #207](https://github.com/Sawtaytoes/mux-magic/pull/207); an older build emits
 `s00e01`.
 
+## Validate the YAML before running it
+
+Check a sequence with **no side effects** first — it runs the same envelope +
+per-command param schemas the runner uses, so "valid here" means "won't be
+rejected there". POST the YAML as a string; use the **`/api`** prefix and
+`Accept: application/json` (the bare `/sequences/validate` path returns the SPA):
+
+```bash
+python3 - <<'PY'
+import json, urllib.request
+yaml = open("sequence.yaml").read()
+req = urllib.request.Request(
+    "https://mux-magic.octen.dev/api/sequences/validate",
+    data=json.dumps({"yaml": yaml}).encode(),
+    headers={"Content-Type": "application/json", "Accept": "application/json"},
+)
+print(urllib.request.urlopen(req).read().decode())   # {"errors":[],"isValid":true}
+PY
+```
+
+Two flow-syntax traps that this catches (both hit while writing this runbook):
+inline `{...}` params break on a value containing `[...]` (e.g. the
+`[anidb-<id>]` library path reads as a nested flow list) — use **block-style
+params and single-quote every path**. `[jpn]` / `[0, 2]` / `[]` are real flow
+sequences and stay as-is.
+
 ## Cleanup — delete `work/` at the very end
 
 `work/` (and its `subs/` + `op-ed/` children) are throwaway staging. Once **both**
@@ -188,11 +214,26 @@ the whole thing in one shot: `deleteFolder` with `sourcePath: <…>/work` and
 `confirm: true`. The source release folders (TTGA / CRUCiBLE) stay — only the
 `work/` copies go.
 
-## Why two YAMLs instead of one
+## One sequence, with parallel groups for the independent heavy ops
 
-The episodes pass and the OP/ED pass are two independent multi-step streams that
-converge on the same library folder. mux-magic **cannot** run them as two parallel
-streams in one sequence — groups are flat-only (a parallel group holds bare steps,
-not sequential sub-groups). See the decision
-[`groups-are-flat-only-no-parallel-of-sequences`](decisions/2026-08-13-groups-are-flat-only-no-parallel-of-sequences.md).
-Until that's built, run the two YAMLs separately.
+It's all one **sequential** YAML: stage → rename → OP/ED and episodes processed →
+both moved → delete `work/`. Where independent bare steps line up, wrap them in a
+`kind: group` / `isParallel: true` group to run them concurrently — the big wins:
+
+- `keepLanguages` (base) + `keepLanguages` (op-ed) + `reorderTracks` (subs) — three
+  independent track ops on three folders, one parallel group.
+- `replaceTracks` (episodes) + `replaceFlacWithPcmAudio` (op-ed) — independent.
+- `moveFiles` (episodes) + `moveFiles` (op-ed) — both moves at the very end.
+
+Keep the **renames serial** — `nameAnimeEpisodesAniDB` hits the rate-limited AniDB
+API and the credits pass uses an interactive picker.
+
+Two hard limits to remember:
+
+- **`isParallel` is honored only on the server run path** ("▶ Run on Server"). The
+  client "▶ Run Sequence" runs everything serially.
+- A parallel group holds **bare steps only** — groups are flat-only, so you can't
+  run two multi-step *streams* in parallel (no parallel-of-sequences). See the
+  decision [`groups-are-flat-only-no-parallel-of-sequences`](decisions/2026-08-13-groups-are-flat-only-no-parallel-of-sequences.md).
+  That's why the two moves are individually parallelized at the end rather than
+  running the whole OP/ED and episodes tails concurrently.
