@@ -323,7 +323,8 @@ const loadStepItem = (
         const matchedPathVariable =
           field.type === "path" &&
           !field.acceptedOutputs &&
-          typeof value === "string"
+          typeof value === "string" &&
+          value !== ""
             ? currentPaths.find(
                 (pathVariable) =>
                   pathVariable.value === value,
