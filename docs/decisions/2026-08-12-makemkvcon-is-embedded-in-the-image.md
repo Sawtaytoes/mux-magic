@@ -10,7 +10,10 @@
 The mux-magic image transplants `/opt/makemkv` from
 `ghcr.io/jlesage/makemkv` and puts `makemkvcon` on `PATH`, so
 `analyseDiscBackup` can read a `[BACKUP]` folder's BDMV tree directly
-(`makemkvcon -r --cache=1 --minlength=0 info file:…`). No optical drive
+(`makemkvcon -r --cache=1 --minlength=<seconds> info file:…`; the floor
+defaults to 60 — see
+[2026-08-13](2026-08-13-disc-analysis-minimum-title-length-is-60-seconds.md)).
+No optical drive
 and no `--device` passthrough — mux-magic needs none of rip-deck's
 `sr`/`sg` machinery.
 

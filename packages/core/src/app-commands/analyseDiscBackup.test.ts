@@ -62,9 +62,9 @@ describe(analyseDiscBackup.name, () => {
     expect(writtenSidecar.titles).toHaveLength(18)
   })
 
-  test("passes --minlength=0 through by default so short extras are seen", async () => {
-    // MakeMKV's 10-second floor drops 51 of Desk Set's 61 titles. "Propose,
-    // never silently discard" means the analyser has to see them.
+  test("passes --minlength=60 through by default so real extras are seen but fragments are not", async () => {
+    // A one-minute floor keeps trailers and featurettes in the proposal while
+    // dropping the sub-minute BDMV fragments (59 of Desk Set's 61 titles).
     vi.mocked(runMakeMkvCon).mockReturnValue(
       of(loadGraph("desk-set-bluray.robot.log")),
     )
@@ -72,7 +72,7 @@ describe(analyseDiscBackup.name, () => {
     await firstValueFrom(analyseDiscBackup({ sourcePath }))
 
     expect(runMakeMkvCon).toHaveBeenCalledWith({
-      minimumTitleLengthSeconds: 0,
+      minimumTitleLengthSeconds: 60,
       sourcePath,
     })
   })
