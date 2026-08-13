@@ -14,7 +14,8 @@ Sources: [v1.0.0 parity delta](2026-06-29-v1.0.0-parity-delta.md), [decisions-vs
 - **Acceptance:** unit test asserting the four scalars are written and no object reaches `dvdCompareId`.
 
 ### B. `flattenOutput` does copy+delete instead of a filesystem move
-- **Already filed as [worker 7d](../workers/7d_filesystem-move-not-copy-delete.md).** Governed by [atomic copy + filesystem move](../decisions/2026-05-19-atomic-copy-and-filesystem-move.md). Same-volume moves must be `fs.rename` (no temp). Extract one shared `moveSingleFile` primitive and audit every move-semantic command.
+- ✅ **Fixed 2026-08-13 in [#211](https://github.com/Sawtaytoes/mux-magic/pull/211).** `flattenOutput` now moves (`fs.rename`, EXDEV fallback retained) when `deleteSourceFolder: true`; the preserve-the-source default still copies. The shared `moveSingleFile` primitive called for below was extracted to `packages/core/src/tools/moveSingleFile.ts` and is used by both `moveFiles` and `flattenOutput`.
+- **Original entry:** Already filed as [worker 7d](../workers/7d_filesystem-move-not-copy-delete.md). Governed by [atomic copy + filesystem move](../decisions/2026-05-19-atomic-copy-and-filesystem-move.md). Same-volume moves must be `fs.rename` (no temp). Extract one shared `moveSingleFile` primitive and audit every move-semantic command.
 
 ---
 
