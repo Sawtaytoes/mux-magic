@@ -47,7 +47,7 @@ export const HomePage = () => {
   return (
     <main className="max-w-6xl mx-auto px-6 py-20">
       <h1 className="text-5xl font-bold tracking-tight text-content-primary text-center">
-        Mux Magic
+        Mux-Magic
       </h1>
       <p className="mt-4 text-lg text-content-secondary text-center">
         Pick a tool.

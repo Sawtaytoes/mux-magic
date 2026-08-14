@@ -21,7 +21,7 @@ import "../src/styles/builderStyles.css"
  * This replaces three separate pieces mux-magic used to carry: the
  * `@storybook/addon-themes` scheme toggle, a hand-written decorator that pinned
  * `data-variant` and echoed `data-density`, and a local `density` `globalType`.
- * `data-scheme` still defaults to `dark` — the scheme Mux Magic opens on — but
+ * `data-scheme` still defaults to `dark` — the scheme Mux-Magic opens on — but
  * it is no longer the only one that renders: `SchemeMenuButton` ships the
  * switcher in the app, and this branch moved the last of the hand-rolled slate
  * literals onto tokens, so the toolbar's `light` entry now shows what a user

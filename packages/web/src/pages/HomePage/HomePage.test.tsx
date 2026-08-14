@@ -13,7 +13,7 @@ describe("HomePage", () => {
     render(<HomePage />)
     expect(
       screen.getByRole("heading", {
-        name: "Mux Magic",
+        name: "Mux-Magic",
         level: 1,
       }),
     ).toBeVisible()
