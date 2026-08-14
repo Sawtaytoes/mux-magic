@@ -1,4 +1,8 @@
 import {
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query"
+import {
   cleanup,
   render,
   screen,
@@ -23,10 +27,20 @@ const makeVariable = (
 const renderPanel = (initialVariables: Variable[] = []) => {
   const store = createStore()
   store.set(variablesAtom, initialVariables)
+  // A threadCount card reaches /system/threads through
+  // @charcuterie/logic/query, so the panel needs a QueryClient in the
+  // tree (retries off for deterministic tests).
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+    },
+  })
   render(
-    <Provider store={store}>
-      <VariablesPanel />
-    </Provider>,
+    <QueryClientProvider client={queryClient}>
+      <Provider store={store}>
+        <VariablesPanel />
+      </Provider>
+    </QueryClientProvider>,
   )
   return store
 }
