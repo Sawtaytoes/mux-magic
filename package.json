@@ -19,6 +19,7 @@
     "dev": "yarn workspace @mux-magic/server dev",
     "e2e:ui": "playwright test --ui",
     "e2e": "playwright test",
+    "generate:api": "yarn workspace @mux-magic/api generate:api",
     "generate:external-api-schemas": "yarn workspace @mux-magic/api generate:external-api-schemas",
     "generate:internal-api-schemas:watch": "yarn workspace @mux-magic/api generate:internal-api-schemas:watch",
     "generate:internal-api-schemas": "yarn workspace @mux-magic/api generate:internal-api-schemas",

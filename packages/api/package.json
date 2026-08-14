@@ -21,6 +21,7 @@
   "description": "Hono API routes + OpenAPI config for mux-magic. Wraps @mux-magic/core with the HTTP layer; exports the `app` Hono instance. No listener — worker 29 reintroduces a packages/server/ front-door that owns the listener.",
   "scripts": {
     "build:command-descriptions": "tsx scripts/build-command-descriptions.ts",
+    "generate:api": "tsx src/generateInternalApiSchemas.ts",
     "generate:external-api-schemas": "tsx src/generateExternalApiSchemas.ts",
     "generate:internal-api-schemas:watch": "tsx watch src/generateInternalApiSchemas.ts",
     "generate:internal-api-schemas": "tsx src/generateInternalApiSchemas.ts",
