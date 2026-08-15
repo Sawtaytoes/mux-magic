@@ -1,7 +1,7 @@
 import {
   createApiClient,
   createApiHooks,
-} from "@charcuterie/logic/query"
+} from "@charcuterie/logic/openapi"
 
 import { apiBase } from "../apiBase"
 import type { paths } from "./schema.generated"
@@ -9,7 +9,12 @@ import type { paths } from "./schema.generated"
 // The single blessed HTTP seam for the web app: a `paths`-typed
 // `openapi-fetch` client (generated from the API's live OpenAPI
 // document into ./schema.generated.ts) bound to TanStack Query via
-// `@charcuterie/logic/query`. Every data call should reach the server
+// `@charcuterie/logic/openapi` — the subpath the seam moved to in
+// logic 2.0.0, so that the six fleet apps with no OpenAPI document
+// stop having to install `openapi-fetch`/`openapi-react-query` just to
+// typecheck a `QueryProvider`. The client and provider are still
+// `./query`; this app is the one consumer of both. Every data call
+// should reach the server
 // through `api.useQuery` / `api.useMutation` here — path, params, and
 // body are all inferred from the generated schema, so a route rename
 // on the server surfaces as a type error at the call site.
