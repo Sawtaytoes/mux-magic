@@ -94,6 +94,24 @@ jobs:
       # watch mode just from process.env.CI.
       - run: yarn vitest run
 
+      # AFTER the tests, deliberately: Vite's optimizer writes its metadata
+      # as it discovers, so before a run there is nothing to compare and
+      # mid-run the picture is incomplete.
+      #
+      # This guards the exact failure this job hit on 2026-08-15, when
+      # `@charcuterie/logic/openapi`, `/query` and `@charcuterie/ui` were
+      # all missing from the list: 16 tests died with `Failed to fetch
+      # dynamically imported module: …?v=<hash>`, the re-optimization
+      # signature, and nothing in the output named the missing packages.
+      # An incomplete list passes until it loses the coin flip.
+      #
+      # The cache lives beside the package, not at the repo root.
+      - name: Check optimizeDeps.include parity
+        working-directory: packages/web
+        run: >-
+          yarn charcuterie-check-optimize-deps ./optimizeDeps.js
+          --cache-dir node_modules/.vite
+
   e2e:
     needs: check-prior-run
     if: needs.check-prior-run.outputs.skip != 'true'

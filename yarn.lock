@@ -838,6 +838,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@charcuterie/vitest-config@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@charcuterie/vitest-config@npm:1.1.0"
+  peerDependencies:
+    vitest: ">=3"
+  bin:
+    charcuterie-check-optimize-deps: src/cli/checkOptimizeDeps.js
+  checksum: 10c0/b7a1bd4bc5f6451aecf2394a1986c598d79ba1296aa07b4c0baf054f9d50be214c67ce0659f644b8a99ef7572894300c4522a9a5800dd7ee37763b237b50e28c
+  languageName: node
+  linkType: hard
+
 "@csstools/color-helpers@npm:^6.0.2":
   version: 6.0.2
   resolution: "@csstools/color-helpers@npm:6.0.2"
@@ -2027,6 +2038,7 @@ __metadata:
     "@charcuterie/tokens": "npm:^1.5.0"
     "@charcuterie/ui": "npm:^2.15.1"
     "@charcuterie/vite-config": "npm:^1.0.2"
+    "@charcuterie/vitest-config": "npm:^1.1.0"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
