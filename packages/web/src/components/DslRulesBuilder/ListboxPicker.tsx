@@ -1,19 +1,26 @@
-import { useVisibility } from "@charcuterie/logic"
-import { Button, Listbox } from "@charcuterie/ui"
+import { Picker } from "@charcuterie/ui"
 
 /**
- * A one-of-several picker, as a `Listbox` rather than a native `Select`
- * — [the 2026-08-10 Charcuterie decision](https://github.com/Sawtaytoes/charcuterie/blob/master/docs/decisions/2026-08-10-listbox-and-combobox-are-the-default-and-select-is-demoted.md)
- * demoting `Select` to a stated-reason exception.
+ * The DSL builder's one-of-several picker — [Charcuterie's
+ * `Picker`](https://github.com/Sawtaytoes/charcuterie/blob/master/packages/ui/src/Picker/Picker.tsx)
+ * with this app's row styling already applied.
  *
- * It is a component rather than inline JSX because `Listbox` needs a
- * visibility state and these render inside a `.map` over tree nodes,
- * where a hook cannot be called.
+ * The open state, the `Button` trigger and the hand-rolled
+ * `${label}: ${value}` accessible name used to live here; `Picker`
+ * (ui@2.15.0) is that assembly done once for the fleet, and names this
+ * component as one of the four it replaces. What is left is the part
+ * that is genuinely mux-magic's: the builder's rows are dense, so every
+ * control in them is `size="sm"`, and the trigger carries no chevron.
+ * Both would otherwise be repeated at each of the eight call sites.
  *
- * The accessible name carries the current value (`"Slot: matches"`)
- * because the trigger's visible text *is* that value, and WCAG 2.5.3
- * wants the visible text contained in the accessible name. It also makes
- * each row's control findable when a group has several.
+ * `iconEnd={null}` is deliberate rather than incidental. `Picker`
+ * defaults to a chevron this trigger never had, and adding one here
+ * would move a Storybook baseline for a change nobody asked for. A
+ * chevron for these rows is a design decision, and its own change.
+ *
+ * It is a component rather than inline JSX for the same reason it
+ * always was: these render inside a `.map` over tree nodes, where a
+ * hook cannot be called.
  */
 export const ListboxPicker = ({
   isDisabled = false,
@@ -27,32 +34,14 @@ export const ListboxPicker = ({
   onChange: (value: string) => void
   options: readonly { label: string; value: string }[]
   value: string
-}) => {
-  const { hide, isVisible, toggle } = useVisibility()
-
-  const currentLabel =
-    options.find((option) => option.value === value)
-      ?.label ?? ""
-
-  return (
-    <Listbox
-      isVisible={isVisible && !isDisabled}
-      onDismiss={hide}
-      onSelect={onChange}
-      options={options}
-      selectedValue={value}
-      trigger={
-        <Button
-          appearance="outline"
-          aria-label={`${label}: ${currentLabel}`}
-          intent="neutral"
-          isDisabled={isDisabled}
-          onClick={toggle}
-          size="sm"
-        >
-          {currentLabel}
-        </Button>
-      }
-    />
-  )
-}
+}) => (
+  <Picker
+    iconEnd={null}
+    isDisabled={isDisabled}
+    label={label}
+    onChange={onChange}
+    options={options}
+    size="sm"
+    value={value}
+  />
+)
