@@ -5,8 +5,25 @@ on: ["pull_request", "push"]
 env:
   PORT: 3000
 
+# Every job carries a `timeout-minutes`. Without one a job inherits GitHub's
+# 6-hour ceiling, and a hang is then indistinguishable from a slow queue for
+# six hours before it reports `cancelled` — a conclusion that reads like
+# infrastructure, not like a failing test.
+#
+# That is not hypothetical. On 2026-08-14 `unit-tests` hung on a real
+# regression (two copies of @charcuterie/logic, so React rendered against two
+# copies of its bindings). Both runs for that SHA sat until 03:24 the next
+# morning and reported `cancelled`; the same job re-run failed honestly in
+# 3m24s. The bug was findable the whole time — the missing timeout is what
+# hid it.
+#
+# The values are ceilings, NOT targets: ~5-7x each job's observed green
+# duration (slowest is unit-tests at ~3min, e2e ~2m15s, the rest under a
+# minute). They exist to turn a hang into a fast, legible failure, so raise
+# one only if a job legitimately grows into it.
 jobs:
   check-prior-run:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     outputs:
       skip: ${{ steps.check.outputs.skip }}
@@ -37,6 +54,7 @@ jobs:
   lint:
     needs: check-prior-run
     if: needs.check-prior-run.outputs.skip != 'true'
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -49,6 +67,7 @@ jobs:
   typecheck:
     needs: check-prior-run
     if: needs.check-prior-run.outputs.skip != 'true'
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -61,6 +80,7 @@ jobs:
   unit-tests:
     needs: check-prior-run
     if: needs.check-prior-run.outputs.skip != 'true'
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -77,6 +97,7 @@ jobs:
   e2e:
     needs: check-prior-run
     if: needs.check-prior-run.outputs.skip != 'true'
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -101,6 +122,7 @@ jobs:
     # as fact out of a build that had exited 1.
     needs: check-prior-run
     if: needs.check-prior-run.outputs.skip != 'true'
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -137,6 +159,7 @@ jobs:
     # depend on prior workflow steps.
     needs: check-prior-run
     if: needs.check-prior-run.outputs.skip != 'true'
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     env:
       RUN_BUILD_BUDGET: "1"
