@@ -8,7 +8,7 @@ import { app } from "./api/hono-routes.js"
 import { openApiDocs } from "./api/openApiDocConfig.js"
 
 // The typed `paths` surface the web app consumes via
-// `@charcuterie/logic/query` (createApiClient<paths>). It is generated
+// `@charcuterie/logic/openapi` (createApiClient<paths>). It is generated
 // from the live Hono OpenAPI document and committed to the repo — Biome
 // (`**/*.generated.ts`) and ESLint (`packages/web/src/api/schema.generated.ts`)
 // both ignore it. See docs/decisions for the generated-schemas convention.
