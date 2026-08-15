@@ -40,5 +40,5 @@ export default defineConfig({
    * config. That file carries the full explanation of why the list is
    * load-bearing and how to regenerate it.
    */
-  optimizeDeps: { include: optimizeDepsInclude },
+  optimizeDeps: { include: [...optimizeDepsInclude] },
 })
