@@ -43,10 +43,25 @@ export default defineConfig({
     include: [
       "@charcuterie/logic",
       "@charcuterie/logic/browser",
+      // Every subpath is its OWN optimizer entry — `@charcuterie/logic`
+      // being listed does not cover `/query` or `/openapi`. Both were
+      // missing until 2026-08-15 (as was `@charcuterie/ui`), and the race
+      // they opened is exactly the one this comment describes: it lost the
+      // coin flip on a CI runner and 16 tests failed with `Failed to fetch
+      // dynamically imported module: .../react_jsx-dev-runtime.js?v=…`,
+      // the re-optimization signature.
+      "@charcuterie/logic/openapi",
+      "@charcuterie/logic/query",
+      "@charcuterie/ui",
       "@dnd-kit/core",
       "@dnd-kit/sortable",
       "@dnd-kit/utilities",
       "@hono/zod-openapi",
+      // Pulled in by Vitest itself rather than by app source, but it is a
+      // top-level entry in `_metadata.json` all the same, and this list is
+      // defined as mirroring that file. (The `vitest > …` rows there are
+      // Vite's naming for transitive deps, not entries — they stay out.)
+      "expect-type",
       "@tanstack/react-query",
       "@testing-library/jest-dom/vitest",
       "@testing-library/react",
