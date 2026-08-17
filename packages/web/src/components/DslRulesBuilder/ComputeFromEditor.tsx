@@ -63,29 +63,40 @@ export const ComputeFromEditor = ({
             )
           }}
         />
-        <Select
-          className="w-32 font-mono"
-          isDisabled={isReadOnly}
-          key={scope}
-          label="scope"
-          onChange={(value) => {
-            onCommitRules(
-              setComputeFromField({
-                rules,
-                ruleIndex,
-                fieldKey,
-                propertyName: "scope",
-                value,
-              }),
-            )
-          }}
-          options={[
-            { label: "scriptInfo", value: "scriptInfo" },
-            { label: "style", value: "style" },
-          ]}
-          size="sm"
-          value={scope}
-        />
+        {/*
+          Width on the wrapper, not on `Select`: `Select` renders an
+          `inline-grid w-full` box around the `<select>` and forwards
+          `className` only to the inner element, so a width passed to
+          `Select` sizes the text box while the wrapper stays full-width
+          and the chevron strands itself at the far right. See
+          charcuterie#112. 10rem = 160px; `scriptInfo` is the widest
+          option and needs 146px.
+        */}
+        <div className="w-40 shrink-0">
+          <Select
+            className="font-mono"
+            isDisabled={isReadOnly}
+            key={scope}
+            label="scope"
+            onChange={(value) => {
+              onCommitRules(
+                setComputeFromField({
+                  rules,
+                  ruleIndex,
+                  fieldKey,
+                  propertyName: "scope",
+                  value,
+                }),
+              )
+            }}
+            options={[
+              { label: "scriptInfo", value: "scriptInfo" },
+              { label: "style", value: "style" },
+            ]}
+            size="sm"
+            value={scope}
+          />
+        </div>
       </div>
       <div className="mt-1.5">
         <span className="text-xs uppercase tracking-wide text-content-secondary">
