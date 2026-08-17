@@ -17,6 +17,7 @@ export const commandNames = [
   "copyFiles",
   "flattenOutput",
   "copyOutSubtitles",
+  "extractDiscTitles",
   "extractSubtitles",
   "fixIncorrectDefaultTracks",
   "getAudioOffsets",

@@ -183,6 +183,38 @@ export const analyseDiscBackupRequestSchema = z.object({
     ),
 })
 
+export const extractDiscTitlesRequestSchema = z.object({
+  sourcePath: z
+    .string()
+    .describe(
+      "A `[BACKUP]` folder produced by rip-deck (e.g. `/media/Disc-Rips/[BACKUP] Desk Set - Blu-ray`). The backup itself is only read.",
+    ),
+  destinationPath: z
+    .string()
+    .optional()
+    .describe(
+      "Where the ripped `.mkv` files land. Defaults to `EXTRACTED-TITLES/` inside the backup, beside `DISC-ANALYSIS/`, so the files travel with the proposal that produced them.",
+    ),
+  disabledRuleNames: z
+    .array(z.string())
+    .default([])
+    .describe(
+      "Heuristic rules to switch off by name (e.g. `isChapterlessLongTitle`). Same list the analysis takes — the rules decide which titles are `keep`, and `keep` is what gets ripped.",
+    ),
+  minimumTitleLengthSeconds: z
+    .number()
+    .default(60)
+    .describe(
+      "MakeMKV's minimum title length. MUST match the analysis pass: makemkvcon assigns title indexes AFTER applying this filter, so the same disc read at 0 and at 60 numbers its titles differently and an index from the wrong pass rips the wrong title.",
+    ),
+  titleIndexes: z
+    .array(z.number())
+    .optional()
+    .describe(
+      "Explicit title indexes to rip, overriding the dispositions. Omit to rip every title the analysis proposed keeping — `merge` and `inspect` titles are never ripped automatically, because one needs the track-graft path and the other needs a human.",
+    ),
+})
+
 export const flattenOutputRequestSchema = z.object({
   sourcePath: z
     .string()
