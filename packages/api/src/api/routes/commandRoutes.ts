@@ -338,6 +338,8 @@ export const commandConfigs: Record<
       extractDiscTitles({
         destinationPath: body.destinationPath,
         disabledRuleNames: body.disabledRuleNames,
+        isRippingTrackSupersets:
+          body.isRippingTrackSupersets,
         minimumTitleLengthSeconds:
           body.minimumTitleLengthSeconds,
         sourcePath: body.sourcePath,

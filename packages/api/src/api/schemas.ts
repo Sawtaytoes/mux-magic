@@ -211,7 +211,13 @@ export const extractDiscTitlesRequestSchema = z.object({
     .array(z.number())
     .optional()
     .describe(
-      "Explicit title indexes to rip, overriding the dispositions. Omit to rip every title the analysis proposed keeping — `merge` and `inspect` titles are never ripped automatically, because one needs the track-graft path and the other needs a human.",
+      "Explicit title indexes to rip, overriding the dispositions. Omit to rip every title the analysis proposed keeping — `merge` and `inspect` titles are not ripped automatically unless `isRippingTrackSupersets` covers them.",
+    ),
+  isRippingTrackSupersets: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Also rip the one title in a cluster that carries every track its siblings expose, grafting the chapter marks it lacks from the richest sibling playlist's `.mpls`. Replaces ripping three 65.5 GB playlists of the same film with one pass. Off by default because the superset is the very title `isChapterlessTwin` proposes discarding, so taking it is the caller's decision.",
     ),
 })
 

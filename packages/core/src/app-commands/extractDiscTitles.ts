@@ -20,7 +20,9 @@ import {
 import { runMakeMkvCon } from "../cli-spawn-operations/runMakeMkvCon.js"
 import { runMakeMkvConExtract } from "../cli-spawn-operations/runMakeMkvConExtract.js"
 import { buildDiscAnalysis } from "../tools/discTitles/buildDiscAnalysis.js"
+import { buildTrackSupersetPlans } from "../tools/discTitles/buildTrackSupersetPlans.js"
 import type { AnalysedTitle } from "../tools/discTitles/discTitleAnalysis.js"
+import { graftPlaylistChapters } from "../tools/discTitles/graftPlaylistChapters.js"
 
 /**
  * Where the ripped titles land.
@@ -32,6 +34,8 @@ import type { AnalysedTitle } from "../tools/discTitles/discTitleAnalysis.js"
 export const extractedTitlesFolderName = "EXTRACTED-TITLES"
 
 export type ExtractedTitle = {
+  /** The `.mpls` its chapter marks were grafted from, or null if none were. */
+  chapterSourceFileName: string | null
   filePath: string
   isAlreadyExtracted: boolean
   sourceFileName: string
@@ -53,19 +57,30 @@ const getIsExistingFile = (filePath: string) =>
  * `nameSpecialFeaturesDvdCompareTmdb` step expects to rename, so this
  * command has no naming logic of its own to disagree with it.
  *
- * `merge` and `inspect` dispositions are NOT extracted. Merge needs the
- * track-graft path (piece C.2) and inspect needs a human; ripping either
- * on a guess is how you get a wrong file that looks right.
+ * `merge` and `inspect` dispositions are NOT extracted by default, because
+ * ripping either on a guess is how you get a wrong file that looks right.
+ *
+ * `isRippingTrackSupersets` opts into the one case that is no longer a
+ * guess: a cluster where one title carries every track its siblings expose
+ * (Soylent Green's raw `00425.m2ts` — LPCM mono plus all three DD 2.0,
+ * where each playlist holds a subset). That title is ripped once instead
+ * of ripping three 65.5 GB playlists, and the chapter marks it lacks are
+ * grafted from the richest sibling playlist's `.mpls`. Off by default:
+ * the superset is exactly the title `isChapterlessTwin` proposes
+ * discarding, so taking it is a decision the caller makes, not one a rule
+ * makes quietly on another rule's behalf.
  */
 export const extractDiscTitles = ({
   destinationPath,
   disabledRuleNames = [],
+  isRippingTrackSupersets = false,
   minimumTitleLengthSeconds = 60,
   sourcePath,
   titleIndexes,
 }: {
   destinationPath?: string
   disabledRuleNames?: string[]
+  isRippingTrackSupersets?: boolean
   minimumTitleLengthSeconds?: number
   sourcePath: string
   titleIndexes?: number[]
@@ -78,12 +93,32 @@ export const extractDiscTitles = ({
       buildDiscAnalysis({ disabledRuleNames, graph }),
     ),
     map((analysis) =>
-      analysis.titles.filter((analysed: AnalysedTitle) =>
-        titleIndexes === undefined
-          ? analysed.disposition === "keep"
-          : titleIndexes.includes(
-              analysed.title.titleIndex,
-            ),
+      ((plans) =>
+        analysis.titles
+          .filter((analysed: AnalysedTitle) =>
+            titleIndexes === undefined
+              ? analysed.disposition === "keep" ||
+                plans.some(
+                  (plan) =>
+                    plan.titleIndex ===
+                    analysed.title.titleIndex,
+                )
+              : titleIndexes.includes(
+                  analysed.title.titleIndex,
+                ),
+          )
+          .map((analysed) => ({
+            analysed,
+            chapterSourceFileName:
+              plans.find(
+                (plan) =>
+                  plan.titleIndex ===
+                  analysed.title.titleIndex,
+              )?.chapterSourceFileName ?? null,
+          })))(
+        isRippingTrackSupersets
+          ? buildTrackSupersetPlans({ analysis })
+          : [],
       ),
     ),
     concatMap((selectedTitles) =>
@@ -98,9 +133,12 @@ export const extractDiscTitles = ({
           "EXTRACT DISC TITLES",
           `${basename(sourcePath)}: ${selectedTitles.length} titles -> ${outputFolderPath}`,
           selectedTitles
-            .map(
-              (analysed) =>
-                `#${analysed.title.titleIndex} ${analysed.title.sourceFileName} (${analysed.title.durationText})`,
+            .map(({ analysed, chapterSourceFileName }) =>
+              `#${analysed.title.titleIndex} ${analysed.title.sourceFileName} (${analysed.title.durationText})`.concat(
+                chapterSourceFileName === null
+                  ? ""
+                  : ` +chapters from ${chapterSourceFileName}`,
+              ),
             )
             .join(", "),
         )
@@ -110,7 +148,7 @@ export const extractDiscTitles = ({
     ),
     concatMap(({ outputFolderPath, selectedTitles }) =>
       from(selectedTitles).pipe(
-        concatMap((analysed) =>
+        concatMap(({ analysed, chapterSourceFileName }) =>
           defer(() =>
             getIsExistingFile(
               join(
@@ -159,7 +197,21 @@ export const extractDiscTitles = ({
                             ),
                     ),
                   ),
+                  // Grafted after every run, including the skipped-rip
+                  // path: mkvpropedit replaces chapters rather than
+                  // appending, so it is idempotent, and a resumed job
+                  // whose rip died before the graft still ends chaptered.
+                  concatMap((filePath) =>
+                    chapterSourceFileName === null
+                      ? of(filePath)
+                      : graftPlaylistChapters({
+                          chapterSourceFileName,
+                          filePath,
+                          sourcePath,
+                        }),
+                  ),
                   map((filePath) => ({
+                    chapterSourceFileName,
                     filePath,
                     isAlreadyExtracted,
                     sourceFileName:

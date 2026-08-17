@@ -79,7 +79,8 @@ window.commandDescriptions = {
       "destinationPath": "Where the ripped `.mkv` files land. Defaults to `EXTRACTED-TITLES/` inside the backup, beside `DISC-ANALYSIS/`, so the files travel with the proposal that produced them.",
       "disabledRuleNames": "Heuristic rules to switch off by name (e.g. `isChapterlessLongTitle`). Same list the analysis takes — the rules decide which titles are `keep`, and `keep` is what gets ripped.",
       "minimumTitleLengthSeconds": "MakeMKV's minimum title length. MUST match the analysis pass: makemkvcon assigns title indexes AFTER applying this filter, so the same disc read at 0 and at 60 numbers its titles differently and an index from the wrong pass rips the wrong title.",
-      "titleIndexes": "Explicit title indexes to rip, overriding the dispositions. Omit to rip every title the analysis proposed keeping — `merge` and `inspect` titles are never ripped automatically, because one needs the track-graft path and the other needs a human."
+      "titleIndexes": "Explicit title indexes to rip, overriding the dispositions. Omit to rip every title the analysis proposed keeping — `merge` and `inspect` titles are not ripped automatically unless `isRippingTrackSupersets` covers them.",
+      "isRippingTrackSupersets": "Also rip the one title in a cluster that carries every track its siblings expose, grafting the chapter marks it lacks from the richest sibling playlist's `.mpls`. Replaces ripping three 65.5 GB playlists of the same film with one pass. Off by default because the superset is the very title `isChapterlessTwin` proposes discarding, so taking it is the caller's decision."
     }
   },
   "flattenOutput": {
