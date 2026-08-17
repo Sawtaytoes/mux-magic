@@ -302,6 +302,15 @@ vi.mock(
 )
 
 vi.mock(
+  "./src/cli-spawn-operations/runMakeMkvConExtract.js",
+  () => ({
+    runMakeMkvConExtract: makeSpawnOpFn(
+      "runMakeMkvConExtract",
+    ),
+  }),
+)
+
+vi.mock(
   "./src/cli-spawn-operations/runMkvExtract.js",
   () => ({
     runMkvExtract: makeSpawnOpFn("runMkvExtract"),
