@@ -3,8 +3,10 @@
 **Written 2026-08-13.** Piece A (the analyser) is **built, merged (#205),
 deployed and verified in production**. Piece C.1 (extraction of simple
 titles) followed the same day — **built, merged (#229), deployed, and
-carried a real disc all the way into `Movies/`**. Piece B (review UI),
-C.2/C.3 (track-set grafting) and D (the probe step) are not built. This
+carried a real disc all the way into `Movies/`**. Piece C.2 followed on
+2026-08-17 for the **superset** case (#233), which carried the Soylent
+Green UHD backup into `Movies/`. Piece B (review UI), C.2's PID-grafting
+remainder, C.3 and D (the probe step) are not built. This
 is what the next agent needs.
 
 Read first: [`docs/disc-backup-title-selection.md`](disc-backup-title-selection.md)
@@ -90,11 +92,27 @@ Three things the first real extraction settled, all now encoded:
 
 1. ~~**Simple titles** — `makemkvcon mkv file:<backup> <index> <outDir>`.~~
    **Done.**
-2. **Track-set variant clusters** (the Soylent Green case) — rip the
-   richest playlist **once** with makemkvcon (it gets chapters and track
-   handling right), then graft the remaining audio out of the shared
-   decrypted `.m2ts` **by PID**, using the existing `mergeTracks` /
-   `replaceTracks`. `parseMpls` gives you the PID per track.
+2. ~~**Track-set variant clusters** (the Soylent Green case)~~ — **done
+   for the superset case (PR #233), and it needed no PID grafting.** When
+   a cluster contains a title carrying every track its siblings expose,
+   `isRippingTrackSupersets` rips *that* once and grafts the chapter
+   marks it lacks from the richest sibling `.mpls` — `mkvpropedit`, in
+   place, ~90 ms on a 65 GB file. Soylent Green went from three 65.5 GB
+   playlist rips to one, and it is the ONLY option that keeps every
+   track: DVDCompare lists an audio commentary plus a 1985 Charlton
+   Heston BFI interview as a secondary audio track, and no single
+   playlist carries both.
+
+   **Verified against an independent authoring**: 9 of the 12 grafted
+   marks land within ~0.6–1.0 s of a chapter on the Blu-ray release of
+   the same film (which has 29). Do this check on the next disc too — it
+   is the cheapest real evidence that a graft is correct rather than
+   merely present.
+
+   Still open: a cluster with **no** superset member, where the audio
+   really does have to be grafted **by PID** out of the shared decrypted
+   `.m2ts` using `mergeTracks` / `replaceTracks`. `parseMpls` gives you
+   the PID per track.
 3. **Always-works fallback** — rip every sibling in full and merge. Keep
    it behind a flag. If the graft path ever produces a track-count
    mismatch, fall back rather than guess.
@@ -127,6 +145,11 @@ already certain from the frame grabs, so DVDCompare had nothing to add).
 - **The last chapter mark is usually an end marker**, which is why MakeMKV
   reports one fewer chapter than there are marks. `isPlaylistEndMarker`
   flags it.
+- **`mkv` mode reports success as MSG:5036 + MSG:5005, never 5004** — see
+  the piece C section. Also: makemkvcon drops a subtitle track silently.
+  Soylent's superset analysed as 2 PGS and came out with 1, because
+  makemkvcon applies its own default selection profile to what it saves.
+  If a track count matters, check the OUTPUT, not the analysis.
 - **A stream's track language is `LANG_CODE` (3), not
   `METADATA_LANGUAGE_CODE` (28).** Reading 28 labels every commentary
   "English" on an English disc and hides the thing you are looking for.
