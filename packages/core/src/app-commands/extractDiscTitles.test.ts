@@ -1,5 +1,4 @@
 import { join } from "node:path"
-
 import { vol } from "memfs"
 import { firstValueFrom, of, throwError } from "rxjs"
 import {
@@ -12,6 +11,7 @@ import {
 
 import { runMakeMkvCon } from "../cli-spawn-operations/runMakeMkvCon.js"
 import { runMakeMkvConExtract } from "../cli-spawn-operations/runMakeMkvConExtract.js"
+import { runMkvPropEdit } from "../cli-spawn-operations/runMkvPropEdit.js"
 import { parseTitleGraph } from "../tools/makemkv/parseTitleGraph.js"
 import {
   extractDiscTitles,
@@ -192,5 +192,79 @@ describe(extractDiscTitles.name, () => {
         }),
       ),
     ).rejects.toThrow("saved 0 titles")
+  })
+
+  test("rips the track superset once and grafts the playlist's chapters onto it", async () => {
+    // Soylent Green: three 65.5 GB playlists of one film, plus a raw
+    // 00425.m2ts holding every track but no chapters. Opting in rips the
+    // raw stream and takes the marks from 00012.mpls.
+    vi.mocked(runMakeMkvCon).mockReturnValue(
+      of(loadGraph("soylent-green-uhd.robot.log")),
+    )
+    mockSuccessfulExtraction()
+    vi.mocked(runMkvPropEdit).mockImplementation(
+      ({ filePath }) => of(filePath),
+    )
+    vol.mkdirSync(join(sourcePath, "BDMV", "PLAYLIST"), {
+      recursive: true,
+    })
+    vol.writeFileSync(
+      join(sourcePath, "BDMV", "PLAYLIST", "00012.mpls"),
+      realFs.readFileSync(
+        join(
+          import.meta.dirname,
+          "..",
+          "tools",
+          "bluray",
+          "__fixtures__",
+          "soylent-green-00012.mpls",
+        ),
+      ),
+    )
+
+    const extracted = await firstValueFrom(
+      extractDiscTitles({
+        isRippingTrackSupersets: true,
+        sourcePath,
+      }),
+    )
+
+    const superset = extracted.find(
+      (title) => title.sourceFileName === "00425.m2ts",
+    )
+
+    expect(superset?.chapterSourceFileName).toBe(
+      "00012.mpls",
+    )
+    // The three same-film playlists are NOT ripped alongside it.
+    expect(
+      extracted.filter((title) =>
+        ["00012.mpls", "00004.mpls", "00001.mpls"].includes(
+          title.sourceFileName,
+        ),
+      ),
+    ).toEqual([])
+    expect(
+      vi
+        .mocked(runMkvPropEdit)
+        .mock.calls.at(0)?.[0]
+        .args.at(0),
+    ).toBe("--chapters")
+  })
+
+  test("leaves the superset alone unless it is asked for", async () => {
+    vi.mocked(runMakeMkvCon).mockReturnValue(
+      of(loadGraph("soylent-green-uhd.robot.log")),
+    )
+    mockSuccessfulExtraction()
+
+    const extracted = await firstValueFrom(
+      extractDiscTitles({ sourcePath }),
+    )
+
+    expect(
+      extracted.map((title) => title.sourceFileName),
+    ).not.toContain("00425.m2ts")
+    expect(runMkvPropEdit).not.toHaveBeenCalled()
   })
 })

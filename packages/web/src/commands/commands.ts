@@ -198,6 +198,10 @@ export const COMMANDS: Commands = {
           type: "numberArray",
           label: "Title indexes to rip (optional)",
         }),
+        field("isRippingTrackSupersets", {
+          type: "boolean",
+          label: "Also rip track-superset titles",
+        }),
         field("disabledRuleNames", {
           type: "stringArray",
           label: "Heuristic rules to disable",
