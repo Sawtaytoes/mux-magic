@@ -43,6 +43,14 @@ const builder = (yargs: Argv) =>
         "MakeMKV's minimum title length. MUST match the analysis pass — makemkvcon numbers titles after applying this filter, so a different value here rips different titles.",
       type: "number",
     })
+    .option("isRippingTrackSupersets", {
+      boolean: true,
+      default: false,
+      describe:
+        "Also rip a cluster's track-superset title (every track its siblings expose) and graft the chapters it lacks from the richest sibling playlist. One pass instead of ripping every playlist of the same film.",
+      nargs: 0,
+      type: "boolean",
+    })
     .option("titleIndexes", {
       array: true,
       describe:
@@ -67,6 +75,7 @@ export const extractDiscTitlesCommand: CommandModule<
     extractDiscTitles({
       destinationPath: argv.destinationPath,
       disabledRuleNames: argv.disabledRuleNames,
+      isRippingTrackSupersets: argv.isRippingTrackSupersets,
       minimumTitleLengthSeconds:
         argv.minimumTitleLengthSeconds,
       sourcePath: argv.sourcePath,
