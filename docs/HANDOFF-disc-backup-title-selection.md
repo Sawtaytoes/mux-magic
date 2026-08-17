@@ -1,8 +1,11 @@
 # HANDOFF — disc-backup title selection
 
 **Written 2026-08-13.** Piece A (the analyser) is **built, merged (#205),
-deployed and verified in production**. Pieces B (review UI) and C
-(execution) are not built. This is what the next agent needs.
+deployed and verified in production**. Piece C.1 (extraction of simple
+titles) followed the same day — **built, merged (#229), deployed, and
+carried a real disc all the way into `Movies/`**. Piece B (review UI),
+C.2/C.3 (track-set grafting) and D (the probe step) are not built. This
+is what the next agent needs.
 
 Read first: [`docs/disc-backup-title-selection.md`](disc-backup-title-selection.md)
 — the original design sketch, now carrying a status header, a "what the
