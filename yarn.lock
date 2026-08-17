@@ -801,14 +801,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/ui@npm:^2.15.1":
-  version: 2.15.1
-  resolution: "@charcuterie/ui@npm:2.15.1"
+"@charcuterie/ui@npm:^2.17.0":
+  version: 2.17.0
+  resolution: "@charcuterie/ui@npm:2.17.0"
   dependencies:
     "@charcuterie/logic": "npm:2.0.0"
     "@charcuterie/tokens": "npm:1.5.0"
     "@floating-ui/react": "npm:^0.27.20"
     "@tanstack/react-virtual": "npm:^3.13.12"
+    tailwind-merge: "npm:^3.6.0"
   peerDependencies:
     react: ">=19"
     react-dom: ">=19"
@@ -816,7 +817,7 @@ __metadata:
   peerDependenciesMeta:
     react-router:
       optional: true
-  checksum: 10c0/1c1ef05341e9703016a44a2118bcb072800db831962ad332fb326265d3605d1d178f944096d2768ae10811d04e0e6df790968fa55d59e90a3ca2432fbe503bc0
+  checksum: 10c0/2fc0e713d479b02f1e99110253e8865495d322985f2cab280c2677eae2c8109192bd73d8bd9a4d1aff88fbad3402dba5d18fc460e780791722d0ba72573bd141
   languageName: node
   linkType: hard
 
@@ -2036,7 +2037,7 @@ __metadata:
     "@charcuterie/server": "npm:^0.2.0"
     "@charcuterie/storybook-config": "npm:^0.2.2"
     "@charcuterie/tokens": "npm:^1.5.0"
-    "@charcuterie/ui": "npm:^2.15.1"
+    "@charcuterie/ui": "npm:^2.17.0"
     "@charcuterie/vite-config": "npm:^1.0.2"
     "@charcuterie/vitest-config": "npm:^1.1.0"
     "@dnd-kit/core": "npm:^6.3.1"
@@ -10661,6 +10662,13 @@ __metadata:
   version: 3.5.0
   resolution: "tailwind-merge@npm:3.5.0"
   checksum: 10c0/4dc588f5b5296ba3f38e1ebb41f02b6d24a8c5bb45e44b33748c118fb4b5767dd0efc464431ca3e75404056b618b5f67bec3708158baa65fed8a2fc9201e0c53
+  languageName: node
+  linkType: hard
+
+"tailwind-merge@npm:^3.6.0":
+  version: 3.6.0
+  resolution: "tailwind-merge@npm:3.6.0"
+  checksum: 10c0/a728d929f4786bcb48641db4228cc8c006a7545491783a658fb4d24d177dab960620991d17805a047309228de50ab949ca8d9e112c30183da0432367796ae186
   languageName: node
   linkType: hard
 
