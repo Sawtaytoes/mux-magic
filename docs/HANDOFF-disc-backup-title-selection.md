@@ -63,12 +63,30 @@ and the spawn op auto-mocked, so **no makemkvcon is needed in CI**.
 
 ---
 
-## Next: piece C — `extractDiscTitles`
+## Piece C — `extractDiscTitles`
 
-Recommended before the UI: it makes the existing proposals actionable,
-and its one hard prerequisite (`parseMpls`) is already done and tested.
+**C.1 is DONE and deployed** (PR #229, 2026-08-13). `extractDiscTitles`
+rips every `keep` title into `EXTRACTED-TITLES/` beside `DISC-ANALYSIS/`,
+one `makemkvcon mkv` run per title, and deliberately does no naming — the
+`<disc>_tNN.mkv` names are left for `nameSpecialFeaturesDvdCompareTmdb`.
+`merge` and `inspect` are not ripped. Proven end to end on Desk Set: 2
+titles out, trimmed, named and now in `Movies/Desk Set (1957)/`.
 
-1. **Simple titles** — `makemkvcon mkv file:<backup> <index> <outDir>`.
+Three things the first real extraction settled, all now encoded:
+
+- **`mkv` mode reports success as MSG:5036 + MSG:5005, NOT 5004.** The
+  docs and rip-deck's contracts both say 5004; rip-deck only runs
+  `backup`, so its constant has never been exercised. Guarding on 5004
+  fails every successful extraction. Capture:
+  `__fixtures__/desk-set-bluray-extract-title.robot.log`.
+- **makemkvcon exits 0 having saved nothing** — parse the saved-title
+  count, never trust the exit code. Same trap as the key check.
+- **Title indexes are assigned AFTER `--minlength` filters**, so the rip
+  must pass the same value the analysis used or it rips a different
+  title.
+
+1. ~~**Simple titles** — `makemkvcon mkv file:<backup> <index> <outDir>`.~~
+   **Done.**
 2. **Track-set variant clusters** (the Soylent Green case) — rip the
    richest playlist **once** with makemkvcon (it gets chapters and track
    handling right), then graft the remaining audio out of the shared
@@ -84,6 +102,9 @@ and its one hard prerequisite (`parseMpls`) is already done and tested.
 Then the existing movie pipeline takes over unchanged: `keepLanguages` →
 `nameSpecialFeaturesDvdCompareTmdb` → `moveFiles`, per
 [the movie-ingest runbook](/mnt/TrueNAS-Apps/Repos/agentic/docs/runbooks/mux-magic-movie-ingest-runbook.md).
+That chain is no longer theoretical — Desk Set went through it on
+2026-08-13 with only the naming done by hand (two files, both identities
+already certain from the frame grabs, so DVDCompare had nothing to add).
 
 ### Traps that already cost time — do not rediscover these
 
@@ -202,5 +223,9 @@ anyway. See
 and PR #221.
 
 **So the numbers above are the `--minlength=0` numbers.** A re-run at the new
-default will report far fewer titles for Desk Set — that is expected, not a
-regression.
+default reports 2 titles for Desk Set — that is expected, not a regression.
+
+**Closed 2026-08-13:** both titles were extracted, trimmed to English,
+named and moved to `Movies/Desk Set (1957)/` (feature + `Theatrical
+Trailer -trailer.mkv`), and the 61 GB backup was deleted — hourly ZFS
+snapshots cover it, and the disc was ripped weeks ago.
