@@ -26,6 +26,7 @@ import {
   deleteFolderRequestSchema,
   distributeFolderToSiblingsRequestSchema,
   exitIfEmptyRequestSchema,
+  extractDiscTitlesRequestSchema,
   extractSubtitlesRequestSchema,
   findContainerAudioFilesRequestSchema,
   fixIncorrectDefaultTracksRequestSchema,
@@ -161,6 +162,41 @@ export const COMMANDS: Commands = {
         field("sourcePath", {
           type: "path",
           label: "Disc Backup Folder",
+        }),
+        field("disabledRuleNames", {
+          type: "stringArray",
+          label: "Heuristic rules to disable",
+        }),
+        field("minimumTitleLengthSeconds", {
+          type: "number",
+          label: "Minimum title length (seconds)",
+        }),
+      ],
+    }
+  })(),
+  extractDiscTitles: (() => {
+    const field = fieldBuilder(
+      extractDiscTitlesRequestSchema,
+    )
+    return {
+      summary:
+        "Rip the titles a disc analysis proposed keeping out of a [BACKUP] folder into .mkv files",
+      tag: "Disc Backups",
+      // Ripped files land in EXTRACTED-TITLES/ inside the backup, which is
+      // what a downstream naming or trimming step chains off.
+      outputFolderName: "EXTRACTED-TITLES",
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Disc Backup Folder",
+        }),
+        field("destinationPath", {
+          type: "path",
+          label: "Destination folder (optional)",
+        }),
+        field("titleIndexes", {
+          type: "numberArray",
+          label: "Title indexes to rip (optional)",
         }),
         field("disabledRuleNames", {
           type: "stringArray",

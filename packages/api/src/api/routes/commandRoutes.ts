@@ -32,6 +32,10 @@ import { deleteFolder } from "@mux-magic/core/src/app-commands/deleteFolder.js"
 import { distributeFolderToSiblings } from "@mux-magic/core/src/app-commands/distributeFolderToSiblings.js"
 import { exitIfEmpty } from "@mux-magic/core/src/app-commands/exitIfEmpty.js"
 import {
+  extractDiscTitles,
+  extractedTitlesFolderName,
+} from "@mux-magic/core/src/app-commands/extractDiscTitles.js"
+import {
   extractSubtitles,
   extractSubtitlesDefaultProps,
 } from "@mux-magic/core/src/app-commands/extractSubtitles.js"
@@ -322,6 +326,29 @@ export const commandConfigs: Record<
     schema: schemas.analyseDiscBackupRequestSchema,
     summary:
       "Analyse a disc backup and propose which titles to rip, with a stated reason per title",
+    tags: ["Disc Backups"],
+  },
+  extractDiscTitles: {
+    extractOutputs: (results) => ({
+      extractedFilePaths: (
+        results as { filePath: string }[]
+      ).map((extracted) => extracted.filePath),
+    }),
+    getObservable: (body) =>
+      extractDiscTitles({
+        destinationPath: body.destinationPath,
+        disabledRuleNames: body.disabledRuleNames,
+        minimumTitleLengthSeconds:
+          body.minimumTitleLengthSeconds,
+        sourcePath: body.sourcePath,
+        titleIndexes: body.titleIndexes,
+      }),
+    // The ripped files are what a downstream step consumes, so the chain
+    // point is the EXTRACTED-TITLES/ folder, not the backup.
+    outputFolderName: extractedTitlesFolderName,
+    schema: schemas.extractDiscTitlesRequestSchema,
+    summary:
+      "Rip the titles a disc analysis proposed keeping out of a `[BACKUP]` folder into .mkv files",
     tags: ["Disc Backups"],
   },
   flattenOutput: {

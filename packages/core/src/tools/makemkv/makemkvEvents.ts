@@ -141,8 +141,20 @@ export const makemkvMessageCode = {
   TITLE_TOO_SHORT: 3025,
   /** Title skipped as identical to another title. */
   TITLE_IS_DUPLICATE: 3309,
-  /** "Copy complete. N titles saved." — N===0 is a FAILURE. */
-  COPY_COMPLETE: 5004,
+  /** "Saving N titles into directory <url>" — the save pass started. */
+  SAVING_TITLES: 5014,
+  /** "N titles saved" — the count, in `params[0]`. N===0 is a FAILURE. */
+  TITLES_SAVED: 5005,
+  /**
+   * "Copy complete. N titles saved."
+   *
+   * 5036, NOT the 5004 the docs and rip-deck's contracts name. Captured
+   * off a real `mkv` extraction on MakeMKV v1.18.4 —
+   * `__fixtures__/desk-set-bluray-extract-title.robot.log` contains 5036
+   * and 5005 and no 5004 at all. rip-deck only ever runs `backup`, which
+   * emits neither, so its 5004 has never been exercised.
+   */
+  COPY_COMPLETE: 5036,
   /** No usable optical drives — expected and harmless for `file:` sources. */
   NO_OPTICAL_DRIVES: 5042,
   /** Evaluation period expired. */
@@ -173,6 +185,28 @@ export const getIsKeyFailureEvent = (
   (keyFailureMessageCodes as readonly number[]).includes(
     event.code,
   )
+
+/**
+ * How many titles the save pass actually wrote, or null if it never said.
+ *
+ * `makemkvcon` exits 0 having saved NOTHING — the same silent-success trap
+ * the key check exists for. The count is read from `params`, not the
+ * rendered message, so a locale change cannot break it.
+ */
+export const getSavedTitleCount = (
+  events: MakemkvEvent[],
+) =>
+  events
+    .filter(
+      (event): event is MessageEvent =>
+        event.type === "MSG" &&
+        (event.code === makemkvMessageCode.COPY_COMPLETE ||
+          event.code === makemkvMessageCode.TITLES_SAVED),
+    )
+    .flatMap((event) => event.params)
+    .map((param) => Number.parseInt(param, 10))
+    .filter((count) => Number.isInteger(count))
+    .at(0) ?? null
 
 /**
  * MakeMKV's `flags` bitfield carries the dialog type in the low bits.

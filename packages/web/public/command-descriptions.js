@@ -69,7 +69,17 @@ window.commandDescriptions = {
     "fields": {
       "sourcePath": "A `[BACKUP]` folder produced by rip-deck (e.g. `/media/Disc-Rips/[BACKUP] Desk Set - Blu-ray`). Read directly as a BDMV tree — no disc needed. Nothing in it is modified.",
       "disabledRuleNames": "Heuristic rules to switch off by name (e.g. `isChapterlessLongTitle`). Studio patterns are conventions, not standards, so a rule that turns out to be wrong for a release can be disabled without unpicking the analyser.",
-      "minimumTitleLengthSeconds": "MakeMKV's minimum title length. Defaults to 0 so short extras are seen and can be proposed for discard with a reason — MakeMKV's own 10-second default silently drops them (51 of Desk Set's 61 titles)."
+      "minimumTitleLengthSeconds": "MakeMKV's minimum title length. Defaults to 60 so real extras (trailers, featurettes) are seen and proposed with a reason, while sub-minute BDMV fragments stay out of the list — at 0, Desk Set reports 61 titles of which only 2 are content. Pass 0 to see every fragment anyway."
+    }
+  },
+  "extractDiscTitles": {
+    "summary": "Rip the titles a disc analysis proposed keeping out of a `[BACKUP]` folder into .mkv files",
+    "fields": {
+      "sourcePath": "A `[BACKUP]` folder produced by rip-deck (e.g. `/media/Disc-Rips/[BACKUP] Desk Set - Blu-ray`). The backup itself is only read.",
+      "destinationPath": "Where the ripped `.mkv` files land. Defaults to `EXTRACTED-TITLES/` inside the backup, beside `DISC-ANALYSIS/`, so the files travel with the proposal that produced them.",
+      "disabledRuleNames": "Heuristic rules to switch off by name (e.g. `isChapterlessLongTitle`). Same list the analysis takes — the rules decide which titles are `keep`, and `keep` is what gets ripped.",
+      "minimumTitleLengthSeconds": "MakeMKV's minimum title length. MUST match the analysis pass: makemkvcon assigns title indexes AFTER applying this filter, so the same disc read at 0 and at 60 numbers its titles differently and an index from the wrong pass rips the wrong title.",
+      "titleIndexes": "Explicit title indexes to rip, overriding the dispositions. Omit to rip every title the analysis proposed keeping — `merge` and `inspect` titles are never ripped automatically, because one needs the track-graft path and the other needs a human."
     }
   },
   "flattenOutput": {
