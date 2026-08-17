@@ -52,32 +52,44 @@ export const ComputeFromOpRow = ({
 
   return (
     <div className="flex items-center gap-1.5 mt-1">
-      <Select
-        className="w-40 font-mono"
-        isDisabled={isReadOnly}
-        // The op row is keyed by index, so a delete above it hands this
-        // slot a different op. `Select` is uncontrolled, so without a key
-        // the DOM would keep the departed op's verb.
-        key={verb}
-        label={`Operation ${opIndex + 1}`}
-        onChange={(nextVerb) => {
-          onCommitRules(
-            setComputeFromOpVerb({
-              rules,
-              ruleIndex,
-              fieldKey,
-              opIndex,
-              verb: nextVerb,
-            }),
-          )
-        }}
-        options={COMPUTE_FROM_OPS_ALL.map((opVerb) => ({
-          label: opVerb,
-          value: opVerb,
-        }))}
-        size="sm"
-        value={verb}
-      />
+      {/*
+        Width on the wrapper, not on `Select`: `Select` renders an
+        `inline-grid w-full` box around the `<select>` and forwards
+        `className` only to the inner element, so a width passed to
+        `Select` sizes the text box while the wrapper stays full-width
+        and the chevron strands itself at the far right. See
+        charcuterie#112. 10rem = 160px; `subtract`/`multiply` are the
+        widest options at 127px, so this one was already wide enough —
+        it moved for the chevron, not for clipping.
+      */}
+      <div className="w-40 shrink-0">
+        <Select
+          className="font-mono"
+          isDisabled={isReadOnly}
+          // The op row is keyed by index, so a delete above it hands this
+          // slot a different op. `Select` is uncontrolled, so without a key
+          // the DOM would keep the departed op's verb.
+          key={verb}
+          label={`Operation ${opIndex + 1}`}
+          onChange={(nextVerb) => {
+            onCommitRules(
+              setComputeFromOpVerb({
+                rules,
+                ruleIndex,
+                fieldKey,
+                opIndex,
+                verb: nextVerb,
+              }),
+            )
+          }}
+          options={COMPUTE_FROM_OPS_ALL.map((opVerb) => ({
+            label: opVerb,
+            value: opVerb,
+          }))}
+          size="sm"
+          value={verb}
+        />
+      </div>
       {isBareOp ? (
         <span className="text-xs text-content-muted italic px-2">
           no operand
