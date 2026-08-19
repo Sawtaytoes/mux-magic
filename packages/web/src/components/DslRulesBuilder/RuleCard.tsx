@@ -66,41 +66,38 @@ export const RuleCard = ({
       ) : (
         // 13rem = 208px, and the number is measured, not chosen:
         // `scaleResolution` is the widest option and needs 194px at
-        // this font. The width lives HERE rather than on `Select`'s
-        // `className` because `Select` renders an `inline-grid w-full`
-        // wrapper around the `<select>` and only forwards `className`
-        // to the inner element — so a width passed to `Select` sizes
-        // the text box while the wrapper stays full-width and the
-        // chevron strands itself at the far right (measured: 869.6px
-        // adrift). See charcuterie#112.
-        <div className="w-52 shrink-0">
-          <Select
-            className="font-mono"
-            // Rule rows are keyed by `ruleKey`, but the rules array is
-            // replaced wholesale on every commit and a rule can also arrive
-            // from a loaded template or an undo. `Select` is uncontrolled by
-            // design, so the DOM has to be re-seeded when the type it is
-            // showing was not the user's own choice.
-            key={rule.type}
-            label={`Rule ${ruleIndex + 1} type`}
-            onChange={(ruleType) => {
-              onCommitRules(
-                changeRuleType({
-                  rules,
-                  ruleIndex,
-                  ruleType:
-                    ruleType as (typeof RULE_TYPES)[number],
-                }),
-              )
-            }}
-            options={RULE_TYPES.map((ruleType) => ({
-              label: ruleType,
-              value: ruleType,
-            }))}
-            size="sm"
-            value={rule.type}
-          />
-        </div>
+        // this font. It sits on `Select` itself now — `className` is
+        // the control's outer box as of `@charcuterie/ui@3`, chevron
+        // included (charcuterie#112), so the wrapping `<div>` this
+        // used to need is gone. `font-mono` is about the option text
+        // rather than the box, so it moves to `controlClassName`.
+        <Select
+          className="w-52 shrink-0"
+          controlClassName="font-mono"
+          // Rule rows are keyed by `ruleKey`, but the rules array is
+          // replaced wholesale on every commit and a rule can also arrive
+          // from a loaded template or an undo. `Select` is uncontrolled by
+          // design, so the DOM has to be re-seeded when the type it is
+          // showing was not the user's own choice.
+          key={rule.type}
+          label={`Rule ${ruleIndex + 1} type`}
+          onChange={(ruleType) => {
+            onCommitRules(
+              changeRuleType({
+                rules,
+                ruleIndex,
+                ruleType:
+                  ruleType as (typeof RULE_TYPES)[number],
+              }),
+            )
+          }}
+          options={RULE_TYPES.map((ruleType) => ({
+            label: ruleType,
+            value: ruleType,
+          }))}
+          size="sm"
+          value={rule.type}
+        />
       )}
       <div className="flex-1" />
       {isReadOnly && (
