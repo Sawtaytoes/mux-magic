@@ -75,21 +75,20 @@ export const ErrorsPanel = () => {
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex w-40 items-center gap-2 text-sm text-content-secondary">
-          <Select
-            label="State"
-            onChange={handleStateChange}
-            options={[
-              { label: "All", value: "" },
-              ...DELIVERY_STATES.map((deliveryState) => ({
-                label: deliveryState,
-                value: deliveryState,
-              })),
-            ]}
-            size="sm"
-            value={filter.state ?? ""}
-          />
-        </div>
+        <Select
+          className="w-40"
+          label="State"
+          onChange={handleStateChange}
+          options={[
+            { label: "All", value: "" },
+            ...DELIVERY_STATES.map((deliveryState) => ({
+              label: deliveryState,
+              value: deliveryState,
+            })),
+          ]}
+          size="sm"
+          value={filter.state ?? ""}
+        />
 
         <label className="flex items-center gap-2 text-sm text-content-secondary">
           <span>Job ID</span>

@@ -785,7 +785,7 @@ export const SmartMatchModal = () => {
                           hasSuffixRow && (
                             <div className="flex items-center gap-1.5 mb-1.5">
                               <Select
-                                className="font-mono"
+                                controlClassName="font-mono"
                                 isDisabled={
                                   row.isApplied ||
                                   isApplying

@@ -64,39 +64,36 @@ export const ComputeFromEditor = ({
           }}
         />
         {/*
-          Width on the wrapper, not on `Select`: `Select` renders an
-          `inline-grid w-full` box around the `<select>` and forwards
-          `className` only to the inner element, so a width passed to
-          `Select` sizes the text box while the wrapper stays full-width
-          and the chevron strands itself at the far right. See
-          charcuterie#112. 10rem = 160px; `scriptInfo` is the widest
-          option and needs 146px.
+          10rem = 160px, measured: `scriptInfo` is the widest option
+          and needs 146px. On `Select` itself, because `className` is
+          the control's outer box as of `@charcuterie/ui@3`, chevron
+          included (charcuterie#112). `font-mono` is the option text,
+          not the box, so it is `controlClassName`.
         */}
-        <div className="w-40 shrink-0">
-          <Select
-            className="font-mono"
-            isDisabled={isReadOnly}
-            key={scope}
-            label="scope"
-            onChange={(value) => {
-              onCommitRules(
-                setComputeFromField({
-                  rules,
-                  ruleIndex,
-                  fieldKey,
-                  propertyName: "scope",
-                  value,
-                }),
-              )
-            }}
-            options={[
-              { label: "scriptInfo", value: "scriptInfo" },
-              { label: "style", value: "style" },
-            ]}
-            size="sm"
-            value={scope}
-          />
-        </div>
+        <Select
+          className="w-40 shrink-0"
+          controlClassName="font-mono"
+          isDisabled={isReadOnly}
+          key={scope}
+          label="scope"
+          onChange={(value) => {
+            onCommitRules(
+              setComputeFromField({
+                rules,
+                ruleIndex,
+                fieldKey,
+                propertyName: "scope",
+                value,
+              }),
+            )
+          }}
+          options={[
+            { label: "scriptInfo", value: "scriptInfo" },
+            { label: "style", value: "style" },
+          ]}
+          size="sm"
+          value={scope}
+        />
       </div>
       <div className="mt-1.5">
         <span className="text-xs uppercase tracking-wide text-content-secondary">
