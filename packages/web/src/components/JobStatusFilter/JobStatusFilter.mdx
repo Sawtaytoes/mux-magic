@@ -1,0 +1,67 @@
+import { Canvas, Controls, Meta } from "@storybook/addon-docs/blocks"
+
+import * as JobStatusFilterStories from "./JobStatusFilter.stories"
+
+<Meta of={JobStatusFilterStories} />
+
+# JobStatusFilter
+
+The chip row above the jobs grid. One chip per job status, pressed when that status is
+showing, carrying how many top-level jobs are in it.
+
+<Canvas of={JobStatusFilterStories.Default} />
+
+## Props
+
+<Controls />
+
+## `exited` is off by default
+
+A sequence that hits a planned early exit (`exitIfEmpty` and friends) writes one umbrella
+job plus one per remaining step. None of it is worth reading, and it runs to the
+thousands — which is the whole reason this component exists:
+
+> "Can I hide all 'exited'? I'd like to only show them via an option but hide by default
+> because they're basically useless, and there are thousands of them."
+
+So `DEFAULT_HIDDEN_JOB_STATUSES` is `["exited"]`, and the choice is remembered in
+`localStorage` under `mux-magic:jobs:visible-statuses`.
+
+<Canvas of={JobStatusFilterStories.AllStatusesShowing} />
+
+## The counts come off the server, and they have to
+
+The obvious source for the number is `jobsAtom`. It is also wrong: `/jobs/stream` is
+asked not to replay a hidden status, so the client genuinely does not have those jobs —
+counting them there would render **`exited 0`** with three thousand of them on disk.
+
+A chip that lies about the thing it is hiding is worse than one with no number, so the
+count comes from `/jobs/status-counts`, which reads the job store. It polls on a 10s
+interval rather than refetching per job event: the number is orientation — *how much am I
+not looking at* — and nobody reads a state transition off it, so a request per event
+during a busy sequence would cost more than the filter saves.
+
+## Two filters, both load-bearing
+
+| Where | Catches |
+| --- | --- |
+| `/jobs/stream?status=…` | The connect replay — thousands of hidden jobs never reach the browser. |
+| `JobsList` | A job that transitions *into* a hidden status while the page is open. |
+
+Live updates are **always** streamed, hidden status or not. Filtering them server-side
+would leave a card frozen at its last visible status forever, because the event that
+would have removed it is the one that got dropped.
+
+## Why chips and not a picker
+
+`Listbox`/`Picker` is the fleet's picker and this is not a pick — it is eight independent
+toggles whose job is to show their own state and their own count at a glance. A dropdown
+hides both behind a click, and the count is the part that answers "why is this list so
+short."
+
+<Canvas of={JobStatusFilterStories.OnlyFailures} />
+
+Switching everything off is legal and reachable by clicking, so the jobs list carries a
+second empty-state message for it.
+
+<Canvas of={JobStatusFilterStories.NothingShowing} />

@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-08-21 | [Hide `exited` jobs by default, and lay the jobs view out as a grid](2026-08-21-exited-jobs-are-hidden-by-default-and-the-jobs-view-is-a-grid.md) | web | Accepted |
 | 2026-08-21 | [Every NSF-family command emits the same summary trailer](2026-08-21-nsf-siblings-emit-the-same-summary-trailer.md) | core / web | Accepted |
 | 2026-08-20 | [Every picker is a `Listbox`; the native `Select` is a hatch we have never needed](2026-08-20-every-picker-is-a-listbox-never-a-native-select.md) | web | Accepted |
 | 2026-08-13 | [Disc analysis runs at `--minlength=60`, not 0](2026-08-13-disc-analysis-minimum-title-length-is-60-seconds.md) | core / cli / api | Accepted |
