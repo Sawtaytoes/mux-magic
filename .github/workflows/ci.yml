@@ -21,6 +21,22 @@ env:
 # duration (slowest is unit-tests at ~3min, e2e ~2m15s, the rest under a
 # minute). They exist to turn a hang into a fast, legible failure, so raise
 # one only if a job legitimately grows into it.
+#
+# The browser install is bounded a SECOND time, at the step, and split in two.
+# `playwright install --with-deps` shells out to apt-get, and on 2026-08-19
+# GitHub's azure.archive.ubuntu.com mirror stopped answering: every index line
+# came back `Ign:`, apt retried forever, and in queuepilot — which had no bound
+# anywhere — four runs sat for SIX HOURS before the workflow cap killed them.
+# The job ceilings above would cap that at 20 minutes here, but as one opaque
+# failed job with nothing naming the half that hung.
+#
+# So: the apt half is best-effort (ubuntu-latest already ships the libraries
+# chromium needs, and a dead Ubuntu mirror must not be able to block this
+# repo's CI), and the BROWSER half — Playwright's own CDN, the part the tests
+# actually need — runs on its own and must succeed. The repo's
+# `install-playwright-browser` script stays the plain `--with-deps` one-liner
+# documented in docs/development.md; `timeout` is coreutils and does not exist
+# on the Windows side of this fleet, so the bound lives here rather than there.
 jobs:
   check-prior-run:
     timeout-minutes: 5
@@ -87,7 +103,12 @@ jobs:
       - uses: actions/setup-node@v6
         with: { node-version: 24 }
       - run: corepack enable && yarn install --immutable
-      - run: yarn install-playwright-browser
+      - name: Install chromium
+        timeout-minutes: 15
+        run: |
+          DEBIAN_FRONTEND=noninteractive timeout 300 yarn playwright install-deps chromium \
+            || echo "playwright install-deps failed or timed out (apt mirror?) — continuing; the runner image ships chromium's libs"
+          timeout 600 yarn playwright install chromium
       - run: yarn build:tools
       # `yarn test` is bare `vitest` so local dev gets watch mode; in CI we
       # need run-once, because Vitest 4 browser mode doesn't reliably exit
@@ -122,7 +143,12 @@ jobs:
       - uses: actions/setup-node@v6
         with: { node-version: 24 }
       - run: corepack enable && yarn install --immutable
-      - run: yarn playwright install chromium --with-deps
+      - name: Install chromium
+        timeout-minutes: 15
+        run: |
+          DEBIAN_FRONTEND=noninteractive timeout 300 yarn playwright install-deps chromium \
+            || echo "playwright install-deps failed or timed out (apt mirror?) — continuing; the runner image ships chromium's libs"
+          timeout 600 yarn playwright install chromium
       - run: yarn build:tools
       - run: yarn build:prod
       - run: yarn e2e

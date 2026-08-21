@@ -17,6 +17,12 @@ concurrency:
 jobs:
   build:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # ci.yml bounds every one of its jobs (its #226); this workflow had no
+    # bound at all, so a wedged `docker build` could hold GitHub's 6-hour
+    # ceiling AND this branch's concurrency slot for the whole time. Observed
+    # green is ~6.5-7min (the image compiles MakeMKV and runs a build-time
+    # assertion against it), so 30 is a ceiling, not a target.
+    timeout-minutes: 30
     runs-on: ubuntu-latest
 
     permissions:
