@@ -12,6 +12,7 @@ import {
   defaultIfEmpty,
   defer,
   EMPTY,
+  ignoreElements,
   map,
   mergeAll,
   mergeMap,
@@ -37,6 +38,12 @@ import {
 } from "../tools/parseSpecialFeatures.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { searchDvdCompare } from "../tools/searchDvdCompare.js"
+import {
+  logBucketFolderCountsIfPresent,
+  moveFilesToBucket,
+  readBucketUnrenamedFiles,
+  UNNAMED_FEATURES_BUCKET,
+} from "./nameSpecialFeaturesDvdCompareTmdb.buckets.js"
 import { buildUnnamedFileCandidates } from "./nameSpecialFeaturesDvdCompareTmdb.buildUnnamedFileCandidates.js"
 import { reorderForDuplicatePrompts } from "./nameSpecialFeaturesDvdCompareTmdb.duplicates.js"
 import { flattenAllKnownNames } from "./nameSpecialFeaturesDvdCompareTmdb.flattenAllKnownNames.js"
@@ -121,15 +128,20 @@ const getNextFilenameCount = (previousCount?: number) =>
 // Unmatched files also produce a trailing summary carrying the
 // DVDCompare candidate list, which is what lights up the web UI's
 // ✨ Fix Unnamed (Smart Match) button for this command — same trailer
-// shape as the TMDB sibling. Unlike that sibling, leftovers are NOT
-// moved into an UNNAMED-FEATURES/ bucket: skip-in-place stays this
-// command's filesystem behaviour, and Smart Match renames them where
-// they sit.
+// shape as the TMDB sibling.
+//
+// Leftovers move into `<sourcePath>/UNNAMED-FEATURES/` exactly as they
+// do for the TMDB sibling, and that is not a stylistic choice: the
+// Smart Match modal builds its rename `oldPath` (and its video-preview
+// path) against that bucket unconditionally — see `buildBucketOldPath`
+// in `SmartMatchModal.tsx`. Emitting the summary without bucketing gives
+// the user a Fix Unnamed button whose Apply fails ENOENT, because the
+// file is still loose in `sourcePath`. Trailer and bucket are one
+// feature; do not ship one without the other.
 //
 // Intentionally omitted vs. the full NSF command:
 //   - TMDB lookup (non-movie workflow; no canonical title needed)
 //   - Edition-folder move (Plex movies-only convention)
-//   - UNNAMED-FEATURES/ bucketing (leftovers stay in sourcePath)
 export const onlyNameSpecialFeaturesDvdCompare = ({
   dvdCompareId,
   dvdCompareReleaseHash,
@@ -164,7 +176,15 @@ export const onlyNameSpecialFeaturesDvdCompare = ({
     concatMap((scrape) =>
       parseSpecialFeatures(scrape.extras).pipe(
         concatMap(({ extras, possibleNames }) =>
-          getFilesAtDepth({ depth: 0, sourcePath }).pipe(
+          // `getFilesAtDepth({ depth: 0 })` is files-only and never
+          // recurses into UNNAMED-FEATURES/, so the match/rename pass only
+          // ever touches loose files in sourcePath. A prior run's leftovers
+          // are not ignored, though — they are read back into the summary
+          // below so Smart Match reopens on a re-run.
+          concat(
+            logBucketFolderCountsIfPresent(sourcePath),
+            getFilesAtDepth({ depth: 0, sourcePath }),
+          ).pipe(
             mergeMap((fileInfo) =>
               getMediaInfo(fileInfo.fullPath).pipe(
                 mergeMap((mediaInfo) =>
@@ -234,241 +254,338 @@ export const onlyNameSpecialFeaturesDvdCompare = ({
               },
             ),
             toArray(),
-            concatMap((matchResults) => {
-              const skipped = matchResults.filter(
-                (
-                  result,
-                ): result is {
-                  durationSeconds: number | null
-                  fileInfo: (typeof matchResults)[number]["fileInfo"]
-                  isSkipped: true
-                } => "isSkipped" in result,
-              )
-              const matched = matchResults.filter(
-                (
-                  result,
-                ): result is {
-                  durationSeconds: number | null
-                  fileInfo: (typeof matchResults)[number]["fileInfo"]
-                  renamedFilename: string
-                } => "renamedFilename" in result,
-              )
+            // Read a prior run's leftovers back out of UNNAMED-FEATURES/
+            // BEFORE this run's leftovers move in, so the two sets never
+            // double-count. Surface-only: these files are folded into the
+            // summary so Smart Match reopens on them, never renamed or
+            // re-bucketed here.
+            concatMap((matchResults) =>
+              readBucketUnrenamedFiles({
+                bucketName: UNNAMED_FEATURES_BUCKET,
+                sourcePath,
+              }).pipe(
+                map((bucketUnrenamedFiles) => ({
+                  bucketUnrenamedFiles,
+                  matchResults,
+                })),
+              ),
+            ),
+            concatMap(
+              ({ bucketUnrenamedFiles, matchResults }) => {
+                const skipped = matchResults.filter(
+                  (
+                    result,
+                  ): result is {
+                    durationSeconds: number | null
+                    fileInfo: (typeof matchResults)[number]["fileInfo"]
+                    isSkipped: true
+                  } => "isSkipped" in result,
+                )
+                const matched = matchResults.filter(
+                  (
+                    result,
+                  ): result is {
+                    durationSeconds: number | null
+                    fileInfo: (typeof matchResults)[number]["fileInfo"]
+                    renamedFilename: string
+                  } => "renamedFilename" in result,
+                )
 
-              logInfo(
-                "RENAMING",
-                `Renaming matched files (${matched.length} of ${matchResults.length})`,
-              )
+                logInfo(
+                  "RENAMING",
+                  `Renaming matched files (${matched.length} of ${matchResults.length})`,
+                )
 
-              const conflictOrderedRenames =
-                reorderRenamesForOnDiskConflicts(matched)
+                const conflictOrderedRenames =
+                  reorderRenamesForOnDiskConflicts(matched)
 
-              const promptForDuplicates$ =
-                isAutoNamingDuplicates
-                  ? of({
-                      kept: conflictOrderedRenames,
-                      droppedFullPaths: [] as string[],
-                    })
-                  : reorderForDuplicatePrompts(
-                      conflictOrderedRenames,
-                    )
+                const promptForDuplicates$ =
+                  isAutoNamingDuplicates
+                    ? of({
+                        kept: conflictOrderedRenames,
+                        droppedFullPaths: [] as string[],
+                      })
+                    : reorderForDuplicatePrompts(
+                        conflictOrderedRenames,
+                      )
 
-              return promptForDuplicates$.pipe(
-                concatMap(({ kept: orderedRenames }) => {
-                  const skipEvents$: Observable<
-                    Observable<OnlyNameSpecialFeaturesResult>
-                  > = of(
-                    ...skipped.map(({ fileInfo }) =>
-                      of<OnlyNameSpecialFeaturesResult>({
-                        skippedFilename: fileInfo.filename,
-                        reason: "no_extra_match",
-                      }),
-                    ),
-                  )
-
-                  const renamesStream$: Observable<
-                    Observable<OnlyNameSpecialFeaturesResult>
-                  > = of(...orderedRenames).pipe(
-                    scan(
-                      (
-                        { previousFilenameCount },
-                        { fileInfo, renamedFilename },
-                      ) => {
-                        const isIntraRunDuplicate =
-                          renamedFilename in
-                          previousFilenameCount
-                        const finalName =
-                          isIntraRunDuplicate
-                            ? `(${getNextFilenameCount(previousFilenameCount[renamedFilename])}) ${renamedFilename}`
-                            : renamedFilename
-                        return {
-                          previousFilenameCount: {
-                            ...previousFilenameCount,
-                            [renamedFilename]:
-                              getNextFilenameCount(
-                                previousFilenameCount[
-                                  renamedFilename
-                                ],
-                              ),
-                          },
-                          renameFileObservable: defer(
-                            async () => {
-                              const ext = extname(
-                                fileInfo.fullPath,
-                              )
-                              const desiredPath = join(
-                                sourcePath,
-                                finalName.concat(ext),
-                              )
-                              if (
-                                fileInfo.fullPath ===
-                                desiredPath
-                              ) {
-                                logInfo(
-                                  "ALREADY NAMED",
-                                  `"${fileInfo.filename}" is already at its target name — nothing to do.`,
-                                )
-                                return {
-                                  resolvedName: finalName,
-                                  isCollision: false,
-                                  isNoop: true,
-                                }
-                              }
-                              const isTargetOnDisk =
-                                await access(
-                                  desiredPath,
-                                ).then(
-                                  () => true,
-                                  () => false,
-                                )
-                              return {
-                                resolvedName: finalName,
-                                isCollision:
-                                  isTargetOnDisk &&
-                                  !isIntraRunDuplicate,
-                                isNoop: false,
-                              }
+                return promptForDuplicates$.pipe(
+                  concatMap(
+                    ({
+                      droppedFullPaths,
+                      kept: orderedRenames,
+                    }) => {
+                      const skipEvents$: Observable<
+                        Observable<OnlyNameSpecialFeaturesResult>
+                      > = of(
+                        ...skipped.map(({ fileInfo }) =>
+                          of<OnlyNameSpecialFeaturesResult>(
+                            {
+                              skippedFilename:
+                                fileInfo.filename,
+                              reason: "no_extra_match",
                             },
-                          ).pipe(
-                            concatMap(
-                              ({
-                                resolvedName,
-                                isCollision,
-                                isNoop,
-                              }): Observable<OnlyNameSpecialFeaturesResult> => {
-                                if (isNoop) {
-                                  return EMPTY
-                                }
-                                if (isCollision) {
-                                  logWarning(
-                                    "COLLISION",
-                                    `"${resolvedName}" already exists. Emitting review-needed event.`,
-                                  )
-                                  return of<OnlyNameSpecialFeaturesResult>(
-                                    {
-                                      hasCollision: true,
-                                      filename:
-                                        fileInfo.filename,
-                                      targetFilename:
-                                        resolvedName,
-                                    },
-                                  )
-                                }
-                                return fileInfo
-                                  .renameFile(resolvedName)
-                                  .pipe(
-                                    map(
-                                      (): OnlyNameSpecialFeaturesResult => ({
-                                        oldName:
-                                          fileInfo.filename,
-                                        newName:
-                                          resolvedName,
-                                      }),
-                                    ),
-                                  )
-                              },
-                            ),
                           ),
-                        }
-                      },
-                      {
-                        previousFilenameCount: {} as Record<
-                          string,
-                          number
-                        >,
-                        renameFileObservable:
-                          new Observable() as Observable<OnlyNameSpecialFeaturesResult>,
-                      },
-                    ),
-                    map(
-                      ({ renameFileObservable }) =>
-                        renameFileObservable,
-                    ),
-                  )
+                        ),
+                      )
 
-                  // Every file that came out of the timecode matcher
-                  // unnamed, paired with its measured runtime so the
-                  // ranker can score candidates by duration proximity.
-                  const unrenamedFiles = skipped.map(
-                    ({ durationSeconds, fileInfo }) => ({
-                      // `FileInfo.filename` is extension-stripped, and
-                      // Smart Match rebuilds the on-disk oldPath/newPath
-                      // from filename + extension for its rename POST —
-                      // without the extension that rename fails ENOENT.
-                      extension: extname(fileInfo.fullPath),
-                      filename: fileInfo.filename,
-                      durationSeconds,
-                    }),
-                  )
-                  // Both the untimed entries (commentaries, galleries —
-                  // the natural smart-match pool) AND the timed extras
-                  // the strict matcher rejected as out-of-tolerance, so
-                  // the modal can show runtimes to compare against the
-                  // file's own. Skipped entirely when nothing is left
-                  // over — an empty pool keeps the trailer cheap.
-                  const possibleNamesForSummary =
-                    unrenamedFiles.length > 0
-                      ? dedupePossibleNames(
-                          possibleNames.concat(
-                            flattenExtrasAsPossibleNames(
-                              extras,
-                            ),
-                          ),
+                      const renamesStream$: Observable<
+                        Observable<OnlyNameSpecialFeaturesResult>
+                      > = of(...orderedRenames).pipe(
+                        scan(
+                          (
+                            { previousFilenameCount },
+                            { fileInfo, renamedFilename },
+                          ) => {
+                            const isIntraRunDuplicate =
+                              renamedFilename in
+                              previousFilenameCount
+                            const finalName =
+                              isIntraRunDuplicate
+                                ? `(${getNextFilenameCount(previousFilenameCount[renamedFilename])}) ${renamedFilename}`
+                                : renamedFilename
+                            return {
+                              previousFilenameCount: {
+                                ...previousFilenameCount,
+                                [renamedFilename]:
+                                  getNextFilenameCount(
+                                    previousFilenameCount[
+                                      renamedFilename
+                                    ],
+                                  ),
+                              },
+                              renameFileObservable: defer(
+                                async () => {
+                                  const ext = extname(
+                                    fileInfo.fullPath,
+                                  )
+                                  const desiredPath = join(
+                                    sourcePath,
+                                    finalName.concat(ext),
+                                  )
+                                  if (
+                                    fileInfo.fullPath ===
+                                    desiredPath
+                                  ) {
+                                    logInfo(
+                                      "ALREADY NAMED",
+                                      `"${fileInfo.filename}" is already at its target name — nothing to do.`,
+                                    )
+                                    return {
+                                      resolvedName:
+                                        finalName,
+                                      isCollision: false,
+                                      isNoop: true,
+                                    }
+                                  }
+                                  const isTargetOnDisk =
+                                    await access(
+                                      desiredPath,
+                                    ).then(
+                                      () => true,
+                                      () => false,
+                                    )
+                                  return {
+                                    resolvedName: finalName,
+                                    isCollision:
+                                      isTargetOnDisk &&
+                                      !isIntraRunDuplicate,
+                                    isNoop: false,
+                                  }
+                                },
+                              ).pipe(
+                                concatMap(
+                                  ({
+                                    resolvedName,
+                                    isCollision,
+                                    isNoop,
+                                  }): Observable<OnlyNameSpecialFeaturesResult> => {
+                                    if (isNoop) {
+                                      return EMPTY
+                                    }
+                                    if (isCollision) {
+                                      logWarning(
+                                        "COLLISION",
+                                        `"${resolvedName}" already exists. Emitting review-needed event.`,
+                                      )
+                                      return of<OnlyNameSpecialFeaturesResult>(
+                                        {
+                                          hasCollision: true,
+                                          filename:
+                                            fileInfo.filename,
+                                          targetFilename:
+                                            resolvedName,
+                                        },
+                                      )
+                                    }
+                                    return fileInfo
+                                      .renameFile(
+                                        resolvedName,
+                                      )
+                                      .pipe(
+                                        map(
+                                          (): OnlyNameSpecialFeaturesResult => ({
+                                            oldName:
+                                              fileInfo.filename,
+                                            newName:
+                                              resolvedName,
+                                          }),
+                                        ),
+                                      )
+                                  },
+                                ),
+                              ),
+                            }
+                          },
+                          {
+                            previousFilenameCount:
+                              {} as Record<string, number>,
+                            renameFileObservable:
+                              new Observable() as Observable<OnlyNameSpecialFeaturesResult>,
+                          },
+                        ),
+                        map(
+                          ({ renameFileObservable }) =>
+                            renameFileObservable,
+                        ),
+                      )
+
+                      // Everything this run leaves unnamed: the timecode
+                      // matcher's misses, PLUS the files the duplicate prompt
+                      // dropped. The dropped ones matter — they used to stay
+                      // loose in sourcePath with no summary entry, so the only
+                      // way to know they existed was to browse the disc.
+                      const droppedFullPathSet = new Set(
+                        droppedFullPaths,
+                      )
+                      const leftoverFiles = skipped
+                        .map(
+                          ({
+                            durationSeconds,
+                            fileInfo,
+                          }) => ({
+                            durationSeconds,
+                            fileInfo,
+                          }),
                         )
-                      : []
-                  const summaryStream$: Observable<
-                    Observable<OnlyNameSpecialFeaturesResult>
-                  > = of(
-                    of<OnlyNameSpecialFeaturesResult>({
-                      allKnownNames: flattenAllKnownNames({
-                        // No cuts: this command never runs the
-                        // movie-naming branch that produces them.
-                        cuts: [],
-                        extras,
-                        possibleNames,
-                      }),
-                      possibleNames:
-                        possibleNamesForSummary,
-                      unnamedFileCandidates:
-                        buildUnnamedFileCandidates({
+                        .concat(
+                          matched
+                            .filter((match) =>
+                              droppedFullPathSet.has(
+                                match.fileInfo.fullPath,
+                              ),
+                            )
+                            .map(
+                              ({
+                                durationSeconds,
+                                fileInfo,
+                              }) => ({
+                                durationSeconds,
+                                fileInfo,
+                              }),
+                            ),
+                        )
+                      // This run's leftovers (still in sourcePath, bucketed
+                      // below) PLUS whatever a prior run already left in
+                      // UNNAMED-FEATURES/. Both are unnamed and both belong in
+                      // the summary so Smart Match can act on them; only the
+                      // former get moved.
+                      const unrenamedFiles = leftoverFiles
+                        .map(
+                          ({
+                            durationSeconds,
+                            fileInfo,
+                          }) => ({
+                            // `FileInfo.filename` is extension-stripped, and
+                            // Smart Match rebuilds the on-disk oldPath/newPath
+                            // from filename + extension for its rename POST —
+                            // without the extension that rename fails ENOENT.
+                            extension: extname(
+                              fileInfo.fullPath,
+                            ),
+                            filename: fileInfo.filename,
+                            durationSeconds,
+                          }),
+                        )
+                        .concat(bucketUnrenamedFiles)
+                      // Both the untimed entries (commentaries, galleries —
+                      // the natural smart-match pool) AND the timed extras
+                      // the strict matcher rejected as out-of-tolerance, so
+                      // the modal can show runtimes to compare against the
+                      // file's own. Skipped entirely when nothing is left
+                      // over — an empty pool keeps the trailer cheap.
+                      const possibleNamesForSummary =
+                        unrenamedFiles.length > 0
+                          ? dedupePossibleNames(
+                              possibleNames.concat(
+                                flattenExtrasAsPossibleNames(
+                                  extras,
+                                ),
+                              ),
+                            )
+                          : []
+                      const summaryStream$: Observable<
+                        Observable<OnlyNameSpecialFeaturesResult>
+                      > = of(
+                        of<OnlyNameSpecialFeaturesResult>({
+                          allKnownNames:
+                            flattenAllKnownNames({
+                              // No cuts: this command never runs the
+                              // movie-naming branch that produces them.
+                              cuts: [],
+                              extras,
+                              possibleNames,
+                            }),
                           possibleNames:
                             possibleNamesForSummary,
-                          unrenamedFiles,
+                          unnamedFileCandidates:
+                            buildUnnamedFileCandidates({
+                              possibleNames:
+                                possibleNamesForSummary,
+                              unrenamedFiles,
+                            }),
+                          unrenamedFilenames:
+                            unrenamedFiles.map(
+                              (file) => file.filename,
+                            ),
                         }),
-                      unrenamedFilenames:
-                        unrenamedFiles.map(
-                          (file) => file.filename,
-                        ),
-                    }),
-                  )
+                      )
 
-                  return concat(
-                    skipEvents$,
-                    renamesStream$,
-                    summaryStream$,
-                  )
-                }),
-              )
-            }),
+                      // After the rename pass, route every leftover into
+                      // <sourcePath>/UNNAMED-FEATURES/ so Smart Match's
+                      // hard-coded bucket oldPath actually points at the file.
+                      // The folder is created lazily — a fully-matched run
+                      // leaves no bucket behind. The filesystem is the cache:
+                      // a refresh, crash, or close-without-applying still
+                      // leaves a recoverable disc folder.
+                      const bucketMoves$: Observable<
+                        Observable<OnlyNameSpecialFeaturesResult>
+                      > = of(
+                        moveFilesToBucket({
+                          bucketName:
+                            UNNAMED_FEATURES_BUCKET,
+                          filePaths: leftoverFiles.map(
+                            ({ fileInfo }) =>
+                              fileInfo.fullPath,
+                          ),
+                          sourcePath,
+                        }).pipe(ignoreElements()),
+                      )
+
+                      // Summary last: it reports on the renames and the bucket
+                      // moves above, so emitting it earlier would describe a
+                      // state that has not happened yet.
+                      return concat(
+                        skipEvents$,
+                        renamesStream$,
+                        bucketMoves$,
+                        summaryStream$,
+                      )
+                    },
+                  ),
+                )
+              },
+            ),
           ),
         ),
       ),

@@ -164,9 +164,14 @@ describe(onlyNameSpecialFeaturesDvdCompare.name, () => {
       },
     ])
 
-    // File is untouched on disk.
+    // Not renamed — but not left loose either. Smart Match builds its
+    // rename oldPath against UNNAMED-FEATURES/, so the file has to be
+    // there or Apply fails ENOENT.
     await expect(
       access("/rips/mystery.mkv"),
+    ).rejects.toThrow()
+    await expect(
+      access("/rips/UNNAMED-FEATURES/mystery.mkv"),
     ).resolves.toBeUndefined()
   })
 
@@ -214,9 +219,12 @@ describe(onlyNameSpecialFeaturesDvdCompare.name, () => {
     await expect(
       access("/rips/making-of.mkv"),
     ).rejects.toThrow()
-    // Unmatched file left alone.
+    // Unmatched file routed to the bucket rather than left loose.
     await expect(
       access("/rips/unknown.mkv"),
+    ).rejects.toThrow()
+    await expect(
+      access("/rips/UNNAMED-FEATURES/unknown.mkv"),
     ).resolves.toBeUndefined()
   })
 
@@ -411,6 +419,128 @@ describe(onlyNameSpecialFeaturesDvdCompare.name, () => {
     // The web reads the trailer once the job is done; emitting it early
     // would mean a summary that predates the renames it summarizes.
     expect(summaryIndex).toBe(results.length - 1)
+  })
+
+  test("a fully-matched run leaves no bucket folder behind", async () => {
+    vol.fromJSON({
+      "/rips/trailer.mkv": "stream-1",
+    })
+
+    vi.mocked(getMediaInfo).mockReturnValue(
+      of(buildFakeMediaInfo(154)),
+    )
+
+    await firstValueFrom(
+      onlyNameSpecialFeaturesDvdCompare({
+        sourcePath: "/rips",
+        url: "https://www.dvdcompare.net/comparisons/film.php?fid=12345#1",
+      }).pipe(toArray()),
+    )
+
+    // The bucket is created lazily, so a clean run should not litter the
+    // disc folder with an empty UNNAMED-FEATURES/.
+    await expect(
+      access("/rips/UNNAMED-FEATURES"),
+    ).rejects.toThrow()
+  })
+
+  test("a prior run's bucketed files are read back into the summary", async () => {
+    vol.fromJSON({
+      "/rips/trailer.mkv": "stream-1",
+      "/rips/UNNAMED-FEATURES/leftover-from-before.mkv":
+        "stream-old",
+    })
+
+    vi.mocked(getMediaInfo).mockImplementation((filePath) =>
+      of(
+        buildFakeMediaInfo(
+          filePath.includes("trailer") ? 154 : 777,
+        ),
+      ),
+    )
+
+    const results = await firstValueFrom(
+      onlyNameSpecialFeaturesDvdCompare({
+        sourcePath: "/rips",
+        url: "https://www.dvdcompare.net/comparisons/film.php?fid=12345#1",
+      }).pipe(toArray()),
+    )
+
+    const summary = results.find(
+      (result) => "unrenamedFilenames" in result,
+    )
+
+    // Without the read-back the file would vanish from the report on a
+    // re-run — the top-level enumeration never recurses into the bucket —
+    // and Smart Match would never reopen on it.
+    expect(summary).toMatchObject({
+      unrenamedFilenames: ["leftover-from-before"],
+    })
+  })
+
+  test("bucketed files are read back without being renamed or re-bucketed", async () => {
+    vol.fromJSON({
+      "/rips/UNNAMED-FEATURES/leftover-from-before.mkv":
+        "stream-old",
+    })
+
+    vi.mocked(getMediaInfo).mockReturnValue(
+      of(buildFakeMediaInfo(777)),
+    )
+
+    await firstValueFrom(
+      onlyNameSpecialFeaturesDvdCompare({
+        sourcePath: "/rips",
+        url: "https://www.dvdcompare.net/comparisons/film.php?fid=12345#1",
+      }).pipe(toArray()),
+    )
+
+    // Surface-only: the read-back reports, it does not move.
+    await expect(
+      access(
+        "/rips/UNNAMED-FEATURES/leftover-from-before.mkv",
+      ),
+    ).resolves.toBeUndefined()
+    await expect(
+      access(
+        "/rips/UNNAMED-FEATURES/UNNAMED-FEATURES/leftover-from-before.mkv",
+      ),
+    ).rejects.toThrow()
+  })
+
+  test("duplicate-prompt losers are bucketed and reported, not left loose", async () => {
+    vol.fromJSON({
+      "/rips/fileA.mkv": "stream-1",
+      "/rips/fileB.mkv": "stream-2",
+    })
+
+    // Both files match the same extra timecode; the prompt keeps fileA.
+    vi.mocked(getMediaInfo).mockReturnValue(
+      of(buildFakeMediaInfo(154)),
+    )
+    vi.mocked(getUserSearchInput).mockReturnValue(of(0))
+
+    const results = await firstValueFrom(
+      onlyNameSpecialFeaturesDvdCompare({
+        sourcePath: "/rips",
+        url: "https://www.dvdcompare.net/comparisons/film.php?fid=12345#1",
+        isAutoNamingDuplicates: false,
+      }).pipe(toArray()),
+    )
+
+    const summary = results.find(
+      (result) => "unrenamedFilenames" in result,
+    )
+
+    // The dropped duplicate used to stay loose in sourcePath with no
+    // summary entry at all — the only way to find it was to browse the
+    // disc folder.
+    expect(summary).toMatchObject({
+      unrenamedFilenames: ["fileB"],
+    })
+    await expect(
+      access("/rips/UNNAMED-FEATURES/fileB.mkv"),
+    ).resolves.toBeUndefined()
   })
 
   test("Zod schema rejects requests with no DVD Compare identifier", async () => {
