@@ -1,11 +1,47 @@
 # Watch ghcr.io/jlesage/makemkv for a newer tag and open a PR bumping the
 # Dockerfile's `FROM` pin.
 #
-# MakeMKV refuses to run once its beta key expires, and the key rotates on
-# roughly a monthly cadence, so a stale image turns into "the analyser
-# returns no titles" with no other symptom. Merging the PR takes the normal
-# route — CI green, then docker-deploy pushes :master and the TrueNAS app
-# redeploys on its `pull_policy: always`.
+# What this is NOT — corrected 2026-08-21, after the first real run.
+#
+# This header used to say: MakeMKV refuses to run once its beta key expires,
+# the key rotates monthly, so a stale image turns into "the analyser returns
+# no titles". The expiry is real. Its connection to this workflow is not, and
+# reading it that way makes a bump look like insurance it does not provide.
+#
+#   * The key is `app_Key` in the MOUNTED HOST CONFIG —
+#     App-Configs/mux-magic/makemkv/.MakeMKV/settings.conf — not in the image.
+#     Nothing this workflow does can rotate it; that file is edited by hand.
+#   * These tags are jlesage's OWN image version (their only version label is
+#     `org.label-schema.version`, e.g. `26.08.2`) and say nothing about which
+#     MakeMKV is inside. v26.07.2 and v26.08.2 both ship MakeMKV v1.18.4.
+#
+# So treat a bump as what it is: a base-layer refresh that keeps the pin from
+# drifting. When the key does expire, the fix is settings.conf — plus, maybe,
+# a jlesage tag that genuinely carries a newer MakeMKV. Check that version
+# inside the image; do not infer it from the tag.
+#
+# The PR this opens is NOT verified by CI. Two separate reasons, both live:
+#
+#   * Nothing builds the Dockerfile on a PR. ci.yml has no Docker job, and
+#     docker-deploy.yml triggers on `branches: [master, feat/**]`, which a
+#     `chore/makemkv-*` branch does not match. The build-time MSG:1005
+#     assertion below therefore runs AFTER the merge, never on the PR.
+#   * GitHub does not trigger workflows from events raised by GITHUB_TOKEN, so
+#     a PR opened by this workflow arrives with NO checks at all until a user
+#     touches it — close+reopen, or push to the branch.
+#
+# Until those are fixed, verify a bump by hand before merging — build the
+# transplant against the new tag and assert it starts:
+#
+#     FROM ghcr.io/jlesage/makemkv:<tag> AS makemkv
+#     FROM node:26-trixie-slim
+#     COPY --from=makemkv /opt/makemkv /opt/makemkv
+#     ENV PATH="/opt/makemkv/bin:${PATH}"
+#     RUN makemkvcon -r --cache=1 info disc:9999 | grep -q 'MSG:1005.*started'
+#
+# After the merge, docker-deploy pushes :master. The app runs
+# `pull_policy: always`, so a redeploy picks the new image up — and performing
+# that redeploy is the agent's job, not a handoff back to the owner.
 #
 # Caveat, stated here rather than rediscovered: jlesage's image lags
 # upstream MakeMKV by days-to-weeks. If latest-day ever matters, the
@@ -81,14 +117,23 @@ jobs:
           body: |
             `ghcr.io/jlesage/makemkv` published `${{ steps.tags.outputs.latest }}`.
 
-            The Dockerfile's build-time assertion
-            (`makemkvcon -r --cache=1 info disc:9999 | grep -q 'MSG:1005.*started'`)
-            is what proves the new image's self-contained loader still
-            resolves on `node:26-trixie-slim`. If that step fails, the
-            symptom is a loader error on the interpreter or a glibc version
-            complaint — **not** a MakeMKV message. Don't "fix" it with a
-            glibc compat shim; `ldd` on `/opt/makemkv` is expected to look
+            **This PR is not verified by CI.** Nothing builds the Dockerfile
+            on a `chore/**` branch, and a PR opened by a workflow gets no
+            checks at all until a user touches it. Green ticks here — if there
+            are any — say nothing about the base image.
+
+            What proves the bump is the Dockerfile's build-time assertion
+            (`makemkvcon -r --cache=1 info disc:9999 | grep -q 'MSG:1005.*started'`),
+            which shows the transplanted `/opt/makemkv` still resolves its
+            bundled loader on `node:26-trixie-slim` — but that runs *after*
+            this merges. Build the two-stage transplant by hand first. If it
+            fails, the symptom is a loader error on the interpreter or a glibc
+            version complaint — **not** a MakeMKV message. Don't "fix" it with
+            a glibc compat shim; `ldd` on `/opt/makemkv` is expected to look
             alarming and is not evidence of anything.
 
-            Note this image lags upstream MakeMKV by days-to-weeks, so a
-            freshly-expired beta key may still be expired after this bump.
+            **This is not a beta-key fix.** The key lives in the mounted host
+            config, not in the image, and this tag is jlesage's image version,
+            not MakeMKV's — a bump can leave the MakeMKV version completely
+            unchanged. If the analyser has stopped returning titles, check
+            `settings.conf`, not this PR.
