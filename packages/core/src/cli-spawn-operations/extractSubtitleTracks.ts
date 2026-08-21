@@ -7,6 +7,10 @@ import { map } from "rxjs"
 import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { EXTRACTED_SUBTITLES_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import {
+  encodeSubtitleTrackName,
+  normalizeSubtitleTrackName,
+} from "../tools/subtitleTrackNames.js"
+import {
   type SubtitleCodecId,
   subtitleExtensionByCodec,
 } from "../tools/subtitleTypes.js"
@@ -16,6 +20,7 @@ export type ExtractSubtitleTrack = {
   codec_id: SubtitleCodecId
   languageCode: Iso6392LanguageCode | "und"
   trackId: number
+  trackName?: string
 }
 
 type ExtractSubtitleTracksRequiredProps = {
@@ -35,6 +40,17 @@ export const extractSubtitleTracksDefaultProps = {
   outputFolderName: EXTRACTED_SUBTITLES_FOLDER_NAME,
 } satisfies ExtractSubtitleTracksOptionalProps
 
+const buildTrackNameSegment = (
+  trackName: string | undefined,
+) =>
+  normalizeSubtitleTrackName(trackName ?? "").length > 0
+    ? ".".concat(
+        encodeSubtitleTrackName(
+          normalizeSubtitleTrackName(trackName ?? ""),
+        ),
+      )
+    : ""
+
 const buildOutputFilePath = ({
   filePath,
   outputFolderName,
@@ -53,6 +69,7 @@ const buildOutputFilePath = ({
       `track${track.trackId}`,
       ".",
       track.languageCode,
+      buildTrackNameSegment(track.trackName),
       ".",
       subtitleExtensionByCodec[track.codec_id],
     ),

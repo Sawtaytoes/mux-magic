@@ -167,6 +167,7 @@ export const extractSubtitles = ({
                   codecId as ExtractSubtitleTrack["codec_id"],
                 languageCode: track.properties.language,
                 trackId: track.properties.number - 1,
+                trackName: track.properties.track_name,
               }),
             )
           return extractSubtitleTracks({
