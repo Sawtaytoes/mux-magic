@@ -258,8 +258,8 @@ describe("ComputeFromEditor — property autocomplete (B14)", () => {
     })
     await user.click(trigger)
     // The AssFieldPicker is now a creatable Combobox — its search input is
-    // reached by placeholder (the scope <Select> is also a combobox), and
-    // Enter on an unmatched query commits it raw.
+    // reached by placeholder, and Enter on an unmatched query commits it
+    // raw.
     const input = screen.getByPlaceholderText(
       /search or type custom/i,
     )

@@ -1,4 +1,4 @@
-import { Button, IconButton, Select } from "@charcuterie/ui"
+import { Button, IconButton, Picker } from "@charcuterie/ui"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useRef } from "react"
 import { apiBase } from "../../apiBase"
@@ -218,8 +218,8 @@ export const VariableCard = ({
                 <span className="text-content-secondary font-mono shrink-0">
                   {stepId} → {fieldName}
                 </span>
-                <Select
-                  className="ms-auto"
+                <Picker
+                  className="ms-auto justify-between font-normal"
                   label={`Resolution for ${stepId} ${fieldName}`}
                   onChange={(resolutionValue) => {
                     setResolution({

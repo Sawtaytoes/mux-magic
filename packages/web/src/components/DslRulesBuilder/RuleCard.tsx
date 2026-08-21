@@ -1,5 +1,6 @@
-import { IconButton, Select } from "@charcuterie/ui"
+import { IconButton } from "@charcuterie/ui"
 import { runWithViewTransition } from "../../utils/runWithViewTransition"
+import { ListboxPicker } from "./ListboxPicker"
 import {
   changeRuleType,
   moveRule,
@@ -66,19 +67,17 @@ export const RuleCard = ({
       ) : (
         // 13rem = 208px, and the number is measured, not chosen:
         // `scaleResolution` is the widest option and needs 194px at
-        // this font. It sits on `Select` itself now — `className` is
-        // the control's outer box as of `@charcuterie/ui@3`, chevron
-        // included (charcuterie#112), so the wrapping `<div>` this
-        // used to need is gone. `font-mono` is about the option text
-        // rather than the box, so it moves to `controlClassName`.
-        <Select
-          className="w-52 shrink-0"
-          controlClassName="font-mono"
+        // this font. It sits on the trigger button, which is the
+        // control's outer box, chevron included.
+        <ListboxPicker
+          className="w-52 shrink-0 justify-between font-mono"
+          hasChevron
           // Rule rows are keyed by `ruleKey`, but the rules array is
           // replaced wholesale on every commit and a rule can also arrive
-          // from a loaded template or an undo. `Select` is uncontrolled by
-          // design, so the DOM has to be re-seeded when the type it is
-          // showing was not the user's own choice.
+          // from a loaded template or an undo. `Listbox`'s `selectedValue`
+          // is a seed, like every value prop in the library, so the picker
+          // has to be re-seeded when the type it is showing was not the
+          // user's own choice.
           key={rule.type}
           label={`Rule ${ruleIndex + 1} type`}
           onChange={(ruleType) => {
@@ -95,7 +94,6 @@ export const RuleCard = ({
             label: ruleType,
             value: ruleType,
           }))}
-          size="sm"
           value={rule.type}
         />
       )}

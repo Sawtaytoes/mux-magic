@@ -518,12 +518,18 @@ describe("DslRulesBuilder render", () => {
         <DslRulesBuilder step={createStep({ rules })} />
       </Provider>,
     )
+    // Each rule type is a `Picker`, so the current value is on the
+    // trigger's accessible name rather than a DOM `value`.
     expect(
-      screen.getByDisplayValue("setScriptInfo"),
-    ).toBeInTheDocument()
+      screen.getByRole("button", {
+        name: "Rule 1 type: setScriptInfo",
+      }),
+    ).toBeVisible()
     expect(
-      screen.getByDisplayValue("scaleResolution"),
-    ).toBeInTheDocument()
+      screen.getByRole("button", {
+        name: "Rule 2 type: scaleResolution",
+      }),
+    ).toBeVisible()
   })
 
   test("renders exactly one aspect link button (linked by default)", () => {

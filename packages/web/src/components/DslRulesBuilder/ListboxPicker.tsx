@@ -21,14 +21,23 @@ import { Picker } from "@charcuterie/ui"
  * It is a component rather than inline JSX for the same reason it
  * always was: these render inside a `.map` over tree nodes, where a
  * hook cannot be called.
+ *
+ * `className` and `hasChevron` are both for the rows that came off a
+ * native `Select`: their measured widths were on the control's outer
+ * box, which is the trigger now, and the control they replace had a
+ * chevron that the combinator rows never did.
  */
 export const ListboxPicker = ({
+  className,
+  hasChevron = false,
   isDisabled = false,
   label,
   onChange,
   options,
   value,
 }: {
+  className?: string
+  hasChevron?: boolean
   isDisabled?: boolean
   label: string
   onChange: (value: string) => void
@@ -36,7 +45,8 @@ export const ListboxPicker = ({
   value: string
 }) => (
   <Picker
-    iconEnd={null}
+    className={className}
+    iconEnd={hasChevron ? undefined : null}
     isDisabled={isDisabled}
     label={label}
     onChange={onChange}

@@ -1,4 +1,4 @@
-import { Button, Select } from "@charcuterie/ui"
+import { Button } from "@charcuterie/ui"
 import { useRef } from "react"
 import { AssFieldPicker } from "./AssFieldPicker"
 import {
@@ -7,6 +7,7 @@ import {
 } from "./assFields"
 import { ComputeFromOpRow } from "./ComputeFromOpRow"
 import { addComputeFromOp } from "./computeMutations"
+import { ListboxPicker } from "./ListboxPicker"
 import { setComputeFromField } from "./styleMutations"
 import type { ComputeFrom, DslRule } from "./types"
 
@@ -65,14 +66,12 @@ export const ComputeFromEditor = ({
         />
         {/*
           10rem = 160px, measured: `scriptInfo` is the widest option
-          and needs 146px. On `Select` itself, because `className` is
-          the control's outer box as of `@charcuterie/ui@3`, chevron
-          included (charcuterie#112). `font-mono` is the option text,
-          not the box, so it is `controlClassName`.
+          and needs 146px. It sits on the trigger button, which is the
+          control's outer box, chevron included.
         */}
-        <Select
-          className="w-40 shrink-0"
-          controlClassName="font-mono"
+        <ListboxPicker
+          className="w-40 shrink-0 justify-between font-mono"
+          hasChevron
           isDisabled={isReadOnly}
           key={scope}
           label="scope"
@@ -91,7 +90,6 @@ export const ComputeFromEditor = ({
             { label: "scriptInfo", value: "scriptInfo" },
             { label: "style", value: "style" },
           ]}
-          size="sm"
           value={scope}
         />
       </div>
