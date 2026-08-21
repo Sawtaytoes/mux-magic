@@ -9,20 +9,36 @@ import * as JobsPageStories from "./JobsPage.stories";
 
 The full Jobs page (mounted at `/jobs`; `/` is the `HomePage` tool picker). Mounts `useSseStream()` on render, which opens the persistent EventSource for `/jobs/events` and feeds `jobsAtom`, `progressByJobIdAtom`, `logsByJobIdAtom`, and `jobsConnectionAtom` from the wire.
 
-Renders a header ("← Tools" back link + page title + "Sequence Builder ↗" / "Errors ↗" links + `StatusBar`) and the list of top-level jobs (those without a `parentJobId`). Newest jobs first — the `jobsAtom` `Map` preserves insertion order, so reversing gives newest-first.
+Renders a header ("← Tools" back link + page title + "Sequence Builder ↗" / "Errors ↗" links + `StatusBar`), the `JobStatusFilter` chip row, and a **responsive grid** of top-level jobs (those without a `parentJobId`). Newest jobs first — the `jobsAtom` `Map` preserves insertion order, so reversing gives newest-first.
 
 ## Behaviour
 
 - **Mount** → `useSseStream()` runs once. The hook owns the EventSource lifecycle, heartbeat watchdog, and reconnection logic. Component itself is just a layout shell.
-- **Empty state** → when there are no top-level jobs, render a centered "No jobs yet…" message linking back to the builder.
-- **List** → top-level jobs only; sequence-children render *inside* their parent's `JobCard` via the steps disclosure.
+- **Empty state** → an `EmptyState` headed "Nothing to show", worded for whether the filter is narrowed or switched off entirely.
+- **Grid** → top-level jobs only; sequence-children render *inside* their parent's `JobCard` via the steps disclosure.
 - **Status badge** → top-right; lives in `StatusBar`.
+- **Filter** → `JobStatusFilter`; `exited` starts off. See that component for why the counts come off the server.
 
 ## Atom wiring
 
 | Atom | Role |
 |------|------|
 | `jobsAtom` | Source of truth for the job list. Written by `useSseStream`, read here for filtering top-level jobs |
+| `visibleJobStatusesAtom` | Which statuses are showing. Read by `JobsList` to filter, and by `useSseStream` to build the stream URL — so changing it reconnects the stream and replays whatever was newly unhidden. Persisted to `localStorage`. |
+
+## Layout
+
+The page is **not** capped at a fixed width, and that is deliberate. It used to be
+`max-w-3xl`, which made a grid impossible: `AdaptiveGrid` widens the content as it takes
+columns, so a fixed outer cap would only have divided one narrow column into narrower
+ones. The cap now comes from the grid and moves with it — one column stays at a reading
+measure, four earns 140rem.
+
+`AdaptiveGrid` spends **height before width**: it takes a column only when the cards will
+not stack inside the window. A taller window therefore takes *fewer* columns, which reads
+backwards and is the rule working. `useAdaptiveColumns` is hoisted into `JobsList` and its
+answer handed to both grids, so the paused section and the main grid always agree on a
+width.
 
 ## Server stream
 
@@ -43,3 +59,19 @@ Renders a header ("← Tools" back link + page title + "Sequence Builder ↗" / 
 ## With jobs (running, completed, failed)
 
 <Canvas of={JobsPageStories.WithJobs} />
+
+## Many jobs — the grid
+
+<Canvas of={JobsPageStories.ManyJobs} />
+
+## With `exited` switched on
+
+<Canvas of={JobsPageStories.ExitedShowing} />
+
+## A paused job keeps its own section
+
+<Canvas of={JobsPageStories.WithPausedSection} />
+
+## Every status switched off
+
+<Canvas of={JobsPageStories.NothingShowing} />

@@ -3,12 +3,17 @@ import { createStore, Provider } from "jotai"
 import { makeFakeJob } from "../../jobs/__fixtures__/makeFakeJob"
 import type {
   Job,
+  JobStatus,
   ProgressSnapshot,
 } from "../../jobs/types"
 import { jobsAtom } from "../../state/jobsAtom"
 import type { ConnectionStatus } from "../../state/jobsConnectionAtom"
 import { jobsConnectionAtom } from "../../state/jobsConnectionAtom"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
+import {
+  DEFAULT_VISIBLE_JOB_STATUSES,
+  visibleJobStatusesAtom,
+} from "../../state/visibleJobStatusesAtom"
 import { JobsPage } from "./JobsPage"
 
 // JobsPage calls useSseStream which opens an EventSource.
@@ -20,6 +25,7 @@ const withStore = (
   jobs: Job[],
   status: ConnectionStatus = "connected",
   progress?: Map<string, ProgressSnapshot>,
+  visibleStatuses: readonly JobStatus[] = DEFAULT_VISIBLE_JOB_STATUSES,
 ) => {
   const store = createStore()
   store.set(
@@ -27,6 +33,7 @@ const withStore = (
     new Map(jobs.map((job) => [job.id, job])),
   )
   store.set(jobsConnectionAtom, status)
+  store.set(visibleJobStatusesAtom, visibleStatuses)
   if (progress) store.set(progressByJobIdAtom, progress)
 
   return (Story: React.ComponentType) => (
@@ -102,6 +109,123 @@ export const WithJobs: Story = {
           },
         ],
       ]),
+    ),
+  ],
+}
+
+// ─── The grid, and what the filter is for ────────────────────────────────────
+
+const GRID_COMMANDS = [
+  "remuxToMkv",
+  "extractSubtitles",
+  "keepLanguages",
+  "mergeTracks",
+  "renameFiles",
+  "reorderTracks",
+] as const
+
+const makeGridJobs = ({
+  count,
+  idPrefix,
+  status,
+}: {
+  count: number
+  idPrefix: string
+  status: Job["status"]
+}) =>
+  Array.from({ length: count }, (_unused, index) =>
+    makeFakeJob({
+      id: `${idPrefix}-${index}`,
+      commandName:
+        GRID_COMMANDS[index % GRID_COMMANDS.length],
+      status,
+      params: {
+        sourcePath: `/media/library/Sample Show - S01E${String(index + 1).padStart(2, "0")}.mkv`,
+      },
+    }),
+  )
+
+/**
+ * Enough cards to force the grid past one column. `AdaptiveGrid`
+ * spends height first, so the column count here is a function of
+ * the preview's height as much as its width — a taller frame takes
+ * FEWER columns, and that is the rule working rather than a bug.
+ */
+export const ManyJobs: Story = {
+  decorators: [
+    withStore(
+      makeGridJobs({
+        count: 14,
+        idPrefix: "done",
+        status: "completed",
+      }).concat(
+        makeGridJobs({
+          count: 3,
+          idPrefix: "broke",
+          status: "failed",
+        }),
+      ),
+    ),
+  ],
+}
+
+/**
+ * The same page with `exited` switched on — the state the default
+ * exists to avoid. In the real app this is thousands of cards, not
+ * twenty.
+ */
+export const ExitedShowing: Story = {
+  decorators: [
+    withStore(
+      makeGridJobs({
+        count: 4,
+        idPrefix: "done",
+        status: "completed",
+      }).concat(
+        makeGridJobs({
+          count: 16,
+          idPrefix: "nothing-to-do",
+          status: "exited",
+        }),
+      ),
+      "connected",
+      undefined,
+      DEFAULT_VISIBLE_JOB_STATUSES.concat("exited"),
+    ),
+  ],
+}
+
+/** A paused job keeps its own section above the rest of the grid. */
+export const WithPausedSection: Story = {
+  decorators: [
+    withStore(
+      makeGridJobs({
+        count: 1,
+        idPrefix: "waiting",
+        status: "paused",
+      }).concat(
+        makeGridJobs({
+          count: 8,
+          idPrefix: "done",
+          status: "completed",
+        }),
+      ),
+    ),
+  ],
+}
+
+/** Every status switched off — the filter's own empty state. */
+export const NothingShowing: Story = {
+  decorators: [
+    withStore(
+      makeGridJobs({
+        count: 6,
+        idPrefix: "done",
+        status: "completed",
+      }),
+      "connected",
+      undefined,
+      [],
     ),
   ],
 }

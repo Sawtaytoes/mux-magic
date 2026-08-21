@@ -51,14 +51,17 @@ export interface paths {
         /** Stream all job updates via Server-Sent Events */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Statuses to replay on connect, comma-separated or repeated (e.g. `?status=running,failed`). Omit it for every status. Sequence-step child jobs are judged by their parent's status, so a visible sequence keeps its whole step list. This filters the CONNECT REPLAY only — live updates are always streamed, or a job whose status changes into a hidden one would be stuck on screen at its last visible status forever. Known values: running, pending, paused, failed, completed, cancelled, skipped, exited. */
+                    status?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description Server-Sent Events stream of job updates. Each event is a JSON job object (without logs). Replays all existing jobs on connect, then streams new creates and status changes. */
+                /** @description Server-Sent Events stream of job updates. Each event is a JSON job object (without logs). Replays existing jobs on connect — every one, or only those matching `status` — then streams all new creates and status changes. */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -134,6 +137,47 @@ export interface paths {
                             /** @description Sequence-step identifier (matches the SequenceStep `id` field — either user-supplied or auto-assigned `step1`, `step2`, …). Only set on sequence-step child jobs; null for top-level jobs. */
                             stepId: string | null;
                         }[];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/status-counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count top-level jobs by status
+         * @description Counts TOP-LEVEL jobs only — sequence steps are never listed on their own, so counting them would report numbers that match nothing on screen. Exists so the jobs filter can say how many jobs a hidden status is hiding; the stream deliberately does not send those jobs, so the client cannot count them itself.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Top-level job count per status */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: number;
+                        };
                     };
                 };
             };
@@ -474,7 +518,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            commandNames: ("makeDirectory" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "renumberChapters" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData")[];
+                            commandNames: ("analyseDiscBackup" | "makeDirectory" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "renumberChapters" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData")[];
                         };
                     };
                 };
@@ -482,6 +526,72 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/analyseDiscBackup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Analyse a disc backup and propose which titles to rip, with a stated reason per title */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @description A `[BACKUP]` folder produced by rip-deck (e.g. `/media/Disc-Rips/[BACKUP] Desk Set - Blu-ray`). Read directly as a BDMV tree — no disc needed. Nothing in it is modified. */
+                        sourcePath: string;
+                        /**
+                         * @description Heuristic rules to switch off by name (e.g. `isChapterlessLongTitle`). Studio patterns are conventions, not standards, so a rule that turns out to be wrong for a release can be disabled without unpicking the analyser.
+                         * @default []
+                         */
+                        disabledRuleNames?: string[];
+                        /**
+                         * @description MakeMKV's minimum title length. Defaults to 60 so real extras (trailers, featurettes) are seen and proposed with a reason, while sub-minute BDMV fragments stay out of the list — at 0, Desk Set reports 61 titles of which only 2 are content. Pass 0 to see every fragment anyway.
+                         * @default 60
+                         */
+                        minimumTitleLengthSeconds?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -1083,6 +1193,84 @@ export interface paths {
                              * @enum {string}
                              */
                             outputFolderName: "EXTRACTED-SUBTITLES";
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/extractDiscTitles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rip the titles a disc analysis proposed keeping out of a `[BACKUP]` folder into .mkv files */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @description A `[BACKUP]` folder produced by rip-deck (e.g. `/media/Disc-Rips/[BACKUP] Desk Set - Blu-ray`). The backup itself is only read. */
+                        sourcePath: string;
+                        /** @description Where the ripped `.mkv` files land. Defaults to `EXTRACTED-TITLES/` inside the backup, beside `DISC-ANALYSIS/`, so the files travel with the proposal that produced them. */
+                        destinationPath?: string;
+                        /**
+                         * @description Heuristic rules to switch off by name (e.g. `isChapterlessLongTitle`). Same list the analysis takes — the rules decide which titles are `keep`, and `keep` is what gets ripped.
+                         * @default []
+                         */
+                        disabledRuleNames?: string[];
+                        /**
+                         * @description MakeMKV's minimum title length. MUST match the analysis pass: makemkvcon assigns title indexes AFTER applying this filter, so the same disc read at 0 and at 60 numbers its titles differently and an index from the wrong pass rips the wrong title.
+                         * @default 60
+                         */
+                        minimumTitleLengthSeconds?: number;
+                        /** @description Explicit title indexes to rip, overriding the dispositions. Omit to rip every title the analysis proposed keeping — `merge` and `inspect` titles are not ripped automatically unless `isRippingTrackSupersets` covers them. */
+                        titleIndexes?: number[];
+                        /**
+                         * @description Also rip the one title in a cluster that carries every track its siblings expose, grafting the chapter marks it lacks from the richest sibling playlist's `.mpls`. Replaces ripping three 65.5 GB playlists of the same film with one pass. Off by default because the superset is the very title `isChapterlessTwin` proposes discarding, so taking it is the caller's decision.
+                         * @default false
+                         */
+                        isRippingTrackSupersets?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /**
+                             * @description Output folder name where files are written, or null for in-place operations
+                             * @enum {string}
+                             */
+                            outputFolderName: "EXTRACTED-TITLES";
                         };
                     };
                 };
@@ -6736,7 +6924,7 @@ export interface components {
             /** @description Optional human-readable alias. Surfaced by the builder UI's step header; ignored at runtime. */
             alias?: string;
             /** @description Name of the registered command to run. Must be one of the names listed at `GET /commands` (or surfaced individually as `POST /commands/<name>` endpoints). Empty string `''` marks a placeholder/blank step from the Builder UI — the runner skips it as a no-op so YAML round-trips don't lose the slot. */
-            command: "" | ("makeDirectory" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "renumberChapters" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData");
+            command: "" | ("analyseDiscBackup" | "makeDirectory" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "renumberChapters" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData");
             /** @description Command params. Each value can be a literal (string / number / boolean / array / object), a `'@pathId'` path-variable reference, or a `{ linkedTo, output }` step-output reference. Per-command param shapes are documented under `POST /commands/<command>` — the same schema each command exposes for direct invocation also applies here once references are resolved. */
             params?: {
                 [key: string]: unknown;

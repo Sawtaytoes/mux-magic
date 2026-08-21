@@ -4,7 +4,7 @@ interface StatusBadgeProps {
   status: string
 }
 
-type StatusIntent =
+export type StatusIntent =
   | "neutral"
   | "accent"
   | "success"
@@ -37,10 +37,19 @@ const statusIntentMap: Record<string, StatusIntent> = {
   exited: "info",
 }
 
+/**
+ * The intent a status paints with — the same answer the badge
+ * uses, exported so the jobs filter can tint a chip per status
+ * without spelling the map a second time.
+ */
+export const getStatusIntent = (
+  status: string,
+): StatusIntent => statusIntentMap[status] ?? "neutral"
+
 export const StatusBadge = ({
   status,
 }: StatusBadgeProps) => {
-  const intent = statusIntentMap[status] ?? "neutral"
+  const intent = getStatusIntent(status)
   return (
     <Badge
       intent={intent}
