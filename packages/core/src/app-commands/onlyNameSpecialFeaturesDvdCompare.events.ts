@@ -11,7 +11,8 @@ import type { UnnamedFileCandidate } from "./nameSpecialFeaturesDvdCompareTmdb.e
 //
 // Still no edition-folder move and no TMDB lookup: those belong to the
 // full `nameSpecialFeaturesDvdCompareTmdb` command (or the movie-cuts
-// sibling). This command's job is timecode-match + Plex-suffix rename.
+// sibling). This command's job is timecode-match + Plex-suffix rename,
+// plus routing whatever stayed unnamed into UNNAMED-FEATURES/.
 //
 // The summary trailer is deliberately the *same* shape the TMDB sibling
 // emits, because the web's NSF results panel identifies it structurally
@@ -22,6 +23,11 @@ import type { UnnamedFileCandidate } from "./nameSpecialFeaturesDvdCompareTmdb.e
 // original spec left leftovers as skip-with-log only, which meant the
 // no-TMDB variant had no way to name them from the UI even though the
 // DVDCompare candidate list was right there.
+//
+// Emitting this trailer obliges the command to bucket its leftovers into
+// UNNAMED-FEATURES/ as well: the Smart Match modal builds its rename
+// `oldPath` against that bucket unconditionally, so a trailer without a
+// bucket produces a button whose Apply fails ENOENT.
 //
 // `allKnownNames` carries every extras label in DVDCompare order for the
 // interactive renamer's autocomplete. There is no `cuts` contribution
