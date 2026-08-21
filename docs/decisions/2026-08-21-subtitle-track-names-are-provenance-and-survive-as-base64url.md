@@ -24,6 +24,11 @@ preserve it.
    <Role>[ (<Qualifier>)][ [<Group>]][ (edited by Sawtaytoes)]
    ```
 
+   The edit marker **keeps every editor already credited in the source name** and
+   appends new ones: `Full Subtitles [Chihiro (ed. Kametsu)]` becomes
+   `Full Subtitles [Chihiro] (edited by Kametsu)`, and the owner is added later as
+   `(edited by Kametsu and Sawtaytoes)`. An edit with no named editor is `(edited)`.
+
    Roles are exactly `Full Subtitles`, `Signs & Songs`, `Forced`, `Commentary`.
    Everything else is regexed into one of them — `Dialogue`, `English`, `Full`,
    `Stylized Subtitles` and `Main` all become `Full Subtitles`; `Signs/Songs`,
@@ -54,6 +59,18 @@ destroyed the record of which group the subtitles came from.
 
 **Do not "simplify" the normalizer back to passing the raw name through.** The
 whole point is that the owner never has to judge a name again.
+
+**Do not append the owner to a name just because it says "modified".** Normalizing
+records only editors the *name* credits. That the **owner** edited a track is not
+provable from the name — it is proved by comparing the track against the source
+release. `addEditorToTrackName` is deliberately a separate call for that reason.
+Blindly appending him would claim edits he never made on releases he only downloaded.
+
+**Do not read `(X modified)` as always naming an editor.** It is ambiguous.
+`Commie (BSEnc modified)` means BSEnc edited Commie's subs, but
+`Signs & Songs (Steins;Sub modified)` means Steins;Sub's subs were modified by someone
+unrecorded — X is the *group*. X is the editor only when a group is named elsewhere.
+Adverbs are filtered too: `R1 (Heavily modified) [Judgement]` credits nobody.
 
 ## Why it must not be re-litigated
 

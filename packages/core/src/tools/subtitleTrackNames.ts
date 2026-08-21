@@ -14,7 +14,7 @@ export const subtitleTrackRoles = [
 export type SubtitleTrackRole =
   (typeof subtitleTrackRoles)[number]
 
-export const editedBySuffix = "(edited by Sawtaytoes)"
+export const ownerEditorName = "Sawtaytoes"
 
 export const encodedTrackNamePrefix = "name-"
 
@@ -65,7 +65,21 @@ const roleMatchers = [
   role: SubtitleTrackRole
 }>
 
-const editedMarkerPattern = /\(\s*edited by[^)]*\)/i
+const editedMarkerPattern = /\(\s*edited(?: by[^)]*)?\)/i
+
+// `ed. X` and `edited by X` always name an editor. `(X modified)` is
+// ambiguous — X is the editor only when a group is named elsewhere,
+// otherwise X is the group that was modified by someone unrecorded.
+const namedEditorPatterns = [
+  /\bed\.\s*([^)\],]+)/i,
+  /\(\s*edited by\s+([^)]+)\)/i,
+] as const
+
+const modifiedParentheticalPattern =
+  /\(([^)]+?)\s+modified\)/i
+
+const editorAdverbPattern =
+  /^(heavily|slightly|lightly|partially|further|slight|minor|major|fully|mostly)$/i
 
 const editedHintPattern =
   /\bmodified\b|\bedited by\b|\bed\.\s*[^),\]]*/i
@@ -146,6 +160,13 @@ const candidatesOf = (trackName: string) =>
   [bracketedGroupOf(trackName), bareGroupOf(trackName)]
     .filter((candidate) => candidate.length > 0)
     .concat(parentheticalsOf(trackName))
+    .concat(
+      baseGroupOf(trackName).length === 0
+        ? [modifiedSubjectOf(trackName)].filter(
+            (subject) => subject.length > 0,
+          )
+        : [],
+    )
 
 const groupOf = (candidates: ReadonlyArray<string>) =>
   candidates.find(
@@ -163,12 +184,70 @@ export const isEditedTrackName = (trackName: string) =>
   editedMarkerPattern.test(trackName) ||
   editedHintPattern.test(trackName)
 
+const splitEditorNames = (creditedText: string) =>
+  creditedText
+    .split(/\s+and\s+|,\s*/i)
+    .map((editorName) => editorName.trim())
+    .filter((editorName) => editorName.length > 0)
+
+const baseGroupOf = (trackName: string) =>
+  [
+    bracketedGroupOf(trackName),
+    bareGroupOf(trackName),
+  ].find((candidate) => candidate.length > 0) ?? ""
+
+const modifiedSubjectOf = (trackName: string) =>
+  cleanSegment(
+    trackName.match(modifiedParentheticalPattern)?.[1] ??
+      "",
+  )
+
+export const findCreditedEditors = (trackName: string) =>
+  namedEditorPatterns
+    .flatMap((pattern) =>
+      splitEditorNames(trackName.match(pattern)?.[1] ?? ""),
+    )
+    .concat(
+      baseGroupOf(trackName).length > 0
+        ? splitEditorNames(modifiedSubjectOf(trackName))
+        : [],
+    )
+    .filter(
+      (editorName) => !editorAdverbPattern.test(editorName),
+    )
+    .filter(
+      (editorName, index, allNames) =>
+        allNames.indexOf(editorName) === index,
+    )
+
+export const formatEditorList = (
+  editorNames: ReadonlyArray<string>,
+) =>
+  editorNames.length <= 1
+    ? editorNames.join("")
+    : editorNames
+        .slice(0, -1)
+        .join(", ")
+        .concat(
+          " and ",
+          editorNames[editorNames.length - 1],
+        )
+
+const buildEditedSuffix = (
+  editorNames: ReadonlyArray<string>,
+) =>
+  editorNames.length > 0
+    ? `(edited by ${formatEditorList(editorNames)})`
+    : "(edited)"
+
 const composeName = ({
+  editorNames,
   group,
   isEdited,
   qualifier,
   role,
 }: {
+  editorNames: ReadonlyArray<string>
   group: string
   isEdited: boolean
   qualifier: string
@@ -178,13 +257,14 @@ const composeName = ({
     role,
     qualifier.length > 0 ? `(${qualifier})` : "",
     group.length > 0 ? `[${group}]` : "",
-    isEdited ? editedBySuffix : "",
+    isEdited ? buildEditedSuffix(editorNames) : "",
   ]
     .filter((part) => part.length > 0)
     .join(" ")
 
 const buildNormalizedName = (trackName: string) =>
   composeName({
+    editorNames: findCreditedEditors(trackName),
     group: groupOf(candidatesOf(trackName)),
     isEdited: isEditedTrackName(trackName),
     qualifier: qualifierOf(candidatesOf(trackName)),
@@ -197,3 +277,24 @@ export const normalizeSubtitleTrackName = (
   trackName.trim().length === 0
     ? ""
     : buildNormalizedName(trackName.trim())
+
+// Adding an editor is separate from normalizing, on purpose. A credited
+// editor is provable from the name; that the OWNER edited a track is not —
+// it is proved by comparing the track's text against the source release.
+// Blindly appending the owner to every credited name would claim edits he
+// never made.
+export const addEditorToTrackName = ({
+  editorName,
+  trackName,
+}: {
+  editorName: string
+  trackName: string
+}) =>
+  findCreditedEditors(trackName).includes(editorName)
+    ? trackName
+    : trackName.replace(editedMarkerPattern, "").trim()
+          .length === trackName.trim().length
+      ? `${trackName.trim()} (edited by ${editorName})`
+      : `${trackName.replace(editedMarkerPattern, "").trim()} (edited by ${formatEditorList(
+          findCreditedEditors(trackName).concat(editorName),
+        )})`

@@ -48,12 +48,22 @@ describe("buildSubtitleSourceArgs", () => {
     ).toBe("0:Signs & Songs [iKaos/corre/moi15moi]")
   })
 
-  test("keeps the owner's edited marker", () => {
+  test("keeps an unattributed edit marker", () => {
     expect(
       buildSubtitleSourceArgs([
         pathForTrackName("Full Subtitles [MTBB Modified]"),
       ])[1],
-    ).toBe("0:Full Subtitles [MTBB] (edited by Sawtaytoes)")
+    ).toBe("0:Full Subtitles [MTBB] (edited)")
+  })
+
+  test("keeps the credited editor", () => {
+    expect(
+      buildSubtitleSourceArgs([
+        pathForTrackName(
+          "Full Subtitles [Chihiro (ed. Kametsu)]",
+        ),
+      ])[1],
+    ).toBe("0:Full Subtitles [Chihiro] (edited by Kametsu)")
   })
 
   test("names each file in a multi-track merge", () => {

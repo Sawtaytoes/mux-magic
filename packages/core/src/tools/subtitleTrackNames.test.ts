@@ -1,8 +1,9 @@
 import { describe, expect, test } from "vitest"
 import {
+  addEditorToTrackName,
   decodeSubtitleTrackName,
-  editedBySuffix,
   encodeSubtitleTrackName,
+  findCreditedEditors,
   findEncodedTrackName,
   isEncodedTrackNameSegment,
   normalizeSubtitleTrackName,
@@ -150,7 +151,7 @@ describe("normalizeSubtitleTrackName", () => {
       normalizeSubtitleTrackName(
         "Full Subtitles [MTBB Modified]",
       ),
-    ).toBe(`Full Subtitles [MTBB] ${editedBySuffix}`)
+    ).toBe("Full Subtitles [MTBB] (edited)")
   })
 
   test("marks an editor credited inside the group", () => {
@@ -158,7 +159,7 @@ describe("normalizeSubtitleTrackName", () => {
       normalizeSubtitleTrackName(
         "Full Subtitles [Chihiro (ed. Kametsu)]",
       ),
-    ).toBe(`Full Subtitles [Chihiro] ${editedBySuffix}`)
+    ).toBe("Full Subtitles [Chihiro] (edited by Kametsu)")
   })
 
   test("marks a parenthesised modification note", () => {
@@ -166,7 +167,7 @@ describe("normalizeSubtitleTrackName", () => {
       normalizeSubtitleTrackName(
         "(SBR Modified) UTW - Signs/Songs",
       ),
-    ).toBe(`Signs & Songs [UTW] ${editedBySuffix}`)
+    ).toBe("Signs & Songs [UTW] (edited by SBR)")
   })
 
   test("is idempotent", () => {
@@ -206,12 +207,113 @@ describe("separator handling", () => {
     ["Dialogue@Foxtrot", "Full Subtitles [Foxtrot]"],
     [
       "Steins;Sub (deanzel modified)",
-      `Full Subtitles [Steins;Sub] ${editedBySuffix}`,
+      "Full Subtitles [Steins;Sub] (edited by deanzel)",
     ],
     ["CR_English", "Full Subtitles [CR]"],
     [
       "Puella Magi Madoka Magica【R1】",
       "Full Subtitles (Puella Magi Madoka Magica) [R1]",
+    ],
+  ])("maps %s to %s", (trackName, expected) => {
+    expect(normalizeSubtitleTrackName(trackName)).toBe(
+      expected,
+    )
+  })
+})
+
+describe("findCreditedEditors", () => {
+  test.each([
+    ["Full Subtitles [Chihiro (ed. Kametsu)]", ["Kametsu"]],
+    [
+      "Signs+Songs [Chihiro (ed. Kametsu and Solaufein)]",
+      ["Kametsu", "Solaufein"],
+    ],
+    ["Commie (BSEnc modified)", ["BSEnc"]],
+    ["Full Subtitles [MTBB Modified]", []],
+  ])("reads %s as %j", (trackName, expected) => {
+    expect(findCreditedEditors(trackName)).toEqual(expected)
+  })
+})
+
+describe("addEditorToTrackName", () => {
+  test("keeps the original editor and appends the owner", () => {
+    expect(
+      addEditorToTrackName({
+        editorName: "Sawtaytoes",
+        trackName: normalizeSubtitleTrackName(
+          "Full Subtitles [Chihiro (ed. Kametsu)]",
+        ),
+      }),
+    ).toBe(
+      "Full Subtitles [Chihiro] (edited by Kametsu and Sawtaytoes)",
+    )
+  })
+
+  test("names the owner when no editor was credited", () => {
+    expect(
+      addEditorToTrackName({
+        editorName: "Sawtaytoes",
+        trackName: normalizeSubtitleTrackName(
+          "Full Subtitles [MTBB Modified]",
+        ),
+      }),
+    ).toBe("Full Subtitles [MTBB] (edited by Sawtaytoes)")
+  })
+
+  test("adds the owner to an otherwise unedited track", () => {
+    expect(
+      addEditorToTrackName({
+        editorName: "Sawtaytoes",
+        trackName: "Full Subtitles [koala]",
+      }),
+    ).toBe("Full Subtitles [koala] (edited by Sawtaytoes)")
+  })
+
+  test("keeps three editors in order", () => {
+    expect(
+      addEditorToTrackName({
+        editorName: "Sawtaytoes",
+        trackName: normalizeSubtitleTrackName(
+          "Signs+Songs [Chihiro (ed. Kametsu and Solaufein)]",
+        ),
+      }),
+    ).toBe(
+      "Signs & Songs [Chihiro] (edited by Kametsu, Solaufein and Sawtaytoes)",
+    )
+  })
+
+  test("does not add the owner twice", () => {
+    const named = addEditorToTrackName({
+      editorName: "Sawtaytoes",
+      trackName: "Full Subtitles [koala]",
+    })
+
+    expect(
+      addEditorToTrackName({
+        editorName: "Sawtaytoes",
+        trackName: named,
+      }),
+    ).toBe(named)
+  })
+})
+
+describe("ambiguous edit credits", () => {
+  test.each([
+    [
+      "Signs & Songs (Steins;Sub modified)",
+      "Signs & Songs [Steins;Sub] (edited)",
+    ],
+    [
+      "ASS / Main (Coalgirls modified)",
+      "Full Subtitles [Coalgirls] (edited)",
+    ],
+    [
+      "Commie (BSEnc modified)",
+      "Full Subtitles [Commie] (edited by BSEnc)",
+    ],
+    [
+      "R1 (Heavily modified) [Judgement]",
+      "Full Subtitles (R1) [Judgement] (edited)",
     ],
   ])("maps %s to %s", (trackName, expected) => {
     expect(normalizeSubtitleTrackName(trackName)).toBe(
