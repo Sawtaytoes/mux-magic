@@ -16,9 +16,19 @@ import type { MediaInfo } from "../tools/getMediaInfo.js"
 vi.mock("../tools/searchDvdCompare.js", () => ({
   searchDvdCompare: vi.fn(),
 }))
-vi.mock("../tools/parseSpecialFeatures.js", () => ({
-  parseSpecialFeatures: vi.fn(),
-}))
+// Only `parseSpecialFeatures` is stubbed. The command also imports
+// `dedupePossibleNames` / `flattenExtrasAsPossibleNames` from this module
+// to build its summary trailer — a bare factory would leave those
+// undefined and the pipeline would throw, so spread the real module.
+vi.mock(
+  "../tools/parseSpecialFeatures.js",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../tools/parseSpecialFeatures.js")
+    >()),
+    parseSpecialFeatures: vi.fn(),
+  }),
+)
 vi.mock("../tools/getMediaInfo.js", () => ({
   getMediaInfo: vi.fn(),
 }))
@@ -245,6 +255,162 @@ describe(onlyNameSpecialFeaturesDvdCompare.name, () => {
     expect(newNames).toContain(
       "Theatrical Trailer -trailer",
     )
+  })
+
+  test("summary trailer lists unrenamed files with ranked DVDCompare candidates", async () => {
+    vol.fromJSON({
+      "/rips/trailer.mkv": "stream-1",
+      "/rips/unknown.mkv": "stream-2",
+    })
+
+    vi.mocked(getMediaInfo).mockImplementation((filePath) =>
+      of(
+        buildFakeMediaInfo(
+          filePath.includes("trailer") ? 154 : 3600,
+        ),
+      ),
+    )
+
+    const results = await firstValueFrom(
+      onlyNameSpecialFeaturesDvdCompare({
+        sourcePath: "/rips",
+        url: "https://www.dvdcompare.net/comparisons/film.php?fid=12345#1",
+      }).pipe(toArray()),
+    )
+
+    const summary = results.find(
+      (result) => "unrenamedFilenames" in result,
+    )
+
+    expect(summary).toBeDefined()
+    expect(summary).toMatchObject({
+      unrenamedFilenames: ["unknown"],
+    })
+  })
+
+  test("summary trailer carries the extension so Smart Match can rebuild the on-disk path", async () => {
+    vol.fromJSON({
+      "/rips/unknown.mp4": "stream-1",
+    })
+
+    vi.mocked(getMediaInfo).mockReturnValue(
+      of(buildFakeMediaInfo(3600)),
+    )
+
+    const results = await firstValueFrom(
+      onlyNameSpecialFeaturesDvdCompare({
+        sourcePath: "/rips",
+        url: "https://www.dvdcompare.net/comparisons/film.php?fid=12345#1",
+      }).pipe(toArray()),
+    )
+
+    const summary = results.find(
+      (result) => "unnamedFileCandidates" in result,
+    )
+
+    expect(summary).toMatchObject({
+      unnamedFileCandidates: [
+        {
+          durationSeconds: 3600,
+          extension: ".mp4",
+          filename: "unknown",
+        },
+      ],
+    })
+  })
+
+  test("summary trailer offers every published extra as a candidate, including out-of-tolerance timed ones", async () => {
+    vol.fromJSON({
+      "/rips/unknown.mkv": "stream-1",
+    })
+
+    vi.mocked(getMediaInfo).mockReturnValue(
+      of(buildFakeMediaInfo(3600)),
+    )
+
+    const results = await firstValueFrom(
+      onlyNameSpecialFeaturesDvdCompare({
+        sourcePath: "/rips",
+        url: "https://www.dvdcompare.net/comparisons/film.php?fid=12345#1",
+      }).pipe(toArray()),
+    )
+
+    const summary = results.find(
+      (result) => "possibleNames" in result,
+    )
+    const candidateNames =
+      summary && "possibleNames" in summary
+        ? summary.possibleNames.map((entry) => entry.name)
+        : []
+
+    // Both fixture extras carry timecodes the strict matcher rejected —
+    // they still belong in the Smart Match pool.
+    expect(candidateNames).toEqual(
+      expect.arrayContaining([
+        "Theatrical Trailer",
+        "Making of the Film",
+      ]),
+    )
+  })
+
+  test("summary trailer is empty-but-present when every file was renamed", async () => {
+    vol.fromJSON({
+      "/rips/trailer.mkv": "stream-1",
+    })
+
+    vi.mocked(getMediaInfo).mockReturnValue(
+      of(buildFakeMediaInfo(154)),
+    )
+
+    const results = await firstValueFrom(
+      onlyNameSpecialFeaturesDvdCompare({
+        sourcePath: "/rips",
+        url: "https://www.dvdcompare.net/comparisons/film.php?fid=12345#1",
+      }).pipe(toArray()),
+    )
+
+    const summary = results.find(
+      (result) => "unrenamedFilenames" in result,
+    )
+
+    // Present so the UI can render "Renamed 1. Files not renamed: 0.",
+    // but with nothing for the ✨ Fix Unnamed button to act on — the
+    // button gates on a non-empty candidate list.
+    expect(summary).toMatchObject({
+      possibleNames: [],
+      unnamedFileCandidates: [],
+      unrenamedFilenames: [],
+    })
+  })
+
+  test("summary trailer is emitted last, after every rename and skip event", async () => {
+    vol.fromJSON({
+      "/rips/trailer.mkv": "stream-1",
+      "/rips/unknown.mkv": "stream-2",
+    })
+
+    vi.mocked(getMediaInfo).mockImplementation((filePath) =>
+      of(
+        buildFakeMediaInfo(
+          filePath.includes("trailer") ? 154 : 3600,
+        ),
+      ),
+    )
+
+    const results = await firstValueFrom(
+      onlyNameSpecialFeaturesDvdCompare({
+        sourcePath: "/rips",
+        url: "https://www.dvdcompare.net/comparisons/film.php?fid=12345#1",
+      }).pipe(toArray()),
+    )
+
+    const summaryIndex = results.findIndex(
+      (result) => "unrenamedFilenames" in result,
+    )
+
+    // The web reads the trailer once the job is done; emitting it early
+    // would mean a summary that predates the renames it summarizes.
+    expect(summaryIndex).toBe(results.length - 1)
   })
 
   test("Zod schema rejects requests with no DVD Compare identifier", async () => {

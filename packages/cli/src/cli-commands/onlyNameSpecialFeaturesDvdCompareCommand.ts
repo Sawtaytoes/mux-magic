@@ -122,6 +122,30 @@ export const onlyNameSpecialFeaturesDvdCompareCommand: CommandModule<
           )
           return
         }
+        // The run's trailing summary. In the web UI this is what the
+        // ✨ Fix Unnamed button reads; the CLI has no Smart Match modal,
+        // so print the same content as text — each leftover file with
+        // the top-ranked DVDCompare candidates the modal would offer.
+        if ("unrenamedFilenames" in event) {
+          if (event.unnamedFileCandidates.length > 0) {
+            logInfo(
+              "UNNAMED FILES",
+              "Left unnamed — closest DVDCompare matches:",
+              event.unnamedFileCandidates.flatMap(
+                ({ filename, rankedCandidates }) =>
+                  [`  • ${filename}`].concat(
+                    rankedCandidates
+                      .slice(0, 3)
+                      .map(
+                        (scored) =>
+                          `      - ${scored.candidate.name}`,
+                      ),
+                  ),
+              ),
+            )
+          }
+          return
+        }
         renamedCount += 1
         logInfo("RENAMED", event.oldName, event.newName)
       },

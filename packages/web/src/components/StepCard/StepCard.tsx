@@ -60,17 +60,33 @@ const buildCommandOptions = (
         value: name,
         textValue: `${commandLabel(name)} ${name} ${tag}`,
         label: (
-          <span className="flex flex-1 items-start gap-2">
-            <span className="flex-1 min-w-0 flex flex-col">
-              <span className="text-xs truncate">
-                {commandLabel(name)}
-              </span>
-              <span className="font-mono text-[10px] truncate text-content-muted">
+          // `min-w-0` on this wrapper is load-bearing: it is a flex item
+          // of ComboboxOption's row, so without it the wrapper's
+          // automatic minimum size is its min-content — the full,
+          // unwrapped label text — and the row grew past the panel's
+          // 384px cap, giving the popup a horizontal scrollbar with the
+          // tag clipped off the right edge. The inner `min-w-0` alone
+          // does not help: min-width on a child is a floor, so the
+          // child still contributes its nowrap text width upward.
+          <span className="flex min-w-0 flex-1 flex-col">
+            {/*
+              Wraps rather than truncates, and gets the row's whole width
+              because the tag moved down to the second line. The longest
+              command label ("Name Special Features (DVD Compare, no
+              TMDB)") is ~332px against ~334px of usable row — too close
+              to the edge to trust at one line, so a second line is the
+              graceful outcome instead of an ellipsis.
+            */}
+            <span className="text-xs wrap-break-word">
+              {commandLabel(name)}
+            </span>
+            <span className="flex min-w-0 items-baseline justify-between gap-2">
+              <span className="truncate font-mono text-[10px] text-content-muted">
                 {name}
               </span>
-            </span>
-            <span className="text-[10px] shrink-0 mt-0.5 text-content-muted">
-              {tag}
+              <span className="shrink-0 text-[10px] text-content-muted">
+                {tag}
+              </span>
             </span>
           </span>
         ),

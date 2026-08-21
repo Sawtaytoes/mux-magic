@@ -30,10 +30,16 @@ import {
   getSpecialFeatureFromTimecode,
   type TimecodeDeviation,
 } from "../tools/getSpecialFeatureFromTimecode.js"
-import { parseSpecialFeatures } from "../tools/parseSpecialFeatures.js"
+import {
+  dedupePossibleNames,
+  flattenExtrasAsPossibleNames,
+  parseSpecialFeatures,
+} from "../tools/parseSpecialFeatures.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { searchDvdCompare } from "../tools/searchDvdCompare.js"
+import { buildUnnamedFileCandidates } from "./nameSpecialFeaturesDvdCompareTmdb.buildUnnamedFileCandidates.js"
 import { reorderForDuplicatePrompts } from "./nameSpecialFeaturesDvdCompareTmdb.duplicates.js"
+import { flattenAllKnownNames } from "./nameSpecialFeaturesDvdCompareTmdb.flattenAllKnownNames.js"
 import { reorderRenamesForOnDiskConflicts } from "./nameSpecialFeaturesDvdCompareTmdb.reorderRenamesForOnDiskConflicts.js"
 import { resolveUrl } from "./nameSpecialFeaturesDvdCompareTmdb.resolveUrl.js"
 import type { OnlyNameSpecialFeaturesResult } from "./onlyNameSpecialFeaturesDvdCompare.events.js"
@@ -112,10 +118,18 @@ const getNextFilenameCount = (previousCount?: number) =>
 // `<existing-base>-<plex-suffix>.<ext>`. Files with no match are
 // skipped with a log entry — never renamed with a guess.
 //
+// Unmatched files also produce a trailing summary carrying the
+// DVDCompare candidate list, which is what lights up the web UI's
+// ✨ Fix Unnamed (Smart Match) button for this command — same trailer
+// shape as the TMDB sibling. Unlike that sibling, leftovers are NOT
+// moved into an UNNAMED-FEATURES/ bucket: skip-in-place stays this
+// command's filesystem behaviour, and Smart Match renames them where
+// they sit.
+//
 // Intentionally omitted vs. the full NSF command:
 //   - TMDB lookup (non-movie workflow; no canonical title needed)
 //   - Edition-folder move (Plex movies-only convention)
-//   - Unnamed-file summary trailer (not needed; skip-with-log is the UX)
+//   - UNNAMED-FEATURES/ bucketing (leftovers stay in sourcePath)
 export const onlyNameSpecialFeaturesDvdCompare = ({
   dvdCompareId,
   dvdCompareReleaseHash,
@@ -149,7 +163,7 @@ export const onlyNameSpecialFeaturesDvdCompare = ({
     ),
     concatMap((scrape) =>
       parseSpecialFeatures(scrape.extras).pipe(
-        concatMap(({ extras }) =>
+        concatMap(({ extras, possibleNames }) =>
           getFilesAtDepth({ depth: 0, sourcePath }).pipe(
             mergeMap((fileInfo) =>
               getMediaInfo(fileInfo.fullPath).pipe(
@@ -157,6 +171,16 @@ export const onlyNameSpecialFeaturesDvdCompare = ({
                   getFileDuration({ mediaInfo }),
                 ),
                 map((duration) => ({
+                  // The measured runtime the Smart Match modal shows
+                  // beside each DVDCompare candidate's published
+                  // timecode, and what the server-side ranker scores
+                  // duration-proximity on. `getFileDuration` maps an
+                  // unparseable MediaInfo Duration to NaN, which would
+                  // score as a real (wildly wrong) runtime — null is the
+                  // ranker's "unknown", so normalise here.
+                  durationSeconds: Number.isFinite(duration)
+                    ? duration
+                    : null,
                   fileInfo,
                   timecode:
                     convertDurationToDvdCompareTimecode(
@@ -167,14 +191,17 @@ export const onlyNameSpecialFeaturesDvdCompare = ({
             ),
             concatMap(
               ({
+                durationSeconds,
                 fileInfo,
                 timecode,
               }): Observable<
                 | {
+                    durationSeconds: number | null
                     fileInfo: typeof fileInfo
                     renamedFilename: string
                   }
                 | {
+                    durationSeconds: number | null
                     fileInfo: typeof fileInfo
                     isSkipped: true
                   }
@@ -194,10 +221,12 @@ export const onlyNameSpecialFeaturesDvdCompare = ({
                     deviation.timecodePaddingAmount,
                 }).pipe(
                   map((renamedFilename) => ({
+                    durationSeconds,
                     fileInfo,
                     renamedFilename,
                   })),
                   defaultIfEmpty({
+                    durationSeconds,
                     fileInfo,
                     isSkipped: true as const,
                   }),
@@ -210,6 +239,7 @@ export const onlyNameSpecialFeaturesDvdCompare = ({
                 (
                   result,
                 ): result is {
+                  durationSeconds: number | null
                   fileInfo: (typeof matchResults)[number]["fileInfo"]
                   isSkipped: true
                 } => "isSkipped" in result,
@@ -218,6 +248,7 @@ export const onlyNameSpecialFeaturesDvdCompare = ({
                 (
                   result,
                 ): result is {
+                  durationSeconds: number | null
                   fileInfo: (typeof matchResults)[number]["fileInfo"]
                   renamedFilename: string
                 } => "renamedFilename" in result,
@@ -374,7 +405,67 @@ export const onlyNameSpecialFeaturesDvdCompare = ({
                     ),
                   )
 
-                  return concat(skipEvents$, renamesStream$)
+                  // Every file that came out of the timecode matcher
+                  // unnamed, paired with its measured runtime so the
+                  // ranker can score candidates by duration proximity.
+                  const unrenamedFiles = skipped.map(
+                    ({ durationSeconds, fileInfo }) => ({
+                      // `FileInfo.filename` is extension-stripped, and
+                      // Smart Match rebuilds the on-disk oldPath/newPath
+                      // from filename + extension for its rename POST —
+                      // without the extension that rename fails ENOENT.
+                      extension: extname(fileInfo.fullPath),
+                      filename: fileInfo.filename,
+                      durationSeconds,
+                    }),
+                  )
+                  // Both the untimed entries (commentaries, galleries —
+                  // the natural smart-match pool) AND the timed extras
+                  // the strict matcher rejected as out-of-tolerance, so
+                  // the modal can show runtimes to compare against the
+                  // file's own. Skipped entirely when nothing is left
+                  // over — an empty pool keeps the trailer cheap.
+                  const possibleNamesForSummary =
+                    unrenamedFiles.length > 0
+                      ? dedupePossibleNames(
+                          possibleNames.concat(
+                            flattenExtrasAsPossibleNames(
+                              extras,
+                            ),
+                          ),
+                        )
+                      : []
+                  const summaryStream$: Observable<
+                    Observable<OnlyNameSpecialFeaturesResult>
+                  > = of(
+                    of<OnlyNameSpecialFeaturesResult>({
+                      allKnownNames: flattenAllKnownNames({
+                        // No cuts: this command never runs the
+                        // movie-naming branch that produces them.
+                        cuts: [],
+                        extras,
+                        possibleNames,
+                      }),
+                      possibleNames:
+                        possibleNamesForSummary,
+                      unnamedFileCandidates:
+                        buildUnnamedFileCandidates({
+                          possibleNames:
+                            possibleNamesForSummary,
+                          unrenamedFiles,
+                        }),
+                      unrenamedFilenames:
+                        unrenamedFiles.map(
+                          (file) => file.filename,
+                        ),
+                    }),
+                  )
+
+                  return concat(
+                    skipEvents$,
+                    renamesStream$,
+                    summaryStream$,
+                  )
                 }),
               )
             }),
