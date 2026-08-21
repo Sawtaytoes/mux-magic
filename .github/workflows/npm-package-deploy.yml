@@ -9,6 +9,10 @@ on:
 jobs:
   publish:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # ~30s green. A hang here is a `npm publish` waiting on the registry, and
+    # without a bound it would sit for GitHub's 6 hours before reporting
+    # `cancelled` — which reads like infrastructure, not like a failed release.
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions:
       contents: write

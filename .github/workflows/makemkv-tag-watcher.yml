@@ -22,6 +22,10 @@ on:
 
 jobs:
   check-for-new-tag:
+    # Two unbounded network calls (ghcr.io's token endpoint and its tag list).
+    # `curl -fsSL` has no timeout of its own, so a hung mirror would park this
+    # weekly job on GitHub's 6-hour ceiling.
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     permissions:
