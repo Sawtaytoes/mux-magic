@@ -154,6 +154,25 @@ const routes: Route[] = [
     path: "/jobs/stream",
     handler: (req, res) => keepSseOpen(req, res),
   },
+  // Feeds the JobStatusFilter chips. `exited` is deliberately huge:
+  // the pile it represents is why the filter exists, and a story
+  // showing "exited 4" would not look like the problem it solves.
+  {
+    method: "GET",
+    path: "/jobs/status-counts",
+    handler: (_, res) => {
+      sendJson(res, {
+        cancelled: 2,
+        completed: 41,
+        exited: 3412,
+        failed: 3,
+        paused: 1,
+        pending: 0,
+        running: 2,
+        skipped: 118,
+      })
+    },
+  },
   {
     method: "GET",
     path: "/jobs/:jobId/logs",

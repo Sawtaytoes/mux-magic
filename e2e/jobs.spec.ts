@@ -30,7 +30,7 @@ test.describe("Jobs page — SSE stream", () => {
     page,
   }) => {
     // Stub the stream with an empty body — no job events.
-    await page.route("**/jobs/stream", async (route) => {
+    await page.route("**/jobs/stream*", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "text/event-stream",
@@ -45,7 +45,9 @@ test.describe("Jobs page — SSE stream", () => {
       page.getByRole("heading", { name: "Jobs" }),
     ).toBeVisible()
     await expect(
-      page.getByText(/No jobs yet/),
+      page.getByRole("heading", {
+        name: "Nothing to show",
+      }),
     ).toBeVisible()
     // Two "Sequence Builder" links exist (header nav + empty-state). Either being
     // visible confirms the page loaded correctly.
@@ -54,6 +56,52 @@ test.describe("Jobs page — SSE stream", () => {
         .getByRole("link", { name: /Sequence Builder/ })
         .first(),
     ).toBeVisible()
+  })
+
+  test("exited is switched off by default, and switching it on re-requests the stream", async ({
+    page,
+  }) => {
+    const requestedUrls: string[] = []
+
+    await page.route("**/jobs/stream*", async (route) => {
+      requestedUrls.push(route.request().url())
+      await route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        headers: { "Cache-Control": "no-cache" },
+        body: "",
+      })
+    })
+
+    await page.goto(`${webBaseUrl}/jobs`)
+
+    const exitedChip = page.getByRole("button", {
+      name: /^exited/,
+    })
+    await expect(exitedChip).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    )
+    // The default connect asks the server to leave exited out, which
+    // is what keeps thousands of them off the wire.
+    await expect
+      .poll(() => requestedUrls.length)
+      .toBeGreaterThan(0)
+    expect(requestedUrls.at(-1)).toContain("status=")
+    expect(requestedUrls.at(-1)).not.toContain("exited")
+
+    await exitedChip.click()
+
+    await expect(exitedChip).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    )
+    // Switching it on has to RECONNECT — the hidden jobs were never
+    // sent, so nothing short of a fresh replay can show them.
+    await expect
+      .poll(() => requestedUrls.length)
+      .toBeGreaterThan(1)
+    expect(requestedUrls.at(-1)).not.toContain("status=")
   })
 
   test("job card appears when SSE delivers a running job", async ({
@@ -65,7 +113,7 @@ test.describe("Jobs page — SSE stream", () => {
       status: "running",
     })
 
-    await page.route("**/jobs/stream", async (route) => {
+    await page.route("**/jobs/stream*", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "text/event-stream",
@@ -100,7 +148,7 @@ test.describe("Jobs page — SSE stream", () => {
       status: "completed",
     }
 
-    await page.route("**/jobs/stream", async (route) => {
+    await page.route("**/jobs/stream*", async (route) => {
       const sseBody = [
         `data: ${JSON.stringify(runningJob)}\n\n`,
         `data: ${JSON.stringify(completedJob)}\n\n`,
@@ -136,7 +184,7 @@ test.describe("Jobs page — SSE stream", () => {
       status: "failed",
     })
 
-    await page.route("**/jobs/stream", async (route) => {
+    await page.route("**/jobs/stream*", async (route) => {
       const sseBody = [
         `data: ${JSON.stringify(jobAlpha)}\n\n`,
         `data: ${JSON.stringify(jobBeta)}\n\n`,
@@ -176,7 +224,7 @@ test.describe("Jobs page — SSE stream", () => {
       parentJobId: "parent-job",
     })
 
-    await page.route("**/jobs/stream", async (route) => {
+    await page.route("**/jobs/stream*", async (route) => {
       const sseBody = [
         `data: ${JSON.stringify(parentJob)}\n\n`,
         `data: ${JSON.stringify(childJob)}\n\n`,

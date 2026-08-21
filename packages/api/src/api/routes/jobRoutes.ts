@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
+import { JOB_STATUSES } from "@mux-magic/core/src/api/jobStatuses.js"
 import {
   cancelJob,
   getAllJobs,
@@ -8,6 +9,11 @@ import {
 import { streamSSE } from "hono/streaming"
 import { z } from "zod"
 import { isFakeRequest } from "../../fake-data/index.js"
+import {
+  getIsJobInFilter,
+  JOB_STATUS_FILTER_DESCRIPTION,
+  parseStatusFilter,
+} from "../jobStreamFilter.js"
 import * as schemas from "../schemas.js"
 import { startSseKeepalive } from "../sseKeepalive.js"
 
@@ -87,10 +93,19 @@ jobRoutes.openapi(
     summary:
       "Stream all job updates via Server-Sent Events",
     tags: ["Job Management"],
+    parameters: [
+      {
+        name: "status",
+        in: "query",
+        required: false,
+        description: JOB_STATUS_FILTER_DESCRIPTION,
+        schema: { type: "string" },
+      },
+    ],
     responses: {
       200: {
         description:
-          "Server-Sent Events stream of job updates. Each event is a JSON job object (without logs). Replays all existing jobs on connect, then streams new creates and status changes.",
+          "Server-Sent Events stream of job updates. Each event is a JSON job object (without logs). Replays existing jobs on connect — every one, or only those matching `status` — then streams all new creates and status changes.",
         content: {
           "text/event-stream": {
             schema: { type: "string" },
@@ -101,6 +116,14 @@ jobRoutes.openapi(
   }),
   (context) => {
     context.header("X-Accel-Buffering", "no")
+
+    // Read before the stream opens: `context.req` is the request
+    // being upgraded, and reaching for it inside the generator
+    // races the abort handler.
+    const statuses = parseStatusFilter(
+      context.req.queries("status"),
+    )
+
     return streamSSE(context, async (stream) => {
       const stopKeepalive = startSseKeepalive(stream)
 
@@ -108,9 +131,15 @@ jobRoutes.openapi(
         stream.writeSSE({ data: JSON.stringify(job) })
 
       await Promise.all(
-        getAllJobs().map(({ logs: _logs, ...job }) =>
-          send(job),
-        ),
+        getAllJobs()
+          .filter((job) =>
+            getIsJobInFilter({
+              getJobById: getJob,
+              job,
+              statuses,
+            }),
+          )
+          .map(({ logs: _logs, ...job }) => send(job)),
       )
 
       await new Promise<void>((resolve) => {
@@ -156,6 +185,56 @@ jobRoutes.openapi(
     )
 
     return context.json(list)
+  },
+)
+
+const jobStatusCountsSchema = z
+  .record(z.string(), z.number().int())
+  .describe(
+    "Top-level job count per status. Statuses with no jobs are present with a count of 0, so a filter UI can render a chip for every status without a second source for the list.",
+  )
+
+// Registered BEFORE /jobs/:id — Hono matches in registration order,
+// so the parameterised route would otherwise swallow this path and
+// answer 404 for a job whose id is "status-counts".
+jobRoutes.openapi(
+  createRoute({
+    method: "get",
+    path: "/jobs/status-counts",
+    summary: "Count top-level jobs by status",
+    description:
+      "Counts TOP-LEVEL jobs only — sequence steps are never listed on their own, so counting them would report numbers that match nothing on screen. Exists so the jobs filter can say how many jobs a hidden status is hiding; the stream deliberately does not send those jobs, so the client cannot count them itself.",
+    tags: ["Job Management"],
+    responses: {
+      200: {
+        description: "Top-level job count per status",
+        content: {
+          "application/json": {
+            schema: jobStatusCountsSchema,
+          },
+        },
+      },
+    },
+  }),
+  (context) => {
+    const topLevelJobs = getAllJobs().filter(
+      (job) => job.parentJobId === null,
+    )
+
+    // A pass per status rather than a fold over the jobs: eight
+    // passes is the same order of work, and it guarantees every
+    // status is present (a fold only reports the ones that
+    // happened, so a status with no jobs would go missing and the
+    // filter chip would lose its number rather than show a zero).
+    const counts = Object.fromEntries(
+      JOB_STATUSES.map((status) => [
+        status,
+        topLevelJobs.filter((job) => job.status === status)
+          .length,
+      ]),
+    )
+
+    return context.json(counts)
   },
 )
 
