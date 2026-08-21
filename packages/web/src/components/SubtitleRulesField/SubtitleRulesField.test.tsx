@@ -67,9 +67,13 @@ describe("SubtitleRulesField", () => {
         <SubtitleRulesField field={field} step={step} />
       </Provider>,
     )
+    // The rule-type control is a `Picker`: its trigger's accessible
+    // name carries the current value.
     expect(
-      screen.getByDisplayValue("setScriptInfo"),
-    ).toBeInTheDocument()
+      screen.getByRole("button", {
+        name: "Rule 1 type: setScriptInfo",
+      }),
+    ).toBeVisible()
   })
 
   test("renders default rules preview when hasDefaultRules is true", async () => {

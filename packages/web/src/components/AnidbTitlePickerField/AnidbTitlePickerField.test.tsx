@@ -112,16 +112,19 @@ describe("AnidbTitlePickerField", () => {
 
     expect(fetchAnidbTitles).toHaveBeenCalledWith(8160)
 
-    const option = await screen.findByRole("option", {
-      name: /Hell`s Paradise Season 2/,
-    })
-    expect(option).toBeInTheDocument()
-
-    await user.selectOptions(
-      screen.getByRole("combobox", {
-        name: /anidb title candidates/i,
+    // The candidate list is a `Picker`: a trigger button that opens a
+    // listbox. It stores nothing, so the trigger reads as its
+    // placeholder until a pick copies the title into the input above.
+    await user.click(
+      screen.getByRole("button", {
+        name: /^AniDB title candidates: Pick a title/i,
       }),
-      "Hell`s Paradise Season 2",
+    )
+
+    await user.click(
+      await screen.findByRole("option", {
+        name: /Hell`s Paradise Season 2/,
+      }),
     )
 
     expect(setParam).toHaveBeenCalledWith(

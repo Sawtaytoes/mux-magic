@@ -1,4 +1,4 @@
-import { Select } from "@charcuterie/ui"
+import { Picker } from "@charcuterie/ui"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect } from "react"
 import { apiBase } from "../../apiBase"
@@ -75,8 +75,8 @@ export const ErrorsPanel = () => {
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Select
-          className="w-40"
+        <Picker
+          className="w-40 justify-between font-normal"
           label="State"
           onChange={handleStateChange}
           options={[

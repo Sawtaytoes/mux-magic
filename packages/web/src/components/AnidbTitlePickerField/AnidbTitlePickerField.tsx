@@ -1,3 +1,4 @@
+import { Picker } from "@charcuterie/ui"
 import type { AnidbTitle } from "@mux-magic/api/api-types"
 import { useState } from "react"
 
@@ -53,10 +54,7 @@ export const AnidbTitlePickerField = ({
     setParam(step.id, field.name, newValue || undefined)
   }
 
-  const handlePick = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    const picked = event.target.value
+  const handlePick = (picked: string) => {
     if (picked) {
       setParam(step.id, field.name, picked)
     }
@@ -87,24 +85,21 @@ export const AnidbTitlePickerField = ({
         </div>
 
         {status === "loaded" && titles.length > 0 ? (
-          <select
-            aria-label="AniDB title candidates"
-            value=""
+          // No `value`: this is a fire-and-reset action picker. Nothing
+          // is stored here — a pick copies the title into the input
+          // above — so the placeholder is the resting label and every
+          // choice is a real change.
+          <Picker
+            className="w-full justify-between font-normal"
+            label="AniDB title candidates"
             onChange={handlePick}
-            className="w-full bg-surface-raised text-content-primary text-xs rounded px-2 py-1.5 border border-border-default focus:outline-none focus:border-border-focus"
-          >
-            <option value="" disabled>
-              Pick a title to copy into the field…
-            </option>
-            {titles.map((title) => (
-              <option
-                key={`${title.type}-${title.lang}-${title.value}`}
-                value={title.value}
-              >
-                {title.type} ({title.lang}): {title.value}
-              </option>
-            ))}
-          </select>
+            options={titles.map((title) => ({
+              label: `${title.type} (${title.lang}): ${title.value}`,
+              value: title.value,
+            }))}
+            placeholder="Pick a title to copy into the field…"
+            size="sm"
+          />
         ) : null}
 
         {status === "empty" ? (

@@ -248,8 +248,8 @@ test.describe("DslRulesBuilder — When panel", () => {
       .first()
       .click()
 
-    // Scoped to the open listbox: the rule-type control is a native
-    // `<select>`, whose `<option>`s also carry role "option".
+    // Scoped to the open listbox: every picker on the page renders its
+    // own options with role "option", and only one panel is open.
     await expect(
       page.getByRole("listbox").getByRole("option"),
     ).toHaveCount(1)
