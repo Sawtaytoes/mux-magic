@@ -15,28 +15,41 @@ The API is mounted under `/api` (e.g. `http://localhost:3000/api/version`). Work
 
 ## Job lifecycle
 
-1. `POST /jobs/<command>` — creates a job, starts it immediately, returns `{ jobId, logsUrl }` with HTTP 202.
+1. `POST /commands/<command>` — creates a job, starts it immediately, returns `{ jobId, logsUrl, outputFolderName }` with HTTP 202. **The path is `/commands/…`, not `/jobs/…`** — jobs are only ever *read* under `/jobs`. Posting to `/jobs/<command>` does not 404: it falls through to the SPA and returns the app's `index.html` with HTTP 200, so a wrong path looks like a broken API rather than a bad URL.
 2. `GET /jobs/:id/logs` — SSE stream. Each event is JSON:
    - `{ "line": "..." }` — a log line from stdout/stderr.
-   - `{ "done": true, "status": "completed" | "failed" | "cancelled" }` — terminal event.
+   - `{ "type": "progress", ... }` — progress snapshot.
+   - `{ "type": "prompt", "promptId": "...", "message": "...", "options": [...] }` — the command needs the caller to choose something before it can continue (see [Interactive prompts](#interactive-prompts)).
+   - `{ "isDone": true, "status": "completed" | "failed" | "cancelled" | "exited", "results": [...], "outputs": {...}, "error": null }` — terminal event.
 3. `GET /jobs/:id` — poll job state at any time.
-4. `DELETE /jobs/:id` — cancel a running job. Tears down the RxJS subscription and tree-kills the child process(es). Idempotent: 202 with the cancelled job body when actioned, 204 No Content when the job is already in a terminal state, 404 when the id is unknown.
+4. `POST /jobs/:id/input` — answer a prompt so a `paused` job can continue.
+5. `DELETE /jobs/:id` — cancel a running job. Tears down the RxJS subscription and tree-kills the child process(es). Idempotent: 202 with the cancelled job body when actioned, 204 No Content when the job is already in a terminal state, 404 when the id is unknown.
 
 ### Job object shape
 
 ```json
 {
   "id": "abc-123",
-  "command": "keepLanguages",
+  "commandName": "keepLanguages",
   "params": { "sourcePath": "/media/anime", "...": "..." },
-  "status": "pending | running | completed | failed",
+  "status": "pending | running | paused | completed | failed | cancelled | skipped | exited",
+  "pauseReason": null,
   "logs": ["line 1", "line 2"],
+  "results": [],
   "startedAt": "2026-01-01T00:00:00.000Z",
   "completedAt": "2026-01-01T00:01:00.000Z",
   "error": null,
-  "outputs": null
+  "outputs": null,
+  "outputFolderName": null,
+  "parentJobId": null,
+  "stepId": null,
+  "threadCountClaim": null
 }
 ```
+
+The command name field is `commandName`, not `command`.
+
+`outputFolderName` is the subfolder a command writes into when it produces new files (`keepLanguages` → `LANGUAGE-TRIMMED`), and `null` for commands that edit in place. `parentJobId` and `stepId` are set on the child jobs of a sequence run.
 
 `outputs` is populated when a command publishes named runtime values (see the [Sequence Runner](#sequence-runner) section below). Most commands leave it `null`.
 
@@ -49,8 +62,12 @@ The API is mounted under `/api` (e.g. `http://localhost:3000/api/version`). Work
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/jobs` | List all jobs (logs excluded from response). |
+| `GET` | `/jobs/status-counts` | Job counts per status — what the Jobs view's filter chips read. |
+| `GET` | `/jobs/stream` | SSE stream of job state changes across all jobs. `?status=running,failed` filters which are replayed on connect. |
 | `GET` | `/jobs/:id` | Get a single job including its buffered logs. |
 | `GET` | `/jobs/:id/logs` | SSE stream of log lines and a final done event. |
+| `POST` | `/jobs/:id/input` | Answer a prompt from a `paused` job. Body `{ promptId, selectedIndex }`; `selectedIndex: -1` skips. |
+| `DELETE` | `/jobs/:id` | Cancel a running job. |
 
 ### Job commands
 
@@ -58,40 +75,95 @@ All commands are started with `POST`. The body is JSON. `sourcePath` is required
 
 | Path | Required body fields | Optional body fields |
 |---|---|---|
-| `POST /jobs/changeTrackLanguages` | `sourcePath` | `audioLanguage`, `subtitlesLanguage`, `videoLanguage`, `isRecursive` |
-| `POST /jobs/copyFiles` | `sourcePath`, `destinationPath` | — |
-| `POST /jobs/fixIncorrectDefaultTracks` | `sourcePath` | `isRecursive` |
-| `POST /jobs/hasBetterAudio` | `sourcePath` | `isRecursive`, `recursiveDepth` |
-| `POST /jobs/hasBetterVersion` | `sourcePath` | `isRecursive`, `recursiveDepth` |
-| `POST /jobs/hasDuplicateMusicFiles` | `sourcePath` | `isRecursive`, `recursiveDepth` |
-| `POST /jobs/hasImaxEnhancedAudio` | `sourcePath` | `isRecursive` |
-| `POST /jobs/hasManyAudioTracks` | `sourcePath` | `isRecursive` |
-| `POST /jobs/hasSurroundSound` | `sourcePath` | `isRecursive`, `recursiveDepth` |
-| `POST /jobs/hasWrongDefaultTrack` | `sourcePath` | `isRecursive` |
-| `POST /jobs/isMissingSubtitles` | `sourcePath` | `isRecursive` |
-| `POST /jobs/keepLanguages` | `sourcePath` | `audioLanguages[]`, `subtitlesLanguages[]`, `useFirstAudioLanguage`, `useFirstSubtitlesLanguage`, `isRecursive` |
-| `POST /jobs/addSubtitles` | `subtitlesPath`, `sourcePath` | `offsets[]`, `hasChapterSyncOffset`, `globalOffset`, `includeChapters` |
-| `POST /jobs/mergeTracks` | `subtitlesPath`, `sourcePath` | (DEPRECATED — alias of `addSubtitles`) `offsets[]`, `hasChapterSyncOffset`, `globalOffset`, `includeChapters` |
-| `POST /jobs/moveFiles` | `sourcePath`, `destinationPath` | — |
-| `POST /jobs/nameAnimeEpisodes` | `sourcePath`, `searchTerm` | `seasonNumber`, `malId` |
-| `POST /jobs/nameAnimeEpisodesAniDB` | `sourcePath` | `searchTerm`, `seasonNumber`, `anidbId` (see [AniDB command notes](cli.md#anidb-command-notes)) |
-| `POST /jobs/nameSpecialFeatures` | `sourcePath`, `url` | `fixedOffset`, `timecodePadding` |
-| `POST /jobs/nameTvShowEpisodes` | `sourcePath`, `searchTerm`, `seasonNumber` | — |
-| `POST /jobs/renameDemos` | `sourcePath` | `isRecursive` |
-| `POST /jobs/renameMovieClipDownloads` | `sourcePath` | — |
-| `POST /jobs/reorderTracks` | `sourcePath` | `audioTrackIndexes[]`, `subtitlesTrackIndexes[]`, `videoTrackIndexes[]`, `isRecursive` |
-| `POST /jobs/replaceAttachments` | `sourceFilesPath`, `destinationFilesPath` | — |
-| `POST /jobs/replaceFlacWithPcmAudio` | `sourcePath` | `isRecursive` |
-| `POST /jobs/replaceTracks` | `sourceFilesPath`, `destinationFilesPath` | `audioLanguages[]`, `subtitlesLanguages[]`, `videoLanguages[]`, `offsets[]`, `hasChapterSyncOffset`, `globalOffset`, `includeChapters` |
-| `POST /jobs/setDisplayWidth` | `sourcePath` | `displayWidth` (default 853), `isRecursive`, `recursiveDepth` |
-| `POST /jobs/splitChapters` | `sourcePath`, `chapterSplits[]` | — |
-| `POST /jobs/storeAspectRatioData` | `sourcePath` | `folders[]`, `force`, `isRecursive`, `recursiveDepth`, `outputPath`, `rootPath`, `threads` |
+| `POST /commands/addSubtitles` | `sourcePath`, `subtitlesPath` | `hasChapterSyncOffset`, `globalOffset`, `includeChapters`, `offsets`[] |
+| `POST /commands/analyseDiscBackup` | `sourcePath` | `disabledRuleNames`[], `minimumTitleLengthSeconds` |
+| `POST /commands/changeTrackLanguages` | `sourcePath` | `isRecursive`, `audioLanguage`, `subtitlesLanguage`, `videoLanguage` |
+| `POST /commands/convertContainerAudioToFlac` | `sourcePath` | `isRecursive`, `isSourceDeleted`, `isVideoDropAcknowledged` |
+| `POST /commands/convertLosslessToFlac` | `sourcePath` | `isRecursive`, `recursiveDepth`, `isSourceDeleted`, `isAuditOnly` |
+| `POST /commands/copyFiles` | `sourcePath` | `destinationPath`, `fileFilterRegex`, `folderFilterRegex`, `includeFolders`, `renameRegex`[], `allowOverwrite` |
+| `POST /commands/copyOutSubtitles` | `sourcePath` | `isRecursive`, `subtitlesLanguages`[], `typesMode`, `subtitleTypes`[], `folders`[] |
+| `POST /commands/deleteCopiedOriginals` | `pathsToDelete`[] | — |
+| `POST /commands/deleteFilesByExtension` | `sourcePath`, `extensions`[] | `isRecursive`, `recursiveDepth` |
+| `POST /commands/deleteFolder` | `sourcePath`, `confirm` | — |
+| `POST /commands/distributeFolderToSiblings` | `sourceFolderPath` | `deleteSourceFolderAfterDistributing` |
+| `POST /commands/exitIfEmpty` | `sourcePath` | — |
+| `POST /commands/extractDiscTitles` | `sourcePath` | `destinationPath`, `disabledRuleNames`[], `minimumTitleLengthSeconds`, `titleIndexes`[], `isRippingTrackSupersets` |
+| `POST /commands/extractSubtitles` | `sourcePath` | `isRecursive`, `subtitlesLanguages`[], `typesMode`, `subtitleTypes`[], `folders`[] |
+| `POST /commands/findContainerAudioFiles` | `sourcePath` | `isRecursive` |
+| `POST /commands/fixIncorrectDefaultTracks` | `sourcePath` | `isRecursive` |
+| `POST /commands/flattenChildFolders` | `parentPath` | `deleteEmptyChildFoldersAfterFlattening` |
+| `POST /commands/flattenOutput` | `sourcePath` | `deleteSourceFolder` |
+| `POST /commands/getAudioOffsets` | `sourcePath`, `destinationFilesPath` | `isOverwritingExtractedAudio` |
+| `POST /commands/hasBetterAudio` | `sourcePath` | `isRecursive`, `recursiveDepth` |
+| `POST /commands/hasBetterVersion` | `sourcePath` | `isRecursive`, `recursiveDepth` |
+| `POST /commands/hasDuplicateMusicFiles` | `sourcePath` | `isRecursive`, `recursiveDepth` |
+| `POST /commands/hasImaxEnhancedAudio` | `sourcePath` | `isRecursive` |
+| `POST /commands/hasManyAudioTracks` | `sourcePath` | `isRecursive` |
+| `POST /commands/hasSurroundSound` | `sourcePath` | `isRecursive`, `recursiveDepth` |
+| `POST /commands/hasWrongDefaultTrack` | `sourcePath` | `isRecursive` |
+| `POST /commands/isMissingSubtitles` | `sourcePath` | `isRecursive` |
+| `POST /commands/keepLanguages` | `sourcePath` | `isRecursive`, `audioLanguages`[], `subtitlesLanguages`[], `useFirstAudioLanguage`, `useFirstSubtitlesLanguage` |
+| `POST /commands/makeDirectory` | `sourcePath` | — |
+| `POST /commands/mergeTracks` | `sourcePath`, `subtitlesPath` | `hasChapterSyncOffset`, `globalOffset`, `includeChapters`, `offsets`[] |
+| `POST /commands/modifySubtitleMetadata` | `sourcePath` | `isRecursive`, `recursiveDepth`, `hasDefaultRules`, `predicates`, `rules`[] |
+| `POST /commands/moveFiles` | `sourcePath` | `destinationPath`, `fileFilterRegex`, `renameRegex`[], `allowOverwrite` |
+| `POST /commands/moveFilesIntoNamedFolders` | `sourcePath` | — |
+| `POST /commands/nameAnimeEpisodes` | `sourcePath` | `searchTerm`, `seasonNumber`, `malId` |
+| `POST /commands/nameAnimeEpisodesAniDB` | `sourcePath` | `searchTerm`, `seasonNumber`, `anidbId`, `episodeType`, `filenameRegex`, `startEpisodeNumber`, `seriesName` |
+| `POST /commands/nameMovieCutsDvdCompareTmdb` | `sourcePath` | `url`, `dvdCompareId`, `dvdCompareReleaseHash`, `searchTerm`, `fixedOffset`, `timecodePadding` |
+| `POST /commands/nameSpecialFeaturesDvdCompareTmdb` | `sourcePath` | `url`, `dvdCompareId`, `dvdCompareReleaseHash`, `searchTerm`, `fixedOffset`, `timecodePadding`, `moveToEditionFolders`, `nonInteractive`, `autoNameDuplicates` |
+| `POST /commands/nameTvShowEpisodes` | `sourcePath` | `searchTerm`, `seasonNumber`, `tvdbId` |
+| `POST /commands/onlyNameSpecialFeaturesDvdCompare` | `sourcePath` | `dvdCompareId`, `dvdCompareReleaseHash`, `url`, `searchTerm`, `timecodePadding`, `fixedOffset`, `autoNameDuplicates` |
+| `POST /commands/remuxToMkv` | `sourcePath`, `extensions`[] | `isRecursive`, `recursiveDepth`, `isSourceDeletedOnSuccess` |
+| `POST /commands/renameDemos` | `sourcePath` | `isRecursive` |
+| `POST /commands/renameFiles` | `sourcePath`, `renameRegex`[] | `isRecursive`, `recursiveDepth`, `fileFilterRegex` |
+| `POST /commands/renameMovieClipDownloads` | `sourcePath` | — |
+| `POST /commands/renumberChapters` | `sourcePath` | `isRecursive`, `isPaddingChapterNumbers` |
+| `POST /commands/reorderTracks` | `sourcePath` | `isRecursive`, `videoTrackIndexes`[], `audioTrackIndexes`[], `subtitlesTrackIndexes`[], `isSkipOnTrackMisalignment` |
+| `POST /commands/replaceAttachments` | `sourcePath`, `destinationFilesPath` | — |
+| `POST /commands/replaceFlacWithPcmAudio` | `sourcePath` | `isRecursive` |
+| `POST /commands/replaceTracks` | `sourcePath`, `destinationFilesPath` | `hasAudioSyncOffset`, `globalOffset`, `includeChapters`, `isOverwritingExtractedAudio`, `audioLanguages`[], `subtitlesLanguages`[], `videoLanguages`[], `offsets`[] |
+| `POST /commands/setDisplayWidth` | `sourcePath` | `isRecursive`, `recursiveDepth`, `displayWidth` |
+| `POST /commands/splitChapters` | `sourcePath`, `chapterSplits`[] | — |
+| `POST /commands/splitCueSheet` | `sourcePath` | `isRecursive`, `outputFolderName` |
+| `POST /commands/storeAspectRatioData` | `sourcePath` | `isRecursive`, `recursiveDepth`, `outputPath`, `rootPath`, `folders`[], `force` |
 
-> **Not yet available via API:** `copyOutSubtitles`, `getAudioOffsets`, `inverseTelecineDiscRips`, `mergeOrderedChapters`.
+> **Not yet available via API:** `inverseTelecineDiscRips`, `mergeOrderedChapters`. (`copyOutSubtitles` and `getAudioOffsets` used to be listed here and are now exposed.)
+
+### Interactive prompts
+
+Some commands cannot finish unattended. `nameTvShowEpisodes` and the `*DvdCompare*` naming
+commands stop and ask the caller to pick a match. When that happens the job goes to
+`status: "paused"` with `pauseReason: "user_input"`, and a `prompt` event goes out on that
+job's SSE stream:
+
+```json
+{ "type": "prompt", "promptId": "p-1", "message": "Which series?", "options": ["The Odyssey (1997)", "..."], "filePath": "/media/…" }
+```
+
+Answer it with the `promptId` from that event:
+
+```sh
+curl -s -X POST http://localhost:3000/api/jobs/abc-123/input \
+  -H "Content-Type: application/json" \
+  -d '{"promptId":"p-1","selectedIndex":0}'
+```
+
+`selectedIndex: -1` skips the item and leaves it unrenamed.
+
+> ⚠️ **Subscribe to the log stream before you POST the command, and keep it open.**
+> `GET /jobs/:id/logs` replays buffered log lines and step-lifecycle events on connect,
+> but it does **not** replay a prompt that is already pending. A caller that starts a job,
+> notices `status: "paused"`, and only then opens the stream never receives the `prompt`
+> event — so it never learns the `promptId`, and the job cannot be answered at all. From a
+> script the job is then stuck: the only ways out are `DELETE /jobs/:id`, or answering it
+> in the web UI, which holds its own long-lived stream. Non-interactive callers should
+> prefer the deterministic commands (`renameFiles` / `moveFiles` with a `renameRegex`)
+> over the prompting naming commands.
 
 ### Browser-safe audio playback
 
-The Builder's file-explorer modal includes a `<video>` preview that plays files directly via `GET /files/stream`. For most rips the audio decodes fine, but disc rips often carry codecs no browser can decode (DTS, TrueHD, MLP, AC-3 outside of Edge, EAC-3 outside of Apple devices). To avoid silent video, the modal probes the source's audio codec via `GET /files/audio-codec?path=…` and, when needed, automatically swaps `<video>.src` to `GET /transcode/audio?path=…&codec=opus`. That endpoint re-encodes only the audio (video stream is `-c:v copy`, so no GPU is involved) and serves the result as Opus-in-WebM with HTTP Range support.
+The Builder's file-explorer modal includes a `<video>` preview that plays files directly via `GET /files/stream`. For most rips the audio decodes fine, but disc rips often carry codecs no browser can decode (DTS, TrueHD, MLP, AC-3 outside of Edge, EAC-3 outside of Apple devices). To avoid silent video, the modal probes the source's audio codec via `GET /files/audio-codec?path=…` and, when needed, automatically swaps `<video>.src` to `GET /transcode/audio?path=…&codec=opus`. That endpoint re-encodes only the audio (video stream is `-c:v copy`, so no GPU is involved) and serves the result as Opus in fragmented MP4 (AAC in fMP4 as the fallback) with HTTP Range support.
 
 **The transcode endpoint requires media to be mounted at `/media` inside the server container.** The path-safety check is hardcoded — paths outside `/media` return 403. Mount the volume in your Docker Compose / run command:
 
@@ -110,11 +182,11 @@ The transcode cache lives under `os.tmpdir()/media-tools-transcode-cache/` and i
 
 ```sh
 # Start the job
-curl -s -X POST http://localhost:3000/api/jobs/keepLanguages \
+curl -s -X POST http://localhost:3000/api/commands/keepLanguages \
   -H "Content-Type: application/json" \
   -d '{"sourcePath":"/media/anime","audioLanguages":["jpn"],"subtitlesLanguages":["eng"],"isRecursive":true}' \
 | jq
-# → { "jobId": "abc-123", "logsUrl": "/jobs/abc-123/logs" }
+# → { "jobId": "abc-123", "logsUrl": "/jobs/abc-123/logs", "outputFolderName": "LANGUAGE-TRIMMED" }
 
 # Stream the output
 curl -s http://localhost:3000/api/jobs/abc-123/logs
@@ -129,7 +201,7 @@ curl -s http://localhost:3000/api/jobs/abc-123/logs
 
 `POST /sequences/run` accepts a list of commands, runs them in order under a **single umbrella job**, and streams every step's output through one SSE log feed. Steps reference each other symbolically — a downstream step can consume an upstream step's output folder or a named runtime value without the caller hardcoding any paths or computing intermediate state.
 
-This is the right endpoint to use whenever you'd otherwise script multiple `POST /jobs/<command>` calls in sequence.
+This is the right endpoint to use whenever you'd otherwise script multiple `POST /commands/<command>` calls in sequence.
 
 ### Endpoint
 
