@@ -1,6 +1,14 @@
 # 2026-08-21 — Every NSF-family command emits the same summary trailer
 
-- **Status:** Accepted
+> [!WARNING]
+> **SUPERSEDED on 2026-08-21 by [the trailer and the UNNAMED-FEATURES/ bucket are one feature](2026-08-21-the-summary-trailer-and-the-unnamed-bucket-are-one-feature.md).**
+> This used to be the decision. It is kept for history — do NOT implement what's
+> below. The paragraph claiming the trailer is "a reporting contract, not a
+> filesystem one" is wrong and shipped a broken button: Smart Match builds its
+> rename path against `UNNAMED-FEATURES/` unconditionally, so a command that
+> emits the trailer must also bucket. Everything else in this file still holds.
+
+- **Status:** Superseded by [2026-08-21-the-summary-trailer-and-the-unnamed-bucket-are-one-feature](2026-08-21-the-summary-trailer-and-the-unnamed-bucket-are-one-feature.md)
 - **Date decided:** 2026-08-21
 - **Area:** core / web
 - **Source:** PR #238 (owner report: "'fix unnamed' is not available for the second option in that dropdown. I dunno why.")
