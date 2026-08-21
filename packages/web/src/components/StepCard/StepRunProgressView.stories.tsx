@@ -175,6 +175,78 @@ export const DoneWithRenamesAndLeftovers: Story = {
   decorators: [withLogs(sampleLogLines)],
 }
 
+// The no-TMDB sibling (`onlyNameSpecialFeaturesDvdCompare`), which
+// until now emitted no summary trailer at all — so its leftovers showed
+// up as bare "skipped" log lines and the ✨ Fix Unnamed button never
+// appeared, even though the DVDCompare candidate list was right there.
+// It now emits the same trailer shape as the TMDB command, so this
+// story is the same panel driven by that command name: proof the button
+// renders, and that `GenericRunResults` stays out of the way instead of
+// listing the renames a second time.
+export const DoneNoTmdbWithLeftovers: Story = {
+  args: {
+    commandName: "onlyNameSpecialFeaturesDvdCompare",
+    isRunning: false,
+    sourcePath: "G:\\Disc-Rips\\Live Concert Film - Bonus",
+    renamePairs: [
+      {
+        oldName: "Concert_t02",
+        newName: "Soundcheck Rehearsal -featurette",
+      },
+    ],
+    // Non-null so the generic panel would have something to render if
+    // it were still claiming this command.
+    results: [
+      {
+        oldName: "Concert_t02",
+        newName: "Soundcheck Rehearsal -featurette",
+      },
+    ],
+    summary: {
+      unrenamedFilenames: ["Concert_t04", "Concert_t07"],
+      possibleNames: [
+        { name: "Backstage Featurette" },
+        { name: "Tour Photo Gallery" },
+      ],
+      unnamedFileCandidates: [
+        {
+          filename: "Concert_t04",
+          extension: ".mkv",
+          durationSeconds: 412,
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Backstage Featurette",
+                timecode: undefined,
+              },
+              confidence: 0.55,
+              durationScore: Number.NaN,
+              filenameScore: 0,
+            },
+          ],
+        },
+        {
+          filename: "Concert_t07",
+          extension: ".mkv",
+          durationSeconds: 96,
+          rankedCandidates: [
+            {
+              candidate: {
+                name: "Tour Photo Gallery",
+                timecode: undefined,
+              },
+              confidence: 0.2,
+              durationScore: Number.NaN,
+              filenameScore: 0,
+            },
+          ],
+        },
+      ],
+    },
+  },
+  decorators: [withLogs(sampleLogLines.slice(0, 4))],
+}
+
 // Happy path — every file renamed, no leftovers.
 export const DoneAllRenamed: Story = {
   args: {

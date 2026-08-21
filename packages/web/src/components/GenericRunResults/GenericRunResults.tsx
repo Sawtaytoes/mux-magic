@@ -16,6 +16,12 @@ const SPECIALIZED_RENDERER_COMMANDS = new Set<string>([
   "convertLosslessToFlac",
   "nameSpecialFeatures",
   "nameSpecialFeaturesDvdCompareTmdb",
+  // The no-TMDB sibling emits the same `{ oldName, newName }` renames
+  // and (since it grew a summary trailer) the same unnamed-file report,
+  // so `NsfRunResults` owns its output too. Without this it was listed
+  // twice — once as the NSF rename list, once as this panel's generic
+  // "Renamed" accordion.
+  "onlyNameSpecialFeaturesDvdCompare",
 ])
 
 const headingByKind: Record<string, string> = {
