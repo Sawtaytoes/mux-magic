@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-08-21 | [Subtitle track names are provenance and survive extraction as base64url](2026-08-21-subtitle-track-names-are-provenance-and-survive-as-base64url.md) | core | Accepted |
 | 2026-08-21 | [Hide `exited` jobs by default, and lay the jobs view out as a grid](2026-08-21-exited-jobs-are-hidden-by-default-and-the-jobs-view-is-a-grid.md) | web | Accepted |
 | 2026-08-21 | [The summary trailer and the UNNAMED-FEATURES/ bucket are one feature](2026-08-21-the-summary-trailer-and-the-unnamed-bucket-are-one-feature.md) | core / web | Accepted |
 | 2026-08-21 | [Every NSF-family command emits the same summary trailer](2026-08-21-nsf-siblings-emit-the-same-summary-trailer.md) | core / web | Superseded |

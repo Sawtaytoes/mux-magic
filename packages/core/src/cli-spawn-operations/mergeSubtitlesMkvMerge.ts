@@ -2,10 +2,36 @@ import { dirname, join } from "node:path"
 import type { LanguageSelection } from "@mux-magic/api/src/api/languageSelection.js"
 import { concatMap, endWith } from "rxjs"
 import { SUBTITLED_FOLDER_NAME } from "../tools/outputFolderNames.js"
+import {
+  decodeSubtitleTrackName,
+  findEncodedTrackName,
+} from "../tools/subtitleTrackNames.js"
 import { defineLanguageForUndefinedTracks } from "./defineLanguageForUndefinedTracks.js"
 import { runMkvMerge } from "./runMkvMerge.js"
 
 export const subtitledFolderName = SUBTITLED_FOLDER_NAME
+
+const trackNameArgsOf = (
+  encodedSegment: string | undefined,
+) =>
+  encodedSegment
+    ? [
+        "--track-name",
+        `0:${decodeSubtitleTrackName(encodedSegment)}`,
+      ]
+    : []
+
+// The track name is provenance — which group the subs came from. A
+// standalone subtitle file can't carry it, so extraction encodes it into
+// the filename and this puts it back on the muxed track.
+export const buildSubtitleSourceArgs = (
+  subtitlesFilesPaths: ReadonlyArray<string>,
+) =>
+  subtitlesFilesPaths.flatMap((subtitleFilePath) =>
+    trackNameArgsOf(
+      findEncodedTrackName(subtitleFilePath),
+    ).concat(subtitleFilePath),
+  )
 
 type MergeSubtitlesMkvMergeRequiredProps = {
   attachmentFilePaths: string[]
@@ -53,7 +79,7 @@ export const mergeSubtitlesMkvMerge = ({
         ? ["--sync", `-1:${offsetInMilliseconds}`]
         : []),
 
-      ...subtitlesFilesPaths,
+      ...buildSubtitleSourceArgs(subtitlesFilesPaths),
 
       ...(chaptersFilePath
         ? ["--chapters", chaptersFilePath]
