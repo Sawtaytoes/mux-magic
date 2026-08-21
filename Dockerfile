@@ -14,7 +14,7 @@
 # Lifted verbatim from rip-deck, which has run this exact transplant onto
 # this exact base (node:26-trixie-slim) since 2026-07-25. Bumping this tag
 # is automated by .github/workflows/makemkv-tag-watcher.yml.
-FROM ghcr.io/jlesage/makemkv:v26.07.2 AS makemkv
+FROM ghcr.io/jlesage/makemkv:v26.08.2 AS makemkv
 
 # ---------- Builder stage ----------
 # Installs ALL deps (devDeps included) and runs `yarn build:prod` to produce
