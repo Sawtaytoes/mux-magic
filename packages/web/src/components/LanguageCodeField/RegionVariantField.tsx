@@ -1,4 +1,4 @@
-import { Field, Select } from "@charcuterie/ui"
+import { Field, Picker } from "@charcuterie/ui"
 
 import { BCP47_VARIANTS } from "../../data/bcp47Variants"
 
@@ -28,7 +28,9 @@ export const RegionVariantField = ({
   return (
     <div className="mt-1">
       <Field label="Variant">
-        <Select
+        <Picker
+          className="justify-between font-normal"
+          label="Variant"
           onChange={handleChange}
           options={[
             { label: "(none)", value: "" },
@@ -38,10 +40,11 @@ export const RegionVariantField = ({
             })),
           ]}
           size="sm"
-          // `key` re-seeds the uncontrolled `<select>` when the BASE CODE
-          // changes. `Select` owns no value — the platform does — so a new
-          // `variants` list with the old DOM selection still in it would
-          // keep showing a variant of the language the user just left.
+          // `key` re-seeds the picker when the BASE CODE changes.
+          // `Listbox`'s `selectedValue` is a seed rather than a
+          // controlled value, so a new `variants` list with the old
+          // selection still checked would keep showing a variant of the
+          // language the user just left.
           key={baseCode}
           value={selectedIetf ?? ""}
         />

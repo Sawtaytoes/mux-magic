@@ -18,6 +18,8 @@
 // the target shape once the plugins land.
 
 import {
+  COMPONENT_CHOICE_NAMESPACE,
+  componentChoicePlugin,
   createReactRules,
   createStoryOverrides,
   createTestRules,
@@ -101,6 +103,33 @@ export default defineConfig(
   createReactRules({
     files: ["packages/web/**/*.{ts,tsx}"],
   }),
+  // Every picker is a `Listbox` — in practice `Picker`, which is a
+  // `Listbox` with its trigger attached — and never a native `Select`
+  // or a raw `<select>`. See docs/agents/code-rules.md "Pickers" and
+  // docs/decisions/2026-08-20-every-picker-is-a-listbox-never-a-native-select.md.
+  //
+  // These two rules are registered by name rather than through
+  // `createComponentChoiceRules()`, which would also turn on
+  // `no-raw-anchor`, `no-raw-button`, `no-clickable-non-interactive`
+  // and `no-navigation-in-click-handler`. Each of those is a real
+  // sweep this app has not done, and a config that turns a repo red is
+  // one that gets reverted rather than migrated — they are their own
+  // change.
+  //
+  // Both rules already ship in the pinned `@charcuterie/eslint-config`,
+  // so this is config-only: no dependency bump, no lockfile change.
+  {
+    files: ["packages/web/**/*.tsx"],
+    plugins: {
+      [COMPONENT_CHOICE_NAMESPACE]: componentChoicePlugin,
+    },
+    rules: {
+      [`${COMPONENT_CHOICE_NAMESPACE}/no-raw-select`]:
+        "error",
+      [`${COMPONENT_CHOICE_NAMESPACE}/prefer-listbox-over-select`]:
+        "error",
+    },
+  },
   createStoryOverrides({
     files: [
       "packages/web/**/__fixtures__/**/*.{ts,tsx}",

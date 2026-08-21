@@ -101,17 +101,18 @@ describe("LanguageCodeField — selected tag rendering", () => {
     })
     renderField(step, field)
     expect(
-      screen.queryByRole("combobox", { name: /variant/i }),
+      screen.queryByRole("button", { name: /^Variant: / }),
     ).not.toBeInTheDocument()
   })
 
-  test("renders a variant select for chi (7 Chinese BCP 47 variants)", () => {
+  test("renders a variant picker for chi (7 Chinese BCP 47 variants)", () => {
     const step = createMockStep({
       params: { audioLanguage: "chi" },
     })
     renderField(step, field)
-    const selects = screen.getAllByRole("combobox")
-    expect(selects.length).toBeGreaterThanOrEqual(1)
+    expect(
+      screen.getByRole("button", { name: /^Variant: / }),
+    ).toBeVisible()
   })
 
   test("uses field label component", () => {
@@ -125,9 +126,8 @@ describe("LanguageCodeField — selected tag rendering", () => {
 
 describe("LanguageCodeField — filter autocomplete", () => {
   // The Combobox filter input lives in the portalled popup, opened from
-  // the "Add/Change …" trigger button — not inline in the field. The
-  // variant Select (also role="combobox") is a sibling, so open the picker
-  // by its button and read the popup input directly.
+  // the "Add/Change …" trigger button — not inline in the field. Open
+  // the picker by its button and read the popup input directly.
   const openPicker = async (
     user: ReturnType<typeof userEvent.setup>,
   ) => {
@@ -219,8 +219,8 @@ describe("LanguageCodeField — filter autocomplete", () => {
       within(listbox).getAllByRole("option")[0]
     await user.click(firstOption)
 
-    // The variant Select stays a combobox once a code is chosen, but the
-    // filter popup is gone — no listbox remains open.
+    // The variant picker is a closed `Listbox` once a code is chosen,
+    // and the filter popup is gone — no listbox remains open.
     expect(screen.queryByRole("listbox")).toBeNull()
   })
 

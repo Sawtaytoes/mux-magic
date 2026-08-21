@@ -1,4 +1,4 @@
-import { Button, IconButton, Select } from "@charcuterie/ui"
+import { Button, IconButton, Picker } from "@charcuterie/ui"
 import { useAtom, useSetAtom } from "jotai"
 import { useState } from "react"
 import { apiBase } from "../../apiBase"
@@ -784,8 +784,8 @@ export const SmartMatchModal = () => {
                         return (
                           hasSuffixRow && (
                             <div className="flex items-center gap-1.5 mb-1.5">
-                              <Select
-                                controlClassName="font-mono"
+                              <Picker
+                                className="w-44 justify-between font-mono"
                                 isDisabled={
                                   row.isApplied ||
                                   isApplying
@@ -793,18 +793,19 @@ export const SmartMatchModal = () => {
                                 /*
                                   The whole reason this key exists.
 
-                                  `Select` is UNCONTROLLED — `value` seeds
-                                  `defaultValue` and the DOM owns it from
-                                  then on — and this control has a SECOND
-                                  writer: picking a different candidate
-                                  re-derives the Plex type through
-                                  `derivePlexSuffix` (commit `bcb0f0b3`,
-                                  fixing a row stranded on the top
-                                  candidate's type). Without a remount the
-                                  select would keep showing the old type
-                                  and silently undo that fix — with a green
-                                  typecheck, because nothing in the type
-                                  system knows a value has two writers.
+                                  `Listbox`'s `selectedValue` is a SEED —
+                                  like every value prop in the library, the
+                                  listbox owns the selection after mount —
+                                  and this control has a SECOND writer:
+                                  picking a different candidate re-derives
+                                  the Plex type through `derivePlexSuffix`
+                                  (commit `bcb0f0b3`, fixing a row stranded
+                                  on the top candidate's type). Without a
+                                  remount the panel's checkmark would keep
+                                  the old type and silently undo that fix —
+                                  with a green typecheck, because nothing in
+                                  the type system knows a value has two
+                                  writers.
 
                                   Keyed on the CANDIDATE, not on the
                                   suffix: keying on `row.plexSuffix` would

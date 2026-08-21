@@ -1,4 +1,4 @@
-import { IconButton, Select } from "@charcuterie/ui"
+import { IconButton } from "@charcuterie/ui"
 import { useState } from "react"
 import { isPlainObject } from "./clauseUtils"
 import {
@@ -7,6 +7,7 @@ import {
   setComputeFromOpOperand,
   setComputeFromOpVerb,
 } from "./computeMutations"
+import { ListboxPicker } from "./ListboxPicker"
 import {
   COMPUTE_FROM_OPS_ALL,
   COMPUTE_FROM_OPS_BARE,
@@ -54,19 +55,17 @@ export const ComputeFromOpRow = ({
     <div className="flex items-center gap-1.5 mt-1">
       {/*
         10rem = 160px; `subtract`/`multiply` are the widest options at
-        127px, so this one is wide by choice rather than by need. On
-        `Select` itself, because `className` is the control's outer
-        box as of `@charcuterie/ui@3`, chevron included
-        (charcuterie#112). `font-mono` is the option text, not the
-        box, so it is `controlClassName`.
+        127px, so this one is wide by choice rather than by need. It
+        sits on the trigger button, which is the control's outer box,
+        chevron included.
       */}
-      <Select
-        className="w-40 shrink-0"
-        controlClassName="font-mono"
+      <ListboxPicker
+        className="w-40 shrink-0 justify-between font-mono"
+        hasChevron
         isDisabled={isReadOnly}
         // The op row is keyed by index, so a delete above it hands this
-        // slot a different op. `Select` is uncontrolled, so without a key
-        // the DOM would keep the departed op's verb.
+        // slot a different op. `Listbox`'s `selectedValue` is a seed, so
+        // without a key the picker would keep the departed op's verb.
         key={verb}
         label={`Operation ${opIndex + 1}`}
         onChange={(nextVerb) => {
@@ -84,7 +83,6 @@ export const ComputeFromOpRow = ({
           label: opVerb,
           value: opVerb,
         }))}
-        size="sm"
         value={verb}
       />
       {isBareOp ? (

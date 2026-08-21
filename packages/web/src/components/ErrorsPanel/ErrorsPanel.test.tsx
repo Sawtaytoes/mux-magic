@@ -78,10 +78,14 @@ describe("ErrorsPanel — filter inputs build correct query strings", () => {
       </Provider>,
     )
 
-    const stateSelect = screen.getByRole("combobox", {
-      name: /state/i,
-    })
-    await userEvent.selectOptions(stateSelect, "pending")
+    // The state filter is a `Picker`: a trigger button named
+    // "State: <current value>" that opens a listbox.
+    await userEvent.click(
+      screen.getByRole("button", { name: /^State: / }),
+    )
+    await userEvent.click(
+      screen.getByRole("option", { name: "pending" }),
+    )
 
     await waitFor(() => {
       const mockFetch = vi.mocked(fetch)

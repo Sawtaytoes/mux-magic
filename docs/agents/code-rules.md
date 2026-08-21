@@ -57,6 +57,18 @@ The agents have repeatedly violated rules 1–4. Before you announce a PR, searc
 
 Workers that ship code containing any of the above will get the PR sent back. Catch it yourself first.
 
+## Pickers — always a `Listbox`, never a native `Select`
+
+Every one-of-several picker in `packages/web` is a Charcuterie **`Listbox`**. In practice that means **`Picker`** from `@charcuterie/ui` — a `Listbox` with its trigger button and open state already attached — or **`Combobox`** when the list is long enough to want typing. The DSL builder's rows go through the local [`ListboxPicker`](../../packages/web/src/components/DslRulesBuilder/ListboxPicker.tsx), which is `Picker` with that area's density (`size="sm"`, no chevron) applied.
+
+- **Never `<Select>` from `@charcuterie/ui`, and never a raw `<select>`.** The native control paints as the OS widget, which looks wrong on Windows and cannot be restyled. `Select` stays exported as a compatibility hatch for four platform cases — the mobile OS wheel picker, autofill, `:invalid`, and a form that submits with no JS on the page — and none of them has ever applied to this app. If one genuinely does, it is a new decision with the reason written down, not a call-site choice.
+- **"They're just plain strings" is not a reason.** Rich options are what `<option>` *cannot* render, not the only reason to prefer a `Listbox`.
+- **`selectedValue` is a seed, not a controlled value** — like every value prop in the library, the listbox owns the selection after mount. A call site with a second writer keeps a `key` on the committed value so the checkmark stays true when the value changes from outside.
+- **Driving one in a test:** the trigger is a button whose accessible name carries the current value (`"Rule 1 type: setStyleFields"`). Query `getByRole("button", { name: /^Rule 1 type: / })`, click it, then click the `option`. There is no DOM `value` — assert `toHaveAccessibleName`.
+- A **`Menu`** is not a picker: its items *do* something rather than *being* a value ([2026-07-31](../decisions/2026-07-31-the-add-variable-picker-stays-a-menu.md)).
+
+Decisions: this repo's [2026-08-20 record](../decisions/2026-08-20-every-picker-is-a-listbox-never-a-native-select.md); the fleet standard `2026-08-20-listbox-is-the-picker-in-every-owned-app-and-native-select-is-a-hatch-we-have-never-needed.md` in the workspace decision log; and charcuterie's [`Listbox` and `Combobox` are the default; `Select` is demoted](https://github.com/Sawtaytoes/charcuterie/blob/master/docs/decisions/2026-08-10-listbox-and-combobox-are-the-default-and-select-is-demoted.md).
+
 ## Variable Naming
 
 - No single-letter variable names. Always use descriptive names that convey purpose.
