@@ -345,7 +345,15 @@ export const StepCard = ({
                   ▾
                 </span>
               }
-              className="flex-1 min-w-0 justify-between text-start"
+              // A floor, not `min-w-0`. The trigger is the only flex-grow
+              // item in this header row, so with a zero floor it absorbed
+              // every pixel the alias input and the action buttons did not
+              // want — at a ~700px card it collapsed to 97px and rendered as
+              // "Nan ▾", which names no command at all. 224px keeps ~54% of
+              // the longest label visible instead of 17%; below that the row
+              // is `flex-wrap`, so the buttons drop to a second line rather
+              // than squeezing the one control that says what the step does.
+              className="flex-1 min-w-56 justify-between text-start"
             >
               <span className="flex-1 min-w-0 truncate flex items-center">
                 {triggerLabel}
