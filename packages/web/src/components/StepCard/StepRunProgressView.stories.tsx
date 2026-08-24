@@ -133,6 +133,7 @@ const meta: Meta<typeof StepRunProgressView> = {
     sourcePath: "G:\\Disc-Rips\\Shrek 2 - 4K",
     snap: {},
     convertLosslessResults: { converted: [], skipped: [] },
+    musicMatchFiles: [],
     results: null,
   },
   parameters: {
@@ -448,6 +449,63 @@ export const NonNsfCommand: Story = {
     withLogs([
       "[INFO] copyFiles started",
       "[INFO] copied 3 files",
+      "[INFO] done",
+    ]),
+  ],
+}
+
+// A `matchMusicBrainzRelease` run. The music panel replaces the NSF one
+// on this card, and its trigger is the only door into the tag review
+// table — nothing has been written at this point.
+export const MusicMatchDone: Story = {
+  args: {
+    commandName: "matchMusicBrainzRelease",
+    isRunning: false,
+    musicMatchFiles: [
+      {
+        currentTags: { title: "Track 01", trackNumber: 1 },
+        durationSeconds: 210,
+        extension: ".flac",
+        filePath: "/inbox/Long Way Down/01.flac",
+        filename: "01.flac",
+        rankedCandidates: [
+          {
+            candidate: {
+              artistName: "Harbour Lights",
+              country: "US",
+              format: "CD",
+              releaseId: "release-1",
+              releaseTitle: "Long Way Down",
+              source: "musicbrainz",
+              trackCount: 12,
+              year: "2004",
+            },
+            confidence: 0.94,
+            proposedTags: {
+              album: "Long Way Down",
+              title: "Anchor",
+              trackNumber: 1,
+            },
+          },
+        ],
+      },
+      {
+        currentTags: {},
+        durationSeconds: 96,
+        extension: ".flac",
+        filePath: "/inbox/Long Way Down/99 - hidden.flac",
+        filename: "99 - hidden.flac",
+        rankedCandidates: [],
+      },
+    ],
+    renamePairs: [],
+    sourcePath: "/inbox/Long Way Down",
+    summary: null,
+  },
+  decorators: [
+    withLogs([
+      "[INFO] matchMusicBrainzRelease started",
+      "[INFO] 2 audio files in 1 clusters.",
       "[INFO] done",
     ]),
   ],
