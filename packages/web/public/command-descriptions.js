@@ -452,7 +452,9 @@ window.commandDescriptions = {
     "summary": "Split media files by chapter markers",
     "fields": {
       "sourcePath": "Directory where video files are located.",
-      "chapterSplits": "Space-separated list of comma-separated chapter markers. Splits occur at the beginning of the chapter."
+      "chapterSplits": "Space-separated list of comma-separated chapter markers. Splits occur at the beginning of the chapter.",
+      "isRenumberingChapters": "Renumber each split file's `Chapter NN` names so they start at 1 (default true). A split part inherits the play-all file's numbering, so part 2 opens on `Chapter 04` without this. Parts with custom chapter names (`Opening`, `Eyecatch`) are left alone.",
+      "isPaddingChapterNumbers": "Zero-pad the renumbered chapter names (default true) — produces `Chapter 01..N` (width ≥ 2). Set false for `Chapter 1..N`. Ignored when chapter renumbering is off."
     }
   },
   "splitCueSheet": {

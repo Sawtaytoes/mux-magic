@@ -523,6 +523,14 @@ export const COMMANDS: Commands = {
           label: "Chapter Splits",
           placeholder: "7,18,26,33 6,17,25 6",
         }),
+        field("isRenumberingChapters", {
+          type: "boolean",
+          label: "Renumber Chapters",
+        }),
+        field("isPaddingChapterNumbers", {
+          type: "boolean",
+          label: "Zero-Pad Chapter Numbers",
+        }),
       ],
     }
   })(),

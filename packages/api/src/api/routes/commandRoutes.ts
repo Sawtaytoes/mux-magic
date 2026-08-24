@@ -954,6 +954,9 @@ export const commandConfigs: Record<
     getObservable: (body) =>
       splitChapters({
         chapterSplitsList: body.chapterSplits,
+        isPaddingChapterNumbers:
+          body.isPaddingChapterNumbers,
+        isRenumberingChapters: body.isRenumberingChapters,
         sourcePath: body.sourcePath,
       }),
     outputFolderName:

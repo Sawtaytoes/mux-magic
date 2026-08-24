@@ -278,7 +278,11 @@ const FIXTURE_INPUTS: Record<string, FixtureInput> = {
     paths: BASE_PATHS,
     step: makeStep(
       "splitChapters",
-      { chapterSplits: ["ch1", "ch2"] },
+      {
+        chapterSplits: ["ch1", "ch2"],
+        isPaddingChapterNumbers: false,
+        isRenumberingChapters: false,
+      },
       { sourcePath: "basePath" },
     ),
   },

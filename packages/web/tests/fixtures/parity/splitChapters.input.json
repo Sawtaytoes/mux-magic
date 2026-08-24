@@ -13,7 +13,9 @@
       "chapterSplits": [
         "ch1",
         "ch2"
-      ]
+      ],
+      "isPaddingChapterNumbers": false,
+      "isRenumberingChapters": false
     },
     "links": {
       "sourcePath": "basePath"

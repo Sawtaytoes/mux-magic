@@ -45,7 +45,7 @@ yarn media <command> --help        # options for a specific command
 | `replaceFlacWithPcmAudio` | `<sourcePath>` | Convert FLAC audio tracks to PCM at the same bit depth. |
 | `replaceTracks` | `<sourceFilesPath> <destinationFilesPath> [offsets...]` | Replace audio, subtitle, or chapter tracks in destination files with tracks from matching source files. |
 | `setDisplayWidth` | `<sourcePath>` | Override the display width (DAR) of video files. Useful for correcting 4:3 vs 16:9 on anamorphic DVD rips. |
-| `splitChapters` | `<sourcePath> <chapterSplits...>` | Split a large file into separate files at given chapter boundaries. Useful for disc rips that contain multiple episodes. |
+| `splitChapters` | `<sourcePath> <chapterSplits...>` | Split a large file into separate files at given chapter boundaries. Useful for disc rips that contain multiple episodes. Each part's `Chapter NN` names are renumbered to start at 1; pass `--no-isRenumberingChapters` to keep the play-all numbering. |
 | `storeAspectRatioData` | `<sourcePath> [folders...]` | Scan media files and write their internal crop/aspect ratio data to a JSON file. |
 
 ---

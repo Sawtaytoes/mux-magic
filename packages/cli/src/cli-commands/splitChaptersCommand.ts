@@ -27,6 +27,22 @@ const builder = (yargs: Argv) =>
         "Space-separated list of comma-separated chapter markers. Splits occur at the beginning of the chapter.",
       type: "string",
     })
+    .option("isRenumberingChapters", {
+      boolean: true,
+      default: true,
+      describe:
+        "Renumber each split file's `Chapter NN` names so they start at 1. A split part inherits the play-all file's numbering, so part 2 opens on `Chapter 04` without this. Parts whose chapters carry custom names (`Opening`, `Eyecatch`) are left alone. Disable with --no-isRenumberingChapters.",
+      nargs: 0,
+      type: "boolean",
+    })
+    .option("isPaddingChapterNumbers", {
+      boolean: true,
+      default: true,
+      describe:
+        "Zero-pad the renumbered chapter names — `Chapter 01..N` rather than `Chapter 1..N`. Ignored when --no-isRenumberingChapters is set.",
+      nargs: 0,
+      type: "boolean",
+    })
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
@@ -46,6 +62,8 @@ export const splitChaptersCommand: CommandModule<
   handler: (argv) => {
     splitChapters({
       chapterSplitsList: argv.chapterSplits,
+      isPaddingChapterNumbers: argv.isPaddingChapterNumbers,
+      isRenumberingChapters: argv.isRenumberingChapters,
       sourcePath: argv.sourcePath,
     }).subscribe(subscribeCli())
   },
