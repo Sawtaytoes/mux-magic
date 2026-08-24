@@ -107,6 +107,20 @@ In `cli.ts`, register it with `.command(someCommandCommand)`.
 
 `makeDirectory(directoryPath)` always creates the exact path passed to it using `mkdir(..., { recursive: true })`. Callers that have a **file** path must pass `dirname(filePath)` themselves — `makeDirectory` does not strip the filename. This applies to `getAudioOffset.ts` and `reorderTracksFfmpeg.ts`; callers like `copyFiles.ts` and `splitChaptersFfmpeg.ts` already pass directory paths and need no wrapping.
 
+## `FileInfo.filename` is the stem — it has NO extension
+
+`getFiles` / `getFilesAtDepth` build each `FileInfo.filename` with
+`basename(path, extname(path))`, so `/inbox/01 - Anchor.flac` arrives as
+`01 - Anchor`. The name matches `renameFile(newFilename)`, which re-attaches the
+extension for you.
+
+The trap is filtering. `filter((fileInfo) => fileInfo.filename.endsWith(".flac"))`
+matches **nothing** and the command reports every folder as empty — a silent
+false negative, not an error. Filter on `fileInfo.fullPath`, and use
+`basename(fileInfo.fullPath)` when a record needs the real filename to show a
+user. `scanAudioFiles.isAudioFilePath` is named for the argument it wants for
+this reason.
+
 ## Commands That Read `process.stdin`
 
 `nameAnimeEpisodes` and `nameTvShowEpisodes` historically prompted via stdin to pick a search result. They now accept an optional `malId` / `tvdbId` parameter that bypasses stdin entirely. Always supply these IDs when calling these commands from the API or sequence builder — omitting them will hang waiting for stdin input.

@@ -518,7 +518,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            commandNames: ("analyseDiscBackup" | "makeDirectory" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "renumberChapters" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData")[];
+                            commandNames: ("analyseDiscBackup" | "makeDirectory" | "matchMusicBrainzRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags")[];
                         };
                     };
                 };
@@ -619,6 +619,77 @@ export interface paths {
                 content: {
                     "application/json": {
                         /** @description Directory path to create, or a file path whose parent directory should be created */
+                        sourcePath: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/matchMusicBrainzRelease": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cluster a folder's audio files into candidate albums from their existing tags, search MusicBrainz for each cluster, and attach ranked releases with a proposed tag set per file. Read-only — the tag table is where a match is accepted. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description How many ranked releases are fetched in full and offered per row. MusicBrainz allows one request per second, so each extra candidate costs about a second per album. Five covers the usual wrong-country or wrong-year correction.
+                         * @default 5
+                         */
+                        candidateFetchLimit?: number;
+                        /**
+                         * @description Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.
+                         * @default false
+                         */
+                        isRecursive?: boolean;
+                        /**
+                         * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
+                         * @default 1
+                         */
+                        recursiveDepth?: number;
+                        /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
                         sourcePath: string;
                     };
                 };
@@ -3458,6 +3529,99 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/commands/renameFilesAndFolders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rename files and folders by regex. The general renamer — renaming was previously only ever a side effect of a naming command, and renameFiles covers files only. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Report the planned renames without touching anything.
+                         * @default false
+                         */
+                        isDryRun?: boolean;
+                        /**
+                         * @description Apply the rename to files.
+                         * @default true
+                         */
+                        isRenamingFiles?: boolean;
+                        /**
+                         * @description Apply the rename to folders. Folders rename deepest-first so a parent rename cannot invalidate a child that has not been renamed yet.
+                         * @default true
+                         */
+                        isRenamingFolders?: boolean;
+                        /** @description Only rename entries whose name matches this pattern. Omit to consider every entry. */
+                        nameFilterRegex?: string | {
+                            pattern: string;
+                            flags?: string;
+                        };
+                        /**
+                         * @description How many folder levels below the source to walk. 0 renames only the direct children of the source folder.
+                         * @default 0
+                         */
+                        recursiveDepth?: number;
+                        /** @description The rename itself: a pattern and its replacement, or an ordered list applied left to right. The extension is part of the name a file rule sees. */
+                        renameRegex: {
+                            pattern: string;
+                            replacement: string;
+                            flags?: string;
+                            sample?: string;
+                        } | {
+                            pattern: string;
+                            replacement: string;
+                            flags?: string;
+                            sample?: string;
+                        }[];
+                        /** @description Folder whose contents are renamed. The folder itself is never renamed. */
+                        sourcePath: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/commands/nameAnimeEpisodes": {
         parameters: {
             query?: never;
@@ -3994,6 +4158,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/commands/scanAudioFiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Walk a folder for audio files and report each one's existing tags, codec, bit depth, sample rate and duration. Pure read — no filesystem mutation. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.
+                         * @default false
+                         */
+                        isRecursive?: boolean;
+                        /**
+                         * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
+                         * @default 1
+                         */
+                        recursiveDepth?: number;
+                        /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
+                        sourcePath: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/commands/renumberChapters": {
         parameters: {
             query?: never;
@@ -4026,6 +4256,86 @@ export interface paths {
                          * @default true
                          */
                         isPaddingChapterNumbers?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/renameAndMoveAudioFiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** File tagged audio into the library tree using the Picard naming script. Each file's own tags decide its destination, so run this after the tags are right. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Report the planned moves without touching a file. Run this first: the destination comes from each file's own tags, so a wrong tag becomes a wrong folder.
+                         * @default false
+                         */
+                        isDryRun?: boolean;
+                        /**
+                         * @description Allow a move to replace an existing file at the destination. Off by default — a clash is reported and the file is left alone.
+                         * @default false
+                         */
+                        isOverwriteAllowed?: boolean;
+                        /**
+                         * @description Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.
+                         * @default false
+                         */
+                        isRecursive?: boolean;
+                        /** @description Root of the destination library tree. The naming script builds every folder below it, so this is the only path the command is given. */
+                        libraryRoot: string;
+                        /** @description Picard naming script to use instead of the default. The default is the owner's own script, verified byte-identical across two machines and eight years — override it only for a one-off. */
+                        namingScript?: string;
+                        /**
+                         * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
+                         * @default 1
+                         */
+                        recursiveDepth?: number;
+                        /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
+                        sourcePath: string;
                     };
                 };
             };
@@ -4782,6 +5092,182 @@ export interface paths {
                             logsUrl: string;
                             /** @description Output folder name where files are written, or null for in-place operations */
                             outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/writeAudioTags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set the same tag fields on every audio file under a folder — MP3Tag's bulk edit. The reviewed, per-file write behind the tag table is POST /music/tags, not this command. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @description Album title to set on every matched file. Leave empty to keep whatever each file already has. */
+                        album?: string;
+                        /** @description Album artist to set on every matched file. This is the field that decides the library folder, so it is the most common bulk edit. */
+                        albumArtist?: string;
+                        /** @description Track artist to set on every matched file. On a compilation this differs per track, so set it here only when every file really does share one artist. */
+                        artist?: string;
+                        /** @description Comment to set on every matched file. */
+                        comment?: string;
+                        /** @description Composer to set on every matched file. */
+                        composer?: string;
+                        /** @description Release date to set on every matched file. MusicBrainz style is `YYYY-MM-DD`, and a bare `YYYY` is accepted. */
+                        date?: string;
+                        /** @description Genres to set on every matched file. Multi-value: the tag holds each entry separately, never one joined string. */
+                        genres?: string[];
+                        /**
+                         * @description Report which files would change, and which fields, without writing anything. Run this first — the report is the same shape as the real run.
+                         * @default false
+                         */
+                        isDryRun?: boolean;
+                        /**
+                         * @description Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.
+                         * @default false
+                         */
+                        isRecursive?: boolean;
+                        /**
+                         * @description Restore each file's modified time after writing. On by default so a re-tag does not make every album look new to the library scanner.
+                         * @default true
+                         */
+                        isTimestampPreserved?: boolean;
+                        /**
+                         * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
+                         * @default 1
+                         */
+                        recursiveDepth?: number;
+                        /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
+                        sourcePath: string;
+                        /** @description Total disc count to set on every matched file. */
+                        totalDiscs?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/music/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Write the reviewed tag set for one audio file
+         * @description One row of the tag review table, one request. The table's Apply button posts these sequentially so a per-row failure stays a per-row failure and lands on that row. Only the fields present in `tags` are compared and written — an absent field leaves whatever the file already has. Returns the fields that changed, which is empty when the file already carried these values.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @description Absolute path of the audio file to write. Must be absolute and traversal-free. */
+                        filePath: string;
+                        /**
+                         * @description Report which fields would change without writing the file.
+                         * @default false
+                         */
+                        isDryRun?: boolean;
+                        /**
+                         * @description Restore the file's modified time after writing.
+                         * @default true
+                         */
+                        isTimestampPreserved?: boolean;
+                        /** @description The tag set to write. Only the fields present are compared and written; an absent field means leave whatever the file already has. */
+                        tags: {
+                            album?: string;
+                            albumArtist?: string;
+                            artist?: string;
+                            comment?: string;
+                            composer?: string;
+                            date?: string;
+                            discNumber?: number;
+                            genres?: string[];
+                            isCompilation?: boolean;
+                            musicBrainzAlbumArtistId?: string;
+                            musicBrainzArtistId?: string;
+                            musicBrainzRecordingId?: string;
+                            musicBrainzReleaseGroupId?: string;
+                            musicBrainzReleaseId?: string;
+                            title?: string;
+                            totalDiscs?: number;
+                            totalTracks?: number;
+                            trackNumber?: number;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Write result for the file, successful or not */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Names of the fields that changed, or would change under `isDryRun`. Empty when the file already carried these values. */
+                            changedFields: string[];
+                            /** @description Why the write failed; null on success. The tag table renders this on the row. */
+                            error: string | null;
+                            /** @description Whether the write succeeded. The tag table marks the row from this field. */
+                            isOk: boolean;
                         };
                     };
                 };
@@ -6934,7 +7420,7 @@ export interface components {
             /** @description Optional human-readable alias. Surfaced by the builder UI's step header; ignored at runtime. */
             alias?: string;
             /** @description Name of the registered command to run. Must be one of the names listed at `GET /commands` (or surfaced individually as `POST /commands/<name>` endpoints). Empty string `''` marks a placeholder/blank step from the Builder UI — the runner skips it as a no-op so YAML round-trips don't lose the slot. */
-            command: "" | ("analyseDiscBackup" | "makeDirectory" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "renumberChapters" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData");
+            command: "" | ("analyseDiscBackup" | "makeDirectory" | "matchMusicBrainzRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags");
             /** @description Command params. Each value can be a literal (string / number / boolean / array / object), a `'@pathId'` path-variable reference, or a `{ linkedTo, output }` step-output reference. Per-command param shapes are documented under `POST /commands/<command>` — the same schema each command exposes for direct invocation also applies here once references are resolved. */
             params?: {
                 [key: string]: unknown;

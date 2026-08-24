@@ -10,6 +10,7 @@
 export const commandNames = [
   "analyseDiscBackup",
   "makeDirectory",
+  "matchMusicBrainzRelease",
   "changeTrackLanguages",
   "convertLosslessToFlac",
   "convertContainerAudioToFlac",
@@ -42,6 +43,7 @@ export const commandNames = [
   "distributeFolderToSiblings",
   "flattenChildFolders",
   "renameFiles",
+  "renameFilesAndFolders",
   "nameAnimeEpisodes",
   "nameAnimeEpisodesAniDB",
   "nameMovieCutsDvdCompareTmdb",
@@ -49,7 +51,9 @@ export const commandNames = [
   "onlyNameSpecialFeaturesDvdCompare",
   "nameTvShowEpisodes",
   "remuxToMkv",
+  "scanAudioFiles",
   "renumberChapters",
+  "renameAndMoveAudioFiles",
   "renameDemos",
   "renameMovieClipDownloads",
   "reorderTracks",
@@ -60,6 +64,7 @@ export const commandNames = [
   "splitChapters",
   "splitCueSheet",
   "storeAspectRatioData",
+  "writeAudioTags",
 ] as const
 
 export type CommandName = (typeof commandNames)[number]

@@ -17,6 +17,11 @@ import {
   findConvertLosslessResults,
 } from "../ConvertLosslessRunResults/findConvertLosslessResults"
 import {
+  dropAppliedMusicMatchFiles,
+  findMusicMatchClusters,
+  flattenMusicMatchFiles,
+} from "../MusicMatchRunResults/findMusicMatchResults"
+import {
   findNsfEditionPlan,
   findNsfRenamePairs,
   findNsfSummary,
@@ -26,6 +31,8 @@ import {
   type NsfSummaryRecord,
 } from "../NsfRunResults/findNsfResults"
 import { appliedSmartMatchRenamesByJobIdAtom } from "../SmartMatchModal/appliedSmartMatchRenamesAtom"
+import { appliedTagWritesByJobIdAtom } from "../TagMatchModal/tagMatchModalAtom"
+import type { TagMatchFile } from "../TagMatchModal/tagMatchTypes"
 import { StepRunProgressView } from "./StepRunProgressView"
 
 // Per-step run display rendered directly on StepCard. Active while the
@@ -95,6 +102,9 @@ export const StepRunProgress = ({
   const appliedRenamesByJobId = useAtomValue(
     appliedSmartMatchRenamesByJobIdAtom,
   )
+  const appliedTagWritesByJobId = useAtomValue(
+    appliedTagWritesByJobIdAtom,
+  )
   const setStepRunStatus = useSetAtom(setStepRunStatusAtom)
   const setRunning = useSetAtom(runningAtom)
 
@@ -112,6 +122,9 @@ export const StepRunProgress = ({
     converted: [],
     skipped: [],
   })
+  const [musicMatchFiles, setMusicMatchFiles] = useState<
+    TagMatchFile[]
+  >([])
   const [results, setResults] =
     useState<ReadonlyArray<unknown> | null>(null)
   // Track the jobId the captured results belong to. When jobId changes
@@ -130,6 +143,7 @@ export const StepRunProgress = ({
       converted: [],
       skipped: [],
     })
+    setMusicMatchFiles([])
     setResults(null)
   }
 
@@ -157,6 +171,11 @@ export const StepRunProgress = ({
       setEditionPlan(findNsfEditionPlan(payload.results))
       setConvertLosslessResults(
         findConvertLosslessResults(payload.results),
+      )
+      setMusicMatchFiles(
+        flattenMusicMatchFiles(
+          findMusicMatchClusters(payload.results),
+        ),
       )
       setResults(payload.results ?? null)
     },
@@ -207,6 +226,12 @@ export const StepRunProgress = ({
       summary={merged.summary}
       editionPlan={editionPlan}
       convertLosslessResults={convertLosslessResults}
+      musicMatchFiles={dropAppliedMusicMatchFiles({
+        appliedFilePaths: (
+          appliedTagWritesByJobId.get(jobId) ?? []
+        ).map((write) => write.filePath),
+        files: musicMatchFiles,
+      })}
       results={results}
     />
   )

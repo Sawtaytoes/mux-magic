@@ -10,6 +10,65 @@
 // extractor catches up.
 
 window.commandDescriptions = {
+  "scanAudioFiles": {
+    "summary": "Walk a folder for audio files and report each one's existing tags, codec, bit depth, sample rate and duration. Pure read — no filesystem mutation.",
+    "fields": {
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
+  "matchMusicBrainzRelease": {
+    "summary": "Cluster a folder's audio files into candidate albums from their existing tags, search MusicBrainz for each cluster, and attach ranked releases with a proposed tag set per file. Read-only — the tag table is where a match is accepted.",
+    "fields": {
+      "candidateFetchLimit": "How many ranked releases are fetched in full and offered per row. MusicBrainz allows one request per second, so each extra candidate costs about a second per album. Five covers the usual wrong-country or wrong-year correction.",
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
+  "writeAudioTags": {
+    "summary": "Set the same tag fields on every audio file under a folder — MP3Tag's bulk edit. The reviewed, per-file write behind the tag table is POST /music/tags, not this command.",
+    "fields": {
+      "album": "Album title to set on every matched file. Leave empty to keep whatever each file already has.",
+      "albumArtist": "Album artist to set on every matched file. This is the field that decides the library folder, so it is the most common bulk edit.",
+      "artist": "Track artist to set on every matched file. On a compilation this differs per track, so set it here only when every file really does share one artist.",
+      "comment": "Comment to set on every matched file.",
+      "composer": "Composer to set on every matched file.",
+      "date": "Release date to set on every matched file. MusicBrainz style is `YYYY-MM-DD`, and a bare `YYYY` is accepted.",
+      "genres": "Genres to set on every matched file. Multi-value: the tag holds each entry separately, never one joined string.",
+      "isDryRun": "Report which files would change, and which fields, without writing anything. Run this first — the report is the same shape as the real run.",
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "isTimestampPreserved": "Restore each file's modified time after writing. On by default so a re-tag does not make every album look new to the library scanner.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka.",
+      "totalDiscs": "Total disc count to set on every matched file."
+    }
+  },
+  "renameAndMoveAudioFiles": {
+    "summary": "File tagged audio into the library tree using the Picard naming script. Each file's own tags decide its destination, so run this after the tags are right.",
+    "fields": {
+      "isDryRun": "Report the planned moves without touching a file. Run this first: the destination comes from each file's own tags, so a wrong tag becomes a wrong folder.",
+      "isOverwriteAllowed": "Allow a move to replace an existing file at the destination. Off by default — a clash is reported and the file is left alone.",
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "libraryRoot": "Root of the destination library tree. The naming script builds every folder below it, so this is the only path the command is given.",
+      "namingScript": "Picard naming script to use instead of the default. The default is the owner's own script, verified byte-identical across two machines and eight years — override it only for a one-off.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
+  "renameFilesAndFolders": {
+    "summary": "Rename files and folders by regex. The general renamer — renaming was previously only ever a side effect of a naming command, and renameFiles covers files only.",
+    "fields": {
+      "isDryRun": "Report the planned renames without touching anything.",
+      "isRenamingFiles": "Apply the rename to files.",
+      "isRenamingFolders": "Apply the rename to folders. Folders rename deepest-first so a parent rename cannot invalidate a child that has not been renamed yet.",
+      "nameFilterRegex": "Only rename entries whose name matches this pattern. Omit to consider every entry.",
+      "recursiveDepth": "How many folder levels below the source to walk. 0 renames only the direct children of the source folder.",
+      "renameRegex": "The rename itself: a pattern and its replacement, or an ordered list applied left to right. The extension is part of the name a file rule sees.",
+      "sourcePath": "Folder whose contents are renamed. The folder itself is never renamed."
+    }
+  },
   "makeDirectory": {
     "summary": "Create a directory (or the parent directory of a file path)",
     "fields": {

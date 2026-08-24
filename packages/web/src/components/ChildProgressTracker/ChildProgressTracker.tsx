@@ -16,6 +16,12 @@ import type {
   Variable,
 } from "../../types"
 import {
+  dropAppliedMusicMatchFiles,
+  findMusicMatchClusters,
+  flattenMusicMatchFiles,
+} from "../MusicMatchRunResults/findMusicMatchResults"
+import { MusicMatchRunResults } from "../MusicMatchRunResults/MusicMatchRunResults"
+import {
   findNsfEditionPlan,
   findNsfRenamePairs,
   findNsfSummary,
@@ -27,6 +33,8 @@ import {
 import { NsfRunResults } from "../NsfRunResults/NsfRunResults"
 import { ProgressBar } from "../ProgressBar/ProgressBar"
 import { appliedSmartMatchRenamesByJobIdAtom } from "../SmartMatchModal/appliedSmartMatchRenamesAtom"
+import { appliedTagWritesByJobIdAtom } from "../TagMatchModal/tagMatchModalAtom"
+import type { TagMatchFile } from "../TagMatchModal/tagMatchTypes"
 
 const findStepById = (
   items: SequenceItem[],
@@ -89,6 +97,9 @@ export const ChildProgressTracker = ({
   const appliedRenamesByJobId = useAtomValue(
     appliedSmartMatchRenamesByJobIdAtom,
   )
+  const appliedTagWritesByJobId = useAtomValue(
+    appliedTagWritesByJobIdAtom,
+  )
 
   const [summary, setSummary] =
     useState<NsfSummaryRecord | null>(null)
@@ -97,6 +108,9 @@ export const ChildProgressTracker = ({
   >([])
   const [editionPlan, setEditionPlan] =
     useState<NsfEditionPlanRecord | null>(null)
+  const [musicMatchFiles, setMusicMatchFiles] = useState<
+    TagMatchFile[]
+  >([])
   // Reset captured results on jobId change — see StepRunProgress for
   // the same pattern.
   const [lastSeenJobId, setLastSeenJobId] = useState<
@@ -107,6 +121,7 @@ export const ChildProgressTracker = ({
     setSummary(null)
     setRenamePairs([])
     setEditionPlan(null)
+    setMusicMatchFiles([])
   }
 
   const handleDone = useCallback(
@@ -114,6 +129,11 @@ export const ChildProgressTracker = ({
       setSummary(findNsfSummary(payload.results))
       setRenamePairs(findNsfRenamePairs(payload.results))
       setEditionPlan(findNsfEditionPlan(payload.results))
+      setMusicMatchFiles(
+        flattenMusicMatchFiles(
+          findMusicMatchClusters(payload.results),
+        ),
+      )
     },
     [],
   )
@@ -165,6 +185,17 @@ export const ChildProgressTracker = ({
         renamePairs={merged.renamePairs}
         summary={merged.summary}
         editionPlan={editionPlan}
+      />
+      <MusicMatchRunResults
+        files={dropAppliedMusicMatchFiles({
+          appliedFilePaths: (
+            appliedTagWritesByJobId.get(jobId) ?? []
+          ).map((write) => write.filePath),
+          files: musicMatchFiles,
+        })}
+        jobId={jobId}
+        sourcePath={sourcePath}
+        stepId={stepId}
       />
     </div>
   )

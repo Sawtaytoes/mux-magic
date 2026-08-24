@@ -20,6 +20,7 @@ export const commandLabels: Record<string, string> = {
   deleteCopiedOriginals: "Delete Copied Originals",
   splitChapters: "Split Chapters",
   remuxToMkv: "Remux to MKV",
+  renameFilesAndFolders: "Rename Files and Folders",
 
   // Flow Control
   exitIfEmpty: "Exit If Empty",
@@ -80,6 +81,12 @@ export const commandLabels: Record<string, string> = {
 
   // Metadata Operations
   storeAspectRatioData: "Store Aspect Ratio Data",
+
+  // Music Tagging
+  scanAudioFiles: "Scan Audio Files",
+  matchMusicBrainzRelease: "Match MusicBrainz Release",
+  writeAudioTags: "Write Audio Tags",
+  renameAndMoveAudioFiles: "Rename and Move Audio Files",
 
   // Misc
   mergeOrderedChapters: "Merge Ordered Chapters",

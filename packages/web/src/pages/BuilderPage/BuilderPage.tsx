@@ -49,6 +49,11 @@ const SmartMatchModal = lazy(() =>
     "../../components/SmartMatchModal/SmartMatchModal"
   ).then((mod) => ({ default: mod.SmartMatchModal })),
 )
+const TagMatchModal = lazy(() =>
+  import(
+    "../../components/TagMatchModal/TagMatchModal"
+  ).then((mod) => ({ default: mod.TagMatchModal })),
+)
 const FileExplorerModal = lazy(() =>
   import(
     "../../components/FileExplorerModal/FileExplorerModal"
@@ -264,6 +269,7 @@ export const BuilderPage = () => {
         <AudioPreviewModal />
         <ImagePreviewModal />
         <SmartMatchModal />
+        <TagMatchModal />
       </Suspense>
     </>
   )

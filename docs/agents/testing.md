@@ -15,6 +15,34 @@
 4. `yarn e2e` — Playwright end-to-end (using your own `PORT`, see [worker-port-protocol.md](worker-port-protocol.md))
 5. `yarn lint` — **re-run last** so Biome catches any formatting touched by typecheck/test/e2e fixes
 
+> ### Steps 3 and 4 fail to start in an agent sandbox — this is not your code
+>
+> The `web` project runs vitest in **browser mode**, so it needs a Playwright chromium
+> build. An agent container ships browsers for its own globally-installed Playwright at
+> a root-owned `/opt/pw-browsers`, and points `PLAYWRIGHT_BROWSERS_PATH` there. This repo
+> pins its **own** Playwright, which wants a **different** revision, and the directory is
+> not writable by the agent user. The run dies before the first test with a message naming
+> a build number that is not there.
+>
+> Install this repo's build somewhere writable and point the run at it:
+>
+> ```sh
+> PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers yarn playwright install chromium-headless-shell
+> PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers yarn vitest run --project web
+> ```
+>
+> Add `--dry-run` to the install to print the exact revision and path without downloading.
+> `yarn e2e` wants the full `chromium`, not the headless shell.
+>
+> ⚠️ **Do not "fix" this by changing the repo.** Bumping `playwright` in `package.json`,
+> editing `playwright.config.ts`, or editing `packages/web/vitest.config.ts` to match the
+> container changes what this repo tests against, and CI does not have the problem. It
+> installs the pinned version itself.
+>
+> ⚠️ **Do not report the UI as untested because of it.** A run that passed with the
+> override is a passing run; say that you used the override. Cross-repo detail:
+> `docs/runbooks/agent-sandbox-runtime.md` in the `agentic` workspace.
+
 ## Forbidden test styles
 
 - **No snapshot tests.** Never use `toMatchSnapshot`, `toMatchInlineSnapshot`. Spell expected values out inline: `expect(x).toBe("literal string")` or `expect(x).toEqual({ explicit: "object" })`. Reason: snapshot diffs hide intent and get rubber-stamped during auto-update.

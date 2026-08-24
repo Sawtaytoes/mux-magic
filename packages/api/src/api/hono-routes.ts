@@ -11,6 +11,7 @@ import { fileRoutes } from "./routes/fileRoutes.js"
 import { inputRoutes } from "./routes/inputRoutes.js"
 import { jobRoutes } from "./routes/jobRoutes.js"
 import { logsRoutes } from "./routes/logRoutes.js"
+import { musicRoutes } from "./routes/musicRoutes.js"
 import { queryRoutes } from "./routes/queryRoutes.js"
 import { sequenceRoutes } from "./routes/sequenceRoutes.js"
 import { serverIdRoutes } from "./routes/serverIdRoutes.js"
@@ -77,6 +78,7 @@ app.route("/", jobRoutes)
 app.route("/", logsRoutes)
 app.route("/", inputRoutes)
 app.route("/", commandRoutes)
+app.route("/", musicRoutes)
 app.route("/", queryRoutes)
 app.route("/", sequenceRoutes)
 app.route("/", fileRoutes)

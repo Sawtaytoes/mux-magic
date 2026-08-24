@@ -2,6 +2,7 @@ import type { ProgressSnapshot } from "../../jobs/types"
 import { ConvertLosslessRunResults } from "../ConvertLosslessRunResults/ConvertLosslessRunResults"
 import type { ConvertLosslessRunResultsData } from "../ConvertLosslessRunResults/findConvertLosslessResults"
 import { GenericRunResults } from "../GenericRunResults/GenericRunResults"
+import { MusicMatchRunResults } from "../MusicMatchRunResults/MusicMatchRunResults"
 import type {
   NsfEditionPlanRecord,
   NsfRenamePair,
@@ -9,6 +10,7 @@ import type {
 } from "../NsfRunResults/findNsfResults"
 import { NsfRunResults } from "../NsfRunResults/NsfRunResults"
 import { ProgressBar } from "../ProgressBar/ProgressBar"
+import type { TagMatchFile } from "../TagMatchModal/tagMatchTypes"
 import { StepLogs } from "./StepLogs"
 
 // Presentational core of StepRunProgress. Same render tree, no atoms
@@ -26,6 +28,7 @@ type Props = {
   summary: NsfSummaryRecord | null
   editionPlan?: NsfEditionPlanRecord | null
   convertLosslessResults: ConvertLosslessRunResultsData
+  musicMatchFiles: TagMatchFile[]
   results: ReadonlyArray<unknown> | null
 }
 
@@ -40,6 +43,7 @@ export const StepRunProgressView = ({
   summary,
   editionPlan,
   convertLosslessResults,
+  musicMatchFiles,
   results,
 }: Props) => (
   <div className="px-3 py-2 border-b border-border-default bg-surface-raised flex flex-col gap-2">
@@ -54,6 +58,12 @@ export const StepRunProgressView = ({
     />
     <ConvertLosslessRunResults
       data={convertLosslessResults}
+    />
+    <MusicMatchRunResults
+      files={musicMatchFiles}
+      jobId={jobId}
+      sourcePath={sourcePath}
+      stepId={stepId}
     />
     <GenericRunResults
       commandName={commandName}

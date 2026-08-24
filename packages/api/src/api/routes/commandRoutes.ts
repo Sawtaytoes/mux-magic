@@ -59,6 +59,10 @@ import {
   keepLanguages,
   keepLanguagesDefaultProps,
 } from "@mux-magic/core/src/app-commands/keepLanguages.js"
+import {
+  type MusicMatchClusterRecord,
+  matchMusicBrainzRelease,
+} from "@mux-magic/core/src/app-commands/matchMusicBrainzRelease.js"
 import { mergeTracks } from "@mux-magic/core/src/app-commands/mergeTracks.js"
 import { modifySubtitleMetadata } from "@mux-magic/core/src/app-commands/modifySubtitleMetadata.js"
 import { moveFiles } from "@mux-magic/core/src/app-commands/moveFiles.js"
@@ -70,11 +74,19 @@ import { nameSpecialFeaturesDvdCompareTmdb } from "@mux-magic/core/src/app-comma
 import { nameTvShowEpisodes } from "@mux-magic/core/src/app-commands/nameTvShowEpisodes.js"
 import { onlyNameSpecialFeaturesDvdCompare } from "@mux-magic/core/src/app-commands/onlyNameSpecialFeaturesDvdCompare.js"
 import { remuxToMkv } from "@mux-magic/core/src/app-commands/remuxToMkv.js"
+import {
+  type RenameAndMoveAudioFilesRecord,
+  renameAndMoveAudioFiles,
+} from "@mux-magic/core/src/app-commands/renameAndMoveAudioFiles.js"
 import { renameDemos } from "@mux-magic/core/src/app-commands/renameDemos.js"
 import {
   type RenameRecord,
   renameFiles,
 } from "@mux-magic/core/src/app-commands/renameFiles.js"
+import {
+  type RenameFilesAndFoldersRecord,
+  renameFilesAndFolders,
+} from "@mux-magic/core/src/app-commands/renameFilesAndFolders.js"
 import { renameMovieClipDownloads } from "@mux-magic/core/src/app-commands/renameMovieClipDownloads.js"
 import { renumberChapters } from "@mux-magic/core/src/app-commands/renumberChapters.js"
 import {
@@ -93,6 +105,10 @@ import {
   replaceTracks,
   replaceTracksDefaultProps,
 } from "@mux-magic/core/src/app-commands/replaceTracks.js"
+import {
+  type ScanAudioFilesRecord,
+  scanAudioFiles,
+} from "@mux-magic/core/src/app-commands/scanAudioFiles.js"
 import { setDisplayWidth } from "@mux-magic/core/src/app-commands/setDisplayWidth.js"
 import {
   splitChapters,
@@ -103,6 +119,7 @@ import {
   splitCueSheetDefaultProps,
 } from "@mux-magic/core/src/app-commands/splitCueSheet.js"
 import { storeAspectRatioData } from "@mux-magic/core/src/app-commands/storeAspectRatioData.js"
+import { writeAudioTags } from "@mux-magic/core/src/app-commands/writeAudioTags.js"
 import { makeDirectory } from "@mux-magic/tools"
 import type { Context } from "hono"
 import type { Observable } from "rxjs"
@@ -188,6 +205,137 @@ export const commandConfigs: Record<
   CommandName,
   CommandConfig
 > = {
+  // ─── Music tagging ──────────────────────────────────────────────────
+  //
+  // The Picard/MP3Tag replacement. Read first, then match, then review in
+  // the tag table, then write, then file. Only two of these change a file,
+  // and both have a dry run.
+  scanAudioFiles: {
+    getObservable: (body) =>
+      scanAudioFiles({
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      audioFilePaths: (results as ScanAudioFilesRecord[])
+        .filter((record) => record.kind === "scanned")
+        .map((record) => record.filePath),
+      unreadableFilePaths: (
+        results as ScanAudioFilesRecord[]
+      )
+        .filter((record) => record.kind === "unreadable")
+        .map((record) => record.filePath),
+    }),
+    schema: schemas.scanAudioFilesRequestSchema,
+    summary:
+      "Walk a folder for audio files and report each one's existing tags, codec, bit depth, sample rate and duration. Pure read — no filesystem mutation.",
+    tags: ["Music Tagging"],
+  },
+  matchMusicBrainzRelease: {
+    getObservable: (body) =>
+      matchMusicBrainzRelease({
+        candidateFetchLimit: body.candidateFetchLimit,
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      matchedFilePaths: (
+        results as MusicMatchClusterRecord[]
+      ).flatMap((cluster) =>
+        cluster.files
+          .filter(
+            (file) => file.rankedCandidates.length > 0,
+          )
+          .map((file) => file.filePath),
+      ),
+    }),
+    schema: schemas.matchMusicBrainzReleaseRequestSchema,
+    summary:
+      "Cluster a folder's audio files into candidate albums from their existing tags, search MusicBrainz for each cluster, and attach ranked releases with a proposed tag set per file. Read-only — the tag table is where a match is accepted.",
+    tags: ["Music Tagging"],
+  },
+  writeAudioTags: {
+    getObservable: (body) =>
+      writeAudioTags({
+        isDryRun: body.isDryRun,
+        isRecursive: body.isRecursive,
+        isTimestampPreserved: body.isTimestampPreserved,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+        // Only the fields the caller actually set are forwarded. An absent
+        // key means "leave what is there" all the way down to the writer,
+        // so spreading `body` wholesale would turn every unset field into
+        // an explicit clear.
+        tags: Object.fromEntries(
+          (
+            [
+              "album",
+              "albumArtist",
+              "artist",
+              "comment",
+              "composer",
+              "date",
+              "genres",
+              "totalDiscs",
+            ] as const
+          )
+            .filter((field) => body[field] !== undefined)
+            .map((field) => [field, body[field]]),
+        ),
+      }),
+    schema: schemas.writeAudioTagsRequestSchema,
+    summary:
+      "Set the same tag fields on every audio file under a folder — MP3Tag's bulk edit. The reviewed, per-file write behind the tag table is POST /music/tags, not this command.",
+    tags: ["Music Tagging"],
+  },
+  renameAndMoveAudioFiles: {
+    getObservable: (body) =>
+      renameAndMoveAudioFiles({
+        isDryRun: body.isDryRun,
+        isOverwriteAllowed: body.isOverwriteAllowed,
+        isRecursive: body.isRecursive,
+        libraryRoot: body.libraryRoot,
+        namingScript: body.namingScript,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      movedFilePaths: (
+        results as RenameAndMoveAudioFilesRecord[]
+      )
+        .filter((record) => record.kind === "moved")
+        .map((record) => record.destination),
+    }),
+    schema: schemas.renameAndMoveAudioFilesRequestSchema,
+    summary:
+      "File tagged audio into the library tree using the Picard naming script. Each file's own tags decide its destination, so run this after the tags are right.",
+    tags: ["Music Tagging"],
+  },
+  renameFilesAndFolders: {
+    getObservable: (body) =>
+      renameFilesAndFolders({
+        isDryRun: body.isDryRun,
+        isRenamingFiles: body.isRenamingFiles,
+        isRenamingFolders: body.isRenamingFolders,
+        nameFilterRegex: body.nameFilterRegex,
+        recursiveDepth: body.recursiveDepth,
+        renameRegex: body.renameRegex,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      renamedPaths: (
+        results as RenameFilesAndFoldersRecord[]
+      )
+        .filter((record) => record.kind === "renamed")
+        .map((record) => record.destination),
+    }),
+    schema: schemas.renameFilesAndFoldersRequestSchema,
+    summary:
+      "Rename files and folders by regex. The general renamer — renaming was previously only ever a side effect of a naming command, and renameFiles covers files only.",
+    tags: ["File Operations"],
+  },
   makeDirectory: {
     getObservable: (body) => makeDirectory(body.sourcePath),
     schema: schemas.makeDirectoryRequestSchema,

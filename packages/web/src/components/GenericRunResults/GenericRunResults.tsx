@@ -22,6 +22,10 @@ const SPECIALIZED_RENDERER_COMMANDS = new Set<string>([
   // twice — once as the NSF rename list, once as this panel's generic
   // "Renamed" accordion.
   "onlyNameSpecialFeaturesDvdCompare",
+  // `MusicMatchRunResults` owns this one. Its records are per-file rows
+  // carrying a whole ranked candidate set; the generic JSON dump renders
+  // them as an unreadable wall and hides the Review Tags button under it.
+  "matchMusicBrainzRelease",
 ])
 
 const headingByKind: Record<string, string> = {
