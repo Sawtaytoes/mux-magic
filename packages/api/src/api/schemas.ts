@@ -1695,6 +1695,18 @@ export const splitChaptersRequestSchema = z.object({
     .describe(
       "Space-separated list of comma-separated chapter markers. Splits occur at the beginning of the chapter.",
     ),
+  isRenumberingChapters: z
+    .boolean()
+    .default(true)
+    .describe(
+      "Renumber each split file's `Chapter NN` names so they start at 1 (default true). A split part inherits the play-all file's numbering, so part 2 opens on `Chapter 04` without this. Parts with custom chapter names (`Opening`, `Eyecatch`) are left alone.",
+    ),
+  isPaddingChapterNumbers: z
+    .boolean()
+    .default(true)
+    .describe(
+      "Zero-pad the renumbered chapter names (default true) — produces `Chapter 01..N` (width ≥ 2). Set false for `Chapter 1..N`. Ignored when chapter renumbering is off.",
+    ),
 })
 
 export const splitCueSheetRequestSchema = z.object({

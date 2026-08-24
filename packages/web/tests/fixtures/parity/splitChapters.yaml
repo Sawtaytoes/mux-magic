@@ -5,4 +5,4 @@ paths:
 steps:
   - id: step-fixture
     command: splitChapters
-    params: {sourcePath: '@basePath', chapterSplits: [ch1, ch2]}
+    params: {sourcePath: '@basePath', chapterSplits: [ch1, ch2], isRenumberingChapters: false, isPaddingChapterNumbers: false}
