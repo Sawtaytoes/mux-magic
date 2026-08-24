@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-08-24 | [The bulk tag command and the reviewed per-file write stay separate](2026-08-24-the-bulk-tag-command-and-the-reviewed-write-are-separate.md) | core / server/api / web | Accepted |
 | 2026-08-24 | [The tagger's defaults reproduce Picard exactly, and re-tagging a filed album is a no-op](2026-08-24-the-tagger-reproduces-picard-defaults-exactly.md) | core / web | Accepted |
 | 2026-08-24 | [Provider responses cache in SQLite, and the cache is disposable](2026-08-24-provider-responses-cache-in-sqlite.md) | core | Accepted |
 | 2026-08-21 | [Subtitle track names are provenance and survive extraction as base64url](2026-08-21-subtitle-track-names-are-provenance-and-survive-as-base64url.md) | core | Accepted |

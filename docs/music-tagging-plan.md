@@ -1,6 +1,7 @@
 # Music tagging and ingest live inside Mux-Magic — the build plan
 
-*Status: plan, not started. Owner-settled 2026-08-24.*
+*Status: phases 0–4 and 7 built and reachable from the app. Phases 5, 6, 8 and 9
+are not started. Owner-settled 2026-08-24; status updated 2026-08-24.*
 
 The goal is to stop using **MP3Tag + Picard** as a pair and get one surface that does
 what both do: MusicBrainz matching, VGMdb matching, AcoustID fingerprinting, bulk tag
@@ -151,16 +152,30 @@ Assistant's API is a better door than its database file. See [§9](#9-open-quest
 
 ### Commands (all sequenceable, `packages/core/src/app-commands/`)
 
-| Command | Job |
-| --- | --- |
-| `scanAudioFiles` | Walk a folder. Read existing tags, duration, codec, bit depth, sample rate. Emits the row set every later step consumes. |
-| `fingerprintAudioFiles` | Run `fpcalc` per file, query AcoustID, attach recording ids and scores. |
-| `matchMusicBrainzRelease` | Cluster files into an album, search MusicBrainz, rank candidate releases, attach ranked candidates per file. |
-| `matchVgmdbRelease` | The same for VGMdb — game and anime soundtracks that MusicBrainz covers badly. This is the MP3Tag script being replaced. |
-| `writeAudioTags` | Write the accepted tag set to the files. The only step that mutates tags. |
-| `renameAndMoveAudioFiles` | Apply the naming template and move into the library tree. |
-| `findDuplicateAudioFiles` | Compare candidates by fingerprint, by tags, and by decoded audio; rank which copy is better by codec, bit depth, sample rate and source. |
-| `renameFilesAndFolders` | The general renamer Mux-Magic lacks today. Not music-specific. |
+| Command | Job | Built? |
+| --- | --- | --- |
+| `scanAudioFiles` | Walk a folder. Read existing tags, duration, codec, bit depth, sample rate. Emits the row set every later step consumes. | ✅ |
+| `fingerprintAudioFiles` | Run `fpcalc` per file, query AcoustID, attach recording ids and scores. | ❌ phase 5 |
+| `matchMusicBrainzRelease` | Cluster files into an album, search MusicBrainz, rank candidate releases, attach ranked candidates per file. | ✅ |
+| `matchVgmdbRelease` | The same for VGMdb — game and anime soundtracks that MusicBrainz covers badly. This is the MP3Tag script being replaced. | ❌ phase 6 |
+| `writeAudioTags` | Write the accepted tag set to the files. The only step that mutates tags. | ✅ |
+| `renameAndMoveAudioFiles` | Apply the naming template and move into the library tree. | ✅ |
+| `findDuplicateAudioFiles` | Compare candidates by fingerprint, by tags, and by decoded audio; rank which copy is better by codec, bit depth, sample rate and source. | ❌ phase 8 |
+| `renameFilesAndFolders` | The general renamer Mux-Magic lacks today. Not music-specific. | ✅ |
+
+**A command is reachable only when five registries agree**, and there is no
+compile-time link between them — `packages/web/src/commands/commands.test.ts` is
+the only guard. The five are `api/commandNames.ts`, `api/schemas.ts`,
+`api/routes/commandRoutes.ts`, `web/commands/commands.ts` and
+`web/jobs/commandLabels.ts`. A command missing from the last two is callable over
+the API and invisible in the builder.
+
+**`writeAudioTags` the command is the BULK edit, not the reviewed write.** It sets
+one tag set over a whole folder — MP3Tag's bulk field edit, [§5](#writing-back-to-musicbrainz-and-acoustid)
+item 1 of the MP3Tag list. The reviewed, per-file write behind the tag table's
+Apply button is `POST /music/tags`, one row per request, so a per-row failure
+stays on that row. A command that applied per-file MusicBrainz proposals with no
+review would be the blind CLI run that was rejected; it is deliberately not built.
 
 ### Interactive surfaces (all opened by a command run)
 
@@ -322,6 +337,18 @@ The real values for all six variables live in the root `.env` and in
 ---
 
 ## 8. Phases
+
+> **Where the build actually stands, 2026-08-24.** Phases 0, 1, 2, 3, 4 and 7 are
+> built, tested and reachable from the sequence builder. Phase 7's general
+> renamer (`renameFilesAndFolders`) landed with it. Phases 5, 6, 8 and 9 are not
+> started, and their three commands are therefore **not** registered — a command
+> in the picker that throws is worse than one that is not there yet.
+>
+> Two things phase 2 needed that this plan did not name, both now built under
+> `packages/core/src/music/matching/`: `matchReleaseTracksToFiles` (which track on
+> the matched release is THIS file — title, duration and position, greedily
+> assigned, nothing used twice) and `buildProposedTags` (a release plus that track
+> turned into the tag set the review table diffs against).
 
 **Phase 0 — foundations.** `provider-cache.sqlite` plus the cache wrapper, retro-fitted to
 DVDCompare and AniDB first. This ships value before any music code exists and proves the
