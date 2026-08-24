@@ -43,6 +43,7 @@ import {
   isMissingSubtitlesRequestSchema,
   keepLanguagesRequestSchema,
   makeDirectoryRequestSchema,
+  matchMusicBrainzReleaseRequestSchema,
   mergeTracksRequestSchema,
   modifySubtitleMetadataRequestSchema,
   moveFilesIntoNamedFoldersRequestSchema,
@@ -54,7 +55,9 @@ import {
   nameTvShowEpisodesRequestSchema,
   onlyNameSpecialFeaturesDvdCompareRequestSchema,
   remuxToMkvRequestSchema,
+  renameAndMoveAudioFilesRequestSchema,
   renameDemosRequestSchema,
+  renameFilesAndFoldersRequestSchema,
   renameFilesRequestSchema,
   renameMovieClipDownloadsRequestSchema,
   renumberChaptersRequestSchema,
@@ -62,15 +65,248 @@ import {
   replaceAttachmentsRequestSchema,
   replaceFlacWithPcmAudioRequestSchema,
   replaceTracksRequestSchema,
+  scanAudioFilesRequestSchema,
   setDisplayWidthRequestSchema,
   splitChaptersRequestSchema,
   splitCueSheetRequestSchema,
   storeAspectRatioDataRequestSchema,
+  writeAudioTagsRequestSchema,
 } from "@mux-magic/api/api-schemas"
 import type { Commands } from "../commands/types"
 import { fieldBuilder } from "./buildFields"
 
 export const COMMANDS: Commands = {
+  // Music Tagging
+  //
+  // The Picard/MP3Tag replacement. Read, match, review, write, file — in
+  // that order. `matchMusicBrainzRelease` opens the tag review table when
+  // its run finishes; nothing here writes without either a review or an
+  // explicit dry run first.
+  scanAudioFiles: (() => {
+    const field = fieldBuilder(scanAudioFilesRequestSchema)
+    return {
+      summary:
+        "Walk a folder for audio files and report each one's existing tags, codec, bit depth, sample rate and duration. Pure read.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      outputs: [
+        { name: "audioFilePaths", label: "Audio files" },
+        {
+          name: "unreadableFilePaths",
+          label: "Unreadable files",
+        },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Music Folder",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  matchMusicBrainzRelease: (() => {
+    const field = fieldBuilder(
+      matchMusicBrainzReleaseRequestSchema,
+    )
+    return {
+      summary:
+        "Cluster a folder's audio files into candidate albums, search MusicBrainz, and attach ranked releases with a proposed tag set per file. Opens the tag review table when the run finishes.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      outputs: [
+        {
+          name: "matchedFilePaths",
+          label: "Matched files",
+        },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Music Folder",
+        }),
+        field("candidateFetchLimit", {
+          type: "number",
+          label: "Candidate releases per row",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  writeAudioTags: (() => {
+    const field = fieldBuilder(writeAudioTagsRequestSchema)
+    return {
+      summary:
+        "Set the same tag fields on every audio file under a folder — MP3Tag's bulk edit. Leave a field empty to keep what each file already has.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      note: "Writes files. Run it once with Dry run on and read the report before turning it off.",
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Music Folder",
+        }),
+        field("isDryRun", {
+          type: "boolean",
+          label: "Dry run",
+        }),
+        field("albumArtist", {
+          type: "string",
+          label: "Album Artist",
+        }),
+        field("album", {
+          type: "string",
+          label: "Album",
+        }),
+        field("artist", {
+          type: "string",
+          label: "Artist",
+        }),
+        field("date", {
+          type: "string",
+          label: "Date",
+        }),
+        field("genres", {
+          type: "stringArray",
+          label: "Genres",
+        }),
+        field("composer", {
+          type: "string",
+          label: "Composer",
+        }),
+        field("comment", {
+          type: "string",
+          label: "Comment",
+        }),
+        field("totalDiscs", {
+          type: "number",
+          label: "Total Discs",
+        }),
+        field("isTimestampPreserved", {
+          type: "boolean",
+          label: "Keep modified times",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  renameAndMoveAudioFiles: (() => {
+    const field = fieldBuilder(
+      renameAndMoveAudioFilesRequestSchema,
+    )
+    return {
+      summary:
+        "File tagged audio into the library tree using the Picard naming script. Each file's own tags decide its destination, so run this after the tags are right.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      note: "Moves files. Run it once with Dry run on — a wrong tag becomes a wrong folder.",
+      outputs: [
+        { name: "movedFilePaths", label: "Filed files" },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Music Folder",
+        }),
+        field("libraryRoot", {
+          type: "path",
+          label: "Library Root",
+        }),
+        field("isDryRun", {
+          type: "boolean",
+          label: "Dry run",
+        }),
+        field("isOverwriteAllowed", {
+          type: "boolean",
+          label: "Allow overwrite",
+        }),
+        field("namingScript", {
+          type: "string",
+          label: "Naming script (optional)",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  renameFilesAndFolders: (() => {
+    const field = fieldBuilder(
+      renameFilesAndFoldersRequestSchema,
+    )
+    return {
+      summary:
+        "Rename files and folders by regex. The general renamer — Rename Files covers files only.",
+      tag: "File Operations",
+      outputFolderName: null,
+      note: "Renames on disk. Run it once with Dry run on and read the report before turning it off.",
+      outputs: [
+        { name: "renamedPaths", label: "Renamed paths" },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        field("renameRegex", {
+          type: "renameRegex",
+          label: "Rename Regex",
+        }),
+        field("isDryRun", {
+          type: "boolean",
+          label: "Dry run",
+        }),
+        field("nameFilterRegex", {
+          type: "regexWithFlags",
+          label: "Name filter",
+          isRequired: false,
+        }),
+        field("isRenamingFiles", {
+          type: "boolean",
+          label: "Rename files",
+        }),
+        field("isRenamingFolders", {
+          type: "boolean",
+          label: "Rename folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+        }),
+      ],
+    }
+  })(),
+
   // File Operations
   makeDirectory: (() => {
     const field = fieldBuilder(makeDirectoryRequestSchema)
@@ -1952,6 +2188,7 @@ export const TAG_ORDER = [
   "File Operations",
   "Flow Control",
   "Audio Operations",
+  "Music Tagging",
   "Track Operations",
   "Subtitle Operations",
   "Analysis",
