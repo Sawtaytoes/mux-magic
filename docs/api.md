@@ -124,7 +124,7 @@ All commands are started with `POST`. The body is JSON. `sourcePath` is required
 | `POST /commands/replaceFlacWithPcmAudio` | `sourcePath` | `isRecursive` |
 | `POST /commands/replaceTracks` | `sourcePath`, `destinationFilesPath` | `hasAudioSyncOffset`, `globalOffset`, `includeChapters`, `isOverwritingExtractedAudio`, `audioLanguages`[], `subtitlesLanguages`[], `videoLanguages`[], `offsets`[] |
 | `POST /commands/setDisplayWidth` | `sourcePath` | `isRecursive`, `recursiveDepth`, `displayWidth` |
-| `POST /commands/splitChapters` | `sourcePath`, `chapterSplits`[] | — |
+| `POST /commands/splitChapters` | `sourcePath`, `chapterSplits`[] | `isRenumberingChapters`, `isPaddingChapterNumbers` |
 | `POST /commands/splitCueSheet` | `sourcePath` | `isRecursive`, `outputFolderName` |
 | `POST /commands/storeAspectRatioData` | `sourcePath` | `isRecursive`, `recursiveDepth`, `outputPath`, `rootPath`, `folders`[], `force` |
 
