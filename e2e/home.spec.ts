@@ -9,7 +9,7 @@ test.describe("Tool picker", () => {
     await page.goto(`${webBaseUrl}/`)
 
     await expect(
-      page.getByRole("heading", { name: "Mux-Magic" }),
+      page.getByRole("heading", { name: "Mux Magic" }),
     ).toBeVisible()
     await expect(
       page.getByRole("heading", { name: "Builder" }),

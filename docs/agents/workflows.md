@@ -74,7 +74,7 @@ Push rule depends on which role you are — see `Multi-Agent Workflow` above. Pr
 
 ## Worker Addressing
 
-The Mux-Magic huge revamp uses sequential 2-hex worker IDs (`01`–`35`+) with the manifest table at [docs/workers/MANIFEST.md](../workers/MANIFEST.md). Each worker has a corresponding prompt file at `docs/workers/<id>_<slug>.md`. Workers update their own row in the manifest when they start (`in-progress`) and finish (`done`); IDs are never renumbered.
+The Mux Magic huge revamp uses sequential 2-hex worker IDs (`01`–`35`+) with the manifest table at [docs/workers/MANIFEST.md](../workers/MANIFEST.md). Each worker has a corresponding prompt file at `docs/workers/<id>_<slug>.md`. Workers update their own row in the manifest when they start (`in-progress`) and finish (`done`); IDs are never renumbered.
 
 ## Worker Port / PID Protocol
 
