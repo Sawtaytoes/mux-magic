@@ -6492,7 +6492,7 @@ export interface paths {
         };
         /**
          * Build identity (git sha, build time, package + node version)
-         * @description Returns the build identity stamped into `public/api/version.json` by `scripts/build-version.cjs`. Mirrors Mux-Magic's existing `/server-id/stream` precedent — boot identity has its sibling here in build identity. Falls back to `{ gitSha: "dev" }` when the prebuild hook didn't run, so dev environments still answer.
+         * @description Returns the build identity stamped into `public/api/version.json` by `scripts/build-version.cjs`. Mirrors Mux Magic's existing `/server-id/stream` precedent — boot identity has its sibling here in build identity. Falls back to `{ gitSha: "dev" }` when the prebuild hook didn't run, so dev environments still answer.
          */
         get: {
             parameters: {

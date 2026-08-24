@@ -9,7 +9,7 @@
       "default": "./src/jobs/types.ts"
     }
   },
-  "description": "React 19 + Vite frontend for Mux-Magic.",
+  "description": "React 19 + Vite frontend for Mux Magic.",
   "scripts": {
     "build:storybook": "storybook build --config-dir .storybook",
     "build": "vite build",

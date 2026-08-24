@@ -1,6 +1,6 @@
-# Mux-Magic
+# Mux Magic
 
-![Mux-Magic logo](docs/images/mux-magic-logo.png)
+![Mux Magic logo](docs/images/mux-magic-logo.png)
 
 A Node.js toolkit for batch media file operations:
 
