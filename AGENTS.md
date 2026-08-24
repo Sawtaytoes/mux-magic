@@ -16,6 +16,7 @@ A Node.js CLI and REST API for batch media file operations (MKV track manipulati
 |-------|-----|
 | **Locked decisions — settled choices that must not be silently reverted** | [docs/decisions/](docs/decisions/README.md) |
 | Runbook — combine two releases (video from A, subs from B); flatten + filename-pairing recipe | [docs/combining-two-releases.md](docs/combining-two-releases.md) |
+| **Music tagging — the Picard/MP3Tag replacement: naming rules, defaults, phases** | [docs/picard-parity.md](docs/picard-parity.md), [docs/music-tagging-plan.md](docs/music-tagging-plan.md) |
 | Code rules, naming, function style, no-barrels, indentation | [docs/agents/code-rules.md](docs/agents/code-rules.md) |
 | **Pickers — every picker is a `Listbox`/`Picker`, never a native `Select`** | [docs/agents/code-rules.md#pickers--always-a-listbox-never-a-native-select](docs/agents/code-rules.md#pickers--always-a-listbox-never-a-native-select) |
 | Testing — frameworks, pre-merge gate, forbidden styles, coverage discipline | [docs/agents/testing.md](docs/agents/testing.md) |

@@ -1,0 +1,84 @@
+{/* TagMatchModal.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as TagMatchModalStories from "./TagMatchModal.stories";
+
+<Meta of={TagMatchModalStories} />
+
+# TagMatchModal
+
+The music tagger's review table. It is the port of `SmartMatchModal` for audio files, and it replaces both MusicBrainz Picard's review surfaces and MP3Tag's bulk edits.
+
+The difference from Smart Match is the whole design: **a Smart Match row commits one filename; a music row commits many fields.** So each row carries a release picker, a confidence badge, and an expandable per-field diff — current value beside proposed value, for all eleven tag fields.
+
+## Behaviour
+
+- **Open** → set `tagMatchModalAtom` to `{ jobId, stepId, sourcePath, files }`. The files arrive pre-ranked from the server, so the modal is a pure presenter.
+- **Pre-checked rows** → a row is checked when its top candidate scores at or above `FILE_LOOKUP_THRESHOLD` (**0.7**). This is Picard's `file_lookup_threshold`, **not** SmartMatch's `LOW_CONFIDENCE_THRESHOLD` of 0.6. Music has its own three thresholds and reusing the video number would mis-gate every row.
+- **Unmatched rows** → below `TRACK_MATCHING_THRESHOLD` (**0.4**) the badge reads "Unmatched" and the row is tinted with the danger surface. Picard would not match the track at all at that score.
+- **Release picker** → `ReleaseCandidatePicker`, showing country / format / year / track count / label per option. This is Picard's manual release search.
+- **Expand a row** → reveals one `TagFieldDiff` per field. Added, changed and removed fields carry colour; unchanged fields stay quiet. This replaces Picard's two-pane view and its tag difference view, and it is the review step that makes the tagger trustworthy.
+- **Free-hand editing** → while a row is unapplied, every proposed value is a text input. `genres` edits as a comma-separated string and commits as an array.
+- **Bulk edit disclosure** (the MP3Tag half) → hidden by default so the review table stays the default view. It holds two controls:
+  1. **Apply a value to every included row** — set album artist, year or genre across 40 files at once, with no MusicBrainz match behind it.
+  2. **Find and replace across one field**, over the included rows, with the affected-row count shown before it commits.
+- **Preview** → the ▶ button opens `audioPreviewModalAtom` for that file. It commits nothing.
+- **Select all** → the header checkbox is tri-state over the rows that are not yet applied. One click resolves either direction.
+- **Apply** → sequentially POSTs one request per included row. Successful rows turn green and read "Tags written"; a failed row keeps its error inline and the modal stays open. The modal closes only when every row succeeded.
+- **Layout** → this is a genuine data table, so it stays a `<table>`. The workspace rule that a list of cards is a grid does not apply to columns meant to be compared down the column.
+
+## Atom wiring
+
+| Atom | Role |
+|------|------|
+| `tagMatchModalAtom` | `{ jobId, stepId, sourcePath, files } \| null` — visibility plus the ranked payload |
+| `appliedTagWritesByJobIdAtom` | `Map<jobId, { filePath, tags }[]>` — per-job log of the writes that succeeded, for the step card to read |
+| `audioPreviewModalAtom` | Set by the per-row ▶ button. The audio one, not the video one. |
+
+## Server endpoint
+
+`POST /api/music/tags`, body `{ filePath, tags }`, response `{ isOk, error }` — one request per row. **The route does not exist yet**; it is owned by the music-tagging API work. The modal only calls it.
+
+## Thresholds
+
+| Constant | Value | Picard name | Use here |
+|----------|-------|-------------|----------|
+| `FILE_LOOKUP_THRESHOLD` | 0.7 | `file_lookup_threshold` | A row at or above this starts checked. |
+| `CLUSTER_LOOKUP_THRESHOLD` | 0.7 | `cluster_lookup_threshold` | The same bar for a whole cluster. |
+| `TRACK_MATCHING_THRESHOLD` | 0.4 | `track_matching_threshold` | A row below this shows as unmatched. |
+
+## High confidence
+
+Every row is at or above 0.7, so every row starts checked.
+
+<Canvas of={TagMatchModalStories.HighConfidence} />
+
+## Mixed confidence
+
+The third row scores 0.65 — above SmartMatch's 0.6, below the music threshold of 0.7 — so it starts unchecked. This story is the visible proof that the two thresholds are not shared.
+
+<Canvas of={TagMatchModalStories.MixedConfidence} />
+
+## Unmatched
+
+Every row is below 0.4. Nothing is pre-checked and the badges read "Unmatched". The second file has no candidates at all.
+
+<Canvas of={TagMatchModalStories.Unmatched} />
+
+## Expanded row showing the diff
+
+Opens with the first row already expanded, so the per-field diff is reviewable on load.
+
+<Canvas of={TagMatchModalStories.ExpandedRowShowingDiff} />
+
+## Bulk edit open
+
+Opens with the bulk-edit disclosure already open.
+
+<Canvas of={TagMatchModalStories.BulkEditOpen} />
+
+## Empty
+
+Defensive: the trigger fired with no files, so the modal renders a focused message rather than an empty table.
+
+<Canvas of={TagMatchModalStories.Empty} />

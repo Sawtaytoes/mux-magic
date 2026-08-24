@@ -1,0 +1,34 @@
+{/* MusicMatchRunResults.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as MusicMatchRunResultsStories from "./MusicMatchRunResults.stories";
+
+<Meta of={MusicMatchRunResultsStories} />
+
+# MusicMatchRunResults
+
+The post-run panel for a `matchMusicBrainzRelease` job, and the only door into the tag review table. It is the music twin of `NsfRunResults`, and it is deliberately the same shape: a count line, then a trigger that seeds the modal with rows the server already ranked.
+
+The match command writes nothing. Everything this panel offers is a review step, which is why the match and the write are separate commands at all — `docs/picard-parity.md` §7.6 records that a blind run was rejected and the tag difference view is what replaced it.
+
+## Behaviour
+
+- **Renders nothing when there are no rows.** The panel is mounted for every step card, so a non-music run must not leave an empty box behind.
+- **The count line separates matched from unmatched.** "Matched" means the file has at least one candidate release, not that the match is good enough to accept unattended — the modal applies Picard's three thresholds per row.
+- **Unmatched files are listed by name.** A bonus track or a hidden track often has no release entry, and the user needs to know which file before opening the table.
+- **No source path, no trigger.** The modal commits per-file absolute paths, so a run whose `sourcePath` could not be resolved shows its counts and no button, rather than a button that fails on click.
+- **Rows already applied do not come back.** The hosting component filters the rows against that job's applied tag writes, so re-opening after an Apply does not re-offer work that is done. Same rule `NsfRunResults` follows for applied renames.
+
+## Props
+
+| Prop | Type | Role |
+|------|------|------|
+| `files` | `TagMatchFile[]` | The flattened rows from every cluster in the run. |
+| `jobId` | `string` | Job that produced them. Keys the applied-writes log. |
+| `sourcePath` | `string \| null` | Folder the run walked. `null` hides the trigger. |
+| `stepId` | `string` | Step that ran, carried through to the modal. |
+
+<Canvas of={MusicMatchRunResultsStories.EveryFileMatched} />
+<Canvas of={MusicMatchRunResultsStories.SomeFilesUnmatched} />
+<Canvas of={MusicMatchRunResultsStories.NothingMatched} />
+<Canvas of={MusicMatchRunResultsStories.NoSourcePath} />

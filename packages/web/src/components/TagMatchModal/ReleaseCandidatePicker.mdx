@@ -1,0 +1,47 @@
+{/* ReleaseCandidatePicker.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as ReleaseCandidatePickerStories from "./ReleaseCandidatePicker.stories";
+
+<Meta of={ReleaseCandidatePickerStories} />
+
+# ReleaseCandidatePicker
+
+The per-row release picker inside `TagMatchModal`. It is the tagger's version of Picard's manual release search: reject the automatic match and pick another release by hand, from a list that shows country, format, year, track count and label. That meta line is the step that stops a wrong match, so it is on every option, not hidden behind a details view.
+
+Ported from `SmartMatchModal/RenameTargetPicker.tsx`.
+
+## Behaviour
+
+- **Under six candidates → `Listbox`. Six or more → `Combobox`.** A long release list is faster to type into than to scan. The cut-over is `SEARCHABLE_CANDIDATE_COUNT`.
+- **Two-row option** — release title and artist on top, then the meta chips: country, format, year, track count, label, source, confidence. Absent facts are simply omitted.
+- **`textValue` carries the searchable text** — the whole meta line, so a query for a country or a label still finds the release.
+- **Confidence colour** — green at or above `FILE_LOOKUP_THRESHOLD` (0.7), amber at or above `TRACK_MATCHING_THRESHOLD` (0.4), red below it.
+- **Never a native `<select>` and never Charcuterie's `<Select>`.** An `<option>` cannot render the meta row, and the native control paints as the OS widget.
+- **`selectedReleaseId` is a seed.** The listbox owns its selection after mount; the modal keeps the committed value in its row state.
+
+## Props
+
+| Prop | Type | Role |
+|------|------|------|
+| `candidates` | `ScoredReleaseCandidate[]` | Ranked releases for this file. |
+| `selectedReleaseId` | `string` | Seed selection. |
+| `onSelect` | `(releaseId: string) => void` | Commits a pick to the row. |
+| `isDisabled` | `boolean` | `true` once the row is applied, or while the batch is writing. |
+| `ariaLabel` | `string` | Base of the trigger's accessible name. The name also carries the current release title, which is how a test asserts the selection — there is no DOM `value` on a listbox. |
+
+## Few candidates
+
+<Canvas of={ReleaseCandidatePickerStories.FewCandidates} />
+
+## Many candidates (searchable)
+
+<Canvas of={ReleaseCandidatePickerStories.ManyCandidatesSearchable} />
+
+## No selection
+
+<Canvas of={ReleaseCandidatePickerStories.NoSelection} />
+
+## Disabled
+
+<Canvas of={ReleaseCandidatePickerStories.Disabled} />

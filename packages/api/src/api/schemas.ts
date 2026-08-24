@@ -2359,3 +2359,273 @@ export const audioCodecResponseSchema = z.object({
       "Error message when validation or mediainfo failed; null on success.",
     ),
 })
+
+// ─── Music tagging ────────────────────────────────────────────────────────
+//
+// The Picard/MP3Tag replacement. `docs/music-tagging-plan.md` §5 is the
+// command list and `docs/picard-parity.md` is the behaviour specification.
+//
+// Three commands here take the same folder-walk pair (`isRecursive` +
+// `recursiveDepth`) as the rest of the app, so a music step chains off a
+// copy or a move exactly like a video one.
+
+const musicSourcePathSchema = z
+  .string()
+  .describe(
+    "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka.",
+  )
+
+const musicIsRecursiveSchema = z
+  .boolean()
+  .default(false)
+  .describe(
+    "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+  )
+
+const musicRecursiveDepthSchema = z
+  .number()
+  .default(1)
+  .describe(
+    "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+  )
+
+export const scanAudioFilesRequestSchema = z.object({
+  isRecursive: musicIsRecursiveSchema,
+  recursiveDepth: musicRecursiveDepthSchema,
+  sourcePath: musicSourcePathSchema,
+})
+
+export const matchMusicBrainzReleaseRequestSchema =
+  z.object({
+    candidateFetchLimit: z
+      .number()
+      .default(5)
+      .describe(
+        "How many ranked releases are fetched in full and offered per row. MusicBrainz allows one request per second, so each extra candidate costs about a second per album. Five covers the usual wrong-country or wrong-year correction.",
+      ),
+    isRecursive: musicIsRecursiveSchema,
+    recursiveDepth: musicRecursiveDepthSchema,
+    sourcePath: musicSourcePathSchema,
+  })
+
+// The tag fields a bulk edit can set. Deliberately flat rather than a
+// nested `tags` object: the builder renders one input per field, and a
+// nested object would be an unusable blob in the step form and in the YAML.
+export const writeAudioTagsRequestSchema = z.object({
+  album: z
+    .string()
+    .optional()
+    .describe(
+      "Album title to set on every matched file. Leave empty to keep whatever each file already has.",
+    ),
+  albumArtist: z
+    .string()
+    .optional()
+    .describe(
+      "Album artist to set on every matched file. This is the field that decides the library folder, so it is the most common bulk edit.",
+    ),
+  artist: z
+    .string()
+    .optional()
+    .describe(
+      "Track artist to set on every matched file. On a compilation this differs per track, so set it here only when every file really does share one artist.",
+    ),
+  comment: z
+    .string()
+    .optional()
+    .describe("Comment to set on every matched file."),
+  composer: z
+    .string()
+    .optional()
+    .describe("Composer to set on every matched file."),
+  date: z
+    .string()
+    .optional()
+    .describe(
+      "Release date to set on every matched file. MusicBrainz style is `YYYY-MM-DD`, and a bare `YYYY` is accepted.",
+    ),
+  genres: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "Genres to set on every matched file. Multi-value: the tag holds each entry separately, never one joined string.",
+    ),
+  isDryRun: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Report which files would change, and which fields, without writing anything. Run this first — the report is the same shape as the real run.",
+    ),
+  isRecursive: musicIsRecursiveSchema,
+  isTimestampPreserved: z
+    .boolean()
+    .default(true)
+    .describe(
+      "Restore each file's modified time after writing. On by default so a re-tag does not make every album look new to the library scanner.",
+    ),
+  recursiveDepth: musicRecursiveDepthSchema,
+  sourcePath: musicSourcePathSchema,
+  totalDiscs: z
+    .number()
+    .optional()
+    .describe(
+      "Total disc count to set on every matched file.",
+    ),
+})
+
+export const renameAndMoveAudioFilesRequestSchema =
+  z.object({
+    isDryRun: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Report the planned moves without touching a file. Run this first: the destination comes from each file's own tags, so a wrong tag becomes a wrong folder.",
+      ),
+    isOverwriteAllowed: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Allow a move to replace an existing file at the destination. Off by default — a clash is reported and the file is left alone.",
+      ),
+    isRecursive: musicIsRecursiveSchema,
+    libraryRoot: z
+      .string()
+      .describe(
+        "Root of the destination library tree. The naming script builds every folder below it, so this is the only path the command is given.",
+      ),
+    namingScript: z
+      .string()
+      .optional()
+      .describe(
+        "Picard naming script to use instead of the default. The default is the owner's own script, verified byte-identical across two machines and eight years — override it only for a one-off.",
+      ),
+    recursiveDepth: musicRecursiveDepthSchema,
+    sourcePath: musicSourcePathSchema,
+  })
+
+export const renameFilesAndFoldersRequestSchema = z.object({
+  isDryRun: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Report the planned renames without touching anything.",
+    ),
+  isRenamingFiles: z
+    .boolean()
+    .default(true)
+    .describe("Apply the rename to files."),
+  isRenamingFolders: z
+    .boolean()
+    .default(true)
+    .describe(
+      "Apply the rename to folders. Folders rename deepest-first so a parent rename cannot invalidate a child that has not been renamed yet.",
+    ),
+  nameFilterRegex: z
+    .union([
+      z.string(),
+      z.object({
+        pattern: z.string(),
+        flags: z.string().optional(),
+      }),
+    ])
+    .optional()
+    .describe(
+      "Only rename entries whose name matches this pattern. Omit to consider every entry.",
+    ),
+  recursiveDepth: z
+    .number()
+    .default(0)
+    .describe(
+      "How many folder levels below the source to walk. 0 renames only the direct children of the source folder.",
+    ),
+  renameRegex: z
+    .union([
+      z.object({
+        pattern: z.string(),
+        replacement: z.string(),
+        flags: z.string().optional(),
+        sample: z.string().optional(),
+      }),
+      z.array(
+        z.object({
+          pattern: z.string(),
+          replacement: z.string(),
+          flags: z.string().optional(),
+          sample: z.string().optional(),
+        }),
+      ),
+    ])
+    .describe(
+      "The rename itself: a pattern and its replacement, or an ordered list applied left to right. The extension is part of the name a file rule sees.",
+    ),
+  sourcePath: z
+    .string()
+    .describe(
+      "Folder whose contents are renamed. The folder itself is never renamed.",
+    ),
+})
+
+// The reviewed, per-file tag write behind the tag table's Apply button.
+// One row, one request — so a per-row failure stays a per-row failure.
+export const musicTagWriteRequestSchema = z.object({
+  filePath: z
+    .string()
+    .describe(
+      "Absolute path of the audio file to write. Must be absolute and traversal-free.",
+    ),
+  isDryRun: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Report which fields would change without writing the file.",
+    ),
+  isTimestampPreserved: z
+    .boolean()
+    .default(true)
+    .describe(
+      "Restore the file's modified time after writing.",
+    ),
+  tags: z
+    .object({
+      album: z.string().optional(),
+      albumArtist: z.string().optional(),
+      artist: z.string().optional(),
+      comment: z.string().optional(),
+      composer: z.string().optional(),
+      date: z.string().optional(),
+      discNumber: z.number().optional(),
+      genres: z.array(z.string()).optional(),
+      isCompilation: z.boolean().optional(),
+      musicBrainzAlbumArtistId: z.string().optional(),
+      musicBrainzArtistId: z.string().optional(),
+      musicBrainzRecordingId: z.string().optional(),
+      musicBrainzReleaseGroupId: z.string().optional(),
+      musicBrainzReleaseId: z.string().optional(),
+      title: z.string().optional(),
+      totalDiscs: z.number().optional(),
+      totalTracks: z.number().optional(),
+      trackNumber: z.number().optional(),
+    })
+    .describe(
+      "The tag set to write. Only the fields present are compared and written; an absent field means leave whatever the file already has.",
+    ),
+})
+
+export const musicTagWriteResponseSchema = z.object({
+  changedFields: z
+    .array(z.string())
+    .describe(
+      "Names of the fields that changed, or would change under `isDryRun`. Empty when the file already carried these values.",
+    ),
+  error: z
+    .string()
+    .nullable()
+    .describe(
+      "Why the write failed; null on success. The tag table renders this on the row.",
+    ),
+  isOk: z
+    .boolean()
+    .describe(
+      "Whether the write succeeded. The tag table marks the row from this field.",
+    ),
+})
