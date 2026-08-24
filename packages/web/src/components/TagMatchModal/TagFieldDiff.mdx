@@ -1,0 +1,57 @@
+{/* TagFieldDiff.mdx */}
+
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as TagFieldDiffStories from "./TagFieldDiff.stories";
+
+<Meta of={TagFieldDiffStories} />
+
+# TagFieldDiff
+
+One tag field's current value beside its proposed value. `TagMatchModal` renders one of these per field when a row is expanded, which is the tagger's replacement for Picard's tag difference view. It is the review step, and it is the reason a blind CLI run was rejected: the user must see which fields change and which do not, before anything is written.
+
+## Behaviour
+
+- **Change type** — derived from the two values as `added` / `changed` / `removed` / `unchanged`. Exported as `deriveTagChangeType` so the modal and its tests share one rule.
+- **Multi-value fields compare as ordered arrays.** A reordered genre list is a change, the same way Picard treats it.
+- **Numbers compare numerically.** `"01"` and `1` are the same value, so a zero-padded track number does not read as a spurious change.
+- **Colour carries the change type** — `bg-intent-success-surface` for added, `bg-intent-warning-surface` for changed, `bg-intent-danger-surface` for removed, no fill for unchanged. An unchanged field is visually quiet; a changed one is obvious.
+- **Editable proposed side** — when `isEditable`, the proposed value is a text input. This is free-hand editing of any tag, including tags MusicBrainz has no opinion about (the MP3Tag behaviour).
+- **`genres` round-trips through text** — it edits as a comma-separated string and commits as an array.
+
+## Props
+
+| Prop | Type | Role |
+|------|------|------|
+| `fieldName` | `AudioTagFieldName` | Which tag this row shows. Drives the label and the parse rules. |
+| `currentValue` | `TagValue` | The value read off the file. |
+| `proposedValue` | `TagValue` | The value that would be written. |
+| `isEditable` | `boolean` | `false` once the row is applied or while the batch is writing. |
+| `onChange` | `(value: TagValue) => void` | Commits a typed edit back to the row's `editedTags`. |
+
+## Test hooks
+
+`data-tag-match-field="<fieldName>"` on the row, `data-tag-match-change-type="<changeType>"` beside it, and `data-tag-match-field-input="<fieldName>"` on the editable input.
+
+## Unchanged
+
+<Canvas of={TagFieldDiffStories.Unchanged} />
+
+## Numeric unchanged
+
+<Canvas of={TagFieldDiffStories.NumericUnchanged} />
+
+## Added
+
+<Canvas of={TagFieldDiffStories.Added} />
+
+## Changed
+
+<Canvas of={TagFieldDiffStories.Changed} />
+
+## Removed
+
+<Canvas of={TagFieldDiffStories.Removed} />
+
+## Editable genres
+
+<Canvas of={TagFieldDiffStories.EditableGenres} />

@@ -11,8 +11,15 @@ test("reuses one fetcher per provider so the rate limiter survives", async () =>
     "MUSICBRAINZ_USER_AGENT",
     "mux-magic-test/0.0.0 ( test@example.com )",
   )
-  const createCachedFetch = vi.fn(() =>
-    vi.fn(async () => ({ body: "{}", isFromCache: true })),
+  const createCachedFetch = vi.fn(
+    (_options: {
+      minimumRequestIntervalMilliseconds: number
+      provider: string
+    }) =>
+      vi.fn(async () => ({
+        body: "{}",
+        isFromCache: true,
+      })),
   )
   vi.doMock("../provider-cache/cachedFetch.js", () => ({
     createCachedFetch,
@@ -36,7 +43,9 @@ test("reuses one fetcher per provider so the rate limiter survives", async () =>
   )
 
   expect(createCachedFetch).toHaveBeenCalledTimes(1)
-  expect(createCachedFetch.mock.calls[0][0]).toMatchObject({
+  expect(
+    createCachedFetch.mock.calls[0]?.[0],
+  ).toMatchObject({
     minimumRequestIntervalMilliseconds: 1000,
     provider: "musicBrainz",
   })
@@ -47,8 +56,15 @@ test("each provider gets its own fetcher and its own interval", async () => {
     "MUSICBRAINZ_USER_AGENT",
     "mux-magic-test/0.0.0 ( test@example.com )",
   )
-  const createCachedFetch = vi.fn(() =>
-    vi.fn(async () => ({ body: "{}", isFromCache: true })),
+  const createCachedFetch = vi.fn(
+    (_options: {
+      minimumRequestIntervalMilliseconds: number
+      provider: string
+    }) =>
+      vi.fn(async () => ({
+        body: "{}",
+        isFromCache: true,
+      })),
   )
   vi.doMock("../provider-cache/cachedFetch.js", () => ({
     createCachedFetch,
