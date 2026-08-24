@@ -2,7 +2,7 @@
 
 ## Why this doc exists
 
-Before media-sync was migrated to drive Mux-Magic by sequence-step JSON, all
+Before media-sync was migrated to drive Mux Magic by sequence-step JSON, all
 default ASS-subtitle "fixups" were computed client-side by a single function
 called `buildDefaultSubtitleModificationRules`. That function read every
 `.ass` file's `[Script Info]` plus `[V4+ Styles]` metadata, ran a small
@@ -27,7 +27,7 @@ heuristic emits (ScriptType pin, YCbCr Matrix override, MarginV/L/R and
 optional resolution rescale). It is **not** sufficient for any of the five
 "should this rule even fire?" or "what number goes in this field?"
 decisions the heuristic currently makes. Those decisions have moved into
-TypeScript (`computeDefaultSubtitleRules` in Mux-Magic), not into YAML.
+TypeScript (`computeDefaultSubtitleRules` in Mux Magic), not into YAML.
 
 We recommend keeping it that way (Road A below).
 

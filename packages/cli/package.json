@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Mux-Magic command-line interface (yargs adapters on top of @mux-magic/api's app-commands).",
+  "description": "Mux Magic command-line interface (yargs adapters on top of @mux-magic/api's app-commands).",
   "scripts": {
     "cli": "tsx src/cli.ts",
     "test": "vitest",
