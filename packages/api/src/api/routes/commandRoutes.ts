@@ -67,6 +67,7 @@ import {
   keepLanguages,
   keepLanguagesDefaultProps,
 } from "@mux-magic/core/src/app-commands/keepLanguages.js"
+import { matchFreedbRelease } from "@mux-magic/core/src/app-commands/matchFreedbRelease.js"
 import {
   type MusicMatchClusterRecord,
   matchMusicBrainzRelease,
@@ -320,6 +321,30 @@ export const commandConfigs: Record<
     schema: schemas.matchMusicBrainzReleaseRequestSchema,
     summary:
       "Cluster a folder's audio files into candidate albums from their existing tags, search MusicBrainz for each cluster, and attach ranked releases with a proposed tag set per file. Read-only — the tag table is where a match is accepted.",
+    tags: ["Music Tagging"],
+  },
+  matchFreedbRelease: {
+    getObservable: (body) =>
+      matchFreedbRelease({
+        candidateLimit: body.candidateLimit,
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      matchedFilePaths: (
+        results as MusicMatchClusterRecord[]
+      ).flatMap((cluster) =>
+        cluster.files
+          .filter(
+            (file) => file.rankedCandidates.length > 0,
+          )
+          .map((file) => file.filePath),
+      ),
+    }),
+    schema: schemas.matchFreedbReleaseRequestSchema,
+    summary:
+      "Match a folder against general freedb — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. freedb is user-submitted CD metadata with no editorial review and no ids to link back to, so run it last. Like VGMdb it identifies a whole disc by track count and total playing time, so point it at ONE disc. Read-only.",
     tags: ["Music Tagging"],
   },
   matchVgmdbRelease: {

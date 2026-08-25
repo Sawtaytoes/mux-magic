@@ -86,6 +86,13 @@ export const vgmdbCddbCachedFetch = buildFetcher({
   provider: "vgmdbCddb",
 })
 
+// General freedb, the third fallback. Its own limiter, so a freedb pass
+// cannot eat VGMdb's interval or the other way round.
+export const freedbCddbCachedFetch = buildFetcher({
+  minimumRequestIntervalMilliseconds: 500,
+  provider: "freedbCddb",
+})
+
 export const coverArtCachedFetch = buildFetcher({
   minimumRequestIntervalMilliseconds:
     COVER_ART_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,

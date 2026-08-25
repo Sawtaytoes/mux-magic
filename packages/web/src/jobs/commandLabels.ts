@@ -88,6 +88,7 @@ export const commandLabels: Record<string, string> = {
   findDuplicateAudioFiles: "Find Duplicate Audio Files",
   matchMusicBrainzRelease: "Match MusicBrainz Release",
   matchVgmdbRelease: "Match VGMdb Release",
+  matchFreedbRelease: "Match freedb Release",
   writeAudioTags: "Write Audio Tags",
   renameAndMoveAudioFiles: "Rename and Move Audio Files",
 

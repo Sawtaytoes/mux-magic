@@ -2442,6 +2442,18 @@ export const matchMusicBrainzReleaseRequestSchema =
 // The tag fields a bulk edit can set. Deliberately flat rather than a
 // nested `tags` object: the builder renders one input per field, and a
 // nested object would be an unusable blob in the step form and in the YAML.
+export const matchFreedbReleaseRequestSchema = z.object({
+  candidateLimit: z
+    .number()
+    .default(4)
+    .describe(
+      "How many matched freedb discs to read in full and offer per row.",
+    ),
+  isRecursive: musicIsRecursiveSchema,
+  recursiveDepth: musicRecursiveDepthSchema,
+  sourcePath: musicSourcePathSchema,
+})
+
 export const matchVgmdbReleaseRequestSchema = z.object({
   candidateLimit: z
     .number()

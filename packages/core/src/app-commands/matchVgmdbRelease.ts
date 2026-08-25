@@ -8,19 +8,21 @@ import { concatMap, from, map, of, toArray } from "rxjs"
 
 import type { AudioTags } from "../music/tags/audioTagFields.js"
 import {
+  type CddbServer,
+  queryVgmdbCddb,
+  readVgmdbCddbAlbum,
+  VGMDB_CDDB_SERVER,
+  type VgmdbCddbAlbum,
+  type VgmdbCddbLanguage,
+  type VgmdbCddbMatch,
+} from "../tools/cddbApi.js"
+import {
   type AudioFileCluster,
   clusterAudioFiles,
 } from "../tools/clusterAudioFiles.js"
 import type { CachedFetch } from "../tools/musicBrainzApi.js"
 import { vgmdbCddbCachedFetch } from "../tools/musicProviderFetchers.js"
 import { scoreTextSimilarity } from "../tools/rankReleaseCandidates.js"
-import {
-  queryVgmdbCddb,
-  readVgmdbCddbAlbum,
-  type VgmdbCddbAlbum,
-  type VgmdbCddbLanguage,
-  type VgmdbCddbMatch,
-} from "../tools/vgmdbCddbApi.js"
 import type {
   MusicMatchClusterRecord,
   MusicMatchScoredCandidate,
@@ -74,6 +76,16 @@ export type MatchVgmdbReleaseProps = {
   sourcePath: string
 }
 
+// Both CDDB-backed commands run this identical pipeline. They differ in
+// the server they ask and the label the review table shows, and in
+// nothing else — so they share one implementation rather than two copies
+// that drift.
+export type MatchCddbReleaseProps =
+  MatchVgmdbReleaseProps & {
+    server?: CddbServer
+    sourceLabel?: "freedb" | "vgmdb"
+  }
+
 // Track order, and the tags are trusted over the filename when they carry
 // a number. The disc id is computed from this order, so getting it wrong
 // produces a different id and no match at all.
@@ -91,11 +103,23 @@ const orderClusterFiles = (
       ),
   )
 
-const toCandidate = (album: VgmdbCddbAlbum) => ({
+const toCandidate = ({
+  album,
+  sourceLabel,
+}: {
+  album: VgmdbCddbAlbum
+  sourceLabel: "freedb" | "vgmdb"
+}) => ({
   artistName: album.artistName,
-  releaseId: album.vgmdbAlbumId,
+  // freedb has no album id of its own, so the disc id is the only stable
+  // handle a row can carry. Leaving it empty would make every candidate
+  // look like the same release to the table's sort and de-duplication.
+  releaseId:
+    album.vgmdbAlbumId.length > 0
+      ? album.vgmdbAlbumId
+      : `${album.category}:${album.discId}`,
   releaseTitle: album.albumTitle,
-  source: "vgmdb" as const,
+  source: sourceLabel,
   trackCount: album.trackTitles.length,
   year: album.year.length > 0 ? album.year : undefined,
 })
@@ -184,14 +208,16 @@ const buildScoredCandidate = ({
   album,
   baseConfidence,
   records,
+  sourceLabel,
   trackIndex,
 }: {
   album: VgmdbCddbAlbum
   baseConfidence: number
   records: ScanAudioFilesScannedRecord[]
+  sourceLabel: "freedb" | "vgmdb"
   trackIndex: number
 }): MusicMatchScoredCandidate => ({
-  candidate: toCandidate(album),
+  candidate: toCandidate({ album, sourceLabel }),
   confidence: buildCandidateConfidence({
     album,
     baseConfidence,
@@ -208,11 +234,13 @@ const assembleClusterRecord = ({
   baseConfidence,
   cluster,
   records,
+  sourceLabel,
 }: {
   albums: VgmdbCddbAlbum[]
   baseConfidence: number
   cluster: AudioFileCluster
   records: ScanAudioFilesScannedRecord[]
+  sourceLabel: "freedb" | "vgmdb"
 }): MusicMatchClusterRecord => ({
   album: cluster.album,
   albumArtist: cluster.albumArtist,
@@ -233,6 +261,7 @@ const assembleClusterRecord = ({
           album,
           baseConfidence,
           records,
+          sourceLabel,
           trackIndex: recordIndex,
         }),
       )
@@ -256,12 +285,16 @@ const matchOneCluster = ({
   cluster,
   filesByPath,
   language,
+  server,
+  sourceLabel,
 }: {
   cachedFetch: CachedFetch
   candidateLimit: number
   cluster: AudioFileCluster
   filesByPath: Map<string, ScanAudioFilesScannedRecord>
   language: VgmdbCddbLanguage
+  server: CddbServer
+  sourceLabel: "freedb" | "vgmdb"
 }) =>
   ((records: ScanAudioFilesScannedRecord[]) =>
     // A file with no readable duration cannot contribute an offset, and
@@ -277,11 +310,13 @@ const matchOneCluster = ({
             baseConfidence: 0,
             cluster,
             records,
+            sourceLabel,
           }),
         )
       : queryVgmdbCddb({
           cachedFetch,
           language,
+          server,
           trackLengthsSeconds: records.map(
             (record) => record.info.durationSeconds ?? 0,
           ),
@@ -299,6 +334,7 @@ const matchOneCluster = ({
                       category: match.category,
                       discId: match.discId,
                       language,
+                      server,
                     }),
                   ),
                   toArray(),
@@ -317,6 +353,7 @@ const matchOneCluster = ({
               baseConfidence,
               cluster,
               records,
+              sourceLabel,
             }),
           ),
         ))(
@@ -332,14 +369,16 @@ const matchOneCluster = ({
     ),
   )
 
-export const matchVgmdbRelease = ({
+export const matchCddbRelease = ({
   cachedFetch = vgmdbCddbCachedFetch,
   candidateLimit = DEFAULT_VGMDB_CANDIDATE_LIMIT,
   isRecursive = false,
   language = "default",
   recursiveDepth = 1,
+  server = VGMDB_CDDB_SERVER,
+  sourceLabel = "vgmdb",
   sourcePath,
-}: MatchVgmdbReleaseProps) =>
+}: MatchCddbReleaseProps) =>
   scanAudioFiles({
     isRecursive,
     recursiveDepth,
@@ -360,8 +399,8 @@ export const matchVgmdbRelease = ({
       ) =>
         ((clusters: AudioFileCluster[]) => {
           logInfo(
-            "matchVgmdbRelease",
-            `${scannedRecords.length} audio files in ${clusters.length} clusters. VGMdb matches a whole disc by track count and total playing time, so a folder holding more than one disc will not match.`,
+            "matchCddbRelease",
+            `${scannedRecords.length} audio files in ${clusters.length} clusters. ${server.name} matches a whole disc by track count and total playing time, so a folder holding more than one disc will not match.`,
           )
           return clusters.length === 0
             ? of<MusicMatchClusterRecord[]>([])
@@ -373,6 +412,8 @@ export const matchVgmdbRelease = ({
                     cluster,
                     filesByPath,
                     language,
+                    server,
+                    sourceLabel,
                   }),
                 ),
                 toArray(),
@@ -393,5 +434,14 @@ export const matchVgmdbRelease = ({
         ),
       ),
     ),
-    logAndRethrowPipelineError(matchVgmdbRelease),
+    logAndRethrowPipelineError(matchCddbRelease),
   )
+
+export const matchVgmdbRelease = (
+  props: MatchVgmdbReleaseProps,
+) =>
+  matchCddbRelease({
+    ...props,
+    server: VGMDB_CDDB_SERVER,
+    sourceLabel: "vgmdb",
+  })

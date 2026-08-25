@@ -3,22 +3,55 @@ import { from, map, type Observable } from "rxjs"
 
 import type { CachedFetch } from "./musicBrainzApi.js"
 
-// VGMdb, reached through the freedb/CDDB server emulator VGMdb runs
-// itself. Announced by a VGMdb administrator in 2009 and still answering
-// in 2026.
+// The freedb/CDDB protocol, spoken to two different servers.
 //
-// ⚠️ This is the route that WORKS, and the reason matters. VGMdb's web
-// pages sit behind a Cloudflare managed challenge that headless Chromium
-// does not pass — measured 403 from a datacentre address AND from the
-// household's own address. The community JSON mirror at vgmdb.info is
-// offline. The CDDB endpoint is plain HTTP, needs **no account and no
-// cookie**, and is not challenged. Verified 2026-08-25 against real
-// library albums.
+// VGMdb runs its own freedb emulator, announced by a VGMdb administrator
+// in 2009 and still answering in 2026. General freedb is the fallback
+// for everything VGMdb has never heard of.
+//
+// ⚠️ For VGMdb this is the route that WORKS, and the reason matters. Its
+// web pages sit behind a Cloudflare managed challenge that headless
+// Chromium does not pass — measured 403 from a datacentre address AND
+// from the household's own address — and the community JSON mirror at
+// vgmdb.info is offline. The CDDB endpoint is plain HTTP, needs **no
+// account and no cookie**, and is not challenged. Verified 2026-08-25
+// against real library albums.
 //
 // Do not "modernise" this into an HTTPS JSON call. There is no official
 // VGMdb JSON API; this emulator is the supported programmatic surface.
 
-export const VGMDB_CDDB_BASE_URL = "http://vgmdb.net/cddb"
+export type CddbServer = {
+  // VGMdb encodes its album id in the CATEGORY (`Soundtrack141255`).
+  // General freedb uses real freedb categories (`misc`, `rock`, `data`),
+  // which carry no id at all, so an id must not be invented from them.
+  hasAlbumIdInCategory: boolean
+  // Only VGMdb's emulator serves a language segment on the path.
+  hasLanguagePaths: boolean
+  baseUrl: string
+  name: string
+}
+
+export const VGMDB_CDDB_SERVER: CddbServer = {
+  baseUrl: "http://vgmdb.net/cddb",
+  hasAlbumIdInCategory: true,
+  hasLanguagePaths: true,
+  name: "VGMdb",
+}
+
+// ⚠️ NOT `gnudb.gnudb.org`, which is the better-known successor. gnudb
+// refuses an unregistered client — it answers `500 Unknown application`
+// to our own honest `hello`, and accepts only application names it knows.
+// Getting in by borrowing a legacy client's identity would be a lie told
+// to a service that explicitly asks developers to register, so the
+// default is the dBpoweramp mirror, which accepts our real name and
+// answered a live query on 2026-08-25. Point `FREEDB_CDDB_SERVER` at
+// gnudb once an application name is registered there.
+export const FREEDB_CDDB_SERVER: CddbServer = {
+  baseUrl: "http://freedb.dbpoweramp.com/~cddb",
+  hasAlbumIdInCategory: false,
+  hasLanguagePaths: false,
+  name: "freedb",
+}
 
 // The announcement lists a language segment on the path. When a title is
 // not recorded in the asked-for language the server reverts to the
@@ -140,10 +173,16 @@ export const buildDiscId = (
     buildTrackOffsets(trackLengthsSeconds),
   )
 
-const buildBaseUrl = (language: VgmdbCddbLanguage) =>
-  language === "default"
-    ? `${VGMDB_CDDB_BASE_URL}/cddb.cgi`
-    : `${VGMDB_CDDB_BASE_URL}/${language}/cddb.cgi`
+const buildBaseUrl = ({
+  language,
+  server,
+}: {
+  language: VgmdbCddbLanguage
+  server: CddbServer
+}) =>
+  language === "default" || !server.hasLanguagePaths
+    ? `${server.baseUrl}/cddb.cgi`
+    : `${server.baseUrl}/${language}/cddb.cgi`
 
 // `hello` identifies the client and is required by the protocol. `proto=6`
 // asks for UTF-8 rather than the protocol's original Latin-1, which is not
@@ -151,15 +190,19 @@ const buildBaseUrl = (language: VgmdbCddbLanguage) =>
 const buildCommandUrl = ({
   command,
   language,
+  server,
 }: {
   command: string
   language: VgmdbCddbLanguage
+  server: CddbServer
 }) =>
-  `${buildBaseUrl(language)}?${new URLSearchParams({
-    cmd: command,
-    hello: "muxmagic octen.dev mux-magic 1.0.0",
-    proto: "6",
-  }).toString()}`
+  `${buildBaseUrl({ language, server })}?${new URLSearchParams(
+    {
+      cmd: command,
+      hello: "muxmagic octen.dev mux-magic 1.0.0",
+      proto: "6",
+    },
+  ).toString()}`
 
 export const buildQueryCommand = (
   trackLengthsSeconds: number[],
@@ -177,7 +220,13 @@ export const buildQueryCommand = (
 export const extractVgmdbAlbumId = (category: string) =>
   category.replace(/^\D+/u, "")
 
-const parseMatchLine = (line: string): VgmdbCddbMatch => {
+const parseMatchLine = ({
+  line,
+  server,
+}: {
+  line: string
+  server: CddbServer
+}): VgmdbCddbMatch => {
   const [category = "", discId = "", ...titleParts] = line
     .trim()
     .split(" ")
@@ -185,7 +234,9 @@ const parseMatchLine = (line: string): VgmdbCddbMatch => {
     albumTitle: titleParts.join(" "),
     category,
     discId,
-    vgmdbAlbumId: extractVgmdbAlbumId(category),
+    vgmdbAlbumId: server.hasAlbumIdInCategory
+      ? extractVgmdbAlbumId(category)
+      : "",
   }
 }
 
@@ -193,16 +244,23 @@ const parseMatchLine = (line: string): VgmdbCddbMatch => {
 // status. `211` (and `210`) open a list that runs until a lone `.`. `202`
 // means no match, which is a normal outcome for an album VGMdb has never
 // seen, not a failure.
-export const parseQueryResponse = (
-  body: string,
-): VgmdbCddbMatch[] =>
+export const parseQueryResponse = ({
+  body,
+  server = VGMDB_CDDB_SERVER,
+}: {
+  body: string
+  server?: CddbServer
+}): VgmdbCddbMatch[] =>
   ((lines: string[]) =>
     ((statusCode: string) =>
       statusCode === "200"
         ? [
-            parseMatchLine(
-              (lines.at(0) ?? "").slice("200 ".length),
-            ),
+            parseMatchLine({
+              line: (lines.at(0) ?? "").slice(
+                "200 ".length,
+              ),
+              server,
+            }),
           ]
         : statusCode === "211" || statusCode === "210"
           ? lines
@@ -212,7 +270,9 @@ export const parseQueryResponse = (
                   line.trim().length > 0 &&
                   line.trim() !== ".",
               )
-              .map(parseMatchLine)
+              .map((line) =>
+                parseMatchLine({ line, server }),
+              )
           : [])((lines.at(0) ?? "").slice(0, 3)))(
     body.split(/\r?\n/u),
   )
@@ -256,10 +316,12 @@ export const parseReadResponse = ({
   body,
   category,
   discId,
+  server = VGMDB_CDDB_SERVER,
 }: {
   body: string
   category: string
   discId: string
+  server?: CddbServer
 }): VgmdbCddbAlbum =>
   ((fields: Map<string, string>) =>
     ((titleParts: {
@@ -279,7 +341,9 @@ export const parseReadResponse = ({
             Number(secondKey.slice("TTITLE".length)),
         )
         .map(([, value]) => value),
-      vgmdbAlbumId: extractVgmdbAlbumId(category),
+      vgmdbAlbumId: server.hasAlbumIdInCategory
+        ? extractVgmdbAlbumId(category)
+        : "",
       year: fields.get("DYEAR") ?? "",
     }))(splitDiscTitle(fields.get("DTITLE") ?? "")))(
     parseXmcd(body),
@@ -288,10 +352,12 @@ export const parseReadResponse = ({
 export const queryVgmdbCddb = ({
   cachedFetch,
   language = "default",
+  server = VGMDB_CDDB_SERVER,
   trackLengthsSeconds,
 }: {
   cachedFetch: CachedFetch
   language?: VgmdbCddbLanguage
+  server?: CddbServer
   trackLengthsSeconds: number[]
 }): Observable<VgmdbCddbMatch[]> =>
   from(
@@ -299,10 +365,11 @@ export const queryVgmdbCddb = ({
       buildCommandUrl({
         command: buildQueryCommand(trackLengthsSeconds),
         language,
+        server,
       }),
     ),
   ).pipe(
-    map(({ body }) => parseQueryResponse(body)),
+    map(({ body }) => parseQueryResponse({ body, server })),
     logAndRethrowPipelineError(queryVgmdbCddb),
   )
 
@@ -311,22 +378,30 @@ export const readVgmdbCddbAlbum = ({
   category,
   discId,
   language = "default",
+  server = VGMDB_CDDB_SERVER,
 }: {
   cachedFetch: CachedFetch
   category: string
   discId: string
   language?: VgmdbCddbLanguage
+  server?: CddbServer
 }): Observable<VgmdbCddbAlbum> =>
   from(
     cachedFetch(
       buildCommandUrl({
         command: `cddb read ${category} ${discId}`,
         language,
+        server,
       }),
     ),
   ).pipe(
     map(({ body }) =>
-      parseReadResponse({ body, category, discId }),
+      parseReadResponse({
+        body,
+        category,
+        discId,
+        server,
+      }),
     ),
     logAndRethrowPipelineError(readVgmdbCddbAlbum),
   )

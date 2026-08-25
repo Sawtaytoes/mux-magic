@@ -51,7 +51,7 @@ export type ReleaseCandidate = {
   year?: string
   trackCount?: number
   label?: string
-  source: "musicbrainz" | "vgmdb"
+  source: "freedb" | "musicbrainz" | "vgmdb"
 }
 
 export type ScoredReleaseCandidate = {
