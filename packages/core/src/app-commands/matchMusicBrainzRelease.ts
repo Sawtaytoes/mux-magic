@@ -65,7 +65,11 @@ export type MusicMatchReleaseCandidate = {
   label?: string
   releaseId: string
   releaseTitle: string
-  source: "musicbrainz"
+  // Both providers, because both feed the SAME review table. The web
+  // mirror of this type (`ReleaseCandidate` in `tagMatchTypes.ts`) has
+  // carried the pair since it was written; the server side only caught up
+  // when `matchVgmdbRelease` was built.
+  source: "musicbrainz" | "vgmdb"
   trackCount?: number
   year?: string
 }

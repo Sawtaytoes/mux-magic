@@ -1,8 +1,7 @@
 # Music tagging and ingest live inside Mux-Magic — the build plan
 
-*Status: every phase except 6 is built and reachable from the app. Phase 6 is
-blocked by VGMdb's bot protection and needs an owner decision. Owner-settled
-2026-08-24; status updated 2026-08-25.*
+*Status: every phase, 0 through 9, is built and reachable from the app.
+Owner-settled 2026-08-24; status updated 2026-08-25.*
 
 The goal is to stop using **MP3Tag + Picard** as a pair and get one surface that does
 what both do: MusicBrainz matching, VGMdb matching, AcoustID fingerprinting, bulk tag
@@ -158,7 +157,7 @@ Assistant's API is a better door than its database file. See [§9](#9-open-quest
 | `scanAudioFiles` | Walk a folder. Read existing tags, duration, codec, bit depth, sample rate. Emits the row set every later step consumes. | ✅ |
 | `fingerprintAudioFiles` | Run `fpcalc` per file, query AcoustID, attach recording ids and scores. | ✅ |
 | `matchMusicBrainzRelease` | Cluster files into an album, search MusicBrainz, rank candidate releases, attach ranked candidates per file. | ✅ |
-| `matchVgmdbRelease` | The same for VGMdb — game and anime soundtracks that MusicBrainz covers badly. This is the MP3Tag script being replaced. | ❌ phase 6 |
+| `matchVgmdbRelease` | The same for VGMdb — game and anime soundtracks that MusicBrainz covers badly. This is the MP3Tag script being replaced. | ✅ |
 | `writeAudioTags` | Write the accepted tag set to the files. The only step that mutates tags. | ✅ |
 | `renameAndMoveAudioFiles` | Apply the naming template and move into the library tree. | ✅ |
 | `findDuplicateAudioFiles` | Compare candidates by fingerprint, by tags, and by decoded audio; rank which copy is better by codec, bit depth, sample rate and source. | ✅ |
@@ -339,12 +338,11 @@ The real values for all six variables live in the root `.env` and in
 
 ## 8. Phases
 
-> **Where the build actually stands, 2026-08-25.** Every phase except 6 is built
-> and tested: 0, 1, 2, 3, 4, 5, 7, 8 and 9. Phase 7's general renamer
-> (`renameFilesAndFolders`) landed with it. **Phase 6 is blocked by VGMdb's bot
-> protection** — see below — and its `matchVgmdbRelease` command is therefore
-> deliberately **not** registered, because a command in the picker that throws is
-> worse than one that is not there yet.
+> **Where the build actually stands, 2026-08-25. Every phase is built and tested**
+> — 0 through 9. Phase 7's general renamer (`renameFilesAndFolders`) landed with
+> it. Phase 6 reaches VGMdb through its own freedb/CDDB emulator, which needs no
+> account and no cookie; the Cloudflare-blocked web pages and the offline JSON
+> mirror are both dead ends, and the table under phase 6 records why.
 >
 > Two things phase 2 needed that this plan did not name, both now built under
 > `packages/core/src/music/matching/`: `matchReleaseTracksToFiles` (which track on
@@ -391,89 +389,50 @@ measured against the live service, and both fail silently rather than loudly.
 **A scored result with no linked recording is normal, not a failure.** AcoustID
 knows the audio; nobody has tied it to MusicBrainz. It stays a row.
 
-**Phase 6 — VGMdb.** ⛔ **Blocked, and not by us.** The scraper and
-`matchVgmdbRelease` are not built, because there is currently no way to read VGMdb
-that does not need a credential the owner has to refresh by hand.
+**Phase 6 — VGMdb.** ✅ Built against **VGMdb's own freedb/CDDB server emulator**,
+which is the route that works.
 
-Measured 2026-08-25, from three different addresses:
+⚠️ **Read this before "modernising" it into an HTTPS JSON call.** Three routes to
+VGMdb were measured on 2026-08-25, and only one answers:
 
 | Route | Result |
 | --- | --- |
-| `vgmdb.net` with plain `fetch` | **403** |
-| `vgmdb.net` with headless Chromium and a desktop User-Agent, from this workspace | **403**, Cloudflare interstitial |
-| `vgmdb.net` the same way from the household's own address, inside the running app container | **403**, page title *"Just a moment…"*, challenge never resolves |
-| `vgmdb.info` (the community JSON mirror) | **No route to host** on 443, connection refused on 80 — the hosted instance is down |
+| `vgmdb.net` web pages, plain fetch or headless Chromium, from a datacentre address AND from the household's own address | **403**, Cloudflare interstitial, challenge never resolves |
+| `vgmdb.info`, the community JSON mirror | **No route to host** — the public instance is offline, and upstream now requires a browser cookie anyway |
+| **`http://vgmdb.net/cddb`, the freedb emulator** | **Works.** Plain HTTP, no account, no cookie, not challenged |
 
-So the plan's stated default — *"the safest default is to scrape it ourselves"* —
-does not work today: VGMdb sits behind a Cloudflare managed challenge that headless
-Chromium does not pass, from a residential address.
+VGMdb has run this emulator since 2009, announced by a VGMdb administrator, and it
+still answers. It needs **no credential of any kind**, which is what makes it the
+supported programmatic surface rather than a workaround.
 
-**The mirror's provenance is fine, and is not the problem.** `hufman/vgmdb` is MIT,
-by Walter Huf (Netherlands), 112 stars, last pushed 2026-04-19, not archived — the
-Chinese-origin constraint does not bite. The problem is that its own users report
-the same wall: issues through 2026 describe 403 and 503 against a self-hosted
-instance, and the only workaround anybody has is a `cf_clearance` cookie harvested
-from a logged-in browser **at the same address**, which expires in about a day. The
-upstream author says plainly that he is unsure how the protection works.
+**Four things the protocol forces, none of them our choice:**
 
-**What that leaves is a decision, not a code change** — self-host the mirror and
-accept a cookie the owner re-harvests, or leave VGMdb alone and keep using the MP3Tag
-script for game and anime soundtracks.
+1. **A disc is identified by its track count and total playing time**, not by its
+   name or its tags. So the files must be in TRACK ORDER, and the folder must hold
+   ONE disc — a flattened two-disc set matches nothing. The command says so in its
+   own summary rather than failing quietly.
+2. **A VGMdb track carries no track number and no recording id.** Its position in
+   the returned list IS its number, so proposals are assigned by position.
+3. **The disc id checksum sits in the TOP byte**, and JavaScript's bitwise
+   operators produce a SIGNED 32-bit result. Without an unsigned coercion, roughly
+   half of all discs compute a negative id and match nothing. Two disc ids
+   *accepted by the live server* are pinned as regression fixtures, because no
+   other test would catch this.
+4. **`proto=6` is required**, not optional: it asks for UTF-8 rather than the
+   protocol's original Latin-1, and VGMdb is full of Japanese titles.
 
-### The API contract, found and pinned — 2026-08-25
+**The category carries the VGMdb album id** (`Soundtrack141255`), which is how a
+CDDB result becomes a link back to the site.
 
-The owner recalled "an API that the MP3Tag script works with". Both halves of that
-were checked, and the answer is more useful than either guess:
+**Language** is an explicit option — `default`, `en`, `ja`, `ja-Latn` — because the
+owner keeps two variants of the MP3Tag script for exactly this. ⚠️ The server
+reverts to the default when an album carries no title in the language asked for, so
+two settings can legitimately return identical text; measured on two albums, both
+of which carry only one language.
 
-**The MP3Tag script is NOT an API client.** `VGMdb_by_URL.src` (version 2.5.1,
-dated 2025-02-25) takes a pasted `vgmdb.net` album URL and **scrapes the HTML** —
-it looks for `<!-- main page contents -->`, `class="albumtitle"` and
-`id="coverart"`. There is no endpoint in it. It works from the owner's Windows
-desktop because Mp3tag makes a browser-shaped request from a machine that has
-already cleared Cloudflare.
-
-**The API is `vgmdb.info`, and it is the same hufman mirror.** This was pinned from
-a second, independent artefact: the household's Jellyfin **VGMdb plugin**
-(`Jellyfin.Plugin.Vgmdb.dll`) calls
-
-```
-https://vgmdb.info/album/<id>?format=json
-https://vgmdb.info/search?format=json&q=<query>
-```
-
-So `?format=json` on any `vgmdb.info` path is the contract, and a **published JSON
-schema** exists at `hufman/vgmdb` under `schema/album.json`. Build the client
-against that rather than against a scrape.
-
-⚠️ **Two things the schema forces on the track matcher**, and both differ from
-MusicBrainz:
-
-1. **A track carries no number and no recording id.** Its position is its index
-   inside `discs[n].tracks`. `matchReleaseTracksToFiles` cannot key on a track
-   number that does not exist.
-2. **`track_length` is `"MM:SS"` text, not milliseconds**, and `disc_length` is the
-   same. Both need parsing before any duration comparison.
-
-A track also carries `names` as a **map of language to title** (`English`,
-`Japanese`, `Romaji`). That is why the owner keeps two variants of the MP3Tag
-script — "Original" and "English-first". The command needs the same choice as an
-option; it is not a detail to pick silently.
-
-⚠️ **Upstream itself now requires a browser cookie.** The mirror's own README says
-so plainly: *"Since the introduction of Cloudflare at VGMdb, you need to
-authenticate with your user"* — set `USER_COOKIE` to the full `Cookie` header
-copied from a logged-in `vgmdb.net` browser session, which contains both
-`cf_clearance` and `vgmsessionhash`. So self-hosting does not route around the
-challenge; it moves the cookie into a container. An official Docker image exists
-(`hufman/vgmdb`).
-
-**What is blocked is therefore narrow and concrete:** the client and
-`matchVgmdbRelease` can be written against the published schema today, but nothing
-can be *verified* until an instance answers — the public `vgmdb.info` is offline
-(no route to host on 443, connection refused on 80, checked twice hours apart from
-two addresses), and a self-hosted one needs the owner's cookie. Building a command
-that cannot be run against a single real response is what the "do not register a
-command that throws" rule exists to prevent, so it waits on that cookie.
+The command emits the **same cluster record shape** as `matchMusicBrainzRelease`,
+so the existing tag review table renders it with no UI work — the web candidate
+type has carried `source: "musicbrainz" | "vgmdb"` since it was written.
 
 **Phase 7 — name and move.** `renameAndMoveAudioFiles`, plus the general
 `renameFilesAndFolders` command. ⚠️ **This phase is bigger than it looks.** The naming rules
@@ -586,13 +545,11 @@ whole workflow. Phase 9 is the part that goes past what either of them does.
    paths, which is the field that matters here.
 3. **Plex as well, or Music Assistant only?** Only worth both if they disagree usefully.
 4. ~~**VGMdb third-party API origin** — confirm, or scrape directly.~~ **Settled
-   2026-08-25: it is `vgmdb.info`, the `hufman/vgmdb` mirror, and its provenance is
-   clean** (MIT, Walter Huf, Netherlands, not archived). Pinned independently from the
-   household's Jellyfin VGMdb plugin, which calls
-   `https://vgmdb.info/album/<id>?format=json`. Build against its published
-   `schema/album.json`, not a scrape. What remains is not a provenance question but a
-   reachability one — the public instance is offline and a self-hosted one needs a
-   `USER_COOKIE` from a logged-in browser. See [phase 6](#8-phases).
+   2026-08-25, and the answer was neither: VGMdb runs its OWN freedb/CDDB server
+   emulator**, at `http://vgmdb.net/cddb`. No third party, no account, no cookie, no
+   Cloudflare challenge. The `hufman/vgmdb` JSON mirror is clean in provenance but
+   its public instance is offline and a self-hosted one needs a browser cookie, so
+   it is a fallback and not the route. See [phase 6](#8-phases).
 5. **Cover art** — embed, write `cover.jpg` beside the files, or both. Match whatever the
    library already does.
 6. **Where does the duplicate work overlap the existing ingest scripts?** The private
