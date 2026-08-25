@@ -24,6 +24,7 @@ A Node.js CLI and REST API for batch media file operations (MKV track manipulati
 | Storybook — required files for new components | [docs/agents/storybook.md](docs/agents/storybook.md) |
 | Architecture — Observable-first, API structure, command modules | [docs/agents/architecture.md](docs/agents/architecture.md) |
 | Variables system — `runtimeValueType`, two-sources-of-truth contract for numeric variable types | [docs/agents/variables-system.md](docs/agents/variables-system.md) |
+| **The AniDB cache — what it does today, and the Charcuterie helper that would replace half of it** | [docs/agents/outbound-http-cache.md](docs/agents/outbound-http-cache.md) |
 | External tool binaries (Windows paths for mkvtoolnix / MediaInfo) | [docs/agents/external-tools.md](docs/agents/external-tools.md) |
 | Workflows, roles, commit conventions | [docs/agents/workflows.md](docs/agents/workflows.md) |
 | Worker port/PID protocol (parallel e2e without collisions) | [docs/agents/worker-port-protocol.md](docs/agents/worker-port-protocol.md) |
