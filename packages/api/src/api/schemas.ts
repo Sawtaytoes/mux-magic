@@ -2442,6 +2442,24 @@ export const matchMusicBrainzReleaseRequestSchema =
 // The tag fields a bulk edit can set. Deliberately flat rather than a
 // nested `tags` object: the builder renders one input per field, and a
 // nested object would be an unusable blob in the step form and in the YAML.
+export const matchVgmdbReleaseRequestSchema = z.object({
+  candidateLimit: z
+    .number()
+    .default(4)
+    .describe(
+      "How many matched VGMdb albums to read in full and offer per row. The common case is the same album released in three regions, which two or three settles.",
+    ),
+  isRecursive: musicIsRecursiveSchema,
+  language: z
+    .enum(["default", "en", "ja", "ja-Latn"])
+    .default("default")
+    .describe(
+      "Which title language to ask VGMdb for. It reverts to the default when an album carries no title in the language you asked for, so two settings can return the same text.",
+    ),
+  recursiveDepth: musicRecursiveDepthSchema,
+  sourcePath: musicSourcePathSchema,
+})
+
 export const writeAudioTagsRequestSchema = z.object({
   album: z
     .string()

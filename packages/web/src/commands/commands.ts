@@ -46,6 +46,7 @@ import {
   keepLanguagesRequestSchema,
   makeDirectoryRequestSchema,
   matchMusicBrainzReleaseRequestSchema,
+  matchVgmdbReleaseRequestSchema,
   mergeTracksRequestSchema,
   modifySubtitleMetadataRequestSchema,
   moveFilesIntoNamedFoldersRequestSchema,
@@ -222,6 +223,52 @@ export const COMMANDS: Commands = {
         field("candidateFetchLimit", {
           type: "number",
           label: "Candidate releases per row",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  matchVgmdbRelease: (() => {
+    const field = fieldBuilder(
+      matchVgmdbReleaseRequestSchema,
+    )
+    return {
+      summary:
+        "Match a folder against VGMdb for game and anime soundtracks. Point it at ONE disc — VGMdb identifies a disc by track count and total playing time, so a flattened multi-disc folder will not match. Read-only.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      outputs: [
+        {
+          name: "matchedFilePaths",
+          label: "Matched files",
+        },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Album Folder",
+        }),
+        field("language", {
+          type: "enum",
+          label: "Title language",
+          options: [
+            { value: "default", label: "VGMdb default" },
+            { value: "en", label: "English" },
+            { value: "ja", label: "Japanese" },
+            { value: "ja-Latn", label: "Romaji" },
+          ],
+        }),
+        field("candidateLimit", {
+          type: "number",
+          label: "Albums to offer per row",
         }),
         field("isRecursive", {
           type: "boolean",

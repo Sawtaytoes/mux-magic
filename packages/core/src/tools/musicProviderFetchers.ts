@@ -78,6 +78,14 @@ export const acoustIdCachedFetch = buildFetcher({
   provider: "acoustId",
 })
 
+// VGMdb's own freedb emulator. It sets no rate limit anywhere, so this
+// is a politeness number rather than a published one — one album is two
+// requests, and a library pass should not read like a flood.
+export const vgmdbCddbCachedFetch = buildFetcher({
+  minimumRequestIntervalMilliseconds: 500,
+  provider: "vgmdbCddb",
+})
+
 export const coverArtCachedFetch = buildFetcher({
   minimumRequestIntervalMilliseconds:
     COVER_ART_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,

@@ -71,6 +71,7 @@ import {
   type MusicMatchClusterRecord,
   matchMusicBrainzRelease,
 } from "@mux-magic/core/src/app-commands/matchMusicBrainzRelease.js"
+import { matchVgmdbRelease } from "@mux-magic/core/src/app-commands/matchVgmdbRelease.js"
 import { mergeTracks } from "@mux-magic/core/src/app-commands/mergeTracks.js"
 import { modifySubtitleMetadata } from "@mux-magic/core/src/app-commands/modifySubtitleMetadata.js"
 import { moveFiles } from "@mux-magic/core/src/app-commands/moveFiles.js"
@@ -319,6 +320,31 @@ export const commandConfigs: Record<
     schema: schemas.matchMusicBrainzReleaseRequestSchema,
     summary:
       "Cluster a folder's audio files into candidate albums from their existing tags, search MusicBrainz for each cluster, and attach ranked releases with a proposed tag set per file. Read-only — the tag table is where a match is accepted.",
+    tags: ["Music Tagging"],
+  },
+  matchVgmdbRelease: {
+    getObservable: (body) =>
+      matchVgmdbRelease({
+        candidateLimit: body.candidateLimit,
+        isRecursive: body.isRecursive,
+        language: body.language,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      matchedFilePaths: (
+        results as MusicMatchClusterRecord[]
+      ).flatMap((cluster) =>
+        cluster.files
+          .filter(
+            (file) => file.rankedCandidates.length > 0,
+          )
+          .map((file) => file.filePath),
+      ),
+    }),
+    schema: schemas.matchVgmdbReleaseRequestSchema,
+    summary:
+      "Match a folder against VGMdb for game and anime soundtracks, which MusicBrainz covers badly. VGMdb identifies a whole disc by track count and total playing time, so point this at ONE disc — a flattened multi-disc folder will not match. Read-only; the tag table is where a match is accepted.",
     tags: ["Music Tagging"],
   },
   writeAudioTags: {
