@@ -1,3 +1,6 @@
+import { mkdir, rename } from "node:fs/promises"
+import { dirname, join, relative, resolve } from "node:path"
+
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import { getChangedTagFields } from "@mux-magic/core/src/app-commands/writeAudioTags.js"
 import type { AudioTags } from "@mux-magic/core/src/music/tags/audioTagFields.js"
@@ -25,6 +28,33 @@ export const musicRoutes = new OpenAPIHono()
 
 const messageFromError = (error: unknown) =>
   error instanceof Error ? error.message : String(error)
+
+// The copy's path below the scanned root, recreated under the holding
+// folder. Flattening instead would make `Disc 1/01 Intro.flac` and
+// `Disc 2/01 Intro.flac` collide, and the second move would land on the
+// first one.
+//
+// A file outside the scanned root keeps only its name — `relative` would
+// otherwise produce a `../..` chain that climbs back out of the holding
+// folder, which is the traversal this whole surface refuses.
+export const buildHoldingDestination = ({
+  filePath,
+  holdingFolderPath,
+  sourceRootPath,
+}: {
+  filePath: string
+  holdingFolderPath: string
+  sourceRootPath: string
+}) =>
+  ((relativePath: string) =>
+    resolve(
+      join(
+        holdingFolderPath,
+        relativePath.startsWith("..")
+          ? (filePath.split(/[\\/]/u).at(-1) ?? "")
+          : relativePath,
+      ),
+    ))(relative(sourceRootPath, filePath))
 
 // Only the fields the caller sent are written. An absent key means "leave
 // what is there"; the modal drops empty rows before it posts, so a field
@@ -100,6 +130,96 @@ musicRoutes.openapi(
       return context.json(
         {
           changedFields: [],
+          error:
+            error instanceof PathSafetyError
+              ? error.message
+              : messageFromError(error),
+          isOk: false,
+        },
+        200,
+      )
+    }
+  },
+)
+
+// The duplicate compare table's confirm action.
+//
+// ⚠️ It MOVES and never deletes, and that is the whole design. The music
+// library lives on a share with no Recycle Bin: a delete there is
+// effectively permanent inside the hour, and the only safety net is the
+// hourly ZFS snapshot. Moving the losing copy into a holding folder makes
+// the decision reversible by dragging a file back, which is what "nothing
+// deletes without a confirmed row" is actually protecting.
+//
+// A plain route rather than a command, for the same reason `POST
+// /music/tags` is: the user has already reviewed the group, each row
+// commits one file, and a row that fails must fail alone and say why on
+// that row.
+musicRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/music/duplicates/resolve",
+    summary:
+      "Move one redundant duplicate copy to a holding folder",
+    description:
+      "One confirmed row of the duplicate compare table, one request. The copy is MOVED, never deleted — the library share has no Recycle Bin, so a move into a holding folder is what makes the decision reversible. The copy's path below `sourceRootPath` is recreated under `holdingFolderPath`, so two same-named tracks from different albums cannot collide.",
+    tags: ["Music Tagging"],
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema:
+              schemas.musicDuplicateResolveRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description:
+          "Move result for the copy, successful or not",
+        content: {
+          "application/json": {
+            schema:
+              schemas.musicDuplicateResolveResponseSchema,
+          },
+        },
+      },
+    },
+  }),
+  async (context) => {
+    const body = context.req.valid("json")
+    try {
+      const filePath = validateReadablePath(body.filePath)
+      const destination = buildHoldingDestination({
+        filePath,
+        holdingFolderPath: validateReadablePath(
+          body.holdingFolderPath,
+        ),
+        sourceRootPath: validateReadablePath(
+          body.sourceRootPath,
+        ),
+      })
+
+      if (!body.isDryRun) {
+        await mkdir(dirname(destination), {
+          recursive: true,
+        })
+        // Refused rather than overwritten. A collision here means the
+        // holding folder already holds a different file at that path,
+        // and silently replacing it would destroy the one thing this
+        // route exists to preserve.
+        await rename(filePath, destination)
+      }
+
+      return context.json(
+        { destination, error: null, isOk: true },
+        200,
+      )
+    } catch (error) {
+      return context.json(
+        {
+          destination: null,
           error:
             error instanceof PathSafetyError
               ? error.message

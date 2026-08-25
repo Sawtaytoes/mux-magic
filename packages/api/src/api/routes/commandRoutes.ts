@@ -41,6 +41,10 @@ import {
 } from "@mux-magic/core/src/app-commands/extractSubtitles.js"
 import { findContainerAudioFiles } from "@mux-magic/core/src/app-commands/findContainerAudioFiles.js"
 import {
+  type FindDuplicateAudioFilesGroupRecord,
+  findDuplicateAudioFiles,
+} from "@mux-magic/core/src/app-commands/findDuplicateAudioFiles.js"
+import {
   type FingerprintAudioFilesRecord,
   fingerprintAudioFiles,
 } from "@mux-magic/core/src/app-commands/fingerprintAudioFiles.js"
@@ -234,6 +238,37 @@ export const commandConfigs: Record<
     schema: schemas.scanAudioFilesRequestSchema,
     summary:
       "Walk a folder for audio files and report each one's existing tags, codec, bit depth, sample rate and duration. Pure read — no filesystem mutation.",
+    tags: ["Music Tagging"],
+  },
+  findDuplicateAudioFiles: {
+    getObservable: (body) =>
+      findDuplicateAudioFiles({
+        isFingerprintCompared: body.isFingerprintCompared,
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      // The copies the ranking would drop, NOT a delete list. Nothing
+      // acts on these without a confirmed row in the compare table.
+      recommendedKeepFilePaths: (
+        results as FindDuplicateAudioFilesGroupRecord[]
+      ).flatMap((group) =>
+        group.copies
+          .filter((copy) => copy.isRecommendedKeep)
+          .map((copy) => copy.filePath),
+      ),
+      redundantFilePaths: (
+        results as FindDuplicateAudioFilesGroupRecord[]
+      ).flatMap((group) =>
+        group.copies
+          .filter((copy) => !copy.isRecommendedKeep)
+          .map((copy) => copy.filePath),
+      ),
+    }),
+    schema: schemas.findDuplicateAudioFilesRequestSchema,
+    summary:
+      "Find duplicate audio files by identical decoded audio, by AcoustID fingerprint, or by tags, and rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, the compare table confirms, and nothing is deleted here.",
     tags: ["Music Tagging"],
   },
   fingerprintAudioFiles: {

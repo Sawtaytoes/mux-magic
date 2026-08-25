@@ -16,6 +16,12 @@ import {
   type ConvertLosslessRunResultsData,
   findConvertLosslessResults,
 } from "../ConvertLosslessRunResults/findConvertLosslessResults"
+import { resolvedDuplicateFilePathsByJobIdAtom } from "../DuplicateCompareModal/duplicateCompareModalAtom"
+import {
+  type DuplicateGroup,
+  dropResolvedDuplicateGroups,
+  findDuplicateGroups,
+} from "../DuplicateCompareModal/duplicateCompareTypes"
 import {
   dropAppliedMusicMatchFiles,
   findMusicMatchClusters,
@@ -105,6 +111,9 @@ export const StepRunProgress = ({
   const appliedTagWritesByJobId = useAtomValue(
     appliedTagWritesByJobIdAtom,
   )
+  const resolvedDuplicatePathsByJobId = useAtomValue(
+    resolvedDuplicateFilePathsByJobIdAtom,
+  )
   const setStepRunStatus = useSetAtom(setStepRunStatusAtom)
   const setRunning = useSetAtom(runningAtom)
 
@@ -125,6 +134,9 @@ export const StepRunProgress = ({
   const [musicMatchFiles, setMusicMatchFiles] = useState<
     TagMatchFile[]
   >([])
+  const [duplicateGroups, setDuplicateGroups] = useState<
+    DuplicateGroup[]
+  >([])
   const [results, setResults] =
     useState<ReadonlyArray<unknown> | null>(null)
   // Track the jobId the captured results belong to. When jobId changes
@@ -144,6 +156,7 @@ export const StepRunProgress = ({
       skipped: [],
     })
     setMusicMatchFiles([])
+    setDuplicateGroups([])
     setResults(null)
   }
 
@@ -176,6 +189,9 @@ export const StepRunProgress = ({
         flattenMusicMatchFiles(
           findMusicMatchClusters(payload.results),
         ),
+      )
+      setDuplicateGroups(
+        findDuplicateGroups(payload.results),
       )
       setResults(payload.results ?? null)
     },
@@ -226,6 +242,11 @@ export const StepRunProgress = ({
       summary={merged.summary}
       editionPlan={editionPlan}
       convertLosslessResults={convertLosslessResults}
+      duplicateGroups={dropResolvedDuplicateGroups({
+        groups: duplicateGroups,
+        resolvedFilePaths:
+          resolvedDuplicatePathsByJobId.get(jobId) ?? [],
+      })}
       musicMatchFiles={dropAppliedMusicMatchFiles({
         appliedFilePaths: (
           appliedTagWritesByJobId.get(jobId) ?? []

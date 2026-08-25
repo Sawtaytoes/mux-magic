@@ -21,7 +21,10 @@ vi.mock(
 
 import { readAudioTags } from "@mux-magic/core/src/music/tags/readAudioTags.js"
 import { writeAudioTags } from "@mux-magic/core/src/music/tags/writeAudioTags.js"
-import { musicRoutes } from "./musicRoutes.js"
+import {
+  buildHoldingDestination,
+  musicRoutes,
+} from "./musicRoutes.js"
 
 const postTags = (body: unknown) =>
   musicRoutes.request("/music/tags", {
@@ -150,5 +153,47 @@ describe("POST /music/tags", () => {
     expect(
       vi.mocked(writeAudioTags).mock.calls[0][0].tags,
     ).toEqual({ title: "Bring the Noise" })
+  })
+})
+
+describe(buildHoldingDestination.name, () => {
+  // Flattening instead would make `Disc 1/01 Intro.flac` and
+  // `Disc 2/01 Intro.flac` collide, and the second move would land on
+  // the first one — destroying the copy this route exists to preserve.
+  test("mirrors the folder structure below the scanned root", () => {
+    expect(
+      buildHoldingDestination({
+        filePath:
+          "/media/Music/Nova Harbour/Tidewater/Disc 2/01 Intro.flac",
+        holdingFolderPath: "/media/Duplicates-Holding",
+        sourceRootPath: "/media/Music",
+      }),
+    ).toBe(
+      "/media/Duplicates-Holding/Nova Harbour/Tidewater/Disc 2/01 Intro.flac",
+    )
+  })
+
+  test("two same-named tracks from different discs do not collide", () => {
+    const buildFor = (discFolder: string) =>
+      buildHoldingDestination({
+        filePath: `/media/Music/Album/${discFolder}/01 Intro.flac`,
+        holdingFolderPath: "/media/Holding",
+        sourceRootPath: "/media/Music",
+      })
+
+    expect(buildFor("Disc 1")).not.toBe(buildFor("Disc 2"))
+  })
+
+  // `relative` would otherwise produce a `../..` chain that climbs back
+  // out of the holding folder, which is the traversal this whole surface
+  // refuses.
+  test("a file outside the scanned root keeps only its name", () => {
+    expect(
+      buildHoldingDestination({
+        filePath: "/somewhere/else/01 Intro.flac",
+        holdingFolderPath: "/media/Holding",
+        sourceRootPath: "/media/Music",
+      }),
+    ).toBe("/media/Holding/01 Intro.flac")
   })
 })

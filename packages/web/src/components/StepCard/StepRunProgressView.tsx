@@ -1,6 +1,8 @@
 import type { ProgressSnapshot } from "../../jobs/types"
 import { ConvertLosslessRunResults } from "../ConvertLosslessRunResults/ConvertLosslessRunResults"
 import type { ConvertLosslessRunResultsData } from "../ConvertLosslessRunResults/findConvertLosslessResults"
+import { DuplicateRunResults } from "../DuplicateCompareModal/DuplicateRunResults"
+import type { DuplicateGroup } from "../DuplicateCompareModal/duplicateCompareTypes"
 import { GenericRunResults } from "../GenericRunResults/GenericRunResults"
 import { MusicMatchRunResults } from "../MusicMatchRunResults/MusicMatchRunResults"
 import type {
@@ -28,6 +30,7 @@ type Props = {
   summary: NsfSummaryRecord | null
   editionPlan?: NsfEditionPlanRecord | null
   convertLosslessResults: ConvertLosslessRunResultsData
+  duplicateGroups: DuplicateGroup[]
   musicMatchFiles: TagMatchFile[]
   results: ReadonlyArray<unknown> | null
 }
@@ -43,6 +46,7 @@ export const StepRunProgressView = ({
   summary,
   editionPlan,
   convertLosslessResults,
+  duplicateGroups,
   musicMatchFiles,
   results,
 }: Props) => (
@@ -61,6 +65,12 @@ export const StepRunProgressView = ({
     />
     <MusicMatchRunResults
       files={musicMatchFiles}
+      jobId={jobId}
+      sourcePath={sourcePath}
+      stepId={stepId}
+    />
+    <DuplicateRunResults
+      groups={duplicateGroups}
       jobId={jobId}
       sourcePath={sourcePath}
       stepId={stepId}

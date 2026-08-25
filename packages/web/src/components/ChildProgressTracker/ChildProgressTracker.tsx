@@ -15,6 +15,13 @@ import type {
   Step,
   Variable,
 } from "../../types"
+import { DuplicateRunResults } from "../DuplicateCompareModal/DuplicateRunResults"
+import { resolvedDuplicateFilePathsByJobIdAtom } from "../DuplicateCompareModal/duplicateCompareModalAtom"
+import {
+  type DuplicateGroup,
+  dropResolvedDuplicateGroups,
+  findDuplicateGroups,
+} from "../DuplicateCompareModal/duplicateCompareTypes"
 import {
   dropAppliedMusicMatchFiles,
   findMusicMatchClusters,
@@ -100,6 +107,9 @@ export const ChildProgressTracker = ({
   const appliedTagWritesByJobId = useAtomValue(
     appliedTagWritesByJobIdAtom,
   )
+  const resolvedDuplicatePathsByJobId = useAtomValue(
+    resolvedDuplicateFilePathsByJobIdAtom,
+  )
 
   const [summary, setSummary] =
     useState<NsfSummaryRecord | null>(null)
@@ -110,6 +120,9 @@ export const ChildProgressTracker = ({
     useState<NsfEditionPlanRecord | null>(null)
   const [musicMatchFiles, setMusicMatchFiles] = useState<
     TagMatchFile[]
+  >([])
+  const [duplicateGroups, setDuplicateGroups] = useState<
+    DuplicateGroup[]
   >([])
   // Reset captured results on jobId change — see StepRunProgress for
   // the same pattern.
@@ -122,6 +135,7 @@ export const ChildProgressTracker = ({
     setRenamePairs([])
     setEditionPlan(null)
     setMusicMatchFiles([])
+    setDuplicateGroups([])
   }
 
   const handleDone = useCallback(
@@ -133,6 +147,9 @@ export const ChildProgressTracker = ({
         flattenMusicMatchFiles(
           findMusicMatchClusters(payload.results),
         ),
+      )
+      setDuplicateGroups(
+        findDuplicateGroups(payload.results),
       )
     },
     [],
@@ -192,6 +209,16 @@ export const ChildProgressTracker = ({
             appliedTagWritesByJobId.get(jobId) ?? []
           ).map((write) => write.filePath),
           files: musicMatchFiles,
+        })}
+        jobId={jobId}
+        sourcePath={sourcePath}
+        stepId={stepId}
+      />
+      <DuplicateRunResults
+        groups={dropResolvedDuplicateGroups({
+          groups: duplicateGroups,
+          resolvedFilePaths:
+            resolvedDuplicatePathsByJobId.get(jobId) ?? [],
         })}
         jobId={jobId}
         sourcePath={sourcePath}

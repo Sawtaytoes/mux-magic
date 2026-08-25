@@ -2395,6 +2395,19 @@ export const scanAudioFilesRequestSchema = z.object({
   sourcePath: musicSourcePathSchema,
 })
 
+export const findDuplicateAudioFilesRequestSchema =
+  z.object({
+    isFingerprintCompared: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Also fingerprint every file so a FLAC and an MP3 of the same recording pair up. They can never hash-match, because the encoders produce different samples. Costs a two-minute decode per file.",
+      ),
+    isRecursive: musicIsRecursiveSchema,
+    recursiveDepth: musicRecursiveDepthSchema,
+    sourcePath: musicSourcePathSchema,
+  })
+
 export const fingerprintAudioFilesRequestSchema = z.object({
   isRecursive: musicIsRecursiveSchema,
   minimumScore: z
@@ -2647,3 +2660,53 @@ export const musicTagWriteResponseSchema = z.object({
       "Whether the write succeeded. The tag table marks the row from this field.",
     ),
 })
+
+// The duplicate compare table's confirm action. It MOVES a redundant copy
+// to a holding folder and never deletes it — the music library lives on a
+// share with no Recycle Bin, where a delete is effectively permanent
+// inside the hour and the only safety net is the hourly ZFS snapshot.
+export const musicDuplicateResolveRequestSchema = z.object({
+  filePath: z
+    .string()
+    .describe(
+      "Absolute path of the redundant copy to move out of the library. Must be absolute and traversal-free.",
+    ),
+  holdingFolderPath: z
+    .string()
+    .describe(
+      "Absolute path of the folder the copy is moved into. The copy's folder structure below the source root is recreated there, so two files with the same name never collide.",
+    ),
+  isDryRun: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Report where the copy would go without moving it.",
+    ),
+  sourceRootPath: z
+    .string()
+    .describe(
+      "The folder the duplicate scan walked. Used to work out the copy's path relative to the library so the holding folder mirrors it.",
+    ),
+})
+
+export const musicDuplicateResolveResponseSchema = z.object(
+  {
+    destination: z
+      .string()
+      .nullable()
+      .describe(
+        "Where the copy was moved, or would be moved under `isDryRun`. Null when the move failed.",
+      ),
+    error: z
+      .string()
+      .nullable()
+      .describe(
+        "Why the move failed; null on success. The compare table renders this on the row.",
+      ),
+    isOk: z
+      .boolean()
+      .describe(
+        "Whether the move succeeded. The compare table marks the row from this field.",
+      ),
+  },
+)

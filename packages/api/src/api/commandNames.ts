@@ -52,6 +52,7 @@ export const commandNames = [
   "nameTvShowEpisodes",
   "remuxToMkv",
   "fingerprintAudioFiles",
+  "findDuplicateAudioFiles",
   "scanAudioFiles",
   "renumberChapters",
   "renameAndMoveAudioFiles",

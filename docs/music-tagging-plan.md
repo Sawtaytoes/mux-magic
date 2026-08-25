@@ -1,7 +1,8 @@
 # Music tagging and ingest live inside Mux-Magic — the build plan
 
-*Status: phases 0–5 and 7 built and reachable from the app. Phases 6, 8 and 9
-are not started. Owner-settled 2026-08-24; status updated 2026-08-25.*
+*Status: phases 0–5, 7 and 8 built and reachable from the app. Phase 6 is blocked
+by VGMdb's bot protection; phase 9 is in progress. Owner-settled 2026-08-24;
+status updated 2026-08-25.*
 
 The goal is to stop using **MP3Tag + Picard** as a pair and get one surface that does
 what both do: MusicBrainz matching, VGMdb matching, AcoustID fingerprinting, bulk tag
@@ -160,7 +161,7 @@ Assistant's API is a better door than its database file. See [§9](#9-open-quest
 | `matchVgmdbRelease` | The same for VGMdb — game and anime soundtracks that MusicBrainz covers badly. This is the MP3Tag script being replaced. | ❌ phase 6 |
 | `writeAudioTags` | Write the accepted tag set to the files. The only step that mutates tags. | ✅ |
 | `renameAndMoveAudioFiles` | Apply the naming template and move into the library tree. | ✅ |
-| `findDuplicateAudioFiles` | Compare candidates by fingerprint, by tags, and by decoded audio; rank which copy is better by codec, bit depth, sample rate and source. | ❌ phase 8 |
+| `findDuplicateAudioFiles` | Compare candidates by fingerprint, by tags, and by decoded audio; rank which copy is better by codec, bit depth, sample rate and source. | ✅ |
 | `renameFilesAndFolders` | The general renamer Mux-Magic lacks today. Not music-specific. | ✅ |
 
 **A command is reachable only when five registries agree**, and there is no
@@ -338,11 +339,12 @@ The real values for all six variables live in the root `.env` and in
 
 ## 8. Phases
 
-> **Where the build actually stands, 2026-08-25.** Phases 0, 1, 2, 3, 4, 5 and 7
-> are built, tested and reachable from the sequence builder. Phase 7's general
-> renamer (`renameFilesAndFolders`) landed with it. Phases 6, 8 and 9 are not
-> started, and their commands are therefore **not** registered — a command in the
-> picker that throws is worse than one that is not there yet.
+> **Where the build actually stands, 2026-08-25.** Phases 0, 1, 2, 3, 4, 5, 7 and
+> 8 are built, tested and reachable from the sequence builder. Phase 7's general
+> renamer (`renameFilesAndFolders`) landed with it. Phase 6 is **blocked by
+> VGMdb** (see below) and phase 9 is in progress; an unbuilt command is
+> deliberately **not** registered — a command in the picker that throws is worse
+> than one that is not there yet.
 >
 > Two things phase 2 needed that this plan did not name, both now built under
 > `packages/core/src/music/matching/`: `matchReleaseTracksToFiles` (which track on
@@ -401,8 +403,46 @@ cannot express them. Build against the worked-examples table in
 and use the acceptance test in its §10: re-running over an album already filed correctly must
 produce **zero** renames, moves and tag changes.
 
-**Phase 8 — library and duplicates.** Read the external catalog, the library browser view,
-`findDuplicateAudioFiles` and the duplicate compare modal.
+**Phase 8 — library and duplicates.** `findDuplicateAudioFiles` and the duplicate
+compare modal. ✅
+
+Three ways two files can be the same track, and a group carries the strongest one
+that found it, because they do not prove the same amount:
+
+| Reason | What it proves |
+| --- | --- |
+| **Identical audio** | The decoded audio is byte for byte the same. Certain. |
+| **Same recording** | AcoustID reports the same recording. Pairs a FLAC with an MP3, which no hash can — the encoders produce different samples. |
+| **Same tags** | Only the tags agree. The weakest, and the only one that works on files nothing has decoded yet. |
+
+A file belongs to exactly one group, the strongest that claimed it. Reporting a
+file twice would let a person confirm the same removal from two rows.
+
+**The FLAC fast path.** FLAC stores an MD5 of the unencoded audio in its
+STREAMINFO block, so a FLAC-to-FLAC comparison reads 42 bytes off the front of the
+file instead of decoding it. Verified against four real library tracks: the header
+MD5 equals `ffmpeg -f md5` exactly. An all-zero MD5 means the encoder stored none —
+it is "unknown", not "empty audio", so it falls back to a decode rather than
+matching every other MD5-less FLAC.
+
+**Ranking is first-difference, not a weighted score**, in the owner's order:
+lossless, then bit depth, then sample rate, then bit rate, then an original name
+over a copy-suffixed one, then size. A weighted score would let a big lossy file
+outrank a small lossless one, which is the exact mistake the rule exists to
+prevent. Ties break on path so a re-run never recommends a different keeper.
+
+⚠️ **Nothing deletes. Confirming MOVES the copy to a holding folder**, and the
+copy's path below the scanned root is recreated there so two same-named tracks
+cannot collide. `G:` has no Recycle Bin, a delete there is effectively permanent
+inside the hour, and the only safety net is the hourly ZFS snapshot — so the
+reversible action is the only one the surface offers. Only an **identical audio**
+group starts checked; a fingerprint or tag match is a hint until a human looks at
+it.
+
+**Still open in this phase:** reading the external catalog (Music Assistant's
+`library.db`) and the library browser view. The duplicate work does not need
+either — it reads the filesystem directly — so they are a separate, smaller piece
+of work rather than a blocker.
 
 **Phase 9 — write back.** AcoustID fingerprint submission first (it is the simplest and the
 most useful), then the five MusicBrainz `ws/2` submissions, then the ported seeded-release
