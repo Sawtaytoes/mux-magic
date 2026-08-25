@@ -754,17 +754,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/server@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "@charcuterie/server@npm:0.2.0"
+"@charcuterie/server@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "@charcuterie/server@npm:0.4.0"
   peerDependencies:
     "@hono/node-server": ">=1.13"
     hono: ">=4"
+    mqtt: ">=5"
     vite: ">=5"
   peerDependenciesMeta:
+    mqtt:
+      optional: true
     vite:
       optional: true
-  checksum: 10c0/27919c25fa3c0cc7b4f9c3b167015cacd5e19fee463cc69ab208d00b458ea8554fd0f39231a336ed90efd578df6580a729ac436da6fccacf62dbbccd08149876
+  checksum: 10c0/1b00ebecdf623bc48840c2d59f2af585baa8f76aac7b8ea846ac32ada75e1c2326331da6ed2c0c84256e8b2193e3a3fd7577f8e2a1d5f43f325d30512e750375
   languageName: node
   linkType: hard
 
@@ -2010,7 +2013,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mux-magic/server@workspace:packages/server"
   dependencies:
-    "@charcuterie/server": "npm:^0.2.0"
+    "@charcuterie/server": "npm:^0.4.0"
     "@hono/node-server": "npm:^2.0.2"
     "@mux-magic/api": "workspace:*"
     "@mux-magic/core": "workspace:*"
@@ -2043,7 +2046,7 @@ __metadata:
   resolution: "@mux-magic/web@workspace:packages/web"
   dependencies:
     "@charcuterie/logic": "npm:^2.0.0"
-    "@charcuterie/server": "npm:^0.2.0"
+    "@charcuterie/server": "npm:^0.4.0"
     "@charcuterie/storybook-config": "npm:^0.2.2"
     "@charcuterie/tokens": "npm:^1.5.0"
     "@charcuterie/ui": "npm:^3.0.0"
