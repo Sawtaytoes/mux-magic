@@ -45,6 +45,7 @@ import {
   isMissingSubtitlesRequestSchema,
   keepLanguagesRequestSchema,
   makeDirectoryRequestSchema,
+  matchFreedbReleaseRequestSchema,
   matchMusicBrainzReleaseRequestSchema,
   matchVgmdbReleaseRequestSchema,
   mergeTracksRequestSchema,
@@ -223,6 +224,42 @@ export const COMMANDS: Commands = {
         field("candidateFetchLimit", {
           type: "number",
           label: "Candidate releases per row",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  matchFreedbRelease: (() => {
+    const field = fieldBuilder(
+      matchFreedbReleaseRequestSchema,
+    )
+    return {
+      summary:
+        "Match a folder against general freedb — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. Its data is user-submitted and unreviewed, so run it last. Point it at ONE disc. Read-only.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      outputs: [
+        {
+          name: "matchedFilePaths",
+          label: "Matched files",
+        },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Album Folder",
+        }),
+        field("candidateLimit", {
+          type: "number",
+          label: "Discs to offer per row",
         }),
         field("isRecursive", {
           type: "boolean",

@@ -6,6 +6,7 @@ import {
   buildQueryCommand,
   buildTrackOffsets,
   extractVgmdbAlbumId,
+  FREEDB_CDDB_SERVER,
   getTotalDiscSeconds,
   parseQueryResponse,
   parseReadResponse,
@@ -13,7 +14,7 @@ import {
   queryVgmdbCddb,
   readVgmdbCddbAlbum,
   splitDiscTitle,
-} from "./vgmdbCddbApi.js"
+} from "./cddbApi.js"
 
 // ⚠️ These two disc ids are not invented. They were computed by this code
 // and then ACCEPTED by the live VGMdb CDDB server on 2026-08-25, which
@@ -113,9 +114,9 @@ describe(buildQueryCommand.name, () => {
 describe(parseQueryResponse.name, () => {
   test("reads a single exact match off the status line", () => {
     expect(
-      parseQueryResponse(
-        "200 Soundtrack141255 920b990b [KSCL-3405] An Album (Disc 6)",
-      ),
+      parseQueryResponse({
+        body: "200 Soundtrack141255 920b990b [KSCL-3405] An Album (Disc 6)",
+      }),
     ).toEqual([
       {
         albumTitle: "[KSCL-3405] An Album (Disc 6)",
@@ -128,27 +129,27 @@ describe(parseQueryResponse.name, () => {
 
   test("reads an inexact list up to the terminating marker", () => {
     expect(
-      parseQueryResponse(
-        [
+      parseQueryResponse({
+        body: [
           "211 Found inexact matches list follows (until terminating marker `.')",
           "Soundtrack32937 610a9b08 First Album",
           "Soundtrack46513 610a9b08 Second Album",
           ".",
           "",
         ].join("\n"),
-      ).map((match) => match.vgmdbAlbumId),
+      }).map((match) => match.vgmdbAlbumId),
     ).toEqual(["32937", "46513"])
   })
 
   // An album VGMdb has never seen is a normal outcome, not a failure.
   test("no match is an empty list, not an error", () => {
     expect(
-      parseQueryResponse("202 No match found"),
+      parseQueryResponse({ body: "202 No match found" }),
     ).toEqual([])
   })
 
   test("survives an empty body", () => {
-    expect(parseQueryResponse("")).toEqual([])
+    expect(parseQueryResponse({ body: "" })).toEqual([])
   })
 })
 
@@ -357,5 +358,79 @@ describe(readVgmdbCddbAlbum.name, () => {
         )
       ).trackTitles,
     ).toEqual(["First Track", "Second Track"])
+  })
+})
+
+describe("freedb versus VGMdb", () => {
+  // ⚠️ VGMdb encodes its album id in the CATEGORY (`Soundtrack141255`).
+  // General freedb uses real freedb categories — `misc`, `rock`, `data` —
+  // which carry no id at all. Reading an id out of one would invent a
+  // VGMdb album number from the word "misc".
+  test("freedb categories yield no album id", () => {
+    expect(
+      parseQueryResponse({
+        body: "200 misc 610a9b08 Nintendo / The Legend of Zelda",
+        server: FREEDB_CDDB_SERVER,
+      }),
+    ).toEqual([
+      {
+        albumTitle: "Nintendo / The Legend of Zelda",
+        category: "misc",
+        discId: "610a9b08",
+        vgmdbAlbumId: "",
+      },
+    ])
+  })
+
+  test("VGMdb categories still yield one", () => {
+    expect(
+      parseQueryResponse({
+        body: "200 Soundtrack141255 920b990b An Album",
+      })[0]?.vgmdbAlbumId,
+    ).toBe("141255")
+  })
+
+  // freedb has no language paths. Asking for one anyway must not produce
+  // a URL that 404s.
+  test("freedb ignores a language segment", async () => {
+    const requestedUrls: string[] = []
+    const cachedFetch = (url: string) => {
+      requestedUrls.push(url)
+      return Promise.resolve({
+        body: "202 No match found",
+        isFromCache: false,
+      })
+    }
+
+    await firstValueFrom(
+      queryVgmdbCddb({
+        cachedFetch,
+        language: "ja-Latn",
+        server: FREEDB_CDDB_SERVER,
+        trackLengthsSeconds: [100],
+      }),
+    )
+
+    expect(requestedUrls[0]).not.toContain("ja-Latn")
+    expect(requestedUrls[0]).toContain(
+      "freedb.dbpoweramp.com/~cddb/cddb.cgi",
+    )
+  })
+
+  // freedb populates the artist properly, unlike VGMdb which usually
+  // leaves it empty. The same parser has to handle both.
+  test("reads freedb's populated artist", () => {
+    expect(
+      parseReadResponse({
+        body: "DTITLE=Nintendo / The Legend of Zelda\nTTITLE0=Overworld",
+        category: "misc",
+        discId: "610a9b08",
+        server: FREEDB_CDDB_SERVER,
+      }),
+    ).toMatchObject({
+      albumTitle: "The Legend of Zelda",
+      artistName: "Nintendo",
+      vgmdbAlbumId: "",
+    })
   })
 })

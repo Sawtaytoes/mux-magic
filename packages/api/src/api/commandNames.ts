@@ -11,6 +11,7 @@ export const commandNames = [
   "analyseDiscBackup",
   "makeDirectory",
   "matchMusicBrainzRelease",
+  "matchFreedbRelease",
   "matchVgmdbRelease",
   "changeTrackLanguages",
   "convertLosslessToFlac",
