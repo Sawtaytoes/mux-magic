@@ -158,6 +158,7 @@ Assistant's API is a better door than its database file. See [§9](#9-open-quest
 | `fingerprintAudioFiles` | Run `fpcalc` per file, query AcoustID, attach recording ids and scores. | ✅ |
 | `matchMusicBrainzRelease` | Cluster files into an album, search MusicBrainz, rank candidate releases, attach ranked candidates per file. | ✅ |
 | `matchVgmdbRelease` | The same for VGMdb — game and anime soundtracks that MusicBrainz covers badly. This is the MP3Tag script being replaced. | ✅ |
+| `matchFreedbRelease` | The same again for general **freedb** — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. | ✅ |
 | `writeAudioTags` | Write the accepted tag set to the files. The only step that mutates tags. | ✅ |
 | `renameAndMoveAudioFiles` | Apply the naming template and move into the library tree. | ✅ |
 | `findDuplicateAudioFiles` | Compare candidates by fingerprint, by tags, and by decoded audio; rank which copy is better by codec, bit depth, sample rate and source. | ✅ |
@@ -433,6 +434,29 @@ of which carry only one language.
 The command emits the **same cluster record shape** as `matchMusicBrainzRelease`,
 so the existing tag review table renders it with no UI work — the web candidate
 type has carried `source: "musicbrainz" | "vgmdb"` since it was written.
+
+**The provider order, settled 2026-08-25.** MusicBrainz first, VGMdb second for game
+and anime soundtracks, **general freedb third** for discs neither has ever heard of.
+
+freedb is last on purpose. It is user-submitted CD metadata with no editorial review,
+so its titles are frequently abbreviated, mis-cased or plain wrong, and it carries no
+artist, recording or release ids to link back to. It earns its place because the discs
+it *does* know are exactly the ones the other two miss — obscure pressings, regional
+releases, and old commercial CDs nobody ever added to MusicBrainz. Measured on a real
+album, it also supplies the album artist that VGMdb leaves empty.
+
+⚠️ **The freedb server is `freedb.dbpoweramp.com`, NOT `gnudb.gnudb.org`.** gnudb is
+the better-known successor, and it refuses an unregistered client — it answers
+`500 Unknown application` to our own honest `hello` and accepts only application names
+it already knows. Getting in by borrowing a legacy client's identity would be a lie
+told to a service that explicitly asks developers to register. Point
+`FREEDB_CDDB_SERVER` at gnudb once an application name is registered there.
+
+⚠️ **Discogs has no CDDB interface** — checked 2026-08-25, every plausible host either
+refuses the connection or 404s. It has a proper REST API at `api.discogs.com`, whose
+unauthenticated search works, so adding it is a separate piece of work with a different
+shape: no disc id, so it matches on artist, album and track count the way MusicBrainz
+does.
 
 **Phase 7 — name and move.** `renameAndMoveAudioFiles`, plus the general
 `renameFilesAndFolders` command. ⚠️ **This phase is bigger than it looks.** The naming rules
