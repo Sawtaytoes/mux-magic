@@ -2395,6 +2395,37 @@ export const scanAudioFilesRequestSchema = z.object({
   sourcePath: musicSourcePathSchema,
 })
 
+export const findDuplicateAudioFilesRequestSchema =
+  z.object({
+    isFingerprintCompared: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Also fingerprint every file so a FLAC and an MP3 of the same recording pair up. They can never hash-match, because the encoders produce different samples. Costs a two-minute decode per file.",
+      ),
+    isRecursive: musicIsRecursiveSchema,
+    recursiveDepth: musicRecursiveDepthSchema,
+    sourcePath: musicSourcePathSchema,
+  })
+
+export const fingerprintAudioFilesRequestSchema = z.object({
+  isRecursive: musicIsRecursiveSchema,
+  minimumScore: z
+    .number()
+    .default(0.5)
+    .describe(
+      "Lowest AcoustID score that counts as the same recording. Below about 0.5 AcoustID is reporting similar audio rather than the same audio — a different take, a different mix, or a cover.",
+    ),
+  recordingLimit: z
+    .number()
+    .default(5)
+    .describe(
+      "How many MusicBrainz recordings to offer per file. A well-known song accumulates dozens of linked recordings, and past the first few they are compilation re-issues of the same one.",
+    ),
+  recursiveDepth: musicRecursiveDepthSchema,
+  sourcePath: musicSourcePathSchema,
+})
+
 export const matchMusicBrainzReleaseRequestSchema =
   z.object({
     candidateFetchLimit: z
@@ -2627,5 +2658,173 @@ export const musicTagWriteResponseSchema = z.object({
     .boolean()
     .describe(
       "Whether the write succeeded. The tag table marks the row from this field.",
+    ),
+})
+
+// The duplicate compare table's confirm action. It MOVES a redundant copy
+// to a holding folder and never deletes it — the music library lives on a
+// share with no Recycle Bin, where a delete is effectively permanent
+// inside the hour and the only safety net is the hourly ZFS snapshot.
+export const musicDuplicateResolveRequestSchema = z.object({
+  filePath: z
+    .string()
+    .describe(
+      "Absolute path of the redundant copy to move out of the library. Must be absolute and traversal-free.",
+    ),
+  holdingFolderPath: z
+    .string()
+    .describe(
+      "Absolute path of the folder the copy is moved into. The copy's folder structure below the source root is recreated there, so two files with the same name never collide.",
+    ),
+  isDryRun: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Report where the copy would go without moving it.",
+    ),
+  sourceRootPath: z
+    .string()
+    .describe(
+      "The folder the duplicate scan walked. Used to work out the copy's path relative to the library so the holding folder mirrors it.",
+    ),
+})
+
+export const musicDuplicateResolveResponseSchema = z.object(
+  {
+    destination: z
+      .string()
+      .nullable()
+      .describe(
+        "Where the copy was moved, or would be moved under `isDryRun`. Null when the move failed.",
+      ),
+    error: z
+      .string()
+      .nullable()
+      .describe(
+        "Why the move failed; null on success. The compare table renders this on the row.",
+      ),
+    isOk: z
+      .boolean()
+      .describe(
+        "Whether the move succeeded. The compare table marks the row from this field.",
+      ),
+  },
+)
+
+// Phase 9 — writing back. Every one of these is an explicit, reviewed
+// action. Nothing submits automatically: these are public database
+// entries made under the owner's account, and a wrong one is visible to
+// everybody and has to be undone by hand.
+export const musicAcoustIdSubmitRequestSchema = z.object({
+  isDryRun: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Report what would be submitted without sending anything to AcoustID.",
+    ),
+  submissions: z
+    .array(
+      z.object({
+        albumArtistName: z.string().optional(),
+        albumName: z.string().optional(),
+        artistName: z.string().optional(),
+        durationSeconds: z
+          .number()
+          .describe(
+            "Track length in seconds. AcoustID rounds it to a whole number and rejects a fractional one.",
+          ),
+        fingerprint: z
+          .string()
+          .describe(
+            "The Chromaprint fingerprint from `fpcalc`, as produced by the fingerprintAudioFiles command.",
+          ),
+        musicBrainzRecordingId: z
+          .string()
+          .optional()
+          .describe(
+            "The recording this fingerprint belongs to. Without it the submission adds a fingerprint that is linked to nothing, which helps nobody.",
+          ),
+        title: z.string().optional(),
+        trackNumber: z.number().optional(),
+        year: z.number().optional(),
+      }),
+    )
+    .describe(
+      "The reviewed submissions. The whole batch goes in one request; AcoustID indexes each entry by position.",
+    ),
+})
+
+export const musicAcoustIdSubmitResponseSchema = z.object({
+  error: z
+    .string()
+    .nullable()
+    .describe(
+      "Why the submission failed; null on success.",
+    ),
+  isOk: z
+    .boolean()
+    .describe("Whether AcoustID accepted the batch."),
+  submissions: z
+    .array(
+      z.object({
+        status: z
+          .string()
+          .describe(
+            "AcoustID's own status for the entry, normally `pending` — it queues submissions rather than applying them at once.",
+          ),
+        submissionId: z.number(),
+      }),
+    )
+    .describe(
+      "One entry per accepted submission, empty on failure or a dry run.",
+    ),
+})
+
+// The half of writing back that is NOT an API. MusicBrainz cannot create
+// a release over the web service, so a missing album is added through a
+// seeded web form the owner completes in his own browser, logged in as
+// himself.
+export const musicSeedReleaseRequestSchema = z.object({
+  albumArtistName: z.string(),
+  artistMbid: z
+    .string()
+    .optional()
+    .describe(
+      "MusicBrainz artist id to link the credit to. Without it the release is created with an unlinked artist name.",
+    ),
+  countryCode: z
+    .string()
+    .optional()
+    .describe(
+      "Release country. Defaults to XW (Worldwide), which suits a digital release.",
+    ),
+  date: z
+    .string()
+    .optional()
+    .describe("Release date, `YYYY-MM-DD` or `YYYY`."),
+  editNote: z.string().optional(),
+  label: z.string().optional(),
+  mediumFormat: z.string().optional(),
+  primaryType: z.string().optional(),
+  releaseTitle: z.string(),
+  secondaryTypes: z.array(z.string()).optional(),
+  tracks: z
+    .array(
+      z.object({
+        lengthMilliseconds: z
+          .number()
+          .describe(
+            "Exact track length. The release editor wants milliseconds, and an approximate length is the most common reason a seeded release needs hand correction.",
+          ),
+        title: z.string(),
+        trackNumber: z.number(),
+      }),
+    )
+    .describe("The tracklist, in order."),
+  url: z
+    .string()
+    .optional()
+    .describe(
+      "A relationship URL, normally the album's purchase page.",
     ),
 })

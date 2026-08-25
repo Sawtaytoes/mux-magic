@@ -29,6 +29,8 @@ import {
   extractDiscTitlesRequestSchema,
   extractSubtitlesRequestSchema,
   findContainerAudioFilesRequestSchema,
+  findDuplicateAudioFilesRequestSchema,
+  fingerprintAudioFilesRequestSchema,
   fixIncorrectDefaultTracksRequestSchema,
   flattenChildFoldersRequestSchema,
   flattenOutputRequestSchema,
@@ -100,6 +102,90 @@ export const COMMANDS: Commands = {
         field("sourcePath", {
           type: "path",
           label: "Music Folder",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  findDuplicateAudioFiles: (() => {
+    const field = fieldBuilder(
+      findDuplicateAudioFilesRequestSchema,
+    )
+    return {
+      summary:
+        "Find duplicate audio files and rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, and nothing is deleted.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      outputs: [
+        {
+          name: "recommendedKeepFilePaths",
+          label: "Copies to keep",
+        },
+        {
+          name: "redundantFilePaths",
+          label: "Redundant copies",
+        },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Music Folder",
+        }),
+        field("isFingerprintCompared", {
+          type: "boolean",
+          label: "Also compare by fingerprint",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  fingerprintAudioFiles: (() => {
+    const field = fieldBuilder(
+      fingerprintAudioFilesRequestSchema,
+    )
+    return {
+      summary:
+        "Fingerprint each file with fpcalc and ask AcoustID which recording it is. This is what identifies untagged and mis-tagged files. Read-only.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      outputs: [
+        {
+          name: "matchedFilePaths",
+          label: "Identified files",
+        },
+        {
+          name: "unmatchedFilePaths",
+          label: "Unidentified files",
+        },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Music Folder",
+        }),
+        field("minimumScore", {
+          type: "number",
+          label: "Minimum AcoustID score",
+        }),
+        field("recordingLimit", {
+          type: "number",
+          label: "Recordings per file",
         }),
         field("isRecursive", {
           type: "boolean",

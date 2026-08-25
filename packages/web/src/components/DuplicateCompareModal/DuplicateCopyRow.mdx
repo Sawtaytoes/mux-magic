@@ -1,0 +1,31 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks"
+
+import * as DuplicateCopyRowStories from "./DuplicateCopyRow.stories"
+
+<Meta of={DuplicateCopyRowStories} />
+
+# DuplicateCopyRow
+
+One copy inside a duplicate group. The radio is the override: the server's
+recommendation arrives pre-selected, and picking a different row is how a
+human disagrees with it.
+
+The quality line — codec, bit depth, sample rate, size — is the evidence
+the ranking used, shown so the recommendation can be checked rather than
+trusted.
+
+## Props
+
+| Prop | Type | What it does |
+| --- | --- | --- |
+| `copy` | `DuplicateCopy` | The file, its measured quality, and why it was or was not recommended. |
+| `isKept` | `boolean` | Whether this is the copy the group will keep. The other copies are the ones that move. |
+| `isReadOnly` | `boolean` | Freezes the row while a move is in flight, and after one succeeds. |
+| `onPlay` | `() => void` | Opens the audio preview. Listening is often the fastest way to settle a doubtful group. |
+| `onSelectKeep` | `() => void` | Makes this the kept copy. |
+
+<Canvas of={DuplicateCopyRowStories.Kept} />
+
+<Canvas of={DuplicateCopyRowStories.MovedOut} />
+
+<Canvas of={DuplicateCopyRowStories.ReadOnly} />

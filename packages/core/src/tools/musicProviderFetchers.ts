@@ -3,6 +3,7 @@ import {
   openProviderCache,
   providerCacheDatabasePath,
 } from "../provider-cache/providerCache.js"
+import { ACOUSTID_MINIMUM_REQUEST_INTERVAL_MILLISECONDS } from "./acoustIdApi.js"
 import {
   type CachedFetch,
   MUSICBRAINZ_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
@@ -69,6 +70,12 @@ export const musicBrainzCachedFetch = buildFetcher({
   minimumRequestIntervalMilliseconds:
     MUSICBRAINZ_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
   provider: "musicBrainz",
+})
+
+export const acoustIdCachedFetch = buildFetcher({
+  minimumRequestIntervalMilliseconds:
+    ACOUSTID_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
+  provider: "acoustId",
 })
 
 export const coverArtCachedFetch = buildFetcher({

@@ -123,6 +123,46 @@ const sampleSummary: NsfSummaryRecord = {
   ],
 }
 
+const DUPLICATE_GROUPS = [
+  {
+    copies: [
+      {
+        filePath:
+          "/library/Nova Harbour/Tidewater/01 Slack Water.flac",
+        info: {
+          bitDepth: 16,
+          codec: "FLAC",
+          fileSizeBytes: 28_400_000,
+          filePath:
+            "/library/Nova Harbour/Tidewater/01 Slack Water.flac",
+          hasEmbeddedCoverArt: false,
+          sampleRate: 44_100,
+        },
+        isLossless: true,
+        isRecommendedKeep: true,
+        rankReasons: ["lossless: lossless"],
+      },
+      {
+        filePath:
+          "/library/Nova Harbour/Tidewater/01 Slack Water.mp3",
+        info: {
+          codec: "MP3",
+          fileSizeBytes: 8_100_000,
+          filePath:
+            "/library/Nova Harbour/Tidewater/01 Slack Water.mp3",
+          hasEmbeddedCoverArt: false,
+        },
+        isLossless: false,
+        isRecommendedKeep: false,
+        rankReasons: [],
+      },
+    ],
+    groupKey: "audio-1",
+    isDuplicateGroup: true as const,
+    matchReason: "audio" as const,
+  },
+]
+
 const meta: Meta<typeof StepRunProgressView> = {
   title: "Components/StepCard/StepRunProgressView",
   component: StepRunProgressView,
@@ -133,6 +173,8 @@ const meta: Meta<typeof StepRunProgressView> = {
     sourcePath: "G:\\Disc-Rips\\Shrek 2 - 4K",
     snap: {},
     convertLosslessResults: { converted: [], skipped: [] },
+    duplicateGroups: [],
+    fingerprintMatches: [],
     musicMatchFiles: [],
     results: null,
   },
@@ -509,4 +551,53 @@ export const MusicMatchDone: Story = {
       "[INFO] done",
     ]),
   ],
+}
+
+// A finished duplicate run. The panel says plainly that nothing has been
+// moved — the command only ever reports, and the compare table is where a
+// human confirms.
+export const DuplicatesDone: Story = {
+  args: {
+    commandName: "findDuplicateAudioFiles",
+    duplicateGroups: DUPLICATE_GROUPS,
+    isRunning: false,
+    renamePairs: [],
+    sourcePath: "/library",
+    summary: null,
+  },
+}
+
+// A finished `fingerprintAudioFiles` run. Submitting to AcoustID is a
+// separate press, never part of the run — these are public database
+// entries made under the owner's account.
+export const FingerprintDone: Story = {
+  args: {
+    commandName: "fingerprintAudioFiles",
+    fingerprintMatches: [
+      {
+        acoustId: "acoust-1",
+        duration: 210.4,
+        filePath:
+          "/inbox/Nova Harbour/Tidewater/01 Slack Water.flac",
+        filename: "01 Slack Water.flac",
+        fingerprint: "AQAD",
+        kind: "matched",
+        recordings: [
+          {
+            artistNames: ["Nova Harbour"],
+            durationSeconds: 210,
+            musicBrainzArtistIds: ["artist-1"],
+            recordingId: "recording-1",
+            releaseGroupIds: ["release-group-1"],
+            title: "Slack Water",
+          },
+        ],
+        score: 0.97,
+      },
+    ],
+    isRunning: false,
+    renamePairs: [],
+    sourcePath: "/inbox/Nova Harbour/Tidewater",
+    summary: null,
+  },
 }
