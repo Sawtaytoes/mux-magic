@@ -40,6 +40,10 @@ import {
   extractSubtitlesDefaultProps,
 } from "@mux-magic/core/src/app-commands/extractSubtitles.js"
 import { findContainerAudioFiles } from "@mux-magic/core/src/app-commands/findContainerAudioFiles.js"
+import {
+  type FingerprintAudioFilesRecord,
+  fingerprintAudioFiles,
+} from "@mux-magic/core/src/app-commands/fingerprintAudioFiles.js"
 import { fixIncorrectDefaultTracks } from "@mux-magic/core/src/app-commands/fixIncorrectDefaultTracks.js"
 import { flattenChildFolders } from "@mux-magic/core/src/app-commands/flattenChildFolders.js"
 import { flattenOutput } from "@mux-magic/core/src/app-commands/flattenOutput.js"
@@ -230,6 +234,32 @@ export const commandConfigs: Record<
     schema: schemas.scanAudioFilesRequestSchema,
     summary:
       "Walk a folder for audio files and report each one's existing tags, codec, bit depth, sample rate and duration. Pure read — no filesystem mutation.",
+    tags: ["Music Tagging"],
+  },
+  fingerprintAudioFiles: {
+    getObservable: (body) =>
+      fingerprintAudioFiles({
+        isRecursive: body.isRecursive,
+        minimumScore: body.minimumScore,
+        recordingLimit: body.recordingLimit,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      matchedFilePaths: (
+        results as FingerprintAudioFilesRecord[]
+      )
+        .filter((record) => record.kind === "matched")
+        .map((record) => record.filePath),
+      unmatchedFilePaths: (
+        results as FingerprintAudioFilesRecord[]
+      )
+        .filter((record) => record.kind === "unmatched")
+        .map((record) => record.filePath),
+    }),
+    schema: schemas.fingerprintAudioFilesRequestSchema,
+    summary:
+      "Fingerprint each audio file with fpcalc and ask AcoustID which recording it is. Identifies untagged and mis-tagged files, which the MusicBrainz cluster match cannot. Read-only.",
     tags: ["Music Tagging"],
   },
   matchMusicBrainzRelease: {

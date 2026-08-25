@@ -1,7 +1,7 @@
 # Music tagging and ingest live inside Mux-Magic — the build plan
 
-*Status: phases 0–4 and 7 built and reachable from the app. Phases 5, 6, 8 and 9
-are not started. Owner-settled 2026-08-24; status updated 2026-08-24.*
+*Status: phases 0–5 and 7 built and reachable from the app. Phases 6, 8 and 9
+are not started. Owner-settled 2026-08-24; status updated 2026-08-25.*
 
 The goal is to stop using **MP3Tag + Picard** as a pair and get one surface that does
 what both do: MusicBrainz matching, VGMdb matching, AcoustID fingerprinting, bulk tag
@@ -155,7 +155,7 @@ Assistant's API is a better door than its database file. See [§9](#9-open-quest
 | Command | Job | Built? |
 | --- | --- | --- |
 | `scanAudioFiles` | Walk a folder. Read existing tags, duration, codec, bit depth, sample rate. Emits the row set every later step consumes. | ✅ |
-| `fingerprintAudioFiles` | Run `fpcalc` per file, query AcoustID, attach recording ids and scores. | ❌ phase 5 |
+| `fingerprintAudioFiles` | Run `fpcalc` per file, query AcoustID, attach recording ids and scores. | ✅ |
 | `matchMusicBrainzRelease` | Cluster files into an album, search MusicBrainz, rank candidate releases, attach ranked candidates per file. | ✅ |
 | `matchVgmdbRelease` | The same for VGMdb — game and anime soundtracks that MusicBrainz covers badly. This is the MP3Tag script being replaced. | ❌ phase 6 |
 | `writeAudioTags` | Write the accepted tag set to the files. The only step that mutates tags. | ✅ |
@@ -338,11 +338,11 @@ The real values for all six variables live in the root `.env` and in
 
 ## 8. Phases
 
-> **Where the build actually stands, 2026-08-24.** Phases 0, 1, 2, 3, 4 and 7 are
-> built, tested and reachable from the sequence builder. Phase 7's general
-> renamer (`renameFilesAndFolders`) landed with it. Phases 5, 6, 8 and 9 are not
-> started, and their three commands are therefore **not** registered — a command
-> in the picker that throws is worse than one that is not there yet.
+> **Where the build actually stands, 2026-08-25.** Phases 0, 1, 2, 3, 4, 5 and 7
+> are built, tested and reachable from the sequence builder. Phase 7's general
+> renamer (`renameFilesAndFolders`) landed with it. Phases 6, 8 and 9 are not
+> started, and their commands are therefore **not** registered — a command in the
+> picker that throws is worse than one that is not there yet.
 >
 > Two things phase 2 needed that this plan did not name, both now built under
 > `packages/core/src/music/matching/`: `matchReleaseTracksToFiles` (which track on
@@ -368,6 +368,26 @@ file changes. Needs a dry-run mode and a per-row failure state.
 
 **Phase 5 — fingerprint.** `fpcalc` in the image, AcoustID client,
 `fingerprintAudioFiles`. This is what identifies untagged and mistagged files.
+
+⚠️ **Two things the AcoustID API does that no summary of it says.** Both were
+measured against the live service, and both fail silently rather than loudly.
+
+1. **`meta` values are separated by a SPACE, not a `+`.** Every published example
+   writes `meta=recordings+releasegroups`, because those examples are GET URLs
+   where `+` *is* the space. This client POSTs a form body — the fingerprint is
+   several kilobytes — and a form encoder escapes `+` to `%2B`. AcoustID then
+   reads one unknown meta name and answers **200 OK with the metadata missing**.
+   Measured side by side: `meta="recordings"` returns 13 recordings,
+   `meta="recordings+releasegroups"` returns none, `meta="recordings
+   releasegroups"` returns 13 with their release groups.
+2. **The provider cache had to learn a second key.** It was keyed on the URL,
+   which is correct for a GET provider where the URL *is* the request. Every
+   AcoustID lookup POSTs to the same `/v2/lookup`, so without an explicit
+   `cacheKey` carrying the fingerprint, track 2 reads back track 1's answer and a
+   whole album identifies as one song. `CachedFetchInit.cacheKey` is that key.
+
+**A scored result with no linked recording is normal, not a failure.** AcoustID
+knows the audio; nobody has tied it to MusicBrainz. It stays a row.
 
 **Phase 6 — VGMdb.** The scraper and `matchVgmdbRelease`. Replaces the MP3Tag script.
 

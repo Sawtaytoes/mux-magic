@@ -2395,6 +2395,24 @@ export const scanAudioFilesRequestSchema = z.object({
   sourcePath: musicSourcePathSchema,
 })
 
+export const fingerprintAudioFilesRequestSchema = z.object({
+  isRecursive: musicIsRecursiveSchema,
+  minimumScore: z
+    .number()
+    .default(0.5)
+    .describe(
+      "Lowest AcoustID score that counts as the same recording. Below about 0.5 AcoustID is reporting similar audio rather than the same audio — a different take, a different mix, or a cover.",
+    ),
+  recordingLimit: z
+    .number()
+    .default(5)
+    .describe(
+      "How many MusicBrainz recordings to offer per file. A well-known song accumulates dozens of linked recordings, and past the first few they are compilation re-issues of the same one.",
+    ),
+  recursiveDepth: musicRecursiveDepthSchema,
+  sourcePath: musicSourcePathSchema,
+})
+
 export const matchMusicBrainzReleaseRequestSchema =
   z.object({
     candidateFetchLimit: z

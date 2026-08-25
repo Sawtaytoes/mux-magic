@@ -7,7 +7,7 @@ import { from, map, type Observable } from "rxjs"
 // tests pass a stub, and nothing in this file ever needs the real one.
 export type CachedFetch = (
   url: string,
-  init?: RequestInit,
+  init?: RequestInit & { cacheKey?: string },
 ) => Promise<{ body: string; isFromCache: boolean }>
 
 export const MUSICBRAINZ_BASE_URL =

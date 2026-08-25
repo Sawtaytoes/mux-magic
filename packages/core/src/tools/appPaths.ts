@@ -29,6 +29,16 @@ const resolveAppPath = (
 // export const audioOffsetFinderPath = ".venv/bin/audio-offset-finder" // This local version doesn't run for whatever reason.
 export const audioOffsetFinderPath = "audio-offset-finder"
 
+// Chromaprint's fingerprinter, used by `fingerprintAudioFiles`. On Linux
+// it comes from the `libchromaprint-tools` apt package the runtime image
+// installs; on Windows it is the standalone release ZIP from
+// github.com/acoustid/chromaprint, unpacked alongside the other bundled
+// binaries.
+export const fpcalcPath = resolveAppPath(
+  "apps.downloaded/chromaprint/fpcalc.exe",
+  "fpcalc",
+)
+
 export const ffmpegPath = resolveAppPath(
   "apps.downloaded/ffmpeg/bin/ffmpeg.exe",
   "ffmpeg",
