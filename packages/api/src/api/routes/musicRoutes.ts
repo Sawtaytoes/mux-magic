@@ -1,15 +1,22 @@
 import { mkdir, rename } from "node:fs/promises"
 import { dirname, join, relative, resolve } from "node:path"
 
-import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
+import {
+  createRoute,
+  OpenAPIHono,
+  z,
+} from "@hono/zod-openapi"
 import { getChangedTagFields } from "@mux-magic/core/src/app-commands/writeAudioTags.js"
 import type { AudioTags } from "@mux-magic/core/src/music/tags/audioTagFields.js"
 import { readAudioTags } from "@mux-magic/core/src/music/tags/readAudioTags.js"
 import { writeAudioTags } from "@mux-magic/core/src/music/tags/writeAudioTags.js"
+import { submitAcoustIdFingerprints } from "@mux-magic/core/src/tools/acoustIdSubmit.js"
+import { buildSeededReleaseForm } from "@mux-magic/core/src/tools/musicBrainzSubmit.js"
 import {
   PathSafetyError,
   validateReadablePath,
 } from "@mux-magic/core/src/tools/pathSafety.js"
+import { firstValueFrom } from "rxjs"
 
 import * as schemas from "../schemas.js"
 
@@ -230,4 +237,115 @@ musicRoutes.openapi(
       )
     }
   },
+)
+
+// ── Phase 9: writing back ───────────────────────────────────────────
+//
+// ⚠️ Nothing here runs by itself. These are public database entries made
+// under the owner's account: a wrong one is visible to everybody and has
+// to be undone by hand. So each is a route the user triggers from a
+// review surface, never a step a sequence can schedule.
+//
+// AcoustID first, because it is the simplest and the most useful — it
+// improves the database the tagger reads FROM, and every correctly
+// matched file is a free contribution.
+musicRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/music/acoustid/submit",
+    summary: "Submit reviewed fingerprints to AcoustID",
+    description:
+      "Sends a batch of fingerprint-to-recording links to AcoustID under the owner's account. Explicit and reviewed only — this route is never called by a sequence step. The two AcoustID keys are not interchangeable: ACOUSTID_API_KEY is the application key sent as `client`, and ACOUSTID_USER_API_KEY is the account key sent as `user`, which is what authorises the submission.",
+    tags: ["Music Tagging"],
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema:
+              schemas.musicAcoustIdSubmitRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "Submission result, successful or not",
+        content: {
+          "application/json": {
+            schema:
+              schemas.musicAcoustIdSubmitResponseSchema,
+          },
+        },
+      },
+    },
+  }),
+  async (context) => {
+    const body = context.req.valid("json")
+    try {
+      // A dry run must not reach the network at all. AcoustID queues a
+      // submission the moment it accepts one, so there is no "preview"
+      // request that leaves the database untouched.
+      const submissions = body.isDryRun
+        ? []
+        : await firstValueFrom(
+            submitAcoustIdFingerprints({
+              submissions: body.submissions,
+            }),
+          )
+      return context.json(
+        { error: null, isOk: true, submissions },
+        200,
+      )
+    } catch (error) {
+      return context.json(
+        {
+          error: messageFromError(error),
+          isOk: false,
+          submissions: [],
+        },
+        200,
+      )
+    }
+  },
+)
+
+// The half that is not an API. The MusicBrainz web service CANNOT create
+// a release, a recording or an artist — it only submits tags, ratings,
+// barcodes, ISRCs and collection membership to entities that already
+// exist. A missing album therefore goes through the web release editor,
+// seeded by a self-submitting form the owner opens while logged in.
+//
+// ⚠️ A seed in the query string is ignored; the editor opens empty. It
+// reads its seed from a form POST body, which is why this returns HTML
+// rather than a URL.
+musicRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/music/musicbrainz/seed-release",
+    summary:
+      "Build a seeded MusicBrainz release-editor form",
+    description:
+      'Returns a self-submitting HTML form that opens the MusicBrainz release editor pre-filled with this album. Opening the editor saves nothing — the owner steps through the tabs and clicks the green "Enter edit" to create the release. This exists because the web service cannot create a release at all.',
+    tags: ["Music Tagging"],
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: schemas.musicSeedReleaseRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description:
+          "The self-submitting release-editor form",
+        content: { "text/html": { schema: z.string() } },
+      },
+    },
+  }),
+  (context) =>
+    context.html(
+      buildSeededReleaseForm(context.req.valid("json")),
+    ),
 )

@@ -2710,3 +2710,121 @@ export const musicDuplicateResolveResponseSchema = z.object(
       ),
   },
 )
+
+// Phase 9 — writing back. Every one of these is an explicit, reviewed
+// action. Nothing submits automatically: these are public database
+// entries made under the owner's account, and a wrong one is visible to
+// everybody and has to be undone by hand.
+export const musicAcoustIdSubmitRequestSchema = z.object({
+  isDryRun: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Report what would be submitted without sending anything to AcoustID.",
+    ),
+  submissions: z
+    .array(
+      z.object({
+        albumArtistName: z.string().optional(),
+        albumName: z.string().optional(),
+        artistName: z.string().optional(),
+        durationSeconds: z
+          .number()
+          .describe(
+            "Track length in seconds. AcoustID rounds it to a whole number and rejects a fractional one.",
+          ),
+        fingerprint: z
+          .string()
+          .describe(
+            "The Chromaprint fingerprint from `fpcalc`, as produced by the fingerprintAudioFiles command.",
+          ),
+        musicBrainzRecordingId: z
+          .string()
+          .optional()
+          .describe(
+            "The recording this fingerprint belongs to. Without it the submission adds a fingerprint that is linked to nothing, which helps nobody.",
+          ),
+        title: z.string().optional(),
+        trackNumber: z.number().optional(),
+        year: z.number().optional(),
+      }),
+    )
+    .describe(
+      "The reviewed submissions. The whole batch goes in one request; AcoustID indexes each entry by position.",
+    ),
+})
+
+export const musicAcoustIdSubmitResponseSchema = z.object({
+  error: z
+    .string()
+    .nullable()
+    .describe(
+      "Why the submission failed; null on success.",
+    ),
+  isOk: z
+    .boolean()
+    .describe("Whether AcoustID accepted the batch."),
+  submissions: z
+    .array(
+      z.object({
+        status: z
+          .string()
+          .describe(
+            "AcoustID's own status for the entry, normally `pending` — it queues submissions rather than applying them at once.",
+          ),
+        submissionId: z.number(),
+      }),
+    )
+    .describe(
+      "One entry per accepted submission, empty on failure or a dry run.",
+    ),
+})
+
+// The half of writing back that is NOT an API. MusicBrainz cannot create
+// a release over the web service, so a missing album is added through a
+// seeded web form the owner completes in his own browser, logged in as
+// himself.
+export const musicSeedReleaseRequestSchema = z.object({
+  albumArtistName: z.string(),
+  artistMbid: z
+    .string()
+    .optional()
+    .describe(
+      "MusicBrainz artist id to link the credit to. Without it the release is created with an unlinked artist name.",
+    ),
+  countryCode: z
+    .string()
+    .optional()
+    .describe(
+      "Release country. Defaults to XW (Worldwide), which suits a digital release.",
+    ),
+  date: z
+    .string()
+    .optional()
+    .describe("Release date, `YYYY-MM-DD` or `YYYY`."),
+  editNote: z.string().optional(),
+  label: z.string().optional(),
+  mediumFormat: z.string().optional(),
+  primaryType: z.string().optional(),
+  releaseTitle: z.string(),
+  secondaryTypes: z.array(z.string()).optional(),
+  tracks: z
+    .array(
+      z.object({
+        lengthMilliseconds: z
+          .number()
+          .describe(
+            "Exact track length. The release editor wants milliseconds, and an approximate length is the most common reason a seeded release needs hand correction.",
+          ),
+        title: z.string(),
+        trackNumber: z.number(),
+      }),
+    )
+    .describe("The tracklist, in order."),
+  url: z
+    .string()
+    .optional()
+    .describe(
+      "A relationship URL, normally the album's purchase page.",
+    ),
+})

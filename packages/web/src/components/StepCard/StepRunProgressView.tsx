@@ -3,6 +3,8 @@ import { ConvertLosslessRunResults } from "../ConvertLosslessRunResults/ConvertL
 import type { ConvertLosslessRunResultsData } from "../ConvertLosslessRunResults/findConvertLosslessResults"
 import { DuplicateRunResults } from "../DuplicateCompareModal/DuplicateRunResults"
 import type { DuplicateGroup } from "../DuplicateCompareModal/duplicateCompareTypes"
+import { FingerprintRunResults } from "../FingerprintRunResults/FingerprintRunResults"
+import type { FingerprintMatchedRecord } from "../FingerprintRunResults/fingerprintResultTypes"
 import { GenericRunResults } from "../GenericRunResults/GenericRunResults"
 import { MusicMatchRunResults } from "../MusicMatchRunResults/MusicMatchRunResults"
 import type {
@@ -31,6 +33,7 @@ type Props = {
   editionPlan?: NsfEditionPlanRecord | null
   convertLosslessResults: ConvertLosslessRunResultsData
   duplicateGroups: DuplicateGroup[]
+  fingerprintMatches: FingerprintMatchedRecord[]
   musicMatchFiles: TagMatchFile[]
   results: ReadonlyArray<unknown> | null
 }
@@ -47,6 +50,7 @@ export const StepRunProgressView = ({
   editionPlan,
   convertLosslessResults,
   duplicateGroups,
+  fingerprintMatches,
   musicMatchFiles,
   results,
 }: Props) => (
@@ -75,6 +79,7 @@ export const StepRunProgressView = ({
       sourcePath={sourcePath}
       stepId={stepId}
     />
+    <FingerprintRunResults matches={fingerprintMatches} />
     <GenericRunResults
       commandName={commandName}
       results={results}

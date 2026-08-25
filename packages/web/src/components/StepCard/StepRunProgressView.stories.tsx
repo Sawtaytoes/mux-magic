@@ -174,6 +174,7 @@ const meta: Meta<typeof StepRunProgressView> = {
     snap: {},
     convertLosslessResults: { converted: [], skipped: [] },
     duplicateGroups: [],
+    fingerprintMatches: [],
     musicMatchFiles: [],
     results: null,
   },
@@ -562,6 +563,41 @@ export const DuplicatesDone: Story = {
     isRunning: false,
     renamePairs: [],
     sourcePath: "/library",
+    summary: null,
+  },
+}
+
+// A finished `fingerprintAudioFiles` run. Submitting to AcoustID is a
+// separate press, never part of the run — these are public database
+// entries made under the owner's account.
+export const FingerprintDone: Story = {
+  args: {
+    commandName: "fingerprintAudioFiles",
+    fingerprintMatches: [
+      {
+        acoustId: "acoust-1",
+        duration: 210.4,
+        filePath:
+          "/inbox/Nova Harbour/Tidewater/01 Slack Water.flac",
+        filename: "01 Slack Water.flac",
+        fingerprint: "AQAD",
+        kind: "matched",
+        recordings: [
+          {
+            artistNames: ["Nova Harbour"],
+            durationSeconds: 210,
+            musicBrainzArtistIds: ["artist-1"],
+            recordingId: "recording-1",
+            releaseGroupIds: ["release-group-1"],
+            title: "Slack Water",
+          },
+        ],
+        score: 0.97,
+      },
+    ],
+    isRunning: false,
+    renamePairs: [],
+    sourcePath: "/inbox/Nova Harbour/Tidewater",
     summary: null,
   },
 }

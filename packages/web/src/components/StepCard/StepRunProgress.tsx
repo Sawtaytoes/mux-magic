@@ -23,6 +23,10 @@ import {
   findDuplicateGroups,
 } from "../DuplicateCompareModal/duplicateCompareTypes"
 import {
+  type FingerprintMatchedRecord,
+  findFingerprintMatches,
+} from "../FingerprintRunResults/fingerprintResultTypes"
+import {
   dropAppliedMusicMatchFiles,
   findMusicMatchClusters,
   flattenMusicMatchFiles,
@@ -137,6 +141,8 @@ export const StepRunProgress = ({
   const [duplicateGroups, setDuplicateGroups] = useState<
     DuplicateGroup[]
   >([])
+  const [fingerprintMatches, setFingerprintMatches] =
+    useState<FingerprintMatchedRecord[]>([])
   const [results, setResults] =
     useState<ReadonlyArray<unknown> | null>(null)
   // Track the jobId the captured results belong to. When jobId changes
@@ -157,6 +163,7 @@ export const StepRunProgress = ({
     })
     setMusicMatchFiles([])
     setDuplicateGroups([])
+    setFingerprintMatches([])
     setResults(null)
   }
 
@@ -192,6 +199,9 @@ export const StepRunProgress = ({
       )
       setDuplicateGroups(
         findDuplicateGroups(payload.results),
+      )
+      setFingerprintMatches(
+        findFingerprintMatches(payload.results),
       )
       setResults(payload.results ?? null)
     },
@@ -247,6 +257,7 @@ export const StepRunProgress = ({
         resolvedFilePaths:
           resolvedDuplicatePathsByJobId.get(jobId) ?? [],
       })}
+      fingerprintMatches={fingerprintMatches}
       musicMatchFiles={dropAppliedMusicMatchFiles({
         appliedFilePaths: (
           appliedTagWritesByJobId.get(jobId) ?? []

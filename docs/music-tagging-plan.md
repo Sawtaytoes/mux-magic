@@ -1,8 +1,8 @@
 # Music tagging and ingest live inside Mux-Magic — the build plan
 
-*Status: phases 0–5, 7 and 8 built and reachable from the app. Phase 6 is blocked
-by VGMdb's bot protection; phase 9 is in progress. Owner-settled 2026-08-24;
-status updated 2026-08-25.*
+*Status: every phase except 6 is built and reachable from the app. Phase 6 is
+blocked by VGMdb's bot protection and needs an owner decision. Owner-settled
+2026-08-24; status updated 2026-08-25.*
 
 The goal is to stop using **MP3Tag + Picard** as a pair and get one surface that does
 what both do: MusicBrainz matching, VGMdb matching, AcoustID fingerprinting, bulk tag
@@ -339,12 +339,12 @@ The real values for all six variables live in the root `.env` and in
 
 ## 8. Phases
 
-> **Where the build actually stands, 2026-08-25.** Phases 0, 1, 2, 3, 4, 5, 7 and
-> 8 are built, tested and reachable from the sequence builder. Phase 7's general
-> renamer (`renameFilesAndFolders`) landed with it. Phase 6 is **blocked by
-> VGMdb** (see below) and phase 9 is in progress; an unbuilt command is
-> deliberately **not** registered — a command in the picker that throws is worse
-> than one that is not there yet.
+> **Where the build actually stands, 2026-08-25.** Every phase except 6 is built
+> and tested: 0, 1, 2, 3, 4, 5, 7, 8 and 9. Phase 7's general renamer
+> (`renameFilesAndFolders`) landed with it. **Phase 6 is blocked by VGMdb's bot
+> protection** — see below — and its `matchVgmdbRelease` command is therefore
+> deliberately **not** registered, because a command in the picker that throws is
+> worse than one that is not there yet.
 >
 > Two things phase 2 needed that this plan did not name, both now built under
 > `packages/core/src/music/matching/`: `matchReleaseTracksToFiles` (which track on
@@ -391,7 +391,35 @@ measured against the live service, and both fail silently rather than loudly.
 **A scored result with no linked recording is normal, not a failure.** AcoustID
 knows the audio; nobody has tied it to MusicBrainz. It stays a row.
 
-**Phase 6 — VGMdb.** The scraper and `matchVgmdbRelease`. Replaces the MP3Tag script.
+**Phase 6 — VGMdb.** ⛔ **Blocked, and not by us.** The scraper and
+`matchVgmdbRelease` are not built, because there is currently no way to read VGMdb
+that does not need a credential the owner has to refresh by hand.
+
+Measured 2026-08-25, from three different addresses:
+
+| Route | Result |
+| --- | --- |
+| `vgmdb.net` with plain `fetch` | **403** |
+| `vgmdb.net` with headless Chromium and a desktop User-Agent, from this workspace | **403**, Cloudflare interstitial |
+| `vgmdb.net` the same way from the household's own address, inside the running app container | **403**, page title *"Just a moment…"*, challenge never resolves |
+| `vgmdb.info` (the community JSON mirror) | **No route to host** on 443, connection refused on 80 — the hosted instance is down |
+
+So the plan's stated default — *"the safest default is to scrape it ourselves"* —
+does not work today: VGMdb sits behind a Cloudflare managed challenge that headless
+Chromium does not pass, from a residential address.
+
+**The mirror's provenance is fine, and is not the problem.** `hufman/vgmdb` is MIT,
+by Walter Huf (Netherlands), 112 stars, last pushed 2026-04-19, not archived — the
+Chinese-origin constraint does not bite. The problem is that its own users report
+the same wall: issues through 2026 describe 403 and 503 against a self-hosted
+instance, and the only workaround anybody has is a `cf_clearance` cookie harvested
+from a logged-in browser **at the same address**, which expires in about a day. The
+upstream author says plainly that he is unsure how the protection works.
+
+**What that leaves is a decision, not a code change** — self-host the mirror and
+accept a cookie the owner re-harvests roughly daily, or leave VGMdb alone and keep
+using the MP3Tag script for game and anime soundtracks. That is the owner's call
+because it is a standing manual chore, so it is not being guessed at here.
 
 **Phase 7 — name and move.** `renameAndMoveAudioFiles`, plus the general
 `renameFilesAndFolders` command. ⚠️ **This phase is bigger than it looks.** The naming rules
@@ -444,10 +472,46 @@ it.
 either — it reads the filesystem directly — so they are a separate, smaller piece
 of work rather than a blocker.
 
-**Phase 9 — write back.** AcoustID fingerprint submission first (it is the simplest and the
-most useful), then the five MusicBrainz `ws/2` submissions, then the ported seeded-release
-form. Every one of them explicit and reviewed, never automatic. See
+**Phase 9 — write back.** ✅ AcoustID fingerprint submission, the five MusicBrainz
+`ws/2` submission builders with their OAuth exchange, and the ported
+seeded-release form. Every one of them explicit and reviewed, never automatic. See
 [§5](#writing-back-to-musicbrainz-and-acoustid).
+
+**Nothing submits as part of a run.** These are public database entries made under
+the owner's account: a wrong one is visible to everybody and has to be undone by
+hand. So each write is a ROUTE the user triggers from a review surface, never a
+command a sequence can schedule — the same reason `POST /music/tags` is a route and
+not a step.
+
+**Only a linked fingerprint is offered.** A fingerprint submitted with no
+MusicBrainz recording id adds a public entry attached to nothing. It helps nobody
+and still counts as a write, so those rows are counted in the summary and left out
+of the batch, and the button disappears when none qualify.
+
+**A dry run does not reach the network.** AcoustID queues a submission the moment it
+accepts one, so there is no preview request that leaves the database untouched.
+
+⚠️ **Verified live on 2026-08-25, without making a single public edit:**
+
+- **The two AcoustID keys are not interchangeable**, proven by sending them both ways
+  round. `client=<application key>, user=<account key>` gets past key validation to
+  the parameter check (error 2, *missing required parameter "fingerprint"*).
+  `client=<account key>` returns error 4, *invalid API key*.
+- **All four MusicBrainz submission paths exist and answer 401** to an
+  unauthenticated POST — `/ws/2/tag`, `/ws/2/rating`, `/ws/2/release/`,
+  `/ws/2/recording/`. Authorisation is checked *before* the `client` parameter is,
+  so a missing token is the first thing that fails.
+- **What is NOT verified end to end:** no successful submission has been made. Doing
+  so would create a real public entry, which is the owner's call, not the agent's.
+  The request shapes are built to the documented contract and unit-tested; the first
+  real submission is still the proving run.
+
+**The seeded release form is ported, not re-derived** — the working version has been
+in the private workspace since July 2026 and has added a real release. Two traps it
+already knows about: a seed passed as QUERY PARAMETERS is ignored and the editor
+opens completely empty (it reads a form POST body), and opening the editor saves
+nothing — the green **"Enter edit"** button is what creates the release, so the
+generated page says so.
 
 MP3Tag and Picard can be dropped after Phase 7 for tagging, and after Phase 8 for the
 whole workflow. Phase 9 is the part that goes past what either of them does.

@@ -22,6 +22,11 @@ import {
   dropResolvedDuplicateGroups,
   findDuplicateGroups,
 } from "../DuplicateCompareModal/duplicateCompareTypes"
+import { FingerprintRunResults } from "../FingerprintRunResults/FingerprintRunResults"
+import {
+  type FingerprintMatchedRecord,
+  findFingerprintMatches,
+} from "../FingerprintRunResults/fingerprintResultTypes"
 import {
   dropAppliedMusicMatchFiles,
   findMusicMatchClusters,
@@ -124,6 +129,8 @@ export const ChildProgressTracker = ({
   const [duplicateGroups, setDuplicateGroups] = useState<
     DuplicateGroup[]
   >([])
+  const [fingerprintMatches, setFingerprintMatches] =
+    useState<FingerprintMatchedRecord[]>([])
   // Reset captured results on jobId change — see StepRunProgress for
   // the same pattern.
   const [lastSeenJobId, setLastSeenJobId] = useState<
@@ -136,6 +143,7 @@ export const ChildProgressTracker = ({
     setEditionPlan(null)
     setMusicMatchFiles([])
     setDuplicateGroups([])
+    setFingerprintMatches([])
   }
 
   const handleDone = useCallback(
@@ -150,6 +158,9 @@ export const ChildProgressTracker = ({
       )
       setDuplicateGroups(
         findDuplicateGroups(payload.results),
+      )
+      setFingerprintMatches(
+        findFingerprintMatches(payload.results),
       )
     },
     [],
@@ -224,6 +235,7 @@ export const ChildProgressTracker = ({
         sourcePath={sourcePath}
         stepId={stepId}
       />
+      <FingerprintRunResults matches={fingerprintMatches} />
     </div>
   )
 }
