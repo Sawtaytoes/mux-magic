@@ -1,0 +1,51 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks"
+
+import * as DuplicateCompareModalStories from "./DuplicateCompareModal.stories"
+
+<Meta of={DuplicateCompareModalStories} />
+
+# DuplicateCompareModal
+
+The duplicate compare table. Rows are duplicate **groups**; each row shows
+the copies side by side with the facts that decided which to keep, the
+recommendation pre-selected, and a human confirming or overriding it.
+
+## Confirming MOVES, it does not delete
+
+The music library lives on a share with no Recycle Bin. A delete there is
+effectively permanent inside the hour, and the only safety net is the
+hourly ZFS snapshot. So the only action this surface offers is a **move**
+into a holding folder, which makes the decision reversible by dragging a
+file back.
+
+The server recreates each copy's path below the scanned root inside the
+holding folder, so `Disc 1/01 Intro.flac` and `Disc 2/01 Intro.flac` cannot
+collide.
+
+## Two safety defaults
+
+1. **Only "identical audio" groups start checked.** A fingerprint match or
+   a tag match is a strong hint, not proof — so confirming a whole table
+   without reading it cannot move a file on the strength of a coincidence.
+2. **The holding folder must be filled in** before Confirm does anything.
+
+## Match strengths
+
+| Reason | What it proves |
+| --- | --- |
+| Identical audio | The decoded audio is byte-for-byte the same. Certain. |
+| Same recording | AcoustID reports the same recording. Pairs a FLAC with an MP3, which no hash can. |
+| Same tags | Only the tags agree. The weakest signal. |
+
+<Canvas of={DuplicateCompareModalStories.IdenticalAudio} />
+
+All three strengths at once. Only the audio group is checked.
+
+<Canvas of={DuplicateCompareModalStories.MixedMatchStrengths} />
+
+The kept row states its reasons, so a human can disagree on sight rather
+than trusting a bare "recommended" badge.
+
+<Canvas of={DuplicateCompareModalStories.HigherResolutionWins} />
+
+<Canvas of={DuplicateCompareModalStories.NoDuplicates} />

@@ -51,6 +51,8 @@ export const commandNames = [
   "onlyNameSpecialFeaturesDvdCompare",
   "nameTvShowEpisodes",
   "remuxToMkv",
+  "fingerprintAudioFiles",
+  "findDuplicateAudioFiles",
   "scanAudioFiles",
   "renumberChapters",
   "renameAndMoveAudioFiles",

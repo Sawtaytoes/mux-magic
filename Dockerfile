@@ -128,7 +128,9 @@ ENV IS_CONTAINERIZED=true
 ENV PORT=3000
 
 # Runtime apt deps. ffmpeg/mkvtoolnix/mediainfo are spawned by the cli
-# operations; python3 runs the audio-offset-finder venv copied from the builder
+# operations; libchromaprint-tools provides `fpcalc`, the Chromaprint
+# fingerprinter that `fingerprintAudioFiles` spawns (the same binary Picard
+# uses); python3 runs the audio-offset-finder venv copied from the builder
 # (the venv's interpreter symlink resolves to this system python3, same 3.13);
 # procps gives the tree-kill child-process discovery something to inspect;
 # ca-certificates + locales cover TLS and UTF-8.
@@ -145,6 +147,7 @@ RUN \
   apt-get install -y --no-install-recommends \
     ca-certificates \
     ffmpeg \
+    libchromaprint-tools \
     locales \
     mediainfo \
     procps \
@@ -188,6 +191,12 @@ ENV PATH="/opt/makemkv/bin:${PATH}"
 # from a runtime surprise into a build failure.
 RUN makemkvcon -r --cache=1 info disc:9999 \
   | grep -q 'MSG:1005.*started'
+
+# fpcalc, asserted rather than assumed. The apt package name
+# (libchromaprint-tools) does not contain the binary name (fpcalc), so a
+# rename upstream would otherwise show up as every music fingerprint row
+# failing with ENOENT at runtime instead of as a build failure here.
+RUN fpcalc -version | grep -q 'fpcalc version'
 
 # MakeMKV keeps its registration key in `$HOME/.MakeMKV/settings.conf`.
 #

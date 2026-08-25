@@ -1,0 +1,45 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks"
+
+import * as FingerprintRunResultsStories from "./FingerprintRunResults.stories"
+
+<Meta of={FingerprintRunResultsStories} />
+
+# FingerprintRunResults
+
+Post-run report for a `fingerprintAudioFiles` job, and the only door to the
+AcoustID submission.
+
+## Submitting is a separate press
+
+These are public database entries made under the owner's account. A wrong
+one is visible to everybody and has to be undone by hand, so the run
+identifies, the panel reports, and a **separate click** submits. Nothing
+is ever sent as part of a sequence step.
+
+This is also the most valuable write the app makes: it improves the
+database the tagger reads from, and every correctly matched file is a free
+contribution. Picard does the same thing by default.
+
+## Only linked fingerprints are offered
+
+A fingerprint submitted with no MusicBrainz recording id adds an entry
+linked to nothing, which helps nobody and still counts as a public write.
+So rows without a recording are counted in the summary and left out of the
+batch, and the button disappears entirely when none qualify.
+
+## Props
+
+| Prop | Type | What it does |
+| --- | --- | --- |
+| `matches` | `FingerprintMatchedRecord[]` | The run's identified files. An empty array renders nothing. |
+
+<Canvas of={FingerprintRunResultsStories.EveryFileContributable} />
+
+AcoustID knows the audio but nobody has tied it to MusicBrainz — counted,
+not submitted.
+
+<Canvas of={FingerprintRunResultsStories.SomeWithoutRecordings} />
+
+<Canvas of={FingerprintRunResultsStories.NothingContributable} />
+
+<Canvas of={FingerprintRunResultsStories.NoMatches} />

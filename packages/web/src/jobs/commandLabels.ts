@@ -84,6 +84,8 @@ export const commandLabels: Record<string, string> = {
 
   // Music Tagging
   scanAudioFiles: "Scan Audio Files",
+  fingerprintAudioFiles: "Fingerprint Audio Files",
+  findDuplicateAudioFiles: "Find Duplicate Audio Files",
   matchMusicBrainzRelease: "Match MusicBrainz Release",
   writeAudioTags: "Write Audio Tags",
   renameAndMoveAudioFiles: "Rename and Move Audio Files",

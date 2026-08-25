@@ -13,6 +13,19 @@ export type CachedFetchOutcome = {
   isFromCache: boolean
 }
 
+// `fetch` ignores properties it does not know, so carrying the cache key
+// on the init object costs nothing at the network layer and keeps the
+// two-argument `CachedFetch` shape every call site already uses.
+//
+// ⚠️ Needed because the cache is keyed on the URL alone. That is correct
+// for a GET provider, where the URL IS the request. It is wrong for a
+// POST provider: AcoustID takes an 8 KB fingerprint in the body and every
+// lookup posts to the same `/v2/lookup` URL, so without this every track
+// after the first would read the first track's cached answer.
+export type CachedFetchInit = RequestInit & {
+  cacheKey?: string
+}
+
 // 429 and 503 are the two statuses every provider here uses to say
 // "later, not never". Everything else non-2xx is a real failure.
 const RETRYABLE_STATUS_CODES = new Set([429, 503])
@@ -23,10 +36,11 @@ const DEFAULT_MINIMUM_REQUEST_INTERVAL_MILLISECONDS = 1000
 
 type RequestContext = {
   cache: ProviderCache
-  initialization: RequestInit | undefined
+  initialization: CachedFetchInit | undefined
   maximumAttempts: number
   provider: string
   rateLimiter: RateLimiter
+  requestKey: string
   retryBackoffMilliseconds: number
   staleRow: ProviderCacheRow | null
   url: string
@@ -38,7 +52,7 @@ const buildHeaders = ({
   staleRow,
   userAgent,
 }: {
-  initialization: RequestInit | undefined
+  initialization: CachedFetchInit | undefined
   staleRow: ProviderCacheRow | null
   userAgent: string
 }) => ({
@@ -53,6 +67,18 @@ const buildHeaders = ({
   "User-Agent": userAgent,
 })
 
+// `cacheKey` is ours, not the platform's. Dropping it keeps `fetch` from
+// ever seeing a property it does not define.
+const toRequestInit = (
+  initialization: CachedFetchInit | undefined,
+): RequestInit | undefined =>
+  initialization === undefined
+    ? undefined
+    : (({
+        cacheKey: _ignoredCacheKey,
+        ...requestInit
+      }: CachedFetchInit) => requestInit)(initialization)
+
 const requestOnce = ({
   attemptNumber,
   requestContext,
@@ -63,7 +89,7 @@ const requestOnce = ({
   requestContext.rateLimiter
     .schedule(() =>
       fetch(requestContext.url, {
-        ...requestContext.initialization,
+        ...toRequestInit(requestContext.initialization),
         headers: buildHeaders({
           initialization: requestContext.initialization,
           staleRow: requestContext.staleRow,
@@ -89,11 +115,13 @@ const requestOnce = ({
 const resolveNotModified = ({
   cache,
   provider,
+  requestKey,
   staleRow,
   url,
 }: {
   cache: ProviderCache
   provider: string
+  requestKey: string
   staleRow: ProviderCacheRow | null
   url: string
 }) =>
@@ -108,7 +136,7 @@ const resolveNotModified = ({
           body: staleRow.body,
           etag: staleRow.etag,
           provider,
-          requestKey: url,
+          requestKey,
         }),
       ).then(() => ({
         body: staleRow.body,
@@ -118,11 +146,13 @@ const resolveNotModified = ({
 const resolveFreshResponse = ({
   cache,
   provider,
+  requestKey,
   response,
   url,
 }: {
   cache: ProviderCache
   provider: string
+  requestKey: string
   response: Response
   url: string
 }) =>
@@ -133,7 +163,7 @@ const resolveFreshResponse = ({
             body,
             etag: response.headers.get("etag"),
             provider,
-            requestKey: url,
+            requestKey,
           }),
         ).then(() => ({ body, isFromCache: false })),
       )
@@ -150,12 +180,14 @@ const fetchAndStore = (requestContext: RequestContext) =>
         ? resolveNotModified({
             cache: requestContext.cache,
             provider: requestContext.provider,
+            requestKey: requestContext.requestKey,
             staleRow: requestContext.staleRow,
             url: requestContext.url,
           })
         : resolveFreshResponse({
             cache: requestContext.cache,
             provider: requestContext.provider,
+            requestKey: requestContext.requestKey,
             response,
             url: requestContext.url,
           }),
@@ -180,28 +212,32 @@ export const createCachedFetch = ({
     (rateLimiter: RateLimiter) =>
     (
       url: string,
-      initialization?: RequestInit,
+      initialization?: CachedFetchInit,
     ): Promise<CachedFetchOutcome> =>
-      ((freshRow: ProviderCacheRow | null) =>
-        freshRow === null
-          ? fetchAndStore({
-              cache,
-              initialization,
-              maximumAttempts,
-              provider,
-              rateLimiter,
-              retryBackoffMilliseconds,
-              staleRow: cache.getStale({
+      ((requestKey: string) =>
+        ((freshRow: ProviderCacheRow | null) =>
+          freshRow === null
+            ? fetchAndStore({
+                cache,
+                initialization,
+                maximumAttempts,
                 provider,
-                requestKey: url,
-              }),
-              url,
-              userAgent,
-            })
-          : Promise.resolve({
-              body: freshRow.body,
-              isFromCache: true,
-            }))(cache.get({ provider, requestKey: url }))
+                rateLimiter,
+                requestKey,
+                retryBackoffMilliseconds,
+                staleRow: cache.getStale({
+                  provider,
+                  requestKey,
+                }),
+                url,
+                userAgent,
+              })
+            : Promise.resolve({
+                body: freshRow.body,
+                isFromCache: true,
+              }))(cache.get({ provider, requestKey })))(
+        initialization?.cacheKey ?? url,
+      )
   )(
     createRateLimiter({
       minimumIntervalMilliseconds:

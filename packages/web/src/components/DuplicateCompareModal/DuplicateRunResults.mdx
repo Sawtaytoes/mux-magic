@@ -1,0 +1,37 @@
+import { Canvas, Meta } from "@storybook/addon-docs/blocks"
+
+import * as DuplicateRunResultsStories from "./DuplicateRunResults.stories"
+
+<Meta of={DuplicateRunResultsStories} />
+
+# DuplicateRunResults
+
+Post-run report for a `findDuplicateAudioFiles` job, and the only door into
+the duplicate compare table.
+
+The command writes nothing, and neither does this panel. The count is
+worded to say so — "nothing has been moved" — because a duplicate report
+that reads like a completed cleanup is the one way this feature could
+mislead someone into thinking files are already gone.
+
+## Props
+
+| Prop | Type | What it does |
+| --- | --- | --- |
+| `groups` | `DuplicateGroup[]` | The server's ranked duplicate groups. An empty array renders nothing. |
+| `jobId` | `string` | Seeds the modal, and keys the per-job log of copies already moved. |
+| `sourcePath` | `string \| null` | The folder the run walked. `null` withholds the trigger: without it the server cannot mirror the folder structure into the holding folder. |
+| `stepId` | `string` | Identifies the step whose run produced these groups. |
+
+<Canvas of={DuplicateRunResultsStories.OneGroup} />
+
+Several groups, one per match strength.
+
+<Canvas of={DuplicateRunResultsStories.SeveralGroups} />
+
+A clean library renders nothing rather than an empty box that invites a
+click.
+
+<Canvas of={DuplicateRunResultsStories.NoDuplicates} />
+
+<Canvas of={DuplicateRunResultsStories.NoSourcePath} />

@@ -15,6 +15,18 @@ import type {
   Step,
   Variable,
 } from "../../types"
+import { DuplicateRunResults } from "../DuplicateCompareModal/DuplicateRunResults"
+import { resolvedDuplicateFilePathsByJobIdAtom } from "../DuplicateCompareModal/duplicateCompareModalAtom"
+import {
+  type DuplicateGroup,
+  dropResolvedDuplicateGroups,
+  findDuplicateGroups,
+} from "../DuplicateCompareModal/duplicateCompareTypes"
+import { FingerprintRunResults } from "../FingerprintRunResults/FingerprintRunResults"
+import {
+  type FingerprintMatchedRecord,
+  findFingerprintMatches,
+} from "../FingerprintRunResults/fingerprintResultTypes"
 import {
   dropAppliedMusicMatchFiles,
   findMusicMatchClusters,
@@ -100,6 +112,9 @@ export const ChildProgressTracker = ({
   const appliedTagWritesByJobId = useAtomValue(
     appliedTagWritesByJobIdAtom,
   )
+  const resolvedDuplicatePathsByJobId = useAtomValue(
+    resolvedDuplicateFilePathsByJobIdAtom,
+  )
 
   const [summary, setSummary] =
     useState<NsfSummaryRecord | null>(null)
@@ -111,6 +126,11 @@ export const ChildProgressTracker = ({
   const [musicMatchFiles, setMusicMatchFiles] = useState<
     TagMatchFile[]
   >([])
+  const [duplicateGroups, setDuplicateGroups] = useState<
+    DuplicateGroup[]
+  >([])
+  const [fingerprintMatches, setFingerprintMatches] =
+    useState<FingerprintMatchedRecord[]>([])
   // Reset captured results on jobId change — see StepRunProgress for
   // the same pattern.
   const [lastSeenJobId, setLastSeenJobId] = useState<
@@ -122,6 +142,8 @@ export const ChildProgressTracker = ({
     setRenamePairs([])
     setEditionPlan(null)
     setMusicMatchFiles([])
+    setDuplicateGroups([])
+    setFingerprintMatches([])
   }
 
   const handleDone = useCallback(
@@ -133,6 +155,12 @@ export const ChildProgressTracker = ({
         flattenMusicMatchFiles(
           findMusicMatchClusters(payload.results),
         ),
+      )
+      setDuplicateGroups(
+        findDuplicateGroups(payload.results),
+      )
+      setFingerprintMatches(
+        findFingerprintMatches(payload.results),
       )
     },
     [],
@@ -197,6 +225,17 @@ export const ChildProgressTracker = ({
         sourcePath={sourcePath}
         stepId={stepId}
       />
+      <DuplicateRunResults
+        groups={dropResolvedDuplicateGroups({
+          groups: duplicateGroups,
+          resolvedFilePaths:
+            resolvedDuplicatePathsByJobId.get(jobId) ?? [],
+        })}
+        jobId={jobId}
+        sourcePath={sourcePath}
+        stepId={stepId}
+      />
+      <FingerprintRunResults matches={fingerprintMatches} />
     </div>
   )
 }
