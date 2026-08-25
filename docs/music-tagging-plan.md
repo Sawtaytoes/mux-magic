@@ -417,9 +417,63 @@ from a logged-in browser **at the same address**, which expires in about a day. 
 upstream author says plainly that he is unsure how the protection works.
 
 **What that leaves is a decision, not a code change** — self-host the mirror and
-accept a cookie the owner re-harvests roughly daily, or leave VGMdb alone and keep
-using the MP3Tag script for game and anime soundtracks. That is the owner's call
-because it is a standing manual chore, so it is not being guessed at here.
+accept a cookie the owner re-harvests, or leave VGMdb alone and keep using the MP3Tag
+script for game and anime soundtracks.
+
+### The API contract, found and pinned — 2026-08-25
+
+The owner recalled "an API that the MP3Tag script works with". Both halves of that
+were checked, and the answer is more useful than either guess:
+
+**The MP3Tag script is NOT an API client.** `VGMdb_by_URL.src` (version 2.5.1,
+dated 2025-02-25) takes a pasted `vgmdb.net` album URL and **scrapes the HTML** —
+it looks for `<!-- main page contents -->`, `class="albumtitle"` and
+`id="coverart"`. There is no endpoint in it. It works from the owner's Windows
+desktop because Mp3tag makes a browser-shaped request from a machine that has
+already cleared Cloudflare.
+
+**The API is `vgmdb.info`, and it is the same hufman mirror.** This was pinned from
+a second, independent artefact: the household's Jellyfin **VGMdb plugin**
+(`Jellyfin.Plugin.Vgmdb.dll`) calls
+
+```
+https://vgmdb.info/album/<id>?format=json
+https://vgmdb.info/search?format=json&q=<query>
+```
+
+So `?format=json` on any `vgmdb.info` path is the contract, and a **published JSON
+schema** exists at `hufman/vgmdb` under `schema/album.json`. Build the client
+against that rather than against a scrape.
+
+⚠️ **Two things the schema forces on the track matcher**, and both differ from
+MusicBrainz:
+
+1. **A track carries no number and no recording id.** Its position is its index
+   inside `discs[n].tracks`. `matchReleaseTracksToFiles` cannot key on a track
+   number that does not exist.
+2. **`track_length` is `"MM:SS"` text, not milliseconds**, and `disc_length` is the
+   same. Both need parsing before any duration comparison.
+
+A track also carries `names` as a **map of language to title** (`English`,
+`Japanese`, `Romaji`). That is why the owner keeps two variants of the MP3Tag
+script — "Original" and "English-first". The command needs the same choice as an
+option; it is not a detail to pick silently.
+
+⚠️ **Upstream itself now requires a browser cookie.** The mirror's own README says
+so plainly: *"Since the introduction of Cloudflare at VGMdb, you need to
+authenticate with your user"* — set `USER_COOKIE` to the full `Cookie` header
+copied from a logged-in `vgmdb.net` browser session, which contains both
+`cf_clearance` and `vgmsessionhash`. So self-hosting does not route around the
+challenge; it moves the cookie into a container. An official Docker image exists
+(`hufman/vgmdb`).
+
+**What is blocked is therefore narrow and concrete:** the client and
+`matchVgmdbRelease` can be written against the published schema today, but nothing
+can be *verified* until an instance answers — the public `vgmdb.info` is offline
+(no route to host on 443, connection refused on 80, checked twice hours apart from
+two addresses), and a self-hosted one needs the owner's cookie. Building a command
+that cannot be run against a single real response is what the "do not register a
+command that throws" rule exists to prevent, so it waits on that cookie.
 
 **Phase 7 — name and move.** `renameAndMoveAudioFiles`, plus the general
 `renameFilesAndFolders` command. ⚠️ **This phase is bigger than it looks.** The naming rules
@@ -531,7 +585,14 @@ whole workflow. Phase 9 is the part that goes past what either of them does.
    service to be up. The API is a supported contract. Check whether the API exposes file
    paths, which is the field that matters here.
 3. **Plex as well, or Music Assistant only?** Only worth both if they disagree usefully.
-4. **VGMdb third-party API origin** — confirm, or scrape directly. See [§6](#vgmdb-provenance).
+4. ~~**VGMdb third-party API origin** — confirm, or scrape directly.~~ **Settled
+   2026-08-25: it is `vgmdb.info`, the `hufman/vgmdb` mirror, and its provenance is
+   clean** (MIT, Walter Huf, Netherlands, not archived). Pinned independently from the
+   household's Jellyfin VGMdb plugin, which calls
+   `https://vgmdb.info/album/<id>?format=json`. Build against its published
+   `schema/album.json`, not a scrape. What remains is not a provenance question but a
+   reachability one — the public instance is offline and a self-hosted one needs a
+   `USER_COOKIE` from a logged-in browser. See [phase 6](#8-phases).
 5. **Cover art** — embed, write `cover.jpg` beside the files, or both. Match whatever the
    library already does.
 6. **Where does the duplicate work overlap the existing ingest scripts?** The private
