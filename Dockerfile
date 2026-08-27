@@ -192,6 +192,34 @@ ENV PATH="/opt/makemkv/bin:${PATH}"
 RUN makemkvcon -r --cache=1 info disc:9999 \
   | grep -q 'MSG:1005.*started'
 
+# mmccextr is the ONE binary under /opt/makemkv that is NOT self-contained.
+# MakeMKV's own binaries resolve through the bundled glibc under
+# /opt/makemkv/lib; its closed-caption converter is linked against Alpine's
+# musl instead (`NEEDED libc.musl-x86_64.so.1`), so on this base it cannot
+# exec at all.
+#
+# That is fatal for a whole TITLE, not just for the captions: a DVD carrying
+# line-21 closed captions makes makemkvcon log "Failed to execute external
+# program 'ccextractor'", then "Error while reading input", then "0 titles
+# saved, 1 failed" — and it still exits 0. Blu-rays author subtitles as PGS
+# and never reach this path, which is why the transplant read as complete
+# until the first DVD (The Punisher, 2026-08-27, where the 2:18 feature
+# would not rip while all five extras did).
+#
+# musl's loader IS its libc, so one file plus the SONAME symlink is the whole
+# fix. `/lib` is a symlink to `/usr/lib` on Debian; write through it so the
+# ELF interpreter path baked into mmccextr (`/lib/ld-musl-x86_64.so.1`)
+# resolves.
+COPY --from=makemkv /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1
+RUN ln -sf /lib/ld-musl-x86_64.so.1 /lib/libc.musl-x86_64.so.1
+
+# mmccextr, asserted rather than assumed — for the same reason the
+# makemkvcon assertion above exists. Without this, a musl bump in the
+# upstream MakeMKV image comes back as one silently unrippable DVD title
+# rather than as a build failure. mmccextr prints its banner and exits 0
+# when run with no arguments.
+RUN mmccextr | grep -q 'CCExtractor'
+
 # fpcalc, asserted rather than assumed. The apt package name
 # (libchromaprint-tools) does not contain the binary name (fpcalc), so a
 # rename upstream would otherwise show up as every music fingerprint row
