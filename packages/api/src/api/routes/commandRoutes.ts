@@ -39,6 +39,7 @@ import {
   extractSubtitles,
   extractSubtitlesDefaultProps,
 } from "@mux-magic/core/src/app-commands/extractSubtitles.js"
+import { fetchThemeMusic } from "@mux-magic/core/src/app-commands/fetchThemeMusic.js"
 import { findContainerAudioFiles } from "@mux-magic/core/src/app-commands/findContainerAudioFiles.js"
 import {
   type FindDuplicateAudioFilesGroupRecord,
@@ -1024,6 +1025,19 @@ export const commandConfigs: Record<
     summary:
       "Rename anime episode files using AniDB metadata (regular, specials with length-matched picker, or type=6 alternates)",
     tags: ["Naming Operations"],
+  },
+  fetchThemeMusic: {
+    getObservable: (body) =>
+      fetchThemeMusic({
+        isApplied: body.isApplied,
+        isOverwrite: body.isOverwrite,
+        manifestPath: body.manifestPath,
+        sourcePath: body.sourcePath,
+      }),
+    schema: schemas.fetchThemeMusicRequestSchema,
+    summary:
+      "Resolve AniDB-tagged anime folders through AnimeThemes and create a reviewable Plex theme music manifest.",
+    tags: ["Metadata Operations"],
   },
   nameMovieCutsDvdCompareTmdb: {
     getObservable: (body) =>

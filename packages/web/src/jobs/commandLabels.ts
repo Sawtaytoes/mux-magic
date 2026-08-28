@@ -65,6 +65,7 @@ export const commandLabels: Record<string, string> = {
   renameFiles: "Rename Files",
   nameAnimeEpisodes: "Name Anime Episodes (MAL)",
   nameAnimeEpisodesAniDB: "Name Anime Episodes (AniDB)",
+  fetchThemeMusic: "Fetch Anime Theme Music",
   nameMovieCutsDvdCompareTmdb:
     "Name Movie Cuts (DVD Compare + TMDB)",
   nameSpecialFeaturesDvdCompareTmdb:

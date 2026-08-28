@@ -518,7 +518,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            commandNames: ("analyseDiscBackup" | "makeDirectory" | "matchMusicBrainzRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags")[];
+                            commandNames: ("analyseDiscBackup" | "makeDirectory" | "matchMusicBrainzRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags")[];
                         };
                     };
                 };
@@ -684,6 +684,154 @@ export interface paths {
                          * @default false
                          */
                         isRecursive?: boolean;
+                        /**
+                         * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
+                         * @default 1
+                         */
+                        recursiveDepth?: number;
+                        /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
+                        sourcePath: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/matchFreedbRelease": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Match a folder against general freedb — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. freedb is user-submitted CD metadata with no editorial review and no ids to link back to, so run it last. Like VGMdb it identifies a whole disc by track count and total playing time, so point it at ONE disc. Read-only. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description How many matched freedb discs to read in full and offer per row.
+                         * @default 4
+                         */
+                        candidateLimit?: number;
+                        /**
+                         * @description Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.
+                         * @default false
+                         */
+                        isRecursive?: boolean;
+                        /**
+                         * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
+                         * @default 1
+                         */
+                        recursiveDepth?: number;
+                        /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
+                        sourcePath: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/matchVgmdbRelease": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Match a folder against VGMdb for game and anime soundtracks, which MusicBrainz covers badly. VGMdb identifies a whole disc by track count and total playing time, so point this at ONE disc — a flattened multi-disc folder will not match. Read-only; the tag table is where a match is accepted. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description How many matched VGMdb albums to read in full and offer per row. The common case is the same album released in three regions, which two or three settles.
+                         * @default 4
+                         */
+                        candidateLimit?: number;
+                        /**
+                         * @description Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.
+                         * @default false
+                         */
+                        isRecursive?: boolean;
+                        /**
+                         * @description Which title language to ask VGMdb for. It reverts to the default when an album carries no title in the language you asked for, so two settings can return the same text.
+                         * @default default
+                         * @enum {string}
+                         */
+                        language?: "default" | "en" | "ja" | "ja-Latn";
                         /**
                          * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
                          * @default 1
@@ -3764,6 +3912,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/commands/fetchThemeMusic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve AniDB-tagged anime folders through AnimeThemes and create a reviewable Plex theme music manifest. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @description Anime library root, or one [anidb-#####] show folder. */
+                        sourcePath: string;
+                        /**
+                         * @description Write theme.mp3 files. The default only writes the review manifest.
+                         * @default false
+                         */
+                        isApplied?: boolean;
+                        /**
+                         * @description Replace an existing theme.mp3 only after AnimeThemes resolves a replacement.
+                         * @default true
+                         */
+                        isOverwrite?: boolean;
+                        /** @description JSON manifest path. Defaults to theme-music-manifest.json in the source directory. */
+                        manifestPath?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/commands/nameMovieCutsDvdCompareTmdb": {
         parameters: {
             query?: never;
@@ -4124,6 +4340,153 @@ export interface paths {
                          * @default false
                          */
                         isSourceDeletedOnSuccess?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/fingerprintAudioFiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fingerprint each audio file with fpcalc and ask AcoustID which recording it is. Identifies untagged and mis-tagged files, which the MusicBrainz cluster match cannot. Read-only. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.
+                         * @default false
+                         */
+                        isRecursive?: boolean;
+                        /**
+                         * @description Lowest AcoustID score that counts as the same recording. Below about 0.5 AcoustID is reporting similar audio rather than the same audio — a different take, a different mix, or a cover.
+                         * @default 0.5
+                         */
+                        minimumScore?: number;
+                        /**
+                         * @description How many MusicBrainz recordings to offer per file. A well-known song accumulates dozens of linked recordings, and past the first few they are compilation re-issues of the same one.
+                         * @default 5
+                         */
+                        recordingLimit?: number;
+                        /**
+                         * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
+                         * @default 1
+                         */
+                        recursiveDepth?: number;
+                        /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
+                        sourcePath: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/findDuplicateAudioFiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Find duplicate audio files by identical decoded audio, by AcoustID fingerprint, or by tags, and rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, the compare table confirms, and nothing is deleted here. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Also fingerprint every file so a FLAC and an MP3 of the same recording pair up. They can never hash-match, because the encoders produce different samples. Costs a two-minute decode per file.
+                         * @default false
+                         */
+                        isFingerprintCompared?: boolean;
+                        /**
+                         * @description Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.
+                         * @default false
+                         */
+                        isRecursive?: boolean;
+                        /**
+                         * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
+                         * @default 1
+                         */
+                        recursiveDepth?: number;
+                        /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
+                        sourcePath: string;
                     };
                 };
             };
@@ -5269,6 +5632,209 @@ export interface paths {
                             /** @description Whether the write succeeded. The tag table marks the row from this field. */
                             isOk: boolean;
                         };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/music/duplicates/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move one redundant duplicate copy to a holding folder
+         * @description One confirmed row of the duplicate compare table, one request. The copy is MOVED, never deleted — the library share has no Recycle Bin, so a move into a holding folder is what makes the decision reversible. The copy's path below `sourceRootPath` is recreated under `holdingFolderPath`, so two same-named tracks from different albums cannot collide.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @description Absolute path of the redundant copy to move out of the library. Must be absolute and traversal-free. */
+                        filePath: string;
+                        /** @description Absolute path of the folder the copy is moved into. The copy's folder structure below the source root is recreated there, so two files with the same name never collide. */
+                        holdingFolderPath: string;
+                        /**
+                         * @description Report where the copy would go without moving it.
+                         * @default false
+                         */
+                        isDryRun?: boolean;
+                        /** @description The folder the duplicate scan walked. Used to work out the copy's path relative to the library so the holding folder mirrors it. */
+                        sourceRootPath: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Move result for the copy, successful or not */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Where the copy was moved, or would be moved under `isDryRun`. Null when the move failed. */
+                            destination: string | null;
+                            /** @description Why the move failed; null on success. The compare table renders this on the row. */
+                            error: string | null;
+                            /** @description Whether the move succeeded. The compare table marks the row from this field. */
+                            isOk: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/music/acoustid/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit reviewed fingerprints to AcoustID
+         * @description Sends a batch of fingerprint-to-recording links to AcoustID under the owner's account. Explicit and reviewed only — this route is never called by a sequence step. The two AcoustID keys are not interchangeable: ACOUSTID_API_KEY is the application key sent as `client`, and ACOUSTID_USER_API_KEY is the account key sent as `user`, which is what authorises the submission.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description Report what would be submitted without sending anything to AcoustID.
+                         * @default false
+                         */
+                        isDryRun?: boolean;
+                        /** @description The reviewed submissions. The whole batch goes in one request; AcoustID indexes each entry by position. */
+                        submissions: {
+                            albumArtistName?: string;
+                            albumName?: string;
+                            artistName?: string;
+                            /** @description Track length in seconds. AcoustID rounds it to a whole number and rejects a fractional one. */
+                            durationSeconds: number;
+                            /** @description The Chromaprint fingerprint from `fpcalc`, as produced by the fingerprintAudioFiles command. */
+                            fingerprint: string;
+                            /** @description The recording this fingerprint belongs to. Without it the submission adds a fingerprint that is linked to nothing, which helps nobody. */
+                            musicBrainzRecordingId?: string;
+                            title?: string;
+                            trackNumber?: number;
+                            year?: number;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Submission result, successful or not */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Why the submission failed; null on success. */
+                            error: string | null;
+                            /** @description Whether AcoustID accepted the batch. */
+                            isOk: boolean;
+                            /** @description One entry per accepted submission, empty on failure or a dry run. */
+                            submissions: {
+                                /** @description AcoustID's own status for the entry, normally `pending` — it queues submissions rather than applying them at once. */
+                                status: string;
+                                submissionId: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/music/musicbrainz/seed-release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build a seeded MusicBrainz release-editor form
+         * @description Returns a self-submitting HTML form that opens the MusicBrainz release editor pre-filled with this album. Opening the editor saves nothing — the owner steps through the tabs and clicks the green "Enter edit" to create the release. This exists because the web service cannot create a release at all.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        albumArtistName: string;
+                        /** @description MusicBrainz artist id to link the credit to. Without it the release is created with an unlinked artist name. */
+                        artistMbid?: string;
+                        /** @description Release country. Defaults to XW (Worldwide), which suits a digital release. */
+                        countryCode?: string;
+                        /** @description Release date, `YYYY-MM-DD` or `YYYY`. */
+                        date?: string;
+                        editNote?: string;
+                        label?: string;
+                        mediumFormat?: string;
+                        primaryType?: string;
+                        releaseTitle: string;
+                        secondaryTypes?: string[];
+                        /** @description The tracklist, in order. */
+                        tracks: {
+                            /** @description Exact track length. The release editor wants milliseconds, and an approximate length is the most common reason a seeded release needs hand correction. */
+                            lengthMilliseconds: number;
+                            title: string;
+                            trackNumber: number;
+                        }[];
+                        /** @description A relationship URL, normally the album's purchase page. */
+                        url?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description The self-submitting release-editor form */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/html": string;
                     };
                 };
             };
@@ -7420,7 +7986,7 @@ export interface components {
             /** @description Optional human-readable alias. Surfaced by the builder UI's step header; ignored at runtime. */
             alias?: string;
             /** @description Name of the registered command to run. Must be one of the names listed at `GET /commands` (or surfaced individually as `POST /commands/<name>` endpoints). Empty string `''` marks a placeholder/blank step from the Builder UI — the runner skips it as a no-op so YAML round-trips don't lose the slot. */
-            command: "" | ("analyseDiscBackup" | "makeDirectory" | "matchMusicBrainzRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags");
+            command: "" | ("analyseDiscBackup" | "makeDirectory" | "matchMusicBrainzRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags");
             /** @description Command params. Each value can be a literal (string / number / boolean / array / object), a `'@pathId'` path-variable reference, or a `{ linkedTo, output }` step-output reference. Per-command param shapes are documented under `POST /commands/<command>` — the same schema each command exposes for direct invocation also applies here once references are resolved. */
             params?: {
                 [key: string]: unknown;

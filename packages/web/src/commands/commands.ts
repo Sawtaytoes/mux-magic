@@ -28,6 +28,7 @@ import {
   exitIfEmptyRequestSchema,
   extractDiscTitlesRequestSchema,
   extractSubtitlesRequestSchema,
+  fetchThemeMusicRequestSchema,
   findContainerAudioFilesRequestSchema,
   findDuplicateAudioFilesRequestSchema,
   fingerprintAudioFilesRequestSchema,
@@ -1996,6 +1997,33 @@ export const COMMANDS: Commands = {
           name: "seriesFolderName",
           label: "Series folder name",
         },
+      ],
+    }
+  })(),
+  fetchThemeMusic: (() => {
+    const field = fieldBuilder(fetchThemeMusicRequestSchema)
+    return {
+      summary:
+        "Resolve AniDB-tagged anime folders through AnimeThemes. The default writes a review manifest only.",
+      tag: "Metadata Operations",
+      outputFolderName: null,
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Anime Source Path",
+        }),
+        field("isApplied", {
+          type: "boolean",
+          label: "Apply Theme Files",
+        }),
+        field("isOverwrite", {
+          type: "boolean",
+          label: "Replace Existing Themes",
+        }),
+        field("manifestPath", {
+          type: "path",
+          label: "Manifest Path",
+        }),
       ],
     }
   })(),
