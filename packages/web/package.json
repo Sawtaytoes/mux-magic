@@ -22,9 +22,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@charcuterie/logic": "^2.0.0",
-    "@charcuterie/tokens": "^1.5.0",
-    "@charcuterie/ui": "^3.0.0",
+    "@charcuterie/logic": "^2.3.0",
+    "@charcuterie/tokens": "^1.6.0",
+    "@charcuterie/ui": "^3.24.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -39,8 +39,8 @@
   },
   "devDependencies": {
     "@charcuterie/server": "^0.4.0",
-    "@charcuterie/storybook-config": "^0.2.2",
-    "@charcuterie/vite-config": "^1.0.2",
+    "@charcuterie/storybook-config": "^0.3.0",
+    "@charcuterie/vite-config": "^1.1.0",
     "@charcuterie/vitest-config": "^1.1.0",
     "@mux-magic/api": "workspace:*",
     "@rolldown/plugin-babel": "^0.2.3",
