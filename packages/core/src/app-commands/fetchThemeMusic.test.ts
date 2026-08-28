@@ -81,6 +81,28 @@ test("does not resolve folders without an AniDB tag", async () => {
   expect(getMockedAnimeTheme).not.toHaveBeenCalled()
 })
 
+test("records a failed AniDB lookup instead of stopping the sweep", async () => {
+  vol.fromJSON({
+    "/Anime/Stale ID [anidb-15105]/episode.mkv": "episode",
+  })
+  getMockedAnimeTheme.mockRejectedValue(
+    new Error("Anime not found"),
+  )
+
+  const records = await firstValueFrom(
+    fetchThemeMusic({ sourcePath: "/Anime" }).pipe(
+      toArray(),
+    ),
+  )
+
+  expect(records).toEqual([
+    expect.objectContaining({
+      lookupError: "Anime not found",
+      result: "lookup-failed",
+    }),
+  ])
+})
+
 test("marks a related-show theme as review-only", async () => {
   vol.fromJSON({
     "/Anime/Original Story [anidb-1416]/episode.mkv":
