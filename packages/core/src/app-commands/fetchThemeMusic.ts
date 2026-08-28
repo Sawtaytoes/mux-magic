@@ -153,7 +153,7 @@ const applyTheme = (record: ThemeMusicManifestRecord) => {
   )
   const temporaryThemePath = join(
     record.showFolder,
-    ".theme.mp3.part",
+    ".theme.part.mp3",
   )
   return defer(() =>
     fetch(audioUrl)
