@@ -18,11 +18,49 @@ window.commandDescriptions = {
       "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
     }
   },
+  "findDuplicateAudioFiles": {
+    "summary": "Find duplicate audio files by identical decoded audio, by AcoustID fingerprint, or by tags, and rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, the compare table confirms, and nothing is deleted here.",
+    "fields": {
+      "isFingerprintCompared": "Also fingerprint every file so a FLAC and an MP3 of the same recording pair up. They can never hash-match, because the encoders produce different samples. Costs a two-minute decode per file.",
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
+  "fingerprintAudioFiles": {
+    "summary": "Fingerprint each audio file with fpcalc and ask AcoustID which recording it is. Identifies untagged and mis-tagged files, which the MusicBrainz cluster match cannot. Read-only.",
+    "fields": {
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "minimumScore": "Lowest AcoustID score that counts as the same recording. Below about 0.5 AcoustID is reporting similar audio rather than the same audio — a different take, a different mix, or a cover.",
+      "recordingLimit": "How many MusicBrainz recordings to offer per file. A well-known song accumulates dozens of linked recordings, and past the first few they are compilation re-issues of the same one.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
   "matchMusicBrainzRelease": {
     "summary": "Cluster a folder's audio files into candidate albums from their existing tags, search MusicBrainz for each cluster, and attach ranked releases with a proposed tag set per file. Read-only — the tag table is where a match is accepted.",
     "fields": {
       "candidateFetchLimit": "How many ranked releases are fetched in full and offered per row. MusicBrainz allows one request per second, so each extra candidate costs about a second per album. Five covers the usual wrong-country or wrong-year correction.",
       "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
+  "matchFreedbRelease": {
+    "summary": "Match a folder against general freedb — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. freedb is user-submitted CD metadata with no editorial review and no ids to link back to, so run it last. Like VGMdb it identifies a whole disc by track count and total playing time, so point it at ONE disc. Read-only.",
+    "fields": {
+      "candidateLimit": "How many matched freedb discs to read in full and offer per row.",
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
+  "matchVgmdbRelease": {
+    "summary": "Match a folder against VGMdb for game and anime soundtracks, which MusicBrainz covers badly. VGMdb identifies a whole disc by track count and total playing time, so point this at ONE disc — a flattened multi-disc folder will not match. Read-only; the tag table is where a match is accepted.",
+    "fields": {
+      "candidateLimit": "How many matched VGMdb albums to read in full and offer per row. The common case is the same album released in three regions, which two or three settles.",
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "language": "Which title language to ask VGMdb for. It reverts to the default when an album carries no title in the language you asked for, so two settings can return the same text.",
       "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
       "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
     }
@@ -377,6 +415,15 @@ window.commandDescriptions = {
       "filenameRegex": "Regex with a named capture group (?<episodeNumber>…) used to pair each file to the AniDB episode whose number matches the captured value (e.g. \"S\\\\d+E(?<episodeNumber>\\\\d+)\"). Matched case-insensitively. Fixes mis-pairing on partial, non-contiguous, or out-of-order sets. Files that don't match fall back to index pairing (see startEpisodeNumber). Applies to the index-paired regular/others types only.",
       "startEpisodeNumber": "First episode number when pairing a partial set by natural-sort index (e.g. 5 names the files s01e05, s01e06, …). Ignored for files matched by filenameRegex. Defaults to 1. Applies to the index-paired regular/others types only.",
       "seriesName": "Overrides AniDB's auto-picked series title in output filenames and the seriesFolderName output. Used verbatim (backticks, apostrophes and all) — pick a candidate with the AniDB title-picker then character-clean it. When omitted, AniDB's title is used."
+    }
+  },
+  "fetchThemeMusic": {
+    "summary": "Resolve AniDB-tagged Anime folders through AnimeThemes. The default creates a manifest and does not change theme.mp3 files.",
+    "fields": {
+      "sourcePath": "Anime library root, or one [anidb-#####] show folder.",
+      "isApplied": "Write theme.mp3 files. The default only writes the review manifest.",
+      "isOverwrite": "Replace an existing theme.mp3 only after AnimeThemes resolves a replacement.",
+      "manifestPath": "JSON manifest path. Defaults to theme-music-manifest.json in the source directory."
     }
   },
   "nameMovieCutsDvdCompareTmdb": {
