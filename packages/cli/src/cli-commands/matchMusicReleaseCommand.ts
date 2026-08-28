@@ -42,7 +42,7 @@ export const matchMusicReleaseCommand: CommandModule<
 > = {
   command: "matchMusicRelease <sourcePath>",
   describe:
-    "Try MusicBrainz, VGMdb and freedb, then combine their release candidates.",
+    "Try MusicBrainz, VGMdb, Discogs and freedb, then combine their release candidates.",
   builder: builder as CommandBuilder<
     Record<string, unknown>,
     Args

@@ -2526,6 +2526,18 @@ export const matchMusicReleaseRequestSchema = z.object({
   sourcePath: musicSourcePathSchema,
 })
 
+export const matchDiscogsReleaseRequestSchema = z.object({
+  candidateFetchLimit: z
+    .number()
+    .default(5)
+    .describe(
+      "How many ranked Discogs releases are read in full and offered per row. Anonymous Discogs access permits 25 requests per minute, so each extra candidate costs about two and a half seconds.",
+    ),
+  isRecursive: musicIsRecursiveSchema,
+  recursiveDepth: musicRecursiveDepthSchema,
+  sourcePath: musicSourcePathSchema,
+})
+
 // The tag fields a bulk edit can set. Deliberately flat rather than a
 // nested `tags` object: the builder renders one input per field, and a
 // nested object would be an unusable blob in the step form and in the YAML.
