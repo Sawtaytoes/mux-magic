@@ -48,6 +48,7 @@ export const commandNames = [
   "renameFilesAndFolders",
   "nameAnimeEpisodes",
   "nameAnimeEpisodesAniDB",
+  "fetchThemeMusic",
   "nameMovieCutsDvdCompareTmdb",
   "nameSpecialFeaturesDvdCompareTmdb",
   "onlyNameSpecialFeaturesDvdCompare",

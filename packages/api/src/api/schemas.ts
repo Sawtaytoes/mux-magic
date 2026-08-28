@@ -1318,6 +1318,36 @@ export const nameAnimeEpisodesAniDBRequestSchema = z
     'Rename anime episodes using AniDB metadata. Supports six episode-type categories (regular, specials, credits, trailers, parodies, others) via the episodeType field. Partial or non-contiguous sets can be paired by extracted episode number (filenameRegex) or by a natural-sort index offset (startEpisodeNumber). Emits a seriesFolderName output ("<name> [anidb-<id>]") for downstream copy/move steps.',
   )
 
+export const fetchThemeMusicRequestSchema = z
+  .object({
+    sourcePath: z
+      .string()
+      .describe(
+        "Anime library root, or one [anidb-#####] show folder.",
+      ),
+    isApplied: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Write theme.mp3 files. The default only writes the review manifest.",
+      ),
+    isOverwrite: z
+      .boolean()
+      .default(true)
+      .describe(
+        "Replace an existing theme.mp3 only after AnimeThemes resolves a replacement.",
+      ),
+    manifestPath: z
+      .string()
+      .optional()
+      .describe(
+        "JSON manifest path. Defaults to theme-music-manifest.json in the source directory.",
+      ),
+  })
+  .describe(
+    "Resolve AniDB-tagged Anime folders through AnimeThemes. The default creates a manifest and does not change theme.mp3 files.",
+  )
+
 export const nameSpecialFeaturesDvdCompareTmdbRequestSchema =
   z.object({
     sourcePath: z

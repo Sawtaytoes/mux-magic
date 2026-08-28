@@ -20,6 +20,7 @@ import { deleteFolderCommand } from "./cli-commands/deleteFolderCommand.js"
 import { distributeFolderToSiblingsCommand } from "./cli-commands/distributeFolderToSiblingsCommand.js"
 import { extractDiscTitlesCommand } from "./cli-commands/extractDiscTitlesCommand.js"
 import { extractSubtitlesCommand } from "./cli-commands/extractSubtitlesCommand.js"
+import { fetchThemeMusicCommand } from "./cli-commands/fetchThemeMusicCommand.js"
 import { findContainerAudioFilesCommand } from "./cli-commands/findContainerAudioFilesCommand.js"
 import { fixIncorrectDefaultTracksCommand } from "./cli-commands/fixIncorrectDefaultTracksCommand.js"
 import { flattenChildFoldersCommand } from "./cli-commands/flattenChildFoldersCommand.js"
@@ -78,6 +79,7 @@ yargs(hideBin(process.argv))
   .command(copyFilesCommand)
   .command(copyOutSubtitlesCommand)
   .command(extractSubtitlesCommand)
+  .command(fetchThemeMusicCommand)
   .command(fixIncorrectDefaultTracksCommand)
   .command(flattenChildFoldersCommand)
   .command(analyseDiscBackupCommand)
