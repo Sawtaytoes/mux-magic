@@ -9,6 +9,11 @@ Green UHD backup into `Movies/`. Piece B (review UI), C.2's PID-grafting
 remainder, C.3 and D (the probe step) are not built. This
 is what the next agent needs.
 
+**Updated 2026-08-27** with the first **DVD** and the first **`.iso`** — see
+[DVDs and ISOs](#dvds-and-isos--what-the-analyser-does-not-handle-2026-08-27).
+Everything else on this page was written against Blu-ray `[BACKUP]`
+folders, and three of its assumptions do not hold on a DVD.
+
 Read first: [`docs/disc-backup-title-selection.md`](disc-backup-title-selection.md)
 — the original design sketch, now carrying a status header, a "what the
 real backups changed" section, and its four open questions answered.
@@ -156,8 +161,83 @@ already certain from the frame grabs, so DVDCompare had nothing to add).
 - **`.gitignore` has `*.log`.** New `.robot.log` fixtures need the
   existing negation to cover them, or they are silently untracked and the
   suite goes green locally while CI fails every test.
+- **A DVD title that will not save is the CLOSED-CAPTION path, not a bad
+  disc.** `Failed to execute external program 'ccextractor'` →
+  `Error while reading input` → `0 titles saved, 1 failed`, with
+  `makemkvcon` still exiting 0. It fails the WHOLE title over one
+  subtitle stream. Fixed in the image on 2026-08-27 by shipping musl's
+  loader for `mmccextr` (#258); if it comes back, the base moved
+  ([decision](decisions/2026-08-27-the-makemkv-transplant-is-not-self-contained-mmccextr-is-musl.md)).
+  **Blu-rays are PGS and never reach this**, so a Blu-ray-only test
+  surface proves nothing about it.
 
 ---
+
+## DVDs and ISOs — what the analyser does not handle (2026-08-27)
+
+Everything above was written against Blu-ray `[BACKUP]` **folders**. The
+first DVD, and the first `.iso`, went through on 2026-08-27
+(`[BACKUP] Punisher_EC - DVD.iso` → `Movies/The Punisher (2004)/`). Three
+gaps showed up. None are fixed; all three have a working shape.
+
+### 1. `analyseDiscBackup` cannot run against an `.iso` at all
+
+`makemkvcon` opens an ISO through the same `file:` source a BDMV folder
+uses — no unpacking, no loop mount, nothing special. But
+`analyseDiscBackup` writes its proposal to
+`join(sourcePath, 'DISC-ANALYSIS', 'analysis.json')`, and `mkdir` inside a
+**file** fails with `ENOTDIR`. There is no parameter to move it.
+
+`extractDiscTitles` has the escape the analyser lacks — `destinationPath`
+— so an ISO works there today:
+
+```jsonc
+POST /api/commands/extractDiscTitles
+{
+  "sourcePath":      "/media/Disc-Rips/[BACKUP] Punisher_EC - DVD.iso",
+  "destinationPath": "/media/Disc-Rips/[BACKUP] Punisher_EC - DVD/EXTRACTED-TITLES",
+  "titleIndexes":    [0, 1, 2, 3, 4, 5],
+  "minimumTitleLengthSeconds": 60
+}
+```
+
+with `titleIndexes` read off a `makemkvcon info` pass run by hand. **The
+obvious fix is a `destinationPath` on `analyseDiscBackup` too**, defaulting
+to today's behaviour for a folder and to a sibling folder named for the
+ISO's basename when `sourcePath` is a file. That is a design call, so it
+was not guessed at. There are **11 more DVD ISOs** waiting in `Disc-Rips`.
+
+### 2. A DVD title has no segment map, so every clustering rule abstains
+
+`buildDiscAnalysis` is built on segment maps. MakeMKV describes a DVD title
+by **cells**, and reported all eleven titles on this disc as a
+single-element map — so `clusterTitlesBySegmentMap`, `isChapterlessTwin`,
+`isRippingTrackSupersets` and the rest have nothing to work with. Nothing
+crashes; the dispositions are just uninformative.
+
+The equivalent DVD fingerprint is **runtime plus chapter mark positions**,
+matched against the release's published extras list. Worked case: a 6:39
+title whose chapter gaps were 1:32 / 2:24 / 2:06 / 0:38 is a **stitched
+reel** of four trailers whose published runtimes are exactly those — an
+identification a runtime comparison alone cannot make.
+`mkvmerge --split chapters:all` then cuts it at the boundaries with a
+stream copy. Worth encoding as a DVD-specific rule if the remaining ISOs
+justify it.
+
+### 3. A DVD gallery is not a title, and never will be
+
+`isImageGallery` (still unbuilt, see above) is a **Blu-ray** concern. A
+Blu-ray gallery is a real video title — one still per ~1 s segment, one
+chapter each — and MakeMKV rips it. A **DVD** gallery is authored as a
+still menu in the **menu domain**, which MakeMKV does not expose as a
+title at any `--minimumTitleLengthSeconds`. The Punisher's published
+extras list a 73-page comic book gallery and the disc offers no title for
+it.
+
+Do not re-run at `0` hunting for it, and do not record it as a missed
+extra. On a DVD, "the listing names a gallery and the analysis has no
+matching title" is the expected result, not a bug.
+
 
 ## Then: piece B — the review UI
 
