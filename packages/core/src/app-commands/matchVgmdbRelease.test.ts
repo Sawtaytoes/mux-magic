@@ -39,6 +39,7 @@ const buildReadBody = ({
     `DTITLE= / ${albumTitle}`,
     "DYEAR=2011",
     "DGENRE=Game",
+    "EXTD=https://vgmdb.net/album/57899",
     ...titles.map(
       (title, index) => `TTITLE${index}=${title}`,
     ),
@@ -132,7 +133,7 @@ describe(matchVgmdbRelease.name, () => {
       clusters[0].files[0].rankedCandidates[0],
     ).toMatchObject({
       candidate: {
-        releaseId: "32937",
+        releaseId: "57899",
         releaseTitle: "[CAT-001] A Game Soundtrack",
         source: "vgmdb",
         year: "2011",
@@ -226,6 +227,45 @@ describe(matchVgmdbRelease.name, () => {
     ).toBeGreaterThan(
       inexact[0].files[0].rankedCandidates[0].confidence,
     )
+  })
+
+  test("Japanese tags produce a finite confidence", async () => {
+    mockFiles({
+      "/inbox/01.flac": {
+        durationSeconds: 210,
+        tags: {
+          album: "森羅万象",
+          albumArtist: "大塚彩子",
+          title: "また夏が来る",
+          trackNumber: 1,
+        },
+      },
+      "/inbox/02.flac": {
+        durationSeconds: 185,
+        tags: {
+          album: "森羅万象",
+          albumArtist: "大塚彩子",
+          title: "forget-me-not",
+          trackNumber: 2,
+        },
+      },
+    })
+
+    const clusters = await firstValueFrom(
+      matchVgmdbRelease({
+        cachedFetch: buildCachedFetch({
+          readBody: buildReadBody({
+            titles: ["また夏が来る", "forget-me-not"],
+          }),
+        }),
+        sourcePath: "/inbox",
+      }),
+    )
+
+    const confidence =
+      clusters[0].files[0].rankedCandidates[0].confidence
+    expect(confidence).toBeTypeOf("number")
+    expect(Number.isFinite(confidence)).toBe(true)
   })
 
   // An album VGMdb has never seen is a normal outcome. The row set still

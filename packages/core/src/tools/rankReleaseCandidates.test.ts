@@ -227,6 +227,15 @@ describe(scoreTextSimilarity.name, () => {
     ).toBe(0)
   })
 
+  test("scores identical Japanese text at 1", () => {
+    expect(
+      scoreTextSimilarity({
+        leftText: "森羅万象",
+        rightText: "森羅万象",
+      }),
+    ).toBe(1)
+  })
+
   test("is not-a-number when either side is empty", () => {
     expect(
       scoreTextSimilarity({

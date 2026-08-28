@@ -122,7 +122,6 @@ describe(parseQueryResponse.name, () => {
         albumTitle: "[KSCL-3405] An Album (Disc 6)",
         category: "Soundtrack141255",
         discId: "920b990b",
-        vgmdbAlbumId: "141255",
       },
     ])
   })
@@ -137,8 +136,8 @@ describe(parseQueryResponse.name, () => {
           ".",
           "",
         ].join("\n"),
-      }).map((match) => match.vgmdbAlbumId),
-    ).toEqual(["32937", "46513"])
+      }).map((match) => match.category),
+    ).toEqual(["Soundtrack32937", "Soundtrack46513"])
   })
 
   // An album VGMdb has never seen is a normal outcome, not a failure.
@@ -154,14 +153,14 @@ describe(parseQueryResponse.name, () => {
 })
 
 describe(extractVgmdbAlbumId.name, () => {
-  test("takes the numeric tail off the category", () => {
-    expect(extractVgmdbAlbumId("Soundtrack141255")).toBe(
-      "141255",
-    )
+  test("takes the album id from VGMdb's canonical album URL", () => {
+    expect(
+      extractVgmdbAlbumId("https://vgmdb.net/album/57899"),
+    ).toBe("57899")
   })
 
-  test("a category with no id yields an empty string", () => {
-    expect(extractVgmdbAlbumId("Soundtrack")).toBe("")
+  test("a CDDB category number is not treated as an album id", () => {
+    expect(extractVgmdbAlbumId("Soundtrack67816")).toBe("")
   })
 })
 
@@ -230,6 +229,7 @@ const READ_BODY = [
   "DTITLE= / [RVL-SOUP-EUR] An Orchestra CD",
   "DYEAR=2011",
   "DGENRE=Game",
+  "EXTD=https://vgmdb.net/album/57899",
   "TTITLE0=First Track",
   "TTITLE1=Second Track",
   ".",
@@ -250,7 +250,7 @@ describe(parseReadResponse.name, () => {
       discId: "610a9b08",
       genre: "Game",
       trackTitles: ["First Track", "Second Track"],
-      vgmdbAlbumId: "32937",
+      vgmdbAlbumId: "57899",
       year: "2011",
     })
   })
@@ -362,32 +362,31 @@ describe(readVgmdbCddbAlbum.name, () => {
 })
 
 describe("freedb versus VGMdb", () => {
-  // ⚠️ VGMdb encodes its album id in the CATEGORY (`Soundtrack141255`).
-  // General freedb uses real freedb categories — `misc`, `rock`, `data` —
-  // which carry no id at all. Reading an id out of one would invent a
-  // VGMdb album number from the word "misc".
-  test("freedb categories yield no album id", () => {
+  // A CDDB query has not returned the xmcd record yet, so neither server
+  // has enough information to expose a VGMdb album id at this stage.
+  test("query results do not invent an album id from a category", () => {
     expect(
       parseQueryResponse({
         body: "200 misc 610a9b08 Nintendo / The Legend of Zelda",
-        server: FREEDB_CDDB_SERVER,
       }),
     ).toEqual([
       {
         albumTitle: "Nintendo / The Legend of Zelda",
         category: "misc",
         discId: "610a9b08",
-        vgmdbAlbumId: "",
       },
     ])
-  })
-
-  test("VGMdb categories still yield one", () => {
     expect(
       parseQueryResponse({
         body: "200 Soundtrack141255 920b990b An Album",
-      })[0]?.vgmdbAlbumId,
-    ).toBe("141255")
+      }),
+    ).toEqual([
+      {
+        albumTitle: "An Album",
+        category: "Soundtrack141255",
+        discId: "920b990b",
+      },
+    ])
   })
 
   // freedb has no language paths. Asking for one anyway must not produce

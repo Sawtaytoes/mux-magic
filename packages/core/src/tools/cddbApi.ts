@@ -21,10 +21,6 @@ import type { CachedFetch } from "./musicBrainzApi.js"
 // VGMdb JSON API; this emulator is the supported programmatic surface.
 
 export type CddbServer = {
-  // VGMdb encodes its album id in the CATEGORY (`Soundtrack141255`).
-  // General freedb uses real freedb categories (`misc`, `rock`, `data`),
-  // which carry no id at all, so an id must not be invented from them.
-  hasAlbumIdInCategory: boolean
   // Only VGMdb's emulator serves a language segment on the path.
   hasLanguagePaths: boolean
   baseUrl: string
@@ -33,7 +29,6 @@ export type CddbServer = {
 
 export const VGMDB_CDDB_SERVER: CddbServer = {
   baseUrl: "http://vgmdb.net/cddb",
-  hasAlbumIdInCategory: true,
   hasLanguagePaths: true,
   name: "VGMdb",
 }
@@ -48,7 +43,6 @@ export const VGMDB_CDDB_SERVER: CddbServer = {
 // gnudb once an application name is registered there.
 export const FREEDB_CDDB_SERVER: CddbServer = {
   baseUrl: "http://freedb.dbpoweramp.com/~cddb",
-  hasAlbumIdInCategory: false,
   hasLanguagePaths: false,
   name: "freedb",
 }
@@ -81,9 +75,6 @@ export type VgmdbCddbMatch = {
   albumTitle: string
   category: string
   discId: string
-  // The numeric part of the category IS the VGMdb album id, which is what
-  // makes a match linkable back to the site.
-  vgmdbAlbumId: string
 }
 
 export type VgmdbCddbAlbum = {
@@ -215,17 +206,18 @@ export const buildQueryCommand = (
     String(getTotalDiscSeconds(trackLengthsSeconds)),
   ].join(" ")
 
-// The category carries the VGMdb album id, as `Soundtrack141255`. That is
-// how a CDDB result becomes a link back to the site.
-export const extractVgmdbAlbumId = (category: string) =>
-  category.replace(/^\D+/u, "")
+// VGMdb's CDDB category has its own numeric entry id. It is NOT the album
+// id used by `https://vgmdb.net/album/<id>`. The real album id is in the
+// xmcd record's EXTD field, which carries the canonical album URL.
+export const extractVgmdbAlbumId = (extendedData: string) =>
+  extendedData.match(
+    /https?:\/\/(?:www\.)?vgmdb\.net\/album\/(\d+)/iu,
+  )?.[1] ?? ""
 
 const parseMatchLine = ({
   line,
-  server,
 }: {
   line: string
-  server: CddbServer
 }): VgmdbCddbMatch => {
   const [category = "", discId = "", ...titleParts] = line
     .trim()
@@ -234,9 +226,6 @@ const parseMatchLine = ({
     albumTitle: titleParts.join(" "),
     category,
     discId,
-    vgmdbAlbumId: server.hasAlbumIdInCategory
-      ? extractVgmdbAlbumId(category)
-      : "",
   }
 }
 
@@ -246,10 +235,8 @@ const parseMatchLine = ({
 // seen, not a failure.
 export const parseQueryResponse = ({
   body,
-  server = VGMDB_CDDB_SERVER,
 }: {
   body: string
-  server?: CddbServer
 }): VgmdbCddbMatch[] =>
   ((lines: string[]) =>
     ((statusCode: string) =>
@@ -259,7 +246,6 @@ export const parseQueryResponse = ({
               line: (lines.at(0) ?? "").slice(
                 "200 ".length,
               ),
-              server,
             }),
           ]
         : statusCode === "211" || statusCode === "210"
@@ -270,9 +256,7 @@ export const parseQueryResponse = ({
                   line.trim().length > 0 &&
                   line.trim() !== ".",
               )
-              .map((line) =>
-                parseMatchLine({ line, server }),
-              )
+              .map((line) => parseMatchLine({ line }))
           : [])((lines.at(0) ?? "").slice(0, 3)))(
     body.split(/\r?\n/u),
   )
@@ -341,9 +325,10 @@ export const parseReadResponse = ({
             Number(secondKey.slice("TTITLE".length)),
         )
         .map(([, value]) => value),
-      vgmdbAlbumId: server.hasAlbumIdInCategory
-        ? extractVgmdbAlbumId(category)
-        : "",
+      vgmdbAlbumId:
+        server === VGMDB_CDDB_SERVER
+          ? extractVgmdbAlbumId(fields.get("EXTD") ?? "")
+          : "",
       year: fields.get("DYEAR") ?? "",
     }))(splitDiscTitle(fields.get("DTITLE") ?? "")))(
     parseXmcd(body),
@@ -369,7 +354,7 @@ export const queryVgmdbCddb = ({
       }),
     ),
   ).pipe(
-    map(({ body }) => parseQueryResponse({ body, server })),
+    map(({ body }) => parseQueryResponse({ body })),
     logAndRethrowPipelineError(queryVgmdbCddb),
   )
 
