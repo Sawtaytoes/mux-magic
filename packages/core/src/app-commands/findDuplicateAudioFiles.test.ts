@@ -158,6 +158,51 @@ describe(findDuplicateAudioFiles.name, () => {
     expect(groups[0].matchReason).toBe("tags")
   })
 
+  test("compares source files with a library path", async () => {
+    mockFiles({
+      "/inbox/01.flac": {
+        bitDepth: 16,
+        hash: "same-audio",
+      },
+      "/library/01.flac": {
+        bitDepth: 24,
+        hash: "same-audio",
+      },
+    })
+
+    const groups = await firstValueFrom(
+      findDuplicateAudioFiles({
+        comparisonPath: "/library",
+        sourcePath: "/inbox",
+      }),
+    )
+
+    expect(groups).toHaveLength(1)
+    expect(groups[0].copies).toHaveLength(2)
+    expect(
+      groups[0].copies.find(
+        (copy) => copy.isRecommendedKeep,
+      )?.filePath,
+    ).toBe("/library/01.flac")
+  })
+
+  test("does not report duplicates that exist only in the comparison path", async () => {
+    mockFiles({
+      "/inbox/01.flac": { hash: "source" },
+      "/library/01.flac": { hash: "same-audio" },
+      "/library/02.flac": { hash: "same-audio" },
+    })
+
+    expect(
+      await firstValueFrom(
+        findDuplicateAudioFiles({
+          comparisonPath: "/library",
+          sourcePath: "/inbox",
+        }),
+      ),
+    ).toEqual([])
+  })
+
   test("reports nothing when every file is distinct", async () => {
     mockFiles({
       "/library/a.flac": {
