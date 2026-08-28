@@ -19,7 +19,10 @@ import {
   toArray,
 } from "rxjs"
 import { runFfmpeg } from "../cli-spawn-operations/runFfmpeg.js"
-import { getAnimeThemeWithMainShowFallback } from "../tools/animeThemesApi.js"
+import {
+  getAnimeThemeWithMainShowFallback,
+  type ResolvedAnimeTheme,
+} from "../tools/animeThemesApi.js"
 
 const ANIDB_FOLDER_ID = /\[anidb-(?<anidbId>\d+)]/i
 
@@ -42,9 +45,11 @@ export type ThemeMusicManifestRecord = {
   audioUrl: string | null
   fallbackAnidbId: number | null
   hasExistingTheme: boolean
+  lookupError: string | null
   path: string
   result:
     | "applied"
+    | "lookup-failed"
     | "missing-anidb-id"
     | "needs-fallback-review"
     | "no-opening"
@@ -99,6 +104,7 @@ const resolveTheme = async (
       audioUrl: null,
       fallbackAnidbId: null,
       hasExistingTheme,
+      lookupError: null,
       path: themePath,
       result: "missing-anidb-id" as const,
       showFolder,
@@ -107,14 +113,34 @@ const resolveTheme = async (
       themeSource: null,
     }
   }
-  const theme =
-    await getAnimeThemeWithMainShowFallback(anidbId)
+  let theme: ResolvedAnimeTheme | null
+  try {
+    theme = await getAnimeThemeWithMainShowFallback(anidbId)
+  } catch (error) {
+    return {
+      anidbId,
+      audioUrl: null,
+      fallbackAnidbId: null,
+      hasExistingTheme,
+      lookupError:
+        error instanceof Error
+          ? error.message
+          : String(error),
+      path: themePath,
+      result: "lookup-failed",
+      showFolder,
+      slug: null,
+      song: null,
+      themeSource: null,
+    }
+  }
   return theme === null
     ? {
         anidbId,
         audioUrl: null,
         fallbackAnidbId: null,
         hasExistingTheme,
+        lookupError: null,
         path: themePath,
         result: "no-opening" as const,
         showFolder,
@@ -127,6 +153,7 @@ const resolveTheme = async (
         audioUrl: theme.audioUrl,
         fallbackAnidbId: theme.fallbackAnidbId,
         hasExistingTheme,
+        lookupError: null,
         path: themePath,
         result:
           theme.source === "main-show-candidate"
@@ -220,20 +247,22 @@ export const fetchThemeMusic = ({
     concatMap((showFolder) =>
       from(resolveTheme(showFolder)),
     ),
-    concatMap((record) =>
-      isApplied &&
-      record.result === "planned" &&
-      (isOverwrite || !record.hasExistingTheme)
-        ? applyTheme(record)
-        : of({
-            ...record,
-            result:
-              record.result === "planned" &&
-              record.hasExistingTheme &&
-              !isOverwrite
-                ? ("skipped-existing" as const)
-                : record.result,
-          }),
+    mergeMap(
+      (record) =>
+        isApplied &&
+        record.result === "planned" &&
+        (isOverwrite || !record.hasExistingTheme)
+          ? applyTheme(record)
+          : of({
+              ...record,
+              result:
+                record.result === "planned" &&
+                record.hasExistingTheme &&
+                !isOverwrite
+                  ? ("skipped-existing" as const)
+                  : record.result,
+            }),
+      4,
     ),
     toArray(),
     concatMap((records) =>
