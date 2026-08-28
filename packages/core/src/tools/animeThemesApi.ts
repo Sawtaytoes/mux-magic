@@ -21,7 +21,7 @@ export type AnimeTheme = {
 
 export type ResolvedAnimeTheme = AnimeTheme & {
   fallbackAnidbId: number | null
-  source: "main-show" | "own"
+  source: "main-show-candidate" | "own"
 }
 
 type AnimeThemesResourceResponse = {
@@ -230,6 +230,6 @@ export const getAnimeThemeWithMainShowFallback = async (
     : {
         ...fallbackTheme.theme,
         fallbackAnidbId: fallbackTheme.fallbackAnidbId,
-        source: "main-show",
+        source: "main-show-candidate",
       }
 }

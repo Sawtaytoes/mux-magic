@@ -80,3 +80,38 @@ test("does not resolve folders without an AniDB tag", async () => {
   ])
   expect(getMockedAnimeTheme).not.toHaveBeenCalled()
 })
+
+test("marks a related-show theme as review-only", async () => {
+  vol.fromJSON({
+    "/Anime/Original Story [anidb-1416]/episode.mkv":
+      "episode",
+  })
+  getMockedAnimeTheme.mockResolvedValue({
+    artist: "UVERworld",
+    audioUrl: "https://a.animethemes.moe/related.ogg",
+    fallbackAnidbId: 5039,
+    slug: "terra_e_tv",
+    song: "endscape",
+    source: "main-show-candidate",
+  })
+
+  const records = await firstValueFrom(
+    fetchThemeMusic({
+      isApplied: true,
+      sourcePath: "/Anime",
+    }).pipe(toArray()),
+  )
+
+  expect(records).toEqual([
+    expect.objectContaining({
+      fallbackAnidbId: 5039,
+      result: "needs-fallback-review",
+      themeSource: "main-show",
+    }),
+  ])
+  expect(
+    vol.existsSync(
+      "/Anime/Original Story [anidb-1416]/theme.mp3",
+    ),
+  ).toBe(false)
+})
