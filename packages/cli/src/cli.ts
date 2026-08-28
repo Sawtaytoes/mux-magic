@@ -37,6 +37,7 @@ import { hasWrongDefaultTrackCommand } from "./cli-commands/hasWrongDefaultTrack
 import { inverseTelecineDiscRipsCommand } from "./cli-commands/inverseTelecineDiscRipsCommand.js"
 import { isMissingSubtitlesCommand } from "./cli-commands/isMissingSubtitlesCommand.js"
 import { keepLanguagesCommand } from "./cli-commands/keepLanguagesCommand.js"
+import { matchMusicReleaseCommand } from "./cli-commands/matchMusicReleaseCommand.js"
 import { mergeOrderedChaptersCommand } from "./cli-commands/mergeOrderedChaptersCommand.js"
 import { mergeTracksCommand } from "./cli-commands/mergeTracksCommand.js"
 import { modifySubtitleMetadataCommand } from "./cli-commands/modifySubtitleMetadataCommand.js"
@@ -101,6 +102,7 @@ yargs(hideBin(process.argv))
   .command(isMissingSubtitlesCommand)
   .command(modifySubtitleMetadataCommand)
   .command(keepLanguagesCommand)
+  .command(matchMusicReleaseCommand)
   .command(addSubtitlesCommand)
   .command(mergeOrderedChaptersCommand)
   .command(mergeTracksCommand)

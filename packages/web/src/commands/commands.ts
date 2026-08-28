@@ -48,6 +48,7 @@ import {
   makeDirectoryRequestSchema,
   matchFreedbReleaseRequestSchema,
   matchMusicBrainzReleaseRequestSchema,
+  matchMusicReleaseRequestSchema,
   matchVgmdbReleaseRequestSchema,
   mergeTracksRequestSchema,
   modifySubtitleMetadataRequestSchema,
@@ -225,6 +226,48 @@ export const COMMANDS: Commands = {
         field("candidateFetchLimit", {
           type: "number",
           label: "Candidate releases per row",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  matchMusicRelease: (() => {
+    const field = fieldBuilder(
+      matchMusicReleaseRequestSchema,
+    )
+    return {
+      summary:
+        "Try MusicBrainz, VGMdb and freedb in that order, then combine every candidate into one tag review table. This is the normal automatic matcher.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      outputs: [
+        {
+          name: "matchedFilePaths",
+          label: "Matched files",
+        },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Music Folder",
+        }),
+        field("language", {
+          type: "enum",
+          label: "VGMdb title language",
+          options: [
+            { value: "default", label: "VGMdb default" },
+            { value: "en", label: "English" },
+            { value: "ja", label: "Japanese" },
+            { value: "ja-Latn", label: "Romaji" },
+          ],
         }),
         field("isRecursive", {
           type: "boolean",

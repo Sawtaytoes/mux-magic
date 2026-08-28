@@ -25,7 +25,10 @@ const SPECIALIZED_RENDERER_COMMANDS = new Set<string>([
   // `MusicMatchRunResults` owns this one. Its records are per-file rows
   // carrying a whole ranked candidate set; the generic JSON dump renders
   // them as an unreadable wall and hides the Review Tags button under it.
+  "matchMusicRelease",
   "matchMusicBrainzRelease",
+  "matchVgmdbRelease",
+  "matchFreedbRelease",
 ])
 
 const headingByKind: Record<string, string> = {

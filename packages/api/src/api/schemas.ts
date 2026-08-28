@@ -2469,6 +2469,18 @@ export const matchMusicBrainzReleaseRequestSchema =
     sourcePath: musicSourcePathSchema,
   })
 
+export const matchMusicReleaseRequestSchema = z.object({
+  isRecursive: musicIsRecursiveSchema,
+  language: z
+    .enum(["default", "en", "ja", "ja-Latn"])
+    .default("default")
+    .describe(
+      "Which title language to ask VGMdb for. MusicBrainz and freedb ignore this field.",
+    ),
+  recursiveDepth: musicRecursiveDepthSchema,
+  sourcePath: musicSourcePathSchema,
+})
+
 // The tag fields a bulk edit can set. Deliberately flat rather than a
 // nested `tags` object: the builder renders one input per field, and a
 // nested object would be an unusable blob in the step form and in the YAML.

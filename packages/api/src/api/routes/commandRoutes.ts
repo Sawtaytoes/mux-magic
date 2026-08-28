@@ -73,6 +73,7 @@ import {
   type MusicMatchClusterRecord,
   matchMusicBrainzRelease,
 } from "@mux-magic/core/src/app-commands/matchMusicBrainzRelease.js"
+import { matchMusicRelease } from "@mux-magic/core/src/app-commands/matchMusicRelease.js"
 import { matchVgmdbRelease } from "@mux-magic/core/src/app-commands/matchVgmdbRelease.js"
 import { mergeTracks } from "@mux-magic/core/src/app-commands/mergeTracks.js"
 import { modifySubtitleMetadata } from "@mux-magic/core/src/app-commands/modifySubtitleMetadata.js"
@@ -322,6 +323,30 @@ export const commandConfigs: Record<
     schema: schemas.matchMusicBrainzReleaseRequestSchema,
     summary:
       "Cluster a folder's audio files into candidate albums from their existing tags, search MusicBrainz for each cluster, and attach ranked releases with a proposed tag set per file. Read-only — the tag table is where a match is accepted.",
+    tags: ["Music Tagging"],
+  },
+  matchMusicRelease: {
+    getObservable: (body) =>
+      matchMusicRelease({
+        isRecursive: body.isRecursive,
+        language: body.language,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      matchedFilePaths: (
+        results as MusicMatchClusterRecord[]
+      ).flatMap((cluster) =>
+        cluster.files
+          .filter(
+            (file) => file.rankedCandidates.length > 0,
+          )
+          .map((file) => file.filePath),
+      ),
+    }),
+    schema: schemas.matchMusicReleaseRequestSchema,
+    summary:
+      "Match a folder against MusicBrainz, VGMdb and freedb in that order, then combine every candidate into one tag review table. One provider failure does not prevent the other two from running. Read-only.",
     tags: ["Music Tagging"],
   },
   matchFreedbRelease: {

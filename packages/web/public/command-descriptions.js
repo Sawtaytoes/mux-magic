@@ -46,6 +46,15 @@ window.commandDescriptions = {
       "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
     }
   },
+  "matchMusicRelease": {
+    "summary": "Match a folder against MusicBrainz, VGMdb and freedb in that order, then combine every candidate into one tag review table. One provider failure does not prevent the other two from running. Read-only.",
+    "fields": {
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "language": "Which title language to ask VGMdb for. MusicBrainz and freedb ignore this field.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
   "matchFreedbRelease": {
     "summary": "Match a folder against general freedb — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. freedb is user-submitted CD metadata with no editorial review and no ids to link back to, so run it last. Like VGMdb it identifies a whole disc by track count and total playing time, so point it at ONE disc. Read-only.",
     "fields": {

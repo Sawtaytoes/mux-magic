@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-08-28 | [Automatic music matching tries every provider; specific matchers own release selection](2026-08-28-auto-music-matching-tries-every-provider-and-specific-matchers-own-release-lookup.md) | core / api / web | Accepted |
 | 2026-08-27 | [Assert every `/opt/makemkv` binary you actually run; the transplant is not fully self-contained (and read rip-deck's Dockerfile first)](2026-08-27-the-makemkv-transplant-is-not-self-contained-mmccextr-is-musl.md) | infra | Accepted |
 | 2026-08-24 | [The bulk tag command and the reviewed per-file write stay separate](2026-08-24-the-bulk-tag-command-and-the-reviewed-write-are-separate.md) | core / server/api / web | Accepted |
 | 2026-08-24 | [The tagger's defaults reproduce Picard exactly, and re-tagging a filed album is a no-op](2026-08-24-the-tagger-reproduces-picard-defaults-exactly.md) | core / web | Accepted |
