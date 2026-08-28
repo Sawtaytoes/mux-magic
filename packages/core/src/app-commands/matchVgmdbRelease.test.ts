@@ -39,6 +39,7 @@ const buildReadBody = ({
     `DTITLE= / ${albumTitle}`,
     "DYEAR=2011",
     "DGENRE=Game",
+    "EXTD=https://vgmdb.net/album/57899",
     ...titles.map(
       (title, index) => `TTITLE${index}=${title}`,
     ),
@@ -132,7 +133,7 @@ describe(matchVgmdbRelease.name, () => {
       clusters[0].files[0].rankedCandidates[0],
     ).toMatchObject({
       candidate: {
-        releaseId: "32937",
+        releaseId: "57899",
         releaseTitle: "[CAT-001] A Game Soundtrack",
         source: "vgmdb",
         year: "2011",
@@ -228,6 +229,45 @@ describe(matchVgmdbRelease.name, () => {
     )
   })
 
+  test("Japanese tags produce a finite confidence", async () => {
+    mockFiles({
+      "/inbox/01.flac": {
+        durationSeconds: 210,
+        tags: {
+          album: "森羅万象",
+          albumArtist: "大塚彩子",
+          title: "また夏が来る",
+          trackNumber: 1,
+        },
+      },
+      "/inbox/02.flac": {
+        durationSeconds: 185,
+        tags: {
+          album: "森羅万象",
+          albumArtist: "大塚彩子",
+          title: "forget-me-not",
+          trackNumber: 2,
+        },
+      },
+    })
+
+    const clusters = await firstValueFrom(
+      matchVgmdbRelease({
+        cachedFetch: buildCachedFetch({
+          readBody: buildReadBody({
+            titles: ["また夏が来る", "forget-me-not"],
+          }),
+        }),
+        sourcePath: "/inbox",
+      }),
+    )
+
+    const confidence =
+      clusters[0].files[0].rankedCandidates[0].confidence
+    expect(confidence).toBeTypeOf("number")
+    expect(Number.isFinite(confidence)).toBe(true)
+  })
+
   // An album VGMdb has never seen is a normal outcome. The row set still
   // arrives, with nothing offered on it.
   test("no match leaves the rows with no candidates", async () => {
@@ -316,5 +356,33 @@ describe(matchVgmdbRelease.name, () => {
     expect(cachedFetch.mock.calls[0]?.[0]).toContain(
       "/cddb/ja-Latn/cddb.cgi",
     )
+  })
+
+  test("a selected VGMdb album id filters the disc matches by canonical EXTD id", async () => {
+    mockFiles(TWO_TRACK_ALBUM)
+
+    const matching = await firstValueFrom(
+      matchVgmdbRelease({
+        cachedFetch: buildCachedFetch(),
+        sourcePath: "/inbox",
+        vgmdbAlbumId: "57899",
+      }),
+    )
+    vol.reset()
+    mockFiles(TWO_TRACK_ALBUM)
+    const rejected = await firstValueFrom(
+      matchVgmdbRelease({
+        cachedFetch: buildCachedFetch(),
+        sourcePath: "/inbox",
+        vgmdbAlbumId: "99999",
+      }),
+    )
+
+    expect(
+      matching[0].files[0].rankedCandidates,
+    ).toHaveLength(1)
+    expect(
+      rejected[0].files[0].rankedCandidates,
+    ).toHaveLength(0)
   })
 })

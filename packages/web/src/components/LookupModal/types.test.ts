@@ -3,6 +3,7 @@ import type {
   SearchDvdCompareResult,
   SearchMalResult,
   SearchMovieDbResult,
+  SearchMusicBrainzReleaseResult,
   SearchTvdbResult,
   LookupRelease as ServerLookupRelease,
   LookupSearchResult as ServerLookupSearchResult,
@@ -44,6 +45,12 @@ describe("LookupModal/types ↔ server/api-types contract", () => {
       variant: "Blu-ray",
       year: "2001",
     } satisfies SearchDvdCompareResult
+    const musicBrainzResult = {
+      artistName: "Seatbelts",
+      releaseId: "7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4",
+      releaseTitle: "Cowboy Bebop",
+      trackCount: 17,
+    } satisfies SearchMusicBrainzReleaseResult
 
     const _webMal: LookupSearchResult = malResult
     const _webAnidb: LookupSearchResult = anidbResult
@@ -51,6 +58,8 @@ describe("LookupModal/types ↔ server/api-types contract", () => {
     const _webTmdb: LookupSearchResult = tmdbResult
     const _webDvdCompare: LookupSearchResult =
       dvdCompareResult
+    const _webMusicBrainz: LookupSearchResult =
+      musicBrainzResult
 
     const _serverMal: ServerLookupSearchResult = malResult
 
@@ -65,6 +74,7 @@ describe("LookupModal/types ↔ server/api-types contract", () => {
       "tvdb",
       "tmdb",
       "dvdcompare",
+      "musicbrainz",
     ]
     const serverKeys: ServerLookupType[] = webKeys
     expect(serverKeys).toEqual(webKeys)

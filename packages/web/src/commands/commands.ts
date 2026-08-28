@@ -48,6 +48,7 @@ import {
   makeDirectoryRequestSchema,
   matchFreedbReleaseRequestSchema,
   matchMusicBrainzReleaseRequestSchema,
+  matchMusicReleaseRequestSchema,
   matchVgmdbReleaseRequestSchema,
   mergeTracksRequestSchema,
   modifySubtitleMetadataRequestSchema,
@@ -222,9 +223,59 @@ export const COMMANDS: Commands = {
           type: "path",
           label: "Music Folder",
         }),
+        field("releaseId", {
+          type: "string",
+          label: "MusicBrainz Release",
+          lookupType: "musicbrainz",
+          companionNameField: "releaseName",
+          placeholder:
+            "Search by album name or paste a release UUID",
+        }),
         field("candidateFetchLimit", {
           type: "number",
           label: "Candidate releases per row",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  matchMusicRelease: (() => {
+    const field = fieldBuilder(
+      matchMusicReleaseRequestSchema,
+    )
+    return {
+      summary:
+        "Try MusicBrainz, VGMdb and freedb in that order, then combine every candidate into one tag review table. This is the normal automatic matcher.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      outputs: [
+        {
+          name: "matchedFilePaths",
+          label: "Matched files",
+        },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Music Folder",
+        }),
+        field("language", {
+          type: "enum",
+          label: "VGMdb title language",
+          options: [
+            { value: "default", label: "VGMdb default" },
+            { value: "en", label: "English" },
+            { value: "ja", label: "Japanese" },
+            { value: "ja-Latn", label: "Romaji" },
+          ],
         }),
         field("isRecursive", {
           type: "boolean",
@@ -245,6 +296,7 @@ export const COMMANDS: Commands = {
     return {
       summary:
         "Match a folder against general freedb — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. Its data is user-submitted and unreviewed, so run it last. Point it at ONE disc. Read-only.",
+      note: "freedb has no album-name search or stable album ID. It can only identify a disc from its track count and track durations.",
       tag: "Music Tagging",
       outputFolderName: null,
       outputs: [
@@ -281,6 +333,7 @@ export const COMMANDS: Commands = {
     return {
       summary:
         "Match a folder against VGMdb for game and anime soundtracks. Point it at ONE disc — VGMdb identifies a disc by track count and total playing time, so a flattened multi-disc folder will not match. Read-only.",
+      note: "VGMdb does not provide an album-search API. Search vgmdb.net by album name, then paste the number from the selected album URL into VGMdb Album ID before the run.",
       tag: "Music Tagging",
       outputFolderName: null,
       outputs: [
@@ -293,6 +346,11 @@ export const COMMANDS: Commands = {
         field("sourcePath", {
           type: "path",
           label: "Album Folder",
+        }),
+        field("vgmdbAlbumId", {
+          type: "number",
+          label: "VGMdb Album ID",
+          placeholder: "For example, 57899",
         }),
         field("language", {
           type: "enum",

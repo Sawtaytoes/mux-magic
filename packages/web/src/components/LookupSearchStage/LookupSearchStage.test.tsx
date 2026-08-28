@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import {
   afterEach,
   beforeEach,
@@ -332,5 +333,55 @@ describe("LookupSearchStage — DVDCompare flow", () => {
       (releaseCall[1]?.body as string) ?? "{}",
     ) as { dvdCompareId: unknown }
     expect(body.dvdCompareId).toBe(55420)
+  })
+})
+
+describe("LookupSearchStage — MusicBrainz release lookup", () => {
+  test("selecting a release writes its UUID and display name", async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    const state: LookupState = {
+      ...baseState,
+      lookupType: "musicbrainz",
+      fieldName: "releaseId",
+      companionNameField: "releaseName",
+      formatFilter: "all",
+      results: [
+        {
+          artistName: "Example Artist",
+          country: "JP",
+          format: "CD",
+          label: "Example Records",
+          releaseId: "7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4",
+          releaseTitle: "Example Album",
+          trackCount: 14,
+          year: "2016",
+        },
+      ],
+    }
+
+    render(
+      <LookupSearchStage
+        state={state}
+        onUpdate={vi.fn()}
+        onClose={onClose}
+      />,
+    )
+
+    await user.click(
+      screen.getByText("Example Album (2016)"),
+    )
+
+    expect(setLinkedOrParamValueMock).toHaveBeenCalledWith(
+      "step-1",
+      "releaseId",
+      "7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4",
+    )
+    expect(setParamMock).toHaveBeenCalledWith(
+      "step-1",
+      "releaseName",
+      "Example Album (2016) — Example Artist",
+    )
+    expect(onClose).toHaveBeenCalledOnce()
   })
 })

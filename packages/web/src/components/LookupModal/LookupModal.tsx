@@ -17,6 +17,7 @@ const LOOKUP_TITLES: Record<LookupType, string> = {
   tvdb: "Look up TVDB ID",
   tmdb: "Look up TMDB ID",
   dvdcompare: "Look up DVDCompare Film ID",
+  musicbrainz: "Look up MusicBrainz Release",
 }
 
 // ─── LookupModal ──────────────────────────────────────────────────────────────

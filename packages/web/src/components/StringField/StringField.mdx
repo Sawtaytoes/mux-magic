@@ -7,7 +7,7 @@ import * as StringFieldStories from "./StringField.stories";
 
 # StringField
 
-A text input for `type: "string"` step fields — the workhorse of the builder body. Wraps the input in a `CommandFieldControl` — `@charcuterie/ui`'s `Field` plus the description `Tooltip` — so the label association, the required asterisk and the help tip come for free.
+A text input for `type: "string"` step fields — the workhorse of the builder body. It normally wraps the input in a `CommandFieldControl` — `@charcuterie/ui`'s `Field` plus the description `Tooltip` — so the label association, the required asterisk and the help tip come for free. A string field with `lookupType` uses `CommandFieldGroup` and adds a lookup button beside the input. This supports identifiers such as a MusicBrainz release UUID, which cannot use the numeric lookup field.
 
 Like `BooleanField`, this is **uncontrolled** (`defaultValue`, not `value`). The `onInput` handler writes back through `window.setParam` on every keystroke. Empty strings are converted to `undefined` so the YAML serializer can drop the key entirely instead of emitting `field: ""`.
 
@@ -42,3 +42,7 @@ Like `BooleanField`, this is **uncontrolled** (`defaultValue`, not `value`). The
 ## Required
 
 <Canvas of={StringFieldStories.Required} />
+
+## With release lookup
+
+<Canvas of={StringFieldStories.WithReleaseLookup} />

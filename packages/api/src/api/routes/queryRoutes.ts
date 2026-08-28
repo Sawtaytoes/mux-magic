@@ -2,6 +2,8 @@ import { sep as pathSeparator } from "node:path"
 
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import { getSubtitleMetadata } from "@mux-magic/core/src/app-commands/getSubtitleMetadata.js"
+import { searchMusicBrainzReleases } from "@mux-magic/core/src/tools/musicBrainzApi.js"
+import { musicBrainzCachedFetch } from "@mux-magic/core/src/tools/musicProviderFetchers.js"
 import {
   PathSafetyError,
   validateReadablePath,
@@ -45,6 +47,7 @@ import {
   fakeSearchDvdCompare,
   fakeSearchMal,
   fakeSearchMovieDb,
+  fakeSearchMusicBrainzReleases,
   fakeSearchTvdb,
   isFakeRequest,
 } from "../../fake-data/index.js"
@@ -112,6 +115,80 @@ queryRoutes.openapi(
       }),
     )
     return context.json({ subtitlesMetadata }, 200)
+  },
+)
+
+queryRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/queries/searchMusicBrainzReleases",
+    summary: "Search MusicBrainz for an album release",
+    description:
+      "Returns MusicBrainz releases matching an album name. The builder uses this before a provider-specific match so the selected release UUID can constrain the matcher.",
+    tags: ["Music Tagging"],
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: schemas.searchTermRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: "MusicBrainz release search results",
+        content: {
+          "application/json": {
+            schema:
+              schemas.searchMusicBrainzReleaseResponseSchema,
+          },
+        },
+      },
+    },
+  }),
+  async (context) => {
+    if (isFakeRequest(context)) {
+      return context.json(
+        fakeSearchMusicBrainzReleases(),
+        200,
+      )
+    }
+    const body = context.req.valid("json")
+    try {
+      const releases = await lastValueFrom(
+        searchMusicBrainzReleases({
+          albumName: body.searchTerm,
+          cachedFetch: musicBrainzCachedFetch,
+        }),
+      )
+      const results = releases.map((release) => ({
+        artistName: release.artistCredit
+          .map(
+            (credit) =>
+              `${credit.name}${credit.joinPhrase}`,
+          )
+          .join(""),
+        country: release.country || undefined,
+        format:
+          release.formats.length > 0
+            ? release.formats.join(", ")
+            : undefined,
+        label: release.labels[0] || undefined,
+        releaseId: release.releaseId,
+        releaseTitle: release.title,
+        trackCount: release.trackCount,
+        year: release.date.slice(0, 4) || undefined,
+      }))
+      return context.json({ results, error: null }, 200)
+    } catch (err) {
+      const message = messageFromError(err)
+      logError("SEARCH MUSICBRAINZ RELEASES", message)
+      return context.json(
+        { results: [], error: message },
+        200,
+      )
+    }
   },
 )
 

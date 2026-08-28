@@ -63,6 +63,9 @@ export type SearchMovieDbResponse = z.infer<
 export type SearchDvdCompareResponse = z.infer<
   typeof schemas.searchDvdCompareResponseSchema
 >
+export type SearchMusicBrainzReleaseResponse = z.infer<
+  typeof schemas.searchMusicBrainzReleaseResponseSchema
+>
 export type ListDvdCompareReleasesResponse = z.infer<
   typeof schemas.listDvdCompareReleasesResponseSchema
 >
@@ -114,6 +117,7 @@ export const LOOKUP_TYPES = [
   "tvdb",
   "tmdb",
   "dvdcompare",
+  "musicbrainz",
 ] as const
 export type LookupType = (typeof LOOKUP_TYPES)[number]
 
@@ -130,6 +134,8 @@ export type SearchMovieDbResult =
   SearchMovieDbResponse["results"][number]
 export type SearchDvdCompareResult =
   SearchDvdCompareResponse["results"][number]
+export type SearchMusicBrainzReleaseResult =
+  SearchMusicBrainzReleaseResponse["results"][number]
 
 // Union of every per-provider search result. Discriminable structurally:
 // each branch has a distinguishing required field (malId / aid / tvdbId /
@@ -141,6 +147,7 @@ export type LookupSearchResult =
   | SearchTvdbResult
   | SearchMovieDbResult
   | SearchDvdCompareResult
+  | SearchMusicBrainzReleaseResult
 
 // Release row from listDvdCompareReleases — shape lives on the tool, this
 // alias keeps the picker-stage naming aligned with the other Lookup* types.

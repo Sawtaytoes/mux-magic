@@ -129,7 +129,7 @@ const tokenizeWords = (text: string) =>
   new Set(
     text
       .toLowerCase()
-      .split(/[\W_]+/u)
+      .split(/[^\p{L}\p{N}]+/u)
       .filter(Boolean),
   )
 

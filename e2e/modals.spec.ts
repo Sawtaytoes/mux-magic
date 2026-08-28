@@ -349,6 +349,73 @@ test.describe("LookupModal", () => {
 
     await expect(page.locator("#lookup-modal")).toBeHidden()
   })
+
+  test("MusicBrainz lookup selects a release before matching", async ({
+    page,
+  }) => {
+    await page.route(
+      "**/api/queries/searchMusicBrainzReleases",
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            results: [
+              {
+                artistName: "Example Artist",
+                country: "JP",
+                format: "CD",
+                label: "Example Records",
+                releaseId:
+                  "7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4",
+                releaseTitle: "Example Album",
+                trackCount: 14,
+                year: "2016",
+              },
+            ],
+            error: null,
+          }),
+        })
+      },
+    )
+    await addStepWithCommand(
+      page,
+      "matchMusicBrainzRelease",
+      /^Match MusicBrainz Release\s/,
+    )
+
+    await page
+      .getByRole("button", {
+        name: "Look up MusicBrainz Release",
+      })
+      .click()
+    await expect(page.locator("#lookup-title")).toHaveText(
+      "Look up MusicBrainz Release",
+    )
+    await page
+      .locator("#lookup-search-input")
+      .fill("Example Album")
+    await page
+      .locator("#lookup-modal")
+      .getByRole("button", { name: "Search" })
+      .click()
+    await page.getByText("Example Album (2016)").click()
+
+    await expect(page.locator("#lookup-modal")).toBeHidden()
+    await expect(
+      page.getByPlaceholder(
+        "Search by album name or paste a release UUID",
+      ),
+    ).toHaveValue("7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4")
+    await expect(
+      page.getByRole("link", {
+        name: "Example Album (2016) — Example Artist",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "https://musicbrainz.org/release/7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4",
+    )
+  })
 })
 
 // ─── FileExplorerModal ────────────────────────────────────────────────────────
