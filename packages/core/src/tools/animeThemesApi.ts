@@ -5,6 +5,7 @@ import {
   writeFile,
 } from "node:fs/promises"
 import { join } from "node:path"
+import { getAnimeXml } from "./anidbApi.js"
 import { getAnidbCacheDir } from "./getAnidbCacheDir.js"
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -16,6 +17,11 @@ export type AnimeTheme = {
   audioUrl: string
   slug: string
   song: string
+}
+
+export type ResolvedAnimeTheme = AnimeTheme & {
+  fallbackAnidbId: number | null
+  source: "main-show" | "own"
 }
 
 type AnimeThemesResourceResponse = {
@@ -183,5 +189,47 @@ export const getAnimeTheme = async (anidbId: number) => {
           opening.theme.song?.title ??
           opening.theme.slug ??
           "Unknown opening",
+      }
+}
+
+const getMainShowAnidbIds = (animeXml: string) =>
+  Array.from(
+    animeXml.matchAll(
+      /<anime id="(?<anidbId>\d+)" type="(?<relation>Parent Story|Prequel)">/g,
+    ),
+  ).map((match) => Number(match.groups?.anidbId))
+
+export const getAnimeThemeWithMainShowFallback = async (
+  anidbId: number,
+): Promise<ResolvedAnimeTheme | null> => {
+  const ownTheme = await getAnimeTheme(anidbId)
+  if (ownTheme !== null) {
+    return {
+      ...ownTheme,
+      fallbackAnidbId: null,
+      source: "own",
+    }
+  }
+  const animeXml = await getAnimeXml(anidbId, {
+    client: "mediatools",
+    clientver: "1",
+  })
+  const fallbackAnidbIds = getMainShowAnidbIds(animeXml)
+  const fallbackThemes = await Promise.all(
+    fallbackAnidbIds.map(async (fallbackAnidbId) => ({
+      fallbackAnidbId,
+      theme: await getAnimeTheme(fallbackAnidbId),
+    })),
+  )
+  const fallbackTheme = fallbackThemes.find(
+    ({ theme }) => theme !== null,
+  )
+  return fallbackTheme?.theme === null ||
+    fallbackTheme === undefined
+    ? null
+    : {
+        ...fallbackTheme.theme,
+        fallbackAnidbId: fallbackTheme.fallbackAnidbId,
+        source: "main-show",
       }
 }

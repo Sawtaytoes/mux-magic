@@ -19,7 +19,7 @@ import {
   toArray,
 } from "rxjs"
 import { runFfmpeg } from "../cli-spawn-operations/runFfmpeg.js"
-import { getAnimeTheme } from "../tools/animeThemesApi.js"
+import { getAnimeThemeWithMainShowFallback } from "../tools/animeThemesApi.js"
 
 const ANIDB_FOLDER_ID = /\[anidb-(?<anidbId>\d+)]/i
 
@@ -40,6 +40,7 @@ export type FetchThemeMusicProps =
 export type ThemeMusicManifestRecord = {
   anidbId: number | null
   audioUrl: string | null
+  fallbackAnidbId: number | null
   hasExistingTheme: boolean
   path: string
   result:
@@ -51,6 +52,7 @@ export type ThemeMusicManifestRecord = {
   showFolder: string
   slug: string | null
   song: string | null
+  themeSource: "main-show" | "own" | null
 }
 
 const pathExists = async (filePath: string) =>
@@ -92,35 +94,42 @@ const resolveTheme = async (showFolder: string) => {
     return {
       anidbId,
       audioUrl: null,
+      fallbackAnidbId: null,
       hasExistingTheme,
       path: themePath,
       result: "missing-anidb-id" as const,
       showFolder,
       slug: null,
       song: null,
+      themeSource: null,
     }
   }
-  const theme = await getAnimeTheme(anidbId)
+  const theme =
+    await getAnimeThemeWithMainShowFallback(anidbId)
   return theme === null
     ? {
         anidbId,
         audioUrl: null,
+        fallbackAnidbId: null,
         hasExistingTheme,
         path: themePath,
         result: "no-opening" as const,
         showFolder,
         slug: null,
         song: null,
+        themeSource: null,
       }
     : {
         anidbId,
         audioUrl: theme.audioUrl,
+        fallbackAnidbId: theme.fallbackAnidbId,
         hasExistingTheme,
         path: themePath,
         result: "planned" as const,
         showFolder,
         slug: theme.slug,
         song: theme.song,
+        themeSource: theme.source,
       }
 }
 
