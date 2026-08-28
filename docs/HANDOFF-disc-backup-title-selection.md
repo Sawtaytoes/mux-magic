@@ -166,10 +166,16 @@ already certain from the frame grabs, so DVDCompare had nothing to add).
   `Error while reading input` → `0 titles saved, 1 failed`, with
   `makemkvcon` still exiting 0. It fails the WHOLE title over one
   subtitle stream. Fixed in the image on 2026-08-27 by shipping musl's
-  loader for `mmccextr` (#258); if it comes back, the base moved
+  loader and libraries for BOTH helper binaries — `mmccextr` and
+  `mmgplsrv` (#258, #259); if it comes back, the base moved
   ([decision](decisions/2026-08-27-the-makemkv-transplant-is-not-self-contained-mmccextr-is-musl.md)).
   **Blu-rays are PGS and never reach this**, so a Blu-ray-only test
   surface proves nothing about it.
+- **`MSG:4041 "Failed to execute external program 'mmgplsrv'"` is not
+  noise.** It is the same musl defect on the other helper, and it was in
+  every log this app produced until #259. It only *looks* harmless here;
+  the identical absence produces `MSG:5069 "Backup failed"` in rip-deck.
+  Treat any MSG:4041 as a broken image, not as a disc problem.
 
 ---
 
