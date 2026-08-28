@@ -108,7 +108,7 @@ const scanOneFile = (fileInfo: FileInfo) =>
     }),
   )
 
-export const scanAudioFiles = ({
+export const scanAudioFilesStream = ({
   isRecursive = false,
   recursiveDepth = 1,
   sourcePath,
@@ -121,6 +121,13 @@ export const scanAudioFiles = ({
       isAudioFilePath(fileInfo.fullPath),
     ),
     withFileProgress((fileInfo) => scanOneFile(fileInfo)),
+    logAndRethrowPipelineError(scanAudioFilesStream),
+  )
+
+export const scanAudioFiles = (
+  props: ScanAudioFilesProps,
+) =>
+  scanAudioFilesStream(props).pipe(
     toArray(),
     logAndRethrowPipelineError(scanAudioFiles),
   )
