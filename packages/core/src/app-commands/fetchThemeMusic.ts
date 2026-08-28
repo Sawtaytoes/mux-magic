@@ -46,6 +46,7 @@ export type ThemeMusicManifestRecord = {
   result:
     | "applied"
     | "missing-anidb-id"
+    | "needs-fallback-review"
     | "no-opening"
     | "planned"
     | "skipped-existing"
@@ -86,7 +87,9 @@ const getAnidbId = (showFolder: string) => {
     : Number(match.groups.anidbId)
 }
 
-const resolveTheme = async (showFolder: string) => {
+const resolveTheme = async (
+  showFolder: string,
+): Promise<ThemeMusicManifestRecord> => {
   const anidbId = getAnidbId(showFolder)
   const themePath = join(showFolder, "theme.mp3")
   const hasExistingTheme = await pathExists(themePath)
@@ -125,11 +128,17 @@ const resolveTheme = async (showFolder: string) => {
         fallbackAnidbId: theme.fallbackAnidbId,
         hasExistingTheme,
         path: themePath,
-        result: "planned" as const,
+        result:
+          theme.source === "main-show-candidate"
+            ? ("needs-fallback-review" as const)
+            : ("planned" as const),
         showFolder,
         slug: theme.slug,
         song: theme.song,
-        themeSource: theme.source,
+        themeSource:
+          theme.source === "main-show-candidate"
+            ? "main-show"
+            : theme.source,
       }
 }
 
