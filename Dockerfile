@@ -192,33 +192,69 @@ ENV PATH="/opt/makemkv/bin:${PATH}"
 RUN makemkvcon -r --cache=1 info disc:9999 \
   | grep -q 'MSG:1005.*started'
 
-# mmccextr is the ONE binary under /opt/makemkv that is NOT self-contained.
-# MakeMKV's own binaries resolve through the bundled glibc under
-# /opt/makemkv/lib; its closed-caption converter is linked against Alpine's
-# musl instead (`NEEDED libc.musl-x86_64.so.1`), so on this base it cannot
-# exec at all.
+# /opt/makemkv is MOSTLY self-contained. The comment above is true of
+# `makemkv`, `makemkvcon` and `sdftool`, which resolve through the bundled
+# glibc under /opt/makemkv/lib. It is NOT true of the two HELPER binaries
+# makemkvcon spawns, both of which are linked against Alpine's musl and
+# cannot exec on this base at all:
 #
-# That is fatal for a whole TITLE, not just for the captions: a DVD carrying
-# line-21 closed captions makes makemkvcon log "Failed to execute external
-# program 'ccextractor'", then "Error while reading input", then "0 titles
-# saved, 1 failed" — and it still exits 0. Blu-rays author subtitles as PGS
-# and never reach this path, which is why the transplant read as complete
-# until the first DVD (The Punisher, 2026-08-27, where the 2:18 feature
-# would not rip while all five extras did).
+#   mmccextr   NEEDED libc.musl-x86_64.so.1
+#   mmgplsrv   NEEDED libc.musl-x86_64.so.1, libstdc++.so.6, libgcc_s.so.1
 #
-# musl's loader IS its libc, so one file plus the SONAME symlink is the whole
-# fix. `/lib` is a symlink to `/usr/lib` on Debian; write through it so the
-# ELF interpreter path baked into mmccextr (`/lib/ld-musl-x86_64.so.1`)
-# resolves.
+# Each one fails differently, and both failures are quiet until they are not:
+#
+#  - `mmccextr` converts DVD line-21 closed captions. Its absence is fatal
+#    for the WHOLE TITLE, not just for the captions: makemkvcon logs
+#    "Failed to execute external program 'ccextractor'", then "Error while
+#    reading input", then "0 titles saved, 1 failed" — and still exits 0.
+#    Blu-rays author subtitles as PGS and never reach it, which is why this
+#    read as complete for two months and then broke on the first DVD
+#    (The Punisher, 2026-08-27: the 2:18 feature would not rip while all
+#    five caption-free extras did).
+#  - `mmgplsrv` is the GPL decode helper. Here it currently logs MSG:4041
+#    and carries on, so it looks like noise — but in rip-deck, which runs
+#    the same transplant on the same base, the same absence produced
+#    MSG:5069 "Backup failed". Treat it as the same class of latent defect,
+#    not as a warning.
+#
+# ⚠️ The three-file form below is LIFTED FROM rip-deck, which hit this first
+# and solved it properly. Do not simplify it back to just the loader — that
+# was tried here on 2026-08-27, and it fixes mmccextr while leaving mmgplsrv
+# broken.
+#
+#  - `/lib/ld-musl-x86_64.so.1` goes at that exact path because it is the
+#    PT_INTERP compiled into both binaries. Nothing else in a Debian image
+#    looks there, so it collides with nothing. musl's loader IS its libc,
+#    which is why the SONAME symlink beside it is enough for `libc.musl`.
+#  - `libstdc++` and `libgcc_s` go in their OWN prefix, found through
+#    `/etc/ld-musl-x86_64.path` — a file only a musl loader ever reads.
+#    ⚠️ Do NOT put Alpine's libstdc++.so.6 in /usr/lib instead. It would
+#    shadow Debian's for every glibc binary in the image, starting with
+#    `node`.
+#
+# This does not make the image musl-compatible and must not be grown into
+# that. It is two binaries, three files, and a search path nothing else
+# consults.
 COPY --from=makemkv /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1
-RUN ln -sf /lib/ld-musl-x86_64.so.1 /lib/libc.musl-x86_64.so.1
+COPY --from=makemkv /usr/lib/libstdc++.so.6.0.32 /opt/makemkv-musl/lib/
+COPY --from=makemkv /usr/lib/libgcc_s.so.1 /opt/makemkv-musl/lib/
+RUN ln -sf /lib/ld-musl-x86_64.so.1 /lib/libc.musl-x86_64.so.1 \
+  && ln -sf libstdc++.so.6.0.32 /opt/makemkv-musl/lib/libstdc++.so.6 \
+  && echo /opt/makemkv-musl/lib > /etc/ld-musl-x86_64.path
 
-# mmccextr, asserted rather than assumed — for the same reason the
-# makemkvcon assertion above exists. Without this, a musl bump in the
-# upstream MakeMKV image comes back as one silently unrippable DVD title
-# rather than as a build failure. mmccextr prints its banner and exits 0
-# when run with no arguments.
+# Both helpers, asserted rather than assumed — for the same reason the
+# makemkvcon assertion above exists, and because that assertion CANNOT reach
+# them: `info disc:9999` spawns neither. Without these, a musl or libstdc++
+# bump upstream comes back as one silently unrippable DVD title instead of a
+# build failure.
+#
+# mmccextr prints its banner and exits 0 with no arguments. mmgplsrv exits
+# non-zero and prints usage, which is fine — the failure being guarded
+# against is the binary not STARTING, which the shell reports as
+# "not found", indistinguishable from a missing file. So that one checks for
+# the absence of a string rather than for an exit code.
 RUN mmccextr | grep -q 'CCExtractor'
+RUN ! /opt/makemkv/bin/mmgplsrv --help 2>&1 | grep -qE 'not found|Error loading shared library'
 
 # fpcalc, asserted rather than assumed. The apt package name
 # (libchromaprint-tools) does not contain the binary name (fpcalc), so a
