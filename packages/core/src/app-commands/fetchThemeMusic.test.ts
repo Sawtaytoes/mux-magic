@@ -5,12 +5,14 @@ import { beforeEach, expect, test, vi } from "vitest"
 import { fetchThemeMusic } from "./fetchThemeMusic.js"
 
 vi.mock("../tools/animeThemesApi.js", () => ({
-  getAnimeTheme: vi.fn(),
+  getAnimeThemeWithMainShowFallback: vi.fn(),
 }))
 
-import { getAnimeTheme } from "../tools/animeThemesApi.js"
+import { getAnimeThemeWithMainShowFallback } from "../tools/animeThemesApi.js"
 
-const getMockedAnimeTheme = vi.mocked(getAnimeTheme)
+const getMockedAnimeTheme = vi.mocked(
+  getAnimeThemeWithMainShowFallback,
+)
 
 beforeEach(() => {
   vol.reset()
@@ -25,8 +27,10 @@ test("writes a review manifest without writing theme files", async () => {
   getMockedAnimeTheme.mockResolvedValue({
     artist: "Masayuki Suzuki",
     audioUrl: "https://a.animethemes.moe/example.ogg",
+    fallbackAnidbId: null,
     slug: "kaguya",
     song: "Love Dramatic",
+    source: "own",
   })
 
   const records = await firstValueFrom(
