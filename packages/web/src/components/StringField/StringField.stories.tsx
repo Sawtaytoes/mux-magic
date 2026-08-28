@@ -63,3 +63,23 @@ export const Required: Story = {
     },
   },
 }
+
+export const WithReleaseLookup: Story = {
+  args: {
+    step: {
+      ...baseStep,
+      params: {
+        releaseId: "7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4",
+        releaseName:
+          "Example Album (2016) — Example Artist",
+      },
+    },
+    field: {
+      name: "releaseId",
+      type: "string",
+      label: "MusicBrainz Release",
+      lookupType: "musicbrainz",
+      companionNameField: "releaseName",
+    },
+  },
+}

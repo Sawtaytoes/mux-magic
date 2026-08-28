@@ -35,4 +35,10 @@ export const LOOKUP_LINKS: Record<
     buildUrl: (id, params) =>
       `https://www.dvdcompare.net/comparisons/film.php?fid=${id}#${params?.dvdCompareReleaseHash ?? 1}`,
   },
+  musicbrainz: {
+    label: "open on MusicBrainz",
+    homeUrl: "https://musicbrainz.org/",
+    buildUrl: (id) =>
+      `https://musicbrainz.org/release/${encodeURIComponent(String(id))}`,
+  },
 }

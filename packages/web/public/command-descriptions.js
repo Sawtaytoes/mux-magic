@@ -38,10 +38,20 @@ window.commandDescriptions = {
     }
   },
   "matchMusicBrainzRelease": {
-    "summary": "Cluster a folder's audio files into candidate albums from their existing tags, search MusicBrainz for each cluster, and attach ranked releases with a proposed tag set per file. Read-only — the tag table is where a match is accepted.",
+    "summary": "Cluster a folder's audio files into candidate albums, or use a selected MusicBrainz release UUID, and attach ranked releases with a proposed tag set per file. Read-only — the tag table is where a match is accepted.",
     "fields": {
       "candidateFetchLimit": "How many ranked releases are fetched in full and offered per row. MusicBrainz allows one request per second, so each extra candidate costs about a second per album. Five covers the usual wrong-country or wrong-year correction.",
       "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "releaseId": "A selected MusicBrainz release UUID. When set, the matcher reads this release directly instead of searching by the current tags.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
+  "matchMusicRelease": {
+    "summary": "Match a folder against MusicBrainz, VGMdb and freedb in that order, then combine every candidate into one tag review table. One provider failure does not prevent the other two from running. Read-only.",
+    "fields": {
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "language": "Which title language to ask VGMdb for. MusicBrainz and freedb ignore this field.",
       "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
       "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
     }
@@ -56,13 +66,14 @@ window.commandDescriptions = {
     }
   },
   "matchVgmdbRelease": {
-    "summary": "Match a folder against VGMdb for game and anime soundtracks, which MusicBrainz covers badly. VGMdb identifies a whole disc by track count and total playing time, so point this at ONE disc — a flattened multi-disc folder will not match. Read-only; the tag table is where a match is accepted.",
+    "summary": "Match a folder against VGMdb for game and anime soundtracks, optionally constrained to a selected VGMdb album ID. VGMdb identifies a whole disc by track count and total playing time, so point this at ONE disc. Read-only; the tag table is where a match is accepted.",
     "fields": {
       "candidateLimit": "How many matched VGMdb albums to read in full and offer per row. The common case is the same album released in three regions, which two or three settles.",
       "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
       "language": "Which title language to ask VGMdb for. It reverts to the default when an album carries no title in the language you asked for, so two settings can return the same text.",
       "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
-      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka.",
+      "vgmdbAlbumId": "A VGMdb album ID from an album URL. When set, the matcher keeps only the disc whose canonical VGMdb URL has this ID."
     }
   },
   "writeAudioTags": {

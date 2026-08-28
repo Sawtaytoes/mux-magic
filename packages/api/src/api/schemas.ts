@@ -1991,6 +1991,45 @@ export const searchMovieDbResponseSchema = z.object({
     ),
 })
 
+export const searchMusicBrainzReleaseResultSchema =
+  z.object({
+    artistName: z
+      .string()
+      .describe("The release artist credit"),
+    country: z
+      .string()
+      .optional()
+      .describe("The release country code"),
+    format: z
+      .string()
+      .optional()
+      .describe("The media formats on this release"),
+    label: z
+      .string()
+      .optional()
+      .describe("The release label"),
+    releaseId: z
+      .string()
+      .describe("MusicBrainz release UUID"),
+    releaseTitle: z.string().describe("Album title"),
+    trackCount: z.number().describe("Total track count"),
+    year: z.string().optional().describe("Release year"),
+  })
+
+export const searchMusicBrainzReleaseResponseSchema =
+  z.object({
+    results: z
+      .array(searchMusicBrainzReleaseResultSchema)
+      .describe("MusicBrainz release search results"),
+    error: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "Error message if the search failed. When present, results is empty.",
+      ),
+  })
+
 export const searchDvdCompareResultSchema = z.object({
   baseTitle: z
     .string()
@@ -2465,9 +2504,27 @@ export const matchMusicBrainzReleaseRequestSchema =
         "How many ranked releases are fetched in full and offered per row. MusicBrainz allows one request per second, so each extra candidate costs about a second per album. Five covers the usual wrong-country or wrong-year correction.",
       ),
     isRecursive: musicIsRecursiveSchema,
+    releaseId: z
+      .string()
+      .optional()
+      .describe(
+        "A selected MusicBrainz release UUID. When set, the matcher reads this release directly instead of searching by the current tags.",
+      ),
     recursiveDepth: musicRecursiveDepthSchema,
     sourcePath: musicSourcePathSchema,
   })
+
+export const matchMusicReleaseRequestSchema = z.object({
+  isRecursive: musicIsRecursiveSchema,
+  language: z
+    .enum(["default", "en", "ja", "ja-Latn"])
+    .default("default")
+    .describe(
+      "Which title language to ask VGMdb for. MusicBrainz and freedb ignore this field.",
+    ),
+  recursiveDepth: musicRecursiveDepthSchema,
+  sourcePath: musicSourcePathSchema,
+})
 
 // The tag fields a bulk edit can set. Deliberately flat rather than a
 // nested `tags` object: the builder renders one input per field, and a
@@ -2500,6 +2557,14 @@ export const matchVgmdbReleaseRequestSchema = z.object({
     ),
   recursiveDepth: musicRecursiveDepthSchema,
   sourcePath: musicSourcePathSchema,
+  vgmdbAlbumId: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe(
+      "A VGMdb album ID from an album URL. When set, the matcher keeps only the disc whose canonical VGMdb URL has this ID.",
+    ),
 })
 
 export const writeAudioTagsRequestSchema = z.object({

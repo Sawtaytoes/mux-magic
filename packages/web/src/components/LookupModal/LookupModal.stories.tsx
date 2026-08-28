@@ -112,6 +112,28 @@ const dvdCompareVariantPickerState = {
   },
 } satisfies LookupState
 
+const musicBrainzWithResultsState = {
+  ...empty,
+  lookupType: "musicbrainz" as const,
+  stepId: "s4",
+  fieldName: "releaseId",
+  companionNameField: "releaseName",
+  stage: "search" as const,
+  searchTerm: "Example Album",
+  results: [
+    {
+      artistName: "Example Artist",
+      country: "JP",
+      format: "CD",
+      label: "Example Records",
+      releaseId: "7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4",
+      releaseTitle: "Example Album",
+      trackCount: 14,
+      year: "2016",
+    },
+  ],
+} satisfies LookupState
+
 export const MalSearch: Story = {
   parameters: { initialState: malSearchState },
   render: () => (
@@ -140,6 +162,20 @@ export const DvdCompareVariantPicker: Story = {
     <>
       <ReOpenButton
         initialState={dvdCompareVariantPickerState}
+      />
+      <LookupModal />
+    </>
+  ),
+}
+
+export const MusicBrainzWithResults: Story = {
+  parameters: {
+    initialState: musicBrainzWithResultsState,
+  },
+  render: () => (
+    <>
+      <ReOpenButton
+        initialState={musicBrainzWithResultsState}
       />
       <LookupModal />
     </>

@@ -156,6 +156,7 @@ Assistant's API is a better door than its database file. See [§9](#9-open-quest
 | --- | --- | --- |
 | `scanAudioFiles` | Walk a folder. Read existing tags, duration, codec, bit depth, sample rate. Emits the row set every later step consumes. | ✅ |
 | `fingerprintAudioFiles` | Run `fpcalc` per file, query AcoustID, attach recording ids and scores. | ✅ |
+| `matchMusicRelease` | Try MusicBrainz, VGMdb and freedb in the settled order, then combine their candidates into one review table. | ✅ |
 | `matchMusicBrainzRelease` | Cluster files into an album, search MusicBrainz, rank candidate releases, attach ranked candidates per file. | ✅ |
 | `matchVgmdbRelease` | The same for VGMdb — game and anime soundtracks that MusicBrainz covers badly. This is the MP3Tag script being replaced. | ✅ |
 | `matchFreedbRelease` | The same again for general **freedb** — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. | ✅ |
@@ -437,6 +438,9 @@ type has carried `source: "musicbrainz" | "vgmdb"` since it was written.
 
 **The provider order, settled 2026-08-25.** MusicBrainz first, VGMdb second for game
 and anime soundtracks, **general freedb third** for discs neither has ever heard of.
+The provider-neutral `matchMusicRelease` command runs all three in that order and
+combines their candidates. The three provider-specific commands remain for an explicit
+provider or release choice.
 
 freedb is last on purpose. It is user-submitted CD metadata with no editorial review,
 so its titles are frequently abbreviated, mis-cased or plain wrong, and it carries no

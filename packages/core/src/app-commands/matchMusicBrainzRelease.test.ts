@@ -266,6 +266,32 @@ describe(matchMusicBrainzRelease.name, () => {
     expect(cachedFetch).toHaveBeenCalledTimes(2)
   })
 
+  test("a selected release id skips search and fetches that release directly", async () => {
+    vol.fromJSON({ "/inbox/01.flac": "x" })
+    mockTagsByPath({
+      "/inbox/01.flac": {
+        album: "It Takes a Nation of Millions",
+        albumArtist: "Public Enemy",
+        title: "Bring the Noise",
+        trackNumber: 1,
+      },
+    })
+    const cachedFetch = buildCachedFetch()
+
+    await firstValueFrom(
+      matchMusicBrainzRelease({
+        cachedFetch,
+        releaseId: RELEASE_ID,
+        sourcePath: "/inbox",
+      }),
+    )
+
+    expect(cachedFetch).toHaveBeenCalledOnce()
+    expect(cachedFetch.mock.calls[0][0]).toContain(
+      `/release/${RELEASE_ID}`,
+    )
+  })
+
   // Regression, found by running this against the live MusicBrainz service.
   // `tracks:<n>` is a hard Lucene filter: two tracks of a sixteen-track album
   // matched nothing and every row came back with no candidates.

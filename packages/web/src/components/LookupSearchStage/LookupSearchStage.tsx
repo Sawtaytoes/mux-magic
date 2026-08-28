@@ -6,6 +6,7 @@ import type {
   SearchDvdCompareResponse,
   SearchMalResponse,
   SearchMovieDbResponse,
+  SearchMusicBrainzReleaseResponse,
   SearchTvdbResponse,
 } from "@mux-magic/api/api-types"
 import { useEffect, useRef } from "react"
@@ -19,7 +20,7 @@ import type {
 } from "../../components/LookupModal/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 
-// Union of all five search endpoints' response envelopes. The
+// Union of all search endpoints' response envelopes. The
 // per-endpoint discriminator lives in `results[number]`, not on the
 // envelope itself, so the narrowing happens after we know which lookup
 // type was requested.
@@ -30,6 +31,7 @@ type AnySearchResponse =
   | SearchTvdbResponse
   | SearchMovieDbResponse
   | SearchDvdCompareResponse
+  | SearchMusicBrainzReleaseResponse
 
 const SEARCH_ENDPOINTS: Record<LookupType, string> = {
   mal: "/queries/searchMal",
@@ -37,6 +39,7 @@ const SEARCH_ENDPOINTS: Record<LookupType, string> = {
   tvdb: "/queries/searchTvdb",
   tmdb: "/queries/searchMovieDb",
   dvdcompare: "/queries/searchDvdCompare",
+  musicbrainz: "/queries/searchMusicBrainzReleases",
 }
 
 const groupDvdCompareResults = (
@@ -378,18 +381,41 @@ export const LookupSearchStage = ({
                   name?: string
                   nameJapanese?: string
                   title?: string
+                  releaseId?: string
+                  releaseTitle?: string
+                  artistName?: string
+                  trackCount?: number
+                  format?: string
+                  country?: string
+                  label?: string
                 }
               const baseLabel =
-                state.lookupType === "tmdb"
-                  ? (typedResult.title ?? "—")
-                  : (typedResult.name ??
-                    typedResult.baseTitle ??
-                    "—")
+                state.lookupType === "musicbrainz"
+                  ? (typedResult.releaseTitle ?? "—")
+                  : state.lookupType === "tmdb"
+                    ? (typedResult.title ?? "—")
+                    : (typedResult.name ??
+                      typedResult.baseTitle ??
+                      "—")
               const label = typedResult.year
                 ? `${baseLabel} (${typedResult.year})`
                 : baseLabel
               const japaneseSubtitle =
                 typedResult.nameJapanese
+              const releaseSubtitle =
+                state.lookupType === "musicbrainz"
+                  ? [
+                      typedResult.artistName,
+                      typedResult.format,
+                      typedResult.country,
+                      typedResult.trackCount === undefined
+                        ? undefined
+                        : `${typedResult.trackCount} tracks`,
+                      typedResult.label,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
+                  : null
               const keyHint =
                 index < 9 ? (
                   <span className="text-xs font-mono bg-surface-sunken px-1 rounded me-2 shrink-0">
@@ -448,6 +474,13 @@ export const LookupSearchStage = ({
                     displayName = typedResult.year
                       ? `${typedResult.title} (${typedResult.year})`
                       : (typedResult.title ?? "")
+                  } else if (
+                    state.lookupType === "musicbrainz"
+                  ) {
+                    id = typedResult.releaseId
+                    displayName = typedResult.artistName
+                      ? `${label} — ${typedResult.artistName}`
+                      : label
                   }
                   if (id !== undefined) {
                     // Write number to the primary numeric field, and
@@ -492,6 +525,11 @@ export const LookupSearchStage = ({
                   {japaneseSubtitle && (
                     <div className="text-xs text-content-muted mt-0.5 truncate">
                       {japaneseSubtitle}
+                    </div>
+                  )}
+                  {releaseSubtitle && (
+                    <div className="text-xs text-content-muted mt-0.5 truncate">
+                      {releaseSubtitle}
                     </div>
                   )}
                 </button>
