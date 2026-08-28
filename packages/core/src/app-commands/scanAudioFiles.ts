@@ -120,7 +120,9 @@ export const scanAudioFilesStream = ({
     filter((fileInfo) =>
       isAudioFilePath(fileInfo.fullPath),
     ),
-    withFileProgress((fileInfo) => scanOneFile(fileInfo)),
+    withFileProgress((fileInfo) => scanOneFile(fileInfo), {
+      isStreaming: true,
+    }),
     logAndRethrowPipelineError(scanAudioFilesStream),
   )
 

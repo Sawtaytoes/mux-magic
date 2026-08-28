@@ -244,11 +244,13 @@ export const findDuplicateAudioFiles = ({
                   ): record is ScanAudioFilesScannedRecord =>
                     record.kind === "scanned",
                 ),
-                withFileProgress((record) =>
-                  examineOneFile({
-                    isFingerprintCompared,
-                    record,
-                  }),
+                withFileProgress(
+                  (record) =>
+                    examineOneFile({
+                      isFingerprintCompared,
+                      record,
+                    }),
+                  { isStreaming: true },
                 ),
                 filter(
                   getIsPotentialSourceMatch({
