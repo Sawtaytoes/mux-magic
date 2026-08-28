@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-08-28 | [Related anime themes require review](2026-08-28-related-anime-themes-require-review.md) | core / cli | Accepted |
 | 2026-08-28 | [Discogs is the third music-release matcher](2026-08-28-discogs-is-the-third-music-release-matcher.md) | core / api / web | Accepted |
 | 2026-08-28 | [Automatic music matching tries every provider; specific matchers own release selection](2026-08-28-auto-music-matching-tries-every-provider-and-specific-matchers-own-release-lookup.md) | core / api / web | Accepted |
 | 2026-08-27 | [Assert every `/opt/makemkv` binary you actually run; the transplant is not fully self-contained (and read rip-deck's Dockerfile first)](2026-08-27-the-makemkv-transplant-is-not-self-contained-mmccextr-is-musl.md) | infra | Accepted |
