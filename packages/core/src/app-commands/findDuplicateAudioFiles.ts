@@ -7,6 +7,7 @@ import {
 import {
   catchError,
   concatMap,
+  filter,
   from,
   map,
   of,
@@ -16,6 +17,7 @@ import {
 import { runFpcalc } from "../cli-spawn-operations/runFpcalc.js"
 import { getAudioContentHash } from "../music/duplicates/audioContentHash.js"
 import {
+  buildTagGroupKey,
   type DuplicateCandidate,
   type DuplicateGroup,
   groupDuplicateCandidates,
@@ -24,11 +26,15 @@ import {
   type RankedDuplicateCopy,
   rankDuplicateCopies,
 } from "../music/duplicates/rankDuplicateCopies.js"
-import type { AudioFileInfo } from "../music/tags/audioTagFields.js"
+import type {
+  AudioFileInfo,
+  AudioTags,
+} from "../music/tags/audioTagFields.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import {
   type ScanAudioFilesScannedRecord,
   scanAudioFiles,
+  scanAudioFilesStream,
 } from "./scanAudioFiles.js"
 
 // Phase 8 of the Picard replacement: find the copies, rank them, and
@@ -120,6 +126,55 @@ const toCandidate = (
   tags: examined.record.tags,
 })
 
+const getHasUsableTagKey = (tags: AudioTags) =>
+  tags.title !== undefined &&
+  tags.title.trim().length > 0 &&
+  ((tags.albumArtist ?? tags.artist ?? "").trim().length >
+    0 ||
+    (tags.album ?? "").trim().length > 0)
+
+// A comparison scan can cover the whole library. Keep source files and
+// library files that can actually match a source file, rather than keeping
+// every decoded hash and tag set until grouping. This is both the same
+// result and bounded memory: a source album is small, and unrelated library
+// tracks can never appear in the returned table.
+const getIsPotentialSourceMatch = ({
+  sourceCandidates,
+}: {
+  sourceCandidates: DuplicateCandidate[]
+}) => {
+  const sourceHashes = new Set(
+    sourceCandidates
+      .map((candidate) => candidate.audioContentHash)
+      .filter((hash): hash is string => hash !== null),
+  )
+  const sourceFingerprints = new Set(
+    sourceCandidates
+      .map((candidate) => candidate.fingerprint)
+      .filter(
+        (fingerprint): fingerprint is string =>
+          fingerprint !== null,
+      ),
+  )
+  const sourceTagKeys = new Set(
+    sourceCandidates
+      .filter((candidate) =>
+        getHasUsableTagKey(candidate.tags),
+      )
+      .map((candidate) => buildTagGroupKey(candidate.tags)),
+  )
+
+  return (examined: ExaminedFile) =>
+    (examined.audioContentHash !== null &&
+      sourceHashes.has(examined.audioContentHash)) ||
+    (examined.fingerprint !== null &&
+      sourceFingerprints.has(examined.fingerprint)) ||
+    (getHasUsableTagKey(examined.record.tags) &&
+      sourceTagKeys.has(
+        buildTagGroupKey(examined.record.tags),
+      ))
+}
+
 const toGroupRecord = ({
   group,
   infoByPath,
@@ -167,27 +222,7 @@ export const findDuplicateAudioFiles = ({
       ),
     ),
     concatMap((sourceRecords) =>
-      comparisonPath === undefined
-        ? of(sourceRecords)
-        : scanAudioFiles({
-            isRecursive: true,
-            recursiveDepth: comparisonRecursiveDepth,
-            sourcePath: comparisonPath,
-          }).pipe(
-            map((comparisonRecords) =>
-              sourceRecords.concat(
-                comparisonRecords.filter(
-                  (
-                    record,
-                  ): record is ScanAudioFilesScannedRecord =>
-                    record.kind === "scanned",
-                ),
-              ),
-            ),
-          ),
-    ),
-    concatMap((scannedRecords) =>
-      from(scannedRecords).pipe(
+      from(sourceRecords).pipe(
         withFileProgress((record) =>
           examineOneFile({
             isFingerprintCompared,
@@ -195,6 +230,40 @@ export const findDuplicateAudioFiles = ({
           }),
         ),
         toArray(),
+        concatMap((sourceExaminedFiles) =>
+          comparisonPath === undefined
+            ? of(sourceExaminedFiles)
+            : scanAudioFilesStream({
+                isRecursive: true,
+                recursiveDepth: comparisonRecursiveDepth,
+                sourcePath: comparisonPath,
+              }).pipe(
+                filter(
+                  (
+                    record,
+                  ): record is ScanAudioFilesScannedRecord =>
+                    record.kind === "scanned",
+                ),
+                withFileProgress((record) =>
+                  examineOneFile({
+                    isFingerprintCompared,
+                    record,
+                  }),
+                ),
+                filter(
+                  getIsPotentialSourceMatch({
+                    sourceCandidates:
+                      sourceExaminedFiles.map(toCandidate),
+                  }),
+                ),
+                toArray(),
+                map((matchingComparisonFiles) =>
+                  sourceExaminedFiles.concat(
+                    matchingComparisonFiles,
+                  ),
+                ),
+              ),
+        ),
       ),
     ),
     map((examinedFiles) =>
