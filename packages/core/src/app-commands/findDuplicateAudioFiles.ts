@@ -54,6 +54,8 @@ export type FindDuplicateAudioFilesGroupRecord = {
 }
 
 export type FindDuplicateAudioFilesProps = {
+  comparisonPath?: string
+  comparisonRecursiveDepth?: number
   isFingerprintCompared?: boolean
   isRecursive?: boolean
   recursiveDepth?: number
@@ -142,6 +144,8 @@ const toGroupRecord = ({
 })
 
 export const findDuplicateAudioFiles = ({
+  comparisonPath,
+  comparisonRecursiveDepth = 3,
   // Off by default. The audio hash already catches every same-encoding
   // copy, and fingerprinting adds a two-minute decode per file to catch
   // the FLAC-beside-MP3 case, which is worth asking for rather than
@@ -162,6 +166,26 @@ export const findDuplicateAudioFiles = ({
           record.kind === "scanned",
       ),
     ),
+    concatMap((sourceRecords) =>
+      comparisonPath === undefined
+        ? of(sourceRecords)
+        : scanAudioFiles({
+            isRecursive: true,
+            recursiveDepth: comparisonRecursiveDepth,
+            sourcePath: comparisonPath,
+          }).pipe(
+            map((comparisonRecords) =>
+              sourceRecords.concat(
+                comparisonRecords.filter(
+                  (
+                    record,
+                  ): record is ScanAudioFilesScannedRecord =>
+                    record.kind === "scanned",
+                ),
+              ),
+            ),
+          ),
+    ),
     concatMap((scannedRecords) =>
       from(scannedRecords).pipe(
         withFileProgress((record) =>
@@ -179,17 +203,35 @@ export const findDuplicateAudioFiles = ({
           "findDuplicateAudioFiles",
           `${examinedFiles.length} audio files in ${groups.length} duplicate groups.`,
         )
-        return groups.map((group) =>
-          toGroupRecord({
-            group,
-            infoByPath: new Map(
-              examinedFiles.map((examined) => [
-                examined.record.filePath,
-                examined.info,
-              ]),
-            ),
-          }),
+        const sourceFilePaths = new Set(
+          examinedFiles
+            .filter(
+              (examined) =>
+                sourcePath === "/" ||
+                examined.record.filePath === sourcePath ||
+                examined.record.filePath.startsWith(
+                  `${sourcePath}/`,
+                ),
+            )
+            .map((examined) => examined.record.filePath),
         )
+        return groups
+          .filter((group) =>
+            group.filePaths.some((filePath) =>
+              sourceFilePaths.has(filePath),
+            ),
+          )
+          .map((group) =>
+            toGroupRecord({
+              group,
+              infoByPath: new Map(
+                examinedFiles.map((examined) => [
+                  examined.record.filePath,
+                  examined.info,
+                ]),
+              ),
+            }),
+          )
       })(
         groupDuplicateCandidates({
           candidates: examinedFiles.map(toCandidate),

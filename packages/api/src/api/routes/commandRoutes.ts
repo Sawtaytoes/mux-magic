@@ -248,6 +248,9 @@ export const commandConfigs: Record<
   findDuplicateAudioFiles: {
     getObservable: (body) =>
       findDuplicateAudioFiles({
+        comparisonPath: body.comparisonPath,
+        comparisonRecursiveDepth:
+          body.comparisonRecursiveDepth,
         isFingerprintCompared: body.isFingerprintCompared,
         isRecursive: body.isRecursive,
         recursiveDepth: body.recursiveDepth,
@@ -273,7 +276,7 @@ export const commandConfigs: Record<
     }),
     schema: schemas.findDuplicateAudioFilesRequestSchema,
     summary:
-      "Find duplicate audio files by identical decoded audio, by AcoustID fingerprint, or by tags, and rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, the compare table confirms, and nothing is deleted here.",
+      "Find duplicates inside the source or against an optional library path. Match by identical decoded audio, by AcoustID fingerprint, or by tags, then rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, the compare table confirms, and nothing is deleted here.",
     tags: ["Music Tagging"],
   },
   fingerprintAudioFiles: {

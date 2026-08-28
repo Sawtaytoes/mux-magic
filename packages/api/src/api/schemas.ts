@@ -2466,6 +2466,18 @@ export const scanAudioFilesRequestSchema = z.object({
 
 export const findDuplicateAudioFilesRequestSchema =
   z.object({
+    comparisonPath: z
+      .string()
+      .optional()
+      .describe(
+        "Optional library or other tree to compare with the source. Only duplicate groups that include a source file are reported.",
+      ),
+    comparisonRecursiveDepth: z
+      .number()
+      .default(3)
+      .describe(
+        "How many folder levels below the comparison path to scan. Three covers the normal Artist/Album/track library layout.",
+      ),
     isFingerprintCompared: z
       .boolean()
       .default(false)
