@@ -46,6 +46,7 @@ import {
   isMissingSubtitlesRequestSchema,
   keepLanguagesRequestSchema,
   makeDirectoryRequestSchema,
+  matchDiscogsReleaseRequestSchema,
   matchFreedbReleaseRequestSchema,
   matchMusicBrainzReleaseRequestSchema,
   matchMusicReleaseRequestSchema,
@@ -253,7 +254,7 @@ export const COMMANDS: Commands = {
     )
     return {
       summary:
-        "Try MusicBrainz, VGMdb and freedb in that order, then combine every candidate into one tag review table. This is the normal automatic matcher.",
+        "Try MusicBrainz, VGMdb, Discogs and freedb in that order, then combine every candidate into one tag review table. This is the normal automatic matcher.",
       tag: "Music Tagging",
       outputFolderName: null,
       outputs: [
@@ -289,13 +290,49 @@ export const COMMANDS: Commands = {
       ],
     }
   })(),
+  matchDiscogsRelease: (() => {
+    const field = fieldBuilder(
+      matchDiscogsReleaseRequestSchema,
+    )
+    return {
+      summary:
+        "Search Discogs by artist and album, then compare its release tracks to the folder. Opens the tag review table when the run finishes.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      outputs: [
+        {
+          name: "matchedFilePaths",
+          label: "Matched files",
+        },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Music Folder",
+        }),
+        field("candidateFetchLimit", {
+          type: "number",
+          label: "Candidate releases per row",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
   matchFreedbRelease: (() => {
     const field = fieldBuilder(
       matchFreedbReleaseRequestSchema,
     )
     return {
       summary:
-        "Match a folder against general freedb — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. Its data is user-submitted and unreviewed, so run it last. Point it at ONE disc. Read-only.",
+        "Match a folder against general freedb — the FOURTH fallback, for discs MusicBrainz, VGMdb and Discogs miss. Its data is user-submitted and unreviewed, so run it last. Point it at ONE disc. Read-only.",
       note: "freedb has no album-name search or stable album ID. It can only identify a disc from its track count and track durations.",
       tag: "Music Tagging",
       outputFolderName: null,

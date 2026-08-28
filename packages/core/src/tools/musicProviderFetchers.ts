@@ -86,11 +86,19 @@ export const vgmdbCddbCachedFetch = buildFetcher({
   provider: "vgmdbCddb",
 })
 
-// General freedb, the third fallback. Its own limiter, so a freedb pass
+// General freedb, the fourth fallback. Its own limiter, so a freedb pass
 // cannot eat VGMdb's interval or the other way round.
 export const freedbCddbCachedFetch = buildFetcher({
   minimumRequestIntervalMilliseconds: 500,
   provider: "freedbCddb",
+})
+
+// Anonymous Discogs clients receive 25 requests per minute. The full release
+// fetches share this limiter with search requests, so a library pass stays
+// below that published limit without requiring a personal access token.
+export const discogsCachedFetch = buildFetcher({
+  minimumRequestIntervalMilliseconds: 2_500,
+  provider: "discogs",
 })
 
 export const coverArtCachedFetch = buildFetcher({

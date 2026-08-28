@@ -518,7 +518,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            commandNames: ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags")[];
+                            commandNames: ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchDiscogsRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags")[];
                         };
                     };
                 };
@@ -663,7 +663,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Match a folder against MusicBrainz, VGMdb and freedb in that order, then combine every candidate into one tag review table. One provider failure does not prevent the other two from running. Read-only. */
+        /** Match a folder against MusicBrainz, VGMdb, Discogs and freedb in that order, then combine every candidate into one tag review table. One provider failure does not prevent the others from running. Read-only. */
         post: {
             parameters: {
                 query?: never;
@@ -799,6 +799,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/commands/matchDiscogsRelease": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Match a folder against Discogs by artist and album, then compare the returned release tracks to its files. Discogs has no CDDB endpoint, so a flattened multi-disc folder is supported. Read-only; the tag table is where a match is accepted. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * @description How many ranked Discogs releases are read in full and offered per row. Anonymous Discogs access permits 25 requests per minute, so each extra candidate costs about two and a half seconds.
+                         * @default 5
+                         */
+                        candidateFetchLimit?: number;
+                        /**
+                         * @description Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.
+                         * @default false
+                         */
+                        isRecursive?: boolean;
+                        /**
+                         * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
+                         * @default 1
+                         */
+                        recursiveDepth?: number;
+                        /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
+                        sourcePath: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/commands/matchFreedbRelease": {
         parameters: {
             query?: never;
@@ -808,7 +879,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Match a folder against general freedb — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. freedb is user-submitted CD metadata with no editorial review and no ids to link back to, so run it last. Like VGMdb it identifies a whole disc by track count and total playing time, so point it at ONE disc. Read-only. */
+        /** Match a folder against general freedb — the FOURTH fallback, for discs MusicBrainz, VGMdb and Discogs miss. freedb is user-submitted CD metadata with no editorial review and no ids to link back to, so run it last. Like VGMdb it identifies a whole disc by track count and total playing time, so point it at ONE disc. Read-only. */
         post: {
             parameters: {
                 query?: never;
@@ -8130,7 +8201,7 @@ export interface components {
             /** @description Optional human-readable alias. Surfaced by the builder UI's step header; ignored at runtime. */
             alias?: string;
             /** @description Name of the registered command to run. Must be one of the names listed at `GET /commands` (or surfaced individually as `POST /commands/<name>` endpoints). Empty string `''` marks a placeholder/blank step from the Builder UI — the runner skips it as a no-op so YAML round-trips don't lose the slot. */
-            command: "" | ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags");
+            command: "" | ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchDiscogsRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags");
             /** @description Command params. Each value can be a literal (string / number / boolean / array / object), a `'@pathId'` path-variable reference, or a `{ linkedTo, output }` step-output reference. Per-command param shapes are documented under `POST /commands/<command>` — the same schema each command exposes for direct invocation also applies here once references are resolved. */
             params?: {
                 [key: string]: unknown;

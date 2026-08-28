@@ -5,7 +5,7 @@ import {
   matchCddbRelease,
 } from "./matchVgmdbRelease.js"
 
-// The THIRD fallback, and only that.
+// The FOURTH fallback, and only that.
 //
 // The order the owner settled: MusicBrainz first, VGMdb second for game
 // and anime soundtracks, and general freedb for what neither of them has
@@ -15,7 +15,7 @@ import {
 // no recording ids and no release ids to link back to.
 //
 // It is worth having anyway, because the discs it does know are exactly
-// the ones the other two miss: obscure pressings, regional releases and
+// the ones the other three miss: obscure pressings, regional releases and
 // old commercial CDs nobody ever added to MusicBrainz.
 //
 // Identical machinery to `matchVgmdbRelease` — same protocol, same disc

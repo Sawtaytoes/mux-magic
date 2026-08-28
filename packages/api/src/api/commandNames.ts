@@ -12,6 +12,7 @@ export const commandNames = [
   "makeDirectory",
   "matchMusicRelease",
   "matchMusicBrainzRelease",
+  "matchDiscogsRelease",
   "matchFreedbRelease",
   "matchVgmdbRelease",
   "changeTrackLanguages",

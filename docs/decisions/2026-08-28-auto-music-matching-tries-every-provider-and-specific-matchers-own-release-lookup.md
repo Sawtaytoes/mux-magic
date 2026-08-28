@@ -1,6 +1,9 @@
 # Automatic music matching tries every provider; specific matchers own release selection
 
-**Status:** Accepted  
+> [!WARNING]
+> Superseded by [Discogs is the third music-release matcher](2026-08-28-discogs-is-the-third-music-release-matcher.md).
+
+**Status:** Superseded by [Discogs is the third music-release matcher](2026-08-28-discogs-is-the-third-music-release-matcher.md)
 **Date:** 2026-08-28  
 **Type:** Product behavior  
 **Supersedes:** None  

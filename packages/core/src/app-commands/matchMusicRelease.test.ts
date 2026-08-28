@@ -1,6 +1,6 @@
 import { of, throwError } from "rxjs"
 import { describe, expect, test, vi } from "vitest"
-
+import { matchDiscogsRelease } from "./matchDiscogsRelease.js"
 import { matchFreedbRelease } from "./matchFreedbRelease.js"
 import {
   type MusicMatchClusterRecord,
@@ -14,6 +14,10 @@ import { matchVgmdbRelease } from "./matchVgmdbRelease.js"
 
 vi.mock("./matchFreedbRelease.js", () => ({
   matchFreedbRelease: vi.fn(),
+}))
+
+vi.mock("./matchDiscogsRelease.js", () => ({
+  matchDiscogsRelease: vi.fn(),
 }))
 
 vi.mock("./matchMusicBrainzRelease.js", () => ({
@@ -31,7 +35,7 @@ const buildCluster = ({
 }: {
   confidence: number
   releaseId: string
-  source: "freedb" | "musicbrainz" | "vgmdb"
+  source: "discogs" | "freedb" | "musicbrainz" | "vgmdb"
 }): MusicMatchClusterRecord => ({
   album: "An Album",
   albumArtist: "An Artist",
@@ -67,6 +71,13 @@ describe(mergeMusicMatchClusters.name, () => {
       [
         buildCluster({
           confidence: 0.8,
+          releaseId: "discogs",
+          source: "discogs",
+        }),
+      ],
+      [
+        buildCluster({
+          confidence: 0.8,
           releaseId: "mb",
           source: "musicbrainz",
         }),
@@ -91,7 +102,7 @@ describe(mergeMusicMatchClusters.name, () => {
       merged[0].files[0].rankedCandidates.map(
         (scored) => scored.candidate.source,
       ),
-    ).toEqual(["vgmdb", "musicbrainz", "freedb"])
+    ).toEqual(["vgmdb", "musicbrainz", "discogs", "freedb"])
   })
 
   test("uses provider order to break equal-confidence ties", () => {
@@ -121,7 +132,7 @@ describe(mergeMusicMatchClusters.name, () => {
 })
 
 describe(matchMusicRelease.name, () => {
-  test("runs all three providers and combines their results", async () => {
+  test("runs all four providers and combines their results", async () => {
     vi.mocked(matchMusicBrainzRelease).mockReturnValue(
       of([
         buildCluster({
@@ -137,6 +148,15 @@ describe(matchMusicRelease.name, () => {
           confidence: 0.9,
           releaseId: "vgm",
           source: "vgmdb",
+        }),
+      ]),
+    )
+    vi.mocked(matchDiscogsRelease).mockReturnValue(
+      of([
+        buildCluster({
+          confidence: 0.75,
+          releaseId: "discogs",
+          source: "discogs",
         }),
       ]),
     )
@@ -163,10 +183,11 @@ describe(matchMusicRelease.name, () => {
 
     expect(matchMusicBrainzRelease).toHaveBeenCalledOnce()
     expect(matchVgmdbRelease).toHaveBeenCalledOnce()
+    expect(matchDiscogsRelease).toHaveBeenCalledOnce()
     expect(matchFreedbRelease).toHaveBeenCalledOnce()
     expect(
       results[0].files[0].rankedCandidates,
-    ).toHaveLength(3)
+    ).toHaveLength(4)
   })
 
   test("continues when one provider fails", async () => {
@@ -182,6 +203,7 @@ describe(matchMusicRelease.name, () => {
         }),
       ]),
     )
+    vi.mocked(matchDiscogsRelease).mockReturnValue(of([]))
     vi.mocked(matchFreedbRelease).mockReturnValue(of([]))
 
     const results = await new Promise<

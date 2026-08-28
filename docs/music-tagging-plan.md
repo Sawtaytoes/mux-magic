@@ -156,10 +156,11 @@ Assistant's API is a better door than its database file. See [§9](#9-open-quest
 | --- | --- | --- |
 | `scanAudioFiles` | Walk a folder. Read existing tags, duration, codec, bit depth, sample rate. Emits the row set every later step consumes. | ✅ |
 | `fingerprintAudioFiles` | Run `fpcalc` per file, query AcoustID, attach recording ids and scores. | ✅ |
-| `matchMusicRelease` | Try MusicBrainz, VGMdb and freedb in the settled order, then combine their candidates into one review table. | ✅ |
+| `matchMusicRelease` | Try MusicBrainz, VGMdb, Discogs and freedb in the settled order, then combine their candidates into one review table. | ✅ |
 | `matchMusicBrainzRelease` | Cluster files into an album, search MusicBrainz, rank candidate releases, attach ranked candidates per file. | ✅ |
 | `matchVgmdbRelease` | The same for VGMdb — game and anime soundtracks that MusicBrainz covers badly. This is the MP3Tag script being replaced. | ✅ |
-| `matchFreedbRelease` | The same again for general **freedb** — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. | ✅ |
+| `matchDiscogsRelease` | Search Discogs by artist and album, then match its release tracks to the cluster. | ✅ |
+| `matchFreedbRelease` | The same again for general **freedb** — the FOURTH fallback, for discs MusicBrainz, VGMdb and Discogs miss. | ✅ |
 | `writeAudioTags` | Write the accepted tag set to the files. The only step that mutates tags. | ✅ |
 | `renameAndMoveAudioFiles` | Apply the naming template and move into the library tree. | ✅ |
 | `findDuplicateAudioFiles` | Compare candidates by fingerprint, by tags, and by decoded audio; rank which copy is better by codec, bit depth, sample rate and source. | ✅ |
@@ -436,9 +437,10 @@ The command emits the **same cluster record shape** as `matchMusicBrainzRelease`
 so the existing tag review table renders it with no UI work — the web candidate
 type has carried `source: "musicbrainz" | "vgmdb"` since it was written.
 
-**The provider order, settled 2026-08-25.** MusicBrainz first, VGMdb second for game
-and anime soundtracks, **general freedb third** for discs neither has ever heard of.
-The provider-neutral `matchMusicRelease` command runs all three in that order and
+**The provider order, updated 2026-08-28.** MusicBrainz runs first, VGMdb runs second for game
+and anime soundtracks, Discogs runs third for its more-curated release database, and
+**general freedb runs fourth** for discs the other providers do not have. The
+provider-neutral `matchMusicRelease` command runs all four in that order and
 combines their candidates. The three provider-specific commands remain for an explicit
 provider or release choice.
 
@@ -458,9 +460,10 @@ told to a service that explicitly asks developers to register. Point
 
 ⚠️ **Discogs has no CDDB interface** — checked 2026-08-25, every plausible host either
 refuses the connection or 404s. It has a proper REST API at `api.discogs.com`, whose
-unauthenticated search works, so adding it is a separate piece of work with a different
-shape: no disc id, so it matches on artist, album and track count the way MusicBrainz
-does.
+unauthenticated search works. `matchDiscogsRelease` now searches by artist and album,
+reads the shortlisted releases in full, and matches their tracks to the cluster. It uses
+the anonymous 25-requests-per-minute limit and the disposable provider cache; a token
+can raise that limit later without changing the matcher.
 
 **Phase 7 — name and move.** `renameAndMoveAudioFiles`, plus the general
 `renameFilesAndFolders` command. ⚠️ **This phase is bigger than it looks.** The naming rules
