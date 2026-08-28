@@ -69,7 +69,7 @@ export type MusicMatchReleaseCandidate = {
   // mirror of this type (`ReleaseCandidate` in `tagMatchTypes.ts`) has
   // carried the pair since it was written; the server side only caught up
   // when `matchVgmdbRelease` was built.
-  source: "freedb" | "musicbrainz" | "vgmdb"
+  source: "discogs" | "freedb" | "musicbrainz" | "vgmdb"
   trackCount?: number
   year?: string
 }

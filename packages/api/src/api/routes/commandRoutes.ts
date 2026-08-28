@@ -68,6 +68,7 @@ import {
   keepLanguages,
   keepLanguagesDefaultProps,
 } from "@mux-magic/core/src/app-commands/keepLanguages.js"
+import { matchDiscogsRelease } from "@mux-magic/core/src/app-commands/matchDiscogsRelease.js"
 import { matchFreedbRelease } from "@mux-magic/core/src/app-commands/matchFreedbRelease.js"
 import {
   type MusicMatchClusterRecord,
@@ -347,7 +348,31 @@ export const commandConfigs: Record<
     }),
     schema: schemas.matchMusicReleaseRequestSchema,
     summary:
-      "Match a folder against MusicBrainz, VGMdb and freedb in that order, then combine every candidate into one tag review table. One provider failure does not prevent the other two from running. Read-only.",
+      "Match a folder against MusicBrainz, VGMdb, Discogs and freedb in that order, then combine every candidate into one tag review table. One provider failure does not prevent the others from running. Read-only.",
+    tags: ["Music Tagging"],
+  },
+  matchDiscogsRelease: {
+    getObservable: (body) =>
+      matchDiscogsRelease({
+        candidateFetchLimit: body.candidateFetchLimit,
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      matchedFilePaths: (
+        results as MusicMatchClusterRecord[]
+      ).flatMap((cluster) =>
+        cluster.files
+          .filter(
+            (file) => file.rankedCandidates.length > 0,
+          )
+          .map((file) => file.filePath),
+      ),
+    }),
+    schema: schemas.matchDiscogsReleaseRequestSchema,
+    summary:
+      "Match a folder against Discogs by artist and album, then compare the returned release tracks to its files. Discogs has no CDDB endpoint, so a flattened multi-disc folder is supported. Read-only; the tag table is where a match is accepted.",
     tags: ["Music Tagging"],
   },
   matchFreedbRelease: {
@@ -371,7 +396,7 @@ export const commandConfigs: Record<
     }),
     schema: schemas.matchFreedbReleaseRequestSchema,
     summary:
-      "Match a folder against general freedb — the THIRD fallback, for discs neither MusicBrainz nor VGMdb has. freedb is user-submitted CD metadata with no editorial review and no ids to link back to, so run it last. Like VGMdb it identifies a whole disc by track count and total playing time, so point it at ONE disc. Read-only.",
+      "Match a folder against general freedb — the FOURTH fallback, for discs MusicBrainz, VGMdb and Discogs miss. freedb is user-submitted CD metadata with no editorial review and no ids to link back to, so run it last. Like VGMdb it identifies a whole disc by track count and total playing time, so point it at ONE disc. Read-only.",
     tags: ["Music Tagging"],
   },
   matchVgmdbRelease: {

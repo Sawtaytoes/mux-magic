@@ -90,6 +90,7 @@ export const commandLabels: Record<string, string> = {
   matchMusicRelease: "Match Music Release (Auto)",
   matchMusicBrainzRelease: "Match MusicBrainz Release",
   matchVgmdbRelease: "Match VGMdb Release",
+  matchDiscogsRelease: "Match Discogs Release",
   matchFreedbRelease: "Match freedb Release",
   writeAudioTags: "Write Audio Tags",
   renameAndMoveAudioFiles: "Rename and Move Audio Files",

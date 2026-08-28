@@ -13,6 +13,7 @@ import {
 } from "rxjs"
 
 import type { VgmdbCddbLanguage } from "../tools/cddbApi.js"
+import { matchDiscogsRelease } from "./matchDiscogsRelease.js"
 import { matchFreedbRelease } from "./matchFreedbRelease.js"
 import {
   type MusicMatchClusterRecord,
@@ -22,7 +23,7 @@ import {
 import { matchVgmdbRelease } from "./matchVgmdbRelease.js"
 
 // The provider-neutral matcher. It asks every provider in the settled
-// order, keeps a failure in one provider from hiding the other two, and
+// order, keeps a failure in one provider from hiding the other three, and
 // returns one review row per file with all candidates ranked together.
 // It remains read-only. The review table is still the only place a
 // candidate becomes a tag write.
@@ -30,6 +31,7 @@ import { matchVgmdbRelease } from "./matchVgmdbRelease.js"
 export const MUSIC_RELEASE_PROVIDER_ORDER = [
   "musicbrainz",
   "vgmdb",
+  "discogs",
   "freedb",
 ] as const
 
@@ -145,7 +147,7 @@ export const matchMusicRelease = ({
 }: MatchMusicReleaseProps) => {
   logInfo(
     "matchMusicRelease",
-    "Trying MusicBrainz, VGMdb, then freedb.",
+    "Trying MusicBrainz, VGMdb, Discogs, then freedb.",
   )
   return concat(
     protectProvider({
@@ -161,6 +163,14 @@ export const matchMusicRelease = ({
       results: matchVgmdbRelease({
         isRecursive,
         language,
+        recursiveDepth,
+        sourcePath,
+      }),
+    }),
+    protectProvider({
+      provider: "Discogs",
+      results: matchDiscogsRelease({
+        isRecursive,
         recursiveDepth,
         sourcePath,
       }),
