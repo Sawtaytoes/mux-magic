@@ -357,4 +357,32 @@ describe(matchVgmdbRelease.name, () => {
       "/cddb/ja-Latn/cddb.cgi",
     )
   })
+
+  test("a selected VGMdb album id filters the disc matches by canonical EXTD id", async () => {
+    mockFiles(TWO_TRACK_ALBUM)
+
+    const matching = await firstValueFrom(
+      matchVgmdbRelease({
+        cachedFetch: buildCachedFetch(),
+        sourcePath: "/inbox",
+        vgmdbAlbumId: "57899",
+      }),
+    )
+    vol.reset()
+    mockFiles(TWO_TRACK_ALBUM)
+    const rejected = await firstValueFrom(
+      matchVgmdbRelease({
+        cachedFetch: buildCachedFetch(),
+        sourcePath: "/inbox",
+        vgmdbAlbumId: "99999",
+      }),
+    )
+
+    expect(
+      matching[0].files[0].rankedCandidates,
+    ).toHaveLength(1)
+    expect(
+      rejected[0].files[0].rankedCandidates,
+    ).toHaveLength(0)
+  })
 })

@@ -7,7 +7,7 @@ import * as LookupModalStories from "./LookupModal.stories";
 
 # LookupModal
 
-Multi-stage search modal for resolving an external ID (MAL, AniDB, TVDB, TMDB, or DVDCompare) and writing it back into a step's field. The shape of `LookupState` (`stage`, `selectedGroup`, `selectedFid`, `selectedVariant`, `releases`, ...) is what drives stage transitions — the modal is a state-machine renderer.
+Multi-stage search modal for resolving an external ID (MAL, AniDB, TVDB, TMDB, DVDCompare, or a MusicBrainz release) and writing it back into a step's field. The shape of `LookupState` (`stage`, `selectedGroup`, `selectedFid`, `selectedVariant`, `releases`, ...) is what drives stage transitions — the modal is a state-machine renderer.
 
 The simple lookup types (MAL/AniDB/TVDB/TMDB) are single-stage: search → pick → close. **DVDCompare** is three-stage: search → pick a film → pick a variant (Blu-ray 4K / Blu-ray / DVD) → pick a specific release.
 
@@ -37,6 +37,7 @@ The simple lookup types (MAL/AniDB/TVDB/TMDB) are single-stage: search → pick 
 | `POST /queries/searchTvdb` | TVDB series search |
 | `POST /queries/searchMovieDb` | TMDB movie search |
 | `POST /queries/searchDvdCompare` | DVDCompare film search (returns groups with variants) |
+| `POST /queries/searchMusicBrainzReleases` | MusicBrainz album-release search |
 | `POST /queries/listDvdCompareReleases` | Releases for a chosen variant (`fid`) |
 
 ## MAL search
@@ -50,3 +51,7 @@ The simple lookup types (MAL/AniDB/TVDB/TMDB) are single-stage: search → pick 
 ## DVDCompare variant picker (stage 2)
 
 <Canvas of={LookupModalStories.DvdCompareVariantPicker} />
+
+## MusicBrainz release results
+
+<Canvas of={LookupModalStories.MusicBrainzWithResults} />

@@ -74,6 +74,7 @@ export type MatchVgmdbReleaseProps = {
   language?: VgmdbCddbLanguage
   recursiveDepth?: number
   sourcePath: string
+  vgmdbAlbumId?: string
 }
 
 // Both CDDB-backed commands run this identical pipeline. They differ in
@@ -287,6 +288,7 @@ const matchOneCluster = ({
   language,
   server,
   sourceLabel,
+  vgmdbAlbumId,
 }: {
   cachedFetch: CachedFetch
   candidateLimit: number
@@ -295,6 +297,7 @@ const matchOneCluster = ({
   language: VgmdbCddbLanguage
   server: CddbServer
   sourceLabel: "freedb" | "vgmdb"
+  vgmdbAlbumId?: string
 }) =>
   ((records: ScanAudioFilesScannedRecord[]) =>
     // A file with no readable duration cannot contribute an offset, and
@@ -327,7 +330,11 @@ const matchOneCluster = ({
                   albums: [] as VgmdbCddbAlbum[],
                   baseConfidence: 0,
                 })
-              : from(matches.slice(0, candidateLimit)).pipe(
+              : from(
+                  vgmdbAlbumId
+                    ? matches
+                    : matches.slice(0, candidateLimit),
+                ).pipe(
                   concatMap((match) =>
                     readVgmdbCddbAlbum({
                       cachedFetch,
@@ -339,7 +346,13 @@ const matchOneCluster = ({
                   ),
                   toArray(),
                   map((albums) => ({
-                    albums,
+                    albums: vgmdbAlbumId
+                      ? albums.filter(
+                          (album) =>
+                            album.vgmdbAlbumId ===
+                            vgmdbAlbumId,
+                        )
+                      : albums,
                     baseConfidence:
                       matches.length === 1
                         ? EXACT_MATCH_CONFIDENCE
@@ -378,6 +391,7 @@ export const matchCddbRelease = ({
   server = VGMDB_CDDB_SERVER,
   sourceLabel = "vgmdb",
   sourcePath,
+  vgmdbAlbumId,
 }: MatchCddbReleaseProps) =>
   scanAudioFiles({
     isRecursive,
@@ -414,6 +428,7 @@ export const matchCddbRelease = ({
                     language,
                     server,
                     sourceLabel,
+                    vgmdbAlbumId,
                   }),
                 ),
                 toArray(),

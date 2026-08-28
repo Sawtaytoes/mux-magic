@@ -3,11 +3,13 @@ import {
   render,
   screen,
 } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { createStore, Provider } from "jotai"
 import { afterEach, describe, expect, test } from "vitest"
 import type { CommandField } from "../../commands/types"
 import { stepsAtom } from "../../state/stepsAtom"
 import type { Step } from "../../types"
+import { lookupModalAtom } from "../LookupModal/lookupModalAtom"
 import { StringField } from "./StringField"
 
 const mockStep: Step = {
@@ -39,6 +41,7 @@ const renderField = (
       <StringField field={field} step={step} />
     </Provider>,
   )
+  return store
 }
 
 afterEach(() => {
@@ -79,5 +82,37 @@ describe("StringField", () => {
       "textbox",
     ) as HTMLInputElement
     expect(input.value).toBe("")
+  })
+
+  test("opens release lookup for a string ID field", async () => {
+    const user = userEvent.setup()
+    const lookupField: CommandField = {
+      name: "releaseId",
+      type: "string",
+      label: "MusicBrainz Release",
+      lookupType: "musicbrainz",
+      companionNameField: "releaseName",
+    }
+    const step: Step = {
+      ...mockStep,
+      params: { releaseId: "", releaseName: "" },
+    }
+    const store = renderField(step, lookupField)
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Look up MusicBrainz Release",
+      }),
+    )
+
+    expect(store.get(lookupModalAtom)).toEqual(
+      expect.objectContaining({
+        lookupType: "musicbrainz",
+        stepId: "step1",
+        fieldName: "releaseId",
+        companionNameField: "releaseName",
+        stage: "search",
+      }),
+    )
   })
 })

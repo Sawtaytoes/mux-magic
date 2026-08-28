@@ -22,6 +22,31 @@ const post = (path: string, body: unknown) =>
     body: JSON.stringify(body),
   })
 
+describe("POST /queries/searchMusicBrainzReleases", () => {
+  test("returns release choices in fake mode", async () => {
+    const response = await post(
+      "/queries/searchMusicBrainzReleases?fake=success",
+      { searchTerm: "Example Album" },
+    )
+    const body = (await response.json()) as {
+      results: Array<{
+        releaseId: string
+        releaseTitle: string
+      }>
+      error: string | null
+    }
+
+    expect(response.status).toBe(200)
+    expect(body.error).toBeNull()
+    expect(body.results).toEqual([
+      expect.objectContaining({
+        releaseId: "7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4",
+        releaseTitle: "Example Album",
+      }),
+    ])
+  })
+})
+
 describe("POST /queries/listDirectoryEntries", () => {
   beforeEach(() => {
     vol.fromJSON({

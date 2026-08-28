@@ -422,6 +422,22 @@ export const fakeSearchAnidb = () => ({
   error: null,
 })
 
+export const fakeSearchMusicBrainzReleases = () => ({
+  results: [
+    {
+      artistName: "Example Artist",
+      country: "JP",
+      format: "CD",
+      label: "Example Records",
+      releaseId: "7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4",
+      releaseTitle: "Example Album",
+      trackCount: 14,
+      year: "2016",
+    },
+  ],
+  error: null,
+})
+
 export const fakeSearchTvdb = () => ({
   results: [
     {

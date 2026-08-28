@@ -103,6 +103,7 @@ export type MatchMusicBrainzReleaseProps = {
   cachedFetch?: CachedFetch
   isRecursive?: boolean
   recursiveDepth?: number
+  releaseId?: string
   sourcePath: string
 }
 
@@ -249,11 +250,13 @@ const matchOneCluster = ({
   candidateFetchLimit,
   cluster,
   filesByPath,
+  releaseId,
 }: {
   cachedFetch: CachedFetch
   candidateFetchLimit: number
   cluster: AudioFileCluster
   filesByPath: Map<string, ScanAudioFilesScannedRecord>
+  releaseId?: string
 }) =>
   ((clusterRecords: ScanAudioFilesScannedRecord[]) =>
     // ⚠️ The cluster's track count is deliberately NOT sent.
@@ -265,38 +268,56 @@ const matchOneCluster = ({
     // ranking signal — `TRACK_COUNT_WEIGHT` in `rankReleaseCandidates` — so
     // a release with the wrong count still places below one with the right
     // count instead of vanishing.
-    searchMusicBrainzReleases({
-      albumName: cluster.album,
-      artistName: cluster.albumArtist,
-      cachedFetch,
-    }).pipe(
-      map((releases) =>
-        rankReleaseCandidates({
-          candidates: releases,
-          files: clusterRecords.map(toRankingFile),
-        }).slice(0, candidateFetchLimit),
-      ),
-      concatMap((shortlist: ScoredReleaseCandidate[]) =>
-        shortlist.length === 0
-          ? of([])
-          : from(shortlist).pipe(
-              concatMap((scored) =>
-                getMusicBrainzRelease({
-                  cachedFetch,
-                  releaseId: scored.candidate.releaseId,
-                }).pipe(
-                  map((release) =>
-                    buildCandidateForRelease({
-                      files: clusterRecords,
-                      release,
-                      releaseScore: scored.matchConfidence,
-                    }),
+    (releaseId
+      ? getMusicBrainzRelease({
+          cachedFetch,
+          releaseId,
+        }).pipe(
+          map((release) => [
+            buildCandidateForRelease({
+              files: clusterRecords,
+              release,
+              releaseScore: 1,
+            }),
+          ]),
+        )
+      : searchMusicBrainzReleases({
+          albumName: cluster.album,
+          artistName: cluster.albumArtist,
+          cachedFetch,
+        }).pipe(
+          map((releases) =>
+            rankReleaseCandidates({
+              candidates: releases,
+              files: clusterRecords.map(toRankingFile),
+            }).slice(0, candidateFetchLimit),
+          ),
+          concatMap(
+            (shortlist: ScoredReleaseCandidate[]) =>
+              shortlist.length === 0
+                ? of([])
+                : from(shortlist).pipe(
+                    concatMap((scored) =>
+                      getMusicBrainzRelease({
+                        cachedFetch,
+                        releaseId:
+                          scored.candidate.releaseId,
+                      }).pipe(
+                        map((release) =>
+                          buildCandidateForRelease({
+                            files: clusterRecords,
+                            release,
+                            releaseScore:
+                              scored.matchConfidence,
+                          }),
+                        ),
+                      ),
+                    ),
+                    toArray(),
                   ),
-                ),
-              ),
-              toArray(),
-            ),
-      ),
+          ),
+        )
+    ).pipe(
       map((candidateMaps) =>
         assembleClusterRecord({
           candidateMaps,
@@ -320,6 +341,7 @@ export const matchMusicBrainzRelease = ({
   candidateFetchLimit = DEFAULT_CANDIDATE_FETCH_LIMIT,
   isRecursive = false,
   recursiveDepth = 1,
+  releaseId,
   sourcePath,
 }: MatchMusicBrainzReleaseProps) =>
   scanAudioFiles({
@@ -354,6 +376,7 @@ export const matchMusicBrainzRelease = ({
                     candidateFetchLimit,
                     cluster,
                     filesByPath,
+                    releaseId,
                   }),
                 ),
                 toArray(),

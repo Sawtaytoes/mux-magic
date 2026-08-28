@@ -735,7 +735,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cluster a folder's audio files into candidate albums from their existing tags, search MusicBrainz for each cluster, and attach ranked releases with a proposed tag set per file. Read-only — the tag table is where a match is accepted. */
+        /** Cluster a folder's audio files into candidate albums, or use a selected MusicBrainz release UUID, and attach ranked releases with a proposed tag set per file. Read-only — the tag table is where a match is accepted. */
         post: {
             parameters: {
                 query?: never;
@@ -756,6 +756,8 @@ export interface paths {
                          * @default false
                          */
                         isRecursive?: boolean;
+                        /** @description A selected MusicBrainz release UUID. When set, the matcher reads this release directly instead of searching by the current tags. */
+                        releaseId?: string;
                         /**
                          * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
                          * @default 1
@@ -877,7 +879,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Match a folder against VGMdb for game and anime soundtracks, which MusicBrainz covers badly. VGMdb identifies a whole disc by track count and total playing time, so point this at ONE disc — a flattened multi-disc folder will not match. Read-only; the tag table is where a match is accepted. */
+        /** Match a folder against VGMdb for game and anime soundtracks, optionally constrained to a selected VGMdb album ID. VGMdb identifies a whole disc by track count and total playing time, so point this at ONE disc. Read-only; the tag table is where a match is accepted. */
         post: {
             parameters: {
                 query?: never;
@@ -911,6 +913,8 @@ export interface paths {
                         recursiveDepth?: number;
                         /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
                         sourcePath: string;
+                        /** @description A VGMdb album ID from an album URL. When set, the matcher keeps only the disc whose canonical VGMdb URL has this ID. */
+                        vgmdbAlbumId?: number;
                     };
                 };
             };
@@ -5976,6 +5980,74 @@ export interface paths {
                                     [key: string]: string;
                                 }[];
                             }[];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/queries/searchMusicBrainzReleases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search MusicBrainz for an album release
+         * @description Returns MusicBrainz releases matching an album name. The builder uses this before a provider-specific match so the selected release UUID can constrain the matcher.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @description Title to search for */
+                        searchTerm: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description MusicBrainz release search results */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description MusicBrainz release search results */
+                            results: {
+                                /** @description The release artist credit */
+                                artistName: string;
+                                /** @description The release country code */
+                                country?: string;
+                                /** @description The media formats on this release */
+                                format?: string;
+                                /** @description The release label */
+                                label?: string;
+                                /** @description MusicBrainz release UUID */
+                                releaseId: string;
+                                /** @description Album title */
+                                releaseTitle: string;
+                                /** @description Total track count */
+                                trackCount: number;
+                                /** @description Release year */
+                                year?: string;
+                            }[];
+                            /** @description Error message if the search failed. When present, results is empty. */
+                            error?: string | null;
                         };
                     };
                 };
