@@ -415,6 +415,10 @@ type WithFileProgressOptions = {
   // orchestration and the actual scheduler accounting happens at the
   // per-spawn layer the caller wires up.
   isOuterScheduled?: boolean
+  // Do not materialize the input first. Use this for a library-sized walk
+  // where knowing the total is less important than keeping memory bounded.
+  // Progress still reports completed files, but it has no total ratio.
+  isStreaming?: boolean
 }
 
 // Sugar for the per-file-iterator pattern that ~all app-commands share:
@@ -438,44 +442,76 @@ export const withFileProgress =
     options: WithFileProgressOptions = {},
   ): OperatorFunction<T, U> =>
   (source) =>
-    source.pipe(
-      toArray(),
-      concatMap((files) => {
-        const concurrency = options.concurrency ?? Infinity
-        const isOuterScheduled =
-          options.isOuterScheduled ?? true
-        const wrap = <V>(work$: Observable<V>) =>
-          isOuterScheduled ? runTask(work$) : work$
-        const indexedFiles = files.map((file, index) => ({
-          file,
-          index,
-        }))
-        const jobId = getActiveJobId()
+    (({
+      concurrency = Infinity,
+      isOuterScheduled = true,
+      isStreaming = false,
+    }: WithFileProgressOptions) => {
+      const wrap = <V>(work$: Observable<V>) =>
+        isOuterScheduled ? runTask(work$) : work$
+      const jobId = getActiveJobId()
+
+      if (isStreaming) {
         if (jobId === undefined) {
-          return from(indexedFiles).pipe(
+          return source.pipe(
             mergeMap(
-              ({ file, index }) =>
-                wrap(perFile(file, index)),
+              (file, index) => wrap(perFile(file, index)),
               concurrency,
             ),
           )
         }
-        const emitter = createProgressEmitter(jobId, {
-          totalFiles: files.length,
-        })
-        return from(indexedFiles).pipe(
-          mergeMap(
-            ({ file, index }) =>
-              wrap(
-                perFile(file, index).pipe(
-                  rxFinalize(() =>
-                    emitter.incrementFilesDone(),
-                  ),
+
+        const emitter = createProgressEmitter(jobId)
+        let index = 0
+        return source.pipe(
+          mergeMap((file) => {
+            const fileIndex = index
+            index += 1
+            return wrap(
+              perFile(file, fileIndex).pipe(
+                rxFinalize(() =>
+                  emitter.incrementFilesDone(),
                 ),
               ),
-            concurrency,
-          ),
+            )
+          }, concurrency),
           rxFinalize(() => emitter.finalize()),
         )
-      }),
-    )
+      }
+
+      return source.pipe(
+        toArray(),
+        concatMap((files) => {
+          const indexedFiles = files.map((file, index) => ({
+            file,
+            index,
+          }))
+          if (jobId === undefined) {
+            return from(indexedFiles).pipe(
+              mergeMap(
+                ({ file, index }) =>
+                  wrap(perFile(file, index)),
+                concurrency,
+              ),
+            )
+          }
+          const emitter = createProgressEmitter(jobId, {
+            totalFiles: files.length,
+          })
+          return from(indexedFiles).pipe(
+            mergeMap(
+              ({ file, index }) =>
+                wrap(
+                  perFile(file, index).pipe(
+                    rxFinalize(() =>
+                      emitter.incrementFilesDone(),
+                    ),
+                  ),
+                ),
+              concurrency,
+            ),
+            rxFinalize(() => emitter.finalize()),
+          )
+        }),
+      )
+    })(options)
