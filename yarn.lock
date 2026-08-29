@@ -695,29 +695,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/biome-config@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "@charcuterie/biome-config@npm:1.0.0"
-  checksum: 10c0/d5b2a20083e72b89fbefad1d41a92e594614f69b2dfcbd031e60cf59e5432376ba67eb89a2fffb44ac95d91e417e1e6133096799b24fac6a528a22e1dc7fedfc
+"@charcuterie/biome-config@npm:^1.3.0":
+  version: 1.3.0
+  resolution: "@charcuterie/biome-config@npm:1.3.0"
+  checksum: 10c0/965800e60637dcd738a7fcdb7f60747b2e47131fc3faafb5857d3cb34fcd0b63d6ce35d42e9a5946f7a8364136bbf20f8ade9a019074058f5a99a90b858f76dd
   languageName: node
   linkType: hard
 
-"@charcuterie/eslint-config@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@charcuterie/eslint-config@npm:1.1.0"
+"@charcuterie/eslint-config@npm:^1.7.0":
+  version: 1.7.0
+  resolution: "@charcuterie/eslint-config@npm:1.7.0"
   dependencies:
     "@vitest/eslint-plugin": "npm:^1.6.20"
     eslint-plugin-react: "npm:^7.37.5"
+    typescript-eslint: "npm:^8.59.2"
   peerDependencies:
     eslint: ">=10"
-    typescript-eslint: ">=8"
-  checksum: 10c0/eecf8047f1b9776715aa7c4c77cfc2859ea6f20be507bcb4351a4f24f4a560fe7832fc86074f0c1f312e1095b80f59bbbde95af11a07941f3ee86e2f47910909
+  checksum: 10c0/d95b62346320d43041f0fb782a3bcd8a4eff377942a1c1bb8a4dce3c9b77626ddee432054da8d67ea9dda8a0bcdbcd1c10e0eeaafad3b4dbe96f37c9945b61ec
   languageName: node
   linkType: hard
 
-"@charcuterie/logic@npm:2.0.0, @charcuterie/logic@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "@charcuterie/logic@npm:2.0.0"
+"@charcuterie/logic@npm:2.3.0, @charcuterie/logic@npm:^2.3.0":
+  version: 2.3.0
+  resolution: "@charcuterie/logic@npm:2.3.0"
   peerDependencies:
     "@preact/signals-core": ">=1.8"
     "@tanstack/react-query": ">=5"
@@ -741,7 +741,7 @@ __metadata:
       optional: true
     react:
       optional: true
-  checksum: 10c0/dff58bccec6d90526a5189ab660c087b321bb26e92ee198e43389bfe4f755fe2c56ff063dc6d18bfd66432137ed10e1371e168d6daf6f7d78461f2cbf050f4b1
+  checksum: 10c0/02ed11b8df7be5a08e56970fc4d28b49f322ac2e4ca6914111208fc3a3eac6006d7f361a29b893738acc6d5761ecb2c349d82a61f6ee9679efdd4e6cc144f65a
   languageName: node
   linkType: hard
 
@@ -771,11 +771,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/storybook-config@npm:^0.2.2":
-  version: 0.2.2
-  resolution: "@charcuterie/storybook-config@npm:0.2.2"
+"@charcuterie/storybook-config@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "@charcuterie/storybook-config@npm:0.3.0"
   dependencies:
-    "@charcuterie/tokens": "npm:1.5.0"
+    "@charcuterie/tokens": "npm:1.6.0"
     remark-gfm: "npm:^4.0.1"
   peerDependencies:
     "@storybook/addon-docs": ">=10"
@@ -793,14 +793,14 @@ __metadata:
       optional: true
     vite:
       optional: true
-  checksum: 10c0/89e18233e83183ff77e3cb2f893414c01378faed01c8bafca1cfcc554698f45ed70489db1309701ebf2d84aad734308490e8a3ff80a2c9b87213a6d5c243cd6a
+  checksum: 10c0/0255b68b8d4dd4e69c211c9366f19b0742008c918959f1436dcc1b8fa41e7be0368fd4cc617c9f2ed88dd1f38310c9fb90710b4ffbde0709ea8b31fb5e3a7612
   languageName: node
   linkType: hard
 
-"@charcuterie/tokens@npm:1.5.0, @charcuterie/tokens@npm:^1.5.0":
-  version: 1.5.0
-  resolution: "@charcuterie/tokens@npm:1.5.0"
-  checksum: 10c0/1dba63b654ca2cb4c54b2412dd7c82a29274333b22ed884d21d7afca050709af0dbbceaaaadb35733829e28a6464f5e01b1baf96957ba82e5f33ead1acf1e58e
+"@charcuterie/tokens@npm:1.6.0, @charcuterie/tokens@npm:^1.6.0":
+  version: 1.6.0
+  resolution: "@charcuterie/tokens@npm:1.6.0"
+  checksum: 10c0/1f2c6093beffde630a6ddd9c19fbe80c95eedaad6694bdeb77104ace0b6613704da64521cf376328b50466996ca5df64c2a6e2bd56429fda15f2af73cb2d4650
   languageName: node
   linkType: hard
 
@@ -811,41 +811,50 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/ui@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "@charcuterie/ui@npm:3.0.0"
+"@charcuterie/ui@npm:^3.24.0":
+  version: 3.24.0
+  resolution: "@charcuterie/ui@npm:3.24.0"
   dependencies:
-    "@charcuterie/logic": "npm:2.0.0"
-    "@charcuterie/tokens": "npm:1.5.0"
+    "@charcuterie/logic": "npm:2.3.0"
+    "@charcuterie/tokens": "npm:1.6.0"
     "@floating-ui/react": "npm:^0.27.20"
     "@tanstack/react-virtual": "npm:^3.13.12"
     tailwind-merge: "npm:^3.6.0"
   peerDependencies:
+    "@codemirror/commands": ^6
+    "@codemirror/lang-markdown": ^6
+    "@codemirror/language": ^6
+    "@codemirror/state": ^6
+    "@codemirror/view": ^6
+    "@lezer/common": ^1
     react: ">=19"
     react-dom: ">=19"
     react-router: ">=7"
   peerDependenciesMeta:
+    "@codemirror/commands":
+      optional: true
+    "@codemirror/lang-markdown":
+      optional: true
+    "@codemirror/language":
+      optional: true
+    "@codemirror/state":
+      optional: true
+    "@codemirror/view":
+      optional: true
+    "@lezer/common":
+      optional: true
     react-router:
       optional: true
-  checksum: 10c0/e35aa400141d09abb90ceb27c9de8085cebff1c71ac36dace94d919db77e3dc8e764235fa8f15df2d2415dbd5f918045d775864816819639c365a4c7b49ae533
+  checksum: 10c0/517b7e85eef9fa20109eb965fdbfee07fc10774c55a63435ac45760d10cb0b8963b18eb2fdfbeb7d057242287ec96eee7e098eb04fc9cac267e81ac5d5e581d5
   languageName: node
   linkType: hard
 
-"@charcuterie/vite-config@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "@charcuterie/vite-config@npm:1.0.2"
+"@charcuterie/vite-config@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@charcuterie/vite-config@npm:1.1.0"
   peerDependencies:
     vite: ">=5"
-  checksum: 10c0/e41f5d69b0ba59090591c2c5758003cf78f46b0aa447cbb3730680f95a5d693209a4c3cd227d0f58b571fadba409863e3305dd7e05dda5a8bc78a63a1ede2b33
-  languageName: node
-  linkType: hard
-
-"@charcuterie/vitest-config@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "@charcuterie/vitest-config@npm:1.0.1"
-  peerDependencies:
-    vitest: ">=3"
-  checksum: 10c0/8d5ed73c2110ed1d022a646cceefecd6346b37769b7f8487bfa227ba53526b3104906b9701b0fab94ba13c4443148f205c109e1dd2287c04c000c88ebcae913d
+  checksum: 10c0/c7d55cf708e9903d4a3952a7344187a63b8c4b5cdd47c44d1e5e3d748f0aaa7e3be28b048b64d109ec0a20f5d18746149a679d87ef026b779d7bc4a01f337b80
   languageName: node
   linkType: hard
 
@@ -2045,12 +2054,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mux-magic/web@workspace:packages/web"
   dependencies:
-    "@charcuterie/logic": "npm:^2.0.0"
+    "@charcuterie/logic": "npm:^2.3.0"
     "@charcuterie/server": "npm:^0.4.0"
-    "@charcuterie/storybook-config": "npm:^0.2.2"
-    "@charcuterie/tokens": "npm:^1.5.0"
-    "@charcuterie/ui": "npm:^3.0.0"
-    "@charcuterie/vite-config": "npm:^1.0.2"
+    "@charcuterie/storybook-config": "npm:^0.3.0"
+    "@charcuterie/tokens": "npm:^1.6.0"
+    "@charcuterie/ui": "npm:^3.24.0"
+    "@charcuterie/vite-config": "npm:^1.1.0"
     "@charcuterie/vitest-config": "npm:^1.1.0"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
@@ -8775,11 +8784,11 @@ __metadata:
   dependencies:
     "@biomejs/biome": "npm:^2.4.15"
     "@changesets/cli": "npm:^2.31.0"
-    "@charcuterie/biome-config": "npm:^1.0.0"
-    "@charcuterie/eslint-config": "npm:^1.1.0"
+    "@charcuterie/biome-config": "npm:^1.3.0"
+    "@charcuterie/eslint-config": "npm:^1.7.0"
     "@charcuterie/playwright-config": "npm:^1.0.1"
     "@charcuterie/tsconfig": "npm:^1.0.0"
-    "@charcuterie/vitest-config": "npm:^1.0.1"
+    "@charcuterie/vitest-config": "npm:^1.1.0"
     "@mux-magic/web": "workspace:*"
     "@playwright/mcp": "npm:^0.0.75"
     "@playwright/test": "npm:^1.61.1"
