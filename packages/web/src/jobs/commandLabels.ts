@@ -87,6 +87,8 @@ export const commandLabels: Record<string, string> = {
   scanAudioFiles: "Scan Audio Files",
   fingerprintAudioFiles: "Fingerprint Audio Files",
   findDuplicateAudioFiles: "Find Duplicate Audio Files",
+  compareMusicAssistantLibrary:
+    "Compare Music Assistant Library",
   matchMusicRelease: "Match Music Release (Auto)",
   matchMusicBrainzRelease: "Match MusicBrainz Release",
   matchVgmdbRelease: "Match VGMdb Release",

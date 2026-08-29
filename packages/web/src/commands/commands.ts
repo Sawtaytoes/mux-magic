@@ -17,6 +17,7 @@ import {
   addSubtitlesRequestSchema,
   analyseDiscBackupRequestSchema,
   changeTrackLanguagesRequestSchema,
+  compareMusicAssistantLibraryRequestSchema,
   convertContainerAudioToFlacRequestSchema,
   convertLosslessToFlacRequestSchema,
   copyFilesRequestSchema,
@@ -147,6 +148,46 @@ export const COMMANDS: Commands = {
         field("isFingerprintCompared", {
           type: "boolean",
           label: "Also compare by fingerprint",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  compareMusicAssistantLibrary: (() => {
+    const field = fieldBuilder(
+      compareMusicAssistantLibraryRequestSchema,
+    )
+    return {
+      summary:
+        "Compare source albums with the existing Music Assistant Music library provider. Read-only: it reports albums that are already in Music, albums that are not, and untagged files.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      outputs: [
+        {
+          name: "albumsAlreadyInMusicLibrary",
+          label: "Albums already in Music",
+        },
+        {
+          name: "albumsNotInMusicLibrary",
+          label: "Albums not in Music",
+        },
+        {
+          name: "untaggedSourceFilePaths",
+          label: "Untagged source files",
+        },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Music Folder",
         }),
         field("isRecursive", {
           type: "boolean",
