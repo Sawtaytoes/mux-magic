@@ -14,6 +14,7 @@ import {
   toArray,
 } from "rxjs"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
+import { formatTitleWithYear } from "../tools/formatTitleWithYear.js"
 import { getRandomString } from "../tools/getRandomString.js"
 import { getUserSearchInput } from "../tools/getUserSearchInput.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
@@ -67,7 +68,7 @@ export const nameTvShowEpisodes = ({
                     options: [
                       ...results.map((result, index) => ({
                         index,
-                        label: `${result.name}${result.year ? ` (${result.year})` : ""}${result.status ? ` [${result.status}]` : ""}`,
+                        label: `${formatTitleWithYear({ title: result.name, year: result.year })}${result.status ? ` [${result.status}]` : ""}`,
                       })),
                       {
                         index: -1,
@@ -145,10 +146,11 @@ export const nameTvShowEpisodes = ({
               fileInfo,
               renamedFilename: cleanupFilename(
                 [
-                  episode?.seriesName ?? "",
-                  " (",
-                  episode?.airedYear ?? "",
-                  ") - s",
+                  formatTitleWithYear({
+                    title: episode?.seriesName ?? "",
+                    year: episode?.airedYear,
+                  }),
+                  " - s",
                   (episode?.seasonNumber ?? "").padStart(
                     2,
                     "0",
