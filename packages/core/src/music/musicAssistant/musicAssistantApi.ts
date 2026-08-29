@@ -9,6 +9,7 @@ type MusicAssistantProviderMapping = {
     codec_type?: string
     sample_rate?: number
   }
+  // eslint-disable-next-line @typescript-eslint/naming-convention -- Music Assistant wire field name
   in_library?: boolean
   provider_instance?: string
 }
