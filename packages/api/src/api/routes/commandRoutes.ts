@@ -11,6 +11,10 @@ import {
 import { analyseDiscBackup } from "@mux-magic/core/src/app-commands/analyseDiscBackup.js"
 import { changeTrackLanguages } from "@mux-magic/core/src/app-commands/changeTrackLanguages.js"
 import {
+  type CompareMusicAssistantLibraryRecord,
+  compareMusicAssistantLibrary,
+} from "@mux-magic/core/src/app-commands/compareMusicAssistantLibrary.js"
+import {
   type ConvertContainerAudioToFlacConvertedRecord,
   type ConvertContainerAudioToFlacRecord,
   convertContainerAudioToFlac,
@@ -277,6 +281,40 @@ export const commandConfigs: Record<
     schema: schemas.findDuplicateAudioFilesRequestSchema,
     summary:
       "Find duplicates inside the source or against an optional library path. Match by identical decoded audio, by AcoustID fingerprint, or by tags, then rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, the compare table confirms, and nothing is deleted here.",
+    tags: ["Music Tagging"],
+  },
+  compareMusicAssistantLibrary: {
+    getObservable: (body) =>
+      compareMusicAssistantLibrary({
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      albumsAlreadyInMusicLibrary: (
+        results as CompareMusicAssistantLibraryRecord[]
+      )
+        .filter(
+          (record) => record.kind === "inMusicLibrary",
+        )
+        .map((record) => record.album),
+      albumsNotInMusicLibrary: (
+        results as CompareMusicAssistantLibraryRecord[]
+      )
+        .filter(
+          (record) => record.kind === "notInMusicLibrary",
+        )
+        .map((record) => record.album),
+      untaggedSourceFilePaths: (
+        results as CompareMusicAssistantLibraryRecord[]
+      )
+        .filter((record) => record.kind === "untagged")
+        .flatMap((record) => record.sourceFilePaths),
+    }),
+    schema:
+      schemas.compareMusicAssistantLibraryRequestSchema,
+    summary:
+      "Compare source albums with the existing Music Assistant Music library provider. It is read-only and reports album matches, album misses, and files that need tags before they can be compared.",
     tags: ["Music Tagging"],
   },
   fingerprintAudioFiles: {

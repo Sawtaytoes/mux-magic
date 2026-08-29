@@ -19,9 +19,19 @@ window.commandDescriptions = {
     }
   },
   "findDuplicateAudioFiles": {
-    "summary": "Find duplicate audio files by identical decoded audio, by AcoustID fingerprint, or by tags, and rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, the compare table confirms, and nothing is deleted here.",
+    "summary": "Find duplicates inside the source or against an optional library path. Match by identical decoded audio, by AcoustID fingerprint, or by tags, then rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, the compare table confirms, and nothing is deleted here.",
     "fields": {
+      "comparisonPath": "Optional library or other tree to compare with the source. Only duplicate groups that include a source file are reported.",
+      "comparisonRecursiveDepth": "How many folder levels below the comparison path to scan. Three covers the normal Artist/Album/track library layout.",
       "isFingerprintCompared": "Also fingerprint every file so a FLAC and an MP3 of the same recording pair up. They can never hash-match, because the encoders produce different samples. Costs a two-minute decode per file.",
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
+  "compareMusicAssistantLibrary": {
+    "summary": "Compare source albums with the existing Music Assistant Music library provider. It is read-only and reports album matches, album misses, and files that need tags before they can be compared.",
+    "fields": {
       "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
       "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
       "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."

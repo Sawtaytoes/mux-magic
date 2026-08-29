@@ -2489,6 +2489,13 @@ export const findDuplicateAudioFilesRequestSchema =
     sourcePath: musicSourcePathSchema,
   })
 
+export const compareMusicAssistantLibraryRequestSchema =
+  z.object({
+    isRecursive: musicIsRecursiveSchema,
+    recursiveDepth: musicRecursiveDepthSchema,
+    sourcePath: musicSourcePathSchema,
+  })
+
 export const fingerprintAudioFilesRequestSchema = z.object({
   isRecursive: musicIsRecursiveSchema,
   minimumScore: z

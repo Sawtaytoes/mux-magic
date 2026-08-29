@@ -58,6 +58,7 @@ export const commandNames = [
   "remuxToMkv",
   "fingerprintAudioFiles",
   "findDuplicateAudioFiles",
+  "compareMusicAssistantLibrary",
   "scanAudioFiles",
   "renumberChapters",
   "renameAndMoveAudioFiles",
