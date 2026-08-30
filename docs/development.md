@@ -14,7 +14,7 @@ yarn install
 yarn dlx @yarnpkg/sdks vscode   # one-time VS Code SDK setup
 ```
 
-Copy `.env.example` to `.env` and set any environment variables you need (e.g. `PORT`, `TMDB_API_KEY`). See the [configuration table](../MANIFEST.md#configuration) for all options.
+Copy `.env.example` to `.env` and set any environment variables you need (e.g. `PORT`, `TMDB_API_KEY`). See the [setup guide](setup.md#configuration) for the main options and `.env.example` for the complete list.
 
 ---
 
@@ -34,7 +34,7 @@ The dev script (`yarn workspace @mux-magic/server dev`) spawns one process: Hono
 ```sh
 yarn test          # run all tests (vitest)
 yarn typecheck     # TypeScript type check without emitting
-yarn build:cli-app # bundle CLI to build/mux-magic.cjs (used by `yarn sea`)
+yarn cli-app:build # bundle CLI to build/mux-magic.cjs
 ```
 
 Tests live next to their source files (`foo.ts` → `foo.test.ts`). The filesystem is globally mocked with `memfs` in tests — see `vitest.setup.ts`.
@@ -43,7 +43,7 @@ Tests live next to their source files (`foo.ts` → `foo.test.ts`). The filesyst
 
 ## Regenerating screenshots
 
-Start the server (`yarn dev`) then run `yarn screenshots`. This launches headless Chromium with `?mock=1` (MSW fake-data mode — no real files needed) and writes PNGs to `docs/images/`. Playwright Chromium must be installed first:
+Start the server (`yarn dev`) then run `yarn generate:screenshots`. This launches headless Chromium with `?mock=1` (MSW fake-data mode — no real files needed) and writes PNGs to `docs/images/`. Playwright Chromium must be installed first:
 
 ```sh
 yarn install-playwright-browser
