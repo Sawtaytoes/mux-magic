@@ -377,6 +377,27 @@ export const extractSubtitlesRequestSchema = z.object({
     ),
 })
 
+export const convertSrtToAssRequestSchema = z.object({
+  sourcePath: z
+    .string()
+    .min(1)
+    .describe("Directory containing SRT subtitle files."),
+  isRecursive: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Recursively scan subdirectories for SRT files. Default false.",
+    ),
+  recursiveDepth: z
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .describe(
+      "Maximum recursion depth when recursive scanning is enabled. Zero uses one level.",
+    ),
+})
+
 /** @deprecated Renamed to {@link extractSubtitlesRequestSchema}. Kept as an alias so existing callers don't break. */
 export const copyOutSubtitlesRequestSchema =
   extractSubtitlesRequestSchema

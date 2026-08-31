@@ -239,6 +239,14 @@ window.commandDescriptions = {
       "folders": "Folder names to extract subtitles into. Each extracted subtitle file is placed inside the named sub-folder relative to the source file location. Leave empty to use the default output folder."
     }
   },
+  "convertSrtToAss": {
+    "summary": "Convert SRT subtitle files to ASS in a separate output folder while preserving the source files.",
+    "fields": {
+      "sourcePath": "Directory containing SRT subtitle files.",
+      "isRecursive": "Recursively scan subdirectories for SRT files. Default false.",
+      "recursiveDepth": "Maximum recursion depth when recursive scanning is enabled. Zero uses one level."
+    }
+  },
   "fixIncorrectDefaultTracks": {
     "summary": "Fix incorrect default track designations",
     "fields": {
