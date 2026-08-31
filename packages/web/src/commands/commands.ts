@@ -20,6 +20,7 @@ import {
   compareMusicAssistantLibraryRequestSchema,
   convertContainerAudioToFlacRequestSchema,
   convertLosslessToFlacRequestSchema,
+  convertSrtToAssRequestSchema,
   copyFilesRequestSchema,
   copyOutSubtitlesRequestSchema,
   deleteCopiedOriginalsRequestSchema,
@@ -1671,6 +1672,35 @@ export const COMMANDS: Commands = {
       ],
     }
   })(),
+  convertSrtToAss: {
+    summary:
+      "Convert SRT subtitle files to ASS in a separate output folder while preserving the source files.",
+    tag: "Subtitle Operations",
+    outputFolderName: "CONVERTED-SUBTITLES",
+    fields: [
+      fieldBuilder(convertSrtToAssRequestSchema)(
+        "sourcePath",
+        {
+          type: "path",
+          label: "Source Path",
+        },
+      ),
+      fieldBuilder(convertSrtToAssRequestSchema)(
+        "isRecursive",
+        {
+          type: "boolean",
+          label: "Recursive",
+        },
+      ),
+      fieldBuilder(convertSrtToAssRequestSchema)(
+        "recursiveDepth",
+        {
+          type: "number",
+          label: "Recursive Depth",
+        },
+      ),
+    ],
+  },
   copyOutSubtitles: (() => {
     const field = fieldBuilder(
       copyOutSubtitlesRequestSchema,

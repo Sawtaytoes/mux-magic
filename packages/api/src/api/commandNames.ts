@@ -18,6 +18,7 @@ export const commandNames = [
   "changeTrackLanguages",
   "convertLosslessToFlac",
   "convertContainerAudioToFlac",
+  "convertSrtToAss",
   "findContainerAudioFiles",
   "copyFiles",
   "flattenOutput",

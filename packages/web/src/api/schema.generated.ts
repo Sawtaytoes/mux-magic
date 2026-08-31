@@ -518,7 +518,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            commandNames: ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchDiscogsRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags")[];
+                            commandNames: ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchDiscogsRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "convertSrtToAss" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "compareMusicAssistantLibrary" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags")[];
                         };
                     };
                 };
@@ -1238,6 +1238,75 @@ export interface paths {
                             logsUrl: string;
                             /** @description Output folder name where files are written, or null for in-place operations */
                             outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/convertSrtToAss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Convert SRT subtitle files to ASS in a separate output folder while preserving the source files. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @description Directory containing SRT subtitle files. */
+                        sourcePath: string;
+                        /**
+                         * @description Recursively scan subdirectories for SRT files. Default false.
+                         * @default false
+                         */
+                        isRecursive?: boolean;
+                        /**
+                         * @description Maximum recursion depth when recursive scanning is enabled. Zero uses one level.
+                         * @default 0
+                         */
+                        recursiveDepth?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /**
+                             * @description Output folder name where files are written, or null for in-place operations
+                             * @enum {string}
+                             */
+                            outputFolderName: "CONVERTED-SUBTITLES";
                         };
                     };
                 };
@@ -4606,7 +4675,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Find duplicate audio files by identical decoded audio, by AcoustID fingerprint, or by tags, and rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, the compare table confirms, and nothing is deleted here. */
+        /** Find duplicates inside the source or against an optional library path. Match by identical decoded audio, by AcoustID fingerprint, or by tags, then rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, the compare table confirms, and nothing is deleted here. */
         post: {
             parameters: {
                 query?: never;
@@ -4617,11 +4686,84 @@ export interface paths {
             requestBody?: {
                 content: {
                     "application/json": {
+                        /** @description Optional library or other tree to compare with the source. Only duplicate groups that include a source file are reported. */
+                        comparisonPath?: string;
+                        /**
+                         * @description How many folder levels below the comparison path to scan. Three covers the normal Artist/Album/track library layout.
+                         * @default 3
+                         */
+                        comparisonRecursiveDepth?: number;
                         /**
                          * @description Also fingerprint every file so a FLAC and an MP3 of the same recording pair up. They can never hash-match, because the encoders produce different samples. Costs a two-minute decode per file.
                          * @default false
                          */
                         isFingerprintCompared?: boolean;
+                        /**
+                         * @description Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.
+                         * @default false
+                         */
+                        isRecursive?: boolean;
+                        /**
+                         * @description How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.
+                         * @default 1
+                         */
+                        recursiveDepth?: number;
+                        /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
+                        sourcePath: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/compareMusicAssistantLibrary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compare source albums with the existing Music Assistant Music library provider. It is read-only and reports album matches, album misses, and files that need tags before they can be compared. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
                         /**
                          * @description Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.
                          * @default false
@@ -8201,7 +8343,7 @@ export interface components {
             /** @description Optional human-readable alias. Surfaced by the builder UI's step header; ignored at runtime. */
             alias?: string;
             /** @description Name of the registered command to run. Must be one of the names listed at `GET /commands` (or surfaced individually as `POST /commands/<name>` endpoints). Empty string `''` marks a placeholder/blank step from the Builder UI — the runner skips it as a no-op so YAML round-trips don't lose the slot. */
-            command: "" | ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchDiscogsRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags");
+            command: "" | ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchDiscogsRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "convertSrtToAss" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "compareMusicAssistantLibrary" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "writeAudioTags");
             /** @description Command params. Each value can be a literal (string / number / boolean / array / object), a `'@pathId'` path-variable reference, or a `{ linkedTo, output }` step-output reference. Per-command param shapes are documented under `POST /commands/<command>` — the same schema each command exposes for direct invocation also applies here once references are resolved. */
             params?: {
                 [key: string]: unknown;

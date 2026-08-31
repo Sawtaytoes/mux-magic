@@ -47,6 +47,7 @@ export const commandLabels: Record<string, string> = {
   addSubtitles: "Add Subtitles",
   extractSubtitles: "Extract Subtitles",
   copyOutSubtitles: "Extract Subtitles (deprecated)",
+  convertSrtToAss: "Convert SRT to ASS",
   isMissingSubtitles: "Check Missing Subtitles",
   modifySubtitleMetadata: "Modify Subtitle Metadata",
   adjustSubtitlePositioning: "Adjust Subtitle Positioning",
