@@ -152,6 +152,7 @@ const TIMING_OVERRIDES: Partial<
   moveFiles: 800,
   flattenOutput: 800,
   // Subtitle metadata — small ASS files, fast JSON rewrite
+  convertSrtToAss: 900,
   modifySubtitleMetadata: 900,
   // Metadata checks — fast scan, no heavy I/O
   hasBetterAudio: 700,

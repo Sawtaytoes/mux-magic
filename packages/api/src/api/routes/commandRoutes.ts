@@ -26,6 +26,10 @@ import {
   convertLosslessToFlac,
 } from "@mux-magic/core/src/app-commands/convertLosslessToFlac.js"
 import {
+  convertSrtToAss,
+  convertSrtToAssDefaultProps,
+} from "@mux-magic/core/src/app-commands/convertSrtToAss.js"
+import {
   type CopyRecord,
   copyFiles,
 } from "@mux-magic/core/src/app-commands/copyFiles.js"
@@ -767,6 +771,20 @@ export const commandConfigs: Record<
     schema: schemas.extractSubtitlesRequestSchema,
     summary:
       "Extract subtitle tracks into separate files alongside each video file.",
+    tags: ["Subtitle Operations"],
+  },
+  convertSrtToAss: {
+    getObservable: (body) =>
+      convertSrtToAss({
+        isRecursive: body.isRecursive,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    outputFolderName:
+      convertSrtToAssDefaultProps.outputFolderName,
+    schema: schemas.convertSrtToAssRequestSchema,
+    summary:
+      "Convert SRT subtitle files to ASS in a separate output folder while preserving the source files.",
     tags: ["Subtitle Operations"],
   },
   fixIncorrectDefaultTracks: {
