@@ -811,9 +811,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/ui@npm:^3.24.0":
-  version: 3.24.0
-  resolution: "@charcuterie/ui@npm:3.24.0"
+"@charcuterie/ui@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "@charcuterie/ui@npm:4.0.0"
   dependencies:
     "@charcuterie/logic": "npm:2.3.0"
     "@charcuterie/tokens": "npm:1.6.0"
@@ -845,7 +845,7 @@ __metadata:
       optional: true
     react-router:
       optional: true
-  checksum: 10c0/517b7e85eef9fa20109eb965fdbfee07fc10774c55a63435ac45760d10cb0b8963b18eb2fdfbeb7d057242287ec96eee7e098eb04fc9cac267e81ac5d5e581d5
+  checksum: 10c0/7908a5c885b5684dfdfb7bca1a9747f8844a74804afa5f660d200f8886c5dbdaee52f2400bf00591c9f2fd5d3891c827178bc15753bb512b3771d14aab630a1a
   languageName: node
   linkType: hard
 
@@ -2058,7 +2058,7 @@ __metadata:
     "@charcuterie/server": "npm:^0.4.0"
     "@charcuterie/storybook-config": "npm:^0.3.0"
     "@charcuterie/tokens": "npm:^1.6.0"
-    "@charcuterie/ui": "npm:^3.24.0"
+    "@charcuterie/ui": "npm:^4.0.0"
     "@charcuterie/vite-config": "npm:^1.1.0"
     "@charcuterie/vitest-config": "npm:^1.1.0"
     "@dnd-kit/core": "npm:^6.3.1"
