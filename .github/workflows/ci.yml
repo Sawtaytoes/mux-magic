@@ -38,12 +38,35 @@ env:
 # documented in docs/development.md; `timeout` is coreutils and does not exist
 # on the Windows side of this fleet, so the bound lives here rather than there.
 jobs:
+  # Decides whether the gates below need to run at all. There are now TWO
+  # reasons they do not, and both set the same `skip` output:
+  #
+  # 1. This exact SHA already has a successful CI run (the original reason —
+  #    a merge to master re-running what the pull request just proved).
+  # 2. The diff is documentation only.
+  #
+  # On (2): nothing below reads markdown. There is no markdownlint, no remark,
+  # no prettier over `.md` and no link check, and Biome does not format
+  # markdown — so a `.md`-only diff made `lint`, `typecheck`, `unit-tests`,
+  # `e2e`, `storybook-build` and `build-budget` all run without opening the
+  # file that changed. e2e alone installs a browser to do it.
+  #
+  # WARNING: do NOT rewrite either reason as `paths-ignore:` on the trigger.
+  # The gates below are required status checks. A job that `if:` skips still
+  # reports its context, and GitHub counts a `skipped` conclusion as success.
+  # A workflow that never STARTED reports nothing at all, so a required check
+  # stays pending and the pull request can never merge, with no failure to
+  # explain why. That difference is the whole reason this job exists.
   check-prior-run:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     outputs:
       skip: ${{ steps.check.outputs.skip }}
     steps:
+      - uses: actions/checkout@v6
+        # The full history: the documentation diff below needs the base commit.
+        with: { fetch-depth: 0 }
+
       - id: check
         env:
           GH_TOKEN: ${{ github.token }}
@@ -52,7 +75,36 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           EVENT: ${{ github.event_name }}
           REF: ${{ github.ref }}
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
         run: |
+          # Reason 2 first — it applies to a pull request as well as a merge,
+          # and it is the cheaper question to answer.
+          #
+          # Fails SAFE: anything we cannot diff — a new branch whose `before`
+          # is all zeros, a base commit the fetch missed — falls through and
+          # runs the whole suite.
+          if [ -n "${BASE_SHA:-}" ] \
+            && [ "${BASE_SHA}" != "0000000000000000000000000000000000000000" ] \
+            && git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null
+          then
+            mergeBase="$(git merge-base "${BASE_SHA}" HEAD || echo "${BASE_SHA}")"
+            changedFiles="$(git diff --name-only "${mergeBase}" HEAD)"
+            printf 'Changed files:\n%s\n\n' "${changedFiles}"
+
+            # `.mdx` deliberately does NOT match `.md$` — it is Storybook
+            # source in this repo, and it compiles. A `.changeset/*.md` is
+            # markdown too, but it is a RELEASE input rather than
+            # documentation, so it counts as code.
+            if [ -n "${changedFiles}" ] \
+              && ! printf '%s\n' "${changedFiles}" | grep -q '^\.changeset/' \
+              && ! printf '%s\n' "${changedFiles}" | grep -qvE '^(.+\.md|LICENSE)$'
+            then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "Documentation-only diff — skipping jobs (workflow still concludes success)."
+              exit 0
+            fi
+          fi
+
           if [ "$EVENT" != "push" ] || [ "$REF" != "refs/heads/master" ]; then
             echo "skip=false" >> "$GITHUB_OUTPUT"
             exit 0
