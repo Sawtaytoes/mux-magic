@@ -40,6 +40,15 @@ export const optimizeDepsInclude = [
   "@charcuterie/logic/openapi",
   "@charcuterie/logic/query",
   "@charcuterie/ui",
+  // The react-router seam is a SUBPATH, so it is its own optimizer
+  // entry even though `@charcuterie/ui` is listed above. Adding
+  // `<ReactRouterAdapter>` to `AppRouter` without this line cost a
+  // CI run: the optimizer discovered it mid-suite, reloaded the
+  // page, and 19 tests in `useBuilderActions.test.tsx` failed with
+  // "Invalid hook call ... more than one copy of React". It passed
+  // locally throughout, because a warm `node_modules/.vite` hides
+  // the race exactly as the note above says it does.
+  "@charcuterie/ui/react-router",
   "@dnd-kit/core",
   "@dnd-kit/sortable",
   "@dnd-kit/utilities",
