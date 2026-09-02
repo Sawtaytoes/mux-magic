@@ -15,8 +15,62 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch || github.ref }}
 
 jobs:
+  # Did CI actually run its gates, or did it skip them?
+  #
+  # CI skips every gate when the diff is documentation only, and mux-magic's
+  # also skips when this exact SHA already had a green run. In BOTH cases the
+  # workflow concludes `success`, so the `conclusion == 'success'` test below
+  # is true and this deploy used to rebuild and push an image for a change
+  # that could not alter it -- churning the mutable `latest` tag for nothing.
+  #
+  # Asking CI what it did is more reliable than re-deriving the diff here. A
+  # `workflow_run` payload carries no `before` SHA, so this workflow cannot
+  # see the range that CI saw -- only the head commit.
+  changes:
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: read
+
+    outputs:
+      didCiRun: ${{ steps.detect.outputs.didCiRun }}
+
+    steps:
+      - id: detect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+
+          # Fails SAFE: a manual dispatch has no upstream run to inspect, so
+          # it builds.
+          if [ "$EVENT" != "workflow_run" ] || [ -z "${RUN_ID:-}" ]
+          then
+            echo "Not a workflow_run trigger -- building."
+            echo "didCiRun=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          conclusion="$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs" \
+            --jq '[.jobs[] | select(.name == "lint")] | first | .conclusion // "unknown"')"
+          echo "CI job 'lint' concluded: ${conclusion}"
+
+          if [ "${conclusion}" = "skipped" ]
+          then
+            echo "CI skipped its gates -- nothing new to build."
+            echo "didCiRun=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "didCiRun=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    needs: [changes]
+    # `!= 'false'` not `== 'true'`: if the `changes` job itself fails,
+    # the output is empty and this still builds.
+    if: ${{ needs.changes.outputs.didCiRun != 'false' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') }}
     # ci.yml bounds every one of its jobs (its #226); this workflow had no
     # bound at all, so a wedged `docker build` could hold GitHub's 6-hour
     # ceiling AND this branch's concurrency slot for the whole time. Observed
