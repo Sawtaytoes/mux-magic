@@ -13,6 +13,7 @@ import { changeTrackLanguagesCommand } from "./cli-commands/changeTrackLanguages
 import { convertContainerAudioToFlacCommand } from "./cli-commands/convertContainerAudioToFlacCommand.js"
 import { convertLosslessToFlacCommand } from "./cli-commands/convertLosslessToFlacCommand.js"
 import { convertSrtToAssCommand } from "./cli-commands/convertSrtToAssCommand.js"
+import { copyAudioReleaseDateIntoDateCommand } from "./cli-commands/copyAudioReleaseDateIntoDateCommand.js"
 import { copyFilesCommand } from "./cli-commands/copyFilesCommand.js"
 import { copyOutSubtitlesCommand } from "./cli-commands/copyOutSubtitlesCommand.js"
 import { deleteCopiedOriginalsCommand } from "./cli-commands/deleteCopiedOriginalsCommand.js"
@@ -80,6 +81,7 @@ yargs(hideBin(process.argv))
   .command(convertContainerAudioToFlacCommand)
   .command(convertSrtToAssCommand)
   .command(copyFilesCommand)
+  .command(copyAudioReleaseDateIntoDateCommand)
   .command(copyOutSubtitlesCommand)
   .command(extractSubtitlesCommand)
   .command(fetchThemeMusicCommand)
