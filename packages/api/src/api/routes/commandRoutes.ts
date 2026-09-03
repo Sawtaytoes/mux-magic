@@ -30,6 +30,10 @@ import {
   convertSrtToAssDefaultProps,
 } from "@mux-magic/core/src/app-commands/convertSrtToAss.js"
 import {
+  type CopyAudioReleaseDateIntoDateRecord,
+  copyAudioReleaseDateIntoDate,
+} from "@mux-magic/core/src/app-commands/copyAudioReleaseDateIntoDate.js"
+import {
   type CopyRecord,
   copyFiles,
 } from "@mux-magic/core/src/app-commands/copyFiles.js"
@@ -251,6 +255,28 @@ export const commandConfigs: Record<
     schema: schemas.scanAudioFilesRequestSchema,
     summary:
       "Walk a folder for audio files and report each one's existing tags, codec, bit depth, sample rate and duration. Pure read — no filesystem mutation.",
+    tags: ["Music Tagging"],
+  },
+  copyAudioReleaseDateIntoDate: {
+    getObservable: (body) =>
+      copyAudioReleaseDateIntoDate({
+        isDryRun: body.isDryRun,
+        isRecursive: body.isRecursive,
+        isTimestampPreserved: body.isTimestampPreserved,
+        recursiveDepth: body.recursiveDepth,
+        sourcePath: body.sourcePath,
+      }),
+    extractOutputs: (results) => ({
+      copiedFilePaths: (
+        results as CopyAudioReleaseDateIntoDateRecord[]
+      )
+        .filter((record) => record.kind === "copied")
+        .map((record) => record.filePath),
+    }),
+    schema:
+      schemas.copyAudioReleaseDateIntoDateRequestSchema,
+    summary:
+      "Copy Release Date into Date for each audio file that has no Date. It keeps Release Date and preserves modified times by default.",
     tags: ["Music Tagging"],
   },
   findDuplicateAudioFiles: {

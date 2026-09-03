@@ -61,6 +61,7 @@ export const commandNames = [
   "findDuplicateAudioFiles",
   "compareMusicAssistantLibrary",
   "scanAudioFiles",
+  "copyAudioReleaseDateIntoDate",
   "renumberChapters",
   "renameAndMoveAudioFiles",
   "renameDemos",

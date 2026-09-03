@@ -18,6 +18,16 @@ window.commandDescriptions = {
       "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
     }
   },
+  "copyAudioReleaseDateIntoDate": {
+    "summary": "Copy Release Date into Date for each audio file that has no Date. It keeps Release Date and preserves modified times by default.",
+    "fields": {
+      "isDryRun": "Report matching files without writing tags.",
+      "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",
+      "isTimestampPreserved": "Restore each file's modified time after writing. On by default so the library scanner does not treat each repaired album as new.",
+      "recursiveDepth": "How many folder levels below the source to walk when `isRecursive` is on. 1 covers the normal `Inbox/<Album>/` layout.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
   "findDuplicateAudioFiles": {
     "summary": "Find duplicates inside the source or against an optional library path. Match by identical decoded audio, by AcoustID fingerprint, or by tags, then rank which copy to keep — lossless first, then bit depth and sample rate. Read-only: it recommends, the compare table confirms, and nothing is deleted here.",
     "fields": {

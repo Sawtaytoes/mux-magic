@@ -21,6 +21,7 @@ import {
   convertContainerAudioToFlacRequestSchema,
   convertLosslessToFlacRequestSchema,
   convertSrtToAssRequestSchema,
+  copyAudioReleaseDateIntoDateRequestSchema,
   copyFilesRequestSchema,
   copyOutSubtitlesRequestSchema,
   deleteCopiedOriginalsRequestSchema,
@@ -109,6 +110,44 @@ export const COMMANDS: Commands = {
         field("sourcePath", {
           type: "path",
           label: "Music Folder",
+        }),
+        field("isRecursive", {
+          type: "boolean",
+          label: "Include child folders",
+        }),
+        field("recursiveDepth", {
+          type: "number",
+          label: "Folder depth",
+          visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  copyAudioReleaseDateIntoDate: (() => {
+    const field = fieldBuilder(
+      copyAudioReleaseDateIntoDateRequestSchema,
+    )
+    return {
+      summary:
+        "Copy Release Date into Date only when Date is missing. Release Date stays in place.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      note: "Writes tags when Dry run is off. Run the dry-run report first.",
+      outputs: [
+        { name: "copiedFilePaths", label: "Copied dates" },
+      ],
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Music Folder",
+        }),
+        field("isDryRun", {
+          type: "boolean",
+          label: "Dry run",
+        }),
+        field("isTimestampPreserved", {
+          type: "boolean",
+          label: "Keep modified times",
         }),
         field("isRecursive", {
           type: "boolean",
