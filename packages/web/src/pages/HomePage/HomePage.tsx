@@ -94,9 +94,8 @@ export const HomePage = () => {
 
           And each tile is now a routed link. `ActionTiles` sends a
           same-origin `href` through the `RouterLink` this app already
-          injects at its root, so these two of the ten raw `<a href>`
-          anchors `AppRouter` complains about stop reloading the
-          document. */}
+          injects at its root. These are two of the ten page links
+          that now navigate without reloading the document. */}
       <ActionTiles
         className="mt-14"
         items={TOOL_ITEMS}

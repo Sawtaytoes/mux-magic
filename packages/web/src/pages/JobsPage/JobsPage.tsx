@@ -1,3 +1,5 @@
+import { UnstyledLink } from "@charcuterie/ui"
+
 import { JobStatusFilter } from "../../components/JobStatusFilter/JobStatusFilter"
 import { StatusBar } from "../../components/StatusBar/StatusBar"
 import { usePageTitle } from "../../hooks/usePageTitle"
@@ -23,25 +25,25 @@ export const JobsPage = () => {
     <main className="px-4 py-6 space-y-4">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-xl font-semibold">
-          <a
+          <UnstyledLink
             href="/"
             className="text-sm font-normal text-content-secondary hover:text-content-secondary me-3"
           >
             ← Tools
-          </a>
+          </UnstyledLink>
           Jobs{" "}
-          <a
+          <UnstyledLink
             href="/builder"
             className="text-sm font-normal text-intent-accent-content hover:text-intent-accent-content ms-3"
           >
             Sequence Builder ↗
-          </a>
-          <a
+          </UnstyledLink>
+          <UnstyledLink
             href="/errors"
             className="text-sm font-normal text-content-secondary hover:text-content-secondary ms-3"
           >
             Errors ↗
-          </a>
+          </UnstyledLink>
         </h1>
         <StatusBar />
       </div>
