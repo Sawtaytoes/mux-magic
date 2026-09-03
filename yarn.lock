@@ -797,10 +797,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/tokens@npm:1.6.0, @charcuterie/tokens@npm:^1.6.0":
+"@charcuterie/tokens@npm:1.6.0":
   version: 1.6.0
   resolution: "@charcuterie/tokens@npm:1.6.0"
   checksum: 10c0/1f2c6093beffde630a6ddd9c19fbe80c95eedaad6694bdeb77104ace0b6613704da64521cf376328b50466996ca5df64c2a6e2bd56429fda15f2af73cb2d4650
+  languageName: node
+  linkType: hard
+
+"@charcuterie/tokens@npm:1.7.0, @charcuterie/tokens@npm:^1.7.0":
+  version: 1.7.0
+  resolution: "@charcuterie/tokens@npm:1.7.0"
+  checksum: 10c0/2c5e981b50d063311122a46a8be2902b2910c7f90a0be8f3d05d7d33b025b7662898b06387dd673b15521d36624359fc79adb7aa9affee93428c256e466996a5
   languageName: node
   linkType: hard
 
@@ -811,12 +818,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/ui@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "@charcuterie/ui@npm:4.0.0"
+"@charcuterie/ui@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "@charcuterie/ui@npm:4.1.0"
   dependencies:
     "@charcuterie/logic": "npm:2.3.0"
-    "@charcuterie/tokens": "npm:1.6.0"
+    "@charcuterie/tokens": "npm:1.7.0"
     "@floating-ui/react": "npm:^0.27.20"
     "@tanstack/react-virtual": "npm:^3.13.12"
     tailwind-merge: "npm:^3.6.0"
@@ -845,7 +852,7 @@ __metadata:
       optional: true
     react-router:
       optional: true
-  checksum: 10c0/7908a5c885b5684dfdfb7bca1a9747f8844a74804afa5f660d200f8886c5dbdaee52f2400bf00591c9f2fd5d3891c827178bc15753bb512b3771d14aab630a1a
+  checksum: 10c0/26e66d2afc64117f0cc622508bdcb1c4aa29ad92c2e3767b970d944d159c8bb7b4a7e80f0977bf35a50c621fb54e9ed8e3ac724a22c997b9742830414dd30031
   languageName: node
   linkType: hard
 
@@ -2057,8 +2064,8 @@ __metadata:
     "@charcuterie/logic": "npm:^2.3.0"
     "@charcuterie/server": "npm:^0.4.0"
     "@charcuterie/storybook-config": "npm:^0.3.0"
-    "@charcuterie/tokens": "npm:^1.6.0"
-    "@charcuterie/ui": "npm:^4.0.0"
+    "@charcuterie/tokens": "npm:^1.7.0"
+    "@charcuterie/ui": "npm:^4.1.0"
     "@charcuterie/vite-config": "npm:^1.1.0"
     "@charcuterie/vitest-config": "npm:^1.1.0"
     "@dnd-kit/core": "npm:^6.3.1"

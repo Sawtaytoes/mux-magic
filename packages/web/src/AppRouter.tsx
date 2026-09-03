@@ -57,9 +57,16 @@ export const AppRouter = () => (
 
       ⚠️ NEITHER SEAM DOES ANYTHING YET, and that is this app's bug,
       not the adapter's. Every in-app link here is still a raw
-      `<a href="/jobs">` written by hand — ten of them, across
-      `PageHeader`, `HomePage`/`ToolCard`, `JobsPage`, `JobsList` and
-      `ErrorsPage`. A raw anchor reloads the document, which throws
+      `<a href="/jobs">` written by hand — eight of them now, across
+      `PageHeader`, `JobsPage`, `JobsList` and `ErrorsPage`.
+
+      The two on `HomePage` are gone, and they are the first two that
+      ever went: that page is a Charcuterie `ActionTiles` now, and it
+      sends a same-origin `href` through this very seam rather than
+      taking one on trust. Adopting a library component fixed the app
+      bug this comment describes, for the part of the app it covers.
+
+      A raw anchor reloads the document, which throws
       away the history entry the scroll memory keyed on, so there is
       no client-side navigation for either seam to observe. The
       workspace rule is that an owned app navigates with real router
