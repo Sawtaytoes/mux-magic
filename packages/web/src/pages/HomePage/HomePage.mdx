@@ -7,7 +7,7 @@ import * as HomePageStories from "./HomePage.stories";
 
 # HomePage
 
-The tool picker mounted at `/`. Two `ToolCard`s — **Builder** (`/builder`) and **Jobs** (`/jobs`) — under the app title.
+The tool picker mounted at `/`. One Charcuterie `ActionTiles` at `size="lg"` — **Builder** (`/builder`) and **Jobs** (`/jobs`) — under the app title.
 
 Before this page existed, `/` was the Jobs page and the Builder was reachable only through a small header link. Jobs now lives at `/jobs`; `/` is the neutral landing surface.
 
@@ -17,12 +17,14 @@ The Errors page (`/errors`) is deliberately *not* a card — it is a detail view
 
 - Pure layout: no atoms, no fetching, no SSE. Cheap to mount, which is why the landing route doesn't open the jobs EventSource anymore.
 - Sets the document title to `Tools · Mux Magic` via `usePageTitle`.
-- Single column below the `sm` breakpoint; two columns above it.
+- Columns come from the **container**, not the window: `ActionTiles` lays out `auto-fill` tracks with a 420px floor, so the tiles gain a column when there is room for one and never stretch into 1280px slabs when there is not. The floor is what sets the column count — at 420 this container takes exactly two tracks, and one below about 860px.
+- Each tile is a real `<a href>` routed through the app's injected `RouterLink`, so these two links no longer reload the document.
+- Colour is the library's. Each tile takes the next hue from Charcuterie's ten-wide categorical palette, so a third tool would arrive with its own rather than repeating one.
 
 ## Default
 
 <Canvas of={HomePageStories.Default} />
 
-## Narrow viewport (cards stack)
+## Narrow viewport (tiles stack)
 
 <Canvas of={HomePageStories.Narrow} />
