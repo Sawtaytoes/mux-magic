@@ -2485,6 +2485,25 @@ export const scanAudioFilesRequestSchema = z.object({
   sourcePath: musicSourcePathSchema,
 })
 
+export const copyAudioReleaseDateIntoDateRequestSchema =
+  z.object({
+    isDryRun: z
+      .boolean()
+      .default(true)
+      .describe(
+        "Report matching files without writing tags.",
+      ),
+    isRecursive: musicIsRecursiveSchema,
+    isTimestampPreserved: z
+      .boolean()
+      .default(true)
+      .describe(
+        "Restore each file's modified time after writing. On by default so the library scanner does not treat each repaired album as new.",
+      ),
+    recursiveDepth: musicRecursiveDepthSchema,
+    sourcePath: musicSourcePathSchema,
+  })
+
 export const findDuplicateAudioFilesRequestSchema =
   z.object({
     comparisonPath: z

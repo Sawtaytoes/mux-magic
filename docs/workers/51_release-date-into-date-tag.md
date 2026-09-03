@@ -1,5 +1,8 @@
 # Worker 51 — release-date-into-date-tag
 
+> [!WARNING]
+> The user corrected this brief on 2026-09-03. This is an audio-tag command, not an MKV-tag command. The active contract is [Audio Release Date is copied into Date only when Date is missing](../decisions/2026-09-03-audio-release-date-is-copied-into-date-only-when-date-is-missing.md). The historical brief remains below as evidence of the superseded scope.
+
 **Model:** Sonnet · **Thinking:** ON · **Effort:** Medium
 **Branch:** `feat/mux-magic-revamp/51-release-date-into-date-tag`
 **Worktree:** `.claude/worktrees/51_release-date-into-date-tag/`
