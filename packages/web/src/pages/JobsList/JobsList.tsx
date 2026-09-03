@@ -1,6 +1,7 @@
 import {
   AdaptiveGrid,
   EmptyState,
+  UnstyledLink,
   useAdaptiveColumns,
 } from "@charcuterie/ui"
 import { useAtomValue } from "jotai"
@@ -95,12 +96,12 @@ export const JobsList = () => {
       {topLevel.length === 0 && (
         <EmptyState
           action={
-            <a
+            <UnstyledLink
               className="text-intent-accent-content hover:text-intent-accent-content text-sm"
               href="/builder"
             >
               Sequence Builder ↗
-            </a>
+            </UnstyledLink>
           }
           description={
             visibleStatuses.length === 0

@@ -1,4 +1,9 @@
-import { Button, IconButton, Switch } from "@charcuterie/ui"
+import {
+  Button,
+  IconButton,
+  Switch,
+  UnstyledLink,
+} from "@charcuterie/ui"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import { useEffect, useState } from "react"
 import { editVariablesModalOpenAtom } from "../../components/EditVariablesModal/editVariablesModalOpenAtom"
@@ -202,12 +207,12 @@ export const PageHeader = () => {
 
         {/* Title */}
         <h1 className="text-lg font-bold tracking-tight leading-none">
-          <a
+          <UnstyledLink
             href="/"
             className="text-content-primary hover:text-intent-accent-content transition-colors"
           >
             Sequence Builder
-          </a>
+          </UnstyledLink>
         </h1>
 
         {/* Background job badge */}
@@ -272,12 +277,12 @@ export const PageHeader = () => {
           </div>
           <span className="page-menu-sep w-px h-6 bg-border-default mx-1" />
           <div className="page-menu-group">
-            <a
+            <UnstyledLink
               href="/jobs"
               className="text-xs text-content-secondary hover:text-content-primary"
             >
               Jobs ↗
-            </a>
+            </UnstyledLink>
           </div>
         </div>
 
