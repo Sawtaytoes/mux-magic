@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-08-29 | [Store AniDB sequels in separate series folders](2026-08-29-anidb-sequels-use-separate-series-folders.md) | naming | Accepted |
 | 2026-08-29 | [A release year is shown once](2026-08-29-a-release-year-is-shown-once.md) | core / cli | Accepted |
 | 2026-08-28 | [Related anime themes require review](2026-08-28-related-anime-themes-require-review.md) | core / cli | Accepted |
 | 2026-08-28 | [Discogs is the third music-release matcher](2026-08-28-discogs-is-the-third-music-release-matcher.md) | core / api / web | Accepted |
