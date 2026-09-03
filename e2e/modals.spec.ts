@@ -274,6 +274,64 @@ test.describe("LoadModal — builder round-trip", () => {
   })
 })
 
+test.describe("Builder YAML paste", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/builder/")
+  })
+
+  test("pasting valid YAML on the page loads the sequence", async ({
+    page,
+  }) => {
+    const yaml = [
+      "steps:",
+      "  - id: page-paste-step",
+      "    command: makeDirectory",
+      "    params:",
+      "      sourcePath: /test/page-paste",
+    ].join("\n")
+
+    await expect(
+      page.getByText("No steps yet."),
+    ).toBeVisible()
+    await pasteText(page, yaml)
+
+    await expect(page.locator(".step-card")).toHaveCount(1)
+    await expect(page.locator(".step-card")).toContainText(
+      "Make Directory",
+    )
+  })
+
+  test("pasting valid YAML in a field keeps editing the field", async ({
+    page,
+  }) => {
+    await addStepWithCommand(
+      page,
+      "makeDirectory",
+      /^Make Directory\s/,
+    )
+    const pathInput = page.getByRole("textbox").last()
+    await pathInput.focus()
+
+    await page.evaluate((yamlText: string) => {
+      const input = document.activeElement
+      const clipboardData = new DataTransfer()
+      clipboardData.setData("text/plain", yamlText)
+      input?.dispatchEvent(
+        new ClipboardEvent("paste", {
+          bubbles: true,
+          cancelable: true,
+          clipboardData,
+        }),
+      )
+    }, "steps:\n  - command: copyFiles\n    params: {}")
+
+    await expect(page.locator(".step-card")).toHaveCount(1)
+    await expect(page.locator(".step-card")).toContainText(
+      "Make Directory",
+    )
+  })
+})
+
 // ─── LookupModal ─────────────────────────────────────────────────────────────
 
 test.describe("LookupModal", () => {
