@@ -3,6 +3,11 @@ import { expect, test } from "vitest"
 // Read through Vite's `?raw` rather than `node:fs`, so this file
 // stays inside the browser program.
 import routerSource from "./AppRouter.tsx?raw"
+import pageHeaderSource from "./components/PageHeader/PageHeader.tsx?raw"
+import errorsPageSource from "./pages/ErrorsPage/ErrorsPage.tsx?raw"
+import homePageSource from "./pages/HomePage/HomePage.tsx?raw"
+import jobsListSource from "./pages/JobsList/JobsList.tsx?raw"
+import jobsPageSource from "./pages/JobsPage/JobsPage.tsx?raw"
 
 /**
  * This app is the reason the test exists.
@@ -46,4 +51,29 @@ test("the adapter is inside the router", () => {
 
   expect(routerAt).toBeGreaterThan(-1)
   expect(adapterAt).toBeGreaterThan(routerAt)
+})
+
+test("all ten same-view page links use the router seam", () => {
+  const unstyledLinkSources = [
+    pageHeaderSource,
+    errorsPageSource,
+    jobsListSource,
+    jobsPageSource,
+  ]
+
+  unstyledLinkSources.forEach((navigationSource) => {
+    expect(navigationSource).toContain("UnstyledLink")
+    expect(navigationSource).not.toContain("<a")
+  })
+
+  expect(
+    unstyledLinkSources
+      .flatMap((navigationSource) =>
+        navigationSource.match(/<UnstyledLink/g),
+      )
+      .filter(Boolean),
+  ).toHaveLength(8)
+  expect(homePageSource).toContain("ActionTiles")
+  expect(homePageSource.match(/href: "\//g)).toHaveLength(2)
+  expect(homePageSource).not.toContain("<a")
 })

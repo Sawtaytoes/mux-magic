@@ -58,6 +58,33 @@ test.describe("Jobs page — SSE stream", () => {
     ).toBeVisible()
   })
 
+  test("page links navigate without reloading the app", async ({
+    page,
+  }) => {
+    await page.route("**/jobs/stream*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        body: "",
+      })
+    })
+
+    await page.goto(`${webBaseUrl}/jobs`)
+    await page.evaluate(() => {
+      document.body.dataset.routerMarker = "kept"
+    })
+    await page
+      .getByRole("link", { name: /Sequence Builder/ })
+      .first()
+      .click()
+
+    await expect(page).toHaveURL(/\/builder$/)
+    await expect(page.locator("body")).toHaveAttribute(
+      "data-router-marker",
+      "kept",
+    )
+  })
+
   test("exited is switched off by default, and switching it on re-requests the stream", async ({
     page,
   }) => {
