@@ -13,11 +13,6 @@ type NativeTagEntry = {
   value: unknown
 }
 
-export type AudioDateFields = {
-  date?: string
-  releaseDate?: string
-}
-
 const NATIVE_KEYS_BY_FIELD = {
   acoustIdFingerprint: [
     "ACOUSTID_FINGERPRINT",
@@ -53,22 +48,6 @@ const NATIVE_KEYS_BY_FIELD = {
     "MUSICBRAINZ_ALBUMID",
     "TXXX:MusicBrainz Album Id",
     "----:com.apple.iTunes:MusicBrainz Album Id",
-  ],
-  date: [
-    "TDRC",
-    "TYER",
-    "TXXX:DATE",
-    "DATE",
-    "year",
-    "WM/Year",
-    "©day",
-  ],
-  releaseDate: [
-    "TDRL",
-    "TXXX:RELEASE DATE",
-    "TXXX:RELEASEDATE",
-    "RELEASE DATE",
-    "RELEASEDATE",
   ],
 } as const
 
@@ -112,26 +91,6 @@ const readNativeField = ({
       found ??
       flattenedNativeTags.get(nativeKey.toLowerCase()),
     undefined,
-  )
-
-const getAudioDateFieldsFromFlattenedTags = (
-  flattenedNativeTags: Map<string, string>,
-): AudioDateFields => ({
-  date: readNativeField({
-    flattenedNativeTags,
-    nativeKeys: NATIVE_KEYS_BY_FIELD.date,
-  }),
-  releaseDate: readNativeField({
-    flattenedNativeTags,
-    nativeKeys: NATIVE_KEYS_BY_FIELD.releaseDate,
-  }),
-})
-
-export const getAudioDateFields = (
-  nativeTags: Record<string, NativeTagEntry[]>,
-) =>
-  getAudioDateFieldsFromFlattenedTags(
-    flattenNativeTags(nativeTags),
   )
 
 const buildTagsFromFlattenedNativeTags = ({
@@ -263,29 +222,6 @@ export const readAudioTags = (filePath: string) =>
       Promise.reject(
         new Error(
           `Cannot read audio tags from "${filePath}": ${
-            error instanceof Error
-              ? error.message
-              : String(error)
-          }`,
-          { cause: error },
-        ),
-      ),
-    )
-
-export const readAudioDateFields = (filePath: string) =>
-  parseFile(filePath, {
-    duration: false,
-    skipCovers: true,
-  })
-    .then((metadata) =>
-      getAudioDateFields(
-        metadata.native as Record<string, NativeTagEntry[]>,
-      ),
-    )
-    .catch((error: unknown) =>
-      Promise.reject(
-        new Error(
-          `Cannot read audio date tags from "${filePath}": ${
             error instanceof Error
               ? error.message
               : String(error)

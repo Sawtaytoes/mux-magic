@@ -1,10 +1,13 @@
 # Audio Release Date is copied into Date only when Date is missing
 
-- **Status:** Accepted
+- **Status:** Superseded by [Bulk audio tag work stays in the generic editor](2026-09-03-bulk-audio-tag-work-stays-in-the-generic-editor.md)
 - **Date:** 2026-09-03
 - **Type:** core / cli / api / web
 - **Supersedes:** The MKV scope in [worker 51](../workers/51_release-date-into-date-tag.md)
-- **Superseded by:** —
+- **Superseded by:** [Bulk audio tag work stays in the generic editor](2026-09-03-bulk-audio-tag-work-stays-in-the-generic-editor.md)
+
+> [!WARNING]
+> This used to be the decision. The user rejected the release-specific command. The current decision keeps bulk audio tag work in the generic editor.
 
 ## Decision
 

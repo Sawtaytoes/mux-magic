@@ -6,10 +6,7 @@ import {
   generateAudioFixture,
   getIsFfmpegAvailable,
 } from "../fixtures/generateAudioFixture.js"
-import {
-  getAudioDateFields,
-  readAudioTags,
-} from "./readAudioTags.js"
+import { readAudioTags } from "./readAudioTags.js"
 
 vi.unmock("node:fs")
 vi.unmock("node:fs/promises")
@@ -38,30 +35,6 @@ afterAll(async () => {
 
 const getFixtureFilePath = (fileName: string) =>
   join(fixtureDirectoryPath, fileName)
-
-test("distinguishes release-date fields from date fields across audio tag formats", () => {
-  expect(
-    getAudioDateFields({
-      "ID3v2.4": [{ id: "TDRL", value: "2010-08-27" }],
-      vorbis: [{ id: "RELEASEDATE", value: "2021-05-25" }],
-    }),
-  ).toEqual({
-    date: undefined,
-    releaseDate: "2010-08-27",
-  })
-
-  expect(
-    getAudioDateFields({
-      "ID3v2.4": [
-        { id: "TXXX:RELEASE DATE", value: "Dec 2011" },
-        { id: "TXXX:DATE", value: "2011" },
-      ],
-    }),
-  ).toEqual({
-    date: "2011",
-    releaseDate: "Dec 2011",
-  })
-})
 
 test.skipIf(isFfmpegMissing)(
   "reads the common tags and the file info from a generated FLAC",
