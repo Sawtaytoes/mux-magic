@@ -62,9 +62,11 @@ describe(analyseDiscBackup.name, () => {
     expect(writtenSidecar.titles).toHaveLength(18)
   })
 
-  test("passes --minlength=60 through by default so real extras are seen but fragments are not", async () => {
-    // A one-minute floor keeps trailers and featurettes in the proposal while
-    // dropping the sub-minute BDMV fragments (59 of Desk Set's 61 titles).
+  test("passes --minlength=10 through by default so short extras are seen but fragments are not", async () => {
+    // Ten seconds drops the sub-second BDMV fragments (51 of Desk Set's 61
+    // titles) while keeping the band a 60-second floor silently threw away:
+    // Soylent Green's 12-second image gallery, and the 0:58 featurette and
+    // two 0:30 promos on the Haunting Hour DVD.
     vi.mocked(runMakeMkvCon).mockReturnValue(
       of(loadGraph("desk-set-bluray.robot.log")),
     )
@@ -72,7 +74,7 @@ describe(analyseDiscBackup.name, () => {
     await firstValueFrom(analyseDiscBackup({ sourcePath }))
 
     expect(runMakeMkvCon).toHaveBeenCalledWith({
-      minimumTitleLengthSeconds: 60,
+      minimumTitleLengthSeconds: 10,
       sourcePath,
     })
   })

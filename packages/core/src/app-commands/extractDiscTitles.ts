@@ -74,7 +74,7 @@ export const extractDiscTitles = ({
   destinationPath,
   disabledRuleNames = [],
   isRippingTrackSupersets = false,
-  minimumTitleLengthSeconds = 60,
+  minimumTitleLengthSeconds = 10,
   sourcePath,
   titleIndexes,
 }: {

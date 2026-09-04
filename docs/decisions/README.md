@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-09-03 | [Disc analysis runs at `--minlength=10`, not 60](2026-09-03-disc-analysis-minimum-title-length-drops-to-10-seconds.md) | core / cli / api / web | Accepted |
 | 2026-09-03 | [Bulk audio tag work stays in the generic editor](2026-09-03-bulk-audio-tag-work-stays-in-the-generic-editor.md) | core / cli / api / web | Accepted |
 | 2026-09-03 | [Audio Release Date is copied into Date only when Date is missing](2026-09-03-audio-release-date-is-copied-into-date-only-when-date-is-missing.md) | core / cli / api / web | Superseded |
 | 2026-08-29 | [Store AniDB sequels in separate series folders](2026-08-29-anidb-sequels-use-separate-series-folders.md) | naming | Accepted |
@@ -35,7 +36,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 | 2026-08-21 | [The summary trailer and the UNNAMED-FEATURES/ bucket are one feature](2026-08-21-the-summary-trailer-and-the-unnamed-bucket-are-one-feature.md) | core / web | Accepted |
 | 2026-08-21 | [Every NSF-family command emits the same summary trailer](2026-08-21-nsf-siblings-emit-the-same-summary-trailer.md) | core / web | Superseded |
 | 2026-08-20 | [Every picker is a `Listbox`; the native `Select` is a hatch we have never needed](2026-08-20-every-picker-is-a-listbox-never-a-native-select.md) | web | Accepted |
-| 2026-08-13 | [Disc analysis runs at `--minlength=60`, not 0](2026-08-13-disc-analysis-minimum-title-length-is-60-seconds.md) | core / cli / api | Accepted |
+| 2026-08-13 | [Disc analysis runs at `--minlength=60`, not 0](2026-08-13-disc-analysis-minimum-title-length-is-60-seconds.md) | core / cli / api | Superseded by [2026-09-03](2026-09-03-disc-analysis-minimum-title-length-drops-to-10-seconds.md) |
 | 2026-08-13 | [Agents merge their own PRs as soon as CI is green](2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md) | process | Accepted |
 | 2026-08-13 | [PR/public screenshots use masked, fictional data](2026-08-13-pr-screenshots-use-masked-fake-data.md) | process | Accepted |
 | 2026-08-13 | [Sequence groups are flat-only (no parallel-of-sequences)](2026-08-13-groups-are-flat-only-no-parallel-of-sequences.md) | api / web | Known limitation |
