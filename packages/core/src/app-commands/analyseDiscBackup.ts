@@ -50,7 +50,7 @@ export const confirmedDispositionsFileName =
  */
 export const analyseDiscBackup = ({
   disabledRuleNames = [],
-  minimumTitleLengthSeconds = 60,
+  minimumTitleLengthSeconds = 10,
   sourcePath,
 }: {
   disabledRuleNames?: string[]

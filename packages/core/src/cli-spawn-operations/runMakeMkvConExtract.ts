@@ -35,7 +35,7 @@ const extractionCacheMegabytes = 128
  *
  * `--minlength` is passed here as well as on the info pass, and the two
  * MUST match: makemkvcon assigns title indexes AFTER applying the filter,
- * so the same disc read at 0 and at 60 numbers its titles differently and
+ * so the same disc read at 0 and at 10 numbers its titles differently and
  * an index from the wrong pass rips the wrong title. Proof is in
  * `__fixtures__/desk-set-bluray-extract-title.robot.log`, where MSG:3307
  * reports `01395.m2ts was added as title #1` only because 59 shorter
