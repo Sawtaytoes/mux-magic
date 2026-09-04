@@ -494,6 +494,7 @@ export const commandConfigs: Record<
               "comment",
               "composer",
               "date",
+              "discNumber",
               "genres",
               "totalDiscs",
             ] as const

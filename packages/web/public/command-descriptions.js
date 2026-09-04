@@ -104,6 +104,7 @@ window.commandDescriptions = {
       "comment": "Comment to set on every matched file.",
       "composer": "Composer to set on every matched file.",
       "date": "Release date to set on every matched file. MusicBrainz style is `YYYY-MM-DD`, and a bare `YYYY` is accepted.",
+      "discNumber": "Disc number to set on every matched file. Point the command at one disc folder when a multi-disc release is still split across folders.",
       "genres": "Genres to set on every matched file. Multi-value: the tag holds each entry separately, never one joined string.",
       "isDryRun": "Report which files would change, and which fields, without writing anything. Run this first — the report is the same shape as the real run.",
       "isRecursive": "Walk child folders as well. An album usually lives in one folder, so this is off by default; turn it on to point a run at a whole inbox of albums at once.",

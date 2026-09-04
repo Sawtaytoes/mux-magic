@@ -6,6 +6,7 @@ import {
   installLogCapture,
   uninstallLogCapture,
 } from "@mux-magic/core/src/api/logCapture.js"
+import { writeAudioTags } from "@mux-magic/core/src/app-commands/writeAudioTags.js"
 import { vol } from "memfs"
 import {
   afterAll,
@@ -14,8 +15,17 @@ import {
   describe,
   expect,
   test,
+  vi,
 } from "vitest"
 import { commandRoutes } from "./commandRoutes.js"
+
+vi.mock(
+  "@mux-magic/core/src/app-commands/writeAudioTags.js",
+  async () => {
+    const { of } = await import("rxjs")
+    return { writeAudioTags: vi.fn(() => of([])) }
+  },
+)
 
 // ─── L3 server-side guard for /commands/:name dry-run safety ────────────────
 //
@@ -66,9 +76,42 @@ afterAll(() => {
 
 afterEach(() => {
   resetStore()
+  vi.mocked(writeAudioTags).mockClear()
 })
 
 describe("POST /commands/:name — dry-run safety", () => {
+  test("writeAudioTags forwards a disc number bulk edit", async () => {
+    const response = await post(
+      "/commands/writeAudioTags",
+      {
+        discNumber: 4,
+        sourcePath: "/music/album/disc-4",
+        totalDiscs: 5,
+      },
+    )
+    expect(response.status).toBe(202)
+
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
+    await waitFor(() => {
+      const status = getJob(jobId)?.status
+      return status === "completed" || status === "failed"
+        ? status
+        : undefined
+    })
+
+    expect(writeAudioTags).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourcePath: "/music/album/disc-4",
+        tags: {
+          discNumber: 4,
+          totalDiscs: 5,
+        },
+      }),
+    )
+  })
+
   test("deleteFolder via ?fake=success leaves the target folder intact", async () => {
     vol.fromJSON({
       "/precious-cmd/keep-me.txt": "irreplaceable",

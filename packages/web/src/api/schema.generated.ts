@@ -5787,6 +5787,8 @@ export interface paths {
                         composer?: string;
                         /** @description Release date to set on every matched file. MusicBrainz style is `YYYY-MM-DD`, and a bare `YYYY` is accepted. */
                         date?: string;
+                        /** @description Disc number to set on every matched file. Point the command at one disc folder when a multi-disc release is still split across folders. */
+                        discNumber?: number;
                         /** @description Genres to set on every matched file. Multi-value: the tag holds each entry separately, never one joined string. */
                         genres?: string[];
                         /**

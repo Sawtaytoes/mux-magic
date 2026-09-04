@@ -490,6 +490,10 @@ export const COMMANDS: Commands = {
           type: "string",
           label: "Date",
         }),
+        field("discNumber", {
+          type: "number",
+          label: "Disc Number",
+        }),
         field("genres", {
           type: "stringArray",
           label: "Genres",
