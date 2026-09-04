@@ -86,8 +86,6 @@ export const commandLabels: Record<string, string> = {
 
   // Music Tagging
   scanAudioFiles: "Scan Audio Files",
-  copyAudioReleaseDateIntoDate:
-    "Copy Release Date into Date",
   fingerprintAudioFiles: "Fingerprint Audio Files",
   findDuplicateAudioFiles: "Find Duplicate Audio Files",
   compareMusicAssistantLibrary:
