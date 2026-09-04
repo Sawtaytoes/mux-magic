@@ -67,6 +67,20 @@ describe("addSubtitles offsets field label", () => {
   })
 })
 
+describe("writeAudioTags disc number field", () => {
+  test("surfaces Disc Number as a numeric bulk field", () => {
+    const discNumberField =
+      COMMANDS.writeAudioTags.fields.find(
+        ({ name }) => name === "discNumber",
+      )
+
+    expect(discNumberField).toMatchObject({
+      label: "Disc Number",
+      type: "number",
+    })
+  })
+})
+
 describe("COMMANDS field descriptions (regression guard)", () => {
   test("every non-hidden command field has a non-empty description", () => {
     Object.entries(COMMANDS).forEach(
