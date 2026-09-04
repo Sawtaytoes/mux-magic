@@ -1,6 +1,19 @@
 # 2026-08-13 — Disc analysis runs at `--minlength=60`, not 0
 
-- **Status:** Accepted
+> [!WARNING]
+> **SUPERSEDED on 2026-09-03 by [Disc analysis runs at `--minlength=10`, not 60](2026-09-03-disc-analysis-minimum-title-length-drops-to-10-seconds.md).**
+> The default is now **10**. This file is kept for history — do NOT set the floor
+> back to 60.
+>
+> Its case against `--minlength=0` still holds and is unchanged; what it got wrong
+> is the *other* end. It never evaluated a value between 0 and 60, and 60 sits
+> **above real content**: it silently hid Soylent Green's 12-second image gallery,
+> and a 0:58 featurette and two 0:30 promos on a Haunting Hour DVD. The Desk Set
+> objection below is answered by 10 anyway — 61 titles become 10, because 51 of
+> the 59 fragments are sub-ten-second. The linked file carries the measured
+> per-floor counts for every disc fixture.
+
+- **Status:** Superseded by [2026-09-03](2026-09-03-disc-analysis-minimum-title-length-drops-to-10-seconds.md)
 - **Date decided:** 2026-08-13
 - **Area:** core / cli / api
 - **Source:** owner, after the first production `analyseDiscBackup` run on `[BACKUP] Desk Set - Blu-ray` returned 61 titles.

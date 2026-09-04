@@ -35,7 +35,7 @@ Note the path is **`/api/commands/<name>`**, not `/jobs/<name>`.
 Verified 2026-08-13 on `[BACKUP] Desk Set - Blu-ray`: 61 titles, 56 keep /
 5 discard, writing `DISC-ANALYSIS/analysis.json` (171 KB) into the backup.
 The result matched the committed fixture's prediction exactly. That run was
-at the then-default `--minlength=0`; the default is now **60** (see the last
+at the then-default `--minlength=0`; the default is now **10** (see the last
 section), so a re-run reports fewer titles.
 
 **Deployment, already done — don't redo it:**
@@ -203,7 +203,7 @@ POST /api/commands/extractDiscTitles
   "sourcePath":      "/media/Disc-Rips/[BACKUP] Punisher_EC - DVD.iso",
   "destinationPath": "/media/Disc-Rips/[BACKUP] Punisher_EC - DVD/EXTRACTED-TITLES",
   "titleIndexes":    [0, 1, 2, 3, 4, 5],
-  "minimumTitleLengthSeconds": 60
+  "minimumTitleLengthSeconds": 10
 }
 ```
 
@@ -336,6 +336,21 @@ and PR #221.
 
 **So the numbers above are the `--minlength=0` numbers.** A re-run at the new
 default reports 2 titles for Desk Set — that is expected, not a regression.
+
+> ### ⚠️ Revised 2026-09-03 — the floor is **10 seconds**, not 60
+>
+> 60 turned out to sit *above real content*, which is the one thing a floor must
+> not do. It silently hid Soylent Green's 12-second image gallery (one of the
+> three galleries the 2026-08-25 pass lost) and, on a Haunting Hour DVD, a 0:58
+> featurette and two 0:30 Hub promos. A title under the floor is not proposed and
+> not discarded-with-a-reason — it is simply absent, so nothing in the output says
+> it existed.
+>
+> **10 answers the Desk Set objection above anyway.** At 10 that disc reports
+> **10 titles**, not 61, because 51 of its 59 fragments are sub-ten-second. A
+> re-run of Desk Set at the current default therefore reports 10, not 2.
+> Per-floor counts for every fixture are in
+> [the decision](decisions/2026-09-03-disc-analysis-minimum-title-length-drops-to-10-seconds.md).
 
 **Closed 2026-08-13:** both titles were extracted, trimmed to English,
 named and moved to `Movies/Desk Set (1957)/` (feature + `Theatrical

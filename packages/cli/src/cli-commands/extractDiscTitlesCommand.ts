@@ -38,7 +38,7 @@ const builder = (yargs: Argv) =>
       type: "string",
     })
     .option("minimumTitleLengthSeconds", {
-      default: 60,
+      default: 10,
       describe:
         "MakeMKV's minimum title length. MUST match the analysis pass — makemkvcon numbers titles after applying this filter, so a different value here rips different titles.",
       type: "number",

@@ -177,9 +177,9 @@ export const analyseDiscBackupRequestSchema = z.object({
     ),
   minimumTitleLengthSeconds: z
     .number()
-    .default(60)
+    .default(10)
     .describe(
-      "MakeMKV's minimum title length. Defaults to 60 so real extras (trailers, featurettes) are seen and proposed with a reason, while sub-minute BDMV fragments stay out of the list — at 0, Desk Set reports 61 titles of which only 2 are content. Pass 0 to see every fragment anyway.",
+      "MakeMKV's minimum title length. Defaults to 10, the floor that drops sub-ten-second BDMV fragments without dropping content — it takes Desk Set from 61 titles to 10, and it keeps the 12-second image gallery, 0:58 featurette and 0:30 promos that a 60-second floor silently hid. Pass 0 to see every fragment anyway.",
     ),
 })
 
@@ -203,9 +203,9 @@ export const extractDiscTitlesRequestSchema = z.object({
     ),
   minimumTitleLengthSeconds: z
     .number()
-    .default(60)
+    .default(10)
     .describe(
-      "MakeMKV's minimum title length. MUST match the analysis pass: makemkvcon assigns title indexes AFTER applying this filter, so the same disc read at 0 and at 60 numbers its titles differently and an index from the wrong pass rips the wrong title.",
+      "MakeMKV's minimum title length. MUST match the analysis pass: makemkvcon assigns title indexes AFTER applying this filter, so the same disc read at 0 and at 10 numbers its titles differently and an index from the wrong pass rips the wrong title.",
     ),
   titleIndexes: z
     .array(z.number())

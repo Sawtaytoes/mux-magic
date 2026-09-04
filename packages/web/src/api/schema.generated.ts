@@ -560,8 +560,8 @@ export interface paths {
                          */
                         disabledRuleNames?: string[];
                         /**
-                         * @description MakeMKV's minimum title length. Defaults to 60 so real extras (trailers, featurettes) are seen and proposed with a reason, while sub-minute BDMV fragments stay out of the list — at 0, Desk Set reports 61 titles of which only 2 are content. Pass 0 to see every fragment anyway.
-                         * @default 60
+                         * @description MakeMKV's minimum title length. Defaults to 10, the floor that drops sub-ten-second BDMV fragments without dropping content — it takes Desk Set from 61 titles to 10, and it keeps the 12-second image gallery, 0:58 featurette and 0:30 promos that a 60-second floor silently hid. Pass 0 to see every fragment anyway.
+                         * @default 10
                          */
                         minimumTitleLengthSeconds?: number;
                     };
@@ -1669,8 +1669,8 @@ export interface paths {
                          */
                         disabledRuleNames?: string[];
                         /**
-                         * @description MakeMKV's minimum title length. MUST match the analysis pass: makemkvcon assigns title indexes AFTER applying this filter, so the same disc read at 0 and at 60 numbers its titles differently and an index from the wrong pass rips the wrong title.
-                         * @default 60
+                         * @description MakeMKV's minimum title length. MUST match the analysis pass: makemkvcon assigns title indexes AFTER applying this filter, so the same disc read at 0 and at 10 numbers its titles differently and an index from the wrong pass rips the wrong title.
+                         * @default 10
                          */
                         minimumTitleLengthSeconds?: number;
                         /** @description Explicit title indexes to rip, overriding the dispositions. Omit to rip every title the analysis proposed keeping — `merge` and `inspect` titles are not ripped automatically unless `isRippingTrackSupersets` covers them. */

@@ -33,9 +33,9 @@ const builder = (yargs: Argv) =>
       type: "string",
     })
     .option("minimumTitleLengthSeconds", {
-      default: 60,
+      default: 10,
       describe:
-        "MakeMKV's minimum title length. Defaults to 60 so real extras are seen while sub-minute BDMV fragments stay out of the proposal. Pass 0 to see everything.",
+        "MakeMKV's minimum title length. Defaults to 10, the floor that drops BDMV fragments without dropping short extras. Pass 0 to see everything.",
       type: "number",
     })
 

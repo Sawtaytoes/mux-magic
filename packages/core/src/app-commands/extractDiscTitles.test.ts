@@ -92,7 +92,9 @@ describe(extractDiscTitles.name, () => {
 
   test("passes the SAME minimum title length to the rip that the analysis used", async () => {
     // makemkvcon numbers titles AFTER applying --minlength, so an index
-    // from a differently-filtered pass rips the wrong title.
+    // from a differently-filtered pass rips the wrong title. 60 is used here
+    // precisely because it is NOT the default any more — it proves the
+    // caller's value flows through rather than the default coinciding.
     vi.mocked(runMakeMkvCon).mockReturnValue(
       of(loadGraph("desk-set-bluray.robot.log")),
     )
