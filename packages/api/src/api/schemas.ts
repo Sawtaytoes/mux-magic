@@ -2652,6 +2652,12 @@ export const writeAudioTagsRequestSchema = z.object({
     .describe(
       "Release date to set on every matched file. MusicBrainz style is `YYYY-MM-DD`, and a bare `YYYY` is accepted.",
     ),
+  discNumber: z
+    .number()
+    .optional()
+    .describe(
+      "Disc number to set on every matched file. Point the command at one disc folder when a multi-disc release is still split across folders.",
+    ),
   genres: z
     .array(z.string())
     .optional()
