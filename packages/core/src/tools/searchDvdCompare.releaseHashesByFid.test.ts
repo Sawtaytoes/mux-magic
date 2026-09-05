@@ -7,10 +7,22 @@ import {
   vi,
 } from "vitest"
 
+import { openProviderCache } from "../provider-cache/providerCache.js"
+import { createDvdComparePageFetcher } from "./dvdCompareFetcher.js"
 import {
   getReleaseHashesByDvdCompareId,
   parseDvdCompareReleasesHtml,
 } from "./searchDvdCompare.js"
+
+// A disposable cache per test. The production fetcher writes to
+// `provider-cache.sqlite`; an in-memory database keeps the caching layer
+// real (the same createCachedFetch, the same `globalThis.fetch` beneath
+// it) while guaranteeing every test starts on a cold cache.
+const buildFetchPage = () =>
+  createDvdComparePageFetcher({
+    cache: openProviderCache({ databasePath: ":memory:" }),
+    minimumRequestIntervalMilliseconds: 0,
+  })
 
 // ─── HTML fixtures ────────────────────────────────────────────────────────────
 
@@ -94,28 +106,36 @@ describe(getReleaseHashesByDvdCompareId.name, () => {
     vi.restoreAllMocks()
   })
 
+  // `ok` and `headers` are what createCachedFetch reads before it stores
+  // the body; `arrayBuffer` is what the charset fallback decodes from.
+  const makeResponse = (html: string) => ({
+    arrayBuffer: async () =>
+      new TextEncoder().encode(html).buffer,
+    headers: { get: () => null },
+    ok: true,
+    status: 200,
+    text: async () => html,
+    url: "https://www.dvdcompare.net/comparisons/film.php",
+  })
+
   const makeFetchStub = (html: string) => {
-    globalThis.fetch = vi.fn(async () => ({
-      status: 200,
-      text: async () => html,
-      // Prod decodes via decodeResponseText -> response.arrayBuffer().
-      arrayBuffer: async () =>
-        new TextEncoder().encode(html).buffer,
-    })) as unknown as typeof globalThis.fetch
+    globalThis.fetch = vi.fn(async () =>
+      makeResponse(html),
+    ) as unknown as typeof globalThis.fetch
   }
 
   test("fetches film.php?fid=<id>&sel=on and returns parsed releases", async () => {
-    const fetchSpy = vi.fn(async () => ({
-      status: 200,
-      text: async () => MULTI_RELEASE_HTML,
-      arrayBuffer: async () =>
-        new TextEncoder().encode(MULTI_RELEASE_HTML).buffer,
-    }))
+    const fetchSpy = vi.fn(async () =>
+      makeResponse(MULTI_RELEASE_HTML),
+    )
     globalThis.fetch =
       fetchSpy as unknown as typeof globalThis.fetch
 
     const releases = await firstValueFrom(
-      getReleaseHashesByDvdCompareId(456),
+      getReleaseHashesByDvdCompareId({
+        dvdCompareId: 456,
+        fetchPage: buildFetchPage(),
+      }),
     )
 
     expect(releases).toEqual([
@@ -147,7 +167,10 @@ describe(getReleaseHashesByDvdCompareId.name, () => {
     makeFetchStub(SINGLE_RELEASE_HTML)
 
     const releases = await firstValueFrom(
-      getReleaseHashesByDvdCompareId(123),
+      getReleaseHashesByDvdCompareId({
+        dvdCompareId: 123,
+        fetchPage: buildFetchPage(),
+      }),
     )
 
     expect(releases).toHaveLength(1)
@@ -162,7 +185,10 @@ describe(getReleaseHashesByDvdCompareId.name, () => {
     makeFetchStub(ZERO_RELEASE_HTML)
 
     const releases = await firstValueFrom(
-      getReleaseHashesByDvdCompareId(789),
+      getReleaseHashesByDvdCompareId({
+        dvdCompareId: 789,
+        fetchPage: buildFetchPage(),
+      }),
     )
 
     expect(releases).toEqual([])

@@ -1,3 +1,5 @@
+import { logWarning } from "@mux-magic/tools"
+
 import type {
   ProviderCache,
   ProviderCacheRow,
@@ -11,7 +13,27 @@ import {
 export type CachedFetchOutcome = {
   body: string
   isFromCache: boolean
+  // True only on the stale-on-error path below: the entry is past its
+  // time to live and the provider could not be reached to refresh it.
+  // Optional so every existing stub that returns `{ body, isFromCache }`
+  // still satisfies the type.
+  isStale?: boolean
 }
+
+// How a provider's bytes become the string this module caches. The default
+// is `Response.text()`, which decodes strictly by the Content-Type charset
+// — right for the JSON APIs, wrong for DVDCompare, whose legacy pages are
+// Windows-1252 bytes mislabelled as UTF-8. A provider that needs its own
+// decoder (or that has to carry response metadata such as the post-redirect
+// URL alongside the body) injects one here rather than making this module
+// import from `tools/`.
+export type DecodeResponseBody = (
+  response: Response,
+) => Promise<string>
+
+const decodeResponseTextByDefault: DecodeResponseBody = (
+  response,
+) => response.text()
 
 // `fetch` ignores properties it does not know, so carrying the cache key
 // on the init object costs nothing at the network layer and keeps the
@@ -36,6 +58,7 @@ const DEFAULT_MINIMUM_REQUEST_INTERVAL_MILLISECONDS = 1000
 
 type RequestContext = {
   cache: ProviderCache
+  decodeResponseBody: DecodeResponseBody
   initialization: CachedFetchInit | undefined
   maximumAttempts: number
   provider: string
@@ -145,19 +168,21 @@ const resolveNotModified = ({
 
 const resolveFreshResponse = ({
   cache,
+  decodeResponseBody,
   provider,
   requestKey,
   response,
   url,
 }: {
   cache: ProviderCache
+  decodeResponseBody: DecodeResponseBody
   provider: string
   requestKey: string
   response: Response
   url: string
 }) =>
   response.ok
-    ? response.text().then((body) =>
+    ? decodeResponseBody(response).then((body) =>
         Promise.resolve(
           cache.set({
             body,
@@ -186,6 +211,8 @@ const fetchAndStore = (requestContext: RequestContext) =>
           })
         : resolveFreshResponse({
             cache: requestContext.cache,
+            decodeResponseBody:
+              requestContext.decodeResponseBody,
             provider: requestContext.provider,
             requestKey: requestContext.requestKey,
             response,
@@ -193,8 +220,67 @@ const fetchAndStore = (requestContext: RequestContext) =>
           }),
   )
 
+const describeThrownError = (thrownError: unknown) =>
+  thrownError instanceof Error
+    ? thrownError.message
+    : String(thrownError)
+
+const describeStaleAge = (fetchedAt: number) =>
+  `${Math.round((Date.now() - fetchedAt) / (60 * 60 * 1000))} hour(s) old`
+
+// Stale-on-error. A plain time-to-live cache still fails hard when the
+// entry has expired AND the provider is unreachable — which is the exact
+// shape of a DVDCompare outage: the answer is on disk, one day past its
+// week, and the run dies with `TypeError: fetch failed`.
+//
+// A row only exists because the provider itself once returned it with a
+// 200, so serving it is never an invention. It is not "caching a
+// failure" either: nothing new is written, and the next successful fetch
+// replaces the row as usual. The outcome carries `isStale: true` so a
+// caller that cares can say so.
+//
+// The staleness is deliberately uncapped. An age limit would restore the
+// hard failure this removes, and the cache is disposable — deleting
+// `provider-cache.sqlite` is the escape hatch when an entry is wrong.
+const serveStaleOnError = ({
+  provider,
+  staleRow,
+  thrownError,
+  url,
+}: {
+  provider: string
+  staleRow: ProviderCacheRow | null
+  thrownError: unknown
+  url: string
+}): Promise<CachedFetchOutcome> =>
+  staleRow === null
+    ? Promise.reject(thrownError)
+    : (logWarning(
+        "PROVIDER CACHE STALE",
+        `${provider} could not be reached for ${url}; serving the cached copy (${describeStaleAge(staleRow.fetchedAt)}). Cause: ${describeThrownError(thrownError)}`,
+      ) ??
+      Promise.resolve({
+        body: staleRow.body,
+        isFromCache: true,
+        isStale: true,
+      }))
+
+const fetchAndStoreOrServeStale = (
+  requestContext: RequestContext,
+) =>
+  fetchAndStore(requestContext).catch(
+    (thrownError: unknown) =>
+      serveStaleOnError({
+        provider: requestContext.provider,
+        staleRow: requestContext.staleRow,
+        thrownError,
+        url: requestContext.url,
+      }),
+  )
+
 export const createCachedFetch = ({
   cache,
+  decodeResponseBody = decodeResponseTextByDefault,
   maximumAttempts = DEFAULT_MAXIMUM_ATTEMPTS,
   minimumRequestIntervalMilliseconds = DEFAULT_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
   provider,
@@ -202,6 +288,7 @@ export const createCachedFetch = ({
   userAgent,
 }: {
   cache: ProviderCache
+  decodeResponseBody?: DecodeResponseBody
   maximumAttempts?: number
   minimumRequestIntervalMilliseconds?: number
   provider: string
@@ -217,8 +304,9 @@ export const createCachedFetch = ({
       ((requestKey: string) =>
         ((freshRow: ProviderCacheRow | null) =>
           freshRow === null
-            ? fetchAndStore({
+            ? fetchAndStoreOrServeStale({
                 cache,
+                decodeResponseBody,
                 initialization,
                 maximumAttempts,
                 provider,

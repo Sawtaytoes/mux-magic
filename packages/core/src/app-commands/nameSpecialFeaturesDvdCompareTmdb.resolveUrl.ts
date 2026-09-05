@@ -48,9 +48,9 @@ export const resolveUrl = ({
   // and let the user choose (or auto-select if there is only one). This skips
   // the movie-search / TMDB-disambiguation stage entirely.
   if (dvdCompareId != null) {
-    return getReleaseHashesByDvdCompareId(
+    return getReleaseHashesByDvdCompareId({
       dvdCompareId,
-    ).pipe(
+    }).pipe(
       switchMap((releases) => {
         if (releases.length === 0) {
           return throwError(
@@ -115,7 +115,7 @@ export const resolveUrl = ({
   }
 
   if (searchTerm) {
-    return findDvdCompareResults(searchTerm).pipe(
+    return findDvdCompareResults({ searchTerm }).pipe(
       switchMap(({ isDirectListing, results }) => {
         if (results.length === 0) {
           throw new Error(

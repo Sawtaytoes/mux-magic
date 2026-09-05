@@ -77,7 +77,7 @@ describe(resolveUrl.name, () => {
     )
     expect(
       getReleaseHashesByDvdCompareId,
-    ).toHaveBeenCalledWith(1234)
+    ).toHaveBeenCalledWith({ dvdCompareId: 1234 })
     expect(getUserSearchInput).not.toHaveBeenCalled()
   })
 
