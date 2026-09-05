@@ -3,9 +3,13 @@ import {
   logInfo,
 } from "@mux-magic/tools"
 import { from, map, type Observable } from "rxjs"
-import { decodeResponseText } from "./decodeBufferWithEncodingFallback.js"
+import type { CachedComputation } from "../provider-cache/cachedComputation.js"
 import {
-  BROWSER_USER_AGENT,
+  cacheDvdCompareScrape,
+  type DvdComparePageFetcher,
+  fetchDvdComparePage,
+} from "./dvdCompareFetcher.js"
+import {
   gotoPage,
   launchBrowser,
   newPageWithUserAgent,
@@ -47,25 +51,18 @@ const DVDCOMPARE_BASE = "https://www.dvdcompare.net"
 // browser UA on every DVDCompare request keeps these plain fetches working
 // regardless of how the site's bot-protection evolves. The same UA is
 // applied to the headless-Chromium context in launchBrowser so both code
-// paths look like the same client. Single-sourced from launchBrowser's
-// BROWSER_USER_AGENT so the fetch and headless-Chromium paths never drift.
-export const DVDCOMPARE_USER_AGENT = BROWSER_USER_AGENT
+// paths look like the same client. Re-exported from dvdCompareFetcher,
+// which is where the header is now applied.
+export { DVDCOMPARE_USER_AGENT } from "./dvdCompareFetcher.js"
 
-// Thin wrapper over `fetch` that always sends the DVDCompare browser UA
-// while preserving any caller-supplied method/body/headers. Routed through
-// `globalThis.fetch` so the test suite's `globalThis.fetch` mocks still
-// intercept these calls.
-const fetchDvdCompare = (
-  url: string,
-  init?: RequestInit,
-): Promise<Response> =>
-  globalThis.fetch(url, {
-    ...init,
-    headers: {
-      "User-Agent": DVDCOMPARE_USER_AGENT,
-      ...init?.headers,
-    },
-  })
+// Every DVDCompare page read goes through this option so the response
+// lands in `provider-cache.sqlite` under the `dvdCompare` provider. The
+// default is the shared cached fetcher; tests pass their own so they can
+// keep a disposable in-memory cache and still exercise `globalThis.fetch`
+// underneath it.
+type DvdComparePageFetcherOption = {
+  fetchPage?: DvdComparePageFetcher
+}
 
 const decodeHtmlEntities = (text: string) =>
   text
@@ -125,16 +122,19 @@ export type DvdCompareSearchOutcome = {
   results: DvdCompareResult[]
 }
 
-export const findDvdCompareResults = (
-  searchTerm: string,
-): Observable<DvdCompareSearchOutcome> =>
+export const findDvdCompareResults = ({
+  fetchPage = fetchDvdComparePage,
+  searchTerm,
+}: DvdComparePageFetcherOption & {
+  searchTerm: string
+}): Observable<DvdCompareSearchOutcome> =>
   from(
     (async () => {
       const formData = new URLSearchParams({
         param: searchTerm,
         searchtype: "text",
       })
-      const response = await fetchDvdCompare(
+      const page = await fetchPage(
         `${DVDCOMPARE_BASE}/comparisons/search.php`,
         {
           method: "POST",
@@ -145,18 +145,20 @@ export const findDvdCompareResults = (
           body: formData.toString(),
         },
       )
-      const html = await decodeResponseText(response)
+      const html = page.html
 
       // DVDCompare signals a single-match outcome in two ways:
       //   1) HTTP redirect (search.php → film.php?fid=N). fetch follows it
-      //      automatically and response.url ends in film.php?fid=N.
+      //      automatically and the landing URL ends in film.php?fid=N. The
+      //      cache envelope carries that URL so a cached search still
+      //      reports the redirect.
       //   2) JS redirect: the search-results page contains
       //      <script>location.href="film.php?fid=N";</script>. Node-side
       //      fetch can't execute scripts so we never reach film.php, but
       //      the literal string is in the HTML and easy to detect.
       // Both are treated identically: fetch the film page, parse its
       // <title> for the canonical record, and return isDirectListing=true.
-      const directFidFromHttpRedirect = response.url.match(
+      const directFidFromHttpRedirect = page.url.match(
         /film\.php\?fid=(\d+)/,
       )?.[1]
       const directFidFromJsRedirect =
@@ -175,11 +177,9 @@ export const findDvdCompareResults = (
         // work with.
         const filmHtml = directFidFromHttpRedirect
           ? html
-          : await fetchDvdCompare(
+          : await fetchPage(
               `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${fid}`,
-            ).then((response) =>
-              decodeResponseText(response),
-            )
+            ).then((filmPage) => filmPage.html)
         const filmInfo = parseDvdCompareFilmTitle(
           filmHtml,
           fid,
@@ -277,18 +277,21 @@ const buildReleasesDebug = (
   }
 }
 
-export const listDvdCompareReleases = (
-  dvdCompareId: number,
-): Observable<DvdCompareReleasesResult> =>
+export const listDvdCompareReleases = ({
+  dvdCompareId,
+  fetchPage = fetchDvdComparePage,
+}: DvdComparePageFetcherOption & {
+  dvdCompareId: number
+}): Observable<DvdCompareReleasesResult> =>
   from(
     (async () => {
       const url = `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${dvdCompareId}&sel=on`
-      const response = await fetchDvdCompare(url)
-      const html = await decodeResponseText(response)
+      const page = await fetchPage(url)
+      const html = page.html
       const releases = parseDvdCompareReleasesHtml(html)
       const debug = buildReleasesDebug(
         url,
-        response.status,
+        page.status,
         html,
       )
 
@@ -310,10 +313,13 @@ export const listDvdCompareReleases = (
     })(),
   )
 
-export const getReleaseHashesByDvdCompareId = (
-  dvdCompareId: number,
-): Observable<DvdCompareRelease[]> =>
-  listDvdCompareReleases(dvdCompareId).pipe(
+export const getReleaseHashesByDvdCompareId = ({
+  dvdCompareId,
+  fetchPage = fetchDvdComparePage,
+}: DvdComparePageFetcherOption & {
+  dvdCompareId: number
+}): Observable<DvdCompareRelease[]> =>
+  listDvdCompareReleases({ dvdCompareId, fetchPage }).pipe(
     map(({ releases }) => releases),
   )
 
@@ -348,17 +354,19 @@ export const parseDvdCompareFilmTitle = (
   return parsed.year ? parsed : null
 }
 
-export const lookupDvdCompareFilm = (
-  dvdCompareId: number,
-): Observable<{ name: string } | null> =>
+export const lookupDvdCompareFilm = ({
+  dvdCompareId,
+  fetchPage = fetchDvdComparePage,
+}: DvdComparePageFetcherOption & {
+  dvdCompareId: number
+}): Observable<{ name: string } | null> =>
   from(
     (async () => {
-      const response = await fetchDvdCompare(
+      const page = await fetchPage(
         `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${dvdCompareId}`,
       )
-      const html = await decodeResponseText(response)
       const result = parseDvdCompareFilmTitle(
-        html,
+        page.html,
         dvdCompareId,
       )
       if (!result) return null
@@ -375,17 +383,22 @@ export const lookupDvdCompareFilm = (
     })(),
   ).pipe(logAndSwallowPipelineError(lookupDvdCompareFilm))
 
-export const lookupDvdCompareRelease = (
-  dvdCompareId: number,
-  hash: string,
-): Observable<{ label: string } | null> =>
+export const lookupDvdCompareRelease = ({
+  dvdCompareId,
+  fetchPage = fetchDvdComparePage,
+  hash,
+}: DvdComparePageFetcherOption & {
+  dvdCompareId: number
+  hash: string
+}): Observable<{ label: string } | null> =>
   from(
     (async () => {
-      const response = await fetchDvdCompare(
+      const page = await fetchPage(
         `${DVDCOMPARE_BASE}/comparisons/film.php?fid=${dvdCompareId}&sel=on`,
       )
-      const html = await decodeResponseText(response)
-      const releases = parseDvdCompareReleasesHtml(html)
+      const releases = parseDvdCompareReleasesHtml(
+        page.html,
+      )
       const matched = releases.find(
         (release) => release.hash === String(hash),
       )
@@ -407,120 +420,131 @@ export type DvdCompareReleaseScrape = {
   filmTitle: DvdCompareResult | null
 }
 
+// The scrape is cached under the resolved URL, hash included, because the
+// hash IS the chosen release — two releases of one film scrape different
+// extras. `cacheScrape` is injectable so a test can hand in a disposable
+// cache instead of the shared `provider-cache.sqlite`.
 export const searchDvdCompare = ({
+  cacheScrape = cacheDvdCompareScrape,
   url,
 }: {
+  cacheScrape?: CachedComputation
   url: string
 }): Observable<DvdCompareReleaseScrape> =>
   from(
-    (async () => {
-      const browser = await launchBrowser()
-      try {
-        const page = await newPageWithUserAgent(browser)
-        // Append &sel=on before the hash so DVDCompare lands on the
-        // unchecked-by-default release-picker form regardless of the user's
-        // saved cookie state.
-        const fullUrl = url.replace(
-          /(.+)(#.+)/,
-          "$1&sel=on$2",
-        )
-        await gotoPage(page, fullUrl)
-
-        // Capture the page <title> before the form submission triggers a
-        // navigation — title content survives the round-trip but reading
-        // it now keeps the eval simple.
-        const filmIdMatch = url.match(/fid=(\d+)/)
-        const filmId = filmIdMatch
-          ? Number(filmIdMatch[1])
-          : 0
-        const rawTitleHtml = `<title>${await page.title()}</title>`
-        const filmTitle = parseDvdCompareFilmTitle(
-          rawTitleHtml,
-          filmId,
-        )
-
-        const releasePackagesForm = page.locator(
-          'form[action^="film.php"]',
-        )
-        if ((await releasePackagesForm.count()) === 0) {
-          throw new Error(
-            "No release packages to choose from.",
+    cacheScrape<DvdCompareReleaseScrape>({
+      requestKey: `scrape|${url}`,
+      produceValue: async () => {
+        const browser = await launchBrowser()
+        try {
+          const page = await newPageWithUserAgent(browser)
+          // Append &sel=on before the hash so DVDCompare lands on the
+          // unchecked-by-default release-picker form regardless of the user's
+          // saved cookie state.
+          const fullUrl = url.replace(
+            /(.+)(#.+)/,
+            "$1&sel=on$2",
           )
+          await gotoPage(page, fullUrl)
+
+          // Capture the page <title> before the form submission triggers a
+          // navigation — title content survives the round-trip but reading
+          // it now keeps the eval simple.
+          const filmIdMatch = url.match(/fid=(\d+)/)
+          const filmId = filmIdMatch
+            ? Number(filmIdMatch[1])
+            : 0
+          const rawTitleHtml = `<title>${await page.title()}</title>`
+          const filmTitle = parseDvdCompareFilmTitle(
+            rawTitleHtml,
+            filmId,
+          )
+
+          const releasePackagesForm = page.locator(
+            'form[action^="film.php"]',
+          )
+          if ((await releasePackagesForm.count()) === 0) {
+            throw new Error(
+              "No release packages to choose from.",
+            )
+          }
+
+          // The hash on the inbound URL (e.g. "#3") names the checkbox to tick.
+          // Default to "1" when the URL has no hash.
+          const urlHash =
+            new URL(url).hash.replace(/#(.+)/, "$1") || "1"
+          const releasePackageCheckbox =
+            releasePackagesForm.locator(
+              `input[type="checkbox"][name="${urlHash}"]`,
+            )
+          if (
+            (await releasePackageCheckbox.count()) === 0
+          ) {
+            throw new Error(
+              "Incorrect or no release package selected.",
+            )
+          }
+
+          await releasePackageCheckbox.check()
+
+          await performAndWaitForNavigation(page, () =>
+            releasePackagesForm
+              .locator('[type="submit"]')
+              .click(),
+          )
+
+          // Multi-disc releases (UHD + BD combos like the Arrow Limited
+          // Edition) render one "Extras" label per disc with its own sibling
+          // `.description`. Locator.all() collects every one so we don't
+          // silently drop disc-2's extras — which on these releases is often
+          // where the bulk of the bonus content lives.
+          const extrasLabels = await page
+            .locator(
+              'xpath=.//div[contains(@class, "label") and contains(text(), "Extras")]',
+            )
+            .all()
+          if (extrasLabels.length === 0) {
+            throw new Error("No extras for this release.")
+          }
+
+          // textContent collapses <br> tags, which DVDCompare uses to
+          // separate per-item lines inside .description. Inject a newline
+          // for every <br> on a clone of the node so the parser's
+          // `.split("\n")` actually sees per-item rows.
+          const extrasPerDisc = await Promise.all(
+            extrasLabels.map((label) =>
+              label.evaluate((element) => {
+                const description =
+                  element?.parentElement?.querySelector(
+                    ".description",
+                  ) ??
+                  element?.parentElement?.parentElement?.querySelector(
+                    ".description",
+                  )
+                if (!description) return ""
+                const cloned = description.cloneNode(
+                  true,
+                ) as HTMLElement
+                cloned
+                  .querySelectorAll("br")
+                  .forEach((br) => {
+                    br.replaceWith("\n")
+                  })
+                return cloned.textContent ?? ""
+              }),
+            ),
+          )
+          // Join with double-newline so the downstream parser sees a clean
+          // line break between disc-1 and disc-2 entries, and any "DISC TWO"
+          // header inside the second block stays at column 0.
+          const extras = extrasPerDisc
+            .filter(Boolean)
+            .join("\n\n")
+
+          return { extras, filmTitle }
+        } finally {
+          await browser.close()
         }
-
-        // The hash on the inbound URL (e.g. "#3") names the checkbox to tick.
-        // Default to "1" when the URL has no hash.
-        const urlHash =
-          new URL(url).hash.replace(/#(.+)/, "$1") || "1"
-        const releasePackageCheckbox =
-          releasePackagesForm.locator(
-            `input[type="checkbox"][name="${urlHash}"]`,
-          )
-        if ((await releasePackageCheckbox.count()) === 0) {
-          throw new Error(
-            "Incorrect or no release package selected.",
-          )
-        }
-
-        await releasePackageCheckbox.check()
-
-        await performAndWaitForNavigation(page, () =>
-          releasePackagesForm
-            .locator('[type="submit"]')
-            .click(),
-        )
-
-        // Multi-disc releases (UHD + BD combos like the Arrow Limited
-        // Edition) render one "Extras" label per disc with its own sibling
-        // `.description`. Locator.all() collects every one so we don't
-        // silently drop disc-2's extras — which on these releases is often
-        // where the bulk of the bonus content lives.
-        const extrasLabels = await page
-          .locator(
-            'xpath=.//div[contains(@class, "label") and contains(text(), "Extras")]',
-          )
-          .all()
-        if (extrasLabels.length === 0) {
-          throw new Error("No extras for this release.")
-        }
-
-        // textContent collapses <br> tags, which DVDCompare uses to
-        // separate per-item lines inside .description. Inject a newline
-        // for every <br> on a clone of the node so the parser's
-        // `.split("\n")` actually sees per-item rows.
-        const extrasPerDisc = await Promise.all(
-          extrasLabels.map((label) =>
-            label.evaluate((element) => {
-              const description =
-                element?.parentElement?.querySelector(
-                  ".description",
-                ) ??
-                element?.parentElement?.parentElement?.querySelector(
-                  ".description",
-                )
-              if (!description) return ""
-              const cloned = description.cloneNode(
-                true,
-              ) as HTMLElement
-              cloned
-                .querySelectorAll("br")
-                .forEach((br) => {
-                  br.replaceWith("\n")
-                })
-              return cloned.textContent ?? ""
-            }),
-          ),
-        )
-        // Join with double-newline so the downstream parser sees a clean
-        // line break between disc-1 and disc-2 entries, and any "DISC TWO"
-        // header inside the second block stays at column 0.
-        const extras = extrasPerDisc
-          .filter(Boolean)
-          .join("\n\n")
-
-        return { extras, filmTitle }
-      } finally {
-        await browser.close()
-      }
-    })(),
+      },
+    }),
   ).pipe(logAndSwallowPipelineError(searchDvdCompare))

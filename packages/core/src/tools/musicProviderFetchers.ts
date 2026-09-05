@@ -1,40 +1,25 @@
 import { createCachedFetch } from "../provider-cache/cachedFetch.js"
-import {
-  openProviderCache,
-  providerCacheDatabasePath,
-} from "../provider-cache/providerCache.js"
 import { ACOUSTID_MINIMUM_REQUEST_INTERVAL_MILLISECONDS } from "./acoustIdApi.js"
 import {
   type CachedFetch,
   MUSICBRAINZ_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
   requireMusicBrainzUserAgent,
 } from "./musicBrainzApi.js"
+import {
+  getSharedProviderCache,
+  registerProviderCacheResetHandler,
+} from "./sharedProviderCache.js"
 
 // The Cover Art Archive is a redirector in front of the Internet Archive and
 // asks for no particular rate. MusicBrainz allows one request per second and
 // enforces it by blocking the address, so it keeps its own interval.
 const COVER_ART_MINIMUM_REQUEST_INTERVAL_MILLISECONDS = 200
 
-// A Map rather than a mutable field, so the lazy open stays an expression.
-const sharedCache = new Map<
-  "instance",
-  ReturnType<typeof openProviderCache>
->()
-
 const fetcherCache = new Map<string, CachedFetch>()
 
-const getSharedProviderCache = () =>
-  sharedCache.get("instance") ??
-  (sharedCache
-    .set(
-      "instance",
-      openProviderCache({
-        databasePath: providerCacheDatabasePath,
-      }),
-    )
-    .get("instance") as ReturnType<
-    typeof openProviderCache
-  >)
+registerProviderCacheResetHandler(() => {
+  fetcherCache.clear()
+})
 
 // Built once per provider and reused. Building it per request would create a
 // new rate limiter every time, which defeats the interval entirely.
@@ -107,8 +92,7 @@ export const coverArtCachedFetch = buildFetcher({
   provider: "coverArtArchive",
 })
 
-export const closeSharedProviderCache = () => {
-  sharedCache.get("instance")?.close()
-  sharedCache.clear()
-  fetcherCache.clear()
-}
+// Re-exported so the existing import path keeps working; the holder and
+// the close itself now live in sharedProviderCache.ts, which the
+// DVDCompare fetcher shares.
+export { closeSharedProviderCache } from "./sharedProviderCache.js"

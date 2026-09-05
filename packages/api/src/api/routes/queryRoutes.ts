@@ -532,7 +532,9 @@ queryRoutes.openapi(
     const body = context.req.valid("json")
     try {
       const outcome = await lastValueFrom(
-        findDvdCompareResults(body.searchTerm),
+        findDvdCompareResults({
+          searchTerm: body.searchTerm,
+        }),
       )
       return context.json(
         {
@@ -594,7 +596,9 @@ queryRoutes.openapi(
     const body = context.req.valid("json")
     try {
       const result = await lastValueFrom(
-        listDvdCompareReleases(body.dvdCompareId),
+        listDvdCompareReleases({
+          dvdCompareId: body.dvdCompareId,
+        }),
       )
       return context.json({ ...result, error: null }, 200)
     } catch (err) {
@@ -774,7 +778,9 @@ queryRoutes.openapi(
     }
     const body = context.req.valid("json")
     const result = await lastValueFrom(
-      lookupDvdCompareFilm(body.dvdCompareId),
+      lookupDvdCompareFilm({
+        dvdCompareId: body.dvdCompareId,
+      }),
     )
     return context.json({ name: result?.name ?? null }, 200)
   },
@@ -816,7 +822,10 @@ queryRoutes.openapi(
     }
     const body = context.req.valid("json")
     const result = await lastValueFrom(
-      lookupDvdCompareRelease(body.dvdCompareId, body.hash),
+      lookupDvdCompareRelease({
+        dvdCompareId: body.dvdCompareId,
+        hash: body.hash,
+      }),
     )
     return context.json(
       { label: result?.label ?? null },

@@ -273,4 +273,80 @@ describe(createCachedFetch.name, () => {
       headersOfCall({ callIndex: 0, fetchSpy }).Accept,
     ).toBe("application/json")
   })
+  // ── stale-on-error ──────────────────────────────────────────────────────
+  //
+  // A plain time-to-live cache still fails hard when the entry has expired
+  // and the provider is unreachable. That is the exact shape of the
+  // 2026-09-05 DVDCompare outage, and it is what these two cover.
+
+  test("serves the expired entry when the provider cannot be reached at all", async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response("first body", { status: 200 }),
+      )
+      .mockRejectedValue(new TypeError("fetch failed"))
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+    const cache = createMemoryCache()
+    const cachedFetch = buildCachedFetch(cache)
+
+    await cachedFetch("https://example.test/ws/2/release/5")
+    cache.staleHolder.isEverythingStale = true
+
+    expect(
+      await cachedFetch(
+        "https://example.test/ws/2/release/5",
+      ),
+    ).toEqual({
+      body: "first body",
+      isFromCache: true,
+      isStale: true,
+    })
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
+
+  test("still rejects when the provider is unreachable and nothing was ever cached", async () => {
+    const fetchSpy = vi.fn(() =>
+      Promise.reject(new TypeError("fetch failed")),
+    )
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+    const cachedFetch = buildCachedFetch(
+      createMemoryCache(),
+    )
+
+    await expect(
+      cachedFetch("https://example.test/ws/2/release/6"),
+    ).rejects.toThrow("fetch failed")
+  })
+
+  test("uses the injected decoder for the stored body", async () => {
+    const fetchSpy = vi.fn(
+      async () => new Response("raw", { status: 200 }),
+    )
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+    const cache = createMemoryCache()
+    const cachedFetch = createCachedFetch({
+      cache,
+      decodeResponseBody: async (response) =>
+        `decoded:${await response.text()}`,
+      minimumRequestIntervalMilliseconds: 0,
+      provider: "musicBrainz",
+      retryBackoffMilliseconds: 0,
+      userAgent,
+    })
+
+    expect(
+      await cachedFetch(
+        "https://example.test/ws/2/release/7",
+      ),
+    ).toEqual({ body: "decoded:raw", isFromCache: false })
+    expect(
+      cache.rows.get(
+        "musicBrainz https://example.test/ws/2/release/7",
+      )?.body,
+    ).toBe("decoded:raw")
+  })
 })
