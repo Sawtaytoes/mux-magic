@@ -86,11 +86,13 @@ const assertPathsAreUsable = ({
     ),
   )
 
-// mkvmerge never writes the `--output` path when `--split` is in play; a
-// single `parts:-<end>` range lands as `<stem>-001.mkv`. Move it back onto
-// the original name so downstream steps keep matching on the episode's
-// filename rather than a part suffix.
-const renameSinglePartToFileName = ({
+// Where the single kept range lands depends on the mkvmerge build. Older
+// ones always append a part suffix, so `parts:-<end>` writes
+// `<stem>-001.mkv` beside the `--output` path; v101 writes the `--output`
+// path verbatim when the split produced exactly one part. Accept both and
+// settle on the original filename, so downstream steps keep matching on
+// the episode's name rather than a part suffix.
+const settleOnDestinationFileName = ({
   destinationFilePath,
   outputFilePath,
 }: {
@@ -105,15 +107,32 @@ const renameSinglePartToFileName = ({
       }),
     ),
     concatMap((partFilePaths) => {
-      if (partFilePaths.length !== 1) {
-        throw new Error(
-          `trimFileTail expected exactly one output part but mkvmerge wrote ${partFilePaths.length}: ${partFilePaths.join(", ")}`,
+      if (partFilePaths.length === 1) {
+        return from(
+          rename(
+            partFilePaths[0],
+            destinationFilePath,
+          ).then(() => destinationFilePath),
         )
       }
 
-      return from(
-        rename(partFilePaths[0], destinationFilePath).then(
+      if (partFilePaths.length > 1) {
+        throw new Error(
+          `trimFileTail expected at most one output part but mkvmerge wrote ${partFilePaths.length}: ${partFilePaths.join(", ")}`,
+        )
+      }
+
+      // No suffixed parts: mkvmerge wrote the output path itself, which is
+      // already the destination. Confirm it exists rather than assuming,
+      // so a genuinely empty output folder still fails loudly.
+      return defer(() =>
+        stat(destinationFilePath).then(
           () => destinationFilePath,
+          () => {
+            throw new Error(
+              `trimFileTail found no output: mkvmerge wrote neither ${destinationFilePath} nor a numbered part beside it`,
+            )
+          },
         ),
       )
     }),
@@ -150,7 +169,7 @@ export const trimFileTail = ({
           }),
         ),
         concatMap((outputFilePath) =>
-          renameSinglePartToFileName({
+          settleOnDestinationFileName({
             destinationFilePath,
             outputFilePath,
           }),

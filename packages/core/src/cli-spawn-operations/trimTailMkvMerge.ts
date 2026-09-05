@@ -23,9 +23,15 @@ export const trimTailMkvMergeDefaultProps = {
 } satisfies TrimTailMkvMergeOptionalProps
 
 // `--split parts:-<end>` keeps a single range running from the start of
-// the file to `<end>` and discards everything after it. mkvmerge only
-// cuts on a keyframe, so the delivered endpoint can land later than the
-// requested one — the app-command reads the result back and reports both.
+// the file to `<end>` and discards everything after it.
+//
+// mkvmerge cuts at the first keyframe **at or after** `<end>`, so the
+// delivered endpoint is never earlier than the request and can be a whole
+// keyframe interval later. Asking for 4 ms past a keyframe therefore costs
+// the next 0.5 s of video, which is enough to leave the first frames of
+// whatever you meant to remove. Aim at the keyframe itself, or just before
+// it. The app-command reads the result back and reports the requested and
+// the delivered length so the overshoot is visible.
 export const trimTailMkvMerge = ({
   endTime,
   filePath,
