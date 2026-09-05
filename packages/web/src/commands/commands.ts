@@ -79,6 +79,7 @@ import {
   splitChaptersRequestSchema,
   splitCueSheetRequestSchema,
   storeAspectRatioDataRequestSchema,
+  trimFileTailRequestSchema,
   writeAudioTagsRequestSchema,
 } from "@mux-magic/api/api-schemas"
 import type { Commands } from "../commands/types"
@@ -1290,6 +1291,32 @@ export const COMMANDS: Commands = {
           type: "boolean",
           label:
             "I acknowledge the video track will be dropped",
+        }),
+      ],
+    }
+  })(),
+  trimFileTail: (() => {
+    const field = fieldBuilder(trimFileTailRequestSchema)
+    return {
+      summary:
+        "Trim everything after a timestamp from one file",
+      tag: "File Operations",
+      outputFolderName: "TRIMMED",
+      note: "One file per run. mkvmerge cuts on a keyframe, so the delivered endpoint can land after the requested one — the job log reports both durations.",
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Source Path",
+        }),
+        field("fileName", {
+          type: "string",
+          label: "File Name",
+          placeholder: "Gou 01-004.mkv",
+        }),
+        field("endTime", {
+          type: "string",
+          label: "End Time",
+          placeholder: "00:23:41.086",
         }),
       ],
     }

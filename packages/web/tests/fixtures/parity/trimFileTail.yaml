@@ -1,0 +1,8 @@
+paths:
+  basePath:
+    label: Base Path
+    value: /fixture/media
+steps:
+  - id: step-fixture
+    command: trimFileTail
+    params: {sourcePath: '@basePath', fileName: episode.mkv, endTime: 00:23:41.086}
