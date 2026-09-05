@@ -2641,6 +2641,47 @@ export const matchVgmdbReleaseRequestSchema = z.object({
     ),
 })
 
+export const applyCoverArtRequestSchema = z.object({
+  imageUrl: z
+    .string()
+    .url()
+    .optional()
+    .describe(
+      "An image to use instead of a lookup. This is the escape hatch for a release MusicBrainz has never heard of — a day-old game soundtrack, a store-only edition — and it wins over every provider.",
+    ),
+  isDryRun: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Report which files would get the art, and where the art came from, without writing anything. Run this first — the report is the same shape as the real run.",
+    ),
+  isEmbedded: z
+    .boolean()
+    .default(true)
+    .describe(
+      "Embed the front cover in every audio file. On by default: an embedded picture travels with the file, so a player that never reads the folder still shows the album.",
+    ),
+  isSavedBesideFiles: z
+    .boolean()
+    .default(true)
+    .describe(
+      "Write the art into the album folder as cover.<ext>. On by default. An existing cover.jpg, folder.jpg or albumart*.jpg is never overwritten.",
+    ),
+  releaseGroupId: z
+    .string()
+    .optional()
+    .describe(
+      "A MusicBrainz release group id to look up on the Cover Art Archive. Read from the files' own tags when left empty.",
+    ),
+  releaseId: z
+    .string()
+    .optional()
+    .describe(
+      "A MusicBrainz release id to look up on the Cover Art Archive. Read from the files' own tags when left empty, which is what makes this command work with only a folder.",
+    ),
+  sourcePath: musicSourcePathSchema,
+})
+
 export const writeAudioTagsRequestSchema = z.object({
   album: z
     .string()

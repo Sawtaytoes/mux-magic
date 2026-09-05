@@ -86,6 +86,7 @@ export const commandLabels: Record<string, string> = {
   storeAspectRatioData: "Store Aspect Ratio Data",
 
   // Music Tagging
+  applyCoverArt: "Apply Cover Art",
   scanAudioFiles: "Scan Audio Files",
   fingerprintAudioFiles: "Fingerprint Audio Files",
   findDuplicateAudioFiles: "Find Duplicate Audio Files",

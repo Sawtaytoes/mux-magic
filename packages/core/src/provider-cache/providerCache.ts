@@ -30,6 +30,7 @@ export const PROVIDER_CACHE_TIME_TO_LIVE: Record<
   aniDb: 3 * millisecondsPerDay,
   coverArtArchive: 8 * millisecondsPerWeek,
   dvdCompare: 7 * millisecondsPerDay,
+  itunes: 8 * millisecondsPerWeek,
   movieDb: 2 * millisecondsPerWeek,
   musicBrainz: 4 * millisecondsPerWeek,
   vgmdb: 4 * millisecondsPerWeek,

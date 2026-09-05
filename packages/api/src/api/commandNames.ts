@@ -75,6 +75,7 @@ export const commandNames = [
   "storeAspectRatioData",
   "trimFileTail",
   "writeAudioTags",
+  "applyCoverArt",
 ] as const
 
 export type CommandName = (typeof commandNames)[number]

@@ -204,10 +204,7 @@ export const getTheAudioDbCoverArt = () => {
   )
 }
 
-// Seam, deliberately unimplemented. Fourth provider: art already sitting in the
-// album folder, matched with LOCAL_COVER_ART_PATTERN.
-export const getLocalCoverArt = () => {
-  throw new Error(
-    "Local cover-art discovery is not implemented. It is the fourth provider in COVER_ART_PROVIDER_ORDER and belongs to a later phase.",
-  )
-}
+// The fourth provider is implemented, in
+// `../music/artwork/findLocalCoverArt.ts`. It reads a folder rather than an
+// HTTP endpoint, so it does not belong in this module, and the chain that
+// orders all four is `../music/artwork/resolveCoverArtImage.ts`.

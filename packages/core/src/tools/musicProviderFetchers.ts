@@ -1,5 +1,6 @@
 import { createCachedFetch } from "../provider-cache/cachedFetch.js"
 import { ACOUSTID_MINIMUM_REQUEST_INTERVAL_MILLISECONDS } from "./acoustIdApi.js"
+import { ITUNES_MINIMUM_REQUEST_INTERVAL_MILLISECONDS } from "./itunesArtwork.js"
 import {
   type CachedFetch,
   MUSICBRAINZ_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
@@ -90,6 +91,16 @@ export const coverArtCachedFetch = buildFetcher({
   minimumRequestIntervalMilliseconds:
     COVER_ART_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
   provider: "coverArtArchive",
+})
+
+// Apple publishes no rate limit and throttles the search endpoint at roughly
+// 20 calls a minute, so this is a politeness number rather than a published
+// one. Its own limiter, so an artwork pass cannot eat the Cover Art
+// Archive's interval or the other way round.
+export const itunesCachedFetch = buildFetcher({
+  minimumRequestIntervalMilliseconds:
+    ITUNES_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
+  provider: "itunes",
 })
 
 // Re-exported so the existing import path keeps working; the holder and
