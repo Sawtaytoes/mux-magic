@@ -93,6 +93,7 @@ against the table.
 | Setting | Value |
 | --- | --- |
 | Provider order | Cover Art Archive → release URL relationships → CAA release group → TheAudioDB → local files |
+| Our provider order | explicit image URL → CAA release → CAA release group → **iTunes** → local files |
 | Image types | **front only** (`caa_restrict_image_types=true`) |
 | Types never used | `matrix/runout`, `raw/unedited`, `watermark` |
 | Size | **original / full size** (`caa_image_size=-1`) |
@@ -105,6 +106,22 @@ against the table.
 
 So each album folder ends with **one `cover.jpg` on disk and one embedded front image per
 file**, at full resolution.
+
+**Built, and one step wider than Picard.** `applyCoverArt` (`packages/core/src/app-commands/`)
+does all of the above through `node-taglib-sharp`, with no re-encode and no remux. Two differences
+from the table, both deliberate
+([decision](decisions/2026-09-05-mux-magic-writes-cover-art-and-itunes-joins-the-provider-chain.md)):
+
+- An **explicit image URL** comes first. It is the escape hatch for a release MusicBrainz has never
+  heard of, which is the normal case for a game soundtrack in its first weeks.
+- **iTunes** is a fifth provider, searched by album title and artist, sitting between the archive and
+  local files. The Cover Art Archive knew only 37 of the 333 albums in this library that had no
+  artwork at all; iTunes knows another 35. Its match requires the album title AND the artist to be
+  equal once case, punctuation and spacing are removed — a search provider with a loose match puts the
+  wrong cover on a record, which is worse than a blank one.
+
+TheAudioDB is still the unimplemented seam in `tools/coverArtArchive.ts`. Local-file discovery is no
+longer a seam; it is `music/artwork/findLocalCoverArt.ts`.
 
 ---
 
