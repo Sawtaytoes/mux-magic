@@ -8,6 +8,7 @@ import {
 import {
   catchError,
   concatMap,
+  defer,
   filter,
   from,
   map,
@@ -45,6 +46,9 @@ export type ApplyCoverArtWrittenRecord = {
   filePath: string
   filename: string
   isDryRun: boolean
+  // False when the file got the cover art but kept the write's timestamp,
+  // because the process does not own the file. The write still counts.
+  isTimestampRestored: boolean
   kind: "written"
 }
 
@@ -117,6 +121,11 @@ const readAlbumIdentityFromFiles = (filePaths: string[]) =>
       releaseId: undefined,
     }))
 
+// `defer`, not a bare `from(promise)`. The operator above this one can hold
+// a projected observable in a queue before it subscribes, and an eagerly
+// started promise would reject into nobody — an unhandled rejection that
+// takes the whole process down instead of becoming a `failed` row. Deferring
+// makes the write start when the row is actually pulled.
 const embedInOneFile = ({
   filePath,
   image,
@@ -126,16 +135,20 @@ const embedInOneFile = ({
   image: ResolvedCoverArt["image"]
   isDryRun: boolean
 }) =>
-  from(
+  defer(() =>
     writeEmbeddedCoverArt({ filePath, image, isDryRun }),
   ).pipe(
     map(
-      ({ isChanged }): ApplyCoverArtRecord =>
+      ({
+        isChanged,
+        isTimestampRestored,
+      }): ApplyCoverArtRecord =>
         isChanged
           ? {
               filePath,
               filename: basename(filePath),
               isDryRun,
+              isTimestampRestored,
               kind: "written",
             }
           : {
