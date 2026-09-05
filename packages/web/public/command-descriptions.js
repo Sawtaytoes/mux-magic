@@ -602,6 +602,14 @@ window.commandDescriptions = {
       "isPaddingChapterNumbers": "Zero-pad the renumbered chapter names (default true) — produces `Chapter 01..N` (width ≥ 2). Set false for `Chapter 1..N`. Ignored when chapter renumbering is off."
     }
   },
+  "trimFileTail": {
+    "summary": "Trim everything after a timestamp from one file",
+    "fields": {
+      "sourcePath": "Directory containing the file to trim.",
+      "fileName": "Exact file name inside sourcePath. One file per run — a tail trim is a per-file decision, not a folder-wide one.",
+      "endTime": "Keep everything before this timestamp and discard the rest (HH:MM:SS[.mmm]). mkvmerge cuts on a keyframe, so the delivered endpoint can land later than the requested one; the job output reports both."
+    }
+  },
   "splitCueSheet": {
     "summary": "Split CUE sheet to FLAC",
     "fields": {

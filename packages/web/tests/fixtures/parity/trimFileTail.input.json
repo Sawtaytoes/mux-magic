@@ -1,0 +1,20 @@
+{
+  "paths": [
+    {
+      "id": "basePath",
+      "label": "Base Path",
+      "value": "/fixture/media"
+    }
+  ],
+  "step": {
+    "id": "step-fixture",
+    "command": "trimFileTail",
+    "params": {
+      "fileName": "episode.mkv",
+      "endTime": "00:23:41.086"
+    },
+    "links": {
+      "sourcePath": "basePath"
+    }
+  }
+}

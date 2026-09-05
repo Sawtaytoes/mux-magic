@@ -19,6 +19,7 @@ export const commandLabels: Record<string, string> = {
   deleteFolder: "Delete Folder",
   deleteCopiedOriginals: "Delete Copied Originals",
   splitChapters: "Split Chapters",
+  trimFileTail: "Trim File Tail",
   remuxToMkv: "Remux to MKV",
   renameFilesAndFolders: "Rename Files and Folders",
 

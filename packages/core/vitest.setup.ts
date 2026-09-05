@@ -405,6 +405,17 @@ vi.mock(
 )
 
 vi.mock(
+  "./src/cli-spawn-operations/trimTailMkvMerge.js",
+  () => ({
+    trimTailMkvMerge: makeSpawnOpFn("trimTailMkvMerge"),
+    trimTailMkvMergeDefaultProps: {
+      outputFolderName: "TRIMMED",
+    },
+    trimmedFolderName: "TRIMMED",
+  }),
+)
+
+vi.mock(
   "./src/cli-spawn-operations/updateTrackLanguage.js",
   () => ({
     updateTrackLanguage: makeSpawnOpFn(

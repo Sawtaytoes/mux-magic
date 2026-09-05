@@ -1760,6 +1760,28 @@ export const splitChaptersRequestSchema = z.object({
     ),
 })
 
+export const trimFileTailRequestSchema = z.object({
+  sourcePath: z
+    .string()
+    .min(1)
+    .describe("Directory containing the file to trim."),
+  fileName: z
+    .string()
+    .min(1)
+    .describe(
+      "Exact file name inside sourcePath. One file per run — a tail trim is a per-file decision, not a folder-wide one.",
+    ),
+  endTime: z
+    .string()
+    .regex(
+      /^\d{2}:\d{2}:\d{2}(\.\d{1,9})?$/,
+      "endTime must be HH:MM:SS or HH:MM:SS.mmm",
+    )
+    .describe(
+      "Keep everything before this timestamp and discard the rest (HH:MM:SS[.mmm]). mkvmerge cuts on a keyframe, so the delivered endpoint can land later than the requested one; the job output reports both.",
+    ),
+})
+
 export const splitCueSheetRequestSchema = z.object({
   sourcePath: z
     .string()
