@@ -9,6 +9,7 @@ import {
   addSubtitlesDefaultProps,
 } from "@mux-magic/core/src/app-commands/addSubtitles.js"
 import { analyseDiscBackup } from "@mux-magic/core/src/app-commands/analyseDiscBackup.js"
+import { applyCoverArt } from "@mux-magic/core/src/app-commands/applyCoverArt.js"
 import { changeTrackLanguages } from "@mux-magic/core/src/app-commands/changeTrackLanguages.js"
 import {
   type CompareMusicAssistantLibraryRecord,
@@ -506,6 +507,22 @@ export const commandConfigs: Record<
     schema: schemas.writeAudioTagsRequestSchema,
     summary:
       "Set the same tag fields on every audio file under a folder — MP3Tag's bulk edit. The reviewed, per-file write behind the tag table is POST /music/tags, not this command.",
+    tags: ["Music Tagging"],
+  },
+  applyCoverArt: {
+    getObservable: (body) =>
+      applyCoverArt({
+        imageUrl: body.imageUrl,
+        isDryRun: body.isDryRun,
+        isEmbedded: body.isEmbedded,
+        isSavedBesideFiles: body.isSavedBesideFiles,
+        releaseGroupId: body.releaseGroupId,
+        releaseId: body.releaseId,
+        sourcePath: body.sourcePath,
+      }),
+    schema: schemas.applyCoverArtRequestSchema,
+    summary:
+      "Give one album folder its cover art: write cover.<ext> beside the files and embed one front picture in each. The image comes from an explicit URL, then the Cover Art Archive by release and release group, then art already in the folder. Point it at ONE album.",
     tags: ["Music Tagging"],
   },
   renameAndMoveAudioFiles: {

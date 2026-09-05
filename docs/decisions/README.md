@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-09-05 | [Mux Magic writes cover art, and iTunes joins the provider chain](2026-09-05-mux-magic-writes-cover-art-and-itunes-joins-the-provider-chain.md) | core / api / web | Accepted |
 | 2026-09-05 | [DVDCompare reads go through the provider cache, and an outage serves the stale entry](2026-09-05-dvdcompare-reads-go-through-the-provider-cache-and-an-outage-serves-the-stale-entry.md) | core | Accepted |
 | 2026-09-03 | [Disc analysis runs at `--minlength=10`, not 60](2026-09-03-disc-analysis-minimum-title-length-drops-to-10-seconds.md) | core / cli / api / web | Accepted |
 | 2026-09-03 | [Bulk audio tag work stays in the generic editor](2026-09-03-bulk-audio-tag-work-stays-in-the-generic-editor.md) | core / cli / api / web | Accepted |

@@ -74,6 +74,7 @@ export const commandNames = [
   "splitCueSheet",
   "storeAspectRatioData",
   "writeAudioTags",
+  "applyCoverArt",
 ] as const
 
 export type CommandName = (typeof commandNames)[number]

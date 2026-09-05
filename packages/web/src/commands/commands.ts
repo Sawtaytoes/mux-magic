@@ -16,6 +16,7 @@
 import {
   addSubtitlesRequestSchema,
   analyseDiscBackupRequestSchema,
+  applyCoverArtRequestSchema,
   changeTrackLanguagesRequestSchema,
   compareMusicAssistantLibraryRequestSchema,
   convertContainerAudioToFlacRequestSchema,
@@ -453,6 +454,46 @@ export const COMMANDS: Commands = {
           type: "number",
           label: "Folder depth",
           visibleWhen: { isRecursive: true },
+        }),
+      ],
+    }
+  })(),
+  applyCoverArt: (() => {
+    const field = fieldBuilder(applyCoverArtRequestSchema)
+    return {
+      summary:
+        "Give one album folder its cover art: write cover.jpg beside the files and embed one front picture in each. Point it at ONE album folder.",
+      tag: "Music Tagging",
+      outputFolderName: null,
+      note: "Writes files. The art is looked up from the files' own MusicBrainz ids, then from iTunes by album and artist, then from art already in the folder. An Image URL overrides all of them. An existing cover.jpg is never overwritten.",
+      fields: [
+        field("sourcePath", {
+          type: "path",
+          label: "Album Folder",
+        }),
+        field("isDryRun", {
+          type: "boolean",
+          label: "Dry run",
+        }),
+        field("imageUrl", {
+          type: "string",
+          label: "Image URL",
+        }),
+        field("isEmbedded", {
+          type: "boolean",
+          label: "Embed In Files",
+        }),
+        field("isSavedBesideFiles", {
+          type: "boolean",
+          label: "Save Beside Files",
+        }),
+        field("releaseId", {
+          type: "string",
+          label: "MusicBrainz Release ID",
+        }),
+        field("releaseGroupId", {
+          type: "string",
+          label: "MusicBrainz Release Group ID",
         }),
       ],
     }

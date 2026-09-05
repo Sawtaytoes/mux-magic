@@ -9,7 +9,6 @@ import {
   EXCLUDED_COVER_ART_TYPES,
   getCoverArt,
   getIsCoverArtNotFoundError,
-  getLocalCoverArt,
   getTheAudioDbCoverArt,
   isUnapprovedCoverArtAllowedByDefault,
   LOCAL_COVER_ART_PATTERN,
@@ -244,15 +243,9 @@ describe(getIsCoverArtNotFoundError.name, () => {
   })
 })
 
-describe("the two later-phase provider seams", () => {
+describe("the remaining provider seam", () => {
   test("TheAudioDB throws rather than silently reporting no art", () => {
     expect(() => getTheAudioDbCoverArt()).toThrow(
-      /not implemented/u,
-    )
-  })
-
-  test("local cover-art discovery throws rather than silently reporting no art", () => {
-    expect(() => getLocalCoverArt()).toThrow(
       /not implemented/u,
     )
   })
