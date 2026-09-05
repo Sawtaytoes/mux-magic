@@ -127,6 +127,7 @@ All commands are started with `POST`. The body is JSON. `sourcePath` is required
 | `POST /commands/splitChapters` | `sourcePath`, `chapterSplits`[] | `isRenumberingChapters`, `isPaddingChapterNumbers` |
 | `POST /commands/splitCueSheet` | `sourcePath` | `isRecursive`, `outputFolderName` |
 | `POST /commands/storeAspectRatioData` | `sourcePath` | `isRecursive`, `recursiveDepth`, `outputPath`, `rootPath`, `folders`[], `force` |
+| `POST /commands/trimFileTail` | `sourcePath`, `fileName`, `endTime` | — |
 
 > **Not yet available via API:** `inverseTelecineDiscRips`, `mergeOrderedChapters`. (`copyOutSubtitles` and `getAudioOffsets` used to be listed here and are now exposed.)
 

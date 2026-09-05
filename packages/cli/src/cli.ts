@@ -63,6 +63,7 @@ import { setDisplayWidthCommand } from "./cli-commands/setDisplayWidthCommand.js
 import { splitChaptersCommand } from "./cli-commands/splitChaptersCommand.js"
 import { splitCueSheetCommand } from "./cli-commands/splitCueSheetCommand.js"
 import { storeAspectRatioDataCommand } from "./cli-commands/storeAspectRatioDataCommand.js"
+import { trimFileTailCommand } from "./cli-commands/trimFileTailCommand.js"
 
 console.time("Command Runtime")
 
@@ -130,4 +131,5 @@ yargs(hideBin(process.argv))
   .command(splitChaptersCommand)
   .command(splitCueSheetCommand)
   .command(storeAspectRatioDataCommand)
+  .command(trimFileTailCommand)
   .strict().argv

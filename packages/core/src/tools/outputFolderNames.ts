@@ -17,3 +17,4 @@ export const REPLACED_TRACKS_FOLDER_NAME =
   "REPLACED-TRACKS" as const
 export const SPLITS_FOLDER_NAME = "SPLITS" as const
 export const SUBTITLED_FOLDER_NAME = "SUBTITLED" as const
+export const TRIMMED_FOLDER_NAME = "TRIMMED" as const

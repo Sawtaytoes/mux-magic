@@ -73,6 +73,7 @@ export const commandNames = [
   "splitChapters",
   "splitCueSheet",
   "storeAspectRatioData",
+  "trimFileTail",
   "writeAudioTags",
 ] as const
 

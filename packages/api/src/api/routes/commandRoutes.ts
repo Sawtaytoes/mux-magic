@@ -140,6 +140,10 @@ import {
   splitCueSheetDefaultProps,
 } from "@mux-magic/core/src/app-commands/splitCueSheet.js"
 import { storeAspectRatioData } from "@mux-magic/core/src/app-commands/storeAspectRatioData.js"
+import {
+  trimFileTail,
+  trimFileTailDefaultProps,
+} from "@mux-magic/core/src/app-commands/trimFileTail.js"
 import { writeAudioTags } from "@mux-magic/core/src/app-commands/writeAudioTags.js"
 import { makeDirectory } from "@mux-magic/tools"
 import type { Context } from "hono"
@@ -1356,6 +1360,20 @@ export const commandConfigs: Record<
       splitChaptersDefaultProps.outputFolderName,
     schema: schemas.splitChaptersRequestSchema,
     summary: "Split media files by chapter markers",
+    tags: ["File Operations"],
+  },
+  trimFileTail: {
+    getObservable: (body) =>
+      trimFileTail({
+        endTime: body.endTime,
+        fileName: body.fileName,
+        sourcePath: body.sourcePath,
+      }),
+    outputFolderName:
+      trimFileTailDefaultProps.outputFolderName,
+    schema: schemas.trimFileTailRequestSchema,
+    summary:
+      "Trim everything after a timestamp from one file",
     tags: ["File Operations"],
   },
   splitCueSheet: {
