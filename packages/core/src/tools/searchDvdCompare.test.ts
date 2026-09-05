@@ -10,6 +10,8 @@ import {
   vi,
 } from "vitest"
 
+import { openProviderCache } from "../provider-cache/providerCache.js"
+import { createDvdComparePageFetcher } from "./dvdCompareFetcher.js"
 import {
   displayDvdCompareVariant,
   findDvdCompareResults,
@@ -482,14 +484,30 @@ describe(findDvdCompareResults.name, () => {
   // The scraper reads raw bytes via arrayBuffer() (so it can recover
   // mislabeled Windows-1252 pages), so the stub exposes arrayBuffer rather
   // than text — matching the real fetch Response surface the code uses.
+  // `ok` and `headers` are what createCachedFetch reads before it stores
+  // the body. `url` is the post-redirect landing URL, which the cache
+  // envelope carries so a cached search still reports isDirectListing.
   const makeSearchPageResponse = (
     html: string,
     finalUrl: string,
   ) => ({
-    url: finalUrl,
     arrayBuffer: async () =>
       new TextEncoder().encode(html).buffer,
+    headers: { get: () => null },
+    ok: true,
+    status: 200,
+    url: finalUrl,
   })
+
+  // A disposable cache per test, so every test starts cold while still
+  // running the real createCachedFetch over the stubbed globalThis.fetch.
+  const buildFetchPage = () =>
+    createDvdComparePageFetcher({
+      cache: openProviderCache({
+        databasePath: ":memory:",
+      }),
+      minimumRequestIntervalMilliseconds: 0,
+    })
 
   test("returns isDirectListing:false with all candidates when the search lands on a multi-result page", async () => {
     globalThis.fetch = vi.fn(async () =>
@@ -500,7 +518,10 @@ describe(findDvdCompareResults.name, () => {
     ) as unknown as typeof globalThis.fetch
 
     const outcome = await firstValueFrom(
-      findDvdCompareResults("Soldier"),
+      findDvdCompareResults({
+        fetchPage: buildFetchPage(),
+        searchTerm: "Soldier",
+      }),
     )
 
     expect(outcome.isDirectListing).toBe(false)
@@ -537,7 +558,10 @@ describe(findDvdCompareResults.name, () => {
     ) as unknown as typeof globalThis.fetch
 
     const outcome = await firstValueFrom(
-      findDvdCompareResults("solider"),
+      findDvdCompareResults({
+        fetchPage: buildFetchPage(),
+        searchTerm: "solider",
+      }),
     )
 
     expect(outcome.isDirectListing).toBe(true)
@@ -589,7 +613,10 @@ describe(findDvdCompareResults.name, () => {
       fetchMock as unknown as typeof globalThis.fetch
 
     const outcome = await firstValueFrom(
-      findDvdCompareResults("solider"),
+      findDvdCompareResults({
+        fetchPage: buildFetchPage(),
+        searchTerm: "solider",
+      }),
     )
 
     expect(outcome.isDirectListing).toBe(true)
@@ -624,7 +651,10 @@ describe(findDvdCompareResults.name, () => {
     ) as unknown as typeof globalThis.fetch
 
     const outcome = await firstValueFrom(
-      findDvdCompareResults("anything"),
+      findDvdCompareResults({
+        fetchPage: buildFetchPage(),
+        searchTerm: "anything",
+      }),
     )
 
     expect(outcome.isDirectListing).toBe(true)
@@ -645,11 +675,61 @@ describe(findDvdCompareResults.name, () => {
     ) as unknown as typeof globalThis.fetch
 
     const outcome = await firstValueFrom(
-      findDvdCompareResults("xyzzy-nonexistent"),
+      findDvdCompareResults({
+        fetchPage: buildFetchPage(),
+        searchTerm: "xyzzy-nonexistent",
+      }),
     )
 
     expect(outcome.isDirectListing).toBe(false)
     expect(outcome.results).toEqual([])
+  })
+
+  test("caches a search so a repeated lookup never reaches the network", async () => {
+    // The regression: DVDCompare had a seven-day time to live declared in
+    // PROVIDER_CACHE_TIME_TO_LIVE from day one, but nothing fetched
+    // through the cache, so every lookup went to the site and an outage
+    // failed the run outright.
+    const fetchSpy = vi.fn(async () =>
+      makeSearchPageResponse(
+        MULTI_RESULT_SEARCH_HTML,
+        "https://www.dvdcompare.net/comparisons/search.php",
+      ),
+    )
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+    const cache = openProviderCache({
+      databasePath: ":memory:",
+    })
+    const fetchPage = createDvdComparePageFetcher({
+      cache,
+      minimumRequestIntervalMilliseconds: 0,
+    })
+
+    const first = await firstValueFrom(
+      findDvdCompareResults({
+        fetchPage,
+        searchTerm: "Soldier",
+      }),
+    )
+
+    expect(
+      cache.getStale({
+        provider: "dvdCompare",
+        requestKey:
+          "https://www.dvdcompare.net/comparisons/search.php|param=Soldier&searchtype=text",
+      }),
+    ).not.toBeNull()
+
+    const second = await firstValueFrom(
+      findDvdCompareResults({
+        fetchPage,
+        searchTerm: "Soldier",
+      }),
+    )
+
+    expect(second).toEqual(first)
+    expect(fetchSpy).toHaveBeenCalledOnce()
   })
 
   test("sends the search term as the 'param' form field to search.php", async () => {
@@ -662,7 +742,12 @@ describe(findDvdCompareResults.name, () => {
     globalThis.fetch =
       fetchSpy as unknown as typeof globalThis.fetch
 
-    await firstValueFrom(findDvdCompareResults("Soldier"))
+    await firstValueFrom(
+      findDvdCompareResults({
+        fetchPage: buildFetchPage(),
+        searchTerm: "Soldier",
+      }),
+    )
 
     const [url, init] = fetchSpy.mock
       .calls[0] as unknown as [string, RequestInit]
