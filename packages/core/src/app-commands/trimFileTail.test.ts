@@ -44,8 +44,9 @@ const stubDurations = (
   })
 }
 
-// mkvmerge never writes the --output path when --split is in play; a
-// single `parts:-<end>` range lands as `<stem>-001.mkv` beside it.
+// Which path the kept range lands on depends on the mkvmerge build: older
+// ones append a part suffix beside the --output path, v101 writes the
+// --output path itself when the split produced exactly one part.
 const stubTrimWritingParts = (partCount: number) => {
   vi.mocked(trimTailMkvMerge).mockImplementation(() => {
     const outputFilePath = join(
@@ -68,6 +69,27 @@ const stubTrimWritingParts = (partCount: number) => {
   })
 }
 
+// The v101 shape: no suffixed parts, the --output path holds the result.
+const stubTrimWritingOutputPathDirectly = () => {
+  vi.mocked(trimTailMkvMerge).mockImplementation(() => {
+    const outputFilePath = join(
+      trimmedFolderPath,
+      "episode.mkv",
+    )
+    vol.mkdirSync(trimmedFolderPath, { recursive: true })
+    vol.writeFileSync(outputFilePath, "trimmed-file")
+    return of(outputFilePath)
+  })
+}
+
+// Neither shape: mkvmerge produced nothing at all.
+const stubTrimWritingNothing = () => {
+  vi.mocked(trimTailMkvMerge).mockImplementation(() => {
+    vol.mkdirSync(trimmedFolderPath, { recursive: true })
+    return of(join(trimmedFolderPath, "episode.mkv"))
+  })
+}
+
 describe("trimFileTail", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -75,7 +97,7 @@ describe("trimFileTail", () => {
     vi.spyOn(console, "info").mockImplementation(() => {})
   })
 
-  test("renames the single split part back onto the original file name", async () => {
+  test("renames the single suffixed split part back onto the original file name", async () => {
     vol.fromJSON({ "/work/episode.mkv": "source-mkv" })
     stubTrimWritingParts(1)
     stubDurations([1427.16, 1421.086])
@@ -155,6 +177,46 @@ describe("trimFileTail", () => {
           sourcePath: "/work",
         }).pipe(toArray()),
       ),
-    ).rejects.toThrow(/expected exactly one output part/)
+    ).rejects.toThrow(/expected at most one output part/)
+  })
+
+  // mkvmerge v101 writes the --output path verbatim when the split
+  // produced one part, so there is no `-001` file to rename. Before this
+  // was handled the command reported a failure over a correct output.
+  test("accepts the build that writes the output path with no part suffix", async () => {
+    vol.fromJSON({ "/work/episode.mkv": "source-mkv" })
+    stubTrimWritingOutputPathDirectly()
+    stubDurations([1427.16, 1421.101])
+
+    const results = await firstValueFrom(
+      trimFileTail({
+        endTime: "00:23:41.086",
+        fileName: "episode.mkv",
+        sourcePath: "/work",
+      }).pipe(toArray()),
+    )
+
+    expect(results[0]).toMatchObject({
+      actualDurationSeconds: 1421.101,
+      filePath: join(trimmedFolderPath, "episode.mkv"),
+      requestedEndTime: "00:23:41.086",
+      sourceDurationSeconds: 1427.16,
+    })
+  })
+
+  test("still fails when mkvmerge produced no output at all", async () => {
+    vol.fromJSON({ "/work/episode.mkv": "source-mkv" })
+    stubTrimWritingNothing()
+    stubDurations([1427.16])
+
+    await expect(
+      firstValueFrom(
+        trimFileTail({
+          endTime: "00:23:41.086",
+          fileName: "episode.mkv",
+          sourcePath: "/work",
+        }).pipe(toArray()),
+      ),
+    ).rejects.toThrow(/found no output/)
   })
 })
