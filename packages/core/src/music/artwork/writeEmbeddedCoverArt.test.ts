@@ -107,7 +107,10 @@ embedFormats.forEach((format) => {
 
       expect(
         await writeEmbeddedCoverArt({ filePath, image }),
-      ).toEqual({ isChanged: true })
+      ).toEqual({
+        isChanged: true,
+        isTimestampRestored: true,
+      })
 
       expect(readPictures(filePath)).toEqual([
         {
@@ -138,7 +141,10 @@ test.skipIf(isFfmpegMissing)(
 
     expect(
       await writeEmbeddedCoverArt({ filePath, image }),
-    ).toEqual({ isChanged: false })
+    ).toEqual({
+      isChanged: false,
+      isTimestampRestored: true,
+    })
 
     expect((await stat(filePath)).mtimeMs).toBe(
       fileStatsAfterFirstWrite.mtimeMs,
@@ -166,7 +172,10 @@ test.skipIf(isFfmpegMissing)(
         filePath,
         image: secondImage,
       }),
-    ).toEqual({ isChanged: true })
+    ).toEqual({
+      isChanged: true,
+      isTimestampRestored: true,
+    })
 
     expect(readPictures(filePath)).toEqual([
       {
@@ -191,7 +200,10 @@ test.skipIf(isFfmpegMissing)(
         image: buildImage(),
         isDryRun: true,
       }),
-    ).toEqual({ isChanged: true })
+    ).toEqual({
+      isChanged: true,
+      isTimestampRestored: true,
+    })
 
     expect(readPictures(filePath)).toEqual([])
   },
@@ -254,3 +266,65 @@ test("names the file in the error when it cannot be read", async () => {
     }),
   ).rejects.toThrow(/Cannot write cover art to/u)
 })
+
+// The library holds files the agent can write but does not own. `utimes`
+// needs ownership, so it fails with `EPERM` while the picture is already in
+// the file. Reporting that file as unwritten sent 17 albums of the first 65
+// through the results panel as failures with the cover art in place, and one
+// of them ended the run.
+const buildTimestampError = (code: string) =>
+  Object.assign(
+    new Error(
+      `${code}: operation not permitted, utime 'x'`,
+    ),
+    { code },
+  )
+
+test.skipIf(isFfmpegMissing)(
+  "counts the file as written when the timestamp cannot be restored",
+  async () => {
+    const filePath = await createFixture({
+      fileName: "timestamps-eperm.flac",
+      format: "flac",
+    })
+    const image = buildImage()
+
+    expect(
+      await writeEmbeddedCoverArt({
+        filePath,
+        image,
+        setFileTimestamps: () =>
+          Promise.reject(buildTimestampError("EPERM")),
+      }),
+    ).toEqual({
+      isChanged: true,
+      isTimestampRestored: false,
+    })
+
+    expect(readPictures(filePath)).toEqual([
+      {
+        byteCount: image.bytes.length,
+        mimeType: "image/png",
+      },
+    ])
+  },
+)
+
+test.skipIf(isFfmpegMissing)(
+  "still fails on a timestamp error that is not an ownership one",
+  async () => {
+    const filePath = await createFixture({
+      fileName: "timestamps-eio.flac",
+      format: "flac",
+    })
+
+    await expect(
+      writeEmbeddedCoverArt({
+        filePath,
+        image: buildImage(),
+        setFileTimestamps: () =>
+          Promise.reject(buildTimestampError("EIO")),
+      }),
+    ).rejects.toThrow(/Cannot write cover art to/u)
+  },
+)

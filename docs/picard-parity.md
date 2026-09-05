@@ -83,7 +83,7 @@ against the table.
 | `ascii_filenames` | **false** | **Do not transliterate.** Japanese titles and curly quotes stay as they are. |
 | `replace_spaces_with_underscores` | false | Spaces are spaces. |
 | `delete_empty_dirs` | true | Remove a source folder left empty after the move. |
-| `preserve_timestamps` | **true** | The file's modification time survives tagging. |
+| `preserve_timestamps` | **true** | The file's modification time survives tagging. Best effort: `utimes` needs the file's owner, so a file the process can write but does not own keeps the write's time. The write still counts, and the row reports `isTimestampRestored: false`. |
 | `move_additional_files` | **false** | Logs, cue sheets and scans stay where they are; they are not dragged into the library. |
 
 ---

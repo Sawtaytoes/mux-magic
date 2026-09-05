@@ -100,29 +100,63 @@ const savePictureToAudioFile = ({
     },
   })
 
+// Restoring the timestamp is a courtesy, not part of the write. The picture
+// is already in the file by the time this runs, so a failure here must not
+// report the file as unwritten — it did get the cover art.
+//
+// `EPERM` is the common one and it is an OWNERSHIP fact, not a permission
+// bug: `utimes` to an arbitrary time needs the file's owner or `CAP_FOWNER`,
+// and a group-writable file owned by another user gives neither. A large
+// part of the music library is owned by `root` while the agent runs as
+// `node`, so 17 of the first 65 albums hit this. Before the fix the whole
+// album reported `failed` even though every file had the cover art, and one
+// of them killed the run.
+const TIMESTAMP_ERROR_CODES = new Set(["EACCES", "EPERM"])
+
+const getIsIgnorableTimestampError = (error: unknown) =>
+  TIMESTAMP_ERROR_CODES.has(
+    (error as { code?: string }).code ?? "",
+  )
+
+export type SetFileTimestamps = (
+  filePath: string,
+  accessedTime: Date,
+  modifiedTime: Date,
+) => Promise<void>
+
 const restoreTimestamps = ({
   filePath,
   originalFileStats,
+  setFileTimestamps,
 }: {
   filePath: string
   originalFileStats: { atime: Date; mtime: Date }
+  setFileTimestamps: SetFileTimestamps
 }) =>
-  utimes(
+  setFileTimestamps(
     filePath,
     originalFileStats.atime,
     originalFileStats.mtime,
   )
+    .then(() => true)
+    .catch((error: unknown) =>
+      getIsIgnorableTimestampError(error)
+        ? false
+        : Promise.reject(error),
+    )
 
 export const writeEmbeddedCoverArt = ({
   filePath,
   image,
   isDryRun = false,
   isTimestampPreserved = true,
+  setFileTimestamps = utimes,
 }: {
   filePath: string
   image: CoverArtImage
   isDryRun?: boolean
   isTimestampPreserved?: boolean
+  setFileTimestamps?: SetFileTimestamps
 }) =>
   ((imageBytes: ByteVector) =>
     stat(filePath)
@@ -140,7 +174,10 @@ export const writeEmbeddedCoverArt = ({
         // Running the command twice over a folder must be a no-op, the same
         // acceptance test `writeAudioTags` is held to.
         isAlreadyWritten || isDryRun
-          ? { isChanged: !isAlreadyWritten }
+          ? {
+              isChanged: !isAlreadyWritten,
+              isTimestampRestored: true,
+            }
           : savePictureToAudioFile({
               filePath,
               imageBytes,
@@ -151,10 +188,14 @@ export const writeEmbeddedCoverArt = ({
                   ? restoreTimestamps({
                       filePath,
                       originalFileStats,
+                      setFileTimestamps,
                     })
-                  : undefined,
+                  : true,
               )
-              .then(() => ({ isChanged: true })),
+              .then((isTimestampRestored) => ({
+                isChanged: true,
+                isTimestampRestored,
+              })),
       )
       .catch((error: unknown) =>
         Promise.reject(
