@@ -804,10 +804,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/tokens@npm:1.8.0, @charcuterie/tokens@npm:^1.8.0":
-  version: 1.8.0
-  resolution: "@charcuterie/tokens@npm:1.8.0"
-  checksum: 10c0/f37639348c24168bc6fb89444b6dc70403e79137719ed33b2c6ffad83b0fedb9cdf92ffc06c3b87eeb8e1fc8c9b1b7aa2ab75a0d9849fec36b224908187b8a58
+"@charcuterie/tokens@npm:1.9.0, @charcuterie/tokens@npm:^1.9.0":
+  version: 1.9.0
+  resolution: "@charcuterie/tokens@npm:1.9.0"
+  checksum: 10c0/0b8806f14c1c53ed8427b9bac1c0b2595eb0f5189359a65bbccfe724cf9f1520ddb34cb083169200f1fee75c60a3feab0b5b2acbd2623fbeb47fb64bcc9e6f63
   languageName: node
   linkType: hard
 
@@ -818,12 +818,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/ui@npm:^4.3.0":
-  version: 4.3.0
-  resolution: "@charcuterie/ui@npm:4.3.0"
+"@charcuterie/ui@npm:^4.5.0":
+  version: 4.5.0
+  resolution: "@charcuterie/ui@npm:4.5.0"
   dependencies:
     "@charcuterie/logic": "npm:2.3.0"
-    "@charcuterie/tokens": "npm:1.8.0"
+    "@charcuterie/tokens": "npm:1.9.0"
     "@floating-ui/react": "npm:^0.27.20"
     "@tanstack/react-virtual": "npm:^3.13.12"
     tailwind-merge: "npm:^3.6.0"
@@ -852,7 +852,7 @@ __metadata:
       optional: true
     react-router:
       optional: true
-  checksum: 10c0/7b139e4993dc6b185e0ea62c3524f41dbfc03ca7c6b7554dc6a96eefe12b2ef04049043176d1f70595e7f2b218316b49cea5514d21c2a564f28b571e12c00beb
+  checksum: 10c0/0c5e4b14e94880f52dd20b980639a199ea80c51fe1498db098872cc979ce2d5b6809286a34bf82175590a89e86a21a6cc75f897bd33ad39a236a4931d500ee3c
   languageName: node
   linkType: hard
 
@@ -2064,8 +2064,8 @@ __metadata:
     "@charcuterie/logic": "npm:^2.3.0"
     "@charcuterie/server": "npm:^0.4.0"
     "@charcuterie/storybook-config": "npm:^0.3.0"
-    "@charcuterie/tokens": "npm:^1.8.0"
-    "@charcuterie/ui": "npm:^4.3.0"
+    "@charcuterie/tokens": "npm:^1.9.0"
+    "@charcuterie/ui": "npm:^4.5.0"
     "@charcuterie/vite-config": "npm:^1.1.0"
     "@charcuterie/vitest-config": "npm:^1.1.0"
     "@dnd-kit/core": "npm:^6.3.1"
