@@ -1,10 +1,17 @@
-# 2026-09-08 — Discogs joins the cover-art chain by identifier, and iTunes must confirm a match
+# Discogs joins the cover-art chain by identifier, and iTunes must confirm a match
 
 - **Status:** Accepted
-- **Date decided:** 2026-09-08
-- **Area:** core
-- **Source:** chat `t3code-45f549d9`; the audit of all 65 covers the backlog run installed
-- **Extends:** [2026-09-05 — Mux Magic writes cover art, and iTunes joins the provider chain](2026-09-05-mux-magic-writes-cover-art-and-itunes-joins-the-provider-chain.md)
+- **Date:** 2026-09-08
+- **Type:** core
+- **Supersedes:** —
+- **Superseded by:** —
+
+This record EXTENDS
+[Mux Magic writes cover art, and iTunes joins the provider chain](2026-09-05-mux-magic-writes-cover-art-and-itunes-joins-the-provider-chain.md).
+It does not replace it: everything that record settled about writing the picture still holds. What
+changes here is the provider chain in front of it.
+
+Source: chat `t3code-45f549d9`, and the audit of all 65 covers the backlog run installed.
 
 ## Decision
 
