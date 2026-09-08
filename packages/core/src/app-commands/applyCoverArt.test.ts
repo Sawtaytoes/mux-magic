@@ -314,3 +314,77 @@ test.skipIf(isFfmpegMissing)(
     ).toBe(1)
   },
 )
+
+// The Discogs step is reached from the tags alone: the release id in the
+// files sends one request to MusicBrainz for the barcode, and the barcode
+// sends one to Discogs. Nothing about it is passed in by the caller.
+const buildRoutedCachedFetch = (
+  bodyByUrl: Record<string, string>,
+): CachedFetch =>
+  vi.fn((url: string) =>
+    Object.hasOwn(bodyByUrl, url)
+      ? Promise.resolve({
+          body: bodyByUrl[url] ?? "",
+          isFromCache: false,
+        })
+      : Promise.reject(new Error(`404 for ${url}`)),
+  )
+
+test.skipIf(isFfmpegMissing)(
+  "reaches Discogs with the barcode MusicBrainz holds for the tagged release",
+  async () => {
+    const folderPath = await mkdtemp(
+      join(fixtureDirectoryPath, "discogs-"),
+    )
+
+    await generateAudioFixture({
+      format: "flac",
+      outputPath: join(folderPath, "01 Track.flac"),
+      tags: {
+        ALBUM: "Modular Heart",
+        ALBUMARTIST: "M. Harvey Bee",
+        MUSICBRAINZ_ALBUMID: "release-9",
+      },
+    })
+
+    const result = await firstValueFrom(
+      applyCoverArt({
+        cachedFetch: buildRoutedCachedFetch({
+          "https://musicbrainz.org/ws/2/release/release-9?inc=recordings+artist-credits+labels+release-groups+media+artist-rels+recording-rels+genres+tags&fmt=json":
+            JSON.stringify({
+              barcode: "724381059029",
+              id: "release-9",
+              title: "Modular Heart",
+            }),
+        }),
+        discogsCachedFetch: buildRoutedCachedFetch({
+          "https://api.discogs.com/database/search?barcode=724381059029&per_page=50&type=release":
+            JSON.stringify({ results: [{ id: 272692 }] }),
+          "https://api.discogs.com/releases/272692":
+            JSON.stringify({
+              id: 272692,
+              images: [
+                {
+                  height: 500,
+                  type: "primary",
+                  uri: "https://i.discogs.com/front-500.jpeg",
+                  width: 500,
+                },
+              ],
+              title: "Modular Heart",
+            }),
+        }),
+        itunesCachedFetch: emptyCachedFetch,
+        sourcePath: folderPath,
+      }),
+    )
+
+    expect(result.source).toBe("discogs")
+    expect(result.imageUrl).toBe(
+      "https://i.discogs.com/front-500.jpeg",
+    )
+    expect(
+      readPictureCount(join(folderPath, "01 Track.flac")),
+    ).toBe(1)
+  },
+)

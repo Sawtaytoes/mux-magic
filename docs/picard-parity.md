@@ -93,7 +93,7 @@ against the table.
 | Setting | Value |
 | --- | --- |
 | Provider order | Cover Art Archive → release URL relationships → CAA release group → TheAudioDB → local files |
-| Our provider order | explicit image URL → CAA release → CAA release group → **iTunes** → local files |
+| Our provider order | explicit image URL → CAA release → CAA release group → **Discogs, by barcode or catalogue number** → **iTunes** → local files |
 | Image types | **front only** (`caa_restrict_image_types=true`) |
 | Types never used | `matrix/runout`, `raw/unedited`, `watermark` |
 | Size | **original / full size** (`caa_image_size=-1`) |
@@ -107,18 +107,29 @@ against the table.
 So each album folder ends with **one `cover.jpg` on disk and one embedded front image per
 file**, at full resolution.
 
-**Built, and one step wider than Picard.** `applyCoverArt` (`packages/core/src/app-commands/`)
-does all of the above through `node-taglib-sharp`, with no re-encode and no remux. Two differences
-from the table, both deliberate
-([decision](decisions/2026-09-05-mux-magic-writes-cover-art-and-itunes-joins-the-provider-chain.md)):
+**Built, and two steps wider than Picard.** `applyCoverArt` (`packages/core/src/app-commands/`)
+does all of the above through `node-taglib-sharp`, with no re-encode and no remux. Three differences
+from the table, all deliberate
+([cover art](decisions/2026-09-05-mux-magic-writes-cover-art-and-itunes-joins-the-provider-chain.md),
+[Discogs](decisions/2026-09-08-discogs-joins-the-cover-art-chain-by-identifier-and-itunes-must-confirm-a-match.md)):
 
 - An **explicit image URL** comes first. It is the escape hatch for a release MusicBrainz has never
   heard of, which is the normal case for a game soundtrack in its first weeks.
-- **iTunes** is a fifth provider, searched by album title and artist, sitting between the archive and
-  local files. The Cover Art Archive knew only 37 of the 333 albums in this library that had no
-  artwork at all; iTunes knows another 35. Its match requires the album title AND the artist to be
-  equal once case, punctuation and spacing are removed — a search provider with a loose match puts the
-  wrong cover on a record, which is worse than a blank one.
+- **Discogs** is asked next, and it is asked by an IDENTIFIER, never by a text search. The barcode and
+  the catalogue number come from the MusicBrainz release the tags already name, so the request costs
+  one extra MusicBrainz lookup and only on the path where the archive came back empty. A barcode names
+  one product, so the answer can only be the wrong album when the identifier is wrong. The release
+  title must also agree, because a barcode can be reused across a reissue.
+- **iTunes** stays below Discogs, searched by album title and artist. The Cover Art Archive knew only
+  37 of the 333 albums in this library that had no artwork at all; iTunes knows another 35. Its match
+  requires the album title AND the artist to be equal once case, punctuation and spacing are removed,
+  and then a second request must CONFIRM the candidate — a shared track title, or failing that a
+  release year within one year of the tags. A search provider with a loose match puts the wrong cover
+  on a record, which is worse than a blank one.
+
+**MusicBrainz stays first and Discogs does not displace it.** The owner's words on 2026-09-08 were
+*"Discogs doesn't need to be the default, but it was a good fallback in this case to confirm.
+MusicBrainz is typically correct."*
 
 TheAudioDB is still the unimplemented seam in `tools/coverArtArchive.ts`. Local-file discovery is no
 longer a seam; it is `music/artwork/findLocalCoverArt.ts`.
