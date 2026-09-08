@@ -90,4 +90,5 @@ then the album folder their turn.
 - `packages/core/src/tools/itunesArtwork.test.ts` — the Foundations, Baby Leaf and Pulse cases are
   real data from this audit
 - `packages/core/src/music/artwork/resolveCoverArtImage.test.ts` — the chain order
-- The audit itself is written up in the `music-ingest` repo
+- The audit itself is `docs/research/2026-09-08-cover-art-verification.md` and its `.tsv` in the
+  `music-ingest` repo — one row per album, with the evidence for each verdict
