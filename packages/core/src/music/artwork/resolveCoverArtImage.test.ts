@@ -236,3 +236,171 @@ test("does not call the archive when there is no id to look up", async () => {
 
   expect(cachedFetch).not.toHaveBeenCalled()
 })
+
+const MUSICBRAINZ_RELEASE_URL =
+  "https://musicbrainz.org/ws/2/release/release-1?inc=recordings+artist-credits+labels+release-groups+media+artist-rels+recording-rels+genres+tags&fmt=json"
+
+const DISCOGS_BARCODE_SEARCH_URL =
+  "https://api.discogs.com/database/search?barcode=724381059029&per_page=50&type=release"
+
+const DISCOGS_RELEASE_URL =
+  "https://api.discogs.com/releases/272692"
+
+const buildMusicBrainzReleaseBody = () =>
+  JSON.stringify({
+    barcode: "724381059029",
+    id: "release-1",
+    "label-info": [
+      { "catalog-number": "7243 8 10590 2 9" },
+    ],
+    title: "Modular Heart",
+  })
+
+const buildDiscogsSearchBody = () =>
+  JSON.stringify({ results: [{ id: 272692 }] })
+
+const buildDiscogsReleaseBody = (title: string) =>
+  JSON.stringify({
+    id: 272692,
+    images: [
+      {
+        height: 500,
+        type: "primary",
+        uri: "https://i.discogs.com/front-500.jpeg",
+        width: 500,
+      },
+    ],
+    title,
+  })
+
+test("falls back to Discogs when the archive has nothing", async () => {
+  const folderPath =
+    await buildFolderWithLocalArt("discogs")
+  const itunesCachedFetch = buildCachedFetch({})
+
+  expect(
+    await resolveCoverArtImage({
+      albumTitle: "Modular Heart",
+      artistName: "M. Harvey Bee",
+      cachedFetch: buildCachedFetch({
+        [MUSICBRAINZ_RELEASE_URL]:
+          buildMusicBrainzReleaseBody(),
+      }),
+      discogsCachedFetch: buildCachedFetch({
+        [DISCOGS_BARCODE_SEARCH_URL]:
+          buildDiscogsSearchBody(),
+        [DISCOGS_RELEASE_URL]:
+          buildDiscogsReleaseBody("Modular Heart"),
+      }),
+      folderPath,
+      itunesCachedFetch,
+      releaseId: "release-1",
+    }),
+  ).toEqual({
+    image: { bytes: JPEG_BYTES, mimeType: "image/jpeg" },
+    imageUrl: "https://i.discogs.com/front-500.jpeg",
+    source: "discogs",
+    sourcePath: null,
+  })
+
+  expect(itunesCachedFetch).not.toHaveBeenCalled()
+})
+
+test("Discogs never overrides art the Cover Art Archive already found", async () => {
+  const folderPath = await mkdtemp(
+    join(fixtureDirectoryPath, "archive-over-discogs-"),
+  )
+  const discogsCachedFetch = buildCachedFetch({
+    [DISCOGS_BARCODE_SEARCH_URL]: buildDiscogsSearchBody(),
+    [DISCOGS_RELEASE_URL]:
+      buildDiscogsReleaseBody("Modular Heart"),
+  })
+
+  expect(
+    (
+      await resolveCoverArtImage({
+        albumTitle: "Modular Heart",
+        artistName: "M. Harvey Bee",
+        cachedFetch: buildCachedFetch({
+          "https://coverartarchive.org/release/release-1":
+            buildArchiveIndex(
+              "https://coverartarchive.org/release/release-1/1.jpg",
+            ),
+        }),
+        discogsCachedFetch,
+        folderPath,
+        releaseId: "release-1",
+      })
+    )?.source,
+  ).toBe("cover-art-archive-release")
+
+  expect(discogsCachedFetch).not.toHaveBeenCalled()
+})
+
+test("reaches iTunes when Discogs holds a different album under the same barcode", async () => {
+  const folderPath = await buildFolderWithLocalArt(
+    "discogs-title-miss",
+  )
+
+  expect(
+    await resolveCoverArtImage({
+      albumTitle: "Modular Heart",
+      artistName: "M. Harvey Bee",
+      cachedFetch: buildCachedFetch({
+        [MUSICBRAINZ_RELEASE_URL]:
+          buildMusicBrainzReleaseBody(),
+      }),
+      discogsCachedFetch: buildCachedFetch({
+        [DISCOGS_BARCODE_SEARCH_URL]:
+          buildDiscogsSearchBody(),
+        [DISCOGS_RELEASE_URL]: buildDiscogsReleaseBody(
+          "A Completely Different Record",
+        ),
+      }),
+      folderPath,
+      itunesCachedFetch: buildCachedFetch({
+        "https://itunes.apple.com/search?entity=album&limit=25&media=music&term=M.+Harvey+Bee+Modular+Heart":
+          JSON.stringify({
+            results: [
+              {
+                artistName: "M. Harvey Bee",
+                artworkUrl100:
+                  "https://example.com/a/100x100bb.jpg",
+                collectionName: "Modular Heart",
+              },
+            ],
+          }),
+      }),
+      releaseId: "release-1",
+    }),
+  ).toEqual({
+    image: { bytes: JPEG_BYTES, mimeType: "image/jpeg" },
+    imageUrl: "https://example.com/a/1200x1200bb.jpg",
+    source: "itunes",
+    sourcePath: null,
+  })
+})
+
+test("a Discogs outage still lets the chain reach the album folder", async () => {
+  const folderPath = await buildFolderWithLocalArt(
+    "discogs-outage",
+  )
+
+  expect(
+    await resolveCoverArtImage({
+      albumTitle: "Modular Heart",
+      cachedFetch: buildCachedFetch({
+        [MUSICBRAINZ_RELEASE_URL]:
+          buildMusicBrainzReleaseBody(),
+      }),
+      discogsCachedFetch: buildCachedFetch({}),
+      folderPath,
+      releaseId: "release-1",
+    }),
+  ).toEqual({
+    image: { bytes: PNG_BYTES, mimeType: "image/png" },
+    imageUrl: null,
+    source: "local-file",
+    sourcePath: join(folderPath, "cover.png"),
+  })
+})
