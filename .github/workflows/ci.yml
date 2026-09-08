@@ -47,6 +47,12 @@ jobs:
   changes:
     uses: Sawtaytoes/charcuterie/.github/workflows/shared-docs-only-changes.yml@workflows-v1
 
+  # The one gate a docs-only change DOES run. It lints the decision records
+  # the pull request TOUCHED, never the whole tree.
+  # This repo keeps 72 decision records.
+  docs:
+    uses: Sawtaytoes/charcuterie/.github/workflows/shared-docs-lint.yml@workflows-v1
+
   # Skips the gates when this exact SHA already has a green run -- a merge to
   # master re-running what the pull request just proved. Documentation-only
   # diffs are the OTHER reason to skip and are no longer decided here; that is
