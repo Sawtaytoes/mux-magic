@@ -19,6 +19,7 @@ const buildRelease = (
   ],
   artistId: "artist-1",
   barcode: "",
+  catalogNumbers: [],
   country: "US",
   date: "1988-06-28",
   folksonomyTags: [],

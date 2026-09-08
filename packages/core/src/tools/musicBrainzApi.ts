@@ -175,6 +175,10 @@ export type MusicBrainzRelease = {
   country: string
   formats: string[]
   labels: string[]
+  // The label's own catalogue number for this release. Discogs indexes on
+  // it, so it is the second identifier the cover-art chain can hand over
+  // when a release has no barcode.
+  catalogNumbers: string[]
   barcode: string
   trackCount: number
   media: MusicBrainzMedium[]
@@ -455,6 +459,9 @@ const buildRelease = ({
     .filter((format) => format.length > 0),
   genres: mapTags(rawRelease.genres),
   isMultiArtist: deriveIsMultiArtist(media),
+  catalogNumbers: (rawRelease["label-info"] ?? [])
+    .map((labelInfo) => labelInfo["catalog-number"] ?? "")
+    .filter((catalogNumber) => catalogNumber.length > 0),
   labels: (rawRelease["label-info"] ?? [])
     .map((labelInfo) => labelInfo.label?.name ?? "")
     .filter((labelName) => labelName.length > 0),

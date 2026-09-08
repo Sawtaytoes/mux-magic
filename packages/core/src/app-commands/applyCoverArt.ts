@@ -24,9 +24,13 @@ import {
 import { saveCoverArtFile } from "../music/artwork/saveCoverArtFile.js"
 import { writeEmbeddedCoverArt } from "../music/artwork/writeEmbeddedCoverArt.js"
 import { readAudioTags } from "../music/tags/readAudioTags.js"
+import { getReleaseYear } from "../tools/itunesArtwork.js"
 import type { CachedFetch } from "../tools/musicBrainzApi.js"
 import { rateLimitedMusicBrainzFetch } from "../tools/musicBrainzApi.js"
-import { itunesCachedFetch as defaultItunesCachedFetch } from "../tools/musicProviderFetchers.js"
+import {
+  discogsCachedFetch as defaultDiscogsCachedFetch,
+  itunesCachedFetch as defaultItunesCachedFetch,
+} from "../tools/musicProviderFetchers.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { isAudioFilePath } from "./scanAudioFiles.js"
 
@@ -82,6 +86,7 @@ export type ApplyCoverArtResult = {
 
 export type ApplyCoverArtProps = {
   cachedFetch?: CachedFetch
+  discogsCachedFetch?: CachedFetch
   imageUrl?: string
   itunesCachedFetch?: CachedFetch
   isDryRun?: boolean
@@ -99,26 +104,40 @@ export type ApplyCoverArtProps = {
 // provider searches on them. Album artist is preferred over track artist:
 // on a compilation the track artist differs per file and would never match
 // the album Apple lists.
+//
+// EVERY file is read, not just the first, because the track titles are how
+// the iTunes provider confirms that the album it found is this album. One
+// title is enough to confirm a match, so a folder holding a single track
+// still gets a real check; the release year is the fallback for the folder
+// whose one title is written in a different script from Apple's.
 const readAlbumIdentityFromFiles = (filePaths: string[]) =>
   Promise.all(
-    filePaths
-      .slice(0, 1)
-      .map((filePath) => readAudioTags(filePath)),
+    filePaths.map((filePath) =>
+      readAudioTags(filePath).catch(() => null),
+    ),
   )
-    .then(([firstFile]) => ({
-      albumTitle: firstFile?.tags.album,
+    .then((files) => files.filter((file) => file !== null))
+    .then((files) => ({
+      albumTitle: files[0]?.tags.album,
       artistName:
-        firstFile?.tags.albumArtist ??
-        firstFile?.tags.artist,
+        files[0]?.tags.albumArtist ?? files[0]?.tags.artist,
+      localTrackTitles: files
+        .map((file) => file.tags.title)
+        .filter(
+          (title): title is string => title !== undefined,
+        ),
       releaseGroupId:
-        firstFile?.tags.musicBrainzReleaseGroupId,
-      releaseId: firstFile?.tags.musicBrainzReleaseId,
+        files[0]?.tags.musicBrainzReleaseGroupId,
+      releaseId: files[0]?.tags.musicBrainzReleaseId,
+      releaseYear: getReleaseYear(files[0]?.tags.date),
     }))
     .catch(() => ({
       albumTitle: undefined,
       artistName: undefined,
+      localTrackTitles: [],
       releaseGroupId: undefined,
       releaseId: undefined,
+      releaseYear: null,
     }))
 
 // `defer`, not a bare `from(promise)`. The operator above this one can hold
@@ -264,6 +283,7 @@ const applyResolvedCoverArt = ({
 
 export const applyCoverArt = ({
   cachedFetch = rateLimitedMusicBrainzFetch,
+  discogsCachedFetch = defaultDiscogsCachedFetch,
   imageUrl,
   isDryRun = false,
   itunesCachedFetch = defaultItunesCachedFetch,
@@ -297,14 +317,18 @@ export const applyCoverArt = ({
                   albumTitle: albumIdentity.albumTitle,
                   artistName: albumIdentity.artistName,
                   cachedFetch,
+                  discogsCachedFetch,
                   folderPath: dirname(filePaths[0] ?? ""),
                   imageUrl,
                   itunesCachedFetch,
+                  localTrackTitles:
+                    albumIdentity.localTrackTitles,
                   releaseGroupId:
                     releaseGroupId ??
                     albumIdentity.releaseGroupId,
                   releaseId:
                     releaseId ?? albumIdentity.releaseId,
+                  releaseYear: albumIdentity.releaseYear,
                 }),
             ),
           ).pipe(
