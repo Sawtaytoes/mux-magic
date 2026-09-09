@@ -20,12 +20,12 @@
     "@mux-magic/core": "workspace:*",
     "@mux-magic/tools": "workspace:*",
     "@mux-magic/web": "workspace:*",
-    "hono": "^4.12.34",
+    "hono": "^4.13.5",
     "vite": "^8.0.16"
   },
   "devDependencies": {
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "vitest": "^5.0.0"
   }
 }
