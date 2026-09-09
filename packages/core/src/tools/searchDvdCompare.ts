@@ -2,7 +2,6 @@ import {
   logAndSwallowPipelineError,
   logInfo,
 } from "@mux-magic/tools"
-import { JSDOM } from "jsdom"
 import { from, map, type Observable } from "rxjs"
 import type { CachedComputation } from "../provider-cache/cachedComputation.js"
 import {
@@ -429,41 +428,48 @@ const throwDvdCompareScrapeError = (
   throw new Error(message)
 }
 
-const requireDvdCompareElement = ({
-  element,
-  message,
-}: {
-  element: Element | null | undefined
-  message: string
-}) => element ?? throwDvdCompareScrapeError(message)
-
 const getDescriptionTextWithBreaks = (
-  description: Element,
+  descriptionHtml: string,
 ) =>
-  (
-    new JSDOM(
-      description.innerHTML.replace(
-        /<br\s*\/?\s*>/gi,
-        "\n",
-      ),
-    ).window.document.body.textContent?.trim() ?? ""
-  ).replace(/\n+/g, "\n")
+  decodeHtmlEntities(
+    descriptionHtml
+      .replace(/<br\s*\/?\s*>/gi, "\n")
+      .replace(/<[^>]+>/g, ""),
+  )
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.replace(/[\t ]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n+/g, "\n")
+    .trim()
 
 const getArchivedExtrasDescriptions = (
-  releaseContainer: Element,
+  releaseHtml: string,
 ) =>
-  Array.from(releaseContainer.querySelectorAll("div.label"))
-    .filter(
-      (label) => label.textContent?.trim() === "Extras:",
-    )
-    .map((label) =>
-      requireDvdCompareElement({
-        element: label.parentElement?.querySelector(
-          ":scope > .description",
-        ),
-        message:
-          "DVDCompare archived an Extras label without its description.",
-      }),
+  Array.from(
+    releaseHtml.matchAll(
+      /<div\b[^>]*class\s*=\s*["'][^"']*\blabel\b[^"']*["'][^>]*>\s*Extras:\s*<\/div>\s*<div\b[^>]*class\s*=\s*["'][^"']*\bdescription\b[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi,
+    ),
+  ).map((match) => match[1])
+
+const getArchivedReleaseHtml = ({
+  html,
+  releaseHash,
+}: {
+  html: string
+  releaseHash: string
+}) =>
+  Array.from(
+    html.matchAll(
+      /<ul\b[^>]*class\s*=\s*["'][^"']*\bdvd\b[^"']*["'][^>]*>[\s\S]*?<\/ul>/gi,
+    ),
+  )
+    .map((match) => match[0])
+    .find((releaseHtml) =>
+      new RegExp(
+        `<a\\b[^>]*(?:name|id)\\s*=\\s*["']?${releaseHash}(?:["'\\s>])`,
+        "i",
+      ).test(releaseHtml),
     )
 
 export const parseArchivedDvdCompareRelease = ({
@@ -473,45 +479,31 @@ export const parseArchivedDvdCompareRelease = ({
   html: string
   url: string
 }): DvdCompareReleaseScrape =>
-  ((
-    document: Document,
-    filmId: number,
-    releaseHash: string,
-  ) =>
-    ((releaseAnchor: Element) =>
-      ((releaseContainer: Element) =>
-        ((extrasDescriptions: Element[]) =>
-          extrasDescriptions.length === 0
-            ? throwDvdCompareScrapeError(
-                `No extras for DVDCompare release package ${releaseHash}.`,
-              )
-            : {
-                extras: extrasDescriptions
-                  .map(getDescriptionTextWithBreaks)
-                  .filter(Boolean)
-                  .join("\n\n"),
-                filmTitle: parseDvdCompareFilmTitle(
-                  html,
-                  filmId,
-                ),
-              })(
-          getArchivedExtrasDescriptions(releaseContainer),
-        ))(
-        requireDvdCompareElement({
-          element:
-            releaseAnchor.closest("tr") ??
-            releaseAnchor.closest("ul.dvd"),
-          message: `DVDCompare archived release package ${releaseHash} without its listing.`,
-        }),
-      ))(
-      requireDvdCompareElement({
-        element: document.querySelector(
-          `a[name="${releaseHash}"], a[id="${releaseHash}"]`,
-        ),
-        message: `DVDCompare's archive does not contain release package ${releaseHash}.`,
-      }),
+  ((filmId: number, releaseHash: string) =>
+    ((releaseHtml: string | undefined) =>
+      releaseHtml === undefined
+        ? throwDvdCompareScrapeError(
+            `DVDCompare's archive does not contain release package ${releaseHash}.`,
+          )
+        : ((extrasDescriptions: string[]) =>
+            extrasDescriptions.length === 0
+              ? throwDvdCompareScrapeError(
+                  `No extras for DVDCompare release package ${releaseHash}.`,
+                )
+              : {
+                  extras: extrasDescriptions
+                    .map(getDescriptionTextWithBreaks)
+                    .filter(Boolean)
+                    .join("\n\n"),
+                  filmTitle: parseDvdCompareFilmTitle(
+                    html,
+                    filmId,
+                  ),
+                })(
+            getArchivedExtrasDescriptions(releaseHtml),
+          ))(
+      getArchivedReleaseHtml({ html, releaseHash }),
     ))(
-    new JSDOM(html).window.document,
     Number(new URL(url).searchParams.get("fid") ?? 0),
     new URL(url).hash.replace(/^#/, "") || "1",
   )
