@@ -129,16 +129,34 @@ const parseLatestWaybackCapture = (
   ((parsed: unknown) =>
     typeof parsed === "object" &&
     parsed !== null &&
-    typeof (parsed as { url?: unknown }).url === "string" &&
     typeof (
       parsed as {
         archived_snapshots?: {
-          closest?: { timestamp?: unknown }
+          closest?: {
+            timestamp?: unknown
+            url?: unknown
+          }
         }
       }
-    ).archived_snapshots?.closest?.timestamp === "string"
+    ).archived_snapshots?.closest?.timestamp === "string" &&
+    typeof (
+      parsed as {
+        archived_snapshots?: {
+          closest?: { url?: unknown }
+        }
+      }
+    ).archived_snapshots?.closest?.url === "string"
       ? {
-          originalUrl: (parsed as { url: string }).url,
+          originalUrl: (
+            parsed as {
+              archived_snapshots: {
+                closest: { url: string }
+              }
+            }
+          ).archived_snapshots.closest.url.replace(
+            /^https?:\/\/web\.archive\.org\/web\/\d+(?:[a-z_]+)?\//i,
+            "",
+          ),
           timestamp: (
             parsed as {
               archived_snapshots: {
@@ -173,6 +191,32 @@ const fetchWaybackResponse = (url: string) =>
         ),
   )
 
+const getWaybackCandidateUrls = (filmId: string) => [
+  `https://www.dvdcompare.net/comparisons/film.php?fid=${filmId}`,
+  `https://dvdcompare.net/comparisons/film.php?fid=${filmId}`,
+  `http://www.dvdcompare.net/comparisons/film.php?fid=${filmId}`,
+  `http://dvdcompare.net/comparisons/film.php?fid=${filmId}`,
+]
+
+const findWaybackCapture = (filmId: string) =>
+  getWaybackCandidateUrls(filmId).reduce<
+    Promise<WaybackCapture | null>
+  >(
+    (capturePromise, candidateUrl) =>
+      capturePromise.then((capture) =>
+        capture === null
+          ? fetchWaybackResponse(
+              `${WAYBACK_AVAILABILITY_URL}?${new URLSearchParams(
+                { url: candidateUrl },
+              ).toString()}`,
+            )
+              .then((response) => response.text())
+              .then(parseLatestWaybackCapture)
+          : capture,
+      ),
+    Promise.resolve(null),
+  )
+
 export const fetchArchivedDvdComparePage = (
   requestedUrl: string,
 ): Promise<DvdComparePage> =>
@@ -183,43 +227,33 @@ export const fetchArchivedDvdComparePage = (
             `The Wayback fallback only supports DVDCompare film pages: ${requestedUrl}`,
           ),
         )
-      : ((availabilityUrl: string) =>
-          fetchWaybackResponse(availabilityUrl)
-            .then((response) => response.text())
-            .then(parseLatestWaybackCapture)
-            .then((capture) =>
-              capture === null
-                ? Promise.reject(
-                    new Error(
-                      `The Wayback Machine has no DVDCompare capture for film id ${filmId}.`,
+      : findWaybackCapture(filmId).then((capture) =>
+          capture === null
+            ? Promise.reject(
+                new Error(
+                  `The Wayback Machine has no DVDCompare capture for film id ${filmId}.`,
+                ),
+              )
+            : ((replayUrl: string) =>
+                fetchWaybackResponse(replayUrl)
+                  .then((response) =>
+                    decodeResponseText(response).then(
+                      (html) => ({
+                        html,
+                        status: response.status,
+                        url: requestedUrl,
+                      }),
                     ),
                   )
-                : ((replayUrl: string) =>
-                    fetchWaybackResponse(replayUrl)
-                      .then((response) =>
-                        decodeResponseText(response).then(
-                          (html) => ({
-                            html,
-                            status: response.status,
-                            url: requestedUrl,
-                          }),
-                        ),
-                      )
-                      .then(
-                        (page) =>
-                          logWarning(
-                            "DVDCOMPARE ARCHIVE FALLBACK",
-                            `DVDCompare could not be reached. Using its newest archived listing for film id ${filmId} (${capture.timestamp}).`,
-                          ) ?? page,
-                      ))(
-                    `${WAYBACK_REPLAY_BASE_URL}/${capture.timestamp}id_/${capture.originalUrl}`,
-                  ),
-            ))(
-          `${WAYBACK_AVAILABILITY_URL}?${new URLSearchParams(
-            {
-              url: `https://dvdcompare.net/comparisons/film.php?fid=${filmId}`,
-            },
-          ).toString()}`,
+                  .then(
+                    (page) =>
+                      logWarning(
+                        "DVDCOMPARE ARCHIVE FALLBACK",
+                        `DVDCompare could not be reached. Using its newest archived listing for film id ${filmId} (${capture.timestamp}).`,
+                      ) ?? page,
+                  ))(
+                `${WAYBACK_REPLAY_BASE_URL}/${capture.timestamp}id_/${capture.originalUrl}`,
+              ),
         ))(getDvdCompareFilmId(requestedUrl))
 
 export const isDvdCompareNetworkFailure = (

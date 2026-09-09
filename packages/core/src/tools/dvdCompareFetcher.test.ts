@@ -247,7 +247,10 @@ describe(createDvdComparePageFetcher.name, () => {
         new Response(
           JSON.stringify({
             archived_snapshots: {
-              closest: { timestamp: "20250403175037" },
+              closest: {
+                timestamp: "20250403175037",
+                url: "http://web.archive.org/web/20250403175037/https://dvdcompare.net/comparisons/film.php?fid=74759",
+              },
             },
             url: "https://dvdcompare.net/comparisons/film.php?fid=74759",
           }),
@@ -309,6 +312,61 @@ describe(createDvdComparePageFetcher.name, () => {
       }),
     ).rejects.toThrow("fetch failed")
     expect(fetchSpy).toHaveBeenCalledOnce()
+  })
+
+  test("tries another archived host form when the first form has no capture", async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ archived_snapshots: {} }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            archived_snapshots: {
+              closest: {
+                timestamp: "20260121165805",
+                url: "http://web.archive.org/web/20260121165805/https://dvdcompare.net/comparisons/film.php?fid=74759",
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response("<html>second host form</html>", {
+          status: 200,
+        }),
+      )
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+    const fetchPage = createDvdComparePageFetcher({
+      cache: openMemoryCache(),
+      minimumRequestIntervalMilliseconds: 0,
+    })
+
+    expect((await fetchPage(FILM_URL)).html).toContain(
+      "second host form",
+    )
+    expect(fetchSpy).toHaveBeenCalledTimes(4)
+    expect(
+      decodeURIComponent(
+        String(fetchSpy.mock.calls[1]?.[0]),
+      ),
+    ).toContain(
+      "url=https://www.dvdcompare.net/comparisons/film.php?fid=74759",
+    )
+    expect(
+      decodeURIComponent(
+        String(fetchSpy.mock.calls[2]?.[0]),
+      ),
+    ).toContain(
+      "url=https://dvdcompare.net/comparisons/film.php?fid=74759",
+    )
   })
 
   test("rejects when both dvdcompare.net and its archive are unreachable", async () => {
