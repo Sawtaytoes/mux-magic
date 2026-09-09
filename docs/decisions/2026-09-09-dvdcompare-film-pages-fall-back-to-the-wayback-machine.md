@@ -17,6 +17,11 @@ page under the live DVDCompare cache key, and continues. A failed live browser s
 same capture, selects only the requested release package from the archived HTML, and stores the
 parsed extras under the existing release-specific scrape key.
 
+The fetcher asks the Wayback Availability API first. If that API reports no capture, it asks the
+CDX index before it reports the page as unavailable. The Availability API returned an empty
+capture object for an archived *Rise of the Planet of the Apes* page while CDX returned its
+2024-08-27 capture, so either endpoint alone is insufficient.
+
 The fallback covers `film.php?fid=N` pages. It does not pretend that Wayback can replay
 DVDCompare's POST-only title search. A caller can bypass that unavailable search with the
 existing `dvdCompareId` and `dvdCompareReleaseHash` parameters.
@@ -55,7 +60,8 @@ missing first cache entry. It avoids a standing dependency on a remote household
 ## Evidence
 
 - `packages/core/src/tools/dvdCompareFetcher.test.ts` proves that a network failure loads an
-  archived film page, stores it under the live URL, and serves the second read without a request.
+  archived film page, stores it under the live URL, serves the second read without a request, and
+  uses CDX when the Availability API omits an existing capture.
 - `packages/core/src/tools/searchDvdCompare.archive.test.ts` proves that the archive parser selects
   one release package, preserves multi-disc extras and `Play All` runtimes, and caches the scrape.
 - A real fetch of archived `fid=1`, release package `2`, returned 15 non-empty extras lines and the

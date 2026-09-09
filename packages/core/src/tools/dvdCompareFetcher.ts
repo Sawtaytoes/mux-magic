@@ -33,6 +33,8 @@ export const DVDCOMPARE_USER_AGENT = BROWSER_USER_AGENT
 
 const WAYBACK_AVAILABILITY_URL =
   "https://archive.org/wayback/available"
+const WAYBACK_CDX_URL =
+  "https://web.archive.org/cdx/search/cdx"
 const WAYBACK_REPLAY_BASE_URL =
   "https://web.archive.org/web"
 const WAYBACK_REQUEST_TIMEOUT_MILLISECONDS = 45_000
@@ -217,6 +219,52 @@ const findWaybackCapture = (filmId: string) =>
     Promise.resolve(null),
   )
 
+const parseNewestCdxCapture = (
+  body: string,
+): WaybackCapture | null =>
+  ((parsed: unknown) =>
+    Array.isArray(parsed)
+      ? (parsed
+          .slice(1)
+          .toReversed()
+          .map((row) =>
+            Array.isArray(row) &&
+            typeof row[0] === "string" &&
+            typeof row[1] === "string"
+              ? { timestamp: row[0], originalUrl: row[1] }
+              : null,
+          )
+          .find((capture) => capture !== null) ?? null)
+      : null)(
+    (() => {
+      try {
+        return JSON.parse(body) as unknown
+      } catch {
+        return null
+      }
+    })(),
+  )
+
+const findWaybackCdxCapture = (filmId: string) =>
+  fetchWaybackResponse(
+    `${WAYBACK_CDX_URL}?${new URLSearchParams({
+      url: `dvdcompare.net/comparisons/film.php?fid=${filmId}`,
+      fl: "timestamp,original",
+      filter: "statuscode:200",
+      output: "json",
+      limit: "-1",
+    }).toString()}`,
+  )
+    .then((response) => response.text())
+    .then(parseNewestCdxCapture)
+
+const findAnyWaybackCapture = (filmId: string) =>
+  findWaybackCapture(filmId).then((capture) =>
+    capture === null
+      ? findWaybackCdxCapture(filmId)
+      : capture,
+  )
+
 export const fetchArchivedDvdComparePage = (
   requestedUrl: string,
 ): Promise<DvdComparePage> =>
@@ -227,7 +275,7 @@ export const fetchArchivedDvdComparePage = (
             `The Wayback fallback only supports DVDCompare film pages: ${requestedUrl}`,
           ),
         )
-      : findWaybackCapture(filmId).then((capture) =>
+      : findAnyWaybackCapture(filmId).then((capture) =>
           capture === null
             ? Promise.reject(
                 new Error(

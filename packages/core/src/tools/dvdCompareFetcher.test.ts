@@ -369,6 +369,55 @@ describe(createDvdComparePageFetcher.name, () => {
     )
   })
 
+  test("uses the CDX index when the availability endpoint omits an existing capture", async () => {
+    const noCaptureResponse = () =>
+      new Response(
+        JSON.stringify({ archived_snapshots: {} }),
+        { status: 200 },
+      )
+    const fetchSpy = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce(noCaptureResponse())
+      .mockResolvedValueOnce(noCaptureResponse())
+      .mockResolvedValueOnce(noCaptureResponse())
+      .mockResolvedValueOnce(noCaptureResponse())
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            ["timestamp", "original"],
+            [
+              "20240827221619",
+              "https://dvdcompare.net/comparisons/film.php?fid=74759",
+            ],
+          ]),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response("<html>indexed capture</html>", {
+          status: 200,
+        }),
+      )
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+    const fetchPage = createDvdComparePageFetcher({
+      cache: openMemoryCache(),
+      minimumRequestIntervalMilliseconds: 0,
+    })
+
+    expect((await fetchPage(FILM_URL)).html).toContain(
+      "indexed capture",
+    )
+    expect(fetchSpy).toHaveBeenCalledTimes(7)
+    expect(String(fetchSpy.mock.calls[5]?.[0])).toContain(
+      "web.archive.org/cdx/search/cdx",
+    )
+    expect(String(fetchSpy.mock.calls[6]?.[0])).toBe(
+      "https://web.archive.org/web/20240827221619id_/https://dvdcompare.net/comparisons/film.php?fid=74759",
+    )
+  })
+
   test("rejects when both dvdcompare.net and its archive are unreachable", async () => {
     globalThis.fetch = vi.fn(() =>
       Promise.reject(new TypeError("fetch failed")),
