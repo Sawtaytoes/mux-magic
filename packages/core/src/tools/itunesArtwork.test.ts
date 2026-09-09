@@ -422,3 +422,27 @@ test("keeps the first name match when the caller has nothing to confirm against"
   })
   expect(cachedFetch).toHaveBeenCalledTimes(1)
 })
+
+// `normaliseForComparison` keeps only `a-z0-9`, so 恋恋風歌 and シナリオ both
+// normalise to the empty string and the old comparison called them equal.
+// That made the name test pass for EVERY non-Latin iTunes result.
+test("refuses a candidate whose name matched only because both normalised to nothing", async () => {
+  expect(
+    await firstValueFrom(
+      getItunesArtwork({
+        albumTitle: "恋恋風歌",
+        artistName: "つじあやの",
+        cachedFetch: buildCachedFetch({
+          results: [
+            {
+              artistName: "シナリオ",
+              artworkUrl100:
+                "https://example.com/wrong/100x100bb.jpg",
+              collectionName: "つぼみ",
+            },
+          ],
+        }),
+      }),
+    ),
+  ).toBeNull()
+})
