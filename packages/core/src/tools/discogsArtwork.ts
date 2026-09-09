@@ -3,11 +3,11 @@ import { firstValueFrom, from } from "rxjs"
 
 import {
   type DiscogsIdentifierKind,
+  type DiscogsImage,
   type DiscogsRelease,
   getDiscogsRelease,
   searchDiscogsReleasesByIdentifier,
 } from "./discogsApi.js"
-import { normaliseForComparison } from "./itunesArtwork.js"
 import type { CachedFetch } from "./musicBrainzApi.js"
 
 // Discogs, reached by an IDENTIFIER rather than by a search.
@@ -32,22 +32,95 @@ export type DiscogsArtworkImage = {
   releaseId: string
 }
 
-// Discogs marks one image `primary`. A release photographed by a contributor
-// often has only `secondary` images — the case, the disc, the inlay — and
-// the front is the first of them, so a secondary image is accepted rather
-// than leaving the album blank.
+// An album cover is SQUARE. That is the one property that separates a front
+// cover from the other things Discogs contributors upload for a release, and
+// it is checked because `primary` does not mean "front":
+//
+//   * Lambert, Hendricks & Ross — *The Best of the Best!* has exactly one
+//     image, marked `primary`, and it is a 600x281 scan of the back tray
+//     and the front laid side by side.
+//   * *Feel Good Rock: Songs You Know by Heart* has one `secondary` image,
+//     600x450 — a photograph of the jewel case on a desk, at an angle, with
+//     a shop's price sticker on it.
+//
+// Both were installed on real albums before this check existed. 4:3 is a
+// camera's aspect ratio, and it is the tell for a photograph of the case
+// rather than a scan of the cover, so the band stops short of it at 5:4.
+export const DISCOGS_MINIMUM_COVER_ASPECT_RATIO = 0.8
+export const DISCOGS_MAXIMUM_COVER_ASPECT_RATIO = 1.25
+
+export const getIsPlausibleCoverShape = (
+  image: DiscogsImage,
+) =>
+  image.width > 0 &&
+  image.height > 0 &&
+  image.width / image.height >=
+    DISCOGS_MINIMUM_COVER_ASPECT_RATIO &&
+  image.width / image.height <=
+    DISCOGS_MAXIMUM_COVER_ASPECT_RATIO
+
+// Among the square-enough images, `primary` is the release's chosen picture
+// and wins. Otherwise the largest one does, because a contributor who
+// uploads several usually scans the front at the highest resolution. A
+// release whose images are ALL the wrong shape returns null and lets the
+// chain carry on to iTunes and then the album folder — a back cover on a
+// record is worse than a blank one.
 export const selectDiscogsFrontImageUrl = (
   release: DiscogsRelease,
 ) =>
-  (
-    release.images.find((image) => image.isPrimary) ??
-    release.images.at(0) ??
-    null
-  )?.imageUrl ?? null
+  ((plausibleImages) =>
+    (
+      plausibleImages.find((image) => image.isPrimary) ??
+      plausibleImages.reduce(
+        (largest: DiscogsImage | null, image) =>
+          largest === null ||
+          image.width * image.height >
+            largest.width * largest.height
+            ? image
+            : largest,
+        null,
+      )
+    )?.imageUrl ?? null)(
+    release.images.filter(getIsPlausibleCoverShape),
+  )
+
+// `normaliseForComparison` keeps only `a-z0-9`, so a title written entirely
+// in Japanese normalises to the EMPTY STRING — and two empty strings are
+// equal. That made this check silently vacuous for exactly the releases the
+// identifier path exists to serve: 恋恋風歌, つぼみ and シナリオ all matched
+// on an empty comparison rather than on their titles.
+//
+// So the comparison here keeps letters and numbers in ANY script. A trailing
+// bracketed qualifier is also dropped, because Discogs writes a Japanese
+// release as `Chara No Mori (チャラの森)` where the tags carry only the
+// romanisation.
+export const normaliseTitleForIdentifierMatch = (
+  title: string,
+) =>
+  title
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]+/gu, "")
+    .replace(/[^\p{L}\p{N}]+/gu, "")
+
+export const getComparableReleaseTitles = (title: string) =>
+  Array.from(
+    new Set(
+      [
+        title,
+        title.replace(/\s*[([{][^)\]}]*[)\]}]\s*$/u, ""),
+      ]
+        .map(normaliseTitleForIdentifierMatch)
+        .filter(
+          (comparableTitle) => comparableTitle.length > 0,
+        ),
+    ),
+  )
 
 // The identifier found the release, but a barcode can be reused across a
 // reissue and a catalogue number is only unique within its label. Requiring
-// the title to agree is what stops a near-miss becoming a wrong cover.
+// the title to agree is what stops a near-miss becoming a wrong cover. A
+// title that normalises to nothing is NOT a match — it is a missing check.
 export const getIsTitleMatch = ({
   albumTitle,
   release,
@@ -55,8 +128,15 @@ export const getIsTitleMatch = ({
   albumTitle: string
   release: DiscogsRelease
 }) =>
-  normaliseForComparison(release.title) ===
-  normaliseForComparison(albumTitle)
+  ((albumTitles, releaseTitles) =>
+    albumTitles.length > 0 &&
+    releaseTitles.length > 0 &&
+    albumTitles.some((comparableAlbumTitle) =>
+      releaseTitles.includes(comparableAlbumTitle),
+    ))(
+    getComparableReleaseTitles(albumTitle),
+    getComparableReleaseTitles(release.title),
+  )
 
 const readFirstMatchingRelease = ({
   albumTitle,

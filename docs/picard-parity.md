@@ -119,7 +119,11 @@ from the table, all deliberate
   the catalogue number come from the MusicBrainz release the tags already name, so the request costs
   one extra MusicBrainz lookup and only on the path where the archive came back empty. A barcode names
   one product, so the answer can only be the wrong album when the identifier is wrong. The release
-  title must also agree, because a barcode can be reused across a reissue.
+  title must also agree, because a barcode can be reused across a reissue. The image must be
+  SQUARE — aspect ratio 0.8 to 1.25. `primary` on Discogs means "the release's lead image", not
+  "the front cover", and without the shape check it returned a scan of a back tray and a
+  photograph of a jewel case
+  ([decision](decisions/2026-09-08-a-discogs-cover-must-be-square-and-a-title-check-must-not-compare-nothing.md)).
 - **iTunes** stays below Discogs, searched by album title and artist. The Cover Art Archive knew only
   37 of the 333 albums in this library that had no artwork at all; iTunes knows another 35. Its match
   requires the album title AND the artist to be equal once case, punctuation and spacing are removed,

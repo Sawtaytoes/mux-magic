@@ -52,12 +52,16 @@ test("takes the image Discogs marks as the front", () => {
       buildRelease({
         images: [
           {
+            height: 500,
             type: "secondary",
             uri: "https://example.com/disc.jpg",
+            width: 500,
           },
           {
+            height: 500,
             type: "primary",
             uri: "https://example.com/front.jpg",
+            width: 500,
           },
         ],
       }),
@@ -66,25 +70,88 @@ test("takes the image Discogs marks as the front", () => {
 })
 
 // A release photographed by a contributor often has no primary image at all
-// — the case, the disc and the inlay are all secondary, and the case is
-// first. Refusing those would leave the album blank for no gain.
-test("falls back to the first image when none is marked primary", () => {
+// — the case, the disc and the inlay are all secondary. The largest square
+// one is taken rather than the first, because refusing them all would leave
+// the album blank for no gain.
+test("takes the largest square image when none is marked primary", () => {
   expect(
     selectDiscogsFrontImageUrl(
       buildRelease({
         images: [
           {
+            height: 300,
             type: "secondary",
-            uri: "https://example.com/case.jpg",
+            uri: "https://example.com/small.jpg",
+            width: 300,
           },
           {
+            height: 900,
             type: "secondary",
-            uri: "https://example.com/disc.jpg",
+            uri: "https://example.com/large.jpg",
+            width: 900,
           },
         ],
       }),
     ),
-  ).toBe("https://example.com/case.jpg")
+  ).toBe("https://example.com/large.jpg")
+})
+
+// Real data: Lambert, Hendricks & Ross — *The Best of the Best!* on Discogs
+// carries one image, marked primary, and it is a 600x281 scan of the back
+// tray beside the front. It went onto the album before this check existed.
+test("refuses a wide scan of the back and front laid side by side", () => {
+  expect(
+    selectDiscogsFrontImageUrl(
+      buildRelease({
+        images: [
+          {
+            height: 281,
+            type: "primary",
+            uri: "https://example.com/spread.jpg",
+            width: 600,
+          },
+        ],
+      }),
+    ),
+  ).toBeNull()
+})
+
+// Real data: *Feel Good Rock: Songs You Know by Heart* — one secondary
+// image, 600x450, a photograph of the jewel case on a desk with a shop's
+// price sticker on it. 4:3 is a camera's aspect ratio, not a cover's.
+test("refuses a 4:3 photograph of the case", () => {
+  expect(
+    selectDiscogsFrontImageUrl(
+      buildRelease({
+        images: [
+          {
+            height: 450,
+            type: "secondary",
+            uri: "https://example.com/case-photo.jpg",
+            width: 600,
+          },
+        ],
+      }),
+    ),
+  ).toBeNull()
+})
+
+// Discogs does not always record the dimensions. Without them the shape
+// cannot be checked, and an unchecked image is the thing this guard exists
+// to stop.
+test("refuses an image whose dimensions Discogs does not give", () => {
+  expect(
+    selectDiscogsFrontImageUrl(
+      buildRelease({
+        images: [
+          {
+            type: "primary",
+            uri: "https://example.com/unknown-size.jpg",
+          },
+        ],
+      }),
+    ),
+  ).toBeNull()
 })
 
 test("has no image to take when the release carries none", () => {
@@ -104,6 +171,49 @@ test("compares the release title with punctuation, case and spacing removed", ()
       }),
     }),
   ).toBe(true)
+})
+
+// Real data: the tags carry the romanisation and Discogs carries both.
+test("matches a romanised title against a bracketed native title", () => {
+  expect(
+    getIsTitleMatch({
+      albumTitle: "Chara no Mori",
+      release: buildRelease({
+        title: "Chara No Mori (チャラの森)",
+      }),
+    }),
+  ).toBe(true)
+})
+
+test("matches a title written entirely in Japanese", () => {
+  expect(
+    getIsTitleMatch({
+      albumTitle: "恋恋風歌",
+      release: buildRelease({ title: "恋恋風歌" }),
+    }),
+  ).toBe(true)
+})
+
+// The old comparison kept only `a-z0-9`, so both of these normalised to the
+// empty string and the check passed. Two different Japanese albums on one
+// label share a catalogue-number prefix, so a vacuous title check is exactly
+// where a wrong cover would come from.
+test("refuses two different Japanese titles that share no characters", () => {
+  expect(
+    getIsTitleMatch({
+      albumTitle: "つぼみ",
+      release: buildRelease({ title: "シナリオ" }),
+    }),
+  ).toBe(false)
+})
+
+test("refuses a title that has nothing left to compare", () => {
+  expect(
+    getIsTitleMatch({
+      albumTitle: "???",
+      release: buildRelease({ title: "!!!" }),
+    }),
+  ).toBe(false)
 })
 
 test("asks for the barcode before any catalogue number", () => {
@@ -139,8 +249,10 @@ test("finds the front cover through the barcode", async () => {
             id: 272692,
             images: [
               {
+                height: 500,
                 type: "primary",
                 uri: "https://example.com/front.jpg",
+                width: 500,
               },
             ],
             title: "Pulse",
@@ -170,8 +282,10 @@ test("refuses a release the identifier found but the title contradicts", async (
             id: 99,
             images: [
               {
+                height: 500,
                 type: "primary",
                 uri: "https://example.com/other.jpg",
+                width: 500,
               },
             ],
             title: "Something Else",
@@ -191,8 +305,10 @@ test("tries the catalogue number when the barcode finds nothing", async () => {
               id: 272692,
               images: [
                 {
+                  height: 500,
                   type: "primary",
                   uri: "https://example.com/front.jpg",
+                  width: 500,
                 },
               ],
               title: "Pulse",

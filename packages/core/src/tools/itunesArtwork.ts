@@ -63,6 +63,23 @@ export const normaliseForComparison = (text: string) =>
     .replace(/[̀-ͯ]/gu, "")
     .replace(/[^a-z0-9]+/gu, "")
 
+// `normaliseForComparison` keeps only `a-z0-9`, so a title or an artist
+// written entirely in a non-Latin script normalises to the EMPTY STRING —
+// and two empty strings are equal. An album called 恋恋風歌 would therefore
+// match EVERY iTunes result whose own title is non-Latin. An empty
+// comparison is a missing check, not a match, so it is refused here.
+const getIsNormalisedEqual = ({
+  candidate,
+  expected,
+}: {
+  candidate: string
+  expected: string
+}) =>
+  ((normalisedExpected) =>
+    normalisedExpected.length > 0 &&
+    normaliseForComparison(candidate) ===
+      normalisedExpected)(normaliseForComparison(expected))
+
 const getIsMatch = ({
   albumTitle,
   artistName,
@@ -72,10 +89,14 @@ const getIsMatch = ({
   artistName: string
   result: ItunesRawResult
 }) =>
-  normaliseForComparison(result.collectionName ?? "") ===
-    normaliseForComparison(albumTitle) &&
-  normaliseForComparison(result.artistName ?? "") ===
-    normaliseForComparison(artistName)
+  getIsNormalisedEqual({
+    candidate: result.collectionName ?? "",
+    expected: albumTitle,
+  }) &&
+  getIsNormalisedEqual({
+    candidate: result.artistName ?? "",
+    expected: artistName,
+  })
 
 export const upgradeArtworkUrl = (artworkUrl: string) =>
   artworkUrl.replace(
