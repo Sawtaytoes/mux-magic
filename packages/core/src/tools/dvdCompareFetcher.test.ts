@@ -237,7 +237,81 @@ describe(createDvdComparePageFetcher.name, () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2)
   })
 
-  test("rejects when dvdcompare.net is unreachable and nothing was ever cached", async () => {
+  test("loads the newest archived film page and caches it under the live URL", async () => {
+    const archivedHtml =
+      "<html><title>DVD Compare: Soldier (Blu-ray) (1998)</title><body>archived film</body></html>"
+    const fetchSpy = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            archived_snapshots: {
+              closest: { timestamp: "20250403175037" },
+            },
+            url: "https://dvdcompare.net/comparisons/film.php?fid=74759",
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(archivedHtml, { status: 200 }),
+      )
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+    const cache = openMemoryCache()
+    const fetchPage = createDvdComparePageFetcher({
+      cache,
+      minimumRequestIntervalMilliseconds: 0,
+    })
+
+    const archivedPage = await fetchPage(FILM_URL)
+
+    expect(archivedPage).toEqual({
+      html: archivedHtml,
+      status: 200,
+      url: FILM_URL,
+    })
+    expect(
+      cache.get({
+        provider: DVDCOMPARE_PROVIDER,
+        requestKey: FILM_URL,
+      }),
+    ).not.toBeNull()
+
+    const cachedPage = await fetchPage(FILM_URL)
+
+    expect(cachedPage).toEqual(archivedPage)
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    expect(String(fetchSpy.mock.calls[1]?.[0])).toContain(
+      "archive.org/wayback/available",
+    )
+    expect(String(fetchSpy.mock.calls[2]?.[0])).toBe(
+      "https://web.archive.org/web/20250403175037id_/https://dvdcompare.net/comparisons/film.php?fid=74759",
+    )
+  })
+
+  test("does not send a failed search POST to the archive", async () => {
+    const fetchSpy = vi.fn(() =>
+      Promise.reject(new TypeError("fetch failed")),
+    )
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+    const fetchPage = createDvdComparePageFetcher({
+      cache: openMemoryCache(),
+      minimumRequestIntervalMilliseconds: 0,
+    })
+
+    await expect(
+      fetchPage(SEARCH_URL, {
+        body: "param=Soldier&searchtype=text",
+        method: "POST",
+      }),
+    ).rejects.toThrow("fetch failed")
+    expect(fetchSpy).toHaveBeenCalledOnce()
+  })
+
+  test("rejects when both dvdcompare.net and its archive are unreachable", async () => {
     globalThis.fetch = vi.fn(() =>
       Promise.reject(new TypeError("fetch failed")),
     ) as unknown as typeof globalThis.fetch

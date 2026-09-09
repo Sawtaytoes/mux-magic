@@ -1,3 +1,4 @@
+import { logWarning } from "@mux-magic/tools"
 import {
   type CachedComputation,
   createCachedComputation,
@@ -29,6 +30,12 @@ export const DVDCOMPARE_MINIMUM_REQUEST_INTERVAL_MILLISECONDS = 500
 // `curl/*` UA both return HTTP 403. Single-sourced from launchBrowser's
 // BROWSER_USER_AGENT so the fetch and headless-Chromium paths never drift.
 export const DVDCOMPARE_USER_AGENT = BROWSER_USER_AGENT
+
+const WAYBACK_AVAILABILITY_URL =
+  "https://archive.org/wayback/available"
+const WAYBACK_REPLAY_BASE_URL =
+  "https://web.archive.org/web"
+const WAYBACK_REQUEST_TIMEOUT_MILLISECONDS = 45_000
 
 // What the DVDCompare scrapers need out of a request. `html` is decoded
 // through the byte-first charset fallback rather than `Response.text()`,
@@ -101,6 +108,149 @@ const buildCacheKey = ({
     ? url
     : `${url}|${String(initialization.body)}`
 
+type WaybackCapture = {
+  originalUrl: string
+  timestamp: string
+}
+
+const getDvdCompareFilmId = (url: string) =>
+  ((parsedUrl: URL) =>
+    /^(?:www\.)?dvdcompare\.net$/i.test(
+      parsedUrl.hostname,
+    ) &&
+    parsedUrl.pathname === "/comparisons/film.php" &&
+    /^\d+$/.test(parsedUrl.searchParams.get("fid") ?? "")
+      ? parsedUrl.searchParams.get("fid")
+      : null)(new URL(url))
+
+const parseLatestWaybackCapture = (
+  body: string,
+): WaybackCapture | null =>
+  ((parsed: unknown) =>
+    typeof parsed === "object" &&
+    parsed !== null &&
+    typeof (parsed as { url?: unknown }).url === "string" &&
+    typeof (
+      parsed as {
+        archived_snapshots?: {
+          closest?: { timestamp?: unknown }
+        }
+      }
+    ).archived_snapshots?.closest?.timestamp === "string"
+      ? {
+          originalUrl: (parsed as { url: string }).url,
+          timestamp: (
+            parsed as {
+              archived_snapshots: {
+                closest: { timestamp: string }
+              }
+            }
+          ).archived_snapshots.closest.timestamp,
+        }
+      : null)(
+    (() => {
+      try {
+        return JSON.parse(body) as unknown
+      } catch {
+        return null
+      }
+    })(),
+  )
+
+const fetchWaybackResponse = (url: string) =>
+  fetch(url, {
+    headers: { "User-Agent": DVDCOMPARE_USER_AGENT },
+    signal: AbortSignal.timeout(
+      WAYBACK_REQUEST_TIMEOUT_MILLISECONDS,
+    ),
+  }).then((response) =>
+    response.ok
+      ? response
+      : Promise.reject(
+          new Error(
+            `Wayback Machine request failed with status ${response.status} for ${url}`,
+          ),
+        ),
+  )
+
+export const fetchArchivedDvdComparePage = (
+  requestedUrl: string,
+): Promise<DvdComparePage> =>
+  ((filmId: string | null) =>
+    filmId === null
+      ? Promise.reject(
+          new Error(
+            `The Wayback fallback only supports DVDCompare film pages: ${requestedUrl}`,
+          ),
+        )
+      : ((availabilityUrl: string) =>
+          fetchWaybackResponse(availabilityUrl)
+            .then((response) => response.text())
+            .then(parseLatestWaybackCapture)
+            .then((capture) =>
+              capture === null
+                ? Promise.reject(
+                    new Error(
+                      `The Wayback Machine has no DVDCompare capture for film id ${filmId}.`,
+                    ),
+                  )
+                : ((replayUrl: string) =>
+                    fetchWaybackResponse(replayUrl)
+                      .then((response) =>
+                        decodeResponseText(response).then(
+                          (html) => ({
+                            html,
+                            status: response.status,
+                            url: requestedUrl,
+                          }),
+                        ),
+                      )
+                      .then(
+                        (page) =>
+                          logWarning(
+                            "DVDCOMPARE ARCHIVE FALLBACK",
+                            `DVDCompare could not be reached. Using its newest archived listing for film id ${filmId} (${capture.timestamp}).`,
+                          ) ?? page,
+                      ))(
+                    `${WAYBACK_REPLAY_BASE_URL}/${capture.timestamp}id_/${capture.originalUrl}`,
+                  ),
+            ))(
+          `${WAYBACK_AVAILABILITY_URL}?${new URLSearchParams(
+            {
+              url: `https://dvdcompare.net/comparisons/film.php?fid=${filmId}`,
+            },
+          ).toString()}`,
+        ))(getDvdCompareFilmId(requestedUrl))
+
+export const isDvdCompareNetworkFailure = (
+  thrownError: unknown,
+) =>
+  thrownError instanceof TypeError ||
+  /(?:ECONNREFUSED|ENETUNREACH|ETIMEDOUT|fetch failed|net::ERR_|connection timed out)/i.test(
+    thrownError instanceof Error
+      ? thrownError.message
+      : String(thrownError),
+  )
+
+const storeArchivedDvdComparePage = ({
+  cache,
+  initialization,
+  page,
+  url,
+}: {
+  cache: ProviderCache
+  initialization: RequestInit | undefined
+  page: DvdComparePage
+  url: string
+}) =>
+  Promise.resolve(
+    cache.set({
+      body: JSON.stringify(page),
+      provider: DVDCOMPARE_PROVIDER,
+      requestKey: buildCacheKey({ initialization, url }),
+    }),
+  ).then(() => page)
+
 export const createDvdComparePageFetcher = ({
   cache,
   minimumRequestIntervalMilliseconds = DVDCOMPARE_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
@@ -119,9 +269,24 @@ export const createDvdComparePageFetcher = ({
       cachedFetch(url, {
         ...initialization,
         cacheKey: buildCacheKey({ initialization, url }),
-      }).then(({ body }) =>
-        decodeDvdComparePage({ body, requestedUrl: url }),
-      )
+      })
+        .then(({ body }) =>
+          decodeDvdComparePage({ body, requestedUrl: url }),
+        )
+        .catch((thrownError: unknown) =>
+          isDvdCompareNetworkFailure(thrownError) &&
+          (initialization?.method ?? "GET") === "GET"
+            ? fetchArchivedDvdComparePage(url).then(
+                (page) =>
+                  storeArchivedDvdComparePage({
+                    cache,
+                    initialization,
+                    page,
+                    url,
+                  }),
+              )
+            : Promise.reject(thrownError),
+        )
   )(
     createCachedFetch({
       cache,
