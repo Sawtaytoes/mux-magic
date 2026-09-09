@@ -308,7 +308,7 @@ export const isDvdCompareNetworkFailure = (
   thrownError: unknown,
 ) =>
   thrownError instanceof TypeError ||
-  /(?:ECONNREFUSED|ENETUNREACH|ETIMEDOUT|fetch failed|net::ERR_|connection timed out)/i.test(
+  /(?:ECONNREFUSED|ENETUNREACH|ETIMEDOUT|fetch failed|net::ERR_|connection timed out|TimeoutError|Timeout \d+ms exceeded)/i.test(
     thrownError instanceof Error
       ? thrownError.message
       : String(thrownError),
