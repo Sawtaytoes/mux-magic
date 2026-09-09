@@ -78,7 +78,7 @@ describe("searchDvdCompare archive fallback", () => {
     launchBrowserMock.mockReset()
     launchBrowserMock.mockRejectedValue(
       new Error(
-        "page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.dvdcompare.net",
+        "TimeoutError: page.goto: Timeout 30000ms exceeded.",
       ),
     )
   })
