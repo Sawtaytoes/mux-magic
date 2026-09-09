@@ -28,19 +28,20 @@ existing `dvdCompareId` and `dvdCompareReleaseHash` parameters.
 
 ## Context
 
-On 2026-09-08 and 2026-09-09 DVDCompare's ports 80 and 443 did not answer from the owner network,
-the TrueNAS host, or the agent network. The site answered with HTTP 200 through the parents'
-network. The archive held 62,980 distinct film IDs and preserved the release package labels,
-extras names, runtimes, and `Play All` notation needed by the naming commands.
+On 2026-09-08 and 2026-09-09 DVDCompare's ports 80 and 443 failed or responded slowly across
+multiple networks. DVDCompare then confirmed that members of its own team also had access
+problems and that it was working on the fault. The archive held 62,980 distinct film IDs and
+preserved the release package labels, extras names, runtimes, and `Play All` notation needed by
+the naming commands.
 
 ## What we rejected — DO NOT revert to this
 
-**A household forward proxy as the primary recovery path.** DVDCompare answers through the
-parents' public address while it refuses or times out through the owner's address, so a proxy
-can work. It would add another household machine, credential, tunnel, and availability
-dependency to every ingest. The Internet Archive already holds the exact listings and needs no
-new service. A proxy stays a later fallback if DVDCompare publishes a listing that the archive
-does not yet hold.
+**A forward proxy as the primary recovery path.** A successful request from another network
+showed that a proxy could sometimes work, but DVDCompare's notice established that the fault was
+intermittent on its side rather than an address-specific block. A proxy would add another
+machine, credential, tunnel, and availability dependency without fixing that cause. The Internet
+Archive already holds the exact listings and needs no new service. A proxy stays a later fallback
+if DVDCompare publishes a listing that the archive does not yet hold.
 
 **Caching the Wayback URL instead of the requested DVDCompare page.** That makes every future
 run fail against the live URL before it discovers the separately cached archive row. The
@@ -66,5 +67,5 @@ missing first cache entry. It avoids a standing dependency on a remote household
   one release package, preserves multi-disc extras and `Play All` runtimes, and caches the scrape.
 - A real fetch of archived `fid=1`, release package `2`, returned 15 non-empty extras lines and the
   parsed 1979 film title.
-- A live request through Lucious at the parents' address returned HTTP 200 in 10.6 seconds while
-  the same URL timed out after eight seconds from the owner network.
+- DVDCompare's 2026-09-09 status reply says that members of its own team had the same access
+  problems and that it was working to resolve the slow or failed loading.
