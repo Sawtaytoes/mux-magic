@@ -214,6 +214,12 @@ const findWaybackCapture = (filmId: string) =>
             )
               .then((response) => response.text())
               .then(parseLatestWaybackCapture)
+              // A failing Availability API is not an answer about whether a
+              // capture exists. It rate-limits this household's egress with
+              // HTTP 429, and a rejection here used to abort the whole
+              // fallback before the CDX index was ever asked — even though
+              // CDX answers the same question and was not rate-limited.
+              .catch(() => null)
           : capture,
       ),
     Promise.resolve(null),
@@ -304,6 +310,75 @@ export const fetchArchivedDvdComparePage = (
               ),
         ))(getDvdCompareFilmId(requestedUrl))
 
+// DVDCompare's TLS listener has been failing since 2026-09-08 while the
+// same Apache instance answers normally on plain HTTP. `https://` stays the
+// first attempt so a run returns to it the moment the TLS fault is fixed;
+// this is the twin URL tried once in between the live attempt and the
+// archive. It returns null for any host that is not DVDCompare, so the
+// downgrade can never be applied to another provider.
+export const toInsecureDvdCompareUrl = (
+  url: string,
+): string | null =>
+  ((parsedUrl: URL) =>
+    parsedUrl.protocol === "https:" &&
+    /^(?:www\.)?dvdcompare\.net$/i.test(parsedUrl.hostname)
+      ? ((): string => {
+          parsedUrl.protocol = "http:"
+          return parsedUrl.toString()
+        })()
+      : null)(new URL(url))
+
+// The insecure retry is a plain fetch rather than another `cachedFetch`
+// call: the answer belongs under the ORIGINAL https request key, exactly
+// as the archived body does. Caching it under the http URL would make
+// every later run fail against https before finding the separate row.
+export const fetchInsecureDvdComparePage = (
+  requestedUrl: string,
+  initialization?: RequestInit,
+): Promise<DvdComparePage> =>
+  ((insecureUrl: string | null) =>
+    insecureUrl === null
+      ? Promise.reject(
+          new Error(
+            `Not a DVDCompare https URL: ${requestedUrl}`,
+          ),
+        )
+      : fetch(insecureUrl, {
+          ...initialization,
+          headers: {
+            ...initialization?.headers,
+            "User-Agent": DVDCOMPARE_USER_AGENT,
+          },
+          signal: AbortSignal.timeout(
+            WAYBACK_REQUEST_TIMEOUT_MILLISECONDS,
+          ),
+        })
+          .then((response) =>
+            response.ok
+              ? decodeResponseText(response).then(
+                  (html) => ({
+                    html,
+                    status: response.status,
+                    // The POST-redirect landing URL decides
+                    // `isDirectListing`, and it is matched on
+                    // `film.php?fid=N`, so the http scheme is harmless.
+                    url: response.url,
+                  }),
+                )
+              : Promise.reject(
+                  new Error(
+                    `DVDCompare insecure retry failed with status ${response.status} for ${insecureUrl}`,
+                  ),
+                ),
+          )
+          .then(
+            (page) =>
+              logWarning(
+                "DVDCOMPARE INSECURE FALLBACK",
+                `DVDCompare could not be reached over https. Served ${requestedUrl} over http instead.`,
+              ) ?? page,
+          ))(toInsecureDvdCompareUrl(requestedUrl))
+
 export const isDvdCompareNetworkFailure = (
   thrownError: unknown,
 ) =>
@@ -314,7 +389,7 @@ export const isDvdCompareNetworkFailure = (
       : String(thrownError),
   )
 
-const storeArchivedDvdComparePage = ({
+const storeDvdComparePage = ({
   cache,
   initialization,
   page,
@@ -356,17 +431,36 @@ export const createDvdComparePageFetcher = ({
           decodeDvdComparePage({ body, requestedUrl: url }),
         )
         .catch((thrownError: unknown) =>
-          isDvdCompareNetworkFailure(thrownError) &&
-          (initialization?.method ?? "GET") === "GET"
-            ? fetchArchivedDvdComparePage(url).then(
-                (page) =>
-                  storeArchivedDvdComparePage({
+          isDvdCompareNetworkFailure(thrownError)
+            ? // The http twin is tried for POST as well as GET. That is
+              // the only recovery that restores `search.php`, which the
+              // archive cannot replay at all because it is POST-only.
+              fetchInsecureDvdComparePage(
+                url,
+                initialization,
+              )
+                .then((page) =>
+                  storeDvdComparePage({
                     cache,
                     initialization,
                     page,
                     url,
                   }),
-              )
+                )
+                .catch((insecureError: unknown) =>
+                  (initialization?.method ?? "GET") ===
+                  "GET"
+                    ? fetchArchivedDvdComparePage(url).then(
+                        (page) =>
+                          storeDvdComparePage({
+                            cache,
+                            initialization,
+                            page,
+                            url,
+                          }),
+                      )
+                    : Promise.reject(insecureError),
+                )
             : Promise.reject(thrownError),
         )
   )(

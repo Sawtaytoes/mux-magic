@@ -10,6 +10,7 @@ import {
   fetchArchivedDvdComparePage,
   fetchDvdComparePage,
   isDvdCompareNetworkFailure,
+  toInsecureDvdCompareUrl,
 } from "./dvdCompareFetcher.js"
 import {
   gotoPage,
@@ -536,7 +537,20 @@ export const searchDvdCompare = ({
               /(.+)(#.+)/,
               "$1&sel=on$2",
             )
-            await gotoPage(page, fullUrl)
+            // Same https-then-http order as the fetch boundary. The
+            // release-picker form's action is relative ("film.php"), so
+            // every later interaction stays on whichever scheme loaded.
+            await gotoPage(page, fullUrl).catch(
+              (navigationError: unknown) =>
+                ((insecureUrl: string | null) =>
+                  isDvdCompareNetworkFailure(
+                    navigationError,
+                  ) && insecureUrl !== null
+                    ? gotoPage(page, insecureUrl)
+                    : Promise.reject(navigationError))(
+                  toInsecureDvdCompareUrl(fullUrl),
+                ),
+            )
 
             // Capture the page <title> before the form submission triggers a
             // navigation — title content survives the round-trip but reading

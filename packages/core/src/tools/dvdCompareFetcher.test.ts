@@ -243,6 +243,10 @@ describe(createDvdComparePageFetcher.name, () => {
     const fetchSpy = vi
       .fn()
       .mockRejectedValueOnce(new TypeError("fetch failed"))
+      // The https attempt and the http twin both fail: DVDCompare is
+      // unreachable on either scheme, which is the only state that should
+      // reach the archive.
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -285,16 +289,16 @@ describe(createDvdComparePageFetcher.name, () => {
     const cachedPage = await fetchPage(FILM_URL)
 
     expect(cachedPage).toEqual(archivedPage)
-    expect(fetchSpy).toHaveBeenCalledTimes(3)
-    expect(String(fetchSpy.mock.calls[1]?.[0])).toContain(
+    expect(fetchSpy).toHaveBeenCalledTimes(4)
+    expect(String(fetchSpy.mock.calls[2]?.[0])).toContain(
       "archive.org/wayback/available",
     )
-    expect(String(fetchSpy.mock.calls[2]?.[0])).toBe(
+    expect(String(fetchSpy.mock.calls[3]?.[0])).toBe(
       "https://web.archive.org/web/20250403175037id_/https://dvdcompare.net/comparisons/film.php?fid=74759",
     )
   })
 
-  test("does not send a failed search POST to the archive", async () => {
+  test("retries a failed search POST over http but never sends it to the archive", async () => {
     const fetchSpy = vi.fn(() =>
       Promise.reject(new TypeError("fetch failed")),
     )
@@ -311,12 +315,23 @@ describe(createDvdComparePageFetcher.name, () => {
         method: "POST",
       }),
     ).rejects.toThrow("fetch failed")
-    expect(fetchSpy).toHaveBeenCalledOnce()
+    // https, then the http twin — and then it stops. The archive cannot
+    // replay a POST, so no archive.org request is made.
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(
+      (fetchSpy.mock.calls as unknown[][]).every((call) =>
+        String(call[0]).includes("dvdcompare.net"),
+      ),
+    ).toBe(true)
   })
 
   test("tries another archived host form when the first form has no capture", async () => {
     const fetchSpy = vi
       .fn()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      // The https attempt and the http twin both fail: DVDCompare is
+      // unreachable on either scheme, which is the only state that should
+      // reach the archive.
       .mockRejectedValueOnce(new TypeError("fetch failed"))
       .mockResolvedValueOnce(
         new Response(
@@ -352,17 +367,17 @@ describe(createDvdComparePageFetcher.name, () => {
     expect((await fetchPage(FILM_URL)).html).toContain(
       "second host form",
     )
-    expect(fetchSpy).toHaveBeenCalledTimes(4)
+    expect(fetchSpy).toHaveBeenCalledTimes(5)
     expect(
       decodeURIComponent(
-        String(fetchSpy.mock.calls[1]?.[0]),
+        String(fetchSpy.mock.calls[2]?.[0]),
       ),
     ).toContain(
       "url=https://www.dvdcompare.net/comparisons/film.php?fid=74759",
     )
     expect(
       decodeURIComponent(
-        String(fetchSpy.mock.calls[2]?.[0]),
+        String(fetchSpy.mock.calls[3]?.[0]),
       ),
     ).toContain(
       "url=https://dvdcompare.net/comparisons/film.php?fid=74759",
@@ -377,6 +392,10 @@ describe(createDvdComparePageFetcher.name, () => {
       )
     const fetchSpy = vi
       .fn()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      // The https attempt and the http twin both fail: DVDCompare is
+      // unreachable on either scheme, which is the only state that should
+      // reach the archive.
       .mockRejectedValueOnce(new TypeError("fetch failed"))
       .mockResolvedValueOnce(noCaptureResponse())
       .mockResolvedValueOnce(noCaptureResponse())
@@ -409,11 +428,11 @@ describe(createDvdComparePageFetcher.name, () => {
     expect((await fetchPage(FILM_URL)).html).toContain(
       "indexed capture",
     )
-    expect(fetchSpy).toHaveBeenCalledTimes(7)
-    expect(String(fetchSpy.mock.calls[5]?.[0])).toContain(
+    expect(fetchSpy).toHaveBeenCalledTimes(8)
+    expect(String(fetchSpy.mock.calls[6]?.[0])).toContain(
       "web.archive.org/cdx/search/cdx",
     )
-    expect(String(fetchSpy.mock.calls[6]?.[0])).toBe(
+    expect(String(fetchSpy.mock.calls[7]?.[0])).toBe(
       "https://web.archive.org/web/20240827221619id_/https://dvdcompare.net/comparisons/film.php?fid=74759",
     )
   })
@@ -430,5 +449,110 @@ describe(createDvdComparePageFetcher.name, () => {
     await expect(fetchPage(FILM_URL)).rejects.toThrow(
       "fetch failed",
     )
+  })
+
+  // DVDCompare's TLS listener failed from 2026-09-08 while port 80 kept
+  // answering in about a second. Before this, an https transport failure
+  // went straight to the Wayback Machine and a search could not recover
+  // at all, because search.php is POST-only and the archive cannot
+  // replay a POST.
+  test("retries a failed https GET over http and caches it under the https key", async () => {
+    const requestedUrls: string[] = []
+    const fetchSpy = vi.fn(async (url: string) => {
+      requestedUrls.push(url)
+      if (url.startsWith("https://")) {
+        throw new TypeError("fetch failed")
+      }
+      return buildHtmlResponse({
+        html: "<html>film over http</html>",
+        url,
+      })
+    })
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+    const cache = openMemoryCache()
+    const fetchPage = createDvdComparePageFetcher({
+      cache,
+      minimumRequestIntervalMilliseconds: 0,
+    })
+
+    const page = await fetchPage(FILM_URL)
+
+    expect(page.html).toBe("<html>film over http</html>")
+    expect(requestedUrls[0]).toBe(FILM_URL)
+    expect(requestedUrls[1]).toBe(
+      "http://www.dvdcompare.net/comparisons/film.php?fid=74759",
+    )
+
+    // Stored under the https key, so the next run does not have to fail
+    // against https again before finding a separate http row.
+    expect(
+      cache.get({
+        provider: DVDCOMPARE_PROVIDER,
+        requestKey: FILM_URL,
+      }),
+    ).not.toBeNull()
+  })
+
+  test("retries a failed https search POST over http, which the archive cannot replay", async () => {
+    const attempts: { body: unknown; url: string }[] = []
+    const fetchSpy = vi.fn(
+      async (url: string, initialization?: RequestInit) => {
+        attempts.push({
+          body: initialization?.body,
+          url,
+        })
+        if (url.startsWith("https://")) {
+          throw new TypeError("fetch failed")
+        }
+        return buildHtmlResponse({
+          html: "<html>search results</html>",
+          url,
+        })
+      },
+    )
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+    const fetchPage = createDvdComparePageFetcher({
+      cache: openMemoryCache(),
+      minimumRequestIntervalMilliseconds: 0,
+    })
+
+    const page = await fetchPage(SEARCH_URL, {
+      body: "param=Eyes+Wide+Shut&searchtype=text",
+      method: "POST",
+    })
+
+    expect(page.html).toBe("<html>search results</html>")
+    // The POST body survives the downgrade, or the retry would search
+    // for nothing and silently return the front page.
+    expect(attempts[1]).toEqual({
+      body: "param=Eyes+Wide+Shut&searchtype=text",
+      url: "http://www.dvdcompare.net/comparisons/search.php",
+    })
+  })
+
+  test("does not downgrade a host that is not DVDCompare", async () => {
+    const fetchSpy = vi.fn(async () => {
+      throw new TypeError("fetch failed")
+    })
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+    const fetchPage = createDvdComparePageFetcher({
+      cache: openMemoryCache(),
+      minimumRequestIntervalMilliseconds: 0,
+    })
+
+    await expect(
+      fetchPage(
+        "https://example.com/comparisons/film.php?fid=1",
+      ),
+    ).rejects.toThrow()
+
+    expect(
+      (fetchSpy.mock.calls as unknown[][]).every((call) =>
+        String(call[0]).startsWith("https://"),
+      ),
+    ).toBe(true)
   })
 })
