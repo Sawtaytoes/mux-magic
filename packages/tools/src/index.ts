@@ -13,6 +13,10 @@ export {
   type CopyOptions,
   type CopyProgressEvent,
 } from "./aclSafeCopyFile.js"
+export {
+  aclSafeCopyFolder,
+  type CopyFolderOptions,
+} from "./aclSafeCopyFolder.js"
 export { addFolderNameBeforeFilename } from "./addFolderNameBeforeFilename.js"
 export {
   applyRenameRegex,

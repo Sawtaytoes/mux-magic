@@ -2487,6 +2487,17 @@ export const COMMANDS: Commands = {
           description:
             "The season number to lookup when renaming.",
         }),
+        field("filenameRegex", {
+          type: "string",
+          label: "Filename Regex",
+          placeholder:
+            "S(?<seasonNumber>\\d+)E(?<episodeNumber>\\d+)",
+        }),
+        field("startEpisodeNumber", {
+          type: "number",
+          label: "Start Episode Number",
+          placeholder: "5",
+        }),
       ],
     }
   })(),

@@ -1565,6 +1565,18 @@ export const nameTvShowEpisodesRequestSchema = z.object({
     .describe(
       "TVDB ID — when provided, skips the interactive search and uses this ID directly.",
     ),
+  filenameRegex: z
+    .string()
+    .optional()
+    .describe(
+      'Regex with named capture groups (?<seasonNumber>…) and (?<episodeNumber>…) used to pair each file to the TVDB episode carrying that number. Overrides the built-in "s01e06" and "1x06" patterns. Matched case-insensitively. A file whose captured season is not seasonNumber is skipped, never renamed.',
+    ),
+  startEpisodeNumber: z
+    .number()
+    .optional()
+    .describe(
+      "First episode number when pairing by natural-sort index (e.g. 5 names the files s01e05, s01e06, …). Only applies to a file whose name carries no season/episode numbering at all. Defaults to 1.",
+    ),
 })
 
 export const renameDemosRequestSchema = z.object({

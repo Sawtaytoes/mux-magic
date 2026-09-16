@@ -19,6 +19,8 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-09-16 | [A TV episode pairs by the number in its filename, not by sort order](2026-09-16-a-tv-episode-pairs-by-the-number-in-its-filename-not-by-sort-order.md) | core / api / cli | Accepted |
+| 2026-09-16 | [A recursive copy goes through `aclSafeCopyFile`, never `fs.cp`](2026-09-16-a-recursive-copy-goes-through-aclsafecopyfile-never-fs-cp.md) | core / tools | Accepted |
 | 2026-09-09 | [DVDCompare film pages fall back to the Wayback Machine](2026-09-09-dvdcompare-film-pages-fall-back-to-the-wayback-machine.md) | core | Accepted |
 | 2026-09-08 | [A Discogs cover must be square, and a title check must not compare nothing](2026-09-08-a-discogs-cover-must-be-square-and-a-title-check-must-not-compare-nothing.md) | core | Accepted |
 | 2026-09-08 | [Discogs joins the cover-art chain by identifier, and iTunes must confirm a match](2026-09-08-discogs-joins-the-cover-art-chain-by-identifier-and-itunes-must-confirm-a-match.md) | core | Accepted |
