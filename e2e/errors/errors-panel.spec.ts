@@ -7,6 +7,16 @@ import {
   webBaseUrl,
 } from "../playwright.setup.js"
 
+// Every test here ends by deleting EVERY persisted error record
+// (`cleanupAllErrors` in afterEach), and the records are one shared
+// server-side store. Under the shared config's `fullyParallel: true` two of
+// these tests can land in different workers, and one test's cleanup then
+// removes the record another is still asserting on. CI hides it by running
+// a single worker; locally it surfaced the moment the suite grew by five
+// tests and the scheduling changed. Serial is the honest fix — these tests
+// share state by design.
+test.describe.configure({ mode: "serial" })
+
 // ─── Mock webhook receiver helpers ──────────────────────────────────────────
 
 type MockReceiverState = {

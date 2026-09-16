@@ -11,6 +11,18 @@ export default defineConfig({
   ],
   test: {
     name: "storybook",
+    // The Storybook vitest plugin takes its file list from `stories` in
+    // .storybook/main.ts, which includes the 54 `.mdx` documentation
+    // pages alongside the 124 story files. An `.mdx` page holds no
+    // stories to render, so every one of them was collected and then
+    // reported as a skipped test file — 54 skips that never meant
+    // anything was going untested. Documentation is not a test; drop it
+    // from the run rather than leave the number to be re-investigated.
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/*.mdx",
+    ],
     browser: {
       enabled: true,
       provider: playwright(),
