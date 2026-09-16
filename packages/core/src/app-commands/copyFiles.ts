@@ -1,7 +1,8 @@
-import { cp, readdir, stat } from "node:fs/promises"
+import { readdir, stat } from "node:fs/promises"
 import { extname, join } from "node:path"
 import {
   aclSafeCopyFile,
+  aclSafeCopyFolder,
   applyRenameRegex,
   type CopyOptions,
   getFiles,
@@ -297,7 +298,16 @@ export const copyFiles = ({
     // Folder copy pipeline: only runs when includeFolders is true.
     // Reads the top-level entries of sourcePath, filters directories by
     // folderFilterRegex, and copies each matching folder recursively via
-    // fs.cp. Rename is applied to the folder name only (not its contents).
+    // aclSafeCopyFolder. Rename is applied to the folder name only (not
+    // its contents).
+    //
+    // Not `fs.cp(..., { recursive: true })`: that copies each file with
+    // libuv's `fs.copyFile`, which fails EPERM on an `aclmode=restricted`
+    // ZFS dataset and takes the whole job down with it after copying
+    // nothing. aclSafeCopyFolder routes every file through the same
+    // aclSafeCopyFile the flat branch above already uses, so both
+    // branches survive that EPERM and both honour isOverwriteAllowed and
+    // the abort signal.
     const foldersCopy$ = isIncludingFolders
       ? defer(() =>
           readdir(sourcePath, { withFileTypes: true }),
@@ -326,9 +336,14 @@ export const copyFiles = ({
               .pipe(
                 concatMap(() =>
                   defer(() =>
-                    cp(sourceFolderPath, destFolderPath, {
-                      recursive: true,
-                    }),
+                    aclSafeCopyFolder(
+                      sourceFolderPath,
+                      destFolderPath,
+                      {
+                        isOverwriteAllowed,
+                        signal: abortController.signal,
+                      },
+                    ),
                   ),
                 ),
               )

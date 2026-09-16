@@ -1233,9 +1233,11 @@ export const commandConfigs: Record<
   nameTvShowEpisodes: {
     getObservable: (body) =>
       nameTvShowEpisodes({
+        filenameRegex: body.filenameRegex,
         searchTerm: body.searchTerm,
         seasonNumber: body.seasonNumber,
         sourcePath: body.sourcePath,
+        startEpisodeNumber: body.startEpisodeNumber,
         tvdbId: body.tvdbId,
       }),
     schema: schemas.nameTvShowEpisodesRequestSchema,
