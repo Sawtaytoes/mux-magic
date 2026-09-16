@@ -518,7 +518,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            commandNames: ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchDiscogsRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "convertSrtToAss" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "compareMusicAssistantLibrary" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "trimFileTail" | "writeAudioTags")[];
+                            commandNames: ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchDiscogsRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "convertSrtToAss" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "compareMusicAssistantLibrary" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "trimFileTail" | "writeAudioTags" | "applyCoverArt")[];
                         };
                     };
                 };
@@ -4478,6 +4478,10 @@ export interface paths {
                         seasonNumber?: number;
                         /** @description TVDB ID — when provided, skips the interactive search and uses this ID directly. */
                         tvdbId?: number;
+                        /** @description Regex with named capture groups (?<seasonNumber>…) and (?<episodeNumber>…) used to pair each file to the TVDB episode carrying that number. Overrides the built-in "s01e06" and "1x06" patterns. Matched case-insensitively. A file whose captured season is not seasonNumber is skipped, never renamed. */
+                        filenameRegex?: string;
+                        /** @description First episode number when pairing by natural-sort index (e.g. 5 names the files s01e05, s01e06, …). Only applies to a file whose name carries no season/episode numbering at all. Defaults to 1. */
+                        startEpisodeNumber?: number;
                     };
                 };
             };
@@ -5878,6 +5882,86 @@ export interface paths {
                         sourcePath: string;
                         /** @description Total disc count to set on every matched file. */
                         totalDiscs?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Job started successfully */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * @description Unique job identifier
+                             * @example 123e4567-e89b-12d3-a456-426614174000
+                             */
+                            jobId: string;
+                            /**
+                             * @description URL to stream job logs via SSE
+                             * @example /jobs/123e4567-e89b-12d3-a456-426614174000/logs
+                             */
+                            logsUrl: string;
+                            /** @description Output folder name where files are written, or null for in-place operations */
+                            outputFolderName?: null;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commands/applyCoverArt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Give one album folder its cover art: write cover.<ext> beside the files and embed one front picture in each. The image comes from an explicit URL, then the Cover Art Archive by release and release group, then art already in the folder. Point it at ONE album. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /**
+                         * Format: uri
+                         * @description An image to use instead of a lookup. This is the escape hatch for a release MusicBrainz has never heard of — a day-old game soundtrack, a store-only edition — and it wins over every provider.
+                         */
+                        imageUrl?: string;
+                        /**
+                         * @description Report which files would get the art, and where the art came from, without writing anything. Run this first — the report is the same shape as the real run.
+                         * @default false
+                         */
+                        isDryRun?: boolean;
+                        /**
+                         * @description Embed the front cover in every audio file. On by default: an embedded picture travels with the file, so a player that never reads the folder still shows the album.
+                         * @default true
+                         */
+                        isEmbedded?: boolean;
+                        /**
+                         * @description Write the art into the album folder as cover.<ext>. On by default. An existing cover.jpg, folder.jpg or albumart*.jpg is never overwritten.
+                         * @default true
+                         */
+                        isSavedBesideFiles?: boolean;
+                        /** @description A MusicBrainz release group id to look up on the Cover Art Archive. Read from the files' own tags when left empty. */
+                        releaseGroupId?: string;
+                        /** @description A MusicBrainz release id to look up on the Cover Art Archive. Read from the files' own tags when left empty, which is what makes this command work with only a folder. */
+                        releaseId?: string;
+                        /** @description Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka. */
+                        sourcePath: string;
                     };
                 };
             };
@@ -8408,7 +8492,7 @@ export interface components {
             /** @description Optional human-readable alias. Surfaced by the builder UI's step header; ignored at runtime. */
             alias?: string;
             /** @description Name of the registered command to run. Must be one of the names listed at `GET /commands` (or surfaced individually as `POST /commands/<name>` endpoints). Empty string `''` marks a placeholder/blank step from the Builder UI — the runner skips it as a no-op so YAML round-trips don't lose the slot. */
-            command: "" | ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchDiscogsRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "convertSrtToAss" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "compareMusicAssistantLibrary" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "trimFileTail" | "writeAudioTags");
+            command: "" | ("analyseDiscBackup" | "makeDirectory" | "matchMusicRelease" | "matchMusicBrainzRelease" | "matchDiscogsRelease" | "matchFreedbRelease" | "matchVgmdbRelease" | "changeTrackLanguages" | "convertLosslessToFlac" | "convertContainerAudioToFlac" | "convertSrtToAss" | "findContainerAudioFiles" | "copyFiles" | "flattenOutput" | "copyOutSubtitles" | "extractDiscTitles" | "extractSubtitles" | "fixIncorrectDefaultTracks" | "getAudioOffsets" | "hasBetterAudio" | "hasBetterVersion" | "hasDuplicateMusicFiles" | "hasImaxEnhancedAudio" | "hasManyAudioTracks" | "hasSurroundSound" | "hasWrongDefaultTrack" | "isMissingSubtitles" | "deleteCopiedOriginals" | "deleteFilesByExtension" | "deleteFolder" | "exitIfEmpty" | "modifySubtitleMetadata" | "keepLanguages" | "addSubtitles" | "mergeTracks" | "moveFiles" | "moveFilesIntoNamedFolders" | "distributeFolderToSiblings" | "flattenChildFolders" | "renameFiles" | "renameFilesAndFolders" | "nameAnimeEpisodes" | "nameAnimeEpisodesAniDB" | "fetchThemeMusic" | "nameMovieCutsDvdCompareTmdb" | "nameSpecialFeaturesDvdCompareTmdb" | "onlyNameSpecialFeaturesDvdCompare" | "nameTvShowEpisodes" | "remuxToMkv" | "fingerprintAudioFiles" | "findDuplicateAudioFiles" | "compareMusicAssistantLibrary" | "scanAudioFiles" | "renumberChapters" | "renameAndMoveAudioFiles" | "renameDemos" | "renameMovieClipDownloads" | "reorderTracks" | "replaceAttachments" | "replaceFlacWithPcmAudio" | "replaceTracks" | "setDisplayWidth" | "splitChapters" | "splitCueSheet" | "storeAspectRatioData" | "trimFileTail" | "writeAudioTags" | "applyCoverArt");
             /** @description Command params. Each value can be a literal (string / number / boolean / array / object), a `'@pathId'` path-variable reference, or a `{ linkedTo, output }` step-output reference. Per-command param shapes are documented under `POST /commands/<command>` — the same schema each command exposes for direct invocation also applies here once references are resolved. */
             params?: {
                 [key: string]: unknown;

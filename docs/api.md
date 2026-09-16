@@ -112,7 +112,7 @@ All commands are started with `POST`. The body is JSON. `sourcePath` is required
 | `POST /commands/nameAnimeEpisodesAniDB` | `sourcePath` | `searchTerm`, `seasonNumber`, `anidbId`, `episodeType`, `filenameRegex`, `startEpisodeNumber`, `seriesName` |
 | `POST /commands/nameMovieCutsDvdCompareTmdb` | `sourcePath` | `url`, `dvdCompareId`, `dvdCompareReleaseHash`, `searchTerm`, `fixedOffset`, `timecodePadding` |
 | `POST /commands/nameSpecialFeaturesDvdCompareTmdb` | `sourcePath` | `url`, `dvdCompareId`, `dvdCompareReleaseHash`, `searchTerm`, `fixedOffset`, `timecodePadding`, `moveToEditionFolders`, `nonInteractive`, `autoNameDuplicates` |
-| `POST /commands/nameTvShowEpisodes` | `sourcePath` | `searchTerm`, `seasonNumber`, `tvdbId` |
+| `POST /commands/nameTvShowEpisodes` | `sourcePath` | `searchTerm`, `seasonNumber`, `tvdbId`, `filenameRegex`, `startEpisodeNumber` |
 | `POST /commands/onlyNameSpecialFeaturesDvdCompare` | `sourcePath` | `dvdCompareId`, `dvdCompareReleaseHash`, `url`, `searchTerm`, `timecodePadding`, `fixedOffset`, `autoNameDuplicates` |
 | `POST /commands/remuxToMkv` | `sourcePath`, `extensions`[] | `isRecursive`, `recursiveDepth`, `isSourceDeletedOnSuccess` |
 | `POST /commands/renameDemos` | `sourcePath` | `isRecursive` |

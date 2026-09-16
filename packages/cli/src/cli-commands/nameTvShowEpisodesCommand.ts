@@ -36,6 +36,19 @@ const builder = (yargs: Argv) =>
         "Name of the TV show for searching TVDB.com.",
       type: "string",
     })
+    .option("filenameRegex", {
+      describe:
+        'Regex with (?<seasonNumber>…) and (?<episodeNumber>…) groups, overriding the built-in "s01e06" and "1x06" patterns.',
+      nargs: 1,
+      type: "string",
+    })
+    .option("startEpisodeNumber", {
+      describe:
+        "First episode number when pairing by natural-sort index. Only applies to a file with no numbering in its name.",
+      nargs: 1,
+      number: true,
+      type: "number",
+    })
 
 type Args = InferArgvOptions<ReturnType<typeof builder>>
 
@@ -54,9 +67,11 @@ export const nameTvShowEpisodesCommand: CommandModule<
 
   handler: (argv) => {
     nameTvShowEpisodes({
+      filenameRegex: argv.filenameRegex,
       searchTerm: argv.searchTerm,
       seasonNumber: argv.seasonNumber,
       sourcePath: argv.sourcePath,
+      startEpisodeNumber: argv.startEpisodeNumber,
     }).subscribe(subscribeCli())
   },
 }

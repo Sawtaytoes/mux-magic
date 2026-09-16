@@ -37,7 +37,7 @@ yarn media <command> --help        # options for a specific command
 | `nameAnimeEpisodes` | `<sourcePath> <searchTerm>` | Rename anime episode files using MyAnimeList metadata. |
 | `nameAnimeEpisodesAniDB` | `<sourcePath> <searchTerm>` | Rename episode files using titles from AniDB. Better OVA/special coverage than MAL. See [AniDB command notes](#anidb-command-notes). |
 | `nameSpecialFeaturesDvdCompareTmdb` | `<sourcePath> <url>` | Rename disc special features using timecodes from a dvdcompare.net URL; movie title canonicalized via TMDB. Renamed from `nameSpecialFeatures` in worker 22 to stay legible alongside upcoming sibling commands. |
-| `nameTvShowEpisodes` | `<sourcePath> <searchTerm>` | Rename episode files using titles from TVDB. |
+| `nameTvShowEpisodes` | `<sourcePath> <searchTerm>` | Rename episode files using titles from TVDB. Each file pairs with the TVDB episode whose number matches the `s01e06` / `1x06` in its own name; a file naming another season is skipped. |
 | `renameDemos` | `<sourcePath>` | Rename demo files to the standard format (see [Demo file format](#demo-file-format)). |
 | `renameMovieClipDownloads` | `<sourcePath>` | Rename TomSawyer AVSForums movie clips to the demo format. |
 | `reorderTracks` | `<sourcePath>` | Reorder video, audio, or subtitle tracks by index. |

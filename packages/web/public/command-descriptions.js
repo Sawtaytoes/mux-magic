@@ -114,6 +114,18 @@ window.commandDescriptions = {
       "totalDiscs": "Total disc count to set on every matched file."
     }
   },
+  "applyCoverArt": {
+    "summary": "Give one album folder its cover art: write cover.<ext> beside the files and embed one front picture in each. The image comes from an explicit URL, then the Cover Art Archive by release and release group, then art already in the folder. Point it at ONE album.",
+    "fields": {
+      "imageUrl": "An image to use instead of a lookup. This is the escape hatch for a release MusicBrainz has never heard of — a day-old game soundtrack, a store-only edition — and it wins over every provider.",
+      "isDryRun": "Report which files would get the art, and where the art came from, without writing anything. Run this first — the report is the same shape as the real run.",
+      "isEmbedded": "Embed the front cover in every audio file. On by default: an embedded picture travels with the file, so a player that never reads the folder still shows the album.",
+      "isSavedBesideFiles": "Write the art into the album folder as cover.<ext>. On by default. An existing cover.jpg, folder.jpg or albumart*.jpg is never overwritten.",
+      "releaseGroupId": "A MusicBrainz release group id to look up on the Cover Art Archive. Read from the files' own tags when left empty.",
+      "releaseId": "A MusicBrainz release id to look up on the Cover Art Archive. Read from the files' own tags when left empty, which is what makes this command work with only a folder.",
+      "sourcePath": "Folder to walk. Only audio files are read — .flac, .mp3, .m4a, .ogg, .opus, .wav, .aiff, .wv, .ape and .mka."
+    }
+  },
   "renameAndMoveAudioFiles": {
     "summary": "File tagged audio into the library tree using the Picard naming script. Each file's own tags decide its destination, so run this after the tags are right.",
     "fields": {
@@ -511,7 +523,9 @@ window.commandDescriptions = {
       "sourcePath": "Directory where all episodes for that season are located.",
       "searchTerm": "Name of the TV show for searching TVDB.com.",
       "seasonNumber": "The season number to lookup when renaming.",
-      "tvdbId": "TVDB ID — when provided, skips the interactive search and uses this ID directly."
+      "tvdbId": "TVDB ID — when provided, skips the interactive search and uses this ID directly.",
+      "filenameRegex": "Regex with named capture groups (?<seasonNumber>…) and (?<episodeNumber>…) used to pair each file to the TVDB episode carrying that number. Overrides the built-in \"s01e06\" and \"1x06\" patterns. Matched case-insensitively. A file whose captured season is not seasonNumber is skipped, never renamed.",
+      "startEpisodeNumber": "First episode number when pairing by natural-sort index (e.g. 5 names the files s01e05, s01e06, …). Only applies to a file whose name carries no season/episode numbering at all. Defaults to 1."
     }
   },
   "remuxToMkv": {
