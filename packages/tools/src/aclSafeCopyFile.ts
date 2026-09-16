@@ -12,6 +12,8 @@ import {
 import { Transform } from "node:stream"
 import { pipeline } from "node:stream/promises"
 
+import { hasErrorCode } from "./hasErrorCode.js"
+
 /**
  * Per-chunk progress notification fired while a single file is being
  * copied. `bytesWritten` accumulates monotonically up to `totalBytes`
@@ -51,15 +53,6 @@ export type CopyOptions = {
 }
 
 const TEMP_SUFFIX = ".muxmagic.tmp"
-
-const hasErrorCode = (
-  error: unknown,
-  code: string,
-): boolean =>
-  error !== null &&
-  typeof error === "object" &&
-  "code" in error &&
-  (error as { code?: unknown }).code === code
 
 // Best-effort cleanup — ignore ENOENT (already gone) and any other
 // unlink error. Cleanup failures must not mask the primary error the
