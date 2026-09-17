@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-09-17 | [Every `tsx` entry point resolves workspace packages from source](2026-09-17-tsx-entry-points-resolve-workspace-packages-from-source.md) | infra | Accepted |
 | 2026-09-16 | [A skipped test is a defect, and the suites report zero](2026-09-16-a-skipped-test-is-a-defect-and-the-suites-report-zero.md) | web / e2e | Accepted |
 | 2026-09-16 | [A TV episode pairs by the number in its filename, not by sort order](2026-09-16-a-tv-episode-pairs-by-the-number-in-its-filename-not-by-sort-order.md) | core / api / cli | Accepted |
 | 2026-09-16 | [A recursive copy goes through `aclSafeCopyFile`, never `fs.cp`](2026-09-16-a-recursive-copy-goes-through-aclsafecopyfile-never-fs-cp.md) | core / tools | Accepted |
