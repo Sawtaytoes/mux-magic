@@ -49,6 +49,10 @@ export const optimizeDepsInclude = [
   // locally throughout, because a warm `node_modules/.vite` hides
   // the race exactly as the note above says it does.
   "@charcuterie/ui/react-router",
+  // `vitest.setup.ts` imports this for the CI-aware Testing Library
+  // `asyncUtilTimeout`. It is a subpath, so it is its own optimizer
+  // entry — the parity check caught it the first time round.
+  "@charcuterie/vitest-config/testingLibrarySetup.js",
   "@dnd-kit/core",
   "@dnd-kit/sortable",
   "@dnd-kit/utilities",
