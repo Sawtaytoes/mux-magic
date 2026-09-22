@@ -8,13 +8,25 @@ the brackets below.
 # YYYY-MM-DD — Short imperative title
 
 - **Status:** Accepted
-- **Date decided:** YYYY-MM-DD
-- **Area:** web | server/api | core | tools | cli | infra | cross-repo | process | naming
+- **Date:** YYYY-MM-DD
+- **Type:** web | server/api | core | tools | cli | infra | cross-repo | process | naming
+- **Supersedes:** —
+- **Superseded by:** —
 - **Source:** worker id / PR # / commit / chat session (the paper trail)
+
+Keep all five of `Status`, `Date`, `Type`, `Supersedes` and `Superseded by`, and keep
+the `Decision`, `Context`, `Why` and `Evidence` sections below. Charcuterie's
+`shared-docs-lint` reads exactly those names over the records a pull request touches,
+and the job is required. Write an em dash where a field is empty. `Source` and
+`What we rejected` are this repo's own additions; the lint ignores extras.
 
 ## Decision
 
 State what was decided as a present-tense rule. 1-3 sentences.
+
+## Context
+
+What was happening that forced the call. The bug, the measurement, the request.
 
 ## What we rejected — DO NOT revert to this
 
@@ -23,12 +35,18 @@ explicitly turned down, and the approach a future agent is most likely to
 drift back toward. This is the most important section — it is why this file
 exists.
 
-## Why it must not be re-litigated
+## Why
 
 The cost already paid for this decision: the bug it fixed, the workflow it
 enables, the re-asking it prevents. If you believe it genuinely should
 change, do NOT silently change it — write a NEW dated file that supersedes
 this one (see below) and get the user's sign-off.
+
+## Evidence
+
+The measurement, the log line, the direct quote. This is the section that keeps
+getting dropped, and it is the one that stops a future agent re-litigating a
+settled call.
 
 <!--
 SUPERSESSION — when a LATER decision overrides this one:
