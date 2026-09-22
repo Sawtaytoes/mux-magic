@@ -1,8 +1,10 @@
 # 2026-09-22 — The `tsx` source condition is private to this repo
 
 - **Status:** Accepted
-- **Date decided:** 2026-09-22
-- **Area:** infra
+- **Date:** 2026-09-22
+- **Type:** infra
+- **Supersedes:** —
+- **Superseded by:** —
 - **Source:** PR #305 — narrows [2026-09-17](2026-09-17-tsx-entry-points-resolve-workspace-packages-from-source.md)
 
 ## Decision
@@ -16,6 +18,16 @@ beside the `source` it already had, pointing at the same files.
 
 This keeps everything the 2026-09-17 decision bought. That record still stands; only
 the name of the condition changes.
+
+## Context
+
+`Docker Deploy` failed on every push to `master` from 2026-09-17 (#303) to 2026-09-22
+(#305). Five days, four merges, and the image the household runs stayed on the
+2026-09-16 build. #303 added `--conditions=source` to every `tsx` entry point so a dev
+checkout needs no `yarn build:tools`. That part works and stays.
+
+An export condition is a global name. `@internationalized/date` declares `"source"`
+too, so the same flag re-pointed it at its TypeScript barrel.
 
 ## What we rejected — DO NOT revert to this
 
@@ -38,7 +50,7 @@ never reaches `dist/import.mjs` in either version. Measured on both.
 consumer may already read that condition. The two names sit side by side and resolve
 to the same file.
 
-## Why it must not be re-litigated
+## Why
 
 `Docker Deploy` failed on every push to `master` from 2026-09-17 (#303) to 2026-09-22
 (#305) — five days, four merges — and the image the household runs stayed on the
