@@ -858,9 +858,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@charcuterie/vitest-config@npm:^1.1.1":
-  version: 1.1.1
-  resolution: "@charcuterie/vitest-config@npm:1.1.1"
+"@charcuterie/vitest-config@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "@charcuterie/vitest-config@npm:1.1.2"
   peerDependencies:
     "@vitest/browser": ">=3"
     "@vitest/browser-playwright": ">=3"
@@ -868,7 +868,7 @@ __metadata:
     vitest: ">=3"
   bin:
     charcuterie-check-optimize-deps: src/cli/checkOptimizeDeps.js
-  checksum: 10c0/cf281060fb98541a3dc8f4d26f2fae713e54fa15a591bbce0e0abbf6d328faec5959fe8c2adee69c22fcaa5c0f35e42929c763f2202117910f9119c95e546b5d
+  checksum: 10c0/9b58eca310e0dcb3678abea42954d66d99fbb29ad3dfe87c8a0a3a0984fa60f1a3f3b4bc947948383fd4df546150a775a75e547c02267d89d796183966a74ff4
   languageName: node
   linkType: hard
 
@@ -2063,7 +2063,7 @@ __metadata:
     "@charcuterie/tokens": "npm:^1.10.1"
     "@charcuterie/ui": "npm:^4.8.0"
     "@charcuterie/vite-config": "npm:^1.1.0"
-    "@charcuterie/vitest-config": "npm:^1.1.1"
+    "@charcuterie/vitest-config": "npm:^1.1.2"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
@@ -8791,7 +8791,7 @@ __metadata:
     "@charcuterie/eslint-config": "npm:^1.7.1"
     "@charcuterie/playwright-config": "npm:^1.0.1"
     "@charcuterie/tsconfig": "npm:^1.0.0"
-    "@charcuterie/vitest-config": "npm:^1.1.1"
+    "@charcuterie/vitest-config": "npm:^1.1.2"
     "@mux-magic/web": "workspace:*"
     "@playwright/mcp": "npm:^0.0.75"
     "@playwright/test": "npm:^1.61.1"
