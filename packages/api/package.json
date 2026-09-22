@@ -18,7 +18,7 @@
     },
     "./*": "./*"
   },
-  "description": "Hono API routes + OpenAPI config for mux-magic. Wraps @mux-magic/core with the HTTP layer; exports the `app` Hono instance. No listener \u2014 worker 29 reintroduces a packages/server/ front-door that owns the listener.",
+  "description": "Hono API routes + OpenAPI config for mux-magic. Wraps @mux-magic/core with the HTTP layer; exports the `app` Hono instance. No listener — worker 29 reintroduces a packages/server/ front-door that owns the listener.",
   "scripts": {
     "build:command-descriptions": "tsx --conditions=source scripts/build-command-descriptions.ts",
     "generate:api": "tsx --conditions=source src/generateInternalApiSchemas.ts",
