@@ -1,9 +1,19 @@
 import { join } from "node:path"
+import { createVitestConfig } from "@charcuterie/vitest-config"
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin"
-import { playwright } from "@vitest/browser-playwright"
-import { defineConfig } from "vitest/config"
 
-export default defineConfig({
+/*
+ * A Vitest project does NOT inherit the root config's `test` options, so
+ * the shared CI-aware budget only reaches this suite if the project
+ * itself calls the factory. See `packages/server/vitest.config.ts` for
+ * the measurement.
+ *
+ * The factory also supplies the chromium-through-Playwright browser
+ * block this file used to spell out. It is not repeated here: Vite's
+ * `mergeConfig` CONCATENATES arrays, so naming `instances` again would
+ * ask for two chromium instances and run every story twice.
+ */
+export default createVitestConfig({
   plugins: [
     storybookTest({
       configDir: join(import.meta.dirname, ".storybook"),
@@ -11,6 +21,16 @@ export default defineConfig({
   ],
   test: {
     name: "storybook",
+    /*
+     * ⚠️ No `setupFiles` here. `@storybook/addon-vitest` injects its
+     * own, and naming one in this config REPLACES it — every story
+     * then fails to import with "Vitest failed to find the runner".
+     * The CI-aware `asyncUtilTimeout` is applied in the `web`
+     * project, which is where the evidence for it is.
+     */
+    // The factory turns globals on; this suite has always imported its
+    // own `describe`/`test`/`expect` and keeps doing so.
+    globals: false,
     // The Storybook vitest plugin takes its file list from `stories` in
     // .storybook/main.ts, which includes the 54 `.mdx` documentation
     // pages alongside the 124 story files. An `.mdx` page holds no
@@ -23,12 +43,6 @@ export default defineConfig({
       "**/dist/**",
       "**/*.mdx",
     ],
-    browser: {
-      enabled: true,
-      provider: playwright(),
-      headless: true,
-      instances: [{ browser: "chromium" }],
-    },
   },
   // Mirror the include list from vitest.config.ts. Storybook tests render
   // the same React components and hit the same React-compiler-runtime path,

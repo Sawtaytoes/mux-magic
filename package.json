@@ -54,7 +54,7 @@
     "@charcuterie/eslint-config": "^1.7.1",
     "@charcuterie/playwright-config": "^1.1.0",
     "@charcuterie/tsconfig": "^1.0.0",
-    "@charcuterie/vitest-config": "^1.2.0",
+    "@charcuterie/vitest-config": "^1.3.0",
     "@mux-magic/web": "workspace:*",
     "@playwright/mcp": "^0.0.75",
     "@playwright/test": "^1.61.1",
