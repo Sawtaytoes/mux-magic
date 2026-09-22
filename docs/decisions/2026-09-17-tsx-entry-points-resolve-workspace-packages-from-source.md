@@ -1,5 +1,13 @@
 # 2026-09-17 — Every `tsx` entry point resolves workspace packages from source
 
+> [!NOTE]
+> **Narrowed on 2026-09-22 by [The `tsx` source condition is private to this
+> repo](2026-09-22-the-tsx-source-condition-is-private-to-this-repo.md).**
+> This decision stands. Only the name of the condition changed: the flag is
+> `--conditions=mux-magic-source`, because `source` is a shared name that also
+> re-points third-party packages and broke the Docker build for five days. Read
+> the two together, and take the flag from the newer file.
+
 - **Status:** Accepted
 - **Date:** 2026-09-17
 - **Type:** infra
