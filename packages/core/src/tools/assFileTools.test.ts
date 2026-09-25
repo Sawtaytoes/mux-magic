@@ -52,6 +52,27 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 Dialogue: 0,0:00:22.59,0:00:23.63,Default,Tojima,0,0,0,,Let's go!
 Dialogue: 0,0:00:28.28,0:00:31.64,Default,Yukarisu,0,0,0,,You're already torn up. \\NYou sure about this?`
 
+const SAMPLE_POSITIONED = `[Script Info]
+ScriptType: v4.00+
+WrapStyle: 0
+PlayResX: 640
+PlayResY: 480
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Calibri,30,&H00FFFFFF,&H0000FFFF,&H00000000,&H00000000,0,0,0,0,100,100,2,0,1,2,1,2,10,10,15,0
+Style: Nameplate,Arial,30,&H00FFFFFF,&H0000FFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,2,2,2,10,10,60,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:25.98,0:00:29.94,Nameplate,,0,0,0,,{\\pos(319,450)}Preta Quoiz
+Dialogue: 0,0:00:30.00,0:00:34.00,Default,,0,0,0,,{\\move(100,200,300,400,0,900)}Sliding sign
+Dialogue: 0,0:00:35.00,0:00:39.00,Default,,0,0,0,,{\\clip(10,20,30,40)}Boxed
+Dialogue: 0,0:00:40.00,0:00:44.00,Default,,0,0,0,,{\\clip(m 0 0 l 100 0 100 100 0 100)}Drawn
+Dialogue: 0,0:00:45.00,0:00:49.00,Default,,0,0,0,,{\\fs30\\bord2\\shad1\\fsp4\\xbord3\\org(320,240)}Sized
+Dialogue: 0,0:00:50.00,0:00:54.00,Default,,0,0,0,,Plain dialogue with no tags`
+
 // Helper to get a Script Info property value
 const getScriptInfoValue = (
   content: string,
@@ -515,6 +536,211 @@ describe("applyAssRules — scaleResolution", () => {
       key: "PlayResX",
       value: "640",
     })
+  })
+})
+
+describe("applyAssRules — scaleResolution geometry", () => {
+  const scaleTo1080 = (
+    overrides: Record<string, unknown> = {},
+  ) =>
+    applyAssRules({
+      assFile: parseAssFile(SAMPLE_POSITIONED),
+      rules: [
+        {
+          type: "scaleResolution",
+          from: { width: 640, height: 480 },
+          to: { width: 1920, height: 1080 },
+          ...overrides,
+        },
+      ],
+    })
+
+  const getEventTexts = (
+    result: ReturnType<typeof applyAssRules>,
+  ) => {
+    const section = result.sections.find(
+      (section) =>
+        section.sectionType === "formatted" &&
+        section.entries.some(
+          (entry) => entry.entryType === "Dialogue",
+        ),
+    )
+    if (section?.sectionType !== "formatted") {
+      return []
+    }
+    return section.entries.map(
+      (entry) => entry.fields.Text ?? "",
+    )
+  }
+
+  const getStyleRow = (
+    result: ReturnType<typeof applyAssRules>,
+    styleName: string,
+  ) => {
+    const section = result.sections.find(
+      (section) =>
+        section.sectionType === "formatted" &&
+        section.entries.some(
+          (entry) => entry.entryType === "Style",
+        ),
+    )
+    if (section?.sectionType !== "formatted") {
+      return undefined
+    }
+    return section.entries.find(
+      (entry) => entry.fields.Name === styleName,
+    )?.fields
+  }
+
+  // 640x480 → 1920x1080 is x × 3 and y × 2.25. The two ratios differ, which
+  // is the whole reason the tags cannot be left alone.
+  test("scales \\pos with the width ratio on x and the height ratio on y", () => {
+    expect(getEventTexts(scaleTo1080())[0]).toBe(
+      "{\\pos(957,1012.5)}Preta Quoiz",
+    )
+  })
+
+  test("scales the four \\move coordinates and leaves its two times alone", () => {
+    expect(getEventTexts(scaleTo1080())[1]).toBe(
+      "{\\move(300,450,900,900,0,900)}Sliding sign",
+    )
+  })
+
+  test("scales a rectangular \\clip", () => {
+    expect(getEventTexts(scaleTo1080())[2]).toBe(
+      "{\\clip(30,45,90,90)}Boxed",
+    )
+  })
+
+  test("leaves a vector-drawing \\clip untouched", () => {
+    expect(getEventTexts(scaleTo1080())[3]).toBe(
+      "{\\clip(m 0 0 l 100 0 100 100 0 100)}Drawn",
+    )
+  })
+
+  test("scales the size tags on the correct axis", () => {
+    expect(getEventTexts(scaleTo1080())[4]).toBe(
+      "{\\fs67.5\\bord4.5\\shad2.25\\fsp12\\xbord9\\org(960,540)}Sized",
+    )
+  })
+
+  test("leaves an event with no override tags byte-identical", () => {
+    expect(getEventTexts(scaleTo1080())[5]).toBe(
+      "Plain dialogue with no tags",
+    )
+  })
+
+  test("scales style geometry on the correct axis and rounds margins", () => {
+    const styleRow = getStyleRow(scaleTo1080(), "Default")
+    expect(styleRow?.Fontsize).toBe("67.5")
+    expect(styleRow?.Outline).toBe("4.5")
+    expect(styleRow?.Shadow).toBe("2.25")
+    expect(styleRow?.MarginV).toBe("34")
+    expect(styleRow?.Spacing).toBe("6")
+    expect(styleRow?.MarginL).toBe("30")
+    expect(styleRow?.MarginR).toBe("30")
+  })
+
+  test("leaves every non-geometric style field alone", () => {
+    const styleRow = getStyleRow(scaleTo1080(), "Default")
+    expect(styleRow?.Fontname).toBe("Calibri")
+    expect(styleRow?.PrimaryColour).toBe("&H00FFFFFF")
+    expect(styleRow?.Bold).toBe("0")
+    expect(styleRow?.Alignment).toBe("2")
+    expect(styleRow?.ScaleX).toBe("100")
+    expect(styleRow?.Encoding).toBe("0")
+  })
+
+  test("isScalingPositionTags:false leaves every event text alone", () => {
+    const texts = getEventTexts(
+      scaleTo1080({ isScalingPositionTags: false }),
+    )
+    expect(texts[0]).toBe("{\\pos(319,450)}Preta Quoiz")
+    expect(
+      getStyleRow(
+        scaleTo1080({ isScalingPositionTags: false }),
+        "Default",
+      )?.Fontsize,
+    ).toBe("67.5")
+  })
+
+  test("isScalingStyleGeometry:false leaves every style row alone", () => {
+    const result = scaleTo1080({
+      isScalingStyleGeometry: false,
+    })
+    expect(getStyleRow(result, "Default")?.Fontsize).toBe(
+      "30",
+    )
+    expect(getStyleRow(result, "Default")?.MarginV).toBe(
+      "15",
+    )
+    expect(getEventTexts(result)[0]).toBe(
+      "{\\pos(957,1012.5)}Preta Quoiz",
+    )
+  })
+
+  test("ignoredStyleNamesRegexString protects a style row from scaling", () => {
+    const result = scaleTo1080({
+      ignoredStyleNamesRegexString: "^Nameplate$",
+    })
+    expect(getStyleRow(result, "Nameplate")?.Fontsize).toBe(
+      "30",
+    )
+    expect(getStyleRow(result, "Nameplate")?.MarginV).toBe(
+      "60",
+    )
+    expect(getStyleRow(result, "Default")?.Fontsize).toBe(
+      "67.5",
+    )
+  })
+
+  // A protected style still has to land where it was drawn, so the guard
+  // covers style rows and deliberately not the coordinate tags.
+  test("a protected style still gets its position tags scaled", () => {
+    expect(
+      getEventTexts(
+        scaleTo1080({
+          ignoredStyleNamesRegexString: "^Nameplate$",
+        }),
+      )[0],
+    ).toBe("{\\pos(957,1012.5)}Preta Quoiz")
+  })
+
+  test("a rule whose `from` guard misses changes nothing at all", () => {
+    const result = applyAssRules({
+      assFile: parseAssFile(SAMPLE_POSITIONED),
+      rules: [
+        {
+          type: "scaleResolution",
+          from: { width: 1280, height: 720 },
+          to: { width: 1920, height: 1080 },
+        },
+      ],
+    })
+    expect(getEventTexts(result)[0]).toBe(
+      "{\\pos(319,450)}Preta Quoiz",
+    )
+    expect(getStyleRow(result, "Default")?.Fontsize).toBe(
+      "30",
+    )
+  })
+
+  test("scaling to the same resolution is a no-op", () => {
+    const result = applyAssRules({
+      assFile: parseAssFile(SAMPLE_POSITIONED),
+      rules: [
+        {
+          type: "scaleResolution",
+          to: { width: 640, height: 480 },
+        },
+      ],
+    })
+    expect(getEventTexts(result)[0]).toBe(
+      "{\\pos(319,450)}Preta Quoiz",
+    )
+    expect(getStyleRow(result, "Default")?.Fontsize).toBe(
+      "30",
+    )
   })
 })
 

@@ -179,7 +179,10 @@ export type ScaleResolutionRule = {
   to: { width: number; height: number }
   hasLayoutRes?: boolean
   hasScaledBorderAndShadow?: boolean
+  ignoredStyleNamesRegexString?: string
   isLayoutResSynced?: boolean
+  isScalingPositionTags?: boolean
+  isScalingStyleGeometry?: boolean
   when?: WhenNode
 }
 
