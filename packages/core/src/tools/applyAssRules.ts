@@ -671,6 +671,302 @@ const applySetScriptInfo = ({
   }),
 })
 
+// ---------------------------------------------------------------------------
+// Geometry scaling for `scaleResolution`
+//
+// libass maps a script onto the frame with TWO different ratios: x coordinates
+// and horizontal margins take the WIDTH ratio, while y coordinates, vertical
+// margins, font size, border and shadow take the HEIGHT ratio. Measured against
+// libass directly — `\pos(100,100)` at Fontsize 30 on a 640x480 canvas renders
+// pixel-identically to `\pos(300,225)` at Fontsize 68 on a 1920x1080 canvas.
+//
+// The ratios differ whenever the aspect changes, so rewriting PlayResX/Y alone
+// moves every positioned sign and shrinks every style that is not overwritten
+// afterwards. That is what this scaling exists to prevent.
+// ---------------------------------------------------------------------------
+
+// `\clip` also takes a vector-drawing form, and `\move` takes two trailing
+// times. Both are left alone: a drawing is not a coordinate pair, and a time
+// is not a distance.
+const COORDINATE_TAG_PATTERN =
+  /\\(pos|org|move|clip|iclip)\s*\(([^)]*)\)/gi
+
+const SCALED_ARGUMENT_COUNT_BY_TAG: Record<string, number> =
+  {
+    clip: 4,
+    iclip: 4,
+    move: 4,
+    org: 2,
+    pos: 2,
+  }
+
+// Ordered longest-first so `xbord` is not eaten by `bord`, and `fsp` not by
+// `fs`. Requiring a digit after the name keeps `\fscx` and `\fad` out.
+const SCALAR_TAG_PATTERN =
+  /\\(xbord|ybord|xshad|yshad|bord|shad|fsp|fs)(-?\d+(?:\.\d+)?)/gi
+
+const HORIZONTALLY_SCALED_SCALAR_TAGS = [
+  "fsp",
+  "xbord",
+  "xshad",
+]
+
+const VERTICALLY_SCALED_STYLE_FIELDS = [
+  "Fontsize",
+  "Outline",
+  "Shadow",
+]
+const HORIZONTALLY_SCALED_STYLE_FIELDS = ["Spacing"]
+const VERTICALLY_SCALED_MARGIN_FIELDS = ["MarginV"]
+const HORIZONTALLY_SCALED_MARGIN_FIELDS = [
+  "MarginL",
+  "MarginR",
+]
+
+const formatScaledNumber = (value: number): string =>
+  String(Number(value.toFixed(4)))
+
+const parseResolutionValue = (
+  value: string | undefined,
+): number | undefined => {
+  if (value === undefined) {
+    return undefined
+  }
+  const parsedValue = Number.parseFloat(value)
+  return Number.isFinite(parsedValue) && parsedValue > 0
+    ? parsedValue
+    : undefined
+}
+
+const scaleCoordinateList = ({
+  argumentText,
+  horizontalRatio,
+  scaledArgumentCount,
+  verticalRatio,
+}: {
+  argumentText: string
+  horizontalRatio: number
+  scaledArgumentCount: number
+  verticalRatio: number
+}): string =>
+  argumentText
+    .split(",")
+    .map((argumentPart, argumentIndex) => {
+      if (argumentIndex >= scaledArgumentCount) {
+        return argumentPart
+      }
+      const parsedValue = Number.parseFloat(
+        argumentPart.trim(),
+      )
+      if (!Number.isFinite(parsedValue)) {
+        return argumentPart
+      }
+      const ratio =
+        argumentIndex % 2 === 0
+          ? horizontalRatio
+          : verticalRatio
+      return formatScaledNumber(parsedValue * ratio)
+    })
+    .join(",")
+
+const isRectangularClip = (
+  argumentText: string,
+): boolean => {
+  const argumentParts = argumentText.split(",")
+  return (
+    argumentParts.length === 4 &&
+    argumentParts.every(
+      (argumentPart) =>
+        argumentPart.trim() !== "" &&
+        Number.isFinite(
+          Number.parseFloat(argumentPart.trim()),
+        ),
+    )
+  )
+}
+
+const scaleEventText = ({
+  horizontalRatio,
+  text,
+  verticalRatio,
+}: {
+  horizontalRatio: number
+  text: string
+  verticalRatio: number
+}): string => {
+  const withScaledCoordinates = text.replace(
+    COORDINATE_TAG_PATTERN,
+    (
+      matchedText,
+      tagName: string,
+      argumentText: string,
+    ) => {
+      const normalizedTagName = tagName.toLowerCase()
+      const isVectorClip =
+        (normalizedTagName === "clip" ||
+          normalizedTagName === "iclip") &&
+        !isRectangularClip(argumentText)
+      if (isVectorClip) {
+        return matchedText
+      }
+      const scaledArgumentCount =
+        SCALED_ARGUMENT_COUNT_BY_TAG[normalizedTagName] ?? 0
+      return `\\${tagName}(${scaleCoordinateList({
+        argumentText,
+        horizontalRatio,
+        scaledArgumentCount,
+        verticalRatio,
+      })})`
+    },
+  )
+
+  return withScaledCoordinates.replace(
+    SCALAR_TAG_PATTERN,
+    (_matchedText, tagName: string, valueText: string) => {
+      const ratio =
+        HORIZONTALLY_SCALED_SCALAR_TAGS.includes(
+          tagName.toLowerCase(),
+        )
+          ? horizontalRatio
+          : verticalRatio
+      return `\\${tagName}${formatScaledNumber(
+        Number.parseFloat(valueText) * ratio,
+      )}`
+    },
+  )
+}
+
+const scaleStyleRow = ({
+  horizontalRatio,
+  styleRow,
+  verticalRatio,
+}: {
+  horizontalRatio: number
+  styleRow: Record<string, string>
+  verticalRatio: number
+}): Record<string, string> => {
+  const scaleField = ({
+    fieldNames,
+    isRounded,
+    ratio,
+  }: {
+    fieldNames: string[]
+    isRounded: boolean
+    ratio: number
+  }): Record<string, string> =>
+    fieldNames.reduce(
+      (accumulator, fieldName) => {
+        const rawValue = styleRow[fieldName]
+        if (rawValue === undefined) {
+          return accumulator
+        }
+        const parsedValue = Number.parseFloat(rawValue)
+        if (!Number.isFinite(parsedValue)) {
+          return accumulator
+        }
+        const scaledValue = parsedValue * ratio
+        accumulator[fieldName] = isRounded
+          ? String(Math.round(scaledValue))
+          : formatScaledNumber(scaledValue)
+        return accumulator
+      },
+      {} as Record<string, string>,
+    )
+
+  return {
+    ...styleRow,
+    ...scaleField({
+      fieldNames: VERTICALLY_SCALED_STYLE_FIELDS,
+      isRounded: false,
+      ratio: verticalRatio,
+    }),
+    ...scaleField({
+      fieldNames: HORIZONTALLY_SCALED_STYLE_FIELDS,
+      isRounded: false,
+      ratio: horizontalRatio,
+    }),
+    ...scaleField({
+      fieldNames: VERTICALLY_SCALED_MARGIN_FIELDS,
+      isRounded: true,
+      ratio: verticalRatio,
+    }),
+    ...scaleField({
+      fieldNames: HORIZONTALLY_SCALED_MARGIN_FIELDS,
+      isRounded: true,
+      ratio: horizontalRatio,
+    }),
+  }
+}
+
+const applyGeometryScaling = ({
+  assFile,
+  horizontalRatio,
+  ignoredStyleNamesRegex,
+  isScalingPositionTags,
+  isScalingStyleGeometry,
+  verticalRatio,
+}: {
+  assFile: AssFile
+  horizontalRatio: number
+  ignoredStyleNamesRegex: RegExp | null
+  isScalingPositionTags: boolean
+  isScalingStyleGeometry: boolean
+  verticalRatio: number
+}): AssFile => ({
+  ...assFile,
+  sections: assFile.sections.map((section) => {
+    if (section.sectionType !== "formatted") {
+      return section
+    }
+
+    return {
+      ...section,
+      entries: section.entries.map((entry) => {
+        if (
+          isScalingStyleGeometry &&
+          entry.entryType === "Style" &&
+          !ignoredStyleNamesRegex?.test(
+            entry.fields.Name ?? "",
+          )
+        ) {
+          const scaledEntry: AssFormatEntry = {
+            ...entry,
+            fields: scaleStyleRow({
+              horizontalRatio,
+              styleRow: entry.fields,
+              verticalRatio,
+            }),
+          }
+          return scaledEntry
+        }
+        if (entry.entryType === "Style") {
+          return entry
+        }
+
+        const hasEventText =
+          isScalingPositionTags &&
+          typeof entry.fields.Text === "string"
+        if (!hasEventText) {
+          return entry
+        }
+
+        const scaledEntry: AssFormatEntry = {
+          ...entry,
+          fields: {
+            ...entry.fields,
+            Text: scaleEventText({
+              horizontalRatio,
+              text: entry.fields.Text ?? "",
+              verticalRatio,
+            }),
+          },
+        }
+        return scaledEntry
+      }),
+    }
+  }),
+})
+
 const applyScaleResolution = ({
   assFile,
   rule,
@@ -762,7 +1058,7 @@ const applyScaleResolution = ({
     ...scaledBorderRules,
   ]
 
-  return subRules.reduce(
+  const rescaledFile = subRules.reduce(
     (currentFile, setScriptInfoRule) =>
       applySetScriptInfo({
         assFile: currentFile,
@@ -770,6 +1066,42 @@ const applyScaleResolution = ({
       }),
     assFile,
   )
+
+  const sourceWidth = parseResolutionValue(currentWidth)
+  const sourceHeight = parseResolutionValue(currentHeight)
+  const isScalingPositionTags =
+    rule.isScalingPositionTags !== false
+  const isScalingStyleGeometry =
+    rule.isScalingStyleGeometry !== false
+
+  // No source resolution to divide by means no ratio, so there is nothing
+  // honest to scale. Leaving the file alone beats inventing the ASS default.
+  if (
+    sourceWidth === undefined ||
+    sourceHeight === undefined ||
+    (!isScalingPositionTags && !isScalingStyleGeometry)
+  ) {
+    return rescaledFile
+  }
+
+  const horizontalRatio = rule.to.width / sourceWidth
+  const verticalRatio = rule.to.height / sourceHeight
+
+  if (horizontalRatio === 1 && verticalRatio === 1) {
+    return rescaledFile
+  }
+
+  return applyGeometryScaling({
+    assFile: rescaledFile,
+    horizontalRatio,
+    ignoredStyleNamesRegex:
+      rule.ignoredStyleNamesRegexString
+        ? new RegExp(rule.ignoredStyleNamesRegexString, "i")
+        : null,
+    isScalingPositionTags,
+    isScalingStyleGeometry,
+    verticalRatio,
+  })
 }
 
 const applySetStyleFields = ({

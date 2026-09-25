@@ -1081,6 +1081,24 @@ const scaleResolutionRuleSchema = z
       .describe(
         "When true, updates LayoutResX and LayoutResY if they already exist in the file. Keys that are absent are left alone unless hasLayoutRes is also true. Defaults to true.",
       ),
+    ignoredStyleNamesRegexString: z
+      .string()
+      .optional()
+      .describe(
+        "Optional case-insensitive regular expression matched against each style's Name field. Matching styles keep their geometry unscaled — use it when a later setStyleFields rule will set those styles absolutely. It protects STYLE ROWS only: a sign's `\\pos` still scales, because a coordinate that does not move with the canvas puts the sign in the wrong place whatever its style says.",
+      ),
+    isScalingPositionTags: z
+      .boolean()
+      .default(true)
+      .describe(
+        "When true, rewrites the coordinate override tags in every event so positioned signs stay where they were drawn: `\\pos`, `\\org`, the first four arguments of `\\move` (the trailing times are left alone), and the rectangular four-argument form of `\\clip`/`\\iclip`. The size tags `\\fs`, `\\fsp`, `\\bord`, `\\shad`, `\\xbord`, `\\ybord`, `\\xshad` and `\\yshad` are scaled too. A vector-drawing `\\clip` and any `\\p` drawing body are left untouched. x takes the width ratio and y the height ratio, because libass uses both. Defaults to true; set false only to reproduce a file produced before this existed.",
+      ),
+    isScalingStyleGeometry: z
+      .boolean()
+      .default(true)
+      .describe(
+        "When true, scales the geometric fields of every style row to the new canvas: Fontsize, Outline, Shadow and MarginV by the height ratio, Spacing, MarginL and MarginR by the width ratio. Margins are rounded to integers. Colours, Bold, Alignment, BorderStyle, ScaleX/Y and Encoding are never touched. Without this, a rescaled file keeps its old numbers and every style renders at the wrong size. Defaults to true.",
+      ),
     when: whenPredicateSchema
       .optional()
       .describe(
@@ -1089,7 +1107,7 @@ const scaleResolutionRuleSchema = z
   })
   .openapi({
     description:
-      "Updates PlayResX/PlayResY in the [Script Info] section to rescale the subtitle canvas. 'from' is an optional guard — if provided and the file's current resolution does not match, the rule is skipped; omit to apply unconditionally. isLayoutResSynced updates LayoutResX/Y only if they already exist; pair it with hasLayoutRes:true to also create them when absent.",
+      "Updates PlayResX/PlayResY in the [Script Info] section to rescale the subtitle canvas, and scales the file's geometry onto that canvas. 'from' is an optional guard — if provided and the file's current resolution does not match, the rule is skipped; omit to apply unconditionally. isLayoutResSynced updates LayoutResX/Y only if they already exist; pair it with hasLayoutRes:true to also create them when absent. isScalingPositionTags and isScalingStyleGeometry both default to true: libass scales x by the width ratio and y by the height ratio, so changing PlayResX/Y alone moves every positioned sign and leaves every style at the wrong size.",
   })
 
 const setStyleFieldsRuleSchema = z
