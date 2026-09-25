@@ -115,22 +115,54 @@ Sets a single key in the `[Script Info]` section. If the key doesn't exist, it's
 
 ### `scaleResolution`
 
-Rescales `PlayResX`/`PlayResY` and proportionally rewrites every style's font sizes, margins, outline, shadow, and `LayoutResX/Y` if present. Skipped per-file if the file's resolution doesn't match `from`.
+Rescales `PlayResX`/`PlayResY`, and moves the file's geometry onto the new canvas: every style's font size, margins, outline, shadow and spacing, every coordinate override tag in `[Events]`, and `LayoutResX/Y` if present. Skipped per-file if the file's resolution doesn't match `from`.
 
 ```yaml
 - type: scaleResolution
-  from: { width: 640, height: 360 }
+  from: { width: 640, height: 480 }
   to: { width: 1920, height: 1080 }
   hasScaledBorderAndShadow: true   # default true
+  isScalingStyleGeometry: true     # default true
+  isScalingPositionTags: true      # default true
 ```
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `type` | `"scaleResolution"` | yes | Discriminator. |
-| `from` | `{ width: number, height: number }` | yes | Per-file guard. Files whose `PlayResX`/`PlayResY` don't match are left alone. |
-| `to` | `{ width: number, height: number }` | yes | Target resolution. Style numerics scale by `to/from` ratio. |
+| `from` | `{ width: number, height: number }` | no | Per-file guard. Files whose `PlayResX`/`PlayResY` don't match are left alone. The ratio always comes from the file's own current resolution, not from this field. |
+| `to` | `{ width: number, height: number }` | yes | Target resolution. |
 | `hasScaledBorderAndShadow` | boolean | no (default `true`) | Whether `[Script Info]` `ScaledBorderAndShadow: yes` is also written. |
+| `isScalingStyleGeometry` | boolean | no (default `true`) | Scale the geometric fields of every style row. |
+| `isScalingPositionTags` | boolean | no (default `true`) | Scale the coordinate and size override tags in every event. |
+| `ignoredStyleNamesRegexString` | string | no | Case-insensitive regex on a style's `Name`. Matching styles keep their geometry unscaled. Protects **style rows only** — see below. |
 | `when` | predicate | no | Aggregate-batch gate. Independent of the per-file `from:` match. |
+
+#### Two ratios, not one
+
+libass does not scale a script uniformly. x coordinates and horizontal margins take the **width** ratio; y coordinates, vertical margins, font size, outline and shadow take the **height** ratio. The two are equal only when the aspect does not change.
+
+Measured directly against libass: `\pos(100,100)` at `Fontsize: 30` on a 640x480 canvas renders **pixel-identically** to `\pos(300,225)` at `Fontsize: 68` on a 1920x1080 canvas. 640x480 to 1920x1080 is therefore x by 3.00 and y by 2.25.
+
+| Scaled by the width ratio | Scaled by the height ratio |
+|---|---|
+| style `MarginL`, `MarginR`, `Spacing` | style `Fontsize`, `Outline`, `Shadow`, `MarginV` |
+| x arguments of `\pos`, `\org`, `\move`, `\clip`, `\iclip` | y arguments of the same tags |
+| `\fsp`, `\xbord`, `\xshad` | `\fs`, `\bord`, `\shad`, `\ybord`, `\yshad` |
+
+Margins are rounded to whole numbers. Everything else keeps up to four decimal places, because rounding a `Shadow: 1` down a 3x scale gives `0` and silently deletes the shadow.
+
+Never scaled: colours, `Bold`, `Italic`, `Underline`, `StrikeOut`, `ScaleX`, `ScaleY`, `Angle`, `Alignment`, `BorderStyle`, `Encoding`, `Name`, `Fontname`.
+
+#### What is left alone on purpose
+
+- A vector-drawing `\clip`, and any `\p` drawing body. A drawing is not a coordinate pair, and rewriting one needs a drawing parser.
+- The two trailing times of `\move(x1,y1,x2,y2,t1,t2)`. A time is not a distance.
+- Per-event `MarginL`/`MarginR`/`MarginV` columns in `[Events]`.
+- `\fad`, `\t` and every other non-geometric tag.
+
+#### `ignoredStyleNamesRegexString` guards styles, not signs
+
+The regex protects style **rows**. A sign's `\pos` is scaled either way, because a coordinate that does not move with the canvas puts the sign in the wrong place whatever its style says. Turn coordinate scaling off with `isScalingPositionTags: false` if you truly want the old behavior.
 
 ### `setStyleFields`
 
