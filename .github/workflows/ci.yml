@@ -253,3 +253,50 @@ jobs:
       - run: corepack enable && yarn install --immutable
       - run: yarn build:tools
       - run: yarn workspace @mux-magic/web test:build-budget
+
+  # Visual regression over every Storybook story, light and dark, through the
+  # fleet's shared workflow — the capture, the reg-suit compare and the report
+  # live in Charcuterie, not here. See
+  # docs/decisions/2026-09-25-vrt-shoots-every-storybook-story-in-both-schemes.md.
+  #
+  # Needs only `changes`, NOT `check-prior-run`: the push to master is the run
+  # that publishes the baseline the next pull request compares against, so it
+  # must never be skipped as a re-run of the pull request's green SHA.
+  #
+  # It runs on this repo's self-hosted LAN runner (the baseline bucket is only
+  # reachable there). The shared workflow refuses a pull request from a fork.
+  # It is deliberately NOT a required check — a red `vrt` is diagnosed in its
+  # own pull request by opening the images, never re-run into green.
+  vrt:
+    needs: [changes]
+    if: needs.changes.outputs.isDocsOnly != 'true'
+    permissions: { contents: read, statuses: write, pull-requests: write }
+    uses: Sawtaytoes/charcuterie/.github/workflows/shared-vrt.yml@workflows-v1
+    with:
+      buildCommand: yarn build:tools && yarn workspace @mux-magic/web build:storybook
+      storybookStaticDirs: packages/web/storybook-static
+      storybookSchemeGlobal: scheme
+      storybookSchemes: dark,light
+      storybookSchemeAttribute: data-scheme
+      # ONE page, not the default four. The capture reuses each page for
+      # every story it shoots, and Chromium in a container cannot see the
+      # cgroup's memory limit, so it collects lazily: one renderer climbs
+      # to 3-4 GB over a few hundred stories. Four of them overran the
+      # runner's 8 GB and the kernel OOM-killed chromium mid-run (the first
+      # PR run: 182 "Page crashed" shots). Measured locally over the full
+      # 912 shots: concurrency 4 peaked at 11.6 GB, 2 at 6.8 GB, 1 at
+      # 4.7 GB in about 14 minutes.
+      storybookConcurrency: 1
+      # Each is excluded because it has nothing stable to shoot:
+      #   - the four render `null` by design (an empty result or a hidden
+      #     field), so the story root never gets a child and the capture
+      #     times out waiting for one;
+      #   - `fields-pathfield--default` runs a play function that mints a
+      #     `Math.random()` path-variable id and prints it.
+      storybookExclude: >-
+        components-duplicaterunresults--no-duplicates
+        components-editionplanpreview--empty-plan
+        components-fingerprintrunresults--no-matches
+        fields-regionvariantfield--japanese-hidden-no-variants
+        fields-pathfield--default
+    secrets: inherit

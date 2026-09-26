@@ -9,6 +9,11 @@ import { jobsAtom } from "../../state/jobsAtom"
 import { progressByJobIdAtom } from "../../state/progressByJobIdAtom"
 import { JobCard } from "./JobCard"
 
+// A fixed clock, not `Date.now()`: the cards print these times verbatim, so a
+// relative fixture changes every screenshot on every run and the VRT shot
+// never matches its baseline.
+const fixtureNow = Date.parse("2026-01-15T18:00:00.000Z")
+
 const COMMANDS = [
   "remuxToMkv",
   "extractSubtitles",
@@ -86,7 +91,7 @@ const runningJob = makeFakeJob({
   id: "job-running",
   commandName: "remuxToMkv",
   status: "running",
-  startedAt: new Date(Date.now() - 45_000).toISOString(),
+  startedAt: new Date(fixtureNow - 45_000).toISOString(),
   params: { sourcePath: "/media/movies/Dune.mkv" },
 })
 
@@ -94,8 +99,8 @@ const completedJob = makeFakeJob({
   id: "job-done",
   commandName: "extractSubtitles",
   status: "completed",
-  startedAt: new Date(Date.now() - 120_000).toISOString(),
-  completedAt: new Date(Date.now() - 10_000).toISOString(),
+  startedAt: new Date(fixtureNow - 120_000).toISOString(),
+  completedAt: new Date(fixtureNow - 10_000).toISOString(),
   params: { sourcePath: "/media/Dune.mkv" },
   results: [{ file: "/media/Dune.srt", track: 0 }],
 })
@@ -112,7 +117,7 @@ const sequenceJob = makeFakeJob({
   id: "seq-1",
   commandName: "sequence",
   status: "running",
-  startedAt: new Date(Date.now() - 90_000).toISOString(),
+  startedAt: new Date(fixtureNow - 90_000).toISOString(),
 })
 
 const childA = makeFakeJob({

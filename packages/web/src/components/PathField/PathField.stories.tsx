@@ -25,7 +25,7 @@ const field =
 // live demo has to read the step BACK from the store, or the controlled
 // input reverts to a static prop on every keystroke. This mirrors
 // `TestPathFieldFromAtom` in PathField.test.tsx. Directory listings come from
-// the Storybook mock server (.storybook/mock-server-plugin.ts).
+// the Storybook mock API (.storybook/mockRoutes.ts).
 const LiveField = ({ stepId }: { stepId: string }) => {
   const steps = useAtomValue(stepsAtom)
 
