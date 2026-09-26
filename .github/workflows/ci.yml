@@ -253,3 +253,41 @@ jobs:
       - run: corepack enable && yarn install --immutable
       - run: yarn build:tools
       - run: yarn workspace @mux-magic/web test:build-budget
+
+  # Visual regression over every Storybook story, light and dark, through the
+  # fleet's shared workflow — the capture, the reg-suit compare and the report
+  # live in Charcuterie, not here. See
+  # docs/decisions/2026-09-25-vrt-shoots-every-storybook-story-in-both-schemes.md.
+  #
+  # Needs only `changes`, NOT `check-prior-run`: the push to master is the run
+  # that publishes the baseline the next pull request compares against, so it
+  # must never be skipped as a re-run of the pull request's green SHA.
+  #
+  # It runs on this repo's self-hosted LAN runner (the baseline bucket is only
+  # reachable there). The shared workflow refuses a pull request from a fork.
+  # It is deliberately NOT a required check — a red `vrt` is diagnosed in its
+  # own pull request by opening the images, never re-run into green.
+  vrt:
+    needs: [changes]
+    if: needs.changes.outputs.isDocsOnly != 'true'
+    permissions: { contents: read, statuses: write, pull-requests: write }
+    uses: Sawtaytoes/charcuterie/.github/workflows/shared-vrt.yml@workflows-v1
+    with:
+      buildCommand: yarn build:tools && yarn workspace @mux-magic/web build:storybook
+      storybookStaticDirs: packages/web/storybook-static
+      storybookSchemeGlobal: scheme
+      storybookSchemes: dark,light
+      storybookSchemeAttribute: data-scheme
+      # Each is excluded because it has nothing stable to shoot:
+      #   - the four render `null` by design (an empty result or a hidden
+      #     field), so the story root never gets a child and the capture
+      #     times out waiting for one;
+      #   - `fields-pathfield--default` runs a play function that mints a
+      #     `Math.random()` path-variable id and prints it.
+      storybookExclude: >-
+        components-duplicaterunresults--no-duplicates
+        components-editionplanpreview--empty-plan
+        components-fingerprintrunresults--no-matches
+        fields-regionvariantfield--japanese-hidden-no-variants
+        fields-pathfield--default
+    secrets: inherit

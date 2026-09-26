@@ -59,3 +59,8 @@ test-results/
 # Local copy of Biome JSON schema (avoids IDE untrusted-URL warning)
 biome-schema.downloaded.json
 
+
+# Visual regression (shared-vrt.yml): shots, reg-suit working dir, config
+.vrt-actual/
+.reg/
+.regconfig.json
