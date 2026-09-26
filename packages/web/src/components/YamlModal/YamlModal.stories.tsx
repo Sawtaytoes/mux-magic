@@ -61,6 +61,7 @@ const meta: Meta<typeof YamlModal> = {
   component: YamlModal,
   parameters: {
     layout: "fullscreen",
+    isFullViewport: true,
     backgrounds: { default: "dark" },
   },
 }

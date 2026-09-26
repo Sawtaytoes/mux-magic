@@ -8,6 +8,7 @@ const meta: Meta<typeof Modal> = {
   component: Modal,
   parameters: {
     layout: "fullscreen",
+    isFullViewport: true,
     backgrounds: { default: "dark" },
   },
 }

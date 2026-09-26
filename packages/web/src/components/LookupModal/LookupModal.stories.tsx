@@ -58,6 +58,7 @@ const meta: Meta<typeof LookupModal> = {
       )
     },
   ],
+  parameters: { isFullViewport: true },
 }
 export default meta
 

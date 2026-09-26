@@ -13,6 +13,15 @@ import {
 import { AppProviders } from "../src/components/AppProviders"
 import "../src/styles/tailwindStyles.css"
 import "../src/styles/builderStyles.css"
+import { installStaticMockFetch } from "./staticMockFetch.ts"
+
+// The dev server answers the mock API itself (`mock-server-plugin.ts`); a
+// built Storybook has no server, so the page answers it. `PROD` is true only
+// for `storybook build` — the dev server and the Vitest project keep the
+// middleware and the real `fetch`.
+if (import.meta.env.PROD) {
+  installStaticMockFetch()
+}
 
 /**
  * All three token axes, written onto the preview iframe's `<html>` by the
@@ -44,11 +53,36 @@ const withAppProviders: Decorator = (Story) => {
   )
 }
 
+/**
+ * Stretches the story root to the full viewport for a story that opts in with
+ * `parameters: { isFullViewport: true }`.
+ *
+ * Dialogs and popovers are portalled out of `#storybook-root` by Floating UI,
+ * and the shared VRT capture screenshots the root element's box only. Without
+ * this, a modal story is shot as its 64px "Open modal" button and the dialog
+ * itself is never compared. A root at least as tall as the viewport puts the
+ * portalled overlay inside the clip. Story view only — in docs mode every
+ * embed would become a full screen tall.
+ */
+const withFullViewport: Decorator = (Story, context) =>
+  context.parameters.isFullViewport === true &&
+  context.viewMode === "story" ? (
+    <div className="min-h-screen">
+      <Story />
+    </div>
+  ) : (
+    <Story />
+  )
+
 export const globalTypes = themeAxes.globalTypes
 
 const preview = {
   initialGlobals: themeAxes.initialGlobals,
-  decorators: [...themeAxes.decorators, withAppProviders],
+  decorators: [
+    ...themeAxes.decorators,
+    withAppProviders,
+    withFullViewport,
+  ],
   parameters: {
     ...themeParameters(),
     actions: {

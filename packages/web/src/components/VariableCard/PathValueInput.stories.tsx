@@ -9,8 +9,8 @@ import {
 import type { Variable } from "../../types"
 import { PathValueInput } from "./PathValueInput"
 
-// The directory listing is served by the Storybook mock server
-// (.storybook/mock-server-plugin.ts → /queries/listDirectoryEntries):
+// The directory listing is served by the Storybook mock API
+// (.storybook/mockRoutes.ts → /queries/listDirectoryEntries):
 // Documents / Downloads / Music / Pictures / Videos, and an error for a
 // path under /nonexistent.
 const Harness = () => {
@@ -52,6 +52,8 @@ type Story = StoryObj<typeof meta>
  * it; picking a folder drills in and the list stays open.
  */
 export const Autocomplete: Story = {
+  // The suggestion list is portalled; see `withFullViewport`.
+  parameters: { isFullViewport: true },
   // Required by the story type; the render uses <Harness/> instead.
   args: {
     onValueChange: () => {},

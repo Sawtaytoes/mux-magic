@@ -115,6 +115,7 @@ const meta: Meta<typeof SequenceRunModal> = {
       )
     },
   ],
+  parameters: { isFullViewport: true },
 }
 export default meta
 

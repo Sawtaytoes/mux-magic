@@ -27,6 +27,7 @@ const meta: Meta<typeof EditVariablesModal> = {
   component: EditVariablesModal,
   parameters: {
     layout: "fullscreen",
+    isFullViewport: true,
     backgrounds: { default: "dark" },
   },
 }

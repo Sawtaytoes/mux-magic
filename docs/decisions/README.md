@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-09-25 | [VRT shoots every Storybook story in both schemes](2026-09-25-vrt-shoots-every-storybook-story-in-both-schemes.md) | infra / web | Accepted |
 | 2026-09-25 | [`scaleResolution` moves the geometry, not just the PlayRes keys](2026-09-25-scale-resolution-moves-the-geometry-not-just-the-playres-keys.md) | core | Accepted |
 | 2026-09-22 | [The `tsx` source condition is private to this repo](2026-09-22-the-tsx-source-condition-is-private-to-this-repo.md) | infra | Accepted |
 | 2026-09-17 | [Every `tsx` entry point resolves workspace packages from source](2026-09-17-tsx-entry-points-resolve-workspace-packages-from-source.md) | infra | Accepted |

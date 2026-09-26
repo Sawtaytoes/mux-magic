@@ -42,6 +42,7 @@ const meta: Meta<typeof LoadModal> = {
   component: LoadModal,
   parameters: {
     layout: "fullscreen",
+    isFullViewport: true,
     backgrounds: { default: "dark" },
   },
 }

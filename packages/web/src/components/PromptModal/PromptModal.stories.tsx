@@ -44,6 +44,7 @@ const meta: Meta<typeof PromptModal> = {
     },
   ],
   parameters: {
+    isFullViewport: true,
     initialState: {
       jobId: "job-demo",
       promptId: "prompt-demo",

@@ -9,6 +9,7 @@ const meta: Meta<typeof SaveTemplateModal> = {
   component: SaveTemplateModal,
   parameters: {
     layout: "fullscreen",
+    isFullViewport: true,
     backgrounds: { default: "dark" },
   },
   args: {

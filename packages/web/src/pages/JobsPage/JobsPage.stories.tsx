@@ -16,6 +16,11 @@ import {
 } from "../../state/visibleJobStatusesAtom"
 import { JobsPage } from "./JobsPage"
 
+// A fixed clock, not `Date.now()`: the cards print these times verbatim, so a
+// relative fixture changes every screenshot on every run and the VRT shot
+// never matches its baseline.
+const fixtureNow = Date.parse("2026-01-15T18:00:00.000Z")
+
 // JobsPage calls useSseStream which opens an EventSource.
 // In Storybook there is no real server, so the EventSource quietly fails
 // and the status-bar stays in "connecting" or "unstable" — that is fine.
@@ -76,7 +81,7 @@ export const WithJobs: Story = {
           commandName: "remuxToMkv",
           status: "running",
           startedAt: new Date(
-            Date.now() - 45_000,
+            fixtureNow - 45_000,
           ).toISOString(),
           params: { sourcePath: "/media/Dune.mkv" },
         }),
@@ -85,10 +90,10 @@ export const WithJobs: Story = {
           commandName: "extractSubtitles",
           status: "completed",
           startedAt: new Date(
-            Date.now() - 120_000,
+            fixtureNow - 120_000,
           ).toISOString(),
           completedAt: new Date(
-            Date.now() - 30_000,
+            fixtureNow - 30_000,
           ).toISOString(),
         }),
         makeFakeJob({
