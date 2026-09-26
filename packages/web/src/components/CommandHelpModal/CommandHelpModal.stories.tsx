@@ -70,6 +70,7 @@ const meta: Meta<typeof CommandHelpModal> = {
   component: CommandHelpModal,
   parameters: {
     layout: "fullscreen",
+    isFullViewport: true,
     backgrounds: { default: "dark" },
   },
 }
