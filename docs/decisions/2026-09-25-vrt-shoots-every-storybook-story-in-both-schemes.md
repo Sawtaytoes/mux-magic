@@ -16,6 +16,10 @@ once in `light`**, through Charcuterie's shared workflow
 this repo's own bucket (report at `https://mux-magic.reg-suit.octen.dev`). Storybook is
 the only source. There is no test-driven capture.
 
+The capture runs with `storybookConcurrency: 1`, not the default 4. The first CI run on
+the runner (8 GB memory limit) had chromium OOM-killed, because four long-lived renderers
+each grew to 3-4 GB. One page stays under 5 GB.
+
 Five story ids are excluded in `ci.yml`, each with its reason beside it. Four render
 `null` by design. `fields-pathfield--default` prints a `Math.random()` path-variable id.
 
@@ -84,6 +88,16 @@ Before the fixes, two runs of the same build had 36 differing shots, 16 of them
 `JobCard`/`JobsPage` with timestamps several minutes apart. The per-story 404 probe
 logged `/api/jobs/status-counts` on 24 stories and `/api/files/*` and
 `/api/queries/*` on others.
+
+Memory: the first pull-request run failed with 182 and 129 `Page crashed` shots on its
+two runs. The host kernel log showed `Memory cgroup out of memory: Killed process …
+(chrome-headless) … anon-rss:2061016kB` inside the runner container, which has
+`Memory=8589934592`. Local peak resident memory over the full 912 shots was 11.6 GB at
+concurrency 4, 6.8 GB at 2 and 4.7 GB at 1 (863 s). A loop of plain navigations did not
+grow, so the growth comes from lazy collection in a reused renderer. It is not one leaking
+story: no single story added more than 60 MB. The real fix belongs in the shared capture,
+which could open a fresh page every N shots. Until then, one page is the setting that
+fits.
 
 Known and deliberately unaddressed:
 
