@@ -23,8 +23,8 @@
   },
   "dependencies": {
     "@charcuterie/logic": "^2.4.0",
-    "@charcuterie/tokens": "^1.10.1",
-    "@charcuterie/ui": "^4.8.0",
+    "@charcuterie/tokens": "^1.10.2",
+    "@charcuterie/ui": "^4.10.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@charcuterie/server": "^0.5.1",
-    "@charcuterie/storybook-config": "^0.4.2",
+    "@charcuterie/storybook-config": "^0.4.3",
     "@charcuterie/vite-config": "^1.1.0",
     "@charcuterie/vitest-config": "^1.3.0",
     "@mux-magic/api": "workspace:*",
