@@ -1,8 +1,22 @@
 # 2026-09-05 — DVDCompare reads go through the provider cache, and an outage serves the stale entry
 
-- **Status:** Accepted
-- **Date decided:** 2026-09-05
-- **Area:** core
+> [!WARNING]
+> **SUPERSEDED IN PART on 2026-09-29 by [Every provider read is network-first, and a cache fallback is reported](2026-09-29-every-provider-read-is-network-first-and-a-cache-fallback-is-reported.md).**
+> The **seven-day time to live** is gone: DVDCompare, like every provider, is read
+> network-first, and the stored entry is used only when the live request fails.
+> `isStale` and the `PROVIDER CACHE STALE` warning are replaced by `isCacheFallback`
+> and a `PROVIDER CACHE FALLBACK` warning that is also recorded on the job and shown
+> in the Builder.
+>
+> Everything else here still holds: every DVDCompare read goes through the cache, the
+> two mechanisms (`cachedFetch`, `cachedComputation`), the JSON envelope, the
+> byte-first decoder, no cached failures, and no cap on the age of a fallback.
+
+- **Status:** Superseded in part by [2026-09-29](2026-09-29-every-provider-read-is-network-first-and-a-cache-fallback-is-reported.md)
+- **Date:** 2026-09-05
+- **Type:** core
+- **Supersedes:** —
+- **Superseded by:** [2026-09-29 — Every provider read is network-first, and a cache fallback is reported](2026-09-29-every-provider-read-is-network-first-and-a-cache-fallback-is-reported.md) (the time to live and the stale-entry reporting)
 - **Source:** dvdcompare.net outage on 2026-09-05; extends [2026-08-24 — Provider responses cache in SQLite](2026-08-24-provider-responses-cache-in-sqlite.md)
 
 ## Decision
@@ -67,3 +81,16 @@ than a week earlier.
 The caching also removes a browser launch per re-run. A disc ingest is re-run often — to
 adjust `timecodePadding`, to re-do a bucket — and each re-run was starting Chromium and
 walking the release form again for an answer that had not changed.
+
+## Context
+
+*This section and `## Evidence` were added on 2026-09-29, when the record was superseded in
+part, so that it passes the decision-record lint. Neither changes what was decided.*
+
+The context is the 2026-09-05 outage described under the heading above.
+
+## Evidence
+
+The failures of `nameSpecialFeaturesDvdCompareTmdb` and `onlyNameSpecialFeaturesDvdCompare`
+with `TypeError: fetch failed` on 2026-09-05, and the live table that held zero `dvdCompare`
+rows, both cited above.

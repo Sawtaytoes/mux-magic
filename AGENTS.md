@@ -24,7 +24,7 @@ A Node.js CLI and REST API for batch media file operations (MKV track manipulati
 | Storybook — required files for new components | [docs/agents/storybook.md](docs/agents/storybook.md) |
 | Architecture — Observable-first, API structure, command modules | [docs/agents/architecture.md](docs/agents/architecture.md) |
 | Variables system — `runtimeValueType`, two-sources-of-truth contract for numeric variable types | [docs/agents/variables-system.md](docs/agents/variables-system.md) |
-| **The AniDB cache — what it does today, and the Charcuterie helper that would replace half of it** | [docs/agents/outbound-http-cache.md](docs/agents/outbound-http-cache.md) |
+| **The provider cache — network-first reads, the AniDB window, the per-job circuit, and the Charcuterie option** | [docs/agents/outbound-http-cache.md](docs/agents/outbound-http-cache.md) |
 | External tool binaries (Windows paths for mkvtoolnix / MediaInfo) | [docs/agents/external-tools.md](docs/agents/external-tools.md) |
 | **Disc backups — `analyseDiscBackup` / `extractDiscTitles`, what is built, and the traps.** ⚠️ **A DVD is not a Blu-ray here**: an `.iso` cannot be analysed at all (the sidecar is written *inside* `sourcePath`), a DVD title has no segment map so every clustering rule abstains, and a DVD gallery is a menu, not a title | [docs/HANDOFF-disc-backup-title-selection.md](docs/HANDOFF-disc-backup-title-selection.md) |
 | Workflows, roles, commit conventions | [docs/agents/workflows.md](docs/agents/workflows.md) |

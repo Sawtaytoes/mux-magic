@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-09-29 | [Every provider read is network-first, and a cache fallback is reported](2026-09-29-every-provider-read-is-network-first-and-a-cache-fallback-is-reported.md) | core / api / web | Accepted |
 | 2026-09-29 | [The agent redeploys, after confirming no job is live](2026-09-29-the-agent-redeploys-after-confirming-no-job-is-live.md) | process | Accepted |
 | 2026-09-25 | [VRT shoots every Storybook story in both schemes](2026-09-25-vrt-shoots-every-storybook-story-in-both-schemes.md) | infra / web | Accepted |
 | 2026-09-25 | [`scaleResolution` moves the geometry, not just the PlayRes keys](2026-09-25-scale-resolution-moves-the-geometry-not-just-the-playres-keys.md) | core | Accepted |
@@ -31,7 +32,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 | 2026-09-08 | [A Discogs cover must be square, and a title check must not compare nothing](2026-09-08-a-discogs-cover-must-be-square-and-a-title-check-must-not-compare-nothing.md) | core | Accepted |
 | 2026-09-08 | [Discogs joins the cover-art chain by identifier, and iTunes must confirm a match](2026-09-08-discogs-joins-the-cover-art-chain-by-identifier-and-itunes-must-confirm-a-match.md) | core | Accepted |
 | 2026-09-05 | [Mux Magic writes cover art, and iTunes joins the provider chain](2026-09-05-mux-magic-writes-cover-art-and-itunes-joins-the-provider-chain.md) | core / api / web | Accepted |
-| 2026-09-05 | [DVDCompare reads go through the provider cache, and an outage serves the stale entry](2026-09-05-dvdcompare-reads-go-through-the-provider-cache-and-an-outage-serves-the-stale-entry.md) | core | Accepted |
+| 2026-09-05 | [DVDCompare reads go through the provider cache, and an outage serves the stale entry](2026-09-05-dvdcompare-reads-go-through-the-provider-cache-and-an-outage-serves-the-stale-entry.md) | core | Superseded in part by [2026-09-29](2026-09-29-every-provider-read-is-network-first-and-a-cache-fallback-is-reported.md) |
 | 2026-09-03 | [Disc analysis runs at `--minlength=10`, not 60](2026-09-03-disc-analysis-minimum-title-length-drops-to-10-seconds.md) | core / cli / api / web | Accepted |
 | 2026-09-03 | [Bulk audio tag work stays in the generic editor](2026-09-03-bulk-audio-tag-work-stays-in-the-generic-editor.md) | core / cli / api / web | Accepted |
 | 2026-09-03 | [Audio Release Date is copied into Date only when Date is missing](2026-09-03-audio-release-date-is-copied-into-date-only-when-date-is-missing.md) | core / cli / api / web | Superseded |
@@ -43,7 +44,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 | 2026-08-27 | [Assert every `/opt/makemkv` binary you actually run; the transplant is not fully self-contained (and read rip-deck's Dockerfile first)](2026-08-27-the-makemkv-transplant-is-not-self-contained-mmccextr-is-musl.md) | infra | Accepted |
 | 2026-08-24 | [The bulk tag command and the reviewed per-file write stay separate](2026-08-24-the-bulk-tag-command-and-the-reviewed-write-are-separate.md) | core / server/api / web | Accepted |
 | 2026-08-24 | [The tagger's defaults reproduce Picard exactly, and re-tagging a filed album is a no-op](2026-08-24-the-tagger-reproduces-picard-defaults-exactly.md) | core / web | Accepted |
-| 2026-08-24 | [Provider responses cache in SQLite, and the cache is disposable](2026-08-24-provider-responses-cache-in-sqlite.md) | core | Accepted |
+| 2026-08-24 | [Provider responses cache in SQLite, and the cache is disposable](2026-08-24-provider-responses-cache-in-sqlite.md) | core | Superseded in part by [2026-09-29](2026-09-29-every-provider-read-is-network-first-and-a-cache-fallback-is-reported.md) |
 | 2026-08-21 | [Subtitle track names are provenance and survive extraction as base64url](2026-08-21-subtitle-track-names-are-provenance-and-survive-as-base64url.md) | core | Accepted |
 | 2026-08-21 | [Hide `exited` jobs by default, and lay the jobs view out as a grid](2026-08-21-exited-jobs-are-hidden-by-default-and-the-jobs-view-is-a-grid.md) | web | Accepted |
 | 2026-08-21 | [The summary trailer and the UNNAMED-FEATURES/ bucket are one feature](2026-08-21-the-summary-trailer-and-the-unnamed-bucket-are-one-feature.md) | core / web | Accepted |

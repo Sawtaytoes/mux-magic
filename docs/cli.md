@@ -67,11 +67,11 @@ Language options accept [ISO 639-2](https://en.wikipedia.org/wiki/List_of_ISO_63
 
 `nameAnimeEpisodesAniDB` is a parallel implementation to `nameAnimeEpisodes` that uses AniDB instead of MAL. AniDB has better coverage of OVAs and specials.
 
-**Search backend.** anidb.net is behind a Cloudflare interactive challenge and the HTTP API has no name-search endpoint. Search uses the [manami-project anime-offline-database](https://github.com/manami-project/anime-offline-database), a community-maintained JSON dataset that cross-references AniDB / MAL / AniList / Kitsu IDs. The dataset is downloaded once (~60 MB) and cached for 7 days under `<ANIDB_CACHE_FOLDER>/manami/` (defaults to `./.cache/anidb/manami/`). Refreshes do a HEAD-redirect version check first and skip the download when the upstream version slug matches what's on disk.
+**Search backend.** anidb.net is behind a Cloudflare interactive challenge and the HTTP API has no name-search endpoint. Search uses the [manami-project anime-offline-database](https://github.com/manami-project/anime-offline-database), a community-maintained JSON dataset that cross-references AniDB / MAL / AniList / Kitsu IDs. The dataset (~60 MB) is kept under `<ANIDB_CACHE_FOLDER>/manami/` (defaults to `./.cache/anidb/manami/`). Every load does a HEAD-redirect version check and downloads only when the upstream version slug differs from what is on disk. When upstream cannot be reached, the file on disk is used and the job log says so.
 
-**Lookup backend.** Once you have an aid, episode metadata is fetched from `api.anidb.net:9001` (the AniDB HTTP API, which is on a separate host that bypasses Cloudflare). Per-anime XML is cached for 7 days under `<ANIDB_CACHE_FOLDER>/anime/<aid>.xml`.
+**Lookup backend.** Once you have an aid, episode metadata is fetched from `api.anidb.net:9001` (the AniDB HTTP API, which is on a separate host that bypasses Cloudflare). Per-anime XML is stored in `provider-cache.sqlite` and served without a request for 24 hours, because AniDB bans a client that asks for the same anime twice in a day. After that it is requested again, and the stored copy is used only when AniDB cannot answer. Files left in `<ANIDB_CACHE_FOLDER>/anime/` by older versions are imported on first read.
 
-**Cache location.** Set `ANIDB_CACHE_FOLDER` in `.env` (or your container env) to point both caches at a directory that survives restarts — important in Docker where the project-relative `./.cache/anidb/` is ephemeral.
+**Cache location.** Set `ANIDB_CACHE_FOLDER` in `.env` (or your container env) to keep the manami dataset in a directory that survives restarts — important in Docker where the project-relative `./.cache/anidb/` is ephemeral. The AniDB answers live in `provider-cache.sqlite` under `APP_DATA_DIR`.
 
 **Episode types (`episodeType` param).** Six modes — one per AniDB episode-type code — so users can run each subset separately rather than mixing them in one prompt loop:
 
