@@ -73,6 +73,5 @@ export const ManyFallbacks: Story = {
   args: { fallbacks: MUSICBRAINZ_FALLBACKS },
 }
 
-export const NoFallbacks: Story = {
-  args: { fallbacks: [] },
-}
+// No story for an empty list: the notice renders nothing, and the VRT run
+// waits for content that never comes. The unit test covers that case.
