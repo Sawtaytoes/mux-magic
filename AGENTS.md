@@ -61,7 +61,9 @@ Before merging UI or API route changes, also run `yarn e2e`. Full pre-merge gate
 
 **Merge your own PR the moment CI goes green — don't ask.** Squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash` (`gh pr merge` trips the shared-worktree lock). The ruleset below is what makes this safe: you cannot merge anything red, so "green" is the whole permission ([decision](docs/decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Leaving a green PR open to be asked about is the failure mode this replaced — it stalls the work and makes the owner the queue.
 
-Two things are still his call, not yours: **merging someone else's PR**, and **anything a merge sets in motion that a merge can't undo** — a master merge builds and pushes `ghcr.io/sawtaytoes/mux-magic:latest`, but the TrueNAS app is only redeployed onto it deliberately, so say what shipped and what still needs a redeploy.
+**Merging someone else's PR** is still his call, not yours.
+
+**Redeploy the TrueNAS app yourself after your merge — but only when no job is live.** A master merge builds and pushes `ghcr.io/sawtaytoes/mux-magic:latest`; it does not redeploy. A restart ends every job in flight, so read `GET https://mux-magic.octen.dev/api/jobs/status-counts` first and redeploy only if `running`, `pending` and `paused` are all `0`. Fail closed: a failed request is a "no". Then `midclt call -j app.pull_images mux-magic` and `midclt call -j app.redeploy mux-magic`, and verify a marker from the new build (the hashed asset name in the running container), not a 200 ([decision](docs/decisions/2026-09-29-the-agent-redeploys-after-confirming-no-job-is-live.md)).
 
 **Merging to `master` is hard-gated on green CI** by a GitHub ruleset — squash-only PRs, linear history, all CI jobs (`lint`, `typecheck`, `unit-tests`, `e2e`, `storybook-build`, `build-budget`) required, and **no bypass** (the owner token cannot merge past red CI either). Don't try to route around a blocked merge — a red gate means CI failed; fix it ([decision](docs/decisions/2026-08-05-master-merges-are-gated-on-ci-by-a-github-ruleset.md)).
 
