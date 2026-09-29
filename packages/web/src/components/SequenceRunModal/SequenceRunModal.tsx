@@ -2,6 +2,7 @@ import { Badge, Button, IconButton } from "@charcuterie/ui"
 import type {
   JobLogsEvent,
   JobStatus,
+  ProviderCacheFallback,
 } from "@mux-magic/api/api-types"
 import { useAtom, useSetAtom } from "jotai"
 import {
@@ -17,6 +18,7 @@ import { Modal } from "../../primitives/Modal/Modal"
 import { runningAtom } from "../../state/runAtoms"
 import { setStepRunStatusAtom } from "../../state/stepAtoms"
 import { ChildProgressTracker } from "../ChildProgressTracker/ChildProgressTracker"
+import { ProviderCacheFallbackNotice } from "../ProviderCacheFallbackNotice/ProviderCacheFallbackNotice"
 import { sequenceRunModalAtom } from "./sequenceRunModalAtom"
 
 // ─── Status badge intents ─────────────────────────────────────────────────────
@@ -50,6 +52,14 @@ export const SequenceRunModal = () => {
   const [logs, setLogs] = useState<string[]>([])
   const [status, setStatus] = useState<JobStatus>("pending")
   const [isSeqDone, setIsSeqDone] = useState(false)
+  // Keyed by the server's index, so the replay on an SSE reconnect
+  // overwrites the copy it already sent instead of adding a second one.
+  const [
+    providerCacheFallbacksByIndex,
+    setProviderCacheFallbacksByIndex,
+  ] = useState<ReadonlyMap<number, ProviderCacheFallback>>(
+    new Map(),
+  )
 
   const logsEndRef = useRef<HTMLDivElement>(null)
   const prevModalJobIdRef = useRef<
@@ -72,6 +82,7 @@ export const SequenceRunModal = () => {
     setStatus(modalState.status)
     setLogs([])
     setIsSeqDone(false)
+    setProviderCacheFallbacksByIndex(new Map())
   }, [modalState])
 
   const jobId =
@@ -165,12 +176,26 @@ export const SequenceRunModal = () => {
         }
         return
       }
+      if (
+        "type" in data &&
+        data.type === "provider-cache-fallback"
+      ) {
+        setProviderCacheFallbacksByIndex((previous) =>
+          new Map(previous).set(data.index, data.fallback),
+        )
+        return
+      }
       if ("line" in data) {
         setLogs((prev) => [...prev, data.line])
         return
       }
       if ("isDone" in data && data.isDone) {
         setStatus(data.status)
+        if (data.providerCacheFallbacks) {
+          setProviderCacheFallbacksByIndex(
+            new Map(data.providerCacheFallbacks.entries()),
+          )
+        }
         setModalState((prev) =>
           prev.mode !== "closed"
             ? {
@@ -351,6 +376,14 @@ export const SequenceRunModal = () => {
             ✕
           </IconButton>
         </div>
+
+        {/* Cached provider data — the values may be out of date */}
+        <ProviderCacheFallbackNotice
+          className="mx-4 mt-3 shrink-0"
+          fallbacks={Array.from(
+            providerCacheFallbacksByIndex.values(),
+          )}
+        />
 
         {/* Active child step progress bars */}
         {activeChildren.length > 0 && (
