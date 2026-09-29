@@ -6,8 +6,11 @@ import {
 import {
   type CachedFetchInit,
   createCachedFetch,
+  type FetchImplementation,
 } from "../provider-cache/cachedFetch.js"
+import { isProviderUnreachableError } from "../provider-cache/networkFirst.js"
 import type { ProviderCache } from "../provider-cache/providerCache.js"
+import { ProviderSkippedError } from "../provider-cache/providerCircuitBreaker.js"
 import { decodeResponseText } from "./decodeBufferWithEncodingFallback.js"
 import { BROWSER_USER_AGENT } from "./launchBrowser.js"
 import {
@@ -15,10 +18,10 @@ import {
   registerProviderCacheResetHandler,
 } from "./sharedProviderCache.js"
 
-// The provider key in `provider-cache.sqlite`. It already has a seven-day
-// time to live in PROVIDER_CACHE_TIME_TO_LIVE — that entry was written when
-// the cache was designed, but nothing ever fetched through it, so the table
-// held rows for the four music providers and none for DVDCompare.
+// The provider key in `provider-cache.sqlite`. Network-first like every
+// provider but AniDB (see PROVIDER_CACHE_POLICIES). It was declared in the
+// old time-to-live table from the day the cache landed, but nothing
+// fetched through it until 2026-09-05.
 export const DVDCOMPARE_PROVIDER = "dvdCompare"
 
 // DVDCompare publishes no rate limit. This is a politeness number in line
@@ -38,6 +41,10 @@ const WAYBACK_CDX_URL =
 const WAYBACK_REPLAY_BASE_URL =
   "https://web.archive.org/web"
 const WAYBACK_REQUEST_TIMEOUT_MILLISECONDS = 45_000
+
+// One https attempt, or one http attempt. The circuit breaker is what keeps
+// a down DVDCompare from costing this on every file of a batch.
+const DVDCOMPARE_REQUEST_TIMEOUT_MILLISECONDS = 20_000
 
 // What the DVDCompare scrapers need out of a request. `html` is decoded
 // through the byte-first charset fallback rather than `Response.text()`,
@@ -328,66 +335,62 @@ export const toInsecureDvdCompareUrl = (
         })()
       : null)(new URL(url))
 
-// The insecure retry is a plain fetch rather than another `cachedFetch`
-// call: the answer belongs under the ORIGINAL https request key, exactly
-// as the archived body does. Caching it under the http URL would make
-// every later run fail against https before finding the separate row.
-export const fetchInsecureDvdComparePage = (
-  requestedUrl: string,
-  initialization?: RequestInit,
-): Promise<DvdComparePage> =>
-  ((insecureUrl: string | null) =>
-    insecureUrl === null
-      ? Promise.reject(
-          new Error(
-            `Not a DVDCompare https URL: ${requestedUrl}`,
-          ),
-        )
-      : fetch(insecureUrl, {
-          ...initialization,
-          headers: {
-            ...initialization?.headers,
-            "User-Agent": DVDCOMPARE_USER_AGENT,
-          },
-          signal: AbortSignal.timeout(
-            WAYBACK_REQUEST_TIMEOUT_MILLISECONDS,
-          ),
-        })
-          .then((response) =>
-            response.ok
-              ? decodeResponseText(response).then(
-                  (html) => ({
-                    html,
-                    status: response.status,
-                    // The POST-redirect landing URL decides
-                    // `isDirectListing`, and it is matched on
-                    // `film.php?fid=N`, so the http scheme is harmless.
-                    url: response.url,
-                  }),
-                )
-              : Promise.reject(
-                  new Error(
-                    `DVDCompare insecure retry failed with status ${response.status} for ${insecureUrl}`,
-                  ),
-                ),
-          )
-          .then(
-            (page) =>
-              logWarning(
-                "DVDCOMPARE INSECURE FALLBACK",
-                `DVDCompare could not be reached over https. Served ${requestedUrl} over http instead.`,
-              ) ?? page,
-          ))(toInsecureDvdCompareUrl(requestedUrl))
+// The plain-http twin, as a Response, so it is part of the LIVE request
+// rather than a fallback: `https://` first, then http when the TLS
+// transport itself fails. Both are the site answering now; only when both
+// fail does the stored page stand in, and only when nothing is stored does
+// the Wayback Machine get asked. The answer is stored under the ORIGINAL
+// https request key, because the cache sees one request.
+//
+// It gets its own timeout: the https attempt's signal may be exactly the
+// one that just fired.
+const fetchInsecureDvdCompareResponse = ({
+  initialization,
+  insecureUrl,
+  requestedUrl,
+}: {
+  initialization: RequestInit
+  insecureUrl: string
+  requestedUrl: string
+}) =>
+  fetch(insecureUrl, {
+    ...initialization,
+    signal: AbortSignal.timeout(
+      DVDCOMPARE_REQUEST_TIMEOUT_MILLISECONDS,
+    ),
+  }).then(
+    (response) =>
+      logWarning(
+        "DVDCOMPARE INSECURE FALLBACK",
+        `DVDCompare could not be reached over https. Requested ${requestedUrl} over http instead.`,
+      ) ?? response,
+  )
 
+export const fetchDvdCompareLive: FetchImplementation = (
+  url,
+  initialization,
+) =>
+  fetch(url, initialization).catch((thrownError: unknown) =>
+    ((insecureUrl: string | null) =>
+      insecureUrl !== null &&
+      isDvdCompareNetworkFailure(thrownError)
+        ? fetchInsecureDvdCompareResponse({
+            initialization,
+            insecureUrl,
+            requestedUrl: url,
+          })
+        : Promise.reject(thrownError))(
+      toInsecureDvdCompareUrl(url),
+    ),
+  )
+
+// A transport failure, a timeout, or the circuit saying DVDCompare already
+// failed in this run — the cases that justify the next rung down.
 export const isDvdCompareNetworkFailure = (
   thrownError: unknown,
 ) =>
-  thrownError instanceof TypeError ||
-  /(?:ECONNREFUSED|ENETUNREACH|ETIMEDOUT|fetch failed|net::ERR_|connection timed out|TimeoutError|Timeout \d+ms exceeded)/i.test(
-    thrownError instanceof Error
-      ? thrownError.message
-      : String(thrownError),
-  )
+  thrownError instanceof ProviderSkippedError ||
+  isProviderUnreachableError(thrownError)
 
 const storeDvdComparePage = ({
   cache,
@@ -430,45 +433,32 @@ export const createDvdComparePageFetcher = ({
         .then(({ body }) =>
           decodeDvdComparePage({ body, requestedUrl: url }),
         )
+        // Reached only when the live request (https, then http) failed AND
+        // nothing was stored for it. The archive is the last rung: it can
+        // be older than any stored page, and it cannot replay a POST.
         .catch((thrownError: unknown) =>
-          isDvdCompareNetworkFailure(thrownError)
-            ? // The http twin is tried for POST as well as GET. That is
-              // the only recovery that restores `search.php`, which the
-              // archive cannot replay at all because it is POST-only.
-              fetchInsecureDvdComparePage(
-                url,
-                initialization,
-              )
-                .then((page) =>
+          isDvdCompareNetworkFailure(thrownError) &&
+          (initialization?.method ?? "GET") === "GET"
+            ? fetchArchivedDvdComparePage(url).then(
+                (page) =>
                   storeDvdComparePage({
                     cache,
                     initialization,
                     page,
                     url,
                   }),
-                )
-                .catch((insecureError: unknown) =>
-                  (initialization?.method ?? "GET") ===
-                  "GET"
-                    ? fetchArchivedDvdComparePage(url).then(
-                        (page) =>
-                          storeDvdComparePage({
-                            cache,
-                            initialization,
-                            page,
-                            url,
-                          }),
-                      )
-                    : Promise.reject(insecureError),
-                )
+              )
             : Promise.reject(thrownError),
         )
   )(
     createCachedFetch({
       cache,
       decodeResponseBody: encodeDvdComparePage,
+      fetchImplementation: fetchDvdCompareLive,
       minimumRequestIntervalMilliseconds,
       provider: DVDCOMPARE_PROVIDER,
+      timeoutMilliseconds:
+        DVDCOMPARE_REQUEST_TIMEOUT_MILLISECONDS,
       userAgent: DVDCOMPARE_USER_AGENT,
     }),
   )
@@ -504,7 +494,7 @@ export const fetchDvdComparePage: DvdComparePageFetcher = (
 // The extras scrape is a headless-Chromium session, not a fetch, so it
 // needs the computation form of the cache rather than `cachedFetch`. It
 // lands in the same table under the same `dvdCompare` provider and the
-// same seven-day time to live.
+// same network-first policy.
 export const createDvdCompareScrapeCache = ({
   cache,
 }: {

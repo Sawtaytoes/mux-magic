@@ -17,6 +17,7 @@ const makeJob = (overrides: Partial<Job> = {}): Job => ({
   params: null,
   parentJobId: null,
   pauseReason: null,
+  providerCacheFallbacks: [],
   results: [],
   startedAt: null,
   status: "running",

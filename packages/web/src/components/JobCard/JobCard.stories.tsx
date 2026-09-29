@@ -105,6 +105,37 @@ const completedJob = makeFakeJob({
   results: [{ file: "/media/Dune.srt", track: 0 }],
 })
 
+// Fixture data only: a made-up film id and a fixed age, never a live
+// capture.
+const cachedProviderDataJob = makeFakeJob({
+  id: "job-cached",
+  commandName: "nameSpecialFeaturesDvdCompareTmdb",
+  status: "completed",
+  startedAt: new Date(fixtureNow - 120_000).toISOString(),
+  completedAt: new Date(fixtureNow - 10_000).toISOString(),
+  params: { sourcePath: "/media/disc-rips/Example Film" },
+  providerCacheFallbacks: [
+    {
+      ageMilliseconds: 3 * 24 * 60 * 60 * 1000,
+      cachedAt: "2026-01-12T18:00:00.000Z",
+      cause:
+        "dvdCompare request timed out after 20000 ms for https://www.dvdcompare.net/comparisons/film.php?fid=12345",
+      isProviderSkipped: false,
+      provider: "dvdCompare",
+      request:
+        "https://www.dvdcompare.net/comparisons/film.php?fid=12345",
+    },
+    {
+      ageMilliseconds: 3 * 24 * 60 * 60 * 1000,
+      cachedAt: "2026-01-12T18:00:05.000Z",
+      cause: "fetch failed",
+      isProviderSkipped: true,
+      provider: "dvdCompare",
+      request: "scrape|film.php?fid=12345#1",
+    },
+  ],
+})
+
 const failedJob = makeFakeJob({
   id: "job-failed",
   commandName: "moveFiles",
@@ -278,4 +309,9 @@ export const Sequence10Children: Story = {
       )
     })(),
   ],
+}
+
+export const UsedCachedProviderData: Story = {
+  args: { job: cachedProviderDataJob },
+  decorators: [withStore([cachedProviderDataJob])],
 }

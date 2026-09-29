@@ -1,4 +1,9 @@
 import { disableJobPersistenceForTests } from "@mux-magic/core/src/api/jobStore.js"
+import { resetProviderCircuitsForTests } from "@mux-magic/core/src/provider-cache/providerCircuitBreaker.js"
+import {
+  closeSharedProviderCache,
+  setSharedProviderCacheDatabasePathForTests,
+} from "@mux-magic/core/src/tools/sharedProviderCache.js"
 import {
   __resetTaskSchedulerForTests,
   initTaskScheduler,
@@ -27,12 +32,20 @@ vi.mock(
   }),
 )
 
+// Every provider read (TMDB, TVDB, Jikan, …) goes through the shared
+// provider cache. `node:sqlite` does not go through the memfs mock, so
+// without this a route test would write a real `provider-cache.sqlite`,
+// and one test's stored answer would be the next test's fallback.
+setSharedProviderCacheDatabasePathForTests(":memory:")
+
 // Initialize the global Task scheduler with unbounded concurrency for
 // tests — they don't care about concurrency caps, they just need the
 // `runTask` plumbing to be live so `withFileProgress` doesn't throw.
 beforeEach(() => {
   initTaskScheduler(Infinity)
   disableJobPersistenceForTests()
+  closeSharedProviderCache()
+  resetProviderCircuitsForTests()
 })
 
 // Reset the in-memory filesystem and scheduler after each test so state

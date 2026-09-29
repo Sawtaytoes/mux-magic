@@ -87,6 +87,21 @@ logsRoutes.openapi(
         })
       }
 
+      // Cache fallbacks recorded so far, as the same event the live stream
+      // pushes. Replayed for a finished job too, so a client has one code
+      // path; `index` lets it keep one copy across reconnects.
+      await job.providerCacheFallbacks.reduce(
+        (previousSend, fallback, index) =>
+          previousSend.then(() =>
+            send({
+              fallback,
+              index,
+              type: "provider-cache-fallback",
+            }),
+          ),
+        Promise.resolve(),
+      )
+
       if (
         job.status === "completed" ||
         job.status === "failed" ||
@@ -102,6 +117,8 @@ logsRoutes.openapi(
           results: job.results,
           outputs: job.outputs,
           error: job.error,
+          providerCacheFallbacks:
+            job.providerCacheFallbacks,
         })
         stopKeepalive()
         return
@@ -119,6 +136,9 @@ logsRoutes.openapi(
           results: finishedJob?.results ?? job.results,
           outputs: finishedJob?.outputs ?? null,
           error: finishedJob?.error ?? job.error,
+          providerCacheFallbacks:
+            finishedJob?.providerCacheFallbacks ??
+            job.providerCacheFallbacks,
         })
         stopKeepalive()
         return
@@ -153,6 +173,9 @@ logsRoutes.openapi(
               results: completedJob?.results ?? job.results,
               outputs: completedJob?.outputs ?? null,
               error: completedJob?.error ?? job.error,
+              providerCacheFallbacks:
+                completedJob?.providerCacheFallbacks ??
+                job.providerCacheFallbacks,
             })
             resolve()
           },

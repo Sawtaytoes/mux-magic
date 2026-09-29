@@ -4,7 +4,6 @@ import { DatabaseSync } from "node:sqlite"
 import { APP_DATA_DIR } from "../tools/appPaths.js"
 
 const millisecondsPerDay = 24 * 60 * 60 * 1000
-const millisecondsPerWeek = 7 * millisecondsPerDay
 
 export const PROVIDER_CACHE_FILE_NAME =
   "provider-cache.sqlite"
@@ -16,25 +15,64 @@ export const providerCacheDatabasePath = join(
   PROVIDER_CACHE_FILE_NAME,
 )
 
-export const PROVIDER_CACHE_DEFAULT_TIME_TO_LIVE =
-  millisecondsPerWeek
+export type ProviderCachePolicy = {
+  // How long a stored answer is served WITHOUT asking the provider. Zero
+  // means network-first: every read goes to the provider, and the stored
+  // row is only the fallback for when that request fails.
+  freshWindowMilliseconds: number
+}
 
-// Album and release metadata barely changes, so the music providers get
-// weeks. DVDCompare and AniDB get days: DVDCompare edits pages, and AniDB
-// wants us back rarely rather than never.
-export const PROVIDER_CACHE_TIME_TO_LIVE: Record<
+const NETWORK_FIRST: ProviderCachePolicy = {
+  freshWindowMilliseconds: 0,
+}
+
+// Every provider that reads through the cache, and the one thing that
+// differs between them. The owner's rule (2026-09-29): fetch the latest
+// every time, and use the cache only when the provider cannot answer.
+//
+// AniDB is the single exception, and it is not a tuning choice: AniDB bans
+// a client that requests the same anime twice in one day, so an entry
+// younger than a day is served with no request at all. Past a day it is
+// network-first like the rest. Do not add a window for any other provider
+// without a documented ban-for-repeat rule of the same kind.
+//
+// `satisfies` plus the `ProviderCacheProvider` key type is the check the
+// old time-to-live table lacked: `createCachedFetch` and
+// `createCachedComputation` only accept a provider named here, so a
+// fetcher registered under a name the table does not have fails to
+// compile instead of running silently on a default.
+export const PROVIDER_CACHE_POLICIES = {
+  acoustId: NETWORK_FIRST,
+  aniDb: { freshWindowMilliseconds: millisecondsPerDay },
+  animeThemes: NETWORK_FIRST,
+  coverArtArchive: NETWORK_FIRST,
+  criterionForum: NETWORK_FIRST,
+  discogs: NETWORK_FIRST,
+  dvdCompare: NETWORK_FIRST,
+  freedbCddb: NETWORK_FIRST,
+  itunes: NETWORK_FIRST,
+  jikan: NETWORK_FIRST,
+  movieDb: NETWORK_FIRST,
+  musicBrainz: NETWORK_FIRST,
+  myAnimeList: NETWORK_FIRST,
+  tvdb: NETWORK_FIRST,
+  vgmdbCddb: NETWORK_FIRST,
+} as const satisfies Record<string, ProviderCachePolicy>
+
+export type ProviderCacheProvider =
+  keyof typeof PROVIDER_CACHE_POLICIES
+
+export const PROVIDER_CACHE_FRESH_WINDOW: Record<
   string,
   number
-> = {
-  acoustId: 4 * millisecondsPerWeek,
-  aniDb: 3 * millisecondsPerDay,
-  coverArtArchive: 8 * millisecondsPerWeek,
-  dvdCompare: 7 * millisecondsPerDay,
-  itunes: 8 * millisecondsPerWeek,
-  movieDb: 2 * millisecondsPerWeek,
-  musicBrainz: 4 * millisecondsPerWeek,
-  vgmdb: 4 * millisecondsPerWeek,
-}
+> = Object.fromEntries(
+  Object.entries(PROVIDER_CACHE_POLICIES).map(
+    ([provider, policy]) => [
+      provider,
+      policy.freshWindowMilliseconds,
+    ],
+  ),
+)
 
 export type ProviderCacheRow = {
   body: string
@@ -51,7 +89,11 @@ export type ProviderCache = {
   clear: () => void
   close: () => void
   deleteProvider: (provider: string) => void
+  // The row only while it is inside the provider's fresh window — which is
+  // zero for every provider except AniDB, so this is almost always null.
   get: (key: ProviderCacheKey) => ProviderCacheRow | null
+  // The row at any age: the fallback when the live request fails, and the
+  // ETag source for a conditional request.
   getStale: (
     key: ProviderCacheKey,
   ) => ProviderCacheRow | null
@@ -60,6 +102,9 @@ export type ProviderCache = {
     props: ProviderCacheKey & {
       body: string
       etag?: string | null
+      // Defaults to now. Set only when importing an answer the provider
+      // gave earlier, so its age stays honest.
+      fetchedAt?: number
     },
   ) => void
 }
@@ -186,27 +231,27 @@ const toProviderCacheRow = (
   fetchedAt: Number(row.fetchedAt ?? 0),
 })
 
-const resolveTimeToLive = ({
+// A provider the table does not name gets no window at all, so an
+// unknown name can only ever make a read MORE current, never less.
+const resolveFreshWindow = ({
+  freshWindowByProvider,
   provider,
-  timeToLiveByProvider,
 }: {
+  freshWindowByProvider: Record<string, number>
   provider: string
-  timeToLiveByProvider: Record<string, number>
-}) =>
-  timeToLiveByProvider[provider] ??
-  PROVIDER_CACHE_DEFAULT_TIME_TO_LIVE
+}) => freshWindowByProvider[provider] ?? 0
 
 const isRowFresh = ({
+  freshWindowByProvider,
   provider,
   row,
-  timeToLiveByProvider,
 }: {
+  freshWindowByProvider: Record<string, number>
   provider: string
   row: ProviderCacheRow
-  timeToLiveByProvider: Record<string, number>
 }) =>
   Date.now() - row.fetchedAt <
-  resolveTimeToLive({ provider, timeToLiveByProvider })
+  resolveFreshWindow({ freshWindowByProvider, provider })
 
 const createUnavailableProviderCache = ({
   databasePath,
@@ -262,11 +307,11 @@ const readRow = ({
 const createAvailableProviderCache = ({
   database,
   databasePath,
-  timeToLiveByProvider,
+  freshWindowByProvider,
 }: {
   database: DatabaseSync
   databasePath: string
-  timeToLiveByProvider: Record<string, number>
+  freshWindowByProvider: Record<string, number>
 }): ProviderCache =>
   ((failureHolder: FailureHolder) => ({
     clear: () => {
@@ -301,7 +346,11 @@ const createAvailableProviderCache = ({
     get: ({ provider, requestKey }: ProviderCacheKey) =>
       ((row: ProviderCacheRow | null) =>
         row !== null &&
-        isRowFresh({ provider, row, timeToLiveByProvider })
+        isRowFresh({
+          freshWindowByProvider,
+          provider,
+          row,
+        })
           ? row
           : null)(
         readRow({
@@ -327,11 +376,13 @@ const createAvailableProviderCache = ({
     set: ({
       body,
       etag = null,
+      fetchedAt = Date.now(),
       provider,
       requestKey,
     }: ProviderCacheKey & {
       body: string
       etag?: string | null
+      fetchedAt?: number
     }) => {
       attemptQuietly({
         databasePath,
@@ -344,7 +395,7 @@ const createAvailableProviderCache = ({
               requestKey,
               body,
               etag,
-              Date.now(),
+              fetchedAt,
             )
         },
       })
@@ -353,10 +404,10 @@ const createAvailableProviderCache = ({
 
 export const openProviderCache = ({
   databasePath = providerCacheDatabasePath,
-  timeToLiveByProvider = PROVIDER_CACHE_TIME_TO_LIVE,
+  freshWindowByProvider = PROVIDER_CACHE_FRESH_WINDOW,
 }: {
   databasePath?: string
-  timeToLiveByProvider?: Record<string, number>
+  freshWindowByProvider?: Record<string, number>
 } = {}) =>
   ((outcome: AttemptOutcome<DatabaseSync>) =>
     outcome.value === null
@@ -367,7 +418,7 @@ export const openProviderCache = ({
       : createAvailableProviderCache({
           database: outcome.value,
           databasePath,
-          timeToLiveByProvider,
+          freshWindowByProvider,
         }))(
     attempt(() => createConfiguredDatabase(databasePath)),
   )

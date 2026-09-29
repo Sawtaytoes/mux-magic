@@ -1,8 +1,21 @@
 # 2026-08-24 — Provider responses cache in SQLite, and the cache is disposable
 
-- **Status:** Accepted
-- **Date decided:** 2026-08-24
-- **Area:** core
+> [!WARNING]
+> **SUPERSEDED IN PART on 2026-09-29 by [Every provider read is network-first, and a cache fallback is reported](2026-09-29-every-provider-read-is-network-first-and-a-cache-fallback-is-reported.md).**
+> The **per-provider time to live** below is gone: every provider is now read
+> network-first, and a stored answer is used only when the live request fails.
+> AniDB alone keeps a one-day no-request window. Do NOT reintroduce a time to live
+> that serves without asking.
+>
+> Everything else here still holds: one SQLite table, `node:sqlite`, keyed by
+> `(provider, requestKey)`; the cache covers every provider; it is disposable; no
+> library catalog; a failure is never cached.
+
+- **Status:** Superseded in part by [2026-09-29](2026-09-29-every-provider-read-is-network-first-and-a-cache-fallback-is-reported.md)
+- **Date:** 2026-08-24
+- **Type:** core
+- **Supersedes:** —
+- **Superseded by:** [2026-09-29 — Every provider read is network-first, and a cache fallback is reported](2026-09-29-every-provider-read-is-network-first-and-a-cache-fallback-is-reported.md) (the per-provider time to live only)
 - **Source:** owner decision, chat 2026-08-24; plan `docs/music-tagging-plan.md` §3
 
 ## Decision
@@ -26,3 +39,16 @@ The cache covers **every** provider, not only the music ones. DVDCompare goes do
 Before this, every DVDCompare outage failed a run outright, and every re-run of the same album hit AniDB and MusicBrainz again. The one-request-per-second MusicBrainz limit is enforced by IP ban, and the address it would ban is the household's — a cache is the normal way to stay inside that limit, not an optimisation.
 
 The disposability clause is the part that keeps this safe. Because deleting the file costs only time, the cache never needs a migration, a backup or a repair tool. Any change that puts data of record in here breaks that, and then the file needs all three.
+
+## Context
+
+*This section and `## Evidence` were added on 2026-09-29, when the record was superseded in
+part, so that it passes the decision-record lint. Neither changes what was decided.*
+
+The context is the one given under the heading above: DVDCompare outages failed runs
+outright, and every re-run of an album asked AniDB and MusicBrainz again.
+
+## Evidence
+
+The owner's decision in the 2026-08-24 chat, and `docs/music-tagging-plan.md` §3, as named
+in the `Source` line.

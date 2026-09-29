@@ -1,5 +1,6 @@
 import { logAndSwallowPipelineError } from "@mux-magic/tools"
 import { from, map, type Observable } from "rxjs"
+import { buildSharedCachedFetch } from "./sharedProviderFetchers.js"
 
 // Public-facing shape for builder UI + nameMovies app-command consumption.
 // Year is the four-digit release year extracted from TMDB's release_date
@@ -68,55 +69,46 @@ const requireTmdbApiKey = () => {
   return apiKey
 }
 
-// 10-second timeout. Without an AbortController, a stalled TMDB
-// connection (rate-limit, TLS hang, packet loss) hangs fetch
-// indefinitely — and since `logAndSwallowPipelineError` downstream only catches
-// errors, the whole observable chain (e.g. `canonicalizeMovieTitle`
-// in `nameSpecialFeaturesDvdCompareTmdb`) freezes silently with no terminal SSE
-// "done" event. Timing out turns the hang into an error → swallowed
-// → chain proceeds with the DVDCompare-derived fallback identity.
-const TMDB_FETCH_TIMEOUT_MS = 10_000
+// 10-second timeout, now enforced by the provider cache's own per-request
+// bound. Without one, a stalled TMDB connection (rate-limit, TLS hang,
+// packet loss) hangs fetch indefinitely — and since
+// `logAndSwallowPipelineError` downstream only catches errors, the whole
+// observable chain (e.g. `canonicalizeMovieTitle` in
+// `nameSpecialFeaturesDvdCompareTmdb`) freezes silently with no terminal
+// SSE "done" event. Timing out turns the hang into an error: the cached
+// answer stands in if there is one, and otherwise the error is swallowed
+// and the chain proceeds with the DVDCompare-derived fallback identity.
+export const TMDB_FETCH_TIMEOUT_MS = 10_000
 
-const tmdbFetch = async (
-  pathAndQuery: string,
-): Promise<unknown> => {
-  const abortController = new AbortController()
-  const timeoutHandle = setTimeout(
-    () => abortController.abort(),
-    TMDB_FETCH_TIMEOUT_MS,
-  )
-  try {
-    const response = await fetch(
-      `${TMDB_BASE_URL}${pathAndQuery}`,
-      {
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${requireTmdbApiKey()}`,
+// TMDB's documented ceiling is around 50 requests per second; a lookup
+// pass makes a handful, so this only keeps a burst polite.
+const TMDB_MINIMUM_REQUEST_INTERVAL_MILLISECONDS = 250
+
+// Network-first through `provider-cache.sqlite` under `movieDb`. The
+// Authorization header is not part of the cache key — the URL is the
+// request — so a rotated token still finds the stored answers.
+const movieDbCachedFetch = buildSharedCachedFetch({
+  minimumRequestIntervalMilliseconds:
+    TMDB_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
+  provider: "movieDb",
+  timeoutMilliseconds: TMDB_FETCH_TIMEOUT_MS,
+})
+
+const tmdbFetch = (pathAndQuery: string) =>
+  Promise.resolve()
+    .then(() => requireTmdbApiKey())
+    .then((apiKey) =>
+      movieDbCachedFetch(
+        `${TMDB_BASE_URL}${pathAndQuery}`,
+        {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
         },
-        signal: abortController.signal,
-      },
+      ),
     )
-    if (!response.ok) {
-      const body = await response.text().catch(() => "")
-      throw new Error(
-        `TMDB ${response.status} ${response.statusText}: ${body}`,
-      )
-    }
-    return await response.json()
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.name === "AbortError"
-    ) {
-      throw new Error(
-        `TMDB request timed out after ${TMDB_FETCH_TIMEOUT_MS}ms: ${pathAndQuery}`,
-      )
-    }
-    throw error
-  } finally {
-    clearTimeout(timeoutHandle)
-  }
-}
+    .then(({ body }) => JSON.parse(body) as unknown)
 
 export const searchMovieDb = (
   searchTerm: string,

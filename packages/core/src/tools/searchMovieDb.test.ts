@@ -13,7 +13,9 @@ import {
   type MovieDbRawSearchResult,
   mapTmdbSearchResults,
   searchMovieDb,
+  TMDB_FETCH_TIMEOUT_MS,
 } from "./searchMovieDb.js"
+import { getSharedProviderCache } from "./sharedProviderCache.js"
 
 describe(mapTmdbSearchResults.name, () => {
   test("maps the documented TMDB search-result fields onto our public shape", () => {
@@ -227,6 +229,97 @@ describe("searchMovieDb (network)", () => {
       )
       expect(results).toEqual([])
     }))
+
+  // TMDB was the one provider read with no cache at all until 2026-09-29.
+  test("stores the answer, and serves it when TMDB cannot be reached", async () => {
+    const searchBody = JSON.stringify({
+      results: [
+        {
+          id: 7,
+          release_date: "1998-10-23",
+          title: "Soldier",
+        },
+      ],
+    })
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(searchBody, { status: 200 }),
+      )
+      .mockRejectedValue(new TypeError("fetch failed"))
+    globalThis.fetch =
+      fetchSpy as unknown as typeof globalThis.fetch
+
+    const live = await firstValueFrom(
+      searchMovieDb("Soldier", "1998"),
+    )
+    const fallback = await firstValueFrom(
+      searchMovieDb("Soldier", "1998"),
+    )
+
+    expect(fallback).toEqual(live)
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(
+      getSharedProviderCache().getStale({
+        provider: "movieDb",
+        requestKey:
+          "https://api.themoviedb.org/3/search/movie?query=Soldier&include_adult=false&language=en-US&page=1&year=1998",
+      })?.body,
+    ).toBe(searchBody)
+  })
+
+  test("keeps the 10 s TMDB timeout, and a request that outlasts it falls back to the stored answer", async () => {
+    const searchBody = JSON.stringify({
+      results: [
+        {
+          id: 8,
+          release_date: "2009-02-06",
+          title: "Coraline",
+        },
+      ],
+    })
+    const requestedTimeouts: number[] = []
+    const createTimeoutSignal =
+      AbortSignal.timeout.bind(AbortSignal)
+    // Record the bound TMDB asks for, then use a short one so the test
+    // does not wait ten real seconds for the same code path.
+    vi.spyOn(AbortSignal, "timeout").mockImplementation(
+      (milliseconds) => {
+        requestedTimeouts.push(milliseconds)
+        return createTimeoutSignal(20)
+      },
+    )
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(searchBody, { status: 200 }),
+      )
+      .mockImplementation(
+        (_url: string, initialization: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            initialization.signal?.addEventListener(
+              "abort",
+              () => {
+                reject(initialization.signal?.reason)
+              },
+            )
+          }),
+      ) as unknown as typeof globalThis.fetch
+
+    const live = await firstValueFrom(
+      searchMovieDb("Coraline"),
+    )
+    const fallback = await firstValueFrom(
+      searchMovieDb("Coraline"),
+    )
+
+    expect(TMDB_FETCH_TIMEOUT_MS).toBe(10_000)
+    expect(requestedTimeouts).toEqual([
+      TMDB_FETCH_TIMEOUT_MS,
+      TMDB_FETCH_TIMEOUT_MS,
+    ])
+    expect(fallback).toEqual(live)
+  })
 
   test("requires TMDB_API_KEY to be set; missing key fails the observable", async () =>
     captureConsoleMessage("error", async () => {

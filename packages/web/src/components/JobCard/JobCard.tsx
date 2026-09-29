@@ -12,6 +12,7 @@ import { CopyTextButton } from "../CopyTextButton/CopyTextButton"
 import { JobLogsDisclosure } from "../JobLogsDisclosure/JobLogsDisclosure"
 import { JobStepsDisclosure } from "../JobStepsDisclosure/JobStepsDisclosure"
 import { ProgressBar } from "../ProgressBar/ProgressBar"
+import { ProviderCacheFallbackNotice } from "../ProviderCacheFallbackNotice/ProviderCacheFallbackNotice"
 import { ResumeJobButton } from "../ResumeJobButton/ResumeJobButton"
 import { StatusBadge } from "../StatusBadge/StatusBadge"
 
@@ -184,6 +185,11 @@ export const JobCard = ({ job }: JobCardProps) => {
           ]}
         />
       )}
+
+      {/* Cached provider data — the values may be out of date */}
+      <ProviderCacheFallbackNotice
+        fallbacks={job.providerCacheFallbacks ?? []}
+      />
 
       {/* Error */}
       {job.error && (

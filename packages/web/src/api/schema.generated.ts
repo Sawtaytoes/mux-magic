@@ -120,6 +120,21 @@ export interface paths {
                             pauseReason: "user_input" | "rate_limit" | null;
                             /** @description Command parameters */
                             params?: unknown;
+                            /** @description Every provider answer this job took from the provider cache because the live request failed. Empty when every provider answered. A sequence's umbrella job also collects its steps' entries. */
+                            providerCacheFallbacks?: {
+                                /** @description How old the served answer was when it was served. */
+                                ageMilliseconds: number;
+                                /** @description ISO time the provider originally returned the served answer. */
+                                cachedAt: string;
+                                /** @description Why the live answer was not used. */
+                                cause: string;
+                                /** @description True when no request was made because this provider had already failed earlier in the same run. */
+                                isProviderSkipped: boolean;
+                                /** @description Provider name, e.g. `dvdCompare`. */
+                                provider: string;
+                                /** @description What was asked for: the URL, or a scrape's request key. */
+                                request: string;
+                            }[];
                             /** @description Job results */
                             results?: unknown[];
                             /** @description Named runtime outputs declared by the command (null when none were produced or the job is in flight) */
@@ -233,6 +248,21 @@ export interface paths {
                             pauseReason: "user_input" | "rate_limit" | null;
                             /** @description Command parameters */
                             params?: unknown;
+                            /** @description Every provider answer this job took from the provider cache because the live request failed. Empty when every provider answered. A sequence's umbrella job also collects its steps' entries. */
+                            providerCacheFallbacks?: {
+                                /** @description How old the served answer was when it was served. */
+                                ageMilliseconds: number;
+                                /** @description ISO time the provider originally returned the served answer. */
+                                cachedAt: string;
+                                /** @description Why the live answer was not used. */
+                                cause: string;
+                                /** @description True when no request was made because this provider had already failed earlier in the same run. */
+                                isProviderSkipped: boolean;
+                                /** @description Provider name, e.g. `dvdCompare`. */
+                                provider: string;
+                                /** @description What was asked for: the URL, or a scrape's request key. */
+                                request: string;
+                            }[];
                             /** @description Job results */
                             results?: unknown[];
                             /** @description Named runtime outputs declared by the command (null when none were produced or the job is in flight) */
@@ -306,6 +336,21 @@ export interface paths {
                             pauseReason: "user_input" | "rate_limit" | null;
                             /** @description Command parameters */
                             params?: unknown;
+                            /** @description Every provider answer this job took from the provider cache because the live request failed. Empty when every provider answered. A sequence's umbrella job also collects its steps' entries. */
+                            providerCacheFallbacks?: {
+                                /** @description How old the served answer was when it was served. */
+                                ageMilliseconds: number;
+                                /** @description ISO time the provider originally returned the served answer. */
+                                cachedAt: string;
+                                /** @description Why the live answer was not used. */
+                                cause: string;
+                                /** @description True when no request was made because this provider had already failed earlier in the same run. */
+                                isProviderSkipped: boolean;
+                                /** @description Provider name, e.g. `dvdCompare`. */
+                                provider: string;
+                                /** @description What was asked for: the URL, or a scrape's request key. */
+                                request: string;
+                            }[];
                             /** @description Job results */
                             results?: unknown[];
                             /** @description Named runtime outputs declared by the command (null when none were produced or the job is in flight) */

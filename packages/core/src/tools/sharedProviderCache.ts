@@ -22,13 +22,27 @@ export const registerProviderCacheResetHandler = (
   resetHandlers.add(handler)
 }
 
+// Tests point the shared handle at `:memory:` (core's vitest.setup.ts), so
+// a module that reads through the shared cache never writes a real
+// `provider-cache.sqlite` into the working directory, and each test starts
+// with an empty cache.
+const databasePathHolder = new Map<"path", string>()
+
+export const setSharedProviderCacheDatabasePathForTests = (
+  databasePath: string,
+) => {
+  databasePathHolder.set("path", databasePath)
+}
+
 export const getSharedProviderCache = () =>
   sharedCache.get("instance") ??
   (sharedCache
     .set(
       "instance",
       openProviderCache({
-        databasePath: providerCacheDatabasePath,
+        databasePath:
+          databasePathHolder.get("path") ??
+          providerCacheDatabasePath,
       }),
     )
     .get("instance") as ReturnType<

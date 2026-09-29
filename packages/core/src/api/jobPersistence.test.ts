@@ -39,6 +39,7 @@ const makeJob = (
   params: { sourcePath: "/media" },
   parentJobId: null,
   pauseReason: null,
+  providerCacheFallbacks: [],
   results: [],
   startedAt: null,
   stepId: null,

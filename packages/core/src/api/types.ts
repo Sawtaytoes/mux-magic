@@ -1,3 +1,5 @@
+import type { ProviderCacheFallback } from "../provider-cache/providerCacheFallbacks.js"
+
 export type JobStatus =
   | "pending"
   | "running"
@@ -39,6 +41,12 @@ export type Job = {
   // Human-readable reason for why this job is paused. Only set when
   // status is "paused"; null for all other statuses.
   pauseReason: JobPauseReason | null
+  // Every answer this job took from `provider-cache.sqlite` because the
+  // live request failed (docs/decisions 2026-09-29). Empty when every
+  // provider answered. A sequence's umbrella job also collects its steps'
+  // entries, so the Builder's run modal, which follows the umbrella, sees
+  // all of them.
+  providerCacheFallbacks: ProviderCacheFallback[]
   results: unknown[]
   startedAt: Date | null
   status: JobStatus
@@ -145,6 +153,16 @@ export type StepEvent = {
   error?: string | null
 }
 
+// Pushed onto the job's SSE subject (and its umbrella's) the moment a
+// provider read falls back to the cache, and replayed on (re)connect.
+// `index` is the entry's position in `providerCacheFallbacks`, so a client
+// that receives the replay twice stores it once.
+export type ProviderCacheFallbackEvent = {
+  type: "provider-cache-fallback"
+  fallback: ProviderCacheFallback
+  index: number
+}
+
 // Terminal payload for the /jobs/:id/logs SSE stream. Sent once on
 // completion / failure / cancellation. Has no `type` discriminator — the
 // presence of `isDone: true` is the discriminator (matches the wire format
@@ -155,6 +173,7 @@ export type JobLogDoneEvent = {
   results?: unknown[]
   outputs?: Record<string, unknown> | null
   error?: string | null
+  providerCacheFallbacks?: ProviderCacheFallback[]
 }
 
 // Live log line on the /jobs/:id/logs SSE stream. No `type` field — the
@@ -173,6 +192,7 @@ export type JobLogsEvent =
   | StepEvent
   | ProgressEvent
   | PromptEvent
+  | ProviderCacheFallbackEvent
   | JobLogLineEvent
   | JobLogDoneEvent
 
@@ -181,3 +201,4 @@ export type {
   DvdCompareResult,
   DvdCompareVariant,
 } from "../tools/searchDvdCompare.js"
+export type { ProviderCacheFallback }

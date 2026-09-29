@@ -104,6 +104,10 @@ const deserializeJob = (
 ): Job => ({
   ...record,
   logs: [],
+  // Written before 2026-09-29 without the field.
+  providerCacheFallbacks:
+    (record as Partial<PersistedJobRecord>)
+      .providerCacheFallbacks ?? [],
   startedAt: record.startedAt
     ? new Date(record.startedAt)
     : null,

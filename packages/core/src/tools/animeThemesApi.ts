@@ -1,16 +1,18 @@
-import {
-  mkdir,
-  readFile,
-  stat,
-  writeFile,
-} from "node:fs/promises"
-import { join } from "node:path"
 import { getAnimeXml } from "./anidbApi.js"
-import { getAnidbCacheDir } from "./getAnidbCacheDir.js"
+import { buildSharedCachedFetch } from "./sharedProviderFetchers.js"
 
-const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000
+// Unchanged from the module's own throttle: a library pass is two requests
+// per show, and this keeps it well clear of the API's rate limit.
 const MIN_REQUEST_INTERVAL_MS = 1_500
-const cachePath = join(getAnidbCacheDir(), "anime-themes")
+
+// Network-first through `provider-cache.sqlite` under `animeThemes`. Until
+// 2026-09-29 this module kept its own 30-day directory of JSON files under
+// the AniDB cache folder; that directory is no longer read or written.
+const animeThemesCachedFetch = buildSharedCachedFetch({
+  minimumRequestIntervalMilliseconds:
+    MIN_REQUEST_INTERVAL_MS,
+  provider: "animeThemes",
+})
 
 export type AnimeTheme = {
   artist: string | null
@@ -50,71 +52,10 @@ type AnimeThemesAnimeResponse = {
   }
 }
 
-let nextRequestAt = 0
-let throttleChain: Promise<void> = Promise.resolve()
-
-const waitForRequestSlot = () => {
-  throttleChain = throttleChain.then(async () => {
-    const waitMilliseconds = Math.max(
-      0,
-      nextRequestAt - Date.now(),
-    )
-    if (waitMilliseconds > 0) {
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, waitMilliseconds)
-      })
-    }
-    nextRequestAt = Date.now() + MIN_REQUEST_INTERVAL_MS
-  })
-  return throttleChain
-}
-
-const isFresh = async (filePath: string) => {
-  try {
-    const fileStats = await stat(filePath)
-    return Date.now() - fileStats.mtimeMs < CACHE_TTL_MS
-  } catch {
-    return false
-  }
-}
-
-const readCachedJson = async <T>(filePath: string) => {
-  const hasFreshCache = await isFresh(filePath)
-  return hasFreshCache
-    ? (JSON.parse(await readFile(filePath, "utf8")) as T)
-    : null
-}
-
-const fetchJson = async <T>({
-  cacheFileName,
-  url,
-}: {
-  cacheFileName: string
-  url: string
-}) => {
-  const filePath = join(cachePath, cacheFileName)
-  const cachedResponse = await readCachedJson<T>(filePath)
-  if (cachedResponse !== null) {
-    return cachedResponse
-  }
-  await mkdir(cachePath, { recursive: true })
-  await waitForRequestSlot()
-  const response = await fetch(url, {
-    headers: { "User-Agent": "mux-magic/1.0" },
-  })
-  if (!response.ok) {
-    throw new Error(
-      `AnimeThemes request failed: ${response.status}`,
-    )
-  }
-  const responseBody = (await response.json()) as T
-  await writeFile(
-    filePath,
-    JSON.stringify(responseBody),
-    "utf8",
+const fetchJson = <T>(url: string) =>
+  animeThemesCachedFetch(url).then(
+    ({ body }) => JSON.parse(body) as T,
   )
-  return responseBody
-}
 
 const sourceRank = (source: string | undefined) =>
   ({ BD: 3, WEB: 2, DVD: 1 })[source ?? ""] ?? 0
@@ -141,20 +82,18 @@ const selectAudio = (
 
 export const getAnimeTheme = async (anidbId: number) => {
   const resourceResponse =
-    await fetchJson<AnimeThemesResourceResponse>({
-      cacheFileName: `resource-${anidbId}.json`,
-      url: `https://api.animethemes.moe/resource?filter[external_id]=${anidbId}&filter[site]=AniDB&include=anime`,
-    })
+    await fetchJson<AnimeThemesResourceResponse>(
+      `https://api.animethemes.moe/resource?filter[external_id]=${anidbId}&filter[site]=AniDB&include=anime`,
+    )
   const animeSlug =
     resourceResponse.resources?.[0]?.anime?.[0]?.slug
   if (animeSlug === undefined) {
     return null
   }
   const animeResponse =
-    await fetchJson<AnimeThemesAnimeResponse>({
-      cacheFileName: `anime-${animeSlug}.json`,
-      url: `https://api.animethemes.moe/anime/${encodeURIComponent(animeSlug)}?include=animethemes.song.artists,animethemes.animethemeentries.videos.audio`,
-    })
+    await fetchJson<AnimeThemesAnimeResponse>(
+      `https://api.animethemes.moe/anime/${encodeURIComponent(animeSlug)}?include=animethemes.song.artists,animethemes.animethemeentries.videos.audio`,
+    )
   const opening = (animeResponse.anime?.animethemes ?? [])
     .filter((theme) => theme.type === "OP")
     .toSorted(

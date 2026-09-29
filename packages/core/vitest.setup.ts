@@ -5,6 +5,11 @@ import {
 import { vol } from "memfs"
 import { afterEach, beforeEach, vi } from "vitest"
 import { disableJobPersistenceForTests } from "./src/api/jobStore.js"
+import { resetProviderCircuitsForTests } from "./src/provider-cache/providerCircuitBreaker.js"
+import {
+  closeSharedProviderCache,
+  setSharedProviderCacheDatabasePathForTests,
+} from "./src/tools/sharedProviderCache.js"
 
 // Always mock `fs` because it's used everywhere, and we never want to hit the filesystem.
 vi.mock("node:fs")
@@ -447,9 +452,18 @@ vi.mock("./src/tools/currentEnvironment.js", () => ({
   getPlatform: vi.fn(() => "linux"),
 }))
 
+// Every module that reads a provider through the SHARED cache (TMDB, AniDB,
+// Jikan, …) gets an empty in-memory database per test, so no test writes a
+// real `provider-cache.sqlite` and no test reads another's answers. The
+// provider circuit breaker is process-wide outside a job, so it is cleared
+// too, or one test's "unreachable" would skip the next test's request.
+setSharedProviderCacheDatabasePathForTests(":memory:")
+
 beforeEach(() => {
   initTaskScheduler(Infinity)
   disableJobPersistenceForTests()
+  closeSharedProviderCache()
+  resetProviderCircuitsForTests()
 })
 
 afterEach(() => {

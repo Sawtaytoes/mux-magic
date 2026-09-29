@@ -205,3 +205,70 @@ test.describe("SequenceRunModal — background flow", () => {
     ).toBeHidden()
   })
 })
+
+// ─── Cached provider data ────────────────────────────────────────────────────
+
+// Fixture data only: a made-up film id and a fixed age.
+const CACHE_FALLBACK = {
+  ageMilliseconds: 3 * 24 * 60 * 60 * 1000,
+  cachedAt: "2026-09-26T12:00:00.000Z",
+  cause:
+    "dvdCompare request timed out after 20000 ms for https://www.dvdcompare.net/comparisons/film.php?fid=12345",
+  isProviderSkipped: false,
+  provider: "dvdCompare",
+  request:
+    "https://www.dvdcompare.net/comparisons/film.php?fid=12345",
+}
+
+test.describe("SequenceRunModal — cached provider data", () => {
+  test("shows a warning notice when the run fell back to a cached answer", async ({
+    page,
+  }) => {
+    const jobId = "test-job-cache-fallback"
+    await stubSequenceRun(page, jobId)
+    // Replaces the stub's log stream: a line, the fallback event the
+    // server pushes, and the done frame that carries the same list.
+    await page.route(
+      `**/jobs/${jobId}/logs`,
+      async (route) => {
+        await route.fulfill({
+          body: [
+            { line: "Looking up DVDCompare…" },
+            {
+              fallback: CACHE_FALLBACK,
+              index: 0,
+              type: "provider-cache-fallback",
+            },
+            {
+              isDone: true,
+              providerCacheFallbacks: [CACHE_FALLBACK],
+              status: "completed",
+            },
+          ]
+            .map(
+              (event) =>
+                `data: ${JSON.stringify(event)}\n\n`,
+            )
+            .join(""),
+          contentType: "text/event-stream",
+          headers: { "Cache-Control": "no-cache" },
+          status: 200,
+        })
+      },
+    )
+    await page.goto("/builder/")
+
+    await triggerRunViaApi(page)
+
+    const notice = page.getByRole("region", {
+      name: "Cached provider data",
+    })
+    await expect(notice).toBeVisible()
+    await expect(notice).toContainText(
+      "This run used cached provider data.",
+    )
+    await expect(notice).toContainText(
+      "DVDCompare: https://www.dvdcompare.net/comparisons/film.php?fid=12345 — cached 3 days ago (2026-09-26).",
+    )
+  })
+})

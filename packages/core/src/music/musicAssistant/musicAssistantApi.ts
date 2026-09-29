@@ -3,6 +3,11 @@ export type MusicAssistantFetch = (
   init: RequestInit,
 ) => Promise<Pick<Response, "json" | "ok" | "status">>
 
+// Music Assistant is the household's own server and its library is read
+// live, never cached (2026-08-24: no library catalog). The request is
+// still bounded, so a stalled server fails the lookup instead of the job.
+const MUSIC_ASSISTANT_REQUEST_TIMEOUT_MILLISECONDS = 20_000
+
 type MusicAssistantProviderMapping = {
   audio_format?: {
     bit_depth?: number
@@ -73,6 +78,9 @@ export const findMusicAssistantLibraryAlbums = async ({
       "Content-Type": "application/json",
     },
     method: "POST",
+    signal: AbortSignal.timeout(
+      MUSIC_ASSISTANT_REQUEST_TIMEOUT_MILLISECONDS,
+    ),
   })
 
   if (!response.ok) {

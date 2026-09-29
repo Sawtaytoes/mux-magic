@@ -632,120 +632,6 @@ export const selectGenres = ({
     minimumGenreUsagePercent,
   })
 
-// Serialized through a promise chain rather than a bare timestamp check:
-// concurrent callers reading the same stale timestamp would all compute
-// "no wait needed" in one tick and burst past the one-request-per-second cap.
-// Chaining makes each caller claim its slot after the previous one.
-const musicBrainzRequestQueue = {
-  chain: Promise.resolve(),
-  lastRequestAtMilliseconds: 0,
-}
-
-const getWaitMilliseconds = () =>
-  MUSICBRAINZ_MINIMUM_REQUEST_INTERVAL_MILLISECONDS -
-  (Date.now() -
-    musicBrainzRequestQueue.lastRequestAtMilliseconds)
-
-const delayToNextSlot = () =>
-  (getWaitMilliseconds() > 0
-    ? new Promise<void>((resolve) => {
-        setTimeout(resolve, getWaitMilliseconds())
-      })
-    : Promise.resolve()
-  ).then(() => {
-    musicBrainzRequestQueue.lastRequestAtMilliseconds =
-      Date.now()
-  })
-
-// The assignment IS the expression: each caller replaces the queue's tail with
-// its own link and waits on that link.
-const waitForMusicBrainzSlot = () =>
-  (musicBrainzRequestQueue.chain =
-    musicBrainzRequestQueue.chain.then(delayToNextSlot))
-
-// `AbortSignal.timeout` is the AbortController timeout without the bookkeeping:
-// the timer is unreferenced, so it never holds the process open, and there is
-// no handle to clear. Without a timeout, a stalled MusicBrainz connection hangs
-// `fetch` forever and the whole observable chain freezes with no terminal event.
-const toRequestError = ({
-  error,
-  url,
-}: {
-  error: unknown
-  url: string
-}) =>
-  error instanceof Error &&
-  (error.name === "TimeoutError" ||
-    error.name === "AbortError")
-    ? new Error(
-        `MusicBrainz request timed out after ${MUSICBRAINZ_FETCH_TIMEOUT_MILLISECONDS}ms: ${url}`,
-      )
-    : error
-
-const readResponseBody = ({
-  body,
-  response,
-}: {
-  body: string
-  response: Response
-}) =>
-  response.ok
-    ? body
-    : Promise.reject(
-        new Error(
-          `MusicBrainz ${response.status} ${response.statusText}: ${body.slice(0, 200)}`,
-        ),
-      )
-
-const fetchWithTimeout = ({
-  init,
-  url,
-}: {
-  init: RequestInit
-  url: string
-}) =>
-  fetch(url, {
-    ...init,
-    signal: AbortSignal.timeout(
-      MUSICBRAINZ_FETCH_TIMEOUT_MILLISECONDS,
-    ),
-  })
-    .then((response) =>
-      response
-        .text()
-        .then((body) =>
-          readResponseBody({ body, response }),
-        ),
-    )
-    .catch((error: unknown) =>
-      Promise.reject(toRequestError({ error, url })),
-    )
-
-// Fallback fetcher, used only when a call site passes no `cachedFetch`. It
-// honours the one-request-per-second rule and the User-Agent requirement, but
-// it does NOT cache. Production call sites pass the provider-cache fetcher
-// built with `createCachedFetch({ cache, provider: "musicbrainz", userAgent,
-// minimumRequestIntervalMilliseconds })`, which does both.
-export const rateLimitedMusicBrainzFetch: CachedFetch = (
-  url,
-  init,
-) =>
-  waitForMusicBrainzSlot()
-    .then(() =>
-      fetchWithTimeout({
-        init: {
-          ...init,
-          headers: {
-            Accept: "application/json",
-            "User-Agent": requireMusicBrainzUserAgent(),
-            ...init?.headers,
-          },
-        },
-        url,
-      }),
-    )
-    .then((body) => ({ body, isFromCache: false }))
-
 // Lucene needs its own quoting; a title with a double quote in it would
 // otherwise truncate the field and match nothing.
 const escapeLuceneValue = (value: string) =>
@@ -781,7 +667,7 @@ export const searchMusicBrainzReleases = ({
   albumName,
   artistName,
   artistNameLocale = DEFAULT_ARTIST_NAME_LOCALE,
-  cachedFetch = rateLimitedMusicBrainzFetch,
+  cachedFetch,
   isArtistNameStandardized = true,
   isArtistNameTranslated = true,
   isPunctuationConverted = false,
@@ -791,7 +677,7 @@ export const searchMusicBrainzReleases = ({
   albumName?: string
   artistName?: string
   artistNameLocale?: string
-  cachedFetch?: CachedFetch
+  cachedFetch: CachedFetch
   isArtistNameStandardized?: boolean
   isArtistNameTranslated?: boolean
   isPunctuationConverted?: boolean
@@ -828,14 +714,14 @@ export const searchMusicBrainzReleases = ({
 
 export const getMusicBrainzRelease = ({
   artistNameLocale = DEFAULT_ARTIST_NAME_LOCALE,
-  cachedFetch = rateLimitedMusicBrainzFetch,
+  cachedFetch,
   isArtistNameStandardized = true,
   isArtistNameTranslated = true,
   isPunctuationConverted = false,
   releaseId,
 }: {
   artistNameLocale?: string
-  cachedFetch?: CachedFetch
+  cachedFetch: CachedFetch
   isArtistNameStandardized?: boolean
   isArtistNameTranslated?: boolean
   isPunctuationConverted?: boolean
