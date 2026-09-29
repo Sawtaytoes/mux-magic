@@ -9,16 +9,23 @@ import {
 
 import { openProviderCache } from "../provider-cache/providerCache.js"
 import {
+  type ProviderCacheFallback,
+  registerProviderCacheFallbackListener,
+} from "../provider-cache/providerCacheFallbacks.js"
+import {
   createDvdComparePageFetcher,
   DVDCOMPARE_PROVIDER,
   DVDCOMPARE_USER_AGENT,
 } from "./dvdCompareFetcher.js"
 
-// The regression this file exists for: `dvdCompare` was declared in
-// PROVIDER_CACHE_TIME_TO_LIVE from the day the cache landed, but no code
-// ever fetched through the cache, so the table held rows for the four
-// music providers and zero for DVDCompare. Every disc ingest went to the
+// The regression this file exists for: `dvdCompare` was declared in the
+// cache's provider table from the day the cache landed, but no code ever
+// fetched through the cache, so the table held rows for the four music
+// providers and zero for DVDCompare. Every disc ingest went to the
 // network, and the 2026-09-05 outage failed every one of them.
+//
+// Since 2026-09-29 every read is network-first: the site is asked every
+// time, and the stored page is only the fallback when it cannot answer.
 
 const FILM_URL =
   "https://www.dvdcompare.net/comparisons/film.php?fid=74759"
@@ -52,17 +59,22 @@ const buildHtmlResponse = ({
   })
 
 // An in-memory database keeps the real cache implementation — the same
-// `node:sqlite` table, the same freshness rule — while giving every test a
-// cold start and touching no file.
-const openMemoryCache = (
-  timeToLiveByProvider: Record<string, number> = {
-    [DVDCOMPARE_PROVIDER]: 7 * 24 * 60 * 60 * 1000,
-  },
-) =>
+// `node:sqlite` table, the same network-first policy — while giving every
+// test a cold start and touching no file.
+const openMemoryCache = () =>
   openProviderCache({
     databasePath: ":memory:",
-    timeToLiveByProvider,
   })
+
+const collectFallbacks = () =>
+  ((fallbacks: ProviderCacheFallback[]) => ({
+    fallbacks,
+    unregister: registerProviderCacheFallbackListener(
+      (fallback) => {
+        fallbacks.push(fallback)
+      },
+    ),
+  }))([])
 
 describe(createDvdComparePageFetcher.name, () => {
   const originalFetch = globalThis.fetch
@@ -76,10 +88,17 @@ describe(createDvdComparePageFetcher.name, () => {
     vi.restoreAllMocks()
   })
 
-  test("writes a dvdCompare row on the first read and serves the second read from it", async () => {
-    const fetchSpy = vi.fn(async () =>
-      buildHtmlResponse({ html: "<html>film</html>" }),
-    )
+  test("writes a dvdCompare row, and still asks the site on the next read", async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(
+        buildHtmlResponse({ html: "<html>film</html>" }),
+      )
+      .mockResolvedValueOnce(
+        buildHtmlResponse({
+          html: "<html>film, edited</html>",
+        }),
+      )
     globalThis.fetch =
       fetchSpy as unknown as typeof globalThis.fetch
     const cache = openMemoryCache()
@@ -88,11 +107,11 @@ describe(createDvdComparePageFetcher.name, () => {
       minimumRequestIntervalMilliseconds: 0,
     })
 
-    const first = await fetchPage(FILM_URL)
+    await fetchPage(FILM_URL)
 
     // The row the defect was missing.
     expect(
-      cache.get({
+      cache.getStale({
         provider: DVDCOMPARE_PROVIDER,
         requestKey: FILM_URL,
       }),
@@ -100,17 +119,27 @@ describe(createDvdComparePageFetcher.name, () => {
 
     const second = await fetchPage(FILM_URL)
 
-    expect(second).toEqual(first)
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    // Network-first: an edit on the site reaches the next read.
+    expect(second.html).toBe("<html>film, edited</html>")
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
   })
 
   test("keys a search POST on its body, so two search terms do not share one answer", async () => {
-    const fetchSpy = vi.fn(async () =>
-      buildHtmlResponse({
-        html: "<html>results</html>",
-        url: SEARCH_URL,
-      }),
-    )
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(
+        buildHtmlResponse({
+          html: "<html>Soldier results</html>",
+          url: SEARCH_URL,
+        }),
+      )
+      .mockResolvedValueOnce(
+        buildHtmlResponse({
+          html: "<html>Coraline results</html>",
+          url: SEARCH_URL,
+        }),
+      )
+      .mockRejectedValue(new TypeError("fetch failed"))
     globalThis.fetch =
       fetchSpy as unknown as typeof globalThis.fetch
     const fetchPage = createDvdComparePageFetcher({
@@ -126,12 +155,16 @@ describe(createDvdComparePageFetcher.name, () => {
       body: "param=Coraline&searchtype=text",
       method: "POST",
     })
-    await fetchPage(SEARCH_URL, {
+    // The site is gone now: the fallback must be Soldier's own answer,
+    // not the last search stored.
+    const fallback = await fetchPage(SEARCH_URL, {
       body: "param=Soldier&searchtype=text",
       method: "POST",
     })
 
-    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(fallback.html).toBe(
+      "<html>Soldier results</html>",
+    )
   })
 
   test("sends the browser User-Agent DVDCompare requires", async () => {
@@ -158,13 +191,16 @@ describe(createDvdComparePageFetcher.name, () => {
     )
   })
 
-  test("keeps the post-redirect landing URL and the status across a cache hit", async () => {
-    const fetchSpy = vi.fn(async () =>
-      buildHtmlResponse({
-        html: "<html>film</html>",
-        url: `${FILM_URL}&landed=1`,
-      }),
-    )
+  test("keeps the post-redirect landing URL and the status in a cache fallback", async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(
+        buildHtmlResponse({
+          html: "<html>film</html>",
+          url: `${FILM_URL}&landed=1`,
+        }),
+      )
+      .mockRejectedValue(new TypeError("fetch failed"))
     globalThis.fetch =
       fetchSpy as unknown as typeof globalThis.fetch
     const fetchPage = createDvdComparePageFetcher({
@@ -179,14 +215,13 @@ describe(createDvdComparePageFetcher.name, () => {
     // `isDirectListing` would flip to false on every cached search.
     expect(cached.url).toBe(`${FILM_URL}&landed=1`)
     expect(cached.status).toBe(200)
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
 
   test("recovers Windows-1252 bytes that DVDCompare mislabels as UTF-8", async () => {
     // 0x92 is a Windows-1252 right single quote and invalid UTF-8, so a
     // strict decoder throws and the chardet fallback takes over. Reading
     // through Response.text() would have produced U+FFFD instead.
-    const fetchSpy = vi.fn(async () =>
+    const fetchSpy = vi.fn().mockResolvedValueOnce(
       buildResponse({
         bytes: Uint8Array.from([
           0x49, 0x74, 0x92, 0x73, 0x20, 0x68, 0x65, 0x72,
@@ -196,6 +231,9 @@ describe(createDvdComparePageFetcher.name, () => {
           0x2e,
         ]),
       }),
+    )
+    fetchSpy.mockRejectedValue(
+      new TypeError("fetch failed"),
     )
     globalThis.fetch =
       fetchSpy as unknown as typeof globalThis.fetch
@@ -211,10 +249,10 @@ describe(createDvdComparePageFetcher.name, () => {
     expect(cachedPage.html).toBe(page.html)
   })
 
-  test("serves the expired row when dvdcompare.net is unreachable", async () => {
-    // The 2026-09-05 failure, reproduced: the answer is on disk, past its
-    // time to live, and undici throws `TypeError: fetch failed`. A plain
-    // time-to-live cache re-raises that and blocks the ingest.
+  test("serves the stored page, and reports it, when dvdcompare.net is unreachable", async () => {
+    // The 2026-09-05 failure, reproduced: the answer is on disk and undici
+    // throws `TypeError: fetch failed`. A plain time-to-live cache
+    // re-raises that and blocks the ingest.
     const fetchSpy = vi
       .fn()
       .mockResolvedValueOnce(
@@ -223,18 +261,31 @@ describe(createDvdComparePageFetcher.name, () => {
       .mockRejectedValue(new TypeError("fetch failed"))
     globalThis.fetch =
       fetchSpy as unknown as typeof globalThis.fetch
-    // Zero milliseconds of life, so the row is already expired on the
-    // second read.
     const fetchPage = createDvdComparePageFetcher({
-      cache: openMemoryCache({ [DVDCOMPARE_PROVIDER]: 0 }),
+      cache: openMemoryCache(),
       minimumRequestIntervalMilliseconds: 0,
     })
+    const { fallbacks, unregister } = collectFallbacks()
 
     const fresh = await fetchPage(FILM_URL)
-    const stale = await fetchPage(FILM_URL)
+    const stored = await fetchPage(FILM_URL)
+    unregister()
 
-    expect(stale.html).toBe(fresh.html)
-    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(stored.html).toBe(fresh.html)
+    // The first read, then https and its http twin on the second. The
+    // Wayback Machine is never asked while a page is stored.
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    expect(
+      (fetchSpy.mock.calls as unknown[][]).every((call) =>
+        String(call[0]).includes("dvdcompare.net"),
+      ),
+    ).toBe(true)
+    expect(fallbacks).toHaveLength(1)
+    expect(fallbacks[0]).toMatchObject({
+      isProviderSkipped: false,
+      provider: DVDCOMPARE_PROVIDER,
+      request: FILM_URL,
+    })
   })
 
   test("loads the newest archived film page and caches it under the live URL", async () => {
@@ -280,12 +331,14 @@ describe(createDvdComparePageFetcher.name, () => {
       url: FILM_URL,
     })
     expect(
-      cache.get({
+      cache.getStale({
         provider: DVDCOMPARE_PROVIDER,
         requestKey: FILM_URL,
       }),
     ).not.toBeNull()
 
+    // DVDCompare already failed in this run, so the next read goes
+    // straight to the stored archive copy without another request.
     const cachedPage = await fetchPage(FILM_URL)
 
     expect(cachedPage).toEqual(archivedPage)
@@ -487,7 +540,7 @@ describe(createDvdComparePageFetcher.name, () => {
     // Stored under the https key, so the next run does not have to fail
     // against https again before finding a separate http row.
     expect(
-      cache.get({
+      cache.getStale({
         provider: DVDCOMPARE_PROVIDER,
         requestKey: FILM_URL,
       }),

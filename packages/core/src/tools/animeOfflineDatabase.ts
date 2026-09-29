@@ -2,11 +2,15 @@ import {
   mkdir,
   readFile,
   stat,
-  utimes,
   writeFile,
 } from "node:fs/promises"
 import { join } from "node:path"
-import { logError, logInfo } from "@mux-magic/tools"
+import { logInfo } from "@mux-magic/tools"
+import {
+  buildProviderCacheFallback,
+  describeThrownError,
+  reportProviderCacheFallback,
+} from "../provider-cache/providerCacheFallbacks.js"
 import { getAnidbCacheDir } from "./getAnidbCacheDir.js"
 
 // manami-project/anime-offline-database is a community-maintained JSON
@@ -16,13 +20,11 @@ import { getAnidbCacheDir } from "./getAnidbCacheDir.js"
 //
 // Hosted via GitHub Releases. /releases/latest/download/ 302-redirects to
 // the current weekly version (e.g., /releases/download/2026-14/...). We
-// extract the version slug from the redirect to do a cheap freshness
+// extract the version slug from the redirect to do a cheap currency
 // check before downloading the full ~61 MB payload.
 
 const LATEST_URL =
   "https://github.com/manami-project/anime-offline-database/releases/latest/download/anime-offline-database-minified.json"
-
-const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 const ANIDB_AID_PATTERN =
   /^https?:\/\/anidb\.net\/anime\/(\d+)\/?$/i
@@ -121,113 +123,140 @@ const pickEnglishSynonym = (
   return bestSynonym
 }
 
-const isFresh = async (path: string, maxAgeMs: number) => {
-  try {
-    const stats = await stat(path)
-    return Date.now() - stats.mtimeMs < maxAgeMs
-  } catch {
-    return false
-  }
-}
+// Network-first, like every provider read (docs/decisions, 2026-09-29):
+// every load asks GitHub which weekly release is current — a HEAD that
+// costs one redirect, not the 61 MB — and downloads only when the version
+// moved. When GitHub cannot be asked, or the download fails, the dataset
+// already on disk stands in, and the owner is told, exactly as a cached
+// provider answer would be.
+//
+// This dataset is NOT in `provider-cache.sqlite`, deliberately: it is one
+// 61 MB bulk file replaced weekly, not a per-request answer, and a single
+// TEXT row that size would be read whole on every search.
+const MANAMI_PROVIDER = "animeOfflineDatabase"
+const MANAMI_HEAD_TIMEOUT_MILLISECONDS = 10_000
+const MANAMI_DOWNLOAD_TIMEOUT_MILLISECONDS = 5 * 60 * 1000
 
-const resolveLatestVersion = async () => {
-  const res = await fetch(LATEST_URL, {
+const resolveLatestVersion = () =>
+  fetch(LATEST_URL, {
     method: "HEAD",
     redirect: "manual",
-  })
-  const location = res.headers.get("location")
-  if (!location)
-    throw new Error(
-      "manami: HEAD response had no Location header",
-    )
-  const match = location.match(
-    /\/releases\/download\/([^/]+)\//,
+    signal: AbortSignal.timeout(
+      MANAMI_HEAD_TIMEOUT_MILLISECONDS,
+    ),
+  }).then((response) =>
+    ((location: string | null) =>
+      location === null
+        ? Promise.reject(
+            new Error(
+              "manami: HEAD response had no Location header",
+            ),
+          )
+        : ((match: RegExpMatchArray | null) =>
+            match === null
+              ? Promise.reject(
+                  new Error(
+                    `manami: unexpected redirect URL ${location}`,
+                  ),
+                )
+              : match[1])(
+            location.match(
+              /\/releases\/download\/([^/]+)\//,
+            ),
+          ))(response.headers.get("location")),
   )
-  if (!match)
-    throw new Error(
-      `manami: unexpected redirect URL ${location}`,
+
+const downloadDataset = ({
+  version,
+}: {
+  version: string
+}) =>
+  Promise.resolve(
+    logInfo(
+      "manami",
+      `downloading dataset version ${version}…`,
+    ),
+  )
+    .then(() =>
+      fetch(LATEST_URL, {
+        signal: AbortSignal.timeout(
+          MANAMI_DOWNLOAD_TIMEOUT_MILLISECONDS,
+        ),
+      }),
     )
-  return match[1]
-}
-
-const downloadDataset = async () => {
-  const res = await fetch(LATEST_URL)
-  if (!res.ok)
-    throw new Error(
-      `manami: download failed (${res.status})`,
+    .then((response) =>
+      response.ok
+        ? response.arrayBuffer()
+        : Promise.reject(
+            new Error(
+              `manami: download failed (${response.status})`,
+            ),
+          ),
     )
-  const buf = Buffer.from(await res.arrayBuffer())
-  await writeFile(dataPath(), buf)
-}
-
-let refreshPromise: Promise<void> | null = null
-
-const refreshIfStale = async () => {
-  if (refreshPromise) return refreshPromise
-
-  refreshPromise = (async () => {
-    try {
-      if (await isFresh(dataPath(), REFRESH_TTL_MS)) return
-
-      await mkdir(cacheDir(), { recursive: true })
-
-      let storedVersion = ""
-      try {
-        storedVersion = (
-          await readFile(versionPath(), "utf8")
-        ).trim()
-      } catch {
-        /* missing version file is fine */
-      }
-
-      let latestVersion: string
-      try {
-        latestVersion = await resolveLatestVersion()
-      } catch (err) {
-        logError(
-          "manami HEAD check failed; using cached dataset",
-          String(err),
-        )
-        if (storedVersion) {
-          // Bump mtime so we don't keep retrying every call.
-          const now = new Date()
-          try {
-            await utimes(dataPath(), now, now)
-          } catch {
-            /* ignore */
-          }
-          return
-        }
-        throw err
-      }
-
-      if (latestVersion === storedVersion) {
-        const now = new Date()
-        try {
-          await utimes(dataPath(), now, now)
-        } catch {
-          /* ignore */
-        }
-        return
-      }
-
+    .then((datasetBytes) =>
+      writeFile(dataPath(), Buffer.from(datasetBytes)),
+    )
+    .then(() => writeFile(versionPath(), version))
+    .then(() => {
       logInfo(
         "manami",
-        `downloading dataset version ${latestVersion}…`,
+        `downloaded dataset version ${version}`,
       )
-      await downloadDataset()
-      await writeFile(versionPath(), latestVersion)
-      logInfo(
-        "manami",
-        `downloaded dataset version ${latestVersion}`,
-      )
-    } finally {
-      refreshPromise = null
-    }
-  })()
+    })
 
-  return refreshPromise
-}
+const readStoredVersion = () =>
+  readFile(versionPath(), "utf8")
+    .then((storedVersion) => storedVersion.trim())
+    .catch(() => "")
+
+const refreshFromNetwork = () =>
+  mkdir(cacheDir(), { recursive: true })
+    .then(() =>
+      Promise.all([
+        resolveLatestVersion(),
+        readStoredVersion(),
+      ]),
+    )
+    .then(([latestVersion, storedVersion]) =>
+      latestVersion === storedVersion
+        ? undefined
+        : downloadDataset({ version: latestVersion }),
+    )
+
+// The dataset on disk is the fallback. With none, the failure is the
+// answer, as it always was.
+const fallBackToStoredDataset = (thrownError: unknown) =>
+  stat(dataPath())
+    .catch(() => null)
+    .then((datasetStats) =>
+      datasetStats === null
+        ? Promise.reject(thrownError)
+        : reportProviderCacheFallback(
+            buildProviderCacheFallback({
+              cause: describeThrownError(thrownError),
+              fetchedAt: datasetStats.mtimeMs,
+              isProviderSkipped: false,
+              provider: MANAMI_PROVIDER,
+              request: LATEST_URL,
+            }),
+          ),
+    )
+
+// Concurrent loads share one refresh, so a burst of searches is one HEAD.
+const refreshHolder = new Map<"refresh", Promise<void>>()
+
+const refreshDataset = () =>
+  refreshHolder.get("refresh") ??
+  (refreshHolder
+    .set(
+      "refresh",
+      refreshFromNetwork()
+        .catch(fallBackToStoredDataset)
+        .finally(() => {
+          refreshHolder.delete("refresh")
+        }),
+    )
+    .get("refresh") as Promise<void>)
 
 export const parseAnimeIndex = (
   rawJson: string,
@@ -306,7 +335,7 @@ let cachedAtMtime = 0
 export const loadAnimeIndex = async (): Promise<
   AnimeIndexEntry[]
 > => {
-  await refreshIfStale()
+  await refreshDataset()
 
   // Long-running processes (the API server) can outlive multiple weekly
   // refreshes. Re-stat the file and reload only if mtime moved.

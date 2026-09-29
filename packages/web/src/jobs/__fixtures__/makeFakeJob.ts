@@ -18,6 +18,7 @@ export const makeFakeJob = (
   params: null,
   parentJobId: null,
   pauseReason: null,
+  providerCacheFallbacks: [],
   results: [],
   startedAt: null,
   stepId: null,

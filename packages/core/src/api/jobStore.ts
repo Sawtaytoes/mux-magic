@@ -14,6 +14,8 @@ import type {
   Job,
   ProgressEvent,
   PromptEvent,
+  ProviderCacheFallback,
+  ProviderCacheFallbackEvent,
   StepEvent,
 } from "./types.js"
 
@@ -23,6 +25,7 @@ import type {
 export type JobEvent =
   | PromptEvent
   | ProgressEvent
+  | ProviderCacheFallbackEvent
   | StepEvent
 
 // ---------------------------------------------------------------------------
@@ -97,6 +100,7 @@ export const createJob = ({
     params,
     parentJobId,
     pauseReason: null,
+    providerCacheFallbacks: [],
     results: [],
     startedAt: null,
     status: "pending",
@@ -143,6 +147,7 @@ const PERSIST_FIELDS = new Set<keyof Job>([
   "status",
   "error",
   "pauseReason",
+  "providerCacheFallbacks",
   "outputs",
   "startedAt",
   "completedAt",
@@ -234,6 +239,53 @@ export const emitJobEvent = (
     else stepEventsByJob.set(id, [event])
   }
 }
+
+// Records one cache fallback on the job it happened in and on that job's
+// umbrella, and pushes the event to both SSE streams. The umbrella copy is
+// what the Builder's run modal reads; the step copy is what the Jobs page
+// shows under that step.
+const appendProviderCacheFallback = ({
+  fallback,
+  id,
+}: {
+  fallback: ProviderCacheFallback
+  id: string
+}) =>
+  ((existing: Job | undefined) => {
+    if (existing !== undefined) {
+      updateJob(id, {
+        providerCacheFallbacks:
+          existing.providerCacheFallbacks.concat(fallback),
+      })
+      emitJobEvent(id, {
+        fallback,
+        index: existing.providerCacheFallbacks.length,
+        type: "provider-cache-fallback",
+      })
+    }
+  })(jobs.get(id))
+
+export const recordProviderCacheFallback = ({
+  fallback,
+  jobId,
+}: {
+  fallback: ProviderCacheFallback
+  jobId: string
+}) => {
+  appendProviderCacheFallback({ fallback, id: jobId })
+  const parentJobId = jobs.get(jobId)?.parentJobId ?? null
+  if (parentJobId !== null) {
+    appendProviderCacheFallback({
+      fallback,
+      id: parentJobId,
+    })
+  }
+}
+
+// The job whose run a read belongs to, for the provider circuit breaker:
+// a sequence step's reads share its umbrella's circuit.
+export const getRootJobId = (id: string) =>
+  jobs.get(id)?.parentJobId ?? id
 
 export const getLatestJobProgress = (
   id: string,

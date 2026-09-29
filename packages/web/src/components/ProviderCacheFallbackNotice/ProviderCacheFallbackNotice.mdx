@@ -1,0 +1,30 @@
+{/* ProviderCacheFallbackNotice.mdx */}
+
+import { Meta, Canvas, Controls } from "@storybook/addon-docs/blocks";
+import * as ProviderCacheFallbackNoticeStories from "./ProviderCacheFallbackNotice.stories";
+
+<Meta of={ProviderCacheFallbackNoticeStories} />
+
+# ProviderCacheFallbackNotice
+
+A warning `Alert` that says a job used cached provider data. Every provider read is network-first: the live site is asked every time, and the cached copy is used only when that request fails. When that happens, the server records the fallback on the job, and this notice shows it in the run modal and on the job card.
+
+Each line names the provider, the request, the age of the cached copy, and why it was used — the request failed, or the provider was not asked because it had already failed earlier in the run. Past six lines, the notice gives the count of the rest; the job log keeps every one.
+
+It renders nothing when the job used no cached data.
+
+## Props
+
+<Controls />
+
+## One provider failed
+
+<Canvas of={ProviderCacheFallbackNoticeStories.OneProviderFailed} />
+
+## A provider skipped after an earlier failure
+
+<Canvas of={ProviderCacheFallbackNoticeStories.ProviderSkippedAfterFailure} />
+
+## Many fallbacks
+
+<Canvas of={ProviderCacheFallbackNoticeStories.ManyFallbacks} />

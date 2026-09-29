@@ -19,6 +19,7 @@ When a job is `running`, the card shows a `ProgressBar` driven by `progressByJob
 - **Params disclosure** → only when `params` has at least one key. Pretty-printed JSON with a copy button.
 - **Logs disclosure** (`LogsDisclosure`) → renders a `<details>` block. Reads from `logsByJobIdAtom`. The `useLogStream(jobId).connect()` is called either when the disclosure opens OR immediately if `jobStatus === "running"` (so a running job streams new lines even with the disclosure closed). Pane auto-scrolls on every new line.
 - **Steps disclosure** (sequence jobs only) → enumerates children that have `parentJobId === job.id`. Each child renders as a `StepRow` with its own status badge, optional progress bar, optional cancel button, and its own `LogsDisclosure`. Open/closed state persists per job-id in `stepsOpenByJobIdAtom`; default is open for `running`/`pending`, closed otherwise.
+- **Cached provider data** → when `job.providerCacheFallbacks` is not empty, a warning `ProviderCacheFallbackNotice` says which provider could not answer and which cached copy stood in. See the `UsedCachedProviderData` story.
 - **Results disclosure** → only when `job.results.length > 0`. Each result is JSON-stringified into its own `<pre>`.
 - **Footer** → "Open in Sequence Builder" link built via `buildBuilderUrl(job)` (deep-link with the job's params). Cancel button rendered when `running`.
 
@@ -60,6 +61,10 @@ When a job is `running`, the card shows a `ProgressBar` driven by `progressByJob
 ## Failed
 
 <Canvas of={JobCardStories.Failed} />
+
+## Used cached provider data
+
+<Canvas of={JobCardStories.UsedCachedProviderData} />
 
 ## Sequence (with children)
 

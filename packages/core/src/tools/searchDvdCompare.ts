@@ -651,15 +651,18 @@ export const searchDvdCompare = ({
           } finally {
             await browser.close()
           }
-        })().catch((thrownError: unknown) =>
-          isDvdCompareNetworkFailure(thrownError)
-            ? fetchArchivedPage(url).then(({ html }) =>
-                parseArchivedDvdCompareRelease({
-                  html,
-                  url,
-                }),
-              )
-            : Promise.reject(thrownError),
-        ),
+        })(),
+      // Reached only when the live scrape failed AND no scrape is stored
+      // for this release: the stored extras beat an archive capture of
+      // unknown age, and the archive beats failing the run.
+      produceLastResortValue: (thrownError: unknown) =>
+        isDvdCompareNetworkFailure(thrownError)
+          ? fetchArchivedPage(url).then(({ html }) =>
+              parseArchivedDvdCompareRelease({
+                html,
+                url,
+              }),
+            )
+          : Promise.reject(thrownError),
     }),
   ).pipe(logAndSwallowPipelineError(searchDvdCompare))

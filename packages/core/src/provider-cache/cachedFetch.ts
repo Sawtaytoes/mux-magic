@@ -1,7 +1,11 @@
-import { logWarning } from "@mux-magic/tools"
-
+import {
+  markProviderUnreachable,
+  type NetworkFirstOutcome,
+  resolveNetworkFirst,
+} from "./networkFirst.js"
 import type {
   ProviderCache,
+  ProviderCacheProvider,
   ProviderCacheRow,
 } from "./providerCache.js"
 import {
@@ -13,11 +17,12 @@ import {
 export type CachedFetchOutcome = {
   body: string
   isFromCache: boolean
-  // True only on the stale-on-error path below: the entry is past its
-  // time to live and the provider could not be reached to refresh it.
+  // True only when the live request FAILED and the stored copy stood in
+  // for it — the case the owner is told about. A 304, or an AniDB entry
+  // inside its one-day window, is `isFromCache` without this.
   // Optional so every existing stub that returns `{ body, isFromCache }`
   // still satisfies the type.
-  isStale?: boolean
+  isCacheFallback?: boolean
 }
 
 // How a provider's bytes become the string this module caches. The default
@@ -56,34 +61,57 @@ const DEFAULT_MAXIMUM_ATTEMPTS = 3
 const DEFAULT_RETRY_BACKOFF_MILLISECONDS = 1000
 const DEFAULT_MINIMUM_REQUEST_INTERVAL_MILLISECONDS = 1000
 
+// Every request is bounded. Network-first asks the provider on every
+// read, so a provider that accepts the connection and then says nothing
+// would otherwise hold the whole job — and the cached fallback — hostage.
+// One attempt, not the whole retry sequence: a 429 retry gets its own.
+export const DEFAULT_REQUEST_TIMEOUT_MILLISECONDS = 20_000
+
+// The transport. `globalThis.fetch` by default; DVDCompare injects one that
+// tries the plain-http twin when TLS fails, so that retry counts as the
+// live request rather than as a fallback.
+export type FetchImplementation = (
+  url: string,
+  initialization: RequestInit,
+) => Promise<Response>
+
+const fetchWithGlobalFetch: FetchImplementation = (
+  url,
+  initialization,
+) => fetch(url, initialization)
+
 type RequestContext = {
   cache: ProviderCache
+  cachedRow: ProviderCacheRow | null
   decodeResponseBody: DecodeResponseBody
+  fetchImplementation: FetchImplementation
   initialization: CachedFetchInit | undefined
   maximumAttempts: number
   provider: string
   rateLimiter: RateLimiter
   requestKey: string
   retryBackoffMilliseconds: number
-  staleRow: ProviderCacheRow | null
+  timeoutMilliseconds: number
   url: string
   userAgent: string
 }
 
 const buildHeaders = ({
+  cachedRow,
   initialization,
-  staleRow,
   userAgent,
 }: {
+  cachedRow: ProviderCacheRow | null
   initialization: CachedFetchInit | undefined
-  staleRow: ProviderCacheRow | null
   userAgent: string
 }) => ({
   ...(initialization?.headers as
     | Record<string, string>
     | undefined),
-  ...(staleRow?.etag
-    ? { "If-None-Match": staleRow.etag }
+  // Revalidation is still "grabbing the latest": the provider decides
+  // whether the stored copy is current, and a 304 refreshes the row.
+  ...(cachedRow?.etag
+    ? { "If-None-Match": cachedRow.etag }
     : {}),
   // Last, so a caller can never drop the descriptive agent MusicBrainz
   // demands. It blocks the IP address, and that address is the house.
@@ -102,6 +130,43 @@ const toRequestInit = (
         ...requestInit
       }: CachedFetchInit) => requestInit)(initialization)
 
+// A caller's own signal still cancels the request; the timeout is added
+// beside it rather than replacing it.
+const buildSignal = ({
+  initialization,
+  timeoutMilliseconds,
+}: {
+  initialization: CachedFetchInit | undefined
+  timeoutMilliseconds: number
+}) =>
+  initialization?.signal
+    ? AbortSignal.any([
+        initialization.signal,
+        AbortSignal.timeout(timeoutMilliseconds),
+      ])
+    : AbortSignal.timeout(timeoutMilliseconds)
+
+const toTimeoutError = ({
+  provider,
+  thrownError,
+  timeoutMilliseconds,
+  url,
+}: {
+  provider: string
+  thrownError: unknown
+  timeoutMilliseconds: number
+  url: string
+}) =>
+  thrownError instanceof Error &&
+  thrownError.name === "TimeoutError"
+    ? Object.assign(
+        new Error(
+          `${provider} request timed out after ${timeoutMilliseconds} ms for ${url}`,
+        ),
+        { name: "TimeoutError" },
+      )
+    : thrownError
+
 const requestOnce = ({
   attemptNumber,
   requestContext,
@@ -111,14 +176,22 @@ const requestOnce = ({
 }): Promise<Response> =>
   requestContext.rateLimiter
     .schedule(() =>
-      fetch(requestContext.url, {
-        ...toRequestInit(requestContext.initialization),
-        headers: buildHeaders({
-          initialization: requestContext.initialization,
-          staleRow: requestContext.staleRow,
-          userAgent: requestContext.userAgent,
-        }),
-      }),
+      requestContext.fetchImplementation(
+        requestContext.url,
+        {
+          ...toRequestInit(requestContext.initialization),
+          headers: buildHeaders({
+            cachedRow: requestContext.cachedRow,
+            initialization: requestContext.initialization,
+            userAgent: requestContext.userAgent,
+          }),
+          signal: buildSignal({
+            initialization: requestContext.initialization,
+            timeoutMilliseconds:
+              requestContext.timeoutMilliseconds,
+          }),
+        },
+      ),
     )
     .then((response) =>
       RETRYABLE_STATUS_CODES.has(response.status) &&
@@ -137,18 +210,18 @@ const requestOnce = ({
 
 const resolveNotModified = ({
   cache,
+  cachedRow,
   provider,
   requestKey,
-  staleRow,
   url,
 }: {
   cache: ProviderCache
+  cachedRow: ProviderCacheRow | null
   provider: string
   requestKey: string
-  staleRow: ProviderCacheRow | null
   url: string
-}) =>
-  staleRow === null
+}): Promise<NetworkFirstOutcome<CachedFetchOutcome>> =>
+  cachedRow === null
     ? Promise.reject(
         new Error(
           `${provider} answered 304 for ${url} but nothing was cached for it.`,
@@ -156,15 +229,41 @@ const resolveNotModified = ({
       )
     : Promise.resolve(
         cache.set({
-          body: staleRow.body,
-          etag: staleRow.etag,
+          body: cachedRow.body,
+          etag: cachedRow.etag,
           provider,
           requestKey,
         }),
       ).then(() => ({
-        body: staleRow.body,
-        isFromCache: true,
+        source: "network",
+        value: { body: cachedRow.body, isFromCache: true },
       }))
+
+// A 5xx, or a 429/503 that outlasted every retry, is the provider saying it
+// cannot serve anyone right now — that opens the circuit. A 404 is an
+// answer about one resource and does not.
+const buildStatusError = ({
+  provider,
+  status,
+  url,
+}: {
+  provider: string
+  status: number
+  url: string
+}) =>
+  ((statusError: Error) =>
+    status >= 500 || RETRYABLE_STATUS_CODES.has(status)
+      ? markProviderUnreachable(statusError)
+      : statusError)(
+    // `status` rides along so an adapter that must hand a Response back
+    // (the TVDB client) can rebuild the provider's own answer.
+    Object.assign(
+      new Error(
+        `${provider} request failed with status ${status} for ${url}`,
+      ),
+      { status },
+    ),
+  )
 
 const resolveFreshResponse = ({
   cache,
@@ -180,7 +279,7 @@ const resolveFreshResponse = ({
   requestKey: string
   response: Response
   url: string
-}) =>
+}): Promise<NetworkFirstOutcome<CachedFetchOutcome>> =>
   response.ok
     ? decodeResponseBody(response).then((body) =>
         Promise.resolve(
@@ -190,23 +289,30 @@ const resolveFreshResponse = ({
             provider,
             requestKey,
           }),
-        ).then(() => ({ body, isFromCache: false })),
+        ).then(() => ({
+          source: "network",
+          value: { body, isFromCache: false },
+        })),
       )
     : Promise.reject(
-        new Error(
-          `${provider} request failed with status ${response.status} for ${url}`,
-        ),
+        buildStatusError({
+          provider,
+          status: response.status,
+          url,
+        }),
       )
 
-const fetchAndStore = (requestContext: RequestContext) =>
-  requestOnce({ attemptNumber: 1, requestContext }).then(
-    (response) =>
+const fetchAndStore = (
+  requestContext: RequestContext,
+): Promise<NetworkFirstOutcome<CachedFetchOutcome>> =>
+  requestOnce({ attemptNumber: 1, requestContext })
+    .then((response) =>
       response.status === NOT_MODIFIED_STATUS_CODE
         ? resolveNotModified({
             cache: requestContext.cache,
+            cachedRow: requestContext.cachedRow,
             provider: requestContext.provider,
             requestKey: requestContext.requestKey,
-            staleRow: requestContext.staleRow,
             url: requestContext.url,
           })
         : resolveFreshResponse({
@@ -218,81 +324,54 @@ const fetchAndStore = (requestContext: RequestContext) =>
             response,
             url: requestContext.url,
           }),
-  )
+    )
+    .catch((thrownError: unknown) =>
+      Promise.reject(
+        toTimeoutError({
+          provider: requestContext.provider,
+          thrownError,
+          timeoutMilliseconds:
+            requestContext.timeoutMilliseconds,
+          url: requestContext.url,
+        }),
+      ),
+    )
 
-const describeThrownError = (thrownError: unknown) =>
-  thrownError instanceof Error
-    ? thrownError.message
-    : String(thrownError)
-
-const describeStaleAge = (fetchedAt: number) =>
-  `${Math.round((Date.now() - fetchedAt) / (60 * 60 * 1000))} hour(s) old`
-
-// Stale-on-error. A plain time-to-live cache still fails hard when the
-// entry has expired AND the provider is unreachable — which is the exact
-// shape of a DVDCompare outage: the answer is on disk, one day past its
-// week, and the run dies with `TypeError: fetch failed`.
-//
-// A row only exists because the provider itself once returned it with a
-// 200, so serving it is never an invention. It is not "caching a
-// failure" either: nothing new is written, and the next successful fetch
-// replaces the row as usual. The outcome carries `isStale: true` so a
-// caller that cares can say so.
-//
-// The staleness is deliberately uncapped. An age limit would restore the
-// hard failure this removes, and the cache is disposable — deleting
-// `provider-cache.sqlite` is the escape hatch when an entry is wrong.
-const serveStaleOnError = ({
-  provider,
-  staleRow,
-  thrownError,
-  url,
-}: {
-  provider: string
-  staleRow: ProviderCacheRow | null
-  thrownError: unknown
-  url: string
-}): Promise<CachedFetchOutcome> =>
-  staleRow === null
-    ? Promise.reject(thrownError)
-    : (logWarning(
-        "PROVIDER CACHE STALE",
-        `${provider} could not be reached for ${url}; serving the cached copy (${describeStaleAge(staleRow.fetchedAt)}). Cause: ${describeThrownError(thrownError)}`,
-      ) ??
-      Promise.resolve({
-        body: staleRow.body,
+const toCachedFetchOutcome = ({
+  source,
+  value,
+}: NetworkFirstOutcome<CachedFetchOutcome>) =>
+  source === "network"
+    ? value
+    : {
+        body: value.body,
+        isCacheFallback: source === "fallback-cache",
         isFromCache: true,
-        isStale: true,
-      }))
+      }
 
-const fetchAndStoreOrServeStale = (
-  requestContext: RequestContext,
-) =>
-  fetchAndStore(requestContext).catch(
-    (thrownError: unknown) =>
-      serveStaleOnError({
-        provider: requestContext.provider,
-        staleRow: requestContext.staleRow,
-        thrownError,
-        url: requestContext.url,
-      }),
-  )
-
+// Network-first (see networkFirst.ts): every read asks the provider, and
+// the stored row answers only when that request fails — at any age, and
+// reported to the owner. AniDB alone serves a row inside its one-day
+// window without asking.
 export const createCachedFetch = ({
   cache,
   decodeResponseBody = decodeResponseTextByDefault,
+  fetchImplementation = fetchWithGlobalFetch,
   maximumAttempts = DEFAULT_MAXIMUM_ATTEMPTS,
   minimumRequestIntervalMilliseconds = DEFAULT_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
   provider,
   retryBackoffMilliseconds = DEFAULT_RETRY_BACKOFF_MILLISECONDS,
+  timeoutMilliseconds = DEFAULT_REQUEST_TIMEOUT_MILLISECONDS,
   userAgent,
 }: {
   cache: ProviderCache
   decodeResponseBody?: DecodeResponseBody
+  fetchImplementation?: FetchImplementation
   maximumAttempts?: number
   minimumRequestIntervalMilliseconds?: number
-  provider: string
+  provider: ProviderCacheProvider
   retryBackoffMilliseconds?: number
+  timeoutMilliseconds?: number
   userAgent: string
 }) =>
   (
@@ -302,28 +381,32 @@ export const createCachedFetch = ({
       initialization?: CachedFetchInit,
     ): Promise<CachedFetchOutcome> =>
       ((requestKey: string) =>
-        ((freshRow: ProviderCacheRow | null) =>
-          freshRow === null
-            ? fetchAndStoreOrServeStale({
-                cache,
-                decodeResponseBody,
-                initialization,
-                maximumAttempts,
-                provider,
-                rateLimiter,
-                requestKey,
-                retryBackoffMilliseconds,
-                staleRow: cache.getStale({
-                  provider,
-                  requestKey,
-                }),
-                url,
-                userAgent,
-              })
-            : Promise.resolve({
-                body: freshRow.body,
-                isFromCache: true,
-              }))(cache.get({ provider, requestKey })))(
+        resolveNetworkFirst<CachedFetchOutcome>({
+          cache,
+          provider,
+          readCachedValue: (row) => ({
+            body: row.body,
+            isFromCache: true,
+          }),
+          request: url,
+          requestFromNetwork: (cachedRow) =>
+            fetchAndStore({
+              cache,
+              cachedRow,
+              decodeResponseBody,
+              fetchImplementation,
+              initialization,
+              maximumAttempts,
+              provider,
+              rateLimiter,
+              requestKey,
+              retryBackoffMilliseconds,
+              timeoutMilliseconds,
+              url,
+              userAgent,
+            }),
+          requestKey,
+        }).then(toCachedFetchOutcome))(
         initialization?.cacheKey ?? url,
       )
   )(

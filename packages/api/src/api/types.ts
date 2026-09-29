@@ -13,6 +13,8 @@ export type {
   ProgressEvent,
   PromptEvent,
   PromptOption,
+  ProviderCacheFallback,
+  ProviderCacheFallbackEvent,
   StepEvent,
 } from "@mux-magic/core/src/api/types.js"
 export type {

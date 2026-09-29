@@ -1,5 +1,7 @@
 import { logAndSwallowPipelineError } from "@mux-magic/tools"
-import { from, map, type Observable } from "rxjs"
+import { from, type Observable } from "rxjs"
+import { isProviderUnreachableError } from "../provider-cache/networkFirst.js"
+import { buildSharedCachedFetch } from "./sharedProviderFetchers.js"
 
 // Backed by Jikan v4 (https://docs.api.jikan.moe), the de-facto unofficial
 // MAL API. We picked Jikan over mal-scraper because:
@@ -21,6 +23,17 @@ import { from, map, type Observable } from "rxjs"
 // recognize "Jibaku Shounen Hanako-kun" but not "地縛少年花子くん".
 
 const JIKAN_BASE = "https://api.jikan.moe/v4"
+
+// Jikan documents 3 requests a second and 60 a minute; one a second stays
+// inside both.
+const JIKAN_MINIMUM_REQUEST_INTERVAL_MILLISECONDS = 1_000
+
+// Network-first through `provider-cache.sqlite` under `jikan`.
+const jikanCachedFetch = buildSharedCachedFetch({
+  minimumRequestIntervalMilliseconds:
+    JIKAN_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
+  provider: "jikan",
+})
 
 export type MalResult = {
   airDate?: string
@@ -102,19 +115,14 @@ export const searchMal = (
   searchTerm: string,
 ): Observable<MalResult[]> =>
   from(
-    fetch(
+    jikanCachedFetch(
       `${JIKAN_BASE}/anime?q=${encodeURIComponent(searchTerm)}&limit=10`,
-    ).then(async (response) => {
-      if (!response.ok) {
-        throw new Error(
-          `Jikan search failed (${response.status})`,
-        )
-      }
-      const payload = (await response.json()) as {
-        data?: JikanAnimeRow[]
-      }
-      return mapJikanSearchResults(payload.data)
-    }),
+    ).then(({ body }) =>
+      mapJikanSearchResults(
+        (JSON.parse(body) as { data?: JikanAnimeRow[] })
+          .data,
+      ),
+    ),
   )
 
 export type MalLookupResult = {
@@ -123,30 +131,41 @@ export type MalLookupResult = {
   year?: string
 }
 
+const toMalLookupResult = (
+  row: JikanAnimeRow | undefined,
+) =>
+  row === undefined
+    ? null
+    : ((name: string, romaji: string) =>
+        name
+          ? {
+              name,
+              nameJapanese:
+                romaji && romaji !== name
+                  ? romaji
+                  : undefined,
+              year: pickYear(row),
+            }
+          : null)(
+        pickDisplayName(row),
+        row.title?.trim() ?? "",
+      )
+
 export const lookupMalById = (
   malId: number,
 ): Observable<MalLookupResult | null> =>
   from(
-    fetch(`${JIKAN_BASE}/anime/${malId}`).then(
-      async (response) => {
-        if (!response.ok) return null
-        const payload = (await response.json()) as {
-          data?: JikanAnimeRow
-        }
-        const row = payload.data
-        if (!row) return null
-        const name = pickDisplayName(row)
-        if (!name) return null
-        const romaji = row.title?.trim() ?? ""
-        return {
-          name,
-          nameJapanese:
-            romaji && romaji !== name ? romaji : undefined,
-          year: pickYear(row),
-        } satisfies MalLookupResult
-      },
-    ),
-  ).pipe(
-    map((result) => result),
-    logAndSwallowPipelineError(lookupMalById),
-  )
+    jikanCachedFetch(`${JIKAN_BASE}/anime/${malId}`)
+      // A status error (an unknown id) still means "no such anime"; an
+      // unreachable Jikan with nothing cached still fails the lookup.
+      .then(
+        ({ body }) =>
+          (JSON.parse(body) as { data?: JikanAnimeRow })
+            .data,
+        (thrownError: unknown) =>
+          isProviderUnreachableError(thrownError)
+            ? Promise.reject(thrownError)
+            : undefined,
+      )
+      .then(toMalLookupResult),
+  ).pipe(logAndSwallowPipelineError(lookupMalById))

@@ -19,6 +19,11 @@ import {
 const CLIENT = "mediatools"
 const CLIENT_VER = "1"
 
+export const ANIDB_CLIENT_IDENTIFIERS = {
+  client: CLIENT,
+  clientver: CLIENT_VER,
+}
+
 export type AnidbResult = {
   aid: number
   episodes?: number

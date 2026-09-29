@@ -1,8 +1,10 @@
 import { createCachedFetch } from "../provider-cache/cachedFetch.js"
+import type { ProviderCacheProvider } from "../provider-cache/providerCache.js"
 import { ACOUSTID_MINIMUM_REQUEST_INTERVAL_MILLISECONDS } from "./acoustIdApi.js"
 import { ITUNES_MINIMUM_REQUEST_INTERVAL_MILLISECONDS } from "./itunesArtwork.js"
 import {
   type CachedFetch,
+  MUSICBRAINZ_FETCH_TIMEOUT_MILLISECONDS,
   MUSICBRAINZ_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
   requireMusicBrainzUserAgent,
 } from "./musicBrainzApi.js"
@@ -27,9 +29,11 @@ registerProviderCacheResetHandler(() => {
 const getFetcher = ({
   minimumRequestIntervalMilliseconds,
   provider,
+  timeoutMilliseconds,
 }: {
   minimumRequestIntervalMilliseconds: number
-  provider: string
+  provider: ProviderCacheProvider
+  timeoutMilliseconds?: number
 }) =>
   fetcherCache.get(provider) ??
   (fetcherCache
@@ -39,6 +43,7 @@ const getFetcher = ({
         cache: getSharedProviderCache(),
         minimumRequestIntervalMilliseconds,
         provider,
+        timeoutMilliseconds,
         userAgent: requireMusicBrainzUserAgent(),
       }),
     )
@@ -47,7 +52,8 @@ const getFetcher = ({
 const buildFetcher =
   (options: {
     minimumRequestIntervalMilliseconds: number
-    provider: string
+    provider: ProviderCacheProvider
+    timeoutMilliseconds?: number
   }): CachedFetch =>
   (url, init) =>
     getFetcher(options)(url, init)
@@ -56,6 +62,8 @@ export const musicBrainzCachedFetch = buildFetcher({
   minimumRequestIntervalMilliseconds:
     MUSICBRAINZ_MINIMUM_REQUEST_INTERVAL_MILLISECONDS,
   provider: "musicBrainz",
+  timeoutMilliseconds:
+    MUSICBRAINZ_FETCH_TIMEOUT_MILLISECONDS,
 })
 
 export const acoustIdCachedFetch = buildFetcher({

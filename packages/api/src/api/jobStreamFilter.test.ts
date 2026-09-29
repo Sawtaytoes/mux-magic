@@ -28,6 +28,7 @@ const makeJob = ({
   params: {},
   parentJobId,
   pauseReason: null,
+  providerCacheFallbacks: [],
   results: [],
   startedAt: null,
   status,

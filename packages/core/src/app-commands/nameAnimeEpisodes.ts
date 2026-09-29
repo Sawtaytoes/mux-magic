@@ -24,6 +24,17 @@ import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
 import { getUserSearchInput } from "../tools/getUserSearchInput.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { searchMal } from "../tools/searchMal.js"
+import { buildSharedCachedComputation } from "../tools/sharedProviderFetchers.js"
+
+// `mal-scraper` makes its own requests (axios, underneath), so it goes
+// through the computation form of the provider cache under `myAnimeList`:
+// network-first, the stored answer when MyAnimeList cannot be reached.
+const cacheMyAnimeListScrape = buildSharedCachedComputation(
+  {
+    provider: "myAnimeList",
+    timeoutMilliseconds: 60_000,
+  },
+)
 
 export const nameAnimeEpisodes = ({
   malId,
@@ -94,10 +105,18 @@ export const nameAnimeEpisodes = ({
         .pipe(
           concatMap(({ id, name, url }) =>
             zip(
-              malScraper.getInfoFromURL(url),
-              malScraper.getEpisodesList({
-                id: Number(id),
-                name,
+              cacheMyAnimeListScrape({
+                produceValue: () =>
+                  malScraper.getInfoFromURL(url),
+                requestKey: `info|${url}`,
+              }),
+              cacheMyAnimeListScrape({
+                produceValue: () =>
+                  malScraper.getEpisodesList({
+                    id: Number(id),
+                    name,
+                  }),
+                requestKey: `episodes|${id}`,
               }),
             ),
           ),

@@ -6,6 +6,11 @@ import {
   requireMusicBrainzUserAgent,
 } from "./musicBrainzApi.js"
 
+// A submission and the OAuth token exchange are writes, so they are never
+// cached — but they are bounded, like every other outbound request, so a
+// provider that accepts the connection and goes quiet cannot hang a job.
+const MUSICBRAINZ_WRITE_TIMEOUT_MILLISECONDS = 30_000
+
 // Phase 9, the MusicBrainz half of writing back.
 //
 // ⚠️ Read this before adding anything here. The web service accepts FIVE
@@ -187,6 +192,9 @@ export const submitToMusicBrainz = ({
         "User-Agent": requireMusicBrainzUserAgent(),
       },
       method: "POST",
+      signal: AbortSignal.timeout(
+        MUSICBRAINZ_WRITE_TIMEOUT_MILLISECONDS,
+      ),
     })
       .then((response) =>
         response.text().then((responseBody) => ({
@@ -490,6 +498,9 @@ export const exchangeMusicBrainzAuthorizationCode = ({
         "User-Agent": requireMusicBrainzUserAgent(),
       },
       method: "POST",
+      signal: AbortSignal.timeout(
+        MUSICBRAINZ_WRITE_TIMEOUT_MILLISECONDS,
+      ),
     })
       .then((response) => response.text())
       .then(
