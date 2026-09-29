@@ -9,6 +9,10 @@
 .gitignore
 .gitattributes
 .claude
+# Agent worktrees live in `.worktrees/`. A `docker build` run on the host
+# from the shared checkout would otherwise copy every worktree open at
+# build time into the image.
+.worktrees
 .vscode
 .idea
 
