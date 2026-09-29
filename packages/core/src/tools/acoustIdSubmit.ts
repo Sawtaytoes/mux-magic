@@ -9,6 +9,7 @@ import {
 // A submission is a write, so it is never cached — but it is bounded, like
 // every other outbound request.
 const ACOUSTID_SUBMIT_TIMEOUT_MILLISECONDS = 30_000
+
 // Phase 9, the first and most useful write-back: send fingerprints to
 // AcoustID.
 //
