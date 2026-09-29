@@ -26,10 +26,11 @@ import { writeEmbeddedCoverArt } from "../music/artwork/writeEmbeddedCoverArt.js
 import { readAudioTags } from "../music/tags/readAudioTags.js"
 import { getReleaseYear } from "../tools/itunesArtwork.js"
 import type { CachedFetch } from "../tools/musicBrainzApi.js"
-import { rateLimitedMusicBrainzFetch } from "../tools/musicBrainzApi.js"
 import {
+  coverArtCachedFetch as defaultCoverArtCachedFetch,
   discogsCachedFetch as defaultDiscogsCachedFetch,
   itunesCachedFetch as defaultItunesCachedFetch,
+  musicBrainzCachedFetch as defaultMusicBrainzCachedFetch,
 } from "../tools/musicProviderFetchers.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { isAudioFilePath } from "./scanAudioFiles.js"
@@ -85,7 +86,10 @@ export type ApplyCoverArtResult = {
 }
 
 export type ApplyCoverArtProps = {
+  // MusicBrainz. A caller that injects only this one (the tests) gets it for
+  // the Cover Art Archive too.
   cachedFetch?: CachedFetch
+  coverArtCachedFetch?: CachedFetch
   discogsCachedFetch?: CachedFetch
   imageUrl?: string
   itunesCachedFetch?: CachedFetch
@@ -282,7 +286,8 @@ const applyResolvedCoverArt = ({
   )
 
 export const applyCoverArt = ({
-  cachedFetch = rateLimitedMusicBrainzFetch,
+  cachedFetch,
+  coverArtCachedFetch,
   discogsCachedFetch = defaultDiscogsCachedFetch,
   imageUrl,
   isDryRun = false,
@@ -316,7 +321,17 @@ export const applyCoverArt = ({
                 resolveCoverArtImage({
                   albumTitle: albumIdentity.albumTitle,
                   artistName: albumIdentity.artistName,
-                  cachedFetch,
+                  // Both went through an UNCACHED MusicBrainz fetcher
+                  // until 2026-09-29, so a cover-art pass hit MusicBrainz
+                  // and the Cover Art Archive on every run and had nothing
+                  // to fall back on when either was down.
+                  cachedFetch:
+                    cachedFetch ??
+                    defaultMusicBrainzCachedFetch,
+                  coverArtCachedFetch:
+                    coverArtCachedFetch ??
+                    cachedFetch ??
+                    defaultCoverArtCachedFetch,
                   discogsCachedFetch,
                   folderPath: dirname(filePaths[0] ?? ""),
                   imageUrl,

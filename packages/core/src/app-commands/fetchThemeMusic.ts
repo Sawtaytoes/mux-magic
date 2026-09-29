@@ -169,6 +169,13 @@ const resolveTheme = async (
       }
 }
 
+// The audio itself is a media download, not a provider answer, so it does
+// not go through `provider-cache.sqlite`: the cache holds metadata, and the
+// file this writes into the show folder IS the durable copy. It is still
+// bounded, so a stalled AnimeThemes CDN fails the one show instead of
+// holding the whole pass.
+const THEME_AUDIO_DOWNLOAD_TIMEOUT_MILLISECONDS = 120_000
+
 const applyTheme = (record: ThemeMusicManifestRecord) => {
   if (record.audioUrl === null) {
     return of(record)
@@ -183,7 +190,11 @@ const applyTheme = (record: ThemeMusicManifestRecord) => {
     ".theme.part.mp3",
   )
   return defer(() =>
-    fetch(audioUrl)
+    fetch(audioUrl, {
+      signal: AbortSignal.timeout(
+        THEME_AUDIO_DOWNLOAD_TIMEOUT_MILLISECONDS,
+      ),
+    })
       .then((response) => {
         if (!response.ok) {
           throw new Error(

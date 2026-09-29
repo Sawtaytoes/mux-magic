@@ -41,6 +41,41 @@ const jobDetailSchema = z.object({
       "Human-readable reason why the job is paused. Only set when status is `paused`; null for all other statuses.",
     ),
   params: z.unknown().describe("Command parameters"),
+  providerCacheFallbacks: z
+    .array(
+      z.object({
+        ageMilliseconds: z
+          .number()
+          .describe(
+            "How old the served answer was when it was served.",
+          ),
+        cachedAt: z
+          .string()
+          .describe(
+            "ISO time the provider originally returned the served answer.",
+          ),
+        cause: z
+          .string()
+          .describe("Why the live answer was not used."),
+        isProviderSkipped: z
+          .boolean()
+          .describe(
+            "True when no request was made because this provider had already failed earlier in the same run.",
+          ),
+        provider: z
+          .string()
+          .describe("Provider name, e.g. `dvdCompare`."),
+        request: z
+          .string()
+          .describe(
+            "What was asked for: the URL, or a scrape's request key.",
+          ),
+      }),
+    )
+    .optional()
+    .describe(
+      "Every provider answer this job took from the provider cache because the live request failed. Empty when every provider answered. A sequence's umbrella job also collects its steps' entries.",
+    ),
   results: z
     .array(z.unknown())
     .optional()

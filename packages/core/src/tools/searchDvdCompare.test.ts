@@ -685,17 +685,21 @@ describe(findDvdCompareResults.name, () => {
     expect(outcome.results).toEqual([])
   })
 
-  test("caches a search so a repeated lookup never reaches the network", async () => {
-    // The regression: DVDCompare had a seven-day time to live declared in
-    // PROVIDER_CACHE_TIME_TO_LIVE from day one, but nothing fetched
-    // through the cache, so every lookup went to the site and an outage
-    // failed the run outright.
-    const fetchSpy = vi.fn(async () =>
-      makeSearchPageResponse(
-        MULTI_RESULT_SEARCH_HTML,
-        "https://www.dvdcompare.net/comparisons/search.php",
-      ),
-    )
+  test("stores a search so a repeated lookup survives the site going down", async () => {
+    // The regression: DVDCompare was declared in the cache's provider
+    // table from day one, but nothing fetched through the cache, so an
+    // outage failed the run outright. The repeat still asks the site
+    // (network-first); the stored answer is what it gets when the site is
+    // gone.
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(
+        makeSearchPageResponse(
+          MULTI_RESULT_SEARCH_HTML,
+          "https://www.dvdcompare.net/comparisons/search.php",
+        ),
+      )
+      .mockRejectedValue(new TypeError("fetch failed"))
     globalThis.fetch =
       fetchSpy as unknown as typeof globalThis.fetch
     const cache = openProviderCache({
@@ -729,7 +733,8 @@ describe(findDvdCompareResults.name, () => {
     )
 
     expect(second).toEqual(first)
-    expect(fetchSpy).toHaveBeenCalledOnce()
+    // The first search, then https and its http twin for the repeat.
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
   })
 
   test("sends the search term as the 'param' form field to search.php", async () => {

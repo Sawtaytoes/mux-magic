@@ -219,6 +219,7 @@ export const resolveCoverArtImage = ({
   albumTitle,
   artistName,
   cachedFetch,
+  coverArtCachedFetch,
   discogsCachedFetch,
   folderPath,
   imageUrl,
@@ -230,7 +231,10 @@ export const resolveCoverArtImage = ({
 }: {
   albumTitle?: string
   artistName?: string
+  // MusicBrainz. Also the Cover Art Archive's fetcher when
+  // `coverArtCachedFetch` is not given.
   cachedFetch: CachedFetch
+  coverArtCachedFetch?: CachedFetch
   discogsCachedFetch?: CachedFetch
   folderPath: string
   imageUrl?: string
@@ -246,7 +250,7 @@ export const resolveCoverArtImage = ({
   ).then((explicitImage) =>
     explicitImage === null
       ? readCoverArtArchive({
-          cachedFetch,
+          cachedFetch: coverArtCachedFetch ?? cachedFetch,
           releaseGroupId,
           releaseId,
         })

@@ -17,6 +17,7 @@ import {
   installLogBridge,
   installLogCapture,
 } from "@mux-magic/core/src/api/logCapture.js"
+import { installProviderCacheFallbackBridge } from "@mux-magic/core/src/api/providerCacheFallbackBridge.js"
 import {
   API_PORT,
   MAX_THREADS,
@@ -126,6 +127,7 @@ const boot = async (): Promise<void> => {
   installCrashHandlers()
   installLogCapture()
   installLogBridge()
+  installProviderCacheFallbackBridge()
   setLoggingMode("api")
   initTaskScheduler(MAX_THREADS, { getActiveJobId })
 

@@ -15,7 +15,8 @@ import {
 
 import {
   openProviderCache,
-  PROVIDER_CACHE_TIME_TO_LIVE,
+  PROVIDER_CACHE_FRESH_WINDOW,
+  PROVIDER_CACHE_POLICIES,
 } from "./providerCache.js"
 
 // `node:sqlite` opens the database file in C++, below the memfs shim the
@@ -48,14 +49,14 @@ describe(openProviderCache.name, () => {
 
   const openTemporaryCache = ({
     fileName,
-    timeToLiveByProvider = PROVIDER_CACHE_TIME_TO_LIVE,
+    freshWindowByProvider = PROVIDER_CACHE_FRESH_WINDOW,
   }: {
     fileName: string
-    timeToLiveByProvider?: Record<string, number>
+    freshWindowByProvider?: Record<string, number>
   }) =>
     openProviderCache({
       databasePath: join(directoryHolder.current, fileName),
-      timeToLiveByProvider,
+      freshWindowByProvider,
     })
 
   test("round-trips a stored body, etag and timestamp", () => {
@@ -71,7 +72,7 @@ describe(openProviderCache.name, () => {
         "https://example.test/ws/2/release?query=x",
     })
 
-    const row = cache.get({
+    const row = cache.getStale({
       provider: "musicBrainz",
       requestKey:
         "https://example.test/ws/2/release?query=x",
@@ -85,37 +86,83 @@ describe(openProviderCache.name, () => {
     cache.close()
   })
 
-  test("misses when the row is older than the provider's time to live", () => {
+  test("get serves a row only inside the provider's fresh window", () => {
     const cache = openTemporaryCache({
-      fileName: "expiry.sqlite",
-      timeToLiveByProvider: {
-        dvdCompare: 7 * millisecondsPerDay,
-      },
+      fileName: "fresh-window.sqlite",
     })
 
     vi.useFakeTimers()
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"))
+    cache.set({
+      body: "<anime/>",
+      provider: "aniDb",
+      requestKey: "https://example.test/anime?aid=1",
+    })
+
+    vi.setSystemTime(new Date("2026-01-01T23:00:00.000Z"))
+    expect(
+      cache.get({
+        provider: "aniDb",
+        requestKey: "https://example.test/anime?aid=1",
+      })?.body,
+    ).toBe("<anime/>")
+
+    vi.setSystemTime(new Date("2026-01-02T01:00:00.000Z"))
+    expect(
+      cache.get({
+        provider: "aniDb",
+        requestKey: "https://example.test/anime?aid=1",
+      }),
+    ).toBeNull()
+
+    cache.close()
+  })
+
+  test("get never serves a network-first provider's row, however young", () => {
+    const cache = openTemporaryCache({
+      fileName: "network-first.sqlite",
+    })
+
     cache.set({
       body: "<html>disc</html>",
       provider: "dvdCompare",
       requestKey: "https://example.test/disc",
     })
 
-    vi.setSystemTime(new Date("2026-01-05T00:00:00.000Z"))
-    expect(
-      cache.get({
-        provider: "dvdCompare",
-        requestKey: "https://example.test/disc",
-      }),
-    ).not.toBeNull()
-
-    vi.setSystemTime(new Date("2026-02-01T00:00:00.000Z"))
     expect(
       cache.get({
         provider: "dvdCompare",
         requestKey: "https://example.test/disc",
       }),
     ).toBeNull()
+    expect(
+      cache.getStale({
+        provider: "dvdCompare",
+        requestKey: "https://example.test/disc",
+      })?.body,
+    ).toBe("<html>disc</html>")
+
+    cache.close()
+  })
+
+  test("keeps an imported answer's own fetch time", () => {
+    const cache = openTemporaryCache({
+      fileName: "imported.sqlite",
+    })
+
+    cache.set({
+      body: "<anime/>",
+      fetchedAt: 1_000,
+      provider: "aniDb",
+      requestKey: "https://example.test/anime?aid=2",
+    })
+
+    expect(
+      cache.getStale({
+        provider: "aniDb",
+        requestKey: "https://example.test/anime?aid=2",
+      })?.fetchedAt,
+    ).toBe(1_000)
 
     cache.close()
   })
@@ -123,7 +170,7 @@ describe(openProviderCache.name, () => {
   test("getStale keeps the expired row so its etag can drive a conditional request", () => {
     const cache = openTemporaryCache({
       fileName: "stale.sqlite",
-      timeToLiveByProvider: { aniDb: 0 },
+      freshWindowByProvider: { aniDb: 0 },
     })
 
     cache.set({
@@ -151,15 +198,17 @@ describe(openProviderCache.name, () => {
     cache.close()
   })
 
-  test("applies a per-provider time to live and falls back to the default", () => {
+  test("a provider the table does not name gets no fresh window", () => {
     const cache = openTemporaryCache({
       fileName: "per-provider.sqlite",
-      timeToLiveByProvider: { impatientProvider: 0 },
+      freshWindowByProvider: {
+        patientProvider: millisecondsPerDay,
+      },
     })
 
     cache.set({
-      body: "impatient",
-      provider: "impatientProvider",
+      body: "patient",
+      provider: "patientProvider",
       requestKey: "https://example.test/one",
     })
     cache.set({
@@ -170,16 +219,16 @@ describe(openProviderCache.name, () => {
 
     expect(
       cache.get({
-        provider: "impatientProvider",
+        provider: "patientProvider",
         requestKey: "https://example.test/one",
-      }),
-    ).toBeNull()
+      })?.body,
+    ).toBe("patient")
     expect(
       cache.get({
         provider: "unlistedProvider",
         requestKey: "https://example.test/two",
-      })?.body,
-    ).toBe("unlisted")
+      }),
+    ).toBeNull()
 
     cache.close()
   })
@@ -233,7 +282,7 @@ describe(openProviderCache.name, () => {
     })
     firstHandle.set({
       body: "persisted",
-      provider: "vgmdb",
+      provider: "vgmdbCddb",
       requestKey: "https://example.test/album/1",
     })
     firstHandle.close()
@@ -243,8 +292,8 @@ describe(openProviderCache.name, () => {
     })
 
     expect(
-      secondHandle.get({
-        provider: "vgmdb",
+      secondHandle.getStale({
+        provider: "vgmdbCddb",
         requestKey: "https://example.test/album/1",
       })?.body,
     ).toBe("persisted")
@@ -290,4 +339,50 @@ describe(openProviderCache.name, () => {
 
       expect(consoleSpy).toHaveBeenCalledTimes(1)
     }))
+})
+
+// The owner's rule of 2026-09-29, locked: every provider fetches the latest
+// first, and AniDB alone may serve a stored answer without asking — for
+// one day, because AniDB bans a client that asks for one anime twice in a
+// day. A second non-zero entry needs a documented rule like that, and a new
+// decision record, not an edit here.
+describe("PROVIDER_CACHE_POLICIES", () => {
+  test("gives AniDB a one-day window and every other provider none", () => {
+    expect(
+      Object.entries(PROVIDER_CACHE_POLICIES)
+        .filter(
+          ([, policy]) =>
+            policy.freshWindowMilliseconds > 0,
+        )
+        .map(([provider, policy]) => [
+          provider,
+          policy.freshWindowMilliseconds,
+        ]),
+    ).toEqual([["aniDb", millisecondsPerDay]])
+  })
+
+  test("names every provider a fetcher is registered under", () => {
+    // The type already refuses an unnamed provider at compile time; this
+    // is the list the three drifted keys (`vgmdb` for `vgmdbCddb`, no
+    // `freedbCddb`, no `discogs`) were missing from.
+    expect(
+      Object.keys(PROVIDER_CACHE_POLICIES).sort(),
+    ).toEqual([
+      "acoustId",
+      "aniDb",
+      "animeThemes",
+      "coverArtArchive",
+      "criterionForum",
+      "discogs",
+      "dvdCompare",
+      "freedbCddb",
+      "itunes",
+      "jikan",
+      "movieDb",
+      "musicBrainz",
+      "myAnimeList",
+      "tvdb",
+      "vgmdbCddb",
+    ])
+  })
 })
