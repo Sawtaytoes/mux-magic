@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-09-29 | [The agent redeploys, after confirming no job is live](2026-09-29-the-agent-redeploys-after-confirming-no-job-is-live.md) | process | Accepted |
 | 2026-09-25 | [VRT shoots every Storybook story in both schemes](2026-09-25-vrt-shoots-every-storybook-story-in-both-schemes.md) | infra / web | Accepted |
 | 2026-09-25 | [`scaleResolution` moves the geometry, not just the PlayRes keys](2026-09-25-scale-resolution-moves-the-geometry-not-just-the-playres-keys.md) | core | Accepted |
 | 2026-09-22 | [The `tsx` source condition is private to this repo](2026-09-22-the-tsx-source-condition-is-private-to-this-repo.md) | infra | Accepted |
@@ -49,7 +50,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 | 2026-08-21 | [Every NSF-family command emits the same summary trailer](2026-08-21-nsf-siblings-emit-the-same-summary-trailer.md) | core / web | Superseded |
 | 2026-08-20 | [Every picker is a `Listbox`; the native `Select` is a hatch we have never needed](2026-08-20-every-picker-is-a-listbox-never-a-native-select.md) | web | Accepted |
 | 2026-08-13 | [Disc analysis runs at `--minlength=60`, not 0](2026-08-13-disc-analysis-minimum-title-length-is-60-seconds.md) | core / cli / api | Superseded by [2026-09-03](2026-09-03-disc-analysis-minimum-title-length-drops-to-10-seconds.md) |
-| 2026-08-13 | [Agents merge their own PRs as soon as CI is green](2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md) | process | Accepted |
+| 2026-08-13 | [Agents merge their own PRs as soon as CI is green](2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md) | process | Accepted; its redeploy carve-out is superseded by [2026-09-29](2026-09-29-the-agent-redeploys-after-confirming-no-job-is-live.md) |
 | 2026-08-13 | [PR/public screenshots use masked, fictional data](2026-08-13-pr-screenshots-use-masked-fake-data.md) | process | Accepted |
 | 2026-08-13 | [Sequence groups are flat-only (no parallel-of-sequences)](2026-08-13-groups-are-flat-only-no-parallel-of-sequences.md) | api / web | Known limitation |
 | 2026-08-12 | [Confirmed disc-title dispositions are the regression corpus, stored in the backup](2026-08-12-confirmed-dispositions-are-the-regression-corpus.md) | core / web | Accepted |
