@@ -40,7 +40,8 @@
     "start": "yarn dev",
     "storybook": "yarn workspace @mux-magic/web storybook",
     "test": "vitest",
-    "typecheck": "tsc --noEmit && yarn workspaces foreach -Ap run typecheck"
+    "typecheck": "tsc --noEmit && yarn workspaces foreach -Ap run typecheck",
+    "test:security": "node --test scripts/dependencySecurity.test.mjs"
   },
   "type": "module",
   "dependencies": {
@@ -93,6 +94,9 @@
     "brace-expansion@^5.0.5": "^5.0.9",
     "undici@^6.25.0": "^6.27.0",
     "undici@^7.19.0": "^7.28.0",
-    "undici@^7.25.0": "^7.28.0"
+    "undici@^7.25.0": "^7.28.0",
+    "braces@npm:^3.0.3": "patch:braces@npm%3A3.0.3#~/.yarn/patches/braces-npm-3.0.3-582c14023c.patch",
+    "http-cache-semantics@npm:^4.0.0": "patch:http-cache-semantics@npm%3A4.3.0#~/.yarn/patches/http-cache-semantics-npm-4.3.0-ee45f76976.patch",
+    "node-taglib-sharp/uuid": "11.1.1"
   }
 }

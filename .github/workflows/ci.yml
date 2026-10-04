@@ -139,6 +139,7 @@ jobs:
       # need run-once, because Vitest 4 browser mode doesn't reliably exit
       # watch mode just from process.env.CI.
       - run: yarn vitest run
+      - run: yarn test:security
 
       # AFTER the tests, deliberately: Vite's optimizer writes its metadata
       # as it discovers, so before a run there is nothing to compare and
