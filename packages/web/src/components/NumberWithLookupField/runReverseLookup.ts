@@ -14,6 +14,7 @@ import type {
   LookupMovieDbRequest,
   LookupTvdbRequest,
   NameLookupResponse,
+  ProviderCacheFallback,
   SearchMovieDbResponse,
 } from "@mux-magic/api/api-types"
 import { apiBase } from "../../apiBase"
@@ -100,7 +101,11 @@ export const buildReverseLookupRequest = (args: {
 }
 
 export const runReverseLookup = async (
-  request: ReverseLookupRequest,
+  request: ReverseLookupRequest & {
+    onProviderCacheFallbacks?: (
+      fallbacks: ProviderCacheFallback[],
+    ) => void
+  },
 ): Promise<string | null> => {
   try {
     const response = await fetch(
@@ -115,6 +120,9 @@ export const runReverseLookup = async (
     const data = (await response.json()) as
       | NameLookupResponse
       | LabelLookupResponse
+    request.onProviderCacheFallbacks?.(
+      data.providerCacheFallbacks ?? [],
+    )
     if ("name" in data) return data.name ?? null
     if ("label" in data) return data.label ?? null
     return null
@@ -126,6 +134,9 @@ export const runReverseLookup = async (
 export const resolveTmdbForBaseTitle = async (args: {
   baseTitle: string
   year: string
+  onProviderCacheFallbacks?: (
+    fallbacks: ProviderCacheFallback[],
+  ) => void
 }): Promise<{
   tmdbId: number
   tmdbName: string
@@ -146,6 +157,9 @@ export const resolveTmdbForBaseTitle = async (args: {
     if (!response.ok) return null
     const data =
       (await response.json()) as SearchMovieDbResponse
+    args.onProviderCacheFallbacks?.(
+      data.providerCacheFallbacks ?? [],
+    )
     const top = data.results?.[0]
     if (!top?.movieDbId) return null
     const tmdbName = top.year

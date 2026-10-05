@@ -62,6 +62,44 @@ describe("AnidbTitlePickerField", () => {
     vi.clearAllMocks()
   })
 
+  test("shows a warning when titles came from the cache", async () => {
+    vi.mocked(fetchAnidbTitles).mockImplementation(
+      async ({ onProviderCacheFallbacks }) => {
+        onProviderCacheFallbacks([
+          {
+            ageMilliseconds: 172800000,
+            cachedAt: "2026-09-27T12:00:00.000Z",
+            cause: "Provider unavailable",
+            isProviderSkipped: false,
+            provider: "aniDb",
+            request: "8160",
+          },
+        ])
+        return [
+          {
+            lang: "en",
+            type: "main",
+            value: "Example Series",
+          },
+        ]
+      },
+    )
+    renderField(createStep({ params: { anidbId: 8160 } }))
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Load titles from AniDB",
+      }),
+    )
+    expect(
+      screen.getByText(
+        "This lookup used cached provider data.",
+      ),
+    ).toBeVisible()
+    expect(
+      screen.getByText(/AniDB: 8160 — cached 2 days ago/),
+    ).toBeVisible()
+  })
+
   test("shows the current seriesName value in the input", () => {
     renderField(
       createStep({
@@ -110,7 +148,10 @@ describe("AnidbTitlePickerField", () => {
       }),
     )
 
-    expect(fetchAnidbTitles).toHaveBeenCalledWith(8160)
+    expect(fetchAnidbTitles).toHaveBeenCalledWith({
+      anidbId: 8160,
+      onProviderCacheFallbacks: expect.any(Function),
+    })
 
     // The candidate list is a `Picker`: a trigger button that opens a
     // listbox. It stores nothing, so the trigger reads as its

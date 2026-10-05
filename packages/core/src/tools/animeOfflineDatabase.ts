@@ -8,6 +8,7 @@ import { join } from "node:path"
 import { logInfo } from "@mux-magic/tools"
 import {
   buildProviderCacheFallback,
+  buildSharedProviderCacheRead,
   describeThrownError,
   reportProviderCacheFallback,
 } from "../provider-cache/providerCacheFallbacks.js"
@@ -243,20 +244,27 @@ const fallBackToStoredDataset = (thrownError: unknown) =>
     )
 
 // Concurrent loads share one refresh, so a burst of searches is one HEAD.
-const refreshHolder = new Map<"refresh", Promise<void>>()
+const refreshHolder = new Map<
+  "refresh",
+  () => Promise<void>
+>()
 
 const refreshDataset = () =>
-  refreshHolder.get("refresh") ??
-  (refreshHolder
-    .set(
-      "refresh",
-      refreshFromNetwork()
-        .catch(fallBackToStoredDataset)
-        .finally(() => {
-          refreshHolder.delete("refresh")
-        }),
-    )
-    .get("refresh") as Promise<void>)
+  (
+    refreshHolder.get("refresh") ??
+    (refreshHolder
+      .set(
+        "refresh",
+        buildSharedProviderCacheRead(() =>
+          refreshFromNetwork()
+            .catch(fallBackToStoredDataset)
+            .finally(() => {
+              refreshHolder.delete("refresh")
+            }),
+        ),
+      )
+      .get("refresh") as () => Promise<void>)
+  )()
 
 export const parseAnimeIndex = (
   rawJson: string,

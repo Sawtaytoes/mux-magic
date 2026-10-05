@@ -1,3 +1,7 @@
+import type {
+  ListDvdCompareReleasesResponse,
+  ProviderCacheFallback,
+} from "@mux-magic/api/api-types"
 import { apiBase } from "../../apiBase"
 import type {
   LookupRelease,
@@ -11,6 +15,7 @@ const fetchReleases = async (
   releases: LookupRelease[]
   debug: unknown
   error: string | null
+  providerCacheFallbacks: ProviderCacheFallback[]
 }> => {
   try {
     const resp = await fetch(
@@ -18,21 +23,31 @@ const fetchReleases = async (
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dvdCompareId }),
+        body: JSON.stringify({
+          dvdCompareId: Number(dvdCompareId),
+        }),
       },
     )
-    const data = (await resp.json()) as {
-      releases?: LookupRelease[]
-      debug?: unknown
-      error?: string
+    if (!resp.ok) {
+      return {
+        releases: [],
+        debug: null,
+        error: `Server error: ${resp.status} ${resp.statusText}`,
+        providerCacheFallbacks: [],
+      }
     }
+    const data =
+      (await resp.json()) as ListDvdCompareReleasesResponse
     return {
+      providerCacheFallbacks:
+        data.providerCacheFallbacks ?? [],
       releases: data.releases ?? [],
       debug: data.debug ?? null,
       error: data.error ?? null,
     }
   } catch (error) {
     return {
+      providerCacheFallbacks: [],
       releases: [],
       debug: null,
       error:
@@ -70,8 +85,17 @@ export const LookupVariantStage = ({
       isLoading: true,
     })
     fetchReleases(variantId).then(
-      ({ releases, debug, error }) => {
-        if (releases.length === 1) {
+      ({
+        releases,
+        debug,
+        error,
+        providerCacheFallbacks,
+      }) => {
+        if (
+          releases.length === 1 &&
+          providerCacheFallbacks.length === 0 &&
+          (state.providerCacheFallbacks?.length ?? 0) === 0
+        ) {
           setParam(state.stepId, state.fieldName, {
             hash: releases[0].hash,
             label: releases[0].label,
@@ -79,6 +103,9 @@ export const LookupVariantStage = ({
           onClose()
         } else {
           onUpdate({
+            providerCacheFallbacks: (
+              state.providerCacheFallbacks ?? []
+            ).concat(providerCacheFallbacks),
             releases,
             releasesDebug: debug,
             releasesError: error,

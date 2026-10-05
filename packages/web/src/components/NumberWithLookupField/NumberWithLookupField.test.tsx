@@ -358,6 +358,52 @@ describe("NumberWithLookupField — reverse-lookup auto-resolution", () => {
     vi.unstubAllGlobals()
   })
 
+  test("shows cached-data provenance for a typed-ID lookup", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          name: "Example Series",
+          providerCacheFallbacks: [
+            {
+              ageMilliseconds: 172800000,
+              cachedAt: "2026-09-27T12:00:00.000Z",
+              cause: "Provider unavailable",
+              isProviderSkipped: false,
+              provider: "jikan",
+              request: "1",
+            },
+          ],
+        }),
+      }),
+    )
+    const step = createTestStep()
+    const store = createStore()
+    store.set(stepsAtom, [step])
+    render(
+      <Provider store={store}>
+        <NumberWithLookupField
+          field={malField}
+          step={step}
+        />
+      </Provider>,
+    )
+    expect(
+      await screen.findByText(
+        "This lookup used cached provider data.",
+      ),
+    ).toBeVisible()
+    expect(
+      screen.getByText(
+        /Jikan \(MyAnimeList\): 1 — cached 2 days ago/,
+      ),
+    ).toBeVisible()
+    expect(
+      (store.get(stepsAtom)[0] as Step).params.malName,
+    ).toBe("Example Series")
+  })
+
   test("fetches and stores companion name on mount when ID is set but companion is empty", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

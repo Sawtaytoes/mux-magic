@@ -55,3 +55,10 @@ The simple lookup types (MAL/AniDB/TVDB/TMDB) are single-stage: search → pick 
 ## MusicBrainz release results
 
 <Canvas of={LookupModalStories.MusicBrainzWithResults} />
+
+A standalone lookup displays the same cached-provider warning as the run modal.
+The notice names the provider, request, cache age, and failed live request. Search
+warnings remain visible through DVDCompare variant and release selection; a new
+search clears them and uses its own response. A cached single release stays open
+for review before selection. Typed-ID reverse lookups and AniDB title loading show
+the notice beside their fields.

@@ -1,5 +1,4 @@
 import { join } from "node:path"
-
 import { vol } from "memfs"
 import {
   afterEach,
@@ -9,6 +8,7 @@ import {
   test,
   vi,
 } from "vitest"
+import { captureProviderCacheFallbacks } from "../provider-cache/providerCacheFallbacks.js"
 
 import {
   ANIDB_PROVIDER,
@@ -85,6 +85,35 @@ describe(getAnimeXml.name, () => {
       buildXml(17005),
       buildXml(17005),
     ])
+  })
+
+  test("both concurrent lookup responses report a shared cached answer", async () => {
+    storeAnswer({
+      aid: 42,
+      ageMilliseconds: 48 * millisecondsPerHour,
+      xml: buildXml(42),
+    })
+    const fetchSpy = vi
+      .fn()
+      .mockRejectedValue(new Error("network down"))
+    vi.stubGlobal("fetch", fetchSpy)
+    const results = await Promise.all([
+      captureProviderCacheFallbacks(() =>
+        getAnimeXml(42, CLIENT),
+      ),
+      captureProviderCacheFallbacks(() =>
+        getAnimeXml(42, CLIENT),
+      ),
+    ])
+    expect(fetchSpy).toHaveBeenCalledOnce()
+    expect(results[0]?.value).toBe(buildXml(42))
+    expect(results[1]?.value).toBe(buildXml(42))
+    expect(results[0]?.providerCacheFallbacks).toHaveLength(
+      1,
+    )
+    expect(results[1]?.providerCacheFallbacks).toEqual(
+      results[0]?.providerCacheFallbacks,
+    )
   })
 
   test("a failed lookup does not poison the next attempt", async () => {

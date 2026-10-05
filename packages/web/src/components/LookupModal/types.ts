@@ -14,6 +14,7 @@ import type {
   LookupRelease,
   LookupSearchResult,
   LookupType,
+  ProviderCacheFallback,
 } from "@mux-magic/api/api-types"
 
 export type {
@@ -39,6 +40,7 @@ export type LookupGroup = {
 }
 
 export type LookupState = {
+  providerCacheFallbacks?: ProviderCacheFallback[]
   lookupType: LookupType
   stepId: string
   fieldName: string

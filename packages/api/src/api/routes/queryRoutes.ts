@@ -2,6 +2,7 @@ import { sep as pathSeparator } from "node:path"
 
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import { getSubtitleMetadata } from "@mux-magic/core/src/app-commands/getSubtitleMetadata.js"
+import { captureProviderCacheFallbacks } from "@mux-magic/core/src/provider-cache/providerCacheFallbacks.js"
 import { searchMusicBrainzReleases } from "@mux-magic/core/src/tools/musicBrainzApi.js"
 import { musicBrainzCachedFetch } from "@mux-magic/core/src/tools/musicProviderFetchers.js"
 import {
@@ -54,6 +55,39 @@ import {
 import * as schemas from "../schemas.js"
 
 export const queryRoutes = new OpenAPIHono()
+
+// Collect per request, including fallback reports emitted before a route
+// catches an error. File queries do not use providers and keep their shape.
+queryRoutes.use("/queries/*", async (context, next) => {
+  if (
+    /\/queries\/(search|lookup|listDvdCompare)/.test(
+      context.req.path,
+    )
+  ) {
+    const { providerCacheFallbacks } =
+      await captureProviderCacheFallbacks(next)
+    if (
+      context.res.ok &&
+      context.res.headers
+        .get("content-type")
+        ?.includes("application/json")
+    ) {
+      const response = await context.res.json()
+      if (
+        response !== null &&
+        typeof response === "object" &&
+        Array.isArray(response) === false
+      ) {
+        context.res = context.json(
+          { ...response, providerCacheFallbacks },
+          200,
+        )
+      }
+    }
+  } else {
+    await next()
+  }
+})
 
 // Pulls the most informative message out of an error that may have a
 // nested cause (e.g. Node's TypeError(fetch failed) wraps ConnectTimeoutError).

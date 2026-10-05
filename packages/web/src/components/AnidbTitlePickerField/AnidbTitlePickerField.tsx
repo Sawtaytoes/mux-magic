@@ -1,11 +1,15 @@
 import { Picker } from "@charcuterie/ui"
-import type { AnidbTitle } from "@mux-magic/api/api-types"
+import type {
+  AnidbTitle,
+  ProviderCacheFallback,
+} from "@mux-magic/api/api-types"
 import { useState } from "react"
 
 import type { CommandField } from "../../commands/types"
 import { useBuilderActions } from "../../hooks/useBuilderActions"
 import type { Step } from "../../types"
 import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
+import { ProviderCacheFallbackNotice } from "../ProviderCacheFallbackNotice/ProviderCacheFallbackNotice"
 import { fetchAnidbTitles } from "./fetchAnidbTitles"
 
 type AnidbTitlePickerFieldProps = {
@@ -33,6 +37,10 @@ export const AnidbTitlePickerField = ({
   const anidbId = Number(rawSourceId)
   const hasAnidbId = Number.isFinite(anidbId) && anidbId > 0
 
+  const [
+    providerCacheFallbacks,
+    setProviderCacheFallbacks,
+  ] = useState<ProviderCacheFallback[]>([])
   const [titles, setTitles] = useState<AnidbTitle[]>([])
   const [status, setStatus] = useState<
     "idle" | "loading" | "loaded" | "empty"
@@ -40,8 +48,12 @@ export const AnidbTitlePickerField = ({
 
   const handleLoad = async () => {
     if (!hasAnidbId) return
+    setProviderCacheFallbacks([])
     setStatus("loading")
-    const loaded = await fetchAnidbTitles(anidbId)
+    const loaded = await fetchAnidbTitles({
+      anidbId,
+      onProviderCacheFallbacks: setProviderCacheFallbacks,
+    })
     setTitles(loaded)
     setStatus(loaded.length > 0 ? "loaded" : "empty")
   }
@@ -63,6 +75,10 @@ export const AnidbTitlePickerField = ({
   return (
     <CommandFieldGroup field={field}>
       <div className="flex flex-col gap-1.5">
+        <ProviderCacheFallbackNotice
+          context="lookup"
+          fallbacks={providerCacheFallbacks}
+        />
         <div className="flex items-center gap-1.5">
           <input
             type="text"

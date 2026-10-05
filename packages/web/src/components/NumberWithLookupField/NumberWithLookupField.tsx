@@ -1,7 +1,7 @@
 import { IconButton } from "@charcuterie/ui"
+import type { ProviderCacheFallback } from "@mux-magic/api/api-types"
 import { useAtomValue, useSetAtom, useStore } from "jotai"
-import { useEffect, useRef } from "react"
-
+import { useEffect, useRef, useState } from "react"
 import { LOOKUP_LINKS } from "../../commands/lookupLinks"
 import type { CommandField } from "../../commands/types"
 import { lookupModalAtom } from "../../components/LookupModal/lookupModalAtom"
@@ -12,6 +12,7 @@ import { variablesAtom } from "../../state/variablesAtom"
 import type { Step } from "../../types"
 import { parseDvdCompareDisplayName } from "../../utils/parseDvdCompareDisplayName"
 import { CommandFieldGroup } from "../CommandFieldGroup/CommandFieldGroup"
+import { ProviderCacheFallbackNotice } from "../ProviderCacheFallbackNotice/ProviderCacheFallbackNotice"
 import { ChevronDownSvg } from "./ChevronDownSvg"
 import { ChevronUpSvg } from "./ChevronUpSvg"
 import {
@@ -46,6 +47,10 @@ export const NumberWithLookupField = ({
   step,
 }: NumberWithLookupFieldProps) => {
   const { setLinkedOrParamValue } = useBuilderActions()
+  const [
+    providerCacheFallbacks,
+    setProviderCacheFallbacks,
+  ] = useState<ProviderCacheFallback[]>([])
   const setLookupModal = useSetAtom(lookupModalAtom)
   const store = useStore()
   const variables = useAtomValue(variablesAtom)
@@ -180,7 +185,14 @@ export const NumberWithLookupField = ({
 
     debounceTimerRef.current = setTimeout(async () => {
       debounceTimerRef.current = null
-      const name = await runReverseLookup(request)
+      const name = await runReverseLookup({
+        ...request,
+        onProviderCacheFallbacks: (fallbacks) => {
+          if (requestTokenRef.current === token) {
+            setProviderCacheFallbacks(fallbacks)
+          }
+        },
+      })
       if (requestTokenRef.current !== token) return
       if (!name) return
       store.set(setParamAtom, {
@@ -193,7 +205,16 @@ export const NumberWithLookupField = ({
       if (isDvdCompareCardLocal) {
         const parsed = parseDvdCompareDisplayName(name)
         if (parsed?.baseTitle) {
-          const tmdb = await resolveTmdbForBaseTitle(parsed)
+          const tmdb = await resolveTmdbForBaseTitle({
+            ...parsed,
+            onProviderCacheFallbacks: (fallbacks) => {
+              if (requestTokenRef.current === token) {
+                setProviderCacheFallbacks((previous) =>
+                  previous.concat(fallbacks),
+                )
+              }
+            },
+          })
           if (requestTokenRef.current !== token) return
           if (tmdb) {
             store.set(setParamAtom, {
@@ -261,6 +282,7 @@ export const NumberWithLookupField = ({
         value: undefined,
       })
     }
+    setProviderCacheFallbacks([])
     requestTokenRef.current = null
   }
 
@@ -364,6 +386,10 @@ export const NumberWithLookupField = ({
 
   return (
     <CommandFieldGroup className="mb-2" field={field}>
+      <ProviderCacheFallbackNotice
+        context="lookup"
+        fallbacks={providerCacheFallbacks}
+      />
       <div className="flex items-center gap-2">
         {hasIncrementButtons ? (
           <>

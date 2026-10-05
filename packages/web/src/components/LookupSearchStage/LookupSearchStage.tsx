@@ -1,7 +1,8 @@
-﻿import { Button } from "@charcuterie/ui"
+import { Button } from "@charcuterie/ui"
 import type {
   DvdCompareResult,
   ListDvdCompareReleasesResponse,
+  ProviderCacheFallback,
   SearchAnidbResponse,
   SearchDvdCompareResponse,
   SearchMalResponse,
@@ -76,6 +77,7 @@ const fetchSearch = async (
   // ignoring the user's format filter since the direct hit is canonical.
   directListingResult: DvdCompareResult | null
   error: string | null
+  providerCacheFallbacks: ProviderCacheFallback[]
 }> => {
   try {
     const resp = await fetch(
@@ -88,6 +90,7 @@ const fetchSearch = async (
     )
     if (!resp.ok) {
       return {
+        providerCacheFallbacks: [],
         results: [],
         directListingResult: null,
         error: `Server error: ${resp.status} ${resp.statusText}`,
@@ -118,12 +121,15 @@ const fetchSearch = async (
         ? (rawResults[0] as unknown as DvdCompareResult)
         : null
     return {
+      providerCacheFallbacks:
+        data.providerCacheFallbacks ?? [],
       results,
       directListingResult,
       error: data.error ?? null,
     }
   } catch (error) {
     return {
+      providerCacheFallbacks: [],
       results: [],
       directListingResult: null,
       error:
@@ -146,10 +152,12 @@ const fetchReleases = async (
   releases: LookupRelease[]
   debug: unknown
   error: string | null
+  providerCacheFallbacks: ProviderCacheFallback[]
 }> => {
   const numId = Number(dvdCompareId)
   if (Number.isNaN(numId)) {
     return {
+      providerCacheFallbacks: [],
       releases: [],
       debug: null,
       error: "Invalid DVDCompare ID",
@@ -166,6 +174,7 @@ const fetchReleases = async (
     )
     if (!resp.ok) {
       return {
+        providerCacheFallbacks: [],
         releases: [],
         debug: null,
         error: `Server error: ${resp.status} ${resp.statusText}`,
@@ -186,12 +195,15 @@ const fetchReleases = async (
       error = String(error)
     }
     return {
+      providerCacheFallbacks:
+        data.providerCacheFallbacks ?? [],
       releases: (data.releases ?? []) as LookupRelease[],
       debug: data.debug ?? null,
       error: typeof error === "string" ? error : null,
     }
   } catch (error) {
     return {
+      providerCacheFallbacks: [],
       releases: [],
       debug: null,
       error:
@@ -225,6 +237,7 @@ export const LookupSearchStage = ({
     group: LookupGroup,
     fidString: string,
     variantLabel: string,
+    searchFallbacks = state.providerCacheFallbacks ?? [],
   ) => {
     onUpdate({
       isLoading: true,
@@ -233,9 +246,16 @@ export const LookupSearchStage = ({
       selectedVariant: variantLabel,
       stage: "release",
     })
-    const { releases, debug, error } =
-      await fetchReleases(fidString)
+    const {
+      releases,
+      debug,
+      error,
+      providerCacheFallbacks,
+    } = await fetchReleases(fidString)
     onUpdate({
+      providerCacheFallbacks: searchFallbacks.concat(
+        providerCacheFallbacks,
+      ),
       releases,
       releasesDebug: debug,
       releasesError: error,
@@ -246,9 +266,17 @@ export const LookupSearchStage = ({
   const runSearch = async () => {
     const term = state.searchTerm.trim()
     if (!term) return
-    onUpdate({ isLoading: true, searchError: null })
-    const { results, directListingResult, error } =
-      await fetchSearch(state.lookupType, term)
+    onUpdate({
+      isLoading: true,
+      searchError: null,
+      providerCacheFallbacks: [],
+    })
+    const {
+      results,
+      directListingResult,
+      error,
+      providerCacheFallbacks,
+    } = await fetchSearch(state.lookupType, term)
     // Direct hit on DVDCompare: server redirected search.php to a single
     // film page (e.g. "solider" → fid=55420). Skip the picker entirely
     // and jump straight to release selection for that one film.
@@ -268,11 +296,13 @@ export const LookupSearchStage = ({
         syntheticGroup,
         fidString,
         directListingResult.variant,
+        providerCacheFallbacks,
       )
       return
     }
     onUpdate({
       isLoading: false,
+      providerCacheFallbacks,
       results,
       searchError: error,
     })

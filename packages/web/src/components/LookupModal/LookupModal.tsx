@@ -10,6 +10,7 @@ import { Modal } from "../../primitives/Modal/Modal"
 import { LookupReleaseStage } from "../LookupReleaseStage/LookupReleaseStage"
 import { LookupSearchStage } from "../LookupSearchStage/LookupSearchStage"
 import { LookupVariantStage } from "../LookupVariantStage/LookupVariantStage"
+import { ProviderCacheFallbackNotice } from "../ProviderCacheFallbackNotice/ProviderCacheFallbackNotice"
 
 const LOOKUP_TITLES: Record<LookupType, string> = {
   mal: "Look up MAL ID",
@@ -127,6 +128,11 @@ export const LookupModal = () => {
             id="lookup-body"
             className="flex-1 overflow-y-auto p-4 min-h-0"
           >
+            <ProviderCacheFallbackNotice
+              className="mb-3"
+              context="lookup"
+              fallbacks={state.providerCacheFallbacks ?? []}
+            />
             {state.stage === "search" && (
               <LookupSearchStage
                 state={state}
