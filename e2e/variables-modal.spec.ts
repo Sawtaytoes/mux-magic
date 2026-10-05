@@ -2,12 +2,23 @@ import { expect, type Page, test } from "@playwright/test"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// The Edit Variables modal is the Narrow View's editor. At `lg` (1024px)
+// and wider the sidebar renders the same panel inline and the modal closes
+// itself (EditVariablesModal's `min-width: 1024px` effect), so of the four
+// test windows only `narrow` can hold it open. Those suites carry the
+// `@narrow-view` tag and the wide windows' claim — the sidebar is the
+// editor — carries `@wide-view`; playwright.config.ts routes each tag to the
+// windows where it is true.
+//
+// In the narrow window the header's pinned toolbar is hidden too (≤480px,
+// builderStyles.css) and its Variables button is mirrored inside the ⋮
+// "Sequence actions" menu, which is where a person on a phone finds it.
 async function openVariablesModal(page: Page) {
-  // Scope to the header toolbar — there is a second "Variables" button
-  // inside `#page-actions-controls` at intermediate widths, and the page
-  // header is designed so this scoping disambiguates.
   await page
-    .getByRole("toolbar", { name: "Header actions" })
+    .getByRole("button", { name: "Sequence actions" })
+    .click()
+  await page
+    .locator("#page-actions-controls")
     .getByRole("button", { name: "Variables" })
     .click()
   await expect(
@@ -15,23 +26,28 @@ async function openVariablesModal(page: Page) {
   ).toBeVisible()
 }
 
+// The sidebar is a `Rail`: a column at `md`+ and a strip below the sequence
+// in the Narrow View, so it is reachable in every window.
+const variablesSidebar = (page: Page) =>
+  page.getByRole("complementary", { name: "Variables" })
+
 // ─── Edit Variables modal ─────────────────────────────────────────────────────
 
-// The header "Variables" button is `lg:hidden` because the desktop layout
-// surfaces variables via the always-visible sidebar instead. Use a sub-lg
-// viewport so the button — and therefore the modal flow — is reachable.
-test.describe("Edit Variables modal", () => {
-  test.use({ viewport: { width: 800, height: 900 } })
-
+test.describe("Edit Variables modal", {
+  tag: "@narrow-view",
+}, () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/builder/")
   })
 
-  test("Variables button opens the Edit Variables modal", async ({
+  test("Variables in the Sequence actions menu opens the Edit Variables modal", async ({
     page,
   }) => {
     await page
-      .getByRole("toolbar", { name: "Header actions" })
+      .getByRole("button", { name: "Sequence actions" })
+      .click()
+    await page
+      .locator("#page-actions-controls")
       .getByRole("button", { name: "Variables" })
       .click()
     await expect(
@@ -133,16 +149,6 @@ test.describe("Edit Variables modal", () => {
       dialog.getByTitle(/browse|pick a folder/i),
     ).toHaveCount(0)
   })
-
-  test("sequence list no longer renders path variable cards inline", async ({
-    page,
-  }) => {
-    // Inline variable cards should NOT exist outside the modal/sidebar.
-    // The BuilderPathVariableList has been removed from BuilderPage.
-    await expect(
-      page.locator("[data-path-var]"),
-    ).toHaveCount(0)
-  })
 })
 
 // ─── Variables sidebar ────────────────────────────────────────────────────────
@@ -155,33 +161,65 @@ test.describe("Variables sidebar", () => {
   test("sidebar is present with Variables heading", async ({
     page,
   }) => {
-    // The sidebar always renders in the DOM; CSS hides it below lg.
+    await expect(variablesSidebar(page)).toBeVisible()
     await expect(
-      page.getByRole("complementary", {
+      variablesSidebar(page).getByRole("heading", {
         name: "Variables",
       }),
-    ).toBeAttached()
+    ).toBeVisible()
+  })
+
+  test("sequence list no longer renders path variable cards inline", async ({
+    page,
+  }) => {
+    // Inline variable cards should NOT exist outside the modal/sidebar.
+    // The BuilderPathVariableList has been removed from BuilderPage.
+    await expect(
+      page.locator("[data-path-var]"),
+    ).toHaveCount(0)
+  })
+})
+
+test.describe("Variables at lg and wider", {
+  tag: "@wide-view",
+}, () => {
+  test("the sidebar is the editor and the header offers no Variables button", async ({
+    page,
+  }) => {
+    await page.goto("/builder/")
+
+    const headerActions = page.getByRole("toolbar", {
+      name: "Header actions",
+    })
+    await expect(headerActions).toBeVisible()
+    await expect(
+      headerActions.getByRole("button", {
+        name: "Variables",
+      }),
+    ).toBeHidden()
+    await expect(
+      variablesSidebar(page).getByRole("button", {
+        name: /add variable/i,
+      }),
+    ).toBeVisible()
   })
 })
 
 // ─── Variable YAML round-trip ─────────────────────────────────────────────────
 
+// Driven through the sidebar, which every window has, so the round-trip is
+// proven in all four. The modal renders the same `VariablesPanel`.
 test.describe("Variable YAML round-trip", () => {
-  // Same as the "Edit Variables modal" suite: need a sub-lg viewport so the
-  // header Variables button (which opens the modal) is visible.
-  test.use({ viewport: { width: 800, height: 900 } })
-
   test.beforeEach(async ({ page }) => {
     await page.goto("/builder/")
   })
 
-  test("path variable created in modal survives YAML copy-reload", async ({
+  test("path variable created in the sidebar survives YAML copy-reload", async ({
     page,
   }) => {
-    // Create a path variable via the modal.
-    await openVariablesModal(page)
-    const dialog = page.getByRole("dialog")
-    await dialog
+    // Create a path variable in the sidebar.
+    const sidebar = variablesSidebar(page)
+    await sidebar
       .getByRole("button", { name: /add variable/i })
       .click()
     await page
@@ -189,19 +227,11 @@ test.describe("Variable YAML round-trip", () => {
       .click()
 
     // Give it a label and a value so toYamlStr sees a non-empty variable.
-    const labelInput = dialog.getByRole("textbox").first()
+    const labelInput = sidebar.getByRole("textbox").first()
     await labelInput.fill("Media Root")
     const valueInput =
-      dialog.getByPlaceholder(/\/mnt\/media/i)
+      sidebar.getByPlaceholder(/\/mnt\/media/i)
     await valueInput.fill("/mnt/media")
-
-    // Close the modal via the close button so we can access header controls.
-    await dialog
-      .getByRole("button", { name: /close/i })
-      .click()
-    await expect(
-      page.getByRole("dialog", { name: /edit variables/i }),
-    ).toBeHidden()
 
     // Copy YAML via header controls.
     await page
@@ -242,34 +272,25 @@ test.describe("Variable YAML round-trip", () => {
       page.getByText(/Paste your saved sequence YAML/),
     ).toBeHidden()
 
-    // Re-open modal and verify the variable survived.
-    await openVariablesModal(page)
+    // The variable survived the reload.
     await expect(
-      page
-        .getByRole("dialog")
-        .locator("input[value='Media Root']"),
+      variablesSidebar(page).locator(
+        "input[value='Media Root']",
+      ),
     ).toBeVisible()
   })
 
   test("threadCount variable survives YAML copy-reload", async ({
     page,
   }) => {
-    await openVariablesModal(page)
-    const dialog = page.getByRole("dialog")
-    await dialog
+    const sidebar = variablesSidebar(page)
+    await sidebar
       .getByRole("button", { name: /add variable/i })
       .click()
     await page
       .getByRole("menuitem", { name: /max threads/i })
       .click()
-    await dialog.getByRole("spinbutton").fill("4")
-
-    await dialog
-      .getByRole("button", { name: /close/i })
-      .click()
-    await expect(
-      page.getByRole("dialog", { name: /edit variables/i }),
-    ).toBeHidden()
+    await sidebar.getByRole("spinbutton").fill("4")
 
     // Copy YAML.
     await page
@@ -310,25 +331,23 @@ test.describe("Variable YAML round-trip", () => {
       page.getByText(/Paste your saved sequence YAML/),
     ).toBeHidden()
 
-    // Re-open modal: the threadCount card is present with the value preserved.
-    await openVariablesModal(page)
+    // The threadCount card is back with the value preserved.
     await expect(
-      page
-        .getByRole("dialog")
-        .getByText("threadCount variable"),
+      variablesSidebar(page).getByText(
+        "threadCount variable",
+      ),
     ).toBeVisible()
     await expect(
-      page.getByRole("dialog").getByRole("spinbutton"),
+      variablesSidebar(page).getByRole("spinbutton"),
     ).toHaveValue("4")
   })
 
   test("dvdCompareId variable survives YAML copy-reload", async ({
     page,
   }) => {
-    // Create a dvdCompareId variable via the modal.
-    await openVariablesModal(page)
-    const dialog = page.getByRole("dialog")
-    await dialog
+    // Create a dvdCompareId variable in the sidebar.
+    const sidebar = variablesSidebar(page)
+    await sidebar
       .getByRole("button", { name: /add variable/i })
       .click()
     await page
@@ -336,19 +355,12 @@ test.describe("Variable YAML round-trip", () => {
       .click()
 
     // Label + value so toYamlStr emits the variable.
-    const labelInput = dialog.getByRole("textbox").first()
+    const labelInput = sidebar.getByRole("textbox").first()
     await labelInput.fill("Spider-Man 2002")
-    const valueInput = dialog.getByPlaceholder(
+    const valueInput = sidebar.getByPlaceholder(
       /spider-man-2002 or https/i,
     )
     await valueInput.fill("spider-man-2002")
-
-    await dialog
-      .getByRole("button", { name: /close/i })
-      .click()
-    await expect(
-      page.getByRole("dialog", { name: /edit variables/i }),
-    ).toBeHidden()
 
     // Copy YAML.
     await page
@@ -388,16 +400,15 @@ test.describe("Variable YAML round-trip", () => {
     ).toBeHidden()
 
     // Variable survives reload — both label and type badge are present.
-    await openVariablesModal(page)
     await expect(
-      page
-        .getByRole("dialog")
-        .locator("input[value='Spider-Man 2002']"),
+      variablesSidebar(page).locator(
+        "input[value='Spider-Man 2002']",
+      ),
     ).toBeVisible()
     await expect(
-      page
-        .getByRole("dialog")
-        .getByText("dvdCompareId variable"),
+      variablesSidebar(page).getByText(
+        "dvdCompareId variable",
+      ),
     ).toBeVisible()
   })
 })

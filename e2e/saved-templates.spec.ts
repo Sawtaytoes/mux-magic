@@ -9,9 +9,9 @@ import { apiBaseUrl } from "./playwright.setup.js"
 // reload the page, see the template still listed, load it back, and
 // see the same step reappear.
 //
-// The sidebar is desktop-only (`hidden lg:flex`), so this spec sticks
-// to the default Playwright viewport which is well above the `lg`
-// breakpoint.
+// The sidebar is a `Rail` — a column at `md`+ and a strip below the
+// sequence in the Narrow View — so the round-trip runs in all four test
+// windows.
 
 test.describe("Saved Templates sidebar", () => {
   // Best-effort cleanup of any leftover templates from prior runs that

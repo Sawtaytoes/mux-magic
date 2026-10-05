@@ -225,6 +225,15 @@ describe("LinkPicker keyboard", () => {
     })
 
     await openPicker(user)
+    // The Combobox hands focus to its search field through floating-ui's
+    // FloatingFocusManager once the panel has positioned — a frame or more
+    // after the click. An Escape pressed before that lands on the trigger
+    // and closes nothing, which is what four windows sharing one runner
+    // exposed: the listbox was still open 15s later. Wait for the field a
+    // keyboard user is typing into, then press Escape there.
+    await waitFor(() => {
+      expect(screen.getByRole("combobox")).toHaveFocus()
+    })
     await user.keyboard("{Escape}")
 
     await waitFor(() => {
