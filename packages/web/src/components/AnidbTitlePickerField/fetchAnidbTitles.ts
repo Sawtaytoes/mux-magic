@@ -7,12 +7,19 @@
 import type {
   AnidbTitle,
   LookupAnidbTitlesResponse,
+  ProviderCacheFallback,
 } from "@mux-magic/api/api-types"
 import { apiBase } from "../../apiBase"
 
-export const fetchAnidbTitles = async (
-  anidbId: number,
-): Promise<AnidbTitle[]> => {
+export const fetchAnidbTitles = async ({
+  anidbId,
+  onProviderCacheFallbacks,
+}: {
+  anidbId: number
+  onProviderCacheFallbacks: (
+    fallbacks: ProviderCacheFallback[],
+  ) => void
+}): Promise<AnidbTitle[]> => {
   try {
     const response = await fetch(
       `${apiBase}/queries/lookupAnidbTitles`,
@@ -25,6 +32,9 @@ export const fetchAnidbTitles = async (
     if (!response.ok) return []
     const data =
       (await response.json()) as LookupAnidbTitlesResponse
+    onProviderCacheFallbacks(
+      data.providerCacheFallbacks ?? [],
+    )
     return data.titles ?? []
   } catch {
     return []

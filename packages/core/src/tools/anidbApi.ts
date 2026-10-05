@@ -4,6 +4,7 @@ import { join } from "node:path"
 import type { DecodeResponseBody } from "../provider-cache/cachedFetch.js"
 import { markProviderUnreachable } from "../provider-cache/networkFirst.js"
 import type { ProviderCache } from "../provider-cache/providerCache.js"
+import { buildSharedProviderCacheRead } from "../provider-cache/providerCacheFallbacks.js"
 import { getAnidbCacheDir } from "./getAnidbCacheDir.js"
 import { getSharedProviderCache } from "./sharedProviderCache.js"
 import { buildSharedCachedFetch } from "./sharedProviderFetchers.js"
@@ -135,7 +136,10 @@ const importLegacyAnimeXml = ({
 // second caller awaits the first's promise instead of racing it to the
 // network. Cleared when it settles so a failure doesn't poison later
 // retries.
-const inFlightByAid = new Map<number, Promise<string>>()
+const inFlightByAid = new Map<
+  number,
+  () => Promise<string>
+>()
 
 const fetchAnimeXml = ({
   aid,
@@ -164,14 +168,18 @@ export const getAnimeXml = (
     clientver,
   }: { client: string; clientver: string },
 ) =>
-  inFlightByAid.get(aid) ??
-  ((request: Promise<string>) =>
-    inFlightByAid
-      .set(aid, request)
-      .get(aid) as Promise<string>)(
-    fetchAnimeXml({ aid, client, clientver }).finally(
-      () => {
-        inFlightByAid.delete(aid)
-      },
-    ),
-  )
+  (
+    inFlightByAid.get(aid) ??
+    ((read: () => Promise<string>) =>
+      inFlightByAid
+        .set(aid, read)
+        .get(aid) as () => Promise<string>)(
+      buildSharedProviderCacheRead(() =>
+        fetchAnimeXml({ aid, client, clientver }).finally(
+          () => {
+            inFlightByAid.delete(aid)
+          },
+        ),
+      ),
+    )
+  )()

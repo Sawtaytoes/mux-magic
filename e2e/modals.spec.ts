@@ -408,6 +408,107 @@ test.describe("LookupModal", () => {
     await expect(page.locator("#lookup-modal")).toBeHidden()
   })
 
+  test("standalone lookup warns about cached answers and clears on a live retry", async ({
+    page,
+  }) => {
+    const fallback = {
+      ageMilliseconds: 172800000,
+      cachedAt: "2026-09-27T12:00:00.000Z",
+      cause: "Provider unavailable",
+      isProviderSkipped: false,
+      provider: "musicBrainz",
+      request: "Example Album",
+    }
+    const attempts = new Set<string>()
+    await page.route(
+      "**/api/queries/searchMusicBrainzReleases",
+      async (route) => {
+        const isLegacyResponse = attempts.size === 0
+        const isRetry = attempts.size > 1
+        attempts.add(String(attempts.size))
+        await route.fulfill({
+          json: {
+            results: [
+              {
+                artistName: "Example Artist",
+                releaseId:
+                  "7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4",
+                releaseTitle: "Example Album",
+                year: "2016",
+                trackCount: 14,
+              },
+            ],
+            error: null,
+            ...(isLegacyResponse
+              ? {}
+              : {
+                  providerCacheFallbacks: isRetry
+                    ? []
+                    : [fallback],
+                }),
+          },
+        })
+      },
+    )
+    await addStepWithCommand(
+      page,
+      "matchMusicBrainzRelease",
+      /^Match MusicBrainz Release\s/,
+    )
+    await page
+      .getByRole("button", {
+        name: "Look up MusicBrainz Release",
+      })
+      .click()
+    await page
+      .locator("#lookup-search-input")
+      .fill("Example Album")
+    await page
+      .locator("#lookup-modal")
+      .getByRole("button", { name: "Search" })
+      .click()
+    const notice = page.getByTestId(
+      "provider-cache-fallback-notice",
+    )
+    await expect(notice).toBeHidden()
+    await expect(
+      page.getByText("Example Album (2016)"),
+    ).toBeVisible()
+    if (process.env.CACHE_NOTICE_SCREENSHOTS) {
+      await page.screenshot({
+        path: "docs/evidence/builder-cache-notice/before.png",
+      })
+    }
+    await page
+      .locator("#lookup-modal")
+      .getByRole("button", { name: "Search" })
+      .click()
+    await expect(notice).toBeVisible()
+    await expect(notice).toContainText(
+      "This lookup used cached provider data.",
+    )
+    await expect(notice).toContainText("MusicBrainz")
+    await expect(notice).toContainText("cached 2 days ago")
+    await expect(notice).toContainText(
+      "Provider unavailable",
+    )
+    if (process.env.CACHE_NOTICE_SCREENSHOTS) {
+      await page.screenshot({
+        path: "docs/evidence/builder-cache-notice/after.png",
+      })
+    }
+    await expect(
+      page.getByText("Example Album (2016)"),
+    ).toBeVisible()
+    await page
+      .locator("#lookup-modal")
+      .getByRole("button", { name: "Search" })
+      .click()
+    await expect(notice).toBeHidden()
+    await page.getByText("Example Album (2016)").click()
+    await expect(page.locator("#lookup-modal")).toBeHidden()
+  })
+
   test("MusicBrainz lookup selects a release before matching", async ({
     page,
   }) => {

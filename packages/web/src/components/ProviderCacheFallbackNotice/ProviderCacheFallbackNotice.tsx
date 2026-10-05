@@ -90,6 +90,7 @@ const listProviderLabels = (
 
 const buildDetails = (
   fallbacks: readonly ProviderCacheFallback[],
+  context: "run" | "lookup",
 ) =>
   fallbacks
     .slice(0, MAXIMUM_DETAIL_LINES)
@@ -97,7 +98,9 @@ const buildDetails = (
     .concat(
       fallbacks.length > MAXIMUM_DETAIL_LINES
         ? [
-            `${fallbacks.length - MAXIMUM_DETAIL_LINES} more — the job log lists each one.`,
+            context === "run"
+              ? `${fallbacks.length - MAXIMUM_DETAIL_LINES} more — the job log lists each one.`
+              : `${fallbacks.length - MAXIMUM_DETAIL_LINES} more cached answers.`,
           ]
         : [],
     )
@@ -105,6 +108,7 @@ const buildDetails = (
 type ProviderCacheFallbackNoticeProps = {
   className?: string
   fallbacks: readonly ProviderCacheFallback[]
+  context?: "run" | "lookup"
   size?: AlertSize
 }
 
@@ -115,6 +119,7 @@ type ProviderCacheFallbackNoticeProps = {
 export const ProviderCacheFallbackNotice = ({
   className,
   fallbacks,
+  context = "run",
   size = "sm",
 }: ProviderCacheFallbackNoticeProps) =>
   fallbacks.length === 0 ? null : (
@@ -122,8 +127,8 @@ export const ProviderCacheFallbackNotice = ({
       className={className}
       data-testid="provider-cache-fallback-notice"
       description={`${pluralize({ count: fallbacks.length, unit: "answer" })} from ${listProviderLabels(fallbacks)} came from the cache, not the live site. Check the result before you rely on it.`}
-      details={buildDetails(fallbacks)}
-      heading="This run used cached provider data."
+      details={buildDetails(fallbacks, context)}
+      heading={`This ${context} used cached provider data.`}
       intent="warning"
       label="Cached provider data"
       size={size}
