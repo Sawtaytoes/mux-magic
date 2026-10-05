@@ -26,3 +26,9 @@ The same browser test retries with live data, verifies the notice disappears, an
 selects the result. API regression tests overlap two requests and emit an unrelated
 background fallback to prove response isolation; they also cover fresh responses
 and errors after a fallback. Field tests cover typed IDs and AniDB title loading.
+
+Concurrent AniDB ID lookups and anime searches share their network read. The
+shared read also retains its fallback metadata, so every lookup receives the
+warning. Regression tests prove both callers report the fallback while the
+provider is requested only once. The existing server log and job report still
+occur once in the originating scope.

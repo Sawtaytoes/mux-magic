@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks"
 import { logWarning } from "@mux-magic/tools"
+import { firstValueFrom, from, map, tap } from "rxjs"
 
 // One answer that came out of the cache because the live request failed.
 // This is what the owner is told about: the job log gets a warning line,
@@ -43,6 +44,40 @@ export const captureProviderCacheFallbacks = <Value>(
       ),
     })),
   )
+
+const collectProviderCacheFallbacks = (
+  fallbacks: readonly ProviderCacheFallback[],
+) => {
+  const collector = lookupFallbackStorage.getStore()
+  fallbacks.forEach((fallback) => {
+    collector?.set(collector.size, fallback)
+  })
+}
+
+// Sharing a promise must share its provenance too. Each caller subscribes
+// in its own lookup scope, while the network read and existing job/log
+// report still happen once in the originating scope.
+export const buildSharedProviderCacheRead = <Value>(
+  operation: () => Promise<Value>,
+) =>
+  (
+    (
+      capturedRead: ReturnType<
+        typeof captureProviderCacheFallbacks<Value>
+      >,
+    ) =>
+    () =>
+      firstValueFrom(
+        from(capturedRead).pipe(
+          tap(({ providerCacheFallbacks }) =>
+            collectProviderCacheFallbacks(
+              providerCacheFallbacks,
+            ),
+          ),
+          map(({ value }) => value),
+        ),
+      )
+  )(captureProviderCacheFallbacks(operation))
 
 const listeners = new Set<ProviderCacheFallbackListener>()
 
@@ -140,8 +175,7 @@ export const formatProviderCacheFallback = (
 export const reportProviderCacheFallback = (
   fallback: ProviderCacheFallback,
 ) => {
-  const collector = lookupFallbackStorage.getStore()
-  collector?.set(collector.size, fallback)
+  collectProviderCacheFallbacks([fallback])
   logWarning(
     PROVIDER_CACHE_FALLBACK_LOG_TITLE,
     formatProviderCacheFallback(fallback),

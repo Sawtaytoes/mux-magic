@@ -14,6 +14,7 @@ This page is the map for changing it, and the option of moving its policy onto C
 | One HTTP request, network-first, with a timeout, retries on 429/503, If-None-Match | `provider-cache/cachedFetch.ts` |
 | Anything else that yields a JSON value for a key — a Chromium scrape, `mal-scraper` — bounded as a whole | `provider-cache/cachedComputation.ts` |
 | The shared resolution: fresh window → live request → stored row → last resort (DVDCompare's Wayback) → fail | `provider-cache/networkFirst.ts` |
+| Shared AniDB XML / dataset refreshes carry fallback metadata to every lookup caller | `buildSharedProviderCacheRead`, `anidbApi.ts`, `animeOfflineDatabase.ts` |
 | The per-job circuit (root job scope, 2 min cooldown, then a probe; none outside a job) | `provider-cache/providerCircuitBreaker.ts` |
 | The request-local collector for standalone Builder lookups (AsyncLocalStorage) | `captureProviderCacheFallbacks`, `queryRoutes` middleware; lookup response `providerCacheFallbacks` |
 | The fallback report: the `PROVIDER CACHE FALLBACK` log line, then the listeners | `provider-cache/providerCacheFallbacks.ts` |
