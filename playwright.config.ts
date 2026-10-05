@@ -1,5 +1,27 @@
-import { createPlaywrightConfig } from "@charcuterie/playwright-config"
+import {
+  createPlaywrightConfig,
+  createViewportProjects,
+} from "@charcuterie/playwright-config"
 import { baseUrl } from "./e2e/playwright.setup.js"
+
+// Every spec runs in the fleet's four windows — `chromium-narrow` (a
+// 384x824 phone), `chromium-tall`, `chromium-wide` and `chromium-ultrawide`.
+//
+// A test whose claim is true in only one kind of window carries a tag, and
+// the tag decides which windows collect it: `@narrow-view` runs only in the
+// narrow window and `@wide-view` in the other three. Filtering by tag here,
+// rather than calling `test.skip()` inside the test, keeps the report at
+// zero skipped (docs/decisions/2026-09-16-a-skipped-test-is-a-defect-and-
+// the-suites-report-zero.md) — a test a window cannot hold is not collected
+// there at all, and every window still gets the claim that IS true in it.
+const narrowViewTag = /@narrow-view/
+const wideViewTag = /@wide-view/
+
+const projects = createViewportProjects().map((project) =>
+  project.metadata?.viewport === "narrow"
+    ? { ...project, grepInvert: wideViewTag }
+    : { ...project, grepInvert: narrowViewTag },
+)
 
 // Worker 29 collapsed the two-process layout into a single front-door
 // on PORT (default 3000) that hosts /api/*, /storybook/*, and / (SPA).
@@ -13,10 +35,12 @@ import { baseUrl } from "./e2e/playwright.setup.js"
 //
 // To run interactively: `yarn e2e:ui`. CI / one-shot: `yarn e2e`.
 //
-// The chromium project, the CI-aware retries/workers and trace-on-first-retry
-// come from `@charcuterie/playwright-config`; what stays here is mux-magic's
-// own — where the specs live, and the server they drive.
+// The four window projects, the CI-aware retries/workers and
+// trace-on-first-retry come from `@charcuterie/playwright-config`; what stays
+// here is mux-magic's own — where the specs live, the server they drive, and
+// the tag routing above.
 export default createPlaywrightConfig({
+  projects,
   testDir: "./e2e",
   reporter: process.env.CI ? "github" : "list",
   use: {
