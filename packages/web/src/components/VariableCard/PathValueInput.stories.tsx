@@ -78,12 +78,21 @@ export const Autocomplete: Story = {
     await userEvent.type(input, "/media/")
 
     // Options portal to document.body, so query the whole screen.
-    await waitFor(() => {
-      expect(
-        within(document.body).getByRole("option", {
-          name: /Documents/,
-        }),
-      ).toBeInTheDocument()
-    })
+    // The listing is a real request to the Storybook mock API
+    // (.storybook/mockRoutes.ts). `storybook/test`'s `waitFor` keeps its own
+    // 1s clock — the CI budget in the `web` project's setup never reaches
+    // it — and with every story running in four windows on one runner the
+    // response outran that second in all four windows, alone, one run in
+    // three. 5s is a budget for the request, not a retry.
+    await waitFor(
+      () => {
+        expect(
+          within(document.body).getByRole("option", {
+            name: /Documents/,
+          }),
+        ).toBeInTheDocument()
+      },
+      { timeout: 5_000 },
+    )
   },
 }

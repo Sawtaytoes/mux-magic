@@ -1,9 +1,31 @@
-import { expect, test } from "@playwright/test"
+import {
+  expect,
+  type Locator,
+  test,
+} from "@playwright/test"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function encodeSeq(yaml: string): string {
   return Buffer.from(yaml, "utf8").toString("base64")
+}
+
+// A step card folds its action row (run, ↑, ↓, copy, ✕) behind the ≡
+// "Step actions" toggle when the CARD is 460px or narrower — the
+// `@container step-card` rule in builderStyles.css. That is the card's own
+// width, not the window's: every card folds in the Narrow View, and a card
+// squeezed into a parallel group folds on a wide window too. So this asks
+// the card the way a person would — open the toggle when it is there — and
+// hands back the card with its actions reachable.
+const revealStepActions = async (stepCard: Locator) => {
+  await expect(stepCard).toBeVisible()
+  const toggle = stepCard.getByRole("button", {
+    name: "Step actions",
+  })
+  if (await toggle.isVisible()) {
+    await toggle.click()
+  }
+  return stepCard
 }
 
 // ─── Step controls — play/stop ────────────────────────────────────────────────
@@ -20,7 +42,9 @@ test.describe("Step controls — play/stop", () => {
       .last()
       .click()
 
-    const stepCard = page.locator(".step-card").first()
+    const stepCard = await revealStepActions(
+      page.locator(".step-card").first(),
+    )
     await expect(
       stepCard.getByRole("button", {
         name: "Run this step only",
@@ -42,7 +66,9 @@ test.describe("Step controls — play/stop", () => {
     )
     await page.goto(`/builder/?seq=${yaml}`)
 
-    const stepCard = page.locator(".step-card").first()
+    const stepCard = await revealStepActions(
+      page.locator(".step-card").first(),
+    )
     await expect(
       stepCard.getByRole("button", {
         name: "Run this step only",
@@ -73,7 +99,9 @@ test.describe("Step controls — up/down reorder", () => {
   test("↑ button is disabled for the first step", async ({
     page,
   }) => {
-    const firstCard = page.locator(".step-card").first()
+    const firstCard = await revealStepActions(
+      page.locator(".step-card").first(),
+    )
     await expect(
       firstCard.getByRole("button", {
         name: "Move step up",
@@ -84,7 +112,9 @@ test.describe("Step controls — up/down reorder", () => {
   test("↓ button is disabled for the last step", async ({
     page,
   }) => {
-    const lastCard = page.locator(".step-card").last()
+    const lastCard = await revealStepActions(
+      page.locator(".step-card").last(),
+    )
     await expect(
       lastCard.getByRole("button", {
         name: "Move step down",
@@ -96,9 +126,11 @@ test.describe("Step controls — up/down reorder", () => {
     page,
   }) => {
     // Before: step-alpha(1 — Copy Files), step-beta(2 — Make Directory).
-    await page
-      .locator(".step-card")
-      .first()
+    await (
+      await revealStepActions(
+        page.locator(".step-card").first(),
+      )
+    )
       .getByRole("button", { name: "Move step down" })
       .click()
 
@@ -115,9 +147,11 @@ test.describe("Step controls — up/down reorder", () => {
     page,
   }) => {
     // Before: step-alpha(1 — Copy Files), step-beta(2 — Make Directory).
-    await page
-      .locator(".step-card")
-      .nth(1)
+    await (
+      await revealStepActions(
+        page.locator(".step-card").nth(1),
+      )
+    )
       .getByRole("button", { name: "Move step up" })
       .click()
 
@@ -155,9 +189,11 @@ test.describe("Step controls — delete", () => {
   }) => {
     await expect(page.locator(".step-card")).toHaveCount(2)
 
-    await page
-      .locator(".step-card")
-      .first()
+    await (
+      await revealStepActions(
+        page.locator(".step-card").first(),
+      )
+    )
       .getByRole("button", { name: "Remove this step" })
       .click()
 
@@ -166,9 +202,11 @@ test.describe("Step controls — delete", () => {
 
   test("✕ removes the correct step", async ({ page }) => {
     // Delete the first step (Copy Files); only Make Directory should remain.
-    await page
-      .locator(".step-card")
-      .first()
+    await (
+      await revealStepActions(
+        page.locator(".step-card").first(),
+      )
+    )
       .getByRole("button", { name: "Remove this step" })
       .click()
 
