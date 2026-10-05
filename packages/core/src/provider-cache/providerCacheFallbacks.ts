@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks"
 import { logWarning } from "@mux-magic/tools"
 
 // One answer that came out of the cache because the live request failed.
@@ -24,6 +25,24 @@ export type ProviderCacheFallback = {
 type ProviderCacheFallbackListener = (
   fallback: ProviderCacheFallback,
 ) => void
+
+// A lookup owns its collector across awaits; concurrent lookups and jobs
+// cannot contribute warnings to one another's response.
+const lookupFallbackStorage = new AsyncLocalStorage<
+  Map<number, ProviderCacheFallback>
+>()
+
+export const captureProviderCacheFallbacks = <Value>(
+  operation: () => Promise<Value>,
+) =>
+  lookupFallbackStorage.run(new Map(), () =>
+    operation().then((value) => ({
+      value,
+      providerCacheFallbacks: Array.from(
+        lookupFallbackStorage.getStore()?.values() ?? [],
+      ),
+    })),
+  )
 
 const listeners = new Set<ProviderCacheFallbackListener>()
 
@@ -121,6 +140,8 @@ export const formatProviderCacheFallback = (
 export const reportProviderCacheFallback = (
   fallback: ProviderCacheFallback,
 ) => {
+  const collector = lookupFallbackStorage.getStore()
+  collector?.set(collector.size, fallback)
   logWarning(
     PROVIDER_CACHE_FALLBACK_LOG_TITLE,
     formatProviderCacheFallback(fallback),

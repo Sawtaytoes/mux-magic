@@ -6446,6 +6446,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description MusicBrainz release search results */
                             results: {
                                 /** @description The release artist credit */
@@ -6514,6 +6523,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description MAL search results */
                             results: {
                                 /** @description Air date string from MAL */
@@ -6576,6 +6594,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description AniDB search results (sourced from manami-project dataset) */
                             results: {
                                 /** @description AniDB anime id */
@@ -6640,6 +6667,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description Display name, or null if not found */
                             name: string | null;
                         };
@@ -6689,6 +6725,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description Candidate titles for the anime (AniDB's synthetic (aXXXXX) reference form filtered out). */
                             titles: {
                                 /** @description Language tag (e.g. en, x-jat, ja) */
@@ -6747,6 +6792,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description TVDB search results */
                             results: {
                                 /** @description Series image URL */
@@ -6811,6 +6865,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description TMDB search results */
                             results: {
                                 /** @description Poster image URL */
@@ -6873,6 +6936,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description True when DVDCompare's search redirected straight to a film page instead of returning a list of candidates. When true the single entry in results was auto-selected — callers should skip the movie-picker step and prompt for a Release Hash directly. */
                             isDirectListing?: boolean;
                             /** @description DVDCompare search results */
@@ -6938,6 +7010,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description Diagnostic info for empty-result debugging */
                             debug?: {
                                 /** @description Total <input type="checkbox"> elements on the fetched page (regardless of name attribute) */
@@ -7009,6 +7090,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description Display name, or null if not found */
                             name: string | null;
                         };
@@ -7058,6 +7148,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description Display name, or null if not found */
                             name: string | null;
                         };
@@ -7107,6 +7206,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description Display name, or null if not found */
                             name: string | null;
                         };
@@ -7156,6 +7264,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description Display name, or null if not found */
                             name: string | null;
                         };
@@ -7207,6 +7324,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Provider answers served from cache because the live request failed, scoped to this lookup. */
+                            providerCacheFallbacks?: {
+                                ageMilliseconds: number;
+                                cachedAt: string;
+                                cause: string;
+                                isProviderSkipped: boolean;
+                                provider: string;
+                                request: string;
+                            }[];
                             /** @description Release label, or null if not found */
                             label: string | null;
                         };

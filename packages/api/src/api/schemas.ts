@@ -3,6 +3,22 @@ import { z } from "@hono/zod-openapi"
 import { subtitleTypeExtensions } from "@mux-magic/core/src/tools/subtitleTypes.js"
 import { languageSelectionSchema } from "./languageSelection.js"
 
+export const providerCacheFallbackSchema = z.object({
+  ageMilliseconds: z.number(),
+  cachedAt: z.string(),
+  cause: z.string(),
+  isProviderSkipped: z.boolean(),
+  provider: z.string(),
+  request: z.string(),
+})
+
+const lookupCacheFallbacksSchema = z
+  .array(providerCacheFallbackSchema)
+  .optional()
+  .describe(
+    "Provider answers served from cache because the live request failed, scoped to this lookup.",
+  )
+
 // Shared response schemas
 export const createJobResponseSchema = (
   outputFolderNameSchema: z.ZodTypeAny = z.null(),
@@ -1938,6 +1954,7 @@ export const searchMalResultSchema = z.object({
 })
 
 export const searchMalResponseSchema = z.object({
+  providerCacheFallbacks: lookupCacheFallbacksSchema,
   results: z
     .array(searchMalResultSchema)
     .describe("MAL search results"),
@@ -1982,6 +1999,7 @@ export const searchAnidbResultSchema = z.object({
 })
 
 export const searchAnidbResponseSchema = z.object({
+  providerCacheFallbacks: lookupCacheFallbacksSchema,
   results: z
     .array(searchAnidbResultSchema)
     .describe(
@@ -2011,6 +2029,7 @@ export const searchTvdbResultSchema = z.object({
 })
 
 export const searchTvdbResponseSchema = z.object({
+  providerCacheFallbacks: lookupCacheFallbacksSchema,
   results: z
     .array(searchTvdbResultSchema)
     .describe("TVDB search results"),
@@ -2052,6 +2071,7 @@ export const searchMovieDbResultSchema = z.object({
 })
 
 export const searchMovieDbResponseSchema = z.object({
+  providerCacheFallbacks: lookupCacheFallbacksSchema,
   results: z
     .array(searchMovieDbResultSchema)
     .describe("TMDB search results"),
@@ -2091,6 +2111,7 @@ export const searchMusicBrainzReleaseResultSchema =
 
 export const searchMusicBrainzReleaseResponseSchema =
   z.object({
+    providerCacheFallbacks: lookupCacheFallbacksSchema,
     results: z
       .array(searchMusicBrainzReleaseResultSchema)
       .describe("MusicBrainz release search results"),
@@ -2115,6 +2136,7 @@ export const searchDvdCompareResultSchema = z.object({
 })
 
 export const searchDvdCompareResponseSchema = z.object({
+  providerCacheFallbacks: lookupCacheFallbacksSchema,
   isDirectListing: z
     .boolean()
     .optional()
@@ -2173,6 +2195,7 @@ export const dvdCompareReleasesDebugSchema = z.object({
 
 export const listDvdCompareReleasesResponseSchema =
   z.object({
+    providerCacheFallbacks: lookupCacheFallbacksSchema,
     debug: dvdCompareReleasesDebugSchema
       .optional()
       .describe(
@@ -2218,6 +2241,7 @@ export const lookupDvdCompareReleaseRequestSchema =
   })
 
 export const nameLookupResponseSchema = z.object({
+  providerCacheFallbacks: lookupCacheFallbacksSchema,
   name: z
     .string()
     .nullable()
@@ -2239,6 +2263,7 @@ export const anidbTitleSchema = z.object({
 })
 
 export const lookupAnidbTitlesResponseSchema = z.object({
+  providerCacheFallbacks: lookupCacheFallbacksSchema,
   titles: z
     .array(anidbTitleSchema)
     .describe(
@@ -2253,6 +2278,7 @@ export const lookupAnidbTitlesResponseSchema = z.object({
 })
 
 export const labelLookupResponseSchema = z.object({
+  providerCacheFallbacks: lookupCacheFallbacksSchema,
   label: z
     .string()
     .nullable()

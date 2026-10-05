@@ -15,6 +15,7 @@ This page is the map for changing it, and the option of moving its policy onto C
 | Anything else that yields a JSON value for a key — a Chromium scrape, `mal-scraper` — bounded as a whole | `provider-cache/cachedComputation.ts` |
 | The shared resolution: fresh window → live request → stored row → last resort (DVDCompare's Wayback) → fail | `provider-cache/networkFirst.ts` |
 | The per-job circuit (root job scope, 2 min cooldown, then a probe; none outside a job) | `provider-cache/providerCircuitBreaker.ts` |
+| The request-local collector for standalone Builder lookups (AsyncLocalStorage) | `captureProviderCacheFallbacks`, `queryRoutes` middleware; lookup response `providerCacheFallbacks` |
 | The fallback report: the `PROVIDER CACHE FALLBACK` log line, then the listeners | `provider-cache/providerCacheFallbacks.ts` |
 | The listener that records a fallback on the job and its umbrella + the SSE event | `api/providerCacheFallbackBridge.ts`, `jobStore.recordProviderCacheFallback` |
 | The shared, lazily opened fetchers a provider module declares at import | `tools/sharedProviderFetchers.ts`, `tools/musicProviderFetchers.ts` |

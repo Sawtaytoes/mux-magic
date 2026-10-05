@@ -182,3 +182,36 @@ export const MusicBrainzWithResults: Story = {
     </>
   ),
 }
+
+export const CachedSearchResults: Story = {
+  render: () => <LookupModal />,
+  parameters: {
+    initialState: {
+      ...empty,
+      lookupType: "musicbrainz",
+      stepId: "step-1",
+      fieldName: "releaseId",
+      stage: "search",
+      searchTerm: "Example Album",
+      results: [
+        {
+          releaseId: "7f6ac7c6-f2c2-4af0-ae87-74aaecda57a4",
+          releaseTitle: "Example Album",
+          artistName: "Example Artist",
+          year: "2016",
+          trackCount: 14,
+        },
+      ],
+      providerCacheFallbacks: [
+        {
+          ageMilliseconds: 172800000,
+          cachedAt: "2026-09-27T12:00:00.000Z",
+          cause: "Provider unavailable",
+          isProviderSkipped: false,
+          provider: "musicBrainz",
+          request: "Example Album",
+        },
+      ],
+    },
+  },
+}
