@@ -7,6 +7,10 @@
 3. **Keep tests in sync with code changes.** When you change behavior, update the tests that assert the old behavior. Leaving a test that no longer matches the current intent (even if it still passes) is misleading; leaving a test that fails is a blocker. Tests are documentation — they must describe what the code *actually does now*, not what it used to do.
 4. **Verify Playwright tests pass before reporting a fix.** After writing an e2e test, run it (`yarn dlx playwright test e2e/builder.spec.ts --grep "<test name>"`) and confirm it passes. Merge conflicts, module refactors, and missed sub-file updates can silently break tests that look logically correct — observed test output is the only reliable signal. Never report a UI fix as done without a passing test run.
 
+## Every browser test runs in four windows
+
+The `web` and `storybook` Vitest projects and the Playwright e2e suite all run once per window — `narrow` 384x824 (a Galaxy S23 Ultra), `tall` 1080x1920, `wide` 1920x1080, `ultrawide` 3440x1440 — from `@charcuterie/vitest-config` / `@charcuterie/playwright-config` ([decision](https://github.com/Sawtaytoes/charcuterie/blob/master/docs/decisions/2026-10-04-every-browser-test-runs-in-four-named-windows.md)). A test that fails in one window is triaged, never pinned back to one window. When a claim is genuinely true in only one kind of window, split it so each window gets the claim that IS true there, without a skip (this repo reports zero skipped): in Vitest, register the tests by `inject("viewport")`; in Playwright, tag the test `@narrow-view` (collected only in `chromium-narrow`) or `@wide-view` (the other three) — `playwright.config.ts` routes the tags. One window alone: `yarn vitest run --project '*-narrow'` / `yarn playwright test --project chromium-narrow`.
+
 ## Pre-merge gate (run in order)
 
 1. `yarn lint` — auto-fix formatting (biome + eslint); re-stage changed files

@@ -19,7 +19,7 @@ A Node.js CLI and REST API for batch media file operations (MKV track manipulati
 | **Music tagging — the Picard/MP3Tag replacement: naming rules, defaults, phases** | [docs/picard-parity.md](docs/picard-parity.md), [docs/music-tagging-plan.md](docs/music-tagging-plan.md) |
 | Code rules, naming, function style, no-barrels, indentation | [docs/agents/code-rules.md](docs/agents/code-rules.md) |
 | **Pickers — every picker is a `Listbox`/`Picker`, never a native `Select`** | [docs/agents/code-rules.md#pickers--always-a-listbox-never-a-native-select](docs/agents/code-rules.md#pickers--always-a-listbox-never-a-native-select) |
-| Testing — frameworks, pre-merge gate, forbidden styles, coverage discipline | [docs/agents/testing.md](docs/agents/testing.md) |
+| Testing — frameworks, pre-merge gate, forbidden styles, coverage discipline. **Every browser test runs in four windows** (narrow, tall, wide, ultrawide) | [docs/agents/testing.md](docs/agents/testing.md) |
 | Test interaction conventions — `user-event`, controlled inputs, `.toBeVisible()` | [docs/agents/test-interactions.md](docs/agents/test-interactions.md) |
 | Storybook — required files for new components | [docs/agents/storybook.md](docs/agents/storybook.md) |
 | Architecture — Observable-first, API structure, command modules | [docs/agents/architecture.md](docs/agents/architecture.md) |
