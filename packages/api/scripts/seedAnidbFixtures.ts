@@ -1,7 +1,7 @@
 // One-off script to seed test fixtures and warm caches from real AniDB
 // responses.
 //
-// Run with:   yarn seed-anidb-fixtures  (from repo root)
+// Run with:   pnpm seed-anidb-fixtures  (from repo root)
 //
 // What it does:
 //   1. Triggers loadAnimeIndex() once  → downloads the manami dataset to

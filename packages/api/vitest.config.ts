@@ -10,7 +10,7 @@ export default createVitestConfig({
     // The factory turns globals on; this suite has always imported its
     // own `describe`/`test`/`expect` and keeps doing so.
     globals: false,
-    // e2e/ holds Playwright Test specs; they have their own runner (`yarn e2e`)
+    // e2e/ holds Playwright Test specs; they have their own runner (`pnpm e2e`)
     // and break under vitest because @playwright/test's describe/test globals
     // aren't compatible.
     exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],

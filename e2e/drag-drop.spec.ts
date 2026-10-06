@@ -36,7 +36,7 @@ async function getYamlText(page: Page): Promise<string> {
 // A pointer drag only swaps once the pointer crosses the TARGET's midpoint,
 // and Playwright's `dragTo` releases at the target's centre — exactly that
 // boundary. It therefore reorders in one direction and not the other, which
-// is what left these tests skipped. The keyboard path has no geometry in it:
+// is what left these tests skipped. The keyboard path uses the real focusable handle:
 // the drag handle is a real button carrying dnd-kit's activator attributes
 // and `sortableKeyboardCoordinates`, so Space lifts, an arrow key moves one
 // position, and Space drops.
@@ -46,17 +46,54 @@ async function moveStepWithKeyboard(
   direction: "down" | "up",
 ) {
   await dragHandle.focus()
-  // dnd-kit measures the droppables on lift and again after each move, both
-  // on the next frame. Three key presses in the same tick outrun that and
-  // the drag never leaves its start position, so each step waits.
+  const activeStepId = await dragHandle.evaluate((handle) =>
+    handle
+      .closest("[data-step-card]")
+      ?.getAttribute("data-step-card"),
+  )
+  expect(activeStepId).toBeTruthy()
+  const announcement = page
+    .locator('[aria-live="assertive"]')
+    .filter({ hasText: `Draggable item ${activeStepId}` })
+
   await page.keyboard.press("Space")
-  await page.waitForTimeout(150)
+  await expect(
+    dragHandle.and(
+      page.locator('[aria-roledescription="sortable"]'),
+    ),
+  ).toHaveAttribute("aria-pressed", "true")
+  // dnd-kit publishes the measured collision target to its live region.
+  // Wait for that state rather than guessing how many milliseconds its
+  // layout measurement and React commit need on the current machine.
+  await expect(announcement).toContainText(
+    `was moved over droppable area ${activeStepId}`,
+  )
+  // Sensor registration and the shared context's rectangle references
+  // settle on the next frame; wait for frames, not a fixed clock delay.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => resolve()),
+        )
+      }),
+  )
+  const regionId = await announcement.getAttribute("id")
+  expect(regionId).toBeTruthy()
+  const liveRegion = page.locator(`[id="${regionId}"]`)
+  const initialAnnouncement = await liveRegion.innerText()
   await page.keyboard.press(
     direction === "down" ? "ArrowDown" : "ArrowUp",
   )
-  await page.waitForTimeout(150)
+  // A group also exposes insertion targets; the rendered DOM and YAML
+  // assertions below determine whether the completed drop reordered it.
+  await expect(liveRegion).not.toHaveText(
+    initialAnnouncement,
+  )
   await page.keyboard.press("Space")
-  await page.waitForTimeout(150)
+  await expect(liveRegion).toContainText(
+    `Draggable item ${activeStepId} was dropped`,
+  )
 }
 
 // ─── Drag-and-drop step reordering ───────────────────────────────────────────

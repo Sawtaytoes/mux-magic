@@ -85,14 +85,15 @@ Disc analysis uses the MakeMKV tools that are included in the container. Mount a
 Requirements:
 
 - Node.js 22 or later.
-- Corepack and Yarn 4.
+- pnpm 12.9.1.
 - `ffmpeg`, `mkvtoolnix`, and `mediainfo` on `PATH`.
 - Python 3 for legacy helpers.
 
 ```sh
-corepack yarn install
+npm install --global --force --allow-scripts=pnpm pnpm@12.9.1
+pnpm install
 cp .env.example .env
-corepack yarn dev
+pnpm dev
 ```
 
 Edit `.env` only for the credentials and settings that you use. Do not commit that file.

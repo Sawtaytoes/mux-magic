@@ -46,11 +46,11 @@ Plus: function destructuring (2+ args → single object param), always-braced `i
 
 ## Before Every Commit
 
-- `yarn lint` — auto-fix formatting (biome + eslint); re-stage changed files
-- `yarn typecheck` — full monorepo type check
-- `yarn test` — unit + integration
+- `pnpm lint` — auto-fix formatting (biome + eslint); re-stage changed files
+- `pnpm typecheck` — full monorepo type check
+- `pnpm test` — unit + integration
 
-Before merging UI or API route changes, also run `yarn e2e`. Full pre-merge gate in [testing.md](docs/agents/testing.md).
+Before merging UI or API route changes, also run `pnpm e2e`. Full pre-merge gate in [testing.md](docs/agents/testing.md).
 
 ## Roles (one-liner)
 
@@ -71,7 +71,7 @@ Full worktree / commit conventions in [workflows.md](docs/agents/workflows.md).
 
 ## Package Manager
 
-Always `yarn`, never `npm` or `npx`. One-off executables use `yarn dlx <pkg>`.
+Use pinned pnpm 12.9.1. Bootstrap its native binary with `npm install --global --force --allow-scripts=pnpm pnpm@12.9.1`; use pnpm for dependency commands. One-off executables use `pnpm dlx <pkg>`.
 
 ## Git — this checkout may be shallow
 

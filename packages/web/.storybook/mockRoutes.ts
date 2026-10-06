@@ -2,7 +2,7 @@
 // the same fixture wherever it is served:
 //
 //   - `mock-server-plugin.ts` answers it from the Vite dev server
-//     (`yarn storybook`, and the Vitest Storybook project).
+//     (`pnpm storybook`, and the Vitest Storybook project).
 //   - `staticMockFetch.ts` answers it inside the page for a BUILT Storybook
 //     (`storybook-static`), which has no server behind it. That build is what
 //     the VRT job screenshots and what the composed Storybook site serves;

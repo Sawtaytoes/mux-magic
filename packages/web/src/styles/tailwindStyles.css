@@ -30,10 +30,9 @@
 /* NOT optional, and it fails **silently** without a line here. Tailwind v4
    scans SOURCE TEXT for complete class strings and does not scan
    dependencies, so every `@charcuterie/ui` component would render unstyled
-   with no error and no failing test. Four levels up because this is a Yarn
-   workspace with a hoisting linker — the package lands in the REPO ROOT's
-   `node_modules`, not in `packages/web`'s. */
-@source "../../../../node_modules/@charcuterie/ui/dist";
+   with no error and no failing test. Two levels up reaches this workspace's
+   declared `@charcuterie/ui` dependency under `packages/web/node_modules`. */
+@source "../../node_modules/@charcuterie/ui/dist";
 
 @layer base {
   body {

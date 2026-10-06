@@ -10,12 +10,12 @@ import { z } from "zod"
 // /server-id/stream. Build identity (git SHA + build timestamp) is
 // stamped into `public/api/version.json` by `scripts/build-version.cjs`
 // at `prebuild`/`prestart`. The route reads that file at request time
-// (rather than importing it once at module load) so a `yarn
+// (rather than importing it once at module load) so a `pnpm
 // build-version` re-run during `tsx watch` development picks up the
 // fresh values without restarting the server.
 //
 // In dev, if the prebuild hook never fired (e.g. `tsx src/api-server.ts`
-// invoked directly outside `yarn`), the route degrades gracefully to
+// invoked directly outside `pnpm`), the route degrades gracefully to
 // `gitSha: "dev"` instead of erroring — the curl-able endpoint still
 // answers, and the UI footer can still render *something*.
 

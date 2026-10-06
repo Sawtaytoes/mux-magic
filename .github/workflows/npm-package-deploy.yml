@@ -24,8 +24,12 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false  # never use caching in release builds
-      - run: corepack enable
-      - run: yarn install --immutable
+      - run: |
+          npm install --global --force --allow-scripts=pnpm pnpm@12.9.1
+          pnpm_global_bin="$(npm prefix --global)/bin"
+          export PATH="$pnpm_global_bin:$PATH"
+          echo "$pnpm_global_bin" >> "$GITHUB_PATH"
+      - run: pnpm install --frozen-lockfile --store-dir ~/.local/share/pnpm/store
 
       # Publish @mux-magic/tools only when its version was bumped this push.
       # "Was it bumped?" == "does a `tools-v<version>` tag already exist for the

@@ -1,11 +1,11 @@
 # CLI
 
-Run any command through the `yarn media` script:
+Run any command through the `pnpm media` script:
 
 ```sh
-yarn media <command> [options]
-yarn media --help                  # list all commands
-yarn media <command> --help        # options for a specific command
+pnpm media <command> [options]
+pnpm media --help                  # list all commands
+pnpm media <command> --help        # options for a specific command
 ```
 
 ---
@@ -113,7 +113,7 @@ Examples:
 ## Build a standalone Windows executable
 
 ```sh
-yarn cli-app:sea
+pnpm cli-app:sea
 ```
 
 Output: `dist/mux-magic.exe`

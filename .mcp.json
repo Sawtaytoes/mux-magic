@@ -2,8 +2,9 @@
   "mcpServers": {
     "playwright": {
       "type": "stdio",
-      "command": "yarn dlx",
+      "command": "pnpm",
       "args": [
+        "dlx",
         "@playwright/mcp@latest",
         "--isolated"
       ]

@@ -52,10 +52,10 @@
       "Bash(whereis *)",
       "Bash(which *)",
       "Bash(xargs -r kill)",
-      "Bash(yarn *)",
-      "Bash(yarn typecheck * | tail *)",
-      "Bash(yarn workspace * 2>&1 | head *; echo *)",
-      "Bash(yarn workspace *)",
+      "Bash(pnpm *)",
+      "Bash(pnpm typecheck * | tail *)",
+      "Bash(pnpm --filter * 2>&1 | head *; echo *)",
+      "Bash(pnpm --filter *)",
       "mcp__playwright__browser_click",
       "mcp__playwright__browser_close",
       "mcp__playwright__browser_console_messages",
@@ -101,8 +101,8 @@
       "PowerShell(Set-Location *)",
       "PowerShell(until Select-String *)",
       "PowerShell(Where-*)",
-      "PowerShell(yarn *)",
-      "PowerShell(yarn workspace *)",
+      "PowerShell(pnpm *)",
+      "PowerShell(pnpm --filter *)",
       "Edit(**)",
       "Read(**)",
       "Read(//**)",
@@ -118,8 +118,8 @@
       "PowerShell(npx *)"
     ],
     "ask": [
-      "Bash(yarn dlx *)",
-      "PowerShell(yarn dlx *)"
+      "Bash(pnpm dlx *)",
+      "PowerShell(pnpm dlx *)"
     ]
   },
   "hooks": {

@@ -1,6 +1,6 @@
 # Build context exclusions — anything Docker doesn't need from the host.
 # Slims `COPY . .` in the builder stage and keeps node_modules / .git off
-# the image entirely. The builder reinstalls deps from yarn.lock and
+# the image entirely. The builder reinstalls deps from pnpm-lock.yaml and
 # rebuilds every artifact, so host-side outputs are pure noise.
 
 # Version control + IDE/agent state
@@ -16,7 +16,7 @@
 .vscode
 .idea
 
-# Installed deps — builder reinstalls fresh from yarn.lock
+# Installed deps — builder reinstalls fresh from pnpm-lock.yaml
 node_modules
 **/node_modules
 

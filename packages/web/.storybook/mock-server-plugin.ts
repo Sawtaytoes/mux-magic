@@ -31,7 +31,7 @@ const sendJson = (
 
 // Tracks every open SSE response so Vitest can drain them on dev-server close.
 // Without this, lingering keep-alive sockets prevent Vite's httpServer.close()
-// from completing, and `yarn test` hangs after all suites finish.
+// from completing, and `pnpm test` hangs after all suites finish.
 const activeSseResponses = new Set<ServerResponse>()
 
 // Keeps the SSE connection open and silent. The Jotai store in each story is
@@ -74,7 +74,7 @@ export const mockServerPlugin = (): Plugin => ({
   configureServer(server) {
     // Force-end any SSE responses still open when Vite shuts down. Without
     // this, lingering keep-alive sockets block Vite's httpServer.close() and
-    // `yarn test` hangs after every suite finishes.
+    // `pnpm test` hangs after every suite finishes.
     server.httpServer?.on("close", () => {
       for (const res of activeSseResponses) {
         if (!res.writableEnded) res.end()

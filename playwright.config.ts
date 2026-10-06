@@ -33,7 +33,7 @@ const projects = createViewportProjects().map((project) =>
 // packages/core/src/tools/envVars.ts. Node's loadEnvFile won't
 // overwrite a process.env value that's already set, so shell wins.
 //
-// To run interactively: `yarn e2e:ui`. CI / one-shot: `yarn e2e`.
+// To run interactively: `pnpm e2e:ui`. CI / one-shot: `pnpm e2e`.
 //
 // The four window projects, the CI-aware retries/workers and
 // trace-on-first-retry come from `@charcuterie/playwright-config`; what stays
@@ -47,7 +47,7 @@ export default createPlaywrightConfig({
     baseURL: baseUrl,
   },
   webServer: {
-    command: "yarn prod:server",
+    command: "pnpm prod:server",
     url: `${baseUrl}/`,
     reuseExistingServer: !process.env.CI,
     stdout: "pipe",

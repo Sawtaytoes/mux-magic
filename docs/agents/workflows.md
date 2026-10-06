@@ -15,11 +15,11 @@ If your repo folder name starts with `Mux-Magic-worker-`:
 2. **Commit AND push** to that branch as you go. This is the explicit reversal of the primary's "never push" rule — the push is what makes your work visible to the user and lets the primary (and other workers) see what you're up to. Push after every commit; don't batch.
 3. **Merge to `master` yourself once CI is green — don't ask.** Squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash`. The no-bypass ruleset means a red PR cannot be merged at all, so green is the permission ([decision](../decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Still the owner's call: someone else's PR. The TrueNAS redeploy is yours, once `/api/jobs/status-counts` shows no running, pending or paused job ([decision](../decisions/2026-09-29-the-agent-redeploys-after-confirming-no-job-is-live.md)).
 4. Everything in `Commit conventions` below (commit-as-you-go, partial-file splits, focused commits) still applies — you're just additionally pushing the branch on every commit.
-5. **For UI changes, leave a dev server running when you hand off / open the PR.** The user reviews UI before approving — they can't tell from a diff whether a button morphs, whether copy feedback flashes, or whether a popover aligns. Start `yarn api-dev-server` (it picks up `PORT` from `.env` — never inline-override it with `$env:PORT=...`) in the background before announcing the PR, and tell the user the URL (`http://localhost:<PORT>/builder/` or `/`) so they can poke at it. Stop the server when they say they're done or when you merge.
+5. **For UI changes, leave a dev server running when you hand off / open the PR.** The user reviews UI before approving — they can't tell from a diff whether a button morphs, whether copy feedback flashes, or whether a popover aligns. Start `pnpm api-dev-server` (it picks up `PORT` from `.env` — never inline-override it with `$env:PORT=...`) in the background before announcing the PR, and tell the user the URL (`http://localhost:<PORT>/builder/` or `/`) so they can poke at it. Stop the server when they say they're done or when you merge.
 
 The push-as-you-go rule is what keeps multiple workers from drifting into each other's blast radius — when the user can see all branches at once, conflicts get spotted early instead of at merge time.
 
-**After any `git pull`** (in either repo, primary or worker): if the pull touched `package.json` or `yarn.lock`, run `yarn install` before doing anything else. Skipping this gives confusing "module not found" or "wrong version" failures that look like real bugs but are just stale `node_modules`. Quick check: `git diff HEAD@{1} HEAD -- package.json yarn.lock` shows whether the pull moved either.
+**After any `git pull`** (in either repo, primary or worker): if the pull touched `package.json` or `pnpm-lock.yaml`, run `pnpm install` before doing anything else. Skipping this gives confusing "module not found" or "wrong version" failures that look like real bugs but are just stale `node_modules`. Quick check: `git diff HEAD@{1} HEAD -- package.json pnpm-lock.yaml` shows whether the pull moved either.
 
 ## Worktree Workflow
 
@@ -27,7 +27,7 @@ When working in a git worktree (created with `EnterWorktree`):
 
 1. **Commit as you go** — after each logical group of changes and passing tests, create a commit. Don't batch work into a single commit at the end.
 2. **Push to a PR, then merge it yourself when CI goes green** — squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash` ([decision](../decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Don't hold a green PR open waiting to be asked.
-3. **Start a dev server when the change is visible in the UI** — start `yarn api-dev-server` on a random port (it picks up `PORT` from `.env`) so the user can poke at it. Merging doesn't wait on that: the PR's before/after screenshots are the record, and the server is for follow-up questions.
+3. **Start a dev server when the change is visible in the UI** — start `pnpm api-dev-server` on a random port (it picks up `PORT` from `.env`) so the user can poke at it. Merging doesn't wait on that: the PR's before/after screenshots are the record, and the server is for follow-up questions.
 4. **Kill the server after the merge**, or when the user says they're done with it.
 
 ## Explaining Behavior Changes to the User
