@@ -5,8 +5,8 @@ The API runs long-running commands as background **jobs** and streams their outp
 ## Start the server
 
 ```sh
-yarn dev                                       # default port 3000
-PORT=8080 yarn dev                             # custom port
+pnpm dev                                       # default port 3000
+PORT=8080 pnpm dev                             # custom port
 ```
 
 The API is mounted under `/api` (e.g. `http://localhost:3000/api/version`). Worker 29 collapsed the SPA + API onto one origin; all `curl` examples below include the `/api` prefix.

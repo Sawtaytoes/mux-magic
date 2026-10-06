@@ -184,8 +184,8 @@ needs a deliberate choice.
 ## Gates (mux-magic house set — all must pass before the PR)
 
 Per [`docs/2026-07-31-m6b-charcuterie-ui.md`](../2026-07-31-m6b-charcuterie-ui.md):
-`yarn lint:biome` + `yarn lint:eslint`, `yarn typecheck`, `yarn vitest run`,
-`yarn e2e`, `yarn workspace @mux-magic/web build:storybook`, and
+`pnpm lint:biome` + `pnpm lint:eslint`, `pnpm typecheck`, `pnpm vitest run`,
+`pnpm e2e`, `pnpm --filter @mux-magic/web build:storybook`, and
 `test:build-budget` (watch the bundle budget — QueryBuilder replaces more code
 than it adds, so this should *help*). PRs base on **`master`**
 ([the revamp-branch rule was superseded 2026-08-03](../decisions/2026-08-03-master-is-the-only-base-branch.md));

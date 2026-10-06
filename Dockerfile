@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # ---------- MakeMKV source stage ----------
 # MakeMKV has no distro package and building it needs the oss+bin tarball
 # pair and a compiler. jlesage's image already has a working build, and
@@ -17,7 +18,7 @@
 FROM ghcr.io/jlesage/makemkv:v26.08.2 AS makemkv
 
 # ---------- Builder stage ----------
-# Installs ALL deps (devDeps included) and runs `yarn build:prod` to produce
+# Installs ALL deps (devDeps included) and runs `pnpm build:prod` to produce
 # the self-contained esbuild bundle, the Vite SPA build, command-descriptions,
 # and version.json. Everything in this stage is discarded — nothing ships in
 # the final image except the build artifacts copied across the stage boundary.
@@ -31,7 +32,7 @@ WORKDIR /app
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 # Build-only apt deps: build-essential for native-module compiles during
-# yarn install and the numpy source build below, git for `git rev-parse HEAD`
+# pnpm install and the numpy source build below, git for `git rev-parse HEAD`
 # if the version script falls back to it, python3 + python3-dev + python3-venv
 # to build the audio-offset-finder venv. wget/ca-certificates stay runtime-side
 # (mkvtoolnix key fetch happens in the runtime stage transiently).
@@ -63,15 +64,14 @@ RUN python3 -m venv /opt/aof-venv \
   && /opt/aof-venv/bin/pip install --no-cache-dir -r requirements.txt
 
 RUN \
-  npm install -g corepack@latest && \
-  corepack enable yarn
+  npm install --global --force --allow-scripts=pnpm pnpm@12.9.1
 
-# Cache-friendly install layer: only the files that affect `yarn install`
+# Cache-friendly install layer: only the files that affect `pnpm install`
 # get copied here, so source-only edits don't bust the install layer. Each
-# workspace's package.json is copied explicitly because yarn needs the full
+# workspace's package.json is copied explicitly because pnpm needs the full
 # workspace topology before it can resolve `workspace:*` references.
-COPY .yarnrc.yml package.json yarn.lock ./
-COPY .yarn .yarn
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .yarn/patches .yarn/patches
 COPY packages/api/package.json     packages/api/package.json
 COPY packages/cli/package.json     packages/cli/package.json
 COPY packages/core/package.json    packages/core/package.json
@@ -79,7 +79,7 @@ COPY packages/server/package.json  packages/server/package.json
 COPY packages/tools/package.json   packages/tools/package.json
 COPY packages/web/package.json     packages/web/package.json
 
-RUN yarn install --immutable
+RUN --mount=type=cache,id=mux-magic-pnpm,target=/pnpm/store,sharing=locked pnpm install --frozen-lockfile --store-dir /pnpm/store
 
 # Rest of the source tree. .dockerignore keeps node_modules / .git / build
 # outputs / docs out of this COPY so it only carries what the build needs.
@@ -88,7 +88,7 @@ COPY . .
 # Build identity. CI passes --build-arg GIT_SHA=… / BUILD_TIME=…; if absent
 # the build-version script falls back to `git rev-parse HEAD` (git is
 # available in this stage) and `new Date().toISOString()`. Setting them as
-# ENV in the builder makes `yarn build:prod` (which invokes build-version.cjs)
+# ENV in the builder makes `pnpm build:prod` (which invokes build-version.cjs)
 # pick them up via process.env.
 ARG GIT_SHA
 ARG BUILD_TIME
@@ -101,14 +101,14 @@ ENV BUILD_TIME=$BUILD_TIME
 # "source" condition that Vite/vitest use. Without this step `build:prod`
 # dies on the first tsx-loaded `import "@mux-magic/tools"` with
 # ERR_MODULE_NOT_FOUND.
-RUN yarn build:tools
+RUN pnpm build:tools
 
 # Produces:
 #   - public/api/version.json                (build identity)
 #   - packages/web/public/command-descriptions.js (copied into the Vite build)
 #   - packages/web/dist/                     (Vite SPA build)
 #   - packages/server/dist/index.js (+ .map) (esbuild bundle of the front-door)
-RUN yarn build:prod
+RUN pnpm build:prod
 
 
 # ---------- Runtime stage ----------
@@ -279,19 +279,12 @@ RUN fpcalc -version | grep -q 'fpcalc version'
 ENV MUX_MAGIC_MAKEMKV_HOME=/makemkv-config
 RUN mkdir -p /makemkv-config/.MakeMKV && chmod 777 /makemkv-config
 
-# Corepack + production-only Yarn install. `yarn workspaces focus
-# --production --all` is Yarn 4's built-in equivalent of `npm install
-# --production` across every workspace — it installs `dependencies` only,
-# skipping `devDependencies` entirely. The esbuild bundle leaves five deps
-# unresolved via --external (playwright, playwright-core, chromium-bidi/*,
-# ./xhr-sync-worker.js, vite); those plus their transitive deps are what
-# this install layer actually needs to produce.
+# Install production dependencies with the same frozen workspace lock.
 RUN \
-  npm install -g corepack@latest && \
-  corepack enable yarn
+  npm install --global --force --allow-scripts=pnpm pnpm@12.9.1
 
-COPY .yarnrc.yml package.json yarn.lock ./
-COPY .yarn .yarn
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .yarn/patches .yarn/patches
 COPY packages/api/package.json     packages/api/package.json
 COPY packages/cli/package.json     packages/cli/package.json
 COPY packages/core/package.json    packages/core/package.json
@@ -299,13 +292,13 @@ COPY packages/server/package.json  packages/server/package.json
 COPY packages/tools/package.json   packages/tools/package.json
 COPY packages/web/package.json     packages/web/package.json
 
-RUN yarn workspaces focus --production --all
+RUN --mount=type=cache,id=mux-magic-pnpm,target=/pnpm/store,sharing=locked pnpm install --prod --frozen-lockfile --store-dir /pnpm/store
 
 # Playwright Chromium binary + matching system libs (libnss3, libxkbcommon0,
-# fonts, etc.). Has to run AFTER yarn install so the playwright CLI is on
+# fonts, etc.). Has to run AFTER pnpm install so the playwright CLI is on
 # disk; --with-deps invokes apt under the hood, which is fine because the
 # container runs as root.
-RUN yarn install-playwright-browser
+RUN pnpm install-playwright-browser
 
 # Build artifacts only — no source .ts. The .map files alone are enough for
 # `--enable-source-maps` to rewrite stack traces back to the original TS

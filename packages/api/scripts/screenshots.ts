@@ -6,11 +6,11 @@
  * full-page PNGs to docs/images/.
  *
  * Run with:
- *   yarn screenshots
+ *   pnpm screenshots
  *
- * Prerequisites: the api-server must be running (yarn api-server or yarn
+ * Prerequisites: the api-server must be running (pnpm api-server or pnpm
  * api-dev-server in another terminal) and the Playwright Chromium browser
- * must be installed (yarn install-playwright-browser).
+ * must be installed (pnpm install-playwright-browser).
  *
  * The script reads PORT from .env (falls back to 3000) to match the same
  * port-sniffing logic used in playwright.config.ts.

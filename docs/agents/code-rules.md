@@ -195,7 +195,7 @@ Enforced by `import-x/no-barrel-files` in `eslint.config.js`.
 
 Biome enforces 2-space indentation everywhere. Never use tabs.
 
-Run `yarn biome format --write <file>` on every file you create or modify, then `git add` the result. Do not rely on your editor's auto-conversion — verify the committed bytes with `git show HEAD:<path> | cat -A` and confirm no `^I` (tab) characters appear. CI runs on Linux where editor-level tab→space conversion does not happen.
+Run `pnpm biome format --write <file>` on every file you create or modify, then `git add` the result. Do not rely on your editor's auto-conversion — verify the committed bytes with `git show HEAD:<path> | cat -A` and confirm no `^I` (tab) characters appear. CI runs on Linux where editor-level tab→space conversion does not happen.
 
 ## Windows-specific: PowerShell UTF-8
 

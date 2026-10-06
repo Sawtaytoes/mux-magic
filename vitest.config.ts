@@ -2,7 +2,7 @@ import { createVitestConfig } from "@charcuterie/vitest-config"
 
 export default createVitestConfig({
   test: {
-    // e2e/ holds Playwright Test specs; they have their own runner (`yarn e2e`)
+    // e2e/ holds Playwright Test specs; they have their own runner (`pnpm e2e`)
     // and break under vitest because @playwright/test's describe/test globals
     // aren't compatible.
     exclude: [

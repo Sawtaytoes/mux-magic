@@ -17,7 +17,7 @@ interface BuildServerOptions {
 // mode with HMR over the same port.
 //
 // Storybook is no longer handled here; run it separately via
-// `yarn workspace @mux-magic/web storybook` (default port 6006).
+// `pnpm --filter @mux-magic/web storybook` (default port 6006).
 export const buildServer = async (
   options: BuildServerOptions,
 ): Promise<Hono> => {

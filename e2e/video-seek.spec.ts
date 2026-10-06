@@ -1,5 +1,10 @@
 import { execFileSync } from "node:child_process"
-import { existsSync, readFileSync } from "node:fs"
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+} from "node:fs"
 import { platform, tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 
@@ -16,46 +21,55 @@ const ffmpegPath =
     : "ffmpeg"
 
 // 60-second synthetic fMP4: blue 320×240 H.264 High@L4.1 + Opus 48 kHz stereo.
-// Generated once for the whole suite; each test reads from this buffer.
+// Each worker generates its own fixture; tests read from this buffer.
 let syntheticFmp4: Buffer
 
 test.beforeAll(() => {
-  const outPath = join(tmpdir(), "pw-mse-seek-test.mp4")
-  execFileSync(ffmpegPath, [
-    "-y",
-    "-f",
-    "lavfi",
-    "-i",
-    "color=c=blue:size=320x240:rate=24",
-    "-f",
-    "lavfi",
-    "-i",
-    "sine=frequency=440:sample_rate=48000",
-    "-t",
-    "60",
-    "-map",
-    "0:v:0",
-    "-c:v",
-    "libx264",
-    "-profile:v",
-    "high",
-    "-level",
-    "4.1",
-    "-map",
-    "1:a:0",
-    "-ac",
-    "2",
-    "-c:a",
-    "libopus",
-    "-b:a",
-    "128k",
-    "-movflags",
-    "frag_keyframe+empty_moov+default_base_moof",
-    "-f",
-    "mp4",
-    outPath,
-  ])
-  syntheticFmp4 = readFileSync(outPath)
+  // beforeAll runs in every parallel worker. A shared filename lets one
+  // worker read while another ffmpeg process is still truncating/writing it.
+  const fixtureDir = mkdtempSync(
+    join(tmpdir(), "pw-mse-seek-"),
+  )
+  const outPath = join(fixtureDir, "fixture.mp4")
+  try {
+    execFileSync(ffmpegPath, [
+      "-y",
+      "-f",
+      "lavfi",
+      "-i",
+      "color=c=blue:size=320x240:rate=24",
+      "-f",
+      "lavfi",
+      "-i",
+      "sine=frequency=440:sample_rate=48000",
+      "-t",
+      "60",
+      "-map",
+      "0:v:0",
+      "-c:v",
+      "libx264",
+      "-profile:v",
+      "high",
+      "-level",
+      "4.1",
+      "-map",
+      "1:a:0",
+      "-ac",
+      "2",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "128k",
+      "-movflags",
+      "frag_keyframe+empty_moov+default_base_moof",
+      "-f",
+      "mp4",
+      outPath,
+    ])
+    syntheticFmp4 = readFileSync(outPath)
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true })
+  }
 })
 
 // `window.openVideoModal` is gone (worker 58 lifted FileVideoPlayer into the
@@ -106,6 +120,7 @@ async function waitForPlayableVideo(page: Page) {
         HTMLMediaElement.HAVE_FUTURE_DATA
       )
     },
+    undefined,
     { timeout: 20_000 },
   )
 }
