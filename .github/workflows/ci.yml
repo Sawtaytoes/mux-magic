@@ -1,6 +1,10 @@
 name: CI
 
-on: ["pull_request", "push"]
+on:
+  pull_request:
+  # Feature branches run through their PR; avoid duplicate build and VRT jobs.
+  push:
+    branches: [master]
 
 env:
   PORT: 3000
