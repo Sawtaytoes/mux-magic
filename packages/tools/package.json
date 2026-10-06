@@ -35,7 +35,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "prepack": "yarn build",
+    "prepack": "pnpm build",
     "typecheck": "tsc --noEmit",
     "test": "vitest"
   },

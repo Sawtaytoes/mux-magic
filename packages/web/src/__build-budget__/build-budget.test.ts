@@ -10,7 +10,7 @@ import { describe, expect, test } from "vitest"
 // subtree + yamlCodec have actually been code-split out of the main
 // chunk. Spawning `vite build` is expensive (~5s warm) so this test is
 // gated behind `RUN_BUILD_BUDGET=1` (default OFF) — CI invokes the
-// dedicated workflow step explicitly. Local `yarn test` is unaffected
+// dedicated workflow step explicitly. Local `pnpm test` is unaffected
 // because this config isn't part of the default web vitest project.
 const isEnabled = process.env.RUN_BUILD_BUDGET === "1"
 const testOrSkip = isEnabled ? test : test.skip
@@ -95,17 +95,21 @@ const MODAL_CHUNK_NAMES = [
 ]
 
 const runBuild = (): string => {
-  const result = spawnSync("yarn", ["vite", "build"], {
-    cwd: PACKAGE_ROOT,
-    encoding: "utf8",
-    // shell: true so `yarn` resolves via PATH on Windows where the
-    // entry is a `.cmd` shim.
-    shell: true,
-    // Vitest sets NODE_ENV=test on its workers; if that leaks into the
-    // spawned vite build, vite skips its production minification path
-    // and the main chunk balloons ~20%. Force production explicitly.
-    env: { ...process.env, NODE_ENV: "production" },
-  })
+  const result = spawnSync(
+    "pnpm",
+    ["exec", "vite", "build"],
+    {
+      cwd: PACKAGE_ROOT,
+      encoding: "utf8",
+      // shell: true so `pnpm` resolves via PATH on Windows where the
+      // entry is a `.cmd` shim.
+      shell: true,
+      // Vitest sets NODE_ENV=test on its workers; if that leaks into the
+      // spawned vite build, vite skips its production minification path
+      // and the main chunk balloons ~20%. Force production explicitly.
+      env: { ...process.env, NODE_ENV: "production" },
+    },
+  )
   if (result.status !== 0) {
     throw new Error(
       `vite build failed (exit ${result.status}):\n${result.stdout}\n${result.stderr}`,
@@ -139,7 +143,7 @@ describe("web build budget (worker 79)", () => {
       )
       // Vite's build reporter gzips at level 9; node's default is 6.
       // Match the reporter so this test agrees with the numbers users
-      // see in `yarn build` output.
+      // see in `pnpm build` output.
       const mainGzipKb =
         gzipSync(mainBytes, {
           level: constants.Z_BEST_COMPRESSION,

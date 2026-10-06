@@ -168,7 +168,7 @@ const boot = async (): Promise<void> => {
   //
   // Side-by-side fix: drop Storybook from the front-door's dev process
   // entirely. The API + SPA stay on a single port (worker 29's win).
-  // Storybook runs separately via `yarn workspace @mux-magic/web
+  // Storybook runs separately via `pnpm --filter @mux-magic/web
   // storybook` when needed, on its own port (default 6006).
   //
   // Boot sequence:

@@ -97,9 +97,14 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with: { node-version: 24 }
-      - run: corepack enable && yarn install --immutable
-      - run: yarn lint:biome
-      - run: yarn lint:eslint
+      - run: |
+          npm install --global --force --allow-scripts=pnpm pnpm@12.9.1
+          pnpm_global_bin="$(npm prefix --global)/bin"
+          export PATH="$pnpm_global_bin:$PATH"
+          echo "$pnpm_global_bin" >> "$GITHUB_PATH"
+          pnpm install --frozen-lockfile --store-dir ~/.local/share/pnpm/store
+      - run: pnpm lint:biome
+      - run: pnpm lint:eslint
 
   typecheck:
     needs: [changes, check-prior-run]
@@ -112,9 +117,14 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with: { node-version: 24 }
-      - run: corepack enable && yarn install --immutable
-      - run: yarn build:tools
-      - run: yarn typecheck
+      - run: |
+          npm install --global --force --allow-scripts=pnpm pnpm@12.9.1
+          pnpm_global_bin="$(npm prefix --global)/bin"
+          export PATH="$pnpm_global_bin:$PATH"
+          echo "$pnpm_global_bin" >> "$GITHUB_PATH"
+          pnpm install --frozen-lockfile --store-dir ~/.local/share/pnpm/store
+      - run: pnpm build:tools
+      - run: pnpm typecheck
 
   unit-tests:
     needs: [changes, check-prior-run]
@@ -127,19 +137,24 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with: { node-version: 24 }
-      - run: corepack enable && yarn install --immutable
+      - run: |
+          npm install --global --force --allow-scripts=pnpm pnpm@12.9.1
+          pnpm_global_bin="$(npm prefix --global)/bin"
+          export PATH="$pnpm_global_bin:$PATH"
+          echo "$pnpm_global_bin" >> "$GITHUB_PATH"
+          pnpm install --frozen-lockfile --store-dir ~/.local/share/pnpm/store
       - name: Install chromium
         timeout-minutes: 15
         run: |
-          DEBIAN_FRONTEND=noninteractive timeout 300 yarn playwright install-deps chromium \
+          DEBIAN_FRONTEND=noninteractive timeout 300 pnpm playwright install-deps chromium \
             || echo "playwright install-deps failed or timed out (apt mirror?) — continuing; the runner image ships chromium's libs"
-          timeout 600 yarn playwright install chromium
-      - run: yarn build:tools
-      # `yarn test` is bare `vitest` so local dev gets watch mode; in CI we
+          timeout 600 pnpm playwright install chromium
+      - run: pnpm build:tools
+      # `pnpm test` is bare `vitest` so local dev gets watch mode; in CI we
       # need run-once, because Vitest 4 browser mode doesn't reliably exit
       # watch mode just from process.env.CI.
-      - run: yarn vitest run
-      - run: yarn test:security
+      - run: pnpm vitest run
+      - run: pnpm test:security
 
       # AFTER the tests, deliberately: Vite's optimizer writes its metadata
       # as it discovers, so before a run there is nothing to compare and
@@ -156,7 +171,7 @@ jobs:
       - name: Check optimizeDeps.include parity
         working-directory: packages/web
         run: >-
-          yarn charcuterie-check-optimize-deps ./optimizeDeps.js
+          pnpm charcuterie-check-optimize-deps ./optimizeDeps.js
           --cache-dir node_modules/.vite
 
   e2e:
@@ -170,13 +185,18 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with: { node-version: 24 }
-      - run: corepack enable && yarn install --immutable
+      - run: |
+          npm install --global --force --allow-scripts=pnpm pnpm@12.9.1
+          pnpm_global_bin="$(npm prefix --global)/bin"
+          export PATH="$pnpm_global_bin:$PATH"
+          echo "$pnpm_global_bin" >> "$GITHUB_PATH"
+          pnpm install --frozen-lockfile --store-dir ~/.local/share/pnpm/store
       - name: Install chromium
         timeout-minutes: 15
         run: |
-          DEBIAN_FRONTEND=noninteractive timeout 300 yarn playwright install-deps chromium \
+          DEBIAN_FRONTEND=noninteractive timeout 300 pnpm playwright install-deps chromium \
             || echo "playwright install-deps failed or timed out (apt mirror?) — continuing; the runner image ships chromium's libs"
-          timeout 600 yarn playwright install chromium
+          timeout 600 pnpm playwright install chromium
       # video-seek.spec.ts encodes its own 60-second fMP4 fixture rather
       # than committing a binary blob. The runner image does not ship
       # ffmpeg, and the suite fails with `spawnSync ffmpeg ENOENT`
@@ -185,9 +205,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ffmpeg
-      - run: yarn build:tools
-      - run: yarn build:prod
-      - run: yarn e2e
+      - run: pnpm build:tools
+      - run: pnpm build:prod
+      - run: pnpm e2e
 
   storybook-build:
     # The Storybook build has been broken on EVERY branch of this repo —
@@ -210,9 +230,14 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with: { node-version: 24 }
-      - run: corepack enable && yarn install --immutable
-      - run: yarn build:tools
-      - run: yarn workspace @mux-magic/web build:storybook
+      - run: |
+          npm install --global --force --allow-scripts=pnpm pnpm@12.9.1
+          pnpm_global_bin="$(npm prefix --global)/bin"
+          export PATH="$pnpm_global_bin:$PATH"
+          echo "$pnpm_global_bin" >> "$GITHUB_PATH"
+          pnpm install --frozen-lockfile --store-dir ~/.local/share/pnpm/store
+      - run: pnpm build:tools
+      - run: pnpm --filter @mux-magic/web build:storybook
 
       # The sibling false-green to a partial build is a build that SUCCEEDS
       # with an empty index — a `stories:` glob in `.storybook/main.ts` that
@@ -251,9 +276,14 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with: { node-version: 24 }
-      - run: corepack enable && yarn install --immutable
-      - run: yarn build:tools
-      - run: yarn workspace @mux-magic/web test:build-budget
+      - run: |
+          npm install --global --force --allow-scripts=pnpm pnpm@12.9.1
+          pnpm_global_bin="$(npm prefix --global)/bin"
+          export PATH="$pnpm_global_bin:$PATH"
+          echo "$pnpm_global_bin" >> "$GITHUB_PATH"
+          pnpm install --frozen-lockfile --store-dir ~/.local/share/pnpm/store
+      - run: pnpm build:tools
+      - run: pnpm --filter @mux-magic/web test:build-budget
 
   # Visual regression over every Storybook story, light and dark, through the
   # fleet's shared workflow — the capture, the reg-suit compare and the report
@@ -274,7 +304,7 @@ jobs:
     permissions: { contents: read, statuses: write, pull-requests: write }
     uses: Sawtaytoes/charcuterie/.github/workflows/shared-vrt.yml@workflows-v1
     with:
-      buildCommand: yarn build:tools && yarn workspace @mux-magic/web build:storybook
+      buildCommand: pnpm build:tools && pnpm --filter @mux-magic/web build:storybook
       storybookStaticDirs: packages/web/storybook-static
       storybookSchemeGlobal: scheme
       storybookSchemes: dark,light

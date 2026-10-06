@@ -45,8 +45,9 @@ Open `http://localhost:3000`. See the [setup guide](docs/setup.md) before you ad
 ## Development
 
 ```sh
-corepack yarn install
-corepack yarn dev
+npm install --global --force --allow-scripts=pnpm pnpm@12.9.1
+pnpm install
+pnpm dev
 ```
 
 The web interface, API, and Storybook use one port. The default address is `http://localhost:3000`.

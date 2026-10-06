@@ -2,12 +2,12 @@
 
 ## Package Manager
 
-**Always use `yarn`, never `npm` or `npx`.** The repo's lockfile is `yarn.lock`; running `npm install` or `npx` desynchronizes it.
+**Use pnpm 12.9.1 with the frozen pnpm lock.** Bootstrap its native binary with `npm install --global --force --allow-scripts=pnpm pnpm@12.9.1`; use pnpm for dependency commands.
 
-- Install/add a package: `yarn add <pkg>` or `yarn add -D <pkg>`
-- Install in a specific workspace: `yarn workspace <workspace-name> add <pkg>`
-- Run scripts: `yarn <script>` (e.g. `yarn test`, `yarn build`)
-- One-off executables: `yarn dlx <pkg>` — not `npx <pkg>`
+- Add a root dependency: `pnpm add -w <pkg>` or `pnpm add -w -D <pkg>`
+- Install in a specific workspace: `pnpm --filter <workspace-name> add <pkg>`
+- Run scripts: `pnpm <script>` (e.g. `pnpm test`, `pnpm build`)
+- One-off executables: `pnpm dlx <pkg>` — not `npx <pkg>`
 
 ## Observable-First
 
@@ -56,7 +56,7 @@ A command needs to land on **five** surfaces or it won't be fully usable. Missin
     - `packages/web/src/commands/commands.ts` — add an entry to the `COMMANDS` map keyed by `<commandName>` with `tag`, `outputFolderName`, and `fields` (built via `fieldBuilder(<commandName>RequestSchema)`). **The CommandPicker iterates over this map — without an entry here, the command does not appear in the builder sidebar even though it's callable via HTTP and CLI.**
     - `packages/web/src/jobs/commandLabels.ts` — add a display label. Without it the sidebar shows the raw camelCase name.
 
-Then regenerate the auto-built UI metadata: `yarn build:command-descriptions` rewrites `packages/web/public/command-descriptions.js` from the Zod `.describe()` text. Commit the regenerated file.
+Then regenerate the auto-built UI metadata: `pnpm build:command-descriptions` rewrites `packages/web/public/command-descriptions.js` from the Zod `.describe()` text. Commit the regenerated file.
 
 **Sanity check before opening the PR:** `grep -rn "flattenOutput\|moveFiles" packages/ docs/` — pick an established command and confirm your new command appears in every place the established one does. This is the single most reliable way to catch a missed wiring site (e.g. the `commands.ts` UI registry, which is easy to miss because there's no compile-time link between it and the server-side `commandNames` array).
 

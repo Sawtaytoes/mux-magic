@@ -1,4 +1,4 @@
-// Default observer for `yarn media <command>` style CLI invocations.
+// Default observer for `pnpm media <command>` style CLI invocations.
 // The observable's logAndRethrowPipelineError at the bottom of every app-command
 // already logged the error with its `[name]` prefix, so the error
 // handler here just needs to terminate cleanly with a non-zero exit

@@ -35,5 +35,5 @@ cleanly. Bump the version whenever you want the changes shipped to npm.
 
 ## Verifying
 
-- `yarn info @mux-magic/tools` shows the latest version after publish completes.
+- `pnpm info @mux-magic/tools` shows the latest version after publish completes.
 - A new `tools-v<version>` tag appears (`git ls-remote --tags origin 'tools-v*'`).

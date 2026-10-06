@@ -7,7 +7,7 @@
  * Phase 4 (W4): re-run after migration; output must match baseline byte-for-byte.
  *   After W1 lands, swap the COMMANDS import to ../src/commands/commands.ts.
  *
- * Run: yarn workspace @mux-magic/web tsx scripts/capture-parity-fixtures.ts
+ * Run: pnpm --filter @mux-magic/web tsx scripts/capture-parity-fixtures.ts
  */
 
 import { mkdirSync, writeFileSync } from "node:fs"

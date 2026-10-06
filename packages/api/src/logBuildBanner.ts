@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url"
 // Mirrors the /version JSON and the UI footer — same source-of-truth
 // `public/api/version.json` written by `scripts/build-version.cjs` at
 // `prebuild`/`prestart`. If that file is missing (someone ran
-// `tsx src/start-servers.ts` directly without going through yarn), we
+// `tsx src/start-servers.ts` directly without going through pnpm), we
 // degrade to a "git=dev" line rather than crashing the boot.
 
 const moduleDir = dirname(fileURLToPath(import.meta.url))
