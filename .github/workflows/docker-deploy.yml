@@ -7,6 +7,10 @@ on:
       - master
       - "feat/**"
     types: [completed]
+  # The `changes` and `build` guards below already handle a manual dispatch;
+  # the trigger was never declared, so an image could not be rebuilt on a
+  # fresh node base (a Node security release) without a code change.
+  workflow_dispatch:
 
 # Group by the branch that actually ran CI, not github.ref — under a
 # workflow_run trigger github.ref is always the default branch, which
@@ -131,7 +135,9 @@ jobs:
       - name: Compute branch tag
         id: tags
         run: |
-          branch_tag="${{ github.event.workflow_run.head_branch }}"
+          # A manual dispatch carries no workflow_run, so fall back to the
+          # dispatched ref; an empty tag would fail the push outright.
+          branch_tag="${{ github.event.workflow_run.head_branch || github.ref_name }}"
           branch_tag="${branch_tag//\//-}"
           echo "branch_tag=${branch_tag}" >> $GITHUB_OUTPUT
 
@@ -147,4 +153,4 @@ jobs:
           tags: |
             ghcr.io/sawtaytoes/mux-magic:${{ github.event.workflow_run.head_sha || github.sha }}
             ghcr.io/sawtaytoes/mux-magic:${{ steps.tags.outputs.branch_tag }}
-            ${{ github.event.workflow_run.head_branch == 'master' && 'ghcr.io/sawtaytoes/mux-magic:latest' || '' }}
+            ${{ (github.event.workflow_run.head_branch || github.ref_name) == 'master' && 'ghcr.io/sawtaytoes/mux-magic:latest' || '' }}
