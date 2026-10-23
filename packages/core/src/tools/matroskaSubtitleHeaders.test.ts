@@ -290,3 +290,88 @@ test("refuses an out-of-file Tracks seek target", async () => {
     readMatroskaTracks("/invalid-seek.mkv"),
   ).rejects.toThrow(/invalid Tracks seek target/)
 })
+
+test("fits expanded ASS format separators without changing values or source credits", () => {
+  const header =
+    "[Script Info]\nFormat: Translator One, Translator Two\n[V4+ Styles]\nFormat: Name,Fontname,MarginV\nStyle: Default,Example Sans,50\n[Events]\nFormat: Layer,Start,End,Text\n[Aegisub Project Garbage]\nFormat: Source One, Source Two\n"
+  const original = tracks({
+    bytes: track({ header, hasChecksum: true }),
+    hasChecksum: true,
+  })
+  const modified = rewriteMatroskaSubtitleHeaders({
+    buffer: original,
+    transform: (text) =>
+      text
+        .replace(
+          "Name,Fontname,MarginV",
+          "Name, Fontname, MarginV",
+        )
+        .replace(
+          "Layer,Start,End,Text",
+          "Layer, Start, End, Text",
+        )
+        .replace("Example Sans,50", "Example Sans,90"),
+  })
+  expect(modified.length).toBe(original.length)
+  expect(
+    modified.includes(
+      Buffer.from("Format: Name,Fontname,MarginV"),
+    ),
+  ).toBe(true)
+  expect(
+    modified.includes(
+      Buffer.from("Style: Default,Example Sans,90"),
+    ),
+  ).toBe(true)
+  expect(
+    modified.includes(
+      Buffer.from("Format: Translator One, Translator Two"),
+    ),
+  ).toBe(true)
+  expect(
+    modified.includes(
+      Buffer.from("Format: Source One, Source Two"),
+    ),
+  ).toBe(true)
+  expect(
+    rewriteMatroskaSubtitleHeaders({
+      buffer: modified,
+      transform: (text) => text,
+    }).equals(modified),
+  ).toBe(true)
+})
+
+test("preserves format spacing when the transformed header already fits", () => {
+  const header =
+    "[V4+ Styles]\nFormat: Name, Fontname, MarginV\nStyle: Default,Example Sans,50\n"
+  const original = tracks({
+    bytes: track({ header: `${header}          ` }),
+  })
+  const modified = rewriteMatroskaSubtitleHeaders({
+    buffer: original,
+    transform: () => header.replace("Sans,50", "Sans,90"),
+  })
+  expect(
+    modified.includes(
+      Buffer.from("Format: Name, Fontname, MarginV"),
+    ),
+  ).toBe(true)
+})
+
+test("still refuses a genuine overflow after optional format compaction", () => {
+  const header =
+    "[V4+ Styles]\nFormat: Name,Fontname\nStyle: Default,Example Sans\n"
+  const original = tracks({ bytes: track({ header }) })
+  expect(() =>
+    rewriteMatroskaSubtitleHeaders({
+      buffer: original,
+      transform: () =>
+        header
+          .replace("Name,Fontname", "Name, Fontname")
+          .replace(
+            "Example Sans",
+            "A much longer font family that cannot fit",
+          ),
+    }),
+  ).toThrow("exceeds its existing capacity")
+})

@@ -237,6 +237,37 @@ const updateChecksum = ({
     ),
   )
 
+const compactFormatFields = (text: string) =>
+  text
+    .split("\n")
+    .reduce<{
+      section: string
+      lines: ReadonlyArray<string>
+    }>(
+      (state, line) =>
+        line.startsWith("[")
+          ? {
+              section: line,
+              lines: state.lines.concat(line),
+            }
+          : {
+              section: state.section,
+              lines: state.lines.concat(
+                ["[V4+ Styles]", "[Events]"].includes(
+                  state.section,
+                ) && line.startsWith("Format: ")
+                  ? `Format: ${line
+                      .slice(8)
+                      .split(",")
+                      .map((field) => field.trim())
+                      .join(",")}`
+                  : line,
+              ),
+            },
+      { section: "", lines: [] },
+    )
+    .lines.join("\n")
+
 const padHeader = ({
   text,
   capacity,
@@ -252,7 +283,14 @@ const padHeader = ({
         ])
       : fail(
           "modified ASS header exceeds its existing capacity; use a verified remux workflow",
-        ))(Buffer.from(text, "utf8"))
+        ))(
+    Buffer.from(
+      Buffer.byteLength(text, "utf8") <= capacity
+        ? text
+        : compactFormatFields(text),
+      "utf8",
+    ),
+  )
 
 const rewriteEntry = ({
   buffer,

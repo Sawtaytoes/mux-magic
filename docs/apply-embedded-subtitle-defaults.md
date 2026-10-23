@@ -36,10 +36,19 @@ Use `isRecursive` and `recursiveDepth` for nested staging folders. Generated
 Verify the staged outputs before using `moveFiles` to install them. Result records
 include the modified metadata range and `hasRewrittenMediaPackets: false`.
 
+Repeated Script Info headings with a single property-bearing section are consolidated
+before computing defaults. Generator comments and source credits are retained, so a
+leading comment-only block cannot hide the real script resolution. Multiple
+property-bearing Script Info sections are refused as ambiguous. Every formatted
+style block contributes to default-margin decisions; repeated style blocks keep
+their field lists, fonts and ignored sign/song styles.
+
 ## Limits
 
 Only S_TEXT/ASS headers are changed. Bitmap subtitles and other track types are
-preserved. Headers must fit their existing byte capacity; unused bytes are padded
+preserved. Headers must fit their existing byte capacity. When needed, optional separator
+spaces in the Styles/Events Format field lists are removed without changing field
+names, style values or credits. Unused bytes are padded
 with whitespace. The command refuses overflow, invalid metadata checksums, unknown
 child lengths, oversized metadata, an existing output, or a source changed during
 the copy. Segment-level CRC-32 is unsupported. These cases require inspection or

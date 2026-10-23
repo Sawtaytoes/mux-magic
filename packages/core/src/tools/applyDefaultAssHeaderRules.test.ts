@@ -65,3 +65,52 @@ test("refuses a serializer round-trip that would lose nonstandard source credit 
     applyDefaultAssHeaderRules(original),
   ).toThrow(/preserve all source Script Info/)
 })
+
+test("reads resolution after a repeated comment-only Script Info header and retains credits", () => {
+  const original = `[Script Info]\n; First generator\n${header({ width: 768, height: 576 }).replace("ScriptType: v4.00+", "ScriptType: v4.00+\nOriginal Translation: Example Group\n; Second generator")}`
+  const output = applyDefaultAssHeaderRules(original)
+  expect(output).toContain(
+    "Style: Default,Example Sans,60,80,80,48",
+  )
+  expect(output).toContain(
+    "Style: Signs,Example Sans,48,10,10,20",
+  )
+  expect(output).toContain("YCbCr Matrix: TV.709")
+  expect(output).toContain(
+    "Original Translation: Example Group",
+  )
+  expect(output).toContain("; First generator")
+  expect(output).toContain("; Second generator")
+  expect(output.match(/\[Script Info\]/g)).toHaveLength(1)
+})
+
+test("refuses multiple property-bearing Script Info sections instead of choosing a resolution", () => {
+  expect(() =>
+    applyDefaultAssHeaderRules(
+      `[Script Info]\nPlayResX: 1920\n${header({ width: 768, height: 576 })}`,
+    ),
+  ).toThrow(/multiple property-bearing Script Info/)
+})
+
+test("examines every style section when computing shared horizontal margins", () => {
+  const original = header({ width: 1280, height: 720 })
+    .replace(
+      "Style: Default,Example Sans,60,10,10,20",
+      "Style: Default,Example Sans,60,110,110,20",
+    )
+    .replace(
+      "[Events]",
+      "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, MarginL, MarginR, MarginV\nStyle: Note,Example Serif,30,20,20,10\n\n[Events]",
+    )
+  const output = applyDefaultAssHeaderRules(original)
+  expect(output).toContain(
+    "Style: Default,Example Sans,60,133,133,60",
+  )
+  expect(output).toContain(
+    "Style: Note,Example Serif,30,133,133,60",
+  )
+  expect(output).toContain(
+    "Style: Signs,Example Sans,48,10,10,20",
+  )
+  expect(output.match(/\[V4\+ Styles\]/g)).toHaveLength(2)
+})
