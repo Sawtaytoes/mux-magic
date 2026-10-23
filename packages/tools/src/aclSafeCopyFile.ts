@@ -13,6 +13,7 @@ import { Transform } from "node:stream"
 import { pipeline } from "node:stream/promises"
 
 import { hasErrorCode } from "./hasErrorCode.js"
+import { tryLinuxClone } from "./tryLinuxClone.js"
 
 /**
  * Per-chunk progress notification fired while a single file is being
@@ -158,7 +159,9 @@ const kernelCopyTier = async (
     return true
   } catch (error) {
     if (hasErrorCode(error, "EPERM")) {
-      // libuv's post-copy `fchmod` failed; bytes are already on disk.
+      // Some libuv versions chmod after copying, while others chmod
+      // before the clone. Accept a complete post-copy result; otherwise
+      // try content-only cloning without changing inherited permissions.
       // Verify size match before accepting — a genuine partial write
       // still needs the streaming fallback.
       const [sourceStat, tempStat] = await Promise.all([
@@ -172,7 +175,10 @@ const kernelCopyTier = async (
         return true
       }
       await safeUnlink(tempPath)
-      return false
+      return tryLinuxClone({
+        source,
+        destination: tempPath,
+      })
     }
     if (
       hasErrorCode(error, "ENOSPC") ||
@@ -237,10 +243,10 @@ const finalizeRename = async (
  *
  * Built to work around an EPERM that libuv's `fs.copyFile` hits on
  * TrueNAS ZFS datasets configured with `aclmode=restricted` — the
- * post-copy `fchmod` fails against NFSv4 ACLs even when the mode is
+ * `fchmod` fails against NFSv4 ACLs even when the mode is
  * unchanged. We treat "EPERM after a complete write" (verified by
  * source/destination size match) as success, and only fall through to
- * a streaming pipeline for genuine partial writes.
+ * content-only Linux cloning or a streaming pipeline for genuine partial writes.
  *
  * Files only — does not handle directory copies. The destination's
  * parent directory must already exist; callers are expected to

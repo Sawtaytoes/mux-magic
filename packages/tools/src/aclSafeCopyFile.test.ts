@@ -1,11 +1,25 @@
 import * as fsPromises from "node:fs/promises"
 import { vol } from "memfs"
-import { describe, expect, test, vi } from "vitest"
+import {
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 
 import {
   aclSafeCopyFile,
   type CopyProgressEvent,
 } from "./aclSafeCopyFile.js"
+
+const { linuxClone } = vi.hoisted(() => ({
+  linuxClone: vi.fn(),
+}))
+vi.mock("./tryLinuxClone.js", () => ({
+  tryLinuxClone: linuxClone,
+}))
+beforeEach(() => linuxClone.mockResolvedValue(false))
 
 const TEMP_SUFFIX = ".muxmagic.tmp"
 
@@ -331,4 +345,76 @@ describe(aclSafeCopyFile.name, () => {
       copyFileSpy.mockRestore()
     })
   })
+})
+
+test("clones without chmod after a pre-copy ACL failure and publishes verified complete bytes", async () => {
+  vol.fromJSON({
+    "/cache/source.mkv": "original media bytes",
+    "/anime": null,
+  })
+  vi.spyOn(fsPromises, "copyFile").mockRejectedValueOnce(
+    Object.assign(new Error("restricted ACL"), {
+      code: "EPERM",
+    }),
+  )
+  linuxClone.mockImplementationOnce(
+    async ({ source, destination }) => {
+      vol.writeFileSync(
+        destination,
+        vol.readFileSync(source),
+      )
+      return true
+    },
+  )
+  await aclSafeCopyFile(
+    "/cache/source.mkv",
+    "/anime/target.mkv",
+  )
+  expect(linuxClone).toHaveBeenCalledWith({
+    source: "/cache/source.mkv",
+    destination: "/anime/target.mkv.muxmagic.tmp",
+  })
+  expect(
+    vol.readFileSync("/anime/target.mkv", "utf8"),
+  ).toBe("original media bytes")
+  expect(
+    vol.readFileSync("/cache/source.mkv", "utf8"),
+  ).toBe("original media bytes")
+  expect(
+    vol.existsSync("/anime/target.mkv.muxmagic.tmp"),
+  ).toBe(false)
+})
+
+test("cancellation after a clone removes its temporary file and never publishes", async () => {
+  vol.fromJSON({
+    "/cache/source.mkv": "original media bytes",
+    "/anime": null,
+  })
+  const controller = new AbortController()
+  vi.spyOn(fsPromises, "copyFile").mockRejectedValueOnce(
+    Object.assign(new Error("restricted ACL"), {
+      code: "EPERM",
+    }),
+  )
+  linuxClone.mockImplementationOnce(
+    async ({ source, destination }) => {
+      vol.writeFileSync(
+        destination,
+        vol.readFileSync(source),
+      )
+      controller.abort(new Error("cancelled during clone"))
+      return true
+    },
+  )
+  await expect(
+    aclSafeCopyFile(
+      "/cache/source.mkv",
+      "/anime/target.mkv",
+      { signal: controller.signal },
+    ),
+  ).rejects.toThrow("cancelled during clone")
+  expect(vol.existsSync("/anime/target.mkv")).toBe(false)
+  expect(
+    vol.existsSync("/anime/target.mkv.muxmagic.tmp"),
+  ).toBe(false)
 })

@@ -50,3 +50,16 @@ accepting a remux result.
 The output's size and metadata are checked before its temporary name is published.
 The operation does not identify a subtitle's release group, repair missing fonts,
 or verify source episode pairing; those remain separate cleanup gates.
+
+## Restricted ACLs and block cloning
+
+On Linux, libuv can attempt `fchmod` before requesting a reflink. A restricted
+NFSv4 ACL can reject that permission change even when creating and writing the
+work copy is allowed. The copy helper retries an incomplete `EPERM` copy with a
+content-only Linux clone through Python, which the container already includes.
+It inherits destination permissions, creates the temporary file exclusively,
+and keeps the existing atomic publication, cancellation and progress behavior.
+If Python or cloning is unavailable, the established safe streaming fallback
+remains available. A filesystem without cloning can still require a full copy.
+
+The ordering is visible in [libuv's implementation](https://github.com/libuv/libuv/blob/v1.52.1/src/unix/fs.c#L1340-L1378).
