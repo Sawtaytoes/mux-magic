@@ -57,6 +57,9 @@ export const PROVIDER_CACHE_POLICIES = {
   musicBrainz: NETWORK_FIRST,
   myAnimeList: NETWORK_FIRST,
   tvdb: NETWORK_FIRST,
+  // VGMdb's album and search pages, read for cover art. A separate key
+  // from `vgmdbCddb`: a different surface with its own rate limit.
+  vgmdb: NETWORK_FIRST,
   vgmdbCddb: NETWORK_FIRST,
 } as const satisfies Record<string, ProviderCachePolicy>
 

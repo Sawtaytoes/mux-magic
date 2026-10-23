@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-10-23 | [VGMdb is a standalone artwork search provider](2026-10-23-vgmdb-is-a-standalone-artwork-search-provider.md) | core | Accepted |
 | 2026-10-23 | [Bandcamp artwork reads the artist's own pages, not search](2026-10-23-bandcamp-artwork-reads-the-artists-own-pages-not-search.md) | core | Accepted |
 | 2026-09-29 | [Every provider read is network-first, and a cache fallback is reported](2026-09-29-every-provider-read-is-network-first-and-a-cache-fallback-is-reported.md) | core / api / web | Accepted |
 | 2026-09-29 | [The agent redeploys, after confirming no job is live](2026-09-29-the-agent-redeploys-after-confirming-no-job-is-live.md) | process | Accepted |

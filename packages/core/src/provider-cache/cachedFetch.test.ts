@@ -672,9 +672,11 @@ describe(createCachedFetch.name, () => {
     const buildUnnamedFetcher = () =>
       createCachedFetch({
         cache: openMemoryCache(),
-        // @ts-expect-error — `vgmdb` is the dead key the old table had while
-        // the fetcher was registered as `vgmdbCddb`.
-        provider: "vgmdb",
+        // @ts-expect-error — a key the table does not name. (This used to
+        // be `vgmdb`, the dead key the old table had while the fetcher was
+        // registered as `vgmdbCddb`; `vgmdb` is a real key again since the
+        // VGMdb artwork provider arrived.)
+        provider: "unnamedProvider",
         userAgent,
       })
 

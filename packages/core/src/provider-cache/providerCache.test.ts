@@ -364,7 +364,9 @@ describe("PROVIDER_CACHE_POLICIES", () => {
   test("names every provider a fetcher is registered under", () => {
     // The type already refuses an unnamed provider at compile time; this
     // is the list the three drifted keys (`vgmdb` for `vgmdbCddb`, no
-    // `freedbCddb`, no `discogs`) were missing from.
+    // `freedbCddb`, no `discogs`) were missing from. `vgmdb` is back as
+    // its own key since 2026-10-23: the web pages read for cover art, a
+    // separate surface from the freedb emulator under `vgmdbCddb`.
     expect(
       Object.keys(PROVIDER_CACHE_POLICIES).sort(),
     ).toEqual([
@@ -383,6 +385,7 @@ describe("PROVIDER_CACHE_POLICIES", () => {
       "musicBrainz",
       "myAnimeList",
       "tvdb",
+      "vgmdb",
       "vgmdbCddb",
     ])
   })

@@ -125,6 +125,16 @@ export const bandcampCachedFetch = buildFetcher({
   provider: "bandcamp",
 })
 
+// VGMdb's web pages, read for cover art. Its own limiter, separate from the
+// freedb emulator's, so an artwork search cannot eat a disc lookup's
+// interval. VGMdb publishes no rate limit; this is a politeness number.
+// Written here rather than imported from vgmdbArtwork.ts, for the same
+// server-bundle reason as Bandcamp's above.
+export const vgmdbCachedFetch = buildFetcher({
+  minimumRequestIntervalMilliseconds: 3_000,
+  provider: "vgmdb",
+})
+
 // Re-exported so the existing import path keeps working; the holder and
 // the close itself now live in sharedProviderCache.ts, which the
 // DVDCompare fetcher shares.
