@@ -1163,6 +1163,28 @@ export const assModificationRuleSchema =
     setStyleFieldsRuleSchema,
   ])
 
+export const applyEmbeddedSubtitleDefaultsRequestSchema =
+  z.object({
+    sourcePath: z
+      .string()
+      .describe(
+        "Directory containing staged MKV files with embedded ASS subtitles.",
+      ),
+    isRecursive: z
+      .boolean()
+      .default(false)
+      .describe("Search child folders for MKV files."),
+    recursiveDepth: z
+      .number()
+      .int()
+      .min(1)
+      .max(16)
+      .default(1)
+      .describe(
+        "Maximum number of child folder levels to search when recursive is enabled.",
+      ),
+  })
+
 export const modifySubtitleMetadataRequestSchema = z.object(
   {
     sourcePath: z

@@ -9,6 +9,7 @@ import { hideBin } from "yargs/helpers"
 
 import { addSubtitlesCommand } from "./cli-commands/addSubtitlesCommand.js"
 import { analyseDiscBackupCommand } from "./cli-commands/analyseDiscBackupCommand.js"
+import { applyEmbeddedSubtitleDefaultsCommand } from "./cli-commands/applyEmbeddedSubtitleDefaultsCommand.js"
 import { changeTrackLanguagesCommand } from "./cli-commands/changeTrackLanguagesCommand.js"
 import { convertContainerAudioToFlacCommand } from "./cli-commands/convertContainerAudioToFlacCommand.js"
 import { convertLosslessToFlacCommand } from "./cli-commands/convertLosslessToFlacCommand.js"
@@ -104,6 +105,7 @@ yargs(hideBin(process.argv))
   .command(inverseTelecineDiscRipsCommand)
   .command(isMissingSubtitlesCommand)
   .command(modifySubtitleMetadataCommand)
+  .command(applyEmbeddedSubtitleDefaultsCommand)
   .command(keepLanguagesCommand)
   .command(matchMusicReleaseCommand)
   .command(addSubtitlesCommand)

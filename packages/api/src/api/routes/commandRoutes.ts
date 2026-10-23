@@ -10,6 +10,10 @@ import {
 } from "@mux-magic/core/src/app-commands/addSubtitles.js"
 import { analyseDiscBackup } from "@mux-magic/core/src/app-commands/analyseDiscBackup.js"
 import { applyCoverArt } from "@mux-magic/core/src/app-commands/applyCoverArt.js"
+import {
+  applyEmbeddedSubtitleDefaults,
+  applyEmbeddedSubtitleDefaultsDefaultProps,
+} from "@mux-magic/core/src/app-commands/applyEmbeddedSubtitleDefaults.js"
 import { changeTrackLanguages } from "@mux-magic/core/src/app-commands/changeTrackLanguages.js"
 import {
   type CompareMusicAssistantLibraryRecord,
@@ -968,6 +972,17 @@ export const commandConfigs: Record<
     summary:
       "Exit the umbrella sequence cleanly (status: exited) if sourcePath does not exist or contains zero entries. No-op if the folder has any contents.",
     tags: ["Flow Control"],
+  },
+  applyEmbeddedSubtitleDefaults: {
+    getObservable: (body) =>
+      applyEmbeddedSubtitleDefaults(body),
+    schema:
+      schemas.applyEmbeddedSubtitleDefaultsRequestSchema,
+    outputFolderName:
+      applyEmbeddedSubtitleDefaultsDefaultProps.outputFolderName,
+    summary:
+      "Apply the default ASS subtitle style rules to staged MKVs without remuxing media packets. Writes a separate SUBTITLE-DEFAULTS folder and refuses headers that cannot fit safely.",
+    tags: ["Subtitle Operations"],
   },
   modifySubtitleMetadata: {
     getObservable: (body) =>

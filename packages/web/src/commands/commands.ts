@@ -17,6 +17,7 @@ import {
   addSubtitlesRequestSchema,
   analyseDiscBackupRequestSchema,
   applyCoverArtRequestSchema,
+  applyEmbeddedSubtitleDefaultsRequestSchema,
   changeTrackLanguagesRequestSchema,
   compareMusicAssistantLibraryRequestSchema,
   convertContainerAudioToFlacRequestSchema,
@@ -1836,6 +1837,36 @@ export const COMMANDS: Commands = {
       ],
     }
   })(),
+  applyEmbeddedSubtitleDefaults: ((field) => ({
+    summary: "Apply Subtitle Defaults to MKV",
+    description:
+      "Raise embedded ASS subtitles using the default style rules while preserving media packets, timestamps, fonts and track flags. Writes staged copies to SUBTITLE-DEFAULTS. Headers that need more space require the extract/modify/add workflow.",
+    tag: "Subtitle Operations",
+    outputFolderName: "SUBTITLE-DEFAULTS",
+    fields: [
+      field("sourcePath", {
+        type: "path",
+        label: "Source Path",
+      }),
+      field("isRecursive", {
+        type: "boolean",
+        label: "Recursive",
+      }),
+      field("recursiveDepth", {
+        type: "number",
+        label: "Depth",
+        min: 1,
+        visibleWhen: {
+          fieldName: "isRecursive",
+          value: true,
+        },
+      }),
+    ],
+  }))(
+    fieldBuilder(
+      applyEmbeddedSubtitleDefaultsRequestSchema,
+    ),
+  ),
   modifySubtitleMetadata: (() => {
     const field = fieldBuilder(
       modifySubtitleMetadataRequestSchema,

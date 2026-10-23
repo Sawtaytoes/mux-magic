@@ -6,6 +6,7 @@ import {
   installLogCapture,
   uninstallLogCapture,
 } from "@mux-magic/core/src/api/logCapture.js"
+import { applyEmbeddedSubtitleDefaults } from "@mux-magic/core/src/app-commands/applyEmbeddedSubtitleDefaults.js"
 import { writeAudioTags } from "@mux-magic/core/src/app-commands/writeAudioTags.js"
 import { vol } from "memfs"
 import {
@@ -18,6 +19,19 @@ import {
   vi,
 } from "vitest"
 import { commandRoutes } from "./commandRoutes.js"
+
+vi.mock(
+  "@mux-magic/core/src/app-commands/applyEmbeddedSubtitleDefaults.js",
+  async () => {
+    const { of } = await import("rxjs")
+    return {
+      applyEmbeddedSubtitleDefaults: vi.fn(() => of([])),
+      applyEmbeddedSubtitleDefaultsDefaultProps: {
+        outputFolderName: "SUBTITLE-DEFAULTS",
+      },
+    }
+  },
+)
 
 vi.mock(
   "@mux-magic/core/src/app-commands/writeAudioTags.js",
@@ -77,9 +91,48 @@ afterAll(() => {
 afterEach(() => {
   resetStore()
   vi.mocked(writeAudioTags).mockClear()
+  vi.mocked(applyEmbeddedSubtitleDefaults).mockClear()
 })
 
 describe("POST /commands/:name — dry-run safety", () => {
+  test("embedded subtitle defaults advertises its separate output and forwards recursion", async () => {
+    const response = await post(
+      "/commands/applyEmbeddedSubtitleDefaults",
+      {
+        sourcePath: "/staged",
+        isRecursive: true,
+        recursiveDepth: 2,
+      },
+    )
+    expect(response.status).toBe(202)
+    const body = (await response.json()) as {
+      jobId: string
+      outputFolderName: string
+    }
+    expect(body.outputFolderName).toBe("SUBTITLE-DEFAULTS")
+    await waitFor(() =>
+      getJob(body.jobId)?.status === "completed"
+        ? true
+        : undefined,
+    )
+    expect(
+      applyEmbeddedSubtitleDefaults,
+    ).toHaveBeenCalledWith({
+      sourcePath: "/staged",
+      isRecursive: true,
+      recursiveDepth: 2,
+    })
+  })
+  test("embedded subtitle defaults rejects an invalid recursive depth", async () => {
+    const response = await post(
+      "/commands/applyEmbeddedSubtitleDefaults",
+      { sourcePath: "/staged", recursiveDepth: -1 },
+    )
+    expect(response.status).toBe(400)
+    expect(
+      applyEmbeddedSubtitleDefaults,
+    ).not.toHaveBeenCalled()
+  })
   test("writeAudioTags forwards a disc number bulk edit", async () => {
     const response = await post(
       "/commands/writeAudioTags",

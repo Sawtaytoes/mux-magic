@@ -40,6 +40,7 @@ export const commandNames = [
   "deleteFolder",
   "exitIfEmpty",
   "modifySubtitleMetadata",
+  "applyEmbeddedSubtitleDefaults",
   "keepLanguages",
   "addSubtitles",
   "mergeTracks",
