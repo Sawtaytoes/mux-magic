@@ -8,6 +8,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   aniDb: "AniDB",
   animeOfflineDatabase: "anime-offline-database",
   animeThemes: "AnimeThemes",
+  bandcamp: "Bandcamp",
   coverArtArchive: "Cover Art Archive",
   criterionForum: "Criterion Forum",
   discogs: "Discogs",

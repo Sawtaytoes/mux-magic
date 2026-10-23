@@ -111,6 +111,20 @@ export const itunesCachedFetch = buildFetcher({
   provider: "itunes",
 })
 
+// Bandcamp publishes no API and no rate limit, so this is a politeness
+// number rather than a published one: at least three seconds between the
+// artist pages one lookup reads. Its own limiter, and the same descriptive
+// User-Agent every provider here sends — never a browser's.
+//
+// ⚠️ The number is written here, NOT imported from bandcampArtwork.ts. This
+// module is in the server bundle; importing the parser would pull JSDOM in
+// with it, and css-tree's own `import { createRequire }` then collides with
+// the bundle banner's, so the server fails to start (SyntaxError).
+export const bandcampCachedFetch = buildFetcher({
+  minimumRequestIntervalMilliseconds: 3_000,
+  provider: "bandcamp",
+})
+
 // Re-exported so the existing import path keeps working; the holder and
 // the close itself now live in sharedProviderCache.ts, which the
 // DVDCompare fetcher shares.

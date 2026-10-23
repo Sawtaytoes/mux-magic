@@ -371,6 +371,7 @@ describe("PROVIDER_CACHE_POLICIES", () => {
       "acoustId",
       "aniDb",
       "animeThemes",
+      "bandcamp",
       "coverArtArchive",
       "criterionForum",
       "discogs",

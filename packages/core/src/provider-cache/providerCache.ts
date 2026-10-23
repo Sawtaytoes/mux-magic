@@ -45,6 +45,7 @@ export const PROVIDER_CACHE_POLICIES = {
   acoustId: NETWORK_FIRST,
   aniDb: { freshWindowMilliseconds: millisecondsPerDay },
   animeThemes: NETWORK_FIRST,
+  bandcamp: NETWORK_FIRST,
   coverArtArchive: NETWORK_FIRST,
   criterionForum: NETWORK_FIRST,
   discogs: NETWORK_FIRST,
