@@ -1,0 +1,41 @@
+<!-- Recorded 2026-10-23 as the HTTP 403 body of https://www.newgrounds.com/search/conduct/audio?terms=test. -->
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NG Guard</title>
+  
+  <link rel="icon" href="/_guard/assets/favicon-jbv52fbx.ico" sizes="any">
+<link rel="stylesheet" crossorigin href="/_guard/assets/index-sdefkv7x.css"><script type="module" crossorigin src="/_guard/assets/index-e411fhsg.js"></script></head>
+
+<body>
+  <main>
+    <section class="stage" aria-label="Newgrounds browser check">
+      <canvas class="wordmark" id="wordmark" role="img" aria-label="Newgrounds"></canvas>
+      <div class="critter">
+        <canvas id="critter" width="9" height="9" aria-hidden="true"></canvas>
+        <p class="critter-name" id="name"></p>
+      </div>
+      <div class="meter">
+        <div class="bar" id="bar" role="progressbar" aria-label="Puzzle progress" aria-valuemin="0"
+          aria-valuemax="100" aria-valuenow="0">
+          <div class="fill" id="fill"></div>
+        </div>
+        <canvas class="pct" id="pct" aria-hidden="true"></canvas>
+      </div>
+      <ol class="log" id="log" aria-hidden="true"></ol>
+    </section>
+    <div class="below">
+      <p class="status" id="status" aria-live="polite"></p>
+      <noscript>
+        <p class="status">This check needs JavaScript. Turn it on, then reload the page to continue to Newgrounds.</p>
+      </noscript>
+      <p class="aside">Logged-in Newgrounds members skip this check.</p>
+      <div id="action"></div>
+    </div>
+  </main>
+</body>
+
+</html>

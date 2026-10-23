@@ -135,6 +135,17 @@ export const vgmdbCachedFetch = buildFetcher({
   provider: "vgmdb",
 })
 
+// Newgrounds' audio search and listen pages, read for track art. Newgrounds
+// publishes no rate limit; this is a politeness number.
+//
+// ⚠️ The number is written here, not imported from newgroundsArtwork.ts.
+// That module loads JSDOM, and pulling JSDOM into this file's import graph
+// puts it in the server bundle, which then fails to start.
+export const newgroundsCachedFetch = buildFetcher({
+  minimumRequestIntervalMilliseconds: 3_000,
+  provider: "newgrounds",
+})
+
 // Re-exported so the existing import path keeps working; the holder and
 // the close itself now live in sharedProviderCache.ts, which the
 // DVDCompare fetcher shares.
