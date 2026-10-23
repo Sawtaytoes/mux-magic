@@ -385,6 +385,7 @@ describe("PROVIDER_CACHE_POLICIES", () => {
       "musicBrainz",
       "myAnimeList",
       "newgrounds",
+      "soundCloud",
       "tvdb",
       "vgmdb",
       "vgmdbCddb",

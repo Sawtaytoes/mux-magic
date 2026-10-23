@@ -146,6 +146,18 @@ export const newgroundsCachedFetch = buildFetcher({
   provider: "newgrounds",
 })
 
+// SoundCloud's public oEmbed endpoint publishes no rate limit, and we read
+// it without a registered client, so it gets the slow end of the politeness
+// range: at least two seconds between requests. A per-song pass over an
+// album must not read like a flood to a host we have no agreement with. It
+// sends the same honest application user agent as every fetcher here, never
+// a browser's. The number is written here rather than imported, for the
+// server-bundle reason given on the Bandcamp fetcher above.
+export const soundCloudCachedFetch = buildFetcher({
+  minimumRequestIntervalMilliseconds: 2_000,
+  provider: "soundCloud",
+})
+
 // Re-exported so the existing import path keeps working; the holder and
 // the close itself now live in sharedProviderCache.ts, which the
 // DVDCompare fetcher shares.

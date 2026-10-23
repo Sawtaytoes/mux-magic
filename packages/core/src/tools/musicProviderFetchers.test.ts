@@ -108,3 +108,47 @@ test(
   },
   MODULE_RELOAD_TIMEOUT_MILLISECONDS,
 )
+
+test(
+  "SoundCloud gets its own fetcher at two seconds or slower",
+  async () => {
+    vi.stubEnv(
+      "MUSICBRAINZ_USER_AGENT",
+      "mux-magic-test/0.0.0 ( test@example.com )",
+    )
+    const createCachedFetch = vi.fn(
+      (_options: {
+        minimumRequestIntervalMilliseconds: number
+        provider: string
+      }) =>
+        vi.fn(async () => ({
+          body: "{}",
+          isFromCache: true,
+        })),
+    )
+    vi.doMock("../provider-cache/cachedFetch.js", () => ({
+      createCachedFetch,
+    }))
+    vi.doMock("../provider-cache/providerCache.js", () => ({
+      openProviderCache: () => ({ close: () => {} }),
+      providerCacheDatabasePath: "/tmp/unused.sqlite",
+    }))
+
+    const { soundCloudCachedFetch } = await import(
+      "./musicProviderFetchers.js"
+    )
+    await soundCloudCachedFetch(
+      "https://soundcloud.com/oembed?format=json&url=a",
+    )
+
+    expect(createCachedFetch).toHaveBeenCalledTimes(1)
+    expect(
+      createCachedFetch.mock.calls[0]?.[0].provider,
+    ).toBe("soundCloud")
+    expect(
+      createCachedFetch.mock.calls[0]?.[0]
+        .minimumRequestIntervalMilliseconds,
+    ).toBeGreaterThanOrEqual(2_000)
+  },
+  MODULE_RELOAD_TIMEOUT_MILLISECONDS,
+)

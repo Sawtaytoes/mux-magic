@@ -57,6 +57,7 @@ export const PROVIDER_CACHE_POLICIES = {
   musicBrainz: NETWORK_FIRST,
   myAnimeList: NETWORK_FIRST,
   newgrounds: NETWORK_FIRST,
+  soundCloud: NETWORK_FIRST,
   tvdb: NETWORK_FIRST,
   // VGMdb's album and search pages, read for cover art. A separate key
   // from `vgmdbCddb`: a different surface with its own rate limit.
