@@ -326,6 +326,30 @@ export const setIgnoredStyleNamesRegex = ({
     },
   })
 
+export const setIgnoredStyleNameWords = ({
+  rules,
+  ruleIndex,
+  value,
+}: {
+  rules: DslRule[]
+  ruleIndex: number
+  value: string
+}) =>
+  updateRuleAt({
+    rules,
+    ruleIndex,
+    updater: (rule) =>
+      rule.type === "setStyleFields"
+        ? {
+            ...rule,
+            ignoredStyleNameWords: value
+              .split(/[,\s]+/)
+              .map((styleWord) => styleWord.trim())
+              .filter(Boolean),
+          }
+        : rule,
+  })
+
 // ─── Predicate mutations ──────────────────────────────────────────────────────
 
 export const addPredicate = ({

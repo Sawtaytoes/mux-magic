@@ -50,6 +50,39 @@ test.describe("DslRulesBuilder — rule lifecycle", () => {
     ).toHaveCount(initialCount + 1)
   })
 
+  test("ignored style words persist alongside a custom regex in YAML", async ({
+    page,
+  }) => {
+    await page
+      .getByRole("button", { name: "+ setStyleFields" })
+      .first()
+      .click()
+    const words = page.getByLabel("Ignore style words", {
+      exact: true,
+    })
+    await words.fill("OP, ED NCOP NCED")
+    await words.press("Tab")
+    const regex = page.locator('input[id^="ssf-regex-"]')
+    await regex.fill("signs?|opening|ending")
+    await regex.press("Tab")
+    await page
+      .getByRole("button", { name: "Sequence actions" })
+      .click()
+    await page
+      .getByRole("button", { name: "View YAML" })
+      .click()
+    const yaml = page.locator("#yaml-modal #yaml-out")
+    await expect(yaml).toContainText(
+      "ignoredStyleNameWords:",
+    )
+    await expect(yaml).toContainText(
+      /ignoredStyleNameWords:\s*\[OP,\s*ED,\s*NCOP,\s*NCED\]/,
+    )
+    await expect(yaml).toContainText(
+      "ignoredStyleNamesRegexString: signs?|opening|ending",
+    )
+  })
+
   test("adding multiple rule types creates multiple cards", async ({
     page,
   }) => {

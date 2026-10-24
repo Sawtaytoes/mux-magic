@@ -189,6 +189,7 @@ export type ScaleResolutionRule = {
 export type SetStyleFieldsRule = {
   type: "setStyleFields"
   ignoredStyleNamesRegexString?: string
+  ignoredStyleNameWords?: string[]
   fields: Record<string, StyleFieldValue>
   applyIf?: ApplyIfNode
   when?: WhenNode

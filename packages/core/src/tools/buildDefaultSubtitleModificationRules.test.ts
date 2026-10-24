@@ -15,6 +15,38 @@ const sample = (
 })
 
 describe(buildDefaultSubtitleModificationRules.name, () => {
+  test("top dialogue styles trigger narrow-margin correction rather than matching OP", () => {
+    const rules = buildDefaultSubtitleModificationRules([
+      sample({
+        scriptInfo: { PlayResX: "1920", PlayResY: "1080" },
+        styles: [
+          {
+            Name: "Top Secondary Dialog 1080P",
+            MarginL: "10",
+            MarginR: "10",
+          },
+        ],
+      }),
+    ])
+    expect(
+      rules.find((rule) => rule.type === "setStyleFields"),
+    ).toMatchObject({
+      ignoredStyleNameWords: expect.arrayContaining([
+        "op",
+        "ed",
+        "ncop",
+        "nced",
+        "opr",
+        "edtl",
+        "opkara",
+      ]),
+      fields: {
+        MarginL: "200",
+        MarginR: "200",
+        MarginV: "90",
+      },
+    })
+  })
   test("always emits a setScriptInfo rule pinning ScriptType to v4.00+", () => {
     const rules = buildDefaultSubtitleModificationRules([
       sample(),
@@ -75,7 +107,16 @@ describe(buildDefaultSubtitleModificationRules.name, () => {
       // 1080/1080*90 = 90.
       fields: { MarginV: "90" },
       ignoredStyleNamesRegexString:
-        "signs?|op|ed|opening|ending",
+        "signs?|opening|ending|credits?|on[ _-]*screen",
+      ignoredStyleNameWords: expect.arrayContaining([
+        "op",
+        "ed",
+        "ncop",
+        "nced",
+        "opr",
+        "edtl",
+        "opkara",
+      ]),
     })
   })
 

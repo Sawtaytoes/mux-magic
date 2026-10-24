@@ -2,7 +2,10 @@ import { Button } from "@charcuterie/ui"
 import { useState } from "react"
 
 import { ApplyIfBuilder } from "./ApplyIfBuilder"
-import { setIgnoredStyleNamesRegex } from "./ruleMutations"
+import {
+  setIgnoredStyleNamesRegex,
+  setIgnoredStyleNameWords,
+} from "./ruleMutations"
 import { StyleFieldRow } from "./StyleFieldRow"
 import { addStyleField } from "./styleMutations"
 import type {
@@ -42,6 +45,9 @@ export const SetStyleFieldsRuleBody = ({
   const fields = rule.fields ?? {}
   const [draftRegex, setDraftRegex] = useState(
     rule.ignoredStyleNamesRegexString ?? "",
+  )
+  const [draftWords, setDraftWords] = useState(
+    (rule.ignoredStyleNameWords ?? []).join(", "),
   )
 
   return (
@@ -118,6 +124,38 @@ export const SetStyleFieldsRuleBody = ({
             /i
           </span>
         </div>
+      </div>
+      <div className="mt-2">
+        <label
+          htmlFor={`ssf-words-${stepId}-${ruleIndex}`}
+          className="block text-xs text-content-secondary mb-0.5"
+        >
+          Ignore style words
+        </label>
+        <input
+          id={`ssf-words-${stepId}-${ruleIndex}`}
+          type="text"
+          value={draftWords}
+          placeholder="OP, ED, NCOP, NCED"
+          readOnly={isReadOnly}
+          onChange={(event) => {
+            setDraftWords(event.target.value)
+          }}
+          onBlur={() => {
+            onCommitRules(
+              setIgnoredStyleNameWords({
+                rules,
+                ruleIndex,
+                value: draftWords,
+              }),
+            )
+          }}
+          className="w-full min-w-0 bg-surface-sunken text-content-primary text-xs rounded px-2 py-1 border border-border-default focus:outline-none focus:border-border-focus font-mono"
+        />
+        <p className="text-xs text-content-muted mt-1">
+          Matches whole words, including OP1 and CamelCase
+          names such as OccultOP1.
+        </p>
       </div>
       <ApplyIfBuilder
         rules={rules}

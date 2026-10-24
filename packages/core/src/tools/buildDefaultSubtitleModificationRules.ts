@@ -4,13 +4,67 @@
 import type { assModificationRuleSchema } from "@mux-magic/api/src/api/schemas.js"
 import type { z } from "zod"
 import type { SubtitleFileMetadata } from "../app-commands/getSubtitleMetadata.js"
+import { createIgnoredStyleNameMatcher } from "./createIgnoredStyleNameMatcher.js"
 
 export type SubtitleModificationRule = z.infer<
   typeof assModificationRuleSchema
 >
 
 const IGNORED_STYLE_NAMES_REGEX_STRING =
-  "signs?|op|ed|opening|ending"
+  "signs?|opening|ending|credits?|on[ _-]*screen"
+const IGNORED_STYLE_NAME_WORDS = [
+  "op",
+  "ed",
+  "ncop",
+  "nced",
+  "ope",
+  "opr",
+  "opj",
+  "opjp",
+  "opja",
+  "opkara",
+  "optl",
+  "opv",
+  "opa",
+  "opi",
+  "open",
+  "opro",
+  "openg",
+  "opengs",
+  "oprom",
+  "oproms",
+  "oproa",
+  "oprob",
+  "ede",
+  "edr",
+  "edj",
+  "edjp",
+  "edja",
+  "edkara",
+  "edtl",
+  "edv",
+  "eda",
+  "edi",
+  "eden",
+  "edro",
+  "edroma",
+  "edrom",
+  "edeng",
+  "edengs",
+  "edroms",
+  "edrob",
+  "oped",
+  "song",
+  "songs",
+  "singing",
+  "music",
+  "karaoke",
+  "poem",
+  "poems",
+  "title",
+  "titles",
+  "continued",
+]
 
 // Heuristic rule generator: given the parsed [Script Info] + [V4+ Styles]
 // metadata for every .ass file in a series, return the modifications most
@@ -69,16 +123,17 @@ export const buildDefaultSubtitleModificationRules = (
     (160 / 1920) * targetWidth,
   )
 
-  const ignoredStyleNamesRegex = new RegExp(
-    IGNORED_STYLE_NAMES_REGEX_STRING,
-    "i",
-  )
+  const isIgnoredStyleName = createIgnoredStyleNameMatcher({
+    ignoredStyleNamesRegexString:
+      IGNORED_STYLE_NAMES_REGEX_STRING,
+    ignoredStyleNameWords: IGNORED_STYLE_NAME_WORDS,
+  })
   const isNeedingMarginLR =
     hasIncorrectResolution ||
     subtitlesMetadata.some(({ styles }) =>
       styles.some(
         (style) =>
-          !ignoredStyleNamesRegex.test(style.Name ?? "") &&
+          !isIgnoredStyleName(style.Name ?? "") &&
           (Number(style.MarginL ?? "0") <
             marginLRThreshold ||
             Number(style.MarginR ?? "0") <
@@ -101,6 +156,7 @@ export const buildDefaultSubtitleModificationRules = (
     fields: styleFields,
     ignoredStyleNamesRegexString:
       IGNORED_STYLE_NAMES_REGEX_STRING,
+    ignoredStyleNameWords: IGNORED_STYLE_NAME_WORDS,
   }
 
   const seedRules: SubtitleModificationRule[] = [

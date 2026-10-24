@@ -132,6 +132,34 @@ describe(modifySubtitleMetadata.name, () => {
       expect(after).toContain("Style: Signs,48,10,10,20")
     }))
 
+  test("default margins repair Top dialogue while preserving a CamelCase OP style", async () =>
+    captureConsoleMessage("info", async () => {
+      vol.fromJSON({
+        "/work/episode-01.ass": HD_TV601_ASS.replace(
+          "Style: Default,",
+          "Style: Top Secondary Dialog 1080P,",
+        ).replace("Style: Signs,", "Style: OccultOP1,"),
+      })
+      await firstValueFrom(
+        modifySubtitleMetadata({
+          hasDefaultRules: true,
+          isRecursive: false,
+          rules: [],
+          sourcePath: "/work",
+        }).pipe(toArray()),
+      )
+      const after = await readFile(
+        "/work/episode-01.ass",
+        "utf8",
+      )
+      expect(after).toContain(
+        "Style: Top Secondary Dialog 1080P,60,200,200,90",
+      )
+      expect(after).toContain(
+        "Style: OccultOP1,48,10,10,20",
+      )
+    }))
+
   test("hasDefaultRules:true with user rules — user rules run AFTER and override defaults", async () =>
     captureConsoleMessage("info", async () => {
       vol.fromJSON({

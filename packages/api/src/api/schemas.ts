@@ -1140,6 +1140,12 @@ const setStyleFieldsRuleSchema = z
       .describe(
         "Optional case-insensitive regular expression matched against each style's Name field. Styles whose name matches are left unchanged. Use this to protect sign/song styles from being overwritten — e.g. 'signs?|op|ed|opening|ending'.",
       ),
+    ignoredStyleNameWords: z
+      .array(z.string().min(1))
+      .optional()
+      .describe(
+        "Optional case-insensitive style-name keywords to leave unchanged. CamelCase names and numeric suffixes are split into words: OP matches OccultOP1, but does not match Top. Combined with ignoredStyleNamesRegexString; either match protects a style.",
+      ),
     applyIf: applyIfPredicateSchema
       .optional()
       .describe(
@@ -1208,7 +1214,7 @@ export const modifySubtitleMetadataRequestSchema = z.object(
       .boolean()
       .default(false)
       .describe(
-        'When true, the command runs the in-tree default-rules heuristic (`buildDefaultSubtitleModificationRules`) against the .ass files at `sourcePath` and PREPENDS the computed rules to `rules`. Defaults run first, user rules run after, so user rules can override. The heuristic emits: `setScriptInfo ScriptType=v4.00+`, `setScriptInfo YCbCr Matrix=TV.709` (when any file has TV.601 outside SD-DVD 640x480), `setStyleFields MarginV=round(PlayResY/1080*90)`, optional `MarginL/R=round(200/1920*PlayResX)` when narrow margins are detected on non-ignored styles, with `ignoredStyleNamesRegexString="signs?|op|ed|opening|ending"`. See docs/dsl/subtitle-rules.md `Default rules toggle` for the full table.',
+        'When true, the command runs the in-tree default-rules heuristic (`buildDefaultSubtitleModificationRules`) against the .ass files at `sourcePath` and PREPENDS the computed rules to `rules`. Defaults run first, user rules run after, so user rules can override. The heuristic emits: `setScriptInfo ScriptType=v4.00+`, `setScriptInfo YCbCr Matrix=TV.709` (when any file has TV.601 outside SD-DVD 640x480), `setStyleFields MarginV=round(PlayResY/1080*90)`, optional `MarginL/R=round(200/1920*PlayResX)` when narrow margins are detected on non-ignored styles, with `ignoredStyleNamesRegexString="signs?|opening|ending|credits?|on[ _-]*screen"` and style-word exclusions for OP/ED, compact forms such as OPR/EDTL/opkara, songs, poems and titles. OP/ED keywords match whole style-name words, including CamelCase names and numeric suffixes, so Top dialogue is not skipped. See docs/dsl/subtitle-rules.md `Default rules toggle` for the full table.',
       ),
     predicates: z
       .record(z.string(), z.record(z.string(), z.string()))

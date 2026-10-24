@@ -21,6 +21,7 @@ import type {
   WhenPredicate,
   WhenPredicateClause,
 } from "./assTypes.js"
+import { createIgnoredStyleNameMatcher } from "./createIgnoredStyleNameMatcher.js"
 
 // ---------------------------------------------------------------------------
 // Batch-aggregate metadata used to evaluate `when:` predicates and to feed
@@ -1123,10 +1124,11 @@ const applySetStyleFields = ({
     return assFile
   }
 
-  const ignoredStyleNamesRegex =
-    rule.ignoredStyleNamesRegexString
-      ? new RegExp(rule.ignoredStyleNamesRegexString, "i")
-      : null
+  const isIgnoredStyleName = createIgnoredStyleNameMatcher({
+    ignoredStyleNamesRegexString:
+      rule.ignoredStyleNamesRegexString,
+    ignoredStyleNameWords: rule.ignoredStyleNameWords,
+  })
 
   return {
     ...assFile,
@@ -1150,7 +1152,7 @@ const applySetStyleFields = ({
           }
 
           const styleName = entry.fields.Name ?? ""
-          if (ignoredStyleNamesRegex?.test(styleName)) {
+          if (isIgnoredStyleName(styleName)) {
             return entry
           }
 

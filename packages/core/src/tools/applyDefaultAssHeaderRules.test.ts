@@ -35,6 +35,28 @@ test("uses the existing 1080p defaults and protects sign styles", () => {
   expect(output).toContain("YCbCr Matrix: TV.709")
 })
 
+test.each([
+  "OPR",
+  "EDTL",
+  "opkara2",
+  "OPv1",
+  "GreatMazOPjp",
+  "Credits ENG",
+  "On Screen red",
+  "WindariaTopSong",
+])("protects compact song/credit styles %s while fixing Top dialogue", (styleName) => {
+  const original = header({ width: 1920, height: 1080 })
+    .replace("Style: Default,", "Style: Top,")
+    .replace("Style: Signs,", `Style: ${styleName},`)
+  const output = applyDefaultAssHeaderRules(original)
+  expect(output).toContain(
+    "Style: Top,Example Sans,60,200,200,90",
+  )
+  expect(output).toContain(
+    `Style: ${styleName},Example Sans,48,10,10,20`,
+  )
+})
+
 test("computes each script's own resolution and keeps the SD matrix exception", () => {
   const output = applyDefaultAssHeaderRules(
     header({ width: 640, height: 480 }),

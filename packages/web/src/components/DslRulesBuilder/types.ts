@@ -206,6 +206,7 @@ export type SetStyleFieldsRule = {
   type: "setStyleFields"
   fields: StyleFieldsMap
   ignoredStyleNamesRegexString?: string
+  ignoredStyleNameWords?: string[]
   applyIf?: ApplyIfNode
   when?: WhenNode
 }

@@ -63,7 +63,9 @@ Computed from the `.ass` metadata at the moment of execution. The heuristic is i
 | 3 | `scaleResolution from 640×360 to 1920×1080` | (Currently dead-coded `false` per existing TODO; no-op even when `hasDefaultRules: true`.) |
 | 4 | `setStyleFields MarginV = round(PlayResY/1080 × 90)` | Always. Computed via `computeFrom`. |
 | 5 | `setStyleFields MarginL/MarginR = round(200/1920 × PlayResX)` | Only when at least one non-ignored style has narrow MarginL/R below threshold. |
-| 6 | `ignoredStyleNamesRegexString: "signs?\|op\|ed\|opening\|ending"` | Bundled with rules 4 + 5 to protect Signs/Songs styles from being overwritten. |
+| 6 | `ignoredStyleNamesRegexString: "signs?\|opening\|ending\|credits?\|on[ _-]*screen"` and theme keywords (OP/ED, compact song labels, songs/poems/titles) | Bundled with rules 4 + 5. Theme words include CamelCase and numeric suffixes (`OccultOP1`), while `Top` and `Styled` dialogue receive the margin fix. |
+
+Compact theme keywords include OPR/OPE, EDR/EDE, OPTL/EDTL, OPJP/EDJP, opkara/edkara and their numeric or season suffixes. Acronym variants preserve OPv1 as OPv and split MainEDSong into ED/Song; neither interpretation matches Top or Styled. Explicit credit and on-screen labels and song/music/poem/title keywords are protected too. The examples below show a representative keyword subset.
 
 Anything more specific than these — or completely different — should be authored as explicit `rules:` entries (which run after the defaults and can override them).
 
@@ -166,7 +168,7 @@ The regex protects style **rows**. A sign's `\pos` is scaled either way, because
 
 ### `setStyleFields`
 
-Overwrites named fields in `[V4+ Styles]` rows. Optionally protects styles whose `Name` matches a regex from being overwritten.
+Overwrites named fields in `[V4+ Styles]` rows. Optionally protects styles whose `Name` matches a regex or a whole-word keyword from being overwritten.
 
 ```yaml
 - type: setStyleFields
@@ -174,14 +176,16 @@ Overwrites named fields in `[V4+ Styles]` rows. Optionally protects styles whose
     MarginV: "90"
     MarginL: "200"
     MarginR: "200"
-  ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending"
+  ignoredStyleNamesRegexString: "signs?|opening|ending|credits?|on[ _-]*screen"
+  ignoredStyleNameWords: [OP, ED, NCOP, NCED, OPR, EDR, OPE, EDE, OPTL, EDTL, opkara, edkara, Song, Music, Title]
 ```
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `type` | `"setStyleFields"` | yes | Discriminator. |
 | `fields` | `Record<string, string \| computeFrom>` | yes | Field name → value. String literal OR a `computeFrom` block (see [Computed values](#computed-values)). |
-| `ignoredStyleNamesRegexString` | string | no | If set, styles whose `Name` field matches the regex are NOT modified (case-insensitive). Useful for protecting `signs`, `op`, `ed` styles. |
+| `ignoredStyleNamesRegexString` | string | no | If set, styles whose `Name` field matches the regex are NOT modified (case-insensitive). Uses raw regex matching; use `ignoredStyleNameWords` for short theme keywords. |
+| `ignoredStyleNameWords` | string[] | no | Case-insensitive whole style-name words. CamelCase and digit suffixes are split: `OP` protects `OccultOP1`, while `Top` remains dialogue. Either this list or the regex can protect a style. |
 | `applyIf` | predicate | no | Per-style applicability filter (see [`applyIf` comparators](#applyif-comparators)). When omitted, all non-ignored styles get the fields. |
 | `when` | predicate | no | Aggregate-batch gate (rule-level, applies to whole batch). |
 
@@ -416,10 +420,11 @@ rules:
             - divide: 1080
             - multiply: 90
             - round
-    ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending"
+    ignoredStyleNamesRegexString: "signs?|opening|ending|credits?|on[ _-]*screen"
+    ignoredStyleNameWords: [OP, ED, NCOP, NCED, OPR, EDR, OPE, EDE, OPTL, EDTL, opkara, edkara, Song, Music, Title]
 ```
 
-For a 1080p file, MarginV becomes `90`. For 720p, `60`. For 480p, `40`. Signs/songs styles are protected by the regex.
+For a 1080p file, MarginV becomes `90`. For 720p, `60`. For 480p, `40`. Signs/songs styles are protected by the regex or theme words.
 
 ### Example 5 — Fix narrow margins ONLY when at least one style is too narrow
 
@@ -429,13 +434,14 @@ rules:
     fields:
       MarginL: "200"
       MarginR: "200"
-    ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending"
+    ignoredStyleNamesRegexString: "signs?|opening|ending|credits?|on[ _-]*screen"
+    ignoredStyleNameWords: [OP, ED, NCOP, NCED, OPR, EDR, OPE, EDE, OPTL, EDTL, opkara, edkara, Song, Music, Title]
     applyIf:
       anyStyleMatches:
         MarginL: { lt: 50 }
 ```
 
-Per-file: only files with a style row that has `MarginL < 50` get the fix; everyone else is left alone. The `ignoredStyleNamesRegexString` then ensures Sign/Song styles aren't overwritten when the rule does fire.
+Per-file: only files with a style row that has `MarginL < 50` get the fix; everyone else is left alone. The regex and theme words protect Sign/Song styles when the rule does fire.
 
 ### Example 6 — All four heuristic branches together
 
@@ -483,7 +489,8 @@ rules:
             - divide: 1080
             - multiply: 90
             - round
-    ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending"
+    ignoredStyleNamesRegexString: "signs?|opening|ending|credits?|on[ _-]*screen"
+    ignoredStyleNameWords: [OP, ED, NCOP, NCED, OPR, EDR, OPE, EDE, OPTL, EDTL, opkara, edkara, Song, Music, Title]
 
   # Fix narrow MarginL/R only when needed.
   - type: setStyleFields
@@ -504,7 +511,8 @@ rules:
             - divide: 1920
             - multiply: 200
             - round
-    ignoredStyleNamesRegexString: "signs?|op|ed|opening|ending"
+    ignoredStyleNamesRegexString: "signs?|opening|ending|credits?|on[ _-]*screen"
+    ignoredStyleNameWords: [OP, ED, NCOP, NCED, OPR, EDR, OPE, EDE, OPTL, EDTL, opkara, edkara, Song, Music, Title]
     applyIf:
       anyStyleMatches:
         MarginL: { lt: 50 }
