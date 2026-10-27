@@ -73,11 +73,11 @@ Before merging UI or API route changes, also run `pnpm e2e`. Full pre-merge gate
 ## Roles (one-liner)
 
 - **Primary** (repo root, branch `master`): never push unless told; commit as you go.
-- **Worker** (`.claude/worktrees/<id>_<slug>/`, branch `worker-<id>-<slug>`): commit and push every change; open a PR against `master`; **merge it yourself once CI is green** (below).
+- **Worker** (`.claude/worktrees/<id>_<slug>/`, branch `worker-<id>-<slug>`): commit and push every change; open a PR against `master`; **merge it yourself after independent review is complete and required CI checks pass** (below).
 
 `master` is the only base branch — the `feat/mux-magic-revamp` integration branch was retired on 2026-08-03 ([decision](docs/decisions/2026-08-03-master-is-the-only-base-branch.md)). Older worker specs under [docs/workers/](docs/workers/) still say "PR against `feat/mux-magic-revamp`"; that text is stale and the branch no longer exists.
 
-**Merge your own PR the moment CI goes green — don't ask.** Squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash` (`gh pr merge` trips the shared-worktree lock). The ruleset below is what makes this safe: you cannot merge anything red, so "green" is the whole permission ([decision](docs/decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Leaving a green PR open to be asked about is the failure mode this replaced — it stalls the work and makes the owner the queue.
+**Merge your own PR after independent review is complete and required CI checks pass — don't ask.** Squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash` (`gh pr merge` trips the shared-worktree lock). The ruleset below prevents merging failed required checks. Completed independent review and passing required checks together permit the merge ([decision](docs/decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Leaving a green PR open to be asked about is the failure mode this replaced — it stalls the work and makes the owner the queue.
 
 **Merging someone else's PR** is still his call, not yours.
 
@@ -117,4 +117,3 @@ another authorized agent; report the gate instead of silently waiving it. Only a
 explicit owner instruction can waive the review, with its scope recorded in the same
 review evidence.
 Existing required checks, merge rules, and deployment verification still apply.
-
