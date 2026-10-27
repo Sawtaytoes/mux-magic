@@ -13,7 +13,7 @@ If your repo folder name starts with `Mux-Magic-worker-`:
 
 1. **Create a feature branch** at the start of any non-trivial work — don't commit directly to `master`. Naming: `feature/<short-description>` (e.g. `feature/jobs-progress-followup`). If a feature branch is already checked out and matches the task, keep using it.
 2. **Commit AND push** to that branch as you go. This is the explicit reversal of the primary's "never push" rule — the push is what makes your work visible to the user and lets the primary (and other workers) see what you're up to. Push after every commit; don't batch.
-3. **Merge to `master` yourself once CI is green — don't ask.** Squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash`. The no-bypass ruleset means a red PR cannot be merged at all, so green is the permission ([decision](../decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Still the owner's call: someone else's PR. The TrueNAS redeploy is yours, once `/api/jobs/status-counts` shows no running, pending or paused job ([decision](../decisions/2026-09-29-the-agent-redeploys-after-confirming-no-job-is-live.md)).
+3. **Merge to `master` yourself after independent review is complete and required CI checks pass — don't ask.** Squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash`. The no-bypass ruleset blocks failed required checks; completed independent review and passing required checks together permit the merge ([decision](../decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Still the owner's call: someone else's PR. The TrueNAS redeploy is yours, once `/api/jobs/status-counts` shows no running, pending or paused job ([decision](../decisions/2026-09-29-the-agent-redeploys-after-confirming-no-job-is-live.md)).
 4. Everything in `Commit conventions` below (commit-as-you-go, partial-file splits, focused commits) still applies — you're just additionally pushing the branch on every commit.
 5. **For UI changes, leave a dev server running when you hand off / open the PR.** The user reviews UI before approving — they can't tell from a diff whether a button morphs, whether copy feedback flashes, or whether a popover aligns. Start `pnpm api-dev-server` (it picks up `PORT` from `.env` — never inline-override it with `$env:PORT=...`) in the background before announcing the PR, and tell the user the URL (`http://localhost:<PORT>/builder/` or `/`) so they can poke at it. Stop the server when they say they're done or when you merge.
 
@@ -26,7 +26,7 @@ The push-as-you-go rule is what keeps multiple workers from drifting into each o
 When working in a git worktree (created with `EnterWorktree`):
 
 1. **Commit as you go** — after each logical group of changes and passing tests, create a commit. Don't batch work into a single commit at the end.
-2. **Push to a PR, then merge it yourself when CI goes green** — squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash` ([decision](../decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Don't hold a green PR open waiting to be asked.
+2. **Push to a PR, then merge it yourself after independent review is complete and required CI checks pass** — squash, via `gh api -X PUT repos/Sawtaytoes/mux-magic/pulls/<n>/merge -f merge_method=squash` ([decision](../decisions/2026-08-13-agents-merge-their-own-prs-when-ci-is-green.md)). Don't hold a green PR open waiting to be asked.
 3. **Start a dev server when the change is visible in the UI** — start `pnpm api-dev-server` on a random port (it picks up `PORT` from `.env`) so the user can poke at it. Merging doesn't wait on that: the PR's before/after screenshots are the record, and the server is for follow-up questions.
 4. **Kill the server after the merge**, or when the user says they're done with it.
 
@@ -70,7 +70,7 @@ If a single file legitimately touches two unrelated concerns (e.g. a feature cha
 
 Natural commit points: a todo item flips to completed, a phase of a Plan-mode plan finishes, tests pass for a self-contained change, a refactor wraps up before the next one starts.
 
-Push rule depends on which role you are — see `Multi-Agent Workflow` above. Primary: never push without explicit instruction. Worker: push every commit to your feature branch, and merge it to `master` yourself once CI is green.
+Push rule depends on which role you are — see `Multi-Agent Workflow` above. Primary: never push without explicit instruction. Worker: push every commit to your feature branch, and merge it to `master` yourself after independent review is complete and required CI checks pass.
 
 ## Worker Addressing
 
