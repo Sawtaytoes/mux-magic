@@ -1,5 +1,23 @@
 # AGENTS.md
 
+## Prefer MCP, APIs, and CLIs over computer use
+
+For service access and routine reads or writes, prefer an available MCP tool, a
+supported HTTP API, or the service's CLI over browser or desktop interaction.
+Check the project's runbooks, existing tools, and documented endpoints first.
+The presence of browser tools is not a reason to choose computer use. A missing
+MCP tool or browser login does not prove that an API or CLI is unavailable.
+
+Use computer interaction when the task needs a visual check, a browser test, a
+UI-only operation, or authentication that the available programmatic routes
+cannot perform. Keep that interaction narrow, then return to MCP/API/CLI calls
+for the rest. If no documented route exists, check the app's existing HTTP
+requests before assuming repeated clicks are necessary; do not bypass access
+controls. State the specific limitation when computer use is required.
+
+This preference does not grant new access, widen credentials or permissions,
+replace a more specific service route, or remove required visual verification.
+
 Guidelines for AI agents working on this codebase. **This file is an index.** The reference docs under [docs/agents/](docs/agents/) are the source of truth — open the one matching your task.
 
 ## ⛔ Locked Decisions — read before changing behavior
@@ -76,3 +94,27 @@ Use pinned pnpm 12.9.1. Bootstrap its native binary with `npm install --global -
 ## Git — this checkout may be shallow
 
 Some checkouts of this repo are **shallow clones** (check `test -f .git/shallow`). When shallow, history is truncated and grafted, so `git merge-base`, `git log`, `git rev-list --count`, and ancestry checks **lie**: unrelated-looking roots appear, branches seem to have "no common ancestor," and a plain fast-forward can look like a destructive 1000-commit rewind. It is an artifact, not reality. **Before reasoning about branch relationships, deleting/overwriting, or force-related operations, run `git fetch --unshallow` first** (or `--depth` deeper), then re-check. Trust `git ls-remote origin <ref>` for the true remote head over a possibly-stale local `origin/*` tracking ref.
+
+## Independent adversarial review
+
+Before integrating any change in this repository, including an authorized direct push
+to the default branch, obtain review from at least one other agent that did not author
+the changes. This includes code, tests, dependencies,
+configuration, CI, and documentation; scale review depth to the risk. For risky designs,
+seek an early challenge as well as review of the final diff. Give the reviewer the
+requirements, applicable instructions, base/head SHAs, full diff, and test evidence.
+Ask it to find correctness defects, regressions, edge cases, security problems, and
+missing verification; a no-findings result is valid. Reviewers inspect and report;
+they do not edit, merge, or deploy.
+
+Resolve findings with evidence, fix confirmed defects, and re-run affected checks.
+Unresolved material concerns block integration. Re-review substantive changes after fixes
+or rebases so the final head is covered. Record reviewer identity, reviewed SHAs,
+findings (or none), resolutions, and verification on the PR; for a direct-push workflow,
+use a tracked review note instead. Self-review and passing
+CI do not replace independent review. If the reviewer is unavailable, retry or use
+another authorized agent; report the gate instead of silently waiving it. Only an
+explicit owner instruction can waive the review, with its scope recorded in the same
+review evidence.
+Existing required checks, merge rules, and deployment verification still apply.
+
