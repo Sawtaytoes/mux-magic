@@ -40,7 +40,7 @@ The branching/deploy model is changing **right now**:
   `feat/mux-magic-revamp` to deploy. **Check before you deploy** — don't assume `:latest`
   is prod.
 - **Redeploying the app** (after CI's Docker Deploy pushes the image): on the TrueNAS host,
-  `ssh root@storeman.octen` then
+  `ssh root@truenas-host` then
   `midclt call app.pull_images mux-magic '{"redeploy": true}'` (returns a job id; poll
   `core.get_jobs`). Verify afterward: `docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' ix-mux-magic-mux-magic-1 | grep GIT_SHA`
   should match your commit, and `docker exec … grep -rl <newSymbol> /app` should find your

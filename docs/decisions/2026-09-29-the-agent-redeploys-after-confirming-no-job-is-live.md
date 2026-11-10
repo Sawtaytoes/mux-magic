@@ -19,7 +19,7 @@ later.
 Then pull before redeploying and verify with a marker from the new build:
 
 ```bash
-ssh root@storeman.octen "midclt call -j app.pull_images mux-magic && midclt call -j app.redeploy mux-magic"
+ssh root@truenas-host "midclt call -j app.pull_images mux-magic && midclt call -j app.redeploy mux-magic"
 ```
 
 The marker is the hashed `index-*.css` / `index-*.js` the merge commit builds,
