@@ -1,3 +1,11 @@
+import {
+  exhaustMap,
+  from,
+  interval,
+  type Subscription,
+  takeWhile,
+} from "rxjs"
+
 /**
  * The part of Hono's `SSEStreamingApi` the keepalive uses. Declared here
  * so this package does not depend on Hono.
@@ -36,18 +44,19 @@ export const startSseKeepalive = ({
 }: {
   intervalMilliseconds?: number
   stream: SseKeepaliveStream
-}): (() => void) => {
-  const timer = setInterval(() => {
-    if (stream.closed || stream.aborted) {
-      clearInterval(timer)
-    } else {
-      stream.write(": keepalive\n\n").catch(() => {
-        clearInterval(timer)
-      })
-    }
-  }, intervalMilliseconds)
-
-  return () => {
-    clearInterval(timer)
-  }
-}
+}): (() => void) =>
+  ((subscription: Subscription) => () => {
+    subscription.unsubscribe()
+  })(
+    interval(intervalMilliseconds)
+      .pipe(
+        takeWhile(() => !stream.closed && !stream.aborted),
+        // A write that never settles drops later ticks rather than
+        // queueing them.
+        exhaustMap(() =>
+          from(stream.write(": keepalive\n\n")),
+        ),
+      )
+      // A failed write ends the keepalive; the stream is gone.
+      .subscribe({ error: () => undefined }),
+  )

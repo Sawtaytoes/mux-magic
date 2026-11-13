@@ -31,11 +31,11 @@ afterEach(() => {
 })
 
 describe(startSseKeepalive.name, () => {
-  test("writes an SSE comment once per default interval", () => {
+  test("writes an SSE comment once per default interval", async () => {
     const stream = createStream()
 
     startSseKeepalive({ stream })
-    vi.advanceTimersByTime(
+    await vi.advanceTimersByTimeAsync(
       defaultSseKeepaliveIntervalMilliseconds * 2,
     )
 
@@ -45,14 +45,14 @@ describe(startSseKeepalive.name, () => {
     )
   })
 
-  test("uses a caller's own interval", () => {
+  test("uses a caller's own interval", async () => {
     const stream = createStream()
 
     startSseKeepalive({
       intervalMilliseconds: 1000,
       stream,
     })
-    vi.advanceTimersByTime(3000)
+    await vi.advanceTimersByTimeAsync(3000)
 
     expect(stream.write).toHaveBeenCalledTimes(3)
   })
@@ -81,6 +81,22 @@ describe(startSseKeepalive.name, () => {
 
     expect(stream.write).not.toHaveBeenCalled()
     expect(vi.getTimerCount()).toBe(0)
+  })
+
+  test("drops ticks while a write has not settled", async () => {
+    const stream = createStream({
+      write: vi.fn(
+        () => new Promise<void>(() => undefined),
+      ),
+    })
+
+    startSseKeepalive({
+      intervalMilliseconds: 1000,
+      stream,
+    })
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(stream.write).toHaveBeenCalledOnce()
   })
 
   test("stops on its own after a failed write", async () => {
