@@ -126,7 +126,9 @@ const moveFileIntoFreeName = ({
 
 // Folders cannot be hard-linked. `rename` refuses to replace a folder
 // that has anything in it (and refuses a file), so a folder rename can
-// only ever replace an empty folder.
+// only ever replace an empty folder. Everything else, including a
+// symbolic link (which `lstat` reports as itself, not its target), takes
+// the no-replace file path.
 const moveIntoFreeName = ({
   newPath,
   oldPath,
@@ -135,9 +137,9 @@ const moveIntoFreeName = ({
   oldPath: string
 }) =>
   lstat(oldPath).then((stats) =>
-    stats.isFile()
-      ? moveFileIntoFreeName({ newPath, oldPath })
-      : rename(oldPath, newPath),
+    stats.isDirectory()
+      ? rename(oldPath, newPath)
+      : moveFileIntoFreeName({ newPath, oldPath }),
   )
 
 const claimTargetPath = ({

@@ -237,6 +237,42 @@ describe(`${renameFileOrFolder.name} claims names atomically`, () => {
     expect(vol.existsSync("/anime/first.mkv")).toBe(false)
   })
 
+  test("a symbolic link source never replaces a file that appears at the target", async () => {
+    vol.fromJSON({
+      "/anime/target-of-link.mkv": "linked",
+    })
+    vol.symlinkSync(
+      "/anime/target-of-link.mkv",
+      "/anime/link.mkv",
+    )
+    const realLstat = fsPromises.lstat
+    vi.spyOn(fsPromises, "lstat").mockImplementationOnce(
+      async (path) => {
+        // Another writer takes the name after the absence check.
+        vol.writeFileSync(
+          "/anime/Show - s01e01.mkv",
+          "other",
+        )
+        return realLstat(path)
+      },
+    )
+
+    await expect(
+      firstValueFrom(
+        renameFileOrFolder({
+          newPath: "/anime/Show - s01e01.mkv",
+          oldPath: "/anime/link.mkv",
+        }),
+      ),
+    ).rejects.toContain("already exists")
+    expect(
+      vol.readFileSync("/anime/Show - s01e01.mkv", "utf8"),
+    ).toBe("other")
+    expect(
+      vol.lstatSync("/anime/link.mkv").isSymbolicLink(),
+    ).toBe(true)
+  })
+
   test("renames a folder", async () => {
     vol.fromJSON({
       "/anime/Disc 1/episode.mkv": "episode",
