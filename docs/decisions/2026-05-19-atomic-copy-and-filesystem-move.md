@@ -2,12 +2,20 @@
 
 > [!WARNING]
 > **SUPERSEDED IN PART on 2026-11-13 by [File cleanup deletes only what it has confirmed](2026-11-13-file-cleanup-deletes-only-what-it-has-confirmed.md).**
-> Only one sentence changed: the overwrite path no longer unlinks the destination before the rename. Everything else below still holds.
+> Only one rule changed: a move, and the final rename of a copy, no longer unlink the destination before the rename. Everything else below still holds.
 
 - **Status:** Accepted; superseded in part by [2026-11-13](2026-11-13-file-cleanup-deletes-only-what-it-has-confirmed.md)
 - **Date decided:** 2026-05-19 (worker 59, PR #134, commits `6832906b` / `209c1170`); the "no temp file on same-volume moves" rule re-emphasized by the user 2026-06-29
+- **Date:** 2026-05-19
+- **Type:** core
+- **Supersedes:** —
+- **Superseded by:** [2026-11-13 — File cleanup deletes only what it has confirmed](2026-11-13-file-cleanup-deletes-only-what-it-has-confirmed.md), in part
 - **Area:** core / tools
 - **Source:** worker 59 (`atomic-copy-and-fast-move`); `packages/tools/src/aclSafeCopyFile.ts`, `packages/core/src/app-commands/moveFiles.ts`
+
+## Context
+
+Worker 59 (PR #134) rebuilt copy and move after moves crawled and copies failed on the TrueNAS ZFS dataset. The sections below record the rules that came out of that work.
 
 ## Decision
 
@@ -42,3 +50,7 @@ A same-volume move is a single atomic `fs.rename(source, destination)`. **No tem
 ## Why it must not be re-litigated
 
 These are the user's most-hit pain points: moves must be instant on the same volume, and copies must not crawl or fail on the ZFS NAS. Each guard (no-temp move, FICLONE-first, EPERM-as-success, refuse-overwrite, no rm -r) fixes a concrete, repeatedly-encountered failure. Reverting any of them silently reintroduces slowness or data loss. See also [NSF state lives in the filesystem](2026-05-19-nsf-filesystem-is-the-state.md) (its bucket moves depend on the fast same-volume rename).
+
+## Evidence
+
+Worker 59, PR #134, commits `6832906b` and `209c1170`. The owner re-emphasized the "no temp file on same-volume moves" rule on 2026-06-29.
