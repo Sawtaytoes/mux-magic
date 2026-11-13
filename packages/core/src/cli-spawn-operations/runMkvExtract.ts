@@ -60,15 +60,18 @@ export const runMkvExtract = ({
 
     const childProcess = spawn(mkvExtractPath, commandArgs)
 
+    const tty = createTtyAffordances(childProcess)
+
     // Without an 'error' listener, a spawn failure (ENOENT when the
     // binary is missing, EACCES, and so on) becomes an uncaughtException,
     // and the server's crash handler exits the whole process. Fail only
     // this observable instead, so one job fails and the rest keep running.
+    // 'exit' never fires after a failed spawn, so restore the terminal
+    // here too.
     childProcess.on("error", (error) => {
+      tty.detach()
       observer.error(error)
     })
-
-    const tty = createTtyAffordances(childProcess)
 
     let hasStarted = false
     // mkvextract writes its 'Extracting track N with CodecID …' banner

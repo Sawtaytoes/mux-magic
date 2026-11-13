@@ -45,6 +45,7 @@ class FakeChildProcess extends EventEmitter {
 const spawnRecords: FakeChildProcess[] = []
 
 const killTeardown = vi.fn()
+const ttyDetach = vi.fn()
 
 vi.mock("node:child_process", () => ({
   execFile: vi.fn(),
@@ -66,7 +67,7 @@ vi.mock("../api/logCapture.js", () => ({
 vi.mock("../tools/createTtyAffordances.js", () => ({
   createTtyAffordances: () => ({
     isUsingTtyAffordances: false,
-    detach: () => {},
+    detach: ttyDetach,
   }),
 }))
 
@@ -135,6 +136,7 @@ describe("spawn failures fail only their own observable", () => {
   beforeEach(() => {
     spawnRecords.length = 0
     killTeardown.mockClear()
+    ttyDetach.mockClear()
     vi.spyOn(console, "info").mockImplementation(() => {})
     vi.spyOn(console, "warn").mockImplementation(() => {})
   })
@@ -145,10 +147,12 @@ describe("spawn failures fail only their own observable", () => {
 
   const swallowingWrappers: Array<{
     name: string
+    hasTtyAffordances: boolean
     start: () => Observable<unknown>
   }> = [
     {
       name: "runFfmpeg",
+      hasTtyAffordances: false,
       start: () =>
         runFfmpeg({
           args: [],
@@ -158,6 +162,7 @@ describe("spawn failures fail only their own observable", () => {
     },
     {
       name: "runMkvExtract",
+      hasTtyAffordances: true,
       start: () =>
         runMkvExtract({
           args: [
@@ -170,6 +175,7 @@ describe("spawn failures fail only their own observable", () => {
     },
     {
       name: "runMkvExtractStdOut",
+      hasTtyAffordances: true,
       start: () =>
         runMkvExtractStdOut({
           args: ["chapters", "/work/in.mkv"],
@@ -177,6 +183,7 @@ describe("spawn failures fail only their own observable", () => {
     },
     {
       name: "runMkvMerge",
+      hasTtyAffordances: true,
       start: () =>
         runMkvMerge({
           args: ["/work/in.mkv"],
@@ -185,6 +192,7 @@ describe("spawn failures fail only their own observable", () => {
     },
     {
       name: "runMkvPropEdit",
+      hasTtyAffordances: true,
       start: () =>
         runMkvPropEdit({
           args: ["--edit", "info"],
@@ -193,6 +201,7 @@ describe("spawn failures fail only their own observable", () => {
     },
     {
       name: "writeChaptersMkvMerge",
+      hasTtyAffordances: true,
       start: () =>
         writeChaptersMkvMerge({
           chaptersXmlPath: "/work/chapters.xml",
@@ -202,27 +211,34 @@ describe("spawn failures fail only their own observable", () => {
     },
   ]
 
-  swallowingWrappers.forEach(({ name, start }) => {
-    test(`${name} logs a spawn error and completes empty`, async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {})
+  swallowingWrappers.forEach(
+    ({ hasTtyAffordances, name, start }) => {
+      test(`${name} logs a spawn error and completes empty`, async () => {
+        const consoleErrorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {})
 
-      const resultPromise = lastValueFrom(
-        start().pipe(toArray()),
-      )
-      await waitForMacrotask()
+        const resultPromise = lastValueFrom(
+          start().pipe(toArray()),
+        )
+        await waitForMacrotask()
 
-      expect(() => {
-        failSpawn()
-      }).not.toThrow()
+        expect(() => {
+          failSpawn()
+        }).not.toThrow()
 
-      await expect(resultPromise).resolves.toEqual([])
-      expect(getLoggedText(consoleErrorSpy)).toContain(
-        "spawn missing-binary ENOENT",
-      )
-    })
-  })
+        await expect(resultPromise).resolves.toEqual([])
+        expect(getLoggedText(consoleErrorSpy)).toContain(
+          "spawn missing-binary ENOENT",
+        )
+        // 'exit' never fires after a failed spawn, so the error path has
+        // to restore the CLI terminal itself.
+        expect(ttyDetach).toHaveBeenCalledTimes(
+          hasTtyAffordances ? 1 : 0,
+        )
+      })
+    },
+  )
 
   test("runReadlineFfmpeg errors its observable on a spawn error", async () => {
     const resultPromise = lastValueFrom(
