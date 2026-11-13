@@ -1,4 +1,5 @@
 import { readFile, stat } from "node:fs/promises"
+import { captureLogMessage } from "@mux-magic/tools/test-helpers"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
@@ -67,6 +68,43 @@ describe(flattenOutput.name, () => {
       stat("/work/episode-02.mkv"),
     ).resolves.toBeDefined()
     await expect(stat("/work/SUBTITLED")).rejects.toThrow()
+  })
+
+  test("keeps the source folder and its nested subfolder when deleteSourceFolder is true", async () => {
+    vol.fromJSON({
+      "/work/SUBTITLED/extras/bonus.mkv": "bonus",
+      "/work/SUBTITLED/extras/deeper/clip.mkv": "clip",
+    })
+
+    await captureLogMessage("warn", async (warningSpy) => {
+      await firstValueFrom(
+        flattenOutput({
+          isDeletingSourceFolder: true,
+          sourcePath: "/work/SUBTITLED",
+        }).pipe(toArray()),
+      )
+      expect(
+        warningSpy.mock.calls.flat().join(" "),
+      ).toContain("KEPT FOLDER, NOT EMPTY")
+    })
+
+    // Top-level files moved up; the nested subfolder was not moved, so
+    // the folder that holds it must survive with everything inside.
+    await expect(
+      readFile("/work/episode-02.mkv", "utf8"),
+    ).resolves.toBe("merged-2")
+    await expect(
+      readFile("/work/SUBTITLED/extras/bonus.mkv", "utf8"),
+    ).resolves.toBe("bonus")
+    await expect(
+      readFile(
+        "/work/SUBTITLED/extras/deeper/clip.mkv",
+        "utf8",
+      ),
+    ).resolves.toBe("clip")
+    await expect(
+      stat("/work/SUBTITLED/episode-01.mkv"),
+    ).rejects.toThrow()
   })
 
   test("overwrites a same-named file in the parent with the source copy", async () => {

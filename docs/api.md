@@ -82,7 +82,7 @@ All commands are started with `POST`. The body is JSON. `sourcePath` is required
 | `POST /commands/convertLosslessToFlac` | `sourcePath` | `isRecursive`, `recursiveDepth`, `isSourceDeleted`, `isAuditOnly` |
 | `POST /commands/copyFiles` | `sourcePath` | `destinationPath`, `fileFilterRegex`, `folderFilterRegex`, `includeFolders`, `renameRegex`[], `allowOverwrite` |
 | `POST /commands/copyOutSubtitles` | `sourcePath` | `isRecursive`, `subtitlesLanguages`[], `typesMode`, `subtitleTypes`[], `folders`[] |
-| `POST /commands/deleteCopiedOriginals` | `pathsToDelete`[] | — |
+| `POST /commands/deleteCopiedOriginals` | `pathsToDelete`[] | `copiedDestinationPaths`[] (required to delete anything; same order as `pathsToDelete`) |
 | `POST /commands/deleteFilesByExtension` | `sourcePath`, `extensions`[] | `isRecursive`, `recursiveDepth` |
 | `POST /commands/deleteFolder` | `sourcePath`, `confirm` | — |
 | `POST /commands/distributeFolderToSiblings` | `sourceFolderPath` | `deleteSourceFolderAfterDistributing` |

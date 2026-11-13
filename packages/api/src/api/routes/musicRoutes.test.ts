@@ -373,6 +373,43 @@ describe("POST /music/duplicates/resolve", () => {
     ).toBe("track")
   })
 
+  test("two concurrent moves into one holding path keep both files", async () => {
+    vol.fromJSON({
+      "/media/library-a/Album/track.flac": "from a",
+      "/media/library-b/Album/track.flac": "from b",
+    })
+
+    const bodies = (await Promise.all(
+      [
+        postResolve({
+          filePath: "/media/library-a/Album/track.flac",
+          holdingFolderPath: "/media/holding",
+          sourceRootPath: "/media/library-a",
+        }),
+        postResolve({
+          filePath: "/media/library-b/Album/track.flac",
+          holdingFolderPath: "/media/holding",
+          sourceRootPath: "/media/library-b",
+        }),
+      ].map((responsePromise) =>
+        responsePromise.then((response) => response.json()),
+      ),
+    )) as Array<{ isOk: boolean }>
+
+    expect(bodies.map((body) => body.isOk).sort()).toEqual([
+      false,
+      true,
+    ])
+    const survivingSources = [
+      "/media/library-a/Album/track.flac",
+      "/media/library-b/Album/track.flac",
+    ].filter((path) => vol.existsSync(path))
+    expect(survivingSources).toHaveLength(1)
+    expect(
+      vol.existsSync("/media/holding/Album/track.flac"),
+    ).toBe(true)
+  })
+
   test("refuses a destination that a link inside the holding folder leads outside the roots", async () => {
     process.env.ALLOWED_FILE_ROOTS = "/media"
     vol.fromJSON({

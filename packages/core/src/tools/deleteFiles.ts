@@ -126,3 +126,19 @@ export const deleteFiles = async (
 
   return { results }
 }
+
+// One-path delete for app commands such as deleteFolder. It runs the
+// same path check and DELETE_MODE strategy as the batch API, and rejects
+// when the delete fails, so the job fails instead of reporting success.
+export const deletePath = (
+  path: string,
+): Promise<DeleteResult> =>
+  deleteFiles([path]).then(({ results: [result] }) =>
+    result.isOk
+      ? result
+      : Promise.reject(
+          new Error(
+            `Could not delete "${result.path}": ${result.error}`,
+          ),
+        ),
+  )

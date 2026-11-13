@@ -207,9 +207,9 @@ const isInsideAllowedRoots = ({
   )
 
 // validateReadablePath plus a check that the path is inside one of the
-// allowed file roots, after symbolic links are resolved. Every route
-// that deletes, renames, moves, or writes a file calls this, so a
-// request cannot change files outside the media mounts.
+// allowed file roots, after symbolic links are resolved. The file
+// explorer and music routes call it on every path they change, and
+// deleteFiles calls it on every path it deletes.
 export const validateWritablePath = (
   path: string,
 ): string => {
@@ -273,8 +273,8 @@ const describePathProblem = ({
 // Returns one message per command path parameter that falls outside the
 // allowed file roots. Empty when there is no limit (a source install
 // with no ALLOWED_FILE_ROOTS) or when every path is inside. Commands and
-// sequence steps call this before they run, so a command such as
-// deleteFolder or moveFiles cannot touch files outside the roots.
+// sequence steps call this before they run. It checks the parameters
+// only: a path a command builds or discovers later is not checked here.
 export const findCommandPathsOutsideAllowedRoots = (
   params: Record<string, unknown>,
 ): string[] =>

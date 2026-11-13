@@ -1,10 +1,16 @@
-import { rm } from "node:fs/promises"
+import { stat } from "node:fs/promises"
 import {
   logAndRethrowPipelineError,
   logInfo,
 } from "@mux-magic/tools"
 import { defer, map, type Observable } from "rxjs"
 
+import { deletePath } from "../tools/deleteFiles.js"
+import { validateWritablePath } from "../tools/pathSafety.js"
+
+// Deletes the folder through the shared delete path, so it gets the
+// same path check as the file explorer and honors DELETE_MODE: the
+// folder goes to the trash unless the operator chose permanent deletes.
 export const deleteFolder = ({
   isConfirmed,
   sourcePath,
@@ -21,11 +27,17 @@ export const deleteFolder = ({
         "deleteFolder refused — pass confirm: true (or --confirm on the CLI) to acknowledge this will recursively delete a directory.",
       )
     }
-    await rm(sourcePath, { recursive: true })
-    return sourcePath
+    // A missing folder fails the step, as `rm` did before: a cleanup
+    // step that finds nothing usually means an earlier path is wrong.
+    await stat(validateWritablePath(sourcePath))
+    const result = await deletePath(sourcePath)
+    return { path: sourcePath, mode: result.mode }
   }).pipe(
-    map((path) => {
-      logInfo("DELETED", path)
+    map(({ mode, path }) => {
+      logInfo(
+        mode === "trash" ? "MOVED TO TRASH" : "DELETED",
+        path,
+      )
       return path
     }),
     logAndRethrowPipelineError(deleteFolder),

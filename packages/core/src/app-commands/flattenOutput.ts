@@ -1,4 +1,4 @@
-import { rm, stat } from "node:fs/promises"
+import { stat } from "node:fs/promises"
 import { basename, dirname, join } from "node:path"
 import {
   aclSafeCopyFile,
@@ -22,11 +22,14 @@ import {
 import { getActiveJobId } from "../api/logCapture.js"
 import { moveSingleFile } from "../tools/moveSingleFile.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
+import { removeEmptyFolder } from "../tools/removeEmptyFolder.js"
 
 // Lifts every file in `sourcePath` up one level into its parent directory,
 // overwriting any same-named originals. By default the source folder is
 // preserved so the user can inspect intermediate state mid-sequence; pass
 // `deleteSourceFolder: true` to remove it once you trust the pipeline.
+// The folder is removed only when it is empty after the move: nested
+// subfolders are not moved, so a folder that still holds one is kept.
 //
 // `deleteSourceFolder: true` MOVES (fs.rename) — it does not copy the bytes
 // and then delete them. A step's output folder is a sibling inside the same
@@ -180,11 +183,19 @@ export const flattenOutput = ({
         toArray(),
         concatMap(() => {
           if (isDeletingSourceFolder) {
+            // Only the top-level files were moved, so a nested
+            // subfolder is still inside. Remove the folder only when it
+            // is empty; otherwise keep it and log what is left.
             return defer(() =>
-              rm(sourcePath, { recursive: true }),
+              removeEmptyFolder(sourcePath),
             ).pipe(
-              tap(() => {
-                logInfo("REMOVED OUTPUT FOLDER", sourcePath)
+              tap((result) => {
+                if (result === "removed") {
+                  logInfo(
+                    "REMOVED OUTPUT FOLDER",
+                    sourcePath,
+                  )
+                }
               }),
               map(() => sourcePath),
             )

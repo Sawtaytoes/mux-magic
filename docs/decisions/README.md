@@ -20,6 +20,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
 | 2026-11-13 | [Browser writes are same-origin, and file changes stay under the allowed roots](2026-11-13-browser-writes-are-same-origin-and-file-changes-stay-under-allowed-roots.md) | server/api | Accepted |
+| 2026-11-13 | [File cleanup deletes only what it has confirmed](2026-11-13-file-cleanup-deletes-only-what-it-has-confirmed.md) | core | Accepted |
 | 2026-10-24 | [Default subtitle themes match OP/ED words](2026-10-24-default-subtitle-themes-match-op-ed-words.md) | core | Accepted |
 | 2026-10-23 | [Newgrounds is a standalone artwork search provider](2026-10-23-newgrounds-is-a-standalone-artwork-search-provider.md) | core | Accepted |
 | 2026-10-23 | [VGMdb is a standalone artwork search provider](2026-10-23-vgmdb-is-a-standalone-artwork-search-provider.md) | core | Accepted |
@@ -79,7 +80,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 | 2026-06-12 | [`test()` not `it()`; no redundant arrow return types](2026-06-12-test-not-it-and-no-return-types.md) | process | Accepted |
 | 2026-06-12 | [BCP 47 language variants are additive; don't switch to 2-letter codes](2026-06-12-bcp47-language-variants-additive.md) | core | Accepted |
 | 2026-05-20 | [Recursion depth defaults: 1 general, 2 for deleteFilesByExtension](2026-05-20-default-recursion-depth-is-1.md) | core / server/api | Accepted |
-| 2026-05-19 | [Atomic copy + filesystem move (FICLONE, ZFS-EPERM, no temp on same-volume moves)](2026-05-19-atomic-copy-and-filesystem-move.md) | core / tools | Accepted |
+| 2026-05-19 | [Atomic copy + filesystem move (FICLONE, ZFS-EPERM, no temp on same-volume moves)](2026-05-19-atomic-copy-and-filesystem-move.md) | core / tools | Superseded in part by [2026-11-13](2026-11-13-file-cleanup-deletes-only-what-it-has-confirmed.md) |
 | 2026-05-19 | [NSF state lives in the filesystem, not a JSON cache](2026-05-19-nsf-filesystem-is-the-state.md) | core / web | Accepted |
 | 2026-05-19 | [Smart Match scoring runs server-side; no client scorer](2026-05-19-smartmatch-scoring-server-side.md) | core / web | Accepted |
 | 2026-05-19 | [`convertLosslessToFlac` rejects video containers](2026-05-19-convertlosslesstoflac-rejects-video.md) | core | Accepted |

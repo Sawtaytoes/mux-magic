@@ -13,14 +13,21 @@ type InferArgvOptions<T> =
 const builder = (yargs: Argv) =>
   yargs
     .example(
-      '$0 deleteCopiedOriginals "/staging/ep01.mkv" "/staging/ep02.mkv"',
-      "Deletes the two source files after they have been successfully copied to the library.",
+      '$0 deleteCopiedOriginals "/staging/ep01.mkv" "/staging/ep02.mkv" --copiedDestinationPaths "/library/ep01.mkv" "/library/ep02.mkv"',
+      "Deletes the two source files after confirming their copies in the library exist and match in size.",
     )
     .positional("pathsToDelete", {
       array: true,
       demandOption: true,
       describe:
         "One or more file or folder paths to delete. In a sequence, these are typically provided via linkedTo from a prior copyFiles step.",
+      type: "string",
+    })
+    .option("copiedDestinationPaths", {
+      array: true,
+      demandOption: true,
+      describe:
+        "The copy of each path to delete, in the same order. Nothing is deleted unless every copy exists and matches its original's size.",
       type: "string",
     })
 
@@ -41,6 +48,7 @@ export const deleteCopiedOriginalsCommand: CommandModule<
 
   handler: (argv) => {
     deleteCopiedOriginals({
+      copiedDestinationPaths: argv.copiedDestinationPaths,
       pathsToDelete: argv.pathsToDelete ?? [],
     })
       .pipe(toArray())

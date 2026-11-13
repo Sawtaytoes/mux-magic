@@ -1,8 +1,11 @@
-import { rename, stat, unlink } from "node:fs/promises"
+import { stat, unlink } from "node:fs/promises"
 import {
   aclSafeCopyFile,
   type CopyOptions,
+  renameOntoDestination,
 } from "@mux-magic/tools"
+
+import { getPlatform } from "./currentEnvironment.js"
 
 // A move is `fs.rename` — no temp file, no byte copy on the same
 // volume. Extracted from moveFiles so every command that moves a file
@@ -62,26 +65,21 @@ export const moveSingleFile = async ({
     destinationPath,
     isOverwriteAllowed,
   )
-  if (hasExistingDestination) {
-    // On Windows `rename` errors with EPERM against an existing
-    // target; the EXDEV fallback's aclSafeCopyFile already handles
-    // its own destination-exists case via the same temp+rename
-    // primitive, so we only need to clear the path here for the
-    // rename fast-path.
-    await unlink(destinationPath).catch((error) => {
-      if (hasErrorCode(error, "ENOENT")) return
-      throw error
-    })
-  }
   try {
-    await rename(sourcePath, destinationPath)
+    await renameOntoDestination({
+      destinationPath,
+      hasExistingDestination,
+      platform: getPlatform(),
+      sourcePath,
+    })
     return "renamed"
   } catch (error) {
     if (!hasErrorCode(error, "EXDEV")) throw error
     // Cross-volume: stream the bytes, then drop the source entry.
-    // aclSafeCopyFile is already temp+rename + EEXIST-safe; pass
-    // isOverwriteAllowed through so it doesn't re-trip on the same
-    // destination check we just made.
+    // aclSafeCopyFile copies to a temp file and renames it into place,
+    // so an existing destination survives until the copy is complete.
+    // isOverwriteAllowed passes through so it doesn't re-trip on the
+    // same destination check we just made.
     await aclSafeCopyFile(sourcePath, destinationPath, {
       ...copyOptions,
       isOverwriteAllowed: true,

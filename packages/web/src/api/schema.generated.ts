@@ -2493,7 +2493,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Delete the original source files that were copied by a prior copyFiles or moveFiles step. Receives its pathsToDelete list via linkedTo from the prior step's copiedSourcePaths output. */
+        /** Delete the original source files that were copied by a prior copyFiles or moveFiles step. Receives its pathsToDelete list via linkedTo from the prior step's copiedSourcePaths output, and copiedDestinationPaths from its copiedDestinationPaths output. Deletes nothing unless every copy is confirmed. */
         post: {
             parameters: {
                 query?: never;
@@ -2506,6 +2506,8 @@ export interface paths {
                     "application/json": {
                         /** @description List of file or folder paths to delete. Typically provided via linkedTo from a prior copyFiles step's copiedSourcePaths output. Is a no-op when the list is empty. */
                         pathsToDelete: string[];
+                        /** @description The copy of each path in pathsToDelete, in the same order. Link it from the same copy step's copiedDestinationPaths output. Nothing is deleted unless every copy exists and matches its original's size. */
+                        copiedDestinationPaths?: string[];
                     };
                 };
             };
