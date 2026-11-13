@@ -90,6 +90,107 @@ describe(renameFileOrFolder.name, () => {
   })
 })
 
+describe(`${renameFileOrFolder.name} claims names atomically`, () => {
+  test("two concurrent renames into one name keep both files", async () => {
+    vol.fromJSON({
+      "/anime/first.mkv": "first",
+      "/anime/second.mkv": "second",
+    })
+
+    const results = await Promise.allSettled([
+      firstValueFrom(
+        renameFileOrFolder({
+          newPath: "/anime/Show - s01e01.mkv",
+          oldPath: "/anime/first.mkv",
+        }),
+      ),
+      firstValueFrom(
+        renameFileOrFolder({
+          newPath: "/anime/Show - s01e01.mkv",
+          oldPath: "/anime/second.mkv",
+        }),
+      ),
+    ])
+
+    expect(results.map((result) => result.status)).toEqual([
+      "fulfilled",
+      "rejected",
+    ])
+    expect(
+      vol.readFileSync("/anime/Show - s01e01.mkv", "utf8"),
+    ).toBe("first")
+    expect(
+      vol.readFileSync("/anime/second.mkv", "utf8"),
+    ).toBe("second")
+    expect(vol.existsSync("/anime/first.mkv")).toBe(false)
+  })
+
+  test("releases the claim so a later rename into a freed name works", async () => {
+    vol.fromJSON({
+      "/anime/first.mkv": "first",
+      "/anime/second.mkv": "second",
+    })
+
+    await firstValueFrom(
+      renameFileOrFolder({
+        newPath: "/anime/Show - s01e01.mkv",
+        oldPath: "/anime/first.mkv",
+      }),
+    )
+    vol.unlinkSync("/anime/Show - s01e01.mkv")
+    await firstValueFrom(
+      renameFileOrFolder({
+        newPath: "/anime/Show - s01e01.mkv",
+        oldPath: "/anime/second.mkv",
+      }),
+    )
+
+    expect(
+      vol.readFileSync("/anime/Show - s01e01.mkv", "utf8"),
+    ).toBe("second")
+  })
+
+  test("does not rename when checking the target fails for a reason other than ENOENT", async () => {
+    vol.fromJSON({
+      "/anime/first.mkv": "first",
+      "/anime/blocker": "a file, not a folder",
+    })
+
+    await expect(
+      firstValueFrom(
+        renameFileOrFolder({
+          newPath: "/anime/blocker/Show - s01e01.mkv",
+          oldPath: "/anime/first.mkv",
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "ENOTDIR" })
+    expect(
+      vol.readFileSync("/anime/first.mkv", "utf8"),
+    ).toBe("first")
+  })
+
+  test("renames a folder", async () => {
+    vol.fromJSON({
+      "/anime/Disc 1/episode.mkv": "episode",
+    })
+
+    await firstValueFrom(
+      renameFileOrFolder({
+        newPath: "/anime/Season 01",
+        oldPath: "/anime/Disc 1",
+      }),
+    )
+
+    expect(
+      vol.readFileSync(
+        "/anime/Season 01/episode.mkv",
+        "utf8",
+      ),
+    ).toBe("episode")
+    expect(vol.existsSync("/anime/Disc 1")).toBe(false)
+  })
+})
+
 describe(createRenameFileOrFolderObservable.name, () => {
   test("completes when the old and new names are the same", async () => {
     expect(

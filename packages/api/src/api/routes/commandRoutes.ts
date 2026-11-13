@@ -696,6 +696,9 @@ export const commandConfigs: Record<
       copiedSourcePaths: (results as CopyRecord[]).map(
         (record) => record.source,
       ),
+      copiedDestinationPaths: (results as CopyRecord[]).map(
+        (record) => record.destination,
+      ),
     }),
     schema: schemas.copyFilesRequestSchema,
     summary:
@@ -1066,6 +1069,9 @@ export const commandConfigs: Record<
       copiedSourcePaths: (results as CopyRecord[]).map(
         (record) => record.source,
       ),
+      copiedDestinationPaths: (results as CopyRecord[]).map(
+        (record) => record.destination,
+      ),
     }),
     schema: schemas.moveFilesRequestSchema,
     summary:
@@ -1128,11 +1134,12 @@ export const commandConfigs: Record<
   deleteCopiedOriginals: {
     getObservable: (body) =>
       deleteCopiedOriginals({
+        copiedDestinationPaths: body.copiedDestinationPaths,
         pathsToDelete: body.pathsToDelete,
       }),
     schema: schemas.deleteCopiedOriginalsRequestSchema,
     summary:
-      "Delete the original source files that were copied by a prior copyFiles or moveFiles step. Receives its pathsToDelete list via linkedTo from the prior step's copiedSourcePaths output.",
+      "Delete the original source files that were copied by a prior copyFiles or moveFiles step. Receives its pathsToDelete list via linkedTo from the prior step's copiedSourcePaths output, and copiedDestinationPaths from its copiedDestinationPaths output. Deletes nothing unless every copy is confirmed.",
     tags: ["File Operations"],
   },
   nameAnimeEpisodes: {

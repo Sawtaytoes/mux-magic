@@ -349,6 +349,12 @@ export const deleteCopiedOriginalsRequestSchema = z.object({
     .describe(
       "List of file or folder paths to delete. Typically provided via linkedTo from a prior copyFiles step's copiedSourcePaths output. Is a no-op when the list is empty.",
     ),
+  copiedDestinationPaths: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "The copy of each path in pathsToDelete, in the same order. Link it from the same copy step's copiedDestinationPaths output. Nothing is deleted unless every copy exists and matches its original's size.",
+    ),
 })
 
 export const extractSubtitlesRequestSchema = z.object({

@@ -1,6 +1,10 @@
 # 2026-05-19 — Atomic copy + filesystem move (FICLONE, ZFS-EPERM, no temp on same-volume moves)
 
-- **Status:** Accepted
+> [!WARNING]
+> **SUPERSEDED IN PART on 2026-11-13 by [File cleanup deletes only what it has confirmed](2026-11-13-file-cleanup-deletes-only-what-it-has-confirmed.md).**
+> Only one sentence changed: the overwrite path no longer unlinks the destination before the rename. Everything else below still holds.
+
+- **Status:** Accepted; superseded in part by [2026-11-13](2026-11-13-file-cleanup-deletes-only-what-it-has-confirmed.md)
 - **Date decided:** 2026-05-19 (worker 59, PR #134, commits `6832906b` / `209c1170`); the "no temp file on same-volume moves" rule re-emphasized by the user 2026-06-29
 - **Area:** core / tools
 - **Source:** worker 59 (`atomic-copy-and-fast-move`); `packages/tools/src/aclSafeCopyFile.ts`, `packages/core/src/app-commands/moveFiles.ts`
