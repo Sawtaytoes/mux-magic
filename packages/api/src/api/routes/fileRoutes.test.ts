@@ -455,3 +455,190 @@ describe("GET /files/audio-codec", () => {
     expect(response.status).toBe(400)
   })
 })
+
+describe("file-changing routes stay inside the allowed file roots", () => {
+  const originalRoots = process.env.ALLOWED_FILE_ROOTS
+
+  beforeEach(() => {
+    process.env.ALLOWED_FILE_ROOTS = "/media"
+    vol.fromJSON({
+      "/media/Anime/ep01.mkv": "episode",
+      "/outside/keep.mkv": "keep",
+    })
+  })
+
+  afterEach(() => {
+    if (originalRoots === undefined) {
+      delete process.env.ALLOWED_FILE_ROOTS
+    } else {
+      process.env.ALLOWED_FILE_ROOTS = originalRoots
+    }
+  })
+
+  test("DELETE /files refuses a path outside the roots and keeps the file", async () => {
+    const response = await fileRoutes.request("/files", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paths: ["/outside/keep.mkv"],
+      }),
+    })
+    const body = (await response.json()) as {
+      results: Array<{
+        isOk: boolean
+        error: string | null
+      }>
+    }
+
+    expect(body.results[0]?.isOk).toBe(false)
+    expect(body.results[0]?.error).toMatch(
+      /outside the allowed file roots/,
+    )
+    await expect(
+      stat("/outside/keep.mkv"),
+    ).resolves.toBeDefined()
+  })
+
+  test("DELETE /files refuses traversal out of a root", async () => {
+    const response = await fileRoutes.request("/files", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paths: ["/media/../outside/keep.mkv"],
+      }),
+    })
+    const body = (await response.json()) as {
+      results: Array<{
+        isOk: boolean
+        error: string | null
+      }>
+    }
+
+    expect(body.results[0]?.isOk).toBe(false)
+    expect(body.results[0]?.error).toMatch(
+      /traversal not allowed/,
+    )
+    await expect(
+      stat("/outside/keep.mkv"),
+    ).resolves.toBeDefined()
+  })
+
+  test("POST /files/rename refuses a new path outside the roots", async () => {
+    const response = await fileRoutes.request(
+      "/files/rename",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          oldPath: "/media/Anime/ep01.mkv",
+          newPath: "/outside/ep01.mkv",
+        }),
+      },
+    )
+    const body = (await response.json()) as {
+      isOk: boolean
+      error: string | null
+    }
+
+    expect(body.isOk).toBe(false)
+    expect(body.error).toMatch(
+      /outside the allowed file roots/,
+    )
+    await expect(
+      stat("/media/Anime/ep01.mkv"),
+    ).resolves.toBeDefined()
+  })
+
+  test("POST /files/rename still renames inside the roots", async () => {
+    const response = await fileRoutes.request(
+      "/files/rename",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          oldPath: "/media/Anime/ep01.mkv",
+          newPath: "/media/Anime/Show - s01e01.mkv",
+        }),
+      },
+    )
+    const body = (await response.json()) as {
+      isOk: boolean
+    }
+
+    expect(body.isOk).toBe(true)
+    await expect(
+      stat("/media/Anime/Show - s01e01.mkv"),
+    ).resolves.toBeDefined()
+  })
+})
+
+describe("file-changing routes resolve symbolic links before the root check", () => {
+  const originalRoots = process.env.ALLOWED_FILE_ROOTS
+
+  beforeEach(() => {
+    process.env.ALLOWED_FILE_ROOTS = "/media"
+    vol.fromJSON({
+      "/media/Anime/ep01.mkv": "episode",
+      "/outside/keep.mkv": "keep",
+    })
+    vol.symlinkSync("/outside", "/media/escape")
+  })
+
+  afterEach(() => {
+    if (originalRoots === undefined) {
+      delete process.env.ALLOWED_FILE_ROOTS
+    } else {
+      process.env.ALLOWED_FILE_ROOTS = originalRoots
+    }
+  })
+
+  test("DELETE /files refuses a path through a link that leaves the roots", async () => {
+    const response = await fileRoutes.request("/files", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paths: ["/media/escape/keep.mkv"],
+      }),
+    })
+    const body = (await response.json()) as {
+      results: Array<{
+        isOk: boolean
+        error: string | null
+      }>
+    }
+
+    expect(body.results[0]?.isOk).toBe(false)
+    expect(body.results[0]?.error).toMatch(
+      /outside the allowed file roots/,
+    )
+    await expect(
+      stat("/outside/keep.mkv"),
+    ).resolves.toBeDefined()
+  })
+
+  test("POST /files/rename refuses a new path under a link that leaves the roots", async () => {
+    const response = await fileRoutes.request(
+      "/files/rename",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          oldPath: "/media/Anime/ep01.mkv",
+          newPath: "/media/escape/new-name.mkv",
+        }),
+      },
+    )
+    const body = (await response.json()) as {
+      isOk: boolean
+      error: string | null
+    }
+
+    expect(body.isOk).toBe(false)
+    expect(body.error).toMatch(
+      /outside the allowed file roots/,
+    )
+    await expect(
+      stat("/media/Anime/ep01.mkv"),
+    ).resolves.toBeDefined()
+  })
+})

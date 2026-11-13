@@ -312,3 +312,48 @@ describe("POST /commands/:name — dry-run safety", () => {
     expect(response.status).toBe(202)
   })
 })
+
+describe("POST /commands/:name — allowed file roots", () => {
+  const originalRoots = process.env.ALLOWED_FILE_ROOTS
+
+  afterEach(() => {
+    if (originalRoots === undefined) {
+      delete process.env.ALLOWED_FILE_ROOTS
+    } else {
+      process.env.ALLOWED_FILE_ROOTS = originalRoots
+    }
+  })
+
+  test("refuses deleteFolder outside the roots before a job starts", async () => {
+    process.env.ALLOWED_FILE_ROOTS = "/media"
+    vol.fromJSON({ "/outside/keep.mkv": "keep" })
+
+    const response = await post("/commands/deleteFolder", {
+      sourcePath: "/outside",
+      confirm: true,
+    })
+    await flushAfter(40)
+
+    expect(response.status).toBe(400)
+    expect(await response.text()).toMatch(
+      /outside the allowed file roots/,
+    )
+    expect(vol.existsSync("/outside/keep.mkv")).toBe(true)
+  })
+
+  test("refuses a moveFiles destination outside the roots", async () => {
+    process.env.ALLOWED_FILE_ROOTS = "/media"
+    vol.fromJSON({ "/media/Anime/ep01.mkv": "episode" })
+
+    const response = await post("/commands/moveFiles", {
+      sourcePath: "/media/Anime",
+      destinationPath: "/outside",
+    })
+    await flushAfter(40)
+
+    expect(response.status).toBe(400)
+    expect(vol.existsSync("/media/Anime/ep01.mkv")).toBe(
+      true,
+    )
+  })
+})

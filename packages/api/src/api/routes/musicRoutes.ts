@@ -1,4 +1,4 @@
-import { mkdir, rename } from "node:fs/promises"
+import { mkdir } from "node:fs/promises"
 import { dirname, join, relative, resolve } from "node:path"
 
 import {
@@ -15,8 +15,10 @@ import { buildSeededReleaseForm } from "@mux-magic/core/src/tools/musicBrainzSub
 import {
   PathSafetyError,
   validateReadablePath,
+  validateWritablePath,
 } from "@mux-magic/core/src/tools/pathSafety.js"
-import { firstValueFrom } from "rxjs"
+import { renameFileOrFolder } from "@mux-magic/tools"
+import { firstValueFrom, lastValueFrom } from "rxjs"
 
 import * as schemas from "../schemas.js"
 
@@ -108,7 +110,7 @@ musicRoutes.openapi(
   async (context) => {
     const body = context.req.valid("json")
     try {
-      const filePath = validateReadablePath(body.filePath)
+      const filePath = validateWritablePath(body.filePath)
       const tags = toAudioTags(body.tags)
       const { tags: currentTags } =
         await readAudioTags(filePath)
@@ -197,16 +199,21 @@ musicRoutes.openapi(
   async (context) => {
     const body = context.req.valid("json")
     try {
-      const filePath = validateReadablePath(body.filePath)
-      const destination = buildHoldingDestination({
-        filePath,
-        holdingFolderPath: validateReadablePath(
-          body.holdingFolderPath,
-        ),
-        sourceRootPath: validateReadablePath(
-          body.sourceRootPath,
-        ),
-      })
+      const filePath = validateWritablePath(body.filePath)
+      // The holding path is checked again once the source-relative part
+      // is added, because a link inside the holding folder could lead
+      // the move outside the allowed roots.
+      const destination = validateWritablePath(
+        buildHoldingDestination({
+          filePath,
+          holdingFolderPath: validateWritablePath(
+            body.holdingFolderPath,
+          ),
+          sourceRootPath: validateReadablePath(
+            body.sourceRootPath,
+          ),
+        }),
+      )
 
       if (!body.isDryRun) {
         await mkdir(dirname(destination), {
@@ -215,8 +222,14 @@ musicRoutes.openapi(
         // Refused rather than overwritten. A collision here means the
         // holding folder already holds a different file at that path,
         // and silently replacing it would destroy the one thing this
-        // route exists to preserve.
-        await rename(filePath, destination)
+        // route exists to preserve. A plain `rename` would replace it on
+        // Linux, so the move goes through the no-replace helper.
+        await lastValueFrom(
+          renameFileOrFolder({
+            newPath: destination,
+            oldPath: filePath,
+          }),
+        )
       }
 
       return context.json(

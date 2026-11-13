@@ -1,5 +1,10 @@
 import { rename } from "node:fs/promises"
-import { dirname, extname, join } from "node:path"
+import {
+  dirname,
+  extname,
+  isAbsolute,
+  join,
+} from "node:path"
 import {
   applyRenameRegex,
   getFilesAtDepth,
@@ -80,6 +85,26 @@ export const renameFiles = ({
                     ),
                   ),
                 )
+
+          // A rename stays in the file's own folder tree. A regex
+          // result that climbs out with `..`, or is an absolute path,
+          // would move the file somewhere the step was never pointed at.
+          matchedFiles.forEach((file) => {
+            const newName = applyRenameRegex(
+              file.filename.concat(extname(file.fullPath)),
+              renameRegex,
+            )
+            if (
+              isAbsolute(newName) ||
+              newName
+                .split(/[\\/]/u)
+                .some((segment) => segment === "..")
+            ) {
+              throw new Error(
+                `renameRegex turned "${file.fullPath}" into "${newName}", which leaves its folder. A rename must stay inside the file's folder.`,
+              )
+            }
+          })
 
           const plans: RenamePlan[] = matchedFiles
             .map((file) => {

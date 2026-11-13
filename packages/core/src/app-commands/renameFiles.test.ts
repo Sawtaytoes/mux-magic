@@ -105,6 +105,31 @@ describe(renameFiles.name, () => {
     expect(vol.existsSync("/src/clean.mkv")).toBe(true)
   })
 
+  test("halts before any rename when the regex result leaves the folder", async () => {
+    vol.fromJSON({
+      "/media/inbox/episode.mkv": "episode",
+    })
+
+    await expect(
+      lastValueFrom(
+        renameFiles({
+          sourcePath: "/media/inbox",
+          renameRegex: {
+            pattern: "^.*$",
+            replacement: "../../outside/escaped.mkv",
+          },
+        }).pipe(toArray()),
+      ),
+    ).rejects.toThrow(/leaves its folder/)
+
+    expect(vol.existsSync("/media/inbox/episode.mkv")).toBe(
+      true,
+    )
+    expect(vol.existsSync("/outside/escaped.mkv")).toBe(
+      false,
+    )
+  })
+
   test("halts before any rename when two targets collide (after rename)", async () => {
     vol.fromJSON({
       "/src/[GroupA] Show - 01.mkv": "epA",

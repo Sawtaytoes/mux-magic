@@ -1,4 +1,6 @@
+import { vol } from "memfs"
 import {
+  afterEach,
   beforeEach,
   describe,
   expect,
@@ -293,5 +295,148 @@ describe("POST /music/musicbrainz/seed-release", () => {
       'action="https://musicbrainz.org/release/add"',
     )
     expect(html).toContain("Slack Water")
+  })
+})
+
+describe("POST /music/duplicates/resolve", () => {
+  const originalRoots = process.env.ALLOWED_FILE_ROOTS
+
+  const postResolve = (body: unknown) =>
+    musicRoutes.request("/music/duplicates/resolve", {
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    })
+
+  beforeEach(() => {
+    vol.reset()
+  })
+
+  afterEach(() => {
+    if (originalRoots === undefined) {
+      delete process.env.ALLOWED_FILE_ROOTS
+    } else {
+      process.env.ALLOWED_FILE_ROOTS = originalRoots
+    }
+  })
+
+  test("moves the file into the holding folder", async () => {
+    vol.fromJSON({
+      "/media/library/Album/track.flac": "track",
+    })
+
+    const response = await postResolve({
+      filePath: "/media/library/Album/track.flac",
+      holdingFolderPath: "/media/holding",
+      sourceRootPath: "/media/library",
+    })
+    const body = (await response.json()) as {
+      isOk: boolean
+    }
+
+    expect(body.isOk).toBe(true)
+    expect(
+      vol.readFileSync(
+        "/media/holding/Album/track.flac",
+        "utf8",
+      ),
+    ).toBe("track")
+  })
+
+  test("refuses to replace a file already in the holding folder", async () => {
+    vol.fromJSON({
+      "/media/library/Album/track.flac": "track",
+      "/media/holding/Album/track.flac": "kept",
+    })
+
+    const response = await postResolve({
+      filePath: "/media/library/Album/track.flac",
+      holdingFolderPath: "/media/holding",
+      sourceRootPath: "/media/library",
+    })
+    const body = (await response.json()) as {
+      isOk: boolean
+    }
+
+    expect(body.isOk).toBe(false)
+    expect(
+      vol.readFileSync(
+        "/media/holding/Album/track.flac",
+        "utf8",
+      ),
+    ).toBe("kept")
+    expect(
+      vol.readFileSync(
+        "/media/library/Album/track.flac",
+        "utf8",
+      ),
+    ).toBe("track")
+  })
+
+  test("two concurrent moves into one holding path keep both files", async () => {
+    vol.fromJSON({
+      "/media/library-a/Album/track.flac": "from a",
+      "/media/library-b/Album/track.flac": "from b",
+    })
+
+    const responses = await Promise.all([
+      postResolve({
+        filePath: "/media/library-a/Album/track.flac",
+        holdingFolderPath: "/media/holding",
+        sourceRootPath: "/media/library-a",
+      }),
+      postResolve({
+        filePath: "/media/library-b/Album/track.flac",
+        holdingFolderPath: "/media/holding",
+        sourceRootPath: "/media/library-b",
+      }),
+    ])
+    const bodies = (await Promise.all(
+      responses.map((response) => response.json()),
+    )) as Array<{ isOk: boolean }>
+
+    expect(bodies.map((body) => body.isOk).sort()).toEqual([
+      false,
+      true,
+    ])
+    const survivingSources = [
+      "/media/library-a/Album/track.flac",
+      "/media/library-b/Album/track.flac",
+    ].filter((path) => vol.existsSync(path))
+    expect(survivingSources).toHaveLength(1)
+    expect(
+      vol.existsSync("/media/holding/Album/track.flac"),
+    ).toBe(true)
+  })
+
+  test("refuses a destination that a link inside the holding folder leads outside the roots", async () => {
+    process.env.ALLOWED_FILE_ROOTS = "/media"
+    vol.fromJSON({
+      "/media/library/Album/track.flac": "track",
+      "/outside/.keep": "",
+    })
+    vol.mkdirSync("/media/holding", { recursive: true })
+    vol.symlinkSync("/outside", "/media/holding/Album")
+
+    const response = await postResolve({
+      filePath: "/media/library/Album/track.flac",
+      holdingFolderPath: "/media/holding",
+      sourceRootPath: "/media/library",
+    })
+    const body = (await response.json()) as {
+      error: string | null
+      isOk: boolean
+    }
+
+    expect(body.isOk).toBe(false)
+    expect(body.error).toMatch(
+      /outside the allowed file roots/,
+    )
+    expect(
+      vol.readFileSync(
+        "/media/library/Album/track.flac",
+        "utf8",
+      ),
+    ).toBe("track")
   })
 })

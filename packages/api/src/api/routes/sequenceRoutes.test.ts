@@ -1875,3 +1875,37 @@ describe("POST /sequences/validate", () => {
     expect(body).toEqual({ isValid: true, errors: [] })
   })
 })
+
+describe("POST /sequences/run — allowed file roots", () => {
+  const originalRoots = process.env.ALLOWED_FILE_ROOTS
+
+  afterEach(() => {
+    if (originalRoots === undefined) {
+      delete process.env.ALLOWED_FILE_ROOTS
+    } else {
+      process.env.ALLOWED_FILE_ROOTS = originalRoots
+    }
+  })
+
+  test("fails a deleteFolder step outside the roots and keeps the folder", async () => {
+    process.env.ALLOWED_FILE_ROOTS = "/media"
+    vol.fromJSON({ "/outside/keep.mkv": "keep" })
+
+    const response = await post("/sequences/run", {
+      steps: [
+        {
+          id: "outside_delete",
+          command: "deleteFolder",
+          params: { sourcePath: "/outside", confirm: true },
+        },
+      ],
+    })
+    const { jobId } = (await response.json()) as {
+      jobId: string
+    }
+    await flushAfter(40)
+
+    expect(getJob(jobId)?.status).toBe("failed")
+    expect(vol.existsSync("/outside/keep.mkv")).toBe(true)
+  })
+})

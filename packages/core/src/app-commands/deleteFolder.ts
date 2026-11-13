@@ -6,7 +6,7 @@ import {
 import { defer, map, type Observable } from "rxjs"
 
 import { deletePath } from "../tools/deleteFiles.js"
-import { validateReadablePath } from "../tools/pathSafety.js"
+import { validateWritablePath } from "../tools/pathSafety.js"
 
 // Deletes the folder through the shared delete path, so it gets the
 // same path check as the file explorer and honors DELETE_MODE: the
@@ -29,7 +29,7 @@ export const deleteFolder = ({
     }
     // A missing folder fails the step, as `rm` did before: a cleanup
     // step that finds nothing usually means an earlier path is wrong.
-    await stat(validateReadablePath(sourcePath))
+    await stat(validateWritablePath(sourcePath))
     const result = await deletePath(sourcePath)
     return { path: sourcePath, mode: result.mode }
   }).pipe(

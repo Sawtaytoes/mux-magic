@@ -150,8 +150,10 @@ import {
   trimFileTailDefaultProps,
 } from "@mux-magic/core/src/app-commands/trimFileTail.js"
 import { writeAudioTags } from "@mux-magic/core/src/app-commands/writeAudioTags.js"
+import { findCommandPathsOutsideAllowedRoots } from "@mux-magic/core/src/tools/pathSafety.js"
 import { makeDirectory } from "@mux-magic/tools"
 import type { Context } from "hono"
+import { HTTPException } from "hono/http-exception"
 import type { Observable } from "rxjs"
 import {
   getEffectiveCommandConfigs,
@@ -1537,6 +1539,15 @@ commandNames.forEach((commandName) => {
     }),
     async (context) => {
       const body = context.req.valid("json")
+      const pathProblems =
+        findCommandPathsOutsideAllowedRoots(
+          body as Record<string, unknown>,
+        )
+      if (pathProblems.length > 0) {
+        throw new HTTPException(400, {
+          message: pathProblems.join("\n"),
+        })
+      }
       const isUsingFake = isFakeRequest(context)
       const effectiveConfig = getEffectiveCommandConfigs(
         isUsingFake,

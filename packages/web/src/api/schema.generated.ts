@@ -7654,7 +7654,7 @@ export interface paths {
         };
         /**
          * List files in a directory with metadata
-         * @description Used by the file-explorer modal in the Builder UI. Returns one entry per direct child of `path`, with isFile/isDirectory + size + mtime. Path must be absolute and traversal-free; this is a read-only operation, so it is NOT gated by ALLOWED_DELETE_ROOTS.
+         * @description Used by the file-explorer modal in the Builder UI. Returns one entry per direct child of `path`, with isFile/isDirectory + size + mtime. Path must be absolute and traversal-free; this is a read-only operation, so it is NOT limited to the allowed file roots.
          */
         get: {
             parameters: {
@@ -7869,7 +7869,7 @@ export interface paths {
         post?: never;
         /**
          * Delete one or more files
-         * @description Bulk delete used by the file-explorer modal. Each path is validated against ALLOWED_DELETE_ROOTS independently; a failure on one path does NOT abort the batch — the response carries per-path success/failure. Strategy (Recycle Bin vs permanent) is set globally via DELETE_MODE and reported through GET /files/delete-mode.
+         * @description Bulk delete used by the file-explorer modal. Each path is validated independently: it must be absolute, traversal-free, and inside the allowed file roots (ALLOWED_FILE_ROOTS, or /media in a container); a failure on one path does NOT abort the batch — the response carries per-path success/failure. Strategy (Recycle Bin vs permanent) is set globally via DELETE_MODE and reported through GET /files/delete-mode.
          */
         delete: {
             parameters: {
@@ -7929,7 +7929,7 @@ export interface paths {
         put?: never;
         /**
          * Rename a single file in place
-         * @description Used by the nameSpecialFeaturesDvdCompareTmdb result card so the user can fix unrenamed entries one row at a time. Both `oldPath` and `newPath` are validated for absolute / no-traversal safety. The underlying helper aborts when `newPath` already exists, so the API can't silently overwrite an existing file.
+         * @description Used by the nameSpecialFeaturesDvdCompareTmdb result card so the user can fix unrenamed entries one row at a time. Both `oldPath` and `newPath` must be absolute, traversal-free, and inside the allowed file roots. The underlying helper aborts when `newPath` already exists, so the API can't silently overwrite an existing file.
          */
         post: {
             parameters: {
