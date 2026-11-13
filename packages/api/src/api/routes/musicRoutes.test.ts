@@ -379,21 +379,20 @@ describe("POST /music/duplicates/resolve", () => {
       "/media/library-b/Album/track.flac": "from b",
     })
 
+    const responses = await Promise.all([
+      postResolve({
+        filePath: "/media/library-a/Album/track.flac",
+        holdingFolderPath: "/media/holding",
+        sourceRootPath: "/media/library-a",
+      }),
+      postResolve({
+        filePath: "/media/library-b/Album/track.flac",
+        holdingFolderPath: "/media/holding",
+        sourceRootPath: "/media/library-b",
+      }),
+    ])
     const bodies = (await Promise.all(
-      [
-        postResolve({
-          filePath: "/media/library-a/Album/track.flac",
-          holdingFolderPath: "/media/holding",
-          sourceRootPath: "/media/library-a",
-        }),
-        postResolve({
-          filePath: "/media/library-b/Album/track.flac",
-          holdingFolderPath: "/media/holding",
-          sourceRootPath: "/media/library-b",
-        }),
-      ].map((responsePromise) =>
-        responsePromise.then((response) => response.json()),
-      ),
+      responses.map((response) => response.json()),
     )) as Array<{ isOk: boolean }>
 
     expect(bodies.map((body) => body.isOk).sort()).toEqual([
