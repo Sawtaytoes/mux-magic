@@ -15,6 +15,7 @@ import { buildSeededReleaseForm } from "@mux-magic/core/src/tools/musicBrainzSub
 import {
   PathSafetyError,
   validateReadablePath,
+  validateWritablePath,
 } from "@mux-magic/core/src/tools/pathSafety.js"
 import { firstValueFrom } from "rxjs"
 
@@ -108,7 +109,7 @@ musicRoutes.openapi(
   async (context) => {
     const body = context.req.valid("json")
     try {
-      const filePath = validateReadablePath(body.filePath)
+      const filePath = validateWritablePath(body.filePath)
       const tags = toAudioTags(body.tags)
       const { tags: currentTags } =
         await readAudioTags(filePath)
@@ -197,10 +198,10 @@ musicRoutes.openapi(
   async (context) => {
     const body = context.req.valid("json")
     try {
-      const filePath = validateReadablePath(body.filePath)
+      const filePath = validateWritablePath(body.filePath)
       const destination = buildHoldingDestination({
         filePath,
-        holdingFolderPath: validateReadablePath(
+        holdingFolderPath: validateWritablePath(
           body.holdingFolderPath,
         ),
         sourceRootPath: validateReadablePath(

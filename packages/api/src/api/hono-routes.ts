@@ -3,6 +3,10 @@ import { logError } from "@mux-magic/tools"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 
+import {
+  crossOriginWriteGuard,
+  isAllowedOrigin,
+} from "./originPolicy.js"
 import { commandRoutes } from "./routes/commandRoutes.js"
 import { addDocRoutes } from "./routes/docRoutes.js"
 import { errorRoutes } from "./routes/errorRoutes.js"
@@ -22,17 +26,24 @@ import { versionRoutes } from "./routes/versionRoutes.js"
 
 export const app = new OpenAPIHono()
 
-// CORS: mux-magic is a single-user local tool. After worker 29 the SPA
-// and the API are same-origin (one Hono front-door, /api/* mounts this
-// sub-app), so CORS is effectively a no-op in normal use. The reflect-
-// origin allow-list stays as a safety net for direct-API consumers
-// (curl, Home Assistant, openapi clients on other hosts) that hit /api
-// across origins. Tighten if the deployment posture ever changes to a
-// multi-tenant public surface.
+// CORS: the SPA and the API are same-origin (one Hono front-door, /api/*
+// mounts this sub-app), so the web UI needs no CORS at all. Only an
+// allowed origin gets CORS headers back: the request's own host,
+// PUBLIC_URL, or an entry in CORS_ALLOWED_ORIGINS (see originPolicy.ts).
+// Server-side clients (curl, Home Assistant) send no Origin header and
+// are not affected. The write guard refuses state-changing requests from
+// any other origin, since CORS alone does not stop a simple POST.
+app.use("*", crossOriginWriteGuard)
 app.use(
   "*",
   cors({
-    origin: (origin) => origin ?? "*",
+    origin: (origin, context) =>
+      isAllowedOrigin({
+        headers: context.req.raw.headers,
+        origin,
+      })
+        ? origin
+        : null,
     allowMethods: [
       "GET",
       "POST",

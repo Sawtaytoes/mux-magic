@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-11-13 | [Browser writes are same-origin, and file changes stay under the allowed roots](2026-11-13-browser-writes-are-same-origin-and-file-changes-stay-under-allowed-roots.md) | server/api | Accepted |
 | 2026-10-24 | [Default subtitle themes match OP/ED words](2026-10-24-default-subtitle-themes-match-op-ed-words.md) | core | Accepted |
 | 2026-10-23 | [Newgrounds is a standalone artwork search provider](2026-10-23-newgrounds-is-a-standalone-artwork-search-provider.md) | core | Accepted |
 | 2026-10-23 | [VGMdb is a standalone artwork search provider](2026-10-23-vgmdb-is-a-standalone-artwork-search-provider.md) | core | Accepted |

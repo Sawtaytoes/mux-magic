@@ -3,7 +3,7 @@ import { rm } from "node:fs/promises"
 import { isNetworkPath } from "./isNetworkPath.js"
 import {
   PathSafetyError,
-  validateReadablePath,
+  validateWritablePath,
 } from "./pathSafety.js"
 
 export type DeleteMode = "trash" | "permanent"
@@ -51,7 +51,7 @@ export const getEffectiveDeleteMode = (
 }
 
 // Per-path delete with the configured strategy. Each path is validated
-// for absolute-path / no-traversal first; failures don't abort the
+// for absolute-path / no-traversal / inside the allowed file roots first; failures don't abort the
 // batch — the API surfaces them per-path so the UI can show "3
 // succeeded, 1 failed" without losing the successful 3. The strategy
 // is computed per-path via getEffectiveDeleteMode so a network-mapped
@@ -75,7 +75,7 @@ export const deleteFiles = async (
     paths.map(async (path): Promise<DeleteResult> => {
       let validated: string
       try {
-        validated = validateReadablePath(path)
+        validated = validateWritablePath(path)
       } catch (error) {
         const message =
           error instanceof PathSafetyError

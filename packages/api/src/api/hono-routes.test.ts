@@ -57,3 +57,128 @@ describe("Hono app", () => {
     expect(body.details).toContain("/app/.config")
   })
 })
+
+describe("origin policy", () => {
+  const originalAllowedOrigins =
+    process.env.CORS_ALLOWED_ORIGINS
+  const originalPublicUrl = process.env.PUBLIC_URL
+
+  afterEach(() => {
+    if (originalAllowedOrigins === undefined) {
+      delete process.env.CORS_ALLOWED_ORIGINS
+    } else {
+      process.env.CORS_ALLOWED_ORIGINS =
+        originalAllowedOrigins
+    }
+    if (originalPublicUrl === undefined) {
+      delete process.env.PUBLIC_URL
+    } else {
+      process.env.PUBLIC_URL = originalPublicUrl
+    }
+  })
+
+  test("does not echo a foreign origin in CORS headers", async () => {
+    const response = await app.request(
+      "http://mux.example/version",
+      { headers: { Origin: "https://evil.example" } },
+    )
+
+    expect(response.status).toBe(200)
+    expect(
+      response.headers.get("access-control-allow-origin"),
+    ).toBe(null)
+  })
+
+  test("allows the app's own host, even when a proxy ends TLS", async () => {
+    const response = await app.request(
+      "http://mux.example/version",
+      {
+        headers: {
+          Host: "mux.example",
+          Origin: "https://mux.example",
+        },
+      },
+    )
+
+    expect(
+      response.headers.get("access-control-allow-origin"),
+    ).toBe("https://mux.example")
+  })
+
+  test("allows an origin listed in CORS_ALLOWED_ORIGINS", async () => {
+    process.env.CORS_ALLOWED_ORIGINS =
+      "https://dashboard.example, https://other.example"
+
+    const response = await app.request(
+      "http://mux.example/version",
+      { headers: { Origin: "https://other.example" } },
+    )
+
+    expect(
+      response.headers.get("access-control-allow-origin"),
+    ).toBe("https://other.example")
+  })
+
+  test("refuses a cross-origin write before it reaches the route", async () => {
+    const response = await app.request(
+      "http://mux.example/templates",
+      {
+        method: "POST",
+        headers: {
+          Host: "mux.example",
+          Origin: "https://evil.example",
+          "Content-Type": "text/plain",
+        },
+        body: JSON.stringify({
+          name: "Demo",
+          yaml: "steps: []",
+        }),
+      },
+    )
+
+    expect(response.status).toBe(403)
+    const body = (await response.json()) as {
+      error: string
+    }
+    expect(body.error).toBe("cross-origin request refused")
+  })
+
+  test("refuses a write from an opaque null origin", async () => {
+    const response = await app.request(
+      "http://mux.example/templates",
+      {
+        method: "POST",
+        headers: { Origin: "null" },
+        body: "{}",
+      },
+    )
+
+    expect(response.status).toBe(403)
+  })
+
+  test("lets a write with no Origin header through (curl, Home Assistant)", async () => {
+    const response = await app.request(
+      "/templates/missing",
+      {
+        method: "DELETE",
+      },
+    )
+
+    expect(response.status).not.toBe(403)
+  })
+
+  test("lets a same-origin write through", async () => {
+    const response = await app.request(
+      "http://mux.example/templates/missing",
+      {
+        method: "DELETE",
+        headers: {
+          Host: "mux.example",
+          Origin: "http://mux.example",
+        },
+      },
+    )
+
+    expect(response.status).not.toBe(403)
+  })
+})

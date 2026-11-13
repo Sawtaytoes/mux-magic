@@ -58,7 +58,8 @@ All settings are optional. The complete commented list is in [`.env.example`](..
 | `DEFAULT_THREAD_COUNT` | `2` | Default task concurrency claim for each sequence job. |
 | `MAX_TRANSCODE_CONCURRENCY` | `4` | Concurrent audio transcodes for browser playback. |
 | `TRANSCODE_CACHE_MAX_BYTES` | `4294967296` | Maximum temporary transcode cache size in bytes. |
-| `PUBLIC_URL` | unset | Public base URL used in generated API documentation. |
+| `PUBLIC_URL` | unset | Public base URL used in generated API documentation. Its origin may also call the API from a browser. |
+| `CORS_ALLOWED_ORIGINS` | unset | Comma-separated extra browser origins that may call the API. The web interface is same-origin and needs no entry. A browser request that changes state from any other origin is refused with 403. Clients that send no `Origin` header, such as curl, are not affected. |
 
 ### Data and metadata
 
@@ -71,6 +72,8 @@ All settings are optional. The complete commented list is in [`.env.example`](..
 | `MEDIAINFO_PATH` | platform default | Host path to the MediaInfo command for a source installation. |
 
 ### File deletion
+
+`ALLOWED_FILE_ROOTS` limits where the file explorer and music routes may delete, rename, move, or write files. It is a list of absolute paths, split by `:` on Linux and macOS and by `;` on Windows. When it is unset, the container image is limited to `/media`, and a source installation has no limit. Reading and listing files are not limited.
 
 `DELETE_MODE` accepts `trash` or `permanent`. The default is `trash`. Permanent deletion cannot be undone by Mux Magic. Windows network paths use permanent deletion when the Recycle Bin is unavailable, even when the global mode is `trash`.
 
