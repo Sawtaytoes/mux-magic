@@ -8,6 +8,7 @@ const baseStep: Step = {
   alias: "Clean Up Originals",
   command: "deleteCopiedOriginals",
   params: {
+    copiedDestinationPaths: [],
     pathsToDelete: [],
   },
   links: {},
@@ -32,12 +33,16 @@ export default meta
 // picker on the `pathsToDelete` field.
 export const Default = makeStory(baseStep)
 
-// `pathsToDelete` linked to an upstream copyFiles step's
-// `copiedSourcePaths` output — the canonical use of this command.
+// `pathsToDelete` and `copiedDestinationPaths` linked to an upstream
+// copyFiles step's two outputs — the canonical use of this command.
 export const WithLinkedFromCopyFiles = makeStory({
   ...baseStep,
   id: "step_delete_copied_originals__linked",
   links: {
+    copiedDestinationPaths: {
+      linkedTo: "step_copy",
+      output: "copiedDestinationPaths",
+    },
     pathsToDelete: {
       linkedTo: "step_copy",
       output: "copiedSourcePaths",
@@ -51,6 +56,10 @@ export const WithManualPaths = makeStory({
   ...baseStep,
   id: "step_delete_copied_originals__manual",
   params: {
+    copiedDestinationPaths: [
+      "/mnt/library/Movie.A.mkv",
+      "/mnt/library/Movie.B.mkv",
+    ],
     pathsToDelete: [
       "/mnt/source/Movie.A.mkv",
       "/mnt/source/Movie.B.mkv",

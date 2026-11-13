@@ -1,4 +1,3 @@
-import { rm } from "node:fs/promises"
 import { basename, join } from "node:path"
 import {
   type FileInfo,
@@ -17,6 +16,7 @@ import {
   tap,
   toArray,
 } from "rxjs"
+import { removeEmptyFolder } from "../tools/removeEmptyFolder.js"
 
 type FlattenRecord = {
   source: string
@@ -77,14 +77,19 @@ export const flattenChildFolders = ({
           if (!isDeletingEmptyChildFoldersAfterFlattening) {
             return from(moves)
           }
+          // Grandchild folders are not moved, so only a child folder
+          // that is now empty is removed. One that still holds anything
+          // is kept, and its leftover entries are logged.
           return defer(() =>
-            rm(childFolder.fullPath, { recursive: true }),
+            removeEmptyFolder(childFolder.fullPath),
           ).pipe(
-            tap(() => {
-              logInfo(
-                "REMOVED EMPTY CHILD",
-                childFolder.fullPath,
-              )
+            tap((result) => {
+              if (result === "removed") {
+                logInfo(
+                  "REMOVED EMPTY CHILD",
+                  childFolder.fullPath,
+                )
+              }
             }),
             concatMap(() => from(moves)),
           )

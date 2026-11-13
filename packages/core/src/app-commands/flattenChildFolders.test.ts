@@ -1,4 +1,5 @@
 import { join } from "node:path"
+import { captureLogMessage } from "@mux-magic/tools/test-helpers"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
 import { beforeEach, describe, expect, test } from "vitest"
@@ -110,6 +111,37 @@ describe(flattenChildFolders.name, () => {
       vol.existsSync("/shorts/disc1/extras/bonus.mkv"),
     ).toBe(true)
     expect(vol.existsSync("/shorts/bonus.mkv")).toBe(false)
+  })
+
+  test("flag-on keeps a child folder that still holds a nested subfolder", async () => {
+    vol.fromJSON({
+      "/shorts/disc1/ep01.mkv": "ep1",
+      "/shorts/disc1/extras/bonus.mkv": "bonus",
+      "/shorts/disc2/ep02.mkv": "ep2",
+    })
+
+    await captureLogMessage("warn", async (warningSpy) => {
+      await firstValueFrom(
+        flattenChildFolders({
+          isDeletingEmptyChildFoldersAfterFlattening: true,
+          parentPath: "/shorts",
+        }).pipe(toArray()),
+      )
+      expect(
+        warningSpy.mock.calls.flat().join(" "),
+      ).toContain("KEPT FOLDER, NOT EMPTY")
+    })
+
+    expect(vol.existsSync("/shorts/ep01.mkv")).toBe(true)
+    expect(vol.existsSync("/shorts/ep02.mkv")).toBe(true)
+    expect(
+      vol.readFileSync(
+        "/shorts/disc1/extras/bonus.mkv",
+        "utf8",
+      ),
+    ).toBe("bonus")
+    // The child that became empty is still removed.
+    expect(vol.existsSync("/shorts/disc2")).toBe(false)
   })
 
   test("empty parent — no emissions, no crash", async () => {
