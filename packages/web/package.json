@@ -39,7 +39,7 @@
     "@hono/zod-openapi": "^1.4.0"
   },
   "devDependencies": {
-    "@charcuterie/server": "^0.5.1",
+    "@charcuterie/server": "^0.6.0",
     "@charcuterie/storybook-config": "^0.4.3",
     "@charcuterie/vite-config": "^1.1.0",
     "@charcuterie/vitest-config": "^2.0.0",

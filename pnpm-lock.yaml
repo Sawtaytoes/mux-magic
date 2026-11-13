@@ -324,6 +324,9 @@ importers:
         version: 6.0.3
   packages/api:
     dependencies:
+      "@charcuterie/server":
+        specifier: ^0.6.0
+        version: 0.6.0(@hono/node-server@2.0.12(hono@4.13.7))(hono@4.13.7)(vite@8.0.16(@types/node@25.6.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.4))
       "@hono/node-server":
         specifier: ^2.0.2
         version: 2.0.12(hono@4.13.7)
@@ -535,8 +538,8 @@ importers:
   packages/server:
     dependencies:
       "@charcuterie/server":
-        specifier: ^0.5.1
-        version: 0.5.1(@hono/node-server@2.0.12(hono@4.13.7))(hono@4.13.7)(vite@8.0.16(@types/node@25.6.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.4))
+        specifier: ^0.6.0
+        version: 0.6.0(@hono/node-server@2.0.12(hono@4.13.7))(hono@4.13.7)(vite@8.0.16(@types/node@25.6.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.4))
       "@hono/node-server":
         specifier: ^2.0.2
         version: 2.0.12(hono@4.13.7)
@@ -641,8 +644,8 @@ importers:
         version: 1.4.0(hono@4.13.7)(zod@4.4.3)
     devDependencies:
       "@charcuterie/server":
-        specifier: ^0.5.1
-        version: 0.5.1(@hono/node-server@2.0.12(hono@4.13.7))(hono@4.13.7)(vite@8.0.16(@types/node@25.6.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.4))
+        specifier: ^0.6.0
+        version: 0.6.0(@hono/node-server@2.0.12(hono@4.13.7))(hono@4.13.7)(vite@8.0.16(@types/node@25.6.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.4))
       "@charcuterie/storybook-config":
         specifier: ^0.4.3
         version: 0.4.3(2c9537179bf35f0252b9ce7e80841ae3)
@@ -1090,9 +1093,9 @@ packages:
       integrity: sha512-1lfWS0rgUjW+Q3N1xcUoXULiLYItfN/w2ZPkTB+U0YimR0yj9223DnaZ2ASdWCv9Oooak0fdz0KBy5TKKPhxhg==
     peerDependencies:
       "@playwright/test": ">=1.40"
-  "@charcuterie/server@0.5.1":
+  "@charcuterie/server@0.6.0":
     resolution:
-      integrity: sha512-cFONTS//vj8NyQRsa1KtZlUyZZcciWxF9DyRllYqz1aCecqXZIWV041RvUH7Ek45EMs57RwAP+an0OriwQ0pJg==
+      integrity: sha512-kmB0GIrvgzv28KfSjbPBjf5gRcj6qoBKPkY5k+yKU48fjDVG+QMiApXXQlj+T3YxFKplMcLC3E8QHv2bkPEcUA==
     peerDependencies:
       "@hono/node-server": ">=1.13"
       hono: ">=4"
@@ -6884,7 +6887,7 @@ snapshots:
       - "@vitest/browser-playwright"
       - playwright
       - vitest
-  "@charcuterie/server@0.5.1(@hono/node-server@2.0.12(hono@4.13.7))(hono@4.13.7)(vite@8.0.16(@types/node@25.6.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.4))":
+  "@charcuterie/server@0.6.0(@hono/node-server@2.0.12(hono@4.13.7))(hono@4.13.7)(vite@8.0.16(@types/node@25.6.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.4))":
     dependencies:
       "@hono/node-server": 2.0.12(hono@4.13.7)
       hono: 4.13.7

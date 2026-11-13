@@ -290,8 +290,12 @@ test.describe("Errors panel — manual redeliver (exhausted → pending path)", 
     const firstRecord = records[0]
 
     // Call redeliver — regardless of current state, it must reset to pending
+    // A bodiless POST needs same-origin proof or a JSON Content-Type
+    // (the shared write guard). Playwright's API client sends neither
+    // Origin nor Sec-Fetch-Site, so it sends the JSON type.
     const redeliverResponse = await page.request.post(
       `${apiBaseUrl}/api/errors/${firstRecord.id}/redeliver`,
+      { headers: { "Content-Type": "application/json" } },
     )
     expect(redeliverResponse.ok()).toBeTruthy()
 

@@ -62,19 +62,28 @@ describe("origin policy", () => {
   const originalAllowedOrigins =
     process.env.CORS_ALLOWED_ORIGINS
   const originalPublicUrl = process.env.PUBLIC_URL
+  const originalAllowedHosts = process.env.ALLOWED_HOSTS
+  const originalNodeEnv = process.env.NODE_ENV
+
+  const restoreEnv = (
+    name: string,
+    value: string | undefined,
+  ) => {
+    if (value === undefined) {
+      delete process.env[name]
+    } else {
+      process.env[name] = value
+    }
+  }
 
   afterEach(() => {
-    if (originalAllowedOrigins === undefined) {
-      delete process.env.CORS_ALLOWED_ORIGINS
-    } else {
-      process.env.CORS_ALLOWED_ORIGINS =
-        originalAllowedOrigins
-    }
-    if (originalPublicUrl === undefined) {
-      delete process.env.PUBLIC_URL
-    } else {
-      process.env.PUBLIC_URL = originalPublicUrl
-    }
+    restoreEnv(
+      "CORS_ALLOWED_ORIGINS",
+      originalAllowedOrigins,
+    )
+    restoreEnv("PUBLIC_URL", originalPublicUrl)
+    restoreEnv("ALLOWED_HOSTS", originalAllowedHosts)
+    restoreEnv("NODE_ENV", originalNodeEnv)
   })
 
   test("does not echo a foreign origin in CORS headers", async () => {
@@ -140,7 +149,7 @@ describe("origin policy", () => {
     const body = (await response.json()) as {
       error: string
     }
-    expect(body.error).toBe("cross-origin request refused")
+    expect(body.error).toContain("https://evil.example")
   })
 
   test("refuses a write from an opaque null origin", async () => {
@@ -180,5 +189,148 @@ describe("origin policy", () => {
     )
 
     expect(response.status).not.toBe(403)
+  })
+
+  test("refuses a text/plain write with no Origin (a JSON body is required)", async () => {
+    const response = await app.request("/templates", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        name: "Demo",
+        yaml: "steps: []",
+      }),
+    })
+
+    expect(response.status).toBe(415)
+  })
+
+  test("refuses a bodiless POST with no Content-Type, Origin, or Sec-Fetch-Site", async () => {
+    const response = await app.request(
+      "/jobs/missing/cancel",
+      { method: "POST" },
+    )
+
+    expect(response.status).toBe(415)
+  })
+
+  test("lets a bodiless POST through when it sends a JSON Content-Type", async () => {
+    const response = await app.request(
+      "/jobs/missing/cancel",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      },
+    )
+
+    expect(response.status).not.toBe(415)
+    expect(response.status).not.toBe(403)
+  })
+
+  test("refuses every request on a Host outside ALLOWED_HOSTS, reads included", async () => {
+    process.env.ALLOWED_HOSTS = "mux.example"
+
+    const response = await app.request(
+      "http://rebound.example/version",
+      { headers: { Host: "rebound.example" } },
+    )
+
+    expect(response.status).toBe(421)
+    const body = (await response.json()) as {
+      error: string
+    }
+    expect(body.error).toContain("ALLOWED_HOSTS")
+  })
+
+  test("refuses a DNS-rebinding write, even though its Origin matches its Host", async () => {
+    process.env.ALLOWED_HOSTS = "mux.example"
+
+    const response = await app.request(
+      "http://rebound.example/templates/missing",
+      {
+        method: "DELETE",
+        headers: {
+          Host: "rebound.example",
+          Origin: "http://rebound.example",
+        },
+      },
+    )
+
+    expect(response.status).toBe(421)
+  })
+
+  test("lets a same-origin write through on a listed Host", async () => {
+    process.env.ALLOWED_HOSTS = "mux.example"
+    process.env.NODE_ENV = "production"
+
+    const response = await app.request(
+      "http://mux.example/templates/missing",
+      {
+        method: "DELETE",
+        headers: {
+          Host: "mux.example",
+          Origin: "https://mux.example",
+          "Sec-Fetch-Site": "same-origin",
+        },
+      },
+    )
+
+    expect(response.status).toBe(404)
+  })
+
+  test("in production, an empty ALLOWED_HOSTS refuses a write from a non-loopback Host", async () => {
+    delete process.env.ALLOWED_HOSTS
+    process.env.NODE_ENV = "production"
+
+    const response = await app.request(
+      "http://mux.example/templates/missing",
+      {
+        method: "DELETE",
+        headers: { Host: "mux.example" },
+      },
+    )
+
+    expect(response.status).toBe(421)
+    const body = (await response.json()) as {
+      error: string
+    }
+    expect(body.error).toContain("ALLOWED_HOSTS")
+  })
+
+  test("with NODE_ENV unset (the production bundle), an empty ALLOWED_HOSTS refuses a rebinding write", async () => {
+    delete process.env.ALLOWED_HOSTS
+    delete process.env.NODE_ENV
+
+    const response = await app.request(
+      "http://rebound.example/templates/missing",
+      {
+        method: "DELETE",
+        headers: {
+          Host: "rebound.example",
+          Origin: "http://rebound.example",
+        },
+      },
+    )
+
+    expect(response.status).toBe(421)
+  })
+
+  test("in production, an empty ALLOWED_HOSTS still serves reads and loopback writes", async () => {
+    delete process.env.ALLOWED_HOSTS
+    process.env.NODE_ENV = "production"
+
+    const read = await app.request(
+      "http://mux.example/version",
+      { headers: { Host: "mux.example" } },
+    )
+    const loopbackWrite = await app.request(
+      "http://localhost:3000/templates/missing",
+      {
+        method: "DELETE",
+        headers: { Host: "localhost:3000" },
+      },
+    )
+
+    expect(read.status).toBe(200)
+    expect(loopbackWrite.status).toBe(404)
   })
 })

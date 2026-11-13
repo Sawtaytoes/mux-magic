@@ -4,7 +4,7 @@ import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 
 import {
-  crossOriginWriteGuard,
+  apiWriteGuard,
   isAllowedOrigin,
 } from "./originPolicy.js"
 import { commandRoutes } from "./routes/commandRoutes.js"
@@ -31,9 +31,10 @@ export const app = new OpenAPIHono()
 // allowed origin gets CORS headers back: the request's own host,
 // PUBLIC_URL, or an entry in CORS_ALLOWED_ORIGINS (see originPolicy.ts).
 // Server-side clients (curl, Home Assistant) send no Origin header and
-// are not affected. The write guard refuses state-changing requests from
-// any other origin, since CORS alone does not stop a simple POST.
-app.use("*", crossOriginWriteGuard)
+// are not affected. The write guard (the shared Charcuterie guard, see
+// originPolicy.ts) refuses a write from another origin or an unlisted
+// Host, since CORS alone does not stop a simple POST or DNS rebinding.
+app.use("*", apiWriteGuard)
 app.use(
   "*",
   cors({
